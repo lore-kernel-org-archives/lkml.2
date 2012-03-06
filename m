@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031158Ab2CFWMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 17:12:48 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:40352 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965262Ab2CFWMp (ORCPT
+	id S1031210Ab2CFWPd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 17:15:33 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62259 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030811Ab2CFWPb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 17:12:45 -0500
-Date: Tue, 06 Mar 2012 17:08:28 -0500 (EST)
-Message-Id: <20120306.170828.2286313308907964046.davem@davemloft.net>
-To: dhdang@apm.com
-Cc: benh@kernel.crashing.org, paulus@samba.org, jwboyer@gmail.com, sr@denx.de,
+	Tue, 6 Mar 2012 17:15:31 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of jwboyer@gmail.com designates 10.52.34.4 as permitted sender) smtp.mail=jwboyer@gmail.com; dkim=pass header.i=jwboyer@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <20120306.170819.2135873666210523674.davem@davemloft.net>
+References: <1330920224-3006-1-git-send-email-dhdang@apm.com>
+	<1330945062-15760-1-git-send-email-dhdang@apm.com>
+	<20120306.170819.2135873666210523674.davem@davemloft.net>
+Date: Tue, 6 Mar 2012 17:15:30 -0500
+Message-ID: <CA+5PVA56KhuBjbszR8_k_OAyQc=1fHxbMXE4ZFO9ahANVJi_Ww@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] powerpc/44x: Add new compatible value for EMAC
+ node of APM821XX dts file.
+From: Josh Boyer <jwboyer@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: dhdang@apm.com, benh@kernel.crashing.org, paulus@samba.org, sr@denx.de,
         linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] powerpc/44x: Add more changes for APM821XX EMAC
- driver
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1330945102-15802-1-git-send-email-dhdang@apm.com>
-References: <1330920224-3006-1-git-send-email-dhdang@apm.com>
-	<1330945102-15802-1-git-send-email-dhdang@apm.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 06 Mar 2012 14:08:31 -0800 (PST)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Duc Dang <dhdang@apm.com>
-Date: Mon,  5 Mar 2012 17:58:22 +0700
+On Tue, Mar 6, 2012 at 5:08 PM, David Miller <davem@davemloft.net> wrote:
+> From: Duc Dang <dhdang@apm.com>
+> Date: Mon,  5 Mar 2012 17:57:42 +0700
+>
+>> This compatible value will be used to distinguish some special features of APM821XX EMAC: no half duplex mode support, configuring jumbo frame.
+>>
+>> Signed-off-by: Duc Dang <dhdang@apm.com>
+>
+> Applied.
 
->  This patch includes:
-> 
->   Configure EMAC PHY clock source (clock from PHY or internal clock).
-> 
->   Do not advertise PHY half duplex capability as APM821XX EMAC does not support half duplex mode.
-> 
->   Add changes to support configuring jumbo frame for APM821XX EMAC.
-> 
-> Signed-off-by: Duc Dang <dhdang@apm.com>
+So I guess we're taking these through your tree?  I guess that works out
+well enough since the other patches I was going to send to Ben aren't
+panning out anyway.
 
-Applied with coding style fixes.
+josh
