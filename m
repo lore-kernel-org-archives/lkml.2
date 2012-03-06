@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964897Ab2CFAzj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 19:55:39 -0500
-Received: from oproxy9.bluehost.com ([69.89.24.6]:48049 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932606Ab2CFAzh (ORCPT
+	id S932651Ab2CFA4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 19:56:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35013 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932581Ab2CFA4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 19:55:37 -0500
-Message-ID: <4F556092.7060202@xenotime.net>
-Date: Mon, 05 Mar 2012 16:55:46 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 5 Mar 2012 19:56:50 -0500
+Date: Mon, 5 Mar 2012 16:56:06 -0800
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <tip-a628b684d27d22631d1819890f13047ae9075241@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hjl.tools@gmail.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hjl.tools@gmail.com
+In-Reply-To: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/x32] x32: Provide separate is_ia32_task() and is_x32_task
+ () predicates
+Git-Commit-ID: a628b684d27d22631d1819890f13047ae9075241
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Azael Avalos <coproscefalo@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/4] toshiba_acpi: Expanded hotkey support
-References: <1326915852-19896-1-git-send-email-seth.forshee@canonical.com> <20120206150658.GE6414@ubuntu-macmini> <20120206151548.GA30255@srcf.ucam.org> <20120305220407.GA16312@ubuntu-macmini> <4F5545BB.5010608@xenotime.net> <20120305233445.GD16312@ubuntu-macmini>
-In-Reply-To: <20120305233445.GD16312@ubuntu-macmini>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Mar 2012 16:56:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2012 03:34 PM, Seth Forshee wrote:
+Commit-ID:  a628b684d27d22631d1819890f13047ae9075241
+Gitweb:     http://git.kernel.org/tip/a628b684d27d22631d1819890f13047ae9075241
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Mon, 5 Mar 2012 13:39:29 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 5 Mar 2012 15:35:18 -0800
 
-> On Mon, Mar 05, 2012 at 03:01:15PM -0800, Randy Dunlap wrote:
->> On 03/05/2012 02:04 PM, Seth Forshee wrote:
->>
->>> On Mon, Feb 06, 2012 at 03:15:48PM +0000, Matthew Garrett wrote:
->>>> On Mon, Feb 06, 2012 at 09:06:58AM -0600, Seth Forshee wrote:
->>>>
->>>>> Matthew: Just wondering if there are more issues that need to be
->>>>> addressed with this round of patches, or if they're looking okay at this
->>>>> point.
->>>>
->>>> I'm fine with them at this point, just waiting on Len to give feedback 
->>>> on the ACPI patch.
->>>
->>> Well, I've been trying to get some comment on the ACPI patch, to no
->>> avail. Unless there's some other option, I guess I'll just resend the
->>> patches using an alternative method for getting the EC handle.
->>
->>
->> I did test this patch series on 3.3-rc5 to see if it would
->> help with the touchpad on/off key on my Toshiba Portege.
->>
->> The patch series didn't have any ill effects, nor did it help
->> with the touchpad on/off key.  :(
-> 
-> Is it only that hotkey that doesn't work, or do the others fail to work
-> as well?
+x32: Provide separate is_ia32_task() and is_x32_task() predicates
 
-I haven't tried any others.  Which ones do you suggest that I test?
+The is_compat_task() test is composed of two predicates already, so
+make each of them available separately.
 
-> If it's only that key that doesn't work, I'd suggest using input-events
-> to determine exactly which device the other hotkey events are coming
-> from (it might be more than one) and to verify there really isn't any
-> event coming out for that key. If there's no event at all for the key,
-> check dmesg and see if any messages are printed there when you press the
-> touchpad key.
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: H. J. Lu <hjl.tools@gmail.com>
+Link: http://lkml.kernel.org/r/1329696488-16970-1-git-send-email-hpa@zytor.com
+---
+ arch/x86/include/asm/compat.h |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
-
-I don't know about "input-events".  Where do I find it & info on it?
-
-I already tried using 'showkey' and it didn't see any keypress for the
-touchpad key.
-
-thanks,
--- 
-~Randy
+diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
+index e7f68b4..355edc0 100644
+--- a/arch/x86/include/asm/compat.h
++++ b/arch/x86/include/asm/compat.h
+@@ -235,12 +235,17 @@ static inline void __user *arch_compat_alloc_user_space(long len)
+ 	return (void __user *)round_down(sp - len, 16);
+ }
+ 
+-static inline bool is_compat_task(void)
++static inline bool is_ia32_task(void)
+ {
+ #ifdef CONFIG_IA32_EMULATION
+ 	if (current_thread_info()->status & TS_COMPAT)
+ 		return true;
+ #endif
++	return false;
++}
++
++static inline bool is_x32_task(void)
++{
+ #ifdef CONFIG_X86_X32_ABI
+ 	if (task_pt_regs(current)->orig_ax & __X32_SYSCALL_BIT)
+ 		return true;
+@@ -248,4 +253,9 @@ static inline bool is_compat_task(void)
+ 	return false;
+ }
+ 
++static inline bool is_compat_task(void)
++{
++	return is_ia32_task() || is_x32_task();
++}
++
+ #endif /* _ASM_X86_COMPAT_H */
