@@ -1,326 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758565Ab2CFIMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 03:12:47 -0500
-Received: from mga09.intel.com ([134.134.136.24]:22299 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757475Ab2CFIMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 03:12:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="114963284"
-Date: Tue, 6 Mar 2012 16:11:17 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: alex.shi@intel.com, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        tim.c.chen@intel.com, ying.huang@intel.com, netdev@vger.kernel.org
-Subject: Re: TCP_STREAM performance regression on commit b3613118
-Message-ID: <20120306081117.GA17375@feng-i7>
-References: <1329472239.2861.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20120217.133327.1178765872497293871.davem@davemloft.net>
- <1330656317.21053.1411.camel@debian>
- <20120301.220743.2174015405223036036.davem@davemloft.net>
+	id S932186Ab2CFIS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 03:18:57 -0500
+Received: from www.linutronix.de ([62.245.132.108]:56722 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755353Ab2CFIS4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 03:18:56 -0500
+Date: Tue, 6 Mar 2012 09:18:53 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
+        Carsten Emde <cbe@osadl.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH RT] seqlock/rt: Prevent livelocks with seqlocks in RT
+In-Reply-To: <1331006584.25686.362.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.02.1203060911000.2742@ionos>
+References: <1331006584.25686.362.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120301.220743.2174015405223036036.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 10:07:43PM -0500, David Miller wrote:
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Fri, 02 Mar 2012 10:45:17 +0800
+On Mon, 5 Mar 2012, Steven Rostedt wrote:
+
+> Thomas,
 > 
-> > Add CC to tang feng, He is working on this issue. 
+> I was running my cpu hotplug stress test along with a kernel compile and
+> after about 40 minutes of running it locked up. It happened in the
+> read_seqcount_begin() that is called by d_lookup().
 > 
-> Is he?  I'm pretty sure this is due to the TCP receive window growing
-> issue Eric Dumazet, Neal Cardwell and I are discussing in the thread
-> starting at:
+> ksoftirqd was caught here:
 > 
-> http://marc.info/?l=linux-netdev&m=132916352815286&w=2
+> static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
+> {
+> 	unsigned ret;
+> 
+> repeat:
+> 	ret = ACCESS_ONCE(sl->sequence);
+> 	if (unlikely(ret & 1)) {
+> 		cpu_relax();
+> 		goto repeat;
+> 	}
+> 	smp_rmb();
+> 
+> 	return ret;
+> }
+> 
+> It preempted the holder of the seqlock that was held for write, and as
+> that holder had migrate disabled, it couldn't be scheduled. Then
+> ksoftirqd went into this infinite loop and the system locked up.
+> 
+> This patch fixes the issue by grabbing and releasing the write lock when
+> it detects contention. It only works with seqlocks and not seqcounts
+> that have their own locking. But we could add an api to include those
+> too if needed.
 
-Yes, probably, as we did find some clue related with the tcp_r/wmem.
+Errm. rt15 has 
 
-Here is the regression we found:
-On some machines, we found there is about 10% resgression of netperf
-TCP-64K loopback test between 3.2 and 3.3-rc1. The exact test is:
-./netperf -t TCP_STREAM -l 60 -H 127.0.0.1 -i 50,3 -I 99,5 -- -s 32768 -S 32768 -m 4096
+/*
+ * Starvation safe read side for RT
+ */
+static inline unsigned read_seqbegin(seqlock_t *sl)
+{
+        unsigned ret;
 
+repeat:
+        ret = sl->seqcount.sequence;
+        if (unlikely(ret & 1)) {
+                /*
+                 * Take the lock and let the writer proceed (i.e. evtl
+                 * boost it), otherwise we could loop here forever.
+                 */
+                spin_lock(&sl->lock);
+                spin_unlock(&sl->lock);
+                goto repeat;
+        }
+        return ret;
+}
+#endif
 
-The test machine is a 2 socket Quad Core Core 2 Duo server(2.66GHz) with
-8 GB RAM. Following are the debug info (ifconfig/netstat -s/tcp_rwmem)
-before and after the test: 
+> Because read_seqlocks are used in the VDSO area, a raw_read_seqcount_begin()
+> was created to allow userspace tasks to access read_seqcount().
+> As the grabbing of the write_lock() is not allowed in VDSO, nor
+> is even referencing it.
 
-The most obvious differences I can see are:
-1) 311 GB vs 241 GB from ifconfig
-2) the difference of the tcp_r/wmem
+This is completely bogus. The VDSO update write side runs with
+interrupts disabled, so it cannot be preempted at all.
 
+> Note, a live lock can still happen if the userspace task that
+> does the read_seqlock is of higher priority than a user doing
+> the write_lock, so userspace needs to be careful.
+
+What the hell are you smoking?
+ 
 Thanks,
-Feng
 
-----------------------------------------------------------
-Before the test (v3.2)
-===========================
-ifconfig info
-eth1      Link encap:Ethernet  HWaddr 00:30:48:7C:CF:72  
-          inet addr:192.168.1.58  Bcast:192.168.1.255  Mask:255.255.255.0
-          inet6 addr: fe80::230:48ff:fe7c:cf72/64 Scope:Link
-          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-          RX packets:947 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:253 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
-          RX bytes:76573 (74.7 KiB)  TX bytes:31034 (30.3 KiB)
-          Memory:d8420000-d8440000 
-
-lo        Link encap:Local Loopback  
-          inet addr:127.0.0.1  Mask:255.0.0.0
-          inet6 addr: ::1/128 Scope:Host
-          UP LOOPBACK RUNNING  MTU:16436  Metric:1
-          RX packets:197 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:197 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:0 
-          RX bytes:21827 (21.3 KiB)  TX bytes:21827 (21.3 KiB)
-
-netstat info
-Ip:
-    593 total packets received
-    3 with invalid addresses
-    0 forwarded
-    0 incoming packets discarded
-    590 incoming packets delivered
-    431 requests sent out
-Icmp:
-    7 ICMP messages received
-    0 input ICMP message failed.
-    ICMP input histogram:
-        destination unreachable: 7
-    7 ICMP messages sent
-    0 ICMP messages failed
-    ICMP output histogram:
-        destination unreachable: 7
-IcmpMsg:
-        InType3: 7
-        OutType3: 7
-Tcp:
-    7 active connections openings
-    10 passive connection openings
-    0 failed connection attempts
-    0 connection resets received
-    3 connections established
-    371 segments received
-    328 segments send out
-    0 segments retransmited
-    0 bad segments received.
-    3 resets sent
-Udp:
-    87 packets received
-    7 packets to unknown port received.
-    0 packet receive errors
-    94 packets sent
-UdpLite:
-tcp_rmem
-4096	87380	4194304
-tcp_wmem
-4096	16384	4194304
-=========================
-
-
-After the test (v3.2)
-===========================
-ifconfig info
-eth1      Link encap:Ethernet  HWaddr 00:30:48:7C:CF:72  
-          inet addr:192.168.1.58  Bcast:192.168.1.255  Mask:255.255.255.0
-          inet6 addr: fe80::230:48ff:fe7c:cf72/64 Scope:Link
-          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-          RX packets:2278 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:690 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
-          RX bytes:174366 (170.2 KiB)  TX bytes:88711 (86.6 KiB)
-          Memory:d8420000-d8440000 
-
-lo        Link encap:Local Loopback  
-          inet addr:127.0.0.1  Mask:255.0.0.0
-          inet6 addr: ::1/128 Scope:Host
-          UP LOOPBACK RUNNING  MTU:16436  Metric:1
-          RX packets:54845546 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:54845546 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:0 
-          RX bytes:334960558399 (311.9 GiB)  TX bytes:334960558399 (311.9 GiB)
-
-netstat info
-Ip:
-    54846593 total packets received
-    3 with invalid addresses
-    0 forwarded
-    0 incoming packets discarded
-    54846590 incoming packets delivered
-    54846212 requests sent out
-Icmp:
-    7 ICMP messages received
-    0 input ICMP message failed.
-    ICMP input histogram:
-        destination unreachable: 7
-    7 ICMP messages sent
-    0 ICMP messages failed
-    ICMP output histogram:
-        destination unreachable: 7
-IcmpMsg:
-        InType3: 7
-        OutType3: 7
-Tcp:
-    21 active connections openings
-    22 passive connection openings
-    0 failed connection attempts
-    0 connection resets received
-    3 connections established
-    54846182 segments received
-    54846067 segments send out
-    0 segments retransmited
-    0 bad segments received.
-    3 resets sent
-Udp:
-    126 packets received
-    7 packets to unknown port received.
-    0 packet receive errors
-    134 packets sent
-UdpLite:
-tcp_rmem
-4096	87380	4194304
-tcp_wmem
-4096	16384	4194304
-=========================
-
-
-
-Before the test (v3.3-rc1)
-===========================
-ifconfig info
-eth1      Link encap:Ethernet  HWaddr 00:30:48:7C:CF:72  
-          inet addr:192.168.1.58  Bcast:192.168.1.255  Mask:255.255.255.0
-          inet6 addr: fe80::230:48ff:fe7c:cf72/64 Scope:Link
-          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-          RX packets:576 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:205 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
-          RX bytes:50045 (48.8 KiB)  TX bytes:27018 (26.3 KiB)
-          Memory:d8420000-d8440000 
-
-lo        Link encap:Local Loopback  
-          inet addr:127.0.0.1  Mask:255.0.0.0
-          inet6 addr: ::1/128 Scope:Host
-          UP LOOPBACK RUNNING  MTU:16436  Metric:1
-          RX packets:88 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:88 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:0 
-          RX bytes:9613 (9.3 KiB)  TX bytes:9613 (9.3 KiB)
-
-netstat info
-Ip:
-    365 total packets received
-    3 with invalid addresses
-    0 forwarded
-    0 incoming packets discarded
-    362 incoming packets delivered
-    278 requests sent out
-Icmp:
-    3 ICMP messages received
-    0 input ICMP message failed.
-    ICMP input histogram:
-        destination unreachable: 3
-    3 ICMP messages sent
-    0 ICMP messages failed
-    ICMP output histogram:
-        destination unreachable: 3
-IcmpMsg:
-        InType3: 3
-        OutType3: 3
-Tcp:
-    3 active connections openings
-    6 passive connection openings
-    0 failed connection attempts
-    0 connection resets received
-    3 connections established
-    226 segments received
-    206 segments send out
-    0 segments retransmited
-    0 bad segments received.
-    3 resets sent
-Udp:
-    64 packets received
-    3 packets to unknown port received.
-    0 packet receive errors
-    67 packets sent
-UdpLite:
-tcp_rmem
-4096	87380	87380
-tcp_wmem
-4096	16384	65536
-=========================
-
-
-After the test (v3.3-rc1)
-===========================
-ifconfig info
-eth1      Link encap:Ethernet  HWaddr 00:30:48:7C:CF:72  
-          inet addr:192.168.1.58  Bcast:192.168.1.255  Mask:255.255.255.0
-          inet6 addr: fe80::230:48ff:fe7c:cf72/64 Scope:Link
-          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-          RX packets:1724 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:608 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
-          RX bytes:134666 (131.5 KiB)  TX bytes:79003 (77.1 KiB)
-          Memory:d8420000-d8440000 
-
-lo        Link encap:Local Loopback  
-          inet addr:127.0.0.1  Mask:255.0.0.0
-          inet6 addr: ::1/128 Scope:Host
-          UP LOOPBACK RUNNING  MTU:16436  Metric:1
-          RX packets:45143339 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:45143339 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:0 
-          RX bytes:259440765641 (241.6 GiB)  TX bytes:259440765641 (241.6 GiB)
-
-netstat info
-Ip:
-    45144169 total packets received
-    3 with invalid addresses
-    0 forwarded
-    0 incoming packets discarded
-    45144166 incoming packets delivered
-    45143928 requests sent out
-Icmp:
-    3 ICMP messages received
-    0 input ICMP message failed.
-    ICMP input histogram:
-        destination unreachable: 3
-    3 ICMP messages sent
-    0 ICMP messages failed
-    ICMP output histogram:
-        destination unreachable: 3
-IcmpMsg:
-        InType3: 3
-        OutType3: 3
-Tcp:
-    16 active connections openings
-    17 passive connection openings
-    0 failed connection attempts
-    0 connection resets received
-    3 connections established
-    45143859 segments received
-    45143814 segments send out
-    0 segments retransmited
-    0 bad segments received.
-    3 resets sent
-Udp:
-    103 packets received
-    3 packets to unknown port received.
-    0 packet receive errors
-    107 packets sent
-UdpLite:
-tcp_rmem
-4096	87380	87380
-tcp_wmem
-4096	16384	65536
-=========================
+	tglx
