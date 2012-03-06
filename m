@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab2CFQPD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 11:15:03 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39021 "EHLO
+	id S1755071Ab2CFQQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 11:16:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39038 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754274Ab2CFQPA (ORCPT
+	with ESMTP id S1751873Ab2CFQQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 11:15:00 -0500
-Date: Tue, 6 Mar 2012 08:13:58 -0800
-From: tip-bot for Philip Prindeville <philipp@redfish-solutions.com>
-Message-ID: <tip-sjp6k1rjksitx1pej0c0qxd1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, hpa@zytor.com,
-        mingo@redhat.com, kernel@wildgooses.com, philipp@redfish-solutions.com,
-        akpm@linux-foundation.org, dilinger@queued.net, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, kernel@wildgooses.com,
-        philipp@redfish-solutions.com, akpm@linux-foundation.org,
-        dilinger@queued.net, tglx@linutronix.de, mingo@elte.hu
+	Tue, 6 Mar 2012 11:16:01 -0500
+Date: Tue, 6 Mar 2012 08:12:22 -0800
+From: tip-bot for Mika Westerberg <mika.westerberg@linux.intel.com>
+Message-ID: <tip-85zdo06yve1o27jpwc74gzng@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, durgadoss.r@intel.com,
+        alan@linux.intel.com, hpa@zytor.com, mingo@redhat.com,
+        kirill.shutemov@linux.intel.com, akpm@linux-foundation.org,
+        mika.westerberg@linux.intel.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, alan@linux.intel.com,
+        durgadoss.r@intel.com, mjg@redhat.com, linux-kernel@vger.kernel.org,
+        kirill.shutemov@linux.intel.com, akpm@linux-foundation.org,
+        mika.westerberg@linux.intel.com, tglx@linutronix.de, mingo@elte.hu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/geode/alix2:
-  Supplement driver to include GPIO button support
-Git-Commit-ID: 373913b568cbfbefcee3263b98bd5a1a8b491f1b
+Subject: [tip:x86/platform] x86/mid/thermal: Turn off thermistor
+Git-Commit-ID: 1b7ccabcc372152d1492241610e52b8ea14b0968
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,180 +29,53 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Mar 2012 08:14:27 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Mar 2012 08:12:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  373913b568cbfbefcee3263b98bd5a1a8b491f1b
-Gitweb:     http://git.kernel.org/tip/373913b568cbfbefcee3263b98bd5a1a8b491f1b
-Author:     Philip Prindeville <philipp@redfish-solutions.com>
-AuthorDate: Mon, 5 Mar 2012 15:05:14 -0800
+Commit-ID:  1b7ccabcc372152d1492241610e52b8ea14b0968
+Gitweb:     http://git.kernel.org/tip/1b7ccabcc372152d1492241610e52b8ea14b0968
+Author:     Mika Westerberg <mika.westerberg@linux.intel.com>
+AuthorDate: Mon, 5 Mar 2012 15:01:04 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Mar 2012 09:23:56 +0100
+CommitDate: Tue, 6 Mar 2012 09:01:26 +0100
 
-x86/geode/alix2: Supplement driver to include GPIO button support
+x86/mid/thermal: Turn off thermistor
 
-GPIO 24 is used in reference designs as a soft-reset button, and
-the alix2 is no exception.  Add it as a gpio-button.
+Instead of complaining that the voltage is on, we can just ask
+the MSIC to turn the voltage off. This should save some power.
 
-Use symbolic values to describe BIOS addresses.
+Voltage for thermistors is turned on when ADC conversion is
+initiated.
 
-Record the model number.
-
-Signed-off-by: Philip A. Prindeville <philipp@redfish-solutions.com>
-Acked-by: Ed Wildgoose <kernel@wildgooses.com>
-Acked-by: Andres Salomon <dilinger@queued.net>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Acked-by: Durgadoss R <durgadoss.r@intel.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
 Cc: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-sjp6k1rjksitx1pej0c0qxd1@git.kernel.org
-[ tidied up the code a bit ]
+Link: http://lkml.kernel.org/n/tip-85zdo06yve1o27jpwc74gzng@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/platform/geode/alix.c |   76 +++++++++++++++++++++++++++++++++++-----
- 1 files changed, 67 insertions(+), 9 deletions(-)
+ drivers/platform/x86/intel_mid_thermal.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/platform/geode/alix.c b/arch/x86/platform/geode/alix.c
-index dc5f1d3..90e23e7 100644
---- a/arch/x86/platform/geode/alix.c
-+++ b/arch/x86/platform/geode/alix.c
-@@ -6,6 +6,7 @@
-  *
-  * Copyright (C) 2008 Constantin Baranov <const@mimas.ru>
-  * Copyright (C) 2011 Ed Wildgoose <kernel@wildgooses.com>
-+ *                and Philip Prindeville <philipp@redfish-solutions.com>
-  *
-  * TODO: There are large similarities with leds-net5501.c
-  * by Alessandro Zummo <a.zummo@towertech.it>
-@@ -24,14 +25,47 @@
- #include <linux/leds.h>
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
-+#include <linux/input.h>
-+#include <linux/gpio_keys.h>
-+#include <linux/dmi.h>
+diff --git a/drivers/platform/x86/intel_mid_thermal.c b/drivers/platform/x86/intel_mid_thermal.c
+index 5917b3c..2ee9766 100644
+--- a/drivers/platform/x86/intel_mid_thermal.c
++++ b/drivers/platform/x86/intel_mid_thermal.c
+@@ -360,8 +360,10 @@ static int mid_initialize_adc(struct device *dev)
+ 	if (ret)
+ 		return ret;
  
- #include <asm/geode.h>
+-	if (data & MSIC_ADCTHERM_MASK)
+-		dev_warn(dev, "ADCTHERM already set");
++	data &= ~MSIC_ADCTHERM_MASK;
++	ret = intel_msic_reg_write(INTEL_MSIC_ADC1CNTL3, data);
++	if (ret)
++		return ret;
  
-+#define BIOS_SIGNATURE_TINYBIOS		0xf0000
-+#define BIOS_SIGNATURE_COREBOOT		0x500
-+#define BIOS_REGION_SIZE		0x10000
-+
- static bool force = 0;
- module_param(force, bool, 0444);
- /* FIXME: Award bios is not automatically detected as Alix platform */
- MODULE_PARM_DESC(force, "Force detection as ALIX.2/ALIX.3 platform");
- 
-+static struct gpio_keys_button alix_gpio_buttons[] = {
-+	{
-+		.code			= KEY_RESTART,
-+		.gpio			= 24,
-+		.active_low		= 1,
-+		.desc			= "Reset button",
-+		.type			= EV_KEY,
-+		.wakeup			= 0,
-+		.debounce_interval	= 100,
-+		.can_disable		= 0,
-+	}
-+};
-+static struct gpio_keys_platform_data alix_buttons_data = {
-+	.buttons			= alix_gpio_buttons,
-+	.nbuttons			= ARRAY_SIZE(alix_gpio_buttons),
-+	.poll_interval			= 20,
-+};
-+
-+static struct platform_device alix_buttons_dev = {
-+	.name				= "gpio-keys-polled",
-+	.id				= 1,
-+	.dev = {
-+		.platform_data		= &alix_buttons_data,
-+	}
-+};
-+
- static struct gpio_led alix_leds[] = {
- 	{
- 		.name = "alix:1",
-@@ -64,17 +98,22 @@ static struct platform_device alix_leds_dev = {
- 	.dev.platform_data = &alix_leds_data,
- };
- 
-+static struct __initdata platform_device *alix_devs[] = {
-+	&alix_buttons_dev,
-+	&alix_leds_dev,
-+};
-+
- static void __init register_alix(void)
- {
- 	/* Setup LED control through leds-gpio driver */
--	platform_device_register(&alix_leds_dev);
-+	platform_add_devices(alix_devs, ARRAY_SIZE(alix_devs));
- }
- 
--static int __init alix_present(unsigned long bios_phys,
-+static bool __init alix_present(unsigned long bios_phys,
- 				const char *alix_sig,
- 				size_t alix_sig_len)
- {
--	const size_t bios_len = 0x00010000;
-+	const size_t bios_len = BIOS_REGION_SIZE;
- 	const char *bios_virt;
- 	const char *scan_end;
- 	const char *p;
-@@ -84,7 +123,7 @@ static int __init alix_present(unsigned long bios_phys,
- 		printk(KERN_NOTICE "%s: forced to skip BIOS test, "
- 		       "assume system is ALIX.2/ALIX.3\n",
- 		       KBUILD_MODNAME);
--		return 1;
-+		return true;
- 	}
- 
- 	bios_virt = phys_to_virt(bios_phys);
-@@ -109,15 +148,33 @@ static int __init alix_present(unsigned long bios_phys,
- 			*a = '\0';
- 
- 		tail = p + alix_sig_len;
--		if ((tail[0] == '2' || tail[0] == '3')) {
-+		if ((tail[0] == '2' || tail[0] == '3' || tail[0] == '6')) {
- 			printk(KERN_INFO
- 			       "%s: system is recognized as \"%s\"\n",
- 			       KBUILD_MODNAME, name);
--			return 1;
-+			return true;
- 		}
- 	}
- 
--	return 0;
-+	return false;
-+}
-+
-+static bool __init alix_present_dmi(void)
-+{
-+	const char *vendor, *product;
-+
-+	vendor = dmi_get_system_info(DMI_SYS_VENDOR);
-+	if (!vendor || strcmp(vendor, "PC Engines"))
-+		return false;
-+
-+	product = dmi_get_system_info(DMI_PRODUCT_NAME);
-+	if (!product || (strcmp(product, "ALIX.2D") && strcmp(product, "ALIX.6")))
-+		return false;
-+
-+	printk(KERN_INFO "%s: system is recognized as \"%s %s\"\n",
-+	       KBUILD_MODNAME, vendor, product);
-+
-+	return true;
- }
- 
- static int __init alix_init(void)
-@@ -128,8 +185,9 @@ static int __init alix_init(void)
- 	if (!is_geode())
- 		return 0;
- 
--	if (alix_present(0xf0000, tinybios_sig, sizeof(tinybios_sig) - 1) ||
--	    alix_present(0x500, coreboot_sig, sizeof(coreboot_sig) - 1))
-+	if (alix_present(BIOS_SIGNATURE_TINYBIOS, tinybios_sig, sizeof(tinybios_sig) - 1) ||
-+	    alix_present(BIOS_SIGNATURE_COREBOOT, coreboot_sig, sizeof(coreboot_sig) - 1) ||
-+	    alix_present_dmi())
- 		register_alix();
- 
- 	return 0;
+ 	/* Index of the first channel in which the stop bit is set */
+ 	channel_index = find_free_channel();
