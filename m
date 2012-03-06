@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031379Ab2CFUvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 15:51:35 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:55690 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031365Ab2CFUvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 15:51:32 -0500
-Subject: [PATCH 23/23] ext4/jbd2: Add metadata checksumming to the list of
- supported features
+	id S1031394Ab2CFUvo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 15:51:44 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:53606 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031382Ab2CFUvk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 15:51:40 -0500
+Subject: [PATCH 19/23] jbd2: Checksum revocation blocks
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,8 +20,8 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Tue, 06 Mar 2012 12:50:42 -0800
-Message-ID: <20120306205041.1663.70894.stgit@elm3b70.beaverton.ibm.com>
+Date: Tue, 06 Mar 2012 12:50:14 -0800
+Message-ID: <20120306205013.1663.40234.stgit@elm3b70.beaverton.ibm.com>
 In-Reply-To: <20120306204750.1663.96751.stgit@elm3b70.beaverton.ibm.com>
 References: <20120306204750.1663.96751.stgit@elm3b70.beaverton.ibm.com>
 User-Agent: StGit/0.15
@@ -29,47 +29,119 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030620-8974-0000-0000-00000702DC7F
+x-cbid: 12030620-5518-0000-0000-000002C52592
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Activate the metadata checksumming feature by adding it to ext4 and jbd2's
-lists of supported features.
+Compute and verify revoke blocks inside the journal.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/ext4.h       |    3 ++-
- include/linux/jbd2.h |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ fs/jbd2/recovery.c |   22 ++++++++++++++++++++++
+ fs/jbd2/revoke.c   |   27 ++++++++++++++++++++++++++-
+ 2 files changed, 48 insertions(+), 1 deletions(-)
 
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 900d5c4..dd75078 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1486,7 +1486,8 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
- 					 EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE | \
- 					 EXT4_FEATURE_RO_COMPAT_BTREE_DIR |\
- 					 EXT4_FEATURE_RO_COMPAT_HUGE_FILE |\
--					 EXT4_FEATURE_RO_COMPAT_BIGALLOC)
-+					 EXT4_FEATURE_RO_COMPAT_BIGALLOC |\
-+					 EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)
+diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
+index da6d7ba..bfc52cd 100644
+--- a/fs/jbd2/recovery.c
++++ b/fs/jbd2/recovery.c
+@@ -703,6 +703,25 @@ static int do_one_pass(journal_t *journal,
+ 	return err;
+ }
  
++static int jbd2_revoke_block_csum_verify(journal_t *j,
++					 void *buf)
++{
++	struct jbd2_journal_revoke_tail *tail;
++	__u32 provided, calculated;
++
++	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		return 1;
++
++	tail = (struct jbd2_journal_revoke_tail *)(buf + j->j_blocksize -
++			sizeof(struct jbd2_journal_revoke_tail));
++	provided = tail->r_checksum;
++	tail->r_checksum = 0;
++	calculated = jbd2_chksum(j, j->j_csum_seed, buf, j->j_blocksize);
++	tail->r_checksum = provided;
++
++	provided = be32_to_cpu(provided);
++	return provided == calculated;
++}
+ 
+ /* Scan a revoke record, marking all blocks mentioned as revoked. */
+ 
+@@ -717,6 +736,9 @@ static int scan_revoke_records(journal_t *journal, struct buffer_head *bh,
+ 	offset = sizeof(jbd2_journal_revoke_header_t);
+ 	max = be32_to_cpu(header->r_count);
+ 
++	if (!jbd2_revoke_block_csum_verify(journal, header))
++		return -EINVAL;
++
+ 	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_64BIT))
+ 		record_len = 8;
+ 
+diff --git a/fs/jbd2/revoke.c b/fs/jbd2/revoke.c
+index 30b2867..53a7544 100644
+--- a/fs/jbd2/revoke.c
++++ b/fs/jbd2/revoke.c
+@@ -582,6 +582,7 @@ static void write_one_revoke_record(journal_t *journal,
+ 				    struct jbd2_revoke_record_s *record,
+ 				    int write_op)
+ {
++	int csum_size = 0;
+ 	struct journal_head *descriptor;
+ 	int offset;
+ 	journal_header_t *header;
+@@ -596,9 +597,13 @@ static void write_one_revoke_record(journal_t *journal,
+ 	descriptor = *descriptorp;
+ 	offset = *offsetp;
+ 
++	/* Do we need to leave space at the end for a checksum? */
++	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		csum_size = sizeof(struct jbd2_journal_revoke_tail);
++
+ 	/* Make sure we have a descriptor with space left for the record */
+ 	if (descriptor) {
+-		if (offset == journal->j_blocksize) {
++		if (offset >= journal->j_blocksize - csum_size) {
+ 			flush_descriptor(journal, descriptor, offset, write_op);
+ 			descriptor = NULL;
+ 		}
+@@ -635,6 +640,24 @@ static void write_one_revoke_record(journal_t *journal,
+ 	*offsetp = offset;
+ }
+ 
++static void jbd2_revoke_csum_set(journal_t *j,
++				 struct journal_head *descriptor)
++{
++	struct jbd2_journal_revoke_tail *tail;
++	__u32 csum;
++
++	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		return;
++
++	tail = (struct jbd2_journal_revoke_tail *)
++			(jh2bh(descriptor)->b_data + j->j_blocksize -
++			sizeof(struct jbd2_journal_revoke_tail));
++	tail->r_checksum = 0;
++	csum = jbd2_chksum(j, j->j_csum_seed, jh2bh(descriptor)->b_data,
++			   j->j_blocksize);
++	tail->r_checksum = cpu_to_be32(csum);
++}
++
  /*
-  * Default values for user and/or group using reserved blocks
-diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-index f321226..40ceeff 100644
---- a/include/linux/jbd2.h
-+++ b/include/linux/jbd2.h
-@@ -296,7 +296,8 @@ typedef struct journal_superblock_s
- #define JBD2_KNOWN_ROCOMPAT_FEATURES	0
- #define JBD2_KNOWN_INCOMPAT_FEATURES	(JBD2_FEATURE_INCOMPAT_REVOKE | \
- 					JBD2_FEATURE_INCOMPAT_64BIT | \
--					JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)
-+					JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT | \
-+					JBD2_FEATURE_INCOMPAT_CSUM_V2)
+  * Flush a revoke descriptor out to the journal.  If we are aborting,
+  * this is a noop; otherwise we are generating a buffer which needs to
+@@ -656,6 +679,8 @@ static void flush_descriptor(journal_t *journal,
  
- #ifdef __KERNEL__
- 
+ 	header = (jbd2_journal_revoke_header_t *) jh2bh(descriptor)->b_data;
+ 	header->r_count = cpu_to_be32(offset);
++	jbd2_revoke_csum_set(journal, descriptor);
++
+ 	set_buffer_jwrite(bh);
+ 	BUFFER_TRACE(bh, "write");
+ 	set_buffer_dirty(bh);
 
