@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758135Ab2CFBQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 20:16:33 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:58001 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757930Ab2CFBQc (ORCPT
+	id S1758154Ab2CFB00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 20:26:26 -0500
+Received: from mail.solarflare.com ([216.237.3.220]:27751 "EHLO
+	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757930Ab2CFB0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 20:16:32 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of minchan.kim@gmail.com designates 10.68.195.99 as permitted sender) smtp.mail=minchan.kim@gmail.com; dkim=pass header.i=minchan.kim@gmail.com
-Date: Tue, 6 Mar 2012 10:16:24 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Minchan Kim <minchan@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Namhyung Kim <namhyung@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] slub: set PG_slab on all of slab pages
-Message-ID: <20120306011624.GA14274@barrios>
-References: <1330505674-31610-1-git-send-email-namhyung.kim@lge.com>
- <20120304103446.GA9267@barrios>
- <alpine.DEB.2.00.1203050845380.11722@router.home>
+	Mon, 5 Mar 2012 20:26:25 -0500
+Message-ID: <1330997177.3022.51.camel@deadeye>
+Subject: Re: [PATCH v4] lpc32xx: Added ethernet driver
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Roland Stigge <stigge@antcom.de>, <davem@davemloft.net>,
+        <jeffrey.t.kirsher@intel.com>, <alexander.h.duyck@intel.com>,
+        <eilong@broadcom.com>, <ian.campbell@citrix.com>,
+        <netdev@vger.kernel.org>, <w.sang@pengutronix.de>,
+        <linux-kernel@vger.kernel.org>, <kevin.wells@nxp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <arnd@arndb.de>,
+        <baruch@tkos.co.il>, <joe@perches.com>
+Date: Tue, 6 Mar 2012 01:26:17 +0000
+In-Reply-To: <1330994958.9504.2.camel@edumazet-glaptop>
+References: <1330983641-32622-1-git-send-email-stigge@antcom.de>
+	 <1330987524.2538.61.camel@bwh-desktop>
+	 <1330994958.9504.2.camel@edumazet-glaptop>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1203050845380.11722@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [88.96.1.126]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18752.005
+X-TM-AS-Result: No--12.679300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
-
-On Mon, Mar 05, 2012 at 08:48:33AM -0600, Christoph Lameter wrote:
-> On Sun, 4 Mar 2012, Minchan Kim wrote:
+On Mon, 2012-03-05 at 16:49 -0800, Eric Dumazet wrote:
+> On Mon, 2012-03-05 at 22:45 +0000, Ben Hutchings wrote:
+> > On Mon, 2012-03-05 at 22:40 +0100, Roland Stigge wrote:
+> > [...]
 > 
-> > I read this thread and I feel the we don't reach right point.
-> > I think it's not a compound page problem.
-> > We can face above problem where we allocates big order page without __GFP_COMP
-> > and free middle page of it.
+> ...
 > 
-> Yes we can do that and doing such a thing seems to be more legitimate
-> since one could argue that the user did not request an atomic allocation
-> unit from the page allocator and therefore the freeing of individual
-> pages in that group is permissible. If memory serves me right we do that
-> sometimes.
-
-To be leitimate, user have to handle subpages's ref counter well.
-But I think it's not desirable. If user want it, he should use
-split_page instead of modifying ref counter directly.
-
+> > > +				/* Copy packet from buffer */
+> > > +				memcpy(prdbuf,
+> > > +					pldat->rx_buff_v[rxconsidx], len);
+> > > +
+> > > +				/* Pass to upper layer */
+> > > +				skb->protocol = eth_type_trans(skb, ndev);
+> > > +				netif_rx(skb);
+> > > +				ndev->last_rx = jiffies;
+> > 
+> > Drivers don't need to set last_rx any more.
 > 
-> However if compound pages are requested then such an atomic allocation
-> unit *was* requested and the page allocator should not allow to free
-> individual pages.
+> Also, a NAPI driver should call netif_receive_skb() instead of
+> netif_rx()
+> 
+> netif_rx() is more expensive because of additional queue, while
+> netif_receive_skb() directly calls the upper stacks.
 
-Yes. In fact, I am not sure this problem is related to compound page.
-If it is compound page, tail page's ref count should be zero.
-When user calls __free_pages in tail page by mistake, it should not pass
-into __free_pages_ok but reference count would be underflow.
-Later, when head page is freed, we could catch it in free_pages_check.
+Yes, but not until the poll function is changed to enable IRQs.
 
-So I had a question to Namhyung that he can see bad page message by PG_slab when he uses SLUB
-with his patch. If the problem still happens, something seems to modify tail page's ref count
-directly without get_page. It's apparently BUG.
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
