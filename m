@@ -1,160 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031112Ab2CFXtd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 18:49:33 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:58817 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759311Ab2CFXtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 18:49:31 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arnd Bergmann <arnd@arndb.de>
-Subject: Re: Pre-merge-window status of the arm-soc tree
-Date: Wed, 7 Mar 2012 00:53:37 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Jamie Iles <jamie@jamieiles.com>, Kevin Hilman <khilman@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        David Brown <davidb@codeaurora.org>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Barry Song <baohua.song@csr.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Jiandong Zheng <jdzheng@broadcom.com>,
-        Colin Cross <ccross@android.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Roland Stigge <stigge@antcom.de>
-References: <201203062054.55434.arnd@arndb.de>
-In-Reply-To: <201203062054.55434.arnd@arndb.de>
+	id S932705Ab2CFXuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 18:50:04 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:44500 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932609Ab2CFXuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 18:50:01 -0500
+X-Sasl-enc: vEzTP6o2L+wB34ONa/Ila41ISud5TF5tF14mhWagBB5E 1331077800
+Message-ID: <4F56A2A5.7010707@imap.cc>
+Date: Wed, 07 Mar 2012 00:49:57 +0100
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.27) Gecko/20120215 SUSE/3.1.19 Thunderbird/3.1.19
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203070053.37617.rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+CC: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com
+Subject: Re: [PATCH 05/68] TTY: remove re-assignments to tty_driver members
+References: <1330955575-26641-1-git-send-email-jslaby@suse.cz> <1330955575-26641-6-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1330955575-26641-6-git-send-email-jslaby@suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig2BAF635A396B50ECE937EA81"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 06, 2012, Arnd Bergmann wrote:
-> This is a summary of what we have today in the arm-soc tree, queued up for
-> v3.4, as I expect the merge window to open soon. We currently have exactly
-> 50 topic branches merged into the for-next tree, with a total of 331
-> non-merge changesets. There are a few more pull requests outstanding for
-> the pxa and exynos platforms.
-> 
-> About half the patches are cleanups and device tree conversion, which
-> is a good indication that we're making progress there. There also seems
-> to be an increased interest in ARMv5 and earlier platforms (pxa, at91,
-> omap1, kirkwood, lpc32xx, sa1100), some of which are now moving over
-> to device tree probing (at91 rapidly, in fact).
-> 
-> Top contributors so far are:
->      27 Nicolas Ferre
->      25 Stephen Warren
->      25 Jean-Christophe PLAGNIOL-VILLARD
->      20 Peter De Schrijver
->      19 Tony Lindgren
->      17 Ohad Ben-Cohen
->      15 Richard Zhao
->      14 Fabio Estevam
->      10 Benoit Cousson
->       9 Roland Stigge
-> 
-> A few things have changed since the last merge window:
-> 
-> * We now have staging branches, to let subarch maintainers get their
-> patches into arm-soc early on, without having the actual commits
-> being stable yet. Right now the only one there is the kirkwood/dt
-> branch from Jason Cooper, but there can be more. These staging
-> branches will not be sent to Linus during the merge window,
-> the idea is that they get replaced with a final version that gets
-> merged into one of the next/* topic branches.
-> 
-> * Russell now has a branch that contains patches from his tree that
-> directly impact stuff in arm-soc. We had a lot of nasty conflicts
-> the last time around, which resulted in some of the patches from
-> arm-soc not making it in during the merge window. Pulling the
-> rmk/for-armsoc branch into arm-soc hopefully lets us avoid this
-> situation in the future because we will fix the conflicts much
-> earlier.
-> 
-> * I have taken the rpmsg branch from Ohad Ben-Cohen into arm-soc.
-> While this is not strictly what arm-soc is for, a lot of us are
-> waiting for the branch to get in, and we hope that Linus will take
-> it from us, while he was cautious the last time when Ohad was sending
-> it as a new subsystem himself. Merging new subsystems through arm-soc
-> should not become the norm, but we can do it when it's really needed.
-> 
-> * There is some renewed interest in fixing 'make randconfig'. I
-> worked on this quite a bit last year but then didn't have the
-> energy to get all the patches integrated besides doing the
-> amr-soc maintainance. Russell has gotten more serious about it now,
-> and a few other people are helping out getting my original patches
-> integrated. If all goes well, we will soon get to the point where
-> we can use randconfig builds for automated regression testing and
-> just refuse to take pull requests into arm-soc if they break builds.
-> 
-> We are mostly converging on a set of topic branches that work for
-> all platforms, right now we have:
-> 
->   fixes				bug fixes for 3.3
->   next/fixes-non-critical       bug fixes for 3.4
->   next/maintainers              updates to MAINTAINERS file
->   next/cleanup                  any global cleanups
->   next/soc                      soc-wide changes
->   next/drivers                  driver related changes
->   next/cleanup2                 cleanups depending on the former
->   next/dt                       device-tree related changes
->   next/boards                   board-specific changes
->   next/soc2                     soc-wide changes with other dependencies
->   next/rpmsg                    remoteproc and rpmsg
->   staging/*			anything that is not quite ready
-> 
-> We can always add more if needed, just be careful not to introduce
-> any circular dependencies. E.g. today the next/dt branch depends on
-> patches in the next/drivers branch, so if you want to have other
-> conflicting patches in both branches, make sure that we can resolve
-> the branches in a way that lets the driver stuff come first. You will
-> find a list of the dependencies in the linux-next tree or in
-> arm-soc/for-next in the arch/arm/arm-soc-for-next-contents.txt file.
-> 
-> The overall changes today are
-> $ git diff for-next --dirstat=1                                                                                                                                                            
->    1.4% Documentation/devicetree/bindings/arm/                                                                                                                                                                     
->    4.1% Documentation/                                                                                                                                                                                             
->    6.2% arch/arm/boot/dts/                                                                                                                                                                                         
->    7.6% arch/arm/mach-at91/include/mach/                                                                                                                                                                           
->   15.6% arch/arm/mach-at91/                                                                                                                                                                                        
->    1.9% arch/arm/mach-davinci/                                                                                                                                                                                     
->    5.6% arch/arm/mach-imx/                                                                                                                                                                                         
->    2.2% arch/arm/mach-mxs/                                                                                                                                                                                         
->    1.3% arch/arm/mach-omap1/                                                                                                                                                                                       
->    3.0% arch/arm/mach-omap2/                                                                                                                                                                                       
->    1.0% arch/arm/mach-tegra/include/mach/                                                                                                                                                                          
->   17.0% arch/arm/mach-tegra/                                                                                                                                                                                       
->    3.9% arch/arm/mach-ux500/                                                                                                                                                                                       
->    2.2% arch/arm/mach-vexpress/                                                                                                                                                                                    
->    1.9% arch/arm/plat-omap/include/plat/                                                                                                                                                                           
->    5.4% arch/arm/                                                                                                                                                                                                  
->    8.0% drivers/remoteproc/                                                                                                                                                                                        
->    3.6% drivers/rpmsg/                                                                                                                                                                                             
->    1.2% drivers/rtc/                                                                                                                                                                                               
->    2.8% drivers/
->    2.7% include/linux/
-> 
-> Notably absent here are still mach-msm and mach-shmobile and some
-> platforms have more patches pending.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig2BAF635A396B50ECE937EA81
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-I'm going to have a pull request for mach-shmobile ready, hopefully on
-Thursday.
+Am 05.03.2012 14:51, schrieb Jiri Slaby:
+> All num, magic and owner are set by alloc_tty_driver. No need to
+> re-set them on each allocation site.
+
+Nice.
+
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+
+For drivers/isdn/gigaset:
+
+Acked-by: Tilman Schmidt <tilman@imap.cc>
+
+> diff --git a/drivers/isdn/gigaset/interface.c b/drivers/isdn/gigaset/in=
+terface.c
+> index b826dac..7e54577 100644
+> --- a/drivers/isdn/gigaset/interface.c
+> +++ b/drivers/isdn/gigaset/interface.c
+> @@ -669,17 +669,15 @@ EXPORT_SYMBOL_GPL(gigaset_if_receive);
+>  void gigaset_if_initdriver(struct gigaset_driver *drv, const char *pro=
+cname,
+>  			   const char *devname)
+>  {
+> -	unsigned minors =3D drv->minors;
+>  	int ret;
+>  	struct tty_driver *tty;
+> =20
+>  	drv->have_tty =3D 0;
+> =20
+> -	drv->tty =3D tty =3D alloc_tty_driver(minors);
+> +	drv->tty =3D tty =3D alloc_tty_driver(drv->minors);
+>  	if (tty =3D=3D NULL)
+>  		goto enomem;
+> =20
+> -	tty->magic =3D		TTY_DRIVER_MAGIC;
+>  	tty->type =3D		TTY_DRIVER_TYPE_SERIAL;
+>  	tty->subtype =3D		SERIAL_TYPE_NORMAL;
+>  	tty->flags =3D		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
+> @@ -687,9 +685,6 @@ void gigaset_if_initdriver(struct gigaset_driver *d=
+rv, const char *procname,
+>  	tty->driver_name =3D	procname;
+>  	tty->name =3D		devname;
+>  	tty->minor_start =3D	drv->minor;
+> -	tty->num =3D		drv->minors;
+> -
+> -	tty->owner =3D		THIS_MODULE;
+> =20
+>  	tty->init_termios          =3D tty_std_termios;
+>  	tty->init_termios.c_cflag  =3D B9600 | CS8 | CREAD | HUPCL | CLOCAL;
 
 Thanks,
-Rafael
+Tilman
+
+--=20
+Tilman Schmidt                    E-Mail: tilman@imap.cc
+Bonn, Germany
+Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
+Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
+
+
+--------------enig2BAF635A396B50ECE937EA81
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk9WoqYACgkQQ3+did9BuFtxcQCfQ8YyyiG8DpVdSV/2F4XyzrvF
+r2AAn0MheuJ1Bbe+RqNBzFWvLNEEEtGl
+=GYDf
+-----END PGP SIGNATURE-----
+
+--------------enig2BAF635A396B50ECE937EA81--
