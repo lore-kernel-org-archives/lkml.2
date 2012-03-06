@@ -1,83 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758786Ab2CFTJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 14:09:24 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:60674 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758289Ab2CFTJX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 14:09:23 -0500
-Date: Tue, 6 Mar 2012 20:09:12 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Dmitry Artamonow <mad_soft@inbox.ru>, linux-tegra@vger.kernel.org,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 2/2] arm/tegra: add timeout to PCIe PLL lock
- detection loop
-Message-ID: <20120306190912.GA13882@avionic-0098.mockup.avionic-design.de>
-References: <1331023544-6439-1-git-send-email-mad_soft@inbox.ru>
- <1331023544-6439-3-git-send-email-mad_soft@inbox.ru>
- <4F56424A.3020305@wwwdotorg.org>
+	id S965152Ab2CFTKr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 14:10:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62062 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758133Ab2CFTKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 14:10:45 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Nick Bowler <nbowler@elliptictech.com>, linux-kernel@vger.kernel.org
+Subject: Re: the maxcpus= boot parameter broke somewhere along the line
+References: <x49vcmhhj2f.fsf@segfault.boston.devel.redhat.com>
+	<CA+1xoqe_xS95xKM2=X-Mq-_gc+DqzxF2D8YiuCf=0=7=mVKsyw@mail.gmail.com>
+	<20120306164835.GA26094@elliptictech.com>
+	<CA+1xoqfzCb5X8wwvR1Bz+D6K20n7v3ChUR0E4Jqw_BWam5C7TQ@mail.gmail.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 06 Mar 2012 13:08:04 -0500
+In-Reply-To: <CA+1xoqfzCb5X8wwvR1Bz+D6K20n7v3ChUR0E4Jqw_BWam5C7TQ@mail.gmail.com>
+	(Sasha Levin's message of "Tue, 6 Mar 2012 19:15:19 +0200")
+Message-ID: <x49mx7thabf.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
-Content-Disposition: inline
-In-Reply-To: <4F56424A.3020305@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:lnerr/B1lT6og16vwWfZf2uIVc+4P49fEsPh53mbfte
- CSxRwUsGcdd7YBgbazU0FfW9868Lana9OloE1dKWCC8F59iXUk
- VroiDVYY6kGdjKRfgk36Gpfz+sCrMjGkds1FEagBuHtHkLKNwg
- qx4A0Iz1yGH3LG6yxd+BK6QvjaRgN6cQemArnprwy1SRgcLw33
- zE6AV1Z0bij1mYLjfSM1H7a5tow1sJNaOuJBGMVmq1zx5pbf+U
- B/EgV5itwNZmWWARhVMGy20PEkscIPeeSKhSKMQZaC3OHlDY1I
- fp0sNBruVZd6NBoJqAfBob8j9rAekCloyto36HmSXChDtJuizI
- AAR1v4onB5d8PetR2vJr4rj//ESerWb2oLYY9YPt8MtsACxxD1
- uZaWG7b6mIbE0wicTndGJ/5G0miZJYiDCc=
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sasha Levin <levinsasha928@gmail.com> writes:
 
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> I can't reproduce it locally with a 3.3-rc5 kernel.
 
-* Stephen Warren wrote:
-> On 03/06/2012 01:45 AM, Dmitry Artamonow wrote:
-> > Tegra PCIe driver waits for PLL to lock using busy loop.
-> > If PLL fails to lock for some reason, this leads to silent lockup
-> > while booting (as PCIe code is not modular).
-> >=20
-> > Fix by adding timeout, so if PLL doesn't lock in a couple
-> > of seconds, just PCIe driver fails and machine continues to boot.
-> >=20
-> > Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
->=20
-> That seems reasonable. So once the mdelay discussion is resolved,
->=20
-> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
->=20
-> Any idea why the PLL doesn't lock sometimes?
+First, thanks for looking into it.  I just did a git pull, up to -rc6,
+and the problem still persists on my machine.
 
-I've seen this happen when the 1.05V regulator (GPIO#2 of the PMU on Harmon=
-y)
-isn't enabled.
+Again, let me know if there's anything else I can provide that would be
+helpful for debugging this.
 
-Thierry
-
---9jxsPFA5p3P2qPhR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk9WYNgACgkQZ+BJyKLjJp+IHgCffb+elfVXEdHsy1qNudzI/8PG
-h8UAn2Jn/coRHAtmXh9YG+K4voKDQFar
-=6aCj
------END PGP SIGNATURE-----
-
---9jxsPFA5p3P2qPhR--
+Cheers,
+Jeff
