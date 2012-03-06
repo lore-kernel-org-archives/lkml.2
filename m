@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759294Ab2CFOKO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 09:10:14 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:29969 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759254Ab2CFOKN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 09:10:13 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6640"; a="169751760"
-Message-ID: <cf2950fbeb4c500534be670cdd8cf85d.squirrel@www.codeaurora.org>
-In-Reply-To: <CAKYAXd8HMrdB9mzgsz5XmMxkDE+gMce+CTEDFU4J67nusNtLOg@mail.gmail.com>
-References: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
-    <CAKYAXd_6OqQJ78mPJp11gRvGwwg88S_n_Auu=_HdP_ZXzCKrDg@mail.gmail.com>
-    <6669559e86c1d13b27e941ff2acf89d2.squirrel@www.codeaurora.org>
-    <CAKYAXd8HMrdB9mzgsz5XmMxkDE+gMce+CTEDFU4J67nusNtLOg@mail.gmail.com>
-Date: Tue, 6 Mar 2012 06:10:12 -0800 (PST)
-Subject: Re: [PATCH v5 2/2] mmc: core: Support packed command for eMMC4.5 
-     device
-From: merez@codeaurora.org
-To: "Namjae Jeon" <linkinjeon@gmail.com>
-Cc: merez@codeaurora.org, "Seungwon Jeon" <tgih.jun@samsung.com>,
-        linux-mmc@vger.kernel.org, "Chris Ball" <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.17
+	id S1759288Ab2CFOM6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 09:12:58 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:60172 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758264Ab2CFOM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 09:12:56 -0500
+X-IronPort-AV: E=Sophos;i="4.73,540,1325491200"; 
+   d="scan'208";a="631080302"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "mszeredi@suse.cz" <mszeredi@suse.cz>
+Subject: Re: [PATCH 9/9] nfs: don't open in ->d_revalidate
+Thread-Topic: [PATCH 9/9] nfs: don't open in ->d_revalidate
+Thread-Index: AQHM+5i1/8/o98YKtk2fJ0XNzaBcrJZd1UkA
+Date: Tue, 6 Mar 2012 14:12:38 +0000
+Message-ID: <1331043158.3260.3.camel@lade.trondhjem.org>
+References: <1331038601-20353-1-git-send-email-miklos@szeredi.hu>
+	 <1331038601-20353-10-git-send-email-miklos@szeredi.hu>
+In-Reply-To: <1331038601-20353-10-git-send-email-miklos@szeredi.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <C9820F4B2194C8439E26FBAD9BBA7108@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q26ED35e008181
 
-> Hi. Merez.
->
-> Thanks a lot about your performance measurement.
->
-> I think that your measurement is enough and correct and the firmware
-> of mmc vender should be optimized or change properly rather than
-> modifying the current patch.
->
-> And currently we can use only write packed cmd by my suggestion.
->
-> I would like to add my reviewd-by tag in updated patches also.
->
-> Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
->
-> Thanks.
+On Tue, 2012-03-06 at 13:56 +0100, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> NFSv4 can't do reliable opens in d_revalidate, since it cannot know whether a
+> mount needs to be followed or not.  It does check d_mountpoint() on the dentry,
+> which can result in a weird error if the VFS found that the mount does not in
+> fact need to be followed, e.g.:
+> 
+>   # mount --bind /mnt/nfs /mnt/nfs-clone
+>   # echo something > /mnt/nfs/tmp/bar
+>   # echo x > /tmp/file
+>   # mount --bind /tmp/file /mnt/nfs-clone/tmp/bar
+>   # cat  /mnt/nfs/tmp/bar
+>   cat: /mnt/nfs/tmp/bar: Not a directory
+> 
+> Which should, by any sane filesystem, result in "something" being printed.
+> 
+> So instead do the open in f_op->open() and in the unlikely case that the cached
+> dentry turned out to be invalid, drop the dentry and return ESTALE to let the
+> VFS retry.
 
-I tend to disagree. Adding a massive amount of code that would be disabled
-can be risky. In case this code will not be in use it will not be properly
-tested and its reliability will be uncertain.
+This patch would force a complete new walk of the path in cases where
+today we just do a single lookup of the last component. It really
+doesn't seem worth taking that penalty just in order to make some insane
+bind mount corner cases work.
 
-Thanks,
-Maya Erez
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
