@@ -1,150 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031228Ab2CFUyv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 15:54:51 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:33083 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031166Ab2CFUtc (ORCPT
+	id S1031269Ab2CFUzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 15:55:00 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59607 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031163Ab2CFUy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 15:49:32 -0500
-Subject: [PATCH 04/23] ext4: Only call out to crc32c if necessary
-To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Tue, 06 Mar 2012 12:48:21 -0800
-Message-ID: <20120306204821.1663.61312.stgit@elm3b70.beaverton.ibm.com>
-In-Reply-To: <20120306204750.1663.96751.stgit@elm3b70.beaverton.ibm.com>
-References: <20120306204750.1663.96751.stgit@elm3b70.beaverton.ibm.com>
-User-Agent: StGit/0.15
+	Tue, 6 Mar 2012 15:54:57 -0500
+Date: Tue, 6 Mar 2012 21:54:53 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sven Joachim <svenjoac@gmx.de>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stefan Lippers-Hollmann <s.L-H@gmx.de>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org,
+        Stefano Brivio <stefano.brivio@polimi.it>
+Subject: Re: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
+In-Reply-To: <alpine.LFD.2.02.1203062101040.2742@ionos>
+Message-ID: <alpine.LFD.2.02.1203062153290.2742@ionos>
+References: <20120228010511.GA8453@kroah.com> <20120228010434.412979550@linuxfoundation.org> <87hay4dqjr.fsf@turtle.gmx.de> <201203050143.24541.s.L-H@gmx.de> <CA+55aFxZsVxkxifR+EUZi=RsUGKfs5vYXX3nN_M_Az1BY5yyaw@mail.gmail.com> <alpine.LFD.2.02.1203060927190.2742@ionos>
+ <alpine.LFD.2.02.1203060957140.2742@ionos> <alpine.LFD.2.02.1203062019340.2742@ionos> <8762eh1p7d.fsf@turtle.gmx.de> <alpine.LFD.2.02.1203062101040.2742@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030620-5518-0000-0000-000002C52100
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only obtain a reference to the cryptoapi and crc32c if we happen to mount a
-filesystem with metadata checksumming enabled.
+On Tue, 6 Mar 2012, Thomas Gleixner wrote:
+> On Tue, 6 Mar 2012, Sven Joachim wrote:
+> > Am 06.03.2012 um 20:31 schrieb Thomas Gleixner:
+> > 
+> > > Stephan, Sven: Can you please provide the output of /proc/interrupts ?
+> > 
+> > Here is mine, from a freshly booted 3.3-rc6 kernel.
+> > 
+> > Cheers,
+> >        Sven
+> > 
+> >            CPU0       
+> >   0:      25050    XT-PIC-XT-PIC    timer
+> >   1:        101    XT-PIC-XT-PIC    i8042
+> >   2:          0    XT-PIC-XT-PIC    cascade
+> >   3:          1    XT-PIC-XT-PIC  
+> >   4:          1    XT-PIC-XT-PIC  
+> >   5:          0    XT-PIC-XT-PIC    ehci_hcd:usb1, uhci_hcd:usb2
+> >   6:          1    XT-PIC-XT-PIC    i915, uhci_hcd:usb5, yenta
+> >   7:          1    XT-PIC-XT-PIC  
+> >   8:          0    XT-PIC-XT-PIC    rtc0
+> >   9:        634    XT-PIC-XT-PIC    acpi
+> >  10:        341    XT-PIC-XT-PIC    uhci_hcd:usb4, snd_hda_intel, b43
+> 
+> Ah, XT-PIC uses handle_level_irq(). /me bangs head against desk.
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
- fs/ext4/Kconfig |    2 ++
- fs/ext4/ext4.h  |   23 +++++++++++++++++++++++
- fs/ext4/super.c |   16 ++++++++++++++++
- 3 files changed, 41 insertions(+), 0 deletions(-)
-
-
-diff --git a/fs/ext4/Kconfig b/fs/ext4/Kconfig
-index 9ed1bb1..c22f170 100644
---- a/fs/ext4/Kconfig
-+++ b/fs/ext4/Kconfig
-@@ -2,6 +2,8 @@ config EXT4_FS
- 	tristate "The Extended 4 (ext4) filesystem"
- 	select JBD2
- 	select CRC16
-+	select CRYPTO
-+	select CRYPTO_CRC32C
- 	help
- 	  This is the next generation of the ext3 filesystem.
+Ha, nosmp on the command line lets me reproduce as well and the patch
+fixes it. Duh, stupid me.
  
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 0f0b0d5..a4b2689 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -29,6 +29,7 @@
- #include <linux/wait.h>
- #include <linux/blockgroup_lock.h>
- #include <linux/percpu_counter.h>
-+#include <crypto/hash.h>
- #ifdef __KERNEL__
- #include <linux/compat.h>
- #endif
-@@ -1269,6 +1270,9 @@ struct ext4_sb_info {
+Thanks,
  
- 	/* record the last minlen when FITRIM is called. */
- 	atomic_t s_last_trim_minblks;
-+
-+	/* Reference to checksum algorithm driver via cryptoapi */
-+	struct crypto_shash *s_chksum_driver;
- };
- 
- static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
-@@ -1631,6 +1635,25 @@ static inline __le16 ext4_rec_len_to_disk(unsigned len, unsigned blocksize)
- #define DX_HASH_HALF_MD4_UNSIGNED	4
- #define DX_HASH_TEA_UNSIGNED		5
- 
-+static inline u32 ext4_chksum(struct ext4_sb_info *sbi, u32 crc,
-+			      const void *address, unsigned int length)
-+{
-+	struct {
-+		struct shash_desc shash;
-+		char ctx[crypto_shash_descsize(sbi->s_chksum_driver)];
-+	} desc;
-+	int err;
-+
-+	desc.shash.tfm = sbi->s_chksum_driver;
-+	desc.shash.flags = 0;
-+	*(u32 *)desc.ctx = crc;
-+
-+	err = crypto_shash_update(&desc.shash, address, length);
-+	BUG_ON(err);
-+
-+	return *(u32 *)desc.ctx;
-+}
-+
- #ifdef __KERNEL__
- 
- /* hash info structure used by the directory hash */
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 38de050..cfd8aa3 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -887,6 +887,8 @@ static void ext4_put_super(struct super_block *sb)
- 	unlock_super(sb);
- 	kobject_put(&sbi->s_kobj);
- 	wait_for_completion(&sbi->s_kobj_unregister);
-+	if (sbi->s_chksum_driver)
-+		crypto_free_shash(sbi->s_chksum_driver);
- 	kfree(sbi->s_blockgroup_lock);
- 	kfree(sbi);
- }
-@@ -3196,6 +3198,18 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 		goto cantfind_ext4;
- 	}
- 
-+	/* Load the checksum driver */
-+	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+		sbi->s_chksum_driver = crypto_alloc_shash("crc32c", 0, 0);
-+		if (IS_ERR(sbi->s_chksum_driver)) {
-+			ext4_msg(sb, KERN_ERR, "Cannot load crc32c driver.");
-+			ret = PTR_ERR(sbi->s_chksum_driver);
-+			sbi->s_chksum_driver = NULL;
-+			goto failed_mount;
-+		}
-+	}
-+
- 	/* Set defaults before we parse the mount options */
- 	def_mount_opts = le32_to_cpu(es->s_default_mount_opts);
- 	set_opt(sb, INIT_INODE_TABLE);
-@@ -3879,6 +3893,8 @@ failed_mount2:
- 		brelse(sbi->s_group_desc[i]);
- 	ext4_kvfree(sbi->s_group_desc);
- failed_mount:
-+	if (sbi->s_chksum_driver)
-+		crypto_free_shash(sbi->s_chksum_driver);
- 	if (sbi->s_proc) {
- 		remove_proc_entry(sb->s_id, ext4_proc_root);
- 	}
-
+ 	tglx
