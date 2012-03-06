@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030807Ab2CFOoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 09:44:24 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60827 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030769Ab2CFOoX convert rfc822-to-8bit (ORCPT
+	id S1030816Ab2CFOpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 09:45:45 -0500
+Received: from aaar.vm.bytemark.co.uk ([80.68.92.230]:41409 "EHLO
+	aaar.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030791Ab2CFOpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 09:44:23 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eag0628@gmail.com designates 10.224.202.195 as permitted sender) smtp.mail=eag0628@gmail.com; dkim=pass header.i=eag0628@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <1331034734.11248.287.camel@twins>
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
-	<1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
-	<1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
-	<1331034734.11248.287.camel@twins>
-Date: Tue, 6 Mar 2012 22:44:22 +0800
-Message-ID: <CACvQF52-kZze+SptSCJtsaj=d6b3vg=VgU+Wbqyz-ebYynnUwA@mail.gmail.com>
-Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine call_srcu()
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 Mar 2012 09:45:43 -0500
+X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Mar 2012 09:45:43 EST
+Message-ID: <1331044752.22559.97.camel@cthulhu.hellion.org.uk>
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Thomas Goirand <zigo@debian.org>, xen-devel@lists.xensource.com,
+        Dave Jiang <dave.jiang@intel.com>,
+        pkg-xen-devel@lists.alioth.debian.org,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        linux-kernel@vger.kernel.org, Jonathan Nieder <jrnieder@gmail.com>,
+        William Dauchy <wdauchy@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Date: Tue, 06 Mar 2012 06:39:12 -0800
+In-Reply-To: <CABE8wwsPA2PUx45EbY3w3BAHaHbUMWo7+giK=uU8gx9mbBkRpQ@mail.gmail.com>
+References: <CAJ75kXZ-2vWZpG7Uz3firg6ew4y_DdorXotkAkUGSK0GWLMUQQ@mail.gmail.com>
+	 <20120127144737.GA27750@andromeda.dapyr.net>
+	 <20120219223125.GA820@burratino> <20120220181618.GD17566@burratino>
+	 <4F4891B8.9050008@goirand.fr> <20120302055715.GA692@burratino>
+	 <CABE8wwt8Lngy=-iL7QGCofy0nW5-q4VJDS_ovEr96fGdYm72ew@mail.gmail.com>
+	 <20120302162159.GB31683@wavehammer.waldi.eu.org>
+	 <CABE8wwtrMEAMw3sJgb8XWQWn_N=YOPzhNbLL0kzMKLhv7xt5=A@mail.gmail.com>
+	 <20120302175719.GA1468@wavehammer.waldi.eu.org>
+	 <CABE8wwvd-R1VkyFL-eZYDB9O05zyWkVQ8pXuMb8GcdAW=5qT3A@mail.gmail.com>
+	 <4F54DB1F.3080000@debian.org>
+	 <CABE8wwtOwgiYwb-_g-3Fg_QH6ph7LEPdkcOff94inDFvs9kwxA@mail.gmail.com>
+	 <4F55D6F6.2040906@debian.org>
+	 <CABE8wwsPA2PUx45EbY3w3BAHaHbUMWo7+giK=uU8gx9mbBkRpQ@mail.gmail.com>
+Organization: 
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 63.145.238.4
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [Pkg-xen-devel] ioatdma: Boot process hangs then reboots when
+ using Xen + Linux 3.2
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 7:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2012-03-06 at 17:57 +0800, Lai Jiangshan wrote:
->> +void srcu_barrier(struct srcu_struct *sp)
->> +{
->> +       struct srcu_sync sync;
->> +       struct srcu_head *head = &sync.head;
->> +       unsigned long chck_seq; /* snap */
->> +
->> +       int idle_loop = 0;
->> +       int cpu;
->> +       struct srcu_cpu_struct *scp;
->> +
->> +       spin_lock_irq(&sp->gp_lock);
->> +       chck_seq = sp->chck_seq;
->> +       for_each_possible_cpu(cpu) {
->
-> ARGH!! this is really not ok.. so we spend all this time killing
-> srcu_sync_expidited and co because they prod at all cpus for no good
-> reason, and what do you do?
+On Tue, 2012-03-06 at 06:14 -0800, Dan Williams wrote:
+> [    9.276817] ioatdma 0000:00:16.4: desc[0]:
+> (0x300cc7000->0x300cc7040) cookie: 0 flags: 0x2 ctl: 0x29 (op: 0
+> int_en: 1 compl: 1)
+> ...
+> [    9.276832] ioatdma 0000:00:16.4: ioat_get_current_completion:
+> phys_complete: 0xcc7000
+> 
+> Thanks, this clearly shows that our descriptors are above 4GB and that
+> the driver truncates the completion word.
+> 
+> Is this new behavior for xen?
 
-it is srcu_barrier(), it have to wait all callbacks complete for all
-cpus since it is per-cpu
-implementation.
+Xen makes a distinction between physical addresses and DMA addresses and
+the latter can potentially be anywhere in the machine's real address
+space while the former is what GFP_KERNEL etc controls.
 
->
-> Also, what happens if your cpu isn't actually online?
+You are using pci_pool_alloc which is the correct API to use for these
+things since it's purpose is to handle cases where PHYS != DMA addr by
+exposing the DMA address to the caller. As part of that you should also
+be using dma_addr_t for DMA addresses since that is the type which is
+defined to handle the appropriate DMA address size on the platform.
 
-The workqueue handles it, not here, if a cpu state machine has callbacks, the
-state machine is started, if it has no callback,  srcu_barrier() does
-nothing for
-this cpu
+I think this DMA!=PHYS can also be true of some non-x86 architectures
+without Xen too but I guess ioat is quite x86 specific? In any case it
+is wrong, or at least non-portable, to use unsigned long for these
+addresses even though it happens on x86 that physaddr == dma addr
+(usually).
 
->
->
->> +               scp = per_cpu_ptr(sp->srcu_per_cpu, cpu);
->> +               if (scp->head && !safe_less_than(chck_seq, scp->head->chck_seq,
->> +                               sp->chck_seq)) {
->> +                       /* this path is likely enterred only once */
->> +                       init_completion(&sync.completion);
->> +                       srcu_queue_callback(sp, scp, head,
->> +                                       __synchronize_srcu_callback);
->> +                       /* don't need to wakeup the woken state machine */
->> +                       spin_unlock_irq(&sp->gp_lock);
->> +                       wait_for_completion(&sync.completion);
->> +                       spin_lock_irq(&sp->gp_lock);
->> +               } else {
->> +                       if ((++idle_loop & 0xF) == 0) {
->> +                               spin_unlock_irq(&sp->gp_lock);
->> +                               udelay(1);
->> +                               spin_lock_irq(&sp->gp_lock);
->> +                       }
->
-> The purpose of this bit isn't quite clear to me, is this simply a lock
-> break?
+Ian.
 
-Yes, the main purpose is:
-make the time of sp->gp_lock short, can be determined.
+-- 
+Ian Campbell
 
->
->> +               }
->> +       }
->> +       spin_unlock_irq(&sp->gp_lock);
->> +
->> +       flush_workqueue(srcu_callback_wq);
->
-> Since you already waited for the completions one by one, what's the
-> purpose of this?
->
->> +}
->> +EXPORT_SYMBOL_GPL(srcu_barrier);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Start every day off with a smile and get it over with.
+		-- W. C. Fields
+
