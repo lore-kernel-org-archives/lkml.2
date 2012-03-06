@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834Ab2CFRMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 12:12:22 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42269 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754769Ab2CFRMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 12:12:20 -0500
-Date: Tue, 6 Mar 2012 18:12:09 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, David Ahern <dsahern@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 0/3] KVM: perf: kvm events analysis tool
-Message-ID: <20120306171209.GB25648@elte.hu>
-References: <4F55D110.2020609@linux.vnet.ibm.com>
- <20120306090730.GB27238@elte.hu>
- <4F55EA0D.4040408@linux.vnet.ibm.com>
+	id S932279Ab2CFRPl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 12:15:41 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44660 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751909Ab2CFRPk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 12:15:40 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of levinsasha928@gmail.com designates 10.50.191.163 as permitted sender) smtp.mail=levinsasha928@gmail.com; dkim=pass header.i=levinsasha928@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F55EA0D.4040408@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+In-Reply-To: <20120306164835.GA26094@elliptictech.com>
+References: <x49vcmhhj2f.fsf@segfault.boston.devel.redhat.com>
+ <CA+1xoqe_xS95xKM2=X-Mq-_gc+DqzxF2D8YiuCf=0=7=mVKsyw@mail.gmail.com> <20120306164835.GA26094@elliptictech.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Tue, 6 Mar 2012 19:15:19 +0200
+Message-ID: <CA+1xoqfzCb5X8wwvR1Bz+D6K20n7v3ChUR0E4Jqw_BWam5C7TQ@mail.gmail.com>
+Subject: Re: the maxcpus= boot parameter broke somewhere along the line
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 6, 2012 at 6:48 PM, Nick Bowler <nbowler@elliptictech.com> wrote:
+> On 2012-03-06 17:17 +0200, Sasha Levin wrote:
+>> On Tue, Mar 6, 2012 at 4:59 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
+>> > When booting my machine with maxcpus=1, it seems to be ignored with
+>> > 3.3.0-rc3.  I know that 3.1.0-rc3 works fine, but I haven't had time to
+>> > track it down any further than that.  I've attached the dmesg from my
+>> > machine.  Let me know if there is any other information that would help
+>> > in solving this.
+>>
+>> [snip]
+>>
+>> > Brought up 1 CPUs
+>> > Total of 1 processors activated (4256.06 BogoMIPS).
+>>
+>> Looks like it indeed brings up only one CPU, what's the problem there?
+>
+> If you scroll further down it seems that the remaining CPUs are brought
+> online near the end of the boot?
+>
+>  [...]
+>  udev: starting version 147
+>  SMP alternatives: switching to SMP code
+>  WARNING! power/level is deprecated; use power/control instead
+>  EDAC MC: Ver: 2.1.0
+>  Booting Node 0 Processor 3 APIC 0x3
+>  smpboot cpu 3: start_ip = 9a000
+>  EDAC MC0: Giving out device to 'i3200_edac' 'i3200': DEV 0000:00:00.0
+>  NMI watchdog enabled, takes one hw-pmu counter.
+>  Booting Node 0 Processor 2 APIC 0x1
+>  smpboot cpu 2: start_ip = 9a000
+>  NMI watchdog enabled, takes one hw-pmu counter.
+>  Booting Node 0 Processor 1 APIC 0x2
+>  smpboot cpu 1: start_ip = 9a000
+>  NMI watchdog enabled, takes one hw-pmu counter.
 
-* Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
-
-> Thanks for your review, Ingo!
-> 
-> On 03/06/2012 05:07 PM, Ingo Molnar wrote:
-> 
-> 
-> > So, your new tool has a similar workflow to:
-> > 
-> >   perf kvm record
-> >   perf kvm report
-> > 
-> > but differs from it in terms of events used and in terms of 
-> > reported output.
-> > 
-> > To me it appears that your tool is basically pretty similar to 
-> > 'perf stat', adapted to KVM, right?
-> > 
-> > So, could your new tool's workflow be simplified like this:
-> > 
-> >   perf kvm stat ..
-> > 
-> > ?
-> > 
-> > To automatically stat all vcpus in the system, the well-known 
-> > -a/--all-cpus system-wide method could be used:
-> > 
-> >   perf kvm stat -a ...
-> > 
-> > with stat output following immediately after it has finished.
-> > 
-> 
-> 
-> Actually, the stat information has already been included in the report.
-> 
-> 
-> > It should also be possible to use those new events in a 
-> > recording fashion - a new, rather logical command sub-space 
-> > could be used for that:
-> > 
-> >  perf kvm stat record ...
-> >  perf kvm stat report ...
-> > 
-> > [ This could be expanded to regular 'perf stat' as well: 'perf 
-> >   stat record' and 'perf stat report' would be useful - but I 
-> >   suspect that's outside the scope of your patches. ]
-> > 
-> 
-> 
-> I totally agree with you except i prefer 'perf kvm events' to 
-> 'perf kvm stat' :) : it records some specified kvm events and 
-> smartly analyze it. I think it matches its doing better.
-
-Well, my problem is that *all* of the 'perf kvm' functionality 
-deals with events :-) So the 'events' does not say much - you 
-just add a variation to the theme without really distinguishing 
-it.
-
-Since 'perf stat' is not yet used and the output of your tool 
-looks quite perf stat alike, why not use that name and 
-standardize all these workflows?
-
-Thanks,
-
-	Ingo
+I can't reproduce it locally with a 3.3-rc5 kernel.
