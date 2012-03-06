@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759019Ab2CFVre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 16:47:34 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:48489 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757538Ab2CFVra convert rfc822-to-8bit (ORCPT
+	id S1759241Ab2CFVrl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 16:47:41 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62080 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759117Ab2CFVrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 16:47:30 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.216.132.40 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
+	Tue, 6 Mar 2012 16:47:37 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.155.143 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Message-ID: <4F5685E9.4010900@openvz.org>
+Date: Wed, 07 Mar 2012 01:47:21 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxdnfGREML3u+eoGf89Jci8qBuW7WBmPk3w=wRWMvRvfg@mail.gmail.com>
-References: <20120228010511.GA8453@kroah.com> <20120228010434.412979550@linuxfoundation.org>
- <87hay4dqjr.fsf@turtle.gmx.de> <201203050143.24541.s.L-H@gmx.de>
- <CA+55aFxZsVxkxifR+EUZi=RsUGKfs5vYXX3nN_M_Az1BY5yyaw@mail.gmail.com>
- <alpine.LFD.2.02.1203060927190.2742@ionos> <alpine.LFD.2.02.1203060957140.2742@ionos>
- <alpine.LFD.2.02.1203062019340.2742@ionos> <8762eh1p7d.fsf@turtle.gmx.de>
- <alpine.LFD.2.02.1203062101040.2742@ionos> <CA+55aFxdnfGREML3u+eoGf89Jci8qBuW7WBmPk3w=wRWMvRvfg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 6 Mar 2012 13:47:09 -0800
-X-Google-Sender-Auth: nL1kCjwjG5RGE2I2FTXsmxrTC-g
-Message-ID: <CA+55aFzqF0C1eiidR=ycJ0DhV3MiWJRkOmi-GEcgT7J6Dm+a5g@mail.gmail.com>
-Subject: Re: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Sven Joachim <svenjoac@gmx.de>, Stefan Lippers-Hollmann <s.L-H@gmx.de>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org,
-        Stefano Brivio <stefano.brivio@polimi.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH bisected regression] sched: rebuild sched domains at suspend/resume
+References: <20120306204357.13169.90791.stgit@zurg> <1331067743.11248.333.camel@twins>
+In-Reply-To: <1331067743.11248.333.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 1:40 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+Peter Zijlstra wrote:
+> On Wed, 2012-03-07 at 00:45 +0400, Konstantin Khlebnikov wrote:
+>> This is fix for suspend/resume regression introduced in commit 8f2f748b0656
+>> ("CPU hotplug, cpusets, suspend: Don't touch cpusets during suspend/resume")
+>> Without this patch suspend always hangs on my thinkpad x220 (2 x CPU * HT).
+>>
+>> cpuset_update_active_cpus() not only juggles with bits in cpusets,
+>> it also calls sched-domains rebuilding after all.
+>>
+>> This patch restores sched-domain rebuilds, as it was before that commit.
 >
-> (*) "1 << ffz(a)" can be written as
+> This changelog also completely fails to explain what the problem was and
+> how this patch sorts it without re-introducing the problems 8f2f748b0656
+> was supposed to fix.
+
+That patch removes cpuset bits clearing on suspend/resume cycle. My patch doesn't clear them too.
+I don't know why these domain rebuilds are required, so I just returned them back.
+
 >
->   a = ~a;        /* Turn the zero bits into 1 bits */
->   a &= -a;      /* .. and find the first one. */
->
-> without ever doing any insane bit scanning.
+> I'd rather revert the 'fix' and think about this more (its been broken
+> pretty much forever anyway) than tinker on top like this.
 
-Alternatively, wite it directly as "(a+1) &~a", which is the same
-expression just written differently (due to "-a == ~a+1")
-
-Yeah, I've been playing too much with the bitwise optimizations of the
-dentry cache name comparisons lately.
-
-                   Linus
+Ok, "rc" isn't the best time that.
