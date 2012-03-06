@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031558Ab2CFWtb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 17:49:31 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:58692 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031500Ab2CFWt3 (ORCPT
+	id S1031561Ab2CFWvw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 17:51:52 -0500
+Received: from eddie.linux-mips.org ([78.24.191.182]:35281 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031497Ab2CFWvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 17:49:29 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of mathieu.poirier@linaro.org designates 10.182.89.65 as permitted sender) smtp.mail=mathieu.poirier@linaro.org
+	Tue, 6 Mar 2012 17:51:50 -0500
+Date: Tue, 6 Mar 2012 23:51:27 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Aaron Durbin <adurbin@google.com>,
+        Paul Turner <pjt@google.com>, Yong Zhang <yong.zhang0@gmail.com>,
+        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH 3/5] mips: Use common fork_idle_from_wq in smpboot
+Message-ID: <20120306225127.GA29711@linux-mips.org>
+References: <1330710103.30167.84.camel@sbsiddha-desk.sc.intel.com>
+ <1331070074-31717-1-git-send-email-venki@google.com>
+ <1331070074-31717-4-git-send-email-venki@google.com>
 MIME-Version: 1.0
-From: mathieu.poirier@linaro.org
-To: linux@arm.linux.org.uk
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, grant.likely@secretlab.ca
-Subject: [PATCH] ARM: versatile: automatically pick a board in Kconfig
-Date: Tue,  6 Mar 2012 15:49:22 -0700
-Message-Id: <1331074162-18147-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331070074-31717-4-git-send-email-venki@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+On Tue, Mar 06, 2012 at 01:41:12PM -0800, Venkatesh Pallipadi wrote:
 
-The versatile platform supports building any combination of the
-three board types (AB, PB, DT), but at least one of them has
-to be enabled. This adds the necessary Kconfig statement to
-enforce that at least one of the three is selected.
+> Cleanup. Instead of reimplementing fork_idle on wq and idle task caching,
+> use fork_idle_from_wq().
+> 
+> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- arch/arm/mach-versatile/Kconfig |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Looking good; this is code that really shouldn't be replicated a over
+several architectures.
 
-diff --git a/arch/arm/mach-versatile/Kconfig b/arch/arm/mach-versatile/Kconfig
-index c1f38f6..31da352 100644
---- a/arch/arm/mach-versatile/Kconfig
-+++ b/arch/arm/mach-versatile/Kconfig
-@@ -25,4 +25,10 @@ config MACH_VERSATILE_DT
- 	  Include support for the ARM(R) Versatile/PB platform,
- 	  using the device tree for discovery
- 
-+config MACH_VERSATILE_AUTO
-+	def_bool y
-+	depends on !ARCH_VERSATILE_PB
-+	depends on !MACH_VERSATILE_AB
-+	select MACH_VERSATILE_DT
-+
- endmenu
--- 
-1.7.5.4
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
+  Ralf
