@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759139Ab2CFLXe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 06:23:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:38934 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965134Ab2CFLXc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 06:23:32 -0500
-Message-ID: <1331032974.11248.279.camel@twins>
-Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine
- call_srcu()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        patches@linaro.org
-Date: Tue, 06 Mar 2012 12:22:54 +0100
-In-Reply-To: <1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
-	 <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
-	 <1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	id S1030370Ab2CFLXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 06:23:45 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35638 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759155Ab2CFLXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 06:23:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="118163688"
+Subject: Re: [PATCH] drivers/dma: linux/module.h included twice
+From: Vinod Koul <vinod.koul@intel.com>
+To: Danny Kukawka <danny.kukawka@bisect.de>
+Cc: Danny Kukawka <dkukawka@suse.de>, Dan Williams <dan.j.williams@intel.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1329333626-31993-1-git-send-email-danny.kukawka@bisect.de>
+References: <1329333626-31993-1-git-send-email-danny.kukawka@bisect.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Mar 2012 16:58:14 +0530
+Message-ID: <1331033296.24656.195.camel@vkoul-udesk3>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-06 at 17:57 +0800, Lai Jiangshan wrote:
-> +       int idxb = sp->completed & 0X1UL;
+On Wed, 2012-02-15 at 20:20 +0100, Danny Kukawka wrote:
+> drivers/dma/imx-dma.c and drivers/dma/imx-sdma.c included
+> 'linux/module.h' twice, remove the duplicates.
+> 
+> Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+> ---
+>  drivers/dma/imx-dma.c  |    1 -
+>  drivers/dma/imx-sdma.c |    1 -
+>  2 files changed, 0 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+> index e4383ee..678cd01 100644
+> --- a/drivers/dma/imx-dma.c
+> +++ b/drivers/dma/imx-dma.c
+> @@ -24,7 +24,6 @@
+>  #include <linux/slab.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/dmaengine.h>
+> -#include <linux/module.h>
+>  
+>  #include <asm/irq.h>
+>  #include <mach/dma-v1.h>
+> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> index 8bc5acf..63540d3 100644
+> --- a/drivers/dma/imx-sdma.c
+> +++ b/drivers/dma/imx-sdma.c
+> @@ -35,7 +35,6 @@
+>  #include <linux/dmaengine.h>
+>  #include <linux/of.h>
+>  #include <linux/of_device.h>
+> -#include <linux/module.h>
+>  
+>  #include <asm/irq.h>
+>  #include <mach/sdma.h>
+Applied Thanks
 
-I didn't even know you could write a hex literal with an upper-case X.
 
-How weird :-)
+-- 
+~Vinod
+
