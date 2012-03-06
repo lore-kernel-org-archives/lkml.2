@@ -1,46 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965270Ab2CFUbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 15:31:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:36514 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030967Ab2CFUbM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 15:31:12 -0500
-Date: Tue, 6 Mar 2012 21:31:06 +0100
-From: Jens Axboe <axboe@kernel.dk>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
-Subject: Re: [GIT PULL] (xen) stable/for-jens-3.4 for linux-block.git tree
- for 3.4 (don't see a branch though?)
-Message-ID: <20120306203105.GG5403@kernel.dk>
-References: <20120304183109.GB449@phenom.dumpdata.com>
+	id S1031044Ab2CFUfP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 15:35:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45759 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965229Ab2CFUfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 15:35:14 -0500
+Date: Tue, 6 Mar 2012 21:35:08 +0100
+From: Jan Kara <jack@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ilya Tumaykin <librarian_rus@yahoo.com>
+Subject: Re: [ 03/34] lib: proportion: lower PROP_MAX_SHIFT to 32 on 64-bit
+ kernel
+Message-ID: <20120306203508.GB8781@quack.suse.cz>
+References: <20120301214654.GA13231@kroah.com>
+ <20120301213922.703908387@linuxfoundation.org>
+ <20120305150657.GB11238@quack.suse.cz>
+ <20120305213126.GA16807@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120304183109.GB449@phenom.dumpdata.com>
+In-Reply-To: <20120305213126.GA16807@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 04 2012, Konrad Rzeszutek Wilk wrote:
-> Hey Jens,
+On Mon 05-03-12 13:31:26, Wu Fengguang wrote:
+> On Mon, Mar 05, 2012 at 04:06:57PM +0100, Jan Kara wrote:
+> > On Thu 01-03-12 13:39:25, Greg KH wrote:
+> > > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> >   Not that I'd see anything wrong with this patch for 2.6.32. But it is
+> > also unnecessary since the code which was triggering the overflow does not
+> > exist in 2.6.32. So maybe just on the grounds of not applying unneeded
+> > patchs I'd skip this one.
 > 
-> Please git pull the following branch in your 3.4 tree:
+> FYI I never see this divide error for pre-3.2 kernels. However I've
+> run into problem (2) before 3.2 which makes bdi dirty threshold go
+> wild. So it seems safer to go with this patch.
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.4
-> 
-> or the following git tag:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.4-tag
-> 
-> which makes the block backend able to work under an HVM domain (by default it was only
-> working in PV), and some fixes and an performance improvement.
-> 
-> Please pull!
+> To be frank the boxes that run into bugs (1) or (2) do not have
+> Terabytes of memory to create the big shift value in
+> calc_period_shift() which is the sufficient condition for triggering
+> the bugs as described in the below changelog. However the bugs do
+> magically go away with the patch applied. Perhaps this patch breaks
+> one necessary condition for triggering the bugs in a small memory box.
+  The patch went in -stable kernel so this is mostly an academic discussion
+but Documentation/stable_kernel_rules.txt says among other things:
+ - It must fix a real bug that bothers people (not a, "This could be a
+   problem..." type thing).
+ - It must fix a problem that causes a build error (but not for things
+   marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
+   security issue, or some "oh, that's not good" issue.  In short,
+   something critical.
 
-Pulled, thanks!
+  This patch simply didn't pass these two conditions for me for 2.6.32 and
+your arguments didn't convince me it's a critical thing either...
 
+								Honza
+
+> > > ------------------
+> > > 
+> > > From: Wu Fengguang <fengguang.wu@intel.com>
+> > > 
+> > > commit 3310225dfc71a35a2cc9340c15c0e08b14b3c754 upstream.
+> > > 
+> > > PROP_MAX_SHIFT should be set to <=32 on 64-bit box. This fixes two bugs
+> > > in the below lines of bdi_dirty_limit():
+> > > 
+> > > 	bdi_dirty *= numerator;
+> > > 	do_div(bdi_dirty, denominator);
+> > > 
+> > > 1) divide error: do_div() only uses the lower 32 bit of the denominator,
+> > >    which may trimmed to be 0 when PROP_MAX_SHIFT > 32.
+> > > 
+> > > 2) overflow: (bdi_dirty * numerator) could easily overflow if numerator
+> > >    used up to 48 bits, leaving only 16 bits to bdi_dirty
+> > > 
+> > > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > > Reported-by: Ilya Tumaykin <librarian_rus@yahoo.com>
+> > > Tested-by: Ilya Tumaykin <librarian_rus@yahoo.com>
+> > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > 
+> > > ---
+> > >  include/linux/proportions.h |    4 ++++
+> > >  1 file changed, 4 insertions(+)
+> > > 
+> > > --- a/include/linux/proportions.h
+> > > +++ b/include/linux/proportions.h
+> > > @@ -81,7 +81,11 @@ void prop_inc_percpu(struct prop_descrip
+> > >   * Limit the time part in order to ensure there are some bits left for the
+> > >   * cycle counter and fraction multiply.
+> > >   */
+> > > +#if BITS_PER_LONG == 32
+> > >  #define PROP_MAX_SHIFT (3*BITS_PER_LONG/4)
+> > > +#else
+> > > +#define PROP_MAX_SHIFT (BITS_PER_LONG/2)
+> > > +#endif
+> > >  
+> > >  #define PROP_FRAC_SHIFT		(BITS_PER_LONG - PROP_MAX_SHIFT - 1)
+> > >  #define PROP_FRAC_BASE		(1UL << PROP_FRAC_SHIFT)
+> > > 
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > -- 
+> > Jan Kara <jack@suse.cz>
+> > SUSE Labs, CR
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 -- 
-Jens Axboe
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
