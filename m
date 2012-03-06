@@ -1,289 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030910Ab2CFPEa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 10:04:30 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40422 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030778Ab2CFPE2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 10:04:28 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of liuj97@gmail.com designates 10.50.203.99 as permitted sender) smtp.mail=liuj97@gmail.com; dkim=pass header.i=liuj97@gmail.com
-From: Jiang Liu <liuj97@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Jes Sorensen <jes@sgi.com>,
-        Ingo Molnar <mingo@redhat.com>, "H . Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Meyer <thomas@m3y3r.de>
-Cc: Jiang Liu <jiang.liu@huawei.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-altix@sgi.com, x86@kernel.org,
-        chenkeping@huawei.com
-Subject: [PATCH] IRQ: normalize chip->irq_set_affinity return value on x86 and IA64
-Date: Tue,  6 Mar 2012 23:01:52 +0800
-Message-Id: <1331046112-19526-1-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1759326Ab2CFPHR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 10:07:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757893Ab2CFPHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 10:07:15 -0500
+Date: Tue, 6 Mar 2012 10:07:09 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] blkcg: accumulated blkcg updates
+Message-ID: <20120306150709.GA32148@redhat.com>
+References: <1329875223-5102-1-git-send-email-tj@kernel.org>
+ <20120305210726.GC1263@google.com>
+ <20120305210836.GD1263@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120305210836.GD1263@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86 and IA64 platforms, interrupt controller chip's irq_set_affinity()
-method always copies affinity mask to irq_data->affinity field but still
-returns 0(IRQ_SET_MASK_OK). That return value causes the interrupt core
-logic unnecessarily copies the mask to irq_data->affinity field again.
-So return IRQ_SET_MASK_OK_NOCOPY instead of IRQ_SET_MASK_OK to get rid of
-the duplicated copy operation.
+On Mon, Mar 05, 2012 at 01:08:36PM -0800, Tejun Heo wrote:
+> On Mon, Mar 05, 2012 at 01:07:26PM -0800, Tejun Heo wrote:
+> > Hello,
+> > 
+> > Vivek reported two different crashes.  Patch 17.5 added and patch 27
+> > updated to address both issues.  Andrew reminded me a deeper problem
+> > with percpu mempool approach and I'll go with Vivek's delayed
+> > allocation patch.  For now, I'm dropping the stats patches.
+> > 
+> > I posted the two updated patches but holding off reposting all patches
+> > which now generate conflicts due to the updates.  git branches are
+> > updated.
+> > 
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-stacking
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git unified-blkg
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git blkcg-kill-pn
+> > 
+> > Note that blkcg-stats is dropped for now.  I'll repost the series
+> > later when Jens is ready to pull.
+> 
+> Ooh, the commit ID of blkcg-stacking, which is on top of all other
+> pending commits is fcddfec4ea9067ae6c963682dcdb5ddf783a3ff9.
+> 
+> Vivek, can you please verify the crashes you were seeing are gone now?
 
-This patch applies to v3.3-rc6 and has been tested on x86 platforms.
+Hi Tejun,
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- arch/ia64/kernel/iosapic.c     |    4 +++-
- arch/ia64/kernel/msi_ia64.c    |    4 ++--
- arch/ia64/sn/kernel/irq.c      |    2 +-
- arch/ia64/sn/kernel/msi_sn.c   |    2 +-
- arch/x86/kernel/apic/io_apic.c |   11 ++++++-----
- arch/x86/platform/uv/uv_irq.c  |    2 +-
- kernel/irq/internals.h         |    3 +++
- kernel/irq/manage.c            |   39 ++++++++++++++++++++++-----------------
- kernel/irq/migration.c         |    6 +-----
- 9 files changed, 40 insertions(+), 33 deletions(-)
+Built and booted into blkcg-stacking. Looks likd old crashes on reading
+file and scheduler change are fixed.
 
-diff --git a/arch/ia64/kernel/iosapic.c b/arch/ia64/kernel/iosapic.c
-index b0f9afe..98f5fa6 100644
---- a/arch/ia64/kernel/iosapic.c
-+++ b/arch/ia64/kernel/iosapic.c
-@@ -374,8 +374,10 @@ iosapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		iosapic_write(iosapic, IOSAPIC_RTE_LOW(rte_index), low32);
- 	}
- 
-+	return IRQ_SET_MASK_OK_NOCOPY;
-+#else
-+	return IRQ_SET_MASK_OK;
- #endif
--	return 0;
- }
- 
- /*
-diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
-index 94e0db7..e155770 100644
---- a/arch/ia64/kernel/msi_ia64.c
-+++ b/arch/ia64/kernel/msi_ia64.c
-@@ -41,7 +41,7 @@ static int ia64_set_msi_irq_affinity(struct irq_data *idata,
- 	write_msi_msg(irq, &msg);
- 	cpumask_copy(idata->affinity, cpumask_of(cpu));
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- #endif /* CONFIG_SMP */
- 
-@@ -157,7 +157,7 @@ static int dmar_msi_set_affinity(struct irq_data *data,
- 	dmar_msi_write(irq, &msg);
- 	cpumask_copy(data->affinity, mask);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- #endif /* CONFIG_SMP */
- 
-diff --git a/arch/ia64/sn/kernel/irq.c b/arch/ia64/sn/kernel/irq.c
-index dfac09a..f444208 100644
---- a/arch/ia64/sn/kernel/irq.c
-+++ b/arch/ia64/sn/kernel/irq.c
-@@ -216,7 +216,7 @@ static int sn_set_affinity_irq(struct irq_data *data,
- 				 sn_irq_lh[irq], list)
- 		(void)sn_retarget_vector(sn_irq_info, nasid, slice);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #ifdef CONFIG_SMP
-diff --git a/arch/ia64/sn/kernel/msi_sn.c b/arch/ia64/sn/kernel/msi_sn.c
-index 2b98b9e..ebb5b55 100644
---- a/arch/ia64/sn/kernel/msi_sn.c
-+++ b/arch/ia64/sn/kernel/msi_sn.c
-@@ -208,7 +208,7 @@ static int sn_set_msi_irq_affinity(struct irq_data *data,
- 	write_msi_msg(irq, &msg);
- 	cpumask_copy(data->affinity, cpu_mask);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- #endif /* CONFIG_SMP */
- 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index fb07275..a81f888 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -2346,6 +2346,7 @@ ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		/* Only the high 8 bits are valid. */
- 		dest = SET_APIC_LOGICAL_ID(dest);
- 		__target_IO_APIC_irq(irq, dest, data->chip_data);
-+		ret = IRQ_SET_MASK_OK_NOCOPY;
- 	}
- 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
- 	return ret;
-@@ -2404,7 +2405,7 @@ ir_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		send_cleanup_vector(cfg);
- 
- 	cpumask_copy(data->affinity, mask);
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #else
-@@ -3209,7 +3210,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 
- 	__write_msi_msg(data->msi_desc, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- #endif /* CONFIG_SMP */
- 
-@@ -3366,7 +3367,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 
- 	dmar_msi_write(irq, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #endif /* CONFIG_SMP */
-@@ -3419,7 +3420,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
- 
- 	hpet_msi_write(data->handler_data, &msg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #endif /* CONFIG_SMP */
-@@ -3499,7 +3500,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
- 		return -1;
- 
- 	target_ht_irq(data->irq, dest, cfg->vector);
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- #endif
-diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-index f25c276..a22c416 100644
---- a/arch/x86/platform/uv/uv_irq.c
-+++ b/arch/x86/platform/uv/uv_irq.c
-@@ -222,7 +222,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
- 	if (cfg->move_in_progress)
- 		send_cleanup_vector(cfg);
- 
--	return 0;
-+	return IRQ_SET_MASK_OK_NOCOPY;
- }
- 
- /*
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index b795231..2c49c40 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -103,6 +103,9 @@ extern int irq_select_affinity_usr(unsigned int irq, struct cpumask *mask);
- 
- extern void irq_set_thread_affinity(struct irq_desc *desc);
- 
-+extern int irq_do_set_affinity(struct irq_data *data,
-+			       const struct cpumask *dest, bool force);
-+
- /* Inline functions for support of irq chips on slow busses */
- static inline void chip_bus_lock(struct irq_desc *desc)
- {
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index a9a9dbe..b410b0b 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -139,6 +139,25 @@ static inline void
- irq_get_pending(struct cpumask *mask, struct irq_desc *desc) { }
- #endif
- 
-+int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
-+			bool force)
-+{
-+	struct irq_desc *desc = irq_data_to_desc(data);
-+	struct irq_chip *chip = irq_data_get_irq_chip(data);
-+	int ret;
-+
-+	ret = chip->irq_set_affinity(data, mask, false);
-+	switch (ret) {
-+	case IRQ_SET_MASK_OK:
-+		cpumask_copy(data->affinity, mask);
-+	case IRQ_SET_MASK_OK_NOCOPY:
-+		irq_set_thread_affinity(desc);
-+		ret = 0;
-+	}
-+
-+	return ret;
-+}
-+
- int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- {
- 	struct irq_chip *chip = irq_data_get_irq_chip(data);
-@@ -149,14 +168,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- 		return -EINVAL;
- 
- 	if (irq_can_move_pcntxt(data)) {
--		ret = chip->irq_set_affinity(data, mask, false);
--		switch (ret) {
--		case IRQ_SET_MASK_OK:
--			cpumask_copy(data->affinity, mask);
--		case IRQ_SET_MASK_OK_NOCOPY:
--			irq_set_thread_affinity(desc);
--			ret = 0;
--		}
-+		ret = irq_do_set_affinity(data, mask, false);
- 	} else {
- 		irqd_set_move_pending(data);
- 		irq_copy_pending(desc, mask);
-@@ -280,9 +292,7 @@ EXPORT_SYMBOL_GPL(irq_set_affinity_notifier);
- static int
- setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
- {
--	struct irq_chip *chip = irq_desc_get_chip(desc);
- 	struct cpumask *set = irq_default_affinity;
--	int ret;
- 
- 	/* Excludes PER_CPU and NO_BALANCE interrupts */
- 	if (!irq_can_set_affinity(irq))
-@@ -301,13 +311,8 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
- 	}
- 
- 	cpumask_and(mask, cpu_online_mask, set);
--	ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
--	switch (ret) {
--	case IRQ_SET_MASK_OK:
--		cpumask_copy(desc->irq_data.affinity, mask);
--	case IRQ_SET_MASK_OK_NOCOPY:
--		irq_set_thread_affinity(desc);
--	}
-+	irq_do_set_affinity(&desc->irq_data, mask, false);
-+
- 	return 0;
- }
- #else
-diff --git a/kernel/irq/migration.c b/kernel/irq/migration.c
-index 4742090..ef04dab 100644
---- a/kernel/irq/migration.c
-+++ b/kernel/irq/migration.c
-@@ -44,11 +44,7 @@ void irq_move_masked_irq(struct irq_data *idata)
- 	 */
- 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
- 		   < nr_cpu_ids))
--		if (!chip->irq_set_affinity(&desc->irq_data,
--					    desc->pending_mask, false)) {
--			cpumask_copy(desc->irq_data.affinity, desc->pending_mask);
--			irq_set_thread_affinity(desc);
--		}
-+		irq_do_set_affinity(&desc->irq_data, desc->pending_mask, false);
- 
- 	cpumask_clear(desc->pending_mask);
- }
--- 
-1.7.5.4
+My system is hanging during reboot. Last message I see is "Detaching DM
+devices" and nothing happens after that. I shall have to do some more 
+testing to figure out when did that start happening.
 
+I have been seeing following on boot though.
+
+[    2.893244] ===============================
+[    2.897492] [ INFO: suspicious RCU usage. ]
+[    2.901741] 3.3.0-rc3-tejun-misc+ #27 Not tainted
+[    2.906509] -------------------------------
+[    2.910760] kernel/cgroup.c:1723 suspicious rcu_dereference_check()
+usage!
+[    2.917696] 
+[    2.917697] other info that might help us debug this:
+[    2.917698] 
+[    2.925919] 
+[    2.925920] rcu_scheduler_active = 1, debug_locks = 0
+[    2.932588] no locks held by swapper/0/1.
+[    2.936664] 
+[    2.936664] stack backtrace:
+[    2.941180] Pid: 1, comm: swapper/0 Not tainted 3.3.0-rc3-tejun-misc+
+#27
+[    2.948030] Call Trace:
+[    2.950550]  [<ffffffff81093ba5>] lockdep_rcu_suspicious+0xe5/0x100
+[    2.956883]  [<ffffffff810adfbe>] cgroup_path+0x1be/0x200
+[    2.962350]  [<ffffffff8130af55>] blkg_lookup_create+0x1d5/0x490
+[    2.968422]  [<ffffffff8130d3b5>] blk_throtl_init+0x135/0x220
+[    2.974237]  [<ffffffff8130d369>] ? blk_throtl_init+0xe9/0x220
+[    2.980141]  [<ffffffff8130b6e1>] blkcg_init_queue+0x31/0x90
+[    2.985874]  [<ffffffff812f2c2a>] blk_alloc_queue_node+0x22a/0x270
+[    2.992120]  [<ffffffff812f2c83>] blk_alloc_queue+0x13/0x20
+[    2.997761]  [<ffffffff81447cba>] brd_alloc+0x7a/0x1b0
+[    3.002968]  [<ffffffff81f0163e>] brd_init+0xc6/0x1ce
+[    3.008086]  [<ffffffff81f01578>] ? register_node_type+0x19/0x19
+[    3.014167]  [<ffffffff810001cf>] do_one_initcall+0x3f/0x170
+[    3.019893]  [<ffffffff81ed4c34>] kernel_init+0xc9/0x143
+[    3.025273]  [<ffffffff81844e24>] kernel_thread_helper+0x4/0x10
+[    3.031258]  [<ffffffff8183b65d>] ? retint_restore_args+0xe/0xe
+[    3.037244]  [<ffffffff81ed4b6b>] ? start_kernel+0x375/0x375
+[    3.042968]  [<ffffffff81844e20>] ? gs_change+0xb/0xb
+
+Thanks
+Vivek
