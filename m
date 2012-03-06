@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031418Ab2CFVOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 16:14:12 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39221 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031315Ab2CFVOK (ORCPT
+	id S1031425Ab2CFVOg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 16:14:36 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:52002 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031211Ab2CFVOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 16:14:10 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of avagin@gmail.com designates 10.204.156.206 as permitted sender) smtp.mail=avagin@gmail.com; dkim=pass header.i=avagin@gmail.com
-Message-ID: <4F567E1C.80003@gmail.com>
-Date: Wed, 07 Mar 2012 01:14:04 +0400
-From: "avagin@gmail.com" <avagin@gmail.com>
-Reply-To: avagin@gmail.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Tue, 6 Mar 2012 16:14:35 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Eric Andersson <eric.andersson@unixphere.com>
+Subject: Re: [PATCHv2 3/3] misc: rename bmp085 to bmp18x
+Date: Tue, 6 Mar 2012 21:14:30 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk, zhengguang.guo@bosch-sensortec.com,
+        peter.moeller@cn.bosch.com
+References: <1331068084-17911-1-git-send-email-eric.andersson@unixphere.com> <1331068084-17911-4-git-send-email-eric.andersson@unixphere.com>
+In-Reply-To: <1331068084-17911-4-git-send-email-eric.andersson@unixphere.com>
 MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: Andrew Vagin <avagin@openvz.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] uevent: send events in correct order according to seqnum
-References: <CAPXgP10GRZ6Y3+dtNSw5zQMaM9FnSBBfLrCJmQ948gA3tALtfw@mail.gmail.com> <1331064368-55675-1-git-send-email-avagin@openvz.org> <CAPXgP10qwPn2-QeyPpDy3GiEqvU6jB-wVuUOUXwcGBvOWOUA1Q@mail.gmail.com>
-In-Reply-To: <CAPXgP10qwPn2-QeyPpDy3GiEqvU6jB-wVuUOUXwcGBvOWOUA1Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201203062114.30998.arnd@arndb.de>
+X-Provags-ID: V02:K0:Fani4IQHEsEyp9l7sicVaMpICM1CiUiLn2zjbszpIRZ
+ p86izTUPVBXM/sbhzTf2TM9jzQ9aauN/QsM2anIJmDmfxUCmNl
+ qRbxhhjdpc99bnEDDAuzWcE4ykNakZQLNRHMxjtpvLsA4C2B3v
+ hUH8Kj5sWqUAyL7n18zy1FWiRI3iKOREE2fHtOajMgcuk7Yo2e
+ 1ElqvjJBBvIAsYLqpU+5U/2GQDo+p4WJ7m3QZimW9BqMVPq5SQ
+ tVBUZdckwRhMAD0Q48XCCHh4Kq2l8Mh3VJFZxUwHvj2+b+q70+
+ QtQFliV1/5w1kj1t1MS32PMMw+K4vxcngqi4AJC/1TbgXb2uNd
+ RiGyTPXYDh4jms/Vtxqg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2012 01:03 AM, Kay Sievers wrote:
-> On Tue, Mar 6, 2012 at 21:06, Andrew Vagin<avagin@openvz.org>  wrote:
->>
->> The queue handling in the udev daemon assumes that the events are
->> ordered.
->>
->> Before this patch uevent_seqnum is incremented under sequence_lock,
->> than an event is send uner uevent_sock_mutex. I want to say that code
->> contained a window between incrementing seqnum and sending an event.
->>
->> This patch locks uevent_sock_mutex before incrementing uevent_seqnum.
->
-> I think we can remove the spin_lock(&sequence_lock); entirely now, right?
+On Tuesday 06 March 2012, Eric Andersson wrote:
+> The bmp085 chip has been deprecated by the newer bmp18x chip family from
+> Bosch Sensortec.
+> 
+> Reviewed-by: Stefan Nilsson <stefan.nilsson@unixphere.com>
+> Signed-off-by: Eric Andersson <eric.andersson@unixphere.com>
+> ---
+>  drivers/misc/Kconfig       |   18 +-
+>  drivers/misc/Makefile      |    6 +-
+>  drivers/misc/bmp085.c      |  514 --------------------------------------------
+>  drivers/misc/bmp18x-i2c.c  |  132 +++++++++++
+>  drivers/misc/bmp18x-spi.c  |  140 ++++++++++++
+>  drivers/misc/bmp18x.c      |  512 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/i2c/bmp085.h |   63 ------
+>  include/linux/i2c/bmp18x.h |   63 ++++++
+>  8 files changed, 859 insertions(+), 589 deletions(-)
 
-I thought about that too. sequence_lock is used when CONFIG_NET isn't 
-defined. I've looked on this code one more time and we may leave only 
-uevent_sock_mutex and use it even when CONFIG_NET isn't defined.
-Thanks for the comment.
+Please use 'git format-patch -M' when sending a rename patch, to make it obvious
+that there are no code changes in the rename. It's a bit suspicous that
+the files are different size and that you remove one .c file but add three
+other ones.
 
-Greg, do you have other objections about this patch?
+You should also try give a better explanation why the rename is actually a
+good idea. Simply listing the old model as deprecated does not sound like
+a strong enough reason, given that some people might rely on the existing
+name in user space interfaces.
 
->
-> Also the section with:
->    seq = ++uevent_seqnum;
-> can just be:
->    add_uevent_var(env, "SEQNUM=%llu", (unsigned long long) ++uevent_seqnum);
-> right?
->
-> And the:
->    mutex_lock(&uevent_sock_mutex);
-> can just move outside of the _NET ifdef and we always use the mutex
-> instead of the spinlock?
->
-> That could look much simpler than the current code, I think.
->
-> Thanks,
-> Kay
-
+	Arnd
