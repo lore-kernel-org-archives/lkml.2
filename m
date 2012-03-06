@@ -1,32 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031442Ab2CFWb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 17:31:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33979 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030811Ab2CFWb0 (ORCPT
+	id S1031449Ab2CFWeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 17:34:18 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48918 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932377Ab2CFWeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 17:31:26 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.41.161 as permitted sender) smtp.mail=linus.walleij@linaro.org
+	Tue, 6 Mar 2012 17:34:16 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.84.164 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <1331061132-25853-1-git-send-email-swarren@nvidia.com>
-References: <1331061132-25853-1-git-send-email-swarren@nvidia.com>
-Date: Tue, 6 Mar 2012 23:31:26 +0100
-Message-ID: <CACRpkdbozBL9kJG_EQW8G7U-He+Lvf5kLetEu65FjLYX8hYR2A@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: Declare struct device
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
+In-Reply-To: <alpine.LFD.2.02.1203062243130.2742@ionos>
+References: <20120228010511.GA8453@kroah.com> <20120228010434.412979550@linuxfoundation.org>
+ <87hay4dqjr.fsf@turtle.gmx.de> <201203050143.24541.s.L-H@gmx.de>
+ <CA+55aFxZsVxkxifR+EUZi=RsUGKfs5vYXX3nN_M_Az1BY5yyaw@mail.gmail.com>
+ <alpine.LFD.2.02.1203060927190.2742@ionos> <alpine.LFD.2.02.1203060957140.2742@ionos>
+ <alpine.LFD.2.02.1203062019340.2742@ionos> <8762eh1p7d.fsf@turtle.gmx.de>
+ <alpine.LFD.2.02.1203062101040.2742@ionos> <CA+55aFxdnfGREML3u+eoGf89Jci8qBuW7WBmPk3w=wRWMvRvfg@mail.gmail.com>
+ <alpine.LFD.2.02.1203062243130.2742@ionos>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 6 Mar 2012 14:33:54 -0800
+X-Google-Sender-Auth: 4aJlPvp9KUxLtwkftZfHgeeSvm0
+Message-ID: <CA+55aFwTYRO-qOPvSPkEf_5=10EOTBQa+DpRHFf_=iwXOFi4xw@mail.gmail.com>
+Subject: Re: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Sven Joachim <svenjoac@gmx.de>, Stefan Lippers-Hollmann <s.L-H@gmx.de>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org,
+        Stefano Brivio <stefano.brivio@polimi.it>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 8:12 PM, Stephen Warren <swarren@nvidia.com> wrote:
+On Tue, Mar 6, 2012 at 2:18 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> Subject: genirq: Clear action->thread_mask if IRQ_ONESHOT is not set
 
-> From: Stephen Warren <swarren@wwwdotorg.org>
->
-> Add a dummy declaration of struct device to avoid the following warning:
+Ok, can we get this fixed version tested too by people who saw the problem?
 
-Applied, thanks!
-Linus Walleij
+Just to make sure..
+
+Thanks,
+
+                     Linus
