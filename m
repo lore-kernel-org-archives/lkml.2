@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247Ab2CFF5M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 00:57:12 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35188 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab2CFF5K (ORCPT
+	id S1752662Ab2CFGEx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 01:04:53 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43974 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab2CFGEr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 00:57:10 -0500
-Date: Tue, 6 Mar 2012 05:57:06 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Arve Hj?nnev?g <arve@android.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, airlied@linux.ie, carsteno@de.ibm.com,
-        steiner@sgi.com
-Subject: Re: [patches] VM-related fixes
-Message-ID: <20120306055706.GQ23916@ZenIV.linux.org.uk>
-References: <20120305063707.GH23916@ZenIV.linux.org.uk>
- <CAMP5XgeWQpMP2Q_29aybHwfMJ1_k5GkGozqocSVVYDoRTpKD2w@mail.gmail.com>
- <20120306041015.GP23916@ZenIV.linux.org.uk>
- <CAMP5XgdmjL68qZJ8D0pNz-S5m-BauTzPyQ9Xv1SPgdZVMiZMpg@mail.gmail.com>
+	Tue, 6 Mar 2012 01:04:47 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of haojian.zhuang@gmail.com designates 10.220.8.195 as permitted sender) smtp.mail=haojian.zhuang@gmail.com; dkim=pass header.i=haojian.zhuang@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMP5XgdmjL68qZJ8D0pNz-S5m-BauTzPyQ9Xv1SPgdZVMiZMpg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201203021355.21669.heiko@sntech.de>
+References: <201203021355.21669.heiko@sntech.de>
+Date: Tue, 6 Mar 2012 14:04:46 +0800
+Message-ID: <CAN1soZwTR=j6=Xi-WKSTQwkGu+58pePb1syD+2q0UhHUJnfg_Q@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Remove bq24022 driver superseeded by gpio-regulator
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Philipp Zabel <philipp.zabel@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 09:25:05PM -0800, Arve Hj?nnev?g wrote:
-> > Sorry, no.
-> > ? ? ? ? ? ? ? ?down_write(&mm->mmap_sem);
-> > ? ? ? ? ? ? ? ?vma = proc->vma;
-> > ? ? ? ? ? ? ? ?if (vma && mm != vma->vm_mm) {
-> > does *not* do what you seem to describe; there's nothing to protect you
-> > from proc->vma getting freed under you right between load from proc->vma
-> > and check of vma->mm. ?->mmap_sem on the right mm would prevent that,
-> > but this one doesn't guarantee anything. ?Get preempted after the second
-> > line quoted above and by the time you get the timeslice back, you might
-> > have had munmap() done by another thread, with vma freed, its memory
-> > recycled, etc.
-> >
-> 
-> OK, if the memory got freed and then re-used by someone who stored a
-> value that matched a pointer to the mm struct that was just locked,
-> this check will fail to catch it. I can check against a cached vm_mm
-> member from mmap instead, assuming this will not change before
-> ->close() is called. Does that sound reasonable, or is there a better
-> way to check this?
+On Fri, Mar 2, 2012 at 8:55 PM, Heiko Stübner <heiko@sntech.de> wrote:
+> The bq24022 regulator is simply a more specialised variant of the now
+> present gpio-regulator. Therefore it probably shouldn't stay around.
+>
+> This series converts the two users of bq24022 pxa/hx4700 and
+> pxa/magician to use the gpio-regulator instead, and after this removes
+> the then unused bq24022 driver.
+>
+> The series was compile-tested only, but the gpio-regulator itself is
+> sucessfully used on my platform for the dcdc3 of a tps650240 (voltage
+> regulator with one gpio) and for a bq24075 (current regulator with two
+> gpios). So I'm quite sure it should work correctly but would welcome
+> testers :-) .
+>
+> Heiko Stuebner (2):
+>  pxa: magician/hx4700: Convert to gpio-regulator from bq24022
+>  regulator: Remove bq24022 regulator driver
+>
+>  arch/arm/configs/magician_defconfig |    2 +-
+>  arch/arm/mach-pxa/hx4700.c          |   33 ++++++--
+>  arch/arm/mach-pxa/magician.c        |   33 ++++++--
+>  drivers/regulator/Kconfig           |    8 --
+>  drivers/regulator/Makefile          |    1 -
+>  drivers/regulator/bq24022.c         |  162 -----------------------------------
+>  include/linux/regulator/bq24022.h   |   24 -----
+>  7 files changed, 55 insertions(+), 208 deletions(-)
+>  delete mode 100644 drivers/regulator/bq24022.c
+>  delete mode 100644 include/linux/regulator/bq24022.h
+>
+> --
+Hi Mark,
 
-Huh?  Sorry, I hadn't been able to parse that - what do you want to cache,
-where and what do you want to check?  Again, at that point *(proc->vma)
-may very well be random garbage, so looking at it would be pointless;
-the value you had at ->mmap() time would be simply current->mm of mmap(2)
-caller; if you want to check that it matches that of opener, fine,
-but then why not do just that in ->mmap()?
+I'm planning to merge this patch into arch-pxa tree since some changes
+on hx4700.c and magician.c. Is it ok fot you?
+
+Best Regards
+Haojian
