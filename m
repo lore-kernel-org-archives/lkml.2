@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab2CFRGF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 12:06:05 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55910 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab2CFRGD (ORCPT
+	id S1757541Ab2CFRIA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 12:08:00 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:43511 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759Ab2CFRH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 12:06:03 -0500
-Message-ID: <4F56424A.3020305@wwwdotorg.org>
-Date: Tue, 06 Mar 2012 09:58:50 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Dmitry Artamonow <mad_soft@inbox.ru>
-CC: linux-tegra@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 2/2] arm/tegra: add timeout to PCIe PLL lock detection
- loop
-References: <1331023544-6439-1-git-send-email-mad_soft@inbox.ru> <1331023544-6439-3-git-send-email-mad_soft@inbox.ru>
-In-Reply-To: <1331023544-6439-3-git-send-email-mad_soft@inbox.ru>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Mar 2012 12:07:58 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of santoshprasadnayak@gmail.com designates 10.68.125.129 as permitted sender) smtp.mail=santoshprasadnayak@gmail.com; dkim=pass header.i=santoshprasadnayak@gmail.com
+From: santosh nayak <santoshprasadnayak@gmail.com>
+To: huangj@brocade.com
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH] [SCSI] bfa: Fix endian bug in bfad_iocmd_debug_fw_core().
+Date: Tue,  6 Mar 2012 22:36:59 +0530
+Message-Id: <1331053619-7211-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2012 01:45 AM, Dmitry Artamonow wrote:
-> Tegra PCIe driver waits for PLL to lock using busy loop.
-> If PLL fails to lock for some reason, this leads to silent lockup
-> while booting (as PCIe code is not modular).
-> 
-> Fix by adding timeout, so if PLL doesn't lock in a couple
-> of seconds, just PCIe driver fails and machine continues to boot.
-> 
-> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-That seems reasonable. So once the mdelay discussion is resolved,
+Casting pointer from native data type to other type is
+endian-sensitive.
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+"iocmd->offset"  is 64 bit but we use only first 32 bit.
+It works in little-endian system but in big-endian system
+it will break.
 
-Any idea why the PLL doesn't lock sometimes?
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+---
+ drivers/scsi/bfa/bfad_bsg.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/bfa/bfad_bsg.c b/drivers/scsi/bfa/bfad_bsg.c
+index 530de2b..c4edc63 100644
+--- a/drivers/scsi/bfa/bfad_bsg.c
++++ b/drivers/scsi/bfa/bfad_bsg.c
+@@ -1918,6 +1918,7 @@ bfad_iocmd_debug_fw_core(struct bfad_s *bfad, void *cmd,
+ 	struct bfa_bsg_debug_s *iocmd = (struct bfa_bsg_debug_s *)cmd;
+ 	void	*iocmd_bufptr;
+ 	unsigned long	flags;
++	u32 offset;
+ 
+ 	if (bfad_chk_iocmd_sz(payload_len, sizeof(struct bfa_bsg_debug_s),
+ 			BFA_DEBUG_FW_CORE_CHUNK_SZ) != BFA_STATUS_OK) {
+@@ -1935,8 +1936,10 @@ bfad_iocmd_debug_fw_core(struct bfad_s *bfad, void *cmd,
+ 
+ 	iocmd_bufptr = (char *)iocmd + sizeof(struct bfa_bsg_debug_s);
+ 	spin_lock_irqsave(&bfad->bfad_lock, flags);
++	offset = iocmd->offset;
+ 	iocmd->status = bfa_ioc_debug_fwcore(&bfad->bfa.ioc, iocmd_bufptr,
+-				(u32 *)&iocmd->offset, &iocmd->bufsz);
++				&offset, &iocmd->bufsz);
++	iocmd->offset = offset;
+ 	spin_unlock_irqrestore(&bfad->bfad_lock, flags);
+ out:
+ 	return 0;
+-- 
+1.7.4.4
+
