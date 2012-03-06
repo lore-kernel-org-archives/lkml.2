@@ -1,100 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758782Ab2CFJxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 04:53:51 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:38725 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S965120Ab2CFJxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 04:53:15 -0500
-X-IronPort-AV: E=Sophos;i="4.73,539,1325433600"; 
-   d="scan'208";a="4464392"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Subject: [PATCH 4/6] remove flip_idx_and_wait()
-Date: Tue, 6 Mar 2012 17:57:36 +0800
-Message-Id: <1331027858-7648-4-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
- <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-06 17:51:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-06 17:51:20,
-	Serialize complete at 2012-03-06 17:51:20
+	id S1758884Ab2CFJyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 04:54:03 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63418 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758480Ab2CFJx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 04:53:56 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of benjamin.tissoires@gmail.com designates 10.180.93.4 as permitted sender) smtp.mail=benjamin.tissoires@gmail.com; dkim=pass header.i=benjamin.tissoires@gmail.com
+From: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] HID: multitouch: add more eGalax devices
+Date: Tue,  6 Mar 2012 10:53:47 +0100
+Message-Id: <1331027628-7946-3-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1331027628-7946-1-git-send-email-benjamin.tissoires@gmail.com>
+References: <1331027628-7946-1-git-send-email-benjamin.tissoires@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-flip and check are the basic steps of gp. call them directly.
+From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+This is a list of devices that should be handled by hid-multitouch.
+They all present the HID usage "Contact ID" and won't be handled by
+hid-input.
+Some of them have _not_ been tested (though I have their report
+descriptors), but I've been guaranted by eeti that they follow the same
+protocol.
+The tested ones are also blacklisted in hid-core.c.
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
 ---
- kernel/srcu.c |   35 +++++++++++++++++------------------
- 1 files changed, 17 insertions(+), 18 deletions(-)
+ drivers/hid/hid-core.c       |    2 ++
+ drivers/hid/hid-ids.h        |    6 ++++++
+ drivers/hid/hid-multitouch.c |   18 ++++++++++++++++++
+ 3 files changed, 26 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/srcu.c b/kernel/srcu.c
-index d5f3450..d101ed5 100644
---- a/kernel/srcu.c
-+++ b/kernel/srcu.c
-@@ -300,23 +300,12 @@ static void wait_idx(struct srcu_struct *sp, int idx, int trycount)
- }
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index c4d049a..eeaa7c5 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1407,6 +1407,8 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480D) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480E) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7224) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_725E) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_DWAV, USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7302) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index e2fb977..963207b 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -237,11 +237,17 @@
+ #define USB_DEVICE_ID_EGALAX_TOUCHCONTROLLER	0x0001
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480D	0x480d
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_480E	0x480e
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7207	0x7207
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C	0x720c
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7224	0x7224
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_725E	0x725e
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7262	0x7262
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B	0x726b
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72AA	0x72aa
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1	0x72a1
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72FA	0x72fa
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7302	0x7302
++#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7349	0x7349
+ #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001	0xa001
  
- /*
-- * Flip the readers' index by incrementing ->completed, then wait
-- * until there are no more readers using the counters referenced by
-- * the old index value.  (Recall that the index is the bottom bit
-- * of ->completed.)
-- *
-- * Of course, it is possible that a reader might be delayed for the
-- * full duration of flip_idx_and_wait() between fetching the
-- * index and incrementing its counter.  This possibility is handled
-- * by the next __synchronize_srcu() invoking wait_idx() for such readers
-- * before starting a new grace period.
-+ * Flip the readers' index by incrementing ->completed, then new
-+ * readers will use counters referenced on new index value.
-  */
--static void flip_idx_and_wait(struct srcu_struct *sp, int trycount)
-+static void srcu_flip(struct srcu_struct *sp)
- {
--	int idx;
--
--	idx = sp->completed++ & 0x1;
--	wait_idx(sp, idx, trycount);
-+	ACCESS_ONCE(sp->completed)++;
- }
+ #define USB_VENDOR_ID_ELECOM		0x056e
+diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+index 1e6de67..a98102d 100644
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -785,12 +785,27 @@ static const struct hid_device_id mt_devices[] = {
+ 	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+ 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C) },
++	{ .driver_data = MT_CLS_EGALAX_SERIAL,
++		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7207) },
++	{ .driver_data = MT_CLS_EGALAX_SERIAL,
++		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_725E) },
++	{ .driver_data = MT_CLS_EGALAX_SERIAL,
++		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7224) },
+ 	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+ 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B) },
++	{ .driver_data = MT_CLS_EGALAX_SERIAL,
++		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7262) },
+ 	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+ 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72A1) },
++	{ .driver_data = MT_CLS_EGALAX_SERIAL,
++		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72AA) },
+ 	{ .driver_data = MT_CLS_EGALAX,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+ 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_72FA) },
+@@ -799,6 +814,9 @@ static const struct hid_device_id mt_devices[] = {
+ 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7302) },
+ 	{ .driver_data = MT_CLS_EGALAX_SERIAL,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
++			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7349) },
++	{ .driver_data = MT_CLS_EGALAX_SERIAL,
++		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+ 			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_A001) },
  
- /*
-@@ -362,10 +351,20 @@ static void __synchronize_srcu(struct srcu_struct *sp, int trycount)
- 
- 	/*
- 	 * Now that wait_idx() has waited for the really old readers,
--	 * invoke flip_idx_and_wait() to flip the counter and wait
--	 * for current SRCU readers.
-+	 *
-+	 * Flip the readers' index by incrementing ->completed, then wait
-+	 * until there are no more readers using the counters referenced by
-+	 * the old index value.  (Recall that the index is the bottom bit
-+	 * of ->completed.)
-+	 *
-+	 * Of course, it is possible that a reader might be delayed for the
-+	 * full duration of flip_idx_and_wait() between fetching the
-+	 * index and incrementing its counter.  This possibility is handled
-+	 * by the next __synchronize_srcu() invoking wait_idx() for such
-+	 * readers before starting a new grace period.
- 	 */
--	flip_idx_and_wait(sp, trycount);
-+	srcu_flip(sp);
-+	wait_idx(sp, (sp->completed - 1) & 0x1, trycount);
- 
- 	mutex_unlock(&sp->mutex);
- }
+ 	/* Elo TouchSystems IntelliTouch Plus panel */
 -- 
-1.7.4.4
+1.7.7.6
 
