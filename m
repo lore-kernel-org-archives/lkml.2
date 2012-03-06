@@ -1,80 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758829Ab2CFIxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 03:53:50 -0500
-Received: from antcom.de ([188.40.178.216]:34086 "EHLO chuck.antcom.de"
+	id S1758835Ab2CFIys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 03:54:48 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60670 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758649Ab2CFIxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 03:53:49 -0500
-Message-ID: <4F55D099.5070006@antcom.de>
-Date: Tue, 06 Mar 2012 09:53:45 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
+	id S1758649Ab2CFIyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 03:54:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="118122082"
+Date: Tue, 6 Mar 2012 10:53:44 +0200
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: Dave Jones <davej@redhat.com>, Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>
+Subject: Re: use-after-free in bluetooth (hci_conn_hash_flush)
+Message-ID: <20120306085342.GA8432@aemeltch-MOBL1>
+References: <20120305221242.GA2008@redhat.com>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: davem@davemloft.net, jeffrey.t.kirsher@intel.com,
-        alexander.h.duyck@intel.com, eilong@broadcom.com,
-        ian.campbell@citrix.com, netdev@vger.kernel.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de, baruch@tkos.co.il,
-        joe@perches.com
-Subject: Re: [PATCH v4] lpc32xx: Added ethernet driver
-References: <1330983641-32622-1-git-send-email-stigge@antcom.de> <1330987524.2538.61.camel@bwh-desktop>
-In-Reply-To: <1330987524.2538.61.camel@bwh-desktop>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120305221242.GA2008@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+Hi,
 
-thank you for your review!
+On Mon, Mar 05, 2012 at 05:12:42PM -0500, Dave Jones wrote:
+> We had a user report this, which looks like a use after free
+> in hci_conn_hash_flush(). Probably related to bf4c63252490ba78fb833cc7acf1a5b1900c970f
 
-On 03/05/2012 11:45 PM, Ben Hutchings wrote:
-> [...]
->> +static int lpc_eth_poll(struct napi_struct *napi, int budget)
->> +{
->> +	struct netdata_local *pldat = container_of(napi,
->> +			struct netdata_local, napi);
->> +	struct net_device *ndev = pldat->ndev;
->> +	unsigned long flags;
->> +	int rx_done = 0;
->> +
->> +	spin_lock_irqsave(&pldat->lock, flags);
->> +
->> +	__lpc_handle_xmit(ndev);
->> +	rx_done = __lpc_handle_recv(ndev, budget);
->> +
->> +	if (rx_done < budget) {
->> +		napi_complete(napi);
->> +		lpc_eth_enable_int(pldat->net_base);
->> +	}
->> +
->> +	spin_unlock_irqrestore(&pldat->lock, flags);
->
-> This is really sad.  You implement NAPI but then take away most of the
-> benefits of that by disabling interrupts.
->
-> It looks like you could safely unlock pldat->lock before calling
-> __lpc_handle_recv - nothing else manipulates RX queue state so no lock
-> is required.
->
-> As for the TX side, you can probably use the TX queue lock
-> (__netif_tx_lock, __netif_tx_unlock) to serialise with
-> lpc_eth_hard_start_xmit() and avoid taking pldat->lock in either
-> __lpc_handle_xmit() or here.
+Yes most probably this is the reason.
 
-Sounds reasonable, and will do it.
+> Full report is at https://bugzilla.redhat.com/show_bug.cgi?id=797590
 
-However, I implemented it from the example of
-drivers/net/ethernet/via/via-velocity.c:velocity_poll() - is there a
-good reason for doing it that way in the velocity driver or is it done
-incorrectly there, also?
+Could you try following commit?
 
-Thanks,
+commit 3c4e0df028935618d052235ba85bc7079be13394
+Author: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
+Date:   Thu Feb 2 10:32:17 2012 +0200
 
-Roland
+    Bluetooth: Use list _safe deleting from conn_hash_list
+    
+    Use list_for_each_entry_safe which is safe version against removal
+    of list entry. Otherwise we remove hci_conn element and reference
+    next element which result in accessing LIST_POISON.
+    
+    [   95.571834] Bluetooth: unknown link type 127
+    [   95.578349] BUG: unable to handle kernel paging request at 20002000
+    [   95.580236] IP: [<20002000>] 0x20001fff
+    [   95.580763] *pde = 00000000
+    [   95.581196] Oops: 0000 [#1] SMP
+    ...
+    [   95.582298] Pid: 3355, comm: hciconfig Tainted: G   O
+3.2.0-VirttualBox
+    [   95.582298] EIP: 0060:[<20002000>] EFLAGS: 00210206 CPU: 0
+    [   95.582298] EIP is at 0x20002000
+    ...
+    [   95.582298] Call Trace:
+    [   95.582298]  [<f8231ab6>] ? hci_conn_hash_flush+0x76/0xf0
+[bluetooth]
+    [   95.582298]  [<f822bcb1>] hci_dev_do_close+0xc1/0x2e0 [bluetooth]
+    [   95.582298]  [<f822d679>] ? hci_dev_get+0x69/0xb0 [bluetooth]
+    [   95.582298]  [<f822e1da>] hci_dev_close+0x2a/0x50 [bluetooth]
+    [   95.582298]  [<f824102f>] hci_sock_ioctl+0x1af/0x3f0 [bluetooth]
+    [   95.582298]  [<c11153ea>] ? handle_pte_fault+0x8a/0x8f0
+    [   95.582298]  [<c146becf>] sock_ioctl+0x5f/0x260
+    [   95.582298]  [<c146be70>] ? sock_fasync+0x90/0x90
+    [   95.582298]  [<c1152b33>] do_vfs_ioctl+0x83/0x5b0
+    [   95.582298]  [<c1563f87>] ? do_page_fault+0x297/0x500
+    [   95.582298]  [<c1563cf0>] ? spurious_fault+0xd0/0xd0
+    [   95.582298]  [<c107165b>] ? up_read+0x1b/0x30
+    [   95.582298]  [<c1563f87>] ? do_page_fault+0x297/0x500
+    [   95.582298]  [<c100aa9f>] ? init_fpu+0xef/0x160
+    [   95.582298]  [<c15617c0>] ? do_debug+0x180/0x180
+    [   95.582298]  [<c100a958>] ? fpu_finit+0x28/0x80
+    [   95.582298]  [<c11530e7>] sys_ioctl+0x87/0x90
+    [   95.582298]  [<c156795f>] sysenter_do_call+0x12/0x38
+    ...
+
+
+Best regards 
+Andrei Emeltchenko 
+
+> 
+> 	Dave
+> 
+> general protection fault: 0000 [#1] SMP 
+> CPU 0 
+> Modules linked in: rfcomm bnep btusb bluetooth lockd sunrpc uvcvideo videobuf2_vmalloc videobuf2_memops videobuf2_core videodev v4l2_compat_ioctl32 media snd_hda_codec_conexant snd_hda_intel arc4 snd_hda_codec iwlwifi mac80211 snd_hwdep snd_pcm snd_page_alloc snd_timer cfg80211 thinkpad_acpi iTCO_wdt e1000e snd soundcore microcode i2c_i801 r592 memstick iTCO_vendor_support rfkill binfmt_misc uinput sdhci_pci sdhci firewire_ohci mmc_core firewire_core crc_itu_t yenta_socket wmi i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+> Pid: 881, comm: bluetoothd Not tainted 3.3.0-0.rc4.git3.1.fc18.x86_64 #1 LENOVO 2767C99/2767C99
+> RIP: 0010:[<ffffffffa0431175>]  [<ffffffffa0431175>] hci_conn_hash_flush+0x95/0x120 [bluetooth]
+> RSP: 0018:ffff8801f33a9d68  EFLAGS: 00010296
+> RAX: 0000000000000000 RBX: 6b6b6b6b6b6b6b6b RCX: 0000000000000001
+> RDX: 0000000000000000 RSI: ffffffff81c297e0 RDI: 0000000000000246
+> RBP: ffff8801f33a9d88 R08: 0000000000000000 R09: 0000000000000000
+> R10: 0000000000000001 R11: 0000000000000000 R12: ffff8801f30cabb8
+> R13: ffff8801f30caa88 R14: ffffffff82d20b40 R15: 0000000000000011
+> FS:  00007f0e6947b740(0000) GS:ffff880232e00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000000000000 CR3: 00000001f2c08000 CR4: 00000000000406f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process bluetoothd (pid: 881, threadinfo ffff8801f33a8000, task ffff8801f33a0000)
+> Stack:
+>  ffff8801f30ca158 6b6b6b6b6b6b6b6b ffff8801f30ca148 ffff8801f30ca158
+>  ffff8801f33a9db8 ffffffffa042a6b8 ffff8801f30ca148 0000000000000000
+>  ffff8801f3318000 ffffffff82d20b40 ffff8801f33a9dd8 ffffffffa042cd9d
+> Call Trace:
+>  [<ffffffffa042a6b8>] hci_dev_do_close+0xc8/0x340 [bluetooth]
+>  [<ffffffffa042cd9d>] hci_dev_close+0x2d/0x70 [bluetooth]
+>  [<ffffffffa04421a3>] hci_sock_ioctl+0x1a3/0x3e0 [bluetooth]
+>  [<ffffffff812c1127>] ? inode_has_perm.isra.42+0x67/0xa0
+>  [<ffffffff815443c0>] sock_do_ioctl+0x30/0x70
+>  [<ffffffff8154447d>] sock_ioctl+0x7d/0x2c0
+>  [<ffffffff811d06b9>] do_vfs_ioctl+0x99/0x5a0
+>  [<ffffffff811d0c59>] sys_ioctl+0x99/0xa0
+>  [<ffffffff816a74e9>] system_call_fastpath+0x16/0x1b
+> Code: fd ff ff 48 8b 03 48 89 45 e8 48 8b 5d e8 e8 83 58 c5 e0 85 c0 74 0f e8 7a 58 c5 e0 85 c0 75 56 66 0f 1f 44 00 00 49 39 dc 74 3b <0f> b6 53 21 66 c7 43 1e 09 00 80 fa 01 74 14 73 8a be 16 00 00 
+> RIP  [<ffffffffa0431175>] hci_conn_hash_flush+0x95/0x120 [bluetooth]
+>  RSP <ffff8801f33a9d68>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
