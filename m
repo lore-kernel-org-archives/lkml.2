@@ -1,144 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757564Ab2CFD3h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 22:29:37 -0500
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:46829 "HELO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754421Ab2CFD3g (ORCPT
+	id S1757801Ab2CFDaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 22:30:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39570 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754421Ab2CFDah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 22:29:36 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of mla@apm.com designates 10.68.130.67 as permitted sender) smtp.mail=mla@apm.com
-MIME-Version: 1.0
-From: Mai La <mla@apm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Tirumala R Marri <tmarri@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Michael Neuling <mikey@neuling.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: open-source-review@apm.com, Mai La <mla@apm.com>
-Subject: [PATCH 1/2] powerpc/44x: Fix PCI MSI support for APM821xx SoC and Bluestone board
-Date: Tue,  6 Mar 2012 10:29:41 +0700
-Message-Id: <1331004581-23795-1-git-send-email-mla@apm.com>
-X-Mailer: git-send-email 1.7.2.5
+	Mon, 5 Mar 2012 22:30:37 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org
+Cc: Azael Avalos <coproscefalo@gmail.com>, Thomas Renninger <trenn@suse.de>,
+        linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: [PATCH v4 0/3] Expanded hotkey support
+Date: Mon,  5 Mar 2012 21:30:30 -0600
+Message-Id: <1331004633-11862-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <20120305220407.GA16312@ubuntu-macmini>
+References: <20120305220407.GA16312@ubuntu-macmini>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch consists of:
-- Enable PCI MSI as default for Bluestone board 
-- Define number of MSI interrupt for Maui APM821xx SoC using in Bluestone board
-- Fix returning ENODEV as finding MSI node
-- Fix MSI physical high and low address
-- Keep MSI data logically
+New version of the patches which remove the need to modify the EC
+driver.
 
-Signed-off-by: Mai La <mla@apm.com>
----
- arch/powerpc/platforms/44x/Kconfig |    2 ++
- arch/powerpc/sysdev/ppc4xx_msi.c   |   28 ++++++++++++++++++----------
- 2 files changed, 20 insertions(+), 10 deletions(-)
+Changes since v3:
 
-diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-index fcf6bf2..9f04ce3 100644
---- a/arch/powerpc/platforms/44x/Kconfig
-+++ b/arch/powerpc/platforms/44x/Kconfig
-@@ -23,6 +23,8 @@ config BLUESTONE
- 	default n
- 	select PPC44x_SIMPLE
- 	select APM821xx
-+	select PCI_MSI
-+	select PPC4xx_MSI
- 	select IBM_EMAC_RGMII
- 	help
- 	  This option enables support for the APM APM821xx Evaluation board.
-diff --git a/arch/powerpc/sysdev/ppc4xx_msi.c b/arch/powerpc/sysdev/ppc4xx_msi.c
-index 1c2d7af..6103908 100644
---- a/arch/powerpc/sysdev/ppc4xx_msi.c
-+++ b/arch/powerpc/sysdev/ppc4xx_msi.c
-@@ -31,7 +31,7 @@
- #include <asm/prom.h>
- #include <asm/hw_irq.h>
- #include <asm/ppc-pci.h>
--#include <boot/dcr.h>
-+#include <asm/dcr.h>
- #include <asm/dcr-regs.h>
- #include <asm/msi_bitmap.h>
- 
-@@ -43,7 +43,12 @@
- #define PEIH_FLUSH0	0x30
- #define PEIH_FLUSH1	0x38
- #define PEIH_CNTRST	0x48
-+
-+#ifdef CONFIG_APM821xx
-+#define NR_MSI_IRQS	8
-+#else
- #define NR_MSI_IRQS	4
-+#endif
- 
- struct ppc4xx_msi {
- 	u32 msi_addr_lo;
-@@ -150,12 +155,11 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 	if (!sdr_addr)
- 		return -1;
- 
--	SDR0_WRITE(sdr_addr, (u64)res.start >> 32);	 /*HIGH addr */
--	SDR0_WRITE(sdr_addr + 1, res.start & 0xFFFFFFFF); /* Low addr */
--
-+	mtdcri(SDR0, *sdr_addr, (u64)res.start >> 32);	/*HIGH addr */
-+	mtdcri(SDR0, *sdr_addr + 1, res.start & 0xFFFFFFFF);/* Low addr */
- 
- 	msi->msi_dev = of_find_node_by_name(NULL, "ppc4xx-msi");
--	if (msi->msi_dev)
-+	if (!msi->msi_dev)
- 		return -ENODEV;
- 
- 	msi->msi_regs = of_iomap(msi->msi_dev, 0);
-@@ -167,9 +171,12 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 		(u32) (msi->msi_regs + PEIH_TERMADH), (u32) (msi->msi_regs));
- 
- 	msi_virt = dma_alloc_coherent(&dev->dev, 64, &msi_phys, GFP_KERNEL);
--	msi->msi_addr_hi = 0x0;
--	msi->msi_addr_lo = (u32) msi_phys;
--	dev_dbg(&dev->dev, "PCIE-MSI: msi address 0x%x\n", msi->msi_addr_lo);
-+	if (!msi_virt)
-+		return -ENOMEM;
-+	msi->msi_addr_hi = (u32)(msi_phys >> 32);
-+	msi->msi_addr_lo = (u32)(msi_phys & 0xffffffff);
-+	dev_dbg(&dev->dev, "PCIE-MSI: msi address high 0x%x, low 0x%x\n",
-+		msi->msi_addr_hi, msi->msi_addr_lo);
- 
- 	/* Progam the Interrupt handler Termination addr registers */
- 	out_be32(msi->msi_regs + PEIH_TERMADH, msi->msi_addr_hi);
-@@ -185,6 +192,8 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 	out_be32(msi->msi_regs + PEIH_MSIED, *msi_data);
- 	out_be32(msi->msi_regs + PEIH_MSIMK, *msi_mask);
- 
-+	dma_free_coherent(&dev->dev, 64, msi_virt, msi_phys);
-+
- 	return 0;
- }
- 
-@@ -215,8 +224,6 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 	struct resource res;
- 	int err = 0;
- 
--	msi = &ppc4xx_msi;/*keep the msi data for further use*/
--
- 	dev_dbg(&dev->dev, "PCIE-MSI: Setting up MSI support...\n");
- 
- 	msi = kzalloc(sizeof(struct ppc4xx_msi), GFP_KERNEL);
-@@ -242,6 +249,7 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 		dev_err(&dev->dev, "Error allocating MSI bitmap\n");
- 		goto error_out;
- 	}
-+	ppc4xx_msi = *msi;
- 
- 	ppc_md.setup_msi_irqs = ppc4xx_setup_msi_irqs;
- 	ppc_md.teardown_msi_irqs = ppc4xx_teardown_msi_irqs;
--- 
-1.7.3.4
+ * Drop patch to add ec_get_handle()
+ * Use acpi_get_devices() to get EC handle
+
+Thanks,
+Seth
+
+
+Azael Avalos (1):
+  toshiba_acpi: Support additional hotkey scancodes
+
+Seth Forshee (2):
+  toshiba_acpi: Support alternate hotkey interfaces
+  toshiba_acpi: Refuse to load on machines with buggy INFO
+    implementations
+
+ drivers/platform/x86/Kconfig        |    1 +
+ drivers/platform/x86/Makefile       |    4 +
+ drivers/platform/x86/toshiba_acpi.c |  260 ++++++++++++++++++++++++++++++-----
+ 3 files changed, 228 insertions(+), 37 deletions(-)
 
