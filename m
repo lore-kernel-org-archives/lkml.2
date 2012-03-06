@@ -1,103 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757811Ab2CFRcb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 12:32:31 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46128 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab2CFRca convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 12:32:30 -0500
-Message-ID: <1331055135.11248.325.camel@twins>
-Subject: Re: [PATCH -tip v5 2/5] perf: set correct value to
- perf_event_header.misc for BTS
-From: Peter Zijlstra <peterz@infradead.org>
-To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
-Date: Tue, 06 Mar 2012 18:32:15 +0100
-In-Reply-To: <4F432E0B.5090608@hitachi.com>
-References: <20120130044242.2384.23076.stgit@linux3>
-	  <20120130044303.2384.63515.stgit@linux3> <1327916138.2446.187.camel@twins>
-	 <4F432E0B.5090608@hitachi.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1758390Ab2CFRjC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 12:39:02 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:55158 "EHLO
+	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756883Ab2CFRjA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 12:39:00 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of amit.sahrawat83@gmail.com designates 10.152.136.36 as permitted sender) smtp.mail=amit.sahrawat83@gmail.com; dkim=pass header.i=amit.sahrawat83@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <1329398881.2893.8.camel@dabdike>
+References: <1329375141-6944-1-git-send-email-amit.sahrawat83@gmail.com>
+	<1329398881.2893.8.camel@dabdike>
+Date: Tue, 6 Mar 2012 23:08:57 +0530
+Message-ID: <CADDb1s0rhEDnRunexnEyL3htpkN+Fu4P7cKJjiZr_s-F48J57g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] scsi: retrieve cache mode using ATA_16 cmd if normal
+ routine fails
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, Nam-Jae Jeon <namjae.jeon@samsung.com>,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-21 at 14:39 +0900, Akihiro Nagai wrote:
-> (2012/01/30 18:35), Peter Zijlstra wrote:
-> > On Mon, 2012-01-30 at 13:43 +0900, Akihiro Nagai wrote:
-> >> @@ -330,6 +342,14 @@ int intel_pmu_drain_bts_buffer(void)
-> >>                  return 1;
-> >>
-> >>          for (; at<  top; at++) {
-> >> +               /*
-> >> +                * To resolve user space symbols and DSOs correctly, set
-> >> +                * PERF_RECORD_MISC_USER if from_addr or to_addr is user space.
-> >> +                */
-> >> +               if (!kernel_ip(data.ip) || !kernel_ip(data.addr)) {
-> >> +                       header.misc&= ~PERF_RECORD_MISC_CPUMODE_MASK;
-> >> +                       header.misc |= PERF_RECORD_MISC_USER;
-> >> +               }
-> >>                  data.ip         = at->from;
-> >>                  data.addr       = at->to;
-> >
-> > Why not key off of the from? If its a jump from userspace its a user
-> > event, its a jump from kernel space its a kernel event?
-> 
-> Of course, originally, perf does that. 
+Hi James,
 
-I don't think it does.
+Few queries relating to solution for this long pending problem.
+As per your suggestions - it is clear - we cannot have this as part of
+default routine to retrieve WCE using ATA - as for some USB HDD - it
+will result in halting their operations.
+So,
+1) USB quirks -> i think this will only be a workaround for few USB
+hard disks - wherein we can their add their entries in the quirks list
+and control this WC. So, this wont be a solution which can be used as
+part of a long term solution.
+2) As part of 'sysfs' interface - there is already an array for
+cache_types in sd.c - Can we make an entry in this array for "write
+back(ata cmd)" and make corresponding changes - to reflect this when
+we do " echo "write back(ata cmd) >
+/sys/class/scsi_disk/<>/cache_type".
+So, these changes won't be part of default routine - but this will
+still need minor changes in sd.c - will those changes be acceptable?
+sd_store_cache_type()->revalidate_disk()->sd_revalidate_disk()->sd_read_cache_type()
 
-> And, in those cases,
-> BTS records the both addresses of kernel and user in one
-> perf_sample on branches from kernel to user. 
+Please share your opinion to bring out a solution to this.
 
-Sorry, I don't get this.
+Thanks & Regards,
+Amit Sahrawat
 
-> Current perf sets PERF_RECORD_MISC_KERNEL to all BTS events,
-
-It doesn't, it does something far more stupid.. it sets the state to
-wherever we were when the BTS overflow interrupt happens. If that was in
-kernel space, we mark all of them as in-kernel, if that was in
-user-space we mark all of then in-user.
-
->  and
-> perf-script doesn't resolve symbols and DSOs about the
-> user-space address, because it is a kernel event. 
-
-Well, that's a perf-script problem, not something you should change the
-kernel for.
-
-So how about something like this?
-
----
- arch/x86/kernel/cpu/perf_event_intel_ds.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index d6bd49f..81e788c 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -333,6 +333,13 @@ int intel_pmu_drain_bts_buffer(void)
- 		data.ip		= at->from;
- 		data.addr	= at->to;
- 
-+		/* XXX doesn't do virt muck properly */
-+		header.misc &= ~PERF_RECORD_MISC_CPUMODE_MASK;
-+		if (kernel_ip(at->from))
-+			header.misc |= PERF_RECORD_MISC_KERNEL;
-+		else
-+			header.misc |= PERF_RECORD_MISC_USER;
-+
- 		perf_output_sample(&handle, &header, &data, event);
- 	}
- 
-
+On Thu, Feb 16, 2012 at 6:58 PM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Thu, 2012-02-16 at 12:22 +0530, Amit Sahrawat wrote:
+>
+>> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+>> index c691fb5..3ca507a 100644
+>> --- a/drivers/scsi/sd.c
+>> +++ b/drivers/scsi/sd.c
+>> @@ -50,6 +50,11 @@
+>>  #include <linux/string_helpers.h>
+>>  #include <linux/async.h>
+>>  #include <linux/slab.h>
+>> +
+>> +#ifdef CONFIG_ATA
+>> +#include <linux/libata.h>
+>> +#endif
+>> +
+>>  #include <linux/pm_runtime.h>
+>>  #include <asm/uaccess.h>
+>>  #include <asm/unaligned.h>
+>> @@ -2129,7 +2134,11 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+>>               if (modepage == 0x3F) {
+>>                       sd_printk(KERN_ERR, sdkp, "No Caching mode page "
+>>                                 "present\n");
+>> +#ifdef CONFIG_ATA
+>> +                     goto WCE_USING_ATA;
+>> +#else
+>>                       goto defaults;
+>> +#endif
+>>               } else if ((buffer[offset] & 0x3f) != modepage) {
+>>                       sd_printk(KERN_ERR, sdkp, "Got wrong page\n");
+>>                       goto defaults;
+>> @@ -2149,6 +2158,15 @@ sd_read_cache_type(struct scsi_disk *sdkp, unsigned char *buffer)
+>>                                 "Uses READ/WRITE(6), disabling FUA\n");
+>>                       sdkp->DPOFUA = 0;
+>>               }
+>> +#ifdef CONFIG_ATA
+>> +WCE_USING_ATA:
+>> +             if (!sdp->removable && !sdkp->WCE) {
+>> +                     sd_printk(KERN_NOTICE, sdkp, "Try to check write cache"
+>> +                             " enable/disable using ATA command\n");
+>> +                     sdkp->WCE = ata_get_cachestatus(sdp);
+>> +             }
+>> +#endif
+>> +
+>
+> I already said before, this is a non starter: we can't randomly send
+> SCSI encapsulated ATA commands to disks from sd.  What we can do is give
+> you a WCE variable you can change on the fly in sysfs via whatever
+> mechanism is most appropriate (but this would have to be a mechanism
+> external to sd.c).
+>
+> Alternatively, you can co-opt the USB quirks handling to set it for you.
+>
+> James
+>
+>
