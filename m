@@ -1,33 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698Ab2CFFm4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 00:42:56 -0500
-Received: from meeri.tskl.net.ki ([202.6.120.6]:44429 "EHLO mail.tskl.net.ki"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab2CFFmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 00:42:55 -0500
-Reply-To: <attorney.p@aol.com>
-From: "Attorney Pepe Gonzalez." <remailer@reece.net.au>
-Subject: Late Client/Inheritance.
-Date: Mon, 5 Mar 2012 23:45:58 +0100
+	id S1751807Ab2CFFqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 00:46:30 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:33271 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab2CFFq3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 00:46:29 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of ncardwell@google.com designates 10.224.196.66 as permitted sender) smtp.mail=ncardwell@google.com; dkim=pass header.i=ncardwell@google.com
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 111212-1, 12/12/2011), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20120305221944.5EBE4410B68@mail.tskl.net.ki>
-To: undisclosed-recipients:;
+In-Reply-To: <CADVnQykqaUCFBYXVqGNq+HmeowAbYJQQNpbXFpQ4Uif3gwf4ig@mail.gmail.com>
+References: <alpine.DEB.2.01.1202261556150.4930@trent.utfs.org>
+	<alpine.DEB.2.01.1202290929520.4930@trent.utfs.org>
+	<CADVnQy=JkVc_8ptpSkhQWe4HJpbe_+JMad+2uqgN1iUfkfFFCw@mail.gmail.com>
+	<CADVnQykqaUCFBYXVqGNq+HmeowAbYJQQNpbXFpQ4Uif3gwf4ig@mail.gmail.com>
+Date: Tue, 6 Mar 2012 00:46:28 -0500
+Message-ID: <CADVnQyk_6LYW2nyjccWjv1NmjivXf5cXBqJ+LsZLjGyOj7kddQ@mail.gmail.com>
+Subject: Re: WARNING: at net/ipv4/tcp_input.c:3418
+From: Neal Cardwell <ncardwell@google.com>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: netdev@vger.kernel.org, markus@trippelsdorf.de,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am confirming if you received my previous email regarding you having the same Surname with my late client/inheritance.Please email me for more information
+On Wed, Feb 29, 2012 at 12:41 PM, Christian Kujau <lists@nerdbynature.de> wrote:
+> This is still happening with 3.3.0-rc5, .config & dmesg here:
+>
+>   http://nerdbynature.de/bits/3.3.0-rc4/ipv4/
 
-Regards
-Contact Email : info1@attorney-pepegonzalez.com 
-Attorney Pepe Gonzalez 
+I was finally able to reproduce this issue where there are warnings
+about sacked_out going negative (since 3.3.0-rc4), and my testing
+shows that this patch seems to fix the issue:
+
+  http://patchwork.ozlabs.org/patch/144844/
+
+For folks who were seeing this problem and are so inclined, feel free
+to try the latest 3.3-rc6 kernel (or davem's "net" tree in git, if
+that's easier) with that patch applied, and let me know how it goes.
+
+thanks,
+neal
