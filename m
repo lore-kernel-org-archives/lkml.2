@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab2CFDiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 22:38:23 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:37664 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757361Ab2CFDiW convert rfc822-to-8bit (ORCPT
+	id S1758091Ab2CFDpX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 22:45:23 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:18425 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757178Ab2CFDpV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 22:38:22 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of arve@android.com designates 10.224.95.210 as permitted sender) smtp.mail=arve@android.com
+	Mon, 5 Mar 2012 22:45:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120305063707.GH23916@ZenIV.linux.org.uk>
-References: <20120305063707.GH23916@ZenIV.linux.org.uk>
-Date: Mon, 5 Mar 2012 19:38:21 -0800
-Message-ID: <CAMP5XgeWQpMP2Q_29aybHwfMJ1_k5GkGozqocSVVYDoRTpKD2w@mail.gmail.com>
-Subject: Re: [patches] VM-related fixes
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, airlied@linux.ie, carsteno@de.ibm.com,
-        steiner@sgi.com
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <37663fc4-72a2-4c02-9d9a-7ac6e6f64e1a@default>
+Date: Mon, 5 Mar 2012 19:44:57 -0800 (PST)
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+To: <yinghai@kernel.org>
+Cc: <mingo@redhat.com>, <konrad.wilk@oracle.com>, <tglx@linutronix.de>,
+        <torvalds@linux-foundation.org>, <joe.jin@oracle.com>,
+        <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <rjw@sisk.pl>, <tiwai@suse.de>, <hpa@zytor.com>
+Subject: =?UTF-8?B?562U5aSNOiBSZTogW1BBVENIXSBJbml0aWFsaXplIG1heF9wZm5fbWFwcGVk?=
+ =?UTF-8?B?IGFzIGluaXRpYWwgaWRlbnQgbWFwcGluZyBzaXplIGZvciB4ODZfNjQ=?=
+X-Mailer: Zimbra on Oracle Beehive
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4F55883E.0087,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 4, 2012 at 10:37 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->        I'd been crawling through VMA-related code for the last couple
-> of weeks; the obvious parts of fallout are in followups and IMO they
-> need to go into -stable as well; there's more, including some bugs I
-> don't know what to do about and patches that need more testing...
->
-...
-> [unsolved] binder is insane, even more than usual for drivers/staging.
-> It stores a reference to mm at open() time,
 
-It stores a reference to the task struct, not the mm.
+----- yinghai@kernel.org å†™é“ï¼š
 
-> then it stores a reference to
-> vma at mmap() time, then it cheerfully works with that ->vma assuming that
-> ->mmap_sem on stored reference to ->mm would suffice.  Guess what happens
-> if somebody opens it and then forks and does mmap in child?
+> it is not that simple.
+> 
+> 
+> 
+> whole history:
+> 
+> before following patch, on x86_64, for low memory (under 4g) pgtable
+> 
+> will be allocated just under TOML
+> 
+> and even those memory is not mapped directly. because now we are using
+> 
+> early_ioremap to access those
+> 
+> page table.
+> 
+> 
+> 
+> but looks it has problem with S4 resume. so good_end is set to initial
+> 
+> mapped high address.
+> 
+> (that is 512M). So page table will just below 512M
+> 
+> but crash kernel is allocated below 768M. so will have no chance to
+> 
+> get 512M porting for crashkernel.
 
-mmap succeeds, but binder_update_page_range will fail when trying to
-create a transaction? (assuming you are talking about the current
-version of the driver)
+Aha, thanks Yinghai talking this interesting history.
 
->  Moreover, if
-> we fork() and have child exit(), we get ->close() called on each VMA we'd
-> copied into child.
+Can't imagine the difference between below 512M and below max_low_pfn_mapped both from sw and hw's view, for S4 resume.
+Even if we set max_pfn_mapped to 512M, we can play with a small trick to get 512M space for crashkernel. That's shareing space with initrd since when initrd space freed, 
+it will check if pages occupied by crashkernel. But this need some address scope calculation.
+> 
+> 
+> 
+> Now your patch just set initial mapping limit to 1g. but according to
+> 
+> arch/x86/kernel/head_64.S
+> 
+> we only have initial mapping to 512M.
 
-The driver sets VM_DONTCOPY which should avoid this.
+I browered arch/x86/kernel/head_64.S again, looks ident mapping is 1G mapped. See below
+NEXT_PAGE(level2_ident_pgt)
+        /* Since I easily can, map the first 1G.
+         * Don't set NX because code runs from these pages.
+         */
+        PMDS(0, __PAGE_KERNEL_IDENT_LARGE_EXEC, PTRS_PER_PMD)
 
->  Since they have stored reference to vma invalidated by
-> ->close(), that has unpleasant side effects, to put it mildly.
+If you mean level2_kernel_pgt here, it's 512MB here. But it's not that accurate for relocated kernel and is truncated in cleanup_highmap to _text ---- _brk_end.
+> 
+> 
+> 
+> So you can not just simply set to 1G,  that will confuse early
+> 
+> memblock allocator.
+> 
+> 
+> 
+> We may update find_early_table_space() to use 1G as good_end for
+> 
+> x86_64 that will be less confusing.
 
-The side effect of ->close() should be the same as when the process
-that opened the driver exits. In other words, the process that
-misbehaved is considered dying. It does not however send death
-notifications until the driver is closed, so other processes do not
-notice until they try to talk to it.
+Yes
+> 
+> 
+> 
+> also even in that case, you still need to double check if S4 resume is
+> 
+> broken again.
+> 
+> 
+> 
+> 
+> 
+> Or We can change KERNL_IMAGE_SIZE to 1G?
+That need only a small change in arch/x86/kernel/head_64.S
+But as you said, still need test for S4 resume or others.
 
->  And yes,
-> I realize that android userland probably doesn't do anything of that kind;
-> fat lot of good it does us...
->
-
-What usage case do you have in mind? The binder driver uses the file
-pointer as the binder process identifier, so you need to open and mmap
-the driver in every process that want to use the driver. While it is
-not common to fork a process in android, the driver should work as
-expected if you do (assuming each process opens and mmaps the driver
-on its own and don't share the file).
-
--- 
-Arve Hjønnevåg
+> 
+> 
+> 
+> Or we need to dig out when S4 resume is broken at first place when we
+> 
+> put page table near TOML.
+I prefer that, maybe intel engineer can help on this.
