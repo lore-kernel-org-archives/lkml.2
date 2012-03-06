@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031069Ab2CFUkD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 15:40:03 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42340 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031036Ab2CFUkA (ORCPT
+	id S1031081Ab2CFUpg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 15:45:36 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46005 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030986Ab2CFUpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 15:40:00 -0500
-Date: Tue, 6 Mar 2012 12:39:59 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Cc: Mark Salter <msalter@redhat.com>, linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 1/2] mm: Fix task_nommu build regression in linux-next
-Message-Id: <20120306123959.1921bcca.akpm@linux-foundation.org>
-In-Reply-To: <1331064994-6693-1-git-send-email-siddhesh.poyarekar@gmail.com>
-References: <1331045377.17099.2.camel@deneb.redhat.com>
-	<1331064994-6693-1-git-send-email-siddhesh.poyarekar@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 6 Mar 2012 15:45:34 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of koct9i@gmail.com designates 10.204.154.20 as permitted sender) smtp.mail=koct9i@gmail.com; dkim=pass header.i=koct9i@gmail.com
+Subject: [PATCH bisected regression] sched: rebuild sched domains at
+ suspend/resume
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Wed, 07 Mar 2012 00:45:29 +0400
+Message-ID: <20120306204357.13169.90791.stgit@zurg>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  7 Mar 2012 01:46:33 +0530
-Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com> wrote:
+This is fix for suspend/resume regression introduced in commit 8f2f748b0656
+("CPU hotplug, cpusets, suspend: Don't touch cpusets during suspend/resume")
+Without this patch suspend always hangs on my thinkpad x220 (2 x CPU * HT).
 
-> Commit b7b2a0afacada237005068294cb0ccc49d32889e resulted in a build
-> failure for nommu builds:
+cpuset_update_active_cpus() not only juggles with bits in cpusets,
+it also calls sched-domains rebuilding after all.
 
-Bare git commit IDs aren't very useful, because the ID of a patch can
-be different in different trees.  And in linux-next, the ID of a patch
-can change over time.  This is why we like to refer to commits using the
-formulation b7b2a0afacad ("procfs: mark thread stack correctly in
-proc/<pid>/maps").
+This patch restores sched-domain rebuilds, as it was before that commit.
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ kernel/sched/core.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9995eb0..0fb7406 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6732,6 +6732,10 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+ 	case CPU_DOWN_FAILED:
+ 		cpuset_update_active_cpus();
+ 		return NOTIFY_OK;
++	case CPU_ONLINE_FROZEN:
++	case CPU_DOWN_FAILED_FROZEN:
++		rebuild_sched_domains();
++		return NOTIFY_OK;
+ 	default:
+ 		return NOTIFY_DONE;
+ 	}
+@@ -6744,6 +6748,9 @@ static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+ 	case CPU_DOWN_PREPARE:
+ 		cpuset_update_active_cpus();
+ 		return NOTIFY_OK;
++	case CPU_DOWN_PREPARE_FROZEN:
++		rebuild_sched_domains();
++		return NOTIFY_OK;
+ 	default:
+ 		return NOTIFY_DONE;
+ 	}
 
