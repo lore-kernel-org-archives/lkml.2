@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758890Ab2CFKeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 05:34:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61605 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964997Ab2CFKem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 05:34:42 -0500
-Message-ID: <4F55E82F.5020008@redhat.com>
-Date: Tue, 06 Mar 2012 12:34:23 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: Re: linux-next: build failure after merge of the kvm tree
-References: <20120306155332.42d5094876089c8b7bb36bb0@canb.auug.org.au>
-In-Reply-To: <20120306155332.42d5094876089c8b7bb36bb0@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758960Ab2CFKmd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 05:42:33 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56283 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758813Ab2CFKmc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 05:42:32 -0500
+Message-ID: <1331030516.11248.268.camel@twins>
+Subject: Re: [PATCH 4/6] remove flip_idx_and_wait()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        patches@linaro.org
+Date: Tue, 06 Mar 2012 11:41:56 +0100
+In-Reply-To: <1331027858-7648-4-git-send-email-laijs@cn.fujitsu.com>
+References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
+	 <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
+	 <1331027858-7648-4-git-send-email-laijs@cn.fujitsu.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2012 06:53 AM, Stephen Rothwell wrote:
-> Hi all,
->
-> After merging the kvm tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->
-> include/linux/kvm_host.h:813:13: error: 'kvm_vcpu_compatible' defined but not used [-Werror=unused-function]
-> cc1: all warnings being treated as errors
->
-> Caused by commit ab0bd7dfdaa5 ("KVM: Ensure all vcpus are consistent with
-> in-kernel irqchip settings").
->
-> This function presumably need to be "static inline bool" in the !
-> CONFIG_KVM_APIC_ARCHITECTURE case.
+On Tue, 2012-03-06 at 17:57 +0800, Lai Jiangshan wrote:
+> +        * full duration of flip_idx_and_wait() between fetching the
 
-Thanks for the report; fixed.
-
--- 
-error compiling committee.c: too many arguments to function
-
+You just killed that function ;-)
