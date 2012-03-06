@@ -1,505 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031405Ab2CFUw0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 15:52:26 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44939 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031366Ab2CFUvd (ORCPT
+	id S1031300Ab2CFUuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 15:50:19 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59097 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031236Ab2CFUuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 15:51:33 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of penberg@gmail.com designates 10.152.128.163 as permitted sender) smtp.mail=penberg@gmail.com; dkim=pass header.i=penberg@gmail.com
-From: Pekka Enberg <penberg@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: leonid.moiseichuk@nokia.com, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: [PATCH] vmevent: Use 'struct vmevent_attr' for vmevent_fd() ABI
-Date: Tue,  6 Mar 2012 22:51:19 +0200
-Message-Id: <1331067079-2163-1-git-send-email-penberg@kernel.org>
-X-Mailer: git-send-email 1.7.6.5
+	Tue, 6 Mar 2012 15:50:04 -0500
+Subject: [PATCH 10/23] ext4: Calculate and verify checksums for htree nodes
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Date: Tue, 06 Mar 2012 12:49:02 -0800
+Message-ID: <20120306204902.1663.6328.stgit@elm3b70.beaverton.ibm.com>
+In-Reply-To: <20120306204750.1663.96751.stgit@elm3b70.beaverton.ibm.com>
+References: <20120306204750.1663.96751.stgit@elm3b70.beaverton.ibm.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030620-4242-0000-0000-000000F9CE3B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces 'struct vmevent_attr' and converts the vmevent_fd() ABI
-to use it which makes the ABI much more flexible.
+Calculate and verify the checksum for directory index tree (htree) node blocks.
+The checksum is stored in the last 4 bytes of the htree block and requires the
+dx_entry array to stop 1 dx_entry short of the end of the block.
 
-Originally-by: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- include/linux/vmevent.h              |   66 +++++++++----
- mm/vmevent.c                         |  186 +++++++++++++++++++++++-----------
- tools/testing/vmevent/vmevent-test.c |   54 +++++++---
- 3 files changed, 212 insertions(+), 94 deletions(-)
+ fs/ext4/namei.c |  160 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 156 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/vmevent.h b/include/linux/vmevent.h
-index 4f577ee..64357e4 100644
---- a/include/linux/vmevent.h
-+++ b/include/linux/vmevent.h
-@@ -3,53 +3,83 @@
+
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index e62e517..064ae7c 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -188,6 +188,121 @@ static struct buffer_head * ext4_dx_find_entry(struct inode *dir,
+ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
+ 			     struct inode *inode);
  
- #include <linux/types.h>
- 
-+/*
-+ * Types of memory attributes which could be monitored through vmevent API
-+ */
- enum {
--	VMEVENT_TYPE_FREE_THRESHOLD	= 1ULL << 0,
--	VMEVENT_TYPE_SAMPLE		= 1ULL << 1,
-+	VMEVENT_ATTR_NR_AVAIL_PAGES	= 1UL,
-+	VMEVENT_ATTR_NR_FREE_PAGES	= 2UL,
-+	VMEVENT_ATTR_NR_SWAP_PAGES	= 3UL,
++/* checksumming functions */
++static struct dx_countlimit *get_dx_countlimit(struct inode *inode,
++					       struct ext4_dir_entry *dirent,
++					       int *offset)
++{
++	struct ext4_dir_entry *dp;
++	struct dx_root_info *root;
++	int count_offset;
 +
-+	VMEVENT_ATTR_MAX		/* non-ABI */
- };
- 
-+/*
-+ * Attribute state bits for threshold
-+ */
- enum {
--	VMEVENT_EATTR_NR_AVAIL_PAGES	= 1ULL << 0,
--	VMEVENT_EATTR_NR_FREE_PAGES	= 1ULL << 1,
--	VMEVENT_EATTR_NR_SWAP_PAGES	= 1ULL << 2,
-+	/*
-+	 * Sample value is less than user-specified value
-+	 */
-+	VMEVENT_ATTR_STATE_VALUE_LT	= (1UL << 0),
- };
- 
--struct vmevent_config {
-+struct vmevent_attr {
- 	/*
--	 * Size of the struct for ABI extensibility.
-+	 * Value in pages delivered with pointed attribute
- 	 */
--	__u32			size;
-+	__u64			value;
- 
- 	/*
--	 * Notification type bitmask
-+	 * Type of profiled attribute from VMEVENT_ATTR_XXX
- 	 */
--	__u64			type;
-+	__u32			type;
++	if (le16_to_cpu(dirent->rec_len) == EXT4_BLOCK_SIZE(inode->i_sb))
++		count_offset = 8;
++	else if (le16_to_cpu(dirent->rec_len) == 12) {
++		dp = (struct ext4_dir_entry *)(((void *)dirent) + 12);
++		if (le16_to_cpu(dp->rec_len) !=
++		    EXT4_BLOCK_SIZE(inode->i_sb) - 12)
++			return NULL;
++		root = (struct dx_root_info *)(((void *)dp + 12));
++		if (root->reserved_zero ||
++		    root->info_length != sizeof(struct dx_root_info))
++			return NULL;
++		count_offset = 32;
++	} else
++		return NULL;
 +
-+        /*
-+	 * Bitmask of current attribute value (see VMEVENT_ATTR_STATE_XXX)
-+	*/
-+	__u32			state;
-+};
- 
-+#define VMEVENT_CONFIG_MAX_ATTRS	32
++	if (offset)
++		*offset = count_offset;
++	return (struct dx_countlimit *)(((void *)dirent) + count_offset);
++}
 +
-+/*
-+ * Configuration structure to get notifications and attributes values
-+ */
-+struct vmevent_config {
- 	/*
--	 * Attributes that are delivered as part of events.
-+	 * Size of the struct for ABI extensibility.
- 	 */
--	__u64			event_attrs;
-+	__u32			size;
- 
- 	/*
--	 * Threshold of free pages in the system.
-+	 * Counter of number monitored attributes
- 	 */
--	__u32			free_pages_threshold;
-+	__u32			counter;
- 
- 	/*
- 	 * Sample period in nanoseconds
- 	 */
- 	__u64			sample_period_ns;
++static __le32 ext4_dx_csum(struct inode *inode, struct ext4_dir_entry *dirent,
++			   int count_offset, int count, struct dx_tail *t)
++{
++	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
++	struct ext4_inode_info *ei = EXT4_I(inode);
++	__u32 csum, old_csum;
++	int size;
 +
-+	/*
-+	 * Attributes that are monitored and delivered as part of events
-+	 */
-+	struct vmevent_attr	attrs[VMEVENT_CONFIG_MAX_ATTRS];
- };
- 
- struct vmevent_event {
- 	/*
--	 * Size of the struct for ABI extensibility.
-+	 * Counter of attributes in this VM event
- 	 */
--	__u32			size;
-+	__u32			counter;
- 
--	__u64			attrs;
-+	__u32			padding;
- 
--	__u64			attr_values[];
-+	/*
-+	 * Attributes for this VM event
-+	 */
-+	struct vmevent_attr	attrs[];
- };
- 
- #endif /* _LINUX_VMEVENT_H */
-diff --git a/mm/vmevent.c b/mm/vmevent.c
-index 37d2c5f..ab6a043 100644
---- a/mm/vmevent.c
-+++ b/mm/vmevent.c
-@@ -24,10 +24,10 @@ struct vmevent_watch {
- 	bool				pending;
- 
- 	/*
-- 	 * Attributes
-- 	 */
-+	 * Attributes that are exported as part of delivered VM events.
-+	 */
- 	unsigned long			nr_attrs;
--	u64				attr_values[64];
-+	struct vmevent_attr		*sample_attrs;
- 
- 	/* sampling */
- 	struct hrtimer			timer;
-@@ -36,54 +36,87 @@ struct vmevent_watch {
- 	wait_queue_head_t		waitq;
- };
- 
--static bool vmevent_match(struct vmevent_watch *watch,
--			   struct vmevent_watch_event *event)
-+typedef u64 (*vmevent_attr_sample_fn)(struct vmevent_watch *watch);
++	size = count_offset + (count * sizeof(struct dx_entry));
++	old_csum = t->dt_checksum;
++	t->dt_checksum = 0;
++	csum = ext4_chksum(sbi, ei->i_csum_seed, (__u8 *)dirent, size);
++	csum = ext4_chksum(sbi, csum, (__u8 *)t, sizeof(struct dx_tail));
++	t->dt_checksum = old_csum;
 +
-+static u64 vmevent_attr_swap_pages(struct vmevent_watch *watch)
++	return cpu_to_le32(csum);
++}
++
++static int ext4_dx_csum_verify(struct inode *inode,
++			       struct ext4_dir_entry *dirent)
++{
++	struct dx_countlimit *c;
++	struct dx_tail *t;
++	int count_offset, limit, count;
++
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		return 1;
++
++	c = get_dx_countlimit(inode, dirent, &count_offset);
++	if (!c) {
++		EXT4_ERROR_INODE(inode, "dir seems corrupt?  Run e2fsck -D.");
++		return 1;
++	}
++	limit = le16_to_cpu(c->limit);
++	count = le16_to_cpu(c->count);
++	if (count_offset + (limit * sizeof(struct dx_entry)) >
++	    EXT4_BLOCK_SIZE(inode->i_sb) - sizeof(struct dx_tail)) {
++		EXT4_ERROR_INODE(inode, "metadata_csum set but no space for "
++				 "tree checksum found.  Run e2fsck -D.");
++		return 1;
++	}
++	t = (struct dx_tail *)(((struct dx_entry *)c) + limit);
++
++	if (t->dt_checksum != ext4_dx_csum(inode, dirent, count_offset,
++					    count, t))
++		return 0;
++	return 1;
++}
++
++static void ext4_dx_csum_set(struct inode *inode, struct ext4_dir_entry *dirent)
++{
++	struct dx_countlimit *c;
++	struct dx_tail *t;
++	int count_offset, limit, count;
++
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++					EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		return;
++
++	c = get_dx_countlimit(inode, dirent, &count_offset);
++	if (!c) {
++		EXT4_ERROR_INODE(inode, "dir seems corrupt?  Run e2fsck -D.");
++		return;
++	}
++	limit = le16_to_cpu(c->limit);
++	count = le16_to_cpu(c->count);
++	if (count_offset + (limit * sizeof(struct dx_entry)) >
++	    EXT4_BLOCK_SIZE(inode->i_sb) - sizeof(struct dx_tail)) {
++		EXT4_ERROR_INODE(inode, "metadata_csum set but no space for "
++				 "tree checksum.  Run e2fsck -D.");
++		return;
++	}
++	t = (struct dx_tail *)(((struct dx_entry *)c) + limit);
++
++	t->dt_checksum = ext4_dx_csum(inode, dirent, count_offset, count, t);
++}
++
++static inline int ext4_handle_dirty_dx_node(handle_t *handle,
++					    struct inode *inode,
++					    struct buffer_head *bh)
++{
++	ext4_dx_csum_set(inode, (struct ext4_dir_entry *)bh->b_data);
++	return ext4_handle_dirty_metadata(handle, inode, bh);
++}
++
+ /*
+  * p is at least 6 bytes before the end of page
+  */
+@@ -247,12 +362,20 @@ static inline unsigned dx_root_limit(struct inode *dir, unsigned infosize)
  {
--	if (watch->config.type & VMEVENT_TYPE_FREE_THRESHOLD) {
--		if (event->nr_free_pages > watch->config.free_pages_threshold)
--			return false;
--	}
-+#ifdef CONFIG_SWAP
-+	struct sysinfo si;
+ 	unsigned entry_space = dir->i_sb->s_blocksize - EXT4_DIR_REC_LEN(1) -
+ 		EXT4_DIR_REC_LEN(2) - infosize;
 +
-+	si_swapinfo(&si);
- 
--	return true;
-+	return si.totalswap;
-+#else
-+	return 0;
-+#endif
++	if (EXT4_HAS_RO_COMPAT_FEATURE(dir->i_sb,
++				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		entry_space -= sizeof(struct dx_tail);
+ 	return entry_space / sizeof(struct dx_entry);
  }
  
--static void vmevent_sample(struct vmevent_watch *watch)
-+static u64 vmevent_attr_free_pages(struct vmevent_watch *watch)
-+{
-+	return global_page_state(NR_FREE_PAGES);
-+}
-+
-+static u64 vmevent_attr_avail_pages(struct vmevent_watch *watch)
+ static inline unsigned dx_node_limit(struct inode *dir)
  {
--	struct vmevent_watch_event event;
- 	struct sysinfo si;
--	int n = 0;
+ 	unsigned entry_space = dir->i_sb->s_blocksize - EXT4_DIR_REC_LEN(0);
++
++	if (EXT4_HAS_RO_COMPAT_FEATURE(dir->i_sb,
++				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		entry_space -= sizeof(struct dx_tail);
+ 	return entry_space / sizeof(struct dx_entry);
+ }
  
--	memset(&event, 0, sizeof(event));
-+	si_meminfo(&si);
+@@ -398,6 +521,15 @@ dx_probe(const struct qstr *d_name, struct inode *dir,
+ 		goto fail;
+ 	}
  
--	event.nr_free_pages	= global_page_state(NR_FREE_PAGES);
-+	return si.totalram;
-+}
++	if (!buffer_verified(bh) &&
++	    !ext4_dx_csum_verify(dir, (struct ext4_dir_entry *)bh->b_data)) {
++		ext4_warning(dir->i_sb, "Root failed checksum");
++		brelse(bh);
++		*err = ERR_BAD_DX_DIR;
++		goto fail;
++	}
++	set_buffer_verified(bh);
++
+ 	entries = (struct dx_entry *) (((char *)&root->info) +
+ 				       root->info.info_length);
  
--	si_meminfo(&si);
--	event.nr_avail_pages	= si.totalram;
-+static vmevent_attr_sample_fn attr_samplers[] = {
-+	[VMEVENT_ATTR_NR_AVAIL_PAGES]   = vmevent_attr_avail_pages,
-+	[VMEVENT_ATTR_NR_FREE_PAGES]    = vmevent_attr_free_pages,
-+	[VMEVENT_ATTR_NR_SWAP_PAGES]    = vmevent_attr_swap_pages,
-+};
- 
--#ifdef CONFIG_SWAP
--	if (watch->config.event_attrs & VMEVENT_EATTR_NR_SWAP_PAGES) {
--		si_swapinfo(&si);
--		event.nr_swap_pages	= si.totalswap;
-+static u64 vmevent_sample_attr(struct vmevent_watch *watch, struct vmevent_attr *attr)
-+{
-+	vmevent_attr_sample_fn fn = attr_samplers[attr->type];
+@@ -458,6 +590,17 @@ dx_probe(const struct qstr *d_name, struct inode *dir,
+ 		if (!(bh = ext4_bread (NULL,dir, dx_get_block(at), 0, err)))
+ 			goto fail2;
+ 		at = entries = ((struct dx_node *) bh->b_data)->entries;
 +
-+	return fn(watch);
-+}
-+
-+static bool vmevent_match(struct vmevent_watch *watch)
-+{
-+	struct vmevent_config *config = &watch->config;
-+	int i;
-+
-+	for (i = 0; i < config->counter; i++) {
-+		struct vmevent_attr *attr = &config->attrs[i];
-+		u64 value;
-+
-+		if (!attr->state)
-+			continue;
-+
-+		value = vmevent_sample_attr(watch, attr);
-+
-+		if (attr->state & VMEVENT_ATTR_STATE_VALUE_LT) {
-+			if (value < attr->value)
-+				return true;
++		if (!buffer_verified(bh) &&
++		    !ext4_dx_csum_verify(dir,
++					 (struct ext4_dir_entry *)bh->b_data)) {
++			ext4_warning(dir->i_sb, "Node failed checksum");
++			brelse(bh);
++			*err = ERR_BAD_DX_DIR;
++			goto fail;
 +		}
- 	}
--#endif
- 
--	if (!vmevent_match(watch, &event))
-+	return false;
-+}
++		set_buffer_verified(bh);
 +
-+static void vmevent_sample(struct vmevent_watch *watch)
-+{
-+	int i;
+ 		if (dx_get_limit(entries) != dx_node_limit (dir)) {
+ 			ext4_warning(dir->i_sb,
+ 				     "dx entry: limit != node limit");
+@@ -557,6 +700,15 @@ static int ext4_htree_next_block(struct inode *dir, __u32 hash,
+ 		if (!(bh = ext4_bread(NULL, dir, dx_get_block(p->at),
+ 				      0, &err)))
+ 			return err; /* Failure */
 +
-+	if (!vmevent_match(watch))
- 		return;
- 
- 	mutex_lock(&watch->mutex);
- 
- 	watch->pending = true;
- 
--	if (watch->config.event_attrs & VMEVENT_EATTR_NR_AVAIL_PAGES)
--		watch->attr_values[n++] = event.nr_avail_pages;
--
--	if (watch->config.event_attrs & VMEVENT_EATTR_NR_FREE_PAGES)
--		watch->attr_values[n++] = event.nr_free_pages;
--
--	if (watch->config.event_attrs & VMEVENT_EATTR_NR_SWAP_PAGES)
--		watch->attr_values[n++] = event.nr_swap_pages;
-+	for (i = 0; i < watch->nr_attrs; i++) {
-+		struct vmevent_attr *attr = &watch->sample_attrs[i];
- 
--	watch->nr_attrs = n;
-+		attr->value = vmevent_sample_attr(watch, attr);
-+	}
- 
- 	mutex_unlock(&watch->mutex);
- }
-@@ -132,43 +165,45 @@ static unsigned int vmevent_poll(struct file *file, poll_table *wait)
- static ssize_t vmevent_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
- {
- 	struct vmevent_watch *watch = file->private_data;
--	struct vmevent_event event;
-+	struct vmevent_event *event;
- 	ssize_t ret = 0;
--	u64 attr_size;
--
--	mutex_lock(&watch->mutex);
-+	u32 size;
-+	int i;
- 
--	if (!watch->pending)
--		goto out_unlock;
-+	size = sizeof(*event) + watch->nr_attrs * sizeof(struct vmevent_attr);
- 
--	attr_size = watch->nr_attrs * sizeof(u64);
-+	if (count < size)
-+		return -EINVAL;
- 
--	memset(&event, 0, sizeof(event));
--	event.size	= sizeof(struct vmevent_event) + attr_size;
--	event.attrs	= watch->config.event_attrs;
-+	mutex_lock(&watch->mutex);
- 
--	if (count < sizeof(event))
-+	if (!watch->pending)
- 		goto out_unlock;
- 
--	if (copy_to_user(buf, &event, sizeof(event))) {
--		ret = -EFAULT;
-+	event = kmalloc(size, GFP_KERNEL);
-+	if (!event) {
-+		ret = -ENOMEM;
- 		goto out_unlock;
- 	}
- 
--	count -= sizeof(event);
-+	for (i = 0; i < watch->nr_attrs; i++) {
-+		memcpy(&event->attrs[i], &watch->sample_attrs[i], sizeof(struct vmevent_attr));
-+	}
- 
--	if (count > attr_size)
--		count = attr_size;
-+	event->counter = watch->nr_attrs;
- 
--	if (copy_to_user(buf + sizeof(event), watch->attr_values, count)) {
-+	if (copy_to_user(buf, event, size)) {
- 		ret = -EFAULT;
--		goto out_unlock;
-+		goto out_free;
- 	}
- 
- 	ret = count;
- 
- 	watch->pending = false;
- 
-+out_free:
-+	kfree(event);
-+
- out_unlock:
- 	mutex_unlock(&watch->mutex);
- 
-@@ -207,6 +242,42 @@ static struct vmevent_watch *vmevent_watch_alloc(void)
- 	return watch;
- }
- 
-+static int vmevent_setup_watch(struct vmevent_watch *watch)
-+{
-+	struct vmevent_config *config = &watch->config;
-+	struct vmevent_attr *attrs = NULL;
-+	unsigned long nr;
-+	int i;
-+
-+	nr = 0;
-+
-+	for (i = 0; i < config->counter; i++) {
-+		struct vmevent_attr *attr = &config->attrs[i];
-+		size_t size;
-+		void *new;
-+
-+		if (attr->type >= VMEVENT_ATTR_MAX)
-+			continue;
-+
-+		size = sizeof(struct vmevent_attr) * (nr + 1);
-+
-+		new = krealloc(attrs, size, GFP_KERNEL);
-+		if (!new) {
-+			kfree(attrs);
-+			return -ENOMEM;
++		if (!buffer_verified(bh) &&
++		    !ext4_dx_csum_verify(dir,
++					 (struct ext4_dir_entry *)bh->b_data)) {
++			ext4_warning(dir->i_sb, "Node failed checksum");
++			return -EIO;
 +		}
++		set_buffer_verified(bh);
 +
-+		attrs = new;
-+
-+		attrs[nr++].type = attr->type;
-+	}
-+
-+	watch->sample_attrs	= attrs;
-+	watch->nr_attrs		= nr;
-+
-+	return 0;
-+}
-+
- static int vmevent_copy_config(struct vmevent_config __user *uconfig,
- 				struct vmevent_config *config)
- {
-@@ -216,14 +287,6 @@ static int vmevent_copy_config(struct vmevent_config __user *uconfig,
- 	if (ret)
- 		return -EFAULT;
- 
--	if (!config->type)
--		return -EINVAL;
--
--	if (config->type & VMEVENT_TYPE_SAMPLE) {
--		if (config->sample_period_ns < NSEC_PER_MSEC)
--			return -EINVAL;
--	}
--
- 	return 0;
- }
- 
-@@ -243,6 +306,10 @@ SYSCALL_DEFINE1(vmevent_fd,
+ 		p++;
+ 		brelse(p->bh);
+ 		p->bh = bh;
+@@ -1232,7 +1384,7 @@ static struct ext4_dir_entry_2 *do_split(handle_t *handle, struct inode *dir,
+ 	err = ext4_handle_dirty_metadata(handle, dir, bh2);
  	if (err)
- 		goto err_free;
+ 		goto journal_error;
+-	err = ext4_handle_dirty_metadata(handle, dir, frame->bh);
++	err = ext4_handle_dirty_dx_node(handle, dir, frame->bh);
+ 	if (err)
+ 		goto journal_error;
+ 	brelse(bh2);
+@@ -1419,7 +1571,7 @@ static int make_indexed_dir(handle_t *handle, struct dentry *dentry,
+ 	frame->bh = bh;
+ 	bh = bh2;
  
-+	err = vmevent_setup_watch(watch);
-+	if (err)
-+		goto err_free;
-+
- 	fd = get_unused_fd_flags(O_RDONLY);
- 	if (fd < 0) {
- 		err = fd;
-@@ -257,8 +324,7 @@ SYSCALL_DEFINE1(vmevent_fd,
+-	ext4_handle_dirty_metadata(handle, dir, frame->bh);
++	ext4_handle_dirty_dx_node(handle, dir, frame->bh);
+ 	ext4_handle_dirty_metadata(handle, dir, bh);
  
- 	fd_install(fd, file);
- 
--	if (watch->config.type & VMEVENT_TYPE_SAMPLE)
--		vmevent_start_timer(watch);
-+	vmevent_start_timer(watch);
- 
- 	return fd;
- 
-diff --git a/tools/testing/vmevent/vmevent-test.c b/tools/testing/vmevent/vmevent-test.c
-index f268034..534f827 100644
---- a/tools/testing/vmevent/vmevent-test.c
-+++ b/tools/testing/vmevent/vmevent-test.c
-@@ -32,12 +32,24 @@ int main(int argc, char *argv[])
- 	printf("Physical pages: %ld\n", phys_pages);
- 
- 	config = (struct vmevent_config) {
--		.type			= VMEVENT_TYPE_SAMPLE | VMEVENT_TYPE_FREE_THRESHOLD,
--		.event_attrs		= VMEVENT_EATTR_NR_AVAIL_PAGES
--					| VMEVENT_EATTR_NR_FREE_PAGES
--					| VMEVENT_EATTR_NR_SWAP_PAGES,
- 		.sample_period_ns	= 1000000000L,
--		.free_pages_threshold	= phys_pages,
-+		.counter		= 4,
-+		.attrs			= {
-+			[0]			= {
-+				.type	= VMEVENT_ATTR_NR_FREE_PAGES,
-+				.state	= VMEVENT_ATTR_STATE_VALUE_LT,
-+				.value	= phys_pages,
-+			},
-+			[1]			= {
-+				.type	= VMEVENT_ATTR_NR_AVAIL_PAGES,
-+			},
-+			[2]			= {
-+				.type	= VMEVENT_ATTR_NR_SWAP_PAGES,
-+			},
-+			[3]			= {
-+				.type	= 0xffff, /* invalid */
-+			},
-+		},
- 	};
- 
- 	fd = sys_vmevent_fd(&config);
-@@ -47,9 +59,10 @@ int main(int argc, char *argv[])
- 	}
- 
- 	for (i = 0; i < 10; i++) {
--		char buffer[sizeof(struct vmevent_event) + 3 * sizeof(uint64_t)];
-+		char buffer[sizeof(struct vmevent_event) + 4 * sizeof(struct vmevent_attr)];
- 		struct vmevent_event *event;
- 		int n = 0;
-+		int idx;
- 
- 		pollfd.fd		= fd;
- 		pollfd.events		= POLLIN;
-@@ -68,16 +81,25 @@ int main(int argc, char *argv[])
- 
- 		event = (void *) buffer;
- 
--		printf("VM event (%Lu bytes):\n", event->size);
--
--		if (event->attrs & VMEVENT_EATTR_NR_AVAIL_PAGES)
--			printf("  VMEVENT_EATTR_NR_AVAIL_PAGES: %Lu\n", event->attr_values[n++]);
--
--		if (event->attrs & VMEVENT_EATTR_NR_FREE_PAGES)
--			printf("  VMEVENT_EATTR_NR_FREE_PAGES : %Lu\n", event->attr_values[n++]);
--
--		if (event->attrs & VMEVENT_EATTR_NR_SWAP_PAGES)
--			printf("  VMEVENT_EATTR_NR_SWAP_PAGES : %Lu\n", event->attr_values[n++]);
-+		printf("VM event (%u attributes):\n", event->counter);
-+
-+		for (idx = 0; idx < event->counter; idx++) {
-+			struct vmevent_attr *attr = &event->attrs[idx];
-+
-+			switch (attr->type) {
-+			case VMEVENT_ATTR_NR_AVAIL_PAGES:
-+				printf("  VMEVENT_ATTR_NR_AVAIL_PAGES: %Lu\n", attr->value);
-+				break;
-+			case VMEVENT_ATTR_NR_FREE_PAGES:
-+				printf("  VMEVENT_ATTR_NR_FREE_PAGES: %Lu\n", attr->value);
-+				break;
-+			case VMEVENT_ATTR_NR_SWAP_PAGES:
-+				printf("  VMEVENT_ATTR_NR_SWAP_PAGES: %Lu\n", attr->value);
-+				break;
-+			default:
-+				printf("  Unknown attribute: %Lu\n", attr->value);
-+			}
-+		}
- 	}
- 	if (close(fd) < 0) {
- 		perror("close failed");
--- 
-1.7.6.5
+ 	de = do_split(handle,dir, &bh, frame, &hinfo, &retval);
+@@ -1594,7 +1746,7 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
+ 			dxtrace(dx_show_index("node", frames[1].entries));
+ 			dxtrace(dx_show_index("node",
+ 			       ((struct dx_node *) bh2->b_data)->entries));
+-			err = ext4_handle_dirty_metadata(handle, dir, bh2);
++			err = ext4_handle_dirty_dx_node(handle, dir, bh2);
+ 			if (err)
+ 				goto journal_error;
+ 			brelse (bh2);
+@@ -1620,7 +1772,7 @@ static int ext4_dx_add_entry(handle_t *handle, struct dentry *dentry,
+ 			if (err)
+ 				goto journal_error;
+ 		}
+-		err = ext4_handle_dirty_metadata(handle, dir, frames[0].bh);
++		err = ext4_handle_dirty_dx_node(handle, dir, frames[0].bh);
+ 		if (err) {
+ 			ext4_std_error(inode->i_sb, err);
+ 			goto cleanup;
 
