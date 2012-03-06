@@ -1,414 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab2CFQTv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 11:19:51 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14848 "EHLO
+	id S1755908Ab2CFQT6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 11:19:58 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14866 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab2CFQTr (ORCPT
+	with ESMTP id S1755650Ab2CFQTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 11:19:47 -0500
-X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=p3AmUFNqfSEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=-WDOxhSWmCua9eXzZOgA:9 a=VA5TkR783eBAL3AFutQA:7 a=jeBq3FmKZ4MA:10 a=Zh68SRI7RUMA:10 a=gX4zK9tFtlYkINgC:21 a=6WaYzDWlI4fk_2PU:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Tue, 6 Mar 2012 11:19:50 -0500
+X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=CZDfYd8cBUwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=koGQc5_6AAAA:8 a=r1SSx9MgkuVJm8cjJMoA:9 a=yFlQdl3_maAO-4_PlrcA:7 a=9AGU4-qqYIQA:10 a=dR6KtR_F_aoA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120306161945.133510832@goodmis.org>
+Message-Id: <20120306161946.377520329@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Tue, 06 Mar 2012 11:16:37 -0500
+Date: Tue, 06 Mar 2012 11:16:43 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH RT 01/25][RFC 3.0.23-rt39-rc1] revert-convert-xtime_lock-to-raw_seqlock
+        John Kacur <jkacur@redhat.com>, stable-rt@vger.kernel.org
+Subject: [PATCH RT 07/25][RFC 3.0.23-rt39-rc1] x86: vdso: Remove bogus locking in update_vsyscall_tz()
 References: <20120306161636.491172179@goodmis.org>
-Content-Disposition: inline; filename=0001-revert-convert-xtime_lock-to-raw_seqlock.patch
+Content-Disposition: inline; filename=0007-x86-vdso-Remove-bogus-locking-in-update_vsyscall_tz.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-revert: timekeeping: Convert xtime_lock to raw_seqlock
+Changing the sequence count in update_vsyscall_tz() is completely
+pointless.
 
-Revert:
+The vdso code copies the data unprotected. There is no point to change
+this as sys_tz is nowhere protected at all. See sys_gettimeofday().
 
-Author: Thomas Gleixner <tglx@linutronix.de>
-Date:   Sat Jul 25 19:43:27 2009 +0200
-
-    timekeeping: Convert xtime_lock to raw_seqlock
-
-    Convert xtime_lock to raw_seqlock and fix up all users.
-
-    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable-rt@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/ia64/kernel/time.c       |    6 +++---
- arch/x86/include/asm/vgtod.h  |    2 +-
- arch/x86/kernel/vsyscall_64.c |   10 +++++-----
- kernel/time/ntp.c             |   16 ++++++++--------
- kernel/time/tick-common.c     |    4 ++--
- kernel/time/tick-internal.h   |    2 +-
- kernel/time/tick-sched.c      |    8 ++++----
- kernel/time/timekeeping.c     |   31 ++++++++++++++++---------------
- 8 files changed, 40 insertions(+), 39 deletions(-)
+ arch/x86/kernel/vsyscall_64.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
-index 604a636..85118df 100644
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -36,7 +36,7 @@
- static cycle_t itc_get_cycles(struct clocksource *cs);
- 
- struct fsyscall_gtod_data_t fsyscall_gtod_data = {
--	.lock = __RAW_SEQLOCK_UNLOCKED(fsyscall_gtod_data.lock),
-+	.lock = __SEQLOCK_UNLOCKED(fsyscall_gtod_data.lock),
- };
- 
- struct itc_jitter_data_t itc_jitter_data;
-@@ -462,7 +462,7 @@ void update_vsyscall(struct timespec *wall, struct timespec *wtm,
- {
-         unsigned long flags;
- 
--	raw_write_seqlock_irqsave(&fsyscall_gtod_data.lock, flags);
-+        write_seqlock_irqsave(&fsyscall_gtod_data.lock, flags);
- 
-         /* copy fsyscall clock data */
-         fsyscall_gtod_data.clk_mask = c->mask;
-@@ -485,6 +485,6 @@ void update_vsyscall(struct timespec *wall, struct timespec *wtm,
- 		fsyscall_gtod_data.monotonic_time.tv_sec++;
- 	}
- 
--	raw_write_sequnlock_irqrestore(&fsyscall_gtod_data.lock, flags);
-+        write_sequnlock_irqrestore(&fsyscall_gtod_data.lock, flags);
- }
- 
-diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
-index 4f72846..646b4c1 100644
---- a/arch/x86/include/asm/vgtod.h
-+++ b/arch/x86/include/asm/vgtod.h
-@@ -5,7 +5,7 @@
- #include <linux/clocksource.h>
- 
- struct vsyscall_gtod_data {
--	raw_seqlock_t	lock;
-+	seqlock_t	lock;
- 
- 	/* open coded 'struct timespec' */
- 	time_t		wall_time_sec;
 diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index bbcbaaa..3e68218 100644
+index 0a7dc13..c378a18 100644
 --- a/arch/x86/kernel/vsyscall_64.c
 +++ b/arch/x86/kernel/vsyscall_64.c
-@@ -52,7 +52,7 @@
- DEFINE_VVAR(int, vgetcpu_mode);
- DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
- {
--	.lock = __RAW_SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
-+	.lock = __SEQLOCK_UNLOCKED(__vsyscall_gtod_data.lock),
- 	.sysctl_enabled = 1,
- };
+@@ -58,12 +58,7 @@ DEFINE_VVAR(struct vsyscall_gtod_data, vsyscall_gtod_data) =
  
-@@ -60,10 +60,10 @@ void update_vsyscall_tz(void)
+ void update_vsyscall_tz(void)
  {
- 	unsigned long flags;
- 
--	raw_write_seqlock_irqsave(&vsyscall_gtod_data.lock, flags);
-+	write_seqlock_irqsave(&vsyscall_gtod_data.lock, flags);
- 	/* sys_tz has changed */
+-	unsigned long flags;
+-
+-	write_seqlock_irqsave(&vsyscall_gtod_data.lock, flags);
+-	/* sys_tz has changed */
  	vsyscall_gtod_data.sys_tz = sys_tz;
--	raw_write_sequnlock_irqrestore(&vsyscall_gtod_data.lock, flags);
-+	write_sequnlock_irqrestore(&vsyscall_gtod_data.lock, flags);
+-	write_sequnlock_irqrestore(&vsyscall_gtod_data.lock, flags);
  }
  
  void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
-@@ -71,7 +71,7 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
- {
- 	unsigned long flags;
- 
--	raw_write_seqlock_irqsave(&vsyscall_gtod_data.lock, flags);
-+	write_seqlock_irqsave(&vsyscall_gtod_data.lock, flags);
- 	/* copy vsyscall data */
- 	vsyscall_gtod_data.clock.vread = clock->vread;
- 	vsyscall_gtod_data.clock.cycle_last = clock->cycle_last;
-@@ -82,7 +82,7 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
- 	vsyscall_gtod_data.wall_time_nsec = wall_time->tv_nsec;
- 	vsyscall_gtod_data.wall_to_monotonic = *wtm;
- 	vsyscall_gtod_data.wall_time_coarse = __current_kernel_time();
--	raw_write_sequnlock_irqrestore(&vsyscall_gtod_data.lock, flags);
-+	write_sequnlock_irqrestore(&vsyscall_gtod_data.lock, flags);
- }
- 
- /* RED-PEN may want to readd seq locking, but then the variable should be
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index b510ba9..f6117a4 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -358,7 +358,7 @@ static enum hrtimer_restart ntp_leap_second(struct hrtimer *timer)
- {
- 	enum hrtimer_restart res = HRTIMER_NORESTART;
- 
--	raw_write_seqlock(&xtime_lock);
-+	write_seqlock(&xtime_lock);
- 
- 	switch (time_state) {
- 	case TIME_OK:
-@@ -388,7 +388,7 @@ static enum hrtimer_restart ntp_leap_second(struct hrtimer *timer)
- 		break;
- 	}
- 
--	raw_write_sequnlock(&xtime_lock);
-+	write_sequnlock(&xtime_lock);
- 
- 	return res;
- }
-@@ -663,7 +663,7 @@ int do_adjtimex(struct timex *txc)
- 
- 	getnstimeofday(&ts);
- 
--	raw_write_seqlock_irq(&xtime_lock);
-+	write_seqlock_irq(&xtime_lock);
- 
- 	if (txc->modes & ADJ_ADJTIME) {
- 		long save_adjust = time_adjust;
-@@ -705,7 +705,7 @@ int do_adjtimex(struct timex *txc)
- 	/* fill PPS status fields */
- 	pps_fill_timex(txc);
- 
--	raw_write_sequnlock_irq(&xtime_lock);
-+	write_sequnlock_irq(&xtime_lock);
- 
- 	txc->time.tv_sec = ts.tv_sec;
- 	txc->time.tv_usec = ts.tv_nsec;
-@@ -903,7 +903,7 @@ void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
- 
- 	pts_norm = pps_normalize_ts(*phase_ts);
- 
--	raw_write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags);
- 
- 	/* clear the error bits, they will be set again if needed */
- 	time_status &= ~(STA_PPSJITTER | STA_PPSWANDER | STA_PPSERROR);
-@@ -916,7 +916,7 @@ void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
- 	 * just start the frequency interval */
- 	if (unlikely(pps_fbase.tv_sec == 0)) {
- 		pps_fbase = *raw_ts;
--		raw_write_sequnlock_irqrestore(&xtime_lock, flags);
-+		write_sequnlock_irqrestore(&xtime_lock, flags);
- 		return;
- 	}
- 
-@@ -931,7 +931,7 @@ void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
- 		time_status |= STA_PPSJITTER;
- 		/* restart the frequency calibration interval */
- 		pps_fbase = *raw_ts;
--		raw_write_sequnlock_irqrestore(&xtime_lock, flags);
-+		write_sequnlock_irqrestore(&xtime_lock, flags);
- 		pr_err("hardpps: PPSJITTER: bad pulse\n");
- 		return;
- 	}
-@@ -948,7 +948,7 @@ void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
- 
- 	hardpps_update_phase(pts_norm.nsec);
- 
--	raw_write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
- }
- EXPORT_SYMBOL(hardpps);
- 
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 174dba1..119528d 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -63,13 +63,13 @@ int tick_is_oneshot_available(void)
- static void tick_periodic(int cpu)
- {
- 	if (tick_do_timer_cpu == cpu) {
--		raw_write_seqlock(&xtime_lock);
-+		write_seqlock(&xtime_lock);
- 
- 		/* Keep track of the next tick event */
- 		tick_next_period = ktime_add(tick_next_period, tick_period);
- 
- 		do_timer(1);
--		raw_write_sequnlock(&xtime_lock);
-+		write_sequnlock(&xtime_lock);
- 	}
- 
- 	update_process_times(user_mode(get_irq_regs()));
-diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-index dbda970..1009b06 100644
---- a/kernel/time/tick-internal.h
-+++ b/kernel/time/tick-internal.h
-@@ -143,4 +143,4 @@ static inline int tick_device_is_functional(struct clock_event_device *dev)
- #endif
- 
- extern void do_timer(unsigned long ticks);
--extern raw_seqlock_t xtime_lock;
-+extern seqlock_t xtime_lock;
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 411fabc..2a6e13c 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -56,7 +56,7 @@ static void tick_do_update_jiffies64(ktime_t now)
- 		return;
- 
- 	/* Reevalute with xtime_lock held */
--	raw_write_seqlock(&xtime_lock);
-+	write_seqlock(&xtime_lock);
- 
- 	delta = ktime_sub(now, last_jiffies_update);
- 	if (delta.tv64 >= tick_period.tv64) {
-@@ -79,7 +79,7 @@ static void tick_do_update_jiffies64(ktime_t now)
- 		/* Keep the tick_next_period variable up to date */
- 		tick_next_period = ktime_add(last_jiffies_update, tick_period);
- 	}
--	raw_write_sequnlock(&xtime_lock);
-+	write_sequnlock(&xtime_lock);
- }
- 
- /*
-@@ -89,12 +89,12 @@ static ktime_t tick_init_jiffy_update(void)
- {
- 	ktime_t period;
- 
--	raw_write_seqlock(&xtime_lock);
-+	write_seqlock(&xtime_lock);
- 	/* Did we start the jiffies update yet ? */
- 	if (last_jiffies_update.tv64 == 0)
- 		last_jiffies_update = tick_next_period;
- 	period = last_jiffies_update;
--	raw_write_sequnlock(&xtime_lock);
-+	write_sequnlock(&xtime_lock);
- 	return period;
- }
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index d040f93..5f45831 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -139,7 +139,8 @@ static inline s64 timekeeping_get_ns_raw(void)
-  * This read-write spinlock protects us from races in SMP while
-  * playing with xtime.
-  */
--__cacheline_aligned_in_smp DEFINE_RAW_SEQLOCK(xtime_lock);
-+__cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
-+
- 
- /*
-  * The current time
-@@ -364,7 +365,7 @@ int do_settimeofday(const struct timespec *tv)
- 	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
- 
--	raw_write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags);
- 
- 	timekeeping_forward_now();
- 
-@@ -380,7 +381,7 @@ int do_settimeofday(const struct timespec *tv)
- 	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
- 				timekeeper.mult);
- 
--	raw_write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
- 	/* signal hrtimers about time change */
- 	clock_was_set();
-@@ -404,7 +405,7 @@ int timekeeping_inject_offset(struct timespec *ts)
- 	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
- 		return -EINVAL;
- 
--	raw_write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags);
- 
- 	timekeeping_forward_now();
- 
-@@ -417,7 +418,7 @@ int timekeeping_inject_offset(struct timespec *ts)
- 	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
- 				timekeeper.mult);
- 
--	raw_write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
- 	/* signal hrtimers about time change */
- 	clock_was_set();
-@@ -571,7 +572,7 @@ void __init timekeeping_init(void)
- 	read_persistent_clock(&now);
- 	read_boot_clock(&boot);
- 
--	raw_write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags);
- 
- 	ntp_init();
- 
-@@ -592,7 +593,7 @@ void __init timekeeping_init(void)
- 				-boot.tv_sec, -boot.tv_nsec);
- 	total_sleep_time.tv_sec = 0;
- 	total_sleep_time.tv_nsec = 0;
--	raw_write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
- }
- 
- /* time in seconds when suspend began */
-@@ -633,7 +634,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- 	if (!(ts.tv_sec == 0 && ts.tv_nsec == 0))
- 		return;
- 
--	raw_write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags);
- 	timekeeping_forward_now();
- 
- 	__timekeeping_inject_sleeptime(delta);
-@@ -643,7 +644,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
- 	update_vsyscall(&xtime, &wall_to_monotonic, timekeeper.clock,
- 				timekeeper.mult);
- 
--	raw_write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
- 	/* signal hrtimers about time change */
- 	clock_was_set();
-@@ -666,7 +667,7 @@ static void timekeeping_resume(void)
- 
- 	clocksource_resume();
- 
--	raw_write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags);
- 
- 	if (timespec_compare(&ts, &timekeeping_suspend_time) > 0) {
- 		ts = timespec_sub(ts, timekeeping_suspend_time);
-@@ -676,7 +677,7 @@ static void timekeeping_resume(void)
- 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
- 	timekeeper.ntp_error = 0;
- 	timekeeping_suspended = 0;
--	raw_write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
- 	touch_softlockup_watchdog();
- 
-@@ -692,10 +693,10 @@ static int timekeeping_suspend(void)
- 
- 	read_persistent_clock(&timekeeping_suspend_time);
- 
--	raw_write_seqlock_irqsave(&xtime_lock, flags);
-+	write_seqlock_irqsave(&xtime_lock, flags);
- 	timekeeping_forward_now();
- 	timekeeping_suspended = 1;
--	raw_write_sequnlock_irqrestore(&xtime_lock, flags);
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
- 	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
- 	clocksource_suspend();
-@@ -1124,7 +1125,7 @@ ktime_t ktime_get_monotonic_offset(void)
-  */
- void xtime_update(unsigned long ticks)
- {
--	raw_write_seqlock(&xtime_lock);
-+	write_seqlock(&xtime_lock);
- 	do_timer(ticks);
--	raw_write_sequnlock(&xtime_lock);
-+	write_sequnlock(&xtime_lock);
- }
 -- 
 1.7.8.3
 
