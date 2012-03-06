@@ -1,127 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396Ab2CFF3P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 00:29:15 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:51083 "EHLO
+	id S1751601Ab2CFF3U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 00:29:20 -0500
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:40397 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750901Ab2CFF3N (ORCPT
+	by vger.kernel.org with ESMTP id S1750901Ab2CFF3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 00:29:13 -0500
-X-Sasl-enc: 8Yvs0XYiESA6iAcLXDDNicMLP9YDTco+en6YhppfaN1Q 1331011752
-Date: Mon, 5 Mar 2012 21:22:36 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: "Valentin, Eduardo" <eduardo.valentin@ti.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        ShuoX Liu <shuox.liu@intel.com>, "Brown, Len" <len.brown@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [linux-pm] [PATCH V3] cpuidle: Add a sysfs entry to disable
- specific C state for debug purpose.
-Message-ID: <20120306052236.GA19416@kroah.com>
-References: <C6CB66606345BC4B80CBE69D22ABFBB1021C7F@SHSMSX101.ccr.corp.intel.com>
- <1330647453.1916.7.camel@ymzhang>
- <20120302142303.648285a7.akpm@linux-foundation.org>
- <C6CB66606345BC4B80CBE69D22ABFBB10220E1@SHSMSX101.ccr.corp.intel.com>
- <4F545A4E.8010801@linux.vnet.ibm.com>
- <4F5466C4.2090808@intel.com>
- <20120305101827.GA19408@khazad-dum.debian.net>
- <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com>
- <1330998885.1916.89.camel@ymzhang>
+	Tue, 6 Mar 2012 00:29:18 -0500
+X-Sasl-enc: HkK5OMHiUaPplN+Gk2rURLDtRs7b5YJrbIgQ8UXbuDL1 1331011757
+Date: Mon, 5 Mar 2012 21:28:49 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Arnd Bergmann <arnd@arndb.de>, Dilan Lee <dilee@nvidia.com>,
+        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
+Message-ID: <20120306052849.GC19454@kroah.com>
+References: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
+ <20120305214747.GA9425@kroah.com>
+ <CACxGe6samH6-o9Ye7h7Wpj8GztxvFpWDgcEvtx2ey+YRGYm_9g@mail.gmail.com>
+ <20120305221528.GA11935@kroah.com>
+ <CACxGe6vB3cHSNtLrLdrWmD3dZk-+eQY4p=X46qqxp0C2a8V6vg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1330998885.1916.89.camel@ymzhang>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACxGe6vB3cHSNtLrLdrWmD3dZk-+eQY4p=X46qqxp0C2a8V6vg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 09:54:45AM +0800, Yanmin Zhang wrote:
-> On Mon, 2012-03-05 at 14:20 +0200, Valentin, Eduardo wrote:
-> > Hello,
-> > 
-> > 
-> > On Mon, Mar 5, 2012 at 12:18 PM, Henrique de Moraes Holschuh
-> > <hmh@hmh.eng.br> wrote:
-> > > On Mon, 05 Mar 2012, ShuoX Liu wrote:
-> > >> @@ -45,6 +46,7 @@ total 0
-> > >>  /sys/devices/system/cpu/cpu0/cpuidle/state1:
-> > >>  total 0
-> > >>  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-> > >> +-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
-> > >>  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
-> > >>  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
-> > >>  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-> > >
-> > > ...
-> > >
-> > >> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-> > >> index 3fe41fe..1eae29a 100644
-> > >> --- a/drivers/cpuidle/sysfs.c
-> > >> +++ b/drivers/cpuidle/sysfs.c
-> > >> @@ -222,6 +222,9 @@ struct cpuidle_state_attr {
-> > >>  #define define_one_state_ro(_name, show) \
-> > >>  static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0444,
-> > >> show, NULL)
-> > >>
-> > >> +#define define_one_state_rw(_name, show, store) \
-> > >> +static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0644,
-> > >> show, store)
-> > >> +
-> > >>  #define define_show_state_function(_name) \
-> > >>  static ssize_t show_state_##_name(struct cpuidle_state *state, \
-> > >>                        struct cpuidle_state_usage *state_usage, char *buf) \
-> > >> @@ -229,6 +232,19 @@ static ssize_t show_state_##_name(struct
-> > >> cpuidle_state *state, \
-> > >>       return sprintf(buf, "%u\n", state->_name);\
-> > >>  }
-> > >>
-> > >> +#define define_store_state_function(_name) \
-> > >> +static ssize_t store_state_##_name(struct cpuidle_state *state, \
-> > >> +             const char *buf, size_t size) \
-> > >> +{ \
-> > >> +     int value; \
-> > >> +     sscanf(buf, "%d", &value); \
-> > >> +     if (value) \
-> > >> +             state->disable = 1; \
-> > >> +     else \
-> > >> +             state->disable = 0; \
-> > >> +     return size; \
-> > >> +}
-> > >
-> > > Isn't this missing a check for capabilities?  Disabling cpuidle states is
-> > > not something random Joe (and IMHO that does mean random capability-
-> > > restricted Joe root) should be doing...
-> > >
-> > > Also, maybe it would be best to use one of the lib helpers to parse that
-> > > value, so that it will be less annoying to userspace (trim blanks, complain
-> > > if there is trailing junk after trimming, etc)?
-> > 
-> > I may be jumping the thread in the middle but, if it is for debug
-> > purposes, as states the subject, shouldn't this entry go to debugfs
-> > instead of sysfs? I know cpuidle has all the infrastructure there to
-> > simply add another sysfs entry, but if the intent is to create a debug
-> > capability, then I'd say it fits under debugfs instead.  Adding Greg
-> > KH here, as I suppose he may have strong opinion on using sysfs for
-> > debugging.
-> Thanks for the comments.
+On Mon, Mar 05, 2012 at 05:08:30PM -0700, Grant Likely wrote:
+> On Mon, Mar 5, 2012 at 3:15 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Mar 05, 2012 at 03:09:27PM -0700, Grant Likely wrote:
+> >> On Mon, Mar 5, 2012 at 2:47 PM, Greg Kroah-Hartman
+> >> <gregkh@linuxfoundation.org> wrote:
+> >> > On Mon, Mar 05, 2012 at 08:47:41AM -0700, Grant Likely wrote:
+> >> >> --- a/include/linux/device.h
+> >> >> +++ b/include/linux/device.h
+> >> >> @@ -587,6 +587,10 @@ struct device_dma_parameters {
+> >> >>   * @mutex:   Mutex to synchronize calls to its driver.
+> >> >>   * @bus:     Type of bus device is on.
+> >> >>   * @driver:  Which driver has allocated this
+> >> >> + * @deferred_probe: entry in deferred_probe_list which is used to retry the
+> >> >> + *           binding of drivers which were unable to get all the resources
+> >> >> + *           needed by the device; typically because it depends on another
+> >> >> + *           driver getting probed first.
+> >> >>   * @platform_data: Platform data specific to the device.
+> >> >>   *           Example: For devices on custom boards, as typical of embedded
+> >> >>   *           and SOC based hardware, Linux often uses platform_data to point
+> >> >> @@ -646,6 +650,7 @@ struct device {
+> >> >>       struct bus_type *bus;           /* type of bus device is on */
+> >> >>       struct device_driver *driver;   /* which driver has allocated this
+> >> >>                                          device */
+> >> >> +     struct list_head        deferred_probe;
+> >> >>       void            *platform_data; /* Platform specific data, device
+> >> >>                                          core doesn't touch it */
+> >> >>       struct dev_pm_info      power;
+> >> >
+> >> > This can go into the "struct device_private" structure instead, right?
+> >> > That would be better to ensure that no non-driver-core code ever touches
+> >> > this thing.
+> >>
+> >> I don't see any reason why not.  I'll make the change and repost.
+> >
+> > If you are going to repost, care to fix up your multi-line comment
+> > blocks to follow the "standard" way of doing it?
+> >
+> > That saves me doing the follow-on patch to do it myself :)
 > 
-> IMHO, all entries under cpuidle directory are for debug purpose. End users
-> shouldn't care about them. If we rewrite codes around all the entries, I strongly
-> agree that we need move them to debugfs.
+> Yeah, I can do that.
+> 
+> Actually, if you're okay with this version other than the private data
+> change, could you pick up this version (it's actually received
+> testing) and I'll provide follow up patches to fix up the issues
+> pointed out by you and Arnd.
 
-I totally agree, they all need to move out of sysfs.
-
-> Here, we just add a new entry under same directory. If we create it under debugfs,
-> we need create the similar directory tree, which is a duplicate effort. In addition,
-> users might be confused that why we separate the entries under sysfs and debugfs.
-
-They should all be moved there, that will remove any confusion :)
+Yes, I can, and I might as well fix up the private thing myself and the
+comments when I do that, I'll cc: you on that.  I have a flight tomorrow
+so I might get the chance to do it then.
 
 thanks,
 
