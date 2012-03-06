@@ -1,50 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030272Ab2CFCf7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 21:35:59 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42955 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030194Ab2CFCf5 (ORCPT
+	id S1030276Ab2CFCpZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 21:45:25 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7813 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030194Ab2CFCpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 21:35:57 -0500
-Date: Tue, 6 Mar 2012 10:50:27 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Nancy Chen <Nancy.Chen@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v8 2/2] Regulator: Add Anatop regulator driver
-Message-ID: <20120306025025.GL16232@S2101-09.ap.freescale.net>
-References: <1330960049-28170-1-git-send-email-paul.liu@linaro.org>
- <1330960049-28170-2-git-send-email-paul.liu@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330960049-28170-2-git-send-email-paul.liu@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 5 Mar 2012 21:45:23 -0500
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=puJ_oERO98cA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=JPQJig8JYuhD0utrOU0A:9 a=YKmmSzRvNwn0uV3sB1UA:7 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120306024521.393424824@goodmis.org>
+User-Agent: quilt/0.50-1
+Date: Mon, 05 Mar 2012 21:38:37 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Clark Williams <clark.williams@gmail.com>
+Subject: [PATCH RT 2/3][FYI only] workqueue: Revert workqueue: Fix PF_THREAD_BOUND abuse
+References: <20120306023835.775610473@goodmis.org>
+Content-Disposition: inline; filename=0002-workqueue-Revert-workqueue-Fix-PF_THREAD_BOUND-abuse.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 11:07:28PM +0800, Ying-Chun Liu (PaulLiu) wrote:
-...
-> +MODULE_AUTHOR("Nancy Chen <Nancy.Chen@freescale.com>");
-> +MODULE_AUTHOR("Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
+Revert commit
 
-I meant something like:
+    Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Date:   Mon Oct 3 12:43:25 2011 +0200
+    workqueue: Fix PF_THREAD_BOUND abuse
 
-MODULE_AUTHOR("Nancy Chen <Nancy.Chen@freescale.com>, "
-	      "Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
+As TREAD_BOUND no longer affects cpu down, and this code introduced
+a lot of races with taking down a CPU.
 
-Otherwise:
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/workqueue.c |   29 +++++++++--------------------
+ 1 files changed, 9 insertions(+), 20 deletions(-)
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-
-> +MODULE_DESCRIPTION("ANATOP Regulator driver");
-> +MODULE_LICENSE("GPL v2");
-
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index e7f3e79..3b53135 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1286,14 +1286,8 @@ __acquires(&gcwq->lock)
+ 			return false;
+ 		if (task_cpu(task) == gcwq->cpu &&
+ 		    cpumask_equal(&current->cpus_allowed,
+-				  get_cpu_mask(gcwq->cpu))) {
+-			/*
+-			 * Since we're binding to a particular cpu and need to
+-			 * stay there for correctness, mark us PF_THREAD_BOUND.
+-			 */
+-			task->flags |= PF_THREAD_BOUND;
++				  get_cpu_mask(gcwq->cpu)))
+ 			return true;
+-		}
+ 		spin_unlock_irq(&gcwq->lock);
+ 
+ 		/*
+@@ -1307,18 +1301,6 @@ __acquires(&gcwq->lock)
+ 	}
+ }
+ 
+-static void worker_unbind_and_unlock(struct worker *worker)
+-{
+-	struct global_cwq *gcwq = worker->gcwq;
+-	struct task_struct *task = worker->task;
+-
+-	/*
+-	 * Its no longer required we're PF_THREAD_BOUND, the work is done.
+-	 */
+-	task->flags &= ~PF_THREAD_BOUND;
+-	spin_unlock_irq(&gcwq->lock);
+-}
+-
+ static struct worker *alloc_worker(void)
+ {
+ 	struct worker *worker;
+@@ -1381,9 +1363,15 @@ static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
+ 	if (IS_ERR(worker->task))
+ 		goto fail;
+ 
++	/*
++	 * A rogue worker will become a regular one if CPU comes
++	 * online later on.  Make sure every worker has
++	 * PF_THREAD_BOUND set.
++	 */
+ 	if (bind && !on_unbound_cpu)
+ 		kthread_bind(worker->task, gcwq->cpu);
+ 	else {
++		worker->task->flags |= PF_THREAD_BOUND;
+ 		if (on_unbound_cpu)
+ 			worker->flags |= WORKER_UNBOUND;
+ 	}
+@@ -2060,7 +2048,7 @@ repeat:
+ 		if (keep_working(gcwq))
+ 			wake_up_worker(gcwq);
+ 
+-		worker_unbind_and_unlock(rescuer);
++		spin_unlock_irq(&gcwq->lock);
+ 	}
+ 
+ 	schedule();
+@@ -3009,6 +2997,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *name,
+ 		if (IS_ERR(rescuer->task))
+ 			goto err;
+ 
++		rescuer->task->flags |= PF_THREAD_BOUND;
+ 		wake_up_process(rescuer->task);
+ 	}
+ 
 -- 
-Regards,
-Shawn
+1.7.3.4
+
+
