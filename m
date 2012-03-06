@@ -1,55 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030336Ab2CFTmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 14:42:19 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:56827 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965176Ab2CFTmR (ORCPT
+	id S1030601Ab2CFTp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 14:45:27 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59335 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965176Ab2CFTpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 14:42:17 -0500
-Message-ID: <4F566872.9010408@fb.com>
-Date: Tue, 6 Mar 2012 11:41:38 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 6 Mar 2012 14:45:25 -0500
+Date: Tue, 6 Mar 2012 20:45:21 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
+cc: Sven Joachim <svenjoac@gmx.de>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Jonathan Nieder <jrnieder@gmail.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
+In-Reply-To: <201203050143.24541.s.L-H@gmx.de>
+Message-ID: <alpine.LFD.2.02.1203062043500.2742@ionos>
+References: <20120228010511.GA8453@kroah.com> <20120228010434.412979550@linuxfoundation.org> <87hay4dqjr.fsf@turtle.gmx.de> <201203050143.24541.s.L-H@gmx.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <linux-perf-users@vger.kernel.org>
-Subject: Re: [RFC] Sort inclusive
-References: <20120305221253.GA30250@dev3310.snc6.facebook.com> <20120306065753.GB5100@elte.hu>
-In-Reply-To: <20120306065753.GB5100@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-03-06_06:2012-03-06,2012-03-06,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/5/12 10:57 PM, Ingo Molnar wrote:
+On Mon, 5 Mar 2012, Stefan Lippers-Hollmann wrote:
+> On Monday 05 March 2012, Sven Joachim wrote:
+> > On 2012-02-28 02:05 +0100, Greg KH wrote:
+> > 
+> > > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > Alas, the commit below broke the WiFi on my laptop, where
+> > "iwlist wlan0 scan" now just reports: " wlan0     No scan results".
+> > 
+> > This is not specific to 3.2, the same problem exists in 3.0.23 and
+> > 3.3-rc6 while previous releases worked.
+> 
+> I can confirm this regression on an old PIII based notebook with a 
+> 32 bit BCM4306/3 PCMCIA card:
+> 
+> 02:00.0 Network controller [0280]: Broadcom Corporation BCM4306 802.11b/g Wireless LAN Controller [14e4:4320] (rev 03)
+>         Subsystem: Linksys WPC54G v1 / WPC54GS v1 802.11g Wireless-G Notebook Adapter [1737:4320]
+>         Flags: bus master, fast devsel, latency 64, IRQ 10
+>         Memory at 20000000 (32-bit, non-prefetchable) [size=8K]
+>         Capabilities: [40] Power Management version 2
+>         Kernel driver in use: b43-pci-bridge
+> 
+> I can observe these differences in the dmesg output (3.2.9 + current 
+> stable queue-3.2):
+> 
+> The kernel configuration is identical in both cases, the only 
+> difference is "genirq: Unmask oneshot irqs when thread was not woken"
+> being applied or not.
+> 
+> --- working	<-- 3.2.9 + current stable queue-3.2, with "genirq: Unmask oneshot irqs when thread was not woken" reverted
+> +++ broken	<-- 3.2.9 + current stable queue-3.2
+> @@ -125,6 +125,7 @@ Initializing cgroup subsys freezer
+>  Initializing cgroup subsys net_cls
+>  Initializing cgroup subsys blkio
+>  Initializing cgroup subsys perf_event
+> +CPU serial number disabled.
 
-> Btw., assuming that you are profiling user-space applications
-> via call-chains, how do you deal with the lack of dwarf decoding
-> done by perf, in particular on 64-bit x86 systems where most
-> distros don't compile call-chains into libraries and
-> application? In what practical situations does that limitation
-> hinder you and what do you do about it - rebuild your apps with
-> frame pointers included?
+I can't see why reverting that genirq patch would cause this.
 
-Yes - we're rebuilding everything with frame pointers so we could get 
-callchains. While this works for C/C++, I'm not convinced that we have a 
-good solution for JITs where there may be multiple stacks (eg: one each 
-for interpreted and JIT code), and the kernel may not be able to unwind 
-without dwarf decoding. For now, we're going with the /tmp/perf-$pid.txt 
-based solution for JITs.
+>  mce: CPU supports 5 MCE banks
+>  SMP alternatives: switching to UP code
+>  Freeing SMP alternatives: 8k freed
+> @@ -137,9 +138,16 @@ SMP disabled
+>  Performance Events: 
+>  no APIC, boot with the "lapic" boot parameter to force-enable it.
+>  no hardware sampling interrupt available.
+> -Broken PMU hardware detected, using software events only.
+> +p6 PMU driver.
+> +... version:                0
+> +... bit width:              32
+> +... generic registers:      2
+> +... value mask:             00000000ffffffff
+> +... max period:             000000007fffffff
+> +... fixed-purpose events:   0
+> +... event mask:             0000000000000003
 
-I'll post a new patch with the code refactored into smaller functions.
+Ditto.
 
-  -Arun
+>  Brought up 1 CPUs
+>  Total of 1 processors activated (1989.75 BogoMIPS).
+>  devtmpfs: initialized
+>  PM: Registering ACPI NVS region at eeff000 (4096 bytes)
+>  print_constraints: dummy: 
+> @@ -174,12 +182,12 @@ pci 0000:00:00.0: reg 10: [mem 0xec00000
+>  type 1 class 0x000604
+>  pci 0000:00:01.0: supports D1
+>  type 2 class 0x000607
+> -pci 0000:00:04.0: reg 10: [mem 0x10000000-0x10000fff]
+> +pci 0000:00:04.0: reg 10: [mem 0x00000000-0x00000fff]
+
+Even more. 
+
+There is something extremly fishy.
+
+Thanks,
+
+	tglx
