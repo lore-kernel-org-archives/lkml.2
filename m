@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031482Ab2CFWmX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 17:42:23 -0500
-Received: from www.linutronix.de ([62.245.132.108]:60251 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031468Ab2CFWmT (ORCPT
+	id S1031558Ab2CFWtb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 17:49:31 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:58692 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1031500Ab2CFWt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 17:42:19 -0500
-Date: Tue, 6 Mar 2012 23:42:15 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Kacur <jkacur@redhat.com>
-cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Carsten Emde <C.Emde@osadl.org>
-Subject: Re: [PATCH RT 04/25][RFC 3.0.23-rt39-rc1]
- revert-seqlock-remove-unused-functions
-In-Reply-To: <CAONaPpFnn1EDh-NbJ5=iKw9q4N41KGVfKqJeO0NXvyTLjpzr4w@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1203062341460.2742@ionos>
-References: <20120306161636.491172179@goodmis.org> <20120306161945.770871645@goodmis.org> <CAONaPpFnn1EDh-NbJ5=iKw9q4N41KGVfKqJeO0NXvyTLjpzr4w@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 6 Mar 2012 17:49:29 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mathieu.poirier@linaro.org designates 10.182.89.65 as permitted sender) smtp.mail=mathieu.poirier@linaro.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+From: mathieu.poirier@linaro.org
+To: linux@arm.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de, grant.likely@secretlab.ca
+Subject: [PATCH] ARM: versatile: automatically pick a board in Kconfig
+Date: Tue,  6 Mar 2012 15:49:22 -0700
+Message-Id: <1331074162-18147-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Mar 2012, John Kacur wrote:
-> On Tue, Mar 6, 2012 at 5:16 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> Does this really need to be reverted? I don't believe the other
-> reverts make use of these functions either. Looking upstream ,they are
-> also not used here, so the original patch should be pushed upstream if
-> anything.
+From: Arnd Bergmann <arnd@arndb.de>
 
-It's applied later on again .... :)
+The versatile platform supports building any combination of the
+three board types (AB, PB, DT), but at least one of them has
+to be enabled. This adds the necessary Kconfig statement to
+enforce that at least one of the three is selected.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ arch/arm/mach-versatile/Kconfig |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-versatile/Kconfig b/arch/arm/mach-versatile/Kconfig
+index c1f38f6..31da352 100644
+--- a/arch/arm/mach-versatile/Kconfig
++++ b/arch/arm/mach-versatile/Kconfig
+@@ -25,4 +25,10 @@ config MACH_VERSATILE_DT
+ 	  Include support for the ARM(R) Versatile/PB platform,
+ 	  using the device tree for discovery
+ 
++config MACH_VERSATILE_AUTO
++	def_bool y
++	depends on !ARCH_VERSATILE_PB
++	depends on !MACH_VERSATILE_AB
++	select MACH_VERSATILE_DT
++
+ endmenu
+-- 
+1.7.5.4
+
