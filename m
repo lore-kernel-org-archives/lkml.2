@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab2CFQJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 11:09:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38919 "EHLO
+	id S1754743Ab2CFQKP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 11:10:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38933 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753793Ab2CFQJX (ORCPT
+	with ESMTP id S1753662Ab2CFQKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 11:09:23 -0500
-Date: Tue, 6 Mar 2012 08:08:22 -0800
-From: tip-bot for Mike Travis <travis@sgi.com>
-Message-ID: <tip-ixcmp0hfp0a3b2lfv3uo0p0x@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        joerg.roedel@amd.com, dwmw2@infradead.org, travis@sgi.com,
-        akpm@linux-foundation.org, jbarnes@virtuousgeek.org, steiner@sgi.com,
-        chrisw@sous-sol.org, drahn@suse.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        travis@sgi.com, dwmw2@infradead.org, joerg.roedel@amd.com,
-        drahn@suse.com, chrisw@sous-sol.org, steiner@sgi.com,
-        akpm@linux-foundation.org, jbarnes@virtuousgeek.org,
+	Tue, 6 Mar 2012 11:10:11 -0500
+Date: Tue, 6 Mar 2012 08:09:11 -0800
+From: tip-bot for Alan Cox <alan@linux.intel.com>
+Message-ID: <tip-z0dxy88f949rvxo5vvd08ybs@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, mjg@redhat.com, alan@linux.intel.com,
+        hpa@zytor.com, mingo@redhat.com, akpm@linux-foundation.org,
         tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, alan@linux.intel.com,
+        mjg@redhat.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/iommu] x86/iommu/intel:
-  Increase the number of iommus supported to MAX_IO_APICS
-Git-Commit-ID: 1b198bb04ad72669d4bd6575fc9945ed595bfee0
+Subject: [tip:x86/platform] x86/mid: Kill off Moorestown
+Git-Commit-ID: 33e9970add9441be99cf14e26087b817eb8c1a99
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,180 +27,821 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Mar 2012 08:08:49 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 06 Mar 2012 08:09:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1b198bb04ad72669d4bd6575fc9945ed595bfee0
-Gitweb:     http://git.kernel.org/tip/1b198bb04ad72669d4bd6575fc9945ed595bfee0
-Author:     Mike Travis <travis@sgi.com>
-AuthorDate: Mon, 5 Mar 2012 15:05:16 -0800
+Commit-ID:  33e9970add9441be99cf14e26087b817eb8c1a99
+Gitweb:     http://git.kernel.org/tip/33e9970add9441be99cf14e26087b817eb8c1a99
+Author:     Alan Cox <alan@linux.intel.com>
+AuthorDate: Mon, 5 Mar 2012 15:01:02 -0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 6 Mar 2012 09:00:02 +0100
+CommitDate: Tue, 6 Mar 2012 09:01:24 +0100
 
-x86/iommu/intel: Increase the number of iommus supported to MAX_IO_APICS
+x86/mid: Kill off Moorestown
 
-The number of IOMMUs supported should be the same as the number
-of IO APICS.  This limit comes into play when the IOMMUs are
-identity mapped, thus the number of possible IOMMUs in the
-"static identity" (si) domain should be this same number.
+All production devices operate in the Oaktrail configuration
+with legacy PC elements present and an ACPI BIOS.  Continue
+stripping out the Moorestown elements from the tree leaving
+Medfield.
 
-Signed-off-by: Mike Travis <travis@sgi.com>
-Signed-off-by: Jack Steiner <steiner@sgi.com>
-Cc: Jack Steiner <steiner@sgi.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Chris Wright <chrisw@sous-sol.org>
-Cc: Daniel Rahn <drahn@suse.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-[ Fixed printk format string, cleaned up the code ]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Matthew Garrett <mjg@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-ixcmp0hfp0a3b2lfv3uo0p0x@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-z0dxy88f949rvxo5vvd08ybs@git.kernel.org
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- drivers/iommu/intel-iommu.c |   39 ++++++++++++++++++++++++++-------------
- 1 files changed, 26 insertions(+), 13 deletions(-)
+ drivers/platform/x86/Kconfig              |   22 -
+ drivers/platform/x86/Makefile             |    1 -
+ drivers/platform/x86/intel_rar_register.c |  669 -----------------------------
+ include/linux/rar_register.h              |   60 ---
+ 4 files changed, 0 insertions(+), 752 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 8aa580d..a08a534 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -354,10 +354,18 @@ static int hw_pass_through = 1;
- /* si_domain contains mulitple devices */
- #define DOMAIN_FLAG_STATIC_IDENTITY	(1 << 2)
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index f995e6e..5715e4d 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -677,28 +677,6 @@ config INTEL_MFLD_THERMAL
+          Say Y here to enable thermal driver support for the  Intel Medfield
+          platform.
  
-+/* define the limit of IOMMUs supported in each domain */
-+#ifdef	CONFIG_X86
-+# define	IOMMU_UNITS_SUPPORTED	MAX_IO_APICS
-+#else
-+# define	IOMMU_UNITS_SUPPORTED	64
-+#endif
-+
- struct dmar_domain {
- 	int	id;			/* domain id */
- 	int	nid;			/* node id */
--	unsigned long iommu_bmp;	/* bitmap of iommus this domain uses*/
-+	DECLARE_BITMAP(iommu_bmp, IOMMU_UNITS_SUPPORTED);
-+					/* bitmap of iommus this domain uses*/
- 
- 	struct list_head devices; 	/* all devices' list */
- 	struct iova_domain iovad;	/* iova's that belong to this domain */
-@@ -569,7 +577,7 @@ static struct intel_iommu *domain_get_iommu(struct dmar_domain *domain)
- 	BUG_ON(domain->flags & DOMAIN_FLAG_VIRTUAL_MACHINE);
- 	BUG_ON(domain->flags & DOMAIN_FLAG_STATIC_IDENTITY);
- 
--	iommu_id = find_first_bit(&domain->iommu_bmp, g_num_of_iommus);
-+	iommu_id = find_first_bit(domain->iommu_bmp, g_num_of_iommus);
- 	if (iommu_id < 0 || iommu_id >= g_num_of_iommus)
- 		return NULL;
- 
-@@ -582,7 +590,7 @@ static void domain_update_iommu_coherency(struct dmar_domain *domain)
- 
- 	domain->iommu_coherency = 1;
- 
--	for_each_set_bit(i, &domain->iommu_bmp, g_num_of_iommus) {
-+	for_each_set_bit(i, domain->iommu_bmp, g_num_of_iommus) {
- 		if (!ecap_coherent(g_iommus[i]->ecap)) {
- 			domain->iommu_coherency = 0;
- 			break;
-@@ -596,7 +604,7 @@ static void domain_update_iommu_snooping(struct dmar_domain *domain)
- 
- 	domain->iommu_snooping = 1;
- 
--	for_each_set_bit(i, &domain->iommu_bmp, g_num_of_iommus) {
-+	for_each_set_bit(i, domain->iommu_bmp, g_num_of_iommus) {
- 		if (!ecap_sc_support(g_iommus[i]->ecap)) {
- 			domain->iommu_snooping = 0;
- 			break;
-@@ -1332,7 +1340,7 @@ static struct dmar_domain *alloc_domain(void)
- 		return NULL;
- 
- 	domain->nid = -1;
--	memset(&domain->iommu_bmp, 0, sizeof(unsigned long));
-+	memset(domain->iommu_bmp, 0, sizeof(domain->iommu_bmp));
- 	domain->flags = 0;
- 
- 	return domain;
-@@ -1358,7 +1366,7 @@ static int iommu_attach_domain(struct dmar_domain *domain,
- 
- 	domain->id = num;
- 	set_bit(num, iommu->domain_ids);
--	set_bit(iommu->seq_id, &domain->iommu_bmp);
-+	set_bit(iommu->seq_id, domain->iommu_bmp);
- 	iommu->domains[num] = domain;
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- 
-@@ -1383,7 +1391,7 @@ static void iommu_detach_domain(struct dmar_domain *domain,
- 
- 	if (found) {
- 		clear_bit(num, iommu->domain_ids);
--		clear_bit(iommu->seq_id, &domain->iommu_bmp);
-+		clear_bit(iommu->seq_id, domain->iommu_bmp);
- 		iommu->domains[num] = NULL;
- 	}
- 	spin_unlock_irqrestore(&iommu->lock, flags);
-@@ -1525,7 +1533,7 @@ static void domain_exit(struct dmar_domain *domain)
- 	dma_pte_free_pagetable(domain, 0, DOMAIN_MAX_PFN(domain->gaw));
- 
- 	for_each_active_iommu(iommu, drhd)
--		if (test_bit(iommu->seq_id, &domain->iommu_bmp))
-+		if (test_bit(iommu->seq_id, domain->iommu_bmp))
- 			iommu_detach_domain(domain, iommu);
- 
- 	free_domain_mem(domain);
-@@ -1651,7 +1659,7 @@ static int domain_context_mapping_one(struct dmar_domain *domain, int segment,
- 	spin_unlock_irqrestore(&iommu->lock, flags);
- 
- 	spin_lock_irqsave(&domain->iommu_lock, flags);
--	if (!test_and_set_bit(iommu->seq_id, &domain->iommu_bmp)) {
-+	if (!test_and_set_bit(iommu->seq_id, domain->iommu_bmp)) {
- 		domain->iommu_count++;
- 		if (domain->iommu_count == 1)
- 			domain->nid = iommu->node;
-@@ -2400,12 +2408,17 @@ static int __init init_dmars(void)
- 	 * endfor
- 	 */
- 	for_each_drhd_unit(drhd) {
--		g_num_of_iommus++;
- 		/*
- 		 * lock not needed as this is only incremented in the single
- 		 * threaded kernel __init code path all other access are read
- 		 * only
- 		 */
-+		if (g_num_of_iommus < IOMMU_UNITS_SUPPORTED) {
-+			g_num_of_iommus++;
-+			continue;
-+		}
-+		printk_once(KERN_ERR "intel-iommu: exceeded %d IOMMUs\n",
-+			  IOMMU_UNITS_SUPPORTED);
- 	}
- 
- 	g_iommus = kcalloc(g_num_of_iommus, sizeof(struct intel_iommu *),
-@@ -3746,7 +3759,7 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
- 	if (found == 0) {
- 		unsigned long tmp_flags;
- 		spin_lock_irqsave(&domain->iommu_lock, tmp_flags);
--		clear_bit(iommu->seq_id, &domain->iommu_bmp);
-+		clear_bit(iommu->seq_id, domain->iommu_bmp);
- 		domain->iommu_count--;
- 		domain_update_iommu_cap(domain);
- 		spin_unlock_irqrestore(&domain->iommu_lock, tmp_flags);
-@@ -3788,7 +3801,7 @@ static void vm_domain_remove_all_dev_info(struct dmar_domain *domain)
- 		 */
- 		spin_lock_irqsave(&domain->iommu_lock, flags2);
- 		if (test_and_clear_bit(iommu->seq_id,
--				       &domain->iommu_bmp)) {
-+				       domain->iommu_bmp)) {
- 			domain->iommu_count--;
- 			domain_update_iommu_cap(domain);
- 		}
-@@ -3813,7 +3826,7 @@ static struct dmar_domain *iommu_alloc_vm_domain(void)
- 
- 	domain->id = vm_domid++;
- 	domain->nid = -1;
--	memset(&domain->iommu_bmp, 0, sizeof(unsigned long));
-+	memset(domain->iommu_bmp, 0, sizeof(domain->iommu_bmp));
- 	domain->flags = DOMAIN_FLAG_VIRTUAL_MACHINE;
- 
- 	return domain;
+-config RAR_REGISTER
+-	bool "Restricted Access Region Register Driver"
+-	depends on PCI && X86_MRST
+-	default n
+-	---help---
+-	  This driver allows other kernel drivers access to the
+-	  contents of the restricted access region control registers.
+-
+-	  The restricted access region control registers
+-	  (rar_registers) are used to pass address and
+-	  locking information on restricted access regions
+-	  to other drivers that use restricted access regions.
+-
+-	  The restricted access regions are regions of memory
+-	  on the Intel MID Platform that are not accessible to
+-	  the x86 processor, but are accessible to dedicated
+-	  processors on board peripheral devices.
+-
+-	  The purpose of the restricted access regions is to
+-	  protect sensitive data from compromise by unauthorized
+-	  programs running on the x86 processor.
+-
+ config INTEL_IPS
+ 	tristate "Intel Intelligent Power Sharing"
+ 	depends on ACPI
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index 293a320..1b6665e 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -34,7 +34,6 @@ obj-$(CONFIG_TOSHIBA_BT_RFKILL)	+= toshiba_bluetooth.o
+ obj-$(CONFIG_INTEL_SCU_IPC)	+= intel_scu_ipc.o
+ obj-$(CONFIG_INTEL_SCU_IPC_UTIL) += intel_scu_ipcutil.o
+ obj-$(CONFIG_INTEL_MFLD_THERMAL) += intel_mid_thermal.o
+-obj-$(CONFIG_RAR_REGISTER)	+= intel_rar_register.o
+ obj-$(CONFIG_INTEL_IPS)		+= intel_ips.o
+ obj-$(CONFIG_GPIO_INTEL_PMIC)	+= intel_pmic_gpio.o
+ obj-$(CONFIG_XO1_RFKILL)	+= xo1-rfkill.o
+diff --git a/drivers/platform/x86/intel_rar_register.c b/drivers/platform/x86/intel_rar_register.c
+deleted file mode 100644
+index c8a6aed..0000000
+--- a/drivers/platform/x86/intel_rar_register.c
++++ /dev/null
+@@ -1,669 +0,0 @@
+-/*
+- *  rar_register.c - An Intel Restricted Access Region register driver
+- *
+- *  Copyright(c) 2009 Intel Corporation. All rights reserved.
+- *
+- *  This program is free software; you can redistribute it and/or
+- *  modify it under the terms of the GNU General Public License as
+- *  published by the Free Software Foundation; either version 2 of the
+- *  License, or (at your option) any later version.
+- *
+- *  This program is distributed in the hope that it will be useful,
+- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+- *  General Public License for more details.
+- *
+- *  You should have received a copy of the GNU General Public License
+- *  along with this program; if not, write to the Free Software
+- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+- *  02111-1307, USA.
+- *
+- * -------------------------------------------------------------------
+- *  20091204 Mark Allyn <mark.a.allyn@intel.com>
+- *	     Ossama Othman <ossama.othman@intel.com>
+- *	Cleanup per feedback from Alan Cox and Arjan Van De Ven
+- *
+- *  20090806 Ossama Othman <ossama.othman@intel.com>
+- *      Return zero high address if upper 22 bits is zero.
+- *      Cleaned up checkpatch errors.
+- *      Clarified that driver is dealing with bus addresses.
+- *
+- *  20090702 Ossama Othman <ossama.othman@intel.com>
+- *      Removed unnecessary include directives
+- *      Cleaned up spinlocks.
+- *      Cleaned up logging.
+- *      Improved invalid parameter checks.
+- *      Fixed and simplified RAR address retrieval and RAR locking
+- *      code.
+- *
+- *  20090626 Mark Allyn <mark.a.allyn@intel.com>
+- *      Initial publish
+- */
+-
+-#include <linux/module.h>
+-#include <linux/pci.h>
+-#include <linux/spinlock.h>
+-#include <linux/device.h>
+-#include <linux/kernel.h>
+-#include <linux/rar_register.h>
+-
+-/* === Lincroft Message Bus Interface === */
+-#define LNC_MCR_OFFSET		0xD0	/* Message Control Register */
+-#define LNC_MDR_OFFSET		0xD4	/* Message Data Register */
+-
+-/* Message Opcodes */
+-#define LNC_MESSAGE_READ_OPCODE	0xD0
+-#define LNC_MESSAGE_WRITE_OPCODE 0xE0
+-
+-/* Message Write Byte Enables */
+-#define LNC_MESSAGE_BYTE_WRITE_ENABLES	0xF
+-
+-/* B-unit Port */
+-#define LNC_BUNIT_PORT	0x3
+-
+-/* === Lincroft B-Unit Registers - Programmed by IA32 firmware === */
+-#define LNC_BRAR0L	0x10
+-#define LNC_BRAR0H	0x11
+-#define LNC_BRAR1L	0x12
+-#define LNC_BRAR1H	0x13
+-/* Reserved for SeP */
+-#define LNC_BRAR2L	0x14
+-#define LNC_BRAR2H	0x15
+-
+-/* Moorestown supports three restricted access regions. */
+-#define MRST_NUM_RAR 3
+-
+-/* RAR Bus Address Range */
+-struct rar_addr {
+-	dma_addr_t low;
+-	dma_addr_t high;
+-};
+-
+-/*
+- *	We create one of these for each RAR
+- */
+-struct client {
+-	int (*callback)(unsigned long data);
+-	unsigned long driver_priv;
+-	bool busy;
+-};
+-
+-static DEFINE_MUTEX(rar_mutex);
+-static DEFINE_MUTEX(lnc_reg_mutex);
+-
+-/*
+- *	One per RAR device (currently only one device)
+- */
+-struct rar_device {
+-	struct rar_addr rar_addr[MRST_NUM_RAR];
+-	struct pci_dev *rar_dev;
+-	bool registered;
+-	bool allocated;
+-	struct client client[MRST_NUM_RAR];
+-};
+-
+-/* Current platforms have only one rar_device for 3 rar regions */
+-static struct rar_device my_rar_device;
+-
+-/*
+- *	Abstract out multiple device support. Current platforms only
+- *	have a single RAR device.
+- */
+-
+-/**
+- *	alloc_rar_device	-	return a new RAR structure
+- *
+- *	Return a new (but not yet ready) RAR device object
+- */
+-static struct rar_device *alloc_rar_device(void)
+-{
+-	if (my_rar_device.allocated)
+-		return NULL;
+-	my_rar_device.allocated = 1;
+-	return &my_rar_device;
+-}
+-
+-/**
+- *	free_rar_device		-	free a RAR object
+- *	@rar: the RAR device being freed
+- *
+- *	Release a RAR object and any attached resources
+- */
+-static void free_rar_device(struct rar_device *rar)
+-{
+-	pci_dev_put(rar->rar_dev);
+-	rar->allocated = 0;
+-}
+-
+-/**
+- *	_rar_to_device		-	return the device handling this RAR
+- *	@rar: RAR number
+- *	@off: returned offset
+- *
+- *	Internal helper for looking up RAR devices. This and alloc are the
+- *	two functions that need touching to go to multiple RAR devices.
+- */
+-static struct rar_device *_rar_to_device(int rar, int *off)
+-{
+-	if (rar >= 0 && rar < MRST_NUM_RAR) {
+-		*off = rar;
+-		return &my_rar_device;
+-	}
+-	return NULL;
+-}
+-
+-/**
+- *	rar_to_device		-	return the device handling this RAR
+- *	@rar: RAR number
+- *	@off: returned offset
+- *
+- *	Return the device this RAR maps to if one is present, otherwise
+- *	returns NULL. Reports the offset relative to the base of this
+- *	RAR device in off.
+- */
+-static struct rar_device *rar_to_device(int rar, int *off)
+-{
+-	struct rar_device *rar_dev = _rar_to_device(rar, off);
+-	if (rar_dev == NULL || !rar_dev->registered)
+-		return NULL;
+-	return rar_dev;
+-}
+-
+-/**
+- *	rar_to_client		-	return the client handling this RAR
+- *	@rar: RAR number
+- *
+- *	Return the client this RAR maps to if a mapping is known, otherwise
+- *	returns NULL.
+- */
+-static struct client *rar_to_client(int rar)
+-{
+-	int idx;
+-	struct rar_device *r = _rar_to_device(rar, &idx);
+-	if (r != NULL)
+-		return &r->client[idx];
+-	return NULL;
+-}
+-
+-/**
+- *	rar_read_addr		-	retrieve a RAR mapping
+- *	@pdev: PCI device for the RAR
+- *	@offset: offset for message
+- *	@addr: returned address
+- *
+- *	Reads the address of a given RAR register. Returns 0 on success
+- *	or an error code on failure.
+- */
+-static int rar_read_addr(struct pci_dev *pdev, int offset, dma_addr_t *addr)
+-{
+-	/*
+-	 * ======== The Lincroft Message Bus Interface ========
+-	 * Lincroft registers may be obtained via PCI from
+-	 * the host bridge using the Lincroft Message Bus
+-	 * Interface.  That message bus interface is generally
+-	 * comprised of two registers: a control register (MCR, 0xDO)
+-	 * and a data register (MDR, 0xD4).
+-	 *
+-	 * The MCR (message control register) format is the following:
+-	 *   1.  [31:24]: Opcode
+-	 *   2.  [23:16]: Port
+-	 *   3.  [15:8]: Register Offset
+-	 *   4.  [7:4]: Byte Enables (use 0xF to set all of these bits
+-	 *              to 1)
+-	 *   5.  [3:0]: reserved
+-	 *
+-	 *  Read (0xD0) and write (0xE0) opcodes are written to the
+-	 *  control register when reading and writing to Lincroft
+-	 *  registers, respectively.
+-	 *
+-	 *  We're interested in registers found in the Lincroft
+-	 *  B-unit.  The B-unit port is 0x3.
+-	 *
+-	 *  The six B-unit RAR register offsets we use are listed
+-	 *  earlier in this file.
+-	 *
+-	 *  Lastly writing to the MCR register requires the "Byte
+-	 *  enables" bits to be set to 1.  This may be achieved by
+-	 *  writing 0xF at bit 4.
+-	 *
+-	 * The MDR (message data register) format is the following:
+-	 *   1. [31:0]: Read/Write Data
+-	 *
+-	 *  Data being read from this register is only available after
+-	 *  writing the appropriate control message to the MCR
+-	 *  register.
+-	 *
+-	 *  Data being written to this register must be written before
+-	 *  writing the appropriate control message to the MCR
+-	 *  register.
+-	*/
+-
+-	int result;
+-	u32 addr32;
+-
+-	/* Construct control message */
+-	u32 const message =
+-		 (LNC_MESSAGE_READ_OPCODE << 24)
+-		 | (LNC_BUNIT_PORT << 16)
+-		 | (offset << 8)
+-		 | (LNC_MESSAGE_BYTE_WRITE_ENABLES << 4);
+-
+-	dev_dbg(&pdev->dev, "Offset for 'get' LNC MSG is %x\n", offset);
+-
+-	/*
+-	* We synchronize access to the Lincroft MCR and MDR registers
+-	* until BOTH the command is issued through the MCR register
+-	* and the corresponding data is read from the MDR register.
+-	* Otherwise a race condition would exist between accesses to
+-	* both registers.
+-	*/
+-
+-	mutex_lock(&lnc_reg_mutex);
+-
+-	/* Send the control message */
+-	result = pci_write_config_dword(pdev, LNC_MCR_OFFSET, message);
+-	if (!result) {
+-		/* Read back the address as a 32bit value */
+-		result = pci_read_config_dword(pdev, LNC_MDR_OFFSET, &addr32);
+-		*addr = (dma_addr_t)addr32;
+-	}
+-	mutex_unlock(&lnc_reg_mutex);
+-	return result;
+-}
+-
+-/**
+- *	rar_set_addr		-	Set a RAR mapping
+- *	@pdev: PCI device for the RAR
+- *	@offset: offset for message
+- *	@addr: address to set
+- *
+- *	Sets the address of a given RAR register. Returns 0 on success
+- *	or an error code on failure.
+- */
+-static int rar_set_addr(struct pci_dev *pdev,
+-	int offset,
+-	dma_addr_t addr)
+-{
+-	/*
+-	* Data being written to this register must be written before
+-	* writing the appropriate control message to the MCR
+-	* register.
+-	* See rar_get_addrs() for a description of the
+-	* message bus interface being used here.
+-	*/
+-
+-	int result;
+-
+-	/* Construct control message */
+-	u32 const message = (LNC_MESSAGE_WRITE_OPCODE << 24)
+-		| (LNC_BUNIT_PORT << 16)
+-		| (offset << 8)
+-		| (LNC_MESSAGE_BYTE_WRITE_ENABLES << 4);
+-
+-	/*
+-	* We synchronize access to the Lincroft MCR and MDR registers
+-	* until BOTH the command is issued through the MCR register
+-	* and the corresponding data is read from the MDR register.
+-	* Otherwise a race condition would exist between accesses to
+-	* both registers.
+-	*/
+-
+-	mutex_lock(&lnc_reg_mutex);
+-
+-	/* Send the control message */
+-	result = pci_write_config_dword(pdev, LNC_MDR_OFFSET, addr);
+-	if (!result)
+-		/* And address */
+-		result = pci_write_config_dword(pdev, LNC_MCR_OFFSET, message);
+-
+-	mutex_unlock(&lnc_reg_mutex);
+-	return result;
+-}
+-
+-/*
+- *	rar_init_params		-	Initialize RAR parameters
+- *	@rar: RAR device to initialise
+- *
+- *	Initialize RAR parameters, such as bus addresses, etc. Returns 0
+- *	on success, or an error code on failure.
+- */
+-static int init_rar_params(struct rar_device *rar)
+-{
+-	struct pci_dev *pdev = rar->rar_dev;
+-	unsigned int i;
+-	int result = 0;
+-	int offset = 0x10;	/* RAR 0 to 2 in order low/high/low/high/... */
+-
+-	/* Retrieve RAR start and end bus addresses.
+-	* Access the RAR registers through the Lincroft Message Bus
+-	* Interface on PCI device: 00:00.0 Host bridge.
+-	*/
+-
+-	for (i = 0; i < MRST_NUM_RAR; ++i) {
+-		struct rar_addr *addr = &rar->rar_addr[i];
+-
+-		result = rar_read_addr(pdev, offset++, &addr->low);
+-		if (result != 0)
+-			return result;
+-
+-		result = rar_read_addr(pdev, offset++, &addr->high);
+-		if (result != 0)
+-			return result;
+-
+-
+-		/*
+-		* Only the upper 22 bits of the RAR addresses are
+-		* stored in their corresponding RAR registers so we
+-		* must set the lower 10 bits accordingly.
+-
+-		* The low address has its lower 10 bits cleared, and
+-		* the high address has all its lower 10 bits set,
+-		* e.g.:
+-		* low = 0x2ffffc00
+-		*/
+-
+-		addr->low &= (dma_addr_t)0xfffffc00u;
+-
+-		/*
+-		* Set bits 9:0 on uppser address if bits 31:10 are non
+-		* zero; otherwize clear all bits
+-		*/
+-
+-		if ((addr->high & 0xfffffc00u) == 0)
+-			addr->high = 0;
+-		else
+-			addr->high |= 0x3ffu;
+-	}
+-	/* Done accessing the device. */
+-
+-	if (result == 0) {
+-		for (i = 0; i != MRST_NUM_RAR; ++i) {
+-			/*
+-			* "BRAR" refers to the RAR registers in the
+-			* Lincroft B-unit.
+-			*/
+-			dev_info(&pdev->dev, "BRAR[%u] bus address range = "
+-			  "[%lx, %lx]\n", i,
+-			  (unsigned long)rar->rar_addr[i].low,
+-			  (unsigned long)rar->rar_addr[i].high);
+-		}
+-	}
+-	return result;
+-}
+-
+-/**
+- *	rar_get_address		-	get the bus address in a RAR
+- *	@start: return value of start address of block
+- *	@end: return value of end address of block
+- *
+- *	The rar_get_address function is used by other device drivers
+- *	to obtain RAR address information on a RAR. It takes three
+- *	parameters:
+- *
+- *	The function returns a 0 upon success or an error if there is no RAR
+- *	facility on this system.
+- */
+-int rar_get_address(int rar_index, dma_addr_t *start, dma_addr_t *end)
+-{
+-	int idx;
+-	struct rar_device *rar = rar_to_device(rar_index, &idx);
+-
+-	if (rar == NULL) {
+-		WARN_ON(1);
+-		return -ENODEV;
+-	}
+-
+-	*start = rar->rar_addr[idx].low;
+-	*end = rar->rar_addr[idx].high;
+-	return 0;
+-}
+-EXPORT_SYMBOL(rar_get_address);
+-
+-/**
+- *	rar_lock	-	lock a RAR register
+- *	@rar_index: RAR to lock (0-2)
+- *
+- *	The rar_lock function is ued by other device drivers to lock an RAR.
+- *	once a RAR is locked, it stays locked until the next system reboot.
+- *
+- *	The function returns a 0 upon success or an error if there is no RAR
+- *	facility on this system, or the locking fails
+- */
+-int rar_lock(int rar_index)
+-{
+-	struct rar_device *rar;
+-	int result;
+-	int idx;
+-	dma_addr_t low, high;
+-
+-	rar = rar_to_device(rar_index, &idx);
+-
+-	if (rar == NULL) {
+-		WARN_ON(1);
+-		return -EINVAL;
+-	}
+-
+-	low = rar->rar_addr[idx].low & 0xfffffc00u;
+-	high = rar->rar_addr[idx].high & 0xfffffc00u;
+-
+-	/*
+-	* Only allow I/O from the graphics and Langwell;
+-	* not from the x86 processor
+-	*/
+-
+-	if (rar_index == RAR_TYPE_VIDEO) {
+-		low |= 0x00000009;
+-		high |= 0x00000015;
+-	} else if (rar_index == RAR_TYPE_AUDIO) {
+-		/* Only allow I/O from Langwell; nothing from x86 */
+-		low |= 0x00000008;
+-		high |= 0x00000018;
+-	} else
+-		/* Read-only from all agents */
+-		high |= 0x00000018;
+-
+-	/*
+-	* Now program the register using the Lincroft message
+-	* bus interface.
+-	*/
+-	result = rar_set_addr(rar->rar_dev,
+-				2 * idx, low);
+-
+-	if (result == 0)
+-		result = rar_set_addr(rar->rar_dev,
+-				2 * idx + 1, high);
+-
+-	return result;
+-}
+-EXPORT_SYMBOL(rar_lock);
+-
+-/**
+- *	register_rar		-	register a RAR handler
+- *	@num: RAR we wish to register for
+- *	@callback: function to call when RAR support is available
+- *	@data: data to pass to this function
+- *
+- *	The register_rar function is to used by other device drivers
+- *	to ensure that this driver is ready. As we cannot be sure of
+- *	the compile/execute order of drivers in the kernel, it is
+- *	best to give this driver a callback function to call when
+- *	it is ready to give out addresses. The callback function
+- *	would have those steps that continue the initialization of
+- *	a driver that do require a valid RAR address. One of those
+- *	steps would be to call rar_get_address()
+- *
+- *	This function return 0 on success or an error code on failure.
+- */
+-int register_rar(int num, int (*callback)(unsigned long data),
+-							unsigned long data)
+-{
+-	/* For now we hardcode a single RAR device */
+-	struct rar_device *rar;
+-	struct client *c;
+-	int idx;
+-	int retval = 0;
+-
+-	mutex_lock(&rar_mutex);
+-
+-	/* Do we have a client mapping for this RAR number ? */
+-	c = rar_to_client(num);
+-	if (c == NULL) {
+-		retval = -ERANGE;
+-		goto done;
+-	}
+-	/* Is it claimed ? */
+-	if (c->busy) {
+-		retval = -EBUSY;
+-		goto done;
+-	}
+-	c->busy = 1;
+-
+-	/* See if we have a handler for this RAR yet, if we do then fire it */
+-	rar = rar_to_device(num, &idx);
+-
+-	if (rar) {
+-		/*
+-		* if the driver already registered, then we can simply
+-		* call the callback right now
+-		*/
+-		(*callback)(data);
+-		goto done;
+-	}
+-
+-	/* Arrange to be called back when the hardware is found */
+-	c->callback = callback;
+-	c->driver_priv = data;
+-done:
+-	mutex_unlock(&rar_mutex);
+-	return retval;
+-}
+-EXPORT_SYMBOL(register_rar);
+-
+-/**
+- *	unregister_rar	-	release a RAR allocation
+- *	@num: RAR number
+- *
+- *	Releases a RAR allocation, or pending allocation. If a callback is
+- *	pending then this function will either complete before the unregister
+- *	returns or not at all.
+- */
+-
+-void unregister_rar(int num)
+-{
+-	struct client *c;
+-
+-	mutex_lock(&rar_mutex);
+-	c = rar_to_client(num);
+-	if (c == NULL || !c->busy)
+-		WARN_ON(1);
+-	else
+-		c->busy = 0;
+-	mutex_unlock(&rar_mutex);
+-}
+-EXPORT_SYMBOL(unregister_rar);
+-
+-/**
+- *	rar_callback		-	Process callbacks
+- *	@rar: new RAR device
+- *
+- *	Process the callbacks for a newly found RAR device.
+- */
+-
+-static void rar_callback(struct rar_device *rar)
+-{
+-	struct client *c = &rar->client[0];
+-	int i;
+-
+-	mutex_lock(&rar_mutex);
+-
+-	rar->registered = 1;	/* Ensure no more callbacks queue */
+-
+-	for (i = 0; i < MRST_NUM_RAR; i++) {
+-		if (c->callback && c->busy) {
+-			c->callback(c->driver_priv);
+-			c->callback = NULL;
+-		}
+-		c++;
+-	}
+-	mutex_unlock(&rar_mutex);
+-}
+-
+-/**
+- *	rar_probe		-	PCI probe callback
+- *	@dev: PCI device
+- *	@id: matching entry in the match table
+- *
+- *	A RAR device has been discovered. Initialise it and if successful
+- *	process any pending callbacks that can now be completed.
+- */
+-static int rar_probe(struct pci_dev *dev, const struct pci_device_id *id)
+-{
+-	int error;
+-	struct rar_device *rar;
+-
+-	dev_dbg(&dev->dev, "PCI probe starting\n");
+-
+-	rar = alloc_rar_device();
+-	if (rar == NULL)
+-		return -EBUSY;
+-
+-	/* Enable the device */
+-	error = pci_enable_device(dev);
+-	if (error) {
+-		dev_err(&dev->dev,
+-			"Error enabling RAR register PCI device\n");
+-		goto end_function;
+-	}
+-
+-	/* Fill in the rar_device structure */
+-	rar->rar_dev = pci_dev_get(dev);
+-	pci_set_drvdata(dev, rar);
+-
+-	/*
+-	 * Initialize the RAR parameters, which have to be retrieved
+-	 * via the message bus interface.
+-	 */
+-	error = init_rar_params(rar);
+-	if (error) {
+-		pci_disable_device(dev);
+-		dev_err(&dev->dev, "Error retrieving RAR addresses\n");
+-		goto end_function;
+-	}
+-	/* now call anyone who has registered (using callbacks) */
+-	rar_callback(rar);
+-	return 0;
+-end_function:
+-	free_rar_device(rar);
+-	return error;
+-}
+-
+-static DEFINE_PCI_DEVICE_TABLE(rar_pci_id_tbl) = {
+-	{ PCI_VDEVICE(INTEL, 0x4110) },
+-	{ 0 }
+-};
+-
+-MODULE_DEVICE_TABLE(pci, rar_pci_id_tbl);
+-
+-/* field for registering driver to PCI device */
+-static struct pci_driver rar_pci_driver = {
+-	.name = "rar_register_driver",
+-	.id_table = rar_pci_id_tbl,
+-	.probe = rar_probe,
+-	/* Cannot be unplugged - no remove */
+-};
+-
+-static int __init rar_init_handler(void)
+-{
+-	return pci_register_driver(&rar_pci_driver);
+-}
+-
+-static void __exit rar_exit_handler(void)
+-{
+-	pci_unregister_driver(&rar_pci_driver);
+-}
+-
+-module_init(rar_init_handler);
+-module_exit(rar_exit_handler);
+-
+-MODULE_LICENSE("GPL");
+-MODULE_DESCRIPTION("Intel Restricted Access Region Register Driver");
+diff --git a/include/linux/rar_register.h b/include/linux/rar_register.h
+deleted file mode 100644
+index 5c61181..0000000
+--- a/include/linux/rar_register.h
++++ /dev/null
+@@ -1,60 +0,0 @@
+-/*
+- * Copyright (C) 2010 Intel Corporation. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of version 2 of the GNU General
+- * Public License as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be
+- * useful, but WITHOUT ANY WARRANTY; without even the implied
+- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+- * PURPOSE.  See the GNU General Public License for more details.
+- * You should have received a copy of the GNU General Public
+- * License along with this program; if not, write to the Free
+- * Software Foundation, Inc., 59 Temple Place - Suite 330,
+- * Boston, MA  02111-1307, USA.
+- * The full GNU General Public License is included in this
+- * distribution in the file called COPYING.
+- */
+-
+-
+-#ifndef _RAR_REGISTER_H
+-#define _RAR_REGISTER_H
+-
+-#include <linux/types.h>
+-
+-/* following are used both in drivers as well as user space apps */
+-
+-#define	RAR_TYPE_VIDEO	0
+-#define	RAR_TYPE_AUDIO	1
+-#define	RAR_TYPE_IMAGE	2
+-#define	RAR_TYPE_DATA	3
+-
+-#ifdef __KERNEL__
+-
+-struct rar_device;
+-
+-#if defined(CONFIG_RAR_REGISTER)
+-int register_rar(int num,
+-		int (*callback)(unsigned long data), unsigned long data);
+-void unregister_rar(int num);
+-int rar_get_address(int rar_index, dma_addr_t *start, dma_addr_t *end);
+-int rar_lock(int rar_index);
+-#else
+-extern void unregister_rar(int num)  { }
+-extern int rar_lock(int rar_index) { return -EIO; }
+-
+-extern inline int register_rar(int num,
+-		int (*callback)(unsigned long data), unsigned long data)
+-{
+-	return -ENODEV;
+-}
+-
+-extern int rar_get_address(int rar_index, dma_addr_t *start, dma_addr_t *end)
+-{
+-	return -ENODEV;
+-}
+-#endif	/* RAR_REGISTER */
+-
+-#endif  /* __KERNEL__ */
+-#endif  /* _RAR_REGISTER_H */
