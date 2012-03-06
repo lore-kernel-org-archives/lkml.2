@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab2CFAt3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 19:49:29 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:33365 "EHLO
+	id S932625Ab2CFAve (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 19:51:34 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:53653 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932433Ab2CFAt2 (ORCPT
+	with ESMTP id S932277Ab2CFAvc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 19:49:28 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eric.dumazet@gmail.com designates 10.68.232.106 as permitted sender) smtp.mail=eric.dumazet@gmail.com; dkim=pass header.i=eric.dumazet@gmail.com
-Subject: Re: [PATCH v4] lpc32xx: Added ethernet driver
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Roland Stigge <stigge@antcom.de>, davem@davemloft.net,
-        jeffrey.t.kirsher@intel.com, alexander.h.duyck@intel.com,
-        eilong@broadcom.com, ian.campbell@citrix.com, netdev@vger.kernel.org,
-        w.sang@pengutronix.de, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, baruch@tkos.co.il, joe@perches.com
-In-Reply-To: <1330987524.2538.61.camel@bwh-desktop>
-References: <1330983641-32622-1-git-send-email-stigge@antcom.de>
-	 <1330987524.2538.61.camel@bwh-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 05 Mar 2012 16:49:18 -0800
-Message-ID: <1330994958.9504.2.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 5 Mar 2012 19:51:32 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of paul.gortmaker@gmail.com designates 10.68.130.193 as permitted sender) smtp.mail=paul.gortmaker@gmail.com; dkim=pass header.i=paul.gortmaker@gmail.com
+MIME-Version: 1.0
+In-Reply-To: <20120306105749.4eb0fcccacfe9352e8042f06@canb.auug.org.au>
+References: <20120306105749.4eb0fcccacfe9352e8042f06@canb.auug.org.au>
+Date: Mon, 5 Mar 2012 19:51:32 -0500
+X-Google-Sender-Auth: QV0LPkY5HhjkIF9koSCWGBnR9Ns
+Message-ID: <CAP=VYLqJ8ER+tbpVqsvtrUottYP7O+k495Vtjp0Ep2Oa1NsqMw@mail.gmail.com>
+Subject: Re: linux-next: bad merge in the moduleh tree
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-05 at 22:45 +0000, Ben Hutchings wrote:
-> On Mon, 2012-03-05 at 22:40 +0100, Roland Stigge wrote:
-> [...]
+On Mon, Mar 5, 2012 at 6:57 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Paul,
+>
+> I noticed this merge in the moduleh tree:
+>
+> dc69707e944e "Merge branch 'module-3.4' into for-sfr"
+>
+> This merge result in multplie includes of kernel.h in lib/average.c and
+> lib/list_debug.c.
 
-...
+Is there a better way to present these into linux-next vs. me merging
+them into one stream?  I want to keep the module-3.4 content separate
+from the bug-3.4 content  (and let Linus do the pull & merge) but at
+the same time I want these commit IDs tested in linux-next.  The topics
+are most likely one-shot deals, so adding a separate entity into linux-next
+for each of them doesn't seem to be worthwhile.
 
-> > +				/* Copy packet from buffer */
-> > +				memcpy(prdbuf,
-> > +					pldat->rx_buff_v[rxconsidx], len);
-> > +
-> > +				/* Pass to upper layer */
-> > +				skb->protocol = eth_type_trans(skb, ndev);
-> > +				netif_rx(skb);
-> > +				ndev->last_rx = jiffies;
-> 
-> Drivers don't need to set last_rx any more.
+Anyway for now, I'll go re-check the merge and make sure it is dup free
+for tomorrow.  Thanks for the heads up.
 
-Also, a NAPI driver should call netif_receive_skb() instead of
-netif_rx()
+Paul.
+--
 
-netif_rx() is more expensive because of additional queue, while
-netif_receive_skb() directly calls the upper stacks.
-
-
-
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
