@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030690Ab2CFN3R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 08:29:17 -0500
-Received: from wp188.webpack.hosteurope.de ([80.237.132.195]:54183 "EHLO
-	wp188.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030669Ab2CFN3O (ORCPT
+	id S1030687Ab2CFNaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 08:30:20 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47477 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030275Ab2CFNaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 08:29:14 -0500
-Message-ID: <4F561124.30800@bisect.de>
-Date: Tue, 06 Mar 2012 14:29:08 +0100
-From: Danny Kukawka <danny.kukawka@bisect.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+	Tue, 6 Mar 2012 08:30:18 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of festevam@gmail.com designates 10.14.127.8 as permitted sender) smtp.mail=festevam@gmail.com; dkim=pass header.i=festevam@gmail.com
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>
-CC: awalls@md.metrocast.net, linux-media@vger.kernel.org,
-        ivtv-devel@ivtvdriver.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ivtv: Fix build warning
-References: <4f53b393.cBPkBHEECVOO9Jzx%Larry.Finger@lwfinger.net>
-In-Reply-To: <4f53b393.cBPkBHEECVOO9Jzx%Larry.Finger@lwfinger.net>
-X-Enigmail-Version: 1.3.5
+In-Reply-To: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8909@MEP-EXCH.meprolight.com>
+References: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8906@MEP-EXCH.meprolight.com>
+	<Pine.LNX.4.64.1203061406500.9300@axis700.grange>
+	<4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8909@MEP-EXCH.meprolight.com>
+Date: Tue, 6 Mar 2012 10:30:15 -0300
+Message-ID: <CAOMZO5Ct_f49j3L4TV1LhHyTAikyx7jTrMgt4aXiMWzPP8g_FA@mail.gmail.com>
+Subject: Re: mx3-camera
+From: Fabio Estevam <festevam@gmail.com>
+To: Alex Gershgorin <alexg@meprolight.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-bounce-key: webpack.hosteurope.de;danny.kukawka@bisect.de;1331040554;0651f440;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.03.2012 19:25, schrieb Larry Finger:
-> In driver ivtv, there is a mismatch between the type of the radio module parameter
-> and the storage variable, which leads to the following warning:
-> 
->   CC [M]  drivers/media/video/ivtv/ivtv-driver.o
-> drivers/media/video/ivtv/ivtv-driver.c: In function ‘__check_radio’:
-> drivers/media/video/ivtv/ivtv-driver.c:142: warning: return from incompatible pointer type
-> drivers/media/video/ivtv/ivtv-driver.c: At top level:
-> drivers/media/video/ivtv/ivtv-driver.c:142: warning: initialization from incompatible pointer type
-> 
-> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+On Tue, Mar 6, 2012 at 10:22 AM, Alex Gershgorin <alexg@meprolight.com> wrote:
 
-See my already twice send patches:
-http://thread.gmane.org/gmane.linux.kernel/1246476
+> In i.MX35 (arch/arm/mach-imx/clock-imx35.c) it looks like this:
+>
+> _REGISTER_CLOCK(NULL, "csi", csi_clk)
 
-Danny
+Yes, I will submit a patch to fix this.
+
+Regards,
+
+Fabio Estevam
