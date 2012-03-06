@@ -1,45 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab2CFQZE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 11:25:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37405 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756645Ab2CFQZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 11:25:00 -0500
-Date: Tue, 6 Mar 2012 11:24:55 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] blkcg: accumulated blkcg updates
-Message-ID: <20120306162455.GB32148@redhat.com>
-References: <1329875223-5102-1-git-send-email-tj@kernel.org>
- <20120305210726.GC1263@google.com>
- <20120305210836.GD1263@google.com>
- <20120306150709.GA32148@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120306150709.GA32148@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756278Ab2CFQXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 11:23:50 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32910 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755534Ab2CFQTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 11:19:48 -0500
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=uXtFb1rEyQIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=mo5OhQ5FGrJinU-aPPAA:9 a=imIzy9uYdW2zjcfvXL8A:7 a=Zh68SRI7RUMA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=UIRJcU6UCbNAp-s2:21 a=Ov0Uxy-l_Rc_lsra:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120306161946.789821696@goodmis.org>
+User-Agent: quilt/0.50-1
+Date: Tue, 06 Mar 2012 11:16:45 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        stable-rt@vger.kernel.org
+Subject: [PATCH RT 09/25][RFC 3.0.23-rt39-rc1] ia64: vsyscall: Use seqcount instead of seqlock
+References: <20120306161636.491172179@goodmis.org>
+Content-Disposition: inline; filename=0009-ia64-vsyscall-Use-seqcount-instead-of-seqlock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 10:07:09AM -0500, Vivek Goyal wrote:
+From: Thomas Gleixner <tglx@linutronix.de>
 
-[..]
-> 
-> My system is hanging during reboot. Last message I see is "Detaching DM
-> devices" and nothing happens after that. I shall have to do some more 
-> testing to figure out when did that start happening.
+The update of the vdso data happens under xtime_lock, so adding a
+nested lock is pointless. Just use a seqcount to sync the readers.
 
-Ok, git bisect shows that very first patch to drain the queue is culprit.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/ia64/kernel/asm-offsets.c        |    4 ++--
+ arch/ia64/kernel/fsys.S               |    2 +-
+ arch/ia64/kernel/fsyscall_gtod_data.h |    2 +-
+ arch/ia64/kernel/time.c               |   10 +++-------
+ 4 files changed, 7 insertions(+), 11 deletions(-)
 
-9e5b9f8 block: blk-throttle should be drained regardless of q->elevator
+diff --git a/arch/ia64/kernel/asm-offsets.c b/arch/ia64/kernel/asm-offsets.c
+index af56501..106aeb6 100644
+--- a/arch/ia64/kernel/asm-offsets.c
++++ b/arch/ia64/kernel/asm-offsets.c
+@@ -269,8 +269,8 @@ void foo(void)
+ 	BLANK();
+ 
+ 	/* used by fsys_gettimeofday in arch/ia64/kernel/fsys.S */
+-	DEFINE(IA64_GTOD_LOCK_OFFSET,
+-		offsetof (struct fsyscall_gtod_data_t, lock));
++	DEFINE(IA64_GTOD_SEQ_OFFSET,
++		offsetof (struct fsyscall_gtod_data_t, seq);
+ 	DEFINE(IA64_GTOD_WALL_TIME_OFFSET,
+ 		offsetof (struct fsyscall_gtod_data_t, wall_time));
+ 	DEFINE(IA64_GTOD_MONO_TIME_OFFSET,
+diff --git a/arch/ia64/kernel/fsys.S b/arch/ia64/kernel/fsys.S
+index 331d42b..fa77de7 100644
+--- a/arch/ia64/kernel/fsys.S
++++ b/arch/ia64/kernel/fsys.S
+@@ -174,7 +174,7 @@ ENTRY(fsys_set_tid_address)
+ 	FSYS_RETURN
+ END(fsys_set_tid_address)
+ 
+-#if IA64_GTOD_LOCK_OFFSET !=0
++#if IA64_GTOD_SEQ_OFFSET !=0
+ #error fsys_gettimeofday incompatible with changes to struct fsyscall_gtod_data_t
+ #endif
+ #if IA64_ITC_JITTER_OFFSET !=0
+diff --git a/arch/ia64/kernel/fsyscall_gtod_data.h b/arch/ia64/kernel/fsyscall_gtod_data.h
+index 57d2ee6..146b15b 100644
+--- a/arch/ia64/kernel/fsyscall_gtod_data.h
++++ b/arch/ia64/kernel/fsyscall_gtod_data.h
+@@ -6,7 +6,7 @@
+  */
+ 
+ struct fsyscall_gtod_data_t {
+-	seqlock_t	lock;
++	seqcount_t	seq;
+ 	struct timespec	wall_time;
+ 	struct timespec monotonic_time;
+ 	cycle_t		clk_mask;
+diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+index 85118df..15823ed 100644
+--- a/arch/ia64/kernel/time.c
++++ b/arch/ia64/kernel/time.c
+@@ -35,9 +35,7 @@
+ 
+ static cycle_t itc_get_cycles(struct clocksource *cs);
+ 
+-struct fsyscall_gtod_data_t fsyscall_gtod_data = {
+-	.lock = __SEQLOCK_UNLOCKED(fsyscall_gtod_data.lock),
+-};
++struct fsyscall_gtod_data_t fsyscall_gtod_data;
+ 
+ struct itc_jitter_data_t itc_jitter_data;
+ 
+@@ -460,9 +458,7 @@ void update_vsyscall_tz(void)
+ void update_vsyscall(struct timespec *wall, struct timespec *wtm,
+ 			struct clocksource *c, u32 mult)
+ {
+-        unsigned long flags;
+-
+-        write_seqlock_irqsave(&fsyscall_gtod_data.lock, flags);
++	write_seqcount_begin(&fsyscall_gtod_data.seq);
+ 
+         /* copy fsyscall clock data */
+         fsyscall_gtod_data.clk_mask = c->mask;
+@@ -485,6 +481,6 @@ void update_vsyscall(struct timespec *wall, struct timespec *wtm,
+ 		fsyscall_gtod_data.monotonic_time.tv_sec++;
+ 	}
+ 
+-        write_sequnlock_irqrestore(&fsyscall_gtod_data.lock, flags);
++	write_seqcount_end(&fsyscall_gtod_data.seq);
+ }
+ 
+-- 
+1.7.8.3
 
-Will do some more debugging.
-
-Thanks
-Vivek
 
