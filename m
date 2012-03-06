@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341Ab2CFWJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 17:09:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36341 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758988Ab2CFWJr (ORCPT
+	id S1030970Ab2CFWMn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 17:12:43 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:40349 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965262Ab2CFWMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 17:09:47 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.50.41.161 as permitted sender) smtp.mail=linus.walleij@linaro.org
-MIME-Version: 1.0
-In-Reply-To: <4F567FE7.4020507@wwwdotorg.org>
-References: <1331068552-16988-1-git-send-email-linus.walleij@stericsson.com>
-	<4F567FE7.4020507@wwwdotorg.org>
-Date: Tue, 6 Mar 2012 23:09:47 +0100
-Message-ID: <CACRpkdYQUmPLdc-cZN80bEgfjNALDQ-gfaHy5d6Hrn_HsHMvtA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: split pincontrol states into its own header
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Mar 2012 17:12:42 -0500
+Date: Tue, 06 Mar 2012 17:08:19 -0500 (EST)
+Message-Id: <20120306.170819.2135873666210523674.davem@davemloft.net>
+To: dhdang@apm.com
+Cc: benh@kernel.crashing.org, paulus@samba.org, jwboyer@gmail.com, sr@denx.de,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] powerpc/44x: Add new compatible value for EMAC
+ node of APM821XX dts file.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1330945062-15760-1-git-send-email-dhdang@apm.com>
+References: <1330920224-3006-1-git-send-email-dhdang@apm.com>
+	<1330945062-15760-1-git-send-email-dhdang@apm.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 06 Mar 2012 14:08:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 10:21 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+From: Duc Dang <dhdang@apm.com>
+Date: Mon,  5 Mar 2012 17:57:42 +0700
 
-> Sure. I'm not quite sure how many (or how many standardized) states we
-> expect to have such that it warrants 'pinctrl-state.h' vs. say
-> 'pinctrl-common.h', but it's probably fine.
+> This compatible value will be used to distinguish some special features of APM821XX EMAC: no half duplex mode support, configuring jumbo frame.
+> 
+> Signed-off-by: Duc Dang <dhdang@apm.com>
 
-We can just rename it as seems fit I guess...
-
-> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-
-I really like your new email address!
-
-Yours,
-Linus Walleij
+Applied.
