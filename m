@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030313Ab2CFKmr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 05:42:47 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:54371 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758974Ab2CFKmm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 05:42:42 -0500
-Message-ID: <4F55EA0D.4040408@linux.vnet.ibm.com>
-Date: Tue, 06 Mar 2012 18:42:21 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1758990Ab2CFKoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 05:44:03 -0500
+Received: from antcom.de ([188.40.178.216]:44082 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758905Ab2CFKoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 05:44:00 -0500
+Message-ID: <4F55EA6D.3070602@antcom.de>
+Date: Tue, 06 Mar 2012 11:43:57 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Avi Kivity <avi@redhat.com>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, David Ahern <dsahern@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 0/3] KVM: perf: kvm events analysis tool
-References: <4F55D110.2020609@linux.vnet.ibm.com> <20120306090730.GB27238@elte.hu>
-In-Reply-To: <20120306090730.GB27238@elte.hu>
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: davem@davemloft.net, jeffrey.t.kirsher@intel.com,
+        alexander.h.duyck@intel.com, eilong@broadcom.com,
+        ian.campbell@citrix.com, netdev@vger.kernel.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de, baruch@tkos.co.il,
+        joe@perches.com
+Subject: Re: [PATCH v4] lpc32xx: Added ethernet driver: smp_wmb()
+References: <1330983641-32622-1-git-send-email-stigge@antcom.de> <1330987524.2538.61.camel@bwh-desktop>
+In-Reply-To: <1330987524.2538.61.camel@bwh-desktop>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-x-cbid: 12030600-7014-0000-0000-000000AF663B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your review, Ingo!
+On 03/05/2012 11:45 PM, Ben Hutchings wrote:
+>> +	/* Clear and enable interrupts */
+>> +	writel(0xFFFF, LPC_ENET_INTCLEAR(pldat->net_base));
+>> +	lpc_eth_enable_int(pldat->net_base);
+>> +
+>> +	/* Get the next TX buffer output index */
+>> +	pldat->num_used_tx_buffs = 0;
+>> +	pldat->last_tx_idx =
+>> +		readl(LPC_ENET_TXCONSUMEINDEX(pldat->net_base));
+> 
+> Doesn't this need to be done *before* enabling interrupts?  Also, I
+> think you need an smp_wmb() so that the interrupt handler is guaranteed
+> to see all these writes.
 
-On 03/06/2012 05:07 PM, Ingo Molnar wrote:
+Do you mean _one_ smp_wmb() directly after lpc_eth_enable_int() (which
+I'm moving behind the above code?
 
+Note that there is no SMP in LPCs and NXP is not planning to build one
+AFAIK. However, I'm fine with including smp_wmb() anyway for completeness.
 
-> So, your new tool has a similar workflow to:
-> 
->   perf kvm record
->   perf kvm report
-> 
-> but differs from it in terms of events used and in terms of 
-> reported output.
-> 
-> To me it appears that your tool is basically pretty similar to 
-> 'perf stat', adapted to KVM, right?
-> 
-> So, could your new tool's workflow be simplified like this:
-> 
->   perf kvm stat ..
-> 
-> ?
-> 
-> To automatically stat all vcpus in the system, the well-known 
-> -a/--all-cpus system-wide method could be used:
-> 
->   perf kvm stat -a ...
-> 
-> with stat output following immediately after it has finished.
-> 
+Thanks in advance,
 
-
-Actually, the stat information has already been included in the report.
-
-
-> It should also be possible to use those new events in a 
-> recording fashion - a new, rather logical command sub-space 
-> could be used for that:
-> 
->  perf kvm stat record ...
->  perf kvm stat report ...
-> 
-> [ This could be expanded to regular 'perf stat' as well: 'perf 
->   stat record' and 'perf stat report' would be useful - but I 
->   suspect that's outside the scope of your patches. ]
-> 
-
-
-I totally agree with you except i prefer 'perf kvm events' to
-'perf kvm stat' :) : it records some specified kvm events and
-smartly analyze it. I think it matches its doing better.
-
-
+Roland
