@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758061Ab2CFAIw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 19:08:52 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:35233 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758017Ab2CFAIu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 19:08:50 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.60.30.66 as permitted sender) smtp.mail=glikely@secretlab.ca
+	id S1758080Ab2CFALs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 19:11:48 -0500
+Received: from mga01.intel.com ([192.55.52.88]:45417 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758054Ab2CFALq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 19:11:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="125382482"
+Date: Mon, 5 Mar 2012 16:11:46 -0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: "linux-fsdevel@vger.kernel.o..." <linux-fsdevel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [BUG] scsi_device.device == NULL in sd_revalidate_disk()
+Message-ID: <20120306001146.GA31227@localhost>
+References: <20120305234133.GA13690@localhost>
+ <CA+5PVA4axkm-S5-E1pnkgNpDLy3DHegFL2Cfo2i-8HOsfGMHDw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120305221528.GA11935@kroah.com>
-References: <1330962461-9061-1-git-send-email-grant.likely@secretlab.ca>
- <20120305214747.GA9425@kroah.com> <CACxGe6samH6-o9Ye7h7Wpj8GztxvFpWDgcEvtx2ey+YRGYm_9g@mail.gmail.com>
- <20120305221528.GA11935@kroah.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 5 Mar 2012 17:08:30 -0700
-X-Google-Sender-Auth: xNtr2TFka2DudIzjz-8Eo-CqIlA
-Message-ID: <CACxGe6vB3cHSNtLrLdrWmD3dZk-+eQY4p=X46qqxp0C2a8V6vg@mail.gmail.com>
-Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Arnd Bergmann <arnd@arndb.de>, Dilan Lee <dilee@nvidia.com>,
-        Manjunath GKondaiah <manjunath.gkondaiah@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+5PVA4axkm-S5-E1pnkgNpDLy3DHegFL2Cfo2i-8HOsfGMHDw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 5, 2012 at 3:15 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Mar 05, 2012 at 03:09:27PM -0700, Grant Likely wrote:
->> On Mon, Mar 5, 2012 at 2:47 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > On Mon, Mar 05, 2012 at 08:47:41AM -0700, Grant Likely wrote:
->> >> --- a/include/linux/device.h
->> >> +++ b/include/linux/device.h
->> >> @@ -587,6 +587,10 @@ struct device_dma_parameters {
->> >>   * @mutex:   Mutex to synchronize calls to its driver.
->> >>   * @bus:     Type of bus device is on.
->> >>   * @driver:  Which driver has allocated this
->> >> + * @deferred_probe: entry in deferred_probe_list which is used to retry the
->> >> + *           binding of drivers which were unable to get all the resources
->> >> + *           needed by the device; typically because it depends on another
->> >> + *           driver getting probed first.
->> >>   * @platform_data: Platform data specific to the device.
->> >>   *           Example: For devices on custom boards, as typical of embedded
->> >>   *           and SOC based hardware, Linux often uses platform_data to point
->> >> @@ -646,6 +650,7 @@ struct device {
->> >>       struct bus_type *bus;           /* type of bus device is on */
->> >>       struct device_driver *driver;   /* which driver has allocated this
->> >>                                          device */
->> >> +     struct list_head        deferred_probe;
->> >>       void            *platform_data; /* Platform specific data, device
->> >>                                          core doesn't touch it */
->> >>       struct dev_pm_info      power;
->> >
->> > This can go into the "struct device_private" structure instead, right?
->> > That would be better to ensure that no non-driver-core code ever touches
->> > this thing.
->>
->> I don't see any reason why not.  I'll make the change and repost.
->
-> If you are going to repost, care to fix up your multi-line comment
-> blocks to follow the "standard" way of doing it?
->
-> That saves me doing the follow-on patch to do it myself :)
+On Mon, Mar 05, 2012 at 07:02:08PM -0500, Josh Boyer wrote:
+> On Mon, Mar 5, 2012 at 6:41 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> > Hi,
+> >
+> > I ran into a NULL dereference bug on USB key hot remove, which should
+> > be caused by the below skdp->device reference
+> >
+> > Â  Â  Â  Â static int sd_revalidate_disk(struct gendisk *disk)
+> > Â  Â  Â  Â {
+> > Â  Â  Â  Â  Â  Â  Â  Â struct scsi_disk *sdkp = scsi_disk(disk);
+> > ==> Â  Â  Â  Â  Â  Â  struct scsi_device *sdp = sdkp->device;
+> 
+> This has been reported numerous times.  There are patches to the block layer
+> that are supposed to fix it, but they haven't hit Linus' tree yet.  I think
+> we're waiting on Jens to push them.
 
-Yeah, I can do that.
-
-Actually, if you're okay with this version other than the private data
-change, could you pick up this version (it's actually received
-testing) and I'll provide follow up patches to fix up the issues
-pointed out by you and Arnd.
+OK, thanks for the information!
 
 Thanks,
-g.
+Fengguang
