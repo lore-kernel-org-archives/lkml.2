@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758940Ab2CFViO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 16:38:14 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63102 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758837Ab2CFViM (ORCPT
+	id S1758950Ab2CFVkq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 16:40:46 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:41274 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756658Ab2CFVkn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 16:38:12 -0500
-Date: Tue, 6 Mar 2012 13:37:36 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Li Zefan <lizf@cn.fujitsu.com>
-cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>, Eric Paris <eparis@redhat.com>
-Subject: Re: [PATCH v2 0/3] cgroup: add xattr support
-In-Reply-To: <20120304180516.GB20787@dhcp-172-17-108-109.mtv.corp.google.com>
-Message-ID: <alpine.LSU.2.00.1203061314400.17934@eggly.anvils>
-References: <4F4F1459.4080300@cn.fujitsu.com> <20120304180516.GB20787@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Tue, 6 Mar 2012 16:40:43 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.180.83.72 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.LFD.2.02.1203062101040.2742@ionos>
+References: <20120228010511.GA8453@kroah.com> <20120228010434.412979550@linuxfoundation.org>
+ <87hay4dqjr.fsf@turtle.gmx.de> <201203050143.24541.s.L-H@gmx.de>
+ <CA+55aFxZsVxkxifR+EUZi=RsUGKfs5vYXX3nN_M_Az1BY5yyaw@mail.gmail.com>
+ <alpine.LFD.2.02.1203060927190.2742@ionos> <alpine.LFD.2.02.1203060957140.2742@ionos>
+ <alpine.LFD.2.02.1203062019340.2742@ionos> <8762eh1p7d.fsf@turtle.gmx.de> <alpine.LFD.2.02.1203062101040.2742@ionos>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 6 Mar 2012 13:40:22 -0800
+X-Google-Sender-Auth: AjSgN4rTOEVWRmCOfNfeHQoJMC8
+Message-ID: <CA+55aFxdnfGREML3u+eoGf89Jci8qBuW7WBmPk3w=wRWMvRvfg@mail.gmail.com>
+Subject: Re: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Sven Joachim <svenjoac@gmx.de>, Stefan Lippers-Hollmann <s.L-H@gmx.de>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org,
+        Stefano Brivio <stefano.brivio@polimi.it>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 4 Mar 2012, Tejun Heo wrote:
-> On Thu, Mar 01, 2012 at 02:16:57PM +0800, Li Zefan wrote:
-> > This can be used to attach metadata to a cgroup, which is required
-> > by systemd.
+On Tue, Mar 6, 2012 at 12:26 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> Subject: genirq: Clear action->thread_mask if IRQ_ONESHOT is not set
 
-I've not reviewed your patches in detail, but I'm very happy for most
-of the shmem xattr code to move out to a library for use elsewhere.
+Umm. Apparently this patch fixes the bug, but the patch itself is just insane.
 
-Note that the linux-next mm/shmem.c now includes Jarkko Sakkinen's
-shmem_initxattrs() work, maybe you can draw from that too.
+> -       if (new->flags & IRQF_ONESHOT && thread_mask == ~0UL) {
+> -               ret = -EBUSY;
+> -               goto out_mask;
+> +       if (new->flags & IRQF_ONESHOT) {
+> +               if (thread_mask == ~0UL) {
+> +                       ret = -EBUSY;
+> +                       goto out_mask;
+> +               }
+> +               new->thread_mask = new->flags & IRQF_ONESHOT;
+>        }
+> -       new->thread_mask = 1 << ffz(thread_mask);
 
-> > 
-> > As lazy as I am, here just quoted from Lennart for the detailed use
-> > cases:
-> 
-> I much prefer this version but would prefer to deal with this in the
-> next merge window as we're already on rc6.  On a cursory look...
-> 
-> * I'm not sure kmem_ is a good prefix.  It sucks that xattr values are
->   stored in kmem w/o size limit and we probably want to improve on
->   both fronts in the future.  Wouldn't it be better to name them
->   simple_*() and put them in fs/libfs.c?
+WHAT?
 
-Yes, simple_*() in fs/libfs.c sounds much better to me than kmem_*().
+You just checked that "new->flags & IRQF_ONESHOT" nonzero, and inside
+that if-statement, you then do
 
-On the size limit issue, shmem has its own shmem_xattr_validate(),
-which rejects XATTR_USER_PREFIX, and the patches leave that unchanged.
+  new->thread_mask = new->flags & IRQF_ONESHOT;
 
-I don't know whether the cgroup xattrs need to support USER or not,
-and I don't know what permissions would be involved if they do;
-but it's an important concern.
+which is just crazy. Why don't you just do
 
-Hugh
+    new->thread_mask = IRQF_ONESHOT;
 
-> 
-> * I don't think we want CONFIG option for cgroupfs xattr.  Let's just
->   add a mount option.
+if that is what you actually meant?
+
+What is that code actually *supposed* to do?
+
+Also, what was the meaning of that old insane line:
+
+   new->thread_mask = 1 << ffz(thread_mask);
+
+which you removed? It was crap, I agree, but what was the thinking
+behind it? And the reason it was crap is because that's a crazy
+expression that could be written better ways (*), and it needs a
+comment on what the heck the point of it was..
+
+So stop with these "random code" snippets, and explain what the f*&^
+the code is meant to do, AND THEN WRITE THE CODE IN A SANE MANNER
+instead of posting these kinds of insane patches.
+
+Because right now it really looks like the "random monkey" approach to
+programming.
+
+                   Linus
+
+(*) "1 << ffz(a)" can be written as
+
+   a = ~a;        /* Turn the zero bits into 1 bits */
+   a &= -a;      /* .. and find the first one. */
+
+without ever doing any insane bit scanning.
