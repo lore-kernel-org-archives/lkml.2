@@ -1,163 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759193Ab2CFL6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 06:58:51 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:48742 "EHLO mx2.parallels.com"
+	id S1759206Ab2CFMAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 07:00:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:28175 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759078Ab2CFL6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 06:58:50 -0500
-Message-ID: <4F55FBB1.2040206@parallels.com>
-Date: Tue, 6 Mar 2012 15:57:37 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7] mm: rework __isolate_lru_page() file/anon filter
-References: <20120229090748.29236.35489.stgit@zurg> <20120229091547.29236.28230.stgit@zurg> <20120302141739.b63677ad.kamezawa.hiroyu@jp.fujitsu.com> <4F505FDF.80003@openvz.org> <20120302171708.6f206bde.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120302171708.6f206bde.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1758929Ab2CFMAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 07:00:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="134204610"
+Subject: Re: [PATCH 1/2] dma: imx-sdma: Let the driver be probed even if no
+ firware is found
+From: Vinod Koul <vinod.koul@intel.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        kernel@pengutronix.de, shawn.guo@freescale.com,
+        Fabio Estevam <fabio.estevam@freescale.com>
+In-Reply-To: <1330525238-25420-1-git-send-email-festevam@gmail.com>
+References: <1330525238-25420-1-git-send-email-festevam@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 06 Mar 2012 17:34:43 +0530
+Message-ID: <1331035483.24656.198.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/02/2012 12:17 PM, KAMEZAWA Hiroyuki wrote:
-> On Fri, 02 Mar 2012 09:51:27 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
->> KAMEZAWA Hiroyuki wrote:
->>> On Wed, 29 Feb 2012 13:15:47 +0400
->>> Konstantin Khlebnikov<khlebnikov@openvz.org>   wrote:
->>>
->>>> This patch adds file/anon filter bits into isolate_mode_t,
->>>> this allows to simplify checks in __isolate_lru_page().
->>>>
->>>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->>>
->>> Hmm.. I like idea but..
->>>
->>>> ---
->>>>    include/linux/mmzone.h |    4 ++++
->>>>    include/linux/swap.h   |    2 +-
->>>>    mm/compaction.c        |    5 +++--
->>>>    mm/vmscan.c            |   27 +++++++++++++--------------
->>>>    4 files changed, 21 insertions(+), 17 deletions(-)
->>>>
->>>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
->>>> index eff4918..2fed935 100644
->>>> --- a/include/linux/mmzone.h
->>>> +++ b/include/linux/mmzone.h
->>>> @@ -193,6 +193,10 @@ struct lruvec {
->>>>    #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
->>>>    /* Isolate for asynchronous migration */
->>>>    #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
->>>> +/* Isolate swap-backed pages */
->>>> +#define	ISOLATE_ANON		((__force isolate_mode_t)0x20)
->>>> +/* Isolate file-backed pages */
->>>> +#define	ISOLATE_FILE		((__force isolate_mode_t)0x40)
->>>>
->>>>    /* LRU Isolation modes. */
->>>>    typedef unsigned __bitwise__ isolate_mode_t;
->>>> diff --git a/include/linux/swap.h b/include/linux/swap.h
->>>> index ba2c8d7..dc6e6a3 100644
->>>> --- a/include/linux/swap.h
->>>> +++ b/include/linux/swap.h
->>>> @@ -254,7 +254,7 @@ static inline void lru_cache_add_file(struct page *page)
->>>>    /* linux/mm/vmscan.c */
->>>>    extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->>>>    					gfp_t gfp_mask, nodemask_t *mask);
->>>> -extern int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file);
->>>> +extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
->>>>    extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
->>>>    						  gfp_t gfp_mask, bool noswap);
->>>>    extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->>>> diff --git a/mm/compaction.c b/mm/compaction.c
->>>> index 74a8c82..cc054f7 100644
->>>> --- a/mm/compaction.c
->>>> +++ b/mm/compaction.c
->>>> @@ -261,7 +261,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->>>>    	unsigned long last_pageblock_nr = 0, pageblock_nr;
->>>>    	unsigned long nr_scanned = 0, nr_isolated = 0;
->>>>    	struct list_head *migratelist =&cc->migratepages;
->>>> -	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
->>>> +	isolate_mode_t mode = ISOLATE_ACTIVE | ISOLATE_INACTIVE |
->>>> +			      ISOLATE_FILE | ISOLATE_ANON;
->>>>
->>>>    	/* Do not scan outside zone boundaries */
->>>>    	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
->>>> @@ -375,7 +376,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->>>>    			mode |= ISOLATE_ASYNC_MIGRATE;
->>>>
->>>>    		/* Try isolate the page */
->>>> -		if (__isolate_lru_page(page, mode, 0) != 0)
->>>> +		if (__isolate_lru_page(page, mode) != 0)
->>>>    			continue;
->>>>
->>>>    		VM_BUG_ON(PageTransCompound(page));
->>>> diff --git a/mm/vmscan.c b/mm/vmscan.c
->>>> index af6cfe7..1b70338 100644
->>>> --- a/mm/vmscan.c
->>>> +++ b/mm/vmscan.c
->>>> @@ -1029,27 +1029,18 @@ keep_lumpy:
->>>>     *
->>>>     * returns 0 on success, -ve errno on failure.
->>>>     */
->>>> -int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
->>>> +int __isolate_lru_page(struct page *page, isolate_mode_t mode)
->>>>    {
->>>> -	bool all_lru_mode;
->>>>    	int ret = -EINVAL;
->>>>
->>>>    	/* Only take pages on the LRU. */
->>>>    	if (!PageLRU(page))
->>>>    		return ret;
->>>>
->>>> -	all_lru_mode = (mode&   (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) ==
->>>> -		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
->>>> -
->>>> -	/*
->>>> -	 * When checking the active state, we need to be sure we are
->>>> -	 * dealing with comparible boolean values.  Take the logical not
->>>> -	 * of each.
->>>> -	 */
->>>> -	if (!all_lru_mode&&   !PageActive(page) != !(mode&   ISOLATE_ACTIVE))
->>>> +	if (!(mode&   (PageActive(page) ? ISOLATE_ACTIVE : ISOLATE_INACTIVE)))
->>>>    		return ret;
->>>
->>> Isn't this complicated ?
->>
->> But it doesn't blows my mind as old code does =)
->>
->> Maybe someone can propose more clear variant?
->>
->
-> switch (mode&  (ISOLATE_ACTIVE | ISOLATE_INACTIVE)) {
-> 	case ISOLATE_ACTIVE :
-> 		if (!PageActive(page))
-> 			return ret;
-> 	case ISOLATE_INACTIVE :
-> 		if (PageActive(page))
-> 			return ret;
-> 	default:
-> 		break;
-> 	}
-> }
->
-> ?
->
-> Thanks,
-> -Kame
->
+On Wed, 2012-02-29 at 11:20 -0300, Fabio Estevam wrote:
+> On the device tree case the code bails out when the firmware name cannot be found
+> or if the firmware fails to be requested.
+> 
+> Fix this behaviour as the SDMA engine can still operate with the built-in
+> ROM scripts.
+> 
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Both Applied, Thanks
+> ---
+>  drivers/dma/imx-sdma.c |   13 +++++--------
+>  1 files changed, 5 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> index bf736ad..130b994 100644
+> --- a/drivers/dma/imx-sdma.c
+> +++ b/drivers/dma/imx-sdma.c
+> @@ -1397,15 +1397,12 @@ static int __init sdma_probe(struct platform_device *pdev)
+>  		 */
+>  		ret = of_property_read_string(np, "fsl,sdma-ram-script-name",
+>  					      &fw_name);
+> -		if (ret) {
+> +		if (ret)
+>  			dev_err(&pdev->dev, "failed to get firmware name\n");
+> -			goto err_init;
+> -		}
+> -
+> -		ret = sdma_get_firmware(sdma, fw_name);
+> -		if (ret) {
+> -			dev_err(&pdev->dev, "failed to get firmware\n");
+> -			goto err_init;
+> +		else {
+> +			ret = sdma_get_firmware(sdma, fw_name);
+> +			if (ret)
+> +				dev_err(&pdev->dev, "failed to get firmware\n");
+>  		}
+>  	}
+>  
 
-The switch gets a little bit too big (vertical-wise). Maybe just 
-splitting it into two lines is enough to clarify its purpose.
-How about:
 
-int tmp_var = PageActive(page) ? ISOLATE_ACTIVE : ISOLATE_INACTIVE
-if (!(mode & tmp_var))
-    ret;
+-- 
+~Vinod
+
