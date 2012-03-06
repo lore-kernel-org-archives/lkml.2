@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab2CFH54 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 02:57:56 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:32877 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758329Ab2CFH5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 02:57:55 -0500
-Date: Tue, 6 Mar 2012 08:57:40 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: tglx@linutronix.de, hpa@zytor.com, alex.shi@intel.com, cl@gentwo.org,
-        sfr@canb.auug.org.au, tj@kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [patch 5/8] x86: use this_cpu_xxx to replace percpu_xxx funcs
-Message-ID: <20120306075740.GF23669@elte.hu>
-References: <20120305230515.A9238A02AE@akpm.mtv.corp.google.com>
- <20120306074601.GD23669@elte.hu>
- <20120305235532.28f407bf.akpm@linux-foundation.org>
+	id S1758584Ab2CFIHd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 03:07:33 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:40275 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758388Ab2CFIHb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 03:07:31 -0500
+Date: Tue, 6 Mar 2012 09:07:27 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Neal Cardwell <ncardwell@google.com>
+Cc: Christian Kujau <lists@nerdbynature.de>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at net/ipv4/tcp_input.c:3418
+Message-ID: <20120306080727.GA1641@x4>
+References: <alpine.DEB.2.01.1202261556150.4930@trent.utfs.org>
+ <alpine.DEB.2.01.1202290929520.4930@trent.utfs.org>
+ <CADVnQy=JkVc_8ptpSkhQWe4HJpbe_+JMad+2uqgN1iUfkfFFCw@mail.gmail.com>
+ <CADVnQykqaUCFBYXVqGNq+HmeowAbYJQQNpbXFpQ4Uif3gwf4ig@mail.gmail.com>
+ <CADVnQyk_6LYW2nyjccWjv1NmjivXf5cXBqJ+LsZLjGyOj7kddQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120305235532.28f407bf.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADVnQyk_6LYW2nyjccWjv1NmjivXf5cXBqJ+LsZLjGyOj7kddQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Tue, 6 Mar 2012 08:46:01 +0100 Ingo Molnar <mingo@elte.hu> wrote:
+On 2012.03.06 at 00:46 -0500, Neal Cardwell wrote:
+> On Wed, Feb 29, 2012 at 12:41 PM, Christian Kujau <lists@nerdbynature.de> wrote:
+> > This is still happening with 3.3.0-rc5, .config & dmesg here:
+> >
+> >   http://nerdbynature.de/bits/3.3.0-rc4/ipv4/
 > 
-> > Will percpu_write() be removed altogether? If so then the 
-> > changelog should say *that*, and explain that on x86 this is a 
-> > simple renaming of the API, not a long explanation about 
-> > scenarios that don't actually matter.
-> > 
-> > If percpu_write() is not being removed then I don't see how this 
-> > patch is an improvement: it's supposed to result in the same 
-> > instructions being emitted, and __this_cpu_write() et al are 
-> > distinctly longer to write ...
-> > 
-> > So what's the plan here?
+> I was finally able to reproduce this issue where there are warnings
+> about sacked_out going negative (since 3.3.0-rc4), and my testing
+> shows that this patch seems to fix the issue:
 > 
-> All percpu_xxx() functions get removed.
+>   http://patchwork.ozlabs.org/patch/144844/
+> 
+> For folks who were seeing this problem and are so inclined, feel free
+> to try the latest 3.3-rc6 kernel (or davem's "net" tree in git, if
+> that's easier) with that patch applied, and let me know how it goes.
 
-Fair enough - then please see my namespace comments for the 
-other patch, before we start spreading these APIs to hundreds of 
-places ...
+Thanks for tracking this down, Neal.
 
-Also, IMHO the lack of debugging API is troubling as well. 
-Thomas found a couple of really, really hairy this_cpu related 
-bugs.
+In my case it looks like the issue was an "once in a lifetime" event.
+So no amount of testing would prove anything.
 
-Thanks,
-
-	Ingo
+-- 
+Markus
