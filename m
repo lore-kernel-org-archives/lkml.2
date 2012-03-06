@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315Ab2CFJZJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 04:25:09 -0500
-Received: from fallback4.mail.ru ([94.100.176.42]:54444 "EHLO
-	fallback4.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757457Ab2CFJZF (ORCPT
+	id S1758220Ab2CFJZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 04:25:58 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:59887 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757001Ab2CFJZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 04:25:05 -0500
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: linux-tegra@vger.kernel.org
-Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: [PATCH/RFC 2/2] arm/tegra: add timeout to PCIe PLL lock detection loop
-Date: Tue,  6 Mar 2012 12:45:43 +0400
-Message-Id: <1331023544-6439-3-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.5.1.300.gc565c
-In-Reply-To: <1331023544-6439-1-git-send-email-mad_soft@inbox.ru>
-References: <1331023544-6439-1-git-send-email-mad_soft@inbox.ru>
-X-Spam: Not detected
+	Tue, 6 Mar 2012 04:25:55 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of richardcochran@gmail.com designates 10.14.28.4 as permitted sender) smtp.mail=richardcochran@gmail.com; dkim=pass header.i=richardcochran@gmail.com
+Date: Tue, 6 Mar 2012 10:25:43 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: tshimizu818@gmail.com, jeffrey.t.kirsher@intel.com,
+        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
+        paul.gortmaker@windriver.com, toshiharu-linux@dsn.okisemi.com,
+        jdmason@kudzu.us, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH] net/pch_gbe: supports eg20t ptp clock
+Message-ID: <20120306092542.GA28585@localhost.localdomain>
+References: <1330926377-11531-1-git-send-email-tshimizu818@gmail.com>
+ <20120305.005709.1597475617000728984.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120305.005709.1597475617000728984.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra PCIe driver waits for PLL to lock using busy loop.
-If PLL fails to lock for some reason, this leads to silent lockup
-while booting (as PCIe code is not modular).
+On Mon, Mar 05, 2012 at 12:57:09AM -0500, David Miller wrote:
+> 
+> So how the heck is this supposed to work?
+> 
+> You post a patch for the e20tp clock source, you don't CC: netdev.
+> 
+> Then you post this network driver patch which depends upon that on
+> and you do CC: netdev.
+> 
+> You've made it impossible for me to apply them both properly into my
+> tree so that the dependency goes in.
 
-Fix by adding timeout, so if PLL doesn't lock in a couple
-of seconds, just PCIe driver fails and machine continues to boot.
+I'm confused. Are you talking about a patch from last August?
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
----
- arch/arm/mach-tegra/pcie.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
+In any case, if there two patches, then they should of course appear
+together.
 
-diff --git a/arch/arm/mach-tegra/pcie.c b/arch/arm/mach-tegra/pcie.c
-index 14b29ab..ffdfdd4 100644
---- a/arch/arm/mach-tegra/pcie.c
-+++ b/arch/arm/mach-tegra/pcie.c
-@@ -585,10 +585,10 @@ static void tegra_pcie_setup_translations(void)
- 	afi_writel(0, AFI_MSI_BAR_SZ);
- }
- 
--static void tegra_pcie_enable_controller(void)
-+static int tegra_pcie_enable_controller(void)
- {
- 	u32 val, reg;
--	int i;
-+	int i, timeout;
- 
- 	/* Enable slot clock and pulse the reset signals */
- 	for (i = 0, reg = AFI_PEX0_CTRL; i < 2; i++, reg += 0x8) {
-@@ -639,8 +639,14 @@ static void tegra_pcie_enable_controller(void)
- 	pads_writel(0xfa5cfa5c, 0xc8);
- 
- 	/* Wait for the PLL to lock */
-+	timeout = 2000;
- 	do {
- 		val = pads_readl(PADS_PLL_CTL);
-+		mdelay(1);
-+		if (--timeout == 0) {
-+			pr_err("Tegra PCIe error: timeout waiting for PLL\n");
-+			return -EBUSY;
-+		}
- 	} while (!(val & PADS_PLL_CTL_LOCKDET));
- 
- 	/* turn off IDDQ override */
-@@ -921,7 +927,9 @@ int __init tegra_pcie_init(bool init_port0, bool init_port1)
- 	if (err)
- 		return err;
- 
--	tegra_pcie_enable_controller();
-+	err = tegra_pcie_enable_controller();
-+	if (err)
-+		return err;
- 
- 	/* setup the AFI address translations */
- 	tegra_pcie_setup_translations();
--- 
-1.7.5.1.300.gc565c
-
+Thanks,
+Richard
