@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750941Ab2CFFDD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 00:03:03 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:46559 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab2CFFDB convert rfc822-to-8bit (ORCPT
+	id S1751174Ab2CFFOO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 00:14:14 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38607 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab2CFFON convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 00:03:01 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of lliubbo@gmail.com designates 10.52.98.200 as permitted sender) smtp.mail=lliubbo@gmail.com; dkim=pass header.i=lliubbo@gmail.com
+	Tue, 6 Mar 2012 00:14:13 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of therbert@google.com designates 10.50.183.163 as permitted sender) smtp.mail=therbert@google.com; dkim=pass header.i=therbert@google.com
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1203052046410.24068@eggly.anvils>
-References: <alpine.LSU.2.00.1203052046410.24068@eggly.anvils>
-Date: Tue, 6 Mar 2012 13:03:00 +0800
-Message-ID: <CAA_GA1cQ4i8Rtrh6OBrgw-dPc7dqnoJbbPRBrBoawihtgn2zLA@mail.gmail.com>
-Subject: Re: [PATCH] page_cgroup: fix horrid swap accounting regression
-From: Bob Liu <lliubbo@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CA+mtBx_vNcPr-q7FSKXCAsVqvjZt=4UpWfv5eAp0=diG0wnbjQ@mail.gmail.com>
+References: <alpine.DEB.2.00.1203011505510.6685@router.home>
+	<1330698646.2469.28.camel@edumazet-laptop>
+	<CA+mtBx_vNcPr-q7FSKXCAsVqvjZt=4UpWfv5eAp0=diG0wnbjQ@mail.gmail.com>
+Date: Mon, 5 Mar 2012 21:14:12 -0800
+Message-ID: <CA+mtBx8oiDq+k3U705xYaV3xUsi=DnSWwCkymEONRcX3su77Fg@mail.gmail.com>
+Subject: Re: 3.3.0-rc5: OOps in dql_completed (Broadcom tg3 driver)
+From: Tom Herbert <therbert@google.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@gentwo.org>, mcarlson@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
+BQL implementation for tg3 does not handle multi queue correctly.
+Will have a fix for that momentarily.
 
-On Tue, Mar 6, 2012 at 12:52 PM, Hugh Dickins <hughd@google.com> wrote:
-> Why is memcg's swap accounting so broken?  Insane counts, wrong ownership,
-> unfreeable structures, which later get freed and then accessed after free.
->
-> Turns out to be a tiny a little 3.3-rc1 regression in 9fb4b7cc0724
-> "page_cgroup: add helper function to get swap_cgroup": the helper
-> function (actually named lookup_swap_cgroup()) returns an address
-> using void* arithmetic, but the structure in question is a short.
->
+Tom
 
-Sorry for my mistake.
-
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-> ---
+On Fri, Mar 2, 2012 at 9:23 AM, Tom Herbert <therbert@google.com> wrote:
+> Hi Christoph, Eric,
 >
->  mm/page_cgroup.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> Looks like we're hitting BUG_ON(count > dql->num_queued -
+> dql->num_completed). �This is indicative of mis-accounting occurring
+> between netdev_sent_queue and netdev_completed_queue. �I don't
+> immediately see how this could happen here in the tg3_tso_bug path,
+> this is still using the same calls to transmit and complete as other
+> paths. �I suppose it's possible that skb_gso_segment is somehow
+> munging skb->len in segments.
 >
-> --- 3.3-rc6/mm/page_cgroup.c    2012-01-20 08:42:35.320020840 -0800
-> +++ linux/mm/page_cgroup.c      2012-03-05 19:51:13.535372098 -0800
-> @@ -379,13 +379,15 @@ static struct swap_cgroup *lookup_swap_c
->        pgoff_t offset = swp_offset(ent);
->        struct swap_cgroup_ctrl *ctrl;
->        struct page *mappage;
-> +       struct swap_cgroup *sc;
+> I'll try to reproduce this.
 >
->        ctrl = &swap_cgroup_ctrl[swp_type(ent)];
->        if (ctrlp)
->                *ctrlp = ctrl;
+>> In case we hit BQL limit in one of the tg3_start_xmit() calls, we should
+>> 'abort' the following ones, dont you think ?
 >
->        mappage = ctrl->map[offset / SC_PER_PAGE];
-> -       return page_address(mappage) + offset % SC_PER_PAGE;
-> +       sc = page_address(mappage);
-> +       return sc + offset % SC_PER_PAGE;
->  }
+> I'm not sure what you mean Eric. �It should be okay to exceed the BQL
+> limit up to the point that num_queued rolls over (probably should be a
+> BUG_ON for that). �This is a much greater number than could ever be
+> queued to tg3.
 >
->  /**
-
-Reviewed-by: Bob Liu <lliubbo@gmail.com>
-
--- 
-Regards,
---Bob
+> Thanks,
+> Tom
+>
+>>
+>> Or maybe thats irrelevant, and only dql_queued() comment is wrong.
+>>
+>> Thanks
+>>
+>>
