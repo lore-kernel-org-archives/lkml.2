@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab2CFGgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 01:36:49 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:57687 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789Ab2CFGgs convert rfc822-to-8bit (ORCPT
+	id S1754923Ab2CFGjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 01:39:13 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45250 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab2CFGjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 01:36:48 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of arve@android.com designates 10.229.135.82 as permitted sender) smtp.mail=arve@android.com
+	Tue, 6 Mar 2012 01:39:12 -0500
+Date: Tue, 6 Mar 2012 09:38:59 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: walter harms <wharms@bfs.de>
+Cc: Eric Wollesen <ericw@xmtp.net>, Doug Thompson <dougthompson@xmission.com>,
+        list-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch v3] edac i5000, i5400: fix pointer math in i5000_get_mc_regs()
+Message-ID: <20120306063859.GA3324@elgon.mountain>
 MIME-Version: 1.0
-In-Reply-To: <20120306055706.GQ23916@ZenIV.linux.org.uk>
-References: <20120305063707.GH23916@ZenIV.linux.org.uk>
-	<CAMP5XgeWQpMP2Q_29aybHwfMJ1_k5GkGozqocSVVYDoRTpKD2w@mail.gmail.com>
-	<20120306041015.GP23916@ZenIV.linux.org.uk>
-	<CAMP5XgdmjL68qZJ8D0pNz-S5m-BauTzPyQ9Xv1SPgdZVMiZMpg@mail.gmail.com>
-	<20120306055706.GQ23916@ZenIV.linux.org.uk>
-Date: Mon, 5 Mar 2012 22:36:47 -0800
-Message-ID: <CAMP5XgeXvrQ4_cEWGiiHzbnYrzx6Nej_O4H_bA5JzLmUtvYALQ@mail.gmail.com>
-Subject: Re: [patches] VM-related fixes
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, airlied@linux.ie, carsteno@de.ibm.com,
-        steiner@sgi.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120305095244.GG1003@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090202.4F55B10C.008A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 5, 2012 at 9:57 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Mar 05, 2012 at 09:25:05PM -0800, Arve Hj?nnev?g wrote:
->> > Sorry, no.
->> > ? ? ? ? ? ? ? ?down_write(&mm->mmap_sem);
->> > ? ? ? ? ? ? ? ?vma = proc->vma;
->> > ? ? ? ? ? ? ? ?if (vma && mm != vma->vm_mm) {
->> > does *not* do what you seem to describe; there's nothing to protect you
->> > from proc->vma getting freed under you right between load from proc->vma
->> > and check of vma->mm. ?->mmap_sem on the right mm would prevent that,
->> > but this one doesn't guarantee anything. ?Get preempted after the second
->> > line quoted above and by the time you get the timeslice back, you might
->> > have had munmap() done by another thread, with vma freed, its memory
->> > recycled, etc.
->> >
->>
->> OK, if the memory got freed and then re-used by someone who stored a
->> value that matched a pointer to the mm struct that was just locked,
->> this check will fail to catch it. I can check against a cached vm_mm
->> member from mmap instead, assuming this will not change before
->> ->close() is called. Does that sound reasonable, or is there a better
->> way to check this?
->
-> Huh?  Sorry, I hadn't been able to parse that - what do you want to cache,
+"pvt->ambase" is a u64 datatype.  The intent here is to fill the first
+half in the first call to pci_read_config_dword() and the other half in
+the second.  Unfortunately the pointer math is wrong so we set the wrong
+data.
 
-The vm_mm member of the vma.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+v2: Redid it as with a union as Walter Harms suggested.
+    Fixed the same bug in i5400_edac.c as well.
+v3: Make the struct __packed just in case.
 
-> where and what do you want to check?  Again, at that point *(proc->vma)
-> may very well be random garbage, so looking at it would be pointless;
+I don't have this hardware, so please review carefully.
 
-Yes it may be random garbage, but we only have a problem if that
-random garbage happens to match the mm pointer we just used.
+diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
+index 74d6ec34..083e80a 100644
+--- a/drivers/edac/i5400_edac.c
++++ b/drivers/edac/i5400_edac.c
+@@ -343,7 +343,13 @@ struct i5400_pvt {
+ 	struct pci_dev *branch_1;		/* 22.0 */
+ 
+ 	u16 tolm;				/* top of low memory */
+-	u64 ambase;				/* AMB BAR */
++	union {
++		u64 ambase;				/* AMB BAR */
++		struct {
++			u32 ambase_bottom;
++			u32 ambase_top;
++		} u __packed;
++	};
+ 
+ 	u16 mir0, mir1;
+ 
+@@ -1024,9 +1030,9 @@ static void i5400_get_mc_regs(struct mem_ctl_info *mci)
+ 	pvt = mci->pvt_info;
+ 
+ 	pci_read_config_dword(pvt->system_address, AMBASE,
+-			(u32 *) &pvt->ambase);
++			&pvt->u.ambase_bottom);
+ 	pci_read_config_dword(pvt->system_address, AMBASE + sizeof(u32),
+-			((u32 *) &pvt->ambase) + sizeof(u32));
++			&pvt->u.ambase_top);
+ 
+ 	maxdimmperch = pvt->maxdimmperch;
+ 	maxch = pvt->maxch;
+diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
+index 4dc3ac2..ecc2401 100644
+--- a/drivers/edac/i5000_edac.c
++++ b/drivers/edac/i5000_edac.c
+@@ -343,7 +343,13 @@ struct i5000_pvt {
+ 	struct pci_dev *branch_1;	/* 22.0 */
+ 
+ 	u16 tolm;		/* top of low memory */
+-	u64 ambase;		/* AMB BAR */
++	union {
++		u64 ambase;		/* AMB BAR */
++		struct {
++			u32 ambase_bottom;
++			u32 ambase_top;
++		} u __packed;
++	};
+ 
+ 	u16 mir0, mir1, mir2;
+ 
+@@ -1128,9 +1134,9 @@ static void i5000_get_mc_regs(struct mem_ctl_info *mci)
+ 	pvt = mci->pvt_info;
+ 
+ 	pci_read_config_dword(pvt->system_address, AMBASE,
+-			(u32 *) & pvt->ambase);
++			&pvt->u.ambase_bottom);
+ 	pci_read_config_dword(pvt->system_address, AMBASE + sizeof(u32),
+-			((u32 *) & pvt->ambase) + sizeof(u32));
++			&pvt->u.ambase_top);
+ 
+ 	maxdimmperch = pvt->maxdimmperch;
+ 	maxch = pvt->maxch;
 
-> the value you had at ->mmap() time would be simply current->mm of mmap(2)
-> caller; if you want to check that it matches that of opener, fine,
-> but then why not do just that in ->mmap()?
 
-If the opener calls exec does the mm returned by get_task_mm change?
-If so, the mmap_sem I locked will not match the vma saved in mmap() so
-I need the check above. If exec creates a new task struct then a check
-in mmap would be sufficient, but I was not under the impression that
-this happens.
 
--- 
-Arve Hjønnevåg
