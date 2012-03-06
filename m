@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758764Ab2CFNT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 08:19:57 -0500
-Received: from www.linutronix.de ([62.245.132.108]:57886 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab2CFNT4 (ORCPT
+	id S1758801Ab2CFNWb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 08:22:31 -0500
+Received: from ftp.meprolight.com ([194.90.149.17]:40634 "EHLO meprolight.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755196Ab2CFNWa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 08:19:56 -0500
-Date: Tue, 6 Mar 2012 14:19:53 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Carsten Emde <cbe@osadl.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH RT] seqlock/rt: Prevent livelocks with seqlocks in RT
-In-Reply-To: <1331036257.25686.365.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.02.1203061418570.2742@ionos>
-References: <1331006584.25686.362.camel@gandalf.stny.rr.com>  <alpine.LFD.2.02.1203060911000.2742@ionos> <1331036257.25686.365.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 6 Mar 2012 08:22:30 -0500
+From: Alex Gershgorin <alexg@meprolight.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Date: Tue, 6 Mar 2012 15:22:01 +0200
+Subject: RE: mx3-camera
+Thread-Topic: mx3-camera
+Thread-Index: Acz7mpjKOOpPMaIuRaaGWjikaJFZIAAAHYw/
+Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8909@MEP-EXCH.meprolight.com>
+References: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8906@MEP-EXCH.meprolight.com>,<Pine.LNX.4.64.1203061406500.9300@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1203061406500.9300@axis700.grange>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Mar 2012, Steven Rostedt wrote:
-> On Tue, 2012-03-06 at 09:18 +0100, Thomas Gleixner wrote:
-> Here's the real fix then:
-> -#ifndef CONFIG_PREEMPT_RT
-> +#ifndef CONFIG_PREEMPT_RT_FULL
->  static inline unsigned read_seqbegin(const seqlock_t *sl)
 
-It's in rt16 already along with a missing fix for a networking inline
-function.
+ Thanks Guennadi, 
 
-Thanks,
+>Hi Alex
 
-	tglx
+>(adding v4l and Sascha to CC)
+
+>On Tue, 6 Mar 2012, Alex Gershgorin wrote:
+
+> Hi Guennadi,
+>
+> I'm working on I.MX35 PDK platform with use 3.3.0-rc6 version of the Linux Kernel.
+> Here is my Kernel boot message
+>
+> "Linux video capture interface: v2.00
+> mx3-camera: probe of mx3-camera.0 failed with error -2"
+>
+> This error comes from probe function of mx3 camera host driver.
+> Precisely in this part of the code:
+>
+> mx3_cam->clk = clk_get(&pdev->dev, NULL);
+> if (IS_ERR(mx3_cam->clk)) {
+>       err = PTR_ERR(mx3_cam->clk);
+>       goto eclkget;
+> }
+
+>I think, the reason is, that the i.MX35 platform doesn't register a camera
+>clock, similar to i.MX31 (arch/arm/mach-imx/clock-imx31.c):
+
+ >       _REGISTER_CLOCK("mx3-camera.0", NULL, csi_clk)
+
+In i.MX35 (arch/arm/mach-imx/clock-imx35.c) it looks like this:
+
+_REGISTER_CLOCK(NULL, "csi", csi_clk)
+
+> I will be glad for any help.
+>
+
+Regards,
+Alex Gershgorin
+
+ 
