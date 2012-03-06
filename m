@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030723Ab2CFNcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 08:32:06 -0500
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49135 "EHLO
+	id S1030710Ab2CFNcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 08:32:05 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49132 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030554Ab2CFNcC (ORCPT
+	with ESMTP id S1030275Ab2CFNcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 6 Mar 2012 08:32:02 -0500
 From: Borislav Petkov <bp@amd64.org>
@@ -12,110 +12,64 @@ To: Tony Luck <tony.luck@intel.com>
 Cc: Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 1/3] mce: Add a msg string to the MCE tracepoint
-Date: Tue,  6 Mar 2012 14:31:31 +0100
-Message-Id: <1331040694-12558-2-git-send-email-bp@amd64.org>
+Subject: [RFC -v3 PATCH 0/3] RAS: Use MCE tracepoint for decoded MCEs
+Date: Tue,  6 Mar 2012 14:31:30 +0100
+Message-Id: <1331040694-12558-1-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.8.rc0
-In-Reply-To: <1331040694-12558-1-git-send-email-bp@amd64.org>
-References: <1331040694-12558-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-The idea here is to pass an additional decoded MCE message through
-the tracepoint and into the ring buffer for userspace to consume. The
-designated consumers are RAS daemons and other tools collecting RAS
-information.
+Third version of the patchset, with the latest addition of
+"hijacking" EDAC printk output when a RAS agent is running, i.e.
+/sys/devices/system/ras/agent is 1. Btw, I'm open for better suggestions
+on how to do the logic of having a RAS agent running - currently, it is
+a bool which is visible through sysfs and userspace can turn it on and
+off.
 
-Drop unneeded fields while at it, thus saving some room in the ring
-buffer.
+Changelog:
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
- include/trace/events/mce.h       |   19 +++++++------------
- 2 files changed, 8 insertions(+), 13 deletions(-)
+* V2:
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 5a11ae2e9e91..072e020ecaf3 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -144,7 +144,7 @@ void mce_log(struct mce *mce)
- 	int ret = 0;
- 
- 	/* Emit the trace record: */
--	trace_mce_record(mce);
-+	trace_mce_record("", mce);
- 
- 	ret = atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, mce);
- 	if (ret == NOTIFY_STOP)
-diff --git a/include/trace/events/mce.h b/include/trace/events/mce.h
-index 4cbbcef6baa8..6fb5c2e0c5e1 100644
---- a/include/trace/events/mce.h
-+++ b/include/trace/events/mce.h
-@@ -10,11 +10,12 @@
- 
- TRACE_EVENT(mce_record,
- 
--	TP_PROTO(struct mce *m),
-+	TP_PROTO(const char *msg, struct mce *m),
- 
--	TP_ARGS(m),
-+	TP_ARGS(msg, m),
- 
- 	TP_STRUCT__entry(
-+		__string(	msg,		msg		)
- 		__field(	u64,		mcgcap		)
- 		__field(	u64,		mcgstatus	)
- 		__field(	u64,		status		)
-@@ -24,15 +25,13 @@ TRACE_EVENT(mce_record,
- 		__field(	u64,		tsc		)
- 		__field(	u64,		walltime	)
- 		__field(	u32,		cpu		)
--		__field(	u32,		cpuid		)
--		__field(	u32,		apicid		)
- 		__field(	u32,		socketid	)
- 		__field(	u8,		cs		)
- 		__field(	u8,		bank		)
--		__field(	u8,		cpuvendor	)
- 	),
- 
- 	TP_fast_assign(
-+		__assign_str(msg,	msg);
- 		__entry->mcgcap		= m->mcgcap;
- 		__entry->mcgstatus	= m->mcgstatus;
- 		__entry->status		= m->status;
-@@ -42,25 +41,21 @@ TRACE_EVENT(mce_record,
- 		__entry->tsc		= m->tsc;
- 		__entry->walltime	= m->time;
- 		__entry->cpu		= m->extcpu;
--		__entry->cpuid		= m->cpuid;
--		__entry->apicid		= m->apicid;
- 		__entry->socketid	= m->socketid;
- 		__entry->cs		= m->cs;
- 		__entry->bank		= m->bank;
--		__entry->cpuvendor	= m->cpuvendor;
- 	),
- 
--	TP_printk("CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, PROCESSOR: %u:%x, TIME: %llu, SOCKET: %u, APIC: %x",
-+	TP_printk("%s" HW_ERR "(CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, TIME: %llu, SOCKET: %u)",
-+		__get_str(msg),
- 		__entry->cpu,
- 		__entry->mcgcap, __entry->mcgstatus,
- 		__entry->bank, __entry->status,
- 		__entry->addr, __entry->misc,
- 		__entry->cs, __entry->ip,
- 		__entry->tsc,
--		__entry->cpuvendor, __entry->cpuid,
- 		__entry->walltime,
--		__entry->socketid,
--		__entry->apicid)
-+		__entry->socketid)
- );
- 
- #endif /* _TRACE_MCE_H */
--- 
-1.7.8.rc0
+Here's a second version of the patchset with the buffer enlarging ripped
+out. 1/4 in the series could go in independently since it is a cleanup,
+I'll add it to a for-next testing branch if there are no objections.
 
+* V1:
+
+this is an initial, more or less serious attempt to collect decoded
+MCE info into a buffer and jettison it into userspace using the MCE
+tracepoint trace_mce_record(). This initial approach needs userspace to
+do
+
+$ echo 1 > /sys/devices/system/ras/agent
+
+and decoded MCE info gets collected into a buffer. Then, when decoding
+is finished, the tracepoint is called and the MCE info along with the
+decoded information lands in the ring buffer and at possible userspace
+consumers.
+
+Also, the commit messages of the single patches contain additional info.
+
+For example, the data looks like this:
+
+mcegen.py-2318  [001] .N..   580.902409: mce_record: [Hardware Error]: CPU:0 MC4_STATUS[Over|CE|-|PCC|AddrV|CECC]: 0xd604c00006080a41 MC4_ADDR: 0x0000000000000016
+[Hardware Error]: Northbridge Error (node 0): DRAM ECC error detected on the NB.
+[Hardware Error]: ERR_ADDR: 0x16 row: 0, channel: 0
+[Hardware Error]: cache level: L1, mem/io: MEM, mem-tx: DWR, part-proc: RES (no timeout)
+[Hardware Error]: CPU: 0, MCGc/s: 0/0, MC4: d604c00006080a41, ADDR/MISC: 0000000000000016/dead57ac1ba0babe, RIP: 00:<0000000000000000>, TSC: 0, TIME: 0)
+
+       mcegen.py-2326  [001] .N..   598.795494: mce_record: [Hardware Error]: CPU:0 MC4_STATUS[Over|UE|MiscV|PCC|-|UECC]: 0xfa002000001c011b
+[Hardware Error]: Northbridge Error (node 0): L3 ECC data cache error.
+[Hardware Error]: cache level: L3/GEN, tx: GEN, mem-tx: RD
+[Hardware Error]: CPU: 0, MCGc/s: 0/0, MC4: fa002000001c011b, ADDR/MISC: 0000000000000016/dead57ac1ba0babe, RIP: 00:<0000000000000000>, TSC: 0, TIME: 0)
+
+mcegen.py-2343  [013] .N..   619.620698: mce_record: [Hardware Error]: CPU:0 MC4_STATUS[-|UE|MiscV|PCC|-|UECC]: 0xba002100000f001b[HardwareError]: Northbridge Error (node 0): GART Table Walk data error.
+[Hardware Error]: cache level: L3/GEN, tx: GEN
+[Hardware Error]: CPU: 0, MCGc/s: 0/0, MC4: ba002100000f001b, ADDR/MISC: 0000000000000016/dead57ac1ba0babe, RIP: 00:<0000000000000000>, TSC: 0, TIME: 0)
+
+As always, reviews and comments are welcome.
+
+Thanks.
