@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab2CFJLN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 04:11:13 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:34170 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173Ab2CFJLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 04:11:10 -0500
-Date: Tue, 6 Mar 2012 10:10:25 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        yrl.pp-manager.tt@hitachi.com, systemtap@sourceware.org,
-        anderson@redhat.com
-Subject: Re: [PATCH v4 -tip 0/3] x86/kprobes: bugfixes and split optprobes
-Message-ID: <20120306091025.GC27238@elte.hu>
-References: <20120305133200.5982.45827.stgit@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120305133200.5982.45827.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1755986Ab2CFJNy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 04:13:54 -0500
+Received: from fallback4.mail.ru ([94.100.176.42]:50485 "EHLO
+	fallback4.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab2CFJNv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 04:13:51 -0500
+X-Greylist: delayed 1679 seconds by postgrey-1.27 at vger.kernel.org; Tue, 06 Mar 2012 04:13:50 EST
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: linux-tegra@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dmitry Artamonow <mad_soft@inbox.ru>
+Subject: [PATCH/RFC 0/2] Couple of Tegra2 PCIe fixes(?)
+Date: Tue,  6 Mar 2012 12:45:41 +0400
+Message-Id: <1331023544-6439-1-git-send-email-mad_soft@inbox.ru>
+X-Mailer: git-send-email 1.7.5.1.300.gc565c
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+These are more of RFC, because I can't test if 1/2 is really fixes anything,
+and not sure how much 2/2 is needed - maybe error it fixes happens just in
+my setup (and also I'm not sure if 2 seconds is a good value for timeout,
+because I have no idea, how much time it takes for PLL to lock when everything)
+But anyway...
 
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+While trying to make PCIe work on Harmony board, I've noticed
+that pinmux groups for PCIe related signals are tristated, which 
+looked suspicious. So I fixed that - that's the patch 1/2.
 
-> Hi,
-> 
-> Here are the patches for fixing bugs in kprobes on x86.
-> 
-> - Both bugs are related to the optprobe.
-> - First bugfix is optprobe to recover instructions when
->   thoes are modified with jump.
-> - Second bugfix is kprobes to recover it too.
-> 
-> This series also includes a patch which split optprobes
-> parts out from kprobes x86 implementation.
-> 
-> Ingo, I've added the splitting patch according your
-> advice :)
-> 
-> Thank you,
-> 
-> ---
-> 
-> Masami Hiramatsu (3):
->       x86/kprobes: Split out optprobe related code to kprobes-opt.c
->       [BUGFIX] x86/kprobes: Fix a bug which can modify kernel code
->       [BUGFIX] x86/kprobes: Fix to recover instructions on optimized path
-> 
-> 
->  arch/x86/kernel/Makefile         |    1 
->  arch/x86/kernel/kprobes-common.h |  106 ++++++
->  arch/x86/kernel/kprobes-opt.c    |  516 +++++++++++++++++++++++++++++++
->  arch/x86/kernel/kprobes.c        |  633 ++++----------------------------------
->  4 files changed, 684 insertions(+), 572 deletions(-)
->  create mode 100644 arch/x86/kernel/kprobes-common.h
->  create mode 100644 arch/x86/kernel/kprobes-opt.c
+Sadly, even with this fix and 3.3v regulator patch[1] applied, PCIe still
+doesn't work for me. Usually driver just loops infinitely in PLL lock
+waiting code (that was the reason for writing patch 2/2 in this
+mini-series). Couple of times I observed that after about 20-30 seconds of
+waiting it passed PLL lock test and continue further, but then it failed to
+detect a link with PCIe card. And I can't even reproduce this anymore.
 
-Thanks, this looks very nice. I've applied them to tip:perf/core 
-and will push them out later today, assuming there are no test 
-failures.
+Does anyone have working PCIe on Harmony? Can you please share the details
+of your setup - what bootloader are you using, which version of kernel,
+some additional patches maybe? Is there some secret tricks which are needed?
+I've tried several combinations of different kernels and bootloaders, but
+still can't find even a one which works.
 
-Thanks,
+[1] http://www.spinics.net/lists/linux-tegra/msg04148.html
 
-	Ingo
+Dmitry Artamonow (2):
+  arm/tegra: fix harmony pinmux for PCIe
+  arm/tegra: add timeout to PCIe PLL lock detection loop
+
+ arch/arm/mach-tegra/board-harmony-pinmux.c |    6 +++---
+ arch/arm/mach-tegra/pcie.c                 |   14 +++++++++++---
+ 2 files changed, 14 insertions(+), 6 deletions(-)
+
+-- 
+1.7.5.1.300.gc565c
+
