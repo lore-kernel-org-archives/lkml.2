@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030493Ab2CFPSS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 10:18:18 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52583 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965153Ab2CFPSR convert rfc822-to-8bit (ORCPT
+	id S1030520Ab2CFPT7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 10:19:59 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38128 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965153Ab2CFPT6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 10:18:17 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of levinsasha928@gmail.com designates 10.50.220.229 as permitted sender) smtp.mail=levinsasha928@gmail.com; dkim=pass header.i=levinsasha928@gmail.com
+	Tue, 6 Mar 2012 10:19:58 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of siddhesh.poyarekar@gmail.com designates 10.236.116.66 as permitted sender) smtp.mail=siddhesh.poyarekar@gmail.com; dkim=pass header.i=siddhesh.poyarekar@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <x49vcmhhj2f.fsf@segfault.boston.devel.redhat.com>
-References: <x49vcmhhj2f.fsf@segfault.boston.devel.redhat.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Tue, 6 Mar 2012 17:17:55 +0200
-Message-ID: <CA+1xoqe_xS95xKM2=X-Mq-_gc+DqzxF2D8YiuCf=0=7=mVKsyw@mail.gmail.com>
-Subject: Re: the maxcpus= boot parameter broke somewhere along the line
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1331045377.17099.2.camel@deneb.redhat.com>
+References: <1331045377.17099.2.camel@deneb.redhat.com>
+Date: Tue, 6 Mar 2012 20:49:57 +0530
+Message-ID: <CAAHN_R2++cosPPdEsO=7ztfKJt9+Fi+iTje6o34EVvZ9kD1EtQ@mail.gmail.com>
+Subject: Re: nommu build failure in linux-next
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 4:59 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> When booting my machine with maxcpus=1, it seems to be ignored with
-> 3.3.0-rc3.  I know that 3.1.0-rc3 works fine, but I haven't had time to
-> track it down any further than that.  I've attached the dmesg from my
-> machine.  Let me know if there is any other information that would help
-> in solving this.
+On Tue, Mar 6, 2012 at 8:19 PM, Mark Salter <msalter@redhat.com> wrote:
+> commit b7b2a0afacada237005068294cb0ccc49d32889e
+> Author: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+> Date:   Tue Mar 6 11:17:12 2012 +1100
+>
+>    procfs: mark thread stack correctly in proc/<pid>/maps
+>
+>
+> This patch still breaks nommu builds. The previous syntax issue has been
+> resolved, but now I see a link error:
+>
+> fs/built-in.o: In function `nommu_vma_show':
+> task_nommu.c:(.text+0x564a0): undefined reference to `vm_is_stack'
+> make[1]: *** [.tmp_vmlinux1] Error 1
+>
 
-[snip]
+The function is defined in mm/memory.c and I realized now that it is
+not built when !CONFIG_MMU. There needs to be a copy of these
+functions in nommu.c as well. I'll test the build and send a patch.
 
-> Brought up 1 CPUs
-> Total of 1 processors activated (4256.06 BogoMIPS).
 
-Looks like it indeed brings up only one CPU, what's the problem there?
+-- 
+Siddhesh Poyarekar
+http://siddhesh.in
