@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757763Ab2CFHMT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 02:12:19 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55044 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757635Ab2CFHMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 02:12:18 -0500
-Message-ID: <1331017892.11728.96.camel@pasglop>
-Subject: Re: [1/2] powerpc/44x: Fix PCI MSI support for APM821xx SoC and
- Bluestone board
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Milton Miller <miltonm@bga.com>
-Cc: Mai La <mla@apm.com>, Paul Mackerras <paulus@samba.org>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Tirumala R Marri <tmarri@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Michael Neuling <mikey@neuling.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, open-source-review@apm.com
-Date: Tue, 06 Mar 2012 18:11:32 +1100
-In-Reply-To: <bluehawk-msi-use-upper-lower-32@mdm.bga.com>
-References: <1331004581-23795-1-git-send-email-mla@apm.com>
-	 <bluehawk-msi-use-upper-lower-32@mdm.bga.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757858Ab2CFHOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 02:14:39 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:16478 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755374Ab2CFHOh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 02:14:37 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 00/23] PCI, x86: pci root bus hotplug support
+Date: Mon,  5 Mar 2012 23:13:37 -0800
+Message-Id: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090202.4F55B95C.0017,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-05 at 22:37 -0600, Milton Miller wrote:
-> On Mon, 05 Mar 2012 about 17:29:41 -0000, Mai La wrote:
-> >  
-> > @@ -43,7 +43,12 @@
-> >  #define PEIH_FLUSH0	0x30
-> >  #define PEIH_FLUSH1	0x38
-> >  #define PEIH_CNTRST	0x48
-> > +
-> > +#ifdef CONFIG_APM821xx
-> > +#define NR_MSI_IRQS	8
-> > +#else
-> >  #define NR_MSI_IRQS	4
-> > +#endif
-> >  
-> 
-> does this need to go into the dts binding?
+will add pci_stop_and_remove_bus() to support remove bus in
+/sys/devices/pci.../pci_bus/...
 
-A compile time #define is definitely not acceptable as it would break a
-multiplatform kernel.
+it support pci root bus removal.
 
-Ben.
+To rescan root, need to
+echo 1 > /sys/bus/pci/rescan_root
 
-> >  struct ppc4xx_msi {
-> >  	u32 msi_addr_lo;
-> > @@ -150,12 +155,11 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
-> >  	if (!sdr_addr)
-> >  		return -1;
-> >  
-> > -	SDR0_WRITE(sdr_addr, (u64)res.start >> 32);	 /*HIGH addr */
-> > -	SDR0_WRITE(sdr_addr + 1, res.start & 0xFFFFFFFF); /* Low addr */
-> > -
-> > +	mtdcri(SDR0, *sdr_addr, (u64)res.start >> 32);	/*HIGH addr */
-> > +	mtdcri(SDR0, *sdr_addr + 1, res.start & 0xFFFFFFFF);/* Low addr */
-> 
-> Please use upper_32_bits and lower_32_bits from linux/kernel.h
-> 
-> >  	msi->msi_dev = of_find_node_by_name(NULL, "ppc4xx-msi");
-> > -	if (msi->msi_dev)
-> > +	if (!msi->msi_dev)
-> >  		return -ENODEV;
-> >  
-> >  	msi->msi_regs = of_iomap(msi->msi_dev, 0);
-> > @@ -167,9 +171,12 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
-> >  		(u32) (msi->msi_regs + PEIH_TERMADH), (u32) (msi->msi_regs));
-> >  
-> >  	msi_virt = dma_alloc_coherent(&dev->dev, 64, &msi_phys, GFP_KERNEL);
-> > -	msi->msi_addr_hi = 0x0;
-> > -	msi->msi_addr_lo = (u32) msi_phys;
-> > -	dev_dbg(&dev->dev, "PCIE-MSI: msi address 0x%x\n", msi->msi_addr_lo);
-> > +	if (!msi_virt)
-> > +		return -ENOMEM;
-> > +	msi->msi_addr_hi = (u32)(msi_phys >> 32);
-> > +	msi->msi_addr_lo = (u32)(msi_phys & 0xffffffff);
-> 
-> ditto
-> 
-> 
-> milton
+this patcheset include some IOMM and dmar and pnpacpi fix with device refcount leaking.
 
+The patches need to apply to pci/for-linus and pci/linux-next
+and [PATCH 00/36] PCI: pci_host_bridge related cleanup and busn_alloc
+
+could get from
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-root-bus-hotplug
+
+Thanks
+
+Yinghai
+
+Yinghai Lu (23):
+  PCI, sys: Use device_type and attr_groups with pci dev
+  PCI, sysfs: create rescan_bridge under /sys/.../pci/devices/... for pci bridges
+  PCI: Add pci_bus_add_single_device()
+  PCI: make pci_rescan_bus_bridge_resize use pci_scan_bridge instead
+  PCI: clean up rescan_bus_bridge_resize
+  PCI: rescan with bus or bridge using callback method too
+  pci, dmar: Update dmar units devices list during hotplug
+  PNPACPI: Fix device ref leaking in acpi_pnp_match
+  IOMMU: Fix tboot force iommu logic
+  PCI, x86: Fix non acpi path pci_sysdata leaking with release_fn
+  PCI: separate out pci_assign_unassigned_bus_resources()
+  PCI: Move back pci_rescan_bus()
+  PCI: move pci_stop_and_remove_behind_bridge down
+  PCI: add __pci_remove_bus_devices()
+  PCI: add pci_stop_and_remove_bus()
+  PCI: add pci bus removal through /sys/.../pci_bus/.../remove
+  PCI, ACPI: make acpi_pci_root_remove remove pci root bus too
+  PCI, ACPI: add acpi_pci_root_rescan()
+  PCI: add /sys/bus/pci/rescan_root
+  PCI: add __pci_scan_root_bus() that can skip bus_add
+  x86, PCI: add __pci_scan_root_bus_on_node() that can skip bus_add
+  x86, PCI: add __pcibios_scan_specific_bus that can skip bus_add
+  x86, PCI: add pcibios_root_rescan
+
+ Documentation/ABI/testing/sysfs-bus-pci |   27 +++++
+ arch/x86/include/asm/pci.h              |    2 +
+ arch/x86/pci/common.c                   |   28 +++--
+ arch/x86/pci/legacy.c                   |   44 ++++++-
+ drivers/acpi/pci_root.c                 |   66 +++++++++++
+ drivers/iommu/intel-iommu.c             |  193 ++++++++++++++++++++++++++++--
+ drivers/pci/bus.c                       |   39 ++++++
+ drivers/pci/pci-sysfs.c                 |  137 ++++++++++++++++++++--
+ drivers/pci/pci.h                       |    1 +
+ drivers/pci/probe.c                     |   43 ++++++-
+ drivers/pci/remove.c                    |   77 ++++++++-----
+ drivers/pci/setup-bus.c                 |   20 +---
+ drivers/pnp/pnpacpi/core.c              |    7 +-
+ include/linux/dmar.h                    |    4 +
+ include/linux/pci.h                     |    6 +
+ 15 files changed, 604 insertions(+), 90 deletions(-)
+
+-- 
+1.7.7
 
