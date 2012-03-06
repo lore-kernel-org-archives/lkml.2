@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030373Ab2CFKKW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 05:10:22 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58459 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932385Ab2CFKKT (ORCPT
+	id S1758900Ab2CFKRH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 05:17:07 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59456 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab2CFKRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 05:10:19 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of miklos@szeredi.hu designates 10.213.15.14 as permitted sender) smtp.mail=miklos@szeredi.hu; dkim=pass header.i=miklos@szeredi.hu
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: NFSv4: truncate returns I/O error
-CC: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 06 Mar 2012 11:10:11 +0100
-Message-ID: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 6 Mar 2012 05:17:06 -0500
+Message-ID: <4F55E412.5050409@ti.com>
+Date: Tue, 6 Mar 2012 11:16:50 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+CC: <spi-devel-general@lists.sourceforge.net>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] spi/omap: Trivial cleanup
+References: <1330524246-8864-1-git-send-email-shubhrajyoti@ti.com>
+In-Reply-To: <1330524246-8864-1-git-send-email-shubhrajyoti@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+Hi Shubhro,
 
-The attached test program reliably fails on an NFSv4 mount.
+On 2/29/2012 3:04 PM, Shubhrajyoti D wrote:
+> The context is stored directly inside drvdata structure post
+> [f887876 spi/omap: Remove bus_num usage for instance index].
+> Remove the OMAP2_MCSPI_MAX_CTRL macro as it is not needed anymore.
+>
+> Cc: Benoit Cousson<b-cousson@ti.com>
+> Signed-off-by: Shubhrajyoti D<shubhrajyoti@ti.com>
 
-# mount -tnfs -onfsvers=4 127.0.0.1:/ /mnt/nfs
-# ./truncate-test /mnt/nfs/tmp/xyz
-truncate: Input/output error
+Thanks for that extra cleanup, I missed it.
+
+Acked-by: Benoit Cousson <b-cousson@ti.com>
+
+> ---
+> Applies on Benoit's for_3.4/dt_spi_eth
+>
+>   drivers/spi/spi-omap2-mcspi.c |    3 ---
+>   1 files changed, 0 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+> index d1eb26c..3526281 100644
+> --- a/drivers/spi/spi-omap2-mcspi.c
+> +++ b/drivers/spi/spi-omap2-mcspi.c
+> @@ -45,9 +45,6 @@
+>
+>   #define OMAP2_MCSPI_MAX_FREQ		48000000
+>
+> -/* OMAP2 has 3 SPI controllers, while OMAP3 has 4 */
+> -#define OMAP2_MCSPI_MAX_CTRL 		4
+> -
+
+I guess it can be included in the "spi/omap: Remove bus_num usage for 
+instance index"?
+Is that OK for you?
+
 
 Thanks,
-Miklos
+Benoit
 
-
---=-=-=
-Content-Type: text/x-csrc
-Content-Disposition: inline; filename=truncate-test.c
-
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-int main(int argc, char *argv[])
-{
-	int res;
-	char *name = argv[1];
-
-	unlink(name);
-	close(open(name, O_WRONLY | O_CREAT, 0644));
-	close(open(name, O_RDONLY));
-
-	res = truncate(name, 1);
-	if (res == -1) {
-		perror("truncate");
-		return 1;
-	}
-    return 0;
-}
-
---=-=-=--
