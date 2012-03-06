@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030642Ab2CFPW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 10:22:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26792 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030580Ab2CFPWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 10:22:24 -0500
-Date: Tue, 6 Mar 2012 10:22:15 -0500
-From: Dave Jones <davej@redhat.com>
-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>
-Subject: Re: use-after-free in bluetooth (hci_conn_hash_flush)
-Message-ID: <20120306152215.GA20793@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	"Gustavo F. Padovan" <padovan@profusion.mobi>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Fedora Kernel Team <kernel-team@fedoraproject.org>
-References: <20120305221242.GA2008@redhat.com>
- <20120306085342.GA8432@aemeltch-MOBL1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120306085342.GA8432@aemeltch-MOBL1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1030624Ab2CFPXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 10:23:25 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:63759 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030372Ab2CFPXX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 10:23:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of takuya.yoshikawa@gmail.com designates 10.182.216.41 as permitted sender) smtp.mail=takuya.yoshikawa@gmail.com; dkim=pass header.i=takuya.yoshikawa@gmail.com
+Date: Wed, 7 Mar 2012 00:23:17 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4 changelog-v2] KVM: Switch to srcu-less
+ get_dirty_log()
+Message-Id: <20120307002317.d8682de9c6ccd6af8ccac467@gmail.com>
+In-Reply-To: <20120306150104.GA3041@amt.cnet>
+References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120303142148.2689454b30dc86d84c4a19f5@gmail.com>
+	<20120306111540.GA29914@amt.cnet>
+	<20120306234317.2817d2071038d11ab3831c82@gmail.com>
+	<20120306150104.GA3041@amt.cnet>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 10:53:44AM +0200, Andrei Emeltchenko wrote:
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
- > On Mon, Mar 05, 2012 at 05:12:42PM -0500, Dave Jones wrote:
- > > We had a user report this, which looks like a use after free
- > > in hci_conn_hash_flush(). Probably related to bf4c63252490ba78fb833cc7acf1a5b1900c970f
- > 
- > Yes most probably this is the reason.
- > 
- > > Full report is at https://bugzilla.redhat.com/show_bug.cgi?id=797590
- > 
- > Could you try following commit?
- > 
- > commit 3c4e0df028935618d052235ba85bc7079be13394
- > Author: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
- > Date:   Thu Feb 2 10:32:17 2012 +0200
- > 
- >     Bluetooth: Use list _safe deleting from conn_hash_list
+> > If we do not mind scanning the bitmap twice, we can decouple the
+> > xchg loop and write protection, but it will be a bit slower, and in
+> > any case we need to hold mmu_lock until TLB is flushed.
+> 
+> Why is it necessary to scan twice? Simply continuing to the next set 
+> of pages, after dropping the lock, should be enough.
 
-Could you attach the patch ? I'll throw it into a Fedora build for
-the user who saw this to test.
+We cannot drop the lock.
+Do you mean doing TLB flush each time before dropping the lock?
 
-	Dave
- 
+> The potential problem i am referring to is:
+> 
+> - kvm.git next + srcu-less series
+> average(ns)    stdev     ns/page    pages    improvement(%)
+> 
+> 8497356.4    16441.0        32.4     256K     -29
+> 
+> So 8ms for 1GB. Assuming it increases linearly, it would take 
+> 400ms for get_dirty on a 50GB slot (most of that time spent 
+> with mmu_lock held). Is this correct?
+
+Partly yes: my method mainly depends on the number of dirty pages,
+not slot size.
+
+But it is not a new problem: traversing all shadow pages for that
+also takes linearly increasing time.
+
+If that 1GB dirty memory is in a 50GB slot, my method will alleviate
+the latency really a lot compared to the current way.  I do not want
+to imagine checking every shadow page in such a huge slot.
+
+Checking pages found in the dirty bitmap only should be better.
+
+	Takuya
