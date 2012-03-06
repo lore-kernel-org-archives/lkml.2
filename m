@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030607Ab2CFMgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 07:36:33 -0500
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:49418 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030584Ab2CFMfe (ORCPT
+	id S1030586Ab2CFMkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 07:40:51 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:40053 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030466Ab2CFMkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 07:35:34 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of peter.ujfalusi@ti.com designates 10.152.132.130 as permitted sender) smtp.mail=peter.ujfalusi@ti.com
-MIME-Version: 1.0
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Tony Lindgren <tony@atomide.com>, Liam Girdwood <lrg@ti.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-next@vger.kernel.org, paul.gortmaker@windriver.com
-Subject: [PATCH 1/5] Revert "mfd/Input/ASoC: twl6040 kconfig fixes"
-Date: Tue,  6 Mar 2012 14:35:12 +0200
-Message-Id: <1331037316-7375-2-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.7.8.5
-In-Reply-To: <1331037316-7375-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1331037316-7375-1-git-send-email-peter.ujfalusi@ti.com>
+	Tue, 6 Mar 2012 07:40:49 -0500
+Date: Tue, 6 Mar 2012 13:40:42 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 regression fix for 3.3-rc6
+Message-ID: <20120306134042.337a6fc6@de.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12030612-8372-0000-0000-000001E928CA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit a0afdbc2665bbad5ebc81a43b820e97f56ea0582.
+Hi Linus,
 
-Reverting changes regarding to twl6040 in MFD tree since the patches will go
-via the audio tree.
+please pull from 'for-linus' branch of
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/input/misc/Kconfig |    2 +-
- drivers/mfd/Kconfig        |   11 ++---------
- sound/soc/codecs/Kconfig   |    3 ++-
- 3 files changed, 5 insertions(+), 11 deletions(-)
+	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 9450d4c..6a9ee24 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -368,7 +368,7 @@ config INPUT_TWL4030_VIBRA
+to receive the following updates:
+
+Steffen Maier (1):
+      [S390] qdio: fix handler function arguments for zfcp data router
+
+It is a fix for a regression that has been introduced with git commit
+25f269f17316549e and if possible we would like to have working code
+for the fcp data router in 3.3.
+
+ drivers/s390/cio/qdio_main.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/s390/cio/qdio_main.c b/drivers/s390/cio/qdio_main.c
+index 3ef8d07..770a740 100644
+--- a/drivers/s390/cio/qdio_main.c
++++ b/drivers/s390/cio/qdio_main.c
+@@ -167,7 +167,7 @@ again:
+ 	DBF_ERROR("%4x EQBS ERROR", SCH_NO(q));
+ 	DBF_ERROR("%3d%3d%2d", count, tmp_count, nr);
+ 	q->handler(q->irq_ptr->cdev, QDIO_ERROR_ACTIVATE_CHECK_CONDITION,
+-		   0, -1, -1, q->irq_ptr->int_parm);
++		   q->nr, q->first_to_kick, count, q->irq_ptr->int_parm);
+ 	return 0;
+ }
  
- config INPUT_TWL6040_VIBRA
- 	tristate "Support for TWL6040 Vibrator"
--	depends on TWL6040_CORE
-+	select TWL6040_CORE
- 	select INPUT_FF_MEMLESS
- 	help
- 	  This option enables support for TWL6040 Vibrator Driver.
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 14e1efa..880c69a 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -267,17 +267,10 @@ config TWL6030_PWM
- 	  This is used to control charging LED brightness.
+@@ -215,7 +215,7 @@ again:
+ 	DBF_ERROR("%4x SQBS ERROR", SCH_NO(q));
+ 	DBF_ERROR("%3d%3d%2d", count, tmp_count, nr);
+ 	q->handler(q->irq_ptr->cdev, QDIO_ERROR_ACTIVATE_CHECK_CONDITION,
+-		   0, -1, -1, q->irq_ptr->int_parm);
++		   q->nr, q->first_to_kick, count, q->irq_ptr->int_parm);
+ 	return 0;
+ }
  
- config TWL6040_CORE
--	bool "Support for TWL6040 audio codec"
--	depends on I2C=y && GENERIC_HARDIRQS
-+	bool
-+	depends on I2C && GENERIC_HARDIRQS
- 	select MFD_CORE
--	select REGMAP_I2C
- 	default n
--	help
--	  Say yes here if you want support for Texas Instruments TWL6040 audio
--	  codec.
--	  This driver provides common support for accessing the device,
--	  additional drivers must be enabled in order to use the
--	  functionality of the device (audio, vibra).
- 
- config MFD_STMPE
- 	bool "Support STMicroelectronics STMPE"
-diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
-index 6b4d86a..f1a1197 100644
---- a/sound/soc/codecs/Kconfig
-+++ b/sound/soc/codecs/Kconfig
-@@ -56,7 +56,7 @@ config SND_SOC_ALL_CODECS
- 	select SND_SOC_TPA6130A2 if I2C
- 	select SND_SOC_TLV320DAC33 if I2C
- 	select SND_SOC_TWL4030 if TWL4030_CORE
--	select SND_SOC_TWL6040 if TWL6040_CORE
-+	select SND_SOC_TWL6040 if I2C
- 	select SND_SOC_UDA134X
- 	select SND_SOC_UDA1380 if I2C
- 	select SND_SOC_WL1273 if MFD_WL1273_CORE
-@@ -274,6 +274,7 @@ config SND_SOC_TWL4030
- 	tristate
- 
- config SND_SOC_TWL6040
-+	select TWL6040_CORE
- 	tristate
- 
- config SND_SOC_UDA134X
--- 
-1.7.8.5
 
