@@ -1,94 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096Ab2CFAWb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 19:22:31 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14617 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758069Ab2CFAW1 (ORCPT
+	id S932335Ab2CFAeY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 19:34:24 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41541 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932091Ab2CFAeW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 19:22:27 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 05 Mar 2012 16:22:22 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Olof Johansson <olof@lixom.net>, Colin Cross <ccross@android.com>
-CC: Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, <linux-doc@vger.kernel.org>
-Subject: [PATCH V2 1/3] Documentation/gpio.txt: Explain expected pinctrl interaction
-Date: Mon, 5 Mar 2012 17:22:14 -0700
-Message-ID: <1330993336-9538-1-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Mon, 5 Mar 2012 19:34:22 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus971@gmail.com designates 10.216.135.141 as permitted sender) smtp.mail=linus971@gmail.com; dkim=pass header.i=linus971@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <201203050143.24541.s.L-H@gmx.de>
+References: <20120228010511.GA8453@kroah.com> <20120228010434.412979550@linuxfoundation.org>
+ <87hay4dqjr.fsf@turtle.gmx.de> <201203050143.24541.s.L-H@gmx.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 5 Mar 2012 16:34:00 -0800
+X-Google-Sender-Auth: h8jOubXlyS-xXIzn5G7sHVq9N1c
+Message-ID: <CA+55aFxZsVxkxifR+EUZi=RsUGKfs5vYXX3nN_M_Az1BY5yyaw@mail.gmail.com>
+Subject: Re: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
+To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
+Cc: Sven Joachim <svenjoac@gmx.de>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update gpio.txt based on recent discussions regarding interaction with the
-pinctrl subsystem.
+Thomas, should we just plan on reverting that commit from mainline? It
+clearly causes regressions.
 
-Previously, gpio_request() was described as explicitly not performing any
-required mux setup operations etc.
+                Linus
 
-Now, gpio_request() is explicitly as explicitly performing any required mux
-setup operations where possible. In the case it isn't, platform code is
-required to have set up any required muxing or other configuration prior to
-gpio_request() being called, in order to maintain the same semantics.
-
-This is achieved by gpiolib drivers calling e.g. pinctrl_request_gpio() in
-their .request() operation.
-
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-doc@vger.kernel.org
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-v2: Modified to state that pin multiplexing should be performed within
-direction_input()/output() rather than request(), to address Russell King's
-need for glitchless transition between special function and GPIO usage of
-a pin. Various rewording and cleanup due to this.
----
- Documentation/gpio.txt |   23 ++++++++++++++++++++---
- 1 files changed, 20 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/gpio.txt b/Documentation/gpio.txt
-index 792faa3..e0f8799 100644
---- a/Documentation/gpio.txt
-+++ b/Documentation/gpio.txt
-@@ -271,9 +271,26 @@ Some platforms may also use knowledge about what GPIOs are active for
- power management, such as by powering down unused chip sectors and, more
- easily, gating off unused clocks.
- 
--Note that requesting a GPIO does NOT cause it to be configured in any
--way; it just marks that GPIO as in use.  Separate code must handle any
--pin setup (e.g. controlling which pin the GPIO uses, pullup/pulldown).
-+For GPIOs that use pins known to the pinctrl subsystem, that subsystem should
-+be informed of their use; a gpiolib driver's .request() operation may call
-+pinctrl_request_gpio(), and a gpiolib driver's .free() operation may call
-+pinctrl_free_gpio(). The pinctrl subsystem allows a pinctrl_request_gpio()
-+to succeed concurrently with a pin or pingroup being "owned" by a device for
-+pin multiplexing.
-+
-+Any programming of pin multiplexing hardware that is needed to route the
-+GPIO signal to the appropriate pin should occur within a GPIO driver's
-+.direction_input() or .direction_output() operations, and occur after any
-+setup of an output GPIO's value. This allows a glitch-free migration from a
-+pin's special function to GPIO. This is sometimes required when using a GPIO
-+to implement a workaround on signals typically driven by a non-GPIO HW block.
-+
-+Some platforms allow some or all GPIO signals to be routed to different pins.
-+Similarly, other aspects of the GPIO or pin may need to be configured, such as
-+pullup/pulldown. Platform software should arrange that any such details are
-+configured prior to gpio_request() being called for those GPIOs, e.g. using
-+the pinctrl subsystem's mapping table, so that GPIO users need not be aware
-+of these details.
- 
- Also note that it's your responsibility to have stopped using a GPIO
- before you free it.
--- 
-1.7.0.4
-
+On Sun, Mar 4, 2012 at 4:43 PM, Stefan Lippers-Hollmann <s.L-H@gmx.de> wrote:
+> Hi
+>
+> On Monday 05 March 2012, Sven Joachim wrote:
+>> On 2012-02-28 02:05 +0100, Greg KH wrote:
+>>
+>> > 3.2-stable review patch.  If anyone has any objections, please let me know.
+>>
+>> Alas, the commit below broke the WiFi on my laptop, where
+>> "iwlist wlan0 scan" now just reports: " wlan0     No scan results".
+>>
+>> This is not specific to 3.2, the same problem exists in 3.0.23 and
+>> 3.3-rc6 while previous releases worked.
+>
+> I can confirm this regression on an old PIII based notebook with a
+> 32 bit BCM4306/3 PCMCIA card:
+>
+> 02:00.0 Network controller [0280]: Broadcom Corporation BCM4306 802.11b/g Wireless LAN Controller [14e4:4320] (rev 03)
+>        Subsystem: Linksys WPC54G v1 / WPC54GS v1 802.11g Wireless-G Notebook Adapter [1737:4320]
+>        Flags: bus master, fast devsel, latency 64, IRQ 10
+>        Memory at 20000000 (32-bit, non-prefetchable) [size=8K]
+>        Capabilities: [40] Power Management version 2
+>        Kernel driver in use: b43-pci-bridge
+>
+> I can observe these differences in the dmesg output (3.2.9 + current
+> stable queue-3.2):
+>
+> The kernel configuration is identical in both cases, the only
+> difference is "genirq: Unmask oneshot irqs when thread was not woken"
+> being applied or not.
+>
+> --- working     <-- 3.2.9 + current stable queue-3.2, with "genirq: Unmask oneshot irqs when thread was not woken" reverted
+> +++ broken      <-- 3.2.9 + current stable queue-3.2
+> @@ -125,6 +125,7 @@ Initializing cgroup subsys freezer
+>  Initializing cgroup subsys net_cls
+>  Initializing cgroup subsys blkio
+>  Initializing cgroup subsys perf_event
+> +CPU serial number disabled.
+>  mce: CPU supports 5 MCE banks
+>  SMP alternatives: switching to UP code
+>  Freeing SMP alternatives: 8k freed
+> @@ -137,9 +138,16 @@ SMP disabled
+>  Performance Events:
+>  no APIC, boot with the "lapic" boot parameter to force-enable it.
+>  no hardware sampling interrupt available.
+> -Broken PMU hardware detected, using software events only.
+> +p6 PMU driver.
+> +... version:                0
+> +... bit width:              32
+> +... generic registers:      2
+> +... value mask:             00000000ffffffff
+> +... max period:             000000007fffffff
+> +... fixed-purpose events:   0
+> +... event mask:             0000000000000003
+>  Brought up 1 CPUs
+>  Total of 1 processors activated (1989.75 BogoMIPS).
+>  devtmpfs: initialized
+>  PM: Registering ACPI NVS region at eeff000 (4096 bytes)
+>  print_constraints: dummy:
+> @@ -174,12 +182,12 @@ pci 0000:00:00.0: reg 10: [mem 0xec00000
+>  type 1 class 0x000604
+>  pci 0000:00:01.0: supports D1
+>  type 2 class 0x000607
+> -pci 0000:00:04.0: reg 10: [mem 0x10000000-0x10000fff]
+> +pci 0000:00:04.0: reg 10: [mem 0x00000000-0x00000fff]
+>  pci 0000:00:04.0: supports D1 D2
+>  pci 0000:00:04.0: PME# supported from D0 D1 D2 D3hot D3cold
+>  pci 0000:00:04.0: PME# disabled
+>  type 2 class 0x000607
+> -pci 0000:00:04.1: reg 10: [mem 0x14000000-0x14000fff]
+> +pci 0000:00:04.1: reg 10: [mem 0x00000000-0x00000fff]
+>  pci 0000:00:04.1: supports D1 D2
+>  pci 0000:00:04.1: PME# supported from D0 D1 D2 D3hot D3cold
+>  pci 0000:00:04.1: PME# disabled
+> @@ -299,6 +307,10 @@ pnp: PnP ACPI: found 11 devices
+>  ACPI: ACPI bus type pnp unregistered
+>  Switching to clocksource acpi_pm
+>  PCI: max bus depth: 1 pci_try_num: 2
+> +pci 0000:00:04.0: BAR 0: assigned [mem 0x10000000-0x10000fff]
+> +(PCI address [0x10000000-0x10000fff])
+> +pci 0000:00:04.1: BAR 0: assigned [mem 0x14000000-0x14000fff]
+> +(PCI address [0x14000000-0x14000fff])
+>  pci 0000:00:11.0: BAR 6: assigned [mem 0x10020000-0x1003ffff pref]
+>  pci 0000:00:04.1: BAR 16: assigned [mem 0x18000000-0x1bffffff]
+>  pci 0000:00:04.1: BAR 15: assigned [mem 0x1c000000-0x1fffffff pref]
+> @@ -326,9 +338,11 @@ pci 0000:00:01.0: setting latency timer
+>  enabled at IRQ 10
+>  PCI: setting IRQ 10 as level-triggered
+>  -> GSI 10 (level, low) -> IRQ 10
+> +pci 0000:00:04.0: setting latency timer to 64
+>  enabled at IRQ 11
+>  PCI: setting IRQ 11 as level-triggered
+>  -> GSI 11 (level, low) -> IRQ 11
+> +pci 0000:00:04.1: setting latency timer to 64
+>  pci_bus 0000:00: resource 0 [io  0x0000-0xffff]
+>  pci_bus 0000:00: resource 1 [mem 0x00000000-0xffffffff]
+>  pci_bus 0000:01: resource 1 [mem 0xe8100000-0xe81fffff]
+> @@ -562,20 +576,6 @@ b43-phy0: Hardware crypto acceleration n
+>  b43-phy0: QoS not supported by firmware
+>  ADDRCONF(NETDEV_UP): wlan0: link is not ready
+>  NET: Registered protocol family 17
+> -wlan0: authenticate with [redacted MAC address] (try 1)
+> -wlan0: authenticated
+> -wlan0: associate with [redacted MAC address] (try 1)
+> -wlan0: RX AssocResp from [redacted MAC address] (capab=0x411 status=0 aid=1)
+> -wlan0: associated
+> -ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
+> -cfg80211: Calling CRDA for country: DE
+> -Intel AES-NI instructions are not detected.
+> -cfg80211: Regulatory domain changed to country: DE
+> -cfg80211:     (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
+> -cfg80211:     (2400000 KHz - 2483500 KHz @ 40000 KHz), (N/A, 2000 mBm)
+> -cfg80211:     (5150000 KHz - 5250000 KHz @ 40000 KHz), (N/A, 2000 mBm)
+> -cfg80211:     (5250000 KHz - 5350000 KHz @ 40000 KHz), (N/A, 2000 mBm)
+> -cfg80211:     (5470000 KHz - 5725000 KHz @ 40000 KHz), (N/A, 2698 mBm)
+>  lp0: using parport0 (interrupt-driven).
+>  lp0: console ready
+>  ppdev: user-space parallel port driver
+> @@ -589,4 +589,3 @@ mtrr: base(0xf2000000) is not aligned on
+>  agpgart-via 0000:00:00.0: AGP 2.0 bridge
+>  agpgart-via 0000:00:00.0: putting AGP V2 device into 0x mode
+>  pci 0000:01:00.0: putting AGP V2 device into 0x mode
+> -wlan0: no IPv6 routers present
+>
+> While I don't get any revealing error messages, once "genirq: Unmask
+> oneshot irqs when thread was not woken" is applied the wlan card
+> stops working (no scan results, unable to auth).
+>
+> I cannot reproduce this problem on a different amd64/ 64 bit system
+> with a BCM4318 PCI card, which continues to work fine.
+>
+> Regards
+>        Stefan Lippers-Hollmann
