@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965297Ab2CFW7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 17:59:42 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35040 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965280Ab2CFW7l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 17:59:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of anton.vorontsov@linaro.org designates 10.204.152.27 as permitted sender) smtp.mail=anton.vorontsov@linaro.org
-Date: Wed, 7 Mar 2012 02:59:37 +0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: linux-kernel@vger.kernel.org, leonid.moiseichuk@nokia.com,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] vmevent: Use 'struct vmevent_attr' for vmevent_fd() ABI
-Message-ID: <20120306225937.GA24931@oksana.dev.rtsoft.ru>
-References: <1331067079-2163-1-git-send-email-penberg@kernel.org>
+	id S1031490Ab2CFXDG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 18:03:06 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:52416 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965287Ab2CFXDE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 18:03:04 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of glikely@secretlab.ca designates 10.182.159.65 as permitted sender) smtp.mail=glikely@secretlab.ca
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1331067079-2163-1-git-send-email-penberg@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1331074162-18147-1-git-send-email-mathieu.poirier@linaro.org>
+References: <1331074162-18147-1-git-send-email-mathieu.poirier@linaro.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 6 Mar 2012 16:02:44 -0700
+X-Google-Sender-Auth: QgviSobQBTSBP2QM0x06qvyOMqs
+Message-ID: <CACxGe6v5edmAcicNSgDaKr2ics5q7fGkh4E4zjeSCOSePrJX+g@mail.gmail.com>
+Subject: Re: [PATCH] ARM: versatile: automatically pick a board in Kconfig
+To: mathieu.poirier@linaro.org
+Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org, arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 10:51:19PM +0200, Pekka Enberg wrote:
-> This patch introduces 'struct vmevent_attr' and converts the vmevent_fd() ABI
-> to use it which makes the ABI much more flexible.
-> 
-> Originally-by: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
-> Signed-off-by: Pekka Enberg <penberg@kernel.org>
+On Tue, Mar 6, 2012 at 3:49 PM,  <mathieu.poirier@linaro.org> wrote:
+> From: Arnd Bergmann <arnd@arndb.de>
+>
+> The versatile platform supports building any combination of the
+> three board types (AB, PB, DT), but at least one of them has
+> to be enabled. This adds the necessary Kconfig statement to
+> enforce that at least one of the three is selected.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
 > ---
+>  arch/arm/mach-versatile/Kconfig |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/mach-versatile/Kconfig b/arch/arm/mach-versatile/Kconfig
+> index c1f38f6..31da352 100644
+> --- a/arch/arm/mach-versatile/Kconfig
+> +++ b/arch/arm/mach-versatile/Kconfig
+> @@ -25,4 +25,10 @@ config MACH_VERSATILE_DT
+>          Include support for the ARM(R) Versatile/PB platform,
+>          using the device tree for discovery
+>
+> +config MACH_VERSATILE_AUTO
+> +       def_bool y
+> +       depends on !ARCH_VERSATILE_PB
+> +       depends on !MACH_VERSATILE_AB
+> +       select MACH_VERSATILE_DT
+> +
+>  endmenu
+> --
+> 1.7.5.4
+>
 
-Sorry for hijacking this thread, but speaking of big
-changes. Are there any plans or ideas to add other methods
-of sampling, i.e. something not timer-based?
 
-I like how it's done for cgroups, i.e. via rate-limited events
-(and the events are "page alloc/free").
-
-But doing this cgroup-way would probably dismiss the point of
-"lightweight" notifications.
-
-Though, current vmevent seems not so lightweigh in sense of
-battery usage and accuracy (i.e. how quick we're able to
-detect the crossed threshold). To get better accuracy we
-would need to run timer at higher frequencies, but then we
-would waste more battery.
-
-Sure, vmevent is still lightweight in sense that it does not
-cause much runtime overhead or memory wastage (unlike cgroups).
-
-The only idea I have for vmevent is to make some hybrid: timer
-plus shrinker API. That way we would detect "low memory" events
-fast enough via shrinker API, and thus run timer at low freq.
-
-But we would still have a running timer, which would wake up
-a system periodically, which is still quite bad. :-/
-
-Thanks,
 
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
