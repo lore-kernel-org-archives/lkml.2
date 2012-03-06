@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab2CFAve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 19:51:34 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:53653 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932277Ab2CFAvc convert rfc822-to-8bit (ORCPT
+	id S964897Ab2CFAzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 19:55:39 -0500
+Received: from oproxy9.bluehost.com ([69.89.24.6]:48049 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932606Ab2CFAzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 19:51:32 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of paul.gortmaker@gmail.com designates 10.68.130.193 as permitted sender) smtp.mail=paul.gortmaker@gmail.com; dkim=pass header.i=paul.gortmaker@gmail.com
+	Mon, 5 Mar 2012 19:55:37 -0500
+Message-ID: <4F556092.7060202@xenotime.net>
+Date: Mon, 05 Mar 2012 16:55:46 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20120306105749.4eb0fcccacfe9352e8042f06@canb.auug.org.au>
-References: <20120306105749.4eb0fcccacfe9352e8042f06@canb.auug.org.au>
-Date: Mon, 5 Mar 2012 19:51:32 -0500
-X-Google-Sender-Auth: QV0LPkY5HhjkIF9koSCWGBnR9Ns
-Message-ID: <CAP=VYLqJ8ER+tbpVqsvtrUottYP7O+k495Vtjp0Ep2Oa1NsqMw@mail.gmail.com>
-Subject: Re: linux-next: bad merge in the moduleh tree
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Matthew Garrett <mjg59@srcf.ucam.org>, linux-acpi@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org, Len Brown <lenb@kernel.org>,
+        Azael Avalos <coproscefalo@gmail.com>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/4] toshiba_acpi: Expanded hotkey support
+References: <1326915852-19896-1-git-send-email-seth.forshee@canonical.com> <20120206150658.GE6414@ubuntu-macmini> <20120206151548.GA30255@srcf.ucam.org> <20120305220407.GA16312@ubuntu-macmini> <4F5545BB.5010608@xenotime.net> <20120305233445.GD16312@ubuntu-macmini>
+In-Reply-To: <20120305233445.GD16312@ubuntu-macmini>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 5, 2012 at 6:57 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Paul,
->
-> I noticed this merge in the moduleh tree:
->
-> dc69707e944e "Merge branch 'module-3.4' into for-sfr"
->
-> This merge result in multplie includes of kernel.h in lib/average.c and
-> lib/list_debug.c.
+On 03/05/2012 03:34 PM, Seth Forshee wrote:
 
-Is there a better way to present these into linux-next vs. me merging
-them into one stream?  I want to keep the module-3.4 content separate
-from the bug-3.4 content  (and let Linus do the pull & merge) but at
-the same time I want these commit IDs tested in linux-next.  The topics
-are most likely one-shot deals, so adding a separate entity into linux-next
-for each of them doesn't seem to be worthwhile.
+> On Mon, Mar 05, 2012 at 03:01:15PM -0800, Randy Dunlap wrote:
+>> On 03/05/2012 02:04 PM, Seth Forshee wrote:
+>>
+>>> On Mon, Feb 06, 2012 at 03:15:48PM +0000, Matthew Garrett wrote:
+>>>> On Mon, Feb 06, 2012 at 09:06:58AM -0600, Seth Forshee wrote:
+>>>>
+>>>>> Matthew: Just wondering if there are more issues that need to be
+>>>>> addressed with this round of patches, or if they're looking okay at this
+>>>>> point.
+>>>>
+>>>> I'm fine with them at this point, just waiting on Len to give feedback 
+>>>> on the ACPI patch.
+>>>
+>>> Well, I've been trying to get some comment on the ACPI patch, to no
+>>> avail. Unless there's some other option, I guess I'll just resend the
+>>> patches using an alternative method for getting the EC handle.
+>>
+>>
+>> I did test this patch series on 3.3-rc5 to see if it would
+>> help with the touchpad on/off key on my Toshiba Portege.
+>>
+>> The patch series didn't have any ill effects, nor did it help
+>> with the touchpad on/off key.  :(
+> 
+> Is it only that hotkey that doesn't work, or do the others fail to work
+> as well?
 
-Anyway for now, I'll go re-check the merge and make sure it is dup free
-for tomorrow.  Thanks for the heads up.
+I haven't tried any others.  Which ones do you suggest that I test?
 
-Paul.
---
+> If it's only that key that doesn't work, I'd suggest using input-events
+> to determine exactly which device the other hotkey events are coming
+> from (it might be more than one) and to verify there really isn't any
+> event coming out for that key. If there's no event at all for the key,
+> check dmesg and see if any messages are printed there when you press the
+> touchpad key.
 
->
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+
+I don't know about "input-events".  Where do I find it & info on it?
+
+I already tried using 'showkey' and it didn't see any keypress for the
+touchpad key.
+
+thanks,
+-- 
+~Randy
