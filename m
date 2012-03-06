@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758790Ab2CFIuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 03:50:16 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:1949 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758365Ab2CFIuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 03:50:15 -0500
-Message-ID: <4F55CFC4.3020100@bfs.de>
-Date: Tue, 06 Mar 2012 09:50:12 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: Eric Wollesen <ericw@xmtp.net>, Doug Thompson <dougthompson@xmission.com>,
-        list-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch v3] edac i5000, i5400: fix pointer math in i5000_get_mc_regs()
-References: <20120306063859.GA3324@elgon.mountain>
-In-Reply-To: <20120306063859.GA3324@elgon.mountain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758814Ab2CFIue (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 03:50:34 -0500
+Received: from fallback8.mail.ru ([94.100.176.136]:41436 "EHLO
+	fallback8.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758365Ab2CFIuc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 03:50:32 -0500
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: linux-tegra@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Stephen Warren <swarren@nvidia.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dmitry Artamonow <mad_soft@inbox.ru>
+Subject: [PATCH/RFC 1/2] arm/tegra: fix harmony pinmux for PCIe
+Date: Tue,  6 Mar 2012 12:45:42 +0400
+Message-Id: <1331023544-6439-2-git-send-email-mad_soft@inbox.ru>
+X-Mailer: git-send-email 1.7.5.1.300.gc565c
+In-Reply-To: <1331023544-6439-1-git-send-email-mad_soft@inbox.ru>
+References: <1331023544-6439-1-git-send-email-mad_soft@inbox.ru>
+X-Spam: Not detected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 6e96aca397 (arm/tegra: Harmony PCIe: Don't touch pinmux)
+removed runtime tri-state toggling for PCIe related pinmux groups,
+but it seems that the fact that all of them are tri-state by default
+has been overlooked. Change defaults for these groups to TEGRA_TRI_NORMAL.
 
+Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+---
+ arch/arm/mach-tegra/board-harmony-pinmux.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Am 06.03.2012 07:38, schrieb Dan Carpenter:
-> "pvt->ambase" is a u64 datatype.  The intent here is to fill the first
-> half in the first call to pci_read_config_dword() and the other half in
-> the second.  Unfortunately the pointer math is wrong so we set the wrong
-> data.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> v2: Redid it as with a union as Walter Harms suggested.
->     Fixed the same bug in i5400_edac.c as well.
-> v3: Make the struct __packed just in case.
-> 
-> I don't have this hardware, so please review carefully.
-> 
-> diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
-> index 74d6ec34..083e80a 100644
-> --- a/drivers/edac/i5400_edac.c
-> +++ b/drivers/edac/i5400_edac.c
-> @@ -343,7 +343,13 @@ struct i5400_pvt {
->  	struct pci_dev *branch_1;		/* 22.0 */
->  
->  	u16 tolm;				/* top of low memory */
-> -	u64 ambase;				/* AMB BAR */
-> +	union {
-> +		u64 ambase;				/* AMB BAR */
-> +		struct {
-> +			u32 ambase_bottom;
-> +			u32 ambase_top;
-> +		} u __packed;
-> +	};
->  
->  	u16 mir0, mir1;
->  
-> @@ -1024,9 +1030,9 @@ static void i5400_get_mc_regs(struct mem_ctl_info *mci)
->  	pvt = mci->pvt_info;
->  
->  	pci_read_config_dword(pvt->system_address, AMBASE,
-> -			(u32 *) &pvt->ambase);
-> +			&pvt->u.ambase_bottom);
->  	pci_read_config_dword(pvt->system_address, AMBASE + sizeof(u32),
-> -			((u32 *) &pvt->ambase) + sizeof(u32));
-> +			&pvt->u.ambase_top);
->  
->  	maxdimmperch = pvt->maxdimmperch;
->  	maxch = pvt->maxch;
-> diff --git a/drivers/edac/i5000_edac.c b/drivers/edac/i5000_edac.c
-> index 4dc3ac2..ecc2401 100644
-> --- a/drivers/edac/i5000_edac.c
-> +++ b/drivers/edac/i5000_edac.c
-> @@ -343,7 +343,13 @@ struct i5000_pvt {
->  	struct pci_dev *branch_1;	/* 22.0 */
->  
->  	u16 tolm;		/* top of low memory */
-> -	u64 ambase;		/* AMB BAR */
-> +	union {
-> +		u64 ambase;		/* AMB BAR */
-> +		struct {
-> +			u32 ambase_bottom;
-> +			u32 ambase_top;
-> +		} u __packed;
-> +	};
->  
->  	u16 mir0, mir1, mir2;
->  
-> @@ -1128,9 +1134,9 @@ static void i5000_get_mc_regs(struct mem_ctl_info *mci)
->  	pvt = mci->pvt_info;
->  
->  	pci_read_config_dword(pvt->system_address, AMBASE,
-> -			(u32 *) & pvt->ambase);
-> +			&pvt->u.ambase_bottom);
->  	pci_read_config_dword(pvt->system_address, AMBASE + sizeof(u32),
-> -			((u32 *) & pvt->ambase) + sizeof(u32));
-> +			&pvt->u.ambase_top);
->  
->  	maxdimmperch = pvt->maxdimmperch;
->  	maxch = pvt->maxch;
-> 
-
-nice work dan,
-i can not find anything to worry about.
-
-
-Acked-by: walter harms <wharms@bfs.de>
+diff --git a/arch/arm/mach-tegra/board-harmony-pinmux.c b/arch/arm/mach-tegra/board-harmony-pinmux.c
+index 465808c..1af85bccc 100644
+--- a/arch/arm/mach-tegra/board-harmony-pinmux.c
++++ b/arch/arm/mach-tegra/board-harmony-pinmux.c
+@@ -53,7 +53,7 @@ static struct tegra_pingroup_config harmony_pinmux[] = {
+ 	{TEGRA_PINGROUP_GME,   TEGRA_MUX_SDIO4,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
+ 	{TEGRA_PINGROUP_GPU,   TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
+ 	{TEGRA_PINGROUP_GPU7,  TEGRA_MUX_RTCK,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
+-	{TEGRA_PINGROUP_GPV,   TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
++	{TEGRA_PINGROUP_GPV,   TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
+ 	{TEGRA_PINGROUP_HDINT, TEGRA_MUX_HDMI,          TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
+ 	{TEGRA_PINGROUP_I2CP,  TEGRA_MUX_I2C,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
+ 	{TEGRA_PINGROUP_IRRX,  TEGRA_MUX_UARTA,         TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
+@@ -112,10 +112,10 @@ static struct tegra_pingroup_config harmony_pinmux[] = {
+ 	{TEGRA_PINGROUP_SDC,   TEGRA_MUX_PWM,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_NORMAL},
+ 	{TEGRA_PINGROUP_SDD,   TEGRA_MUX_PWM,           TEGRA_PUPD_PULL_UP,   TEGRA_TRI_TRISTATE},
+ 	{TEGRA_PINGROUP_SDIO1, TEGRA_MUX_SDIO1,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
+-	{TEGRA_PINGROUP_SLXA,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
++	{TEGRA_PINGROUP_SLXA,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
+ 	{TEGRA_PINGROUP_SLXC,  TEGRA_MUX_SPDIF,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
+ 	{TEGRA_PINGROUP_SLXD,  TEGRA_MUX_SPDIF,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
+-	{TEGRA_PINGROUP_SLXK,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
++	{TEGRA_PINGROUP_SLXK,  TEGRA_MUX_PCIE,          TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
+ 	{TEGRA_PINGROUP_SPDI,  TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
+ 	{TEGRA_PINGROUP_SPDO,  TEGRA_MUX_RSVD2,         TEGRA_PUPD_NORMAL,    TEGRA_TRI_TRISTATE},
+ 	{TEGRA_PINGROUP_SPIA,  TEGRA_MUX_GMI,           TEGRA_PUPD_NORMAL,    TEGRA_TRI_NORMAL},
+-- 
+1.7.5.1.300.gc565c
 
