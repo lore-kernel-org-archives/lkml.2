@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab2CFOrm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 09:47:42 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59566 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759273Ab2CFOrl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 09:47:41 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of eag0628@gmail.com designates 10.229.137.144 as permitted sender) smtp.mail=eag0628@gmail.com; dkim=pass header.i=eag0628@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <1331034734.11248.287.camel@twins>
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
-	<1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
-	<1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
-	<1331034734.11248.287.camel@twins>
-Date: Tue, 6 Mar 2012 22:47:40 +0800
-Message-ID: <CACvQF52cmm5-tEuQaTDFAsavTECzFWyNTOhrquXP+QBGWK2P2w@mail.gmail.com>
-Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine call_srcu()
-From: Lai Jiangshan <eag0628@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1030828Ab2CFOtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 09:49:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759273Ab2CFOti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 09:49:38 -0500
+Subject: nommu build failure in linux-next
+From: Mark Salter <msalter@redhat.com>
+To: siddhesh.poyarekar@gmail.com
+Cc: linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 06 Mar 2012 09:49:36 -0500
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1331045377.17099.2.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
->> +               }
->> +       }
->> +       spin_unlock_irq(&sp->gp_lock);
->> +
->> +       flush_workqueue(srcu_callback_wq);
->
-> Since you already waited for the completions one by one, what's the
-> purpose of this?
+commit b7b2a0afacada237005068294cb0ccc49d32889e
+Author: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Date:   Tue Mar 6 11:17:12 2012 +1100
 
-srcu callbacks are preemptible/sleepable here, so they may not
-complete in order,
-some may not finish here. so srcu_barrier() needs to wait them.
+    procfs: mark thread stack correctly in proc/<pid>/maps
 
 
->
->> +}
->> +EXPORT_SYMBOL_GPL(srcu_barrier);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This patch still breaks nommu builds. The previous syntax issue has been
+resolved, but now I see a link error:
+
+fs/built-in.o: In function `nommu_vma_show':
+task_nommu.c:(.text+0x564a0): undefined reference to `vm_is_stack'
+make[1]: *** [.tmp_vmlinux1] Error 1
+
+
+
