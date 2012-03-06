@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab2CFBuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 20:50:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35232 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758110Ab2CFBuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 20:50:18 -0500
-Message-ID: <4F556D3D.8040400@zytor.com>
-Date: Mon, 05 Mar 2012 17:49:49 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: zhenzhong.duan@oracle.com, Takashi Iwai <tiwai@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
-        joe.jin@oracle.com, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] Initialize max_pfn_mapped as initial ident mapping size
- for x86_64
-References: <1330669703-20176-1-git-send-email-zhenzhong.duan@oracle.com> <CAE9FiQV3CyB1YRPDxFu-jGr73+Qwpkn4O4QYYZvBJcyZA5Gouw@mail.gmail.com>
-In-Reply-To: <CAE9FiQV3CyB1YRPDxFu-jGr73+Qwpkn4O4QYYZvBJcyZA5Gouw@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+	id S1758222Ab2CFByb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 20:54:31 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:62879 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758192Ab2CFBya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 20:54:30 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of axel.lin@gmail.com designates 10.68.74.138 as permitted sender) smtp.mail=axel.lin@gmail.com; dkim=pass header.i=axel.lin@gmail.com
+Message-ID: <1330998862.3708.1.camel@phoenix>
+Subject: [PATCH 1/2] regulator: tps65217: Use DIV_ROUND_UP macro to
+ calculate selector
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: AnilKumar Ch <anilkumar@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 06 Mar 2012 09:54:22 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2012 05:35 PM, Yinghai Lu wrote:
-> 
-> whole history:
-> before following patch, on x86_64, for low memory (under 4g) pgtable
-> will be allocated just under TOML
-> and even those memory is not mapped directly. because now we are using
-> early_ioremap to access those
-> page table.
-> 
-> but looks it has problem with S4 resume. so good_end is set to initial
-> mapped high address.
-> (that is 512M). So page table will just below 512M
-> but crash kernel is allocated below 768M. so will have no chance to
-> get 512M porting for crashkernel.
-> 
-> Now your patch just set initial mapping limit to 1g. but according to
-> arch/x86/kernel/head_64.S
-> we only have initial mapping to 512M.
-> 
-> So you can not just simply set to 1G,  that will confuse early
-> memblock allocator.
-> 
-> We may update find_early_table_space() to use 1G as good_end for
-> x86_64 that will be less confusing.
-> 
+Use DIV_ROUND_UP macro for better readability.
 
-This is crazy.  All of it.  We shouldn't have a bunch of magic memory
-limits on 64 bits, and trying to add and subtract to them really just
-makes the pain worse.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/tps65217-regulator.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-WHY does it have a problem with S4 resume?  S4 is Linux code, so there
-is a bug here that people keep trying to hack around instead of digging
-into.
-
-The early mapping range we can fix, and probably should.  Mapping the
-first 4 GiB is not a lot of memory and makes a much more sensible
-starting point.
-
-	-hpa
-
-
+diff --git a/drivers/regulator/tps65217-regulator.c b/drivers/regulator/tps65217-regulator.c
+index 28a10ea..15f2fa0 100644
+--- a/drivers/regulator/tps65217-regulator.c
++++ b/drivers/regulator/tps65217-regulator.c
+@@ -82,11 +82,11 @@ static int tps65217_uv_to_vsel1(int uV, unsigned int *vsel)
+ 		return -EINVAL;
+ 
+ 	if (uV <= 1500000)
+-		*vsel = (uV - 875001) / 25000;
++		*vsel = DIV_ROUND_UP(uV - 900000, 25000);
+ 	else if (uV <= 2900000)
+-		*vsel = 24 + (uV - 1450001) / 50000;
++		*vsel = 24 + DIV_ROUND_UP(uV - 1500000, 50000);
+ 	else if (uV < 3300000)
+-		*vsel = 52 + (uV - 2800001) / 100000;
++		*vsel = 52 + DIV_ROUND_UP(uV - 2900000, 100000);
+ 	else
+ 		*vsel = 56;
+ 
+@@ -116,11 +116,11 @@ static int tps65217_uv_to_vsel2(int uV, unsigned int *vsel)
+ 		return -EINVAL;
+ 
+ 	if (uV <= 1900000)
+-		*vsel = (uV - 1450001) / 50000;
++		*vsel = DIV_ROUND_UP(uV - 1500000, 50000);
+ 	else if (uV <= 2400000)
+-		*vsel = 8 + (uV - 1800001) / 100000;
++		*vsel = 8 + DIV_ROUND_UP(uV - 1900000, 100000);
+ 	else
+-		*vsel = 13 + (uV - 2350001) / 50000;
++		*vsel = 13 + DIV_ROUND_UP(uV - 2400000, 50000);
+ 
+ 	return 0;
+ }
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.5.4
+
+
 
