@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758911Ab2CFKVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 05:21:00 -0500
-Received: from www.linutronix.de ([62.245.132.108]:57320 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758448Ab2CFKU7 (ORCPT
+	id S1758922Ab2CFK10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 05:27:26 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:41575 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758517Ab2CFK1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 05:20:59 -0500
-Date: Tue, 6 Mar 2012 11:20:57 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: [ANNOUNCE] 3.2.9-rt16
-Message-ID: <alpine.LFD.2.02.1203061118050.2742@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 6 Mar 2012 05:27:23 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of vegard.nossum@gmail.com designates 10.180.80.104 as permitted sender) smtp.mail=vegard.nossum@gmail.com; dkim=pass header.i=vegard.nossum@gmail.com
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1331028583.15778.3.camel@ThinkPad-T61>
+References: <1329717665.3448.28.camel@ThinkPad-T61>
+	<1329735648.2293.307.camel@twins>
+	<1329788560.3448.45.camel@ThinkPad-T61>
+	<1329819437.2293.382.camel@twins>
+	<1329990828.19165.36.camel@ThinkPad-T61>
+	<1330340324.11248.60.camel@twins>
+	<1330941917.24353.63.camel@ThinkPad-T61>
+	<1330969747.11248.250.camel@twins>
+	<20120305214545.GH3083@redhat.com>
+	<1331028583.15778.3.camel@ThinkPad-T61>
+Date: Tue, 6 Mar 2012 11:27:21 +0100
+Message-ID: <CAOMGZ=ECe+p10H4RMjcJnfa254_JGPg+BzmVuLvpZb1-Tzn4Xg@mail.gmail.com>
+Subject: Re: [PATCH v3 x86 1/2] fix page faults by nmiaction in nmi if
+ kmemcheck is enabled
+From: Vegard Nossum <vegard.nossum@gmail.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, paulus@samba.org,
+        mingo@elte.hu, acme@ghostprotocols.net, tony.luck@intel.com,
+        bp@amd64.org, robert.richter@amd.com, lenb@kernel.org, minyard@acm.org,
+        wim@iguana.be, linux-edac@vger.kernel.org, oprofile-list@lists.sf.net,
+        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net,
+        linux-watchdog@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+On 6 March 2012 11:09, Li Zhong <zhong@linux.vnet.ibm.com> wrote:
+> This patch tries to fix the problem of page fault exception caused by
+> accessing nmiaction structure in nmi if kmemcheck is enabled.
+>
+> If kmemcheck is enabled, the memory allocated through slab are in pages
+> that are marked non-present, so that some checks could be done in the
+> page fault handling code ( e.g. whether the memory is read before
+> written to ).
+> As nmiaction is allocated in this way, so it resides in a non-present
+> page. Then there is a page fault while the nmi code accessing the
+> nmiaction structure, which would then cause a warning by
+> WARN_ON_ONCE(in_nmi()) in kmemcheck_fault(), called by do_page_fault().
+>
+> v2: as Peter suggested, changed the nmiaction to use static storage.
+>
+> v3: as Peter suggested, use macro to shorten the codes. Also keep the
+> original usage of register_nmi_handler, so users of this call doesn't
+> need change.
+>
+> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
 
-I'm pleased to announce the 3.2.9-rt16 release.
+Looks like you've solved this now. Thanks.
 
-Changes vs. 3.2.9-rt15:
+For the record, another way to prevent the page fault from happening
+in the first place is to set up a new slab cache with the flag
+SLAB_NOTRACK. This is different from the GFP_NOTRACK flag which, as
+you noted, doesn't prevent page faults, just inhibits
+checking/warnings for those memory areas.
 
-  * cpu hotplug lock init fix [ Steven ]
-
-  * seqlock fix CONFIG typo
-
-The incremental patch against 3.2.9-rt15 can be found here:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/incr/patch-3.2.9-rt15-rt16.patch.xz
-
-and is appended below.
-
-
-The RT patch against 3.2.9 can be found here:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.9-rt16.patch.xz
+It's a bit of a hassle, I admit. Maybe we could create an additional,
+separate set of slab caches (using SLAB_NOTRACK) and a new GFP flag
+which selects this set of caches instead. This would allow anything
+that takes a gfp_t to allocate memory that is guaranteed not to page
+fault when using kmemcheck. Pekka, any thoughts?
 
 
-The split quilt queue is available at:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patches-3.2.9-rt16.tar.xz
-
-
-Enjoy,
-
-	tglx
-
-Index: linux-3.2/include/linux/seqlock.h
-===================================================================
---- linux-3.2.orig/include/linux/seqlock.h
-+++ linux-3.2/include/linux/seqlock.h
-@@ -177,7 +177,7 @@ typedef struct {
- /*
-  * Read side functions for starting and finalizing a read side section.
-  */
--#ifndef CONFIG_PREEMPT_RT
-+#ifndef CONFIG_PREEMPT_RT_FULL
- static inline unsigned read_seqbegin(const seqlock_t *sl)
- {
- 	return read_seqcount_begin(&sl->seqcount);
-Index: linux-3.2/kernel/cpu.c
-===================================================================
---- linux-3.2.orig/kernel/cpu.c
-+++ linux-3.2/kernel/cpu.c
-@@ -59,16 +59,20 @@ static struct {
- 	int refcount;
- } cpu_hotplug = {
- 	.active_writer = NULL,
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+	.lock = __SPIN_LOCK_UNLOCKED(cpu_hotplug.lock),
-+#else
- 	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
-+#endif
- 	.refcount = 0,
- };
- 
- #ifdef CONFIG_PREEMPT_RT_FULL
--# define hotplug_lock() spin_lock(&cpu_hotplug.lock)
--# define hotplug_unlock() spin_unlock(&cpu_hotplug.lock)
-+# define hotplug_lock() rt_spin_lock(&cpu_hotplug.lock)
-+# define hotplug_unlock() rt_spin_unlock(&cpu_hotplug.lock)
- #else
- # define hotplug_lock() mutex_lock(&cpu_hotplug.lock)
--# define hotplug_lock() mutex_unlock(&cpu_hotplug.lock)
-+# define hotplug_unlock() mutex_unlock(&cpu_hotplug.lock)
- #endif
- 
- struct hotplug_pcp {
-Index: linux-3.2/localversion-rt
-===================================================================
---- linux-3.2.orig/localversion-rt
-+++ linux-3.2/localversion-rt
-@@ -1 +1 @@
---rt15
-+-rt16
-Index: linux-3.2/include/net/neighbour.h
-===================================================================
---- linux-3.2.orig/include/net/neighbour.h
-+++ linux-3.2/include/net/neighbour.h
-@@ -385,7 +385,7 @@ struct neighbour_cb {
- 
- #define NEIGH_CB(skb)	((struct neighbour_cb *)(skb)->cb)
- 
--static inline void neigh_ha_snapshot(char *dst, const struct neighbour *n,
-+static inline void neigh_ha_snapshot(char *dst, struct neighbour *n,
- 				     const struct net_device *dev)
- {
- 	unsigned int seq;
+Vegard
