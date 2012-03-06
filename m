@@ -1,524 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758761Ab2CFIb4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 03:31:56 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:51077 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758512Ab2CFIbW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 03:31:22 -0500
-X-AuditID: cbfee61b-b7c62ae000000989-1e-4f55cb4ee475
-Reply-to: pullip.cho@samsung.com
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Cc: "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
-        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Subash Patel'" <subash.ramaswamy@linaro.org>
-Subject: [PATCH v10 1/3] S5P: SYSMMU: Remove System MMU device driver
-Date: Tue, 06 Mar 2012 17:31:27 +0900
-Organization: Samsung Electronics Co., Ltd
-Message-id: <002001ccfb73$85dee550$919caff0$%cho@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: ko
-Thread-index: Acz7c4XBsYH2aRsCRaeK21qLcQJjPw==
-X-Brightmail-Tracker: AAAAAA==
+	id S1758737Ab2CFIfF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 03:35:05 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:21138 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758632Ab2CFIfC convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:12:1>);
+	Tue, 6 Mar 2012 03:35:02 -0500
+Message-Id: <4F55DA3E0200007800076916@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 06 Mar 2012 08:34:54 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Santosh Jodh" <Santosh.Jodh@citrix.com>
+Cc: "David Vrabel" <david.vrabel@citrix.com>,
+        "Ian Campbell" <Ian.Campbell@citrix.com>,
+        "Paul Durrant" <Paul.Durrant@citrix.com>,
+        "waldi@debian.org" <waldi@debian.org>,
+        "weiyi.huang@gmail.com" <weiyi.huang@gmail.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "joe.jin@oracle.com" <joe.jin@oracle.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "lersek@redhat.com" <lersek@redhat.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "dgdegra@tycho.nsa.gov" <dgdegra@tycho.nsa.gov>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH 0001/001] xen: multi page ring support for block
+ devices
+References: <1330701099-18281-1-git-send-email-santoshprasadnayak@gmail.com>
+ <7914B38A4445B34AA16EB9F1352942F1010A1FA12364@SJCPMAILBOX01.citrite.net>
+In-Reply-To: <7914B38A4445B34AA16EB9F1352942F1010A1FA12364@SJCPMAILBOX01.citrite.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes System MMU device driver from arm/plat-s5p tree
-for transition to implement IOMMU driver.
-Although controlling System MMU in this removing driver
-is similar to the new IOMMU driver in the following patch,
-the new one is almost rewrite of this driver and there is no
-benefit to moving the driver file from arch/arm/ to drivers/iommu.
+>>> On 05.03.12 at 22:49, Santosh Jodh <Santosh.Jodh@citrix.com> wrote:
 
-Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
----
- arch/arm/plat-s5p/Kconfig                   |    8 -
- arch/arm/plat-s5p/Makefile                  |    1 -
- arch/arm/plat-s5p/sysmmu.c                  |  313 ---------------------------
- arch/arm/plat-samsung/include/plat/devs.h   |    1 -
- arch/arm/plat-samsung/include/plat/sysmmu.h |   95 --------
- 5 files changed, 0 insertions(+), 418 deletions(-)
- delete mode 100644 arch/arm/plat-s5p/sysmmu.c
- delete mode 100644 arch/arm/plat-samsung/include/plat/sysmmu.h
+Could this be split up into 3 patches, for easier reviewing:
+- one adjusting the xenbus interface to allow for multiple ring pages (and
+  maybe even that one should be split into the backend and frontend
+  related parts), syncing with the similar netback effort?
+- one for the blkback changes
+- one for the blkfront changes?
 
-diff --git a/arch/arm/plat-s5p/Kconfig b/arch/arm/plat-s5p/Kconfig
-index 8490695..9451ed4 100644
---- a/arch/arm/plat-s5p/Kconfig
-+++ b/arch/arm/plat-s5p/Kconfig
-@@ -50,14 +50,6 @@ config S5P_PM
- 	  Common code for power management support on S5P and newer SoCs
- 	  Note: Do not select this for S5P6440 and S5P6450.
- 
--comment "System MMU"
--
--config S5P_SYSTEM_MMU
--	bool "S5P SYSTEM MMU"
--	depends on ARCH_EXYNOS4
--	help
--	  Say Y here if you want to enable System MMU
--
- config S5P_SLEEP
- 	bool
- 	help
-diff --git a/arch/arm/plat-s5p/Makefile b/arch/arm/plat-s5p/Makefile
-index 4bd8241..4953d50 100644
---- a/arch/arm/plat-s5p/Makefile
-+++ b/arch/arm/plat-s5p/Makefile
-@@ -16,7 +16,6 @@ obj-y				+= clock.o
- obj-y				+= irq.o
- obj-$(CONFIG_S5P_EXT_INT)	+= irq-eint.o
- obj-$(CONFIG_S5P_GPIO_INT)	+= irq-gpioint.o
--obj-$(CONFIG_S5P_SYSTEM_MMU)	+= sysmmu.o
- obj-$(CONFIG_S5P_PM)		+= pm.o irq-pm.o
- obj-$(CONFIG_S5P_SLEEP)		+= sleep.o
- obj-$(CONFIG_S5P_HRT) 		+= s5p-time.o
-diff --git a/arch/arm/plat-s5p/sysmmu.c b/arch/arm/plat-s5p/sysmmu.c
-deleted file mode 100644
-index c8bec9c..0000000
---- a/arch/arm/plat-s5p/sysmmu.c
-+++ /dev/null
-@@ -1,313 +0,0 @@
--/* linux/arch/arm/plat-s5p/sysmmu.c
-- *
-- * Copyright (c) 2010 Samsung Electronics Co., Ltd.
-- *		http://www.samsung.com
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#include <linux/io.h>
--#include <linux/interrupt.h>
--#include <linux/platform_device.h>
--#include <linux/export.h>
--
--#include <asm/pgtable.h>
--
--#include <mach/map.h>
--#include <mach/regs-sysmmu.h>
--#include <plat/sysmmu.h>
--
--#define CTRL_ENABLE	0x5
--#define CTRL_BLOCK	0x7
--#define CTRL_DISABLE	0x0
--
--static struct device *dev;
--
--static unsigned short fault_reg_offset[SYSMMU_FAULTS_NUM] = {
--	S5P_PAGE_FAULT_ADDR,
--	S5P_AR_FAULT_ADDR,
--	S5P_AW_FAULT_ADDR,
--	S5P_DEFAULT_SLAVE_ADDR,
--	S5P_AR_FAULT_ADDR,
--	S5P_AR_FAULT_ADDR,
--	S5P_AW_FAULT_ADDR,
--	S5P_AW_FAULT_ADDR
--};
--
--static char *sysmmu_fault_name[SYSMMU_FAULTS_NUM] = {
--	"PAGE FAULT",
--	"AR MULTI-HIT FAULT",
--	"AW MULTI-HIT FAULT",
--	"BUS ERROR",
--	"AR SECURITY PROTECTION FAULT",
--	"AR ACCESS PROTECTION FAULT",
--	"AW SECURITY PROTECTION FAULT",
--	"AW ACCESS PROTECTION FAULT"
--};
--
--static int (*fault_handlers[S5P_SYSMMU_TOTAL_IPNUM])(
--		enum S5P_SYSMMU_INTERRUPT_TYPE itype,
--		unsigned long pgtable_base,
--		unsigned long fault_addr);
--
--/*
-- * If adjacent 2 bits are true, the system MMU is enabled.
-- * The system MMU is disabled, otherwise.
-- */
--static unsigned long sysmmu_states;
--
--static inline void set_sysmmu_active(sysmmu_ips ips)
--{
--	sysmmu_states |= 3 << (ips * 2);
--}
--
--static inline void set_sysmmu_inactive(sysmmu_ips ips)
--{
--	sysmmu_states &= ~(3 << (ips * 2));
--}
--
--static inline int is_sysmmu_active(sysmmu_ips ips)
--{
--	return sysmmu_states & (3 << (ips * 2));
--}
--
--static void __iomem *sysmmusfrs[S5P_SYSMMU_TOTAL_IPNUM];
--
--static inline void sysmmu_block(sysmmu_ips ips)
--{
--	__raw_writel(CTRL_BLOCK, sysmmusfrs[ips] + S5P_MMU_CTRL);
--	dev_dbg(dev, "%s is blocked.\n", sysmmu_ips_name[ips]);
--}
--
--static inline void sysmmu_unblock(sysmmu_ips ips)
--{
--	__raw_writel(CTRL_ENABLE, sysmmusfrs[ips] + S5P_MMU_CTRL);
--	dev_dbg(dev, "%s is unblocked.\n", sysmmu_ips_name[ips]);
--}
--
--static inline void __sysmmu_tlb_invalidate(sysmmu_ips ips)
--{
--	__raw_writel(0x1, sysmmusfrs[ips] + S5P_MMU_FLUSH);
--	dev_dbg(dev, "TLB of %s is invalidated.\n", sysmmu_ips_name[ips]);
--}
--
--static inline void __sysmmu_set_ptbase(sysmmu_ips ips, unsigned long pgd)
--{
--	if (unlikely(pgd == 0)) {
--		pgd = (unsigned long)ZERO_PAGE(0);
--		__raw_writel(0x20, sysmmusfrs[ips] + S5P_MMU_CFG); /* 4KB LV1 */
--	} else {
--		__raw_writel(0x0, sysmmusfrs[ips] + S5P_MMU_CFG); /* 16KB LV1 */
--	}
--
--	__raw_writel(pgd, sysmmusfrs[ips] + S5P_PT_BASE_ADDR);
--
--	dev_dbg(dev, "Page table base of %s is initialized with 0x%08lX.\n",
--						sysmmu_ips_name[ips], pgd);
--	__sysmmu_tlb_invalidate(ips);
--}
--
--void sysmmu_set_fault_handler(sysmmu_ips ips,
--			int (*handler)(enum S5P_SYSMMU_INTERRUPT_TYPE itype,
--					unsigned long pgtable_base,
--					unsigned long fault_addr))
--{
--	BUG_ON(!((ips >= SYSMMU_MDMA) && (ips < S5P_SYSMMU_TOTAL_IPNUM)));
--	fault_handlers[ips] = handler;
--}
--
--static irqreturn_t s5p_sysmmu_irq(int irq, void *dev_id)
--{
--	/* SYSMMU is in blocked when interrupt occurred. */
--	unsigned long base = 0;
--	sysmmu_ips ips = (sysmmu_ips)dev_id;
--	enum S5P_SYSMMU_INTERRUPT_TYPE itype;
--
--	itype = (enum S5P_SYSMMU_INTERRUPT_TYPE)
--		__ffs(__raw_readl(sysmmusfrs[ips] + S5P_INT_STATUS));
--
--	BUG_ON(!((itype >= 0) && (itype < 8)));
--
--	dev_alert(dev, "%s occurred by %s.\n", sysmmu_fault_name[itype],
--							sysmmu_ips_name[ips]);
--
--	if (fault_handlers[ips]) {
--		unsigned long addr;
--
--		base = __raw_readl(sysmmusfrs[ips] + S5P_PT_BASE_ADDR);
--		addr = __raw_readl(sysmmusfrs[ips] + fault_reg_offset[itype]);
--
--		if (fault_handlers[ips](itype, base, addr)) {
--			__raw_writel(1 << itype,
--					sysmmusfrs[ips] + S5P_INT_CLEAR);
--			dev_notice(dev, "%s from %s is resolved."
--					" Retrying translation.\n",
--				sysmmu_fault_name[itype], sysmmu_ips_name[ips]);
--		} else {
--			base = 0;
--		}
--	}
--
--	sysmmu_unblock(ips);
--
--	if (!base)
--		dev_notice(dev, "%s from %s is not handled.\n",
--			sysmmu_fault_name[itype], sysmmu_ips_name[ips]);
--
--	return IRQ_HANDLED;
--}
--
--void s5p_sysmmu_set_tablebase_pgd(sysmmu_ips ips, unsigned long pgd)
--{
--	if (is_sysmmu_active(ips)) {
--		sysmmu_block(ips);
--		__sysmmu_set_ptbase(ips, pgd);
--		sysmmu_unblock(ips);
--	} else {
--		dev_dbg(dev, "%s is disabled. "
--			"Skipping initializing page table base.\n",
--						sysmmu_ips_name[ips]);
--	}
--}
--
--void s5p_sysmmu_enable(sysmmu_ips ips, unsigned long pgd)
--{
--	if (!is_sysmmu_active(ips)) {
--		sysmmu_clk_enable(ips);
--
--		__sysmmu_set_ptbase(ips, pgd);
--
--		__raw_writel(CTRL_ENABLE, sysmmusfrs[ips] + S5P_MMU_CTRL);
--
--		set_sysmmu_active(ips);
--		dev_dbg(dev, "%s is enabled.\n", sysmmu_ips_name[ips]);
--	} else {
--		dev_dbg(dev, "%s is already enabled.\n", sysmmu_ips_name[ips]);
--	}
--}
--
--void s5p_sysmmu_disable(sysmmu_ips ips)
--{
--	if (is_sysmmu_active(ips)) {
--		__raw_writel(CTRL_DISABLE, sysmmusfrs[ips] + S5P_MMU_CTRL);
--		set_sysmmu_inactive(ips);
--		sysmmu_clk_disable(ips);
--		dev_dbg(dev, "%s is disabled.\n", sysmmu_ips_name[ips]);
--	} else {
--		dev_dbg(dev, "%s is already disabled.\n", sysmmu_ips_name[ips]);
--	}
--}
--
--void s5p_sysmmu_tlb_invalidate(sysmmu_ips ips)
--{
--	if (is_sysmmu_active(ips)) {
--		sysmmu_block(ips);
--		__sysmmu_tlb_invalidate(ips);
--		sysmmu_unblock(ips);
--	} else {
--		dev_dbg(dev, "%s is disabled. "
--			"Skipping invalidating TLB.\n", sysmmu_ips_name[ips]);
--	}
--}
--
--static int s5p_sysmmu_probe(struct platform_device *pdev)
--{
--	int i, ret;
--	struct resource *res, *mem;
--
--	dev = &pdev->dev;
--
--	for (i = 0; i < S5P_SYSMMU_TOTAL_IPNUM; i++) {
--		int irq;
--
--		sysmmu_clk_init(dev, i);
--		sysmmu_clk_disable(i);
--
--		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
--		if (!res) {
--			dev_err(dev, "Failed to get the resource of %s.\n",
--							sysmmu_ips_name[i]);
--			ret = -ENODEV;
--			goto err_res;
--		}
--
--		mem = request_mem_region(res->start, resource_size(res),
--					 pdev->name);
--		if (!mem) {
--			dev_err(dev, "Failed to request the memory region of %s.\n",
--							sysmmu_ips_name[i]);
--			ret = -EBUSY;
--			goto err_res;
--		}
--
--		sysmmusfrs[i] = ioremap(res->start, resource_size(res));
--		if (!sysmmusfrs[i]) {
--			dev_err(dev, "Failed to ioremap() for %s.\n",
--							sysmmu_ips_name[i]);
--			ret = -ENXIO;
--			goto err_reg;
--		}
--
--		irq = platform_get_irq(pdev, i);
--		if (irq <= 0) {
--			dev_err(dev, "Failed to get the IRQ resource of %s.\n",
--							sysmmu_ips_name[i]);
--			ret = -ENOENT;
--			goto err_map;
--		}
--
--		if (request_irq(irq, s5p_sysmmu_irq, IRQF_DISABLED,
--						pdev->name, (void *)i)) {
--			dev_err(dev, "Failed to request IRQ for %s.\n",
--							sysmmu_ips_name[i]);
--			ret = -ENOENT;
--			goto err_map;
--		}
--	}
--
--	return 0;
--
--err_map:
--	iounmap(sysmmusfrs[i]);
--err_reg:
--	release_mem_region(mem->start, resource_size(mem));
--err_res:
--	return ret;
--}
--
--static int s5p_sysmmu_remove(struct platform_device *pdev)
--{
--	return 0;
--}
--int s5p_sysmmu_runtime_suspend(struct device *dev)
--{
--	return 0;
--}
--
--int s5p_sysmmu_runtime_resume(struct device *dev)
--{
--	return 0;
--}
--
--const struct dev_pm_ops s5p_sysmmu_pm_ops = {
--	.runtime_suspend	= s5p_sysmmu_runtime_suspend,
--	.runtime_resume		= s5p_sysmmu_runtime_resume,
--};
--
--static struct platform_driver s5p_sysmmu_driver = {
--	.probe		= s5p_sysmmu_probe,
--	.remove		= s5p_sysmmu_remove,
--	.driver		= {
--		.owner		= THIS_MODULE,
--		.name		= "s5p-sysmmu",
--		.pm		= &s5p_sysmmu_pm_ops,
--	}
--};
--
--static int __init s5p_sysmmu_init(void)
--{
--	return platform_driver_register(&s5p_sysmmu_driver);
--}
--arch_initcall(s5p_sysmmu_init);
-diff --git a/arch/arm/plat-samsung/include/plat/devs.h b/arch/arm/plat-samsung/include/plat/devs.h
-index 2dd5267..a604cb8 100644
---- a/arch/arm/plat-samsung/include/plat/devs.h
-+++ b/arch/arm/plat-samsung/include/plat/devs.h
-@@ -132,7 +132,6 @@ extern struct platform_device exynos4_device_pcm1;
- extern struct platform_device exynos4_device_pcm2;
- extern struct platform_device exynos4_device_pd[];
- extern struct platform_device exynos4_device_spdif;
--extern struct platform_device exynos4_device_sysmmu;
- 
- extern struct platform_device samsung_asoc_dma;
- extern struct platform_device samsung_asoc_idma;
-diff --git a/arch/arm/plat-samsung/include/plat/sysmmu.h b/arch/arm/plat-samsung/include/plat/sysmmu.h
-deleted file mode 100644
-index 5fe8ee0..0000000
---- a/arch/arm/plat-samsung/include/plat/sysmmu.h
-+++ /dev/null
-@@ -1,95 +0,0 @@
--/* linux/arch/arm/plat-samsung/include/plat/sysmmu.h
-- *
-- * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
-- *		http://www.samsung.com
-- *
-- * Samsung System MMU driver for S5P platform
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
--*/
--
--#ifndef __PLAT_SAMSUNG_SYSMMU_H
--#define __PLAT_SAMSUNG_SYSMMU_H __FILE__
--
--enum S5P_SYSMMU_INTERRUPT_TYPE {
--	SYSMMU_PAGEFAULT,
--	SYSMMU_AR_MULTIHIT,
--	SYSMMU_AW_MULTIHIT,
--	SYSMMU_BUSERROR,
--	SYSMMU_AR_SECURITY,
--	SYSMMU_AR_ACCESS,
--	SYSMMU_AW_SECURITY,
--	SYSMMU_AW_PROTECTION, /* 7 */
--	SYSMMU_FAULTS_NUM
--};
--
--#ifdef CONFIG_S5P_SYSTEM_MMU
--
--#include <mach/sysmmu.h>
--
--/**
-- * s5p_sysmmu_enable() - enable system mmu of ip
-- * @ips: The ip connected system mmu.
-- * #pgd: Base physical address of the 1st level page table
-- *
-- * This function enable system mmu to transfer address
-- * from virtual address to physical address
-- */
--void s5p_sysmmu_enable(sysmmu_ips ips, unsigned long pgd);
--
--/**
-- * s5p_sysmmu_disable() - disable sysmmu mmu of ip
-- * @ips: The ip connected system mmu.
-- *
-- * This function disable system mmu to transfer address
-- * from virtual address to physical address
-- */
--void s5p_sysmmu_disable(sysmmu_ips ips);
--
--/**
-- * s5p_sysmmu_set_tablebase_pgd() - set page table base address to refer page table
-- * @ips: The ip connected system mmu.
-- * @pgd: The page table base address.
-- *
-- * This function set page table base address
-- * When system mmu transfer address from virtaul address to physical address,
-- * system mmu refer address information from page table
-- */
--void s5p_sysmmu_set_tablebase_pgd(sysmmu_ips ips, unsigned long pgd);
--
--/**
-- * s5p_sysmmu_tlb_invalidate() - flush all TLB entry in system mmu
-- * @ips: The ip connected system mmu.
-- *
-- * This function flush all TLB entry in system mmu
-- */
--void s5p_sysmmu_tlb_invalidate(sysmmu_ips ips);
--
--/** s5p_sysmmu_set_fault_handler() - Fault handler for System MMUs
-- * @itype: type of fault.
-- * @pgtable_base: the physical address of page table base. This is 0 if @ips is
-- *               SYSMMU_BUSERROR.
-- * @fault_addr: the device (virtual) address that the System MMU tried to
-- *             translated. This is 0 if @ips is SYSMMU_BUSERROR.
-- * Called when interrupt occurred by the System MMUs
-- * The device drivers of peripheral devices that has a System MMU can implement
-- * a fault handler to resolve address translation fault by System MMU.
-- * The meanings of return value and parameters are described below.
--
-- * return value: non-zero if the fault is correctly resolved.
-- *         zero if the fault is not handled.
-- */
--void s5p_sysmmu_set_fault_handler(sysmmu_ips ips,
--			int (*handler)(enum S5P_SYSMMU_INTERRUPT_TYPE itype,
--					unsigned long pgtable_base,
--					unsigned long fault_addr));
--#else
--#define s5p_sysmmu_enable(ips, pgd) do { } while (0)
--#define s5p_sysmmu_disable(ips) do { } while (0)
--#define s5p_sysmmu_set_tablebase_pgd(ips, pgd) do { } while (0)
--#define s5p_sysmmu_tlb_invalidate(ips) do { } while (0)
--#define s5p_sysmmu_set_fault_handler(ips, handler) do { } while (0)
--#endif
--#endif /* __ASM_PLAT_SYSMMU_H */
--- 
-1.7.1
+> --- a/drivers/block/xen-blkback/xenbus.c
+> +++ b/drivers/block/xen-blkback/xenbus.c
+> @@ -122,8 +122,8 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+>         return blkif;
+>  }
+> 
+> -static int xen_blkif_map(struct xen_blkif *blkif, unsigned long shared_page,
+> -                        unsigned int evtchn)
+> +static int xen_blkif_map(struct xen_blkif *blkif, int ring_ref[],
+
+As you need to touch this anyway, can you please switch this to the
+proper type (grant_ref_t) rather than using plain "int" (not just here)?
+
+> +                        unsigned int ring_order, unsigned int evtchn)
+>  {
+>         int err;
+> 
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -135,7 +139,7 @@ static DEFINE_SPINLOCK(minor_lock);
+>  static int get_id_from_freelist(struct blkfront_info *info)
+>  {
+>         unsigned long free = info->shadow_free;
+> -       BUG_ON(free >= BLK_RING_SIZE);
+> +       BUG_ON(free >= BLK_MAX_RING_SIZE);
+
+Wouldn't you better check against the actual limit here?
+
+>         info->shadow_free = info->shadow[free].req.u.rw.id;
+>         info->shadow[free].req.u.rw.id = 0x0fffffee; /* debug */
+>         return free;
+> @@ -698,16 +704,19 @@ static void blkif_free(struct blkfront_info *info, int suspend)
+>         flush_work_sync(&info->work);
+> 
+>         /* Free resources associated with old device channel. */
+> -       if (info->ring_ref != GRANT_INVALID_REF) {
+> -               gnttab_end_foreign_access(info->ring_ref, 0,
+> -                                         (unsigned long)info->ring.sring);
+> -               info->ring_ref = GRANT_INVALID_REF;
+> -               info->ring.sring = NULL;
+> +       for (i = 0; i < (1 << info->ring_order); i++) {
+> +               if (info->ring_ref[i] != GRANT_INVALID_REF) {
+> +                       gnttab_end_foreign_access(info->ring_ref[i], 0, 0);
+> +                       info->ring_ref[i] = GRANT_INVALID_REF;
+> +               }
+>         }
+> +
+> +       free_pages((unsigned long)info->ring.sring, info->ring_order);
+
+No. The freeing must continue happen in gnttab_end_foreign_access()
+(with the sole exception when a page was allocated but the grant
+didn't get established), since it must be suppressed/delayed when the
+grant is still in use (otherwise the kernel will die on the first re-use of
+the page). I just happened to fix that problem at the end of last week
+in the variant of the patch that we pulled into our tree.
+
+Further, rather than doing a non-zero order allocation here, I'd
+suggest allocating individual pages and vmap()-ing them.
+
+> +       info->ring.sring = NULL;
+> +
+>         if (info->irq)
+>                 unbind_from_irqhandler(info->irq, info);
+>         info->evtchn = info->irq = 0;
+> -
+>  }
+> 
+>  static void blkif_completion(struct blk_shadow *s)
+> @@ -875,8 +883,27 @@ static int talk_to_blkback(struct xenbus_device *dev,
+>  {
+>         const char *message = NULL;
+>         struct xenbus_transaction xbt;
+> +       unsigned int ring_order;
+> +       int legacy_backend;
+> +       int i;
+>         int err;
+> 
+> +       for (i = 0; i < (1 << info->ring_order); i++)
+> +               info->ring_ref[i] = GRANT_INVALID_REF;
+> +
+> +       err = xenbus_scanf(XBT_NIL, dev->otherend, "max-ring-page-order", "%u",
+> +                          &ring_order);
+
+At least the frontend should imo also support the alternative interface
+(using "max-ring-pages" etc).
+
+> +
+> +       legacy_backend = !(err == 1);
+> +
+> +       if (legacy_backend) {
+> +               info->ring_order = 0;
+> +       } else {
+> +               info->ring_order = (ring_order <= xen_blkif_ring_order) ?
+> +                                  ring_order :
+> +                                  xen_blkif_ring_order;
+
+min()?
+
+> +       }
+> +
+>         /* Create shared ring, alloc event channel. */
+>         err = setup_blkring(dev, info);
+>         if (err)
+> @@ -889,12 +916,35 @@ again:
+>                 goto destroy_blkring;
+>         }
+> 
+> -       err = xenbus_printf(xbt, dev->nodename,
+> -                           "ring-ref", "%u", info->ring_ref);
+> -       if (err) {
+> -               message = "writing ring-ref";
+> -               goto abort_transaction;
+> +       if (legacy_backend) {
+
+Why not use the simpler interface always when info->ring_order == 0?
+
+> +               err = xenbus_printf(xbt, dev->nodename,
+> +                                   "ring-ref", "%d", info->ring_ref[0]);
+> +               if (err) {
+> +                       message = "writing ring-ref";
+> +                       goto abort_transaction;
+> +               }
+> +       } else {
+> +               for (i = 0; i < (1 << info->ring_order); i++) {
+> +                       char key[sizeof("ring-ref") + 2];
+> +
+> +                       sprintf(key, "ring-ref%d", i);
+> +
+> +                       err = xenbus_printf(xbt, dev->nodename,
+> +                                           key, "%d", info->ring_ref[i]);
+> +                       if (err) {
+> +                               message = "writing ring-ref";
+> +                               goto abort_transaction;
+> +                       }
+> +               }
+> +
+> +               err = xenbus_printf(xbt, dev->nodename,
+> +                                   "ring-page-order", "%u", info->ring_order);
+> +               if (err) {
+> +                       message = "writing ring-order";
+> +                       goto abort_transaction;
+> +               }
+>         }
+> +
+>         err = xenbus_printf(xbt, dev->nodename,
+>                             "event-channel", "%u", info->evtchn);
+>         if (err) {
+> @@ -996,21 +1046,14 @@ static int blkfront_probe(struct xenbus_device *dev,
+>         info->connected = BLKIF_STATE_DISCONNECTED;
+>         INIT_WORK(&info->work, blkif_restart_queue);
+> 
+> -       for (i = 0; i < BLK_RING_SIZE; i++)
+> +       for (i = 0; i < BLK_MAX_RING_SIZE; i++)
+>                 info->shadow[i].req.u.rw.id = i+1;
+> -       info->shadow[BLK_RING_SIZE-1].req.u.rw.id = 0x0fffffff;
+> +       info->shadow[BLK_MAX_RING_SIZE-1].req.u.rw.id = 0x0fffffff;
+
+A proper terminator must also be written in talk_to_blkback() once
+the actual ring size is known.
+
+Further, blkif_recover() must be able to deal with a change of the
+allowed upper bound.
+
+>         /* Front end dir is a number, which is used as the id. */
+>         info->handle = simple_strtoul(strrchr(dev->nodename, '/')+1, NULL, 0);
+>         dev_set_drvdata(&dev->dev, info);
+> 
+> -       err = talk_to_blkback(dev, info);
+
+Completely removing this here is wrong afaict - what if the backend
+already is in InitWait when the frontend starts?
+
+Further, whatever is done to this call here also needs to be done in
+blkfront_resume().
+
+> -       if (err) {
+> -               kfree(info);
+> -               dev_set_drvdata(&dev->dev, NULL);
+> -               return err;
+> -       }
+> -
+>         return 0;
+>  }
+> 
+> @@ -1307,6 +1349,10 @@ static void blkback_changed(struct xenbus_device *dev,
+>         case XenbusStateClosed:
+>                 break;
+> 
+> +       case XenbusStateInitWait:
+> +               talk_to_blkback(dev, info);
+
+This call can return an error.
+
+> +               break;
+> +
+>         case XenbusStateConnected:
+>                 blkfront_connect(info);
+>                 break;
+> --- a/include/xen/xenbus.h
+> +++ b/include/xen/xenbus.h
+> @@ -195,15 +195,23 @@ int xenbus_watch_pathfmt(struct xenbus_device *dev, struct xenbus_watch *watch,
+>                          const char *pathfmt, ...);
+> 
+>  int xenbus_switch_state(struct xenbus_device *dev, enum xenbus_state new_state);
+> -int xenbus_grant_ring(struct xenbus_device *dev, unsigned long ring_mfn);
+> -int xenbus_map_ring_valloc(struct xenbus_device *dev,
+> -                          int gnt_ref, void **vaddr);
+> -int xenbus_map_ring(struct xenbus_device *dev, int gnt_ref,
+> -                          grant_handle_t *handle, void *vaddr);
+> +
+> +#define        XENBUS_MAX_RING_ORDER   2
+> +#define        XENBUS_MAX_RING_PAGES   (1 << XENBUS_MAX_RING_ORDER)
+
+Why do you need an artificial global limit here? Each driver can decide
+individually what its limit should be.
+
+Jan
 
 
