@@ -1,51 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107Ab2CFVVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 16:21:49 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49946 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754910Ab2CFVVs (ORCPT
+	id S1756249Ab2CFVWf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 16:22:35 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:52920 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754519Ab2CFVWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 16:21:48 -0500
-Message-ID: <4F567FE7.4020507@wwwdotorg.org>
-Date: Tue, 06 Mar 2012 14:21:43 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: split pincontrol states into its own header
-References: <1331068552-16988-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1331068552-16988-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Mar 2012 16:22:33 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
+        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH RESEND v3] USB: Support for LPC32xx SoC
+Date: Tue,  6 Mar 2012 22:21:53 +0100
+Message-Id: <1331068913-9321-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2012 02:15 PM, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> Move the pin control state defines into its own header file,
-> since it is used both by machine.h which is facing the platform
-> and by consumer.h which is facing the drivers, and pinctrl.h
-> which is pinctrl-driver internal, let's not have each and every
-> .h file include all others, then isolation is moot.
-> 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+This patch adds OHCI support to the LPC32xx ARM platform
 
-Sure. I'm not quite sure how many (or how many standardized) states we
-expect to have such that it warrants 'pinctrl-state.h' vs. say
-'pinctrl-common.h', but it's probably fine.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+---
+ drivers/usb/host/ohci-hcd.c     |    5 +++
+ drivers/usb/host/ohci-pnx4008.c |   66 +++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 67 insertions(+), 4 deletions(-)
+
+--- linux-2.6.orig/drivers/usb/host/ohci-hcd.c
++++ linux-2.6/drivers/usb/host/ohci-hcd.c
+@@ -1055,6 +1055,11 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
+ #endif
+ 
++#ifdef CONFIG_ARCH_LPC32XX
++#include "ohci-pnx4008.c"
++#define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
++#endif
++
+ #ifdef CONFIG_ARCH_DAVINCI_DA8XX
+ #include "ohci-da8xx.c"
+ #define PLATFORM_DRIVER		ohci_hcd_da8xx_driver
+--- linux-2.6.orig/drivers/usb/host/ohci-pnx4008.c
++++ linux-2.6/drivers/usb/host/ohci-pnx4008.c
+@@ -22,6 +22,7 @@
+ #include <linux/i2c.h>
+ 
+ #include <mach/hardware.h>
++#include <asm/mach-types.h>
+ #include <asm/io.h>
+ 
+ #include <mach/platform.h>
+@@ -143,7 +144,17 @@ static void i2c_write(u8 buf, u8 subaddr
+ 	i2c_master_send(isp1301_i2c_client, &tmpbuf[0], 2);
+ }
+ 
+-static void isp1301_configure(void)
++static u16 i2c_read16(u8 subaddr)
++{
++	u16 data;
++
++	i2c_master_send(isp1301_i2c_client, &subaddr, 1);
++	i2c_master_recv(isp1301_i2c_client, (u8 *) &data, 2);
++
++	return data;
++}
++
++static void isp1301_configure_pnx4008(void)
+ {
+ 	/* PNX4008 only supports DAT_SE0 USB mode */
+ 	/* PNX4008 R2A requires setting the MAX603 to output 3.6V */
+@@ -166,7 +177,51 @@ static void isp1301_configure(void)
+ 		  ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
+ 	i2c_write(0xFF,
+ 		  ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
++}
+ 
++static void isp1301_configure_lpc32xx(void)
++{
++	/* LPC32XX only supports DAT_SE0 USB mode */
++	/* This sequence is important */
++
++	/* Disable transparent UART mode first */
++	i2c_write(MC1_UART_EN, (ISP1301_I2C_MODE_CONTROL_1 |
++		ISP1301_I2C_REG_CLEAR_ADDR));
++
++	i2c_write(~MC1_SPEED_REG, (ISP1301_I2C_MODE_CONTROL_1 |
++		ISP1301_I2C_REG_CLEAR_ADDR));
++	i2c_write(MC1_SPEED_REG, ISP1301_I2C_MODE_CONTROL_1);
++	i2c_write(~0,
++		(ISP1301_I2C_MODE_CONTROL_2 | ISP1301_I2C_REG_CLEAR_ADDR));
++	i2c_write((MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL),
++		ISP1301_I2C_MODE_CONTROL_2);
++	i2c_write(~0, (ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR));
++	i2c_write(MC1_DAT_SE0, ISP1301_I2C_MODE_CONTROL_1);
++	i2c_write((OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN),
++		ISP1301_I2C_OTG_CONTROL_1);
++	i2c_write((OTG1_DM_PULLUP | OTG1_DP_PULLUP),
++		(ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR));
++	i2c_write(~0,
++		 ISP1301_I2C_INTERRUPT_LATCH | ISP1301_I2C_REG_CLEAR_ADDR);
++	i2c_write(~0,
++		ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
++	i2c_write(~0,
++		ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
++
++	/* Enable usb_need_clk clock after transceiver is initialized */
++	__raw_writel((__raw_readl(USB_CTRL) | (1 << 22)), USB_CTRL);
++
++	printk(KERN_INFO "ISP1301 Vendor ID  : 0x%04x\n", i2c_read16(0x00));
++	printk(KERN_INFO "ISP1301 Product ID : 0x%04x\n", i2c_read16(0x02));
++	printk(KERN_INFO "ISP1301 Version ID : 0x%04x\n", i2c_read16(0x14));
++}
++
++static void isp1301_configure(void)
++{
++	if (machine_is_pnx4008())
++		isp1301_configure_pnx4008();
++	else
++		isp1301_configure_lpc32xx();
+ }
+ 
+ static inline void isp1301_vbus_on(void)
+@@ -375,7 +430,8 @@ static int __devinit usb_hcd_pnx4008_pro
+ 	}
+ 
+ 	/* Set all USB bits in the Start Enable register */
+-	pnx4008_set_usb_bits();
++	if (machine_is_pnx4008())
++		pnx4008_set_usb_bits();
+ 
+ 	hcd->rsrc_start = pdev->resource[0].start;
+ 	hcd->rsrc_len = pdev->resource[0].end - pdev->resource[0].start + 1;
+@@ -404,7 +460,8 @@ static int __devinit usb_hcd_pnx4008_pro
+ 
+ 	pnx4008_stop_hc();
+ out4:
+-	pnx4008_unset_usb_bits();
++	if (machine_is_pnx4008())
++		pnx4008_unset_usb_bits();
+ 	usb_put_hcd(hcd);
+ out3:
+ 	clk_disable(usb_clk);
+@@ -427,7 +484,8 @@ static int usb_hcd_pnx4008_remove(struct
+ 	pnx4008_stop_hc();
+ 	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+ 	usb_put_hcd(hcd);
+-	pnx4008_unset_usb_bits();
++	if (machine_is_pnx4008())
++		pnx4008_unset_usb_bits();
+ 	clk_disable(usb_clk);
+ 	clk_put(usb_clk);
+ 	i2c_unregister_device(isp1301_i2c_client);
