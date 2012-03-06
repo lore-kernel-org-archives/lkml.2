@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965133Ab2CFSvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 13:51:22 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:46488 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S965074Ab2CFSvU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 13:51:20 -0500
-Message-ID: <4F565CB0.8070301@xenotime.net>
-Date: Tue, 06 Mar 2012 10:51:28 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S965188Ab2CFSvm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 13:51:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48406 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965074Ab2CFSvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 13:51:41 -0500
+Date: Tue, 6 Mar 2012 13:51:37 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        viro@ZenIV.linux.org.uk
+Subject: inode->i_wb_list corruption.
+Message-ID: <20120306185137.GA15881@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Fedora Kernel Team <kernel-team@fedoraproject.org>,
+	viro@ZenIV.linux.org.uk
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jonathan Cameron <jic23@cam.ac.uk>, linux-iio@vger.kernel.org
-Subject: Re: linux-next: Tree for Mar 6 (staging/iio)
-References: <20120306180746.25c595babf8b5072366cdbec@canb.auug.org.au>
-In-Reply-To: <20120306180746.25c595babf8b5072366cdbec@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/05/2012 11:07 PM, Stephen Rothwell wrote:
+We've had three separate reports against 3.2.x recently where the linked list debugging
+is getting tripped up by the prev->next pointer being null instead of pointing
+to the current list entry while walking the i_wb_list
 
-> Hi all,
-> 
-> Changes since 20120305:
+Call traces are slightly different each time, but all end up walking i_wb_list 
+in dput -> d_kill -> i_put -> evict -> inode_wb_list_del
 
-
-When CONFIG_DEBUG_FS is not enabled:
-
-drivers/staging/iio/industrialio-core.c:621:11: error: 'iio_read_channel_ext_info' undeclared (first use in this function)
-drivers/staging/iio/industrialio-core.c:623:11: error: 'iio_write_channel_ext_info' undeclared (first use in this function)
+What protects that list ? It looks to be just bdi->wb.list_lock ?
 
 
+full reports at:
+https://bugzilla.redhat.com/show_bug.cgi?id=784741
+https://bugzilla.redhat.com/show_bug.cgi?id=799229
+https://bugzilla.redhat.com/show_bug.cgi?id=799692
 
+	Dave
 
--- 
-~Randy
