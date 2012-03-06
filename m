@@ -1,130 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030897Ab2CFPDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 10:03:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26738 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030791Ab2CFPDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 10:03:51 -0500
-Date: Tue, 6 Mar 2012 12:01:04 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4 changelog-v2] KVM: Switch to srcu-less get_dirty_log()
-Message-ID: <20120306150104.GA3041@amt.cnet>
-References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
- <20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp>
- <20120303142148.2689454b30dc86d84c4a19f5@gmail.com>
- <20120306111540.GA29914@amt.cnet>
- <20120306234317.2817d2071038d11ab3831c82@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120306234317.2817d2071038d11ab3831c82@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1030910Ab2CFPEa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 10:04:30 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40422 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030778Ab2CFPE2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 10:04:28 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of liuj97@gmail.com designates 10.50.203.99 as permitted sender) smtp.mail=liuj97@gmail.com; dkim=pass header.i=liuj97@gmail.com
+From: Jiang Liu <liuj97@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Jes Sorensen <jes@sgi.com>,
+        Ingo Molnar <mingo@redhat.com>, "H . Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Meyer <thomas@m3y3r.de>
+Cc: Jiang Liu <jiang.liu@huawei.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-altix@sgi.com, x86@kernel.org,
+        chenkeping@huawei.com
+Subject: [PATCH] IRQ: normalize chip->irq_set_affinity return value on x86 and IA64
+Date: Tue,  6 Mar 2012 23:01:52 +0800
+Message-Id: <1331046112-19526-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 11:43:17PM +0900, Takuya Yoshikawa wrote:
-> Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> 
-> > > +	spin_lock(&kvm->mmu_lock);
-> > 
-> > It is not clear why mmu_lock is needed. Dropping it across the xchg loop
-> > should be similar to srcu implementation, in that concurrent updates
-> > will be visible only on the next get_dirty call? Well, it is necessary
-> > anyway for write protecting the sptes.
-> 
-> My implementation does write protection inside the xchg loop.
-> Then, after that loop, flushes TLB.
-> 
-> mmu_lock must protect both of these together.
-> 
-> If we do not mind scanning the bitmap twice, we can decouple the
-> xchg loop and write protection, but it will be a bit slower, and in
-> any case we need to hold mmu_lock until TLB is flushed.
+On x86 and IA64 platforms, interrupt controller chip's irq_set_affinity()
+method always copies affinity mask to irq_data->affinity field but still
+returns 0(IRQ_SET_MASK_OK). That return value causes the interrupt core
+logic unnecessarily copies the mask to irq_data->affinity field again.
+So return IRQ_SET_MASK_OK_NOCOPY instead of IRQ_SET_MASK_OK to get rid of
+the duplicated copy operation.
 
-Why is it necessary to scan twice? Simply continuing to the next set 
-of pages, after dropping the lock, should be enough.
+This patch applies to v3.3-rc6 and has been tested on x86 platforms.
 
-The potential problem i am referring to is:
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+---
+ arch/ia64/kernel/iosapic.c     |    4 +++-
+ arch/ia64/kernel/msi_ia64.c    |    4 ++--
+ arch/ia64/sn/kernel/irq.c      |    2 +-
+ arch/ia64/sn/kernel/msi_sn.c   |    2 +-
+ arch/x86/kernel/apic/io_apic.c |   11 ++++++-----
+ arch/x86/platform/uv/uv_irq.c  |    2 +-
+ kernel/irq/internals.h         |    3 +++
+ kernel/irq/manage.c            |   39 ++++++++++++++++++++++-----------------
+ kernel/irq/migration.c         |    6 +-----
+ 9 files changed, 40 insertions(+), 33 deletions(-)
 
-- kvm.git next + srcu-less series
-average(ns)    stdev     ns/page    pages    improvement(%)
+diff --git a/arch/ia64/kernel/iosapic.c b/arch/ia64/kernel/iosapic.c
+index b0f9afe..98f5fa6 100644
+--- a/arch/ia64/kernel/iosapic.c
++++ b/arch/ia64/kernel/iosapic.c
+@@ -374,8 +374,10 @@ iosapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		iosapic_write(iosapic, IOSAPIC_RTE_LOW(rte_index), low32);
+ 	}
+ 
++	return IRQ_SET_MASK_OK_NOCOPY;
++#else
++	return IRQ_SET_MASK_OK;
+ #endif
+-	return 0;
+ }
+ 
+ /*
+diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
+index 94e0db7..e155770 100644
+--- a/arch/ia64/kernel/msi_ia64.c
++++ b/arch/ia64/kernel/msi_ia64.c
+@@ -41,7 +41,7 @@ static int ia64_set_msi_irq_affinity(struct irq_data *idata,
+ 	write_msi_msg(irq, &msg);
+ 	cpumask_copy(idata->affinity, cpumask_of(cpu));
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ #endif /* CONFIG_SMP */
+ 
+@@ -157,7 +157,7 @@ static int dmar_msi_set_affinity(struct irq_data *data,
+ 	dmar_msi_write(irq, &msg);
+ 	cpumask_copy(data->affinity, mask);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ #endif /* CONFIG_SMP */
+ 
+diff --git a/arch/ia64/sn/kernel/irq.c b/arch/ia64/sn/kernel/irq.c
+index dfac09a..f444208 100644
+--- a/arch/ia64/sn/kernel/irq.c
++++ b/arch/ia64/sn/kernel/irq.c
+@@ -216,7 +216,7 @@ static int sn_set_affinity_irq(struct irq_data *data,
+ 				 sn_irq_lh[irq], list)
+ 		(void)sn_retarget_vector(sn_irq_info, nasid, slice);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #ifdef CONFIG_SMP
+diff --git a/arch/ia64/sn/kernel/msi_sn.c b/arch/ia64/sn/kernel/msi_sn.c
+index 2b98b9e..ebb5b55 100644
+--- a/arch/ia64/sn/kernel/msi_sn.c
++++ b/arch/ia64/sn/kernel/msi_sn.c
+@@ -208,7 +208,7 @@ static int sn_set_msi_irq_affinity(struct irq_data *data,
+ 	write_msi_msg(irq, &msg);
+ 	cpumask_copy(data->affinity, cpu_mask);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ #endif /* CONFIG_SMP */
+ 
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index fb07275..a81f888 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2346,6 +2346,7 @@ ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		/* Only the high 8 bits are valid. */
+ 		dest = SET_APIC_LOGICAL_ID(dest);
+ 		__target_IO_APIC_irq(irq, dest, data->chip_data);
++		ret = IRQ_SET_MASK_OK_NOCOPY;
+ 	}
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 	return ret;
+@@ -2404,7 +2405,7 @@ ir_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		send_cleanup_vector(cfg);
+ 
+ 	cpumask_copy(data->affinity, mask);
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #else
+@@ -3209,7 +3210,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 
+ 	__write_msi_msg(data->msi_desc, &msg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ #endif /* CONFIG_SMP */
+ 
+@@ -3366,7 +3367,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 
+ 	dmar_msi_write(irq, &msg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #endif /* CONFIG_SMP */
+@@ -3419,7 +3420,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
+ 
+ 	hpet_msi_write(data->handler_data, &msg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #endif /* CONFIG_SMP */
+@@ -3499,7 +3500,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 		return -1;
+ 
+ 	target_ht_irq(data->irq, dest, cfg->vector);
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #endif
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index f25c276..a22c416 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -222,7 +222,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	if (cfg->move_in_progress)
+ 		send_cleanup_vector(cfg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ /*
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index b795231..2c49c40 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -103,6 +103,9 @@ extern int irq_select_affinity_usr(unsigned int irq, struct cpumask *mask);
+ 
+ extern void irq_set_thread_affinity(struct irq_desc *desc);
+ 
++extern int irq_do_set_affinity(struct irq_data *data,
++			       const struct cpumask *dest, bool force);
++
+ /* Inline functions for support of irq chips on slow busses */
+ static inline void chip_bus_lock(struct irq_desc *desc)
+ {
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index a9a9dbe..b410b0b 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -139,6 +139,25 @@ static inline void
+ irq_get_pending(struct cpumask *mask, struct irq_desc *desc) { }
+ #endif
+ 
++int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
++			bool force)
++{
++	struct irq_desc *desc = irq_data_to_desc(data);
++	struct irq_chip *chip = irq_data_get_irq_chip(data);
++	int ret;
++
++	ret = chip->irq_set_affinity(data, mask, false);
++	switch (ret) {
++	case IRQ_SET_MASK_OK:
++		cpumask_copy(data->affinity, mask);
++	case IRQ_SET_MASK_OK_NOCOPY:
++		irq_set_thread_affinity(desc);
++		ret = 0;
++	}
++
++	return ret;
++}
++
+ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ {
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+@@ -149,14 +168,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+ 		return -EINVAL;
+ 
+ 	if (irq_can_move_pcntxt(data)) {
+-		ret = chip->irq_set_affinity(data, mask, false);
+-		switch (ret) {
+-		case IRQ_SET_MASK_OK:
+-			cpumask_copy(data->affinity, mask);
+-		case IRQ_SET_MASK_OK_NOCOPY:
+-			irq_set_thread_affinity(desc);
+-			ret = 0;
+-		}
++		ret = irq_do_set_affinity(data, mask, false);
+ 	} else {
+ 		irqd_set_move_pending(data);
+ 		irq_copy_pending(desc, mask);
+@@ -280,9 +292,7 @@ EXPORT_SYMBOL_GPL(irq_set_affinity_notifier);
+ static int
+ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
+ {
+-	struct irq_chip *chip = irq_desc_get_chip(desc);
+ 	struct cpumask *set = irq_default_affinity;
+-	int ret;
+ 
+ 	/* Excludes PER_CPU and NO_BALANCE interrupts */
+ 	if (!irq_can_set_affinity(irq))
+@@ -301,13 +311,8 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
+ 	}
+ 
+ 	cpumask_and(mask, cpu_online_mask, set);
+-	ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
+-	switch (ret) {
+-	case IRQ_SET_MASK_OK:
+-		cpumask_copy(desc->irq_data.affinity, mask);
+-	case IRQ_SET_MASK_OK_NOCOPY:
+-		irq_set_thread_affinity(desc);
+-	}
++	irq_do_set_affinity(&desc->irq_data, mask, false);
++
+ 	return 0;
+ }
+ #else
+diff --git a/kernel/irq/migration.c b/kernel/irq/migration.c
+index 4742090..ef04dab 100644
+--- a/kernel/irq/migration.c
++++ b/kernel/irq/migration.c
+@@ -44,11 +44,7 @@ void irq_move_masked_irq(struct irq_data *idata)
+ 	 */
+ 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
+ 		   < nr_cpu_ids))
+-		if (!chip->irq_set_affinity(&desc->irq_data,
+-					    desc->pending_mask, false)) {
+-			cpumask_copy(desc->irq_data.affinity, desc->pending_mask);
+-			irq_set_thread_affinity(desc);
+-		}
++		irq_do_set_affinity(&desc->irq_data, desc->pending_mask, false);
+ 
+ 	cpumask_clear(desc->pending_mask);
+ }
+-- 
+1.7.5.4
 
-8497356.4    16441.0        32.4     256K     -29
-
-So 8ms for 1GB. Assuming it increases linearly, it would take 
-400ms for get_dirty on a 50GB slot (most of that time spent 
-with mmu_lock held). Is this correct?
-
-> As can be seen from the unit-test result the majority of time
-> is being spent on write protecting sptes, so decoupling xchg loop
-> alone will not alleviate the problem so much -- my guess.
-> 
-> > A cond_resched_lock() would alleviate the potentially long held 
-> > times for mmu_lock (can you measure it with large memslots?)
-> 
-> How to move TLB flush out of mmu_lock critical sections was discussed
-> before, and there seemed to be some proposals.
-> 
-> Anyone is working on that?
-> 
-> After that we can do many things.
-> 
-> One idea is to make the extra bitmap buffer size shrink to one page
-> or so and do xchg and write protection loop by that limited size.
-> 
-> Because we can drop mmu_lock, it is possible to copy_to_user part of
-> the dirty bitmap, and then go to the next part.
-> 
-> After everything is protected, we can then do TLB flush after dropping
-> mmu_lock.
-> 
-> > Otherwise looks nice.
-> 
-> Thanks,
-> 	Takuya
-> 
-> 
-> > > -		r = -ENOMEM;
-> > > -		slots = kmemdup(kvm->memslots, sizeof(*kvm->memslots), GFP_KERNEL);
-> > > -		if (!slots)
-> > > -			goto out;
-> > > +	for (i = 0; i < n / sizeof(long); i++) {
-> > > +		unsigned long mask;
-> > > +		gfn_t offset;
-> > >  
-> > > -		memslot = id_to_memslot(slots, log->slot);
-> > > -		memslot->nr_dirty_pages = 0;
-> > > -		memslot->dirty_bitmap = dirty_bitmap_head;
-> > > -		update_memslots(slots, NULL);
-> > > +		if (!dirty_bitmap[i])
-> > > +			continue;
-> > >  
-> > > -		old_slots = kvm->memslots;
-> > > -		rcu_assign_pointer(kvm->memslots, slots);
-> > > -		synchronize_srcu_expedited(&kvm->srcu);
-> > > -		kfree(old_slots);
-> > > +		is_dirty = true;
-> > >  
-> > > -		write_protect_slot(kvm, memslot, dirty_bitmap, nr_dirty_pages);
-> > > +		mask = xchg(&dirty_bitmap[i], 0);
-> > > +		dirty_bitmap_buffer[i] = mask;
-> > >  
-> > > -		r = -EFAULT;
-> > > -		if (copy_to_user(log->dirty_bitmap, dirty_bitmap, n))
-> > > -			goto out;
-> > > -	} else {
-> > > -		r = -EFAULT;
-> > > -		if (clear_user(log->dirty_bitmap, n))
-> > > -			goto out;
-> > > +		offset = i * BITS_PER_LONG;
-> > > +		kvm_mmu_write_protect_pt_masked(kvm, memslot, offset, mask);
-> > >  	}
-> > > +	if (is_dirty)
-> > > +		kvm_flush_remote_tlbs(kvm);
-> > > +
-> > > +	spin_unlock(&kvm->mmu_lock);
