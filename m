@@ -1,133 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758658Ab2CFJxt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 04:53:49 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:1726 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S965121Ab2CFJxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 04:53:15 -0500
-X-IronPort-AV: E=Sophos;i="4.73,539,1325433600"; 
-   d="scan'208";a="4464393"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Subject: [PATCH 3/6] use "int trycount" instead of "bool expedited"
-Date: Tue, 6 Mar 2012 17:57:35 +0800
-Message-Id: <1331027858-7648-3-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
- <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-06 17:51:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-06 17:51:20,
-	Serialize complete at 2012-03-06 17:51:20
+	id S1030219Ab2CFKAR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 05:00:17 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50694 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758525Ab2CFKAP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 05:00:15 -0500
+Date: Tue, 6 Mar 2012 10:00:12 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH v6] sound/soc/codecs: add LAPIS Semiconductor ML26124
+Message-ID: <20120306100012.GC19635@opensource.wolfsonmicro.com>
+References: <1329976011-2251-1-git-send-email-tomoya.rohm@gmail.com>
+ <20120229235147.GM8295@opensource.wolfsonmicro.com>
+ <CANKRQngOkGTPM9AWEaHoaNQCyN65B_ESB24ctcT_DiEen050fg@mail.gmail.com>
+ <20120302125819.GE3230@opensource.wolfsonmicro.com>
+ <CANKRQngoDf_U8U7txG0AT1TKmSeq2FfqwjWD7EEiLROWzn+f5Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UFHRwCdBEJvubb2X"
+Content-Disposition: inline
+In-Reply-To: <CANKRQngoDf_U8U7txG0AT1TKmSeq2FfqwjWD7EEiLROWzn+f5Q@mail.gmail.com>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/srcu.c |   27 ++++++++++++++-------------
- 1 files changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/srcu.c b/kernel/srcu.c
-index fbe2d5f..d5f3450 100644
---- a/kernel/srcu.c
-+++ b/kernel/srcu.c
-@@ -254,12 +254,12 @@ EXPORT_SYMBOL_GPL(__srcu_read_unlock);
-  * we repeatedly block for 1-millisecond time periods.  This approach
-  * has done well in testing, so there is no need for a config parameter.
-  */
--#define SYNCHRONIZE_SRCU_READER_DELAY 5
-+#define SYNCHRONIZE_SRCU_READER_DELAY	5
-+#define SYNCHRONIZE_SRCU_TRYCOUNT	2
-+#define SYNCHRONIZE_SRCU_EXP_TRYCOUNT	12
- 
--static void wait_idx(struct srcu_struct *sp, int idx, bool expedited)
-+static void wait_idx(struct srcu_struct *sp, int idx, int trycount)
- {
--	int trycount = 0;
--
- 	/*
- 	 * If a reader fetches the index before the ->completed increment,
- 	 * but increments its counter after srcu_readers_active_idx_check()
-@@ -278,9 +278,10 @@ static void wait_idx(struct srcu_struct *sp, int idx, bool expedited)
- 	if (!srcu_readers_active_idx_check(sp, idx)) {
- 		udelay(SYNCHRONIZE_SRCU_READER_DELAY);
- 		while (!srcu_readers_active_idx_check(sp, idx)) {
--			if (expedited && ++ trycount < 10)
-+			if (trycount > 0) {
-+				trycount--;
- 				udelay(SYNCHRONIZE_SRCU_READER_DELAY);
--			else
-+			} else
- 				schedule_timeout_interruptible(1);
- 		}
- 	}
-@@ -310,18 +311,18 @@ static void wait_idx(struct srcu_struct *sp, int idx, bool expedited)
-  * by the next __synchronize_srcu() invoking wait_idx() for such readers
-  * before starting a new grace period.
-  */
--static void flip_idx_and_wait(struct srcu_struct *sp, bool expedited)
-+static void flip_idx_and_wait(struct srcu_struct *sp, int trycount)
- {
- 	int idx;
- 
- 	idx = sp->completed++ & 0x1;
--	wait_idx(sp, idx, expedited);
-+	wait_idx(sp, idx, trycount);
- }
- 
- /*
-  * Helper function for synchronize_srcu() and synchronize_srcu_expedited().
-  */
--static void __synchronize_srcu(struct srcu_struct *sp, bool expedited)
-+static void __synchronize_srcu(struct srcu_struct *sp, int trycount)
- {
- 	rcu_lockdep_assert(!lock_is_held(&sp->dep_map) &&
- 			   !lock_is_held(&rcu_bh_lock_map) &&
-@@ -357,14 +358,14 @@ static void __synchronize_srcu(struct srcu_struct *sp, bool expedited)
- 	 * fetching ->completed and incrementing their counter, wait_idx()
- 	 * will normally not need to wait.
- 	 */
--	wait_idx(sp, (sp->completed - 1) & 0x1, expedited);
-+	wait_idx(sp, (sp->completed - 1) & 0x1, trycount);
- 
- 	/*
- 	 * Now that wait_idx() has waited for the really old readers,
- 	 * invoke flip_idx_and_wait() to flip the counter and wait
- 	 * for current SRCU readers.
- 	 */
--	flip_idx_and_wait(sp, expedited);
-+	flip_idx_and_wait(sp, trycount);
- 
- 	mutex_unlock(&sp->mutex);
- }
-@@ -385,7 +386,7 @@ static void __synchronize_srcu(struct srcu_struct *sp, bool expedited)
-  */
- void synchronize_srcu(struct srcu_struct *sp)
- {
--	__synchronize_srcu(sp, 0);
-+	__synchronize_srcu(sp, SYNCHRONIZE_SRCU_TRYCOUNT);
- }
- EXPORT_SYMBOL_GPL(synchronize_srcu);
- 
-@@ -406,7 +407,7 @@ EXPORT_SYMBOL_GPL(synchronize_srcu);
-  */
- void synchronize_srcu_expedited(struct srcu_struct *sp)
- {
--	__synchronize_srcu(sp, 1);
-+	__synchronize_srcu(sp, SYNCHRONIZE_SRCU_EXP_TRYCOUNT);
- }
- EXPORT_SYMBOL_GPL(synchronize_srcu_expedited);
- 
--- 
-1.7.4.4
+--UFHRwCdBEJvubb2X
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, Mar 06, 2012 at 12:03:20PM +0900, Tomoya MORINAGA wrote:
+> 2012=E5=B9=B43=E6=9C=882=E6=97=A521:58 Mark Brown <broonie@opensource.wol=
+fsonmicro.com>:
+
+> >> Let me know why I should  use SND_SOC_REGMAP not _I2C.
+
+> > Have you checked what _I2C and _REGMAP do?
+
+> I've just checked it.
+> If SND_SOC_REGMAP is used, it seems there is no processing in it.
+
+This is not the case.
+
+> So, can I delete snd_soc_codec_set_cache_io ?
+
+No.
+
+> > Use module_i2c_driver().
+
+> I understand.
+
+> As a matter of interest, why can I use module_i2c_driver ?
+
+It is best practice.
+
+> There is no ASoC driver uses module_i2c_driver.
+
+This is not the case.  As I have *REPEATEDLY* told you you should be
+sumbitting code against current development versions of the subsystem.
+
+> >> +static int ml26124_update_bits(struct snd_soc_codec *codec, unsigned =
+short reg,
+> >> +                             unsigned int mask, unsigned int value)
+
+> > Why are you open coding this in your driver?  There is no point in
+> > replicating subsystem functionality.
+
+> For ML26124 spec, it's necessary.
+> Because the codec's register read-address and write-address is not the sa=
+me.
+> E.G.
+> Sampling Rate Register
+> R: offset=3D0
+> W: offset=3D1
+
+This is not what the above prototype says, the above prototype has only
+one register in it.  You need to make this *much* clearer for the
+registers it's affecting.
+
+--UFHRwCdBEJvubb2X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPVeAlAAoJEBus8iNuMP3dVssP/1uborFkcsdWswKgiBb8yHg5
+UkMaJbz9lKKxC6t4UC407uYpReHKpkToZJitULrmWeOPTKxZ2eiAOIinKdzNdT5L
+KX0Zw30+FaiEnwLzMTB9dnVKR8UdIndpB2i7283bHWnnnaxFNo1jvbMYCRbTVsTT
+Tjox/3SfMigPMC6WsZkQe2OD+WNkTr51lcULjA3YwJ/QineOZ4XHpCt9l2QUSgYW
+B4BD+taNconB5jjdwnQ1+tiO/JRS0tp/zq6iC+vsLWrB6Q0jz+P6FkFtBYV/iDJK
+e5aLNe7xn/OuBXlHcAplMiahCC6DD2VSjAacT2ri0Yo7LEZH4E2AQfO+fzHrQ+Et
+V9F+XvqUJASiB6TpzoeqedkjNhKnYz0HGAjHiBWWjeEGzVCCrdbbEHwCkjXn7bWK
+1S9pcv3gAgUnyx5yXd7PabmOM1sWZk/9K6IcM8tWiNaWpp9wojAhzZFU/Wayr2Nu
+vTerHSCPxlqp+73cbwRRSKvsjUdgsQdwkwzyywhLG7P/SAt8Pog4hpyaq8V+oRRT
+ZELFlmpxrqH6Ej3Ky/KW+1HZKXAISfTdQX8iAsPNScyvh4Jc00SYXfXVzUcXTGtl
+R84R28rfB1bA+Ze/MCGAQZ0E9gdIq6+hoWniNPVNnc9ESLFhXw9sP8VDqwzTlDYQ
+8Wtavpb8/NAH6dlW+2lp
+=8OSh
+-----END PGP SIGNATURE-----
+
+--UFHRwCdBEJvubb2X--
