@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030548Ab2CFMXw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 07:23:52 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64735 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030480Ab2CFMXv convert rfc822-to-8bit (ORCPT
+	id S1030574Ab2CFMfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 07:35:09 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36131 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030531Ab2CFMfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 07:23:51 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of linus.walleij@linaro.org designates 10.42.18.195 as permitted sender) smtp.mail=linus.walleij@linaro.org
+	Tue, 6 Mar 2012 07:35:07 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of sergey.senozhatsky@gmail.com designates 10.14.101.131 as permitted sender) smtp.mail=sergey.senozhatsky@gmail.com; dkim=pass header.i=sergey.senozhatsky@gmail.com
+Date: Tue, 6 Mar 2012 15:33:55 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Joey Lee <jlee@novell.com>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] acer-wmi: ignore missing Aspire 5741G keys
+Message-ID: <20120306123355.GA3904@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-In-Reply-To: <C5C3845E-9732-4A9D-B1DC-84688E7D807F@kernel.crashing.org>
-References: <1330424541-5299-1-git-send-email-martyn.welch@ge.com>
-	<1330424541-5299-2-git-send-email-martyn.welch@ge.com>
-	<C5C3845E-9732-4A9D-B1DC-84688E7D807F@kernel.crashing.org>
-Date: Tue, 6 Mar 2012 13:23:50 +0100
-Message-ID: <CACRpkdaTnu+Z49CDm1Ub1H9VK9WKMd48vwWmcmhn7YHWS9_HeQ@mail.gmail.com>
-Subject: Re: [PATCH V2 1/2] powerpc: Move GE GPIO and PIC drivers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: Martyn Welch <martyn.welch@ge.com>,
-        "linuxppc-dev@lists.ozlabs.org list" <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linus.walleij@stericsson.com, Grant Likely <grant.likely@secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 1:19 PM, Kumar Gala <galak@kernel.crashing.org> wrote:
-> On Feb 28, 2012, at 4:22 AM, Martyn Welch wrote:
->
->> Move the GE GPIO and PIC drivers to allow these to be used by non-86xx
->> boards.
->
-> gpio driver should be in drivers/gpio.  Please split that move out as a separate patch for Grant & Linus to review as part of the GPIO subsystem
+ acer-wmi: ignore missing Aspire 5741G keys
 
-Yes please. It will get a good home there, Grant knows everything about PPC...
+Ignore Aspire's 5741G:
+ KEY_PREVIOUSSONG
+ KEY_NEXTSONG
+ KEY_PLAYPAUSE
+ KEY_STOP
+ KEY_VOLUMEDOWN
 
-Yours,
-Linus Walleij
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+---
+
+ drivers/platform/x86/acer-wmi.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index b848277..d8a67cc 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -107,11 +107,16 @@ static const struct key_entry acer_wmi_keymap[] = {
+ 	{KE_KEY, 0x24, {KEY_PROG4} },    /* Social networking_Key */
+ 	{KE_IGNORE, 0x41, {KEY_MUTE} },
+ 	{KE_IGNORE, 0x42, {KEY_PREVIOUSSONG} },
++	{KE_IGNORE, 0x4d, {KEY_PREVIOUSSONG} },	
+ 	{KE_IGNORE, 0x43, {KEY_NEXTSONG} },
++	{KE_IGNORE, 0x4e, {KEY_NEXTSONG} },
+ 	{KE_IGNORE, 0x44, {KEY_PLAYPAUSE} },
++	{KE_IGNORE, 0x4f, {KEY_PLAYPAUSE} },
+ 	{KE_IGNORE, 0x45, {KEY_STOP} },
++	{KE_IGNORE, 0x50, {KEY_STOP} },
+ 	{KE_IGNORE, 0x48, {KEY_VOLUMEUP} },
+ 	{KE_IGNORE, 0x49, {KEY_VOLUMEDOWN} },
++	{KE_IGNORE, 0x4a, {KEY_VOLUMEDOWN} },
+ 	{KE_IGNORE, 0x61, {KEY_SWITCHVIDEOMODE} },
+ 	{KE_IGNORE, 0x62, {KEY_BRIGHTNESSUP} },
+ 	{KE_IGNORE, 0x63, {KEY_BRIGHTNESSDOWN} },
+
