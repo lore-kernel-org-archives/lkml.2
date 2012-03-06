@@ -1,119 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031188Ab2CFU4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 15:56:14 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:46831 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031124Ab2CFUtG (ORCPT
+	id S1031255Ab2CFU4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 15:56:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60807 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031124Ab2CFU4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 15:49:06 -0500
-Subject: [PATCH v3 00/23] ext4: Add metadata checksumming
-To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Tue, 06 Mar 2012 12:47:50 -0800
-Message-ID: <20120306204750.1663.96751.stgit@elm3b70.beaverton.ibm.com>
-User-Agent: StGit/0.15
+	Tue, 6 Mar 2012 15:56:19 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of hughd@google.com designates 10.42.131.129 as permitted sender) smtp.mail=hughd@google.com; dkim=pass header.i=hughd@google.com
+Date: Tue, 6 Mar 2012 12:55:42 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: fix mapcount check in move charge code for
+ anonymous page
+In-Reply-To: <20120305091719.c9f93f1a.nishimura@mxp.nes.nec.co.jp>
+Message-ID: <alpine.LSU.2.00.1203061230530.17934@eggly.anvils>
+References: <1330720508-21019-1-git-send-email-n-horiguchi@ah.jp.nec.com> <20120305091719.c9f93f1a.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030620-6148-0000-0000-000004084C5E
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, 5 Mar 2012, Daisuke Nishimura wrote:
+> Hi, Horiguchi-san.
+> On Fri,  2 Mar 2012 15:35:08 -0500
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> > Currently charge on shared anonyous pages is supposed not to moved
+> > in task migration. To implement this, we need to check that mapcount > 1,
+> > instread of > 2. So this patch fixes it.
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+> >  mm/memcontrol.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
+> > index b6d1bab..785f6d3 100644
+> > --- linux-next-20120228.orig/mm/memcontrol.c
+> > +++ linux-next-20120228/mm/memcontrol.c
+> > @@ -5102,7 +5102,7 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
+> >  		return NULL;
+> >  	if (PageAnon(page)) {
+> >  		/* we don't move shared anon */
+> > -		if (!move_anon() || page_mapcount(page) > 2)
+> > +		if (!move_anon() || page_mapcount(page) > 1)
+> >  			return NULL;
+> >  	} else if (!move_file())
+> >  		/* we ignore mapcount for file pages */
+> > -- 
+> > 1.7.7.6
+> > 
+> Sorry, it's my fault..
+> Thank you for catching this.
+> 
+> Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-This patchset adds crc32c checksums to most of the ext4 metadata objects.  A
-full design document is on the ext4 wiki[1] but I will summarize that document here.
+I'm perversely sorry to see this fix already wing its way into 3.3-rc,
+but never mind.
 
-As much as we wish our storage hardware was totally reliable, it is still
-quite possible for data to be corrupted on disk, corrupted during transfer over
-a wire, or written to the wrong places.  To protect against this sort of
-non-hostile corruption, it is desirable to store checksums of metadata objects
-on the filesystem to prevent broken metadata from shredding the filesystem.
+I was puzzling over that same "> 2" test when thinking through the
+stats move locking, and again when swap accounting appeared to be
+broken through and through (now fixed by two-liner in page_cgroup.c).
 
-The crc32c polynomial was chosen for its improved error detection capabilities
-over crc32 and crc16, and because of its hardware acceleration on current and
-upcoming Intel and Sparc chips.
+Why is there any test on page_mapcount(page) there at all?
+2.6.34 comments it
+	* TODO: We don't move charges of shared(used by multiple
+	* processes) pages for now.
+as if it's an unwelcome restriction to be eliminated later.
 
-Each type of metadata object has been retrofitted to store a checksum as follows:
+I don't understand why it was ever there, and would like to remove
+it (and update the Documentation file) - just to remove a little
+unnecessary complication, including mem_cgroup_count_swap_user().
 
-- The superblock stores a crc32c of itself.
-- Each inode stores crc32c(fs_uuid + inode_num + inode_gen + inode +
-  slack_space_after_inode)
-- Block and inode bitmaps each get their own crc32c(fs_uuid + group_num +
-  bitmap), stored in the block group descriptor.
-- Each extent tree block stores a crc32c(fs_uuid + inode_num + inode_gen +
-  extent_entries) in unused space at the end of the block.
-- Each directory leaf block has an unused-looking directory entry big enough to
-  store a crc32c(fs_uuid + inode_num + inode_gen + block) at the end of the
-  block.
-- Each directory htree block is shortened to contain a crc32c(fs_uuid +
-  inode_num + inode_gen + block) at the end of the block.
-- Extended attribute blocks store crc32c(fs_uuid + id + ea_block) in the
-  header, where id is, depending on the refcount, either the inode_num and
-  inode_gen; or the block number.
-- MMP blocks store crc32c(fs_uuid + mmpblock) at the end of the MMP block.
-- Block groups can now use crc32c instead of crc16.
-- The journal now has a v2 checksum feature flag.
-- crc32c(j_uuid + block) checksums have been inserted into descriptor blocks,
-  commit blocks, revoke blocks, and the journal superblock.
-- Each block tag in a descriptor block has a checksum of the related data block.
+The file case moves account, even when the page is not mapped into
+this address space, even when it's mapped into a thousand others.
 
-The patchset for e2fsprogs will be sent under separate cover only to linux-ext4
-as it is quite lengthy (~51 patches).
+Why treat the anonymous so differently here?  I'd have thought it
+quite likely (by no means certain, but quite likely) that when you
+move a task sharing an anon page from one cg to another, you'll
+move the other task(s) sharing it immediately after - strange that
+these shared pages should then get left behind.
 
-As far as performance impact goes, I see nearly no change with a standard mail
-server ffsb simulation.  On a test that involves only file creation and
-deletion and extent tree modifications, I see a drop of about 50 percent with
-the current kernel crc32c implementation; this improves to a drop of about 20
-percent with the enclosed crc32c implementation.  However, given that metadata
-is usually a small fraction of total IO, it doesn't seem like the cost of
-enabling this feature is unreasonable.
+I was pleased by the "> 2" bug, there almost all the life of
+move_charge_at_immigrate, demonstrating that nobody was depending
+upon the documented behaviour.
 
-There are a few unresolved issues:
+I've a few more cleanups in the swap accounting area, I guess I
+should just post this change along with them and we discuss then,
+unless you can enlighten me what it's about before I get there.
 
-- I haven't fixed it up to checksum the exclude bitmap yet.  I'll probably
-  submit that as an add-on to the snapshot patchset.
-
-- Using the journal commit hooks to delay crc32c calculation until dirty
-  buffers are actually being written to disk.
-
-Please have a look at the design document and patches, and please feel free to
-suggest any changes.
-
-v2: Checksum the MMP block, store the checksum type in the superblock, include
-the inode generation in file checksums, and finally solve the problem of limited
-space in block groups by splitting the checksum into two halves.
-
-v2.1: Checksum the reserved parts of the htree tail structure.  Fix some flag
-handling bugs with the mb cache init routine wherein bitmaps could fail to be
-checksummed at read time.
-
-v2.2: Reincorporate the FS UUID in the bitmap checksum calcuations.  Move all
-disk layout changes to the front and the feature flag enablement to the end of
-the patch set.  Fail journal recovery if revoke block fails checksum.
-
-v2.3: Update the design document URL, and various minor naming cleanups.
-
-v3: Eliminate the bg_use_meta_csum feature flag and make metadata_csum
-supersede uninit_bg.  Minor fixes to support the new online resize code.
-
-This patchset has been tested on 3.3.0-rc6 on x64 and i386.  The patches seems
-to work fine on both platforms.
-
---D
-
-[1] https://ext4.wiki.kernel.org/articles/e/x/t/Ext4_Metadata_Checksums_4d24.html
-
+Thanks,
+Hugh
