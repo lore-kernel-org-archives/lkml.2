@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758629Ab2CFNk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 08:40:27 -0500
-Received: from ftp.meprolight.com ([194.90.149.17]:55623 "EHLO meprolight.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753987Ab2CFNk0 convert rfc822-to-8bit (ORCPT
+	id S1759160Ab2CFNuV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 08:50:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3366 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab2CFNuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 08:40:26 -0500
-From: Alex Gershgorin <alexg@meprolight.com>
-To: Alex Gershgorin <alexg@meprolight.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Date: Tue, 6 Mar 2012 15:40:10 +0200
-Subject: RE: mx3-camera
-Thread-Topic: mx3-camera
-Thread-Index: Acz7mpjKOOpPMaIuRaaGWjikaJFZIAAAHYw/AACDQt0=
-Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D890A@MEP-EXCH.meprolight.com>
-References: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8906@MEP-EXCH.meprolight.com>,<Pine.LNX.4.64.1203061406500.9300@axis700.grange>,<4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8909@MEP-EXCH.meprolight.com>
-In-Reply-To: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8909@MEP-EXCH.meprolight.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 6 Mar 2012 08:50:20 -0500
+X-Authority-Analysis: v=2.0 cv=Xp94yC59 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=c6_V1vMADKhEWi0C6ywA:9 a=ksDR6UYX5qwwFqDPLsQA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331041818.25686.375.camel@gandalf.stny.rr.com>
+Subject: Re: [ANNOUNCE] 3.2.9-rt16
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Tue, 06 Mar 2012 08:50:18 -0500
+In-Reply-To: <alpine.LFD.2.02.1203061118050.2742@ionos>
+References: <alpine.LFD.2.02.1203061118050.2742@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-03-06 at 11:20 +0100, Thomas Gleixner wrote:
+> Dear RT Folks,
+> 
+> I'm pleased to announce the 3.2.9-rt16 release.
+> 
+> Changes vs. 3.2.9-rt15:
+> 
+>   * cpu hotplug lock init fix [ Steven ]
+> 
+>   * seqlock fix CONFIG typo
+> 
 
-________________________________________
-From: Alex Gershgorin
-Sent: Tuesday, March 06, 2012 3:22 PM
-To: Guennadi Liakhovetski
-Cc: linux-kernel@vger.kernel.org; Linux Media Mailing List; Sascha Hauer
-Subject: RE: mx3-camera
+Note, yesterday while running some stress tests I hit a live lock here:
 
- Thanks Guennadi,
+static inline struct dentry *dentry_kill(struct dentry *dentry, int ref)
+        __releases(dentry->d_lock)
+{
+        struct inode *inode;
+        struct dentry *parent;
 
->Hi Alex
+        inode = dentry->d_inode;
+        if (inode && !spin_trylock(&inode->i_lock)) {
+relock:
+                seq_spin_unlock(&dentry->d_lock);
+                cpu_relax();
+                return dentry; /* try again with same dentry */
+        }
+        if (IS_ROOT(dentry))
+                parent = NULL;
+        else
+                parent = dentry->d_parent;
+        if (parent && !seq_spin_trylock(&parent->d_lock)) {
+                if (inode)
+                        spin_unlock(&inode->i_lock);
+                goto relock;
+        }
 
->(adding v4l and Sascha to CC)
 
->On Tue, 6 Mar 2012, Alex Gershgorin wrote:
+When it fails to grab either the inode->i_lock or the parent->d_lock it
+returns back to dput() and dput() will retry. We get into another one of
+these cases where we can spin blocking the holder of the locks.
 
-> Hi Guennadi,
->
-> I'm working on I.MX35 PDK platform with use 3.3.0-rc6 version of the Linux Kernel.
-> Here is my Kernel boot message
->
-> "Linux video capture interface: v2.00
-> mx3-camera: probe of mx3-camera.0 failed with error -2"
->
-> This error comes from probe function of mx3 camera host driver.
-> Precisely in this part of the code:
->
-> mx3_cam->clk = clk_get(&pdev->dev, NULL);
-> if (IS_ERR(mx3_cam->clk)) {
->       err = PTR_ERR(mx3_cam->clk);
->       goto eclkget;
-> }
+I experimented with adding a grab lock of the inode->i_lock or
+parent->d_lock if they existed (required initializing parent to NULL),
+which seemed to help a lot, but then eventually it locked up. As I'm not
+sure its safe to grab them straight here even after we release the
+dentry->d_lock. I'll have to enable full lockdep to see if this breaks
+the ordering.
 
->I think, the reason is, that the i.MX35 platform doesn't register a camera
->clock, similar to i.MX31 (arch/arm/mach-imx/clock-imx31.c):
+I haven't looked too deeply into this code yet, but I'm assuming that
+dput() can be called where we can't just take the inode or parent lock?
 
- >       _REGISTER_CLOCK("mx3-camera.0", NULL, csi_clk)
-
-In i.MX35 (arch/arm/mach-imx/clock-imx35.c) it looks like this:
-_REGISTER_CLOCK(NULL, "csi", csi_clk)
-
-You were right, it should be  _REGISTER_CLOCK("mx3-camera.0", NULL, csi_clk) 
-I checked, now this error not appear  :-) 
-
-> I will be glad for any help.
-
-Regards,
-Alex Gershgorin
+-- Steve
 
 
