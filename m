@@ -1,238 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab2CFEDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 23:03:09 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11730 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757895Ab2CFEDH (ORCPT
+	id S1030253Ab2CFEKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 23:10:33 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60906 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757895Ab2CFEKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 23:03:07 -0500
-X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=dsNQgiZsgNIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=rNbeg_Uf9ar5u9fk7eYA:9 a=Y3NhY_pb9qn9EJMJ1NIA:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1331006584.25686.362.camel@gandalf.stny.rr.com>
-Subject: [PATCH RT] seqlock/rt: Prevent livelocks with seqlocks in RT
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@redhat.com>, Carsten Emde <cbe@osadl.org>
-Date: Mon, 05 Mar 2012 23:03:04 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 5 Mar 2012 23:10:32 -0500
+Date: Tue, 6 Mar 2012 04:10:15 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Arve Hj?nnev?g <arve@android.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, airlied@linux.ie, carsteno@de.ibm.com,
+        steiner@sgi.com
+Subject: Re: [patches] VM-related fixes
+Message-ID: <20120306041015.GP23916@ZenIV.linux.org.uk>
+References: <20120305063707.GH23916@ZenIV.linux.org.uk>
+ <CAMP5XgeWQpMP2Q_29aybHwfMJ1_k5GkGozqocSVVYDoRTpKD2w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMP5XgeWQpMP2Q_29aybHwfMJ1_k5GkGozqocSVVYDoRTpKD2w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On Mon, Mar 05, 2012 at 07:38:21PM -0800, Arve Hj?nnev?g wrote:
+> > [unsolved] binder is insane, even more than usual for drivers/staging.
+> > It stores a reference to mm at open() time,
+> 
+> It stores a reference to the task struct, not the mm.
 
-I was running my cpu hotplug stress test along with a kernel compile and
-after about 40 minutes of running it locked up. It happened in the
-read_seqcount_begin() that is called by d_lookup().
+Equivalent, for our purposes.  OK, almost - strictly speaking that avoids
+some extra nasty scenarios with open/exec/mmap, but the real PITA comes from
+much simpler open/fork/mmap in child anyway...
 
-ksoftirqd was caught here:
-
-static __always_inline unsigned read_seqbegin(const seqlock_t *sl)
-{
-	unsigned ret;
-
-repeat:
-	ret = ACCESS_ONCE(sl->sequence);
-	if (unlikely(ret & 1)) {
-		cpu_relax();
-		goto repeat;
-	}
-	smp_rmb();
-
-	return ret;
-}
-
-It preempted the holder of the seqlock that was held for write, and as
-that holder had migrate disabled, it couldn't be scheduled. Then
-ksoftirqd went into this infinite loop and the system locked up.
-
-This patch fixes the issue by grabbing and releasing the write lock when
-it detects contention. It only works with seqlocks and not seqcounts
-that have their own locking. But we could add an api to include those
-too if needed.
-
--- Steve
-
-
-
->From b4c0fe13e4e54f20f9e5975a39fb37efd0736333 Mon Sep 17 00:00:00 2001
-From: Steven Rostedt <srostedt@redhat.com>
-Date: Thu, 1 Mar 2012 09:38:12 -0500
-Subject: seqlock/rt: Prevent livelocks with seqlocks in RT
-
-With RT, seqlocks can be preempted. Worse yet, when holding a
-write_seqlock, migration is disabled. If an high priority task
-preempts a task holding a write_seqlock, and that high priority
-task uses the associated read_seqlock(), it can go into an infinite
-spin waiting for the write_seqlock() to finish. But since the holder
-of that lock has migration disabled, and is of lower priority than
-the task using the read_seqlock() we end up with a live lock.
-
-To prevent this, when the read_seqcount_begin() detects that a
-write lock is being held, it will grab that lock and release it.
-This will cause the holder of the lock to wake up and finish.
-The priority inheritance will help it as well.
-
-Because read_seqlocks are used in the VDSO area, a raw_read_seqcount_begin()
-was created to allow userspace tasks to access read_seqcount().
-As the grabbing of the write_lock() is not allowed in VDSO, nor
-is even referencing it.
-
-Note, a live lock can still happen if the userspace task that
-does the read_seqlock is of higher priority than a user doing
-the write_lock, so userspace needs to be careful.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/vdso/vclock_gettime.c |    8 +++---
- include/linux/seqlock.h        |   59 +++++++++++++++++++++++++++++++++------
- 2 files changed, 54 insertions(+), 13 deletions(-)
-
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index d8511fb..01d0c2c 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -86,7 +86,7 @@ notrace static noinline int do_realtime(struct timespec *ts)
- {
- 	unsigned long seq, ns;
- 	do {
--		seq = read_seqcount_begin(&gtod->seq);
-+		seq = raw_read_seqcount_begin(&gtod->seq);
- 		ts->tv_sec = gtod->wall_time_sec;
- 		ts->tv_nsec = gtod->wall_time_nsec;
- 		ns = vgetns();
-@@ -99,7 +99,7 @@ notrace static noinline int do_monotonic(struct timespec *ts)
- {
- 	unsigned long seq, ns, secs;
- 	do {
--		seq = read_seqcount_begin(&gtod->seq);
-+		seq = raw_read_seqcount_begin(&gtod->seq);
- 		secs = gtod->wall_time_sec;
- 		ns = gtod->wall_time_nsec + vgetns();
- 		secs += gtod->wall_to_monotonic.tv_sec;
-@@ -123,7 +123,7 @@ notrace static noinline int do_realtime_coarse(struct timespec *ts)
- {
- 	unsigned long seq;
- 	do {
--		seq = read_seqcount_begin(&gtod->seq);
-+		seq = raw_read_seqcount_begin(&gtod->seq);
- 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
- 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
- 	} while (unlikely(read_seqcount_retry(&gtod->seq, seq)));
-@@ -134,7 +134,7 @@ notrace static noinline int do_monotonic_coarse(struct timespec *ts)
- {
- 	unsigned long seq, ns, secs;
- 	do {
--		seq = read_seqcount_begin(&gtod->seq);
-+		seq = raw_read_seqcount_begin(&gtod->seq);
- 		secs = gtod->wall_time_coarse.tv_sec;
- 		ns = gtod->wall_time_coarse.tv_nsec;
- 		secs += gtod->wall_to_monotonic.tv_sec;
-diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-index 723274d..6d93b72 100644
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -38,10 +38,32 @@
-  */
- typedef struct seqcount {
- 	unsigned sequence;
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+	int has_lock;
-+#endif
- } seqcount_t;
+> > then it stores a reference to
+> > vma at mmap() time, then it cheerfully works with that ->vma assuming that
+> > ->mmap_sem on stored reference to ->mm would suffice. ?Guess what happens
+> > if somebody opens it and then forks and does mmap in child?
+> 
+> mmap succeeds, but binder_update_page_range will fail when trying to
+> create a transaction? (assuming you are talking about the current
+> version of the driver)
  
--#define SEQCNT_ZERO { 0 }
--#define seqcount_init(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO; } while (0)
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+# define SEQCNT_ZERO		{ 0, 0 }
-+# define SEQCNT_ZERO_LOCK	{ 0, 1 }
-+# define seqcount_init(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO; } while (0)
-+# define seqcount_init_lock(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO_LOCK; } while (0)
-+#else
-+# define SEQCNT_ZERO		{ 0 }
-+# define SEQCNT_ZERO_LOCK	SEQCNT_ZERO
-+# define seqcount_init(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO; } while (0)
-+# define seqcount_init_lock(x)	seqcount_init(x)
-+#endif
-+
-+typedef struct {
-+	struct seqcount seqcount;
-+	raw_spinlock_t lock;
-+} raw_seqlock_t;
-+
-+typedef struct {
-+	struct seqcount seqcount;
-+	spinlock_t lock;
-+} seqlock_t;
- 
- /**
-  * __read_seqcount_begin - begin a seq-read critical section (without barrier)
-@@ -63,6 +85,30 @@ static inline unsigned __read_seqcount_begin(const seqcount_t *s)
- repeat:
- 	ret = s->sequence;
- 	if (unlikely(ret & 1)) {
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+		if (s->has_lock) {
-+			seqlock_t *sl;
-+
-+			sl = container_of(s, seqlock_t, seqcount);
-+			/* This process may be blocking the writer, kick it */
-+			spin_lock(&sl->lock);
-+			spin_unlock(&sl->lock);
-+		}
-+#endif
-+		cpu_relax();
-+		goto repeat;
-+	}
-+	return ret;
-+}
-+
-+/* Needed for VDSO areas */
-+static inline unsigned raw_read_seqcount_begin(const seqcount_t *s)
-+{
-+	unsigned ret;
-+
-+repeat:
-+	ret = s->sequence;
-+	if (unlikely(ret & 1)) {
- 		cpu_relax();
- 		goto repeat;
- 	}
-@@ -150,24 +196,19 @@ static inline void write_seqcount_barrier(seqcount_t *s)
- 	s->sequence+=2;
- }
- 
--typedef struct {
--	struct seqcount seqcount;
--	spinlock_t lock;
--} seqlock_t;
--
- /*
-  * These macros triggered gcc-3.x compile-time problems.  We think these are
-  * OK now.  Be cautious.
-  */
- #define __SEQLOCK_UNLOCKED(lockname)			\
- 	{						\
--		.seqcount = SEQCNT_ZERO,		\
-+		.seqcount = SEQCNT_ZERO_LOCK,		\
- 		.lock =	__SPIN_LOCK_UNLOCKED(lockname)	\
- 	}
- 
- #define seqlock_init(x)					\
- 	do {						\
--		seqcount_init(&(x)->seqcount);		\
-+		seqcount_init_lock(&(x)->seqcount);		\
- 		spin_lock_init(&(x)->lock);		\
- 	} while (0)
- 
--- 
-1.7.3.4
+Sorry, no.
+                down_write(&mm->mmap_sem);
+                vma = proc->vma;
+                if (vma && mm != vma->vm_mm) {
+does *not* do what you seem to describe; there's nothing to protect you
+from proc->vma getting freed under you right between load from proc->vma
+and check of vma->mm.  ->mmap_sem on the right mm would prevent that,
+but this one doesn't guarantee anything.  Get preempted after the second
+line quoted above and by the time you get the timeslice back, you might
+have had munmap() done by another thread, with vma freed, its memory
+recycled, etc.
 
+> > ?Moreover, if
+> > we fork() and have child exit(), we get ->close() called on each VMA we'd
+> > copied into child.
+> 
+> The driver sets VM_DONTCOPY which should avoid this.
 
+Umm...  Point taken - missed that.
 
+> > ?Since they have stored reference to vma invalidated by
+> > ->close(), that has unpleasant side effects, to put it mildly.
+> 
+> The side effect of ->close() should be the same as when the process
+> that opened the driver exits. In other words, the process that
+> misbehaved is considered dying. It does not however send death
+> notifications until the driver is closed, so other processes do not
+> notice until they try to talk to it.
+> 
+> > ?And yes,
+> > I realize that android userland probably doesn't do anything of that kind;
+> > fat lot of good it does us...
+> >
+> 
+> What usage case do you have in mind? The binder driver uses the file
+> pointer as the binder process identifier, so you need to open and mmap
+> the driver in every process that want to use the driver. While it is
+> not common to fork a process in android, the driver should work as
+> expected if you do (assuming each process opens and mmaps the driver
+> on its own and don't share the file).
+
+Except that we can't make that assumption...
