@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab2CFDG5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 22:06:57 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:45262 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab2CFDGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 22:06:55 -0500
-Date: Tue, 6 Mar 2012 13:38:09 +1100
-From: David Gibson <dwg@au1.ibm.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        aarcange@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V2 0/9] memcg: add HugeTLB resource tracking
-Message-ID: <20120306023809.GF12818@truffala.fritz.box>
-Mail-Followup-To: David Gibson <dwg@au1.ibm.com>,
-	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-	Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-	mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-	aarcange@redhat.com, mhocko@suse.cz, hannes@cmpxchg.org,
-	linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120301144029.545a5589.akpm@linux-foundation.org>
- <20120302032853.GB2728@truffala.fritz.box>
- <87fwdodyr0.fsf@linux.vnet.ibm.com>
+	id S1755989Ab2CFDHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 22:07:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32707 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755426Ab2CFDHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 22:07:05 -0500
+Date: Tue, 6 Mar 2012 00:06:35 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        dsahern@gmail.com, ravitillo@lbl.gov, khandual@linux.vnet.ibm.com,
+        robert.richter@amd.com, ming.m.lin@intel.com, vweaver1@eecs.utk.edu,
+        andi@firstfloor.org
+Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
+Message-ID: <20120306030635.GC5656@infradead.org>
+References: <20120224094048.GA7952@quad>
+ <20120305154753.GA14604@elte.hu>
+ <20120305155011.GA32413@elte.hu>
+ <20120305155642.GB32413@elte.hu>
+ <1330965033.11248.240.camel@twins>
+ <20120305203518.GA5656@infradead.org>
+ <4F55337B.4080807@fb.com>
+ <20120305222614.GB5656@infradead.org>
+ <4F554DC7.8010504@fb.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87fwdodyr0.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12030517-3568-0000-0000-000001517C2C
+In-Reply-To: <4F554DC7.8010504@fb.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 04, 2012 at 11:39:23PM +0530, Aneesh Kumar K.V wrote:
-> On Fri, 2 Mar 2012 14:28:53 +1100, David Gibson <dwg@au1.ibm.com> wrote:
-> > On Thu, Mar 01, 2012 at 02:40:29PM -0800, Andrew Morton wrote:
-> > > On Thu,  1 Mar 2012 14:46:11 +0530
-> > > "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > This patchset implements a memory controller extension to control
-> > > > HugeTLB allocations. It is similar to the existing hugetlb quota
-> > > > support in that, the limit is enforced at mmap(2) time and not at
-> > > > fault time. HugeTLB's quota mechanism limits the number of huge pages
-> > > > that can allocated per superblock.
-> > > > 
-> > > > For shared mappings we track the regions mapped by a task along with the
-> > > > memcg. We keep the memory controller charged even after the task
-> > > > that did mmap(2) exits. Uncharge happens during truncate. For Private
-> > > > mappings we charge and uncharge from the current task cgroup.
-> > > 
-> > > I haven't begin to get my head around this yet, but I'd like to draw
-> > > your attention to https://lkml.org/lkml/2012/2/15/548.  That fix has
-> > > been hanging around for a while, but I haven't done anything with it
-> > > yet because I don't like its additional blurring of the separation
-> > > between hugetlb core code and hugetlbfs.  I want to find time to sit
-> > > down and see if the fix can be better architected but haven't got
-> > > around to that yet.
-> > 
-> > So.. that version of the fix I specifically rebuilt to address your
-> > concerns about that blurring - in fact I think it reduces the current
-> > layer blurring.  I haven't had any reply - what problems do see it as
-> > still having?
+Em Mon, Mar 05, 2012 at 03:35:35PM -0800, Arun Sharma escreveu:
+> Like you probably figured from my other mail, we deal with deeply
+> nested callchains with unwieldy function names a lot -- thanks to C++
+> and template programming. --tui's collapsing/expanding functionality
+> is quite useful to navigate that mess. I'm just taking this
+> opportunity to get some attention focused on improving it :)
+
+Excellent!
+
+I can think about other Zoom operations, like zooming into just the
+entries where some specific function in its callchains, say the one
+under the cursor, appears, etc.
+ 
+> On 3/5/12 2:26 PM, Arnaldo Carvalho de Melo wrote:
 > 
-> https://lkml.org/lkml/2012/2/16/179 ?
+> >>Here's an example:
+> >>
+> >># perf record -ag -- sleep 3
+> >># perf report -G -s pid --tui # SIGSEGV
+> >
+> >Ok, now this is a good report, I managed to reproduce and will work on a
+> >fix, thanks,
+> 
+> Something like this seems to do it for me.
+> 
+>         offset = addr - sym->start;
+> +       len = sym->end - sym->start;
+> +       if (offset >= len)
+> +               return 0;
+> +
 
-Ah.  Missed that reply somehow.  Odd.  Replied now and I'll respin
-accordingly.
+That is my fault, I should have added a BUG_ON() spitting out a
+callchain in this case, as that function shouldn't be called if the
+address is not within its range :-\
+ 
+> The other problem area seems to be callchains when using -p regexp
+> -x options. I'll try to summarize problems there in a separate
+> thread.
 
-> That is a serious issue isn't it ?
+Please do,
 
-Yes, it is.  And it's been around for a long, long time.
+Thanks a lot!
 
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
-
+- Arnaldo
