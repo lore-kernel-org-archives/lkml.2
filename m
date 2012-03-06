@@ -1,120 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965246Ab2CFXb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 18:31:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:19042 "EHLO mx1.redhat.com"
+	id S1759351Ab2CFXgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 18:36:11 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:47211 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604Ab2CFXbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 18:31:25 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix mapcount check in move charge code for anonymous page
-Date: Tue,  6 Mar 2012 18:31:07 -0500
-Message-Id: <1331076667-11118-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <alpine.LSU.2.00.1203061230530.17934@eggly.anvils>
+	id S1756346Ab2CFXgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 18:36:09 -0500
+Message-ID: <1331076961.2191.165.camel@work-vm>
+Subject: Re: RTC regression
+From: John Stultz <john.stultz@linaro.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: Thomas Gleixner <tglx@linutronix.de>, a.zummo@towertech.it,
+        rtc-linux@googlegroups.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 06 Mar 2012 15:36:01 -0800
+In-Reply-To: <4F4E9B71.2010407@nod.at>
+References: <4F4E9B71.2010407@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030623-7182-0000-0000-000000FAF845
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 12:55:42PM -0800, Hugh Dickins wrote:
-> On Mon, 5 Mar 2012, Daisuke Nishimura wrote:
-> > Hi, Horiguchi-san.
-> > On Fri,  2 Mar 2012 15:35:08 -0500
-> > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-> >
-> > > Currently charge on shared anonyous pages is supposed not to moved
-> > > in task migration. To implement this, we need to check that mapcount > 1,
-> > > instread of > 2. So this patch fixes it.
-> > >
-> > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > > ---
-> > >  mm/memcontrol.c |    2 +-
-> > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > >
-> > > diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
-> > > index b6d1bab..785f6d3 100644
-> > > --- linux-next-20120228.orig/mm/memcontrol.c
-> > > +++ linux-next-20120228/mm/memcontrol.c
-> > > @@ -5102,7 +5102,7 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
-> > >  		return NULL;
-> > >  	if (PageAnon(page)) {
-> > >  		/* we don't move shared anon */
-> > > -		if (!move_anon() || page_mapcount(page) > 2)
-> > > +		if (!move_anon() || page_mapcount(page) > 1)
-> > >  			return NULL;
-> > >  	} else if (!move_file())
-> > >  		/* we ignore mapcount for file pages */
-> > > --
-> > > 1.7.7.6
-> > >
-> > Sorry, it's my fault..
-> > Thank you for catching this.
-> >
-> > Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
->
-> I'm perversely sorry to see this fix already wing its way into 3.3-rc,
-> but never mind.
->
-> I was puzzling over that same "> 2" test when thinking through the
-> stats move locking, and again when swap accounting appeared to be
-> broken through and through (now fixed by two-liner in page_cgroup.c).
->
-> Why is there any test on page_mapcount(page) there at all?
-> 2.6.34 comments it
-> 	* TODO: We don't move charges of shared(used by multiple
-> 	* processes) pages for now.
-> as if it's an unwelcome restriction to be eliminated later.
+On Wed, 2012-02-29 at 22:41 +0100, Richard Weinberger wrote:
+> Hi!
+> 
+> hwclock calls the RTC_UIE_ON ioctl to wait for a timer tick.
+> If RTC_UIE_ON was successful it opens /dev/rtcX and waits up to 5 seconds using select()
+> for a tick.
+> Some RTC drivers have no support for RTC_UIE_ON and ioctl just returns -EINVAL.
+> Drivers indicated this by setting rtc_class_ops->update_irq_enable to NULL.
+> In this case hwclock waits in a busy loop for the next timer tick.
+> 
+> These two commits changed this behavior:
+> 6610e08 (RTC: Rework RTC code to use timerqueue for events)
+> 51ba60c (RTC: Cleanup rtc_class_ops->update_irq_enable())
+> 
+> rtc_class_ops->update_irq_enable was removed and rtc_update_irq_enable()
+> is now using rtc_class_ops->set_alarm instead of rtc_class_ops->update_irq_enable.
+> 
+> Some RTC devices (like mpc515x) don't support intervals smaller than one
+> minute.
+> rtc-mpc5121.c deals with this by rounding up to one minute.
+> But now after commit 6610e08 RTC_UIE_ON will no longer return -EINVAL and
+> the next tick comes somewhen within the next 60 seconds, because the driver rounded up...
+> hwclock's select() is not happy about this and timeouts in most cases.
 
-I see.
-This comment implies this restiction is a temporary one.
+Thanks for diagnosing and pointing out this issue! I hadn't been aware
+of such hardware.
 
-> I don't understand why it was ever there, and would like to remove
-> it (and update the Documentation file) - just to remove a little
-> unnecessary complication, including mem_cgroup_count_swap_user().
->
-> The file case moves account, even when the page is not mapped into
-> this address space, even when it's mapped into a thousand others.
->
-> Why treat the anonymous so differently here?
+Would something like the following be a better generic interface?
+Basically allow the RTC drivers to flag that UIE is unsupported (much as
+setting the update_irq_enable to null did prior).
 
-I'm not sure the reason, but current behavior is obviously confusing
-(at least for me.) We need to fix it in clearer manner.
+Let me know if this works for you, and I'll look to see what other
+drivers might be affected here.
 
-IMO, ideally the charge of shared (both file and anon) pages should
-be accounted for all cgroups to which the processes mapping the pages
-belong to, where each charge is weighted by inverse number of mapcount.
-I think accounting total number of mapcount with another counter does
-not work, because the weight of charge depends on each page and the
-total count of mapcount doesn't describe the proportion among cgroups.
-But anyway, it adds more complexity and needs much work, so is not
-a short term fix.
+thanks
+-john
 
-> I'd have thought it
-> quite likely (by no means certain, but quite likely) that when you
-> move a task sharing an anon page from one cg to another, you'll
-> move the other task(s) sharing it immediately after - strange that
-> these shared pages should then get left behind.
+Add generic infrastructure to handle rtc devices that don't support UIE
+mode.
 
-I agree. Currently we can exactly account only if all processes charging
-shared anon pages are migrated to the same cgroup. Otherwise, something
-strange happen.
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 
-> I was pleased by the "> 2" bug, there almost all the life of
-> move_charge_at_immigrate, demonstrating that nobody was depending
-> upon the documented behaviour.
->
-> I've a few more cleanups in the swap accounting area, I guess I
-> should just post this change along with them and we discuss then,
-> unless you can enlighten me what it's about before I get there.
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index dc87eda..eb415bd 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -458,6 +458,11 @@ int rtc_update_irq_enable(struct rtc_device *rtc, unsigned int enabled)
+ 	if (rtc->uie_rtctimer.enabled == enabled)
+ 		goto out;
+ 
++	if (rtc->uie_unsupported) {
++		err = -EINVAL;
++		goto out;
++	}
++
+ 	if (enabled) {
+ 		struct rtc_time tm;
+ 		ktime_t now, onesec;
+diff --git a/drivers/rtc/rtc-mpc5121.c b/drivers/rtc/rtc-mpc5121.c
+index 9d3cacc..be6d4f4 100644
+--- a/drivers/rtc/rtc-mpc5121.c
++++ b/drivers/rtc/rtc-mpc5121.c
+@@ -360,6 +360,8 @@ static int __devinit mpc5121_rtc_probe(struct platform_device *op)
+ 						&mpc5200_rtc_ops, THIS_MODULE);
+ 	}
+ 
++	rtc->rtc.uie_unsupported = 1;
++
+ 	if (IS_ERR(rtc->rtc)) {
+ 		err = PTR_ERR(rtc->rtc);
+ 		goto out_free_irq;
+diff --git a/include/linux/rtc.h b/include/linux/rtc.h
+index 93f4d03..fcabfb4 100644
+--- a/include/linux/rtc.h
++++ b/include/linux/rtc.h
+@@ -202,7 +202,8 @@ struct rtc_device
+ 	struct hrtimer pie_timer; /* sub second exp, so needs hrtimer */
+ 	int pie_enabled;
+ 	struct work_struct irqwork;
+-
++	/* Some hardware can't support UIE mode */
++	int uie_unsupported;
+ 
+ #ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
+ 	struct work_struct uie_task;
 
-I just began hacking memcg code few weeks ago, so I don't have any
-more detailed idea about it now.
 
-Thanks,
-Naoya
