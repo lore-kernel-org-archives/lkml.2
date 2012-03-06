@@ -1,116 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030963Ab2CFULA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 15:11:00 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:53594 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1030936Ab2CFUK6 (ORCPT
+	id S1030992Ab2CFUPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 15:15:45 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:35524 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030934Ab2CFUPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 15:10:58 -0500
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX1/vlndZb5vvkrr50HZLwMywJeqO+bHAY+oXTTKV7D
-	bZ4aTczcbevT5W
-From: Sven Joachim <svenjoac@gmx.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Stefan Lippers-Hollmann <s.L-H@gmx.de>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org
-Subject: Re: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
-References: <20120228010511.GA8453@kroah.com>
-	<20120228010434.412979550@linuxfoundation.org>
-	<87hay4dqjr.fsf@turtle.gmx.de> <201203050143.24541.s.L-H@gmx.de>
-	<alpine.LFD.2.02.1203062043500.2742@ionos>
-Date: Tue, 06 Mar 2012 21:10:54 +0100
-In-Reply-To: <alpine.LFD.2.02.1203062043500.2742@ionos> (Thomas Gleixner's
-	message of "Tue, 6 Mar 2012 20:45:21 +0100 (CET)")
-Message-ID: <87wr6xze0h.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.94 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+	Tue, 6 Mar 2012 15:15:42 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of siddhesh.poyarekar@gmail.com designates 10.68.216.98 as permitted sender) smtp.mail=siddhesh.poyarekar@gmail.com; dkim=pass header.i=siddhesh.poyarekar@gmail.com
+From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Subject: [PATCH 1/2] mm: Fix task_nommu build regression in linux-next
+Date: Wed,  7 Mar 2012 01:46:33 +0530
+Message-Id: <1331064994-6693-1-git-send-email-siddhesh.poyarekar@gmail.com>
+X-Mailer: git-send-email 1.7.7.4
+In-Reply-To: <1331045377.17099.2.camel@deneb.redhat.com>
+References: <1331045377.17099.2.camel@deneb.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 06.03.2012 um 20:45 schrieb Thomas Gleixner:
+Commit b7b2a0afacada237005068294cb0ccc49d32889e resulted in a build
+failure for nommu builds:
 
-> On Mon, 5 Mar 2012, Stefan Lippers-Hollmann wrote:
->> On Monday 05 March 2012, Sven Joachim wrote:
->> > On 2012-02-28 02:05 +0100, Greg KH wrote:
->> > 
->> > > 3.2-stable review patch.  If anyone has any objections, please let me know.
->> > 
->> > Alas, the commit below broke the WiFi on my laptop, where
->> > "iwlist wlan0 scan" now just reports: " wlan0     No scan results".
->> > 
->> > This is not specific to 3.2, the same problem exists in 3.0.23 and
->> > 3.3-rc6 while previous releases worked.
->> 
->> I can confirm this regression on an old PIII based notebook with a 
->> 32 bit BCM4306/3 PCMCIA card:
->> 
->> 02:00.0 Network controller [0280]: Broadcom Corporation BCM4306 802.11b/g Wireless LAN Controller [14e4:4320] (rev 03)
->>         Subsystem: Linksys WPC54G v1 / WPC54GS v1 802.11g Wireless-G Notebook Adapter [1737:4320]
->>         Flags: bus master, fast devsel, latency 64, IRQ 10
->>         Memory at 20000000 (32-bit, non-prefetchable) [size=8K]
->>         Capabilities: [40] Power Management version 2
->>         Kernel driver in use: b43-pci-bridge
->> 
->> I can observe these differences in the dmesg output (3.2.9 + current 
->> stable queue-3.2):
->> 
->> The kernel configuration is identical in both cases, the only 
->> difference is "genirq: Unmask oneshot irqs when thread was not woken"
->> being applied or not.
->> 
->> --- working	<-- 3.2.9 + current stable queue-3.2, with "genirq: Unmask oneshot irqs when thread was not woken" reverted
->> +++ broken	<-- 3.2.9 + current stable queue-3.2
->> @@ -125,6 +125,7 @@ Initializing cgroup subsys freezer
->>  Initializing cgroup subsys net_cls
->>  Initializing cgroup subsys blkio
->>  Initializing cgroup subsys perf_event
->> +CPU serial number disabled.
->
-> I can't see why reverting that genirq patch would cause this.
->
->>  mce: CPU supports 5 MCE banks
->>  SMP alternatives: switching to UP code
->>  Freeing SMP alternatives: 8k freed
->> @@ -137,9 +138,16 @@ SMP disabled
->>  Performance Events: 
->>  no APIC, boot with the "lapic" boot parameter to force-enable it.
->>  no hardware sampling interrupt available.
->> -Broken PMU hardware detected, using software events only.
->> +p6 PMU driver.
->> +... version:                0
->> +... bit width:              32
->> +... generic registers:      2
->> +... value mask:             00000000ffffffff
->> +... max period:             000000007fffffff
->> +... fixed-purpose events:   0
->> +... event mask:             0000000000000003
->
-> Ditto.
->
->>  Brought up 1 CPUs
->>  Total of 1 processors activated (1989.75 BogoMIPS).
->>  devtmpfs: initialized
->>  PM: Registering ACPI NVS region at eeff000 (4096 bytes)
->>  print_constraints: dummy: 
->> @@ -174,12 +182,12 @@ pci 0000:00:00.0: reg 10: [mem 0xec00000
->>  type 1 class 0x000604
->>  pci 0000:00:01.0: supports D1
->>  type 2 class 0x000607
->> -pci 0000:00:04.0: reg 10: [mem 0x10000000-0x10000fff]
->> +pci 0000:00:04.0: reg 10: [mem 0x00000000-0x00000fff]
->
-> Even more. 
+fs/built-in.o: In function `nommu_vma_show':
+task_nommu.c:(.text+0x564a0): undefined reference to `vm_is_stack'
+make[1]: *** [.tmp_vmlinux1] Error 1
 
-FWIW, I don't see any such differences on my system (with 3.3-rc6).
+Fix is to provide definitions of vm_is_stack() and
+vm_is_stack_for_task() for nommu as well. This patch also adds an
+explicit include of sched.h based on observations and patch submission
+by Paul Gortmaker <paul.gortmaker@windriver.com>:
 
-> There is something extremly fishy.
+https://lkml.org/lkml/2012/3/5/326
 
-Cheers,
-       Sven
+Signed-off-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+---
+ mm/memory.c |    1 +
+ mm/nommu.c  |   40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 0 deletions(-)
+
+diff --git a/mm/memory.c b/mm/memory.c
+index 2533d9f..0ca7fe6 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -57,6 +57,7 @@
+ #include <linux/swapops.h>
+ #include <linux/elf.h>
+ #include <linux/gfp.h>
++#include <linux/sched.h>
+ 
+ #include <asm/io.h>
+ #include <asm/pgalloc.h>
+diff --git a/mm/nommu.c b/mm/nommu.c
+index b982290..5a5c3fc 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -29,6 +29,7 @@
+ #include <linux/security.h>
+ #include <linux/syscalls.h>
+ #include <linux/audit.h>
++#include <linux/sched.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/tlb.h>
+@@ -2089,3 +2090,42 @@ int nommu_shrink_inode_mappings(struct inode *inode, size_t size,
+ 	up_write(&nommu_region_sem);
+ 	return 0;
+ }
++
++/* Check if the vma is being used as a stack by this task */
++static int vm_is_stack_for_task(struct task_struct *t,
++				struct vm_area_struct *vma)
++{
++	return (vma->vm_start <= KSTK_ESP(t) && vma->vm_end >= KSTK_ESP(t));
++}
++
++/*
++ * Check if the vma is being used as a stack.
++ * If is_group is non-zero, check in the entire thread group or else
++ * just check in the current task. Returns the pid of the task that
++ * the vma is stack for.
++ */
++pid_t vm_is_stack(struct task_struct *task,
++		  struct vm_area_struct *vma, int in_group)
++{
++	pid_t ret = 0;
++
++	if (vm_is_stack_for_task(task, vma))
++		return task->pid;
++
++	if (in_group) {
++		struct task_struct *t;
++		rcu_read_lock();
++		t = list_first_entry_rcu(&task->thread_group,
++					 struct task_struct, thread_group);
++		do {
++			if (vm_is_stack_for_task(t, vma)) {
++				ret = t->pid;
++				goto done;
++			}
++		} while_each_thread(task, t);
++done:
++		rcu_read_unlock();
++	}
++
++	return ret;
++}
+-- 
+1.7.7.4
+
