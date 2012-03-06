@@ -1,98 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758589Ab2CFHQw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 02:16:52 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:32102 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758466Ab2CFHQt (ORCPT
+	id S1758625Ab2CFHRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 02:17:08 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17493 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758612Ab2CFHRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 02:16:49 -0500
+	Tue, 6 Mar 2012 02:17:04 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH 18/23] PCI, ACPI: add acpi_pci_root_rescan()
-Date: Mon,  5 Mar 2012 23:13:55 -0800
-Message-Id: <1331018040-30725-19-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 20/23] PCI: add __pci_scan_root_bus() that can skip bus_add
+Date: Mon,  5 Mar 2012 23:13:57 -0800
+Message-Id: <1331018040-30725-21-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
 References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4F55B9E0.000F,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F55B9EF.00D9,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-it will rescan all acpi pci root if related pci root bus get removed before.
+So could insert pus pci_assign_unassigned_bus_resources() before do bus_add.
 
-Signed-off-by: Yinghai <yinghai@kernel.org>
-Cc: Len Brown <lenb@kernel.org>
-Cc: linux-acpi@vger.kernel.org
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/acpi/pci_root.c |   52 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 52 insertions(+), 0 deletions(-)
+ drivers/pci/probe.c |   13 ++++++++++---
+ include/linux/pci.h |    3 +++
+ 2 files changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index b38e347..e1814e0 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -679,3 +679,55 @@ static int __init acpi_pci_root_init(void)
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 6240d2c..708412a 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1953,8 +1953,9 @@ void pci_bus_release_busn_res(struct pci_bus *b)
+ 			res, ret ? "can not be" : "is");
  }
  
- subsys_initcall(acpi_pci_root_init);
-+
-+static acpi_status
-+rescan_root_bridge(acpi_handle handle, u32 lvl, void *context, void **rv)
+-struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+-		struct pci_ops *ops, void *sysdata, struct list_head *resources)
++struct pci_bus * __devinit __pci_scan_root_bus(struct device *parent, int bus,
++		struct pci_ops *ops, void *sysdata, struct list_head *resources,
++		bool bus_add)
+ {
+ 	struct pci_bus *b;
+ 	struct pci_host_bridge_window *window, *n;
+@@ -1985,9 +1986,15 @@ struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+ 	if (!found)
+ 		pci_bus_update_busn_res_end(b, b->subordinate);
+ 
+-	pci_bus_add_devices(b);
++	if (bus_add)
++		pci_bus_add_devices(b);
+ 	return b;
+ }
++struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
++		struct pci_ops *ops, void *sysdata, struct list_head *resources)
 +{
-+	struct acpi_device *device, *pdevice;
-+	struct acpi_pci_root *root;
-+	acpi_handle phandle;
-+	int ret_val;
-+
-+	if (!acpi_is_root_bridge(handle))
-+		return AE_OK;
-+
-+	acpi_get_parent(handle, &phandle);
-+	if (acpi_bus_get_device(phandle, &pdevice)) {
-+		printk(KERN_DEBUG "no parent device, assuming NULL\n");
-+		pdevice = NULL;
-+	}
-+
-+	if (!acpi_bus_get_device(handle, &device)) {
-+		/* check if  pci root_bus is removed */
-+		root = acpi_driver_data(device);
-+		if (pci_find_bus(root->segment, root->secondary.start))
-+			return AE_OK;
-+
-+		printk(KERN_DEBUG "bus exists... trim\n");
-+		/* this shouldn't be in here, so remove
-+		 * the bus then re-add it...
-+		 */
-+		ret_val = acpi_bus_trim(device, 1);
-+		printk(KERN_DEBUG "acpi_bus_trim return %x\n", ret_val);
-+	}
-+
-+	ret_val = acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE);
-+	if (ret_val) {
-+		printk(KERN_ERR "error adding bus, %x\n", -ret_val);
-+		goto out;
-+	}
-+
-+	root = acpi_driver_data(device);
-+	pci_assign_unassigned_bus_resources(root->bus);
-+
-+	ret_val = acpi_bus_start(device);
-+
-+out:
-+	return ret_val;
++	return __pci_scan_root_bus(parent, bus, ops, sysdata, resources, true);
 +}
-+
-+void acpi_pci_root_rescan(void)
-+{
-+	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-+		ACPI_UINT32_MAX, rescan_root_bridge, NULL, NULL, NULL);
-+}
+ EXPORT_SYMBOL(pci_scan_root_bus);
+ 
+ /* Deprecated; use pci_scan_root_bus() instead */
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 3d5feda..1efb80d 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -675,6 +675,9 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ void pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
+ void pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
+ void pci_bus_release_busn_res(struct pci_bus *b);
++struct pci_bus * __devinit __pci_scan_root_bus(struct device *parent, int bus,
++		struct pci_ops *ops, void *sysdata, struct list_head *resources,
++		bool bus_add);
+ struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
+ 					     struct pci_ops *ops, void *sysdata,
+ 					     struct list_head *resources);
 -- 
 1.7.7
 
