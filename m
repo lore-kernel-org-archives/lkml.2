@@ -1,247 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759250Ab2CFMQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 07:16:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51886 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759184Ab2CFMQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 07:16:13 -0500
-Date: Tue, 6 Mar 2012 08:15:40 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4 changelog-v2] KVM: Switch to srcu-less get_dirty_log()
-Message-ID: <20120306111540.GA29914@amt.cnet>
-References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
- <20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp>
- <20120303142148.2689454b30dc86d84c4a19f5@gmail.com>
+	id S1030489Ab2CFMQj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 07:16:39 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:48675 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759177Ab2CFMQh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 07:16:37 -0500
+Date: Tue, 6 Mar 2012 13:16:16 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>, Tony Luck <tony.luck@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv5] EDAC core changes in order to properly report errors
+ from all types of memory controllers
+Message-ID: <20120306121616.GB11661@aftab>
+References: <4F50DECB.8030200@redhat.com>
+ <20120305110441.GC1070@aftab>
+ <4F54A6FF.50502@redhat.com>
+ <20120305124411.GD1070@aftab>
+ <4F54C133.6040709@redhat.com>
+ <20120305141349.GF1070@aftab>
+ <4F54D4AF.9060802@redhat.com>
+ <4F553764.5070305@redhat.com>
+ <20120305232319.GA7175@aftab>
+ <4F55F598.7050406@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120303142148.2689454b30dc86d84c4a19f5@gmail.com>
+In-Reply-To: <4F55F598.7050406@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 03, 2012 at 02:21:48PM +0900, Takuya Yoshikawa wrote:
-> We have seen some problems of the current implementation of
-> get_dirty_log() which uses synchronize_srcu_expedited() for updating
-> dirty bitmaps; e.g. it is noticeable that this sometimes gives us ms
-> order of latency when we use VGA displays.
-> 
-> Furthermore the recent discussion on the following thread
->     "srcu: Implement call_srcu()"
->     http://lkml.org/lkml/2012/1/31/211
-> also motivated us to implement get_dirty_log() without SRCU.
-> 
-> This patch achieves this goal without sacrificing the performance of
-> both VGA and live migration: in practice the new code is much faster
-> than the old one unless we have too many dirty pages.
-> 
-> Implementation:
-> 
-> The key part of the implementation is the use of xchg() operation for
-> clearing dirty bits atomically.  Since this allows us to update only
-> BITS_PER_LONG pages at once, we need to iterate over the dirty bitmap
-> until every dirty bit is cleared again for the next call.
-> 
-> Although some people may worry about the problem of using the atomic
-> memory instruction many times to the concurrently accessible bitmap,
-> it is usually accessed with mmu_lock held and we rarely see concurrent
-> accesses: so what we need to care about is the pure xchg() overheads.
-> 
-> Another point to note is that we do not use for_each_set_bit() to check
-> which ones in each BITS_PER_LONG pages are actually dirty.  Instead we
-> simply use __ffs() in a loop.  This is much faster than repeatedly call
-> find_next_bit().
-> 
-> Performance:
-> 
-> The dirty-log-perf unit test showed nice improvements, some times faster
-> than before, except for some extreme cases; for such cases the speed of
-> getting dirty page information is much faster than we process it in the
-> userspace.
-> 
-> For real workloads, both VGA and live migration, we have observed pure
-> improvements: when the guest was reading a file during live migration,
-> we originally saw a few ms of latency, but with the new method the
-> latency was less than 200us.
-> 
-> Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-> ---
->  arch/x86/kvm/x86.c |  116 +++++++++++++++++++--------------------------------
->  1 files changed, 43 insertions(+), 73 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 3bc1922..0748bab 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -3041,55 +3041,32 @@ static int kvm_vm_ioctl_reinject(struct kvm *kvm,
->  }
->  
->  /**
-> - * write_protect_slot - write protect a slot for dirty logging
-> - * @kvm: the kvm instance
-> - * @memslot: the slot we protect
-> - * @dirty_bitmap: the bitmap indicating which pages are dirty
-> - * @nr_dirty_pages: the number of dirty pages
-> + * kvm_vm_ioctl_get_dirty_log - get and clear the log of dirty pages in a slot
-> + * @kvm: kvm instance
-> + * @log: slot id and address to which we copy the log
->   *
-> - * We have two ways to find all sptes to protect:
-> - * 1. Use kvm_mmu_slot_remove_write_access() which walks all shadow pages and
-> - *    checks ones that have a spte mapping a page in the slot.
-> - * 2. Use kvm_mmu_rmap_write_protect() for each gfn found in the bitmap.
-> + * We need to keep it in mind that VCPU threads can write to the bitmap
-> + * concurrently.  So, to avoid losing data, we keep the following order for
-> + * each bit:
->   *
-> - * Generally speaking, if there are not so many dirty pages compared to the
-> - * number of shadow pages, we should use the latter.
-> + *   1. Take a snapshot of the bit and clear it if needed.
-> + *   2. Write protect the corresponding page.
-> + *   3. Flush TLB's if needed.
-> + *   4. Copy the snapshot to the userspace.
->   *
-> - * Note that letting others write into a page marked dirty in the old bitmap
-> - * by using the remaining tlb entry is not a problem.  That page will become
-> - * write protected again when we flush the tlb and then be reported dirty to
-> - * the user space by copying the old bitmap.
-> + * Between 2 and 3, the guest may write to the page using the remaining TLB
-> + * entry.  This is not a problem because the page will be reported dirty at
-> + * step 4 using the snapshot taken before and step 3 ensures that successive
-> + * writes will be logged for the next call.
->   */
-> -static void write_protect_slot(struct kvm *kvm,
-> -			       struct kvm_memory_slot *memslot,
-> -			       unsigned long *dirty_bitmap,
-> -			       unsigned long nr_dirty_pages)
-> -{
-> -	spin_lock(&kvm->mmu_lock);
-> -
-> -	/* Not many dirty pages compared to # of shadow pages. */
-> -	if (nr_dirty_pages < kvm->arch.n_used_mmu_pages) {
-> -		gfn_t offset;
-> -
-> -		for_each_set_bit(offset, dirty_bitmap, memslot->npages)
-> -			kvm_mmu_write_protect_pt_masked(kvm, memslot, offset, 1);
-> -
-> -		kvm_flush_remote_tlbs(kvm);
-> -	} else
-> -		kvm_mmu_slot_remove_write_access(kvm, memslot->id);
-> -
-> -	spin_unlock(&kvm->mmu_lock);
-> -}
-> -
-> -/*
-> - * Get (and clear) the dirty memory log for a memory slot.
-> - */
-> -int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
-> -				      struct kvm_dirty_log *log)
-> +int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
->  {
->  	int r;
->  	struct kvm_memory_slot *memslot;
-> -	unsigned long n, nr_dirty_pages;
-> +	unsigned long n, i;
-> +	unsigned long *dirty_bitmap;
-> +	unsigned long *dirty_bitmap_buffer;
-> +	bool is_dirty = false;
->  
->  	mutex_lock(&kvm->slots_lock);
->  
-> @@ -3098,49 +3075,42 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
->  		goto out;
->  
->  	memslot = id_to_memslot(kvm->memslots, log->slot);
-> +
-> +	dirty_bitmap = memslot->dirty_bitmap;
->  	r = -ENOENT;
-> -	if (!memslot->dirty_bitmap)
-> +	if (!dirty_bitmap)
->  		goto out;
->  
->  	n = kvm_dirty_bitmap_bytes(memslot);
-> -	nr_dirty_pages = memslot->nr_dirty_pages;
->  
-> -	/* If nothing is dirty, don't bother messing with page tables. */
-> -	if (nr_dirty_pages) {
-> -		struct kvm_memslots *slots, *old_slots;
-> -		unsigned long *dirty_bitmap, *dirty_bitmap_head;
-> +	dirty_bitmap_buffer = dirty_bitmap + n / sizeof(long);
-> +	memset(dirty_bitmap_buffer, 0, n);
->  
-> -		dirty_bitmap = memslot->dirty_bitmap;
-> -		dirty_bitmap_head = memslot->dirty_bitmap_head;
-> -		if (dirty_bitmap == dirty_bitmap_head)
-> -			dirty_bitmap_head += n / sizeof(long);
-> -		memset(dirty_bitmap_head, 0, n);
-> +	spin_lock(&kvm->mmu_lock);
+On Tue, Mar 06, 2012 at 08:31:36AM -0300, Mauro Carvalho Chehab wrote:
 
-It is not clear why mmu_lock is needed. Dropping it across the xchg loop
-should be similar to srcu implementation, in that concurrent updates
-will be visible only on the next get_dirty call? Well, it is necessary
-anyway for write protecting the sptes.
+[..]
 
-A cond_resched_lock() would alleviate the potentially long held 
-times for mmu_lock (can you measure it with large memslots?)
+> Breaking it into smaller patchsets is not trivial, as the analysis of the
+> individual changesets only makes sense in the light of the big change on
+> the edac core structures.
 
-Otherwise looks nice.
+I don't believe that and LKML contains countless examples of how patches
+can be split into simple hunks containing only one logical change.
+Simply put yourself in the reviewer's place and try to imagine what kind
+of patch format you'd like to see.
 
->  
-> -		r = -ENOMEM;
-> -		slots = kmemdup(kvm->memslots, sizeof(*kvm->memslots), GFP_KERNEL);
-> -		if (!slots)
-> -			goto out;
-> +	for (i = 0; i < n / sizeof(long); i++) {
-> +		unsigned long mask;
-> +		gfn_t offset;
->  
-> -		memslot = id_to_memslot(slots, log->slot);
-> -		memslot->nr_dirty_pages = 0;
-> -		memslot->dirty_bitmap = dirty_bitmap_head;
-> -		update_memslots(slots, NULL);
-> +		if (!dirty_bitmap[i])
-> +			continue;
->  
-> -		old_slots = kvm->memslots;
-> -		rcu_assign_pointer(kvm->memslots, slots);
-> -		synchronize_srcu_expedited(&kvm->srcu);
-> -		kfree(old_slots);
-> +		is_dirty = true;
->  
-> -		write_protect_slot(kvm, memslot, dirty_bitmap, nr_dirty_pages);
-> +		mask = xchg(&dirty_bitmap[i], 0);
-> +		dirty_bitmap_buffer[i] = mask;
->  
-> -		r = -EFAULT;
-> -		if (copy_to_user(log->dirty_bitmap, dirty_bitmap, n))
-> -			goto out;
-> -	} else {
-> -		r = -EFAULT;
-> -		if (clear_user(log->dirty_bitmap, n))
-> -			goto out;
-> +		offset = i * BITS_PER_LONG;
-> +		kvm_mmu_write_protect_pt_masked(kvm, memslot, offset, mask);
->  	}
-> +	if (is_dirty)
-> +		kvm_flush_remote_tlbs(kvm);
-> +
-> +	spin_unlock(&kvm->mmu_lock);
-> +
-> +	r = -EFAULT;
-> +	if (copy_to_user(log->dirty_bitmap, dirty_bitmap_buffer, n))
-> +		goto out;
->  
->  	r = 0;
->  out:
-> -- 
-> 1.7.5.4
+[..]
+
+> On a csrow-based MC, dual-rank memories would be mapped as two separate 
+> (csrow, channel) addresses. Each will have half of the DIMM size on each
+> address. The above "emulation" creates two (csrow, channel) addreses for every
+> FB-DIMM, filling just one, but only if the memory is dual-rank.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> For a FB-DIMM controller, the number of ranks is just a detail associated with
+> a given DIMM slot, as the memory is selected by slot, and not by rank.
+> 
+> So, the logic is completely broken for single-rank memories and half-broken for 
+> double-rank ones.
+
+I'm still wondering whether FBDIMM-based drivers should get their own
+EDAC infrastructure and own nomenclature instead of fitting them in the
+existing scheme...
+
+> 
+> This is an example of a patch that should not be fold.
+> 
+> After this patch, the memories on the i5000 machine I'm testing are properly
+> reported, being single-rank or dual-rank.
+
+How about instead of verbosely explaining in a mail why you're doing
+what you're doing, you add that explanation to your patches so that even
+the unlightened one can understand what you're doing? I think that will
+benefit all.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
