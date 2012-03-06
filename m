@@ -1,206 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab2CFA6O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 19:58:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35033 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932605Ab2CFA6N (ORCPT
+	id S932683Ab2CFBEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 20:04:48 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44809 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932607Ab2CFBEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 19:58:13 -0500
-Date: Mon, 5 Mar 2012 16:57:43 -0800
-From: "tip-bot for H.J. Lu" <hjl.tools@gmail.com>
-Message-ID: <tip-55283e2537714f9370c4ab847d170acf223daf90@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        oleg@redhat.com, roland@hack.frob.com, tglx@linutronix.de,
-        hjl.tools@gmail.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, roland@hack.frob.com, oleg@redhat.com,
-        hjl.tools@gmail.com
-In-Reply-To: <1329696488-16970-1-git-send-email-hpa@zytor.com>
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/x32] x32: Add ptrace for x32
-Git-Commit-ID: 55283e2537714f9370c4ab847d170acf223daf90
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 5 Mar 2012 20:04:46 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of arve@android.com designates 10.68.234.166 as permitted sender) smtp.mail=arve@android.com
+From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Matt Helsley <matthltc@us.ibm.com>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, markgross@thegnar.org,
+        Matthew Garrett <mjg@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>, jeffbrown@android.com,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+Subject: [PATCH 1/2] epoll: Add a flag, EPOLLWAKEUP, to prevent suspend while epoll events are ready
+Date: Mon,  5 Mar 2012 17:04:31 -0800
+Message-Id: <1330995872-4491-1-git-send-email-arve@android.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <201203042356.17846.rjw@sisk.pl>
+References: <201203042356.17846.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 05 Mar 2012 16:58:07 -0800 (PST)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  55283e2537714f9370c4ab847d170acf223daf90
-Gitweb:     http://git.kernel.org/tip/55283e2537714f9370c4ab847d170acf223daf90
-Author:     H.J. Lu <hjl.tools@gmail.com>
-AuthorDate: Mon, 5 Mar 2012 15:32:11 -0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Mon, 5 Mar 2012 15:43:45 -0800
+When an epoll_event, that has the EPOLLWAKEUP flag set, is ready, a
+wakeup_source will be active to prevent suspend. This can be used to
+handle wakeup events from a driver that support poll, e.g. input, if
+that driver wakes up the waitqueue passed to epoll before allowing
+suspend.
 
-x32: Add ptrace for x32
+The current implementation uses an extra wakeup_source when
+ep_scan_ready_list runs. This can cause problems if a single thread
+is polling on wakeup events and frequent non-wakeup events (events
+usually arrive during thread freezing) using the same epoll file.
 
-X32 ptrace is a hybrid of 64bit ptrace and compat ptrace with 32bit
-address and longs.  It use 64bit ptrace to access the full 64bit
-registers.  PTRACE_PEEKUSR and PTRACE_POKEUSR are only allowed to access
-segment and debug registers.  PTRACE_PEEKUSR returns the lower 32bits
-and PTRACE_POKEUSR zero-extends 32bit value to 64bit.   It works since
-the upper 32bits of segment and debug registers of x32 process are always
-zero.  GDB only uses PTRACE_PEEKUSR and PTRACE_POKEUSR to access
-segment and debug registers.
-
-[ hpa: changed TIF_X32 test to use !is_ia32_task() instead, and moved
-  the system call number to the now-unused 521 slot. ]
-
-Signed-off-by: "H.J. Lu" <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/1329696488-16970-1-git-send-email-hpa@zytor.com
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
 ---
- arch/x86/kernel/ptrace.c         |   99 ++++++++++++++++++++++++++++++++++++++
- arch/x86/syscalls/syscall_64.tbl |    4 +-
- 2 files changed, 101 insertions(+), 2 deletions(-)
+ fs/eventpoll.c            |   71 +++++++++++++++++++++++++++++++++++++++++++--
+ include/linux/eventpoll.h |    6 ++++
+ 2 files changed, 74 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 5026738..93e7877a 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1130,6 +1130,100 @@ static int genregs32_set(struct task_struct *target,
- 	return ret;
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index aabdfc3..6263ac6 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -33,6 +33,7 @@
+ #include <linux/bitops.h>
+ #include <linux/mutex.h>
+ #include <linux/anon_inodes.h>
++#include <linux/device.h>
+ #include <asm/uaccess.h>
+ #include <asm/system.h>
+ #include <asm/io.h>
+@@ -88,7 +89,7 @@
+  */
+ 
+ /* Epoll private bits inside the event mask */
+-#define EP_PRIVATE_BITS (EPOLLONESHOT | EPOLLET)
++#define EP_PRIVATE_BITS (EPOLLWAKEUP | EPOLLONESHOT | EPOLLET)
+ 
+ /* Maximum number of nesting allowed inside epoll sets */
+ #define EP_MAX_NESTS 4
+@@ -155,6 +156,9 @@ struct epitem {
+ 	/* List header used to link this item to the "struct file" items list */
+ 	struct list_head fllink;
+ 
++	/* wakeup_source used when EPOLLWAKEUP is set */
++	struct wakeup_source *ws;
++
+ 	/* The structure that describe the interested events and the source fd */
+ 	struct epoll_event event;
+ };
+@@ -195,6 +199,9 @@ struct eventpoll {
+ 	 */
+ 	struct epitem *ovflist;
+ 
++	/* wakeup_source used when ep_scan_ready_list is running */
++	struct wakeup_source *ws;
++
+ 	/* The user that created the eventpoll descriptor */
+ 	struct user_struct *user;
+ 
+@@ -524,6 +531,7 @@ static int ep_scan_ready_list(struct eventpoll *ep,
+ 	 * in a lockless way.
+ 	 */
+ 	spin_lock_irqsave(&ep->lock, flags);
++	__pm_stay_awake(ep->ws);
+ 	list_splice_init(&ep->rdllist, &txlist);
+ 	ep->ovflist = NULL;
+ 	spin_unlock_irqrestore(&ep->lock, flags);
+@@ -547,8 +555,10 @@ static int ep_scan_ready_list(struct eventpoll *ep,
+ 		 * queued into ->ovflist but the "txlist" might already
+ 		 * contain them, and the list_splice() below takes care of them.
+ 		 */
+-		if (!ep_is_linked(&epi->rdllink))
++		if (!ep_is_linked(&epi->rdllink)) {
+ 			list_add_tail(&epi->rdllink, &ep->rdllist);
++			__pm_stay_awake(epi->ws);
++		}
+ 	}
+ 	/*
+ 	 * We need to set back ep->ovflist to EP_UNACTIVE_PTR, so that after
+@@ -561,6 +571,7 @@ static int ep_scan_ready_list(struct eventpoll *ep,
+ 	 * Quickly re-inject items left on "txlist".
+ 	 */
+ 	list_splice(&txlist, &ep->rdllist);
++	__pm_relax(ep->ws);
+ 
+ 	if (!list_empty(&ep->rdllist)) {
+ 		/*
+@@ -615,6 +626,9 @@ static int ep_remove(struct eventpoll *ep, struct epitem *epi)
+ 		list_del_init(&epi->rdllink);
+ 	spin_unlock_irqrestore(&ep->lock, flags);
+ 
++	if (epi->ws)
++		wakeup_source_unregister(epi->ws);
++
+ 	/* At this point it is safe to free the eventpoll item */
+ 	kmem_cache_free(epi_cache, epi);
+ 
+@@ -665,6 +679,8 @@ static void ep_free(struct eventpoll *ep)
+ 	mutex_unlock(&epmutex);
+ 	mutex_destroy(&ep->mtx);
+ 	free_uid(ep->user);
++	if (ep->ws)
++		wakeup_source_unregister(ep->ws);
+ 	kfree(ep);
  }
  
-+#ifdef CONFIG_X86_X32_ABI
-+static long x32_arch_ptrace(struct task_struct *child,
-+			    compat_long_t request, compat_ulong_t caddr,
-+			    compat_ulong_t cdata)
-+{
-+	unsigned long addr = caddr;
-+	unsigned long data = cdata;
-+	void __user *datap = compat_ptr(data);
-+	int ret;
-+
-+	switch (request) {
-+	/* Read 32bits at location addr in the USER area.  Only allow
-+	   to return the lower 32bits of segment and debug registers.  */
-+	case PTRACE_PEEKUSR: {
-+		u32 tmp;
-+
-+		ret = -EIO;
-+		if ((addr & (sizeof(data) - 1)) || addr >= sizeof(struct user) ||
-+		    addr < offsetof(struct user_regs_struct, cs))
-+			break;
-+
-+		tmp = 0;  /* Default return condition */
-+		if (addr < sizeof(struct user_regs_struct))
-+			tmp = getreg(child, addr);
-+		else if (addr >= offsetof(struct user, u_debugreg[0]) &&
-+			 addr <= offsetof(struct user, u_debugreg[7])) {
-+			addr -= offsetof(struct user, u_debugreg[0]);
-+			tmp = ptrace_get_debugreg(child, addr / sizeof(data));
-+		}
-+		ret = put_user(tmp, (__u32 __user *)datap);
-+		break;
-+	}
-+
-+	/* Write the word at location addr in the USER area.  Only allow
-+	   to update segment and debug registers with the upper 32bits
-+	   zero-extended. */
-+	case PTRACE_POKEUSR:
-+		ret = -EIO;
-+		if ((addr & (sizeof(data) - 1)) || addr >= sizeof(struct user) ||
-+		    addr < offsetof(struct user_regs_struct, cs))
-+			break;
-+
-+		if (addr < sizeof(struct user_regs_struct))
-+			ret = putreg(child, addr, data);
-+		else if (addr >= offsetof(struct user, u_debugreg[0]) &&
-+			 addr <= offsetof(struct user, u_debugreg[7])) {
-+			addr -= offsetof(struct user, u_debugreg[0]);
-+			ret = ptrace_set_debugreg(child,
-+						  addr / sizeof(data), data);
-+		}
-+		break;
-+
-+	case PTRACE_GETREGS:	/* Get all gp regs from the child. */
-+		return copy_regset_to_user(child,
-+					   task_user_regset_view(current),
-+					   REGSET_GENERAL,
-+					   0, sizeof(struct user_regs_struct),
-+					   datap);
-+
-+	case PTRACE_SETREGS:	/* Set all gp regs in the child. */
-+		return copy_regset_from_user(child,
-+					     task_user_regset_view(current),
-+					     REGSET_GENERAL,
-+					     0, sizeof(struct user_regs_struct),
-+					     datap);
-+
-+	case PTRACE_GETFPREGS:	/* Get the child FPU state. */
-+		return copy_regset_to_user(child,
-+					   task_user_regset_view(current),
-+					   REGSET_FP,
-+					   0, sizeof(struct user_i387_struct),
-+					   datap);
-+
-+	case PTRACE_SETFPREGS:	/* Set the child FPU state. */
-+		return copy_regset_from_user(child,
-+					     task_user_regset_view(current),
-+					     REGSET_FP,
-+					     0, sizeof(struct user_i387_struct),
-+					     datap);
-+
-+		/* normal 64bit interface to access TLS data.
-+		   Works just like arch_prctl, except that the arguments
-+		   are reversed. */
-+	case PTRACE_ARCH_PRCTL:
-+		return do_arch_prctl(child, data, addr);
-+
-+	default:
-+		return compat_ptrace_request(child, request, addr, data);
-+	}
-+
-+	return ret;
-+}
-+#endif
-+
- long compat_arch_ptrace(struct task_struct *child, compat_long_t request,
- 			compat_ulong_t caddr, compat_ulong_t cdata)
- {
-@@ -1139,6 +1233,11 @@ long compat_arch_ptrace(struct task_struct *child, compat_long_t request,
- 	int ret;
- 	__u32 val;
+@@ -693,6 +709,7 @@ static int ep_read_events_proc(struct eventpoll *ep, struct list_head *head,
+ 			 * callback, but it's not actually ready, as far as
+ 			 * caller requested events goes. We can remove it here.
+ 			 */
++			__pm_relax(epi->ws);
+ 			list_del_init(&epi->rdllink);
+ 		}
+ 	}
+@@ -877,8 +894,10 @@ static int ep_poll_callback(wait_queue_t *wait, unsigned mode, int sync, void *k
+ 	}
  
-+#ifdef CONFIG_X86_X32_ABI
-+	if (!is_ia32_task())
-+		return x32_arch_ptrace(child, request, caddr, cdata);
-+#endif
+ 	/* If this file is already in the ready list we exit soon */
+-	if (!ep_is_linked(&epi->rdllink))
++	if (!ep_is_linked(&epi->rdllink)) {
+ 		list_add_tail(&epi->rdllink, &ep->rdllist);
++		__pm_stay_awake(epi->ws);
++	}
+ 
+ 	/*
+ 	 * Wake up ( if active ) both the eventpoll wait list and the ->poll()
+@@ -1034,6 +1053,30 @@ static int reverse_path_check(void)
+ 	return error;
+ }
+ 
++static int ep_create_wakeup_source(struct epitem *epi)
++{
++	const char *name;
 +
- 	switch (request) {
- 	case PTRACE_PEEKUSR:
- 		ret = getreg32(child, addr, &val);
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 0d778b8..dd29a9e 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -107,7 +107,7 @@
- 98	common	getrusage		sys_getrusage
- 99	common	sysinfo			sys_sysinfo
- 100	common	times			sys_times
--101	common	ptrace			sys_ptrace
-+101	64	ptrace			sys_ptrace
- 102	common	getuid			sys_getuid
- 103	common	syslog			sys_syslog
- 104	common	getgid			sys_getgid
-@@ -331,7 +331,7 @@
- 518	x32	sendmsg			compat_sys_sendmsg
- 519	x32	recvmsg			compat_sys_recvmsg
- 520	x32	execve			stub_x32_execve
--# 521 available
-+521	x32	ptrace			compat_sys_ptrace
- 522	x32	rt_sigpending		sys32_rt_sigpending
- 523	x32	rt_sigtimedwait		compat_sys_rt_sigtimedwait
- 524	x32	rt_sigqueueinfo		sys32_rt_sigqueueinfo
++	if (!epi->ep->ws) {
++		epi->ep->ws = wakeup_source_register("eventpoll");
++		if (!epi->ep->ws)
++			return -ENOMEM;
++	}
++
++	name = epi->ffd.file->f_path.dentry->d_name.name;
++	epi->ws = wakeup_source_register(name);
++	if (!epi->ws)
++		return -ENOMEM;
++
++	return 0;
++}
++
++static void ep_destroy_wakeup_source(struct epitem *epi)
++{
++	wakeup_source_unregister(epi->ws);
++	epi->ws = NULL;
++}
++
+ /*
+  * Must be called with "mtx" held.
+  */
+@@ -1061,6 +1104,13 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 	epi->event = *event;
+ 	epi->nwait = 0;
+ 	epi->next = EP_UNACTIVE_PTR;
++	if (epi->event.events & EPOLLWAKEUP) {
++		error = ep_create_wakeup_source(epi);
++		if (error)
++			goto error_create_wakeup_source;
++	} else {
++		epi->ws = NULL;
++	}
+ 
+ 	/* Initialize the poll table using the queue callback */
+ 	epq.epi = epi;
+@@ -1106,6 +1156,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 	/* If the file is already "ready" we drop it inside the ready list */
+ 	if ((revents & event->events) && !ep_is_linked(&epi->rdllink)) {
+ 		list_add_tail(&epi->rdllink, &ep->rdllist);
++		__pm_stay_awake(epi->ws);
+ 
+ 		/* Notify waiting tasks that events are available */
+ 		if (waitqueue_active(&ep->wq))
+@@ -1146,6 +1197,10 @@ error_unregister:
+ 		list_del_init(&epi->rdllink);
+ 	spin_unlock_irqrestore(&ep->lock, flags);
+ 
++	if (epi->ws)
++		wakeup_source_unregister(epi->ws);
++
++error_create_wakeup_source:
+ 	kmem_cache_free(epi_cache, epi);
+ 
+ 	return error;
+@@ -1167,6 +1222,12 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
+ 	 */
+ 	epi->event.events = event->events;
+ 	epi->event.data = event->data; /* protected by mtx */
++	if (epi->event.events & EPOLLWAKEUP) {
++		if (!epi->ws)
++			ep_create_wakeup_source(epi);
++	} else if (epi->ws) {
++		ep_destroy_wakeup_source(epi);
++	}
+ 
+ 	/*
+ 	 * Get current event bits. We can safely use the file* here because
+@@ -1182,6 +1243,7 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
+ 		spin_lock_irq(&ep->lock);
+ 		if (!ep_is_linked(&epi->rdllink)) {
+ 			list_add_tail(&epi->rdllink, &ep->rdllist);
++			__pm_stay_awake(epi->ws);
+ 
+ 			/* Notify waiting tasks that events are available */
+ 			if (waitqueue_active(&ep->wq))
+@@ -1217,6 +1279,7 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
+ 	     !list_empty(head) && eventcnt < esed->maxevents;) {
+ 		epi = list_first_entry(head, struct epitem, rdllink);
+ 
++		__pm_relax(epi->ws);
+ 		list_del_init(&epi->rdllink);
+ 
+ 		revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
+@@ -1232,6 +1295,7 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
+ 			if (__put_user(revents, &uevent->events) ||
+ 			    __put_user(epi->event.data, &uevent->data)) {
+ 				list_add(&epi->rdllink, head);
++				__pm_stay_awake(epi->ws);
+ 				return eventcnt ? eventcnt : -EFAULT;
+ 			}
+ 			eventcnt++;
+@@ -1251,6 +1315,7 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
+ 				 * poll callback will queue them in ep->ovflist.
+ 				 */
+ 				list_add_tail(&epi->rdllink, &ep->rdllist);
++				__pm_stay_awake(epi->ws);
+ 			}
+ 		}
+ 	}
+diff --git a/include/linux/eventpoll.h b/include/linux/eventpoll.h
+index 657ab55..520a57c 100644
+--- a/include/linux/eventpoll.h
++++ b/include/linux/eventpoll.h
+@@ -26,6 +26,12 @@
+ #define EPOLL_CTL_DEL 2
+ #define EPOLL_CTL_MOD 3
+ 
++/*
++ * Request the handling of system wakeup events so as to prevent automatic
++ * system suspends from happening while those events are being processed.
++ */
++#define EPOLLWAKEUP (1 << 29)
++
+ /* Set the One Shot behaviour for the target file descriptor */
+ #define EPOLLONESHOT (1 << 30)
+ 
+-- 
+1.7.7.3
+
