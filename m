@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab2CFDDW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 22:03:22 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:34398 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab2CFDDU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 22:03:20 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of tomoya.rohm@gmail.com designates 10.68.218.228 as permitted sender) smtp.mail=tomoya.rohm@gmail.com; dkim=pass header.i=tomoya.rohm@gmail.com
+	id S1753893Ab2CFDGW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 22:06:22 -0500
+Received: from ozlabs.org ([203.10.76.45]:42044 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751383Ab2CFDGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 22:06:20 -0500
+Date: Tue, 6 Mar 2012 13:37:00 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: akpm@linux-foundation.org, abarry@cray.com, hughd@google.com,
+        mgorman@suse.de, minchan.kim@gmail.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] hugepages: Fix use after free bug in "quota" handling
+Message-ID: <20120306023700.GE12818@truffala.fritz.box>
+Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
+	Hillf Danton <dhillf@gmail.com>, akpm@linux-foundation.org,
+	abarry@cray.com, hughd@google.com, mgorman@suse.de,
+	minchan.kim@gmail.com, paulus@samba.org,
+	linux-kernel@vger.kernel.org
+References: <1329366240-11663-1-git-send-email-david@gibson.dropbear.id.au>
+ <1329366240-11663-3-git-send-email-david@gibson.dropbear.id.au>
+ <CAJd=RBAK-iTs6HfNm+Lv_5GKPbQfpALgYCgB+mitXUPofJ1gtA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120302125819.GE3230@opensource.wolfsonmicro.com>
-References: <1329976011-2251-1-git-send-email-tomoya.rohm@gmail.com>
-	<20120229235147.GM8295@opensource.wolfsonmicro.com>
-	<CANKRQngOkGTPM9AWEaHoaNQCyN65B_ESB24ctcT_DiEen050fg@mail.gmail.com>
-	<20120302125819.GE3230@opensource.wolfsonmicro.com>
-Date: Tue, 6 Mar 2012 12:03:20 +0900
-Message-ID: <CANKRQngoDf_U8U7txG0AT1TKmSeq2FfqwjWD7EEiLROWzn+f5Q@mail.gmail.com>
-Subject: Re: [PATCH v6] sound/soc/codecs: add LAPIS Semiconductor ML26124
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJd=RBAK-iTs6HfNm+Lv_5GKPbQfpALgYCgB+mitXUPofJ1gtA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012$BG/(B3$B7n(B2$BF|(B21:58 Mark Brown <broonie@opensource.wolfsonmicro.com>:
->> >> +static int ml26124_set_dai_clkdiv(struct snd_soc_dai *codec_dai,
->> >> +                               int div_id, int div)
->> >> +{
->> >> +     struct snd_soc_codec *codec = codec_dai->codec;
->
->> >> +     switch (div_id) {
->> >> +     case ML26124_MCLK:
->> >> +             ml26124_update_bits(codec, ML26124_CLK_CTL,
->> >> +                                   BIT(0) | BIT(1), div);
->> >> +             break;
->
->> > Why can't the driver calculate this automatically given the MCLK?
->
->> Sorry, I can't understand your saying.
->> Why does this driver need to calculate ?
->> I think this driver can use "div" value directly.
->
-> Why does the user have to set this divider by hand at all?  There's
-> already a set_sysclk() function, just have the user specify the clock
-> they're providing.
-I see.
-This processing will move to set_sysclk()
+On Thu, Feb 16, 2012 at 08:33:51PM +0800, Hillf Danton wrote:
+> On Thu, Feb 16, 2012 at 12:24 PM, David Gibson
+> <david@gibson.dropbear.id.au> wrote:
+> > @@ -1046,12 +1124,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+> >        if (!page) {
+> >                page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+> >                if (!page) {
+> > -                       hugetlb_put_quota(inode->i_mapping, chg);
+> > +                       hugepage_subpool_put_pages(spool, chg);
+> >                        return ERR_PTR(-VM_FAULT_SIGBUS);
+> >                }
+> >        }
+> >
+> > -       set_page_private(page, (unsigned long) mapping);
+> > +       set_page_private(page, (unsigned long)spool);
 
->> >> +     ret = snd_soc_codec_set_cache_io(codec, 8, 8, SND_SOC_I2C);
->> > You're mixing regmap API usage and ASoC level I2C, this should be
->> > _REGMAP.
->> Currently, it seems codec control via i2c works well.
->> Let me know why I should  use SND_SOC_REGMAP not _I2C.
-> Have you checked what _I2C and _REGMAP do?
-I've just checked it.
-If SND_SOC_REGMAP is used, it seems there is no processing in it.
-So, can I delete snd_soc_codec_set_cache_io ?
+Sorry for the very delayed reply.  Somehow I never spotted this when
+it first came.  I think I must have acidentally deleted it when
+cleaning out automated messages and spam.
 
->
->> >> +static int __init ml26124_modinit(void)
->> >> +{
->> >> +     int ret;
->> >> +
->> >> +     ret = i2c_add_driver(&ml26124_i2c_driver);
->> >> +     if (ret != 0)
->
->> > module_i2c_driver().
->
->> Sorry, I can't understand your saying.
->
-> Use module_i2c_driver().
-I understand.
-As a matter of interest, why can I use module_i2c_driver ?
-There is no ASoC driver uses module_i2c_driver.
+> Page mapping is used in unmap_ref_private(), and I am
+> wondering it no longer works:-(
 
->> +static int ml26124_update_bits(struct snd_soc_codec *codec, unsigned short reg,
->> +                             unsigned int mask, unsigned int value)
->
-> Why are you open coding this in your driver?  There is no point in
-> replicating subsystem functionality.
-For ML26124 spec, it's necessary.
-Because the codec's register read-address and write-address is not the same.
-E.G.
-Sampling Rate Register
-R: offset=0
-W: offset=1
+Good point.  But unmap_ref_private() does take the vma, so it should
+be able to get to the mapping from there.  I'll respin doing that,
+instead of using page_private().
 
-thanks,
+> > @@ -2392,7 +2471,8 @@ retry_avoidcopy:
+> >
+> >        /* Drop page_table_lock as buddy allocator may be called */
+> >        spin_unlock(&mm->page_table_lock);
+> > -       new_page = alloc_huge_page(vma, address, outside_reserve);
+> > +       new_page = alloc_huge_page(vma, address, outside_reserve,
+> > +                                  subpool_vma(vma));
+> 
+> Change in the number of parameters of alloc_huge_page()
+> looks unnecessary.
+
+Because alloc_huge_page() also takes vma.  Yeah, fair enough.  I'll
+change that in the respin too.
+
 -- 
-ROHM Co., Ltd.
-tomoya
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
