@@ -1,80 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab2CFD1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 22:27:44 -0500
-Received: from ozlabs.org ([203.10.76.45]:47569 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754421Ab2CFD1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 22:27:42 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Santosh Jodh <Santosh.Jodh@citrix.com>,
-        "konrad.wilk\@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy\@goop.org" <jeremy@goop.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "jbarnes\@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "jbeulich\@novell.com" <jbeulich@novell.com>,
-        "joe.jin\@oracle.com" <joe.jin@oracle.com>,
-        "lersek\@redhat.com" <lersek@redhat.com>,
-        "weiyi.huang\@gmail.com" <weiyi.huang@gmail.com>,
-        "dgdegra\@tycho.nsa.gov" <dgdegra@tycho.nsa.gov>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "paul.gortmaker\@windriver.com" <paul.gortmaker@windriver.com>,
-        "akpm\@linux-foundation.org" <akpm@linux-foundation.org>,
-        "waldi\@debian.org" <waldi@debian.org>,
-        "virtualization\@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-pci\@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel\@lists.xen.org" <xen-devel@lists.xen.org>
-Cc: Santosh Jodh <Santosh.Jodh@citrix.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>
-Subject: Re: [PATCH 0001/001] xen: multi page ring support for block devices
-In-Reply-To: <7914B38A4445B34AA16EB9F1352942F1010A1FA12364@SJCPMAILBOX01.citrite.net>
-References: <1330701099-18281-1-git-send-email-santoshprasadnayak@gmail.com> <7914B38A4445B34AA16EB9F1352942F1010A1FA12364@SJCPMAILBOX01.citrite.net>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 06 Mar 2012 13:12:49 +1030
-Message-ID: <87ty22xxee.fsf@rustcorp.com.au>
+	id S1757564Ab2CFD3h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 22:29:37 -0500
+Received: from exprod5og110.obsmtp.com ([64.18.0.20]:46829 "HELO
+	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754421Ab2CFD3g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 5 Mar 2012 22:29:36 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of mla@apm.com designates 10.68.130.67 as permitted sender) smtp.mail=mla@apm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+From: Mai La <mla@apm.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Tirumala R Marri <tmarri@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Michael Neuling <mikey@neuling.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Cc: open-source-review@apm.com, Mai La <mla@apm.com>
+Subject: [PATCH 1/2] powerpc/44x: Fix PCI MSI support for APM821xx SoC and Bluestone board
+Date: Tue,  6 Mar 2012 10:29:41 +0700
+Message-Id: <1331004581-23795-1-git-send-email-mla@apm.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 5 Mar 2012 13:49:07 -0800, Santosh Jodh <Santosh.Jodh@citrix.com> wrote:
-> +/* Order of maximum shared ring size advertised to the front end. */
-> +int xen_blkif_max_ring_order = XENBUS_MAX_RING_ORDER;
-> +
-> +#define BLK_RING_SIZE(_order) __CONST_RING_SIZE(blkif, PAGE_SIZE << (_order))
-> +
-> +static int set_max_ring_order(const char *buf, struct kernel_param *kp)
-> +{
-> +       int err;
-> +       unsigned long order;
-> +
-> +       err = kstrtol(buf, 0, &order);
-> +       if (err ||
-> +           order < 0 ||
-> +           order > XENBUS_MAX_RING_ORDER)
-> +               return -EINVAL;
+This patch consists of:
+- Enable PCI MSI as default for Bluestone board 
+- Define number of MSI interrupt for Maui APM821xx SoC using in Bluestone board
+- Fix returning ENODEV as finding MSI node
+- Fix MSI physical high and low address
+- Keep MSI data logically
 
-Hmm, order can't be < 0, since it's unsigned.  So did you mean
-kstrtoull?
+Signed-off-by: Mai La <mla@apm.com>
+---
+ arch/powerpc/platforms/44x/Kconfig |    2 ++
+ arch/powerpc/sysdev/ppc4xx_msi.c   |   28 ++++++++++++++++++----------
+ 2 files changed, 20 insertions(+), 10 deletions(-)
 
-And I think returning err is cleaner (it's -EINVAL for malformed
-strings, -ERANGE for ones too big).
-
-> +       if (xen_blkif_reqs < BLK_RING_SIZE(order))
-> +               printk(KERN_WARNING "WARNING: "
-> +                      "I/O request space (%d reqs) < ring order %ld, "
-> +                      "consider increasing %s.reqs to >= %ld.",
-> +                      xen_blkif_reqs, order, KBUILD_MODNAME,
-> +                      roundup_pow_of_two(BLK_RING_SIZE(order)));
-
-This message doesn't mention the module namr or parameter name
-anywhere.  Think of the poor sysadmins!
-
-Thanks,
-Rusty.
+diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
+index fcf6bf2..9f04ce3 100644
+--- a/arch/powerpc/platforms/44x/Kconfig
++++ b/arch/powerpc/platforms/44x/Kconfig
+@@ -23,6 +23,8 @@ config BLUESTONE
+ 	default n
+ 	select PPC44x_SIMPLE
+ 	select APM821xx
++	select PCI_MSI
++	select PPC4xx_MSI
+ 	select IBM_EMAC_RGMII
+ 	help
+ 	  This option enables support for the APM APM821xx Evaluation board.
+diff --git a/arch/powerpc/sysdev/ppc4xx_msi.c b/arch/powerpc/sysdev/ppc4xx_msi.c
+index 1c2d7af..6103908 100644
+--- a/arch/powerpc/sysdev/ppc4xx_msi.c
++++ b/arch/powerpc/sysdev/ppc4xx_msi.c
+@@ -31,7 +31,7 @@
+ #include <asm/prom.h>
+ #include <asm/hw_irq.h>
+ #include <asm/ppc-pci.h>
+-#include <boot/dcr.h>
++#include <asm/dcr.h>
+ #include <asm/dcr-regs.h>
+ #include <asm/msi_bitmap.h>
+ 
+@@ -43,7 +43,12 @@
+ #define PEIH_FLUSH0	0x30
+ #define PEIH_FLUSH1	0x38
+ #define PEIH_CNTRST	0x48
++
++#ifdef CONFIG_APM821xx
++#define NR_MSI_IRQS	8
++#else
+ #define NR_MSI_IRQS	4
++#endif
+ 
+ struct ppc4xx_msi {
+ 	u32 msi_addr_lo;
+@@ -150,12 +155,11 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
+ 	if (!sdr_addr)
+ 		return -1;
+ 
+-	SDR0_WRITE(sdr_addr, (u64)res.start >> 32);	 /*HIGH addr */
+-	SDR0_WRITE(sdr_addr + 1, res.start & 0xFFFFFFFF); /* Low addr */
+-
++	mtdcri(SDR0, *sdr_addr, (u64)res.start >> 32);	/*HIGH addr */
++	mtdcri(SDR0, *sdr_addr + 1, res.start & 0xFFFFFFFF);/* Low addr */
+ 
+ 	msi->msi_dev = of_find_node_by_name(NULL, "ppc4xx-msi");
+-	if (msi->msi_dev)
++	if (!msi->msi_dev)
+ 		return -ENODEV;
+ 
+ 	msi->msi_regs = of_iomap(msi->msi_dev, 0);
+@@ -167,9 +171,12 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
+ 		(u32) (msi->msi_regs + PEIH_TERMADH), (u32) (msi->msi_regs));
+ 
+ 	msi_virt = dma_alloc_coherent(&dev->dev, 64, &msi_phys, GFP_KERNEL);
+-	msi->msi_addr_hi = 0x0;
+-	msi->msi_addr_lo = (u32) msi_phys;
+-	dev_dbg(&dev->dev, "PCIE-MSI: msi address 0x%x\n", msi->msi_addr_lo);
++	if (!msi_virt)
++		return -ENOMEM;
++	msi->msi_addr_hi = (u32)(msi_phys >> 32);
++	msi->msi_addr_lo = (u32)(msi_phys & 0xffffffff);
++	dev_dbg(&dev->dev, "PCIE-MSI: msi address high 0x%x, low 0x%x\n",
++		msi->msi_addr_hi, msi->msi_addr_lo);
+ 
+ 	/* Progam the Interrupt handler Termination addr registers */
+ 	out_be32(msi->msi_regs + PEIH_TERMADH, msi->msi_addr_hi);
+@@ -185,6 +192,8 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
+ 	out_be32(msi->msi_regs + PEIH_MSIED, *msi_data);
+ 	out_be32(msi->msi_regs + PEIH_MSIMK, *msi_mask);
+ 
++	dma_free_coherent(&dev->dev, 64, msi_virt, msi_phys);
++
+ 	return 0;
+ }
+ 
+@@ -215,8 +224,6 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
+ 	struct resource res;
+ 	int err = 0;
+ 
+-	msi = &ppc4xx_msi;/*keep the msi data for further use*/
+-
+ 	dev_dbg(&dev->dev, "PCIE-MSI: Setting up MSI support...\n");
+ 
+ 	msi = kzalloc(sizeof(struct ppc4xx_msi), GFP_KERNEL);
+@@ -242,6 +249,7 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
+ 		dev_err(&dev->dev, "Error allocating MSI bitmap\n");
+ 		goto error_out;
+ 	}
++	ppc4xx_msi = *msi;
+ 
+ 	ppc_md.setup_msi_irqs = ppc4xx_setup_msi_irqs;
+ 	ppc_md.teardown_msi_irqs = ppc4xx_teardown_msi_irqs;
 -- 
-  How could I marry someone with more hair than me?  http://baldalex.org
+1.7.3.4
+
