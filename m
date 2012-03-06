@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758290Ab2CFExx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 5 Mar 2012 23:53:53 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:43616 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030363Ab2CFExm (ORCPT
+	id S1758325Ab2CFEyK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 5 Mar 2012 23:54:10 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:5810 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758294Ab2CFEyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 5 Mar 2012 23:53:42 -0500
-Date: Tue, 6 Mar 2012 15:53:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: linux-next: build failure after merge of the kvm tree
-Message-Id: <20120306155332.42d5094876089c8b7bb36bb0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__6_Mar_2012_15_53_32_+1100_T12f_9UMn8.X62m."
+	Mon, 5 Mar 2012 23:54:08 -0500
+X-Greylist: delayed 1010 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Mar 2012 23:54:08 EST
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+To: Mai La <mla@apm.com>
+Subject: Re: [1/2] powerpc/44x: Fix PCI MSI support for APM821xx SoC and Bluestone board
+From: Milton Miller <miltonm@bga.com>
+Message-Id: <bluehawk-msi-use-upper-lower-32@mdm.bga.com>
+In-Reply-To: <1331004581-23795-1-git-send-email-mla@apm.com>
+References: <1331004581-23795-1-git-send-email-mla@apm.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Tirumala R Marri <tmarri@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Michael Neuling <mikey@neuling.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, open-source-review@apm.com
+Date: Mon, 05 Mar 2012 22:37:13 -0600
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__6_Mar_2012_15_53_32_+1100_T12f_9UMn8.X62m.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 05 Mar 2012 about 17:29:41 -0000, Mai La wrote:
+>  
+> @@ -43,7 +43,12 @@
+>  #define PEIH_FLUSH0	0x30
+>  #define PEIH_FLUSH1	0x38
+>  #define PEIH_CNTRST	0x48
+> +
+> +#ifdef CONFIG_APM821xx
+> +#define NR_MSI_IRQS	8
+> +#else
+>  #define NR_MSI_IRQS	4
+> +#endif
+>  
 
-Hi all,
+does this need to go into the dts binding?
 
-After merging the kvm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+>  struct ppc4xx_msi {
+>  	u32 msi_addr_lo;
+> @@ -150,12 +155,11 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
+>  	if (!sdr_addr)
+>  		return -1;
+>  
+> -	SDR0_WRITE(sdr_addr, (u64)res.start >> 32);	 /*HIGH addr */
+> -	SDR0_WRITE(sdr_addr + 1, res.start & 0xFFFFFFFF); /* Low addr */
+> -
+> +	mtdcri(SDR0, *sdr_addr, (u64)res.start >> 32);	/*HIGH addr */
+> +	mtdcri(SDR0, *sdr_addr + 1, res.start & 0xFFFFFFFF);/* Low addr */
 
-include/linux/kvm_host.h:813:13: error: 'kvm_vcpu_compatible' defined but n=
-ot used [-Werror=3Dunused-function]
-cc1: all warnings being treated as errors
+Please use upper_32_bits and lower_32_bits from linux/kernel.h
 
-Caused by commit ab0bd7dfdaa5 ("KVM: Ensure all vcpus are consistent with
-in-kernel irqchip settings").
+>  	msi->msi_dev = of_find_node_by_name(NULL, "ppc4xx-msi");
+> -	if (msi->msi_dev)
+> +	if (!msi->msi_dev)
+>  		return -ENODEV;
+>  
+>  	msi->msi_regs = of_iomap(msi->msi_dev, 0);
+> @@ -167,9 +171,12 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
+>  		(u32) (msi->msi_regs + PEIH_TERMADH), (u32) (msi->msi_regs));
+>  
+>  	msi_virt = dma_alloc_coherent(&dev->dev, 64, &msi_phys, GFP_KERNEL);
+> -	msi->msi_addr_hi = 0x0;
+> -	msi->msi_addr_lo = (u32) msi_phys;
+> -	dev_dbg(&dev->dev, "PCIE-MSI: msi address 0x%x\n", msi->msi_addr_lo);
+> +	if (!msi_virt)
+> +		return -ENOMEM;
+> +	msi->msi_addr_hi = (u32)(msi_phys >> 32);
+> +	msi->msi_addr_lo = (u32)(msi_phys & 0xffffffff);
 
-This function presumably need to be "static inline bool" in the !
-CONFIG_KVM_APIC_ARCHITECTURE case.
+ditto
 
-I have used the kvm tree from next-20120305 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Tue__6_Mar_2012_15_53_32_+1100_T12f_9UMn8.X62m.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPVZhMAAoJEECxmPOUX5FEnRsP/jWmgxiplN8ECqvV7WjRvA0N
-j6TU+RJaYe9Pde22C7plJyWjR45NMk7tUwwcEEXJnMo+U/HCQ7EoV6/LGgjiY7+s
-CIDOSQyUtsiXgGxsQYxTtd8Gfj0Ak0n9m70XicIQsmtcBj1xF14NkNC+/+MRTxb2
-VE33YSyfC7iIYxgrQfEqXl0F8DGroHmr2z/wdj0iH5jueunwf/roPJ4QUsy4Zuab
-ooZ19rtZBZSKdzo8DH2fZFJfPS+ERNsIq4R0eftHTIgSr3eALS0waY7vGd0ipXpL
-ddzQqKPoyhHscPTraKzSo1US6oy1KQHkV5cWC28UXfSWwae5yV80VsdXRoyM13c4
-3WPL60XIIdXJnEDTFdtFuR5doSqiam7/plc68QhI5ha8MFR4INwKmV+plEftfsMs
-JqWXyCTR6laX1UAhk0AzBzXo28FYew6qQzvdgxVnNFGaM9eb1brWyZTYZp6ZqjrR
-0eRcva7M9zz3VDNvFTIQflQ6kGh/o7feNa08ZzKIPNmLOQkP5QJIkX6RM/JJBz8g
-MQTRd4vt087EQ8/J8bthWs5uBg7wcT+lxpNxpRdNSucWy59B4HUmt+8LahwvM+hc
-rQmnzwMMooKRgoARDK3EVmPM+uk9QZxyOU5pKaUMVh9vPbwPWvlG6pcqXqgRoW9q
-6z2KB6ExMimfLf9cfmge
-=KyEH
------END PGP SIGNATURE-----
-
---Signature=_Tue__6_Mar_2012_15_53_32_+1100_T12f_9UMn8.X62m.--
+milton
