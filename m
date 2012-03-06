@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965107Ab2CFTC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 14:02:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2011 "EHLO mx1.redhat.com"
+	id S1758666Ab2CFTHu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 14:07:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19976 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756346Ab2CFTC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 14:02:28 -0500
-Date: Tue, 6 Mar 2012 14:02:11 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: [PATCHSET] blkcg: accumulated blkcg updates
-Message-ID: <20120306190211.GD32148@redhat.com>
-References: <1329875223-5102-1-git-send-email-tj@kernel.org>
- <20120305210726.GC1263@google.com>
- <20120305210836.GD1263@google.com>
- <20120306150709.GA32148@redhat.com>
- <20120306162455.GB32148@redhat.com>
- <20120306183942.GC32148@redhat.com>
+	id S1758133Ab2CFTHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 14:07:48 -0500
+Date: Tue, 6 Mar 2012 19:31:22 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] creds: kill __task_cred()->task_is_dead() validation
+Message-ID: <20120306183122.GA29308@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120306183942.GC32148@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 01:39:42PM -0500, Vivek Goyal wrote:
-> On Tue, Mar 06, 2012 at 11:24:55AM -0500, Vivek Goyal wrote:
-> > On Tue, Mar 06, 2012 at 10:07:09AM -0500, Vivek Goyal wrote:
-> > 
-> > [..]
-> > > 
-> > > My system is hanging during reboot. Last message I see is "Detaching DM
-> > > devices" and nothing happens after that. I shall have to do some more 
-> > > testing to figure out when did that start happening.
-> > 
-> > Ok, git bisect shows that very first patch to drain the queue is culprit.
-> > 
-> > 9e5b9f8 block: blk-throttle should be drained regardless of q->elevator
-> > 
-> > Will do some more debugging.
-> 
-> Hmm..., haven't reached to the bottom of the issue yet, but there is more
-> data.
+commit 8f92054e:
 
-Ok, found it. Basically we have not initialized the q->queue_head during
-queue creation. Hence we end up thinking that q->queue_head is not empty.
+    add the following validation condition:
 
-So following fixed the issue for me. I still don't understand the special
-cased code (q->queue_head is not empty but don't kick queue).
+        task->exit_state >= 0
 
- block/blk-core.c |    1 +
- 1 file changed, 1 insertion(+)
+    to permit the access if the target task is dead and therefore
+    unable to change its own credentials.
 
-Index: tejun-misc/block/blk-core.c
-===================================================================
---- tejun-misc.orig/block/blk-core.c	2012-03-07 00:47:14.325852192 -0500
-+++ tejun-misc/block/blk-core.c	2012-03-07 00:47:15.998853132 -0500
-@@ -558,6 +558,7 @@ struct request_queue *blk_alloc_queue_no
- 	setup_timer(&q->timeout, blk_rq_timed_out_timer, (unsigned long) q);
- 	INIT_LIST_HEAD(&q->timeout_list);
- 	INIT_LIST_HEAD(&q->icq_list);
-+	INIT_LIST_HEAD(&q->queue_head);
- #ifdef CONFIG_BLK_CGROUP
- 	INIT_LIST_HEAD(&q->blkg_list);
- #endif
+OK, but afaics currently this can only help wait_task_zombie() which
+calls __task_cred() without rcu lock.
 
-Thanks
-Vivek
+Remove this validation and change wait_task_zombie() to use task_uid()
+instead. This means we do rcu_read_lock() only to shut up the lockdep,
+but we already do the same in, say, wait_task_stopped().
+
+task_is_dead() should die, task->exit_state != 0 means that this task
+has passed exit_notify(), only do_wait-like code paths should use this.
+
+Unfortunately, we can't kill task_is_dead() right now, it has already
+found the users in drivers/staging/, and I bet the usage is wrong.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ include/linux/cred.h |   10 +++-------
+ kernel/exit.c        |    2 +-
+ 2 files changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index adadf71..1b64c72 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -276,17 +276,13 @@ static inline void put_cred(const struct cred *_cred)
+  * @task: The task to query
+  *
+  * Access the objective credentials of a task.  The caller must hold the RCU
+- * readlock or the task must be dead and unable to change its own credentials.
++ * readlock.
+  *
+  * The result of this function should not be passed directly to get_cred();
+  * rather get_task_cred() should be used instead.
+  */
+-#define __task_cred(task)						\
+-	({								\
+-		const struct task_struct *__t = (task);			\
+-		rcu_dereference_check(__t->real_cred,			\
+-				      task_is_dead(__t));		\
+-	})
++#define __task_cred(task)	\
++	rcu_dereference((task)->real_cred)
+ 
+ /**
+  * get_current_cred - Get the current task's subjective credentials
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 4b4042f..7b36288 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1206,7 +1206,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 	unsigned long state;
+ 	int retval, status, traced;
+ 	pid_t pid = task_pid_vnr(p);
+-	uid_t uid = __task_cred(p)->uid;
++	uid_t uid = task_uid(p);
+ 	struct siginfo __user *infop;
+ 
+ 	if (!likely(wo->wo_flags & WEXITED))
+-- 
+1.5.5.1
+
 
