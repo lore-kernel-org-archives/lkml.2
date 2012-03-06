@@ -1,113 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758807Ab2CFIxX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 03:53:23 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:52199 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758649Ab2CFIxW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 03:53:22 -0500
-Date: Tue, 6 Mar 2012 09:53:15 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@intel.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
-In-Reply-To: <1331022623.24656.191.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1203060935460.9300@axis700.grange>
-References: <Pine.LNX.4.64.1202011610050.26261@axis700.grange> 
- <Pine.LNX.4.64.1203021341590.913@axis700.grange> <1331022623.24656.191.camel@vkoul-udesk3>
+	id S1758829Ab2CFIxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 03:53:50 -0500
+Received: from antcom.de ([188.40.178.216]:34086 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758649Ab2CFIxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 03:53:49 -0500
+Message-ID: <4F55D099.5070006@antcom.de>
+Date: Tue, 06 Mar 2012 09:53:45 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:mvYuYTFxzRO4uqYJdlUwedGE+TGKZV/NY5Q1aFk8fG/
- KuTyl0zcfDi2a45uVsz3uNa9eoxA1/uql1XTOECX4a2/UUVP3u
- ME4SxbFrdLYgFJxnz20VX5Xq1U0g/ZOFq+Ykfn4GQGGAvUaCsL
- 1UL/ksPmJs4InYmai9+DW3uCR274/azXWF6V7dRjJlpIuvGRyf
- GQykHqKkU/1pkmSaLX/tPT1otM9CoTBfTttWQrDNPyj572eJJe
- lmxb+LVW6gVAbwtGhi9GKNFQ7vtlhoX35KFyo+KB1AcwnCeZ6b
- nEDLd1WU8mQkKHrP5lWyTjsV2/QOi2T/uSKIN1+lwa6oAUK+pU
- rJP/Ehh9Q5L5Il29Hg2+ZsaGQMgkj5h350rpVPHkyBPb/IoV9v
- Srn7iA6SkJxSA==
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: davem@davemloft.net, jeffrey.t.kirsher@intel.com,
+        alexander.h.duyck@intel.com, eilong@broadcom.com,
+        ian.campbell@citrix.com, netdev@vger.kernel.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de, baruch@tkos.co.il,
+        joe@perches.com
+Subject: Re: [PATCH v4] lpc32xx: Added ethernet driver
+References: <1330983641-32622-1-git-send-email-stigge@antcom.de> <1330987524.2538.61.camel@bwh-desktop>
+In-Reply-To: <1330987524.2538.61.camel@bwh-desktop>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod
+Hi Ben,
 
-Thanks for your review.
+thank you for your review!
 
-On Tue, 6 Mar 2012, Vinod Koul wrote:
+On 03/05/2012 11:45 PM, Ben Hutchings wrote:
+> [...]
+>> +static int lpc_eth_poll(struct napi_struct *napi, int budget)
+>> +{
+>> +	struct netdata_local *pldat = container_of(napi,
+>> +			struct netdata_local, napi);
+>> +	struct net_device *ndev = pldat->ndev;
+>> +	unsigned long flags;
+>> +	int rx_done = 0;
+>> +
+>> +	spin_lock_irqsave(&pldat->lock, flags);
+>> +
+>> +	__lpc_handle_xmit(ndev);
+>> +	rx_done = __lpc_handle_recv(ndev, budget);
+>> +
+>> +	if (rx_done < budget) {
+>> +		napi_complete(napi);
+>> +		lpc_eth_enable_int(pldat->net_base);
+>> +	}
+>> +
+>> +	spin_unlock_irqrestore(&pldat->lock, flags);
+>
+> This is really sad.  You implement NAPI but then take away most of the
+> benefits of that by disabling interrupts.
+>
+> It looks like you could safely unlock pldat->lock before calling
+> __lpc_handle_recv - nothing else manipulates RX queue state so no lock
+> is required.
+>
+> As for the TX side, you can probably use the TX queue lock
+> (__netif_tx_lock, __netif_tx_unlock) to serialise with
+> lpc_eth_hard_start_xmit() and avoid taking pldat->lock in either
+> __lpc_handle_xmit() or here.
 
-> On Fri, 2012-03-02 at 14:21 +0100, Guennadi Liakhovetski wrote:
-> > Hi Vinod
-> > 
-> > On Wed, 1 Feb 2012, Guennadi Liakhovetski wrote:
-> sorry I thought I had replied, but looks like it got missed!
-> > 
-> > > When performing slame DMA some dmaengine drivers need additional data from
-> typo		  ^^^^^^^^^
-> > > client drivers to find out, whether they can support that specific client
-> > > and to configure the DMA channel for it. This additional data has to be
-> > > supplied by client drivers during channel allocation, i.e., with the
-> > > __dma_request_channel() function. This patch adds a new
-> > > struct dma_slave_desc with some basic data in it, further this struct can
-> > > be embedded in hardware-specific types to supply any auxiliary
-> > > configuration.
-> counter arguing shouldn't the client drivers find out of the channel
-> requested is capable or not, that can be alternate approach as well.
-> That way people implement this in the filer functions and find if this
-> is the channel we need rather than dmac finding out if it can service
-> the client or not.
+Sounds reasonable, and will do it.
 
-How shall clients find this out? This is system- and DMAC-specific, this 
-has nothing to do with the client functionality. The proposed approach is:
+However, I implemented it from the example of
+drivers/net/ethernet/via/via-velocity.c:velocity_poll() - is there a
+good reason for doing it that way in the velocity driver or is it done
+incorrectly there, also?
 
-* a client driver (MMC, USB, anything else) is capable to use DMA uses the 
-standard dmaengine API to transfer the data
+Thanks,
 
-* if the platform, where it's running, is supplying any auxiliary data, 
-that it has to pass to the DMAC driver, it can do so, without getting 
-involved in the details, just passing a pointer
-
-* the most natural location to do this is IMHO when requesting a DMA 
-channel
-
-Now, on sh-mobile platforms you can realistically have around 5 DMAC 
-instances with 2 or 6 channels each, of which, say, 3 controllers are 
-suitable for MMC and 2 are not. How shall the filter function find this 
-out? Call some ugly platform callback? Traverse some platform-specific 
-lists? Or use a fixed channel, thus significantly reducing flexibility? 
-Sorry, none of these options seems very attractive to me.
-
-> Frankly I prefer former model, as that way dmacs will present channel
-> capabilities, and clients can use as they deem fit.
-> > > 
-> > > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-
-[snip]
-
-> > > @@ -948,7 +954,9 @@ int dma_async_device_register(struct dma_device *device);
-> > >  void dma_async_device_unregister(struct dma_device *device);
-> > >  void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
-> > >  struct dma_chan *dma_find_channel(enum dma_transaction_type tx_type);
-> > > -#define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y)
-> > > +#define dma_request_channel(mask, x, y) __dma_request_channel(&(mask), x, y, NULL)
-> > > +#define dma_request_slave_channel(mask, x, y, id) __dma_request_channel(&(mask), \
-> > > +									x, y, id)
-> > >  
-> > >  /* --- Helper iov-locking functions --- */
-> > >  
-> So what are we supposed to do with the slave argument. Is the
-> expectation that dmacs will parse the parameters in dma_slave_desc and
-> based on these return the status of .device_alloc_chan_resources?
-
-Exactly. If the channel, handed in to the DMAC driver by the dmaengine 
-core for allocation / configuration is suitable for this slave, actions 
-will be performed, otherwise an error will be returned.
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Roland
