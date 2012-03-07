@@ -1,132 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab2CGPnb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 10:43:31 -0500
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:40244 "EHLO
-	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755251Ab2CGPn3 convert rfc822-to-8bit (ORCPT
+	id S1758796Ab2CGPo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 10:44:28 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:61779 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab2CGPo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 10:43:29 -0500
-X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Mar 2012 10:43:29 EST
+	Wed, 7 Mar 2012 10:44:26 -0500
+Date: Wed, 7 Mar 2012 16:44:12 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
+In-Reply-To: <20120307142634.GA18787@n2100.arm.linux.org.uk>
+Message-ID: <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
+References: <1331035739.24656.201.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1203061339330.9300@axis700.grange> <1331101687.24656.319.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+ <20120307093026.GM17370@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
+ <20120307103112.GP17370@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
+ <20120307124620.GT17370@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
+ <20120307142634.GA18787@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CANrkHUZysOnHKKUuLm0Vbo1KsNp0yUd=udjGvQ43=gTTXbWeCw@mail.gmail.com>
-References: <20120301185044.29210.44521.stgit@kaulin.local>
-	<20120301185535.29210.71546.stgit@kaulin.local>
-	<4F50643B.9050500@ti.com>
-	<20120302172251.GJ18901@atomide.com>
-	<4F548457.5050205@ti.com>
-	<CANrkHUZysOnHKKUuLm0Vbo1KsNp0yUd=udjGvQ43=gTTXbWeCw@mail.gmail.com>
-Date: Wed, 7 Mar 2012 21:06:42 +0530
-Message-ID: <CANrkHUaYDpv=p0p81oKWCoewyjheyZYkCqvZY7_ZQxWi_=8YFw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] mmc: omap_hsmmc: Simplify init for twl6030 MMC card detect
-From: "T Krishnamoorthy, Balaji" <balajitk@ti.com>
-To: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-arm-kernel@lists.infradead.org
-Cc: Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Rajendra Nayak <rnayak@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:4Bg6nzT7I6rIhynFoVVWn7yM225vBuonn2c7Ni4R9RC
+ XroGmZMX+KFRHXfzEYv4QKmKF/3T+LbiOF85mLRdrIyhL3Watg
+ y5murmHGiKTqHMk9y9O4p+U07r9Bm0UbcqjmEiK32Vg6AZ3FDU
+ hP4xh9ivvLymnA50AJ2ib3EOntoJdePW0noDDGtcF12ZgnwKao
+ Wef7RDC2a8JrejFC4rz9fd1M/9/zuI4E/ZRcHyvYqR3lNXWXNB
+ k9zov5VM3EspkJVBOwQuSjxgXIH4jsrdew/PPy+Tha8vkChEgu
+ Wzq9mxSG4OvjVyf/vmZV0N91jXm9BZTku92RttYbLJFatHa3u6
+ d9uz1eDd5g1wZfFtI4NiQm48hd6MOa2ewj6CwEJIJMlpi5tAwY
+ e0+xNkjzUN/Rg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 5, 2012 at 3:55 PM, T Krishnamoorthy, Balaji
-<balajitk@ti.com> wrote:
-> On Mon, Mar 5, 2012 at 2:46 PM, Rajendra Nayak <rnayak@ti.com> wrote:
->> On Friday 02 March 2012 10:52 PM, Tony Lindgren wrote:
->>>
->>> BTW, with -rc5, looks like re-inserting omap_hsmmc on omap4 fails
->>> to detect any cards, and then fails to unload. This works on omap3
->>> just fine. Any ideas why that would be?
->>
->>
->> Yeah, looks like thats broken. I am not sure whats going wrong though.
->> I just enabled CONFIG_MMC_DEBUG and saw these logs below.
->>
->> Venkat/Balaji, care to look at this one?
->>
->
-> Let me check this
+On Wed, 7 Mar 2012, Russell King - ARM Linux wrote:
 
-OMAP4 and OMAP3 HSMMC IP registers differ by 0x100 offset.
-Addng the offset to platform_device resource structure
-increments the start address for every insmod operation.
-MMC command fails on re-insertion as module due incorrect register base.
-Fix this by updating the ioremap base address only.
+> On Wed, Mar 07, 2012 at 02:49:25PM +0100, Guennadi Liakhovetski wrote:
+> > On Wed, 7 Mar 2012, Russell King - ARM Linux wrote:
+> > > What
+> > > would be useful is to have a helper function along these lines:
+> > > 
+> > > struct dma_chan *dma_request_channel_config(mask, fn, data, config)
+> > > {
+> > > 	struct dma_chan *c = dma_request_channel(mask, fn, data);
+> > > 
+> > > 	if (c) {
+> > > 		if (dmaengine_slave_config(c, config)) {
+> > > 			dma_release_channel(c);
+> > > 			c = NULL;
+> > > 		}
+> > > 	}
+> > > 	return c;
+> > > }
+> > 
+> > Hm, yeah... That seems like an over-complication to me: to "just" allocae 
+> > a channel you cann dma_request_channel(), which scans your devices and 
+> > channels on them, calls your filter, calls the DMA controller driver's 
+> > allocation method, only to eventually call dmaengine_slave_config() and 
+> > see it fail, after which you release the channel and start anew...
+> 
+> The point is _not_ that this uses dmaengine_slave_config() to find a
+> channel at all.  As I already said, there's nothing in dma_slave_config
+> which _could_ be used to decide whether a channel is suitable or not.
 
-Signed-off-by: Balaji T K <balajitk@ti.com>
+I completely agree, that's why I wrote in my previous mail:
+
+> > > However, I don't see anything in struct dma_slave_config which could be
+> > > used to select an appropriate channel.
+> > 
+> > That's also my problem with it, and the reason, why I suggested, that it 
+> > has to be embedded in a hardware-specific channel configuration type.
+
+So, the question remains: which way should we go? If we don't come up with 
+a generic solution, I'd be inclined to just do something as silly as
+
+arch/arm/mach-shmobile/board-*.c
+
+static const struct device *group1_dma_dev[] = {
+	&dma0.device,
+	&dma1.device,
+};
+
+static const struct device *group2_dma_dev[] = {
+	&dma2.device,
+	&dma3.device,
+};
+
+static struct my_platform_data = {
+	.dma_dev_list = group1_dma_dev,
+	.dma_dev_list_num = ARRAY_SIZE(group1_dma_dev),
+};
+
+drivers/.../sh_*.c
+
+static bool filter(struct dma_chan *chan, void *arg)
+{
+	struct device *dev = chan->dev->device.parent;
+	struct my_platform_data *pdata = arg;
+
+	for (i = 0; i < pdata->dma_dev_list_num; i++)
+		if (pdata->dma_dev_list[i] == dev)
+			return true;
+
+	return false;
+}
+
+even though I find it silly to have to do this on every platform and in 
+every driver.
+
+Thanks
+Guennadi
+
+> So to try to filter on the slave configuration is a pure red herring.
+> None of the DMA controllers I have access to (whether they be working
+> or not) could make any kind of decision about whether a particular
+> channel is suitable for the peripheral by looking at the dma_slave_config
+> structure - it's very much the case that the decision would be that
+> 'any channel will do', which in reality it won't because there's other
+> information required to make the decision about which virtual channel
+> should be used.  Specifically, the request signal information.
+> 
+> Even more specifically, the request signal information may not be _just_
+> the request signal on the DMA controller but also incorporate an
+> external MUX like on the Realview boards (which pl08x handles itself.)
+> 
+> I do not see any milage in trying to select a channel based on "I want
+> a DMA engine to access register X, width Y, burst size Z."  As far as
+> I can see, the common situation is that there's nothing in that set of
+> information which would be useful to chose a specific channel on a
+> DMA engine.
+
 ---
-Note:  eMMC detection is still failing on resertion due to card vcc
-power off on rmmod
-
- drivers/mmc/host/omap_hsmmc.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index fd0c661..4e1f8f6 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -1870,8 +1870,6 @@ static int __init omap_hsmmc_probe(struct
-platform_device *pdev)
- 	if (res == NULL || irq < 0)
- 		return -ENXIO;
-
--	res->start += pdata->reg_offset;
--	res->end += pdata->reg_offset;
- 	res = request_mem_region(res->start, resource_size(res), pdev->name);
- 	if (res == NULL)
- 		return -EBUSY;
-@@ -1896,7 +1894,7 @@ static int __init omap_hsmmc_probe(struct
-platform_device *pdev)
- 	host->irq	= irq;
- 	host->id	= pdev->id;
- 	host->slot_id	= 0;
--	host->mapbase	= res->start;
-+	host->mapbase	= res->start + pdata->reg_offset;
- 	host->base	= ioremap(host->mapbase, SZ_4K);
- 	host->power_mode = MMC_POWER_OFF;
- 	host->next_data.cookie = 1;
--- 
-1.7.0.4
-
->
->> # insmod omap_hsmmc.ko
->> [   43.358398] omap_hsmmc omap_hsmmc.0: context was not lost
->> [   43.364105] omap_hsmmc omap_hsmmc.0: enabled
->> [   44.434661] mmc0: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0
->> timing 0
->> [   44.442352] omap_hsmmc omap_hsmmc.0: Set clock to 0Hz
->> [   44.474365] omap_hsmmc omap_hsmmc.0: disabled
->> [   44.482208] omap_hsmmc omap_hsmmc.4: context was not lost
->> [   44.482208] omap_hsmmc omap_hsmmc.4: enabled
->> [   44.546600] omap_hsmmc omap_hsmmc.0: context was not lost
->> [   44.552276] omap_hsmmc omap_hsmmc.0: enabled
->> [   44.552276] mmc0: mmc_rescan_try_freq: trying to init card at 400000 Hz
->> [   44.563720] mmc0: clock 0Hz busmode 2 powermode 1 cs 0 Vdd 18 width 0
->> timing 0
->> [   44.572174] omap_hsmmc omap_hsmmc.0: Set clock to 0Hz
->> [   44.613800] mmc0: clock 400000Hz busmode 2 powermode 2 cs 0 Vdd 18 width
->> 0 timing 0
->> [   44.621887] omap_hsmmc omap_hsmmc.0: Set clock to 400000Hz
->> [   44.735290] mmc0: starting CMD52 arg 00000c00 flags 00000195
->> [   44.741271] omap_hsmmc omap_hsmmc.0: mmc0: CMD52, argument 0x00000c00
->> [   45.560241] mmc1: clock 0Hz busmode 1 powermode 0 cs 0 Vdd 0 width 0
->> timing 0
->> [   45.567871] omap_hsmmc omap_hsmmc.4: Set clock to 0Hz
->> [   45.591491] omap_hsmmc omap_hsmmc.4: disabled
->> #
->> #
->> # rmmod omap_hsmmc
->> [  607.302307] omap_hsmmc omap_hsmmc.4: context was not lost
->> [  607.308044] omap_hsmmc omap_hsmmc.4: enabled
->> [  607.312591] omap_hsmmc omap_hsmmc.4: disabled
->> [  607.317199] omap_hsmmc omap_hsmmc.4: context was not lost
->> [  607.322875] omap_hsmmc omap_hsmmc.4: enabled
->>
-
-
-
--- 
-Thanks and Regards,
-Balaji T K
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
