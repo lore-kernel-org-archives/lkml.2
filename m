@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759512Ab2CGS1M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 13:27:12 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53737 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab2CGS1J convert rfc822-to-8bit (ORCPT
+	id S1759560Ab2CGS3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 13:29:23 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49951 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754785Ab2CGS3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 13:27:09 -0500
+	Wed, 7 Mar 2012 13:29:20 -0500
+Message-ID: <4F57A8FA.8080208@wwwdotorg.org>
+Date: Wed, 07 Mar 2012 11:29:14 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-In-Reply-To: <20120307155018.GA13430@redhat.com>
-References: <20120216215603.GH9751@redhat.com>
-	<m1y5s2ku36.fsf@fess.ebiederm.org>
-	<m1fwe9bpk2.fsf@fess.ebiederm.org>
-	<20120217195430.GO9751@redhat.com>
-	<m1y5s07rn3.fsf@fess.ebiederm.org>
-	<20120220151419.GU9751@redhat.com>
-	<m1obss39a4.fsf@fess.ebiederm.org>
-	<20120221135934.GF26998@redhat.com>
-	<m1ipip6xe8.fsf@fess.ebiederm.org>
-	<4F573E1C.2060909@oss.ntt.co.jp>
-	<20120307155018.GA13430@redhat.com>
-Date: Wed, 7 Mar 2012 10:27:07 -0800
-X-Google-Sender-Auth: qkxEeS_iz8Vg8oi9qI4zaukNHP4
-Message-ID: <CAE9FiQXLMzVLH7MW2OXFCpBU+5RRN-EnshGYhkj_3sO36c1Mkg@mail.gmail.com>
-Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
- crash path
-From: Yinghai Lu <yinghai@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: =?ISO-8859-1?Q?Fernando_Luis_V=E1zquez_Cao?= 
-	<fernando@oss.ntt.co.jp>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
-        mingo@elte.hu, kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de
+To: Josh Boyer <jwboyer@gmail.com>
+CC: Michal Marek <mmarek@suse.cz>, linux-arch@vger.kernel.org,
+        Michal Simek <monstr@monstr.eu>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Mike Frysinger <vapier@gentoo.org>, nico@fluxnic.net,
+        linux-sh@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, sparclinux@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: Re: [PATCH 1/3] Kbuild: centralize MKIMAGE and cmd_uimage definitions
+References: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org> <CA+5PVA7PCow=Z7TpPtQYp3ye6uKFSp3XsdH75Pe9BRu9Vyy21g@mail.gmail.com>
+In-Reply-To: <CA+5PVA7PCow=Z7TpPtQYp3ye6uKFSp3XsdH75Pe9BRu9Vyy21g@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/7 Vivek Goyal <vgoyal@redhat.com>:
-> On Wed, Mar 07, 2012 at 07:53:16PM +0900, Fernando Luis Vázquez Cao wrote:
->> On 03/01/2012 08:19 AM, Eric W. Biederman wrote:
+On 03/07/2012 07:15 AM, Josh Boyer wrote:
+> On Tue, Mar 6, 2012 at 7:30 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> All ARCHs have the same definition of MKIMAGE. Move it to Makefile.lib
+>> to avoid duplication.
 >>
->> >Don Zickus<dzickus@redhat.com>  writes:
->> >>It probably is, except I never hacked on idt code before and my assembly
->> >>isn't that good.  I have been trying to find examples to copy from to give
->> >>it a try.  So far I was using early_idt_handlers with early_printk to see
->> >>if I could capture some printk messages while jumping from the first
->> >>kernel to the second kernel (when the other early_idt_handlers would kick
->> >>in for the second kernel).
->> >>
->> >>Tips?  Better examples?
->> >That is a particularly good example.  When I took a quick look earlier
->> >that is the first place we reload the idt in the kernel boot so that is
->> >one of two places that needs to be modified.
+>> All ARCHs have similar definitions of cmd_uimage. Place a sufficiently
+>> parameterized version in Makefile.lib to avoid duplication.
 >>
->> Hi Eric, Don
->>
->> Sorry for chiming in so late.
->>
->> We run into the same NMI problems and wrote some patches that tackle
->> the kernel boot side of things. They have been extensively tested using
->> qemu-kvm and things seem to be working as expected (after receiving an
->> early NMI the kernel continues without problem; after the iret there is no
->> stack corruption or register corruption).
->
-> What happens if NMI happens while we are still in purgatory code?
->
-yes, you are right. that is too late to set that in arch/x86/kernel/head64.c
+>> The centralized cmd_uimage definition will allow the future introduction
+>> of a centralized Kconfig option to make cmd_uimage use -T kernel_noload
+>> rather than -T kernel.
+...
+> Is there a reason you skipped powerpc?
 
-i even not get print out "early console in decompress_kernel"
-from arch/x86/boot/compressed/misc.c::decompress_kernel()
+grepping the powerpc makefiles showed no hits on MKIMAGE, mkimage or
+cmd_uimage.
 
-Yinghai
+Looking a little harder now, this is all inside the shell script
+arch/powerpc/boot/wrapper. I'm not really sure quite how to unify that
+shell script with the makefile use of mkimage. Do you have any ideas?
