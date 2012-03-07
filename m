@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab2CGLxf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 06:53:35 -0500
-Received: from antcom.de ([188.40.178.216]:59299 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755380Ab2CGLxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 06:53:34 -0500
-Message-ID: <4F574C38.4030006@antcom.de>
-Date: Wed, 07 Mar 2012 12:53:28 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
+	id S1755058Ab2CGLz2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 06:55:28 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:58689 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751464Ab2CGLz0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 06:55:26 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alex Shi <alex.shi@intel.com>
+Subject: Re: [RFC patch] spindep: add cross cache lines checking
+Date: Wed, 7 Mar 2012 11:54:35 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: gcc@gcc.gnu.org, Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de,
+        "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, andi.kleen@intel.com, gcc-help@gcc.gnu.org
+References: <1330917630.18835.44.camel@debian> <201203060932.45223.arnd@arndb.de> <1331108607.18835.343.camel@debian>
+In-Reply-To: <1331108607.18835.343.camel@debian>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: davem@davemloft.net, jeffrey.t.kirsher@intel.com,
-        alexander.h.duyck@intel.com, eilong@broadcom.com,
-        ian.campbell@citrix.com, netdev@vger.kernel.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org, baruch@tkos.co.il,
-        joe@perches.com
-Subject: Re: [PATCH v5] lpc32xx: Added ethernet driver
-References: <1331067664-9124-1-git-send-email-stigge@antcom.de> <201203062134.38077.arnd@arndb.de>
-In-Reply-To: <201203062134.38077.arnd@arndb.de>
-X-Enigmail-Version: 1.3.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201203071154.36059.arnd@arndb.de>
+X-Provags-ID: V02:K0:p8483ffIImvh+93DEzGOChRs89MU4DQ5SU94P0QSaNz
+ ZvWBLIgebjnGK0+MHh3p8/NleH0bD/imBp/stKX+yspLOhSYT3
+ 9tJpe45jJsdPYSPMw+QFfbkybIKgkD20L66ivQIviPqgUJl0x8
+ YjvSVrp4gdL+08RBwszszaJyelEx/NYUxUqHnMH3x8EqW2Gmqt
+ WcYjE9oPM9APuHk4l6RcIod0O7w0OOxYXMQhiZ+LtoNh3F8pP5
+ UqzKPaHiMuC2nyauqd3zlXJ6Uf9gHQyFXeapetfuQfdWuBvNL0
+ JBZSw80ttChEdkJtmNcIWHkaMEos6uUW3jEYHAvN5OqidJEJmd
+ UqdaEndEdTkeZgbnM+Wo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Wednesday 07 March 2012, Alex Shi wrote:
 
-On 03/06/2012 10:34 PM, Arnd Bergmann wrote:
-> This should eventually both become run-time options based on the device tree.
-> I don't know if you planned to do that anyway, but if you want the same kernel
-> binary to be used for systems in different configurations, you cannot have
-> compile-time decisions that are exclusive-or. Since you don't support device
-> tree yet but plan to do that in the future, you could add a comment here
-> about it, or you could even prepare it for that case already by passing the
-> device into the functions that will be required for reading the properties.
+> Understand. thx. So is the following checking that your wanted?
+> ===
+> diff --git a/include/linux/rwlock.h b/include/linux/rwlock.h
+> index bc2994e..64828a3 100644
+> --- a/include/linux/rwlock.h
+> +++ b/include/linux/rwlock.h
+> @@ -21,10 +21,12 @@
+>  do {								\
+>  	static struct lock_class_key __key;			\
+>  								\
+> +	BUILD_BUG_ON(__alignof__(lock) == 1);			\
+>  	__rwlock_init((lock), #lock, &__key);			\
+>  } while (0)
+>  #else
+>  # define rwlock_init(lock)					\
+> +	BUILD_BUG_ON(__alignof__(lock) == 1);			\
+>  	do { *(lock) = __RW_LOCK_UNLOCKED(lock); } while (0)
+>  #endif
 
-Good point.
+I think the check should be (__alignof__(lock) < __alignof__(rwlock_t)),
+otherwise it will still pass when you have structure with attribute((packed,aligned(2)))
 
-I prefer putting a comment for now, because upon the planned device tree
-introduction in lpc32xx, an internal change in lpc_eth.c will be
-necessary anyway, so there is no need to already introduce unused
-parameters at this point.
+> 1, it is alignof bug for default gcc on my fc15 and Ubuntu 11.10 etc?
+> 
+> struct sub {
+>         int  raw_lock;
+>         char a;
+> };
+> struct foo {
+>         struct sub z;
+>         int slk;
+>         char y;
+> }__attribute__((packed));
+> 
+> struct foo f1;
+> 
+> __alignof__(f1.z.raw_lock) is 4, but its address actually can align on
+> one byte. 
 
-Thanks,
+That looks like correct behavior, because the alignment of raw_lock inside of
+struct sub is still 4. But it does mean that there can be cases where the
+compile-time check is not sufficient, so we might want the run-time check
+as well, at least under some config option.
 
-Roland
+	Arnd
