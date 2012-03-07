@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083Ab2CGUfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 15:35:46 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:4000 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752627Ab2CGUfn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 15:35:43 -0500
-X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Mar 2012 15:35:43 EST
-Message-ID: <1331152168.1798.13.camel@x61.thuisdomein>
-Subject: Re: [PATCH] prctl: Use CAP_SYS_RESOUCE for PR_SET_MM option
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>
-Date: Wed, 07 Mar 2012 21:29:28 +0100
-In-Reply-To: <20120307125217.GC20558@moon>
-References: <20120307125217.GC20558@moon>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 07 Mar 2012 20:29:29.0150 (UTC) FILETIME=[FF15FDE0:01CCFCA0]
-X-RcptDomain: vger.kernel.org
+	id S1758535Ab2CGUhw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 15:37:52 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:48831 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755470Ab2CGUhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 15:37:51 -0500
+Date: Wed, 7 Mar 2012 21:37:25 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Seebach <peter.seebach@windriver.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Anton Blanchard <anton@samba.org>, paulus@samba.org,
+        peterz@infradead.org, dsahern@gmail.com, fweisbec@gmail.com,
+        yanmin_zhang@linux.intel.com, emunson@mgebm.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: Incorrect use of snprintf results in SEGV
+Message-ID: <20120307203725.GA4333@elte.hu>
+References: <20120307114249.44275ca3@kryten>
+ <20120307010904.GE5656@infradead.org>
+ <20120306192912.59811e3e@wrlaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120306192912.59811e3e@wrlaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-07 at 16:52 +0400, Cyrill Gorcunov wrote:
-> CAP_SYS_ADMIN is already overloaded left and right,
-> so to have more finegrained access control use
-> CAP_SYS_RESOUCE here.
+
+* Peter Seebach <peter.seebach@windriver.com> wrote:
+
+> On Tue, 6 Mar 2012 22:09:04 -0300
+> Arnaldo Carvalho de Melo <acme@redhat.com> wrote:
 > 
-> The CAP_SYS_RESOUCE is chosen because this prctl
-> option allows a current process to adjust some
-> fields of memory map descriptor which rather
-> represent what the process owns: pointers to
-> code, data, stack segments, command line,
-> auxilary vector data and etc.
+> > Or what kind of such pipe the people who designed snprintf 
+> > were using
+> > :-(
+> 
+> I wasn't there for the original 4.4BSD implementation, but I 
+> was on the ISO committee when we adopted it, and I regret to 
+> say, while the food was lovely, the hosting organization 
+> didn't offer us any drugs at all. But I can explain the 
+> rationale of the choice.
 
-Nitpicking: s/CAP_SYS_RESOUCE/CAP_SYS_RESOURCE/ in both the commit
-summary and the commit explanation. (And if you change that you might
-also do a s/auxilary/auxiliary/ in the commit explanation.)
+;-)
 
+> If snprintf returns the size it needed, and you know the size 
+> you gave it, you have a choice of what to do, and you have all 
+> the information you need to make an informed choice.
+> 
+> If it returns the amount it wrote, or possibly an error 
+> indicator (such as -1) when out of space, you *don't* have the 
+> information you need to make an informed choice, and one 
+> possible choice ("reallocate with the right amount") is not 
+> available to you. We had also seen other functions which made 
+> that implementation choice, and consistently, people disliked 
+> them more.
 
-Paul Bolle
+You are missing two important aspects:
 
+1) Dynamic reallocation on snprintf() failure is an utterly rare
+   thing - it is used in less than 1% of snprintf() invocations. 
+   (Yes, I just checked a couple of codebases.)
+
+   We *DONT* want to make APIs more fragile just to accomodate a
+   rare, esoteric usecase! Doing that you are introducing very
+   real bugs in very real code. You are hurting the 99% for the
+   sake of the 1%, and needlessly so:
+
+2) It's not even true that should some code want to
+   dynamically allocate the 'required' number of bytes is not
+   available. Some oddball side API could be added for that 1%:
+
+	size_needed = snprintf_size(...);
+
+So this API could have been designed right but it was messed up 
+out of concern for an insane 1% case - FAIL.
+
+This is a case study for how insane semantics are created ...
+
+Thanks,
+
+	Ingo
