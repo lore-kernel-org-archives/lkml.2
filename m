@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965226Ab2CGUDZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 15:03:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12235 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759790Ab2CGUDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 15:03:23 -0500
-Date: Wed, 7 Mar 2012 20:51:04 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        adobriyan@gmail.com, ebiederm@xmission.com, keescook@chromium.org,
-        kosaki.motohiro@jp.fujitsu.com, matthltc@us.ibm.com, tj@kernel.org,
-        xemul@parallels.com
-Subject: Re: + mm-exec-rename-mm-exe_file-to-mm-exe_path.patch added to -mm
-	tree
-Message-ID: <20120307195104.GA5071@redhat.com>
-References: <20120306231325.D4B26A0395@akpm.mtv.corp.google.com> <20120307162630.GG20558@moon> <20120307174113.GA25366@redhat.com> <20120307193433.GP20619@moon>
+	id S1030282Ab2CGUFp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 15:05:45 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57559 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759748Ab2CGUFn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 15:05:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120307193433.GP20619@moon>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120307184615.GA29005@redhat.com>
+References: <1144797072.59663.1331142646789.JavaMail.root@storentr1.softathome.com>
+	<1830531676.59669.1331142673402.JavaMail.root@storentr1.softathome.com>
+	<20120307184615.GA29005@redhat.com>
+Date: Wed, 7 Mar 2012 21:05:43 +0100
+Message-ID: <CAO6Zf6C_0e=mdz=iZQtBvVn35Dp6KCBzXfo0PPLm1vs5h7inLA@mail.gmail.com>
+Subject: Re: 'khelper' (child) is stuck in endless loop: do_signal() and !user_mode(regs)
+From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Dmitry ADAMUSHKA (EXT)" <dmitry.adamushka_ext@softathome.com>,
+        Ingo Molnar <mingo@elte.hu>, Ralf Baechle <ralf@linux-mips.org>,
+        wouter.cloetens@softathome.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew, please drop this (trivial as I thought) patch :/
+Hi Oleg,
 
-On 03/07, Cyrill Gorcunov wrote:
+> On 03/07, Dmitry ADAMUSHKA (EXT) wrote:
+>>
+>> Now, the assumptions (the question is whether these are true for the recent kernels):
+>>
+>> 1) TIF_SIGPENDING can be set for 'khelper' while it's running in ____call_usermodehelper()
+>>    between (a) flush_signal_handlers() and (b) kernel_execve() => so TIF_SIGPENDING is set;
 >
-> On Wed, Mar 07, 2012 at 06:41:13PM +0100, Oleg Nesterov wrote:
-> ...
-> > I do not think I really need it, but just in case... could you send me
-> > (privately) the result of "make fs/dcache.s" ?
-> >
+> Yes, but it is not khelper. It is another kernel thread. Yes, its
+> ->comm[] was copied from parent, so ps/etc can show it as khelper.
+
+Sure, that's why I indicated 'khelper' (child).
+
 >
-> yes, just sent.
+>> 2) kernel_execve() can fail in ____call_usermodehelper().
+>>
+>> The later one is less of an assumption; let's say, it fails due to a shortage of memory (or whatever).
+>>
+>> If (1) is true, then
+>>
+>> the pre-conditions:
+>>
+>> - a kernel space task;
+>>
+>> 'khelper' running ____call_usermodehelper() in our case.
+>>
+>> - TIF_SIGPENDING is set.
+>>
+>> A signal has been delivered, say, as a result of kill(-1, SIGKILL).
+>>
+>> The endless loop is as follows:
+>>
+>> * syscall_exit_work:
+>>  - work_pending:            // start_of_the_loop
 >
-> > I'll try to recheck the patch and think.
-> >
-> > But if you can _explain_ why do you think that "struct path" can't work,
-> > please explain ;)
+> We shouldn't be here. This is the kernel thread.
+
+Note that kernel_execve() is backed up by a full fledged syscall (not
+just a function call, at least on MIPS and x86), so I assume that all
+the usual syscall-related stuff applies here as well.
+
 >
-> OK, the best way to prove myself that I was wrong is to try to
-> explain why it can't work. So I prepared a call trace to point
-> where we can get a reference to non-existing path and... found
-> that it's simply impossible.
+> And if start_thread() was already called, then
+>
+>>  - work_notify_sig:
+>>    - do_notify_resume()
+>>      - do_signal()          ==> if (!user_mode(regs)) return; so signals are not handled
+>
+> user_mode() is no longer true.
 
-It is possible, and you even explained this in the private email
-with asm you sent me.
+!user_mode() is true. Note, the failure of kernel_execve() is one of
+the pre-conditions. So we have a kernel thread returning from a real
+syscall (hence, syscall_exit and co) with TIF_SIGPENDING.
 
-> OOPs. Sorry for false alarm, Oleg!
+>
+> Once again, I can be wrong, I'll read this email tomorrow.
+>
 
-No, thanks for the report and analysis.
+Great, thanks!
 
-Indeed, the patch is deadly wrong. Somehow I missed that ->f_path
-is not the pointer! So set_mm_exe_path(&bprm->file->f_path) is
-is obvioulsy wrong. I didn't bother to think about "&" think call
-needs.
 
-Thanks!
-
-Oleg.
-
+-- Dmitry
