@@ -1,126 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab2CGJSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 04:18:51 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:61668 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357Ab2CGJSs (ORCPT
+	id S1754642Ab2CGJTl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 04:19:41 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:55042 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754224Ab2CGJTj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 04:18:48 -0500
-Date: Wed, 7 Mar 2012 10:18:42 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@intel.com>
-cc: linux-kernel@vger.kernel.org, "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
-In-Reply-To: <1331101687.24656.319.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
-References: <Pine.LNX.4.64.1202011610050.26261@axis700.grange> 
- <Pine.LNX.4.64.1203021341590.913@axis700.grange>  <1331022623.24656.191.camel@vkoul-udesk3>
-  <Pine.LNX.4.64.1203060935460.9300@axis700.grange>  <1331035739.24656.201.camel@vkoul-udesk3>
-  <Pine.LNX.4.64.1203061339330.9300@axis700.grange> <1331101687.24656.319.camel@vkoul-udesk3>
+	Wed, 7 Mar 2012 04:19:39 -0500
+X-IronPort-AV: E=Sophos;i="4.73,545,1325433600"; 
+   d="scan'208";a="4480368"
+Message-ID: <4F5728DE.5070501@cn.fujitsu.com>
+Date: Wed, 07 Mar 2012 17:22:38 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:y9SIJTlSv4oGavI6SsdsfqLZuElOReMnWsRVmR+GbEJ
- P0xVL1ivoK54HJnJLZC5ODVbZbHa5F3+SNy2cl3DmCOub6oTPH
- wfxu5ZMu807lA+S26L1Bi6sj9wzVT0rKvZqKsr7FI36nEqvta+
- gVviMHjrjOB6Vw9FkCdehtoYLrLgB+ZSNPhE1d9PcLRIHyKT21
- cmPX/+mWV5zhBDftHTlq26O0EqmhIw4gURbVqSMuSPBDZqgn/P
- 7hbd0CBNkVYOcqcJjrtlukyO9ZjntQdOsiGezKZ90izhRetxLm
- HeD82NluTsesEuEexA2oo80+kekf0Hzhx/QVgF83CJ8pQTRRrm
- va7y+PbPfXimeKJlDd92V5xIw2WPlKwF8V6BtDuaAzkTUufNFf
- yMgliS/7hik8w==
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH v2] cgroups: Run subsystem fork callback from cgroup_post_fork()
+References: <1330057410-9375-1-git-send-email-fweisbec@gmail.com> <1330362171-30697-1-git-send-email-fweisbec@gmail.com> <20120229155500.GU3090@google.com> <20120229162148.GA8375@somewhere.redhat.com> <4F4EEB0F.2000504@cn.fujitsu.com> <20120304135300.GA18143@somewhere.redhat.com>
+In-Reply-To: <20120304135300.GA18143@somewhere.redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-07 17:17:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-07 17:17:43
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(changed Russell's address to the one from MAINTAINERS)
-
-On Wed, 7 Mar 2012, Vinod Koul wrote:
-
-> On Tue, 2012-03-06 at 14:03 +0100, Guennadi Liakhovetski wrote:
-> <adding few folks to thread, who i may be intrested in this discussion>
-> > But the DMAC is certainly a better match for making channel-selection 
-> > decisions.
-> I am not sure about that as well...
-> > 
-> > > Bigger question is who knows about this mapping and how do we
-> > > incorporate this mapping into channel allocation
-> > 
-> > The platform does. And this knowledge has to be passed to the relevant 
-> > driver. But I think it's the DMAC driver, that is relevant, not the client 
-> > driver. The platform would supply information like
-> > 
-> > DMAC #1
-> > 	channel #1
-> > 		(can be used for) device #1
-> > 		device #2
-> > 		...
-> > 	channel #2
-> > 	...
-> > ...
-> right :-)
-> and we need to ensure that somehow this information is presented to
-> dmaengine and dmaengine uses this information to filter the channel
-> requests. In past we had good discussion [1], [2], [3] on this topic but
-> unfortunately nothing came out of it.
+Frederic Weisbecker wrote:
+> On Thu, Mar 01, 2012 at 11:20:47AM +0800, Li Zefan wrote:
+>> 于 2012年03月01日 00:21, Frederic Weisbecker 写道:
+>>> On Wed, Feb 29, 2012 at 07:55:00AM -0800, Mandeep Singh Baines wrote:
+>>>> Frederic Weisbecker (fweisbec@gmail.com) wrote:
+>>>>> When a user freezes a cgroup, the freezer sets the subsystem state
+>>>>> to CGROUP_FREEZING and then iterates over the tasks in the cgroup links.
+>>>>>
+>>>>> But there is a possible race here, although unlikely, if a task
+>>>>> forks and the parent is preempted between write_unlock(tasklist_lock)
+>>>>> and cgroup_post_fork(). If we freeze the cgroup while the parent
+>>>>
+>>>> So what if you moved cgroup_post_forks() a few lines up to be
+>>>> inside the tasklist_lock?
+>>>
+>>> It won't work. Consider this scenario:
+>>>
+>>> CPU 0                                     CPU 1
+>>>
+>>>                                        cgroup_fork_callbacks()
+>>>                                        write_lock(tasklist_lock)
+>>> try_to_freeze_cgroup() {               add child to task list etc...
+>>> 	cgroup_iter_start()
+>>>         freeze tasks                        
+>>>         cgroup_iter_end()
+>>> }                                      cgroup_post_fork()
+>>>                                        write_unlock(tasklist_lock)
+>>>
+>>> If this is not the first time we call cgroup_iter_start(), we won't go
+>>> through the whole tasklist, we simply iterate through the css set task links.
+>>>
+>>> Plus we try to avoid anything under tasklist_lock when possible.
+>>>
+>>
+>> Your patch won't close the race I'm afraid.
+>>
+>> // state will be set to FREEZING
+>> echo FROZEN > /cgroup/sub/freezer.state
+>>                                           write_lock(tasklist_lock)
+>>                                           add child to task list ...
+>> 					  write_unlock(tasklist_lock)
+>> // state will be updated to FROZEN
+>> cat /cgroup/sub/freezer.state
+>> 					  cgroup_post_fork()
+>> 					  ->freezer_fork()
+>>
+>> freezer_fork() will freeze the task only if the cgroup is in FREEZING
+>> state, and will BUG if the state is FROZEN.
 > 
-> I like the approach outlined by Linus W [1], where we can get the
-> information from platform (DT, FW,....) and its presented to dmaengine.
-
-I still don't see an answer to the very same question, that we've been 
-discussing over multiple threads and mails now: how do we use that, if 
-it's not a 1-to-1 mapping? I.e., many channels on many controllers can be 
-run-time configured for use with different client devices. Also the above 
-idea from Linus W doesn't directly address this.
-
-Following his clock / regulator analogy. There the correspondence is 
-clearly fixed: fixed clocks and power supplies are used with every 
-specific device. Whereas in our DMAC case it's not.
-
-I'm trying to think of an analogy, where you have several pools of 
-resources, and each consumer can use any of the resources on some of those 
-pools, but nothing pops up. Interrupts, GPIOs, clocks, regulators - they 
-all are fixed to their consumers.
-
-Also notice, this can become even worse, if we ever get controllers with 
-channels with different capabilities on them. So, I really would let the 
-DMAC driver do the mapping and not try to put it in the core.
-
-Thanks
-Guennadi
-
-> I think we need to solve this _now_. There are two aspects
-> a) to ensure dmaengine understand channel-client mapping. For this we
-> can start with idea in [1] and see if this suits everyones needs
-> b) how to ensure the platform gives this information in variety of arch
-> we have (arm, x86, sh-....)
+> Good point!
 > 
-> Thoughts...?
-> > And I don't think, it would be reasonable to let every slave driver use 
-> > this information. These lists can also be optimised for specific 
-> > platforms. E.g., on some sh-mobile SoCs you have two DMAC types. One of 
-> > them can serve devices from list A on any channel, the other one - from 
-> > list B. So, all you have to do, is to reference either A or B from your 
-> > DMAC platform data. Whereas doing a reverse mapping: for each (potential) 
-> > DMA user reference a list of channels, that it can use - would be really 
-> > clumsy.
-> > 
-> [1]:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-August/060717.html
-> [2]:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059212.html
-> [3]:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-July/059217.html
+>>
+>> We can fix freezer_fork(), but seems that requires we hold cgroup_mutex
+>> in that function(), which we don't like at all. Not to say your
+>> task_counter stuff..
+>>
+>> At this moment I don't see a solution without tasklist_lock involved,
+>> any better idea?
 > 
+> Ok, everything would be _much_ simpler if we were adding the css set task
+> link unconditionally.
 > 
-> -- 
-> ~Vinod
+> Unfortunately this means acquiring a (global) lock unconditionally and
+> doing a list_add() on every fork. Although the lock could perhaps
+> be made per css set.
+> 
+> An idea could be to start the css set linking as soon as we create
+> the first subdirectory of a freezer cgroup. The root css set can't be
+> freezed and when we create the subdirectory we have no task there yet.
+> Due to the threadgroup_lock() that follows, none of the tasks that will be
+> attached there can be stuck in the middle of a fork so we are fine against
+> their css_set links: we know that when we attach a task to the cgroup of that
+> subdir, its css set link is set and we won't have any of the race we are describing.
+> 
+> How does that sound?
 > 
 
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+I'm confused..
+
+The race you described is about freezing a cgroup while a task is forking,
+and it doesn't have something to do with attaching tasks manually and the
+enabling of css set links. So how can the race be fixed in the way you
+proposed?
