@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915Ab2CGK7J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 05:59:09 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61541 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab2CGK7G convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 05:59:06 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: m.szyprowski@samsung.com, "Barry Song" <Barry.Song@csr.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, "Barry Song" <Baohua.Song@csr.com>
-Subject: Re: [PATCH v3] MM: CMA: add a simple kernel module as the helper to
- test CMA
-References: <1331090098-25097-1-git-send-email-Barry.Song@csr.com>
-Date: Wed, 07 Mar 2012 11:59:03 +0100
+	id S1755961Ab2CGLBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 06:01:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55122 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755409Ab2CGLBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 06:01:04 -0500
+Date: Wed, 7 Mar 2012 11:01:00 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Lameter <cl@linux.com>, Miao Xie <miaox@cn.fujitsu.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
+ related damage v2
+Message-ID: <20120307110100.GB17697@suse.de>
+References: <20120306132735.GA2855@suse.de>
+ <20120306122657.8e5b128d.akpm@linux-foundation.org>
+ <20120306224201.GA17697@suse.de>
+ <20120306145451.8eff82a6.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.wasrgptm3l0zgt@mpn-glaptop>
-In-Reply-To: <1331090098-25097-1-git-send-email-Barry.Song@csr.com>
-User-Agent: Opera Mail/11.61 (Linux)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120306145451.8eff82a6.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks!  Some minor comments, hopefully last ones:
+On Tue, Mar 06, 2012 at 02:54:51PM -0800, Andrew Morton wrote:
+> > > > -static inline void put_mems_allowed(void)
+> > > > +/*
+> > > > + * If this returns false, the operation that took place after get_mems_allowed
+> > > > + * may have failed. It is up to the caller to retry the operation if
+> > > > + * appropriate
+> > > > + */
+> > > > +static inline bool put_mems_allowed(unsigned int seq)
+> > > >  {
+> > > > -	/*
+> > > > -	 * ensure that reading mems_allowed and mempolicy before reducing
+> > > > -	 * mems_allowed_change_disable.
+> > > > -	 *
+> > > > -	 * the write-side task will know that the read-side task is still
+> > > > -	 * reading mems_allowed or mempolicy, don't clears old bits in the
+> > > > -	 * nodemask.
+> > > > -	 */
+> > > > -	smp_mb();
+> > > > -	--ACCESS_ONCE(current->mems_allowed_change_disable);
+> > > > +	return !read_seqcount_retry(&current->mems_allowed_seq, seq);
+> > > >  }
+> > > >  
+> > > >  static inline void set_mems_allowed(nodemask_t nodemask)
+> > > 
+> > > How come set_mems_allowed() still uses task_lock()?
+> > >
+> > 
+> > Consistency.
+> > 
+> > The task_lock is taken by kernel/cpuset.c when updating
+> > mems_allowed so it is taken here. That said, it is unnecessary to take
+> > as the two places where set_mems_allowed is used are not going to be
+> > racing. In the unlikely event that set_mems_allowed() gets another user,
+> > there is no harm is leaving the task_lock as it is. It's not in a hot
+> > path of any description.
+> 
+> But shouldn't set_mems_allowed() bump mems_allowed_seq?
 
-On Wed, 07 Mar 2012 04:14:58 +0100, Barry Song <Barry.Song@csr.com> wrote:
-> +static ssize_t
-> +cma_test_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
-> +{
-
-[...]
-
-> +	_dev_info(cma_dev, "free: CM virt: %p dma: %p size:%uK\n",
-
-This should read: “size: %zuK”.  “z” is the proper modifier to use for size_t type.
-
-> +		alloc->virt, (void *)alloc->dma, alloc->size / SZ_1K);
-> +	kfree(alloc);
-> +
-> +	return 0;
-> +}
-
-> +static ssize_t
-> +cma_test_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
-> +{
-> +	struct cma_allocation *alloc;
-> +	size_t size;
-> +	int ret;
-> +
-> +	ret = kstrtouint_from_user(buf, count, 0, &size);
-
-kstrtouint_from_user() expects pointer to unsigned int, size_t is not always
-unsigned int.  It may be unsigned long.  As such, size should be of type
-unsigned long and this line should use kstrtoulong_from_user().
-
-[...]
-
-> +	if (alloc->virt) {
-> +		_dev_info(cma_dev, "alloc: virt: %p dma: %p size: %uK\n",
-> +			alloc->virt, (void *)alloc->dma, size);
-
-Like previously, this should be “size: %zuK”.
-
-[...]
-
-> +}
+Yes, it should. It's not necessary with the existing callers but the
+"consistency" argument applies. Fixed now.
 
 -- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+Mel Gorman
+SUSE Labs
