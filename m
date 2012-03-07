@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759545Ab2CGSDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 13:03:30 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42316 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759493Ab2CGSD2 convert rfc822-to-8bit (ORCPT
+	id S964944Ab2CGSDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 13:03:43 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64174 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759437Ab2CGSDj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 13:03:28 -0500
+	Wed, 7 Mar 2012 13:03:39 -0500
 MIME-Version: 1.0
-In-Reply-To: <1331137905.11248.355.camel@twins>
-References: <CAL1RGDUbxcx+cCM_mf1nFJ=Jz0SyaiW0ffxiY4gZ6KNWzJCnMg@mail.gmail.com>
- <1331137905.11248.355.camel@twins>
-From: Roland Dreier <roland@kernel.org>
-Date: Wed, 7 Mar 2012 10:03:07 -0800
-X-Google-Sender-Auth: 2heHnJaMCM9_-kWPA51SPvqKDfc
-Message-ID: <CAG4TOxM2yGvFo5O9x0M6H2GONPyF9XVOLwonfS-1gkpskkO+0w@mail.gmail.com>
-Subject: Re: runnable tasks never making it to a runqueue where they can run?
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <aefc95$3e4riv@orsmga001.jf.intel.com>
+References: <1331121050-17857-1-git-send-email-djkurtz@chromium.org>
+ <1331121050-17857-3-git-send-email-djkurtz@chromium.org> <aefc95$3e4riv@orsmga001.jf.intel.com>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 8 Mar 2012 02:03:14 +0800
+X-Google-Sender-Auth: NyEqP_b0CXAAvypU0q9g5SOc1AU
+Message-ID: <CAGS+omBpUoyrrtjA9SwZmKaLct0YTYSZt01Hs5KsyZZBqxgiBg@mail.gmail.com>
+Subject: Re: [PATCH 2/9] drm/i915/intel_i2c: assign HDMI port D to pin pair 6
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Yufeng Shen <miletus@chromium.org>, Benson Leung <bleung@chromium.org>,
+        Sameer Nanda <snanda@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 8:31 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> 6,7,8,10,18,19,22 but never onto 23
+On Wed, Mar 7, 2012 at 9:23 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
 >
->>   (Interestingly, those 8 CPUs seem to form a domain)
+> On Wed,  7 Mar 2012 19:50:43 +0800, Daniel Kurtz <djkurtz@chromium.org>
+> wrote:
+> > According to i915 documentation [1], "Port D" (DP/HDMI Port D) is
+> > actually gmbus pin pair 6 (gmbus0.2:0 == 110b GPIOF), not 7 (111b).
+> > Pin pair 7 is a reserved pair.
+> >
+> > [1] Documentation for [DevSNB+] and [DevIBX], as found on
+> > http://intellinuxgraphics.org
 >
-> That would be 'interesting'... I have a similar wsm box and you should
-> have a domain setup like:
->
-> 0-5,12-17  (node 0)
-> 6-11,18-23 (node 1)
->
-> Where the first set (0-5 & 6-11) is smt0 and the second set (12-17 &
-> 18-23) smt1.
->
-> Can you boot with sched_debug and send me both /proc/cpuinfo and dmesg?
+> The problem is I took those definitions from the gen2 specs, and munged
+> in the obvious changes with gen3... And it appears that the GPIO pin
+> assignment versus GMBUS has changed over the years. And so the can of
+> worms is opened!
 
-Never mind, what I said was partially BS.  It is true that
-I only see the thread on those runqueues.  However you are
-right that the domain mask is 0xFC0FC0 (6-11,18-23), but
-the thread has an affinity mask of 0xFFF5D7, so the CPUs
-in the intersection are 0xFC05C0, ie 9 and 11 aren't in its
-affinity mask.
+I'm not sure what exactly you mean by gen2 and gen3 specs, but, as far
+as I can tell, the GPIO pin assignment is the same for both Cougar
+Point (Sandy Bridge) [1] and Ibex Peak (?) [2].  Although, the
+documentation is a bit confusing and it is difficult to tell.
 
-The behavior is still a little strange -- the scheduler is trying
-6,7,8,10 and their SMT siblings (I left out 20 by accident in
-my list but it is there).  This is suggestive:
+[1] http://intellinuxgraphics.org/documentation/SNB/IHD_OS_Vol3_Part3.pdf
+[2] http://intellinuxgraphics.org/IHD_OS_Vol3_Part3r2.pdf
 
-So could the fact that we don't have CPU 11 in our affinity
-mask cause the scheduler not to try the CPU 23 runqueue?
-Is it only looking at the first SMT sibling or something?
+What do you mean exactly by gen2 & gen3?  Can you point to docs?
 
- - R.
+> -Chris
+>
+> --
+> Chris Wilson, Intel Open Source Technology Centre
