@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751097Ab2CGF2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 00:28:15 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45188 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814Ab2CGF2N convert rfc822-to-8bit (ORCPT
+	id S1750814Ab2CGF2a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 00:28:30 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:42494 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab2CGF2O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 00:28:13 -0500
+	Wed, 7 Mar 2012 00:28:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAE5mzvgc60+_HOve+5wMsL7fo6jmM_sOB=_pTR1j23=RbP+uPw@mail.gmail.com>
-References: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
-	<CAE5mzvgfsHD1Ku5saw+Cu7+vJAayx20=HfHfab1MrAwz3AtqJg@mail.gmail.com>
-	<CAF1ivSZcGHQ-bnGasKghJ-_beDqgyZ_ug=m-7Ykr4xUphZeLqw@mail.gmail.com>
-	<CAE5mzvgc60+_HOve+5wMsL7fo6jmM_sOB=_pTR1j23=RbP+uPw@mail.gmail.com>
-Date: Wed, 7 Mar 2012 13:28:12 +0800
-X-Google-Sender-Auth: UBjRY3Z4lQ6hZWTCNq455pzDhuY
-Message-ID: <CAF1ivSaDEfDFgF0hz3myjSc0BXhig1XGRa_uMOi=gtf2HTEMHg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] ahci: fix boot/resume COMRESET failures
-From: Lin Ming <ming.m.lin@intel.com>
-To: cwillu <cwillu@cwillu.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Norbert Preining <preining@logic.at>,
-        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Matt <jackdachef@gmail.com>
+In-Reply-To: <002201ccfb73$93311520$b9933f60$%cho@samsung.com>
+References: <002201ccfb73$93311520$b9933f60$%cho@samsung.com>
+Date: Wed, 7 Mar 2012 14:28:13 +0900
+Message-ID: <CAAQKjZNJHeApuiyh467w8wGaY8VFb_PqLrvHGUxmE8-+a4yRTA@mail.gmail.com>
+Subject: Re: [PATCH v10 3/3] iommu/exynos: Add iommu driver for Exynos Platforms
+From: InKi Dae <daeinki@gmail.com>
+To: pullip.cho@samsung.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Joerg Roedel <joro@8bytes.org>,
+        Subash Patel <subash.ramaswamy@linaro.org>,
+        Younglak Kim <younglak1004.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 5, 2012 at 1:12 PM, cwillu <cwillu@cwillu.com> wrote:
-> On Sun, Mar 4, 2012 at 6:58 PM, Lin Ming <ming.m.lin@intel.com> wrote:
->> On Fri, Mar 2, 2012 at 9:16 PM, cwillu <cwillu@cwillu.com> wrote:
->>> On Tue, Feb 21, 2012 at 12:38 PM, Brian Norris
->>> <computersforpeace@gmail.com> wrote:
->>>> This series addresses regression problems with
->>>>
->>>>    commit 7faa33da9b7add01db9f1ad92c6a5d9145e940a7
->>>>    ahci: start engine only during soft/hard resets
->>>
->>> I just spent the better part of last night tracking down the specific
->>> sources of the log entry I get when I disconnect my e-sata drive; once
->>> it disconnects, the port is dead until I reboot; no combination of
->>> anything I've been able to poke at in /sys or elsewhere gets it live
->>> again.  This starts with 3.3rc1, and turns out to still work fine in
->>> 3.2.1. Any chance it's related?
->>>
->>> 3.3rc5, immediately after the unplug:
->>
->> Hi,
->>
->> I tested on my machine and it's fixed by below patch.
->> http://marc.info/?l=linux-kernel&m=132996405028746&w=2
->>
->> Would you please also try it?
->
-> Building it now, and will be able to test in about 5 hours.
+> +static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
+> +{
+> +       /* SYSMMU is in blocked when interrupt occurred. */
+> +       struct sysmmu_drvdata *data = dev_id;
+> +       struct resource *irqres;
+> +       struct platform_device *pdev;
+> +       enum EXYNOS_SYSMMU_INTERRUPT_TYPE itype;
 
-Hi,
+how about to change EXYNOS_SYSMMU_INTERRUPT_TYPE to small letter? just
+for code clean.
 
-How about the test result?
+> +       unsigned long addr = -1;
+> +
+> +       int i, ret = -ENOSYS;
+> +
+> +       read_lock(&data->lock);
+> +
+> +       WARN_ON(!is_sysmmu_active(data));
+> +
+> +       pdev = to_platform_device(data->sysmmu);
+> +       for (i = 0; i < pdev->num_resources; i++) {
+> +               irqres = platform_get_resource(pdev, IORESOURCE_IRQ, i);
+> +               if (irqres && ((int)irqres->start == irq))
+> +                       break;
+> +       }
 
-Regards,
-Lin Ming
+is there any reason that it should get irq resources in interrupt
+handler? if not so then how about to move it into probe()?
 
->
-> After looking at the thread, I spent another couple hours on poking
-> /sys, and did get the port to come back up and find the drive with the
-> following:
->
-> echo on > /sys/devices/pci0000:00/0000:00:1f.2/ata5/power/control
-> echo on > /sys/devices/pci0000:00/0000:00:1f.2/ata5/host4/power/control
-> echo '- - -' > /sys/devices/pci0000:00/0000:00:1f.2/ata5/host4/scsi_host/host4/scan
-> --
+> +
+> +       if (i == pdev->num_resources) {
+> +               itype = SYSMMU_FAULT_UNKNOWN;
+> +       } else {
+> +               i /= 2;
+> +
+> +               itype = (enum EXYNOS_SYSMMU_INTERRUPT_TYPE)
+
+ditto.
+
+> +                       __ffs(__raw_readl(data->sfrbases[i] + REG_INT_STATUS));
+> +               if (WARN_ON(!((itype >= 0) && (itype < SYSMMU_FAULT_UNKNOWN))))
+> +                       itype = SYSMMU_FAULT_UNKNOWN;
+> +               else
+> +                       addr = __raw_readl(
+> +                               data->sfrbases[i] + fault_reg_offset[itype]);
+> +       }
+> +
