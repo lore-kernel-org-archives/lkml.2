@@ -1,88 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2CGJqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 04:46:55 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39604 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab2CGJqj (ORCPT
+	id S1753918Ab2CGJyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 04:54:12 -0500
+Received: from goliath.siemens.de ([192.35.17.28]:25037 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab2CGJyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 04:46:39 -0500
+	Wed, 7 Mar 2012 04:54:09 -0500
+Message-ID: <4F57302B.1040505@siemens.com>
+Date: Wed, 07 Mar 2012 10:53:47 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
-References: <Pine.LNX.4.64.1202011610050.26261@axis700.grange>
-	<Pine.LNX.4.64.1203021341590.913@axis700.grange>
-	<1331022623.24656.191.camel@vkoul-udesk3>
-	<Pine.LNX.4.64.1203060935460.9300@axis700.grange>
-	<1331035739.24656.201.camel@vkoul-udesk3>
-	<Pine.LNX.4.64.1203061339330.9300@axis700.grange>
-	<1331101687.24656.319.camel@vkoul-udesk3>
-	<Pine.LNX.4.64.1203070917380.19595@axis700.grange>
-Date: Wed, 7 Mar 2012 10:46:38 +0100
-Message-ID: <CACRpkda7F9ajf=LkPdJMP3WsZ94CrP3indO=WcE3v8UBX_BBGQ@mail.gmail.com>
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH v2] deal with guest paniced event
+References: <4F56BEF2.4020405@cn.fujitsu.com> <4F56C0E1.1090703@cn.fujitsu.com>
+In-Reply-To: <4F56C0E1.1090703@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 10:18 AM, Guennadi Liakhovetski
-<g.liakhovetski@gmx.de> wrote:
-> [Vinod]
->> I like the approach outlined by Linus W [1], where we can get the
->> information from platform (DT, FW,....) and its presented to dmaengine.
->
-> I still don't see an answer to the very same question, that we've been
-> discussing over multiple threads and mails now: how do we use that, if
-> it's not a 1-to-1 mapping? I.e., many channels on many controllers can be
-> run-time configured for use with different client devices. Also the above
-> idea from Linus W doesn't directly address this.
+On 2012-03-07 02:58, Wen Congyang wrote:
+> When the host knows the guest is paniced, it will set
+> exit_reason to KVM_EXIT_GUEST_PANICED. So if qemu receive
+> this exit_reason, we can send a event to tell management
+> application that the guest is paniced and set the guest
+> status to RUN_STATE_PANICED.
+> 
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  kvm-all.c                 |    4 ++++
+>  linux-headers/linux/kvm.h |    1 +
+>  monitor.c                 |    3 +++
+>  monitor.h                 |    1 +
+>  qapi-schema.json          |    2 +-
+>  qmp.c                     |    3 ++-
+>  vl.c                      |    1 +
+>  7 files changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kvm-all.c b/kvm-all.c
+> index c4babda..d356948 100644
+> --- a/kvm-all.c
+> +++ b/kvm-all.c
+> @@ -1190,6 +1190,10 @@ int kvm_cpu_exec(CPUState *env)
+>                      (uint64_t)run->hw.hardware_exit_reason);
+>              ret = -1;
+>              break;
+> +        case KVM_EXIT_GUEST_PANICED:
+> +            monitor_protocol_event(QEVENT_GUEST_PANICED, NULL);
+> +            vm_stop(RUN_STATE_PANICED);
+> +            break;
 
-True, it's a new problem space.
+This cannot work. You missed to set ret to -1 to break out of loop.
 
-However I see nothing wrong in the basic idea that the platform data
-and/or device tree should supply a number of mappings with constraints
-to dmaengine, that eventually helps it to select and enable a proper
-channel.
+>          case KVM_EXIT_INTERNAL_ERROR:
+>              ret = kvm_handle_internal_error(env, run);
+>              break;
+> diff --git a/linux-headers/linux/kvm.h b/linux-headers/linux/kvm.h
+> index f6b5343..ddc9716 100644
+> --- a/linux-headers/linux/kvm.h
+> +++ b/linux-headers/linux/kvm.h
+> @@ -163,6 +163,7 @@ struct kvm_pit_config {
+>  #define KVM_EXIT_OSI              18
+>  #define KVM_EXIT_PAPR_HCALL	  19
+>  #define KVM_EXIT_S390_UCONTROL	  20
+> +#define KVM_EXIT_GUEST_PANICED	  21
 
-For example in the regulator framework we have voltage constraints on
-the rails, and the subsystem infers the voltage from these constraints.
-Constraints in platform data are nice.
+Linux header must be sync'ed in a separate patch, referencing the
+upstream (typically kvm.git) commit hash that was used as base. Make
+sure to use the update-linux-headers.sh script for this.
 
-So the way forward in my simple opinion is to get the core dmaengine
-to be aware of the applicable constraints and hand out DMA channels
-or NACK channel requests if these constraints cannot be satisfied.
+So the ordering is: Get the kernel changes accepted, then push the
+(final) user space patches. That said, a patch like this can still be
+posted in advance for informational purposes, but not for application.
 
-So when you write:
+Jan
 
-> Whereas doing a reverse mapping: for each (potential)
-> DMA user reference a list of channels, that it can use - would be really
-> clumsy.
-
-I basically disagree. I think the knowledge of available channels
-and their characteristics should be known to the dmaengine
-core, and the core shall select what channel to use.
-
-Else I fear we end up with a lot of logic distributed all over the
-place with no consolidation in sight, it will just grow everywhere
-with each new DMA controller.
-
-However it may need to have a different form given what Russell
-says: many drivers tend to have a number of arbitrable channels
-and the constraints is really about which event line (burst/single
-request line) to mux in for that one channel. So the platform
-data may need to take a form that better reflects this, which in
-turn necessitates that the dmaengine core and channel request
-interface be refactored to be aware of this kind of DMAC slaves.
-
-It requires a bit of upfront code but I think this is the way forward.
-Besides, Russell says he's already working on refactoring one
-part of the problem (virtual channels / request lines) if I understand
-him correctly.
-
-Yours,
-Linus Walleij
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
