@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758441Ab2CGPYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 10:24:17 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:36047 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756597Ab2CGPYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 10:24:16 -0500
-Message-ID: <4F577D9B.7020402@gmail.com>
-Date: Wed, 07 Mar 2012 07:24:11 -0800
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S932301Ab2CGP24 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 10:28:56 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:42565 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932176Ab2CGP2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 10:28:55 -0500
+Date: Wed, 7 Mar 2012 07:27:03 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Andre@jasper.es
+Subject: Re: [GIT PULL] RCU changes for v3.3
+Message-ID: <20120307152703.GD2348@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120105135432.GA31450@elte.hu>
+ <1327422312.7231.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20120124165312.GG2531@linux.vnet.ibm.com>
+ <1327425208.7231.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <20120124194140.GB2381@linux.vnet.ibm.com>
+ <20120124232911.GA11327@linux.vnet.ibm.com>
+ <20120307114410.GA4214@swordfish.minsk.epam.com>
+ <CA+5PVA4CdtQYbJBvpoAa7iyWegBpJaDBcFfXpXYX=pARw_SBSA@mail.gmail.com>
 MIME-Version: 1.0
-To: Mohammed Shafi <shafi.wireless@gmail.com>
-CC: linux-kernel@vger.kernel.org, Linux-netdev <netdev@vger.kernel.org>,
-        Linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
- DMADBG_7=0x00008040
-References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com>
-In-Reply-To: <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+5PVA4CdtQYbJBvpoAa7iyWegBpJaDBcFfXpXYX=pARw_SBSA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030715-5930-0000-0000-000005E002B6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2012 07:19 AM, Mohammed Shafi wrote:
-> On Wed, Mar 7, 2012 at 7:55 PM, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->> ath9k craps out from time to time(more annoying if anything)
->>
->> [44309.840830] ath: Failed to stop TX DMA, queues=0x001!
->> [44309.858246] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
->> [44309.858255] ath: Could not stop RX, we could be confusing the DMA engine
->> when we start RX up
->> [44309.932801] ath: Failed to stop TX DMA, queues=0x001!
->> [44309.950352] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
->> [44309.950361] ath: Could not stop RX, we could be confusing the DMA engine
->> when we start RX up
->> [44310.024301] ath: Failed to stop TX DMA, queues=0x001!
->> [44310.041641] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
->> [44310.041646] ath: Could not stop RX, we could be confusing the DMA engine
->> when we start RX up
->> [44310.116316] ath: Failed to stop TX DMA, queues=0x001!
->> [44310.133909] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
->> [44310.133918] ath: Could not stop RX, we could be confusing the DMA engine
->> when we start RX up
->> [44310.208021] ath: Failed to stop TX DMA, queues=0x001!
->> [44310.225752] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
->> [44310.225761] ath: Could not stop RX, we could be confusing the DMA engine
->> when we start RX up
->> [44310.299922] ath: Failed to stop TX DMA, queues=0x001!
->> [44310.317579] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->> AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
->> [44310.317587] ath: Could not stop RX, we could be confusing the DMA engine
->> whe
->
-> this is has become a know issue but less harmful, please try to see if
-> the workaround of disabling power save helps
->
-> iw dev wlanX set power_save off
->
+On Wed, Mar 07, 2012 at 09:09:39AM -0500, Josh Boyer wrote:
+> On Wed, Mar 7, 2012 at 6:44 AM, Sergey Senozhatsky
+> <sergey.senozhatsky@gmail.com> wrote:
+> > > > > ------------------------------------------------------------------------
+> >> > > >
+> >> > > > idle: Avoid using RCU when RCU thinks the CPU is idle
+> >> > > >
+> >> > > > The x86 idle loops invoke cpuidle_idle_call() which uses tracing
+> >> > > > which uses RCU.  Unfortunately, these idle loops have already
+> >> > > > told RCU to ignore this CPU when they call it.  This patch hacks
+> >> > > > the idle loops to avoid this problem, but probably causing several
+> >> > > > other problems in the process.
+> >> > > >
+> >> > > > Not-yet-signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >> > > > ---
+> >> > >
+> >> > > Hi Paul
+> >> > >
+> >> > > Just tested it on my x86_64 machine, but warnings are still here
+> >> > >
+> >> > > Thanks !
+> >> >
+> >> > Gah!!!  The mwait_idle() function itself (which is the default value of
+> >> > the pm_idle function pointer) uses tracing and thus RCU!  What part of
+> >> > "don't use RCU from idle CPUs" was unclear, one wonders?
+> >> >
+> >> > Ah well, the good news is that we can now detect such abuse and fix it.
+> >> >
+> >> > But fixing it appears to require pushing rcu_idle_enter() and
+> >> > rcu_idle_exit() pairs down to the bottom of each and every idle loop
+> >> > and governor.
+> >> >
+> >> > So...  The cpuidle_idle_call() function has an idle loop inside of itself,
+> >> > namely the ->enter() call for the desired target state.  It does tracing
+> >> > on both sides of that call.  Should the ->enter() calls actually avoid
+> >> > use of tracing, I could push the rcu_idle_enter() and rcu_idle_exit()
+> >> > down into cpuidle_idle_call().  We seem to have a ladder_governor and
+> >> > a menu_governor in 3.2, and these have states, which in turn have ->enter
+> >> > functions.
+> >> >
+> >> > Hmmm...  Residual power dissipation is given in milliwatts.  I could
+> >> > imagine some heartburn from many of the more aggressive embedded folks,
+> >> > given that they might prefer microwatts -- or maybe even nanowatts,
+> >> > for all I know.
+> >> >
+> >> > There are a bunch of states defined in drivers/idle/intel_idle.c,
+> >> > and these use intel_idle() as their ->enter() states.  This one looks
+> >> > to have a nice place for rcu_idle_enter() and rcu_idle_exit().
+> >> >
+> >> > But I also need to push rcu_idle_enter() and rcu_idle_exit() into any
+> >> > function that can be assigned to pm_idle():  default_idle(), poll_idle(),
+> >> > mwait_idle(), and amd_e400_idle().  OK, that is not all -that- bad,
+> >> > though this must also be done for a number of other architectures as well.
+> >> >
+> >> > OK, will post a patch.  I will need testing -- clearly my testing on KVM
+> >> > is missing a few important code paths...
+> >>
+> >> And here is another version of the patch.
+> > Hello,
+> > I just hit the same problem.
+> >
+> > Is this patch scheduled for 3.3 until release or will land during 3.4
+> > merge window?
+> 
+> There are 3 patches in Paul's 3.4 queue, and another 9 of Steven Rostedt's
+> that fix this.  They'll wind up in 3.4.
+> 
+> I looked at reverting the patch that adds this new warning and it doesn't
+> trivially revert.
 
-ok! I have set that on the machine.. will see if I get this message in 
-the upcoming weeks.
+What are you based on?  I should be able to disable the warning for
+you easily enough.
 
->
->
->>
->>
->> part of dmesg here:
->> http://fpaste.org/xew6/
->> I can supply full log if needed..
->>
->> Justin P. Mattock
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
+							Thanx, Paul
 
-Justin P. Mattock
