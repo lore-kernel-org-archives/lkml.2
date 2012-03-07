@@ -1,75 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785Ab2CGRDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 12:03:30 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36835 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755524Ab2CGRD2 convert rfc822-to-8bit (ORCPT
+	id S1758896Ab2CGRFx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 12:05:53 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:34214 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758175Ab2CGRFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 12:03:28 -0500
+	Wed, 7 Mar 2012 12:05:50 -0500
+Date: Wed, 7 Mar 2012 09:05:44 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, axboe@kernel.dk,
+        hughd@google.com, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dpshah@google.com, ctalbott@google.com, rni@google.com
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-ID: <20120307170544.GA30676@google.com>
+References: <20120227031146.GA25187@redhat.com>
+ <20120227091141.GG3401@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120227194321.GF27677@redhat.com>
+ <20120229173639.GB5930@redhat.com>
+ <20120305221321.GF1263@google.com>
+ <20120306210954.GF32148@redhat.com>
+ <20120306132034.ecaf8b20.akpm@linux-foundation.org>
+ <20120306213437.GG32148@redhat.com>
+ <20120306135531.828ca78e.akpm@linux-foundation.org>
+ <20120307145556.GA11262@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120307125217.GC20558@moon>
-References: <20120307125217.GC20558@moon>
-Date: Wed, 7 Mar 2012 09:03:27 -0800
-X-Google-Sender-Auth: sWapcG1cTC347jj9U_hPw-Fy39o
-Message-ID: <CAGXu5jL2QWWdnA-T3RQDWCaOuCcW8dvBXfGFBb6Oe9C1zT3oJw@mail.gmail.com>
-Subject: Re: [PATCH] prctl: Use CAP_SYS_RESOUCE for PR_SET_MM option
-From: Kees Cook <keescook@chromium.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120307145556.GA11262@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 4:52 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> CAP_SYS_ADMIN is already overloaded left and right,
-> so to have more finegrained access control use
-> CAP_SYS_RESOUCE here.
->
-> The CAP_SYS_RESOUCE is chosen because this prctl
-> option allows a current process to adjust some
-> fields of memory map descriptor which rather
-> represent what the process owns: pointers to
-> code, data, stack segments, command line,
-> auxilary vector data and etc.
->
-> Suggested-by: Michael Kerrisk <mtk.manpages@gmail.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Oleg Nesterov <oleg@redhat.com>
-> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> CC: Kees Cook <keescook@chromium.org>
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> ---
->  kernel/sys.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> Index: linux-2.6.git/kernel/sys.c
-> ===================================================================
-> --- linux-2.6.git.orig/kernel/sys.c
-> +++ linux-2.6.git/kernel/sys.c
-> @@ -1712,7 +1712,7 @@ static int prctl_set_mm(int opt, unsigne
->        if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
->                return -EINVAL;
->
-> -       if (!capable(CAP_SYS_ADMIN))
-> +       if (!capable(CAP_SYS_RESOURCE))
->                return -EPERM;
->
->        if (addr >= TASK_SIZE)
+On Wed, Mar 07, 2012 at 09:55:56AM -0500, Vivek Goyal wrote:
+> +/*
+> + * Worker for allocating per cpu stat for blk groups. This is scheduled
+> + * once there are some groups on the alloc_list waiting for allocation
+> + */
+> +static void blkio_stat_alloc_fn(struct work_struct *work)
+> +{
+> +
+> +	struct blkio_group *blkg, *n;
+> +	int i;
+> +
+> +alloc_stats:
+> +	spin_lock_irq(&alloc_list_lock);
+> +		if (list_empty(&alloc_list)) {
+> +			/* No more groups needing per cpu stat allocation */
+> +			spin_unlock_irq(&alloc_list_lock);
+> +			return;
+> +		}
+> +	spin_unlock_irq(&alloc_list_lock);
 
-Yeah, getting away from CAP_SYS_ADMIN is a good idea.
+I don't think we really need the above.  Just proceed with allocation.
 
-Acked-by: Kees Cook <keescook@chromium.org>
+> +	for (i = 0; i < BLKIO_NR_POLICIES; i++) {
+> +		if (pcpu_stats[i] != NULL)
+> +			continue;
+> +
+> +		pcpu_stats[i] = alloc_percpu(struct blkio_group_stats_cpu);
+> +		/* Allocatoin failed. Try again after some time. */
+		          ^^ typo
+> +		if (pcpu_stats[i] == NULL) {
+> +			msleep(10);
+> +			goto alloc_stats;
+> +		}
+> +	}
+
+Why not queue_delayed_work(system_nrt_wq, work, msecs_to_jiffies(10))?
+Why hog the worker thread?
+
+> +
+> +	spin_lock_irq(&blkio_list_lock);
+> +	spin_lock(&alloc_list_lock);
+> +
+> +	list_for_each_entry_safe(blkg, n, &alloc_list, alloc_node) {
+> +		for (i = 0; i < BLKIO_NR_POLICIES; i++) {
+> +			struct blkio_policy_type *pol = blkio_policy[i];
+> +			struct blkg_policy_data *pd;
+> +
+> +			if (!pol)
+> +				continue;
+> +
+> +			if (!blkg->pd[i])
+> +				continue;
+> +
+> +			pd = blkg->pd[i];
+> +			if (pd->stats_cpu)
+> +				continue;
+> +
+> +			pd->stats_cpu = pcpu_stats[i];
+> +			pcpu_stats[i] = NULL;
+
+I think this can be slightly more compact.  How about the following?
+
+	struct blkg_policy_data *pd = blkg->pd[i];
+
+	if (blkio_policy[i] && pd && !pd->stats_cpu)
+		swap(pd->stats_cpu, pcpu_stats[i]);
+
+> +		}
+> +		list_del_init(&blkg->alloc_node);
+> +		break;
+
+If we're breaking after the first iteration, why are we using
+list_for_each at all?
+
+> +	}
+
+and we can test whether we need to loop here, right?
+
+Thanks.
 
 -- 
-Kees Cook
-ChromeOS Security
+tejun
