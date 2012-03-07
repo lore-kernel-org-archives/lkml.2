@@ -1,78 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab2CGJdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 04:33:53 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56065 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab2CGJds (ORCPT
+	id S1755017Ab2CGJgI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 04:36:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57517 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034Ab2CGJgB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 04:33:48 -0500
-Date: Wed, 7 Mar 2012 09:30:26 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
-	__dma_request_channel()
-Message-ID: <20120307093026.GM17370@n2100.arm.linux.org.uk>
-References: <Pine.LNX.4.64.1202011610050.26261@axis700.grange> <Pine.LNX.4.64.1203021341590.913@axis700.grange> <1331022623.24656.191.camel@vkoul-udesk3> <Pine.LNX.4.64.1203060935460.9300@axis700.grange> <1331035739.24656.201.camel@vkoul-udesk3> <Pine.LNX.4.64.1203061339330.9300@axis700.grange> <1331101687.24656.319.camel@vkoul-udesk3> <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+	Wed, 7 Mar 2012 04:36:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <201203071002.40296.rjw@sisk.pl>
+References: <13197479.540821330911965933.JavaMail.weblogic@epv6ml06>
+	<1331096521-26026-1-git-send-email-myungjoo.ham@samsung.com>
+	<201203071002.40296.rjw@sisk.pl>
+Date: Wed, 7 Mar 2012 18:36:00 +0900
+X-Google-Sender-Auth: kH8N5ujUMZUaJFvUNA1WvZSoucc
+Message-ID: <CAJ0PZbQSuG2sJngV+MzaveWvvQZM=bm_GxB_725PNv0zAx+H5A@mail.gmail.com>
+Subject: Re: [PATCH v3] PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        linux-pm@vger.kernel.org,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 07, 2012 at 10:18:42AM +0100, Guennadi Liakhovetski wrote:
-> I still don't see an answer to the very same question, that we've been 
-> discussing over multiple threads and mails now: how do we use that, if 
-> it's not a 1-to-1 mapping? I.e., many channels on many controllers can be 
-> run-time configured for use with different client devices. Also the above 
-> idea from Linus W doesn't directly address this.
-> 
-> Following his clock / regulator analogy. There the correspondence is 
-> clearly fixed: fixed clocks and power supplies are used with every 
-> specific device. Whereas in our DMAC case it's not.
-> 
-> I'm trying to think of an analogy, where you have several pools of 
-> resources, and each consumer can use any of the resources on some of those 
-> pools, but nothing pops up. Interrupts, GPIOs, clocks, regulators - they 
-> all are fixed to their consumers.
-> 
-> Also notice, this can become even worse, if we ever get controllers with 
-> channels with different capabilities on them. So, I really would let the 
-> DMAC driver do the mapping and not try to put it in the core.
+2012/3/7 Rafael J. Wysocki <rjw@sisk.pl>:
+> Hi,
+>
+> Can you please post all of your outstanding PM-related patches that
+> you want me to look at in one series, so that they appear in context?
+>
+> I'm struggling to understand what you need all those changes for.
+>
 
-Well, I am quite convinced (being on my third or fourth DMA engine driver)
-that DMA engine does stuff quite wrongly when it comes to slave stuff.
-Why?
+Hello Rafael,
 
-The code required to support slave device transfers is very much the same
-for each driver (that's partly because I'm writing my drivers in the same
-way.)  Essentially, slave channels aren't physical channels themselves,
-but virtual channels which get assigned to physical channels at some point.
-I would really like to see some common infrastructure for handling these
-virtual channels so I don't have to write yet another version of that code,
-and that's something I'll be working on.
 
-My main critera for selecting a virtual channel is the DMA request signal
-into the DMA controller itself, and nothing more.  Most other non-specific
-configuration information (data register, data register width, burst size
-etc) comes from the peripheral driver.
+I've put the patches at
 
-Any other data relevant to the DMA engine needs to come from the platform
-in some way, that being DT or platform data or whatever.  For example,
-with a DMA engine which has two bus interfaces, where it matters which
-bus interface is used, that needs to be specified by the platform and not
-by the DMA engine itself nor the peripheral driver.
+- devfreq patches (based on your pm-devfreq branch)
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/devfreq-for-next
 
-That would also include, if relevant, which physical channels a virtual
-channel (dma request) could be routed to.
+- pm-qos patches (based on your pm-qos branch)
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/pm_qos-for-next
 
-Note that we've been omitting that from the PL08x driver so far - memory-
-to-memory requests are supposed to only be handled by a couple of channels
-which are designed for that purpose (so they don't flood the bus) but
-we currently allocate them to any channel...
+
+- In order to help understand, all related patches are at (do not pull
+from here, please)
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/devfreq
+devfreq patches + pm-qos patches + cpufreq patches combined. (based on
+Linux 3.3-rc6 + some test patches.)
+However, it does not include recent PM-QoS patches in pm-qos branch,
+so the patches are not recent and different from the above. So please
+do not pull from here to your branches.
+
+
+Anyway, we are synching our local repositories with infradead.org now;
+so there could be some lag; infradead.org is not showing the current
+version, yet.
+(.... it even seems that the server is down now. I'll retry sync if it
+resurrects)
+
+
+Thank you.
+
+
+Cheers!
+MyungJoo.
+
+> Thanks,
+> Rafael
+>
+>
+> On Wednesday, March 07, 2012, MyungJoo Ham wrote:
+>> 1. CPU_DMA_THROUGHPUT
+>>
+>> This might look simliar to CPU_DMA_LATENCY. However, there are H/W
+>> blocks that creates QoS requirement based on DMA throughput, not
+>> latency, while their (those QoS requester H/W blocks) services are
+>> short-term bursts that cannot be effectively responsed by DVFS
+>> mechanisms (CPUFreq and Devfreq).
+>>
+>> In the Exynos4412 systems that are being tested, such H/W blocks include
+>> MFC (multi-function codec)'s decoding and enconding features, TV-out
+>> (including HDMI), and Cameras. When the display is operated at 60Hz,
+>> each chunk of task should be done within 16ms and the workload on DMA is
+>> not well spread and fluctuates between frames; some frame requires more
+>> and some do not and within a frame, the workload also fluctuates
+>> heavily and the tasks within a frame are usually not parallelized; they
+>> are processed through specific H/W blocks, not CPU cores. They often
+>> have PPMU capabilities; however, they need to be polled very frequently
+>> in order to let DVFS mechanisms react properly. (less than 5ms).
+>>
+>> For such specific tasks, allowing them to request QoS requirements seems
+>> adequete because DVFS mechanisms (as long as the polling rate is 5ms or
+>> longer) cannot follow up with them. Besides, the device drivers know
+>> when to request and cancel QoS exactly.
+>>
+>> 2. DVFS_LATENCY
+>>
+>> Both CPUFreq and Devfreq have response latency to a sudden workload
+>> increase. With near-100% (e.g., 95%) up-threshold, the average response
+>> latency is approximately 1.5 x polling-rate.
+>>
+>> A specific polling rate (e.g., 100ms) may generally fit for its system;
+>> however, there could be exceptions for that. For example,
+>> - When a user input suddenly starts: typing, clicking, moving cursors, and
+>>   such, the user might need the full performance immediately. However,
+>>   we do not know whether the full performance is actually needed or not
+>>   until we calculate the utilization; thus, we need to calculate it
+>>   faster with user inputs or any similar events. Specifying QoS on CPU
+>>   processing power or Memory bandwidth at every user input is an
+>>   overkill because there are many cases where such speed-up isn't
+>>   necessary.
+>> - When a device driver needs a faster performance response from DVFS
+>>   mechanism. This could be addressed by simply putting QoS requests.
+>>   However, such QoS requests may keep the system running fast
+>>   unnecessary in some cases, especially if a) the device's resource
+>>   usage bursts with some duration (e.g., 100ms-long bursts) and
+>>   b) the driver doesn't know when such burst come. MMC/WiFi often had
+>>   such behaviors although there are possibilities that part (b) might
+>>   be addressed with further efforts.
+>>
+>> The cases shown above can be tackled with putting QoS requests on the
+>> response time or latency of DVFS mechanism, which is directly related to
+>> its polling interval (if the DVFS mechanism is polling based).
+>>
+>> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>
+>> --
+>> Changes from v2
+>> - Rebased on the recent PM QoS patches, resolving the merge conflict.
+>>
+>> Changes from RFC(v1)
+>> - Added omitted part (registering new classes)
+>> ---
+>>  include/linux/pm_qos.h |    4 ++++
+>>  kernel/power/qos.c     |   31 ++++++++++++++++++++++++++++++-
+>>  2 files changed, 34 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+>> index c8a541e..0ee7caa 100644
+>> --- a/include/linux/pm_qos.h
+>> +++ b/include/linux/pm_qos.h
+>> @@ -14,6 +14,8 @@ enum {
+>>       PM_QOS_CPU_DMA_LATENCY,
+>>       PM_QOS_NETWORK_LATENCY,
+>>       PM_QOS_NETWORK_THROUGHPUT,
+>> +     PM_QOS_CPU_DMA_THROUGHPUT,
+>> +     PM_QOS_DVFS_RESPONSE_LATENCY,
+>>
+>>       /* insert new class ID */
+>>       PM_QOS_NUM_CLASSES,
+>> @@ -24,6 +26,8 @@ enum {
+>>  #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE     (2000 * USEC_PER_SEC)
+>>  #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE     (2000 * USEC_PER_SEC)
+>>  #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE      0
+>> +#define PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE      0
+>> +#define PM_QOS_DVFS_LAT_DEFAULT_VALUE        (2000 * USEC_PER_SEC)
+>>  #define PM_QOS_DEV_LAT_DEFAULT_VALUE         0
+>>
+>>  struct pm_qos_request {
+>> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+>> index d6d6dbd..3e122db 100644
+>> --- a/kernel/power/qos.c
+>> +++ b/kernel/power/qos.c
+>> @@ -101,11 +101,40 @@ static struct pm_qos_object network_throughput_pm_qos = {
+>>  };
+>>
+>>
+>> +static BLOCKING_NOTIFIER_HEAD(cpu_dma_throughput_notifier);
+>> +static struct pm_qos_constraints cpu_dma_tput_constraints = {
+>> +     .list = PLIST_HEAD_INIT(cpu_dma_tput_constraints.list),
+>> +     .target_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
+>> +     .default_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
+>> +     .type = PM_QOS_MAX,
+>> +     .notifiers = &cpu_dma_throughput_notifier,
+>> +};
+>> +static struct pm_qos_object cpu_dma_throughput_pm_qos = {
+>> +     .constraints = &cpu_dma_tput_constraints,
+>> +     .name = "cpu_dma_throughput",
+>> +};
+>> +
+>> +
+>> +static BLOCKING_NOTIFIER_HEAD(dvfs_lat_notifier);
+>> +static struct pm_qos_constraints dvfs_lat_constraints = {
+>> +     .list = PLIST_HEAD_INIT(dvfs_lat_constraints.list),
+>> +     .target_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
+>> +     .default_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
+>> +     .type = PM_QOS_MIN,
+>> +     .notifiers = &dvfs_lat_notifier,
+>> +};
+>> +static struct pm_qos_object dvfs_lat_pm_qos = {
+>> +     .constraints = &dvfs_lat_constraints,
+>> +     .name = "dvfs_latency",
+>> +};
+>> +
+>>  static struct pm_qos_object *pm_qos_array[] = {
+>>       &null_pm_qos,
+>>       &cpu_dma_pm_qos,
+>>       &network_lat_pm_qos,
+>> -     &network_throughput_pm_qos
+>> +     &network_throughput_pm_qos,
+>> +     &cpu_dma_throughput_pm_qos,
+>> +     &dvfs_lat_pm_qos,
+>>  };
+>>
+>>  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+>>
+>
+
+
+
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
