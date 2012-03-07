@@ -1,144 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab2CGKys (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 05:54:48 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:35698 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754976Ab2CGKyq (ORCPT
+	id S1755578Ab2CGK4A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 05:56:00 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51488 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754976Ab2CGKz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 05:54:46 -0500
-Message-ID: <4F573E74.5040504@oss.ntt.co.jp>
-Date: Wed, 07 Mar 2012 19:54:44 +0900
-From: =?ISO-8859-1?Q?Fernando_Luis_V=E1zquez_Cao?= 
-	<fernando@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 7 Mar 2012 05:55:58 -0500
+Date: Wed, 7 Mar 2012 10:55:56 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: lrg@ti.com, linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        ldewanagn@nvidia.com
+Subject: Re: [PATCH V2] regulator: fixed: Support for open drain gpio pin
+Message-ID: <20120307105556.GB3107@opensource.wolfsonmicro.com>
+References: <1331116113-22565-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, mingo@elte.hu,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de, vgoyal@redhat.com
-Subject: [PATCH 1/2] boot: ignore early NMIs
-References: <CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com> <20120216172735.GX9751@redhat.com> <CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com> <20120216215603.GH9751@redhat.com> <m1y5s2ku36.fsf@fess.ebiederm.org> <m1fwe9bpk2.fsf@fess.ebiederm.org> <20120217195430.GO9751@redhat.com> <m1y5s07rn3.fsf@fess.ebiederm.org> <20120220151419.GU9751@redhat.com> <m1obss39a4.fsf@fess.ebiederm.org> <20120221135934.GF26998@redhat.com> <m1ipip6xe8.fsf@fess.ebiederm.org> <4F573E1C.2060909@oss.ntt.co.jp>
-In-Reply-To: <4F573E1C.2060909@oss.ntt.co.jp>
-Content-Type: multipart/mixed;
- boundary="------------000801010101070406040206"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IrhDeMKUP4DT/M7F"
+Content-Disposition: inline
+In-Reply-To: <1331116113-22565-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000801010101070406040206
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 
+--IrhDeMKUP4DT/M7F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Mar 07, 2012 at 03:58:33PM +0530, Laxman Dewangan wrote:
+> Adding flag on fixed regulator board configuration structure
+> to specify whether gpio is open drain type or not.
 
---------------000801010101070406040206
-Content-Type: text/x-patch;
- name="ignore-early-nmis.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="ignore-early-nmis.patch"
+This looks good, I'll apply it after the next merge window - it'll need
+to wait for the GPIO side of things to be merged up via Linus' tree.
 
-Subject: [PATCH] boot: ignore early NMIs
+--IrhDeMKUP4DT/M7F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-NMIs very early in the boot process are rarely critical (usually
-it just means that there was a spurious bit flip somewhere in the
-hardware, or that this is a kdump kernel and we received an NMI
-generated in the previous context), so the current behavior of
-halting the system when one occurs is probably a bit over the top.
+iQIcBAEBAgAGBQJPVz6yAAoJEBus8iNuMP3d53kP/02uPjPgFVlxTaot3ZLWT/Kf
++bKAbKKQPMyRmCdUsT0z+ES1BFIpKYTS0aHdg09GZv2XWOyqeXzWv9JQNUrzhERD
+6umAPGijhvaWk8fQpYr8+/E/+cuf+39zdMydy8vHt3jRYuAR2vwZ4AauCULtWN+1
+4LICkcUdSOE2V7n+LiVpC22TQfk9pSnspVSAgvDGk3fz3w/940JYw90WYm210RR5
+C2o8Uryby8ErUgHPQgA9lCdEVgvmdviBKAT4l6QqbmDCQEpV0kpuSFJu39IYyKrM
+KE91ekTX9H47oAA0gn6PLpleZ8LltupWdYFG3Okitg5ySS6kAu+VRIkvdEv013CD
+rg+GJUkNLT56ZTSzjr4rPTvpDpEgBynpB66jqohWBcKcURIVnSJ2OcKaZ4dWORme
+m+rktC9S1ufKl4PV6GA6Sc230ht29ogVnyBkUCvX/pyircw20s6e07uFLOrPWqXd
+Javj1j9hmyd5nNS3UlD9uR8aO+RYQLgFHXnFShv+bicr4AivM8f2X5Lu0Hx/asAP
+HgYkx/aOh59jlhwxKDAr9iaMcpWFtnEDVspqy9lzhB22x7XvkRmMk8NPnX1oNIJh
+MJRmipIqXZMslrP85/Jk7n8BKT/553ec5rBKGDjtuuTJDD2KHSmyD8kmZ/hs49/O
+ATIccpUtc05h72pg0f/4
+=O1Cc
+-----END PGP SIGNATURE-----
 
-This patch changes the early IDT so that NMIs are ignored and the
-kernel can, hopefully, continue executing other code. Harsher
-measures (panic, etc) are defered to the final NMI handler, which
-can actually make an informed decision.
-
-This issue presented itself in our environment as seemingly
-random hangs in kdump.
-
-Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
----
-
-diff -urNp linux-3.3-rc6-orig/arch/x86/kernel/head64.c linux-3.3-rc6/arch/x86/kernel/head64.c
---- linux-3.3-rc6-orig/arch/x86/kernel/head64.c	2012-03-07 15:49:01.834241787 +0900
-+++ linux-3.3-rc6/arch/x86/kernel/head64.c	2012-03-07 18:39:03.173732875 +0900
-@@ -71,7 +71,7 @@ void __init x86_64_start_kernel(char * r
- 				(__START_KERNEL & PGDIR_MASK)));
- 	BUILD_BUG_ON(__fix_to_virt(__end_of_fixed_addresses) <= MODULES_END);
- 
--	/* clear bss before set_intr_gate with early_idt_handler */
-+	/* clear bss before set_intr_gate with early_idt_handlers */
- 	clear_bss();
- 
- 	/* Make NULL pointers segfault */
-@@ -79,13 +79,8 @@ void __init x86_64_start_kernel(char * r
- 
- 	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
- 
--	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
--#ifdef CONFIG_EARLY_PRINTK
-+	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++)
- 		set_intr_gate(i, &early_idt_handlers[i]);
--#else
--		set_intr_gate(i, early_idt_handler);
--#endif
--	}
- 	load_idt((const struct desc_ptr *)&idt_descr);
- 
- 	if (console_loglevel == 10)
-diff -urNp linux-3.3-rc6-orig/arch/x86/kernel/head_64.S linux-3.3-rc6/arch/x86/kernel/head_64.S
---- linux-3.3-rc6-orig/arch/x86/kernel/head_64.S	2012-03-07 15:49:01.838241839 +0900
-+++ linux-3.3-rc6/arch/x86/kernel/head_64.S	2012-03-07 18:41:21.811516876 +0900
-@@ -270,18 +270,29 @@ bad_address:
- 	jmp bad_address
- 
- 	.section ".init.text","ax"
--#ifdef CONFIG_EARLY_PRINTK
- 	.globl early_idt_handlers
- early_idt_handlers:
--	i = 0
-+	vector = 0
- 	.rept NUM_EXCEPTION_VECTORS
--	movl $i, %esi
--	jmp early_idt_handler
--	i = i + 1
-+	/*
-+	 * NMIs (vector 2) this early in the boot process are rarely critical
-+	 * (usually it just means that there was a spurious bit flip somewhere
-+	 * in the hardware, or that this is a kdump kernel and we received an
-+	 * NMI generated in the previous context), so we ignore them here and
-+	 * try to continue (see early_nmi_handler implementation below).
-+	 * Harsher measures (panic, etc) are defered to the final NMI handler,
-+	 * which can actually make an informed decision.
-+	 */
-+	.if vector == 2
-+	jmp early_nmi_handler
-+	.else
-+	movl $vector, %esi
-+	jmp early_exception_handler
-+	.endif
-+	vector = vector + 1
- 	.endr
--#endif
- 
--ENTRY(early_idt_handler)
-+early_exception_handler:
- #ifdef CONFIG_EARLY_PRINTK
- 	cmpl $2,early_recursion_flag(%rip)
- 	jz  1f
-@@ -315,6 +326,9 @@ ENTRY(early_idt_handler)
- 1:	hlt
- 	jmp 1b
- 
-+early_nmi_handler:
-+	iretq
-+
- #ifdef CONFIG_EARLY_PRINTK
- early_recursion_flag:
- 	.long 0
-
---------------000801010101070406040206--
+--IrhDeMKUP4DT/M7F--
