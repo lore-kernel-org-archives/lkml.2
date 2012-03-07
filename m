@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759593Ab2CGUkj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 15:40:39 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:53342 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755407Ab2CGUke (ORCPT
+	id S1759287Ab2CGUoh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 15:44:37 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:39622 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758449Ab2CGUof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 15:40:34 -0500
-Date: Wed, 07 Mar 2012 15:39:13 -0500 (EST)
-Message-Id: <20120307.153913.824845751182717386.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless 2012-03-06
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120306201528.GC3353@tuxdriver.com>
-References: <20120306201528.GC3353@tuxdriver.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 07 Mar 2012 12:39:28 -0800 (PST)
+	Wed, 7 Mar 2012 15:44:35 -0500
+Date: Wed, 7 Mar 2012 14:44:15 -0600
+From: George Wilson <ltcgcw@us.ibm.com>
+To: James Morris <jmorris@namei.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        David Safford <safford@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: Re: [PATCH v2 00/11] ima: appraisal extension
+Message-ID: <20120307204414.GA6028@us.ibm.com>
+References: <1330629048-5933-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <alpine.LRH.2.02.1203072057350.29863@tundra.namei.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1203072057350.29863@tundra.namei.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030720-3352-0000-0000-0000032C17E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Tue, 6 Mar 2012 15:15:28 -0500
-
-> Here are a few more squeakers hoping for 3.3...
+On Wed, Mar 07, 2012 at 09:08:05PM +1100, James Morris wrote:
 > 
-> Two of them are for carl9170: a one-line fix for a memory accounting
-> leak; and a fix that corrects the handling of frames with a couple of
-> status flags set by mac80211 (enabling delivery to sleeping stations).
-> Also included is a one-liner for mwifiex that should have been included
-> in "mwifiex: clear previous security setting during association".
-> Finally, a one-line fix from Johannes Berg for an iwlwifi regression
-> brings-up the rear.
+> Do you know if any distros are planning on integrating EVM/IMA?
 > 
-> Please let me know if there are problems!
+> What about Tizen ?  The now defunct MeeGo project weas previously the 
+> main intended user.
 
-Pulled, but no promises getting these into 3.3
+FWIW, IBM has submitted EVM and IMA-appraisal feature requests to our Linux
+distro partners.  We also plan to use the features internally when they are
+supported in distros.
+
+-- 
+George Wilson
+IBM Linux Technology Center
+Security Development
+
