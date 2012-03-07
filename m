@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759043Ab2CGDAb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 22:00:31 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:47409 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756144Ab2CGDA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 22:00:29 -0500
-X-IronPort-AV: E=Sophos;i="4.73,543,1325433600"; 
-   d="scan'208";a="4476387"
-Message-ID: <4F56CBB6.90100@cn.fujitsu.com>
-Date: Wed, 07 Mar 2012 10:45:10 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1759084Ab2CGDQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 22:16:45 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:43151 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751317Ab2CGDQo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 22:16:44 -0500
 MIME-Version: 1.0
-To: Eric Blake <eblake@redhat.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH v2] deal with guest paniced event
-References: <4F56BEF2.4020405@cn.fujitsu.com> <4F56C0E1.1090703@cn.fujitsu.com> <4F56CA9E.2040907@redhat.com>
-In-Reply-To: <4F56CA9E.2040907@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-07 10:41:32,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-07 10:41:38,
-	Serialize complete at 2012-03-07 10:41:38
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF178E5D2FF5@HQMAIL01.nvidia.com>
+References: <1328288172-8059-1-git-send-email-sjg@chromium.org>
+	<74CDBE0F657A3D45AFBB94109FB122FF178E5D2FF5@HQMAIL01.nvidia.com>
+Date: Tue, 6 Mar 2012 19:16:43 -0800
+X-Google-Sender-Auth: DmRR_k5nS_oBi2JRLop4PDVyLD0
+Message-ID: <CAPnjgZ1rXEGbi3m3HeWiUxG_TbmUug0C0QZgb7_9Eiz-xPMHwg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] arm: tegra: dts: USB Updates for Tegra legacy mode / OTG
+From: Simon Glass <sjg@chromium.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
+        Olof Johansson <olof@lixom.net>
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03/07/2012 10:40 AM, Eric Blake Wrote:
-> On 03/06/2012 06:58 PM, Wen Congyang wrote:
->> When the host knows the guest is paniced, it will set
->> exit_reason to KVM_EXIT_GUEST_PANICED. So if qemu receive
->> this exit_reason, we can send a event to tell management
->> application that the guest is paniced and set the guest
->> status to RUN_STATE_PANICED.
-> 
-> s/PANICED/PANICKED/ throughout your series, for the correct spelling of
-> the past tense of panic.
++Olof
 
-Sorry for my bad english. I will update it.
+Hi,
 
-Thanks
-Wen Congyang
+On Fri, Feb 3, 2012 at 11:59 AM, Stephen Warren <swarren@nvidia.com> wrote:
+> Simon Glass wrote at riday, February 03, 2012 9:56 AM:
+>> This little series brings in some bindings that seem useful for U-Boot.
+>>
+>> I am working mostly in U-Boot, but since there is no shared .dts repo
+>> I was asked to commit these changes to the kernel. I do not propose to
+>> update the Linux USB drivers to match.
+>
+> I think the series looks reasonable, so:
+>
+> Acked-by: Stephen Warren <swarren@nvidia.com<>
+>
+> (I note that the kernel's USB driver for USB1 doesn't attempt to clear
+> legacy mode; I wonder how we're getting away with that. Perhaps it's
+> only been tested with a bootloader that's already cleared legacy mode)
+>
 
-> 
+How does this series get picked up, please?
 
+Regards,
+Simon
+
+> --
+> nvpublic
+>
