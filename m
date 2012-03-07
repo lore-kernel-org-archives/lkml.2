@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031637Ab2CGAKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 19:10:45 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42741 "EHLO
-	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758988Ab2CGAKo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 19:10:44 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of pullip.linux@gmail.com designates 10.112.85.33 as permitted sender) smtp.mail=pullip.linux@gmail.com; dkim=pass header.i=pullip.linux@gmail.com
-MIME-Version: 1.0
-In-Reply-To: <CAH9JG2Uvc27UMcsy_Apqo+Td_td_18C6i3vvC8aroBse2=+53w@mail.gmail.com>
-References: <002101ccfb73$8684c240$938e46c0$%cho@samsung.com>
-	<CAH9JG2Uvc27UMcsy_Apqo+Td_td_18C6i3vvC8aroBse2=+53w@mail.gmail.com>
-Date: Wed, 7 Mar 2012 09:10:42 +0900
-X-Google-Sender-Auth: ogsWR0vnjPNcb2Bn3fJFUvEhfZc
-Message-ID: <CAHQjnOP_mEck35PwhDd7v=MKc+ONFRFxa7i=ro0iMxWy-fuFNw@mail.gmail.com>
-Subject: Re: [PATCH v10 2/3] ARM: EXYNOS: Change System MMU platform device definitions
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Subash Patel <subash.ramaswamy@linaro.org>,
-        Younglak Kim <younglak1004.kim@samsung.com>,
-        iommu@lists.linux-foundation.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1031649Ab2CGAPq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 19:15:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43311 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031620Ab2CGAPp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 19:15:45 -0500
+Date: Tue, 6 Mar 2012 16:15:43 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: gaowanlong@cn.fujitsu.com
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        eparis@parisplace.org, James Morris <jmorris@namei.org>
+Subject: Re: [PATCH] selinux: init target class when add avc callback
+Message-Id: <20120306161543.63c3fc54.akpm@linux-foundation.org>
+In-Reply-To: <4F56A4E2.5050001@cn.fujitsu.com>
+References: <1328406808-11309-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	<4F56A4E2.5050001@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 7:03 PM, Kyungmin Park <kyungmin.park@samsung.com> wrote:
->>
->> -#define S5P_SYSMMU_TOTAL_IPNUM               EXYNOS4_SYSMMU_TOTAL_IPNUM
->> +#define SYSMMU_DEVNAME_BASE "exynos-sysmmu"
->> +
->> +#define SYSMMU_CLOCK_NAME "sysmmu"
->> +#define SYSMMU_CLOCK_NAME2 "sysmmu_mc"
-> What's the meaning of "mc"?
-It stands for multi clock gating source.
-ISP block has a lot of System MMUs and I merged them in a single
-platform device to control them easier. However it is required to access
-2 control registers to gating  their clocks. "sysmmu_mc" is prepared for the
-case that requires 2 clock descriptors for clock gating.
+On Wed, 07 Mar 2012 07:59:30 +0800
+Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
 
->> +
->> +#ifdef CONFIG_EXYNOS_DEV_SYSMMU
->> +#include <linux/device.h>
->> +struct platform_device;
->> +
->> +#define SYSMMU_PLATDEV(ipname) exynos_device_sysmmu_##ipname
->> +
->> +extern struct platform_device SYSMMU_PLATDEV(mfc_l);
->> +extern struct platform_device SYSMMU_PLATDEV(mfc_r);
->> +extern struct platform_device SYSMMU_PLATDEV(tv);
->> +extern struct platform_device SYSMMU_PLATDEV(jpeg);
->> +extern struct platform_device SYSMMU_PLATDEV(rot);
-> Where's the fimc platform_device?
->
-> I think you only tested it with exynos5.
+> On 02/05/2012 09:53 AM, Wanlong Gao wrote:
+> 
+> > Target security class should be initialized when add avc callback.
+> > Although tclass is userless in callbacks now, but it may be used
+> > in the future .
+> > 
+> > Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> > ---
+> >  security/selinux/avc.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+> > index dca1c22..27495e6 100644
+> > --- a/security/selinux/avc.c
+> > +++ b/security/selinux/avc.c
+> > @@ -576,6 +576,7 @@ int avc_add_callback(int (*callback)(u32 event, u32 ssid, u32 tsid,
+> >  	c->events = events;
+> >  	c->ssid = ssid;
+> >  	c->tsid = tsid;
+> > +	c->tclass = tclass;
+> >  	c->perms = perms;
+> >  	c->next = avc_callbacks;
+> >  	avc_callbacks = c;
 
-True. I am sorry that I have missed to define it externally.
-Thank you.
+Perhaps James can take a look at this?
 
-Cho KyongHo.
+avc_add_callback() looks a bit odd.  It uses GFP_ATOMIC, but that is
+unnecessary because avc_add_callback() is only ever called from
+module_init() code.  And if it isn't only ever called from
+module_init() code then it needs some locking for that list.
