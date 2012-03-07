@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab2CGLBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 06:01:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55122 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755409Ab2CGLBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 06:01:04 -0500
-Date: Wed, 7 Mar 2012 11:01:00 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Christoph Lameter <cl@linux.com>, Miao Xie <miaox@cn.fujitsu.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier
- related damage v2
-Message-ID: <20120307110100.GB17697@suse.de>
-References: <20120306132735.GA2855@suse.de>
- <20120306122657.8e5b128d.akpm@linux-foundation.org>
- <20120306224201.GA17697@suse.de>
- <20120306145451.8eff82a6.akpm@linux-foundation.org>
+	id S1755633Ab2CGLDm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 06:03:42 -0500
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:37716 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab2CGLDj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 06:03:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120306145451.8eff82a6.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1331117396-11600-1-git-send-email-avagin@openvz.org>
+References: <1331117396-11600-1-git-send-email-avagin@openvz.org>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 7 Mar 2012 12:03:19 +0100
+Message-ID: <CAPXgP12kQm9dZdjh3Vch2ebrn21jW6r-=gVssmvU3WqJ6VE70g@mail.gmail.com>
+Subject: Re: [PATCH] uevent: send events in correct order according to seqnum (v3)
+To: Andrew Vagin <avagin@openvz.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 02:54:51PM -0800, Andrew Morton wrote:
-> > > > -static inline void put_mems_allowed(void)
-> > > > +/*
-> > > > + * If this returns false, the operation that took place after get_mems_allowed
-> > > > + * may have failed. It is up to the caller to retry the operation if
-> > > > + * appropriate
-> > > > + */
-> > > > +static inline bool put_mems_allowed(unsigned int seq)
-> > > >  {
-> > > > -	/*
-> > > > -	 * ensure that reading mems_allowed and mempolicy before reducing
-> > > > -	 * mems_allowed_change_disable.
-> > > > -	 *
-> > > > -	 * the write-side task will know that the read-side task is still
-> > > > -	 * reading mems_allowed or mempolicy, don't clears old bits in the
-> > > > -	 * nodemask.
-> > > > -	 */
-> > > > -	smp_mb();
-> > > > -	--ACCESS_ONCE(current->mems_allowed_change_disable);
-> > > > +	return !read_seqcount_retry(&current->mems_allowed_seq, seq);
-> > > >  }
-> > > >  
-> > > >  static inline void set_mems_allowed(nodemask_t nodemask)
-> > > 
-> > > How come set_mems_allowed() still uses task_lock()?
-> > >
-> > 
-> > Consistency.
-> > 
-> > The task_lock is taken by kernel/cpuset.c when updating
-> > mems_allowed so it is taken here. That said, it is unnecessary to take
-> > as the two places where set_mems_allowed is used are not going to be
-> > racing. In the unlikely event that set_mems_allowed() gets another user,
-> > there is no harm is leaving the task_lock as it is. It's not in a hot
-> > path of any description.
-> 
-> But shouldn't set_mems_allowed() bump mems_allowed_seq?
+On Wed, Mar 7, 2012 at 11:49, Andrew Vagin <avagin@openvz.org> wrote:
+> The queue handling in the udev daemon assumes that the events are
+> ordered.
+>
+> Before this patch uevent_seqnum is incremented under sequence_lock,
+> than an event is send uner uevent_sock_mutex. I want to say that code
+> contained a window between incrementing seqnum and sending an event.
+>
+> This patch locks uevent_sock_mutex before incrementing uevent_seqnum.
+>
+> v2: delete sequence_lock, uevent_seqnum is protected by uevent_sock_mutex
+> v3: unlock the mutex before the goto exit
+>
+> Thanks for Kay for the comments.
+>
+> Signed-off-by: Andrew Vagin <avagin@openvz.org>
 
-Yes, it should. It's not necessary with the existing callers but the
-"consistency" argument applies. Fixed now.
+Looks good to me. Works fine in a kvm installation here.
+Feel free to add:
+  Tested-By: Kay Sievers <kay.sievers@vrfy.org>
 
--- 
-Mel Gorman
-SUSE Labs
+Thanks lot for the udev debugging and taking care of it,
+Kay
