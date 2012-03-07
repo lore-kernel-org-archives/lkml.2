@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759374Ab2CGAJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 19:09:12 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49053 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754592Ab2CGAJJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 19:09:09 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of yhlu.kernel@gmail.com designates 10.236.184.226 as permitted sender) smtp.mail=yhlu.kernel@gmail.com; dkim=pass header.i=yhlu.kernel@gmail.com
+	id S1031637Ab2CGAKp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 19:10:45 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:42741 "EHLO
+	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758988Ab2CGAKo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 19:10:44 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of pullip.linux@gmail.com designates 10.112.85.33 as permitted sender) smtp.mail=pullip.linux@gmail.com; dkim=pass header.i=pullip.linux@gmail.com
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5TjhNv1W=PxSPO6qXfhW1Mi4dMp83vj82=O_hFOq1vow@mail.gmail.com>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
-	<1331018040-30725-24-git-send-email-yinghai@kernel.org>
-	<CAErSpo5TjhNv1W=PxSPO6qXfhW1Mi4dMp83vj82=O_hFOq1vow@mail.gmail.com>
-Date: Tue, 6 Mar 2012 16:09:09 -0800
-X-Google-Sender-Auth: hBMXSkDdrWEFABGalGin0m0XHis
-Message-ID: <CAE9FiQXsY7Dn5TGtD1ARM_KFdz1V1hJOvYAy6e4msM=i3VfhDg@mail.gmail.com>
-Subject: Re: [PATCH 23/23] x86, PCI: add pcibios_root_rescan
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <CAH9JG2Uvc27UMcsy_Apqo+Td_td_18C6i3vvC8aroBse2=+53w@mail.gmail.com>
+References: <002101ccfb73$8684c240$938e46c0$%cho@samsung.com>
+	<CAH9JG2Uvc27UMcsy_Apqo+Td_td_18C6i3vvC8aroBse2=+53w@mail.gmail.com>
+Date: Wed, 7 Mar 2012 09:10:42 +0900
+X-Google-Sender-Auth: ogsWR0vnjPNcb2Bn3fJFUvEhfZc
+Message-ID: <CAHQjnOP_mEck35PwhDd7v=MKc+ONFRFxa7i=ro0iMxWy-fuFNw@mail.gmail.com>
+Subject: Re: [PATCH v10 2/3] ARM: EXYNOS: Change System MMU platform device definitions
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Subash Patel <subash.ramaswamy@linaro.org>,
+        Younglak Kim <younglak1004.kim@samsung.com>,
+        iommu@lists.linux-foundation.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 3:13 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Mar 6, 2012 at 12:14 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> need use it to rescan root bus that was not added via acpi probe.
+On Tue, Mar 6, 2012 at 7:03 PM, Kyungmin Park <kyungmin.park@samsung.com> wrote:
 >>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> ---
->>  arch/x86/pci/legacy.c |   25 +++++++++++++++++++++++++
->>  1 files changed, 25 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/pci/legacy.c b/arch/x86/pci/legacy.c
->> index aab0e41..7a7c78f 100644
->> --- a/arch/x86/pci/legacy.c
->> +++ b/arch/x86/pci/legacy.c
->> @@ -79,3 +79,28 @@ int __init pci_subsys_init(void)
->>        return 0;
->>  }
->>  subsys_initcall(pci_subsys_init);
+>> -#define S5P_SYSMMU_TOTAL_IPNUM               EXYNOS4_SYSMMU_TOTAL_IPNUM
+>> +#define SYSMMU_DEVNAME_BASE "exynos-sysmmu"
 >> +
->> +void __devinit pcibios_root_rescan(void)
->> +{
->> +       int busn;
->> +       struct pci_bus *bus;
+>> +#define SYSMMU_CLOCK_NAME "sysmmu"
+>> +#define SYSMMU_CLOCK_NAME2 "sysmmu_mc"
+> What's the meaning of "mc"?
+It stands for multi clock gating source.
+ISP block has a lot of System MMUs and I merged them in a single
+platform device to control them easier. However it is required to access
+2 control registers to gating  their clocks. "sysmmu_mc" is prepared for the
+case that requires 2 clock descriptors for clock gating.
+
 >> +
->> +       if (pcibios_last_bus <= 0 || pcibios_last_bus > 0xff)
->> +               return;
+>> +#ifdef CONFIG_EXYNOS_DEV_SYSMMU
+>> +#include <linux/device.h>
+>> +struct platform_device;
 >> +
->> +       for (busn = 0; busn <= pcibios_last_bus; busn++) {
->> +               bus = pci_find_bus(0, busn);
+>> +#define SYSMMU_PLATDEV(ipname) exynos_device_sysmmu_##ipname
 >> +
->> +               if (bus)
->> +                       continue;
->> +
->> +               bus = __pcibios_scan_specific_bus(busn, false);
->> +
->> +               if (!bus)
->> +                       continue;
->> +
->> +               pci_assign_unassigned_bus_resources(bus);
->> +
->> +               pci_bus_add_devices(bus);
->> +       }
->> +}
+>> +extern struct platform_device SYSMMU_PLATDEV(mfc_l);
+>> +extern struct platform_device SYSMMU_PLATDEV(mfc_r);
+>> +extern struct platform_device SYSMMU_PLATDEV(tv);
+>> +extern struct platform_device SYSMMU_PLATDEV(jpeg);
+>> +extern struct platform_device SYSMMU_PLATDEV(rot);
+> Where's the fimc platform_device?
 >
-> Does anybody call this?
+> I think you only tested it with exynos5.
 
-yes, in
+True. I am sorry that I have missed to define it externally.
+Thank you.
 
-[PATCH 19/23] PCI: add /sys/bus/pci/rescan_root
-
->
-> Do we need it?  I assume we only care about host bridge hotplug via ACPI on x86.
-
-my sandbridge system has cpu bus 0x7f, and 0xff in DSDT.
-
-but nehalem and westmere system does not have cpu bus 0xf8, ... 0xff.
-
->
-> Please wait a while (at least a day or two) before reposting your
-> series so people have time to take a look at the current one.  It's a
-> real nuisance to be working through a large series like this and get
-> bombed with a repost of the whole thing that tweaks some minor detail.
->  I'd rather take some time and get as much of the discussion out of
-> the way on V1 as possible before getting to V2, V3, V4, etc.
-
-Sure.
+Cho KyongHo.
