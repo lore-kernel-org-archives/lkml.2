@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab2CGPuq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 10:50:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26643 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753979Ab2CGPup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 10:50:45 -0500
-Date: Wed, 7 Mar 2012 10:50:18 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
-	<fernando@oss.ntt.co.jp>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, mingo@elte.hu,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de
-Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
- crash path
-Message-ID: <20120307155018.GA13430@redhat.com>
-References: <20120216215603.GH9751@redhat.com>
- <m1y5s2ku36.fsf@fess.ebiederm.org>
- <m1fwe9bpk2.fsf@fess.ebiederm.org>
- <20120217195430.GO9751@redhat.com>
- <m1y5s07rn3.fsf@fess.ebiederm.org>
- <20120220151419.GU9751@redhat.com>
- <m1obss39a4.fsf@fess.ebiederm.org>
- <20120221135934.GF26998@redhat.com>
- <m1ipip6xe8.fsf@fess.ebiederm.org>
- <4F573E1C.2060909@oss.ntt.co.jp>
+	id S1756624Ab2CGPwK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 10:52:10 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60670 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756303Ab2CGPwH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 10:52:07 -0500
+Date: Wed, 7 Mar 2012 07:45:17 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Andrew Vagin <avagin@openvz.org>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] uevent: send events in correct order according to seqnum
+ (v3)
+Message-ID: <20120307154517.GA16080@kroah.com>
+References: <1331117396-11600-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F573E1C.2060909@oss.ntt.co.jp>
+In-Reply-To: <1331117396-11600-1-git-send-email-avagin@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 07, 2012 at 07:53:16PM +0900, Fernando Luis Vázquez Cao wrote:
-> On 03/01/2012 08:19 AM, Eric W. Biederman wrote:
+On Wed, Mar 07, 2012 at 02:49:56PM +0400, Andrew Vagin wrote:
+> The queue handling in the udev daemon assumes that the events are
+> ordered.
 > 
-> >Don Zickus<dzickus@redhat.com>  writes:
-> >>It probably is, except I never hacked on idt code before and my assembly
-> >>isn't that good.  I have been trying to find examples to copy from to give
-> >>it a try.  So far I was using early_idt_handlers with early_printk to see
-> >>if I could capture some printk messages while jumping from the first
-> >>kernel to the second kernel (when the other early_idt_handlers would kick
-> >>in for the second kernel).
-> >>
-> >>Tips?  Better examples?
-> >That is a particularly good example.  When I took a quick look earlier
-> >that is the first place we reload the idt in the kernel boot so that is
-> >one of two places that needs to be modified.
-> 
-> Hi Eric, Don
-> 
-> Sorry for chiming in so late.
-> 
-> We run into the same NMI problems and wrote some patches that tackle
-> the kernel boot side of things. They have been extensively tested using
-> qemu-kvm and things seem to be working as expected (after receiving an
-> early NMI the kernel continues without problem; after the iret there is no
-> stack corruption or register corruption).
+> Before this patch uevent_seqnum is incremented under sequence_lock,
+> than an event is send uner uevent_sock_mutex. I want to say that code
+> contained a window between incrementing seqnum and sending an event.
 
-What happens if NMI happens while we are still in purgatory code?
+Is this something that you have seen "in the wild"?  If so, we should
+backport it to older kernels as well, right?
 
-Thanks
-Vivek
+thanks,
+
+greg k-h
