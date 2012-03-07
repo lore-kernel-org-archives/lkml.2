@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030882Ab2CGWns (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 17:43:48 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:26739 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030205Ab2CGWnp (ORCPT
+	id S1030889Ab2CGWov (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 17:44:51 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11458 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030205Ab2CGWou convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 17:43:45 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 07 Mar 2012 17:43:43 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Michal Marek <mmarek@suse.cz>, linux-arch@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Mike Frysinger <vapier@gentoo.org>, linux-sh@vger.kernel.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, sparclinux@vger.kernel.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: Re: [PATCH 2/3] Kbuild: Implement CONFIG_UIMAGE_KERNEL_NOLOAD
-In-reply-to: <20120307213009.GF18787@n2100.arm.linux.org.uk>
-Message-id: <alpine.LFD.2.02.1203071644180.24151@xanadu.home>
-References: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org>
- <1331080238-1524-2-git-send-email-swarren@wwwdotorg.org>
- <20120307180815.GA27213@game.jcrosoft.org> <4F57AB92.6060907@wwwdotorg.org>
- <20120307183633.GB27213@game.jcrosoft.org> <4F57C4C6.2070602@wwwdotorg.org>
- <alpine.LFD.2.02.1203071537130.24151@xanadu.home>
- <20120307213009.GF18787@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 7 Mar 2012 17:44:50 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 07 Mar 2012 14:44:27 -0800
+From: Diwakar Tundlam <dtundlam@nvidia.com>
+To: Ingo Molnar <mingo@elte.hu>, "'Peter Zijlstra'" <peterz@infradead.org>,
+        "'Jens Axboe'" <jaxboe@fusionio.com>,
+        "'Randy Dunlap'" <randy.dunlap@oracle.com>
+CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'Linus Torvalds'" <torvalds@linux-foundation.org>
+Date: Wed, 7 Mar 2012 14:44:26 -0800
+Subject: [PATCH] scheduler: domain: correctly initialize 'next_balance' in
+ 'nohz' idle balancer
+Thread-Topic: [PATCH] scheduler: domain: correctly initialize 'next_balance'
+ in 'nohz' idle balancer
+Thread-Index: AczgU0erG2gZs14gRdCqHlqSrZe0nwcX5wag
+Message-ID: <1DD7BFEDD3147247B1355BEFEFE4665237994F30EF@HQMAIL04.nvidia.com>
+References: <1327927463-4165-1-git-send-email-pdeschrijver@nvidia.com>
+	 <1328024684.2446.234.camel@twins>
+	 <1DD7BFEDD3147247B1355BEFEFE466523791832BE9@HQMAIL04.nvidia.com>
+ <1328040137.2446.242.camel@twins>
+In-Reply-To: <1328040137.2446.242.camel@twins>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Mar 2012, Russell King - ARM Linux wrote:
+scheduler: domain: init next_balance in nohz_idle_balancer with jiffies
 
-> On Wed, Mar 07, 2012 at 04:03:04PM -0500, Nicolas Pitre wrote:
-> > Well, I do have a patch series getting rid of ZRELADDR entirely, and 
-> > AUTO_ZRELADDR would then become implicit, unless CONFIG_PHYS_OFFSET is 
-> > defined.
-> 
-> Not possible, unless you're goign to also rip out uImage support.
+The 'next_balance' field of 'nohz' idle balancer must be initialized
+to jiffies. Since jiffies is initialized to negative 300 seconds the
+'nohz' idle balancer does not run for the first 300s (5mins) after
+bootup. If no new processes are spawed or no idle cycles happen, the
+load on the cpus will remain unbalanced for that duration.
 
-I wish I could.  At least this new "noload" option would make uImage 
-compatible with this.  That won't help existing u-Boot installations 
-though, which is why I didn't post that patch series yet as I still 
-haven't found a good fallback.
+Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
+---
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> Otherwise, how do we deal with platforms like Versatile Express where
-> uboot does a funky relocation of data depending on whether the uImage
-> it's loading is for the low 256MB RAM mapping or the high 1GB RAM
-> mapping.
-
-Doesn't it use AUTO_ZRELADDR?  With the newer u-Boot, you'd just load 
-uImage to whatever address and u-Boot won't mess with it.
-
-
-Nicolas
+diff -up sched/fair.c{.orig,}
+--- sched/fair.c.orig	2012-03-07 08:33:03.000000000 -0800
++++ sched/fair.c	2012-03-07 13:50:30.787265795 -0800
+@@ -5614,6 +5614,7 @@ __init void init_sched_fair_class(void)
+ 	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
+ 
+ #ifdef CONFIG_NO_HZ
++	nohz.next_balance = jiffies;
+ 	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
+ 	cpu_notifier(sched_ilb_notifier, 0);
+ #endif
