@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab2CGJcp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 04:32:45 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:19835 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab2CGJcm convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:13:1>);
-	Wed, 7 Mar 2012 04:32:42 -0500
-Message-Id: <4F5739760200007800076DA6@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 07 Mar 2012 09:33:26 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Santosh Jodh" <Santosh.Jodh@citrix.com>, <konrad@darnok.org>
-Cc: "David Vrabel" <david.vrabel@citrix.com>,
-        "Ian Campbell" <Ian.Campbell@citrix.com>,
-        "Paul Durrant" <Paul.Durrant@citrix.com>,
-        "waldi@debian.org" <waldi@debian.org>,
-        "weiyi.huang@gmail.com" <weiyi.huang@gmail.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "joe.jin@oracle.com" <joe.jin@oracle.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "lersek@redhat.com" <lersek@redhat.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "dgdegra@tycho.nsa.gov" <dgdegra@tycho.nsa.gov>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>
-Subject: Re: [Xen-devel] [PATCH 0001/001] xen: multi page ring support
- for block devices
-References: <1330701099-18281-1-git-send-email-santoshprasadnayak@gmail.com>
- <7914B38A4445B34AA16EB9F1352942F1010A1FA12364@SJCPMAILBOX01.citrite.net>
- <CAPbh3rsExLtohBwVd_scYuO=GN1iZE5egQQ3x5M59YUno5Rtyw@mail.gmail.com>
-In-Reply-To: <CAPbh3rsExLtohBwVd_scYuO=GN1iZE5egQQ3x5M59YUno5Rtyw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1754820Ab2CGJdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 04:33:53 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56065 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2CGJds (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 04:33:48 -0500
+Date: Wed, 7 Mar 2012 09:30:26 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
+	__dma_request_channel()
+Message-ID: <20120307093026.GM17370@n2100.arm.linux.org.uk>
+References: <Pine.LNX.4.64.1202011610050.26261@axis700.grange> <Pine.LNX.4.64.1203021341590.913@axis700.grange> <1331022623.24656.191.camel@vkoul-udesk3> <Pine.LNX.4.64.1203060935460.9300@axis700.grange> <1331035739.24656.201.camel@vkoul-udesk3> <Pine.LNX.4.64.1203061339330.9300@axis700.grange> <1331101687.24656.319.camel@vkoul-udesk3> <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 06.03.12 at 18:20, Konrad Rzeszutek Wilk <konrad@darnok.org> wrote:
->  -> the usage of XenbusStateInitWait? Why do we introduce that? Looks
-> like a fix to something.
+On Wed, Mar 07, 2012 at 10:18:42AM +0100, Guennadi Liakhovetski wrote:
+> I still don't see an answer to the very same question, that we've been 
+> discussing over multiple threads and mails now: how do we use that, if 
+> it's not a 1-to-1 mapping? I.e., many channels on many controllers can be 
+> run-time configured for use with different client devices. Also the above 
+> idea from Linus W doesn't directly address this.
+> 
+> Following his clock / regulator analogy. There the correspondence is 
+> clearly fixed: fixed clocks and power supplies are used with every 
+> specific device. Whereas in our DMAC case it's not.
+> 
+> I'm trying to think of an analogy, where you have several pools of 
+> resources, and each consumer can use any of the resources on some of those 
+> pools, but nothing pops up. Interrupts, GPIOs, clocks, regulators - they 
+> all are fixed to their consumers.
+> 
+> Also notice, this can become even worse, if we ever get controllers with 
+> channels with different capabilities on them. So, I really would let the 
+> DMAC driver do the mapping and not try to put it in the core.
 
-No, this is required to get the negotiation working (the frontend must
-not try to read the new nodes until it can be certain that the backend
-populated them). However, as already pointed out in an earlier reply
-to Santosh, the way this is done here doesn't appear to allow for the
-backend to already be in InitWait state when the frontend gets
-invoked.
+Well, I am quite convinced (being on my third or fourth DMA engine driver)
+that DMA engine does stuff quite wrongly when it comes to slave stuff.
+Why?
 
-> -> XENBUS_MAX_RING_PAGES - why 2? Why not 4? What is the optimal
-> default size for SSD usage? 16?
+The code required to support slave device transfers is very much the same
+for each driver (that's partly because I'm writing my drivers in the same
+way.)  Essentially, slave channels aren't physical channels themselves,
+but virtual channels which get assigned to physical channels at some point.
+I would really like to see some common infrastructure for handling these
+virtual channels so I don't have to write yet another version of that code,
+and that's something I'll be working on.
 
-What do SSDs have to do with a XenBus definition? Imo it's wrong (and
-unnecessary) to introduce a limit at the XenBus level at all - each driver
-can do this for itself.
+My main critera for selecting a virtual channel is the DMA request signal
+into the DMA controller itself, and nothing more.  Most other non-specific
+configuration information (data register, data register width, burst size
+etc) comes from the peripheral driver.
 
-As to the limit for SSDs in the block interface - I don't think the number
-of possibly simultaneous requests has anything to do with this. Instead,
-I'd expect the request number/size/segments extension that NetBSD
-apparently implements to possibly have an effect.
+Any other data relevant to the DMA engine needs to come from the platform
+in some way, that being DT or platform data or whatever.  For example,
+with a DMA engine which has two bus interfaces, where it matters which
+bus interface is used, that needs to be specified by the platform and not
+by the DMA engine itself nor the peripheral driver.
 
-Jan
+That would also include, if relevant, which physical channels a virtual
+channel (dma request) could be routed to.
 
+Note that we've been omitting that from the PL08x driver so far - memory-
+to-memory requests are supposed to only be handled by a couple of channels
+which are designed for that purpose (so they don't flood the bus) but
+we currently allocate them to any channel...
