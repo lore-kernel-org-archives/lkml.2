@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418Ab2CGFgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 00:36:32 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:36354 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751029Ab2CGFgb (ORCPT
+	id S1751389Ab2CGFkx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 00:40:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37580 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab2CGFkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 00:36:31 -0500
-X-Authenticated: #28250155
-X-Provags-ID: V01U2FsdGVkX199TRQEIN99Lfd3gOpBAnTqDQPn//LE8rSO2exu0F
-	09SOS8tyIUJFFl
-From: Sven Joachim <svenjoac@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Stefan Lippers-Hollmann <s.L-H@gmx.de>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org,
-        Stefano Brivio <stefano.brivio@polimi.it>
-Subject: Re: [ 57/72] genirq: Unmask oneshot irqs when thread was not woken
-References: <20120228010511.GA8453@kroah.com>
-	<20120228010434.412979550@linuxfoundation.org>
-	<87hay4dqjr.fsf@turtle.gmx.de> <201203050143.24541.s.L-H@gmx.de>
-	<CA+55aFxZsVxkxifR+EUZi=RsUGKfs5vYXX3nN_M_Az1BY5yyaw@mail.gmail.com>
-	<alpine.LFD.2.02.1203060927190.2742@ionos>
-	<alpine.LFD.2.02.1203060957140.2742@ionos>
-	<alpine.LFD.2.02.1203062019340.2742@ionos>
-	<8762eh1p7d.fsf@turtle.gmx.de>
-	<alpine.LFD.2.02.1203062101040.2742@ionos>
-	<CA+55aFxdnfGREML3u+eoGf89Jci8qBuW7WBmPk3w=wRWMvRvfg@mail.gmail.com>
-	<alpine.LFD.2.02.1203062243130.2742@ionos>
-	<CA+55aFwTYRO-qOPvSPkEf_5=10EOTBQa+DpRHFf_=iwXOFi4xw@mail.gmail.com>
-Date: Wed, 07 Mar 2012 06:36:24 +0100
-In-Reply-To: <CA+55aFwTYRO-qOPvSPkEf_5=10EOTBQa+DpRHFf_=iwXOFi4xw@mail.gmail.com>
-	(Linus Torvalds's message of "Tue, 6 Mar 2012 14:33:54 -0800")
-Message-ID: <87lindnfaf.fsf@turtle.gmx.de>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.94 (gnu/linux)
+	Wed, 7 Mar 2012 00:40:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Y-GMX-Trusted: 0
+In-Reply-To: <4F56F0A8.1000600@gmail.com>
+References: <1331090098-25097-1-git-send-email-Barry.Song@csr.com>
+ <4F56E0AC.8070501@gmail.com> <CAGsJ_4x4CwD+WAE9d+Xob_tfwqmE6SdBdBd5EbC64XBi4Uzvgg@mail.gmail.com>
+ <4F56EA49.8070808@gmail.com> <CAGsJ_4xJoKGt3+b_3bteoMyeO615pCxFpMpsH4LtvufFNDv6bA@mail.gmail.com>
+ <4F56EBA6.6000704@gmail.com> <CAGsJ_4ypegMQVf0Xet1T5sLaaEDGh5s1Vi6w4t_UQSZp7nYQuQ@mail.gmail.com>
+ <4F56ED9D.3000504@gmail.com> <CAGsJ_4x9hGDh+PgrvtXqp-bdbPHABz1ErHGdvFQAr0m9RYM8Vw@mail.gmail.com>
+ <4F56F0A8.1000600@gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 7 Mar 2012 13:40:32 +0800
+Message-ID: <CAGsJ_4zPn=phmWw8qSed93QWnTdOF7peh71uom0i6idR1_jFSQ@mail.gmail.com>
+Subject: Re: [PATCH v3] MM: CMA: add a simple kernel module as the helper to
+ test CMA
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Barry Song <Barry.Song@csr.com>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, mina86@mina86.com,
+        Barry Song <Baohua.Song@csr.com>, linux-arm-kernel@lists.infradead.org,
+        m.szyprowski@samsung.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-06 23:33 +0100, Linus Torvalds wrote:
-
-> On Tue, Mar 6, 2012 at 2:18 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> Subject: genirq: Clear action->thread_mask if IRQ_ONESHOT is not set
+2012/3/7 Cong Wang <xiyou.wangcong@gmail.com>:
+> On 03/07/2012 01:17 PM, Barry Song wrote:
+>>
+>> that is definitely trivial as we are talking about things in a test
+>> module. and we are not talking about any bug in the test module as
+>> well.
 >
-> Ok, can we get this fixed version tested too by people who saw the problem?
+>
+> I am quite sure *any* patches have bugs will not be merged, IOW, you seem
+> don't want your patch merged. :) Fine. That is all.
 
-It works for me.
+Cong, i was not againest what you said as a techinical issue.
+definitely, it can be a /proc, it is also able to be /sys if you like.
+/proc is probably better than /dev from the original design thinking in kernel.
 
-Cheers,
-       Sven 
+here i focused on people have this module to test CMA at runtime. i
+also thought Michal also wants this module to show people the usage of
+CMA as well.
+
+i'll much appreciate if you have time to move it to /proc.
+
+-barry
