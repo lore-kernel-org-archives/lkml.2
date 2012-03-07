@@ -1,488 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760017Ab2CGTr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 14:47:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57736 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760004Ab2CGTrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 14:47:24 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 06/29] Disintegrate asm/system.h for AVR32
-To: paul.gortmaker@windriver.com, hpa@zytor.com
-Cc: torvalds@linux-foundation.org, sfr@canb.auug.org.au, mingo@redhat.com,
-        arnd@arndb.de, dhowells@redhat.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Date: Wed, 07 Mar 2012 19:47:05 +0000
-Message-ID: <20120307194705.15987.54533.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120307194548.15987.36073.stgit@warthog.procyon.org.uk>
-References: <20120307194548.15987.36073.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1760031Ab2CGTrp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 14:47:45 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52274 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760005Ab2CGTr1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 14:47:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120307162851.GC13430@redhat.com>
+References: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com>
+	<CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
+	<20120307162851.GC13430@redhat.com>
+Date: Wed, 7 Mar 2012 13:47:25 -0600
+Message-ID: <CAKA=qzb0T62xFsDpiQ0nsnE--HQ2bXFKN2EWr4knjR_+bOshUA@mail.gmail.com>
+Subject: Re: multi-second application stall in open()
+From: Josh Hunt <joshhunt00@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, tj@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disintegrate asm/system.h for AVR32.  This has not been compiled at all.
+On Wed, Mar 7, 2012 at 10:28 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Wed, Mar 07, 2012 at 07:43:42AM -0600, Josh Hunt wrote:
+>> On Tue, Mar 6, 2012 at 3:56 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
+>> > I am trying to diagnose a stall in an application when making a call
+>> > to open() with O_TRUNC. The issue was originally seen on 2.6.38 and
+>> > I've since reproduced on 2.6.35. I believe the last kernel that I did
+>> > not see the stall was 2.6.32. The system is under low to moderate cpu
+>> > and memory load when the issue occurs. The filesystem is ext2, but I
+>> > mounted it as ext4 and still saw the issue.
+>> >
+>> > To me it appears the O_TRUNC needs to truncate pages in the page
+>> > cache, but maybe those are already out for writeback? This causes the
+>> > open() to wait until that operation completes at which time it is then
+>> > able to proceed. If that's true then it looks like the writeback is
+>> > sitting on the queue forever waiting (tens of seconds) to be
+>> > dispatched to the device.
+>> >
+>> > Here's some more info/data I collected:
+>> > (Unfortunately the data here and attached are from separate runs so
+>> > the #s will not match up file to file.)
+>> >
+>> > Snippet of an strace when it is hanging:
+>> > 1329323286.589182 close(37)             = 0 <0.000010>
+>> > 1329323286.589212 clock_gettime(0x5 /* CLOCK_??? */, {1329323286,
+>> > 587579583}) = 0 <0.000007>
+>> > 1329323286.589241 open("/usr/local/etc/abcd/known/test808",
+>> > O_WRONLY|O_CREAT|O_TRUNC, 0644)                = 37 <76.841586>
+>> > 1329323363.441841 fchmod(37, 0644)      = 0 <0.000012>
+>> > 1329323363.441882 fcntl64(37, F_GETFL)  = 0x1 (flags O_WRONLY) <0.000011>
+>> > 1329323363.441915 fcntl64(37, F_SETFL, O_WRONLY|O_NONBLOCK) = 0 <0.000010>
+>> >
+>> > To debug this more I enabled the hang check timer to dump stack when
+>> > anything hung for longer than 10s. There I see the the hanging
+>> > application appearing to be stuck in sync_page(). See attached dmesg
+>> > for traces.
+>> >
+>> > I've also captured "iostat -xm 1" while the application was running
+>> > and have attached a snippet of that when the problem is occurring. I
+>> > see 100% utilization for many seconds and then eventually the
+>> > operations complete, but the await time is extremely high. To me there
+>> > doesn't look like much IO going on which could be starving out any
+>> > requests.
+>> >
+>> > I have not been able to perform a full bisection to better understand
+>> > what may be causing this, but do see this on 2.6.38, a little less
+>> > frequently but still occurs on 2.6.35, and no longer see the issue on
+>> > 2.6.32. If I switch slice_idle to 0 or change to the deadline
+>> > scheduler the issue appears to go away in both 2.6.35 and 38.
+>
+> Is it happening on latest kernel (3.3-rc6) ?
+>
+> Can you change the IO scheduler to deadline on sda and see if the issue
+> still happens. (echo deadline > /sys/block/sda/queue/scheduler).
+>
+> blktrace of cfq look odd. I see that some IO (async writes) are being
+> submitted but CFQ did not dispatch it for a long time.  Even some unplugs
+> came in still nothing happened. Also no completions are happening during
+> that window. Not sure why CFQ refuses to dispatch queued writes.
+>
+> Request added by flusher.
+>
+>  8,0    1    36926  5028.546000122  2846  A   W 20147012 + 8 <- (8,3)
+> 3375152
+>  8,0    1    36927  5028.546001798  2846  Q   W 20147012 + 8 [flush-8:0]
+>  8,0    1    36928  5028.546009900  2846  G   W 20147012 + 8 [flush-8:0]
+>  8,0    1    36929  5028.546014649  2846  I   W 20147012 + 8 (    4749)
+> [flush-8:0]
+>
+> And this request is dispatched after 22 seconds.
+>
+>  8,0    1    37056  5050.117337221   162  D   W 20147012 + 16 (21571322572) [sync_supers]
+>
+>
+> And it completes fairly fast.
+>
+>  8,0    0    36522  5050.117686149  9657  C   W 20147012 + 16 (  348928)
+> [0]
+>
+> So not sure why CFQ will hold that request for so long when other IO is
+> not happening.
+>
+> Please try latest kernels and see if deadline has the same issue. If not,
+> then we know somehow CFQ is related. If it still happens on latest
+> kernels, can you try capturing blktrace again when you are experiencing
+> the delays.
+>
+> Thanks
+> Vivek
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Vivek thanks for the response. I did try deadline and do not see the
+issue using that. I also do not see the problem when slice_idle is set
+to 0. Unfortunately I cannot run the testcase on 3.3-rc right now. I
+also wanted to point out that there seems to be very little IO going
+on (at least from what I can tell.) Please double check me with the
+iostat output I sent in the previous mail. I am wondering if it's
+possible that there's not enough requests here to keep things running
+smoothly? If that's a possibility?
 
- arch/avr32/include/asm/atomic.h        |  101 ++++++++++++++++++
- arch/avr32/include/asm/barrier.h       |   27 +++++
- arch/avr32/include/asm/bug.h           |    5 +
- arch/avr32/include/asm/exec.h          |   13 ++
- arch/avr32/include/asm/special_insns.h |   13 ++
- arch/avr32/include/asm/switch_to.h     |   46 ++++++++
- arch/avr32/include/asm/system.h        |  178 --------------------------------
- 7 files changed, 205 insertions(+), 178 deletions(-)
- create mode 100644 arch/avr32/include/asm/barrier.h
- create mode 100644 arch/avr32/include/asm/exec.h
- create mode 100644 arch/avr32/include/asm/special_insns.h
- create mode 100644 arch/avr32/include/asm/switch_to.h
- delete mode 100644 arch/avr32/include/asm/system.h
-
-diff --git a/arch/avr32/include/asm/atomic.h b/arch/avr32/include/asm/atomic.h
-index 2fc18fe..91c6833 100644
---- a/arch/avr32/include/asm/atomic.h
-+++ b/arch/avr32/include/asm/atomic.h
-@@ -15,6 +15,7 @@
- #define __ASM_AVR32_ATOMIC_H
- 
- #include <linux/types.h>
-+#include <linux/irqflags.h>
- 
- #define ATOMIC_INIT(i)  { (i) }
- 
-@@ -187,4 +188,104 @@ static inline int atomic_sub_if_positive(int i, atomic_t *v)
- #define smp_mb__before_atomic_inc()	barrier()
- #define smp_mb__after_atomic_inc()	barrier()
- 
-+#define xchg(ptr,x) \
-+	((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
-+
-+extern void __xchg_called_with_bad_pointer(void);
-+
-+static inline unsigned long xchg_u32(u32 val, volatile u32 *m)
-+{
-+	u32 ret;
-+
-+	asm volatile("xchg %[ret], %[m], %[val]"
-+			: [ret] "=&r"(ret), "=m"(*m)
-+			: "m"(*m), [m] "r"(m), [val] "r"(val)
-+			: "memory");
-+	return ret;
-+}
-+
-+static inline unsigned long __xchg(unsigned long x,
-+				       volatile void *ptr,
-+				       int size)
-+{
-+	switch(size) {
-+	case 4:
-+		return xchg_u32(x, ptr);
-+	default:
-+		__xchg_called_with_bad_pointer();
-+		return x;
-+	}
-+}
-+
-+static inline unsigned long __cmpxchg_u32(volatile int *m, unsigned long old,
-+					  unsigned long new)
-+{
-+	__u32 ret;
-+
-+	asm volatile(
-+		"1:	ssrf	5\n"
-+		"	ld.w	%[ret], %[m]\n"
-+		"	cp.w	%[ret], %[old]\n"
-+		"	brne	2f\n"
-+		"	stcond	%[m], %[new]\n"
-+		"	brne	1b\n"
-+		"2:\n"
-+		: [ret] "=&r"(ret), [m] "=m"(*m)
-+		: "m"(m), [old] "ir"(old), [new] "r"(new)
-+		: "memory", "cc");
-+	return ret;
-+}
-+
-+extern unsigned long __cmpxchg_u64_unsupported_on_32bit_kernels(
-+        volatile int * m, unsigned long old, unsigned long new);
-+#define __cmpxchg_u64 __cmpxchg_u64_unsupported_on_32bit_kernels
-+
-+/* This function doesn't exist, so you'll get a linker error
-+   if something tries to do an invalid cmpxchg().  */
-+extern void __cmpxchg_called_with_bad_pointer(void);
-+
-+#define __HAVE_ARCH_CMPXCHG 1
-+
-+static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
-+				      unsigned long new, int size)
-+{
-+	switch (size) {
-+	case 4:
-+		return __cmpxchg_u32(ptr, old, new);
-+	case 8:
-+		return __cmpxchg_u64(ptr, old, new);
-+	}
-+
-+	__cmpxchg_called_with_bad_pointer();
-+	return old;
-+}
-+
-+#define cmpxchg(ptr, old, new)					\
-+	((typeof(*(ptr)))__cmpxchg((ptr), (unsigned long)(old),	\
-+				   (unsigned long)(new),	\
-+				   sizeof(*(ptr))))
-+
-+#include <asm-generic/cmpxchg-local.h>
-+
-+static inline unsigned long __cmpxchg_local(volatile void *ptr,
-+				      unsigned long old,
-+				      unsigned long new, int size)
-+{
-+	switch (size) {
-+	case 4:
-+		return __cmpxchg_u32(ptr, old, new);
-+	default:
-+		return __cmpxchg_local_generic(ptr, old, new, size);
-+	}
-+
-+	return old;
-+}
-+
-+#define cmpxchg_local(ptr, old, new)					\
-+	((typeof(*(ptr)))__cmpxchg_local((ptr), (unsigned long)(old),	\
-+				   (unsigned long)(new),		\
-+				   sizeof(*(ptr))))
-+
-+#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
-+
- #endif /*  __ASM_AVR32_ATOMIC_H */
-diff --git a/arch/avr32/include/asm/barrier.h b/arch/avr32/include/asm/barrier.h
-new file mode 100644
-index 0000000..808001c
---- /dev/null
-+++ b/arch/avr32/include/asm/barrier.h
-@@ -0,0 +1,27 @@
-+/*
-+ * Copyright (C) 2004-2006 Atmel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __ASM_AVR32_BARRIER_H
-+#define __ASM_AVR32_BARRIER_H
-+
-+#define mb()			asm volatile("" : : : "memory")
-+#define rmb()			mb()
-+#define wmb()			asm volatile("sync 0" : : : "memory")
-+#define read_barrier_depends()  do { } while(0)
-+#define set_mb(var, value)      do { var = value; mb(); } while(0)
-+
-+#ifdef CONFIG_SMP
-+# error "The AVR32 port does not support SMP"
-+#else
-+# define smp_mb()		barrier()
-+# define smp_rmb()		barrier()
-+# define smp_wmb()		barrier()
-+# define smp_read_barrier_depends() do { } while(0)
-+#endif
-+
-+
-+#endif /* __ASM_AVR32_BARRIER_H */
-diff --git a/arch/avr32/include/asm/bug.h b/arch/avr32/include/asm/bug.h
-index 2aa373cc..85a92d0 100644
---- a/arch/avr32/include/asm/bug.h
-+++ b/arch/avr32/include/asm/bug.h
-@@ -70,4 +70,9 @@
- 
- #include <asm-generic/bug.h>
- 
-+struct pt_regs;
-+void die(const char *str, struct pt_regs *regs, long err);
-+void _exception(long signr, struct pt_regs *regs, int code,
-+		unsigned long addr);
-+
- #endif /* __ASM_AVR32_BUG_H */
-diff --git a/arch/avr32/include/asm/exec.h b/arch/avr32/include/asm/exec.h
-new file mode 100644
-index 0000000..f467be8
---- /dev/null
-+++ b/arch/avr32/include/asm/exec.h
-@@ -0,0 +1,13 @@
-+/*
-+ * Copyright (C) 2004-2006 Atmel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __ASM_AVR32_EXEC_H
-+#define __ASM_AVR32_EXEC_H
-+
-+#define arch_align_stack(x)	(x)
-+
-+#endif /* __ASM_AVR32_EXEC_H */
-diff --git a/arch/avr32/include/asm/special_insns.h b/arch/avr32/include/asm/special_insns.h
-new file mode 100644
-index 0000000..f922218
---- /dev/null
-+++ b/arch/avr32/include/asm/special_insns.h
-@@ -0,0 +1,13 @@
-+/*
-+ * Copyright (C) 2004-2006 Atmel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __ASM_AVR32_SPECIAL_INSNS_H
-+#define __ASM_AVR32_SPECIAL_INSNS_H
-+
-+#define nop() asm volatile("nop")
-+
-+#endif /* __ASM_AVR32_SPECIAL_INSNS_H */
-diff --git a/arch/avr32/include/asm/switch_to.h b/arch/avr32/include/asm/switch_to.h
-new file mode 100644
-index 0000000..9a8e9d5
---- /dev/null
-+++ b/arch/avr32/include/asm/switch_to.h
-@@ -0,0 +1,46 @@
-+/*
-+ * Copyright (C) 2004-2006 Atmel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __ASM_AVR32_SWITCH_TO_H
-+#define __ASM_AVR32_SWITCH_TO_H
-+
-+/*
-+ * Help PathFinder and other Nexus-compliant debuggers keep track of
-+ * the current PID by emitting an Ownership Trace Message each time we
-+ * switch task.
-+ */
-+#ifdef CONFIG_OWNERSHIP_TRACE
-+#include <asm/ocd.h>
-+#define finish_arch_switch(prev)			\
-+	do {						\
-+		ocd_write(PID, prev->pid);		\
-+		ocd_write(PID, current->pid);		\
-+	} while(0)
-+#endif
-+
-+/*
-+ * switch_to(prev, next, last) should switch from task `prev' to task
-+ * `next'. `prev' will never be the same as `next'.
-+ *
-+ * We just delegate everything to the __switch_to assembly function,
-+ * which is implemented in arch/avr32/kernel/switch_to.S
-+ *
-+ * mb() tells GCC not to cache `current' across this call.
-+ */
-+struct cpu_context;
-+struct task_struct;
-+extern struct task_struct *__switch_to(struct task_struct *,
-+				       struct cpu_context *,
-+				       struct cpu_context *);
-+#define switch_to(prev, next, last)					\
-+	do {								\
-+		last = __switch_to(prev, &prev->thread.cpu_context + 1,	\
-+				   &next->thread.cpu_context);		\
-+	} while (0)
-+
-+
-+#endif /* __ASM_AVR32_SWITCH_TO_H */
-diff --git a/arch/avr32/include/asm/system.h b/arch/avr32/include/asm/system.h
-deleted file mode 100644
-index 62d9ded..0000000
---- a/arch/avr32/include/asm/system.h
-+++ /dev/null
-@@ -1,178 +0,0 @@
--/*
-- * Copyright (C) 2004-2006 Atmel Corporation
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#ifndef __ASM_AVR32_SYSTEM_H
--#define __ASM_AVR32_SYSTEM_H
--
--#include <linux/compiler.h>
--#include <linux/linkage.h>
--#include <linux/types.h>
--
--#include <asm/ptrace.h>
--#include <asm/sysreg.h>
--
--#define xchg(ptr,x) \
--	((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
--
--#define nop() asm volatile("nop")
--
--#define mb()			asm volatile("" : : : "memory")
--#define rmb()			mb()
--#define wmb()			asm volatile("sync 0" : : : "memory")
--#define read_barrier_depends()  do { } while(0)
--#define set_mb(var, value)      do { var = value; mb(); } while(0)
--
--/*
-- * Help PathFinder and other Nexus-compliant debuggers keep track of
-- * the current PID by emitting an Ownership Trace Message each time we
-- * switch task.
-- */
--#ifdef CONFIG_OWNERSHIP_TRACE
--#include <asm/ocd.h>
--#define finish_arch_switch(prev)			\
--	do {						\
--		ocd_write(PID, prev->pid);		\
--		ocd_write(PID, current->pid);		\
--	} while(0)
--#endif
--
--/*
-- * switch_to(prev, next, last) should switch from task `prev' to task
-- * `next'. `prev' will never be the same as `next'.
-- *
-- * We just delegate everything to the __switch_to assembly function,
-- * which is implemented in arch/avr32/kernel/switch_to.S
-- *
-- * mb() tells GCC not to cache `current' across this call.
-- */
--struct cpu_context;
--struct task_struct;
--extern struct task_struct *__switch_to(struct task_struct *,
--				       struct cpu_context *,
--				       struct cpu_context *);
--#define switch_to(prev, next, last)					\
--	do {								\
--		last = __switch_to(prev, &prev->thread.cpu_context + 1,	\
--				   &next->thread.cpu_context);		\
--	} while (0)
--
--#ifdef CONFIG_SMP
--# error "The AVR32 port does not support SMP"
--#else
--# define smp_mb()		barrier()
--# define smp_rmb()		barrier()
--# define smp_wmb()		barrier()
--# define smp_read_barrier_depends() do { } while(0)
--#endif
--
--#include <linux/irqflags.h>
--
--extern void __xchg_called_with_bad_pointer(void);
--
--static inline unsigned long xchg_u32(u32 val, volatile u32 *m)
--{
--	u32 ret;
--
--	asm volatile("xchg %[ret], %[m], %[val]"
--			: [ret] "=&r"(ret), "=m"(*m)
--			: "m"(*m), [m] "r"(m), [val] "r"(val)
--			: "memory");
--	return ret;
--}
--
--static inline unsigned long __xchg(unsigned long x,
--				       volatile void *ptr,
--				       int size)
--{
--	switch(size) {
--	case 4:
--		return xchg_u32(x, ptr);
--	default:
--		__xchg_called_with_bad_pointer();
--		return x;
--	}
--}
--
--static inline unsigned long __cmpxchg_u32(volatile int *m, unsigned long old,
--					  unsigned long new)
--{
--	__u32 ret;
--
--	asm volatile(
--		"1:	ssrf	5\n"
--		"	ld.w	%[ret], %[m]\n"
--		"	cp.w	%[ret], %[old]\n"
--		"	brne	2f\n"
--		"	stcond	%[m], %[new]\n"
--		"	brne	1b\n"
--		"2:\n"
--		: [ret] "=&r"(ret), [m] "=m"(*m)
--		: "m"(m), [old] "ir"(old), [new] "r"(new)
--		: "memory", "cc");
--	return ret;
--}
--
--extern unsigned long __cmpxchg_u64_unsupported_on_32bit_kernels(
--        volatile int * m, unsigned long old, unsigned long new);
--#define __cmpxchg_u64 __cmpxchg_u64_unsupported_on_32bit_kernels
--
--/* This function doesn't exist, so you'll get a linker error
--   if something tries to do an invalid cmpxchg().  */
--extern void __cmpxchg_called_with_bad_pointer(void);
--
--#define __HAVE_ARCH_CMPXCHG 1
--
--static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
--				      unsigned long new, int size)
--{
--	switch (size) {
--	case 4:
--		return __cmpxchg_u32(ptr, old, new);
--	case 8:
--		return __cmpxchg_u64(ptr, old, new);
--	}
--
--	__cmpxchg_called_with_bad_pointer();
--	return old;
--}
--
--#define cmpxchg(ptr, old, new)					\
--	((typeof(*(ptr)))__cmpxchg((ptr), (unsigned long)(old),	\
--				   (unsigned long)(new),	\
--				   sizeof(*(ptr))))
--
--#include <asm-generic/cmpxchg-local.h>
--
--static inline unsigned long __cmpxchg_local(volatile void *ptr,
--				      unsigned long old,
--				      unsigned long new, int size)
--{
--	switch (size) {
--	case 4:
--		return __cmpxchg_u32(ptr, old, new);
--	default:
--		return __cmpxchg_local_generic(ptr, old, new, size);
--	}
--
--	return old;
--}
--
--#define cmpxchg_local(ptr, old, new)					\
--	((typeof(*(ptr)))__cmpxchg_local((ptr), (unsigned long)(old),	\
--				   (unsigned long)(new),		\
--				   sizeof(*(ptr))))
--
--#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
--
--struct pt_regs;
--void die(const char *str, struct pt_regs *regs, long err);
--void _exception(long signr, struct pt_regs *regs, int code,
--		unsigned long addr);
--
--#define arch_align_stack(x)	(x)
--
--#endif /* __ASM_AVR32_SYSTEM_H */
-
+Thanks
+Josh
