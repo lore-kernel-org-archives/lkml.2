@@ -1,77 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757401Ab2CGNkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 08:40:06 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58550 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755786Ab2CGNkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 08:40:04 -0500
-Date: Wed, 7 Mar 2012 14:39:37 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, gcc@gcc.gnu.org, tglx@linutronix.de,
-        "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, andi.kleen@intel.com, gcc-help@gcc.gnu.org
-Subject: Re: [RFC patch] spindep: add cross cache lines checking
-Message-ID: <20120307133937.GB12676@elte.hu>
-References: <1330917630.18835.44.camel@debian>
- <201203060932.45223.arnd@arndb.de>
- <1331108607.18835.343.camel@debian>
- <201203071154.36059.arnd@arndb.de>
- <4F575F09.3010107@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F575F09.3010107@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+	id S932143Ab2CGNkp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 08:40:45 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:12968 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756204Ab2CGNkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 08:40:43 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 07 Mar 2012 05:40:42 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
+        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
+        linus.walleij@linaro.org
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, ldewangan@nvidia.com
+Subject: [PATCH V1] i2c: gpio: Use open drain support from gpio driver
+Date: Wed,  7 Mar 2012 19:08:14 +0530
+Message-Id: <1331127494-6913-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The gpio core driver (gpio library) supports the open
+drain pin handling. Therefore, it is not require it
+to handle in the i2c-gpio driver, just require
+to pass the OPEN_DRAIN type flag when requesting the gpio.
 
-* Alex Shi <alex.shi@intel.com> wrote:
+Remove the handling of open drain pin in the i2c-gpio driver.
 
-> > I think the check should be (__alignof__(lock) < 
-> > __alignof__(rwlock_t)), otherwise it will still pass when 
-> > you have structure with attribute((packed,aligned(2)))
-> 
-> reasonable!
-> 
-> >> 1, it is alignof bug for default gcc on my fc15 and Ubuntu 11.10 etc?
-> >>
-> >> struct sub {
-> >>         int  raw_lock;
-> >>         char a;
-> >> };
-> >> struct foo {
-> >>         struct sub z;
-> >>         int slk;
-> >>         char y;
-> >> }__attribute__((packed));
-> >>
-> >> struct foo f1;
-> >>
-> >> __alignof__(f1.z.raw_lock) is 4, but its address actually can align on
-> >> one byte. 
-> > 
-> > That looks like correct behavior, because the alignment of 
-> > raw_lock inside of struct sub is still 4. But it does mean 
-> > that there can be cases where the compile-time check is not 
-> > sufficient, so we might want the run-time check as well, at 
-> > least under some config option.
-> 
-> what's your opinion of this, Ingo?
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/i2c/busses/i2c-gpio.c |   78 ++++++++++++++--------------------------
+ 1 files changed, 27 insertions(+), 51 deletions(-)
 
-Dunno. How many real bugs have you found via this patch?
+diff --git a/drivers/i2c/busses/i2c-gpio.c b/drivers/i2c/busses/i2c-gpio.c
+index 69fbfae..662a747 100644
+--- a/drivers/i2c/busses/i2c-gpio.c
++++ b/drivers/i2c/busses/i2c-gpio.c
+@@ -16,22 +16,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/gpio.h>
+ 
+-/* Toggle SDA by changing the direction of the pin */
+-static void i2c_gpio_setsda_dir(void *data, int state)
+-{
+-	struct i2c_gpio_platform_data *pdata = data;
+-
+-	if (state)
+-		gpio_direction_input(pdata->sda_pin);
+-	else
+-		gpio_direction_output(pdata->sda_pin, 0);
+-}
+-
+-/*
+- * Toggle SDA by changing the output value of the pin. This is only
+- * valid for pins configured as open drain (i.e. setting the value
+- * high effectively turns off the output driver.)
+- */
++/* Toggle SDA by setting value, gpio library take care of open drain pins.*/
+ static void i2c_gpio_setsda_val(void *data, int state)
+ {
+ 	struct i2c_gpio_platform_data *pdata = data;
+@@ -39,23 +24,7 @@ static void i2c_gpio_setsda_val(void *data, int state)
+ 	gpio_set_value(pdata->sda_pin, state);
+ }
+ 
+-/* Toggle SCL by changing the direction of the pin. */
+-static void i2c_gpio_setscl_dir(void *data, int state)
+-{
+-	struct i2c_gpio_platform_data *pdata = data;
+-
+-	if (state)
+-		gpio_direction_input(pdata->scl_pin);
+-	else
+-		gpio_direction_output(pdata->scl_pin, 0);
+-}
+-
+-/*
+- * Toggle SCL by changing the output value of the pin. This is used
+- * for pins that are configured as open drain and for output-only
+- * pins. The latter case will break the i2c protocol, but it will
+- * often work in practice.
+- */
++ /* Toggle SCL by setting value, gpio library take care of open drain pins.*/
+ static void i2c_gpio_setscl_val(void *data, int state)
+ {
+ 	struct i2c_gpio_platform_data *pdata = data;
+@@ -83,6 +52,8 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
+ 	struct i2c_algo_bit_data *bit_data;
+ 	struct i2c_adapter *adap;
+ 	int ret;
++	unsigned long sda_gpio_flags;
++	unsigned long scl_gpio_flags;
+ 
+ 	pdata = pdev->dev.platform_data;
+ 	if (!pdata)
+@@ -96,28 +67,33 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
+ 	if (!bit_data)
+ 		goto err_alloc_bit_data;
+ 
+-	ret = gpio_request(pdata->sda_pin, "sda");
+-	if (ret)
++	/* Initially, SCL and SDA pin should be HIGH */
++	sda_gpio_flags = GPIOF_OUT_INIT_HIGH;
++	scl_gpio_flags = GPIOF_OUT_INIT_HIGH;
++
++	if (pdata->sda_is_open_drain)
++		sda_gpio_flags |= GPIOF_OPEN_DRAIN;
++
++	if (pdata->scl_is_open_drain && !pdata->scl_is_output_only)
++		scl_gpio_flags |= GPIOF_OPEN_DRAIN;
++
++
++
++	ret = gpio_request_one(pdata->sda_pin, sda_gpio_flags, "sda");
++	if (ret) {
++		pr_err("%s(): Error in requesting sda gpio%d, ret %d\n",
++				__func__, pdata->sda_pin, ret);
+ 		goto err_request_sda;
+-	ret = gpio_request(pdata->scl_pin, "scl");
+-	if (ret)
++	}
++	ret = gpio_request_one(pdata->scl_pin, scl_gpio_flags, "scl");
++	if (ret) {
++		pr_err("%s(): Error in requesting scl gpio%d, ret %d\n",
++				__func__, pdata->scl_pin, ret);
+ 		goto err_request_scl;
+-
+-	if (pdata->sda_is_open_drain) {
+-		gpio_direction_output(pdata->sda_pin, 1);
+-		bit_data->setsda = i2c_gpio_setsda_val;
+-	} else {
+-		gpio_direction_input(pdata->sda_pin);
+-		bit_data->setsda = i2c_gpio_setsda_dir;
+ 	}
+ 
+-	if (pdata->scl_is_open_drain || pdata->scl_is_output_only) {
+-		gpio_direction_output(pdata->scl_pin, 1);
+-		bit_data->setscl = i2c_gpio_setscl_val;
+-	} else {
+-		gpio_direction_input(pdata->scl_pin);
+-		bit_data->setscl = i2c_gpio_setscl_dir;
+-	}
++	bit_data->setsda = i2c_gpio_setsda_val;
++	bit_data->setscl = i2c_gpio_setscl_val;
+ 
+ 	if (!pdata->scl_is_output_only)
+ 		bit_data->getscl = i2c_gpio_getscl;
+-- 
+1.7.1.1
 
-Thanks,
-
-	Ingo
