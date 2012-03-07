@@ -1,102 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261Ab2CGMOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 07:14:12 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:54965 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758093Ab2CGMOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 07:14:09 -0500
-Message-ID: <4F575100.30502@linux.vnet.ibm.com>
-Date: Wed, 07 Mar 2012 20:13:52 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: PATCH 1/2] rmap: cleanup anon_vma_prepare
-References: <4F575045.9010904@linux.vnet.ibm.com>
-In-Reply-To: <4F575045.9010904@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12030712-8878-0000-0000-000001923A85
+	id S1758095Ab2CGMQb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 07:16:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:49904 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753459Ab2CGMQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 07:16:29 -0500
+Message-Id: <aefc95$3e4c4e@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="115486862"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 3/9] drm/i915/intel_i2c: refactor using intel_gmbus_get_bus
+To: Daniel Kurtz <djkurtz@chromium.org>, Keith Packard <keithp@keithp.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Sameer Nanda <snanda@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+In-Reply-To: <1331121050-17857-4-git-send-email-djkurtz@chromium.org>
+References: <1331121050-17857-1-git-send-email-djkurtz@chromium.org> <1331121050-17857-4-git-send-email-djkurtz@chromium.org>
+Date: Wed, 07 Mar 2012 12:15:18 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the title typo, repost it.
+On Wed,  7 Mar 2012 19:50:44 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> Instead of letting other modules directly access the ->gmbus array,
+> introduce a new API, intel_gmbus_get_bus(), to lookup an i2c_adapter for
+> a given gmbus pin pair identifier.  This API enables later refactoring
+> of the gmbus pin pair list.
+> 
+> Note: It is critical that intel_setup_gmbus() gets called before
+> intel_gmbus_get_bus().
 
--------------------->
-Subject: [PATCH 1/2] rmap: cleanup anon_vma_prepare
+If you are going to rename it, perhaps a better choice than
+intel_gmbus_get_bus(int gpio_pin) ?
 
-Using the common function anon_vma_chain_link() to link vma and anon_vma
+intel_i2c_get_adapter(int gpio_pin) since the rest of the code really
+does not care how the bits are transferred but that it interfaces using
+i2c.
+-Chris
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- mm/rmap.c |   35 ++++++++++++++++-------------------
- 1 files changed, 16 insertions(+), 19 deletions(-)
-
-diff --git a/mm/rmap.c b/mm/rmap.c
-index c8454e0..55c5064 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -120,6 +120,21 @@ static void anon_vma_chain_free(struct anon_vma_chain *anon_vma_chain)
- 	kmem_cache_free(anon_vma_chain_cachep, anon_vma_chain);
- }
-
-+static void anon_vma_chain_link(struct vm_area_struct *vma,
-+				struct anon_vma_chain *avc,
-+				struct anon_vma *anon_vma)
-+{
-+	avc->vma = vma;
-+	avc->anon_vma = anon_vma;
-+	list_add(&avc->same_vma, &vma->anon_vma_chain);
-+
-+	/*
-+	 * It's critical to add new vmas to the tail of the anon_vma,
-+	 * see comment in huge_memory.c:__split_huge_page().
-+	 */
-+	list_add_tail(&avc->same_anon_vma, &anon_vma->head);
-+}
-+
- /**
-  * anon_vma_prepare - attach an anon_vma to a memory region
-  * @vma: the memory region in question
-@@ -175,10 +190,7 @@ int anon_vma_prepare(struct vm_area_struct *vma)
- 		spin_lock(&mm->page_table_lock);
- 		if (likely(!vma->anon_vma)) {
- 			vma->anon_vma = anon_vma;
--			avc->anon_vma = anon_vma;
--			avc->vma = vma;
--			list_add(&avc->same_vma, &vma->anon_vma_chain);
--			list_add_tail(&avc->same_anon_vma, &anon_vma->head);
-+			anon_vma_chain_link(vma, avc, anon_vma);
- 			allocated = NULL;
- 			avc = NULL;
- 		}
-@@ -224,21 +236,6 @@ static inline void unlock_anon_vma_root(struct anon_vma *root)
- 		mutex_unlock(&root->mutex);
- }
-
--static void anon_vma_chain_link(struct vm_area_struct *vma,
--				struct anon_vma_chain *avc,
--				struct anon_vma *anon_vma)
--{
--	avc->vma = vma;
--	avc->anon_vma = anon_vma;
--	list_add(&avc->same_vma, &vma->anon_vma_chain);
--
--	/*
--	 * It's critical to add new vmas to the tail of the anon_vma,
--	 * see comment in huge_memory.c:__split_huge_page().
--	 */
--	list_add_tail(&avc->same_anon_vma, &anon_vma->head);
--}
--
- /*
-  * Attach the anon_vmas from src to dst.
-  * Returns 0 on success, -ENOMEM on failure.
 -- 
-1.7.7.6
-
+Chris Wilson, Intel Open Source Technology Centre
