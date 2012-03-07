@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab2CGMxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 07:53:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:41536 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757715Ab2CGMxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 07:53:32 -0500
-Message-Id: <aefc95$3e4jv1@orsmga001.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="115494881"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 6/9] drm/i915/intel_i2c: return -ENXIO for device NAK
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>
-In-Reply-To: <CAGS+omByuSWzV1Pa_ODugq9rrZ2DtgU_LPWDAfbrR_q_zuDvYQ@mail.gmail.com>
-References: <1331121050-17857-1-git-send-email-djkurtz@chromium.org> <1331121050-17857-7-git-send-email-djkurtz@chromium.org> <aefc95$3e4bn0@orsmga001.jf.intel.com> <CAGS+omByuSWzV1Pa_ODugq9rrZ2DtgU_LPWDAfbrR_q_zuDvYQ@mail.gmail.com>
-Date: Wed, 07 Mar 2012 12:53:21 +0000
+	id S1758722Ab2CGMx6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 07:53:58 -0500
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:36175
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752437Ab2CGMx5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 07:53:57 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz936eK1432N98dKzz1202hzzz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Subject: Re: [PATCH] powerpc/srio: Fix the compile errors when building
+	with 64bit
+From: Liu Gang <Gang.Liu@freescale.com>
+To: Kumar Gala <galak@kernel.crashing.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <Alexandre.Bounine@idt.com>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <r58472@freescale.com>, <r61911@freescale.com>,
+        Shaohui Xie <Shaohui.Xie@freescale.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+In-Reply-To: <B946A444-73EC-4A70-AA7E-31FAF31FFF13@kernel.crashing.org>
+References: <1330672127-22172-1-git-send-email-Gang.Liu@freescale.com>
+	 <6BFCD6C7-7675-4A99-9C4C-4E86FA5642A4@kernel.crashing.org>
+	 <1330957222.23420.136.camel@10.ap.freescale.net>
+	 <B946A444-73EC-4A70-AA7E-31FAF31FFF13@kernel.crashing.org>
+Content-Type: text/plain
+Date: Wed, 7 Mar 2012 20:52:21 +0800
+Message-ID: <1331124741.23420.140.camel@10.ap.freescale.net>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Mar 2012 20:41:03 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> On Wed, Mar 7, 2012 at 8:12 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > On Wed,  7 Mar 2012 19:50:47 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> >> Return -ENXIO if a device NAKs a transaction.
-> >>
-> >> Note: We should return -ETIMEDOUT, too if the transaction times out,
-> >> however, that error path is currently handled by the 'bit-bang fallback'.
-> >>
-> >> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> >
-> > Can you clarify what the rule is if an error is detected part-way
-> > through a xfer?
+Hi, Kumar,
+
+On Tue, 2012-03-06 at 11:46 -0600, Kumar Gala wrote:
+> How about a struct instead:
 > 
-> A priceless comment from drivers/i2c/i2c-core::i2c_transfer...
+> struct rmu_dmsg {
+> 	u16	dummy;
+> 	u16	tid;
+> 	u16	sid;
+> 	u16	info;
+> };
+> 
+> 	struct rmu_dmsg *dmsg = fsl_dbell->dbell_ring.virt + (in_be32(&fsl_dbell->dbell_regs->dqdpar) & 0xfff);
+> 
+> Than you can git rid of the DBELL_* macros.
 
-Thanks, that is about as consistent as one expects with i2c. ;)
- 
-> This doesn't specify what to do if the transfer doesn't get an ACK
-> during another phase of the transfer.
-> However, it does say to send -ENXIO "if no ACK during address phase",
-> which is a subset of the possible no-ACK conditions during a transfer.
->  Thus, I choose to return ENXIO in all no-ACK cases, to ensure we send
-> it during the one case that is specified.
+Yes, this can really git rid of the DBELL_* macros and some other code.
+I'll update the patch based on your comments.
+Thanks a lot.
 
-This (and a summary of the rest) deserves to be captured as a comment in
-the code.
--Chris
+Liu Gang
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+
