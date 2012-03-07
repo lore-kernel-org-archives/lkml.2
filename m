@@ -1,107 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965306Ab2CGBaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 20:30:07 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47396 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756654Ab2CGBaG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 20:30:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120306115246.GD19635@opensource.wolfsonmicro.com>
-References: <1329976011-2251-1-git-send-email-tomoya.rohm@gmail.com>
-	<1329976011-2251-2-git-send-email-tomoya.rohm@gmail.com>
-	<20120302163915.GD6056@opensource.wolfsonmicro.com>
-	<CANKRQni8hPoHEsV2VecbgKBdfS5+rit0-jXzz_d8F_nY5-dN3g@mail.gmail.com>
-	<20120306115246.GD19635@opensource.wolfsonmicro.com>
-Date: Wed, 7 Mar 2012 10:30:05 +0900
-Message-ID: <CANKRQngg+8LJvb-+Byv6XPqqWFyCU1U+-hppuxo_=CM1qLUF_Q@mail.gmail.com>
-Subject: Re: [PATCH v3] sound/soc/lapis: add platform driver for ML7213
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932727Ab2CGBcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 20:32:54 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:58605 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932303Ab2CGBcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 20:32:53 -0500
+Message-ID: <1331083933.2191.172.camel@work-vm>
+Subject: Re: [PATCH] x86, tsc: Skip refined tsc calibration on systems with
+ reliable TSC.
+From: john stultz <johnstul@us.ibm.com>
+To: Alok Kataria <akataria@vmware.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>, dirk.brandewie@gmail.com,
+        alan@linux.intel.com, stable@kernel.org, Dan Hecht <dhecht@vmware.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 06 Mar 2012 17:32:13 -0800
+In-Reply-To: <1329877195.10380.33.camel@ank32.eng.vmware.com>
+References: <1329876964.10380.28.camel@ank32.eng.vmware.com>
+	 <1329877195.10380.33.camel@ank32.eng.vmware.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030701-5806-0000-0000-00001334A0E6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 8:52 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
->> > I just merged Lars-Peter's dmaengine library code which has been on the
->> > list for a week or so - this should be updated to use that next time
->> > it's posted.  That should save a lot of code from the driver and make
->> > sure it's following best practices for dmaengine use.
->> Sorry, we can't use this library.
-> This sort of response really isn't on.  Do you have some reason for
-> saying this?  Flat out refusing to do things with no reason is not
-> useful.
+On Tue, 2012-02-21 at 18:19 -0800, Alok Kataria wrote:
+> [Oops forgot to copy LKML, now it is, sorry for the duplicates]
+> 
+> While running the latest Linux as guest under VMware in highly
+> over-committed situations, we have seen cases when the refined TSC
+> algorithm fails to get a valid tsc_start value in
+> tsc_refine_calibration_work from multiple attempts. As a result the
+> kernel keeps on scheduling the tsc_irqwork task for later. Subsequently
+> after several attempts when it gets a valid start value it goes through
+> the refined calibration and either bails out or uses the new results.
+> Given that the kernel originally read the TSC frequency from the
+> platform, which is the best it can get, I don't think there is much
+> value in refining it. 
+> 
+> So IMO, for systems which get the TSC frequency from the platform we
+> should skip the refined tsc algorithm.
+>         
+> We can use the TSC_RELIABLE cpu cap flag to detect this, right now it is
+> set only on VMware and for Moorestown Penwell both of which have there
+> own TSC calibration methods.
 
-Current Intel's dma driver (pch_dma) doesn't work on this library.
-Because the library uses function which pch_dma doesn't support.
-e.g. device_prep_dma_cyclic
-So, we can't use this library.
+So this looks ok to me, only one nit below...
 
->> >> +static struct ioh_i2s_data *i2s_data;
->> >> +static struct ioh_i2s_dma dmadata[MAX_I2S_CH];
->> > Why are these needed, aren't they dynamically allocated by the driver?
->> You mean ASoC driver can't use global variable ?
-> In general no Linux driver should be using a global variable except for
-> things like this.
+> 
+> Index: linux-2.6/arch/x86/kernel/tsc.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/tsc.c	2012-02-21 17:31:01.000000000 -0800
+> +++ linux-2.6/arch/x86/kernel/tsc.c	2012-02-21 17:39:05.000000000 -0800
+> @@ -874,6 +874,13 @@ static void tsc_refine_calibration_work(
+>  		goto out;
+> 
+>  	/*
+> +	 * Trust the results of the earlier calibration on systems
+> +	 * exporting a reliable TSC.
+> +	 */
+> +	if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE))
+> +		goto out;
+> +
+> +	/*
 
-I see. I'll use dynamic allocation.
+Instead of dropping out in the function called by the work-queue, why
+not just avoid scheduling the work-queue to begin with?
 
->> >> +     case SNDRV_PCM_FORMAT_S32_LE:
->> >> +             byte = 24;
->> >> +             break;
->> > That looks wrong...  are you sure you don't support S24_LE or something?
->> This is correct.
->> Because maximum transmit size of ML7213's I2S hw is 24bit.
-> Note we often lay out 24 bit audio in 32 bit blocks.
+The FEATURE_TSC_RELIABLE isn't something that is set late, and needs the
+delay, right?
 
-24bit data doesn't work on our system.
-So, we don't support S24_LE.
+Here's what I queued up, let me know if it looks ok to you and I'll push
+it on to Thomas.
 
->> >> +static struct platform_driver ioh_i2s_driver_plat = {
->> >
->> >> +static struct platform_driver ioh_dai_driver_plat = {
->> >
->> >> +static int ioh_i2s_pci_probe(struct pci_dev *pdev,
->> >> +                          const struct pci_device_id *id)
->> > Why are you creating these platform devices?  I don't understand the
->> > function they serve.  The code handling them looks to have quite a few
->> > problems but I'm not clear they should be there in the first place.
->> if these platform devices aren't used, device detection doesn't work correctly.
->> So, I added these.
-> You've not actually mentioned the problem you were seeing...
+thanks
+-john
 
-I saw mapping problem between machine driver and platform driver.
-e.g.  cpu_dai_name "ml7213ioh"
+>From 50cd62f326fa3204763717c9808bdc29ba10512c Mon Sep 17 00:00:00 2001
+From: Alok Kataria <akataria@vmware.com>
+Date: Tue, 21 Feb 2012 18:19:55 -0800
+Subject: [PATCH] x86, tsc: Skip refined tsc calibration on systems with reliable TSC.
 
->> >> +     rv = request_irq(pdev->irq, ioh_i2s_irq, IRQF_SHARED, "ml7213_ioh",
->> >> +                      pdev);
->> >> +     if (rv != 0) {
->> >> +             printk(KERN_ERR "Failed to allocate irq\n");
->> >> +             goto out_irq;
->> >> +     }
->> > Are you *sure* you're ready to handle interrupts at this point?
->> This is just registering interrupt handler.
->> As long as interrupt register is not enabled, the interrupt handler is
->> not called.
->> This is common request_irq description.
->> What's is your concern ?
-> Apart from anything else you've got the interrupt requested as
-> IRQF_SHARED so the interrupt could get called at any time.  It's also
-> not clear that you've got the hardware in a known good state.
+While running the latest Linux as guest under VMware in highly
+over-committed situations, we have seen cases when the refined TSC
+algorithm fails to get a valid tsc_start value in
+tsc_refine_calibration_work from multiple attempts. As a result the
+kernel keeps on scheduling the tsc_irqwork task for later. Subsequently
+after several attempts when it gets a valid start value it goes through
+the refined calibration and either bails out or uses the new results.
+Given that the kernel originally read the TSC frequency from the
+platform, which is the best it can get, I don't think there is much
+value in refining it.
 
-Do you mean request_irq should move to somewhere, like open() or
-hw_params() or ... ?
+So  for systems which get the TSC frequency from the platform we
+should skip the refined tsc algorithm.
 
-thanks.
+We can use the TSC_RELIABLE cpu cap flag to detect this, right now it is
+set only on VMware and for Moorestown Penwell both of which have there
+own TSC calibration methods.
 
+Signed-off-by: Alok N Kataria <akataria@vmware.com>
+Cc: John Stultz <johnstul@us.ibm.com>
+Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: stable@kernel.org
+[jstultz: Reworked to simply not schedule the refining work,
+rather then scheduling the work and bombing out later]
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ arch/x86/kernel/tsc.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index a62c201..b7d4d33 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -932,6 +932,14 @@ static int __init init_tsc_clocksource(void)
+ 		clocksource_tsc.rating = 0;
+ 		clocksource_tsc.flags &= ~CLOCK_SOURCE_IS_CONTINUOUS;
+ 	}
++
++	/*
++	 * Trust the results of the earlier calibration on systems
++	 * exporting a reliable TSC.
++	 */
++	if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE))
++		return 0;
++
+ 	schedule_delayed_work(&tsc_irqwork, 0);
+ 	return 0;
+ }
 -- 
-ROHM Co., Ltd.
-tomoya
+1.7.3.2.146.gca209
+
+
+
