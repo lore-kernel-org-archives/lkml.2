@@ -1,57 +1,387 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965181Ab2CGWAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 17:00:00 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:34731 "EHLO e8.ny.us.ibm.com"
+	id S1030259Ab2CGV6o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 16:58:44 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:48516 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030251Ab2CGV6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 16:58:45 -0500
+	id S1757670Ab2CGV6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 16:58:39 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 12/13] android: staging: ram_console: fix crash in ram_console_late_init
-Date: Wed,  7 Mar 2012 13:58:22 -0800
-Message-Id: <1331157503-3413-13-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 08/13] android: persistent_ram: handle reserving and mapping memory
+Date: Wed,  7 Mar 2012 13:58:18 -0800
+Message-Id: <1331157503-3413-9-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1331157503-3413-1-git-send-email-john.stultz@linaro.org>
 References: <1331157503-3413-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030721-9360-0000-0000-00000455D5EC
+x-cbid: 12030721-8974-0000-0000-0000070D7DBB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Colin Cross <ccross@android.com>
 
-If the persistent ram buffer is not available, ram_console_late_init
-would crash when dereferencing ram_console_zone.  Return early if
-ram console was not initialized.
+Replace the ioremapped memory passed in from the drivers with
+a memblock_reserve and vmap.  Adds a new function,
+persistent_ram_early_init, designed to be called from the machine
+init_early callback, that calls memblock_remove and saves the
+provided persistent ram area layout.
+
+Drivers only pass in their struct device * and ecc settings.
+Locating and mapping the memory is now handled entirely within
+persistent_ram.
+
+Also, convert ram_console to the new persistent_ram_init
+parameters that only take a struct device * and ecc settings.
 
 CC: Greg KH <gregkh@linuxfoundation.org>
 CC: Android Kernel Team <kernel-team@android.com>
-Change-Id: Idff0f690406cdb2fe977bab64a39dc8b40dd4566
+Change-Id: Ibc87ec27b70ed1c928eaa487503469e199973058
+Change-Id: I12b018381a2ed5965a8a4b0da40c3e640f92b6cf
 Signed-off-by: Colin Cross <ccross@android.com>
+[jstultz: Fix pr_info casting issues on 64bit, folded two
+patches as the build breaks if they are apart. Also replaced
+phys_to_page() w/ pfn_to_page(addr>>PAGE_SHIFT), as phys_to_page
+is only on a few arches.]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/ram_console.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/staging/android/persistent_ram.c |  139 ++++++++++++++++++++++++------
+ drivers/staging/android/persistent_ram.h |   24 +++++-
+ drivers/staging/android/ram_console.c    |   42 ++-------
+ 3 files changed, 144 insertions(+), 61 deletions(-)
 
+diff --git a/drivers/staging/android/persistent_ram.c b/drivers/staging/android/persistent_ram.c
+index 35c57a0..81950e6 100644
+--- a/drivers/staging/android/persistent_ram.c
++++ b/drivers/staging/android/persistent_ram.c
+@@ -12,12 +12,17 @@
+  *
+  */
+ 
++#include <linux/device.h>
++#include <linux/err.h>
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
++#include <linux/list.h>
++#include <linux/memblock.h>
+ #include <linux/rslib.h>
+ #include <linux/slab.h>
++#include <linux/vmalloc.h>
+ #include "persistent_ram.h"
+ 
+ struct persistent_ram_buffer {
+@@ -29,7 +34,7 @@ struct persistent_ram_buffer {
+ 
+ #define PERSISTENT_RAM_SIG (0x43474244) /* DBGC */
+ 
+-static LIST_HEAD(zone_list);
++static __initdata LIST_HEAD(persistent_ram_list);
+ 
+ static void persistent_ram_encode_rs8(struct persistent_ram_zone *prz,
+ 	uint8_t *data, size_t len, uint8_t *ecc)
+@@ -270,54 +275,134 @@ void persistent_ram_free_old(struct persistent_ram_zone *prz)
+ 	prz->old_log_size = 0;
+ }
+ 
+-static int __init __persistent_ram_init(struct persistent_ram_zone *prz,
+-			       void __iomem *mem, size_t buffer_size, bool ecc)
++static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
++		struct persistent_ram_zone *prz)
+ {
+-	struct persistent_ram_buffer *buffer = mem;
++	struct page **pages;
++	phys_addr_t page_start;
++	unsigned int page_count;
++	pgprot_t prot;
++	unsigned int i;
++
++	page_start = start - offset_in_page(start);
++	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
++
++	prot = pgprot_noncached(PAGE_KERNEL);
++
++	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
++	if (!pages) {
++		pr_err("%s: Failed to allocate array for %u pages\n", __func__,
++			page_count);
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < page_count; i++) {
++		phys_addr_t addr = page_start + i * PAGE_SIZE;
++		pages[i] = pfn_to_page(addr >> PAGE_SHIFT);
++	}
++	prz->vaddr = vmap(pages, page_count, VM_MAP, prot);
++	kfree(pages);
++	if (!prz->vaddr) {
++		pr_err("%s: Failed to map %u pages\n", __func__, page_count);
++		return -ENOMEM;
++	}
++
++	prz->buffer = prz->vaddr + offset_in_page(start);
++	prz->buffer_size = size - sizeof(struct persistent_ram_buffer);
++
++	return 0;
++}
++
++static int __init persistent_ram_buffer_init(const char *name,
++		struct persistent_ram_zone *prz)
++{
++	int i;
++	struct persistent_ram *ram;
++	struct persistent_ram_descriptor *desc;
++	phys_addr_t start;
++
++	list_for_each_entry(ram, &persistent_ram_list, node) {
++		start = ram->start;
++		for (i = 0; i < ram->num_descs; i++) {
++			desc = &ram->descs[i];
++			if (!strcmp(desc->name, name))
++				return persistent_ram_buffer_map(start,
++						desc->size, prz);
++			start += desc->size;
++		}
++	}
++
++	return -EINVAL;
++}
++
++static  __init
++struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
++{
++	struct persistent_ram_zone *prz;
+ 	int ret;
+ 
+-	INIT_LIST_HEAD(&prz->node);
++	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
++	if (!prz) {
++		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
++		return ERR_PTR(-ENOMEM);
++	}
+ 
+-	prz->buffer = buffer;
+-	prz->buffer_size = buffer_size - sizeof(struct persistent_ram_buffer);
++	INIT_LIST_HEAD(&prz->node);
+ 
+-	if (prz->buffer_size > buffer_size) {
+-		pr_err("persistent_ram: buffer %p, invalid size %zu, datasize %zu\n",
+-		       buffer, buffer_size, prz->buffer_size);
+-		return -EINVAL;
++	ret = persistent_ram_buffer_init(dev_name(dev), prz);
++	if (ret) {
++		pr_err("persistent_ram: failed to initialize buffer\n");
++		return ERR_PTR(ret);
+ 	}
+ 
+ 	prz->ecc = ecc;
+-	ret = persistent_ram_init_ecc(prz, buffer_size);
++	ret = persistent_ram_init_ecc(prz, prz->buffer_size);
+ 	if (ret)
+-		return ret;
++		return ERR_PTR(ret);
+ 
+-	if (buffer->sig == PERSISTENT_RAM_SIG) {
+-		if (buffer->size > prz->buffer_size
+-		    || buffer->start > buffer->size)
++	if (prz->buffer->sig == PERSISTENT_RAM_SIG) {
++		if (prz->buffer->size > prz->buffer_size
++		    || prz->buffer->start > prz->buffer->size)
+ 			pr_info("persistent_ram: found existing invalid buffer, size %d, start %d\n",
+-			       buffer->size, buffer->start);
++			       prz->buffer->size, prz->buffer->start);
+ 		else {
+ 			pr_info("persistent_ram: found existing buffer, size %d, start %d\n",
+-			       buffer->size, buffer->start);
++			       prz->buffer->size, prz->buffer->start);
+ 			persistent_ram_save_old(prz);
+ 		}
+ 	} else {
+ 		pr_info("persistent_ram: no valid data in buffer (sig = 0x%08x)\n",
+-			buffer->sig);
++			prz->buffer->sig);
+ 	}
+ 
+-	buffer->sig = PERSISTENT_RAM_SIG;
+-	buffer->start = 0;
+-	buffer->size = 0;
++	prz->buffer->sig = PERSISTENT_RAM_SIG;
++	prz->buffer->start = 0;
++	prz->buffer->size = 0;
+ 
+-	list_add_tail(&prz->node, &zone_list);
++	return prz;
++}
+ 
+-	return 0;
++struct persistent_ram_zone * __init
++persistent_ram_init_ringbuffer(struct device *dev, bool ecc)
++{
++	return __persistent_ram_init(dev, ecc);
+ }
+ 
+-int __init persistent_ram_init_ringbuffer(struct persistent_ram_zone *prz,
+-			       void __iomem *mem, size_t buffer_size, bool ecc)
++int __init persistent_ram_early_init(struct persistent_ram *ram)
+ {
+-	return __persistent_ram_init(prz, mem, buffer_size, true);
++	int ret;
++
++	ret = memblock_reserve(ram->start, ram->size);
++	if (ret) {
++		pr_err("Failed to reserve persistent memory from %08lx-%08lx\n",
++			(long)ram->start, (long)(ram->start + ram->size - 1));
++		return ret;
++	}
++
++	list_add_tail(&ram->node, &persistent_ram_list);
++
++	pr_info("Initialized persistent memory from %08lx-%08lx\n",
++		(long)ram->start, (long)(ram->start + ram->size - 1));
++
++	return 0;
+ }
+diff --git a/drivers/staging/android/persistent_ram.h b/drivers/staging/android/persistent_ram.h
+index ab3995c..f41e208 100644
+--- a/drivers/staging/android/persistent_ram.h
++++ b/drivers/staging/android/persistent_ram.h
+@@ -15,13 +15,31 @@
+ #ifndef __LINUX_PERSISTENT_RAM_H__
+ #define __LINUX_PERSISTENT_RAM_H__
+ 
++#include <linux/device.h>
+ #include <linux/kernel.h>
++#include <linux/list.h>
+ #include <linux/types.h>
+ 
+ struct persistent_ram_buffer;
+ 
++struct persistent_ram_descriptor {
++	const char	*name;
++	phys_addr_t	size;
++};
++
++struct persistent_ram {
++	phys_addr_t	start;
++	phys_addr_t	size;
++
++	int					num_descs;
++	struct persistent_ram_descriptor	*descs;
++
++	struct list_head node;
++};
++
+ struct persistent_ram_zone {
+ 	struct list_head node;
++	void *vaddr;
+ 	struct persistent_ram_buffer *buffer;
+ 	size_t buffer_size;
+ 
+@@ -43,8 +61,10 @@ struct persistent_ram_zone {
+ 	bool early;
+ };
+ 
+-int persistent_ram_init_ringbuffer(struct persistent_ram_zone *prz,
+-	void __iomem *buffer, size_t buffer_size, bool ecc);
++int persistent_ram_early_init(struct persistent_ram *ram);
++
++struct persistent_ram_zone *persistent_ram_init_ringbuffer(struct device *dev,
++		bool ecc);
+ 
+ int persistent_ram_write(struct persistent_ram_zone *prz, const void *s,
+ 	unsigned int count);
 diff --git a/drivers/staging/android/ram_console.c b/drivers/staging/android/ram_console.c
-index 29d347e..d956b84 100644
+index d920bd7..29d347e 100644
 --- a/drivers/staging/android/ram_console.c
 +++ b/drivers/staging/android/ram_console.c
-@@ -150,6 +150,9 @@ static int __init ram_console_late_init(void)
- 	struct proc_dir_entry *entry;
- 	struct persistent_ram_zone *prz = ram_console_zone;
+@@ -24,7 +24,7 @@
+ #include "persistent_ram.h"
+ #include "ram_console.h"
  
-+	if (!prz)
-+		return 0;
-+
+-static struct persistent_ram_zone ram_console_zone;
++static struct persistent_ram_zone *ram_console_zone;
+ static const char *bootinfo;
+ static size_t bootinfo_size;
+ 
+@@ -52,33 +52,13 @@ void ram_console_enable_console(int enabled)
+ 
+ static int ram_console_driver_probe(struct platform_device *pdev)
+ {
+-	struct resource *res = pdev->resource;
+-	size_t start;
+-	size_t buffer_size;
+-	void *buffer;
+ 	struct ram_console_platform_data *pdata = pdev->dev.platform_data;
+-	int ret;
++	struct persistent_ram_zone *prz;
+ 
+-	if (res == NULL || pdev->num_resources != 1 ||
+-	    !(res->flags & IORESOURCE_MEM)) {
+-		printk(KERN_ERR "ram_console: invalid resource, %p %d flags "
+-		       "%lx\n", res, pdev->num_resources, res ? res->flags : 0);
+-		return -ENXIO;
+-	}
+-	buffer_size = resource_size(res);
+-	start = res->start;
+-	printk(KERN_INFO "ram_console: got buffer at %zx, size %zx\n",
+-	       start, buffer_size);
+-	buffer = ioremap(res->start, buffer_size);
+-	if (buffer == NULL) {
+-		printk(KERN_ERR "ram_console: failed to map memory\n");
+-		return -ENOMEM;
+-	}
++	prz = persistent_ram_init_ringbuffer(&pdev->dev, true);
++	if (IS_ERR(prz))
++		return PTR_ERR(prz);
+ 
+-	ret = persistent_ram_init_ringbuffer(&ram_console_zone, buffer,
+-					     buffer_size, true);
+-	if (ret)
+-		goto err;
+ 
+ 	if (pdata) {
+ 		bootinfo = kstrdup(pdata->bootinfo, GFP_KERNEL);
+@@ -86,14 +66,12 @@ static int ram_console_driver_probe(struct platform_device *pdev)
+ 			bootinfo_size = strlen(bootinfo);
+ 	}
+ 
+-	ram_console.data = &ram_console_zone;
++	ram_console_zone = prz;
++	ram_console.data = prz;
+ 
+ 	register_console(&ram_console);
+-	return 0;
+ 
+-err:
+-	iounmap(buffer);
+-	return ret;
++	return 0;
+ }
+ 
+ static struct platform_driver ram_console_driver = {
+@@ -115,7 +93,7 @@ static ssize_t ram_console_read_old(struct file *file, char __user *buf,
+ {
+ 	loff_t pos = *offset;
+ 	ssize_t count;
+-	struct persistent_ram_zone *prz = &ram_console_zone;
++	struct persistent_ram_zone *prz = ram_console_zone;
+ 	size_t old_log_size = persistent_ram_old_size(prz);
+ 	const char *old_log = persistent_ram_old(prz);
+ 	char *str;
+@@ -170,7 +148,7 @@ static const struct file_operations ram_console_file_ops = {
+ static int __init ram_console_late_init(void)
+ {
+ 	struct proc_dir_entry *entry;
+-	struct persistent_ram_zone *prz = &ram_console_zone;
++	struct persistent_ram_zone *prz = ram_console_zone;
+ 
  	if (persistent_ram_old_size(prz) == 0)
  		return 0;
- 
 -- 
 1.7.3.2.146.gca209
 
