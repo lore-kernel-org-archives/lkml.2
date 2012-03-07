@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932684Ab2CGS0D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 13:26:03 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:36906 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755616Ab2CGS0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 13:26:00 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 1/3] Kbuild: centralize MKIMAGE and cmd_uimage definitions
-Date: Wed, 7 Mar 2012 13:25:51 -0500
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
-Cc: Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
-        nico@fluxnic.net, Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        "Hans-Christian Egtvedt" <egtvedt@samfundet.no>,
-        Michal Simek <monstr@monstr.eu>, Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org> <201203062256.16105.vapier@gentoo.org> <4F579DE0.3050400@wwwdotorg.org>
-In-Reply-To: <4F579DE0.3050400@wwwdotorg.org>
+	id S1759512Ab2CGS1M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 13:27:12 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53737 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab2CGS1J convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 13:27:09 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3453817.5KXmdesmuJ";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203071326.00264.vapier@gentoo.org>
+In-Reply-To: <20120307155018.GA13430@redhat.com>
+References: <20120216215603.GH9751@redhat.com>
+	<m1y5s2ku36.fsf@fess.ebiederm.org>
+	<m1fwe9bpk2.fsf@fess.ebiederm.org>
+	<20120217195430.GO9751@redhat.com>
+	<m1y5s07rn3.fsf@fess.ebiederm.org>
+	<20120220151419.GU9751@redhat.com>
+	<m1obss39a4.fsf@fess.ebiederm.org>
+	<20120221135934.GF26998@redhat.com>
+	<m1ipip6xe8.fsf@fess.ebiederm.org>
+	<4F573E1C.2060909@oss.ntt.co.jp>
+	<20120307155018.GA13430@redhat.com>
+Date: Wed, 7 Mar 2012 10:27:07 -0800
+X-Google-Sender-Auth: qkxEeS_iz8Vg8oi9qI4zaukNHP4
+Message-ID: <CAE9FiQXLMzVLH7MW2OXFCpBU+5RRN-EnshGYhkj_3sO36c1Mkg@mail.gmail.com>
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
+ crash path
+From: Yinghai Lu <yinghai@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: =?ISO-8859-1?Q?Fernando_Luis_V=E1zquez_Cao?= 
+	<fernando@oss.ntt.co.jp>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
+        mingo@elte.hu, kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3453817.5KXmdesmuJ
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+2012/3/7 Vivek Goyal <vgoyal@redhat.com>:
+> On Wed, Mar 07, 2012 at 07:53:16PM +0900, Fernando Luis Vázquez Cao wrote:
+>> On 03/01/2012 08:19 AM, Eric W. Biederman wrote:
+>>
+>> >Don Zickus<dzickus@redhat.com>  writes:
+>> >>It probably is, except I never hacked on idt code before and my assembly
+>> >>isn't that good.  I have been trying to find examples to copy from to give
+>> >>it a try.  So far I was using early_idt_handlers with early_printk to see
+>> >>if I could capture some printk messages while jumping from the first
+>> >>kernel to the second kernel (when the other early_idt_handlers would kick
+>> >>in for the second kernel).
+>> >>
+>> >>Tips?  Better examples?
+>> >That is a particularly good example.  When I took a quick look earlier
+>> >that is the first place we reload the idt in the kernel boot so that is
+>> >one of two places that needs to be modified.
+>>
+>> Hi Eric, Don
+>>
+>> Sorry for chiming in so late.
+>>
+>> We run into the same NMI problems and wrote some patches that tackle
+>> the kernel boot side of things. They have been extensively tested using
+>> qemu-kvm and things seem to be working as expected (after receiving an
+>> early NMI the kernel continues without problem; after the iret there is no
+>> stack corruption or register corruption).
+>
+> What happens if NMI happens while we are still in purgatory code?
+>
+yes, you are right. that is too late to set that in arch/x86/kernel/head64.c
 
-On Wednesday 07 March 2012 12:41:52 Stephen Warren wrote:
-> On 03/06/2012 08:56 PM, Mike Frysinger wrote:
-> > On Tuesday 06 March 2012 19:30:36 Stephen Warren wrote:
-> >> +UIMAGE_ENTRYADDR =3D $(shell $(NM) vmlinux | awk '$$NF =3D=3D "__star=
-t"
-> >> {print $$1}')
-> >=20
-> > i feel like if we tried harder, we could automate the -e arg for all
-> > arches. i understand if you don't want to undertake that though.
->=20
-> Yes, this might be possible. I'd guess the symbol name varies between
-> archs, but that can probably be taken care of.
+i even not get print out "early console in decompress_kernel"
+from arch/x86/boot/compressed/misc.c::decompress_kernel()
 
-i think we could avoid the symbol lookup.  if the entry point is set correc=
-tly=20
-in the ELF, we could do:
-UIMAGE_ENTRYADDR =3D $(shell $(READELF) -h vmlinux | \
-	awk '$$0 ~ /Entry point address:/ { print $$NF }'
-
-99% sure this would work for Blackfin kernel images ...
-
-> This is probably best
-> left as a follow-on patch though, since it's a behavioral change,
-> whereas this patch is just consolidation.
-
-of course
-=2Dmike
-
---nextPart3453817.5KXmdesmuJ
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJPV6g2AAoJEEFjO5/oN/WBGsYP/0LuhueJyy+ApCnyRU4eAlt8
-uNqSCCBHqhDLbGKA04czwUBKCXczhfBs7vOPz4v5GCkPYajflecF0zrJpyGokurD
-Bl/1JF6bQzEt8314UyHpHN3L1hF7+VyI5/jWC/6GaBVrxPst+PHz7oaUEcFUr/9o
-XL+sVZ2ckHerFKwRY7gK6CtW9QWrQWKyCys+huleSarE8jgsvZdmIyWlmxWKuEYQ
-A4iyQCSMZ0rayCysyuSPVbdoVaNNHAHcZldhYAIRPNg2/wOJu8RmuWgfmZ7Qf6yv
-ndAJZz8mdjzF8Intm9K+oNEivDOExGUoL0iUO48gD+oAxhFJhGVxbXK4qYtfDe1j
-WKDRc/8dU3K4i0AcyvyLb2gUjaFhLEoE29Sh57AaTykDLyE1OITZpeT/mfMzGPrW
-jx1Nz/0WpQEtyX76jy5ioD3ypI5XjqWypm0TPpcBGwR33QaHR6ezqrK7swL9LnXb
-ku3oLHbiJukDSI0nR2tyTPFivp7glQ0Up3kQ8/s3BuYj55s8v4txTDwPT3YnaptF
-9OL6/YcHUYZc9QnAYPKXo91CQHYoT60sZpUvuEUIB+y1w1yTC2E9uOsCB5XzfEkq
-YslRhKWielv+GPZdXRD73G1cCVZWOI9WvRFo23dIm06p60K9hl68A6grVU4LyeLA
-NqB0V2d1dK8ii1f5je9z
-=/F8M
------END PGP SIGNATURE-----
-
---nextPart3453817.5KXmdesmuJ--
+Yinghai
