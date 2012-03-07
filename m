@@ -1,72 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031652Ab2CGAR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 19:17:27 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:38650 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932670Ab2CGAR0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 19:17:26 -0500
-X-AuditID: cbfee61a-b7b78ae000001ceb-5e-4f56a915b61f
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: merez@codeaurora.org, "'Namjae Jeon'" <linkinjeon@gmail.com>
-Cc: linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org
-References: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
- <CAKYAXd_6OqQJ78mPJp11gRvGwwg88S_n_Auu=_HdP_ZXzCKrDg@mail.gmail.com>
- <6669559e86c1d13b27e941ff2acf89d2.squirrel@www.codeaurora.org>
- <CAKYAXd8HMrdB9mzgsz5XmMxkDE+gMce+CTEDFU4J67nusNtLOg@mail.gmail.com>
- <cf2950fbeb4c500534be670cdd8cf85d.squirrel@www.codeaurora.org>
-In-reply-to: <cf2950fbeb4c500534be670cdd8cf85d.squirrel@www.codeaurora.org>
-Subject: RE: [PATCH v5 2/2] mmc: core: Support packed command for eMMC4.5 device
-Date: Wed, 07 Mar 2012 09:17:24 +0900
-Message-id: <000001ccfbf7$ac3e7510$04bb5f30$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=Windows-1252
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Acz7oxeJ5VIyI3u0SZab75XIrzc7ogAT/tRQ
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	id S1031645Ab2CGATx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 19:19:53 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:50875 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932682Ab2CGATv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 19:19:51 -0500
+X-IronPort-AV: E=Sophos;i="4.73,542,1325491200"; 
+   d="scan'208";a="631276447"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "xemul@parallels.com" <xemul@parallels.com>,
+        "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jbottomley@parallels.com" <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] SUNRPC: set desired file system root before connecting
+ local transports
+Thread-Topic: [PATCH] SUNRPC: set desired file system root before connecting
+ local transports
+Thread-Index: AQHM9vLHZdm7svM3nkmFIPo1sSpgIZZeiDkA
+Date: Wed, 7 Mar 2012 00:19:48 +0000
+Message-ID: <1331079588.10560.55.camel@lade.trondhjem.org>
+References: <20120229145915.24030.31551.stgit@localhost6.localdomain6>
+In-Reply-To: <20120229145915.24030.31551.stgit@localhost6.localdomain6>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <1E0E74313C142F4582D2DBA3872510C1@tahoe.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q270K0Zl011487
 
-Maya Erez <merez@codeaurora.org> wrote:
-> > Hi. Merez.
-> >
-> > Thanks a lot about your performance measurement.
-> >
-> > I think that your measurement is enough and correct and the firmware
-> > of mmc vender should be optimized or change properly rather than
-> > modifying the current patch.
-> >
-> > And currently we can use only write packed cmd by my suggestion.
-> >
-> > I would like to add my reviewd-by tag in updated patches also.
-> >
-> > Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-> >
-> > Thanks.
+On Wed, 2012-02-29 at 18:59 +0400, Stanislav Kinsbursky wrote:
+> Today, there is a problem in connecting of local SUNRPC thansports. These
+> transports uses UNIX sockets and connection itself is done by rpciod workqueue.
+> But UNIX sockets lookup is done in context of process file system root. I.e.
+> all local thunsports are connecting in rpciod context.
+> This works nice until we will try to mount NFS from process with other root -
+> for example in container. This container can have it's own (nested) root and
+> rcpbind process, listening on it's own unix sockets. But NFS mount attempt in
+> this container will register new service (Lockd for example) in global rpcbind
+> - not containers's one.
+> This patch solves the problem by switching rpciod kernel thread's file system
+> root to right one (stored on transport) while connecting of local transports.
 > 
-> I tend to disagree. Adding a massive amount of code that would be disabled
-> can be risky. In case this code will not be in use it will not be properly
-> tested and its reliability will be uncertain.
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 > 
-If you found something to be correct, please let me know that.
-It would be rightly appreciated.
+> ---
+>  fs/fs_struct.c        |    1 +
+>  net/sunrpc/xprtsock.c |   32 ++++++++++++++++++++++++++++++--
+>  2 files changed, 31 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/fs_struct.c b/fs/fs_struct.c
+> index 78b519c..0f984c3 100644
+> --- a/fs/fs_struct.c
+> +++ b/fs/fs_struct.c
+> @@ -36,6 +36,7 @@ void set_fs_root(struct fs_struct *fs, struct path *path)
+>  	if (old_root.dentry)
+>  		path_put_longterm(&old_root);
+>  }
+> +EXPORT_SYMBOL_GPL(set_fs_root);
+>  
+>  /*
+>   * Replace the fs->{pwdmnt,pwd} with {mnt,dentry}. Put the old values.
+> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+> index 4c8281d..c94c181 100644
+> --- a/net/sunrpc/xprtsock.c
+> +++ b/net/sunrpc/xprtsock.c
+> @@ -37,6 +37,7 @@
+>  #include <linux/sunrpc/svcsock.h>
+>  #include <linux/sunrpc/xprtsock.h>
+>  #include <linux/file.h>
+> +#include <linux/fs_struct.h>
+>  #ifdef CONFIG_SUNRPC_BACKCHANNEL
+>  #include <linux/sunrpc/bc_xprt.h>
+>  #endif
+> @@ -255,6 +256,11 @@ struct sock_xprt {
+>  	void			(*old_state_change)(struct sock *);
+>  	void			(*old_write_space)(struct sock *);
+>  	void			(*old_error_report)(struct sock *);
+> +
+> +	/*
+> +	 * Saved transport creator root. Required for local transports only.
+> +	 */
+> +	struct path		root;
+>  };
+>  
+>  /*
+> @@ -1891,6 +1897,7 @@ static void xs_local_setup_socket(struct work_struct *work)
+>  	struct rpc_xprt *xprt = &transport->xprt;
+>  	struct socket *sock;
+>  	int status = -EIO;
+> +	struct path root;
+>  
+>  	if (xprt->shutdown)
+>  		goto out;
+> @@ -1908,7 +1915,14 @@ static void xs_local_setup_socket(struct work_struct *work)
+>  	dprintk("RPC:       worker connecting xprt %p via AF_LOCAL to %s\n",
+>  			xprt, xprt->address_strings[RPC_DISPLAY_ADDR]);
+>  
+> +	get_fs_root(current->fs, &root);
+> +	set_fs_root(current->fs, &transport->root);
+> +
+>  	status = xs_local_finish_connecting(xprt, sock);
+> +
+> +	set_fs_root(current->fs, &root);
+> +	path_put(&root);
+> +
+>  	switch (status) {
+>  	case 0:
 
-Best regards,
-Seungwon Jeon.
+Hi Stanislav,
 
-> Thanks,
-> Maya Erez
-> Consultant for Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+What happens here if the mount namespace of the process that originally
+created the sock_xprt no longer exists? Should we care about that case?
 
+Cheers
+  Trond
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
