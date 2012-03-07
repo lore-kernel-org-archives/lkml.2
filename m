@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab2CGPJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 10:09:17 -0500
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:24824
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751210Ab2CGPJQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 10:09:16 -0500
-X-SpamScore: -3
-X-BigFish: VPS-3(zz936eKzz1202hzzz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M0ISR7-01-5B4-02
-X-M-MSG: 
-From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-Subject: [PATCH 2/2] Refine mutex and rcu method in module.c, kernel<3.2.9>
-Thread-Topic: [PATCH 2/2] Refine mutex and rcu method in module.c,
- kernel<3.2.9>
-Thread-Index: AQHM/HKZ7/XXKKaGDUauY7gMkxJ9YA==
-Date: Wed, 7 Mar 2012 14:57:21 +0000
-Message-ID: <491D6B4EAD0A714894D8AD22F4BDE0430328AF@SCYBEXDAG04.amd.com>
-References: <491D6B4EAD0A714894D8AD22F4BDE04303289D@SCYBEXDAG04.amd.com>
-In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE04303289D@SCYBEXDAG04.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.74.102]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+	id S1758116Ab2CGPLT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 10:11:19 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:10803 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757254Ab2CGPLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 10:11:17 -0500
+X-IronPort-AV: E=Sophos;i="4.73,546,1325433600"; 
+   d="scan'208";a="4482191"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Eric Paris <eparis@parisplace.org>, James Morris <jmorris@namei.org>,
+        sds@tycho.nsa.gov, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] selinux:replace weak GFP_ATOMIC to GFP_KERNEL in avc_add_callback
+Date: Wed, 7 Mar 2012 22:17:13 +0800
+Message-Id: <1331129834-1554-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.9.2
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-07 22:16:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-07 22:17:04,
+	Serialize complete at 2012-03-07 22:17:04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Add protection code for module_bug_list readers
-2. Add a new module_bug_mutex as the mutex of the module_bug_list writers
+avc_add_callback now only called from initcalls, so replace the
+weak GFP_ATOMIC to GFP_KERNEL, and mark this function __init
+to make a warning when not been called from initcalls.
 
---- bug.ori.c   2012-03-07 20:42:56.454850872 +0800
-+++ bug.c       2012-03-07 20:58:48.562825887 +0800
-@@ -42,6 +42,7 @@
- #include <linux/kernel.h>
- #include <linux/bug.h>
- #include <linux/sched.h>
-+#include <linux/rcupdate.h>
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ security/selinux/avc.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+index dca1c22..c301679 100644
+--- a/security/selinux/avc.c
++++ b/security/selinux/avc.c
+@@ -557,7 +557,7 @@ int avc_audit(u32 ssid, u32 tsid,
+  * @perms based on @tclass.  Returns %0 on success or
+  * -%ENOMEM if insufficient memory exists to add the callback.
+  */
+-int avc_add_callback(int (*callback)(u32 event, u32 ssid, u32 tsid,
++int __init avc_add_callback(int (*callback)(u32 event, u32 ssid, u32 tsid,
+ 				     u16 tclass, u32 perms,
+ 				     u32 *out_retained),
+ 		     u32 events, u32 ssid, u32 tsid,
+@@ -566,7 +566,7 @@ int avc_add_callback(int (*callback)(u32 event, u32 ssid, u32 tsid,
+ 	struct avc_callback_node *c;
+ 	int rc = 0;
  
- extern const struct bug_entry __start___bug_table[], __stop___bug_table[];
- 
-@@ -56,19 +57,24 @@
- 
- #ifdef CONFIG_MODULES
- static LIST_HEAD(module_bug_list);
-+static DEFINE_MUTEX(module_bug_mutex);
- 
- static const struct bug_entry *module_find_bug(unsigned long bugaddr)
- {
-        struct module *mod;
- 
--       list_for_each_entry(mod, &module_bug_list, bug_list) {
-+       rcu_read_lock();
-+       list_for_each_entry_rcu(mod, &module_bug_list, bug_list) {
-                const struct bug_entry *bug = mod->bug_table;
-                unsigned i;
- 
-                for (i = 0; i < mod->num_bugs; ++i, ++bug)
--                       if (bugaddr == bug_addr(bug))
-+                       if (bugaddr == bug_addr(bug)){
-+                               rcu_read_unlock();
-                                return bug;
-+                        }
-        }
-+       rcu_read_unlock();
-        return NULL;
- }
- 
-@@ -96,7 +102,9 @@
-         * traversals, but since we only traverse on BUG()s, a spinlock
-         * could potentially lead to deadlock and thus be counter-productive.
-         */
--       list_add(&mod->bug_list, &module_bug_list);
-+       mutex_lock(&module_bug_mutex);
-+       list_add_rcu(&mod->bug_list, &module_bug_list);
-+       mutex_unlock(&module_bug_mutex);
- }
- 
- void module_bug_cleanup(struct module *mod)
+-	c = kmalloc(sizeof(*c), GFP_ATOMIC);
++	c = kmalloc(sizeof(*c), GFP_KERNEL);
+ 	if (!c) {
+ 		rc = -ENOMEM;
+ 		goto out;
+-- 
+1.7.9.2.323.gf051a
 
