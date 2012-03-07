@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab2CGPxL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 10:53:11 -0500
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:51809
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756242Ab2CGPxJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 10:53:09 -0500
-X-SpamScore: -20
-X-BigFish: VPS-20(zzbb2dI9371I936eK542M1432N98dK4015Izz1202hzz8275dhz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M0IUS6-02-7AS-02
-X-M-MSG: 
-From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/2] Refine mutex and rcu method in module.c,
- kernel<3.2.9>
-Thread-Topic: [PATCH 1/2] Refine mutex and rcu method in module.c,
- kernel<3.2.9>
-Thread-Index: Acz8cbLg6k3HMRVqQxaI2PGzwf9Wcf//hssA//92MJA=
-Date: Wed, 7 Mar 2012 15:52:53 +0000
-Message-ID: <491D6B4EAD0A714894D8AD22F4BDE0430328E3@SCYBEXDAG04.amd.com>
-References: <491D6B4EAD0A714894D8AD22F4BDE04303289D@SCYBEXDAG04.amd.com>
- <4F5780A2.2040402@gmail.com>
-In-Reply-To: <4F5780A2.2040402@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.74.102]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757415Ab2CGP42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 10:56:28 -0500
+Received: from palinux.external.hp.com ([192.25.206.14]:59273 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754458Ab2CGP41 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 10:56:27 -0500
+Date: Wed, 7 Mar 2012 08:56:25 -0700
+From: Matthew Wilcox <matthew@wil.cx>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        mkp@mkp.net
+Subject: Re: [PATCH] [SCSI] sd: set BIO_MAPPED_INTEGRITY bit correctly in
+	sd_dif_prepare().
+Message-ID: <20120307155624.GC19570@parisc-linux.org>
+References: <1331131295-3707-1-git-send-email-santoshprasadnayak@gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331131295-3707-1-git-send-email-santoshprasadnayak@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------Original Message-----
-From: Cong Wang [mailto:xiyou.wangcong@gmail.com] 
-Sent: Wednesday, March 07, 2012 11:37 PM
-To: Chen, Dennis (SRDC SW)
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Refine mutex and rcu method in module.c, kernel<3.2.9>
+On Wed, Mar 07, 2012 at 08:11:35PM +0530, santosh nayak wrote:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> 
+> Value of BIO_MAPPED_INTEGRITY is 11. Intention was to set the 11th bit.
 
-Hi,
+Also, can we introduce:
 
-On 03/07/2012 10:51 PM, Chen, Dennis (SRDC SW) wrote:
+#define bio_set_flag(bio, flag)	((bio)->bi_flags |= (1 << (flag)))
 
-Before we are going into tech details...
+Then hunt down and kill all the places that manipulate bi_flags by hand?
+We might also need:
 
-> 1. Narrow down the granularity of mutex_lock/ mutex_unlock
-> 2. Replace some unnecessary mutex_lock/mutex_unlock pairs with RCU
-> 3. Refine the consistent calling style of RCU functioan
+#define bio_set_flag_atomic(bio, flag) set_bit(&(bio)->bi_flags, (flag))
 
-Please split the patch into three patches.
-
->
-> --- module.ori.c        2012-03-07 19:59:07.890900147 +0800
-> +++ module.c    2012-03-07 22:12:44.982738729 +0800
-
-The patch is not correctly generated, check 
-Documentation/SubmittingPatches for more info.
-
-====================================================
-
-diff -u module.ori.c module.c > module.patch
-
-give more details please?
-
-Thanks,
-
-
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
