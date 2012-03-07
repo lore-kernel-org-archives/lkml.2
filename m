@@ -1,173 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab2CGNcP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 08:32:15 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:36955 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909Ab2CGNcN (ORCPT
+	id S1756544Ab2CGNef (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 08:34:35 -0500
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:43510 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab2CGNed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 08:32:13 -0500
-Date: Tue, 6 Mar 2012 15:15:28 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2012-03-06
-Message-ID: <20120306201528.GC3353@tuxdriver.com>
+	Wed, 7 Mar 2012 08:34:33 -0500
+Message-ID: <4F5763CD.8050903@linux.vnet.ibm.com>
+Date: Wed, 07 Mar 2012 19:04:05 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0OAP2g/MAC+5xKAE"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        prashanth@linux.vnet.ibm.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        "paulmck@linux.vnet.ibm.com >> \"Paul E. McKenney\"" 
+	<paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH bisected regression] sched: rebuild sched domains at suspend/resume
+References: <20120306204357.13169.90791.stgit@zurg>
+In-Reply-To: <20120306204357.13169.90791.stgit@zurg>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12030713-3864-0000-0000-000001BAD484
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/07/2012 02:15 AM, Konstantin Khlebnikov wrote:
 
---0OAP2g/MAC+5xKAE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This is fix for suspend/resume regression introduced in commit 8f2f748b0656
+> ("CPU hotplug, cpusets, suspend: Don't touch cpusets during suspend/resume")
+> Without this patch suspend always hangs on my thinkpad x220 (2 x CPU * HT).
+> 
 
-commit 7f466cff75f16ac545f34c7876e6f80225a36a6d
 
-Dave,
+Hey, with commit 8f2f748b0656, suspend/resume works perfectly for me! I ran it
+multiple times just to make sure, and everything worked just great.
 
-Here are a few more squeakers hoping for 3.3...
+Apart from that, I even tried suspend/resume after building the kernel with
+and without CONFIG_CPUSETS. Both cases worked perfectly.
 
-Two of them are for carl9170: a one-line fix for a memory accounting
-leak; and a fix that corrects the handling of frames with a couple of
-status flags set by mac80211 (enabling delivery to sleeping stations).
-Also included is a one-liner for mwifiex that should have been included
-in "mwifiex: clear previous security setting during association".
-Finally, a one-line fix from Johannes Berg for an iwlwifi regression
-brings-up the rear.
+So, I am really surprised at what you stated above. Are you *really* sure you
+are facing suspend hangs *because* of the above commit?
 
-Please let me know if there are problems!
+And AFAICS hardware doesn't matter for the code in question, but in any case,
+the laptop on which I tested it is:
+Thinkpad T420 (Intel core i5-2540M), 2 cores * HT (total 4 logical cpus).
 
-Thanks,
+Also, the patch you posted here doesn't make much sense.. nor does it give a
+clue as to what might be wrong at your end (if anything is really wrong, that
+is). Do you have CONFIG_CPUSETS set or unset? Could you share your .config?
 
-John
+Coming to your patch, assuming you have CONFIG_CPUSETS enabled, then,
+calling rebuild_sched_domains() at that point is useless because the cpusets
+weren't changed at all. So generate_sched_domains() would generate the same
+sched domain partitions that is already there.. And hence
+partition_sched_domains() would essentially do nothing.. no sched domain is
+destroyed, and no new domains are created.
 
----
+However, if CONFIG_CPUSETS is unset, then, before commit 8f2f748b0656,
+partition_sched_domains(1, NULL, NULL) would have been invoked, thus rebuilding
+a single sched domain. And that is why I specifically also tested commit
+8f2f748b0656 with CONFIG_CPUSETS unset - and that also worked fine (as I
+mentioned above).
 
-The following changes since commit 5cb917bc4f3882ecee87064483111023086757d3:
+So could you please check again?
 
-  tg3: Fix to use multi queue BQL interfaces (2012-03-06 01:19:08 -0500)
+By the way, you can use the pm-test framework (see Documentation/power/basic-
+pm-debugging.txt) to pin-point which stage is causing the hang.
+Specifically, the stage where CPU hotplug is done is 'processors'.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
-avem
+So you should probably try out this level:
+# echo processors > /sys/power/pm_test
+# echo mem > /sys/power/state
 
-Amitkumar Karwar (1):
-      mwifiex: reset encryption mode flag before association
+Replacing processors with core enables even deeper level suspend testing.
 
-Christian Lamparter (1):
-      carl9170: fix frame delivery if sta is in powersave mode
+> cpuset_update_active_cpus() not only juggles with bits in cpusets,
+> it also calls sched-domains rebuilding after all.
+> 
+> This patch restores sched-domain rebuilds, as it was before that commit.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> ---
+>  kernel/sched/core.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 9995eb0..0fb7406 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -6732,6 +6732,10 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+>  	case CPU_DOWN_FAILED:
+>  		cpuset_update_active_cpus();
+>  		return NOTIFY_OK;
+> +	case CPU_ONLINE_FROZEN:
+> +	case CPU_DOWN_FAILED_FROZEN:
+> +		rebuild_sched_domains();
+> +		return NOTIFY_OK;
+>  	default:
+>  		return NOTIFY_DONE;
+>  	}
+> @@ -6744,6 +6748,9 @@ static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+>  	case CPU_DOWN_PREPARE:
+>  		cpuset_update_active_cpus();
+>  		return NOTIFY_OK;
+> +	case CPU_DOWN_PREPARE_FROZEN:
+> +		rebuild_sched_domains();
+> +		return NOTIFY_OK;
+>  	default:
+>  		return NOTIFY_DONE;
+>  	}
+> 
 
-Johannes Berg (1):
-      iwlwifi: fix wowlan suspend
+ 
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
 
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
-nto for-davem
-
-Nicolas Cavallari (1):
-      carl9170: Fix memory accounting when sta is in power-save mode.
-
- drivers/net/wireless/ath/carl9170/tx.c     |    9 ++++++---
- drivers/net/wireless/iwlwifi/iwl-agn-lib.c |    2 +-
- drivers/net/wireless/mwifiex/cfg80211.c    |    1 +
- 3 files changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/carl9170/tx.c b/drivers/net/wireless/=
-ath/carl9170/tx.c
-index d19a9ee..bbc813d 100644
---- a/drivers/net/wireless/ath/carl9170/tx.c
-+++ b/drivers/net/wireless/ath/carl9170/tx.c
-@@ -1234,6 +1234,7 @@ static bool carl9170_tx_ps_drop(struct ar9170 *ar, st=
-ruct sk_buff *skb)
- {
- 	struct ieee80211_sta *sta;
- 	struct carl9170_sta_info *sta_info;
-+	struct ieee80211_tx_info *tx_info;
-=20
- 	rcu_read_lock();
- 	sta =3D __carl9170_get_tx_sta(ar, skb);
-@@ -1241,16 +1242,18 @@ static bool carl9170_tx_ps_drop(struct ar9170 *ar, =
-struct sk_buff *skb)
- 		goto out_rcu;
-=20
- 	sta_info =3D (void *) sta->drv_priv;
--	if (unlikely(sta_info->sleeping)) {
--		struct ieee80211_tx_info *tx_info;
-+	tx_info =3D IEEE80211_SKB_CB(skb);
-=20
-+	if (unlikely(sta_info->sleeping) &&
-+	    !(tx_info->flags & (IEEE80211_TX_CTL_POLL_RESPONSE |
-+				IEEE80211_TX_CTL_CLEAR_PS_FILT))) {
- 		rcu_read_unlock();
-=20
--		tx_info =3D IEEE80211_SKB_CB(skb);
- 		if (tx_info->flags & IEEE80211_TX_CTL_AMPDU)
- 			atomic_dec(&ar->tx_ampdu_upload);
-=20
- 		tx_info->flags |=3D IEEE80211_TX_STAT_TX_FILTERED;
-+		carl9170_release_dev_space(ar, skb);
- 		carl9170_tx_status(ar, skb, false);
- 		return true;
- 	}
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wirel=
-ess/iwlwifi/iwl-agn-lib.c
-index 64cf439..ca78e91 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-@@ -1240,7 +1240,7 @@ int iwlagn_suspend(struct iwl_priv *priv,
- 				.flags =3D CMD_SYNC,
- 				.data[0] =3D key_data.rsc_tsc,
- 				.dataflags[0] =3D IWL_HCMD_DFL_NOCOPY,
--				.len[0] =3D sizeof(key_data.rsc_tsc),
-+				.len[0] =3D sizeof(*key_data.rsc_tsc),
- 			};
-=20
- 			ret =3D iwl_trans_send_cmd(trans(priv), &rsc_tsc_cmd);
-diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless=
-/mwifiex/cfg80211.c
-index 5b2972b..2210a0f 100644
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -846,6 +846,7 @@ mwifiex_cfg80211_assoc(struct mwifiex_private *priv, si=
-ze_t ssid_len, u8 *ssid,
- 	priv->sec_info.wpa_enabled =3D false;
- 	priv->sec_info.wpa2_enabled =3D false;
- 	priv->wep_key_curr_index =3D 0;
-+	priv->sec_info.encryption_mode =3D 0;
- 	ret =3D mwifiex_set_encode(priv, NULL, 0, 0, 1);
-=20
- 	if (mode =3D=3D NL80211_IFTYPE_ADHOC) {
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---0OAP2g/MAC+5xKAE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPVnBgAAoJEJctW/TcYTgGv0sP/3FZMpNXM4i5CXMsuxIj7rFM
-okuAB3Ba1GlJoYWtFM8Phs2Wx/ePVrlEFPsilhfjvN+hyF9vLLWgJzYMU5+tlxAJ
-mwXGnVZtHDM3x4LVQXcQLec7uz5l/BJj/bFCA1/E/z/YnXxFaBgiBAEZn9VURqqi
-oAuDt0nSFauJznewMVbHhAo+a/ByzQnW6cx31CHUlTb+zEdNN+QE0GwBhsuszT0b
-az6vdHaCyQtqUbPhmPkbCykbBjOnVgxOEFOJechpT0QhaR1kPUEkB8lQNFjv7FyO
-rory/lqLZ1NBllYYnJalQ2eJhkm+65RI3AfS6+hNozeZ4CjvbRB/MCo22bTa3efP
-GzXRatrgR6ZemyYhUe5UwumBdUZs8+CvK2SevDadszeVHJ+zyJn6KRWeODekINN9
-Q7qYK6R6ECckoX2t38IUEIFE7kKC7G5bqEpI8YRc0Yw4aRLyYs4z1lCNJ77a81fg
-2ZRbr7kTHCTiQY2dmMLyz4bVEwSKzX163+J2hWQqmVI5e9ky1ImMykebe739IOlP
-uu9GW/p2exAcBIhPMjpupB3hgo41LIjzaIpXowvShY2frgIKWmL8YQ5w+BcxmJb4
-hlx01vPinu/psau4OqShvJaHm8a+cP6KO5HMuCZkosAmcA/xF4eD0wEXDa6GhsKe
-Xs6xz0RUJsc715RPKCd8
-=aUV3
------END PGP SIGNATURE-----
-
---0OAP2g/MAC+5xKAE--
