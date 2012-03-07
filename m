@@ -1,51 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab2CGKD2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 05:03:28 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37030 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754587Ab2CGKD1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 05:03:27 -0500
-Date: Wed, 7 Mar 2012 12:03:20 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: leonid.moiseichuk@nokia.com
-cc: anton.vorontsov@linaro.org, linux-kernel@vger.kernel.org,
-        rientjes@google.com
-Subject: RE: [PATCH] vmevent: Use 'struct vmevent_attr' for vmevent_fd()
- ABI
-In-Reply-To: <84FF21A720B0874AA94B46D76DB9826904581EF7@008-AM1MPN1-003.mgdnok.nokia.com>
-Message-ID: <alpine.LFD.2.02.1203071202150.1774@tux.localdomain>
-References: <1331067079-2163-1-git-send-email-penberg@kernel.org> <20120306225937.GA24931@oksana.dev.rtsoft.ru> <84FF21A720B0874AA94B46D76DB9826904581EF7@008-AM1MPN1-003.mgdnok.nokia.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754986Ab2CGKEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 05:04:12 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:62815 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751920Ab2CGKEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 05:04:10 -0500
+X-IronPort-AV: E=Sophos;i="4.73,545,1325433600"; 
+   d="scan'208";a="4480952"
+Message-ID: <4F5732FB.5040208@cn.fujitsu.com>
+Date: Wed, 07 Mar 2012 18:05:47 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH v2] deal with guest paniced event
+References: <4F56BEF2.4020405@cn.fujitsu.com> <4F56C0E1.1090703@cn.fujitsu.com> <4F57302B.1040505@siemens.com>
+In-Reply-To: <4F57302B.1040505@siemens.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-07 18:02:08,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-07 18:02:14,
+	Serialize complete at 2012-03-07 18:02:14
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Mar 2012, leonid.moiseichuk@nokia.com wrote:
-> > -----Original Message-----
-> > From: ext Anton Vorontsov [mailto:anton.vorontsov@linaro.org]
-> > Sent: 07 March, 2012 01:00
-> > To: Pekka Enberg
-> > Cc: linux-kernel@vger.kernel.org; Moiseichuk Leonid (Nokia-MP/Espoo);
-> ...
-> > Sorry for hijacking this thread, but speaking of big changes. Are there any
-> > plans or ideas to add other methods of sampling, i.e. something not timer-
-> > based?
-> ...
-> > Though, current vmevent seems not so lightweigh in sense of battery usage
-> > and accuracy (i.e. how quick we're able to detect the crossed threshold). To
-> > get better accuracy we would need to run timer at higher frequencies, but
-> > then we would waste more battery.
+At 03/07/2012 05:53 PM, Jan Kiszka Wrote:
+> On 2012-03-07 02:58, Wen Congyang wrote:
+>> When the host knows the guest is paniced, it will set
+>> exit_reason to KVM_EXIT_GUEST_PANICED. So if qemu receive
+>> this exit_reason, we can send a event to tell management
+>> application that the guest is paniced and set the guest
+>> status to RUN_STATE_PANICED.
+>>
+>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>> ---
+>>  kvm-all.c                 |    4 ++++
+>>  linux-headers/linux/kvm.h |    1 +
+>>  monitor.c                 |    3 +++
+>>  monitor.h                 |    1 +
+>>  qapi-schema.json          |    2 +-
+>>  qmp.c                     |    3 ++-
+>>  vl.c                      |    1 +
+>>  7 files changed, 13 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kvm-all.c b/kvm-all.c
+>> index c4babda..d356948 100644
+>> --- a/kvm-all.c
+>> +++ b/kvm-all.c
+>> @@ -1190,6 +1190,10 @@ int kvm_cpu_exec(CPUState *env)
+>>                      (uint64_t)run->hw.hardware_exit_reason);
+>>              ret = -1;
+>>              break;
+>> +        case KVM_EXIT_GUEST_PANICED:
+>> +            monitor_protocol_event(QEVENT_GUEST_PANICED, NULL);
+>> +            vm_stop(RUN_STATE_PANICED);
+>> +            break;
 > 
-> One of patch I sent was about switching to deferred timer. This API should not be 100% accurate first, and using deferred
-> timers will allow to sleep properly when system has no activity. I hope Pekka will accept the next patch as well.
+> This cannot work. You missed to set ret to -1 to break out of loop.
 
-I merged that patch yesterday:
+I fotgot to do it. But it works fine while I test this patch. I
+think ret has set to 0 before I guest is panicked.
 
-http://git.kernel.org/?p=linux/kernel/git/penberg/linux.git;a=commitdiff;h=7d5e14c4b0421f7716e759934c0c2524b1d763ea
+> 
+>>          case KVM_EXIT_INTERNAL_ERROR:
+>>              ret = kvm_handle_internal_error(env, run);
+>>              break;
+>> diff --git a/linux-headers/linux/kvm.h b/linux-headers/linux/kvm.h
+>> index f6b5343..ddc9716 100644
+>> --- a/linux-headers/linux/kvm.h
+>> +++ b/linux-headers/linux/kvm.h
+>> @@ -163,6 +163,7 @@ struct kvm_pit_config {
+>>  #define KVM_EXIT_OSI              18
+>>  #define KVM_EXIT_PAPR_HCALL	  19
+>>  #define KVM_EXIT_S390_UCONTROL	  20
+>> +#define KVM_EXIT_GUEST_PANICED	  21
+> 
+> Linux header must be sync'ed in a separate patch, referencing the
+> upstream (typically kvm.git) commit hash that was used as base. Make
+> sure to use the update-linux-headers.sh script for this.
+> 
+> So the ordering is: Get the kernel changes accepted, then push the
+> (final) user space patches. That said, a patch like this can still be
+> posted in advance for informational purposes, but not for application.
 
-			Pekka
+OK.
+
+Thanks
+Wen Congyang
+
+> 
+> Jan
+> 
+
