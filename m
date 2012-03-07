@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758949Ab2CGOeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 09:34:17 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:48575 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757742Ab2CGOeO (ORCPT
+	id S1759073Ab2CGOf5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 09:35:57 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:41988 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758921Ab2CGOeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 09:34:14 -0500
+	Wed, 7 Mar 2012 09:34:16 -0500
 From: Javier Martin <javier.martin@vista-silicon.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
         vinod.koul@intel.com, linux@arm.linux.org.uk, kernel@pengutronix.de,
         Javier Martin <javier.martin@vista-silicon.com>
-Subject: [PATCH v2 07/13] dmaengine: imx-dma: remove sg member from internal structure.
-Date: Wed,  7 Mar 2012 15:33:39 +0100
-Message-Id: <1331130825-14947-8-git-send-email-javier.martin@vista-silicon.com>
+Subject: [PATCH v2 08/13] dmaengine: imx-dma: remove 'in_use' field of 'internal' structure.
+Date: Wed,  7 Mar 2012 15:33:40 +0100
+Message-Id: <1331130825-14947-9-git-send-email-javier.martin@vista-silicon.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1331130825-14947-1-git-send-email-javier.martin@vista-silicon.com>
 References: <1331130825-14947-1-git-send-email-javier.martin@vista-silicon.com>
@@ -22,107 +22,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This member is redundant, because it is already present in
-descriptor structure. Removing it will make further removing
-of 'internal' structure easier.
+It makes no sense keeping an 'in_use' flag when the multiple descriptor
+mechanism already prevents a new DMA transfer to be issued when another
+one is in course.
 
 Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
 ---
- drivers/dma/imx-dma.c |   42 ++++++++++++++++++------------------------
- 1 files changed, 18 insertions(+), 24 deletions(-)
+ drivers/dma/imx-dma.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index cb45aff..ed94207 100644
+index ed94207..1e66ee6 100644
 --- a/drivers/dma/imx-dma.c
 +++ b/drivers/dma/imx-dma.c
-@@ -128,7 +128,6 @@ enum  imxdma_prep_type {
-  */
- 
+@@ -130,8 +130,6 @@ enum  imxdma_prep_type {
  struct imxdma_channel_internal {
--	struct scatterlist *sg;
  	unsigned int resbytes;
  
- 	int in_use;
-@@ -278,11 +277,11 @@ static void imxdma_enable_hw(struct imxdma_desc *d)
- 		CCR_ACRPT, DMA_CCR(channel));
+-	int in_use;
+-
+ 	struct timer_list watchdog;
  
- 	if ((cpu_is_mx21() || cpu_is_mx27()) &&
--			imxdmac->internal.sg && imxdma_hw_chain(&imxdmac->internal)) {
--		imxdmac->internal.sg = sg_next(imxdmac->internal.sg);
--		if (imxdmac->internal.sg) {
-+			d->sg && imxdma_hw_chain(&imxdmac->internal)) {
-+		d->sg = sg_next(d->sg);
-+		if (d->sg) {
- 			u32 tmp;
--			imxdma_sg_next(d, imxdmac->internal.sg);
-+			imxdma_sg_next(d, d->sg);
- 			tmp = imx_dmav1_readl(DMA_CCR(channel));
- 			imx_dmav1_writel(tmp | CCR_RPT | CCR_ACRPT,
+ 	int hw_chaining;
+@@ -266,9 +264,6 @@ static void imxdma_enable_hw(struct imxdma_desc *d)
+ 
+ 	pr_debug("imxdma%d: imx_dma_enable\n", channel);
+ 
+-	if (imxdmac->internal.in_use)
+-		return;
+-
+ 	local_irq_save(flags);
+ 
+ 	imx_dmav1_writel(1 << channel, DMA_DISR);
+@@ -287,7 +282,6 @@ static void imxdma_enable_hw(struct imxdma_desc *d)
  				DMA_CCR(channel));
-@@ -319,7 +318,6 @@ static void imxdma_watchdog(unsigned long data)
+ 		}
+ 	}
+-	imxdmac->internal.in_use = 1;
+ 
+ 	local_irq_restore(flags);
+ }
+@@ -307,7 +301,6 @@ static void imxdma_disable_hw(struct imxdma_channel *imxdmac)
+ 	imx_dmav1_writel(imx_dmav1_readl(DMA_CCR(channel)) & ~CCR_CEN,
+ 			DMA_CCR(channel));
+ 	imx_dmav1_writel(1 << channel, DMA_DISR);
+-	imxdmac->internal.in_use = 0;
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -317,7 +310,6 @@ static void imxdma_watchdog(unsigned long data)
+ 	int channel = imxdmac->channel;
  
  	imx_dmav1_writel(0, DMA_CCR(channel));
- 	imxdmac->internal.in_use = 0;
--	imxdmac->internal.sg = NULL;
+-	imxdmac->internal.in_use = 0;
  
  	/* Tasklet watchdog error handler */
  	tasklet_schedule(&imxdmac->dma_tasklet);
-@@ -387,24 +385,23 @@ static void dma_irq_handle_channel(struct imxdma_channel *imxdmac)
- 	int chno = imxdmac->channel;
- 	struct imxdma_desc *desc;
+@@ -436,7 +428,6 @@ static void dma_irq_handle_channel(struct imxdma_channel *imxdmac)
  
--	if (imxdma->sg) {
--		u32 tmp;
--		imxdma->sg = sg_next(imxdma->sg);
--
--		if (imxdma->sg) {
-+	spin_lock(&imxdmac->lock);
-+	if (list_empty(&imxdmac->ld_active)) {
-+		spin_unlock(&imxdmac->lock);
-+		goto out;
-+	}
+ out:
+ 	imx_dmav1_writel(0, DMA_CCR(chno));
+-	imxdma->in_use = 0;
+ 	/* Tasklet irq */
+ 	tasklet_schedule(&imxdmac->dma_tasklet);
+ }
+@@ -470,7 +461,6 @@ static int imxdma_xfer_desc(struct imxdma_desc *d)
+ {
+ 	struct imxdma_channel *imxdmac = to_imxdma_chan(d->desc.chan);
+ 	struct imxdma_engine *imxdma = imxdmac->imxdma;
+-	int ret;
  
--			spin_lock(&imxdmac->lock);
--			if (list_empty(&imxdmac->ld_active)) {
--				spin_unlock(&imxdmac->lock);
--				goto out;
--			}
-+	desc = list_first_entry(&imxdmac->ld_active,
-+				struct imxdma_desc,
-+				node);
-+	spin_unlock(&imxdmac->lock);
- 
--			desc = list_first_entry(&imxdmac->ld_active,
--						struct imxdma_desc,
--						node);
--			spin_unlock(&imxdmac->lock);
-+	if (desc->sg) {
-+		u32 tmp;
-+		desc->sg = sg_next(desc->sg);
- 
--			imxdma_sg_next(desc, imxdma->sg);
-+		if (desc->sg) {
-+			imxdma_sg_next(desc, desc->sg);
- 
- 			tmp = imx_dmav1_readl(DMA_CCR(chno));
- 
-@@ -478,8 +475,6 @@ static int imxdma_xfer_desc(struct imxdma_desc *d)
  	/* Configure and enable */
  	switch (d->type) {
- 	case IMXDMA_DESC_MEMCPY:
--		imxdmac->internal.sg = NULL;
--
- 		imx_dmav1_writel(d->src, DMA_SAR(imxdmac->channel));
- 		imx_dmav1_writel(d->dest, DMA_DAR(imxdmac->channel));
- 		imx_dmav1_writel(d->config_mem | (d->config_port << 2),
-@@ -495,7 +490,6 @@ static int imxdma_xfer_desc(struct imxdma_desc *d)
- 	/* Cyclic transfer is the same as slave_sg with special sg configuration. */
- 	case IMXDMA_DESC_CYCLIC:
- 	case IMXDMA_DESC_SLAVE_SG:
--		imxdmac->internal.sg = d->sg;
- 		imxdmac->internal.resbytes = d->len;
- 
- 		if (d->direction == DMA_DEV_TO_MEM) {
 -- 
 1.7.0.4
 
