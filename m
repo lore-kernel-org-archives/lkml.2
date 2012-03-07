@@ -1,54 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758704Ab2CGQBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 11:01:37 -0500
-Received: from mga03.intel.com ([143.182.124.21]:22677 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758532Ab2CGQBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 11:01:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="115917600"
-Message-ID: <1331136246.32316.39.camel@sauron.fi.intel.com>
-Subject: Re: [RFC][PATCH 0/7] UBI checkpointing support
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <rw@linutronix.de>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, tim.bird@am.sony.com
-Date: Wed, 07 Mar 2012 18:04:06 +0200
-In-Reply-To: <1329250006-22944-1-git-send-email-rw@linutronix.de>
-References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759128Ab2CGQDg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 11:03:36 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50529 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758720Ab2CGQDd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 11:03:33 -0500
+From: Johan Hovold <jhovold@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>, stable <stable@vger.kernel.org>
+Subject: [PATCH 1/2] bluetooth: hci_ldisc: fix NULL-pointer dereference on tty_close
+Date: Wed,  7 Mar 2012 17:01:59 +0100
+Message-Id: <1331136120-27075-2-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.8.4
+In-Reply-To: <1331136120-27075-1-git-send-email-jhovold@gmail.com>
+References: <1331136120-27075-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another not-so-technical comment.
+Do not close protocol driver until device has been unregistered.
 
-On Tue, 2012-02-14 at 21:06 +0100, Richard Weinberger wrote:
-> The following patch set implements checkpointing support for
-> UBI. Checkpointing is an optional feature which stores the physical to
-> logical eraseblock relations in a checkpointing superblock to reduce
-> the initialization time of UBI. 
+This fixes a race between tty_close and hci_dev_open which can result in
+a NULL-pointer dereference.
 
-So this is basically about improving scalability and "mount" time. This
-has nothing to do with checkpointing most people are aware of.
-Confusing...
+The line discipline closes the protocol driver while we may still have
+hci_dev_open sleeping on the req_lock mutex resulting in a NULL-pointer
+dereference when lock is acquired and hci_init_req called.
 
-Really, this tirm is already reserved by file-systems, things like
-virtual machines where it means "freezing" the contents and doing COW
-when changing the freezed blocks and guaranteeing the ability to
-"roll-back" to the checkpointed data.
+Bug is 100% reproducible using hciattach and a disconnected serial port:
 
-Please, consider an option of picking a different name. In JFFS2 a
-"similar" thing was called "summaries", and even this is better than
-"checkpoint", I think.
+0. # hciattach -n ttyO1 any noflow
 
+1. hci_dev_open called from hci_power_on grabs req lock
+2. hci_init_req executes but device fails to initialise (times out
+   eventually)
+3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
+4. hci_uart_tty_close detaches protocol driver and cancels init req
+5. hci_dev_open (1) releases req lock
+6. hci_dev_open (3) grabs req lock, calls hci_init_req, which triggers oops
+   when request is prepared in hci_uart_send_frame
+
+[  137.201263] Unable to handle kernel NULL pointer dereference at virtual address 00000028
+[  137.209838] pgd = c0004000
+[  137.212677] [00000028] *pgd=00000000
+[  137.216430] Internal error: Oops: 17 [#1]
+[  137.220642] Modules linked in:
+[  137.223846] CPU: 0    Tainted: G        W     (3.3.0-rc6-dirty #406)
+[  137.230529] PC is at __lock_acquire+0x5c/0x1ab0
+[  137.235290] LR is at lock_acquire+0x9c/0x128
+[  137.239776] pc : [<c0071490>]    lr : [<c00733f8>]    psr: 20000093
+[  137.239776] sp : cf869dd8  ip : c0529554  fp : c051c730
+[  137.251800] r10: 00000000  r9 : cf8673c0  r8 : 00000080
+[  137.257293] r7 : 00000028  r6 : 00000002  r5 : 00000000  r4 : c053fd70
+[  137.264129] r3 : 00000000  r2 : 00000000  r1 : 00000000  r0 : 00000001
+[  137.270965] Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[  137.278717] Control: 10c5387d  Table: 8f0f4019  DAC: 00000015
+[  137.284729] Process kworker/u:1 (pid: 7, stack limit = 0xcf8682e8)
+[  137.291229] Stack: (0xcf869dd8 to 0xcf86a000)
+[  137.295776] 9dc0:                                                       c0529554 00000000
+[  137.304351] 9de0: cf8673c0 cf868000 d03ea1ef cf868000 000001ef 00000470 00000000 00000002
+[  137.312927] 9e00: cf8673c0 00000001 c051c730 c00716ec 0000000c 00000440 c0529554 00000001
+[  137.321533] 9e20: c051c730 cf868000 d03ea1f3 00000000 c053b978 00000000 00000028 cf868000
+[  137.330078] 9e40: 00000000 00000000 00000002 00000000 00000000 c00733f8 00000002 00000080
+[  137.338684] 9e60: 00000000 c02a1d50 00000000 00000001 60000013 c0969a1c 60000093 c053b96c
+[  137.347259] 9e80: 00000002 00000018 20000013 c02a1d50 cf0ac000 00000000 00000002 cf868000
+[  137.355834] 9ea0: 00000089 c0374130 00000002 00000000 c02a1d50 cf0ac000 0000000c cf0fc540
+[  137.364410] 9ec0: 00000018 c02a1d50 cf0fc540 00000000 cf0fc540 c0282238 c028220c cf178d80
+[  137.372985] 9ee0: 127525d8 c02821cc 9a1fa451 c032727c 9a1fa451 127525d8 cf0fc540 cf0ac4ec
+[  137.381561] 9f00: cf0ac000 cf0fc540 cf0ac584 c03285f4 c0328580 cf0ac4ec cf85c740 c05510cc
+[  137.390136] 9f20: ce825400 c004c914 00000002 00000000 c004c884 ce8254f5 cf869f48 00000000
+[  137.398712] 9f40: c0328580 ce825415 c0a7f914 c061af64 00000000 c048cf3c cf8673c0 cf85c740
+[  137.407287] 9f60: c05510cc c051a66c c05510ec c05510c4 cf85c750 cf868000 00000089 c004d6ac
+[  137.415863] 9f80: 00000000 c0073d14 00000001 cf853ed8 cf85c740 c004d558 00000013 00000000
+[  137.424438] 9fa0: 00000000 00000000 00000000 c00516b0 00000000 00000000 cf85c740 00000000
+[  137.433013] 9fc0: 00000001 dead4ead ffffffff ffffffff c0551674 00000000 00000000 c0450aa4
+[  137.441589] 9fe0: cf869fe0 cf869fe0 cf853ed8 c005162c c0013b30 c0013b30 00ffff00 00ffff00
+[  137.450164] [<c0071490>] (__lock_acquire+0x5c/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
+[  137.459503] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0374130>] (_raw_spin_lock_irqsave+0x44/0x58)
+[  137.469360] [<c0374130>] (_raw_spin_lock_irqsave+0x44/0x58) from [<c02a1d50>] (skb_queue_tail+0x18/0x48)
+[  137.479339] [<c02a1d50>] (skb_queue_tail+0x18/0x48) from [<c0282238>] (h4_enqueue+0x2c/0x34)
+[  137.488189] [<c0282238>] (h4_enqueue+0x2c/0x34) from [<c02821cc>] (hci_uart_send_frame+0x34/0x68)
+[  137.497497] [<c02821cc>] (hci_uart_send_frame+0x34/0x68) from [<c032727c>] (hci_send_frame+0x50/0x88)
+[  137.507171] [<c032727c>] (hci_send_frame+0x50/0x88) from [<c03285f4>] (hci_cmd_work+0x74/0xd4)
+[  137.516204] [<c03285f4>] (hci_cmd_work+0x74/0xd4) from [<c004c914>] (process_one_work+0x1a0/0x4ec)
+[  137.525604] [<c004c914>] (process_one_work+0x1a0/0x4ec) from [<c004d6ac>] (worker_thread+0x154/0x344)
+[  137.535278] [<c004d6ac>] (worker_thread+0x154/0x344) from [<c00516b0>] (kthread+0x84/0x90)
+[  137.543975] [<c00516b0>] (kthread+0x84/0x90) from [<c0013b30>] (kernel_thread_exit+0x0/0x8)
+[  137.552734] Code: e59f4e5c e5941000 e3510000 0a000031 (e5971000)
+[  137.559234] ---[ end trace 1b75b31a2719ed1e ]---
+
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/bluetooth/hci_ldisc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
+index 0711448..6946081 100644
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -310,11 +310,11 @@ static void hci_uart_tty_close(struct tty_struct *tty)
+ 			hci_uart_close(hdev);
+ 
+ 		if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
+-			hu->proto->close(hu);
+ 			if (hdev) {
+ 				hci_unregister_dev(hdev);
+ 				hci_free_dev(hdev);
+ 			}
++			hu->proto->close(hu);
+ 		}
+ 	}
+ }
 -- 
-Best Regards,
-Artem Bityutskiy
+1.7.8.4
 
