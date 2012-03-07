@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058Ab2CGLz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 06:55:28 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:58689 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab2CGLz0 (ORCPT
+	id S1756359Ab2CGL5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 06:57:46 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47518 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753734Ab2CGL5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 06:55:26 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alex Shi <alex.shi@intel.com>
-Subject: Re: [RFC patch] spindep: add cross cache lines checking
-Date: Wed, 7 Mar 2012 11:54:35 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: gcc@gcc.gnu.org, Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de,
-        "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, andi.kleen@intel.com, gcc-help@gcc.gnu.org
-References: <1330917630.18835.44.camel@debian> <201203060932.45223.arnd@arndb.de> <1331108607.18835.343.camel@debian>
-In-Reply-To: <1331108607.18835.343.camel@debian>
+	Wed, 7 Mar 2012 06:57:44 -0500
+Date: Wed, 7 Mar 2012 14:57:36 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] acpi throttling: fix endian bug in
+ acpi_read_throttling_status()
+Message-ID: <20120307115736.GB13204@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203071154.36059.arnd@arndb.de>
-X-Provags-ID: V02:K0:p8483ffIImvh+93DEzGOChRs89MU4DQ5SU94P0QSaNz
- ZvWBLIgebjnGK0+MHh3p8/NleH0bD/imBp/stKX+yspLOhSYT3
- 9tJpe45jJsdPYSPMw+QFfbkybIKgkD20L66ivQIviPqgUJl0x8
- YjvSVrp4gdL+08RBwszszaJyelEx/NYUxUqHnMH3x8EqW2Gmqt
- WcYjE9oPM9APuHk4l6RcIod0O7w0OOxYXMQhiZ+LtoNh3F8pP5
- UqzKPaHiMuC2nyauqd3zlXJ6Uf9gHQyFXeapetfuQfdWuBvNL0
- JBZSw80ttChEdkJtmNcIWHkaMEos6uUW3jEYHAvN5OqidJEJmd
- UqdaEndEdTkeZgbnM+Wo=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090203.4F574D36.0141,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 07 March 2012, Alex Shi wrote:
+Using a u64 here creates an endian bug.  We store a u32 number in the
+top byte which is a larger number than intended on big endian systems.
+There is no reason to use a 64 bit data type here, I guess it was just
+an oversight.
 
-> Understand. thx. So is the following checking that your wanted?
-> ===
-> diff --git a/include/linux/rwlock.h b/include/linux/rwlock.h
-> index bc2994e..64828a3 100644
-> --- a/include/linux/rwlock.h
-> +++ b/include/linux/rwlock.h
-> @@ -21,10 +21,12 @@
->  do {								\
->  	static struct lock_class_key __key;			\
->  								\
-> +	BUILD_BUG_ON(__alignof__(lock) == 1);			\
->  	__rwlock_init((lock), #lock, &__key);			\
->  } while (0)
->  #else
->  # define rwlock_init(lock)					\
-> +	BUILD_BUG_ON(__alignof__(lock) == 1);			\
->  	do { *(lock) = __RW_LOCK_UNLOCKED(lock); } while (0)
->  #endif
+I removed the initialization to zero as well.  It's needed with a u64
+but with a u32, the variable gets initialized properly inside the call
+to acpi_os_read_port().
 
-I think the check should be (__alignof__(lock) < __alignof__(rwlock_t)),
-otherwise it will still pass when you have structure with attribute((packed,aligned(2)))
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-> 1, it is alignof bug for default gcc on my fc15 and Ubuntu 11.10 etc?
-> 
-> struct sub {
->         int  raw_lock;
->         char a;
-> };
-> struct foo {
->         struct sub z;
->         int slk;
->         char y;
-> }__attribute__((packed));
-> 
-> struct foo f1;
-> 
-> __alignof__(f1.z.raw_lock) is 4, but its address actually can align on
-> one byte. 
-
-That looks like correct behavior, because the alignment of raw_lock inside of
-struct sub is still 4. But it does mean that there can be cases where the
-compile-time check is not sufficient, so we might want the run-time check
-as well, at least under some config option.
-
-	Arnd
+diff --git a/drivers/acpi/processor_throttling.c b/drivers/acpi/processor_throttling.c
+index 605a295..1d02b7b 100644
+--- a/drivers/acpi/processor_throttling.c
++++ b/drivers/acpi/processor_throttling.c
+@@ -769,7 +769,7 @@ static int acpi_read_throttling_status(struct acpi_processor *pr,
+ 					u64 *value)
+ {
+ 	u32 bit_width, bit_offset;
+-	u64 ptc_value;
++	u32 ptc_value;
+ 	u64 ptc_mask;
+ 	struct acpi_processor_throttling *throttling;
+ 	int ret = -1;
+@@ -777,12 +777,11 @@ static int acpi_read_throttling_status(struct acpi_processor *pr,
+ 	throttling = &pr->throttling;
+ 	switch (throttling->status_register.space_id) {
+ 	case ACPI_ADR_SPACE_SYSTEM_IO:
+-		ptc_value = 0;
+ 		bit_width = throttling->status_register.bit_width;
+ 		bit_offset = throttling->status_register.bit_offset;
+ 
+ 		acpi_os_read_port((acpi_io_address) throttling->status_register.
+-				  address, (u32 *) &ptc_value,
++				  address, &ptc_value,
+ 				  (u32) (bit_width + bit_offset));
+ 		ptc_mask = (1 << bit_width) - 1;
+ 		*value = (u64) ((ptc_value >> bit_offset) & ptc_mask);
