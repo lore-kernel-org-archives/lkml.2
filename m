@@ -1,237 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002Ab2CGMMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 07:12:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41366 "EHLO mx1.redhat.com"
+	id S1757796Ab2CGML3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 07:11:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49399 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757963Ab2CGMMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 07:12:22 -0500
+	id S1757666Ab2CGMLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 07:11:24 -0500
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] events/hw_event: Create a Hardware Events Report Mecanism (HERM)
-Date: Wed,  7 Mar 2012 09:12:15 -0300
-Message-Id: <1331122335-28600-1-git-send-email-mchehab@redhat.com>
+Subject: [PATCH 1/6] edac: Initialize the dimm label with the known information
+Date: Wed,  7 Mar 2012 09:11:13 -0300
+Message-Id: <1331122278-28458-2-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1331122278-28458-1-git-send-email-mchehab@redhat.com>
+References: <1331122278-28458-1-git-send-email-mchehab@redhat.com>
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a trace class for handle hardware events
+While userspace doesn't fill the dimm labels, add there the dimm location,
+as described by the used memory model. This could eventually match what
+is described at the dmidecode, making easier for people to identify the
+memory.
 
-Part of the description bellow is shamelessly copied from Tony
-Luck's notes about the Hardware Error BoF during LPC 2010 [1].
-Tony, thanks for your notes and discussions to generate the
-h/w error reporting requirements.
+For example, on an Intel motherboard, the memory is described as:
 
-[1] http://lwn.net/Articles/416669/
+Memory Device
+	Array Handle: 0x0029
+	Error Information Handle: Not Provided
+	Total Width: 64 bits
+	Data Width: 64 bits
+	Size: 2048 MB
+	Form Factor: DIMM
+	Set: 1
+	Locator: A1_DIMM0
+	Bank Locator: A1_Node0_Channel0_Dimm0
+	Type: <OUT OF SPEC>
+	Type Detail: Synchronous
+	Speed: 800 MHz
+	Manufacturer: A1_Manufacturer0
+	Serial Number: A1_SerNum0
+	Asset Tag: A1_AssetTagNum0
+	Part Number: A1_PartNum0
 
-    We have several subsystems & methods for reporting hardware errors:
+After this patch, the memory label will be filled with:
+	/sys/devices/system/edac/mc/mc0/dimm0/dimm_label:mc#0channel#0slot#0
 
-    1) EDAC ("Error Detection and Correction").  In its original form
-    this consisted of a platform specific driver that read topology
-    information and error counts from chipset registers and reported
-    the results via a sysfs interface.
+With somewhat matches what it is at the Bank Locator DMI information.
+So, it is easier to associate the dimm labels, of course assuming that
+the DMI has the Bank Locator filled, and the BIOS doesn't have any bugs.
 
-    2) mcelog - x86 specific decoding of machine check bank registers
-    reporting in binary form via /dev/mcelog. Recent additions make use
-    of the APEI extensions that were documented in version 4.0a of the
-    ACPI specification to acquire more information about errors without
-    having to rely reading chipset registers directly. A user level
-    programs decodes into somewhat human readable format.
+Yet, even without it, several motherboards are provided with enough
+info to map from channel/slot (or branch/channel/slot) into the DIMM
+label. So, letting the EDAC core fill it, by default is a good thing.
 
-    3) drivers/edac/mce_amd.c - this driver hooks into the mcelog path and
-    decodes errors reported via machine check bank registers in AMD
-    processors to the console log using printk();
-
-    Each of these mechanisms has a band of followers ... and none
-    of them appear to meet all the needs of all users.
-
-In order to provide a proper hardware event subsystem, let's
-encapsulate the memory error hardware events into a trace facility.
-
-As no agreement was reached so far for the MCA-based trace events, for
-now, let's add events only for memory errors. A latter patch can change
-the tracepoint, for events originated via MCA.
+It should noticed that, as the label filling happens at the
+edac_mc_alloc(), drivers can override it to better describe the memories
+(and some actually do it).
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
- drivers/edac/edac_core.h        |    2 +-
- drivers/edac/edac_mc.c          |   11 ++++-
- include/trace/events/hw_event.h |  107 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 118 insertions(+), 2 deletions(-)
- create mode 100644 include/trace/events/hw_event.h
+ drivers/edac/edac_mc.c |   21 +++++++++++++++++----
+ 1 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-index 1d421d3..7caff6e 100644
---- a/drivers/edac/edac_core.h
-+++ b/drivers/edac/edac_core.h
-@@ -470,7 +470,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  const int layer2,
- 			  const char *msg,
- 			  const char *other_detail,
--			  const void *mcelog);
-+			  const void *arch_log);
- 
- /*
-  * edac_device APIs
 diff --git a/drivers/edac/edac_mc.c b/drivers/edac/edac_mc.c
-index 1651e7e..e1589b6 100644
+index 4ff8d28..1651e7e 100644
 --- a/drivers/edac/edac_mc.c
 +++ b/drivers/edac/edac_mc.c
-@@ -34,6 +34,9 @@
- #include "edac_core.h"
- #include "edac_module.h"
+@@ -205,10 +205,10 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
+ 	struct errcount_attribute_data *ercd;
+ 	struct dimm_info *dimm;
+ 	u32 *ce_per_layer[EDAC_MAX_LAYERS], *ue_per_layer[EDAC_MAX_LAYERS];
+-	void *pvt;
++	void *pvt, *p;
+ 	unsigned size, tot_dimms, count, pos[EDAC_MAX_LAYERS];
+ 	unsigned tot_csrows, tot_cschannels, tot_errcount = 0;
+-	int i, j;
++	int i, j, n, len;
+ 	int err;
+ 	int row, chn;
  
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/hw_event.h>
-+
- /* lock to memory controller's control array */
- static DEFINE_MUTEX(mem_ctls_mutex);
- static LIST_HEAD(mc_devices);
-@@ -394,6 +397,9 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
- 	 * which will perform kobj unregistration and the actual free
- 	 * will occur during the kobject callback operation
- 	 */
-+
-+	trace_hw_event_init("edac", (unsigned)edac_index);
-+
- 	return mci;
- }
- EXPORT_SYMBOL_GPL(edac_mc_alloc);
-@@ -911,7 +917,7 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			  const int layer2,
- 			  const char *msg,
- 			  const char *other_detail,
--			  const void *mcelog)
-+			  const void *arch_log)
- {
- 	unsigned long remapped_page;
- 	/* FIXME: too much for stack: move it to some pre-alocated area */
-@@ -1049,6 +1055,9 @@ void edac_mc_handle_error(const enum hw_event_mc_err_type type,
- 			"page 0x%lx offset 0x%lx grain %d",
- 			page_frame_number, offset_in_page, grain);
+@@ -324,9 +324,22 @@ struct mem_ctl_info *edac_mc_alloc(unsigned edac_index,
+ 			i, (dimm - mci->dimms),
+ 			pos[0], pos[1], pos[2], row, chn);
  
-+	trace_mc_error(type, mci->mc_idx, msg, label, location,
-+		       detail, other_detail);
-+
- 	if (type == HW_EVENT_ERR_CORRECTED) {
- 		if (edac_mc_get_log_ce())
- 			edac_mc_printk(mci, KERN_WARNING,
-diff --git a/include/trace/events/hw_event.h b/include/trace/events/hw_event.h
-new file mode 100644
-index 0000000..9209c6b
---- /dev/null
-+++ b/include/trace/events/hw_event.h
-@@ -0,0 +1,107 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM hw_event
-+
-+#if !defined(_TRACE_HW_EVENT_MC_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_HW_EVENT_MC_H
-+
-+#include <linux/tracepoint.h>
-+#include <linux/edac.h>
-+#include <linux/ktime.h>
-+
-+/*
-+ * Hardware Anomaly Report Mecanism (HARM) events
-+ *
-+ * Those events are generated when hardware detected a corrected or
-+ * uncorrected event, and are meant to replace the current API to report
-+ * errors defined on both EDAC and MCE subsystems.
-+ *
-+ * There are two types of events defined here: arch-independent ones, and
-+ * x86 arch events. The x86 arch events are based on x86 MCE architecture.
-+ */
-+
-+DECLARE_EVENT_CLASS(hw_event_class,
-+	TP_PROTO(const char *type, unsigned int instance),
-+	TP_ARGS(type, instance),
-+
-+	TP_STRUCT__entry(
-+		__string(	type,		type			)
-+		__field(	unsigned int,	instance		)
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(type, type);
-+		__entry->instance = instance;
-+	),
-+
-+	TP_printk("Initialized %s#%d\n",
-+		__get_str(type),
-+		__entry->instance)
-+);
-+
-+/*
-+ * This event indicates that a hardware collection mechanism is started
-+ */
-+DEFINE_EVENT(hw_event_class, hw_event_init,
-+
-+	TP_PROTO(const char *type, unsigned int instance),
-+
-+	TP_ARGS(type, instance)
-+);
-+
-+
-+/*
-+ * Hardware-independent Memory Controller specific events
-+ */
-+
-+/*
-+ * Default error mechanisms for Memory Controller errors (CE and UE)
-+ */
-+TRACE_EVENT(mc_error,
-+
-+	TP_PROTO(const unsigned int err_type,
-+		 const unsigned int mc_index,
-+		 const char *msg,
-+		 const char *label,
-+		 const char *location,
-+		 const char *detail,
-+		 const char *driver_detail),
-+
-+	TP_ARGS(err_type, mc_index, msg, label, location,
-+		detail, driver_detail),
-+
-+	TP_STRUCT__entry(
-+		__field(	unsigned int,	err_type		)
-+		__field(	unsigned int,	mc_index		)
-+		__string(	msg,		msg			)
-+		__string(	label,		label			)
-+		__string(	detail,		detail			)
-+		__string(	location,	location		)
-+		__string(	driver_detail,	driver_detail		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->err_type		= err_type;
-+		__entry->mc_index		= mc_index;
-+		__assign_str(msg, msg);
-+		__assign_str(label, label);
-+		__assign_str(location, location);
-+		__assign_str(detail, detail);
-+		__assign_str(driver_detail, driver_detail);
-+	),
-+
-+	TP_printk(HW_ERR "mce#%d: %s error %s on label \"%s\" (%s %s %s)",
-+		  __entry->mc_index,
-+		  (__entry->err_type == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
-+			((__entry->err_type == HW_EVENT_ERR_FATAL) ?
-+			"Fatal" : "Uncorrected"),
-+		  __get_str(msg),
-+		  __get_str(label),
-+		  __get_str(location),
-+		  __get_str(detail),
-+		  __get_str(driver_detail))
-+);
-+
-+#endif /* _TRACE_HW_EVENT_MC_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
+-		/* Copy DIMM location */
+-		for (j = 0; j < n_layers; j++)
++		/*
++		 * Copy DIMM location and initialize the memory location
++		 */
++		len = sizeof(dimm->label);
++		p = dimm->label;
++		n = snprintf(p, len, "mc#%u", edac_index);
++		p += n;
++		len -= n;
++		for (j = 0; j < n_layers; j++) {
++			n = snprintf(p, len, "%s#%u",
++				     edac_layer_name[layers[j].type],
++				     pos[j]);
++			p += n;
++			len -= n;
+ 			dimm->location[j] = pos[j];
++		}
+ 
+ 		/* Link it to the csrows old API data */
+ 		chan->dimm = dimm;
 -- 
 1.7.8
 
