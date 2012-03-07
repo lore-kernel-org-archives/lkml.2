@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab2CGU7o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 15:59:44 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:46049 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755568Ab2CGU7l convert rfc822-to-8bit (ORCPT
+	id S1754197Ab2CGVBz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 16:01:55 -0500
+Received: from www.linutronix.de ([62.245.132.108]:38782 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab2CGVBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 15:59:41 -0500
-Message-ID: <1331153964.11248.362.camel@twins>
-Subject: Re: [PATCH] perf: Incorrect use of snprintf results in SEGV
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Seebach <peter.seebach@windriver.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Anton Blanchard <anton@samba.org>, paulus@samba.org, dsahern@gmail.com,
-        fweisbec@gmail.com, yanmin_zhang@linux.intel.com, emunson@mgebm.net,
-        linux-kernel@vger.kernel.org
-Date: Wed, 07 Mar 2012 21:59:24 +0100
-In-Reply-To: <20120307203725.GA4333@elte.hu>
-References: <20120307114249.44275ca3@kryten>
-	 <20120307010904.GE5656@infradead.org> <20120306192912.59811e3e@wrlaptop>
-	 <20120307203725.GA4333@elte.hu>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 7 Mar 2012 16:01:54 -0500
+Message-ID: <4F57CCB9.9090001@linutronix.de>
+Date: Wed, 07 Mar 2012 22:01:45 +0100
+From: Richard Weinberger <rw@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, tim.bird@am.sony.com
+Subject: Re: [RFC][PATCH 0/7] UBI checkpointing support
+References: <1329250006-22944-1-git-send-email-rw@linutronix.de> <1331136246.32316.39.camel@sauron.fi.intel.com>
+In-Reply-To: <1331136246.32316.39.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-07 at 21:37 +0100, Ingo Molnar wrote:
->         size_needed = snprintf_size(...);
+Am 07.03.2012 17:04, schrieb Artem Bityutskiy:
+> Another not-so-technical comment.
+>
+> On Tue, 2012-02-14 at 21:06 +0100, Richard Weinberger wrote:
+>> The following patch set implements checkpointing support for
+>> UBI. Checkpointing is an optional feature which stores the physical to
+>> logical eraseblock relations in a checkpointing superblock to reduce
+>> the initialization time of UBI.
+>
+> So this is basically about improving scalability and "mount" time. This
+> has nothing to do with checkpointing most people are aware of.
+> Confusing...
 
-This would require 3 passes over the fmt+args, first to find the
-allocated size is insufficient, 2nd to compute the size, 3rd to fill
-buffer.
+Mostly because "checkpointing" is a buzzword. ;-)
 
-Whereas with the current "creative" API only 2 passes are needed.
+> Really, this tirm is already reserved by file-systems, things like
+> virtual machines where it means "freezing" the contents and doing COW
+> when changing the freezed blocks and guaranteeing the ability to
+> "roll-back" to the checkpointed data.
+>
+> Please, consider an option of picking a different name. In JFFS2 a
+> "similar" thing was called "summaries", and even this is better than
+> "checkpoint", I think.
 
-I can imagine that back in the day of small memory and small CPU this
-was deemed important enough.
+What about "Erase block indexing"?
+Basically a checkpoint is an index...
 
-Anyway, its all moot, this API exists and has been out in the wild for
-several decades now, its not like we can actually change it :-)
+Thanks,
+//richard
+
+P.s: I'm really bad in picking names.
