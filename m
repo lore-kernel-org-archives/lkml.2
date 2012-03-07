@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758734Ab2CGOd6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 09:33:58 -0500
+	id S1758913Ab2CGOeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 09:34:11 -0500
 Received: from mail-we0-f174.google.com ([74.125.82.174]:33666 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756419Ab2CGOd4 (ORCPT
+	with ESMTP id S1757742Ab2CGOeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 09:33:56 -0500
+	Wed, 7 Mar 2012 09:34:02 -0500
 From: Javier Martin <javier.martin@vista-silicon.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        vinod.koul@intel.com, linux@arm.linux.org.uk, kernel@pengutronix.de
-Subject: [PATCH v2 00/13] dmaengine: imx-dma: merge dma arch code into dmaengine.
-Date: Wed,  7 Mar 2012 15:33:32 +0100
-Message-Id: <1331130825-14947-1-git-send-email-javier.martin@vista-silicon.com>
+        vinod.koul@intel.com, linux@arm.linux.org.uk, kernel@pengutronix.de,
+        Javier Martin <javier.martin@vista-silicon.com>
+Subject: [PATCH v2 02/13] dmaengine: imx-dma: remove data member from internal structure.
+Date: Wed,  7 Mar 2012 15:33:34 +0100
+Message-Id: <1331130825-14947-3-git-send-email-javier.martin@vista-silicon.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1331130825-14947-1-git-send-email-javier.martin@vista-silicon.com>
+References: <1331130825-14947-1-git-send-email-javier.martin@vista-silicon.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following series have to be applied on top of the following patches:
-[PATCH v2 1/2] dmaengine: Add support for MEMCPY for imx-dma.
-[PATCH v3 2/2] dmaengine: Add support for multiple descriptors for imx-dma.
+Internal structure is just an auxiliary structure used for the initial
+merge which is meant to be gone. As data member is not use anywhere
+we can simply remove it.
 
-As discussed with Vinod and Sascha, the file 'arch/arm/mach-imx/dma-v1.c'
-is deprecated and no new patches are accepted for it.
+Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+---
+ drivers/dma/imx-dma.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-This series merges this code into the imx-dma.c dmaengine driver.
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index 28d716c..1a9be6d 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -132,7 +132,6 @@ enum  imxdma_prep_type {
+  */
+ 
+ struct imxdma_channel_internal {
+-	void *data;
+ 	unsigned int dma_mode;
+ 	struct scatterlist *sg;
+ 	unsigned int resbytes;
+-- 
+1.7.0.4
 
-Changes since v1:
- - Merge patch 14 with 01.
- - Add a proper changelog to each patch of the series.
-
-[PATCH v2 01/13] dmaengine: imx-dma: merge old dma-v1.c with imx-dma.c
-[PATCH v2 02/13] dmaengine: imx-dma: remove data member from internal structure.
-[PATCH v2 03/13] dmaengine: imx-dma: remove dma_mode member of internal structure.
-[PATCH v2 04/13] dmaengine: imx-dma: remove 'imxdma_setup_mem2mem_hw' function.
-[PATCH v2 05/13] dmaengine: imx-dma: remove 'imxdma_config_channel_hw' function.
-[PATCH v2 06/13] dmaengine: imx-dma: remove 'imxdma_setup_sg_hw' function.
-[PATCH v2 07/13] dmaengine: imx-dma: remove sg member from internal structure.
-[PATCH v2 08/13] dmaengine: imx-dma: remove 'in_use' field of 'internal' structure.
-[PATCH v2 09/13] dmaengine: imx-dma: remove 'resbytes' field of 'internal' structure.
-[PATCH v2 10/13] dmaengine: imx-dma: remove internal structure.
-[PATCH v2 11/13] dmaengine: imx-dma: remove unused arg of imxdma_sg_next.
-[PATCH v2 12/13] dmaengine: imx-dma: remove 'imx_dmav1_baseaddr' and 'dma_clk'.
-[PATCH v2 13/13] dmaengine: imx-dma: use 'dev_dbg' and 'dev_warn' for messages.
