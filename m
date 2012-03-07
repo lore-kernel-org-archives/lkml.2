@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759440Ab2CGPrE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 10:47:04 -0500
-Received: from 4.mo2.mail-out.ovh.net ([87.98.172.75]:36038 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759409Ab2CGPrC (ORCPT
+	id S1753836Ab2CGPta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 10:49:30 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41544 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab2CGPt3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 10:47:02 -0500
-Date: Wed, 7 Mar 2012 16:36:22 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        Samuel Ortiz <sameo@linux.intel.com>, patches@linaro.org,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Nancy Chen <Nancy.Chen@freescale.com>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH v9] Regulator: Add Anatop regulator driver
-Message-ID: <20120307153622.GC17745@game.jcrosoft.org>
-References: <1331126658-26926-1-git-send-email-paul.liu@linaro.org>
- <20120307132225.GB17745@game.jcrosoft.org>
- <20120307134551.GL3107@opensource.wolfsonmicro.com>
+	Wed, 7 Mar 2012 10:49:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120307134551.GL3107@opensource.wolfsonmicro.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 9435604170485639983
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrvdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrvdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+In-Reply-To: <20120307152703.GD2348@linux.vnet.ibm.com>
+References: <20120105135432.GA31450@elte.hu>
+	<1327422312.7231.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20120124165312.GG2531@linux.vnet.ibm.com>
+	<1327425208.7231.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	<20120124194140.GB2381@linux.vnet.ibm.com>
+	<20120124232911.GA11327@linux.vnet.ibm.com>
+	<20120307114410.GA4214@swordfish.minsk.epam.com>
+	<CA+5PVA4CdtQYbJBvpoAa7iyWegBpJaDBcFfXpXYX=pARw_SBSA@mail.gmail.com>
+	<20120307152703.GD2348@linux.vnet.ibm.com>
+Date: Wed, 7 Mar 2012 10:49:26 -0500
+Message-ID: <CA+5PVA7q03ZTLtFZH98KvtLbreSx65uGEBJmT02-vCHgogHaMg@mail.gmail.com>
+Subject: Re: [GIT PULL] RCU changes for v3.3
+From: Josh Boyer <jwboyer@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Andre@jasper.es
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:45 Wed 07 Mar     , Mark Brown wrote:
-> On Wed, Mar 07, 2012 at 02:22:25PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> 
-> > > +- compatible: Must be "fsl,anatop-regulator"
-> > > +- vol-bit-shift: Bit shift for the register
-> > > +- vol-bit-width: Number of bits used in the register
-> > > +- min-bit-val: Minimum value of this register
-> > > +- min-voltage: Minimum voltage of this regulator
-> > > +- max-voltage: Maximum voltage of this regulator
-> 
-> > specific properites need to be prefix by the vendor
-> 
-> This really doesn't seem at all sane for a device which is already
-> vendor specific, it's just noise in the bindings.
-No it's
-Here is a good example as we have regulator generic binding & vendor
-specific bindig
+On Wed, Mar 7, 2012 at 10:27 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Wed, Mar 07, 2012 at 09:09:39AM -0500, Josh Boyer wrote:
+>> On Wed, Mar 7, 2012 at 6:44 AM, Sergey Senozhatsky
+>> <sergey.senozhatsky@gmail.com> wrote:
+>> > Hello,
+>> > I just hit the same problem.
+>> >
+>> > Is this patch scheduled for 3.3 until release or will land during 3.4
+>> > merge window?
+>>
+>> There are 3 patches in Paul's 3.4 queue, and another 9 of Steven Rostedt's
+>> that fix this.  They'll wind up in 3.4.
+>>
+>> I looked at reverting the patch that adds this new warning and it doesn't
+>> trivially revert.
+>
+> What are you based on?  I should be able to disable the warning for
+> you easily enough.
 
-Best Regards,
-J.
+3.3.  I think I tried reverting 00f49e5729af602deb559b0cf293a00b625e8636 and
+it failed.  Then I locally commented out the WARN_ONCE in the functions which
+got rid of that, but we still get a 'suspicious RCU usage' warning when
+running powertop.  I gave up after that, since it all goes away if we disable
+the debugging options and you have fixes queued for 3.4.
+
+josh
