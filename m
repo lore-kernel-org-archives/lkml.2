@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030668Ab2CGW25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 17:28:57 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39876 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab2CGW2v (ORCPT
+	id S1030633Ab2CGWaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 17:30:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52014 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756333Ab2CGWa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 17:28:51 -0500
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        Shawn Guo <shawn.guo@linaro.org>, Huang Shijie <b32955@freescale.com>,
-        Arnd Bergmann <arnd@arndb.de>, Wolfram Sang <w.sang@pengutronix.de>
-Subject: [PATCH 3/3] rtc: stmp3xxx: use global stmp_device functionality
-Date: Wed,  7 Mar 2012 23:28:34 +0100
-Message-Id: <1331159314-12022-4-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.9.1
-In-Reply-To: <1331159314-12022-1-git-send-email-w.sang@pengutronix.de>
-References: <1331159314-12022-1-git-send-email-w.sang@pengutronix.de>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 7 Mar 2012 17:30:29 -0500
+Date: Wed, 7 Mar 2012 14:30:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: mcgrathr@google.com, avi@redhat.com, linux-kernel@vger.kernel.org,
+        qemu-devel@nongnu.org
+Subject: Re: [PATCH 0/2] core dump: re-purpose VM_ALWAYSDUMP to user
+ controlled VM_DONTDUMP
+Message-Id: <20120307143028.5dc27570.akpm@linux-foundation.org>
+In-Reply-To: <cover.1331137504.git.jbaron@redhat.com>
+References: <cover.1331137504.git.jbaron@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The former mach specific reset_block function has been converted to a global
-one. Use the new one to remove mach dependency from the driver. Also simplify
-code using the new STMP_OFFSET_REG_* macros.
+On Wed, 7 Mar 2012 12:00:46 -0500
+Jason Baron <jbaron@redhat.com> wrote:
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
----
- drivers/rtc/Kconfig        |    1 +
- drivers/rtc/rtc-stmp3xxx.c |   29 ++++++++++-------------------
- 2 files changed, 11 insertions(+), 19 deletions(-)
+> Hi,
+> 
+> The motivation for this change was that I was looking at a way for a qemu-kvm
+> process, to exclude the guest memory from its core dump, which can be quite
+> large. There are already a number of filter flags in
+> /proc/<pid>/coredump_filter, however, these allow one to specify 'types' of
+> kernel memory, not specific address ranges (which is needed in this case).
+> 
+> Since there are no more vma flags available, the first patch eliminates the
+> need for the 'VM_ALWAYSDUMP' flag. The flag is used internally by the kernel to
+> mark vdso and vsyscall pages. However, it is simple enough to check if a vma
+> covers a vdso or vsyscall page without the need for this flag.
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 3a125b8..e124f93 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -983,6 +983,7 @@ config RTC_DRV_COH901331
- config RTC_DRV_STMP
- 	tristate "Freescale STMP3xxx/i.MX23/i.MX28 RTC"
- 	depends on ARCH_MXS
-+	select STMP_DEVICE
- 	help
- 	  If you say yes here you will get support for the onboard
- 	  STMP3xxx/i.MX23/i.MX28 RTC.
-diff --git a/drivers/rtc/rtc-stmp3xxx.c b/drivers/rtc/rtc-stmp3xxx.c
-index 1028786..e755d3e 100644
---- a/drivers/rtc/rtc-stmp3xxx.c
-+++ b/drivers/rtc/rtc-stmp3xxx.c
-@@ -25,11 +25,9 @@
- #include <linux/interrupt.h>
- #include <linux/rtc.h>
- #include <linux/slab.h>
--
--#include <mach/common.h>
-+#include <linux/stmp_device.h>
- 
- #define STMP3XXX_RTC_CTRL			0x0
--#define STMP3XXX_RTC_CTRL_SET			0x4
- #define STMP3XXX_RTC_CTRL_CLR			0x8
- #define STMP3XXX_RTC_CTRL_ALARM_IRQ_EN		0x00000001
- #define STMP3XXX_RTC_CTRL_ONEMSEC_IRQ_EN	0x00000002
-@@ -44,7 +42,6 @@
- #define STMP3XXX_RTC_ALARM			0x40
- 
- #define STMP3XXX_RTC_PERSISTENT0		0x60
--#define STMP3XXX_RTC_PERSISTENT0_SET		0x64
- #define STMP3XXX_RTC_PERSISTENT0_CLR		0x68
- #define STMP3XXX_RTC_PERSISTENT0_ALARM_WAKE_EN	0x00000002
- #define STMP3XXX_RTC_PERSISTENT0_ALARM_EN	0x00000004
-@@ -106,20 +103,14 @@ static irqreturn_t stmp3xxx_rtc_interrupt(int irq, void *dev_id)
- static int stmp3xxx_alarm_irq_enable(struct device *dev, unsigned int enabled)
- {
- 	struct stmp3xxx_rtc_data *rtc_data = dev_get_drvdata(dev);
-+	u32 set_clr_offset = enabled ? STMP_OFFSET_REG_SET : STMP_OFFSET_REG_CLR;
-+
-+	writel(STMP3XXX_RTC_PERSISTENT0_ALARM_EN |
-+		STMP3XXX_RTC_PERSISTENT0_ALARM_WAKE_EN,
-+		rtc_data->io + STMP3XXX_RTC_PERSISTENT0 + set_clr_offset);
-+	writel(STMP3XXX_RTC_CTRL_ALARM_IRQ_EN,
-+		rtc_data->io + STMP3XXX_RTC_CTRL + set_clr_offset);
- 
--	if (enabled) {
--		writel(STMP3XXX_RTC_PERSISTENT0_ALARM_EN |
--				STMP3XXX_RTC_PERSISTENT0_ALARM_WAKE_EN,
--				rtc_data->io + STMP3XXX_RTC_PERSISTENT0_SET);
--		writel(STMP3XXX_RTC_CTRL_ALARM_IRQ_EN,
--				rtc_data->io + STMP3XXX_RTC_CTRL_SET);
--	} else {
--		writel(STMP3XXX_RTC_PERSISTENT0_ALARM_EN |
--				STMP3XXX_RTC_PERSISTENT0_ALARM_WAKE_EN,
--				rtc_data->io + STMP3XXX_RTC_PERSISTENT0_CLR);
--		writel(STMP3XXX_RTC_CTRL_ALARM_IRQ_EN,
--				rtc_data->io + STMP3XXX_RTC_CTRL_CLR);
--	}
- 	return 0;
- }
- 
-@@ -206,7 +197,7 @@ static int stmp3xxx_rtc_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, rtc_data);
- 
--	mxs_reset_block(rtc_data->io);
-+	stmp_reset_block(rtc_data->io);
- 	writel(STMP3XXX_RTC_PERSISTENT0_ALARM_EN |
- 			STMP3XXX_RTC_PERSISTENT0_ALARM_WAKE_EN |
- 			STMP3XXX_RTC_PERSISTENT0_ALARM_WAKE,
-@@ -253,7 +244,7 @@ static int stmp3xxx_rtc_resume(struct platform_device *dev)
- {
- 	struct stmp3xxx_rtc_data *rtc_data = platform_get_drvdata(dev);
- 
--	mxs_reset_block(rtc_data->io);
-+	stmp_reset_block(rtc_data->io);
- 	writel(STMP3XXX_RTC_PERSISTENT0_ALARM_EN |
- 			STMP3XXX_RTC_PERSISTENT0_ALARM_WAKE_EN |
- 			STMP3XXX_RTC_PERSISTENT0_ALARM_WAKE,
--- 
-1.7.9.1
+Gee, we ran out?
+
+That makes it pretty inevitable that we will grow the vma by four
+bytes.  Once we have done that, your always_dump_vma() trickery becomes
+unneeded and undesirable, yes?  If so, we may as well recognise reality
+and grow the vma now.
+
+> The second patch then replaces the 'VM_ALWAYSDUMP' flag with a new 
+> 'VM_DONTDUMP' flag, which can be set by userspace using new madvise flags:
+> 'MADV_DONTDUMP', and unset via 'MADV_DUMP'. The core dump filters continue to
+> work the same as before unless 'MADV_DONTDUMP' is set on the region.
+> 
+> The qemu code which implements this features is at:
+> http://people.redhat.com/~jbaron/qemu-dump/qemu-dump.patch
+> 
+> In my testing the qemu core dump shrunk from 383MB -> 13MB with this patch.
+> 
+> I also believe that the 'MADV_DONTDUMP' flag might be useful for security
+> sensitive apps, which might want to select which areas are dumped.
+> 
+
+Is there any way for userspace to query the state of the flag?  
 
