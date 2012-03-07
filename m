@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758156Ab2CGMNP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 07:13:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15612 "EHLO mx1.redhat.com"
+	id S1758287Ab2CGMOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 07:14:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12702 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757684Ab2CGMLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 07:11:24 -0500
+	id S1758166Ab2CGMOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 07:14:09 -0500
+Message-ID: <4F575103.50403@redhat.com>
+Date: Wed, 07 Mar 2012 09:13:55 -0300
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/6] i5400_edac: improve debug messages to better represent the filled memory
-Date: Wed,  7 Mar 2012 09:11:18 -0300
-Message-Id: <1331122278-28458-7-git-send-email-mchehab@redhat.com>
-In-Reply-To: <1331122278-28458-1-git-send-email-mchehab@redhat.com>
-References: <1331122278-28458-1-git-send-email-mchehab@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: EDAC devel <linux-edac@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv7] EDAC core changes in order to properly report errors
+ from all types of memory controllers
+References: <4F54C133.6040709@redhat.com> <20120305141349.GF1070@aftab> <4F54D4AF.9060802@redhat.com> <4F553764.5070305@redhat.com> <20120305232319.GA7175@aftab> <4F55F598.7050406@redhat.com> <20120306121616.GB11661@aftab> <4F56A9CB.2010504@redhat.com> <20120307084243.GB20727@aftab> <4F57482C.4060105@redhat.com> <20120307120613.GB21202@aftab>
+In-Reply-To: <20120307120613.GB21202@aftab>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Improves the debug output message, in order to better represent the
-memory controller hierarchy, when outputing the debug messages.
+Em 07-03-2012 09:06, Borislav Petkov escreveu:
+> On Wed, Mar 07, 2012 at 08:36:12AM -0300, Mauro Carvalho Chehab wrote:
+>>>> - 1 patch that adds a trace event to report memory errors:
+>>>>       events/hw_event: Create a Hardware Events Report Mecanism (HERM)
+>>>
+>>> NACK to that last one.
+>>
+>> Hmm... interesting... this one adds a tracepoint for non-MCA based memory errors...
+>> I've understood that you've against only the mca one...
+> 
+> If you mean the patch at
+> 
+> http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-edac.git;a=commitdiff;h=56efd647f5a63497a07caaa22e993307aaf95270
 
-No functional changes when debug is disabled.
+Yes, that one.
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/edac/i5400_edac.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+> where you've removed the trace.*mce call, then I don't object to it per
+> se. Send it for proper review too, though, because it contains incorrect
+> comments like
+> 
+> + * Those events are generated when hardware detected a corrected or
+> + * uncorrected event, and are meant to replace the current API to report
+> + * errors defined on both EDAC and MCE subsystems.
+> 
+> which clearly need fixing.
 
-diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
-index 3aa2a1e..5debda9 100644
---- a/drivers/edac/i5400_edac.c
-+++ b/drivers/edac/i5400_edac.c
-@@ -963,7 +963,7 @@ static void calculate_dimm_size(struct i5400_pvt *pvt)
- 	int dimm, max_dimms;
- 	char *p, *mem_buffer;
- 	int space, n;
--	int channel;
-+	int channel, branch;
- 
- 	/* ================= Generate some debug output ================= */
- 	space = PAGE_SIZE;
-@@ -1028,6 +1028,19 @@ static void calculate_dimm_size(struct i5400_pvt *pvt)
- 		space -= n;
- 	}
- 
-+	space -= n;
-+	debugf2("%s\n", mem_buffer);
-+	p = mem_buffer;
-+	space = PAGE_SIZE;
-+
-+	n = snprintf(p, space, "           ");
-+	p += n;
-+	for (branch = 0; branch < MAX_BRANCHES; branch++) {
-+		n = snprintf(p, space, "       branch %d       | ", branch);
-+		p += n;
-+		space -= n;
-+	}
-+
- 	/* output the last message and free buffer */
- 	debugf2("%s\n", mem_buffer);
- 	kfree(mem_buffer);
--- 
-1.7.8
+True. Ok, sent it.
+> 
+> Thanks.
+> 
 
+Thanks,
+Mauro
