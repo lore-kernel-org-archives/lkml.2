@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759402Ab2CGD6S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 22:58:18 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:46670 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756930Ab2CGD6Q (ORCPT
+	id S1759405Ab2CGECB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 23:02:01 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44335 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759062Ab2CGEB7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 22:58:16 -0500
-X-AuditID: cbfee61b-b7c62ae000000989-bd-4f56dcd7051c
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
-Cc: "'Liam Girdwood'" <lrg@ti.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-References: <1331085732.7432.1.camel@phoenix>
-In-reply-to: <1331085732.7432.1.camel@phoenix>
-Subject: RE: [PATCH] regulator: Remove unused i2c variable in s5m8767_pmic_probe
-Date: Wed, 07 Mar 2012 12:58:15 +0900
-Message-id: <047101ccfc16$85fad4b0$91f07e10$@com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Acz8BlacOtho2AuFRjqjgi5MkjQk3gAD6pPA
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 6 Mar 2012 23:01:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <1331087818-9942-2-git-send-email-ruan.zhengwang@gmail.com>
+References: <1331087818-9942-1-git-send-email-ruan.zhengwang@gmail.com>
+	<1331087818-9942-2-git-send-email-ruan.zhengwang@gmail.com>
+Date: Tue, 6 Mar 2012 20:01:58 -0800
+Message-ID: <CAMP5XgfWBj_V+21avHyEbViYK1N0fHBmyj6CcYry0Fd4QttgqQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2 v2] Staging:android: Initialise buffer and buffer_size
+ before used
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Zhengwang Ruan <ruan.zhengwang@gmail.com>
+Cc: gregkh@linuxfoundation.org, chris+android@zenthought.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 07, 2012 at 11:02 AM, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/regulator/s5m8767.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
+On Tue, Mar 6, 2012 at 6:36 PM, Zhengwang Ruan <ruan.zhengwang@gmail.com> wrote:
+> GCC warns 'buffer' and 'buffer_size' are used with being uninitialized, and
+> 'buffer' is used as returned value, and 'buffer_size' is initialized using
+> uninitialized_var to clear warning.
 
-Acked-by: Sangbeom Kim <sbkim73@samsung.com>
+Why do you clear the warning on buffer_size with uninitialized_var()
+but not on buffer? Neither variable is used before being initialized.
 
-Thanks,
-Sangbeom.
-
+-- 
+Arve Hjønnevåg
