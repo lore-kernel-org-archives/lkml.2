@@ -1,85 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab2CGVU2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 16:20:28 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:55585 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab2CGVU0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 16:20:26 -0500
-Date: Wed, 7 Mar 2012 15:19:51 -0600
-From: Peter Seebach <peter.seebach@windriver.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Anton Blanchard <anton@samba.org>, <paulus@samba.org>,
-        <peterz@infradead.org>, <dsahern@gmail.com>, <fweisbec@gmail.com>,
-        <yanmin_zhang@linux.intel.com>, <emunson@mgebm.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf: Incorrect use of snprintf results in SEGV
-Message-ID: <20120307151951.7e84adb6@wrlaptop>
-In-Reply-To: <20120307203725.GA4333@elte.hu>
-References: <20120307114249.44275ca3@kryten>
-	<20120307010904.GE5656@infradead.org>
-	<20120306192912.59811e3e@wrlaptop>
-	<20120307203725.GA4333@elte.hu>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+	id S1754751Ab2CGVUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 16:20:52 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:57658 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751376Ab2CGVUt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 16:20:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120306190039.GJ3852@pengutronix.de>
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
+ <1330763341-3437-4-git-send-email-mturquette@linaro.org> <20120303133158.GA26882@pengutronix.de>
+ <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com>
+ <20120304115201.GB26882@pengutronix.de> <CAJOA=zP8d8wm==7=svOzh03Ft-1_LV71q0mA6Pncrh5vQSWGEA@mail.gmail.com>
+ <20120305073836.GU3852@pengutronix.de> <CAJOA=zMs75ZQ24g5PXpSLV3AJzWEo12g86G8+4+ryQR_cTYpzA@mail.gmail.com>
+ <20120306190039.GJ3852@pengutronix.de>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Wed, 7 Mar 2012 13:20:07 -0800
+Message-ID: <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
+Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Andrew Lunn <andrew@lunn.ch>, Paul Walmsley <paul@pwsan.com>,
+        linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Mar 2012 21:37:25 +0100
-Ingo Molnar <mingo@elte.hu> wrote:
+On Tue, Mar 6, 2012 at 11:00 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Mon, Mar 05, 2012 at 12:03:15PM -0800, Turquette, Mike wrote:
+>> On Sun, Mar 4, 2012 at 11:38 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+>> > On Sun, Mar 04, 2012 at 04:12:21PM -0800, Turquette, Mike wrote:
+>> >> >>
+>> >> >> I believe this patch already does what you suggest, but I might be
+>> >> >> missing your point.
+>> >> >
+>> >> > In include/linux/clk-private.h you expose struct clk outside the core.
+>> >> > This has to be done to make static initializers possible. There is a big
+>> >> > warning in this file that it must not be included from files implementing
+>> >> > struct clk_ops. You can simply avoid this warning by declaring struct clk
+>> >> > with only a single member:
+>> >> >
+>> >> > include/linux/clk.h:
+>> >> >
+>> >> > struct clk {
+>> >> >        struct clk_internal *internal;
+>> >> > };
+>> >> >
+>> >> > This way everybody knows struct clk (thus can embed it in their static
+>> >> > initializers), but doesn't know anything about the internal members. Now
+>> >> > in drivers/clk/clk.c you declare struct clk_internal exactly like struct
+>> >> > clk was declared before:
+>> >> >
+>> >> > struct clk_internal {
+>> >> >        const char              *name;
+>> >> >        const struct clk_ops    *ops;
+>> >> >        struct clk_hw           *hw;
+>> >> >        struct clk              *parent;
+>> >> >        char                    **parent_names;
+>> >> >        struct clk              **parents;
+>> >> >        u8                      num_parents;
+>> >> >        unsigned long           rate;
+>> >> >        unsigned long           flags;
+>> >> >        unsigned int            enable_count;
+>> >> >        unsigned int            prepare_count;
+>> >> >        struct hlist_head       children;
+>> >> >        struct hlist_node       child_node;
+>> >> >        unsigned int            notifier_count;
+>> >> > #ifdef CONFIG_COMMON_CLK_DEBUG
+>> >> >        struct dentry           *dentry;
+>> >> > #endif
+>> >> > };
+>> >> >
+>> >> > An instance of struct clk_internal will be allocated in
+>> >> > __clk_init/clk_register. Now the private data stays completely inside
+>> >> > the core and noone can abuse it.
+>> >>
+>> >> Hi Sascha,
+>> >>
+>> >> I see the disconnect here.  For OMAP (and possibly other platforms) at
+>> >> least some clock data is necessary during early boot, before the
+>> >> regular allocation methods are available (timers for instance).
+>> >
+>> > We had this problem on i.MX aswell. It turned out that the timer clock
+>> > is the only clock that is needed so early. We solved this by moving the
+>> > clock init to the system timer init function.
+>>
+>> When you say "mov[ed] the clock init to the system timer init
+>> function" do you mean that you statically allocated struct clk and
+>> used the clk framework api, or instead you just did some direct
+>> register writes to initialize things properly?
+>
+> I meant that on i.MX we do the clock tree initialization when kmalloc is
+> available, see the attached patch for omap4 based on your branch which
+> does the same for Omap. The first clock you need is the one for the
+> timer, so you can initialize the clocktree at the beginning of
+> time_init() and don't need statically initialized clocks anymore.
+>
+>> >
+>> > Well, the file is work in progress, you probably fix this before sending
+>> > it out, but I bet people will include clk-private.h and nobody else
+>> > notices it.
+>>
+>> clock44xx_data.c does not violate that rule.  None of the logic that
+>> implements ops for those clocks is present clock44xx_data.c.
+>
+> Indeed, I missed that. It only has the ops but not the individual
+> functions.
+>
+>> All of
+>> the code in that file is simply initialization and registration of
+>> OMAP4 clocks.  Many of the clocks are basic clock types (divider,
+>> multiplexer and fixed-rate are used in that file) with protected code
+>> drivers/clk/clk-*.c and the remaining clocks are of the struct
+>> clk_hw_omap variety, which has code spread across several files:
+>>
+>> arch/arm/mach-omap2/clock.c
+>> arch/arm/mach-omap2/clock.h
+>> arch/arm/mach-omap2/clkt_dpll.c
+>> arch/arm/mach-omap2/clkt_clksel.c
+>> arch/arm/mach-omap2/dpll3xxx.c
+>> arch/arm/mach-omap2/dpll4xxx.c
+>>
+>> All of the above files include linux/clk-provider.h, not
+>> linux/clk-private.h.  That code makes heavy use of the
+>> __clk_get_whatever helpers and shows how a platform might honor the
+>> layer of separation between struct clk and stuct clk_ops/struct
+>> clk_foo.  You are correct that the code is a work-in-progress, but
+>> there are no layering violations that I can see.
+>>
+>> I also think we are talking past each other to some degree.  One point
+>> I would like to make (and maybe you already know this from code
+>> review) is that it is unnecessary to have pointers to your parent
+>> struct clk*'s when either initializing or registering your clocks.  In
+>> fact the existing clk_register_foo functions don't even allow you to
+>> pass in parent pointers and rely wholly on string name matching.  I
+>> just wanted to point that out in case it went unnoticed, as it is a
+>> new way of doing things from the previous series and was born out of
+>> Thomas' review of V4 and multi-parent handling.  This also keeps
+>> device-tree in mind where we might not know the struct clk *pointer at
+>> compile time for "connecting" discrete devices.
+>
+> Yes, I've seen this and I really like it. Also the change that
+> multiplexers return an index to an array instead of the parent
+> clock is very nice.
+>
+> Sascha
+>
+>
+> 8<-----------------------------------------------------
+>
+> ARM omap4: move clocktree init to timer init time so we don't need static clocks
+>
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-> You are missing two important aspects:
-> 
-> 1) Dynamic reallocation on snprintf() failure is an utterly rare
->    thing - it is used in less than 1% of snprintf() invocations. 
->    (Yes, I just checked a couple of codebases.)
+Hi Sascha,
 
-I would agree that it's very rare.  But then, using the return value at
-all isn't especially common in my experience -- the only interesting
-part, most of the time, is "we're sure this didn't overrun the buffer".
- 
->    We *DONT* want to make APIs more fragile just to accomodate a
->    rare, esoteric usecase!
+Thanks for the example code.  This is in fact something I had
+considered doing before, but it is a bit complicated for my platform.
 
-I would view snprintf as an API which already exists.  If it's the
-wrong API, by all means, write a different one -- but I would suggest
-not using the same name for it.  If a function is going to be called
-snprintf, IMO it should have the semantics of snprintf.  If those are
-the wrong semantics (and they may well be), then I would say use a
-function which has the right semantics, and isn't named snprintf.
- 
-> 2) It's not even true that should some code want to
->    dynamically allocate the 'required' number of bytes is not
->    available. Some oddball side API could be added for that 1%:
- 
-> 	size_needed = snprintf_size(...);
+We set up all of the OMAP clocks with __clk_init because this is a
+dependency of OMAP's hwmod code which models and interacts with
+specific resources for hardware modules, such as clocks.  There are
+other dependencies such as our clockdomain code, which needs the
+clocks to be fully initialized.  Some aspects of these layers get
+init'd before we can allocate memory.
 
-That's where the "can write one in terms of the other" argument comes
-into play.
+Admittedly I think that the OMAP code could migrate some of these bits
+to a lazy-registration model, specifically the hwmod object instances,
+but that requires an awful lot of refactoring for a fairly large stack
+of platform code.  This might be something to achieve in the future
+but for now we *need* initialisation to be fully static.
 
-If you have snprintf_needed(), it's easy to write snprintf_written()
-in terms of it.  If you have only snprintf_written(), it is unreasonably
-ugly and/or inefficient to write snprintf_needed() in terms of it.
+Assuming that some day OMAP code can be refactored to allow for lazy
+(or at least initcall-based) registration of clocks then perhaps your
+suggestion can take root.  Which leads me to this question: are there
+any other platforms out there that require the level of expose to
+struct clk present in this patchset?  OMAP does, for now, but if that
+changes then I need to know if others require this as well.
 
-> So this API could have been designed right but it was messed up 
-> out of concern for an insane 1% case - FAIL.
+Regards,
+Mike
 
-Well, the thing is.  If there *exists* a reallocation case, those
-semantics end up being needed.
-
-I do agree that this is a source of errors in usage (and a quick audit
-shows that I have at least one use which falls prey to this, as well as
-several which check for it correctly).  In practice, I'd guess that
-treating probably-negative sizes as an error would likely resolve
-things, although that's also a semantics change -- it's just that it's
-a semantics change which only affects single snprintf calls that were
-expected to write to half the address space.
-
--s
--- 
-Listen, get this.  Nobody with a good compiler needs to be justified.
+> ---
+>  arch/arm/mach-omap2/clock44xx_data.c |    4 +++-
+>  arch/arm/mach-omap2/io.c             |    1 -
+>  arch/arm/mach-omap2/timer.c          |    3 +++
+>  3 files changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/clock44xx_data.c b/arch/arm/mach-omap2/clock44xx_data.c
+> index 7f833a7..5aa8dd2 100644
+> --- a/arch/arm/mach-omap2/clock44xx_data.c
+> +++ b/arch/arm/mach-omap2/clock44xx_data.c
+> @@ -6032,7 +6032,9 @@ int __init omap4xxx_clk_init(void)
+>                }
+>  # else
+>                clkdev_add(c);
+> -               __clk_init(NULL, c->clk);
+> +
+> +               clk_register(NULL, c->clk->name, c->clk->ops, c->clk->hw,
+> +                       c->clk->parent_names, c->clk->num_parents, c->clk->flags);
+>  #endif
+>        }
+>
+> diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
+> index eb50c29..8db4380 100644
+> --- a/arch/arm/mach-omap2/io.c
+> +++ b/arch/arm/mach-omap2/io.c
+> @@ -476,7 +476,6 @@ void __init omap4430_init_early(void)
+>        omap44xx_clockdomains_init();
+>        omap44xx_hwmod_init();
+>        omap_hwmod_init_postsetup();
+> -       omap4xxx_clk_init();
+>  }
+>  #endif
+>
+> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+> index 5c9acea..2cca796 100644
+> --- a/arch/arm/mach-omap2/timer.c
+> +++ b/arch/arm/mach-omap2/timer.c
+> @@ -323,9 +323,12 @@ OMAP_SYS_TIMER_INIT(3_secure, OMAP3_SECURE_TIMER, OMAP3_CLKEV_SOURCE,
+>  OMAP_SYS_TIMER(3_secure)
+>  #endif
+>
+> +int __init omap4xxx_clk_init(void);
+> +
+>  #ifdef CONFIG_ARCH_OMAP4
+>  static void __init omap4_timer_init(void)
+>  {
+> +       omap4xxx_clk_init();
+>  #ifdef CONFIG_LOCAL_TIMERS
+>        twd_base = ioremap(OMAP44XX_LOCAL_TWD_BASE, SZ_256);
+>        BUG_ON(!twd_base);
+> --
+> 1.7.9.1
+>
+> --
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
