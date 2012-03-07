@@ -1,43 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759428Ab2CGEQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 23:16:59 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:55102 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759263Ab2CGEQ6 (ORCPT
+	id S964909Ab2CGEb2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 23:31:28 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:58041 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932223Ab2CGEb0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 23:16:58 -0500
+	Tue, 6 Mar 2012 23:31:26 -0500
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <1331093522.3143.3.camel@phoenix>
-References: <1331093522.3143.3.camel@phoenix>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Wed, 7 Mar 2012 12:16:37 +0800
-Message-ID: <CAF+7xWkxLZkFV=oh-daLeBchd=vFjw5jeBLNqmMiSu4LYQEYOA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: Rename s5m8767_convert_voltage to s5m8767_get_proper_voltage_sel
-To: linux-kernel@vger.kernel.org
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1331018040-30725-20-git-send-email-yinghai@kernel.org>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+	<1331018040-30725-20-git-send-email-yinghai@kernel.org>
+Date: Tue, 6 Mar 2012 21:31:24 -0700
+Message-ID: <CABhMZUX_pv2Wx4u+kqwcyCOpUnZ3yi68cVpV9TAzsqx2DF5DRQ@mail.gmail.com>
+Subject: Re: [PATCH 19/23] PCI: add /sys/bus/pci/rescan_root
+From: Bjorn Helgaas <bjorn.helgaas@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-doc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/7 Axel Lin <axel.lin@gmail.com>:
-> This function finds the smallest voltage that falls within the specified range,
-> and then returns the selector. This rename makes the intention more clear.
+On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
 >
-> Also remove unneeded local variables min_vol and max_vol in s5m8767_set_voltage
-> and s5m8767_set_voltage_buck.
+> It will be used to rediscover removed pci root buses.
 >
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-doc@vger.kernel.org
 > ---
-> I was confused by the function name, s5m8767_convert_voltage() converts what to what?
+>  Documentation/ABI/testing/sysfs-bus-pci |    9 +++++++++
+>  drivers/pci/pci-sysfs.c                 |   21 +++++++++++++++++++++
+>  2 files changed, 30 insertions(+), 0 deletions(-)
 >
+> diff --git a/Documentation/ABI/testing/sysfs-bus-pci
+> b/Documentation/ABI/testing/sysfs-bus-pci
+> index 22392de..eb826bd 100644
+> --- a/Documentation/ABI/testing/sysfs-bus-pci
+> +++ b/Documentation/ABI/testing/sysfs-bus-pci
+> @@ -66,6 +66,15 @@ Description:
+>                re-discover previously removed devices.
+>                Depends on CONFIG_HOTPLUG.
+>
+> +What:          /sys/bus/pci/rescan_root
+> +Date:          March 2012
+> +Contact:       Linux PCI developers <linux-pci@vger.kernel.org>
+> +Description:
+> +               Writing a non-zero value to this attribute will
+> +               cause a rescan of all PCI root buses in the system, and
+> +               re-discover previously removed PCI root buses.
 
-BTW, I'm also confused by s5m8767_set_high and s5m8767_set_low functions.
-Both function sets the same gpios to the same state. ( by different order )
-Maybe we need comments (or rename) for both functions.
+This seems sort of backwards to me.  Architecture-specific code
+enumerated the host bridges/root buses in the first place, not the PCI
+core.  Now we're asking the PCI core (/sys/bus/pci) to re-enumerate
+them.
 
-Regards,
-Axel
+But maybe it's still the right answer, I dunno.
+
+> +               Depends on CONFIG_HOTPLUG.
+> +
+>  What:          /sys/bus/pci/devices/.../msi_irqs/
+>  Date:          September, 2011
+>  Contact:       Neil Horman <nhorman@tuxdriver.com>
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index f855b4b..d6221e5 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -302,8 +302,29 @@ static ssize_t bus_rescan_store(struct bus_type *bus,
+> const char *buf,
+>        return count;
+>  }
+>
+> +void __weak acpi_pci_root_rescan(void) { }
+> +void __weak pcibios_root_rescan(void) { }
+> +
+> +static ssize_t bus_rescan_root_store(struct bus_type *bus, const char
+> *buf,
+> +                               size_t count)
+> +{
+> +       unsigned long val;
+> +
+> +       if (strict_strtoul(buf, 0, &val) < 0)
+> +               return -EINVAL;
+> +
+> +       if (val) {
+> +               mutex_lock(&pci_remove_rescan_mutex);
+> +               acpi_pci_root_rescan();
+
+This architecture-dependent function name should not be here.  How
+will we make this work for powerpc, sparc, etc.?
+
+> +               pcibios_root_rescan();
+> +               mutex_unlock(&pci_remove_rescan_mutex);
+> +       }
+> +       return count;
+> +}
+> +
+>  struct bus_attribute pci_bus_attrs[] = {
+>        __ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, bus_rescan_store),
+> +       __ATTR(rescan_root, (S_IWUSR|S_IWGRP), NULL,
+> bus_rescan_root_store),
+>        __ATTR_NULL
+>  };
+>
+> --
+> 1.7.7
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
