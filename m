@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab2CGNkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 08:40:07 -0500
-Received: from 8.mo2.mail-out.ovh.net ([188.165.52.147]:40177 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755917Ab2CGNkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 08:40:05 -0500
-X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Mar 2012 08:40:04 EST
-Date: Wed, 7 Mar 2012 14:22:25 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        Samuel Ortiz <sameo@linux.intel.com>, patches@linaro.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Nancy Chen <Nancy.Chen@freescale.com>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH v9] Regulator: Add Anatop regulator driver
-Message-ID: <20120307132225.GB17745@game.jcrosoft.org>
-References: <1331126658-26926-1-git-send-email-paul.liu@linaro.org>
+	id S1757401Ab2CGNkG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 08:40:06 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58550 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755786Ab2CGNkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 08:40:04 -0500
+Date: Wed, 7 Mar 2012 14:39:37 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, gcc@gcc.gnu.org, tglx@linutronix.de,
+        "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, andi.kleen@intel.com, gcc-help@gcc.gnu.org
+Subject: Re: [RFC patch] spindep: add cross cache lines checking
+Message-ID: <20120307133937.GB12676@elte.hu>
+References: <1330917630.18835.44.camel@debian>
+ <201203060932.45223.arnd@arndb.de>
+ <1331108607.18835.343.camel@debian>
+ <201203071154.36059.arnd@arndb.de>
+ <4F575F09.3010107@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331126658-26926-1-git-send-email-paul.liu@linaro.org>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 7172826831719214054
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrvdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrvdeiucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+In-Reply-To: <4F575F09.3010107@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21:24 Wed 07 Mar     , Ying-Chun Liu (PaulLiu) wrote:
-> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-> 
-> Anatop is an integrated regulator inside i.MX6 SoC.
-> There are 3 digital regulators which controls PU, CORE (ARM), and SOC.
-> And 3 analog regulators which controls 1P1, 2P5, 3P0 (USB).
-> This patch adds the Anatop regulator driver.
-> 
-> Signed-off-by: Nancy Chen <Nancy.Chen@freescale.com>
-> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Liam Girdwood <lrg@ti.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> ---
->  .../bindings/regulator/anatop-regulator.txt        |   28 +++
->  drivers/regulator/Kconfig                          |    8 +
->  drivers/regulator/Makefile                         |    1 +
->  drivers/regulator/anatop-regulator.c               |  231 ++++++++++++++++++++
->  4 files changed, 268 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/regulator/anatop-regulator.txt
->  create mode 100644 drivers/regulator/anatop-regulator.c
-> 
-> diff --git a/Documentation/devicetree/bindings/regulator/anatop-regulator.txt b/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
-> new file mode 100644
-> index 0000000..500463e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
-> @@ -0,0 +1,28 @@
-> +Anatop Voltage regulators
-> +
-> +Required properties:
-> +- compatible: Must be "fsl,anatop-regulator"
-> +- vol-bit-shift: Bit shift for the register
-> +- vol-bit-width: Number of bits used in the register
-> +- min-bit-val: Minimum value of this register
-> +- min-voltage: Minimum voltage of this regulator
-> +- max-voltage: Maximum voltage of this regulator
-specific properites need to be prefix by the vendor
 
-Best Regards,
-J.
+* Alex Shi <alex.shi@intel.com> wrote:
+
+> > I think the check should be (__alignof__(lock) < 
+> > __alignof__(rwlock_t)), otherwise it will still pass when 
+> > you have structure with attribute((packed,aligned(2)))
+> 
+> reasonable!
+> 
+> >> 1, it is alignof bug for default gcc on my fc15 and Ubuntu 11.10 etc?
+> >>
+> >> struct sub {
+> >>         int  raw_lock;
+> >>         char a;
+> >> };
+> >> struct foo {
+> >>         struct sub z;
+> >>         int slk;
+> >>         char y;
+> >> }__attribute__((packed));
+> >>
+> >> struct foo f1;
+> >>
+> >> __alignof__(f1.z.raw_lock) is 4, but its address actually can align on
+> >> one byte. 
+> > 
+> > That looks like correct behavior, because the alignment of 
+> > raw_lock inside of struct sub is still 4. But it does mean 
+> > that there can be cases where the compile-time check is not 
+> > sufficient, so we might want the run-time check as well, at 
+> > least under some config option.
+> 
+> what's your opinion of this, Ingo?
+
+Dunno. How many real bugs have you found via this patch?
+
+Thanks,
+
+	Ingo
