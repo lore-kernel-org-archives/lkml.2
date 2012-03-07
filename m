@@ -1,102 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab2CGLWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 06:22:13 -0500
-Received: from ring0.de ([91.143.88.219]:57363 "EHLO smtp.ring0.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755176Ab2CGLV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 06:21:56 -0500
-X-Greylist: delayed 1945 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Mar 2012 06:21:55 EST
-X-Spam-Report: * -1.9 BAYES_00 BODY: Spamwahrscheinlichkeit nach Bayes-Test: 0-1%
-	*      [score: 0.0000]
-	*  0.8 RDNS_NONE Delivered to internal network by a host with no rDNS
-Date: Wed, 7 Mar 2012 11:49:23 +0100
-From: Sebastian Reichel <sre@debian.org>
-To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        CarlosChinea <carlos.chinea@nokia.com>, linux-kernel@vger.kernel.org,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        ext Linus Walleij <linus.walleij@linaro.org>,
-        "peter_henn@gmx.de" <peter_henn@gmx.de>,
-        "sjur.brandeland@stericsson.com" <sjur.brandeland@stericsson.com>,
-        "govindraj.ti@gmail.com" <govindraj.ti@gmail.com>,
-        "pawel.szyszuk@stericsson.com" <pawel.szyszuk@stericsson.com>,
-        Andras Domokos <andras.domokos@nokia.com>,
-        ext Shubhrajyoti <shubhrajyoti@ti.com>,
-        ext Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        ext Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [GIT PULL] HSI framework
-Message-ID: <20120307104923.GB18093@earth.universe>
-References: <1326461140.32183.40.camel@groo>
- <1326975259.28477.57.camel@sauron.fi.intel.com>
+	id S1756024Ab2CGL1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 06:27:17 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45735 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab2CGL1P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 06:27:15 -0500
+Message-ID: <4F57465D.1000402@kernel.org>
+Date: Wed, 07 Mar 2012 11:28:29 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="W/nzBZO5zC0uMSeA"
-Content-Disposition: inline
-In-Reply-To: <1326975259.28477.57.camel@sauron.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Grundler <grundler@chromium.org>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Benson Leung <bleung@chromium.org>, Bryan Freed <bfreed@chromium.org>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging:iio:tsl2563 rewrite probe error handling
+References: <1330967759-18660-1-git-send-email-grundler@chromium.org>
+In-Reply-To: <1330967759-18660-1-git-send-email-grundler@chromium.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fundamentally an excellent patch fixing some real issues, but just
+because I'm in that sort of mood I'll be fussy about the fact it is
+one patch.
 
---W/nzBZO5zC0uMSeA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+To nitpick, I'd have prefered this to be two patches. First that fixes
+the issues and the second that adds the additional output.  Actually
+should probably have even had a third making the white space changes.
 
-On Thu, Jan 19, 2012 at 02:14:19PM +0200, Artem Bityutskiy wrote:
-> On Fri, 2012-01-13 at 15:25 +0200, Carlos Chinea wrote:
-> > Hi Linus,
-> >=20
-> > I have been working in an HSI framework. The High Speed Synchronous
-> > Serial Interface (HSI) is a serial interface mainly used for
-> > connecting application engines (APE) with cellular modem engines (CMT)
-> > in cellular handsets.
-> >=20
-> > The framework is currently being used for some people and we would
-> > like to see it integrated into the kernel for 3.3. There is no HW
-> > controller drivers in this pull, but some people have already some of
-> > them pending which they would like to push as soon as this integrated.
-> > I am also working on the acceptance for an TI OMAP one, based on a
-> > compatible legacy version of the interface called SSI.
->=20
-> Hi Linus,
->=20
-> I've noticed that you have not pulled this (yet). I would like to
-> confirm that we at Intel are also very interested to have HSI upstream.
->=20
-> I believe this code base is more than worth merging since it has many
-> users and it has proven itself in real Nokia products. Would you please
-> pull it?
+In particular 'device not found' and 'device detect error' are both
+valid explanations.  Perhaps it's nice to have everything more
+consistent but that shouldn't have been in the same patch as some out
+and out fixes.  Fixes will probably get back ported to stable trees,
+error messages won't.
 
-Hi,
+Still,getting the fix in place is the most important thing so if Greg
+is willing to pick this up then it has my Ack.
 
-I think we never got a reply why the HSI framework has not been
-pulled into 3.3. So what needs to be done to get it pulled into 3.4?
+On 03/05/2012 05:15 PM, Grant Grundler wrote:
+> tsl2563 probe function has two minor issues with it's error handling paths:
+> 1) it is silent (did not report errors to dmesg)
+> 2) did not return failure code (mixed up use of ret and err)
+> 
+> and two major issues:
+> 3) goto fail2 would corrupt a free memory pool ("double free")
+> 4) device registration failure did NOT cancel/flush delayed work.
+>    (and thus dereference a freed data structure later)
+> 
+> The "double free" is subtle and was introduced with this change:
+>     Author: Jonathan Cameron <jic23@cam.ac.uk>
+>     Date:   Mon Apr 18 12:58:55 2011 +0100
+>     staging:iio:tsl2563 take advantage of new iio_device_allocate private data.
+oops.  Thanks for picking up on this one.
+> 
+> Originally, chip was allocated seperately. Now it's appended to the
+> indio_dev by iio_allocate_device(sizeof(*chip)). So we only need one
+> kfree call as well (in iio_free_device()).
+> 
+> Signed-off-by: Grant Grundler <grundler@chromium.org>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+> ---
+>  Gory details of tracking this down are here:
+>     http://crosbug.com/26819
+> 
+>  Despite iio_device_registration failing, system can at least now boot.
+>  Will follow up with a fix to "double register : in_intensity_both_raw"
+>  error that is included in the bug report.
+> 
+>  drivers/staging/iio/light/tsl2563.c |   39 +++++++++++++++++++++++-----------
+>  1 files changed, 26 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
+> index 7e984bc..bf6498b 100644
+> --- a/drivers/staging/iio/light/tsl2563.c
+> +++ b/drivers/staging/iio/light/tsl2563.c
+> @@ -705,7 +705,6 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
+>  	struct tsl2563_chip *chip;
+>  	struct tsl2563_platform_data *pdata = client->dev.platform_data;
+>  	int err = 0;
+> -	int ret;
+>  	u8 id = 0;
+>  
+>  	indio_dev = iio_allocate_device(sizeof(*chip));
+> @@ -719,13 +718,15 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
+>  
+>  	err = tsl2563_detect(chip);
+>  	if (err) {
+> -		dev_err(&client->dev, "device not found, error %d\n", -err);
+> +		dev_err(&client->dev, "detect error %d\n", -err);
+>  		goto fail1;
+>  	}
+>  
+>  	err = tsl2563_read_id(chip, &id);
+> -	if (err)
+> +	if (err) {
+> +		dev_err(&client->dev, "read id error %d\n", -err);
+>  		goto fail1;
+> +	}
+>  
+>  	mutex_init(&chip->lock);
+>  
+> @@ -748,40 +749,52 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
+>  	indio_dev->num_channels = ARRAY_SIZE(tsl2563_channels);
+>  	indio_dev->dev.parent = &client->dev;
+>  	indio_dev->modes = INDIO_DIRECT_MODE;
+Certainly no problem with white space here to make the sections of
+code more obvious, but it doesn't belong in a patch with bug fixes.
+> +
+>  	if (client->irq)
+>  		indio_dev->info = &tsl2563_info;
+>  	else
+>  		indio_dev->info = &tsl2563_info_no_irq;
+> +
+>  	if (client->irq) {
+> -		ret = request_threaded_irq(client->irq,
+> +		err = request_threaded_irq(client->irq,
+>  					   NULL,
+>  					   &tsl2563_event_handler,
+>  					   IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+>  					   "tsl2563_event",
+>  					   indio_dev);
+> -		if (ret)
+> -			goto fail2;
+> +		if (err) {
+> +			dev_err(&client->dev, "irq request error %d\n", -err);
+> +			goto fail1;
+> +		}
+>  	}
+> +
+>  	err = tsl2563_configure(chip);
+> -	if (err)
+> -		goto fail3;
+> +	if (err) {
+> +		dev_err(&client->dev, "configure error %d\n", -err);
+> +		goto fail2;
+> +	}
+>  
+>  	INIT_DELAYED_WORK(&chip->poweroff_work, tsl2563_poweroff_work);
+> +
+>  	/* The interrupt cannot yet be enabled so this is fine without lock */
+>  	schedule_delayed_work(&chip->poweroff_work, 5 * HZ);
+>  
+> -	ret = iio_device_register(indio_dev);
+> -	if (ret)
+> +	err = iio_device_register(indio_dev);
+> +	if (err) {
+> +		dev_err(&client->dev, "iio registration error %d\n", -err);
+>  		goto fail3;
+> +	}
+>  
+>  	return 0;
+> +
+>  fail3:
+> +	cancel_delayed_work(&chip->poweroff_work);
+> +	flush_scheduled_work();
+> +fail2:
+>  	if (client->irq)
+>  		free_irq(client->irq, indio_dev);
+> -fail2:
+> -	iio_free_device(indio_dev);
+>  fail1:
+> -	kfree(chip);
+> +	iio_free_device(indio_dev);
+>  	return err;
+>  }
+>  
 
--- Sebastian
-
---W/nzBZO5zC0uMSeA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPVz0zAAoJENju1/PIO/qaN34P/RyWtEVnVMn+8/nwLSdMkjNs
-RFL00j2KMjI0O9hzyekkxhHZypntloR9xBuVcQryWA7iLACWi3EEQuL6u5peuJFE
-z5/En0JSonnvPJnC9bfTzuc5Rz5CvE9lts1d6mH1vqqe7V2V3gmb8ySkuQKlusYd
-PFkx9YbMLZyoOOaDdjApCi1tEhMXVy27p94zMAdWVhXGA76eQJzPA1WkFIursA8I
-uzIFpSOAqDYy1iFTjZMWNICfIq5hAUmkakV93WZEeiZZ5fXtsP4mrX9ErioObpZT
-rCFE9+HkuExStnySJ9yBatgoICv9mtSVeMQpOnxXSbchH73/rmBIvKCt0Mu5ho34
-6SEW8AZO9uoT8kTwoafmo/WfPY7cTCAOx0AHyWUuoMNTpuvJqGtAlRxurS5hPz5l
-k6I8CU8x6n86lvNxL1VWfDC6MB4Oy/MmFHMS62XeIEX2Zpp2wRbBo3wpcq0+1Q/V
-BsRIPchF7OaDf7jTAd/8l8/J6QSgeI8ZB0+b1iEQyYCyiwHaV6v/1DW7//XsTEn8
-SxBztOWTydNu3GVp1M7Uv42eSzh30K7Znggd5o2v6W1HCFoTRnHDz/F7PxyrJmbb
-Tl7/tIyNHf0aJo7gupc7ELO4FN02erTNGV9JnQTlsv1QEAC5n6wM9r9W8gkgd5jV
-zsxWf9udPBzqxyfg6HUR
-=OZZk
------END PGP SIGNATURE-----
-
---W/nzBZO5zC0uMSeA--
