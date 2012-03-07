@@ -1,69 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964844Ab2CGRos (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 12:44:48 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60111 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932508Ab2CGRoq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 12:44:46 -0500
-Date: Wed, 7 Mar 2012 17:44:43 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, khali@linux-fr.org,
-        ben-linux@fluff.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V1] i2c: gpio: Use open drain support from gpio driver
-Message-ID: <20120307174443.GV3107@opensource.wolfsonmicro.com>
-References: <1331127494-6913-1-git-send-email-ldewangan@nvidia.com>
- <20120307173157.GT3107@opensource.wolfsonmicro.com>
- <20120307173922.GB1130@pengutronix.de>
+	id S964902Ab2CGRp4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 12:45:56 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:47729 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S964855Ab2CGRpz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 12:45:55 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pEAjBjStGYT6H+Py"
-Content-Disposition: inline
-In-Reply-To: <20120307173922.GB1130@pengutronix.de>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1328858388-22384-1-git-send-email-myungjoo.ham@samsung.com>
+References: <1328858388-22384-1-git-send-email-myungjoo.ham@samsung.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Wed, 7 Mar 2012 09:45:33 -0800
+Message-ID: <CAJOA=zMuv7ic5WV8Z=pv0e=oR+UZ14K8HBCwQw01qLw_UbSXuQ@mail.gmail.com>
+Subject: Re: [PATCH] PM / devfreq: add relation of recommended frequency.
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        myungjoo.ham@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Feb 9, 2012 at 11:19 PM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+> The semantics of "target frequency" given to devfreq driver from
+> devfreq framework has always been interpretted as "at least" or GLB
+> (greatest lower bound). However, the framework might want the
+> device driver to limit its max frequency (LUB: least upper bound),
+> especially if it is given by thermal framework (it's too hot).
+>
+> Thus, the target fuction should have another parameter to express
+> whether the framework wants GLB or LUB. And, the additional parameter,
+> "u32 options", does it.
 
---pEAjBjStGYT6H+Py
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Nitpick: changelog still refers to "options" but code reads "flags".
 
-On Wed, Mar 07, 2012 at 06:39:22PM +0100, Wolfram Sang wrote:
-> On Wed, Mar 07, 2012 at 05:31:57PM +0000, Mark Brown wrote:
+Regards,
+Mike
 
-> > Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-> Typo ;)
-
-Not at all, it's a direct demonstration of the quick review I did!  :P
-
---pEAjBjStGYT6H+Py
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPV56DAAoJEBus8iNuMP3dRzcP/2vyBGFYGNIyCG6ja7VqkZCr
-r0Pt2+8DDA12VxAUUMtxMnBHTaW7jq5xD8e4tTSTAszC3SYIKqMCYSG+J9TwVy+5
-8G9/h6uAoVI6HmIdtYjqbgtR7omjuMOyZIqfZH18DwrhS+ZHawB/bLxfoX1wCccV
-uvgqxwpw36CxhyEDxp2WL+R4RujsmfB4Sbtl67r0j4IYNDccQE15NHvBORvsvodl
-+fYoLL2x3SJw4BIFqwKAkI7x/tCvb4TZti/8rd6zch6XAlKva2CJ1Sg+nBp3gWP7
-J12d1O7MWCOV27Qe0hcA9UPLBfq18yiY1JaDJwPuglB61H5fNPw+hcu3pDCTIpHf
-8kJYQ7kYPVA+vgawGkyRYQUQ07rtQhBDML16Knac93qB0UzrRb55nDbrGnWTfEwb
-52M/w8flEo9oGpSnwTGFdJ0UA9vwCxxAoZK2fMzIus0MrWO8OgmJMaWIwArqvOvA
-osLAXwlgq8xfnSob4M7YAmYKQdjvUdky7goI9eExy1umf+i+rMchOepOvvAp2g1p
-AreCbHdY3WE39fjVUMFBAweHG4e65DSkn/jsws29KkL1cXVWHyQ9ypuyCF9C8Oom
-jkUxbIcVh9oGzAvOOf5TJdJ2VGynPIb/NjIoRZdCHenpOk8aD5L5uwigGZgOqEwG
-IJtKaBLg1fpe3od7DA+R
-=rKz7
------END PGP SIGNATURE-----
-
---pEAjBjStGYT6H+Py--
+>
+> With the update, devfreq_recommended_opp() is also updated.
+>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/devfreq/devfreq.c     |   44 ++++++++++++++++++++++++++++++----------
+>  drivers/devfreq/exynos4_bus.c |   16 +++++++++++---
+>  include/linux/devfreq.h       |   18 ++++++++++++++--
+>  3 files changed, 60 insertions(+), 18 deletions(-)
+>
+> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+> index a33fc6c..83392a6 100644
+> --- a/drivers/devfreq/devfreq.c
+> +++ b/drivers/devfreq/devfreq.c
+> @@ -84,6 +84,7 @@ int update_devfreq(struct devfreq *devfreq)
+>  {
+>        unsigned long freq;
+>        int err = 0;
+> +       u32 options = 0;
+>
+>        if (!mutex_is_locked(&devfreq->lock)) {
+>                WARN(true, "devfreq->lock must be locked by the caller.\n");
+> @@ -104,18 +105,23 @@ int update_devfreq(struct devfreq *devfreq)
+>         * qos_min_freq
+>         */
+>
+> -       if (devfreq->qos_min_freq && freq < devfreq->qos_min_freq)
+> +       if (devfreq->qos_min_freq && freq < devfreq->qos_min_freq) {
+>                freq = devfreq->qos_min_freq;
+> -       if (devfreq->max_freq && freq > devfreq->max_freq)
+> +               options &= ~(1 << 0);
+> +               options |= DEVFREQ_OPTION_FREQ_LUB;
+> +       }
+> +       if (devfreq->max_freq && freq > devfreq->max_freq) {
+>                freq = devfreq->max_freq;
+> -       if (devfreq->min_freq && freq < devfreq->min_freq)
+> +               options &= ~(1 << 0);
+> +               options |= DEVFREQ_OPTION_FREQ_GLB;
+> +       }
+> +       if (devfreq->min_freq && freq < devfreq->min_freq) {
+>                freq = devfreq->min_freq;
+> +               options &= ~(1 << 0);
+> +               options |= DEVFREQ_OPTION_FREQ_LUB;
+> +       }
+>
+> -       /*
+> -        * TODO in the devfreq-next:
+> -        * add relation or use rance (freq_min, freq_max)
+> -        */
+> -       err = devfreq->profile->target(devfreq->dev.parent, &freq);
+> +       err = devfreq->profile->target(devfreq->dev.parent, &freq, options);
+>        if (err)
+>                return err;
+>
+> @@ -771,14 +777,30 @@ module_exit(devfreq_exit);
+>  *                          freq value given to target callback.
+>  * @dev                The devfreq user device. (parent of devfreq)
+>  * @freq       The frequency given to target function
+> + * @floor      false: find LUB first and use GLB if LUB not available.
+> + *             true:  find GLB first and use LUB if GLB not available.
+> + *
+> + * LUB: least upper bound (at least this freq or above, but the least)
+> + * GLB: greatest lower bound (at most this freq or below, but the most)
+>  *
+>  */
+> -struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq)
+> +struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
+> +                                   bool floor)
+>  {
+> -       struct opp *opp = opp_find_freq_ceil(dev, freq);
+> +       struct opp *opp;
+>
+> -       if (opp == ERR_PTR(-ENODEV))
+> +       if (floor) {
+>                opp = opp_find_freq_floor(dev, freq);
+> +
+> +               if (opp == ERR_PTR(-ENODEV))
+> +                       opp = opp_find_freq_ceil(dev, freq);
+> +       } else {
+> +               opp = opp_find_freq_ceil(dev, freq);
+> +
+> +               if (opp == ERR_PTR(-ENODEV))
+> +                       opp = opp_find_freq_floor(dev, freq);
+> +       }
+> +
+>        return opp;
+>  }
+>
+> diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
+> index 590d686..c0a78da 100644
+> --- a/drivers/devfreq/exynos4_bus.c
+> +++ b/drivers/devfreq/exynos4_bus.c
+> @@ -619,13 +619,21 @@ static int exynos4_bus_setvolt(struct busfreq_data *data, struct opp *opp,
+>        return err;
+>  }
+>
+> -static int exynos4_bus_target(struct device *dev, unsigned long *_freq)
+> +static int exynos4_bus_target(struct device *dev, unsigned long *_freq,
+> +                             u32 options)
+>  {
+>        int err = 0;
+> -       struct busfreq_data *data = dev_get_drvdata(dev);
+> -       struct opp *opp = devfreq_recommended_opp(dev, _freq);
+> -       unsigned long old_freq = opp_get_freq(data->curr_opp);
+> +       unsigned long def = *_freq;
+> +       struct platform_device *pdev = container_of(dev, struct platform_device,
+> +                                                   dev);
+> +       struct busfreq_data *data = platform_get_drvdata(pdev);
+> +       struct opp *opp = devfreq_recommended_opp(dev, _freq, options &
+> +                                                 DEVFREQ_OPTION_FREQ_GLB);
+>        unsigned long freq = opp_get_freq(opp);
+> +       unsigned long old_freq = opp_get_freq(data->curr_opp);
+> +
+> +       if (IS_ERR(opp))
+> +               return PTR_ERR(opp);
+>
+>        if (old_freq == freq)
+>                return 0;
+> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+> index b853379..1aff012 100644
+> --- a/include/linux/devfreq.h
+> +++ b/include/linux/devfreq.h
+> @@ -59,6 +59,16 @@ struct devfreq_pm_qos_table {
+>        s32 qos_value;
+>  };
+>
+> +/*
+> + * target callback, which is to provide additional information to the
+> + * devfreq driver.
+> + */
+> +
+> +/* The resulting frequency should be at least this. (least upper bound) */
+> +#define DEVFREQ_OPTION_FREQ_LUB        0x0
+> +/* The resulting frequency should be at most this. (greatest lower bound) */
+> +#define DEVFREQ_OPTION_FREQ_GLB 0x1
+> +
+>  /**
+>  * struct devfreq_dev_profile - Devfreq's user device profile
+>  * @initial_freq       The operating frequency when devfreq_add_device() is
+> @@ -76,6 +86,8 @@ struct devfreq_pm_qos_table {
+>  *                     higher than any operable frequency, set maximum.
+>  *                     Before returning, target function should set
+>  *                     freq at the current frequency.
+> + *                     The "option" parameter's possible values are
+> + *                     explained above with "DEVFREQ_OPTION_*" macros.
+>  * @get_dev_status     The device should provide the current performance
+>  *                     status to devfreq, which is used by governors.
+>  * @exit               An optional callback that is called when devfreq
+> @@ -95,7 +107,7 @@ struct devfreq_dev_profile {
+>        bool qos_use_max;
+>        struct devfreq_pm_qos_table *qos_list;
+>
+> -       int (*target)(struct device *dev, unsigned long *freq);
+> +       int (*target)(struct device *dev, unsigned long *freq, u32 options);
+>        int (*get_dev_status)(struct device *dev,
+>                              struct devfreq_dev_status *stat);
+>        void (*exit)(struct device *dev);
+> @@ -198,7 +210,7 @@ extern int devfreq_remove_device(struct devfreq *devfreq);
+>
+>  /* Helper functions for devfreq user device driver with OPP. */
+>  extern struct opp *devfreq_recommended_opp(struct device *dev,
+> -                                          unsigned long *freq);
+> +                                          unsigned long *freq, bool floor);
+>  extern int devfreq_register_opp_notifier(struct device *dev,
+>                                         struct devfreq *devfreq);
+>  extern int devfreq_unregister_opp_notifier(struct device *dev,
+> @@ -253,7 +265,7 @@ static int devfreq_remove_device(struct devfreq *devfreq)
+>  }
+>
+>  static struct opp *devfreq_recommended_opp(struct device *dev,
+> -                                          unsigned long *freq)
+> +                                          unsigned long *freq, bool floor)
+>  {
+>        return -EINVAL;
+>  }
+> --
+> 1.7.4.1
+>
