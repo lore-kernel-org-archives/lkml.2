@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965302Ab2CGWrU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 17:47:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6928 "EHLO mx1.redhat.com"
+	id S1030850Ab2CGWuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 17:50:11 -0500
+Received: from nn7.de ([85.214.94.156]:57172 "EHLO nn7.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965026Ab2CGWrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 17:47:15 -0500
-Date: Wed, 7 Mar 2012 22:46:58 +0000
-From: Alasdair G Kergon <agk@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
-        Joe Thornber <thornber@redhat.com>,
-        Jonathan Brassow <jbrassow@redhat.com>, stable@kernel.org,
-        Jesper Juhl <jj@chaosbits.net>
-Subject: [git pull] device-mapper fixes for 3.3
-Message-ID: <20120307224658.GQ16767@agk-dp.fab.redhat.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-	Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
-	Joe Thornber <thornber@redhat.com>,
-	Jonathan Brassow <jbrassow@redhat.com>, stable@kernel.org,
-	Jesper Juhl <jj@chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752095Ab2CGWuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 17:50:08 -0500
+Message-ID: <1331160605.32484.24.camel@no>
+Subject: gs_change ... kswapd0 exited with preempt_count 1
+From: Soeren Sonnenburg <sonne@debian.org>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 07 Mar 2012 23:50:05 +0100
+Organization: 
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-YDY2sHxdGwYn5LIA+nXT"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.3-fixes
+--=-YDY2sHxdGwYn5LIA+nXT
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: quoted-printable
 
-to get the following device-mapper fixes for 3.3.
+Hi,
 
-Thanks,
-Alasdair
+I am chasing a bug I cannot make any sense of: I have a i7 based server
+on an intel board that runs just fine for days but then suddenly dies
+with the backtraces below on git master but also any older kernel
+version I tried. The system is running this config
+http://7nn.de/debugging/config.gz
 
-----------------------------------------------------------------
-Device-mapper fixes for 3.3.
+And no matter what I do I keep getting kernel panics after a couple of
+days (or weeks) that all involve kswapd0 / gs_change:
 
-Eight small device-mapper bug fixes.
+http://7nn.de/debugging/panic-3.2.0.jpg
+http://7nn.de/debugging/panic-3.3.0-rc5.jpg
 
-----------------------------------------------------------------
-Jesper Juhl (1):
-      dm ioctl: do not leak argv if target message only contains whitespace
+Any ideas,
+Soeren
+--=20
+For the one fact about the future of which we can be certain is that it
+will be utterly fantastic. -- Arthur C. Clarke, 1962
 
-Joe Thornber (2):
-      dm thin metadata: unlock superblock in init_pmd error path
-      dm thin metadata: decrement counter after removing mapped block
+--=-YDY2sHxdGwYn5LIA+nXT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Jonathan E Brassow (2):
-      dm raid: set MD_CHANGE_DEVS when rebuilding
-      dm raid: fix flush support
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Mike Snitzer (2):
-      dm flakey: fix crash on read when corrupt_bio_byte not set
-      dm thin metadata: remove incorrect close_device on creation error paths
+iQIcBAABCAAGBQJPV+YdAAoJEH82z1Wqh6p3jEIP/0SzzoW87gwOlBgUFtBmU33s
+6BoQbTsZvBkvivEwaHvzgPThesEf2swhMAtkdMHcowEoN1qwp7HIPFrzOpXr9g7x
+CiuA4EEaoiSKTT8Sv1GHZUDRGiM1ms3TZQrnzHqKKHXLNTn3xrO2gRr7/TFK6jF+
+JPfb7c8UlEVN/jXcPLD8azeNrY/L0zRwTAxt/AcM56BlDnn4nrTZGT2/hjUgpseU
+2fOUPUgO8ncXo8bt4EtiaZx6mYs9j3OMPDyWhmNL4CqL3D+aPlx1rkt5S2wm4tSu
+wdEDP1ZSGvaSrj1ptiDGrUZWx62kGVoUVl/v+/egjV1b3cQlDCF64yzLgG3gzjCe
+f/9T4wpTP9MOZ9LL12nQG1K1NMoHpMP1EDE2ypYVNY0j8tvqhG/ELoWYAtuF5vMn
+pRT1Uqgle2rokV8szTE7nOSA3i+J/kBDid5sb0g5FX/l5MXgXzQQt3CcihGdSWeY
+FuStIL7n0GdfrMxyNpm1d2HwHYcPrCTwgNYnjvPVVBT0dQCQ4pOIEnIAlyJbntae
+4US2otYA91pRjPvsbAUpiyCQToELD3JhdA51H8taFPDt98N5gFDFu/1BIIzWzcKB
+5CaANrJ1aPOjax5eg7ftla+JvU3yD02Oixw9uDiRRKEzWtK33Vs15uaFU+lDBL6q
+HXkg8CleuuUhnqneG+h/
+=3Fju
+-----END PGP SIGNATURE-----
 
-Milan Broz (1):
-      dm io: fix discard support
-
- drivers/md/dm-flakey.c        |    2 +-
- drivers/md/dm-io.c            |   23 ++++++++++++++++-------
- drivers/md/dm-ioctl.c         |    2 +-
- drivers/md/dm-raid.c          |   17 +++++++++++------
- drivers/md/dm-thin-metadata.c |   25 ++++++++++++++++++++-----
- 5 files changed, 49 insertions(+), 20 deletions(-)
-
+--=-YDY2sHxdGwYn5LIA+nXT--
