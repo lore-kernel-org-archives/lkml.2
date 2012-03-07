@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031649Ab2CGAPq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 19:15:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43311 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031620Ab2CGAPp (ORCPT
+	id S1031652Ab2CGAR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 19:17:27 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:38650 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932670Ab2CGAR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 19:15:45 -0500
-Date: Tue, 6 Mar 2012 16:15:43 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: gaowanlong@cn.fujitsu.com
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        eparis@parisplace.org, James Morris <jmorris@namei.org>
-Subject: Re: [PATCH] selinux: init target class when add avc callback
-Message-Id: <20120306161543.63c3fc54.akpm@linux-foundation.org>
-In-Reply-To: <4F56A4E2.5050001@cn.fujitsu.com>
-References: <1328406808-11309-1-git-send-email-gaowanlong@cn.fujitsu.com>
-	<4F56A4E2.5050001@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 6 Mar 2012 19:17:26 -0500
+X-AuditID: cbfee61a-b7b78ae000001ceb-5e-4f56a915b61f
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: merez@codeaurora.org, "'Namjae Jeon'" <linkinjeon@gmail.com>
+Cc: linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org
+References: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
+ <CAKYAXd_6OqQJ78mPJp11gRvGwwg88S_n_Auu=_HdP_ZXzCKrDg@mail.gmail.com>
+ <6669559e86c1d13b27e941ff2acf89d2.squirrel@www.codeaurora.org>
+ <CAKYAXd8HMrdB9mzgsz5XmMxkDE+gMce+CTEDFU4J67nusNtLOg@mail.gmail.com>
+ <cf2950fbeb4c500534be670cdd8cf85d.squirrel@www.codeaurora.org>
+In-reply-to: <cf2950fbeb4c500534be670cdd8cf85d.squirrel@www.codeaurora.org>
+Subject: RE: [PATCH v5 2/2] mmc: core: Support packed command for eMMC4.5 device
+Date: Wed, 07 Mar 2012 09:17:24 +0900
+Message-id: <000001ccfbf7$ac3e7510$04bb5f30$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Acz7oxeJ5VIyI3u0SZab75XIrzc7ogAT/tRQ
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Mar 2012 07:59:30 +0800
-Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
-
-> On 02/05/2012 09:53 AM, Wanlong Gao wrote:
+Maya Erez <merez@codeaurora.org> wrote:
+> > Hi. Merez.
+> >
+> > Thanks a lot about your performance measurement.
+> >
+> > I think that your measurement is enough and correct and the firmware
+> > of mmc vender should be optimized or change properly rather than
+> > modifying the current patch.
+> >
+> > And currently we can use only write packed cmd by my suggestion.
+> >
+> > I would like to add my reviewd-by tag in updated patches also.
+> >
+> > Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+> >
+> > Thanks.
 > 
-> > Target security class should be initialized when add avc callback.
-> > Although tclass is userless in callbacks now, but it may be used
-> > in the future .
-> > 
-> > Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> > ---
-> >  security/selinux/avc.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/security/selinux/avc.c b/security/selinux/avc.c
-> > index dca1c22..27495e6 100644
-> > --- a/security/selinux/avc.c
-> > +++ b/security/selinux/avc.c
-> > @@ -576,6 +576,7 @@ int avc_add_callback(int (*callback)(u32 event, u32 ssid, u32 tsid,
-> >  	c->events = events;
-> >  	c->ssid = ssid;
-> >  	c->tsid = tsid;
-> > +	c->tclass = tclass;
-> >  	c->perms = perms;
-> >  	c->next = avc_callbacks;
-> >  	avc_callbacks = c;
+> I tend to disagree. Adding a massive amount of code that would be disabled
+> can be risky. In case this code will not be in use it will not be properly
+> tested and its reliability will be uncertain.
+> 
+If you found something to be correct, please let me know that.
+It would be rightly appreciated.
 
-Perhaps James can take a look at this?
+Best regards,
+Seungwon Jeon.
 
-avc_add_callback() looks a bit odd.  It uses GFP_ATOMIC, but that is
-unnecessary because avc_add_callback() is only ever called from
-module_init() code.  And if it isn't only ever called from
-module_init() code then it needs some locking for that list.
+> Thanks,
+> Maya Erez
+> Consultant for Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
