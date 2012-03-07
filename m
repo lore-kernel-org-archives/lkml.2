@@ -1,180 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab2CGI6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 03:58:35 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:59497 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751536Ab2CGI6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 03:58:34 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v3] PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
-Date: Wed, 7 Mar 2012 10:02:40 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <mavej@redhat.com>,
-        linux-pm@vger.kernel.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
-        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com, linux-kernel@vger.kernel.org
-References: <13197479.540821330911965933.JavaMail.weblogic@epv6ml06> <1331096521-26026-1-git-send-email-myungjoo.ham@samsung.com>
-In-Reply-To: <1331096521-26026-1-git-send-email-myungjoo.ham@samsung.com>
+	id S1753507Ab2CGJCU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 04:02:20 -0500
+Received: from cassarossa.samfundet.no ([129.241.93.19]:32861 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752927Ab2CGJCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 04:02:17 -0500
+Date: Wed, 7 Mar 2012 10:00:17 +0100
+From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
+        nico@fluxnic.net, Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Michal Simek <monstr@monstr.eu>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH 1/3] Kbuild: centralize MKIMAGE and cmd_uimage
+ definitions
+Message-ID: <20120307090017.GB17076@samfundet.no>
+References: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203071002.40296.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Can you please post all of your outstanding PM-related patches that
-you want me to look at in one series, so that they appear in context?
-
-I'm struggling to understand what you need all those changes for.
-
-Thanks,
-Rafael
-
-
-On Wednesday, March 07, 2012, MyungJoo Ham wrote:
-> 1. CPU_DMA_THROUGHPUT
+Around Tue 06 Mar 2012 17:30:36 -0700 or thereabout, Stephen Warren wrote:
+> All ARCHs have the same definition of MKIMAGE. Move it to Makefile.lib
+> to avoid duplication.
 > 
-> This might look simliar to CPU_DMA_LATENCY. However, there are H/W
-> blocks that creates QoS requirement based on DMA throughput, not
-> latency, while their (those QoS requester H/W blocks) services are
-> short-term bursts that cannot be effectively responsed by DVFS
-> mechanisms (CPUFreq and Devfreq).
+> All ARCHs have similar definitions of cmd_uimage. Place a sufficiently
+> parameterized version in Makefile.lib to avoid duplication.
 > 
-> In the Exynos4412 systems that are being tested, such H/W blocks include
-> MFC (multi-function codec)'s decoding and enconding features, TV-out
-> (including HDMI), and Cameras. When the display is operated at 60Hz,
-> each chunk of task should be done within 16ms and the workload on DMA is
-> not well spread and fluctuates between frames; some frame requires more
-> and some do not and within a frame, the workload also fluctuates
-> heavily and the tasks within a frame are usually not parallelized; they
-> are processed through specific H/W blocks, not CPU cores. They often
-> have PPMU capabilities; however, they need to be polled very frequently
-> in order to let DVFS mechanisms react properly. (less than 5ms).
+> The centralized cmd_uimage definition will allow the future introduction
+> of a centralized Kconfig option to make cmd_uimage use -T kernel_noload
+> rather than -T kernel.
 > 
-> For such specific tasks, allowing them to request QoS requirements seems
-> adequete because DVFS mechanisms (as long as the polling rate is 5ms or
-> longer) cannot follow up with them. Besides, the device drivers know
-> when to request and cancel QoS exactly.
-> 
-> 2. DVFS_LATENCY
-> 
-> Both CPUFreq and Devfreq have response latency to a sudden workload
-> increase. With near-100% (e.g., 95%) up-threshold, the average response
-> latency is approximately 1.5 x polling-rate.
-> 
-> A specific polling rate (e.g., 100ms) may generally fit for its system;
-> however, there could be exceptions for that. For example,
-> - When a user input suddenly starts: typing, clicking, moving cursors, and
->   such, the user might need the full performance immediately. However,
->   we do not know whether the full performance is actually needed or not
->   until we calculate the utilization; thus, we need to calculate it
->   faster with user inputs or any similar events. Specifying QoS on CPU
->   processing power or Memory bandwidth at every user input is an
->   overkill because there are many cases where such speed-up isn't
->   necessary.
-> - When a device driver needs a faster performance response from DVFS
->   mechanism. This could be addressed by simply putting QoS requests.
->   However, such QoS requests may keep the system running fast
->   unnecessary in some cases, especially if a) the device's resource
->   usage bursts with some duration (e.g., 100ms-long bursts) and
->   b) the driver doesn't know when such burst come. MMC/WiFi often had
->   such behaviors although there are possibilities that part (b) might
->   be addressed with further efforts.
-> 
-> The cases shown above can be tackled with putting QoS requests on the
-> response time or latency of DVFS mechanism, which is directly related to
-> its polling interval (if the DVFS mechanism is polling based).
-> 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> --
-> Changes from v2
-> - Rebased on the recent PM QoS patches, resolving the merge conflict.
-> 
-> Changes from RFC(v1)
-> - Added omitted part (registering new classes)
+> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
 > ---
->  include/linux/pm_qos.h |    4 ++++
->  kernel/power/qos.c     |   31 ++++++++++++++++++++++++++++++-
->  2 files changed, 34 insertions(+), 1 deletions(-)
+> NOTE: I have not tested this patch in any way at all for architectures
+> other than ARM.
 > 
-> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> index c8a541e..0ee7caa 100644
-> --- a/include/linux/pm_qos.h
-> +++ b/include/linux/pm_qos.h
-> @@ -14,6 +14,8 @@ enum {
->  	PM_QOS_CPU_DMA_LATENCY,
->  	PM_QOS_NETWORK_LATENCY,
->  	PM_QOS_NETWORK_THROUGHPUT,
-> +	PM_QOS_CPU_DMA_THROUGHPUT,
-> +	PM_QOS_DVFS_RESPONSE_LATENCY,
->  
->  	/* insert new class ID */
->  	PM_QOS_NUM_CLASSES,
-> @@ -24,6 +26,8 @@ enum {
->  #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
->  #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
->  #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-> +#define PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE	0
-> +#define PM_QOS_DVFS_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
->  #define PM_QOS_DEV_LAT_DEFAULT_VALUE		0
->  
->  struct pm_qos_request {
-> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-> index d6d6dbd..3e122db 100644
-> --- a/kernel/power/qos.c
-> +++ b/kernel/power/qos.c
-> @@ -101,11 +101,40 @@ static struct pm_qos_object network_throughput_pm_qos = {
->  };
->  
->  
-> +static BLOCKING_NOTIFIER_HEAD(cpu_dma_throughput_notifier);
-> +static struct pm_qos_constraints cpu_dma_tput_constraints = {
-> +	.list = PLIST_HEAD_INIT(cpu_dma_tput_constraints.list),
-> +	.target_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
-> +	.type = PM_QOS_MAX,
-> +	.notifiers = &cpu_dma_throughput_notifier,
-> +};
-> +static struct pm_qos_object cpu_dma_throughput_pm_qos = {
-> +	.constraints = &cpu_dma_tput_constraints,
-> +	.name = "cpu_dma_throughput",
-> +};
-> +
-> +
-> +static BLOCKING_NOTIFIER_HEAD(dvfs_lat_notifier);
-> +static struct pm_qos_constraints dvfs_lat_constraints = {
-> +	.list = PLIST_HEAD_INIT(dvfs_lat_constraints.list),
-> +	.target_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
-> +	.type = PM_QOS_MIN,
-> +	.notifiers = &dvfs_lat_notifier,
-> +};
-> +static struct pm_qos_object dvfs_lat_pm_qos = {
-> +	.constraints = &dvfs_lat_constraints,
-> +	.name = "dvfs_latency",
-> +};
-> +
->  static struct pm_qos_object *pm_qos_array[] = {
->  	&null_pm_qos,
->  	&cpu_dma_pm_qos,
->  	&network_lat_pm_qos,
-> -	&network_throughput_pm_qos
-> +	&network_throughput_pm_qos,
-> +	&cpu_dma_throughput_pm_qos,
-> +	&dvfs_lat_pm_qos,
->  };
->  
->  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> 
+>  arch/arm/boot/Makefile          |   23 +++++++++--------------
+>  arch/avr32/boot/images/Makefile |    9 +++------
 
+For the AVR32 related changes
+
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+
+-- 
+Best regards, Hans-Christian Egtvedt
