@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab2CGC1y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 21:27:54 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:53216 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427Ab2CGC1x (ORCPT
+	id S1756647Ab2CGCfY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 21:35:24 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:42214 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab2CGCfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 21:27:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F56AC21.1050000@gmail.com>
-References: <Pine.LNX.4.64.1203041946430.3487@file.rdu.redhat.com> <4F56AC21.1050000@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 6 Mar 2012 18:27:32 -0800
-X-Google-Sender-Auth: Hbwn8QlYnaQJ4X-POPVjPA7S4eI
-Message-ID: <CA+55aFwdV1UmsmC+PMMEDmq-TyqGWORdYVfGq4AdZ6+iO2eQ6Q@mail.gmail.com>
-Subject: Re: [PATCH] fix bug introduced in "mm: simplify find_vma_prev()"
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Shaohua Li <shaohua.li@intel.com>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 6 Mar 2012 21:35:21 -0500
+Date: Tue, 06 Mar 2012 21:34:53 -0500 (EST)
+Message-Id: <20120306.213453.700930266749202538.davem@davemloft.net>
+To: tshimizu818@gmail.com
+Cc: jeffrey.t.kirsher@intel.com, lucas.demarchi@profusion.mobi,
+        mirq-linux@rere.qmqm.pl, paul.gortmaker@windriver.com,
+        jdmason@kudzu.us, john.stultz@linaro.org, richardcochran@gmail.com,
+        arnd@arndb.de, khc@pm.waw.pl, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH RE-SUBMIT] net/pch_gbe: supports eg20t ptp clock
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1331079669-22446-1-git-send-email-tshimizu818@gmail.com>
+References: <1331079669-22446-1-git-send-email-tshimizu818@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 06 Mar 2012 18:34:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 4:30 PM, KOSAKI Motohiro
-<kosaki.motohiro@gmail.com> wrote:
->
-> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->
-> I prefer to remove find_vma_prev() eventually. but this is good short term
-> solution.
 
-Ok, applied.
+You still haven't submitted this properly.
 
-And then I committed an extra patch that removed the really obvious
-cases of find_vma_prev() (ie where it immediately returns if the
-resulting "vma" is NULL.
+First, you submitted the PCH_GBE driver changes before the EG20T
+PTP clock driver which it depends upon.
 
-There may well be a few more cases that really only need find_vma(),
-but if it wasn't totally obvious from the grep output with just a
-couple of lines of context, I left it alone for now.
-
-                Linus
+Second, you didn't number your patches.  When you submit a patch
+series you must number them so that there is no confusion about
+what order those patches should be applied.
