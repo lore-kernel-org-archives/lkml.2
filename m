@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab2CGNOG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 08:14:06 -0500
-Received: from mga01.intel.com ([192.55.52.88]:35757 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609Ab2CGNOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 08:14:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="134929907"
-Message-ID: <4F575F09.3010107@intel.com>
-Date: Wed, 07 Mar 2012 21:13:45 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: gcc@gcc.gnu.org, Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de,
-        "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, andi.kleen@intel.com, gcc-help@gcc.gnu.org
-Subject: Re: [RFC patch] spindep: add cross cache lines checking
-References: <1330917630.18835.44.camel@debian> <201203060932.45223.arnd@arndb.de> <1331108607.18835.343.camel@debian> <201203071154.36059.arnd@arndb.de>
-In-Reply-To: <201203071154.36059.arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757767Ab2CGNSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 08:18:47 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10943 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920Ab2CGNSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 08:18:46 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 07 Mar 2012 05:18:45 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
+        jedu@slimlogic.co.uk, lrg@ti.com
+Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        ldewangan@nvidia.com
+Subject: [PATCH V1 1/2] mfd: tps65910: Use correct variable name for regmap config
+Date: Wed,  7 Mar 2012 18:46:05 +0530
+Message-Id: <1331126166-3908-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This was the copy-paste issue in reg cache support code where
+variable name for regmap config was not really starting from
+the device name, it was starting from some other device name.
+Fixing this so that variable name contains actual device name.
 
-> I think the check should be (__alignof__(lock) < __alignof__(rwlock_t)),
-> otherwise it will still pass when you have structure with attribute((packed,aligned(2)))
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+This is just variable name change.
 
+ drivers/mfd/tps65910.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-reasonable!
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index 1c4f53e..bf2b25e 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -81,7 +81,7 @@ static bool is_volatile_reg(struct device *dev, unsigned int reg)
+ 	return true;
+ }
+ 
+-static const struct regmap_config rc5t583_regmap_config = {
++static const struct regmap_config tps65910_regmap_config = {
+ 	.reg_bits = 8,
+ 	.val_bits = 8,
+ 	.volatile_reg = is_volatile_reg,
+@@ -120,7 +120,7 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
+ 	tps65910->write = tps65910_i2c_write;
+ 	mutex_init(&tps65910->io_mutex);
+ 
+-	tps65910->regmap = regmap_init_i2c(i2c, &rc5t583_regmap_config);
++	tps65910->regmap = regmap_init_i2c(i2c, &tps65910_regmap_config);
+ 	if (IS_ERR(tps65910->regmap)) {
+ 		ret = PTR_ERR(tps65910->regmap);
+ 		dev_err(&i2c->dev, "regmap initialization failed: %d\n", ret);
+-- 
+1.7.1.1
 
-> 
->> 1, it is alignof bug for default gcc on my fc15 and Ubuntu 11.10 etc?
->>
->> struct sub {
->>         int  raw_lock;
->>         char a;
->> };
->> struct foo {
->>         struct sub z;
->>         int slk;
->>         char y;
->> }__attribute__((packed));
->>
->> struct foo f1;
->>
->> __alignof__(f1.z.raw_lock) is 4, but its address actually can align on
->> one byte. 
-> 
-> That looks like correct behavior, because the alignment of raw_lock inside of
-> struct sub is still 4. But it does mean that there can be cases where the
-> compile-time check is not sufficient, so we might want the run-time check
-> as well, at least under some config option.
-
-
-what's your opinion of this, Ingo?
