@@ -1,108 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab2CGKqo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 05:46:44 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:46367 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241Ab2CGKqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 05:46:43 -0500
-From: Andrew Vagin <avagin@openvz.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Cc: avagin@openvz.org, linux-hotplug@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] uevent: send events in correct order according to seqnum (v3)
-Date: Wed,  7 Mar 2012 14:49:56 +0400
-Message-Id: <1331117396-11600-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1754587Ab2CGKsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 05:48:30 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46726 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab2CGKs3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 05:48:29 -0500
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Barry Song" <Barry.Song@csr.com>, "Cong Wang" <xiyou.wangcong@gmail.com>
+Cc: m.szyprowski@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
+        "Barry Song" <Baohua.Song@csr.com>
+Subject: Re: [PATCH v3] MM: CMA: add a simple kernel module as the helper to
+ test CMA
+References: <1331090098-25097-1-git-send-email-Barry.Song@csr.com>
+ <4F56E0AC.8070501@gmail.com>
+Date: Wed, 07 Mar 2012 11:48:24 +0100
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.wasqyyok3l0zgt@mpn-glaptop>
+In-Reply-To: <4F56E0AC.8070501@gmail.com>
+User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The queue handling in the udev daemon assumes that the events are
-ordered.
+> On 03/07/2012 11:14 AM, Barry Song wrote:
+>> Any write request to /dev/cma_test will let the module to allocate memory from
+>> CMA, for example:
+>>
+>> 1st time
+>> $ echo 1024>  /dev/cma_test
+>> will require cma_test to request 1MB(1024KB)
+>> 2nd time
+>> $ echo 2048>  /dev/cma_test
+>> will require cma_test to request 2MB(2048KB)
+>>
+>> Any read request to /dev/cma_test will let the module to free the 1st valid
+>> memory from CMA, for example:
+>>
+>> 1st time
+>> $ cat /dev/cma_test
+>> will require cma_test to free the 1MB allocated in the first write request
+>> 2nd time
+>> $ cat /dev/cma_test
+>> will require cma_test to free the 2MB allocated in the second write request
 
-Before this patch uevent_seqnum is incremented under sequence_lock,
-than an event is send uner uevent_sock_mutex. I want to say that code
-contained a window between incrementing seqnum and sending an event.
+On Wed, 07 Mar 2012 05:14:36 +0100, Cong Wang <xiyou.wangcong@gmail.com> wrote:
+> Any reason why using /dev not /proc or /sys?
 
-This patch locks uevent_sock_mutex before incrementing uevent_seqnum.
+Because /proc is for processes and /sys is for stable, documented APIs.
 
-v2: delete sequence_lock, uevent_seqnum is protected by uevent_sock_mutex
-v3: unlock the mutex before the goto exit
+If anything, debugfs might make some sense, but since the module needs struct
+device anyway, it can just register a misc device, which is simpler and does
+not require debugfs to be compiled.
 
-Thanks for Kay for the comments.
-
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- lib/kobject_uevent.c |   19 +++++++++----------
- 1 files changed, 9 insertions(+), 10 deletions(-)
-
-diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
-index e66e9b6..75cbdb5 100644
---- a/lib/kobject_uevent.c
-+++ b/lib/kobject_uevent.c
-@@ -29,16 +29,17 @@
- 
- u64 uevent_seqnum;
- char uevent_helper[UEVENT_HELPER_PATH_LEN] = CONFIG_UEVENT_HELPER_PATH;
--static DEFINE_SPINLOCK(sequence_lock);
- #ifdef CONFIG_NET
- struct uevent_sock {
- 	struct list_head list;
- 	struct sock *sk;
- };
- static LIST_HEAD(uevent_sock_list);
--static DEFINE_MUTEX(uevent_sock_mutex);
- #endif
- 
-+/* This lock protects uevent_seqnum and uevent_sock_list */
-+static DEFINE_MUTEX(uevent_sock_mutex);
-+
- /* the strings here must match the enum in include/linux/kobject.h */
- static const char *kobject_actions[] = {
- 	[KOBJ_ADD] =		"add",
-@@ -136,7 +137,6 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
- 	struct kobject *top_kobj;
- 	struct kset *kset;
- 	const struct kset_uevent_ops *uevent_ops;
--	u64 seq;
- 	int i = 0;
- 	int retval = 0;
- #ifdef CONFIG_NET
-@@ -243,17 +243,16 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
- 	else if (action == KOBJ_REMOVE)
- 		kobj->state_remove_uevent_sent = 1;
- 
-+	mutex_lock(&uevent_sock_mutex);
- 	/* we will send an event, so request a new sequence number */
--	spin_lock(&sequence_lock);
--	seq = ++uevent_seqnum;
--	spin_unlock(&sequence_lock);
--	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)seq);
--	if (retval)
-+	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)++uevent_seqnum);
-+	if (retval) {
-+		mutex_unlock(&uevent_sock_mutex);
- 		goto exit;
-+	}
- 
- #if defined(CONFIG_NET)
- 	/* send netlink message */
--	mutex_lock(&uevent_sock_mutex);
- 	list_for_each_entry(ue_sk, &uevent_sock_list, list) {
- 		struct sock *uevent_sock = ue_sk->sk;
- 		struct sk_buff *skb;
-@@ -290,8 +289,8 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
- 		} else
- 			retval = -ENOMEM;
- 	}
--	mutex_unlock(&uevent_sock_mutex);
- #endif
-+	mutex_unlock(&uevent_sock_mutex);
- 
- 	/* call uevent_helper, usually only enabled during early boot */
- 	if (uevent_helper[0] && !kobj_usermode_filter(kobj)) {
 -- 
-1.7.1
-
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
