@@ -1,79 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759696Ab2CGSxg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 13:53:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3660 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757586Ab2CGSxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 13:53:35 -0500
-Date: Wed, 7 Mar 2012 19:46:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Dmitry ADAMUSHKA (EXT)" <dmitry.adamushka_ext@softathome.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Ralf Baechle <ralf@linux-mips.org>,
-        wouter.cloetens@softathome.com,
-        dmitry adamushko <dmitry.adamushko@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: 'khelper' (child) is stuck in endless loop: do_signal() and
-	!user_mode(regs)
-Message-ID: <20120307184615.GA29005@redhat.com>
-References: <1144797072.59663.1331142646789.JavaMail.root@storentr1.softathome.com> <1830531676.59669.1331142673402.JavaMail.root@storentr1.softathome.com>
+	id S1758998Ab2CGS4h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 13:56:37 -0500
+Received: from casper.infradead.org ([85.118.1.10]:37625 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755568Ab2CGS4g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 13:56:36 -0500
+Message-ID: <4F57AF4A.6080703@kernel.dk>
+Date: Wed, 07 Mar 2012 19:56:10 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1830531676.59669.1331142673402.JavaMail.root@storentr1.softathome.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Josh Hunt <joshhunt00@gmail.com>, linux-kernel@vger.kernel.org,
+        tj@kernel.org
+Subject: Re: multi-second application stall in open()
+References: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com> <CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com> <20120307162851.GC13430@redhat.com>
+In-Reply-To: <20120307162851.GC13430@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On 03/07/2012 05:28 PM, Vivek Goyal wrote:
+> On Wed, Mar 07, 2012 at 07:43:42AM -0600, Josh Hunt wrote:
+>> On Tue, Mar 6, 2012 at 3:56 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
+>>> I am trying to diagnose a stall in an application when making a call
+>>> to open() with O_TRUNC. The issue was originally seen on 2.6.38 and
+>>> I've since reproduced on 2.6.35. I believe the last kernel that I did
+>>> not see the stall was 2.6.32. The system is under low to moderate cpu
+>>> and memory load when the issue occurs. The filesystem is ext2, but I
+>>> mounted it as ext4 and still saw the issue.
+>>>
+>>> To me it appears the O_TRUNC needs to truncate pages in the page
+>>> cache, but maybe those are already out for writeback? This causes the
+>>> open() to wait until that operation completes at which time it is then
+>>> able to proceed. If that's true then it looks like the writeback is
+>>> sitting on the queue forever waiting (tens of seconds) to be
+>>> dispatched to the device.
+>>>
+>>> Here's some more info/data I collected:
+>>> (Unfortunately the data here and attached are from separate runs so
+>>> the #s will not match up file to file.)
+>>>
+>>> Snippet of an strace when it is hanging:
+>>> 1329323286.589182 close(37)             = 0 <0.000010>
+>>> 1329323286.589212 clock_gettime(0x5 /* CLOCK_??? */, {1329323286,
+>>> 587579583}) = 0 <0.000007>
+>>> 1329323286.589241 open("/usr/local/etc/abcd/known/test808",
+>>> O_WRONLY|O_CREAT|O_TRUNC, 0644)                = 37 <76.841586>
+>>> 1329323363.441841 fchmod(37, 0644)      = 0 <0.000012>
+>>> 1329323363.441882 fcntl64(37, F_GETFL)  = 0x1 (flags O_WRONLY) <0.000011>
+>>> 1329323363.441915 fcntl64(37, F_SETFL, O_WRONLY|O_NONBLOCK) = 0 <0.000010>
+>>>
+>>> To debug this more I enabled the hang check timer to dump stack when
+>>> anything hung for longer than 10s. There I see the the hanging
+>>> application appearing to be stuck in sync_page(). See attached dmesg
+>>> for traces.
+>>>
+>>> I've also captured "iostat -xm 1" while the application was running
+>>> and have attached a snippet of that when the problem is occurring. I
+>>> see 100% utilization for many seconds and then eventually the
+>>> operations complete, but the await time is extremely high. To me there
+>>> doesn't look like much IO going on which could be starving out any
+>>> requests.
+>>>
+>>> I have not been able to perform a full bisection to better understand
+>>> what may be causing this, but do see this on 2.6.38, a little less
+>>> frequently but still occurs on 2.6.35, and no longer see the issue on
+>>> 2.6.32. If I switch slice_idle to 0 or change to the deadline
+>>> scheduler the issue appears to go away in both 2.6.35 and 38.
+> 
+> Is it happening on latest kernel (3.3-rc6) ?
+> 
+> Can you change the IO scheduler to deadline on sda and see if the issue
+> still happens. (echo deadline > /sys/block/sda/queue/scheduler).
+> 
+> blktrace of cfq look odd. I see that some IO (async writes) are being
+> submitted but CFQ did not dispatch it for a long time.  Even some unplugs
+> came in still nothing happened. Also no completions are happening during
+> that window. Not sure why CFQ refuses to dispatch queued writes.
+> 
+> Request added by flusher.
+> 
+>   8,0    1    36926  5028.546000122  2846  A   W 20147012 + 8 <- (8,3)
+> 3375152
+>   8,0    1    36927  5028.546001798  2846  Q   W 20147012 + 8 [flush-8:0]
+>   8,0    1    36928  5028.546009900  2846  G   W 20147012 + 8 [flush-8:0]
+>   8,0    1    36929  5028.546014649  2846  I   W 20147012 + 8 (    4749)
+> [flush-8:0]
+> 
+> And this request is dispatched after 22 seconds.
+> 
+>   8,0    1    37056  5050.117337221   162  D   W 20147012 + 16 (21571322572) [sync_supers]
+> 
+> 
+> And it completes fairly fast.
+> 
+>  8,0    0    36522  5050.117686149  9657  C   W 20147012 + 16 (  348928)
+> [0]
+> 
+> So not sure why CFQ will hold that request for so long when other IO is
+> not happening.
+> 
+> Please try latest kernels and see if deadline has the same issue. If not,
+> then we know somehow CFQ is related. If it still happens on latest
+> kernels, can you try capturing blktrace again when you are experiencing
+> the delays.
 
-I can't read this email carefully now, will do tomorrow.
+I'm seeing something very similar here. While testing the gtk fio
+client, I ran a job that issued a lot of random reads to my primary
+disk. 64 ios in flight, direct, libaio, 512b random reads. Firefox
+essentially froze, windows starting freezing up around me.
 
-But,
+I'll try and reproduce, but a quick guess would be that things starting
+piling up in fsync() or stalling on writes in general, since we are
+heavily starving those.
 
-On 03/07, Dmitry ADAMUSHKA (EXT) wrote:
->
-> Now, the assumptions (the question is whether these are true for the recent kernels):
->
-> 1) TIF_SIGPENDING can be set for 'khelper' while it's running in ____call_usermodehelper()
->    between (a) flush_signal_handlers() and (b) kernel_execve() => so TIF_SIGPENDING is set;
-
-Yes, but it is not khelper. It is another kernel thread. Yes, its
-->comm[] was copied from parent, so ps/etc can show it as khelper.
-
-> 2) kernel_execve() can fail in ____call_usermodehelper().
->
-> The later one is less of an assumption; let's say, it fails due to a shortage of memory (or whatever).
->
-> If (1) is true, then
->
-> the pre-conditions:
->
-> - a kernel space task;
->
-> 'khelper' running ____call_usermodehelper() in our case.
->
-> - TIF_SIGPENDING is set.
->
-> A signal has been delivered, say, as a result of kill(-1, SIGKILL).
->
-> The endless loop is as follows:
->
-> * syscall_exit_work:
->  - work_pending:            // start_of_the_loop
-
-We shouldn't be here. This is the kernel thread.
-
-And if start_thread() was already called, then
-
->  - work_notify_sig:
->    - do_notify_resume()
->      - do_signal()          ==> if (!user_mode(regs)) return; so signals are not handled
-
-user_mode() is no longer true.
-
-Once again, I can be wrong, I'll read this email tomorrow.
-
-Oleg.
+-- 
+Jens Axboe
 
