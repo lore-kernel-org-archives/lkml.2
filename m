@@ -1,55 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759348Ab2CGDmo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 22:42:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45039 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759007Ab2CGDmE (ORCPT
+	id S1759377Ab2CGDmq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 22:42:46 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45293 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759023Ab2CGDm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 22:42:04 -0500
-From: santosh nayak <santoshprasadnayak@gmail.com>
-To: mchehab@infradead.org
-Cc: dheitmueller@kernellabs.com, hans.verkuil@cisco.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Santosh Nayak <santoshprasadnayak@gmail.com>
-Subject: [PATCH] [media] dvb: negative value assigned to unsigned int in CDRXD().
-Date: Wed,  7 Mar 2012 09:11:03 +0530
-Message-Id: <1331091663-4790-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Tue, 6 Mar 2012 22:42:29 -0500
+From: Robert Lee <rob.lee@linaro.org>
+To: rjw@sisk.pl, len.brown@intel.com
+Cc: khilman@ti.com, robherring2@gmail.com, Baohua.Song@csr.com,
+        amit.kucheria@linaro.org, nicolas.ferre@atmel.com, linux@maxim.org.za,
+        kgene.kim@samsung.com, amit.kachhap@linaro.org, magnus.damm@gmail.com,
+        nsekhar@ti.com, daniel.lezcano@linaro.org, mturquette@linaro.org,
+        vincent.guittot@linaro.org, arnd.bergmann@linaro.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        deepthi@linux.vnet.ibm.com, broonie@opensource.wolfsonmicro.com,
+        nicolas.pitre@linaro.org, linux@arm.linux.org.uk,
+        jean.pihet@newoldbits.com, venki@google.com, ccross@google.com,
+        g.trinabh@gmail.com, kernel@wantstofly.org, lethal@linux-sh.org,
+        jon-hunter@ti.com, tony@atomide.com, linux-omap@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [RFC PATCH] cpuidle: avoid unnecessary expensive governor processing
+Date: Tue,  6 Mar 2012 21:42:18 -0600
+Message-Id: <1331091738-26322-1-git-send-email-rob.lee@linaro.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Nayak <santoshprasadnayak@gmail.com>
+There a few cases when a platform's cpuidle_device will only have one
+cpuidle state.  e.g., when a single idle state system uses cpuidle
+to provide sysfs staticstics for profiling (powertop, etc).  This can
+also be the case for coupled smp system implementations that keep
+all but one cpuidle_device at a state_count of 1, but they still want
+to export idle statistics for these states using cpuidle.
 
-In CDRXD(), Negative number is assigned to unsigned variable
-'state->noise_cal.tdCal2.
-
-Members of 'SNoiseCal' should be 'signed short'.
-
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+Signed-off-by: Robert Lee <rob.lee@linaro.org>
 ---
- drivers/media/dvb/frontends/drxd_hard.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/cpuidle/governors/ladder.c |    7 +++++--
+ drivers/cpuidle/governors/menu.c   |    7 +++++--
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/dvb/frontends/drxd_hard.c b/drivers/media/dvb/frontends/drxd_hard.c
-index 7bf39cd..f380eb4 100644
---- a/drivers/media/dvb/frontends/drxd_hard.c
-+++ b/drivers/media/dvb/frontends/drxd_hard.c
-@@ -101,9 +101,9 @@ struct SCfgAgc {
+diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
+index b6a09ea..13abdba 100644
+--- a/drivers/cpuidle/governors/ladder.c
++++ b/drivers/cpuidle/governors/ladder.c
+@@ -71,8 +71,11 @@ static int ladder_select_state(struct cpuidle_driver *drv,
+ 	int last_residency, last_idx = ldev->last_state_idx;
+ 	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
  
- struct SNoiseCal {
- 	int cpOpt;
--	u16 cpNexpOfs;
--	u16 tdCal2k;
--	u16 tdCal8k;
-+	short cpNexpOfs;
-+	short tdCal2k;
-+	short tdCal8k;
- };
+-	/* Special case when user has set very strict latency requirement */
+-	if (unlikely(latency_req == 0)) {
++	/*
++	 * Special case when user has set very strict latency requirement or
++	 * there is currently only one state for this device.
++	 */
++	if ((latency_req == 0) || (dev->state_count == 1)) {
+ 		ladder_do_selection(ldev, last_idx, 0);
+ 		return 0;
+ 	}
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index ad09526..80eb606 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -249,8 +249,11 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	data->last_state_idx = 0;
+ 	data->exit_us = 0;
  
- enum app_env {
+-	/* Special case when user has set very strict latency requirement */
+-	if (unlikely(latency_req == 0))
++	/*
++	 * Special case when user has set very strict latency requirement or
++	 * there is currently only one state for this device.
++	 */
++	if ((latency_req == 0) || (dev->state_count == 1))
+ 		return 0;
+ 
+ 	/* determine the expected residency time, round up */
 -- 
-1.7.4.4
+1.7.1
 
