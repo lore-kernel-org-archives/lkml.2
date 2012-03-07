@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965123Ab2CGVYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 16:24:06 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47153 "EHLO
+	id S964879Ab2CGVXf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 16:23:35 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43421 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030242Ab2CGVXi (ORCPT
+	with ESMTP id S932142Ab2CGVX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 16:23:38 -0500
+	Wed, 7 Mar 2012 16:23:28 -0500
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, Trond.Myklebust@netapp.com, sfrench@samba.org,
         sage@newdream.net, ericvh@gmail.com, mszeredi@suse.cz
-Subject: [PATCH 24/25] vfs: optionally skip lookup on exclusive create
-Date: Wed,  7 Mar 2012 22:22:41 +0100
-Message-Id: <1331155362-11132-25-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 18/25] vfs: only retry last component if opening stale dentry
+Date: Wed,  7 Mar 2012 22:22:35 +0100
+Message-Id: <1331155362-11132-19-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
 References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
@@ -24,161 +24,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-NFS optimizes away the last component lookup for exclusive creation (create,
-mkdir, mknod, link, symlink).  It does this by checking for LOOKUP_EXCL in
-nd->flags and skipping the actual lookup in that case, leaving a negative
-unhashed dentry for the create function to fill.
+NFS optimizes away d_revalidates for last component of open.  This means that
+open itself can find the dentry stale.  It returns ESTALE resulting in the
+complete path being looked up again with LOOKUP_REVAL.
 
-Move this logic into the VFS which can be enabled by a filesystem flag.
+This is unnecessary, however, since it would be enough to retry the last
+component only.  Introduce EOPENSTALE (a kernel private errno) and allow NFS to
+retry opening only the last component.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c         |   12 +++++++++++-
- fs/nfs/dir.c       |   22 ++++++++++++----------
- fs/nfs/super.c     |    9 ++++++---
- include/linux/fs.h |    1 +
- 4 files changed, 30 insertions(+), 14 deletions(-)
+ fs/namei.c            |   34 ++++++++++++++++++++++++++++++----
+ fs/nfs/file.c         |    2 +-
+ fs/open.c             |   16 +++++++++-------
+ include/linux/errno.h |    1 +
+ 4 files changed, 41 insertions(+), 12 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 5c95ce5..3e3652c 100644
+index ff21a67..b991aa0 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2709,6 +2709,7 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
- 
- struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path, int is_dir)
- {
-+	bool need_lookup;
- 	struct dentry *dentry = ERR_PTR(-EEXIST);
- 	struct nameidata nd;
- 	int error = do_path_lookup(dfd, pathname, LOOKUP_PARENT, &nd);
-@@ -2728,10 +2729,19 @@ struct dentry *kern_path_create(int dfd, const char *pathname, struct path *path
- 	 * Do the final lookup.
+@@ -2194,8 +2194,8 @@ static struct file *atomic_open(struct nameidata *nd, struct dentry *dentry,
+ 	 * Another problem is returing the "right" error value (e.g. for an
+ 	 * O_EXCL open we want to return EEXIST not EROFS).
  	 */
- 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
--	dentry = lookup_hash(&nd);
-+	dentry = lookup_dcache(&nd.last, nd.path.dentry, &nd, &need_lookup);
- 	if (IS_ERR(dentry))
- 		goto fail;
+-	if ((open_flag & (O_CREAT | O_TRUNC)) ||
+-	    (open_flag & O_ACCMODE) != O_RDONLY) {
++	if (!*want_write && ((open_flag & (O_CREAT | O_TRUNC)) ||
++			     (open_flag & O_ACCMODE) != O_RDONLY)) {
+ 		error = mnt_want_write(nd->path.mnt);
+ 		if (!error) {
+ 			*want_write = 1;
+@@ -2370,6 +2370,8 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	int acc_mode = op->acc_mode;
+ 	struct inode *inode;
+ 	int symlink_ok = 0;
++	struct path save_parent = { .dentry = NULL, .mnt = NULL };
++	bool retried = false;
+ 	int error;
  
-+	if (need_lookup) {
-+		struct inode *dir = nd.path.dentry->d_inode;
-+		if (!(dir->i_sb->s_type->fs_flags & FS_SKIP_LOOKUP_EXCL)) {
-+			dentry = lookup_real(dir, dentry, &nd);
-+			if (IS_ERR(dentry))
-+				goto fail;
-+		}
+ 	nd->flags &= ~LOOKUP_PARENT;
+@@ -2433,6 +2435,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 			goto exit;
+ 	}
+ 
++retry_lookup:
+ 	mutex_lock(&dir->d_inode->i_mutex);
+ 
+ 	filp = lookup_open(nd, path, od, op, &want_write);
+@@ -2532,12 +2535,21 @@ finish_lookup:
+ 		return NULL;
+ 	}
+ 
+-	path_to_nameidata(path, nd);
++	if ((nd->flags & LOOKUP_RCU) || nd->path.mnt != path->mnt) {
++		path_to_nameidata(path, nd);
++	} else {
++		save_parent.dentry = nd->path.dentry;
++		save_parent.mnt = mntget(path->mnt);
++		nd->path.dentry = path->dentry;
++
 +	}
-+
- 	if (dentry->d_inode)
- 		goto eexist;
- 	/*
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 887226d..2b91cf3 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1286,16 +1286,6 @@ static struct dentry *nfs_lookup(struct inode *dir, struct dentry * dentry, stru
- 	if (dentry->d_name.len > NFS_SERVER(dir)->namelen)
+ 	nd->inode = inode;
+ 
+ 	error = complete_walk(nd);
+-	if (error)
++	if (error) {
++		path_put(&save_parent);
+ 		return ERR_PTR(error);
++	}
+ 	error = -EISDIR;
+ 	if ((open_flag & O_CREAT) && S_ISDIR(inode->i_mode))
+ 		goto exit;
+@@ -2562,6 +2574,19 @@ common:
+ 		goto exit;
+ 	od->mnt = nd->path.mnt;
+ 	filp = finish_open(od, nd->path.dentry, NULL);
++	if (IS_ERR(filp) && PTR_ERR(filp) == -EOPENSTALE) {
++		error = -ESTALE;
++		if (!save_parent.dentry || retried)
++			goto exit;
++		BUG_ON(save_parent.dentry != dir);
++		path_put(&nd->path);
++		nd->path = save_parent;
++		nd->inode = dir->d_inode;
++		save_parent.mnt = NULL;
++		save_parent.dentry = NULL;
++		retried = true;
++		goto retry_lookup;
++	}
+ 	if (IS_ERR(filp))
  		goto out;
+ 	error = open_check_o_direct(filp);
+@@ -2580,6 +2605,7 @@ opened:
+ out:
+ 	if (want_write)
+ 		mnt_drop_write(nd->path.mnt);
++	path_put(&save_parent);
+ 	path_put(&nd->path);
+ 	return filp;
  
--	/*
--	 * If we're doing an exclusive create, optimize away the lookup
--	 * but don't hash the dentry.
--	 */
--	if (nfs_is_exclusive_create(dir, nd)) {
--		d_instantiate(dentry, NULL);
--		res = NULL;
--		goto out;
--	}
--
- 	res = ERR_PTR(-ENOMEM);
- 	fhandle = nfs_alloc_fhandle();
- 	fattr = nfs_alloc_fattr();
-@@ -1612,6 +1602,9 @@ nfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t rdev)
- 	dfprintk(VFS, "NFS: mknod(%s/%ld), %s\n",
- 			dir->i_sb->s_id, dir->i_ino, dentry->d_name.name);
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index 4e626ec..bb1f5cb 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -935,7 +935,7 @@ out:
  
-+	if (dentry->d_name.len > NFS_SERVER(dir)->namelen)
-+		return -ENAMETOOLONG;
-+
- 	if (!new_valid_dev(rdev))
- 		return -EINVAL;
- 
-@@ -1638,6 +1631,9 @@ static int nfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
- 	dfprintk(VFS, "NFS: mkdir(%s/%ld), %s\n",
- 			dir->i_sb->s_id, dir->i_ino, dentry->d_name.name);
- 
-+	if (dentry->d_name.len > NFS_SERVER(dir)->namelen)
-+		return -ENAMETOOLONG;
-+
- 	attr.ia_valid = ATTR_MODE;
- 	attr.ia_mode = mode | S_IFDIR;
- 
-@@ -1771,6 +1767,9 @@ static int nfs_symlink(struct inode *dir, struct dentry *dentry, const char *sym
- 	dfprintk(VFS, "NFS: symlink(%s/%ld, %s, %s)\n", dir->i_sb->s_id,
- 		dir->i_ino, dentry->d_name.name, symname);
- 
-+	if (dentry->d_name.len > NFS_SERVER(dir)->namelen)
-+		return -ENAMETOOLONG;
-+
- 	if (pathlen > PAGE_SIZE)
- 		return -ENAMETOOLONG;
- 
-@@ -1824,6 +1823,9 @@ nfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *dentry)
- 		old_dentry->d_parent->d_name.name, old_dentry->d_name.name,
- 		dentry->d_parent->d_name.name, dentry->d_name.name);
- 
-+	if (dentry->d_name.len > NFS_SERVER(dir)->namelen)
-+		return -ENAMETOOLONG;
-+
- 	nfs_inode_return_delegation(inode);
- 
+ out_drop:
  	d_drop(dentry);
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index 3dfa4f1..41ec94b 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -279,7 +279,8 @@ static struct file_system_type nfs_fs_type = {
- 	.name		= "nfs",
- 	.mount		= nfs_fs_mount,
- 	.kill_sb	= nfs_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE | FS_REVAL_DOT |
-+			  FS_BINARY_MOUNTDATA | FS_SKIP_LOOKUP_EXCL,
- };
+-	err = -ESTALE;
++	err = -EOPENSTALE;
+ 	goto out_put_ctx;
+ }
  
- struct file_system_type nfs_xdev_fs_type = {
-@@ -287,7 +288,8 @@ struct file_system_type nfs_xdev_fs_type = {
- 	.name		= "nfs",
- 	.mount		= nfs_xdev_mount,
- 	.kill_sb	= nfs_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE | FS_REVAL_DOT |
-+			  FS_BINARY_MOUNTDATA | FS_SKIP_LOOKUP_EXCL,
- };
+diff --git a/fs/open.c b/fs/open.c
+index b51afcc..d324139 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -737,7 +737,6 @@ cleanup_all:
+ 	f->f_path.dentry = NULL;
+ 	f->f_path.mnt = NULL;
+ cleanup_file:
+-	put_filp(f);
+ 	dput(dentry);
+ 	mntput(mnt);
+ 	return ERR_PTR(error);
+@@ -758,15 +757,16 @@ cleanup_file:
+ struct file *finish_open(struct opendata *od, struct dentry *dentry,
+ 			 int (*open)(struct inode *, struct file *))
+ {
+-	struct file *filp;
+-
+-	filp = od->filp;
+-	od->filp = NULL;
++	struct file *res;
  
- static const struct super_operations nfs_sops = {
-@@ -327,7 +329,8 @@ static struct file_system_type nfs4_fs_type = {
- 	.name		= "nfs4",
- 	.mount		= nfs4_mount,
- 	.kill_sb	= nfs4_kill_super,
--	.fs_flags	= FS_RENAME_DOES_D_MOVE|FS_REVAL_DOT|FS_BINARY_MOUNTDATA,
-+	.fs_flags	= FS_RENAME_DOES_D_MOVE | FS_REVAL_DOT |
-+			  FS_BINARY_MOUNTDATA | FS_SKIP_LOOKUP_EXCL,
- };
+ 	mntget(od->mnt);
+ 	dget(dentry);
  
- static struct file_system_type nfs4_remote_fs_type = {
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index ea9282d..4a5e0d3 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -183,6 +183,7 @@ struct inodes_stat_t {
- 					 */
- #define FS_NO_LOOKUP_OPEN	0x10000	/* fs can't do atomic lookup+open */
- #define FS_NO_LOOKUP_CREATE	0x20000 /* fs can't do lookup+create+open */
-+#define FS_SKIP_LOOKUP_EXCL	0x40000 /* skip lookup for exclusive create */
+-	return do_dentry_open(dentry, od->mnt, filp, open, current_cred());
++	res = do_dentry_open(dentry, od->mnt, od->filp, open, current_cred());
++	if (!IS_ERR(res))
++		od->filp = NULL;
++
++	return res;
+ }
+ EXPORT_SYMBOL(finish_open);
  
- /*
-  * These are the fs-independent mount-flags: up to 32 flags are supported
+@@ -795,7 +795,9 @@ struct file *dentry_open(struct dentry *dentry, struct vfsmount *mnt, int flags,
+ 
+ 	f->f_flags = flags;
+ 	res = do_dentry_open(dentry, mnt, f, NULL, cred);
+-	if (!IS_ERR(res)) {
++	if (IS_ERR(res)) {
++		put_filp(f);
++	} else {
+ 		int error = open_check_o_direct(f);
+ 		if (error) {
+ 			fput(res);
+diff --git a/include/linux/errno.h b/include/linux/errno.h
+index 4668583..b1c33a0 100644
+--- a/include/linux/errno.h
++++ b/include/linux/errno.h
+@@ -16,6 +16,7 @@
+ #define ERESTARTNOHAND	514	/* restart if no handler.. */
+ #define ENOIOCTLCMD	515	/* No ioctl command */
+ #define ERESTART_RESTARTBLOCK 516 /* restart by calling sys_restart_syscall */
++#define EOPENSTALE	517	/* open found a stale dentry */
+ 
+ /* Defined for the NFSv3 protocol */
+ #define EBADHANDLE	521	/* Illegal NFS file handle */
 -- 
 1.7.7
 
