@@ -1,120 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758896Ab2CGRFx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 12:05:53 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:34214 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758175Ab2CGRFu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 12:05:50 -0500
-Date: Wed, 7 Mar 2012 09:05:44 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, axboe@kernel.dk,
-        hughd@google.com, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dpshah@google.com, ctalbott@google.com, rni@google.com
-Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
- and remove stats_lock
-Message-ID: <20120307170544.GA30676@google.com>
-References: <20120227031146.GA25187@redhat.com>
- <20120227091141.GG3401@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120227194321.GF27677@redhat.com>
- <20120229173639.GB5930@redhat.com>
- <20120305221321.GF1263@google.com>
- <20120306210954.GF32148@redhat.com>
- <20120306132034.ecaf8b20.akpm@linux-foundation.org>
- <20120306213437.GG32148@redhat.com>
- <20120306135531.828ca78e.akpm@linux-foundation.org>
- <20120307145556.GA11262@redhat.com>
+	id S932251Ab2CGRKo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 12:10:44 -0500
+Received: from bay0-omc1-s22.bay0.hotmail.com ([65.54.190.33]:25651 "EHLO
+	bay0-omc1-s22.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757217Ab2CGRKn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 12:10:43 -0500
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Mar 2012 12:10:43 EST
+Message-ID: <BAY167-W124DBC204D9E95FC00BAA44BD560@phx.gbl>
+X-Originating-IP: [66.87.0.153]
+From: Xiachen Dong <xiachendong@hotmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: 2.6.36 and higher version kernel slower than 2.6.25.1 kernel?
+Date: Wed, 7 Mar 2012 12:04:33 -0500
+Importance: Normal
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120307145556.GA11262@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 07 Mar 2012 17:04:33.0244 (UTC) FILETIME=[5E27A1C0:01CCFC84]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 07, 2012 at 09:55:56AM -0500, Vivek Goyal wrote:
-> +/*
-> + * Worker for allocating per cpu stat for blk groups. This is scheduled
-> + * once there are some groups on the alloc_list waiting for allocation
-> + */
-> +static void blkio_stat_alloc_fn(struct work_struct *work)
-> +{
-> +
-> +	struct blkio_group *blkg, *n;
-> +	int i;
-> +
-> +alloc_stats:
-> +	spin_lock_irq(&alloc_list_lock);
-> +		if (list_empty(&alloc_list)) {
-> +			/* No more groups needing per cpu stat allocation */
-> +			spin_unlock_irq(&alloc_list_lock);
-> +			return;
-> +		}
-> +	spin_unlock_irq(&alloc_list_lock);
 
-I don't think we really need the above.  Just proceed with allocation.
+Hi,
 
-> +	for (i = 0; i < BLKIO_NR_POLICIES; i++) {
-> +		if (pcpu_stats[i] != NULL)
-> +			continue;
-> +
-> +		pcpu_stats[i] = alloc_percpu(struct blkio_group_stats_cpu);
-> +		/* Allocatoin failed. Try again after some time. */
-		          ^^ typo
-> +		if (pcpu_stats[i] == NULL) {
-> +			msleep(10);
-> +			goto alloc_stats;
-> +		}
-> +	}
+Recently we upgrade the OS for our AT91RM9200 platform from 2.6.25.1 to 2.6.36. We run the SQLITE3 database insertion tests for the new kernel. The test result shows that 2.6.36 kernel is around 10% slower than the 2.6.25.1.
 
-Why not queue_delayed_work(system_nrt_wq, work, msecs_to_jiffies(10))?
-Why hog the worker thread?
+The sqlite3 database insertion test originates from http://www.phoronix-test-suite.com/?k=home. It is very simple: it creates a new database under current directory and simply keeps on inserting 2500 records into the new DB created. Then it calculates the time it takes to finish the task.
 
-> +
-> +	spin_lock_irq(&blkio_list_lock);
-> +	spin_lock(&alloc_list_lock);
-> +
-> +	list_for_each_entry_safe(blkg, n, &alloc_list, alloc_node) {
-> +		for (i = 0; i < BLKIO_NR_POLICIES; i++) {
-> +			struct blkio_policy_type *pol = blkio_policy[i];
-> +			struct blkg_policy_data *pd;
-> +
-> +			if (!pol)
-> +				continue;
-> +
-> +			if (!blkg->pd[i])
-> +				continue;
-> +
-> +			pd = blkg->pd[i];
-> +			if (pd->stats_cpu)
-> +				continue;
-> +
-> +			pd->stats_cpu = pcpu_stats[i];
-> +			pcpu_stats[i] = NULL;
+Here's how we run the test:
 
-I think this can be slightly more compact.  How about the following?
+1) Install or port sqlite3 to the platform;
+2) mke2fs /dev/ram0;
+3) mount -t ext2 /dev/ram0 /mnt/temp;
+4) cp sqliteInsertionTest.sh /mnt/temp;
+   cp sqlite-insertions.txt /mnt/temp;
+5) cd /mnt/temp;
+6) ./sqliteInsertionTest.sh;
+7) repeat the test 10 times and take the average;
 
-	struct blkg_policy_data *pd = blkg->pd[i];
+To narrow down the problem. We also ran similar tests on a Pentium IV 1.7G laptop. Here is how the test was run:
 
-	if (blkio_policy[i] && pd && !pd->stats_cpu)
-		swap(pd->stats_cpu, pcpu_stats[i]);
+a) install sqlite3 on the laptop
+b) compile the 2.6.25.1 and 2.6.36 kernel on the laptop, try to make the kernel config as similar as possible;
+c) boot into 2.6.25.1 and 2.6.36 kernel in single user mode ("single" in commandline argument);
+d) run same tests in step 2) to step 7) above
 
-> +		}
-> +		list_del_init(&blkg->alloc_node);
-> +		break;
+The P4 CPU is single core, no hyper-threading. We can still see the performance hit in the 2.6.36 kernel on the Pentium laptop.
 
-If we're breaking after the first iteration, why are we using
-list_for_each at all?
+We may attach the kernel config files if needed. We choose CFQ for the scheduler for both kernels.
 
-> +	}
 
-and we can test whether we need to loop here, right?
+Here is the content of sqliteInsertionTest.sh:
 
-Thanks.
+============ sqliteInsertionTest.sh ===========
+#!/bin/sh
 
--- 
-tejun
+TEST_PATH=`pwd`
+rm -f $TEST_PATH/benchmark.db
+
+echo "`date`, starting test ..."
+
+sqlite3 $TEST_PATH/benchmark.db  "CREATE TABLE pts1 ('I' SMALLINT NOT NULL, 'DT' TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 'F1' VARCHAR(4) NOT NULL, 'F2' VARCHAR(16) NOT NULL);"
+
+cat $TEST_PATH/sqlite-insertions.txt | sqlite3 $TEST_PATH/benchmark.db
+...
+#cat $TEST_PATH/sqlite-insertions.txt | sqlite3 $TEST_PATH/benchmark.db
+#cat $TEST_PATH/sqlite-insertions.txt | sqlite3 $TEST_PATH/behchmark.db
+
+echo "`date`, test done."
+============ end of sqliteInsertionTest.sh ===========
+
+sqlite-insertions.txt is very simple:
+
+INSERT INTO 'pts1' ('I', 'DT', 'F1', 'F2') VALUES ('1', CURRENT_TIMESTAMP, '6758', '9844343722998287');
+INSERT INTO 'pts1' ('I', 'DT', 'F1', 'F2') VALUES ('2', CURRENT_TIMESTAMP, '3733', '8925952369645997');
+...
+INSERT INTO 'pts1' ('I', 'DT', 'F1', 'F2') VALUES ('2499', CURRENT_TIMESTAMP, '5955', '1088209297553915');
+INSERT INTO 'pts1' ('I', 'DT', 'F1', 'F2') VALUES ('2500', CURRENT_TIMESTAMP, '6086', '6839549078383414');
+
+The other thing we notice is that if the test is run under tempfs, the insertion can be done faster. However, there is still performance hit in 2.6.36 kernel.
+
+We also run the same test on 3.0.23 kernel on the Pentium 4 laptop. The performance hit still exist.
+
+Our questions are:
+1. Is anyone else on the list notice such issue?
+2. Did we did something silly in running such performance tests?
+3. Are there any new features in 2.6.36 kernel that we didn't enable and those disabled features lead to our current test result?
+
+Any suggestions and comments will be greatly appreciated.
+
+Thank you.
+
+Xiachen
+
+ 		 	   		  
