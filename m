@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030889Ab2CGWov (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 17:44:51 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11458 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030205Ab2CGWou convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 17:44:50 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 07 Mar 2012 14:44:27 -0800
-From: Diwakar Tundlam <dtundlam@nvidia.com>
-To: Ingo Molnar <mingo@elte.hu>, "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Jens Axboe'" <jaxboe@fusionio.com>,
-        "'Randy Dunlap'" <randy.dunlap@oracle.com>
-CC: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Date: Wed, 7 Mar 2012 14:44:26 -0800
-Subject: [PATCH] scheduler: domain: correctly initialize 'next_balance' in
- 'nohz' idle balancer
-Thread-Topic: [PATCH] scheduler: domain: correctly initialize 'next_balance'
- in 'nohz' idle balancer
-Thread-Index: AczgU0erG2gZs14gRdCqHlqSrZe0nwcX5wag
-Message-ID: <1DD7BFEDD3147247B1355BEFEFE4665237994F30EF@HQMAIL04.nvidia.com>
-References: <1327927463-4165-1-git-send-email-pdeschrijver@nvidia.com>
-	 <1328024684.2446.234.camel@twins>
-	 <1DD7BFEDD3147247B1355BEFEFE466523791832BE9@HQMAIL04.nvidia.com>
- <1328040137.2446.242.camel@twins>
-In-Reply-To: <1328040137.2446.242.camel@twins>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S965302Ab2CGWrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 17:47:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6928 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965026Ab2CGWrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 17:47:15 -0500
+Date: Wed, 7 Mar 2012 22:46:58 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
+        Joe Thornber <thornber@redhat.com>,
+        Jonathan Brassow <jbrassow@redhat.com>, stable@kernel.org,
+        Jesper Juhl <jj@chaosbits.net>
+Subject: [git pull] device-mapper fixes for 3.3
+Message-ID: <20120307224658.GQ16767@agk-dp.fab.redhat.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+	Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
+	Joe Thornber <thornber@redhat.com>,
+	Jonathan Brassow <jbrassow@redhat.com>, stable@kernel.org,
+	Jesper Juhl <jj@chaosbits.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scheduler: domain: init next_balance in nohz_idle_balancer with jiffies
+Please pull from:
 
-The 'next_balance' field of 'nohz' idle balancer must be initialized
-to jiffies. Since jiffies is initialized to negative 300 seconds the
-'nohz' idle balancer does not run for the first 300s (5mins) after
-bootup. If no new processes are spawed or no idle cycles happen, the
-load on the cpus will remain unbalanced for that duration.
+  git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.3-fixes
 
-Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
----
- 1 files changed, 1 insertions(+), 0 deletions(-)
+to get the following device-mapper fixes for 3.3.
 
-diff -up sched/fair.c{.orig,}
---- sched/fair.c.orig	2012-03-07 08:33:03.000000000 -0800
-+++ sched/fair.c	2012-03-07 13:50:30.787265795 -0800
-@@ -5614,6 +5614,7 @@ __init void init_sched_fair_class(void)
- 	open_softirq(SCHED_SOFTIRQ, run_rebalance_domains);
- 
- #ifdef CONFIG_NO_HZ
-+	nohz.next_balance = jiffies;
- 	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
- 	cpu_notifier(sched_ilb_notifier, 0);
- #endif
+Thanks,
+Alasdair
+
+----------------------------------------------------------------
+Device-mapper fixes for 3.3.
+
+Eight small device-mapper bug fixes.
+
+----------------------------------------------------------------
+Jesper Juhl (1):
+      dm ioctl: do not leak argv if target message only contains whitespace
+
+Joe Thornber (2):
+      dm thin metadata: unlock superblock in init_pmd error path
+      dm thin metadata: decrement counter after removing mapped block
+
+Jonathan E Brassow (2):
+      dm raid: set MD_CHANGE_DEVS when rebuilding
+      dm raid: fix flush support
+
+Mike Snitzer (2):
+      dm flakey: fix crash on read when corrupt_bio_byte not set
+      dm thin metadata: remove incorrect close_device on creation error paths
+
+Milan Broz (1):
+      dm io: fix discard support
+
+ drivers/md/dm-flakey.c        |    2 +-
+ drivers/md/dm-io.c            |   23 ++++++++++++++++-------
+ drivers/md/dm-ioctl.c         |    2 +-
+ drivers/md/dm-raid.c          |   17 +++++++++++------
+ drivers/md/dm-thin-metadata.c |   25 ++++++++++++++++++++-----
+ 5 files changed, 49 insertions(+), 20 deletions(-)
+
