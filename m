@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab2CGNno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 08:43:44 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40184 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757941Ab2CGNnn convert rfc822-to-8bit (ORCPT
+	id S1758180Ab2CGNpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 08:45:55 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35506 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757326Ab2CGNpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 08:43:43 -0500
+	Wed, 7 Mar 2012 08:45:54 -0500
+Date: Wed, 7 Mar 2012 13:45:52 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        Samuel Ortiz <sameo@linux.intel.com>, patches@linaro.org,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Nancy Chen <Nancy.Chen@freescale.com>
+Subject: Re: [PATCH v9] Regulator: Add Anatop regulator driver
+Message-ID: <20120307134551.GL3107@opensource.wolfsonmicro.com>
+References: <1331126658-26926-1-git-send-email-paul.liu@linaro.org>
+ <20120307132225.GB17745@game.jcrosoft.org>
 MIME-Version: 1.0
-In-Reply-To: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com>
-References: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com>
-Date: Wed, 7 Mar 2012 07:43:42 -0600
-Message-ID: <CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
-Subject: Re: multi-second application stall in open()
-From: Josh Hunt <joshhunt00@gmail.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org, vgoyal@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EOHJn1TVIJfeVXv2"
+Content-Disposition: inline
+In-Reply-To: <20120307132225.GB17745@game.jcrosoft.org>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 3:56 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
-> I am trying to diagnose a stall in an application when making a call
-> to open() with O_TRUNC. The issue was originally seen on 2.6.38 and
-> I've since reproduced on 2.6.35. I believe the last kernel that I did
-> not see the stall was 2.6.32. The system is under low to moderate cpu
-> and memory load when the issue occurs. The filesystem is ext2, but I
-> mounted it as ext4 and still saw the issue.
->
-> To me it appears the O_TRUNC needs to truncate pages in the page
-> cache, but maybe those are already out for writeback? This causes the
-> open() to wait until that operation completes at which time it is then
-> able to proceed. If that's true then it looks like the writeback is
-> sitting on the queue forever waiting (tens of seconds) to be
-> dispatched to the device.
->
-> Here's some more info/data I collected:
-> (Unfortunately the data here and attached are from separate runs so
-> the #s will not match up file to file.)
->
-> Snippet of an strace when it is hanging:
-> 1329323286.589182 close(37)             = 0 <0.000010>
-> 1329323286.589212 clock_gettime(0x5 /* CLOCK_??? */, {1329323286,
-> 587579583}) = 0 <0.000007>
-> 1329323286.589241 open("/usr/local/etc/abcd/known/test808",
-> O_WRONLY|O_CREAT|O_TRUNC, 0644)                = 37 <76.841586>
-> 1329323363.441841 fchmod(37, 0644)      = 0 <0.000012>
-> 1329323363.441882 fcntl64(37, F_GETFL)  = 0x1 (flags O_WRONLY) <0.000011>
-> 1329323363.441915 fcntl64(37, F_SETFL, O_WRONLY|O_NONBLOCK) = 0 <0.000010>
->
-> To debug this more I enabled the hang check timer to dump stack when
-> anything hung for longer than 10s. There I see the the hanging
-> application appearing to be stuck in sync_page(). See attached dmesg
-> for traces.
->
-> I've also captured "iostat -xm 1" while the application was running
-> and have attached a snippet of that when the problem is occurring. I
-> see 100% utilization for many seconds and then eventually the
-> operations complete, but the await time is extremely high. To me there
-> doesn't look like much IO going on which could be starving out any
-> requests.
->
-> I have not been able to perform a full bisection to better understand
-> what may be causing this, but do see this on 2.6.38, a little less
-> frequently but still occurs on 2.6.35, and no longer see the issue on
-> 2.6.32. If I switch slice_idle to 0 or change to the deadline
-> scheduler the issue appears to go away in both 2.6.35 and 38.
->
-> I've also attached the "blkparse -t" output a few seconds before and
-> after the issue occurs, and the avg file from the output of "btt -i
-> ... -o bp.log"
->
-> Please let me know if any other data would be helpful.
-> I would appreciate any help in better understanding this issue and
-> what may be causing it.
->
-> --
-> Josh
 
-[adding to cc list]
+--EOHJn1TVIJfeVXv2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Josh
+On Wed, Mar 07, 2012 at 02:22:25PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+
+> > +- compatible: Must be "fsl,anatop-regulator"
+> > +- vol-bit-shift: Bit shift for the register
+> > +- vol-bit-width: Number of bits used in the register
+> > +- min-bit-val: Minimum value of this register
+> > +- min-voltage: Minimum voltage of this regulator
+> > +- max-voltage: Maximum voltage of this regulator
+
+> specific properites need to be prefix by the vendor
+
+This really doesn't seem at all sane for a device which is already
+vendor specific, it's just noise in the bindings.
+
+--EOHJn1TVIJfeVXv2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPV2ZCAAoJEBus8iNuMP3dNscP/36no4jSuMHNQVkaYJkb+Bv3
+0DLsEs8HDb0V1RHVsxIsAeQQB90AC1olW8z8ZnbEzONOx4h9Z4NxC5awQONoW2s/
+z+Nh5FDrjsyAqxRvSDMavqJdYphl8hO8Dijh4guCFSzBNvtzavblQ3RdMskPPTy5
+XoBl31HqXKBBYL+ojbIX5fVOBD3ypSJa5Pd4jawLO4XwLoisiw1u0rGwp/bLtbFt
+B4/BQK5Sq5zG2X/9RKDmyYCeBa3JBy0v8OkEa3i7/JHyRupnoKKexbF7y2g8iPRS
+BoGinC10ffNHzFP8y5fgAtWQ8eNR/wYWNeGLNeWjoXHylu08IuEt/5LOuaM/8Qhg
+PO4A3ftm71nYtOjGnvQ6v9gnJO94eeVXRYiQL7L5HM8B0BbFy7RS2Sm2q21ukQQV
+2O2go2SY70sd+B0eq6lThm6B3OohOxprp/o7330ZC5G1lnnxGzvE9SitkWILjqf6
+1kdHnx1le3kqhoD/M+qKx1W3uSwR33DJ03orTXtI9ggD1cO+LQtZtsoG9EXGppvs
+J+h8fJqASJTM8LcEbcLYtJ5gsPmug3ifJrboconlRljW48WjlnjI7fs1qUYOy5tt
+VHpg/VqjqeZS7qL69EAoMnaZKENF5VpuszLFiOYLmqop4dz3Q+lq7nQcD5k15rtq
+dPXk2RBIK9aDRD3F/X24
+=HwqO
+-----END PGP SIGNATURE-----
+
+--EOHJn1TVIJfeVXv2--
