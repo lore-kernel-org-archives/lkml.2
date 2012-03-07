@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759194Ab2CGQHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 11:07:05 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44226 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920Ab2CGQHC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 11:07:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120307155624.GC19570@parisc-linux.org>
-References: <1331131295-3707-1-git-send-email-santoshprasadnayak@gmail.com>
-	<20120307155624.GC19570@parisc-linux.org>
-Date: Wed, 7 Mar 2012 21:37:01 +0530
-Message-ID: <CAOD=uF6nG=r9GLtzdds8T_67RmOyOhD756Kj_EGXsuDgfQR7nA@mail.gmail.com>
-Subject: Re: [PATCH] [SCSI] sd: set BIO_MAPPED_INTEGRITY bit correctly in sd_dif_prepare().
-From: santosh prasad nayak <santoshprasadnayak@gmail.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        mkp@mkp.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1759331Ab2CGQIU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 11:08:20 -0500
+Received: from mga09.intel.com ([134.134.136.24]:8287 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754647Ab2CGQIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 11:08:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="115546398"
+Message-ID: <1331136589.3463.3.camel@sauron.fi.intel.com>
+Subject: Re: [RFC][PATCH 1/7] MTD: UBI: Add checkpoint on-chip layout
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <rw@linutronix.de>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, tim.bird@am.sony.com
+Date: Wed, 07 Mar 2012 18:09:49 +0200
+In-Reply-To: <1329250006-22944-2-git-send-email-rw@linutronix.de>
+References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
+	 <1329250006-22944-2-git-send-email-rw@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 9:26 PM, Matthew Wilcox <matthew@wil.cx> wrote:
-> On Wed, Mar 07, 2012 at 08:11:35PM +0530, santosh nayak wrote:
->> From: Santosh Nayak <santoshprasadnayak@gmail.com>
->>
->> Value of BIO_MAPPED_INTEGRITY is 11. Intention was to set the 11th bit.
->
-> Also, can we introduce:
->
-> #define bio_set_flag(bio, flag) ((bio)->bi_flags |= (1 << (flag)))
->
+On Tue, 2012-02-14 at 21:06 +0100, Richard Weinberger wrote:
+> Specify the on-chip checkpoint layout.
+> The checkpoint consists of two major parts.
+> A super block (identified via UBI_CP_SB_VOLUME_ID) and
+> zero or more data blocks (identified via UBI_CP_DATA_VOLUME_ID).
+> Data blocks are only used if whole checkpoint information does not fit
+> into the super block.
 
-  set_bit() can do the same task.
-  Can you please explain why do we need a new macro ?
+And superblock is also a more or less standard name used by file-system.
+I easily imagine difficulties and confusion when discussing UBIFS and
+UBI and mixing UBI and UBIFS supersblocks up. IMHO, anything unique is
+much better, even if it does not make much sense. E.g., "boss block" or
+"pomo block" (pomo = boss in Finnish).
 
+Would you consider picking a different name as well please?
 
-> Then hunt down and kill all the places that manipulate bi_flags by hand?
-> We might also need:
->
-> #define bio_set_flag_atomic(bio, flag) set_bit(&(bio)->bi_flags, (flag))
+-- 
+Best Regards,
+Artem Bityutskiy
 
-for atomic operation we have __set_bit() . Is there any need to define
-to new macro ?
-
-
-Regards
-Santosh
-
->
-> --
-> Matthew Wilcox                          Intel Open Source Technology Centre
-> "Bill, look, we understand that you're interested in selling us this
-> operating system, but compare it to ours.  We can't possibly take such
-> a retrograde step."
