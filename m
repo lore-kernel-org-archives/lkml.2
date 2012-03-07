@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031759Ab2CGBJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 20:09:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50427 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031747Ab2CGBJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 20:09:21 -0500
-Date: Tue, 6 Mar 2012 22:09:04 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Anton Blanchard <anton@samba.org>
-Cc: paulus@samba.org, peterz@infradead.org, mingo@elte.hu, dsahern@gmail.com,
-        fweisbec@gmail.com, yanmin_zhang@linux.intel.com, emunson@mgebm.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: Incorrect use of snprintf results in SEGV
-Message-ID: <20120307010904.GE5656@infradead.org>
-References: <20120307114249.44275ca3@kryten>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120307114249.44275ca3@kryten>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1031765Ab2CGBNi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 20:13:38 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:60748 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031740Ab2CGBNg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 20:13:36 -0500
+Message-ID: <1331082811.2191.167.camel@work-vm>
+Subject: Re: WARNING: Adjusting tsc more then 11%
+From: John Stultz <john.stultz@linaro.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Dave Jones <davej@redhat.com>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 06 Mar 2012 17:13:31 -0800
+In-Reply-To: <CA+1xoqeKMVzSEMef+Yg6yBSyObN4pWA9cVf7t72SBJ0W==MNqQ@mail.gmail.com>
+References: <20120305154411.GA29668@redhat.com>
+	 <1330972323.2191.74.camel@work-vm> <20120305192338.GA30491@redhat.com>
+	 <1330977010.2191.84.camel@work-vm> <20120305195758.GA25498@redhat.com>
+	 <CA+1xoqfYbC30dFDOtfAVcr5w0WYAS1ruKFS-rcRAEv2ZqaGW6w@mail.gmail.com>
+	 <1330979254.2191.98.camel@work-vm>
+	 <CA+1xoqeKMVzSEMef+Yg6yBSyObN4pWA9cVf7t72SBJ0W==MNqQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030701-7282-0000-0000-0000072671A7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Mar 07, 2012 at 11:42:49AM +1100, Anton Blanchard escreveu:
+On Mon, 2012-03-05 at 22:36 +0200, Sasha Levin wrote:
+> On Mon, Mar 5, 2012 at 10:27 PM, John Stultz <john.stultz@linaro.org> wrote:
+> > On Mon, 2012-03-05 at 22:16 +0200, Sasha Levin wrote:
+> >> On Mon, Mar 5, 2012 at 9:57 PM, Dave Jones <davej@redhat.com> wrote:
+> >> > On Mon, Mar 05, 2012 at 11:50:10AM -0800, John Stultz wrote:
+> >> >
+> >> >  > So it would be great to get further feedback from folks who are seeing
+> >> >  > this warning, so we can really hammer this out, but I don't want the
+> >> >  > warning spooking anyone into thinking things are terribly broken.
+> >> >
+> >> > One of the reports was from someone using vbox. I'm now wondering if
+> >> > the other users are using some other flavour of virt. I'll ask.
+> >>
+> >> I've reported this issue with regards to KVM before
+> >> (http://permalink.gmane.org/gmane.comp.emulators.kvm.devel/85632) but
+> >> according to this thread it's not really KVM specific.
+> >>
+> >> It's easily reproducible using Dave's trinity running inside a KVM guest.
+> >
+> > Great! Do you have a link to trinity? (Google just gives me a video of
+> > its use and links to various churches)
 > 
-> I have a workload where perf top scribbles over the stack and we
-> SEGV. What makes it interesting is that an snprintf is causing this.
+> Sure, the git tree is here: codemonkey.org.uk/projects/trinity/trinity.git
 > 
-> The workload is a c++ gem that has method names over 3000 characters
-> long, but snprintf is designed to avoid overrunning buffers. So what
-> went wrong?
-> 
-> The problem is we assume snprintf returns the number of characters
-> written:
-> 
->     ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", self->level);
-> ...
->     ret += repsep_snprintf(bf + ret, size - ret, "%s", self->ms.sym->name);
-> 
-> Unfortunately this is not how snprintf works. snprintf returns the
-> number of characters that would have been written if there was enough
-> space. In the above case, if the first snprintf returns a value larger
-> than size, we pass a negative size into the second snprintf and
-> happily scribble over the stack. If you have 3000 character c++
-> methods thats a lot of stack to trample.
-> 
-> This patch fixes repsep_snprintf by clamping the value at size - 1
-> which is the maximum snprintf can write before adding the NULL
-> terminator.
-> 
-> I get the sinking feeling that there are a lot of other uses of
-> snprintf that have this same bug, we should audit them all.
+> Basically just start 2*vcpu instances of trinity inside the guest and
+> wait a bit.
 
-Indeed, I wonder what kind of crack pipe I was smoking when I read the
-snprintf man page.
+So I left trinity running in a 2vcpu kvm guest for ~5 hours and haven't
+seen anything yet. Could you send me a .config for the guest kernel and
+maybe your kvm command line? 
 
-Or what kind of such pipe the people who designed snprintf were using
-:-(
+Also, it shouldn't really matter, but are the guests 32bit or 64bit?
 
-> 
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> Cc: stable@kernel.org
-> ---
-> 
-> Index: linux-build/tools/perf/util/sort.c
-> ===================================================================
-> --- linux-build.orig/tools/perf/util/sort.c	2012-03-07 10:58:57.502318907 +1100
-> +++ linux-build/tools/perf/util/sort.c	2012-03-07 11:00:58.812423271 +1100
-> @@ -33,6 +33,9 @@ static int repsep_snprintf(char *bf, siz
->  		}
->  	}
->  	va_end(ap);
-> +
-> +	if (n >= (int)size)
-> +		return size - 1;
->  	return n;
->  }
->  
+thanks
+-john
+
+
