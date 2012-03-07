@@ -1,387 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030259Ab2CGV6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 16:58:44 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:48516 "EHLO e3.ny.us.ibm.com"
+	id S1030648Ab2CGWAh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 17:00:37 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:51063 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757670Ab2CGV6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 16:58:39 -0500
+	id S1755563Ab2CGV6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 16:58:42 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
         Android Kernel Team <kernel-team@android.com>,
         John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 08/13] android: persistent_ram: handle reserving and mapping memory
-Date: Wed,  7 Mar 2012 13:58:18 -0800
-Message-Id: <1331157503-3413-9-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 11/13] android: persistent_trace: ftrace into persistent_ram
+Date: Wed,  7 Mar 2012 13:58:21 -0800
+Message-Id: <1331157503-3413-12-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1331157503-3413-1-git-send-email-john.stultz@linaro.org>
 References: <1331157503-3413-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030721-8974-0000-0000-0000070D7DBB
+x-cbid: 12030721-7182-0000-0000-000000FDF953
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Colin Cross <ccross@android.com>
 
-Replace the ioremapped memory passed in from the drivers with
-a memblock_reserve and vmap.  Adds a new function,
-persistent_ram_early_init, designed to be called from the machine
-init_early callback, that calls memblock_remove and saves the
-provided persistent ram area layout.
-
-Drivers only pass in their struct device * and ecc settings.
-Locating and mapping the memory is now handled entirely within
-persistent_ram.
-
-Also, convert ram_console to the new persistent_ram_init
-parameters that only take a struct device * and ecc settings.
+persistent_trace uses the ftrace infrastructure, but traces
+into a persistent_ram buffer instead of the regular ftrace
+ringbuffer.  After a reset or panic, the trace can be
+decoded with cat /sys/kernel/debug/persistent_trace.
 
 CC: Greg KH <gregkh@linuxfoundation.org>
 CC: Android Kernel Team <kernel-team@android.com>
-Change-Id: Ibc87ec27b70ed1c928eaa487503469e199973058
-Change-Id: I12b018381a2ed5965a8a4b0da40c3e640f92b6cf
+Change-Id: Ia6025ccc323599c7844e0783af0386d32ed7419e
 Signed-off-by: Colin Cross <ccross@android.com>
-[jstultz: Fix pr_info casting issues on 64bit, folded two
-patches as the build breaks if they are apart. Also replaced
-phys_to_page() w/ pfn_to_page(addr>>PAGE_SHIFT), as phys_to_page
-is only on a few arches.]
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/persistent_ram.c |  139 ++++++++++++++++++++++++------
- drivers/staging/android/persistent_ram.h |   24 +++++-
- drivers/staging/android/ram_console.c    |   42 ++-------
- 3 files changed, 144 insertions(+), 61 deletions(-)
+ drivers/staging/android/Kconfig            |   14 ++
+ drivers/staging/android/Makefile           |    3 +
+ drivers/staging/android/trace_persistent.c |  242 ++++++++++++++++++++++++++++
+ 3 files changed, 259 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/android/trace_persistent.c
 
-diff --git a/drivers/staging/android/persistent_ram.c b/drivers/staging/android/persistent_ram.c
-index 35c57a0..81950e6 100644
---- a/drivers/staging/android/persistent_ram.c
-+++ b/drivers/staging/android/persistent_ram.c
-@@ -12,12 +12,17 @@
-  *
-  */
+diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
+index 08a3b11..bc33ab9 100644
+--- a/drivers/staging/android/Kconfig
++++ b/drivers/staging/android/Kconfig
+@@ -37,6 +37,20 @@ config ANDROID_RAM_CONSOLE
+ 	select ANDROID_PERSISTENT_RAM
+ 	default n
  
-+#include <linux/device.h>
-+#include <linux/err.h>
- #include <linux/errno.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/io.h>
-+#include <linux/list.h>
-+#include <linux/memblock.h>
- #include <linux/rslib.h>
- #include <linux/slab.h>
-+#include <linux/vmalloc.h>
- #include "persistent_ram.h"
- 
- struct persistent_ram_buffer {
-@@ -29,7 +34,7 @@ struct persistent_ram_buffer {
- 
- #define PERSISTENT_RAM_SIG (0x43474244) /* DBGC */
- 
--static LIST_HEAD(zone_list);
-+static __initdata LIST_HEAD(persistent_ram_list);
- 
- static void persistent_ram_encode_rs8(struct persistent_ram_zone *prz,
- 	uint8_t *data, size_t len, uint8_t *ecc)
-@@ -270,54 +275,134 @@ void persistent_ram_free_old(struct persistent_ram_zone *prz)
- 	prz->old_log_size = 0;
- }
- 
--static int __init __persistent_ram_init(struct persistent_ram_zone *prz,
--			       void __iomem *mem, size_t buffer_size, bool ecc)
-+static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
-+		struct persistent_ram_zone *prz)
- {
--	struct persistent_ram_buffer *buffer = mem;
-+	struct page **pages;
-+	phys_addr_t page_start;
-+	unsigned int page_count;
-+	pgprot_t prot;
-+	unsigned int i;
++config PERSISTENT_TRACER
++	bool "Persistent function tracer"
++	depends on HAVE_FUNCTION_TRACER
++	select FUNCTION_TRACER
++	select ANDROID_PERSISTENT_RAM
++	help
++	  persistent_trace traces function calls into a persistent ram
++	  buffer that can be decoded and dumped after reboot through
++	  /sys/kernel/debug/persistent_trace.  It can be used to
++	  determine what function was last called before a reset or
++	  panic.
 +
-+	page_start = start - offset_in_page(start);
-+	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
++	  If unsure, say N.
 +
-+	prot = pgprot_noncached(PAGE_KERNEL);
+ config ANDROID_TIMED_OUTPUT
+ 	bool "Timed output class driver"
+ 	default y
+diff --git a/drivers/staging/android/Makefile b/drivers/staging/android/Makefile
+index 9b6c9ed..35ffdfe 100644
+--- a/drivers/staging/android/Makefile
++++ b/drivers/staging/android/Makefile
+@@ -9,3 +9,6 @@ obj-$(CONFIG_ANDROID_LOW_MEMORY_KILLER)	+= lowmemorykiller.o
+ obj-$(CONFIG_ANDROID_SWITCH)		+= switch/
+ obj-$(CONFIG_ANDROID_INTF_ALARM)	+= alarm.o
+ obj-$(CONFIG_ANDROID_INTF_ALARM_DEV)	+= alarm-dev.o
++obj-$(CONFIG_PERSISTENT_TRACER)		+= trace_persistent.o
 +
-+	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
-+	if (!pages) {
-+		pr_err("%s: Failed to allocate array for %u pages\n", __func__,
-+			page_count);
-+		return -ENOMEM;
-+	}
++CFLAGS_REMOVE_trace_persistent.o = -pg
+diff --git a/drivers/staging/android/trace_persistent.c b/drivers/staging/android/trace_persistent.c
+new file mode 100644
+index 0000000..176b4ff
+--- /dev/null
++++ b/drivers/staging/android/trace_persistent.c
+@@ -0,0 +1,242 @@
++/*
++ * Copyright (C) 2012 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
 +
-+	for (i = 0; i < page_count; i++) {
-+		phys_addr_t addr = page_start + i * PAGE_SIZE;
-+		pages[i] = pfn_to_page(addr >> PAGE_SHIFT);
-+	}
-+	prz->vaddr = vmap(pages, page_count, VM_MAP, prot);
-+	kfree(pages);
-+	if (!prz->vaddr) {
-+		pr_err("%s: Failed to map %u pages\n", __func__, page_count);
-+		return -ENOMEM;
-+	}
++#include <linux/debugfs.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/platform_device.h>
++#include <linux/seq_file.h>
++#include <linux/slab.h>
 +
-+	prz->buffer = prz->vaddr + offset_in_page(start);
-+	prz->buffer_size = size - sizeof(struct persistent_ram_buffer);
++#include "persistent_ram.h"
++#include "../../../kernel/trace/trace.h"
++
++struct persistent_trace_record {
++	unsigned long ip;
++	unsigned long parent_ip;
++};
++
++#define REC_SIZE sizeof(struct persistent_trace_record)
++
++static struct persistent_ram_zone *persistent_trace;
++
++static int persistent_trace_enabled;
++
++static struct trace_array *persistent_trace_array;
++
++static struct ftrace_ops trace_ops;
++
++static int persistent_tracer_init(struct trace_array *tr)
++{
++	persistent_trace_array = tr;
++	tr->cpu = get_cpu();
++	put_cpu();
++
++	tracing_start_cmdline_record();
++
++	persistent_trace_enabled = 0;
++	smp_wmb();
++
++	register_ftrace_function(&trace_ops);
++
++	smp_wmb();
++	persistent_trace_enabled = 1;
 +
 +	return 0;
 +}
 +
-+static int __init persistent_ram_buffer_init(const char *name,
-+		struct persistent_ram_zone *prz)
++static void persistent_trace_reset(struct trace_array *tr)
 +{
-+	int i;
-+	struct persistent_ram *ram;
-+	struct persistent_ram_descriptor *desc;
-+	phys_addr_t start;
++	persistent_trace_enabled = 0;
++	smp_wmb();
 +
-+	list_for_each_entry(ram, &persistent_ram_list, node) {
-+		start = ram->start;
-+		for (i = 0; i < ram->num_descs; i++) {
-+			desc = &ram->descs[i];
-+			if (!strcmp(desc->name, name))
-+				return persistent_ram_buffer_map(start,
-+						desc->size, prz);
-+			start += desc->size;
-+		}
-+	}
++	unregister_ftrace_function(&trace_ops);
 +
-+	return -EINVAL;
++	tracing_stop_cmdline_record();
 +}
 +
-+static  __init
-+struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
++static void persistent_trace_start(struct trace_array *tr)
 +{
-+	struct persistent_ram_zone *prz;
- 	int ret;
- 
--	INIT_LIST_HEAD(&prz->node);
-+	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
-+	if (!prz) {
-+		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
- 
--	prz->buffer = buffer;
--	prz->buffer_size = buffer_size - sizeof(struct persistent_ram_buffer);
-+	INIT_LIST_HEAD(&prz->node);
- 
--	if (prz->buffer_size > buffer_size) {
--		pr_err("persistent_ram: buffer %p, invalid size %zu, datasize %zu\n",
--		       buffer, buffer_size, prz->buffer_size);
--		return -EINVAL;
-+	ret = persistent_ram_buffer_init(dev_name(dev), prz);
-+	if (ret) {
-+		pr_err("persistent_ram: failed to initialize buffer\n");
-+		return ERR_PTR(ret);
- 	}
- 
- 	prz->ecc = ecc;
--	ret = persistent_ram_init_ecc(prz, buffer_size);
-+	ret = persistent_ram_init_ecc(prz, prz->buffer_size);
- 	if (ret)
--		return ret;
-+		return ERR_PTR(ret);
- 
--	if (buffer->sig == PERSISTENT_RAM_SIG) {
--		if (buffer->size > prz->buffer_size
--		    || buffer->start > buffer->size)
-+	if (prz->buffer->sig == PERSISTENT_RAM_SIG) {
-+		if (prz->buffer->size > prz->buffer_size
-+		    || prz->buffer->start > prz->buffer->size)
- 			pr_info("persistent_ram: found existing invalid buffer, size %d, start %d\n",
--			       buffer->size, buffer->start);
-+			       prz->buffer->size, prz->buffer->start);
- 		else {
- 			pr_info("persistent_ram: found existing buffer, size %d, start %d\n",
--			       buffer->size, buffer->start);
-+			       prz->buffer->size, prz->buffer->start);
- 			persistent_ram_save_old(prz);
- 		}
- 	} else {
- 		pr_info("persistent_ram: no valid data in buffer (sig = 0x%08x)\n",
--			buffer->sig);
-+			prz->buffer->sig);
- 	}
- 
--	buffer->sig = PERSISTENT_RAM_SIG;
--	buffer->start = 0;
--	buffer->size = 0;
-+	prz->buffer->sig = PERSISTENT_RAM_SIG;
-+	prz->buffer->start = 0;
-+	prz->buffer->size = 0;
- 
--	list_add_tail(&prz->node, &zone_list);
-+	return prz;
++	tracing_reset_online_cpus(tr);
 +}
- 
--	return 0;
-+struct persistent_ram_zone * __init
-+persistent_ram_init_ringbuffer(struct device *dev, bool ecc)
++
++static void persistent_trace_call(unsigned long ip, unsigned long parent_ip)
 +{
-+	return __persistent_ram_init(dev, ecc);
- }
- 
--int __init persistent_ram_init_ringbuffer(struct persistent_ram_zone *prz,
--			       void __iomem *mem, size_t buffer_size, bool ecc)
-+int __init persistent_ram_early_init(struct persistent_ram *ram)
- {
--	return __persistent_ram_init(prz, mem, buffer_size, true);
++	struct trace_array *tr = persistent_trace_array;
++	struct trace_array_cpu *data;
++	long disabled;
++	struct persistent_trace_record rec;
++	unsigned long flags;
++	int cpu;
++
++	smp_rmb();
++	if (unlikely(!persistent_trace_enabled))
++		return;
++
++	if (unlikely(oops_in_progress))
++		return;
++
++	/*
++	 * Need to use raw, since this must be called before the
++	 * recursive protection is performed.
++	 */
++	local_irq_save(flags);
++	cpu = raw_smp_processor_id();
++	data = tr->data[cpu];
++	disabled = atomic_inc_return(&data->disabled);
++
++	if (likely(disabled == 1)) {
++		rec.ip = ip;
++		rec.parent_ip = parent_ip;
++		rec.ip |= cpu;
++		persistent_ram_write(persistent_trace, &rec, sizeof(rec));
++	}
++
++	atomic_dec(&data->disabled);
++	local_irq_restore(flags);
++}
++
++static struct ftrace_ops trace_ops __read_mostly = {
++	.func = persistent_trace_call,
++	.flags = FTRACE_OPS_FL_GLOBAL,
++};
++
++static struct tracer persistent_tracer __read_mostly = {
++	.name		= "persistent",
++	.init		= persistent_tracer_init,
++	.reset		= persistent_trace_reset,
++	.start		= persistent_trace_start,
++	.wait_pipe	= poll_wait_pipe,
++};
++
++struct persistent_trace_seq_data {
++	const void *ptr;
++	size_t off;
++	size_t size;
++};
++
++void *persistent_trace_seq_start(struct seq_file *s, loff_t *pos)
++{
++	struct persistent_trace_seq_data *data;
++
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return NULL;
++
++	data->ptr = persistent_ram_old(persistent_trace);
++	data->size = persistent_ram_old_size(persistent_trace);
++	data->off = data->size % REC_SIZE;
++
++	data->off += *pos * REC_SIZE;
++
++	if (data->off + REC_SIZE > data->size) {
++		kfree(data);
++		return NULL;
++	}
++
++	return data;
++
++}
++void persistent_trace_seq_stop(struct seq_file *s, void *v)
++{
++	kfree(v);
++}
++
++void *persistent_trace_seq_next(struct seq_file *s, void *v, loff_t *pos)
++{
++	struct persistent_trace_seq_data *data = v;
++
++	data->off += REC_SIZE;
++
++	if (data->off + REC_SIZE > data->size)
++		return NULL;
++
++	(*pos)++;
++
++	return data;
++}
++
++int persistent_trace_seq_show(struct seq_file *s, void *v)
++{
++	struct persistent_trace_seq_data *data = v;
++	struct persistent_trace_record *rec;
++
++	rec = (struct persistent_trace_record *)(data->ptr + data->off);
++
++	seq_printf(s, "%ld %08lx  %08lx  %pf <- %pF\n",
++		rec->ip & 3, rec->ip, rec->parent_ip,
++		(void *)rec->ip, (void *)rec->parent_ip);
++
++	return 0;
++}
++
++static const struct seq_operations persistent_trace_seq_ops = {
++	.start = persistent_trace_seq_start,
++	.next = persistent_trace_seq_next,
++	.stop = persistent_trace_seq_stop,
++	.show = persistent_trace_seq_show,
++};
++
++static int persistent_trace_old_open(struct inode *inode, struct file *file)
++{
++	return seq_open(file, &persistent_trace_seq_ops);
++}
++
++static const struct file_operations persistent_trace_old_fops = {
++	.open		= persistent_trace_old_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= seq_release,
++};
++
++static int persistent_trace_probe(struct platform_device *pdev)
++{
++	struct dentry *d;
 +	int ret;
 +
-+	ret = memblock_reserve(ram->start, ram->size);
-+	if (ret) {
-+		pr_err("Failed to reserve persistent memory from %08lx-%08lx\n",
-+			(long)ram->start, (long)(ram->start + ram->size - 1));
-+		return ret;
++	persistent_trace = persistent_ram_init_ringbuffer(&pdev->dev, false);
++	if (IS_ERR(persistent_trace)) {
++		pr_err("persistent_trace: failed to init ringbuffer: %ld\n",
++				PTR_ERR(persistent_trace));
++		return PTR_ERR(persistent_trace);
 +	}
 +
-+	list_add_tail(&ram->node, &persistent_ram_list);
++	ret = register_tracer(&persistent_tracer);
++	if (ret)
++		pr_err("persistent_trace: failed to register tracer");
 +
-+	pr_info("Initialized persistent memory from %08lx-%08lx\n",
-+		(long)ram->start, (long)(ram->start + ram->size - 1));
++	if (persistent_ram_old_size(persistent_trace) > 0) {
++		d = debugfs_create_file("persistent_trace", S_IRUGO, NULL,
++			NULL, &persistent_trace_old_fops);
++		if (IS_ERR_OR_NULL(d))
++			pr_err("persistent_trace: failed to create old file\n");
++	}
 +
 +	return 0;
- }
-diff --git a/drivers/staging/android/persistent_ram.h b/drivers/staging/android/persistent_ram.h
-index ab3995c..f41e208 100644
---- a/drivers/staging/android/persistent_ram.h
-+++ b/drivers/staging/android/persistent_ram.h
-@@ -15,13 +15,31 @@
- #ifndef __LINUX_PERSISTENT_RAM_H__
- #define __LINUX_PERSISTENT_RAM_H__
- 
-+#include <linux/device.h>
- #include <linux/kernel.h>
-+#include <linux/list.h>
- #include <linux/types.h>
- 
- struct persistent_ram_buffer;
- 
-+struct persistent_ram_descriptor {
-+	const char	*name;
-+	phys_addr_t	size;
++}
++
++static struct platform_driver persistent_trace_driver  = {
++	.probe = persistent_trace_probe,
++	.driver		= {
++		.name	= "persistent_trace",
++	},
 +};
 +
-+struct persistent_ram {
-+	phys_addr_t	start;
-+	phys_addr_t	size;
-+
-+	int					num_descs;
-+	struct persistent_ram_descriptor	*descs;
-+
-+	struct list_head node;
-+};
-+
- struct persistent_ram_zone {
- 	struct list_head node;
-+	void *vaddr;
- 	struct persistent_ram_buffer *buffer;
- 	size_t buffer_size;
- 
-@@ -43,8 +61,10 @@ struct persistent_ram_zone {
- 	bool early;
- };
- 
--int persistent_ram_init_ringbuffer(struct persistent_ram_zone *prz,
--	void __iomem *buffer, size_t buffer_size, bool ecc);
-+int persistent_ram_early_init(struct persistent_ram *ram);
-+
-+struct persistent_ram_zone *persistent_ram_init_ringbuffer(struct device *dev,
-+		bool ecc);
- 
- int persistent_ram_write(struct persistent_ram_zone *prz, const void *s,
- 	unsigned int count);
-diff --git a/drivers/staging/android/ram_console.c b/drivers/staging/android/ram_console.c
-index d920bd7..29d347e 100644
---- a/drivers/staging/android/ram_console.c
-+++ b/drivers/staging/android/ram_console.c
-@@ -24,7 +24,7 @@
- #include "persistent_ram.h"
- #include "ram_console.h"
- 
--static struct persistent_ram_zone ram_console_zone;
-+static struct persistent_ram_zone *ram_console_zone;
- static const char *bootinfo;
- static size_t bootinfo_size;
- 
-@@ -52,33 +52,13 @@ void ram_console_enable_console(int enabled)
- 
- static int ram_console_driver_probe(struct platform_device *pdev)
- {
--	struct resource *res = pdev->resource;
--	size_t start;
--	size_t buffer_size;
--	void *buffer;
- 	struct ram_console_platform_data *pdata = pdev->dev.platform_data;
--	int ret;
-+	struct persistent_ram_zone *prz;
- 
--	if (res == NULL || pdev->num_resources != 1 ||
--	    !(res->flags & IORESOURCE_MEM)) {
--		printk(KERN_ERR "ram_console: invalid resource, %p %d flags "
--		       "%lx\n", res, pdev->num_resources, res ? res->flags : 0);
--		return -ENXIO;
--	}
--	buffer_size = resource_size(res);
--	start = res->start;
--	printk(KERN_INFO "ram_console: got buffer at %zx, size %zx\n",
--	       start, buffer_size);
--	buffer = ioremap(res->start, buffer_size);
--	if (buffer == NULL) {
--		printk(KERN_ERR "ram_console: failed to map memory\n");
--		return -ENOMEM;
--	}
-+	prz = persistent_ram_init_ringbuffer(&pdev->dev, true);
-+	if (IS_ERR(prz))
-+		return PTR_ERR(prz);
- 
--	ret = persistent_ram_init_ringbuffer(&ram_console_zone, buffer,
--					     buffer_size, true);
--	if (ret)
--		goto err;
- 
- 	if (pdata) {
- 		bootinfo = kstrdup(pdata->bootinfo, GFP_KERNEL);
-@@ -86,14 +66,12 @@ static int ram_console_driver_probe(struct platform_device *pdev)
- 			bootinfo_size = strlen(bootinfo);
- 	}
- 
--	ram_console.data = &ram_console_zone;
-+	ram_console_zone = prz;
-+	ram_console.data = prz;
- 
- 	register_console(&ram_console);
--	return 0;
- 
--err:
--	iounmap(buffer);
--	return ret;
-+	return 0;
- }
- 
- static struct platform_driver ram_console_driver = {
-@@ -115,7 +93,7 @@ static ssize_t ram_console_read_old(struct file *file, char __user *buf,
- {
- 	loff_t pos = *offset;
- 	ssize_t count;
--	struct persistent_ram_zone *prz = &ram_console_zone;
-+	struct persistent_ram_zone *prz = ram_console_zone;
- 	size_t old_log_size = persistent_ram_old_size(prz);
- 	const char *old_log = persistent_ram_old(prz);
- 	char *str;
-@@ -170,7 +148,7 @@ static const struct file_operations ram_console_file_ops = {
- static int __init ram_console_late_init(void)
- {
- 	struct proc_dir_entry *entry;
--	struct persistent_ram_zone *prz = &ram_console_zone;
-+	struct persistent_ram_zone *prz = ram_console_zone;
- 
- 	if (persistent_ram_old_size(prz) == 0)
- 		return 0;
++static int __init persistent_trace_init(void)
++{
++	return platform_driver_register(&persistent_trace_driver);
++}
++core_initcall(persistent_trace_init);
 -- 
 1.7.3.2.146.gca209
 
