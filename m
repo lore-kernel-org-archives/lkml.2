@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759373Ab2CGPp7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 10:45:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43040 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759331Ab2CGPp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 10:45:57 -0500
-Date: Wed, 7 Mar 2012 16:38:49 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Cc: Mark Salter <msalter@redhat.com>, linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH 2/2] mm/linux-next: Fix rcu locking in vm_is_stack
-Message-ID: <20120307153849.GA18879@redhat.com>
-References: <1331045377.17099.2.camel@deneb.redhat.com> <1331064994-6693-1-git-send-email-siddhesh.poyarekar@gmail.com> <1331064994-6693-2-git-send-email-siddhesh.poyarekar@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331064994-6693-2-git-send-email-siddhesh.poyarekar@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759397Ab2CGPqM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 10:46:12 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62389 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755945Ab2CGPqI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 10:46:08 -0500
+Message-ID: <1331135164.2516.8.camel@ayu>
+Subject: Re: Change MAC address permanently
+From: Calvin Walton <calvin.walton@kepstin.ca>
+To: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 07 Mar 2012 10:46:04 -0500
+In-Reply-To: <CAH9NwWcbYRq9z_i8BcuQoK05+=ugyLqymHh9H6y963xWNnp2EA@mail.gmail.com>
+References: <CAH9NwWcbYRq9z_i8BcuQoK05+=ugyLqymHh9H6y963xWNnp2EA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07, Siddhesh Poyarekar wrote:
->
-> Take rcu read lock before we do anything at all with the threadgroup
-> list. Also use list_first_entry_rcu to safely get the reference to the
-> first task in the list.
+On Thu, 2012-02-23 at 10:52 +0100, Christian Gmeiner wrote:
+> Hi all,
+> 
+> I have found out that ioctl SIOCSIFHWADDR could be used to change the
+> current MAC address
+> of an Ethernet device. But the big problem is that after an reboot the
+> change is gone. Is there
+> an other way of changing the MAC address permanently?
 
-Sorry, but both patches are absolutely wrong, afaics. This change fixes
-nothing, just obfuscates the code.
+An option that may be sufficient for your needs is if you simply modify
+your Linux startup scripts to reset the MAC address of the card every
+time the computer boots, by using a udev rule or editing the network
+init script.
 
-Probably my explanation was not clear, let me try again.
+But if you /really/ want to change the MAC address burned into the
+hardware...
 
-rcu_read_lock() can not help without the additional checks. By the
-time you take it, task->thread_group->next can point to nowhere.
+In most PC network cards, the MAC address of the device is stored in an
+EEPROM on the device, and has an initial value flashed when the device
+is assembled.
 
-So,
+Depending on the network card and driver in question, you may be able to
+view and modify the contents of the EEPROM (which will contain various
+other data that you want to avoid changing!) with the ethtool -e and -E
+options. This can be a dangerous operation, so read the ethtool man page
+first, and be careful.
 
-> @@ -3932,18 +3932,20 @@ pid_t vm_is_stack(struct task_struct *task,
->  		return task->pid;
->
->  	if (in_group) {
-> -		struct task_struct *t = task;
-> +		struct task_struct *t;
->  		rcu_read_lock();
-> -		while_each_thread(task, t) {
-> +		t = list_first_entry_rcu(&task->thread_group,
-> +					 struct task_struct, thread_group);
-
-It is not safe to dereference this pointer.
-
-Once again. You have the task_struct *task. It exits,
-but task->thread_group->next still points to another thread T. Now suppose
-that T exits too. But task->thread_group->next was not changed, it still
-points to T. RCU grace period passes, T is freed.
-
-After that you take rcu_read_lock(), but it is too late! >next points to
-the already freed/reused memory. How can list_first_entry_rcu() help?
-
-What you need is something like
-
-		rcu_read_lock();
-		if (!pid_alive(task))
-			goto done;
-
-		t = task;
-		do {
-			...
-		} while_each(task, t);
-
-	done:
-		rcu_read_unlock();
-
-
-And. Imho it is not good to have the (afaics exactly?) same code in
-mm/nommu.c, even with the same names. Why it is not possible to make
-a single definition?
-
-Oleg.
+-- 
+Calvin Walton <calvin.walton@kepstin.ca>
 
