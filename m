@@ -1,130 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab2CGKa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 05:30:59 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13355 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab2CGKa5 (ORCPT
+	id S1754781Ab2CGKbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 05:31:16 -0500
+Received: from mga12.intel.com ([143.182.124.36]:50666 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754106Ab2CGKbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 05:30:57 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 07 Mar 2012 02:30:57 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: lrg@ti.com, broonie@opensource.wolfsonmicro.com
-Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
-        ldewanagn@nvidia.com, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2] regulator: fixed: Support for open drain gpio pin
-Date: Wed,  7 Mar 2012 15:58:33 +0530
-Message-Id: <1331116113-22565-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 7 Mar 2012 05:31:13 -0500
+Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix
+ CONFIG_X86_32 oops
+From: Matt Fleming <matt.fleming@intel.com>
+To: "H. Peter Anvin" <hpa@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, mingo@redhat.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, keithp@keithp.com, rui.zhang@intel.com,
+        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <4F4C3BA2.1070708@kernel.org>
+References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
+	 <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
+	 <CAE9FiQWFpsZotawqPD4738jTayB=KOGo0W9+AT2go3GYk1v_sQ@mail.gmail.com>
+	 <4F45B35D.1010702@zytor.com>
+	 <CAE9FiQUbyYYN5orG_RyVm=P-8wNh=YsET1VzGojpFTfJPueHqA@mail.gmail.com>
+	 <4F471651.3080609@zytor.com>  <4F4C3BA2.1070708@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Wed, 07 Mar 2012 10:30:50 +0000
+Message-ID: <1331116250.3539.35.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding flag on fixed regulator board configuration structure
-to specify whether gpio is open drain type or not.
-Passing this information to gpio library when requesting
-gpio so that gpio driver can set the pin state accordingly,
-for open drain type:
-- Pin can be set HIGH as setting as input, PULL UP on
-  pin make this as HIGH.
-- Pin can be set LOW as setting it as output and drive to LOW.
+On Mon, 2012-02-27 at 18:27 -0800, H. Peter Anvin wrote:
+> On 02/23/2012 08:47 PM, H. Peter Anvin wrote:
+> >>
+> >> please check attach patch for tip/efi branch.
+> > 
+> > That doesn't do anything like what I noted above.
+> > 
+> > We should get rid of dependencies on legacy PC memory layouts, not add
+> > more hacks.  What is so hard about "when we create the initial mappings,
+> > only create for RAM/ACPI/EFI regions" (if we even need to do so for
+> > ACPI, I think ACPI might use ioremap() already)?
+> > 
+> 
+> Hi Yinghai,
+> 
+> Can you please answer my question?
 
-The non-open drain pin can be  set HIGH/LOW by setting it to
-output and driving it to HIGH/LOW.
+Did you have something like this in mind? Note that it doesn't go all
+the way to removing the add_do_memmap boot parameter because I'm not
+sure how to do that for GPL exported symbols.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-This is the continuation of effort on supporting open drain gpio
-which was discussed in patch V1.
-[PATCH V1] regulator: fixed: Support for open-drain gpio
-The changes from V1:
-The open drain support is added in gpo library and hence in place
-of handling open drain condition in the fixed regulator, passing
-appropriate flag to gpio driver library to handle this condition
-in gpio driver.
+The only testing I've done with this is to ensure that it boots under
+qemu (both for EFI and BIOS) on 32/64-bit.
 
- drivers/regulator/fixed.c       |   24 +++++++++++-------------
- include/linux/regulator/fixed.h |    7 +++++++
- 2 files changed, 18 insertions(+), 13 deletions(-)
+This is on top of tip/x86/efi.
 
-diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-index 40f3803..13a3d2c 100644
---- a/drivers/regulator/fixed.c
-+++ b/drivers/regulator/fixed.c
-@@ -201,6 +201,7 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
- 	drvdata->startup_delay = config->startup_delay;
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+index bce688d..4f95f23 100644
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -51,8 +51,9 @@ static inline phys_addr_t get_max_mapped(void)
+ 	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
+ }
  
- 	if (gpio_is_valid(config->gpio)) {
-+		int gpio_flag;
- 		drvdata->enable_high = config->enable_high;
+-extern unsigned long init_memory_mapping(unsigned long start,
+-					 unsigned long end);
++extern unsigned long init_memory_mapping(void);
++extern unsigned long __init_memory_mapping(unsigned long start,
++					   unsigned long end);
  
- 		/* FIXME: Remove below print warning
-@@ -218,29 +219,26 @@ static int __devinit reg_fixed_voltage_probe(struct platform_device *pdev)
- 			dev_warn(&pdev->dev,
- 				"using GPIO 0 for regulator enable control\n");
+ extern void initmem_init(void);
+ extern void free_initmem(void);
+diff --git a/arch/x86/kernel/amd_gart_64.c b/arch/x86/kernel/amd_gart_64.c
+index b1e7c7f..f52ced2 100644
+--- a/arch/x86/kernel/amd_gart_64.c
++++ b/arch/x86/kernel/amd_gart_64.c
+@@ -769,7 +769,7 @@ int __init gart_iommu_init(void)
  
--		ret = gpio_request(config->gpio, config->supply_name);
--		if (ret) {
--			dev_err(&pdev->dev,
--			   "Could not obtain regulator enable GPIO %d: %d\n",
--							config->gpio, ret);
--			goto err_name;
--		}
+ 	if (end_pfn > max_low_pfn_mapped) {
+ 		start_pfn = (aper_base>>PAGE_SHIFT);
+-		init_memory_mapping(start_pfn<<PAGE_SHIFT, end_pfn<<PAGE_SHIFT);
++		__init_memory_mapping(start_pfn<<PAGE_SHIFT, end_pfn<<PAGE_SHIFT);
+ 	}
+ 
+ 	pr_info("PCI-DMA: using GART IOMMU.\n");
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index e22bb08..b65d287 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -690,8 +690,6 @@ early_param("reservelow", parse_reservelow);
+ 
+ void __init setup_arch(char **cmdline_p)
+ {
+-	unsigned long end_pfn;
 -
--		/* set output direction without changing state
-+		/*
-+		 * set output direction without changing state
- 		 * to prevent glitch
- 		 */
- 		drvdata->is_enabled = config->enabled_at_boot;
- 		ret = drvdata->is_enabled ?
- 				config->enable_high : !config->enable_high;
-+		gpio_flag = ret ? GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW;
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+ 	visws_early_detect();
+@@ -927,31 +925,11 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	init_gbpages();
+ 
+-	/* max_pfn_mapped is updated here */
+-	end_pfn = max_low_pfn;
+-
+-#ifdef CONFIG_X86_64
+-	/*
+-	 * There may be regions after the last E820_RAM region that we
+-	 * want to include in the kernel direct mapping because their
+-	 * contents are needed at runtime.
+-	 */
+-	if (efi_enabled) {
+-		unsigned long efi_end;
+-
+-		efi_end = e820_end_pfn(MAXMEM>>PAGE_SHIFT, E820_RESERVED_EFI);
+-		if (efi_end > end_pfn)
+-			end_pfn = efi_end;
+-	}
+-#endif
+-
+-	max_low_pfn_mapped = init_memory_mapping(0, end_pfn << PAGE_SHIFT);
+-	max_pfn_mapped = max_low_pfn_mapped;
++	/* max_low_pfn_mapped is updated here */
++	max_pfn_mapped = init_memory_mapping();
+ 
+ #ifdef CONFIG_X86_64
+ 	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
+ 		/* can we preseve max_low_pfn ?*/
+ 		max_low_pfn = max_pfn;
+ 	}
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 6cabf65..f1835e9 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -118,8 +118,8 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+  * This runs before bootmem is initialized and gets pages directly from
+  * the physical memory. To access them they are temporarily mapped.
+  */
+-unsigned long __init_refok init_memory_mapping(unsigned long start,
+-					       unsigned long end)
++unsigned long __init_refok __init_memory_mapping(unsigned long start,
++						 unsigned long end)
+ {
+ 	unsigned long page_size_mask = 0;
+ 	unsigned long start_pfn, end_pfn;
+@@ -301,6 +301,59 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	return ret >> PAGE_SHIFT;
+ }
+ 
++/*
++ * Traverse the E820 memory map and add RAM/ACPI/EFI regions to the
++ * initial memory mapping.
++ */
++unsigned long __init_refok init_memory_mapping(void)
++{
++	struct e820entry *entry;
++	unsigned long last_pfn_mapped = 0;
++	unsigned long start, end;
++	int i;
 +
-+		if (config->gpio_is_open_drain)
-+			gpio_flag |= GPIOF_OPEN_DRAIN;
++	/* Map the legacy region until we fix all drivers */
++	__init_memory_mapping(0, 1 << 20);
++
++	for (i = 0; i < e820.nr_map; i++) {
++		entry = &e820.map[i];
++		start = entry->addr;
++		end = start + entry->size;
++
++		/* We've already mapped below 1MB */
++		if (end < (1 << 20))
++			continue;
++
++		if (start < (1 << 20))
++			start = 1 << 20;
++#ifdef CONFIG_X86_32
++		/*
++		 * The map is sorted, so bail once we hit a region
++		 * that's above max_low_pfn.
++		 */
++		if (start >= max_low_pfn << PAGE_SHIFT)
++			break;
++
++		if (end > max_low_pfn << PAGE_SHIFT)
++			end = max_low_pfn << PAGE_SHIFT;
++#endif
++		switch (entry->type) {
++		case E820_RAM:
++		case E820_RESERVED_EFI:
++		case E820_ACPI:
++		case E820_NVS:
++			last_pfn_mapped = __init_memory_mapping(start, end);
++			break;
++		default:
++			continue;
++		}
++
++		if (end <= max_low_pfn << PAGE_SHIFT)
++			max_low_pfn_mapped = last_pfn_mapped;
++	}
++
++	return last_pfn_mapped;
++}
  
--		ret = gpio_direction_output(config->gpio, ret);
-+		ret = gpio_request_one(config->gpio, gpio_flag,
-+						config->supply_name);
- 		if (ret) {
- 			dev_err(&pdev->dev,
--			   "Could not configure regulator enable GPIO %d direction: %d\n",
-+			   "Could not obtain regulator enable GPIO %d: %d\n",
- 							config->gpio, ret);
--			goto err_gpio;
-+			goto err_name;
- 		}
--
- 	} else {
- 		/* Regulator without GPIO control is considered
- 		 * always enabled
-diff --git a/include/linux/regulator/fixed.h b/include/linux/regulator/fixed.h
-index 936a7d8..f83f744 100644
---- a/include/linux/regulator/fixed.h
-+++ b/include/linux/regulator/fixed.h
-@@ -26,6 +26,12 @@ struct regulator_init_data;
-  * @gpio:		GPIO to use for enable control
-  * 			set to -EINVAL if not used
-  * @startup_delay:	Start-up time in microseconds
-+ * @gpio_is_open_drain: Gpio pin is open drain or normal type.
-+ *			If it is open drain type then HIGH will be set
-+ *			through PULL-UP with setting gpio as input
-+ *			and low will be set as gpio-output with driven
-+ *			to low. For non-open-drain case, the gpio will
-+ *			will be in output and drive to low/high accordingly.
-  * @enable_high:	Polarity of enable GPIO
-  *			1 = Active high, 0 = Active low
-  * @enabled_at_boot:	Whether regulator has been enabled at
-@@ -43,6 +49,7 @@ struct fixed_voltage_config {
- 	int microvolts;
- 	int gpio;
- 	unsigned startup_delay;
-+	unsigned gpio_is_open_drain:1;
- 	unsigned enable_high:1;
- 	unsigned enabled_at_boot:1;
- 	struct regulator_init_data *init_data;
--- 
-1.7.1.1
+ /*
+  * devmem_is_allowed() checks to see if /dev/mem access to a certain address
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 436a030..e86e370 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -659,7 +659,7 @@ int arch_add_memory(int nid, u64 start, u64 size)
+ 	unsigned long nr_pages = size >> PAGE_SHIFT;
+ 	int ret;
+ 
+-	last_mapped_pfn = init_memory_mapping(start, start + size);
++	last_mapped_pfn = __init_memory_mapping(start, start + size);
+ 	if (last_mapped_pfn > max_pfn_mapped)
+ 		max_pfn_mapped = last_mapped_pfn;
+ 
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 264cc6e..ef0a725 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -573,8 +573,7 @@ void __init efi_init(void)
+ 		printk(KERN_WARNING
+ 		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
+ 
+-	if (add_efi_memmap)
+-		do_add_efi_memmap();
++	do_add_efi_memmap();
+ 
+ #ifdef CONFIG_X86_32
+ 	x86_platform.get_wallclock = efi_get_time;
+
 
