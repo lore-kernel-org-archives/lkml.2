@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab2CGKjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 05:39:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36618 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092Ab2CGKjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 05:39:05 -0500
+	id S1755159Ab2CGKmp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 05:42:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54119 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753372Ab2CGKmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 05:42:44 -0500
+Date: Wed, 7 Mar 2012 11:42:40 +0100
+From: Jan Kara <jack@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        viro@ZenIV.linux.org.uk, Christoph Hellwig <hch@infradead.org>
+Subject: Re: inode->i_wb_list corruption.
+Message-ID: <20120307104240.GB18658@quack.suse.cz>
+References: <20120306185137.GA15881@redhat.com>
+ <20120306210307.GC8781@quack.suse.cz>
+ <20120307072608.GA24087@localhost>
 MIME-Version: 1.0
-In-Reply-To: <4F56EBA6.6000704@gmail.com>
-References: <1331090098-25097-1-git-send-email-Barry.Song@csr.com>
- <4F56E0AC.8070501@gmail.com> <CAGsJ_4x4CwD+WAE9d+Xob_tfwqmE6SdBdBd5EbC64XBi4Uzvgg@mail.gmail.com>
- <4F56EA49.8070808@gmail.com> <CAGsJ_4xJoKGt3+b_3bteoMyeO615pCxFpMpsH4LtvufFNDv6bA@mail.gmail.com>
- <4F56EBA6.6000704@gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Wed, 7 Mar 2012 18:38:44 +0800
-Message-ID: <CAGsJ_4wd14LNGf0xtbTzvGn5v0WUcRiN04OC+wtDqSrem0di4w@mail.gmail.com>
-Subject: Re: [PATCH v3] MM: CMA: add a simple kernel module as the helper to
- test CMA
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mina86@mina86.com,
-        linux-arm-kernel@lists.infradead.org, m.szyprowski@samsung.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120307072608.GA24087@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/7 Cong Wang <xiyou.wangcong@gmail.com>:
-> On 03/07/2012 12:57 PM, Barry Song wrote:
->>
->>
->> if you think so, pls do that and send v4 with your s-o-b.
->>
->
-> This is not a good attitude, nor helps your patch to be merged...
->
-> Be collaborative.
+On Tue 06-03-12 23:26:08, Wu Fengguang wrote:
+> On Tue, Mar 06, 2012 at 10:03:07PM +0100, Jan Kara wrote:
+> > On Tue 06-03-12 13:51:37, Dave Jones wrote:
+> > > We've had three separate reports against 3.2.x recently where the linked list debugging
+> > > is getting tripped up by the prev->next pointer being null instead of pointing
+> > > to the current list entry while walking the i_wb_list
+> > > 
+> > > Call traces are slightly different each time, but all end up walking i_wb_list 
+> > > in dput -> d_kill -> i_put -> evict -> inode_wb_list_del
+> > > 
+> > > What protects that list ? It looks to be just bdi->wb.list_lock ?
+> > > 
+> > > 
+> > > full reports at:
+> > > https://bugzilla.redhat.com/show_bug.cgi?id=784741
+> > > https://bugzilla.redhat.com/show_bug.cgi?id=799229
+> > > https://bugzilla.redhat.com/show_bug.cgi?id=799692
+> >   Hum, interesting! I'd guess this might be caused by f758eeab - adding
+> > Fengguang and Christoph to CC. But I'm really failing to see how this could
+> > happen but interesting thing is that in two of the three cases the files
+> > are on virtual filesystems (once cgroup, once sysfs). These both use
+> > noop_backing_dev_info.
+> 
+> sysfs/cgroup forgot to init inode->i_wb_list?
+  Umm, it's not *that* simple I'd say. E.g. sysfs doesn't provide
+alloc_inode() method so we use inode_cachep for allocations. And that cache
+is configured to use inode_init_once().
 
-pls just focus on techinical discussion and note you are not the man
-to decide whether the patch should be merged. Many people know how to
-make patches merged well.
-you said that just like you are the one maintaining MM. Be modest, man!
+Also note that the error message is:
+list_del corruption. prev->next should be ffff8801c2f41b18, but was (null)
 
--barry
+Which means that our inode had correct i_wb_list.prev but the previous
+inode had NULL in i_wb_list.next. But that means that both inodes were
+linked into the list at some point. So it does not seem like an
+initialization issue to me...
+
+								Honza
+
+> --- linux.orig/fs/inode.c	2012-02-22 19:20:48.374799955 -0800
+> +++ linux/fs/inode.c	2012-03-06 23:11:29.133899478 -0800
+> @@ -193,6 +193,7 @@ int inode_init_always(struct super_block
+>  	inode->i_private = NULL;
+>  	inode->i_mapping = mapping;
+>  	INIT_LIST_HEAD(&inode->i_dentry);	/* buggered by rcu freeing */
+> +	INIT_LIST_HEAD(&inode->i_wb_list);
+>  #ifdef CONFIG_FS_POSIX_ACL
+>  	inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
+>  #endif
