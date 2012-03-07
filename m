@@ -1,226 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757216Ab2CGDXC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 22:23:02 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60660 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755264Ab2CGDXA (ORCPT
+	id S1757936Ab2CGD0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 22:26:37 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:43433 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab2CGD0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 22:23:00 -0500
-Date: Tue, 6 Mar 2012 19:22:21 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/7 v2] mm: rework __isolate_lru_page() file/anon
- filter
-In-Reply-To: <20120303091327.17599.80336.stgit@zurg>
-Message-ID: <alpine.LSU.2.00.1203061904570.18675@eggly.anvils>
-References: <20120229091547.29236.28230.stgit@zurg> <20120303091327.17599.80336.stgit@zurg>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 6 Mar 2012 22:26:36 -0500
+Message-ID: <1331090790.2191.173.camel@work-vm>
+Subject: Re: [PATCH] x86, tsc: Skip refined tsc calibration on systems with
+ reliable TSC.
+From: john stultz <johnstul@us.ibm.com>
+To: Alok Kataria <akataria@vmware.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        the arch/x86 maintainers <x86@kernel.org>, dirk.brandewie@gmail.com,
+        alan@linux.intel.com, stable@kernel.org, Dan Hecht <dhecht@vmware.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 06 Mar 2012 19:26:30 -0800
+In-Reply-To: <1331085930.8086.33.camel@ank32.eng.vmware.com>
+References: <1329876964.10380.28.camel@ank32.eng.vmware.com>
+	 <1329877195.10380.33.camel@ank32.eng.vmware.com>
+	 <1331083933.2191.172.camel@work-vm>
+	 <1331085930.8086.33.camel@ank32.eng.vmware.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030703-7408-0000-0000-00000342B9B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 3 Mar 2012, Konstantin Khlebnikov wrote:
-
-> This patch adds file/anon filter bits into isolate_mode_t,
-> this allows to simplify checks in __isolate_lru_page().
+On Tue, 2012-03-06 at 18:05 -0800, Alok Kataria wrote:
+> Hi John,
 > 
-> v2:
-> * use switch () instead of if ()
-> * fixed lumpy-reclaim isolation mode
+> On Tue, 2012-03-06 at 17:32 -0800, john stultz wrote:
+> > On Tue, 2012-02-21 at 18:19 -0800, Alok Kataria wrote:
+> > > [Oops forgot to copy LKML, now it is, sorry for the duplicates]
+> > > 
+> > > While running the latest Linux as guest under VMware in highly
+> > > over-committed situations, we have seen cases when the refined TSC
+> > > algorithm fails to get a valid tsc_start value in
+> > > tsc_refine_calibration_work from multiple attempts. As a result the
+> > > kernel keeps on scheduling the tsc_irqwork task for later. Subsequently
+> > > after several attempts when it gets a valid start value it goes through
+> > > the refined calibration and either bails out or uses the new results.
+> > > Given that the kernel originally read the TSC frequency from the
+> > > platform, which is the best it can get, I don't think there is much
+> > > value in refining it. 
+> > > 
+> > > So IMO, for systems which get the TSC frequency from the platform we
+> > > should skip the refined tsc algorithm.
+> > >         
+> > > We can use the TSC_RELIABLE cpu cap flag to detect this, right now it is
+> > > set only on VMware and for Moorestown Penwell both of which have there
+> > > own TSC calibration methods.
+> > 
+> > So this looks ok to me, only one nit below...
+> > 
+> > > 
+> > > Index: linux-2.6/arch/x86/kernel/tsc.c
+> > > ===================================================================
+> > > --- linux-2.6.orig/arch/x86/kernel/tsc.c	2012-02-21 17:31:01.000000000 -0800
+> > > +++ linux-2.6/arch/x86/kernel/tsc.c	2012-02-21 17:39:05.000000000 -0800
+> > > @@ -874,6 +874,13 @@ static void tsc_refine_calibration_work(
+> > >  		goto out;
+> > > 
+> > >  	/*
+> > > +	 * Trust the results of the earlier calibration on systems
+> > > +	 * exporting a reliable TSC.
+> > > +	 */
+> > > +	if (boot_cpu_has(X86_FEATURE_TSC_RELIABLE))
+> > > +		goto out;
+> > > +
+> > > +	/*
+> > 
+> > Instead of dropping out in the function called by the work-queue, why
+> > not just avoid scheduling the work-queue to begin with?
+> > 
+> > The FEATURE_TSC_RELIABLE isn't something that is set late, and needs the
+> > delay, right?
 > 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Right, but the reason I did it as part of work-queue was because on the
+> "out" path it still registered the tsc clocksource for us, the patch you
+> suggested doesn't do that. Please find below a patch on similar lines,
+> which registers the clocksource on RELIABLE_TSC systems, instead of
+> relying on irq_work to do that. 
 
-I'm sorry to be messing you around on this one, Konstantin, but...
+Ah, yes. Thanks for pointing that out!
 
-(a) if you do go with the switch statements,
-in kernel we align the "case"s underneath the "switch"
+I'll go ahead and queue your revision.
 
-but
+thanks
+-john
 
-(b) I seem to be at odds with Kamezawa-san, I much preferred your
-original, which did in 2 lines what the switches do in 10 lines.
-And I'd say there's more opportunity for error in 10 lines than 2.
 
-What does the compiler say (4.5.1 here, OPTIMIZE_FOR_SIZE off)?
-   text	   data	    bss	    dec	    hex	filename
-  17723	    113	     17	  17853	   45bd	vmscan.o.0
-  17671	    113	     17	  17801	   4589	vmscan.o.1
-  17803	    113	     17	  17933	   460d	vmscan.o.2
-
-That suggests that your v2 is the worst and your v1 the best.
-Kame, can I persuade you to let the compiler decide on this?
-
-If people have to think for a moment about the concise expression,
-well, great, I don't mind people having to think about kernel code.
-
-Hugh
-
-> ---
->  include/linux/mmzone.h |    4 ++++
->  include/linux/swap.h   |    2 +-
->  mm/compaction.c        |    5 +++--
->  mm/vmscan.c            |   49 +++++++++++++++++++++++++++++++-----------------
->  4 files changed, 40 insertions(+), 20 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 5f1e4ee..e60dcbd 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -192,6 +192,10 @@ struct lruvec {
->  #define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
->  /* Isolate for asynchronous migration */
->  #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
-> +/* Isolate swap-backed pages */
-> +#define ISOLATE_ANON		((__force isolate_mode_t)0x20)
-> +/* Isolate file-backed pages */
-> +#define ISOLATE_FILE		((__force isolate_mode_t)0x40)
->  
->  /* LRU Isolation modes. */
->  typedef unsigned __bitwise__ isolate_mode_t;
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index ba2c8d7..dc6e6a3 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -254,7 +254,7 @@ static inline void lru_cache_add_file(struct page *page)
->  /* linux/mm/vmscan.c */
->  extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
->  					gfp_t gfp_mask, nodemask_t *mask);
-> -extern int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file);
-> +extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
->  extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
->  						  gfp_t gfp_mask, bool noswap);
->  extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 74a8c82..cc054f7 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -261,7 +261,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  	unsigned long last_pageblock_nr = 0, pageblock_nr;
->  	unsigned long nr_scanned = 0, nr_isolated = 0;
->  	struct list_head *migratelist = &cc->migratepages;
-> -	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
-> +	isolate_mode_t mode = ISOLATE_ACTIVE | ISOLATE_INACTIVE |
-> +			      ISOLATE_FILE | ISOLATE_ANON;
->  
->  	/* Do not scan outside zone boundaries */
->  	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
-> @@ -375,7 +376,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  			mode |= ISOLATE_ASYNC_MIGRATE;
->  
->  		/* Try isolate the page */
-> -		if (__isolate_lru_page(page, mode, 0) != 0)
-> +		if (__isolate_lru_page(page, mode) != 0)
->  			continue;
->  
->  		VM_BUG_ON(PageTransCompound(page));
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 7de3acc..cce1e14 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1029,28 +1029,35 @@ keep_lumpy:
->   *
->   * returns 0 on success, -ve errno on failure.
->   */
-> -int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
-> +int __isolate_lru_page(struct page *page, isolate_mode_t mode)
->  {
-> -	bool all_lru_mode;
->  	int ret = -EINVAL;
->  
->  	/* Only take pages on the LRU. */
->  	if (!PageLRU(page))
->  		return ret;
->  
-> -	all_lru_mode = (mode & (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) ==
-> -		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
-> -
-> -	/*
-> -	 * When checking the active state, we need to be sure we are
-> -	 * dealing with comparible boolean values.  Take the logical not
-> -	 * of each.
-> -	 */
-> -	if (!all_lru_mode && !PageActive(page) != !(mode & ISOLATE_ACTIVE))
-> -		return ret;
-> +	switch (mode & (ISOLATE_ACTIVE | ISOLATE_INACTIVE)) {
-> +		case ISOLATE_ACTIVE:
-> +			if (!PageActive(page))
-> +				return ret;
-> +			break;
-> +		case ISOLATE_INACTIVE:
-> +			if (PageActive(page))
-> +				return ret;
-> +			break;
-> +	}
->  
-> -	if (!all_lru_mode && !!page_is_file_cache(page) != file)
-> -		return ret;
-> +	switch (mode & (ISOLATE_FILE | ISOLATE_ANON)) {
-> +		case ISOLATE_FILE:
-> +			if (!page_is_file_cache(page))
-> +				return ret;
-> +			break;
-> +		case ISOLATE_ANON:
-> +			if (page_is_file_cache(page))
-> +				return ret;
-> +			break;
-> +	}
->  
->  	/*
->  	 * When this function is being called for lumpy reclaim, we
-> @@ -1160,7 +1167,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  
->  		VM_BUG_ON(!PageLRU(page));
->  
-> -		switch (__isolate_lru_page(page, mode, file)) {
-> +		switch (__isolate_lru_page(page, mode)) {
->  		case 0:
->  			mem_cgroup_lru_del(page);
->  			list_move(&page->lru, dst);
-> @@ -1218,7 +1225,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
->  			    !PageSwapCache(cursor_page))
->  				break;
->  
-> -			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
-> +			if (__isolate_lru_page(cursor_page, mode) == 0) {
->  				unsigned int isolated_pages;
->  
->  				mem_cgroup_lru_del(cursor_page);
-> @@ -1503,7 +1510,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
->  
->  	set_reclaim_mode(priority, sc, false);
->  	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
-> -		isolate_mode |= ISOLATE_ACTIVE;
-> +		isolate_mode |= ISOLATE_ACTIVE | ISOLATE_FILE | ISOLATE_ANON;
->  
->  	lru_add_drain();
->  
-> @@ -1511,6 +1518,10 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
->  		isolate_mode |= ISOLATE_UNMAPPED;
->  	if (!sc->may_writepage)
->  		isolate_mode |= ISOLATE_CLEAN;
-> +	if (file)
-> +		isolate_mode |= ISOLATE_FILE;
-> +	else
-> +		isolate_mode |= ISOLATE_ANON;
->  
->  	spin_lock_irq(&zone->lru_lock);
->  
-> @@ -1677,6 +1688,10 @@ static void shrink_active_list(unsigned long nr_to_scan,
->  		isolate_mode |= ISOLATE_UNMAPPED;
->  	if (!sc->may_writepage)
->  		isolate_mode |= ISOLATE_CLEAN;
-> +	if (file)
-> +		isolate_mode |= ISOLATE_FILE;
-> +	else
-> +		isolate_mode |= ISOLATE_ANON;
->  
->  	spin_lock_irq(&zone->lru_lock);
->  
