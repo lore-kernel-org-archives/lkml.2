@@ -1,116 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab2CGLge (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 06:36:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21588 "EHLO mx1.redhat.com"
+	id S1756251Ab2CGLhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 06:37:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37878 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754865Ab2CGLgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 06:36:32 -0500
-Message-ID: <4F57482C.4060105@redhat.com>
-Date: Wed, 07 Mar 2012 08:36:12 -0300
+	id S1755562Ab2CGLhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 06:37:13 -0500
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: EDAC devel <linux-edac@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv7] EDAC core changes in order to properly report errors
- from all types of memory controllers
-References: <4F54A6FF.50502@redhat.com> <20120305124411.GD1070@aftab> <4F54C133.6040709@redhat.com> <20120305141349.GF1070@aftab> <4F54D4AF.9060802@redhat.com> <4F553764.5070305@redhat.com> <20120305232319.GA7175@aftab> <4F55F598.7050406@redhat.com> <20120306121616.GB11661@aftab> <4F56A9CB.2010504@redhat.com> <20120307084243.GB20727@aftab>
-In-Reply-To: <20120307084243.GB20727@aftab>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] edac: Improve the comments to better describe the memory concepts
+Date: Wed,  7 Mar 2012 08:37:04 -0300
+Message-Id: <1331120224-27420-1-git-send-email-mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 07-03-2012 05:42, Borislav Petkov escreveu:
-> On Tue, Mar 06, 2012 at 09:20:27PM -0300, Mauro Carvalho Chehab wrote:
->> The series now contains:
-> 
-> The below looks like a good way to split this huge patchset into
-> smaller, much easier to review ones:
-> 
->>
->> - 2 fix patches over upstream:
->>       edac/ppc4xx_edac: Fix compilation
+The memory terms changed along the time, since when EDAC were originally
+written: new concepts were introduced, and some things have different
+meanings, depending on the memory architecture.
 
-This one was reviewed already, at the first time I sent it.
-So, I'll skip it on my mailbomb.
+Better define those terms.
 
->>       i5400_edac: Avoid calling pci_put_device() twice
->>
->> - 1 comments improvements:
->>       edac: Improve the comments to better describe the memory concepts
->>
->> - 1 internal struct renaming patch:
->>       edac: rename channel_info to rank_info
->>
->> - 6 patches that prepare the internal structures to represent the memory
->>   properties per dimm, instead of per csrow. This is needed for modern
->>   controllers, where the memories at different channels may be different:
->>       edac: Create a dimm struct and move the labels into it
->>       edac: Add per dimm's sysfs nodes
->>       edac: move dimm properties to struct memset_info
->>       edac: Don't initialize csrow's first_page & friends when not needed
->>       edac: move nr_pages to dimm struct
->>       edac: Add per-dimm sysfs show nodes
->>
->> - 2 patches that add proper support for FB-DIMM and for the modern Intel
->>   DDR2/DDR3 memory controllers: 
->>       edac: Fix core support for MC's that see DIMMS instead of ranks
->>       edac: Export MC hierarchy counters for CE and UE
->>
->> - 1 log cleanup patch, that prepares for using a MCA based tracepoint:
->>       edac: Cleanup the logs for i7core and sb edac drivers
->>
->> - 2 debug improvement patches:
->>       edac: Add a sysfs node to test the EDAC error report facility
->>       edac: Initialize the dimm label with the known information
->>
->> - 5 post-FB-DIMM patches that cleans, fix and/or improve a few random things:
->>       edac_mc_sysfs: don't create inactive errcount sysfs nodes
->>       i5000_edac: Fix the logic that retrieves memory information
->>       edac: add a sysfs node that stores the max possible memory location
->>       edac: Call the sysfs nodes as "rank" instead of "dimm" if chip select is used
->>       i5400_edac: improve debug messages to better represent the filled memory
+As some concepts are different for memory controllers used by certain
+memory stick types, add a per-memory type comment, and add a more verbose
+description for each memory type.
 
-Ok, I'll mailbomb them.
+No functional changes. Just comments were touched.
 
->>
->> - 1 patch that adds a trace event to report memory errors:
->>       events/hw_event: Create a Hardware Events Report Mecanism (HERM)
-> 
-> NACK to that last one.
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ include/linux/edac.h |  182 +++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 137 insertions(+), 45 deletions(-)
 
-Hmm... interesting... this one adds a tracepoint for non-MCA based memory errors...
-I've understood that you've against only the mca one...
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index 055b248..96f996f 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -66,25 +66,91 @@ enum dev_type {
+ #define DEV_FLAG_X32		BIT(DEV_X32)
+ #define DEV_FLAG_X64		BIT(DEV_X64)
+ 
+-/* memory types */
++/**
++ * enum mem_type - memory types
++ *
++ * @MEM_EMPTY		Empty csrow
++ * @MEM_RESERVED:	Reserved csrow type
++ * @MEM_UNKNOWN:	Unknown csrow type
++ * @MEM_FPM:		Fast page mode
++ *			An old asyncronous memory technology, encapsulated as
++ *			SIMM, popularly used between 1987-1995.
++ * @MEM_EDO:		Extended data out
++ *			Asynchronous memory technology used on early Pentium's
++ *			(1995-1998).
++ * @MEM_BEDO:		Burst Extended data out
++ *			EDO memories with performance improvement gains.
++ * @MEM_SDR:		Single data rate SDRAM
++ *			First types of syncronous ram specified by JEDEC
++ *			popular between 1998-2002. The JEDEC standards defined
++ *			3 types of sticks: PC66, PC100 and PC133. There were
++ *			also some non-official overclocked sticks like PC150
++ *			and PC166.
++ *			There are 3 pins for chip select: Pins 0 and 2 are
++ *			for rank 0; pins 1 and 3 are for rank 1, if the memory
++ *			is dual-rank.
++ * @MEM_RDR:		Registered single data rate SDRAM
++ * @MEM_DDR:		Double data rate SDRAM, used between 2002 and 2005.
++ *			The JEDEC standards defined sticks PC1600, PC2100,
++ *			PC2700 and PC3200. Non-official overclocked sticks
++ *			also exists.
++ *			On DDR memories, there are one or two channels. A
++ *			single-channel mode means that one x72 ECC dimm is
++ *			accessed, in order to provide 64 bits of data. On
++ *			dual-channel mode, two dimm's are used simultaneously,
++ *			in order to provide a 128 bits of data. The "cschannel"
++ *			concept used on EDAC refers to such channel type.
++ * @MEM_RDDR:		Registered Double data rate SDRAM
++ *			This is a variant of the DDR memories.
++ *			A registered memory has a buffer inside it, hiding
++ *			part of the memory details to the memory controller.
++ * @MEM_RMBS:		Rambus DRAM
++ *			Rambus uses a high-speed multi-drop serial bus to
++ *			communicate with each RDRAM chip, used on some
++ *			machines between 2000-2002 (Pentium III and IV).
++ * @MEM_DDR2:		DDR2 RAM, as described at JEDEC JESD79-2F.
++ *			Those memories are labed as "PC2-" instead of "PC" to
++ *			differenciate from DDR.
++ * @MEM_FB_DDR2:	Fully-Buffered DDR2, as described at JEDEC Std No. 205
++ *			and JESD206.
++ *			A FB-DIMM channel consists of 14 unidirectional signal
++ *			pairs (Northbound path) from the memories to the MC
++ *			and 10 unidirectional signal pairs (Southbond path)
++ *			from the MC to the DIMM's.
++ *			those memories are x72 ECC DIMMs. Up to 8 DIMMs can
++ *			be connected per channel. When used with 128 bits,
++ *			two channels are needed. The grouping of those two
++ *			channels is called "branch".
++ * @MEM_RDDR2:		Registered DDR2 RAM
++ *			This is a variant of the DDR2 memories.
++ * @MEM_XDR:		Rambus XDR
++ *			It is an evolution of the original RAMBUS memories,
++ *			created to compete with DDR2. Weren't used on any
++ *			x86 arch, but cell_edac PPC memory controller uses it.
++ * @MEM_DDR3:		DDR3 RAM
++ *			Those memories are labed as "PC3-" to differenciate
++ *			from DDR and DDR2.
++ * @MEM_RDDR3:		Registered DDR3 RAM
++ *			This is a variant of the DDR3 memories.
++ */
+ enum mem_type {
+-	MEM_EMPTY = 0,		/* Empty csrow */
+-	MEM_RESERVED,		/* Reserved csrow type */
+-	MEM_UNKNOWN,		/* Unknown csrow type */
+-	MEM_FPM,		/* Fast page mode */
+-	MEM_EDO,		/* Extended data out */
+-	MEM_BEDO,		/* Burst Extended data out */
+-	MEM_SDR,		/* Single data rate SDRAM */
+-	MEM_RDR,		/* Registered single data rate SDRAM */
+-	MEM_DDR,		/* Double data rate SDRAM */
+-	MEM_RDDR,		/* Registered Double data rate SDRAM */
+-	MEM_RMBS,		/* Rambus DRAM */
+-	MEM_DDR2,		/* DDR2 RAM */
+-	MEM_FB_DDR2,		/* fully buffered DDR2 */
+-	MEM_RDDR2,		/* Registered DDR2 RAM */
+-	MEM_XDR,		/* Rambus XDR */
+-	MEM_DDR3,		/* DDR3 RAM */
+-	MEM_RDDR3,		/* Registered DDR3 RAM */
++	MEM_EMPTY = 0,
++	MEM_RESERVED,
++	MEM_UNKNOWN,
++	MEM_FPM,
++	MEM_EDO,
++	MEM_BEDO,
++	MEM_SDR,
++	MEM_RDR,
++	MEM_DDR,
++	MEM_RDDR,
++	MEM_RMBS,
++	MEM_DDR2,
++	MEM_FB_DDR2,
++	MEM_RDDR2,
++	MEM_XDR,
++	MEM_DDR3,
++	MEM_RDDR3,
+ };
+ 
+ #define MEM_FLAG_EMPTY		BIT(MEM_EMPTY)
+@@ -162,8 +228,9 @@ enum scrub_type {
+ #define OP_OFFLINE		0x300
+ 
+ /*
+- * There are several things to be aware of that aren't at all obvious:
++ * Concepts used at the EDAC subsystem
+  *
++ * There are several things to be aware of that aren't at all obvious:
+  *
+  * SOCKETS, SOCKET SETS, BANKS, ROWS, CHIP-SELECT ROWS, CHANNELS, etc..
+  *
+@@ -172,36 +239,61 @@ enum scrub_type {
+  * creating a common ground for discussion, terms and their definitions
+  * will be established.
+  *
+- * Memory devices:	The individual chip on a memory stick.  These devices
+- *			commonly output 4 and 8 bits each.  Grouping several
+- *			of these in parallel provides 64 bits which is common
+- *			for a memory stick.
++ * Memory devices:	The individual DRAM chips on a memory stick.  These
++ *			devices commonly output 4 and 8 bits each (x4, x8).
++ *			Grouping several of these in parallel provides the
++ *			number of bits that the memory controller expects:
++ *			typically 72 bits, in order to provide 64 bits of ECC
++ *			corrected data.
+  *
+  * Memory Stick:	A printed circuit board that aggregates multiple
+- *			memory devices in parallel.  This is the atomic
+- *			memory component that is purchaseable by Joe consumer
+- *			and loaded into a memory socket.
++ *			memory devices in parallel.  In general, this is the
++ *			Field Replaceable Unit (FRU) that the final consumer
++ *			cares to replace. It is typically encapsulated as DIMMs
+  *
+  * Socket:		A physical connector on the motherboard that accepts
+- *			a single memory stick.
++ *			a single memory stick. Also called as "slot" on several
++ *			datasheets.
+  *
+- * Channel:		Set of memory devices on a memory stick that must be
+- *			grouped in parallel with one or more additional
+- *			channels from other memory sticks.  This parallel
+- *			grouping of the output from multiple channels are
+- *			necessary for the smallest granularity of memory access.
+- *			Some memory controllers are capable of single channel -
+- *			which means that memory sticks can be loaded
+- *			individually.  Other memory controllers are only
+- *			capable of dual channel - which means that memory
+- *			sticks must be loaded as pairs (see "socket set").
++ * Channel:		A memory controller channel, responsible to communicate
++ *			with a group of DIMM's. Each channel has its own
++ *			independent control (command) and data bus, and can
++ *			be used independently or grouped.
+  *
+- * Chip-select row:	All of the memory devices that are selected together.
+- *			for a single, minimum grain of memory access.
+- *			This selects all of the parallel memory devices across
+- *			all of the parallel channels.  Common chip-select rows
+- *			for single channel are 64 bits, for dual channel 128
+- *			bits.
++ * Branch:		Not all memory controllers have it. It is the highest
++ *			hierarchy on a Fully-Buffered DIMM memory controller.
++ *			Typically, it contains two channels.
++ *			Two channels at the same branch can be used in single
++ *			mode or in lockstep mode.
++ *			When lockstep is enabled, the cache line is higher,
++ *			but it generally brings some performance penalty.
++ *			Also, it is generally not possible to point to just one
++ *			memory stick when an error occurs, as the error
++ *			correction code is calculated using two dimms instead
++ *			of one. Due to that, it is capable of correcting more
++ *			errors than on single mode.
++ *
++ * Single-channel:	The data accessed by the memory controller is contained
++ *			into one dimm only. E. g. if the data is 64 bits-wide,
++ *			the data flows to the CPU using one 64 bits parallel
++ *			access.
++ *			Typically used with SDR, DDR, DDR2 and DDR3 memories.
++ *			FB-DIMM and RAMBUS use a different concept for channel,
++ *			so this concept doesn't apply there.
++ *
++ * Double-channel:	The data size accessed by the memory controller is
++ *			interlaced into two dimms, accessed at the same time.
++ *			E. g. if the DIMM is 64 bits-wide (72 bits with ECC),
++ *			the data flows to the CPU using a 128 bits parallel
++ *			access.
++ *
++ * Chip-select row:	This is the name of the DRAM signal used to select the
++ *			DRAM chips to be used. It may not be visible by the
++ *			memory controller, as some DIMM types have a memory
++ *			buffer that can hide direct access to it from the
++ *			Memory Controller. On devices where it is visible, it
++ *			selects the DIMM rank that it is accessed by the
++ *			memory controller.
+  *
+  * Single-Ranked stick:	A Single-ranked stick has 1 chip-select row of memory.
+  *			Motherboards commonly drive two chip-select pins to
+@@ -214,8 +306,8 @@ enum scrub_type {
+  *
+  * Double-sided stick:	DEPRECATED TERM, see Double-Ranked stick.
+  *			A double-sided stick has two chip-select rows which
+- *			access different sets of memory devices.  The two
+- *			rows cannot be accessed concurrently.  "Double-sided"
++ *			access different sets of memory devices. The two
++ *			rows cannot be accessed concurrently. "Double-sided"
+  *			is irrespective of the memory devices being mounted
+  *			on both sides of the memory stick.
+  *
+-- 
+1.7.8
 
-Anyway, we have a dead lock with regards to trace, as I'm nacking your approach,
-and you're nacking mine.
-
-I think we should then try to schedule a meeting (either physical or a conference)
-in order to addresss it, as it doesn't sound that we'll be able to solve it via
-ML.
-
->> While the preliminar tests is working ok on the machines I'm testing,
->> as I didn't finish the tests yet, some other fix patches may be needed,
->> but I'll insert them at the end of the series, as rebasing a large patchset
->> like that is very time-consuming.
->>
->> So,  I think it is time to merge it at -next, in order to give more visibility
->> to it. So, tomorrow, I'll add it there, if I got no complains.
-> 
-> linux-next is not a testing ground for unfinished testing, unreviewed
-> patches (I'm sure you already knew that), so before you send your stuff
-> anywhere, it needs to be reviewed by the interested parties. One of
-> them is me, I'm sure there are others, so please split them in proper
-> patchsets, as I've already asked you (the above topical split could
-> work) and send them to edac-devel and people for review.
-> 
-> Thanks.
-> 
-
-Thanks,
-Mauro
