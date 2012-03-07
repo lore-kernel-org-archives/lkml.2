@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031721Ab2CGAw0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 19:52:26 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48151 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932701Ab2CGAwY convert rfc822-to-8bit (ORCPT
+	id S1031733Ab2CGAym (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 19:54:42 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:64015 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932701Ab2CGAyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 19:52:24 -0500
+	Tue, 6 Mar 2012 19:54:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <1331080238-1524-2-git-send-email-swarren@wwwdotorg.org>
-References: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org> <1331080238-1524-2-git-send-email-swarren@wwwdotorg.org>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Wed, 7 Mar 2012 11:52:03 +1100
-Message-ID: <CAGRGNgWHXrQgVobz+54sFBzj=bTHCKwg+H4_CY5JoGtmETw2yA@mail.gmail.com>
-Subject: Re: [PATCH 2/3] Kbuild: Implement CONFIG_UIMAGE_KERNEL_NOLOAD
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
-        nico@fluxnic.net, Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>, Michal Simek <monstr@monstr.eu>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-arch@vger.kernel.org
+In-Reply-To: <1331067743.11248.333.camel@twins>
+References: <20120306204357.13169.90791.stgit@zurg> <1331067743.11248.333.camel@twins>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 6 Mar 2012 16:54:20 -0800
+X-Google-Sender-Auth: a5X2_XgJtjaI-5YrIywnFHwlTas
+Message-ID: <CA+55aFxPiW=T8iNy=Fb_fuO2DYV9+sQL-mr8=Uc7cWymTyVt6A@mail.gmail.com>
+Subject: Re: [PATCH bisected regression] sched: rebuild sched domains at suspend/resume
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Wed, Mar 7, 2012 at 11:30, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> This allows the user to use U-Boot's mkimage's -T kernel_noload option
-> if their arch Kconfig allows it, and they desire.
+On Tue, Mar 6, 2012 at 1:02 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 >
-> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
-> ---
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 6cfd71d..2035562 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -203,6 +203,21 @@ config KERNEL_LZO
+> This changelog also completely fails to explain what the problem was and
+> how this patch sorts it without re-introducing the problems 8f2f748b0656
+> was supposed to fix.
 >
->  endchoice
->
-> +config ALLOW_UIMAGE_KERNEL_NOLOAD
-> +       bool
-> +
-> +config UIMAGE_KERNEL_NOLOAD
-> +       bool "Use mkimage's -T kernel_noload instead of -T kernel"
-> +       depends on ALLOW_UIMAGE_KERNEL_NOLOAD
-> +       help
-> +         uImage files of type "kernel" embed an absolute load and entry point
-> +         address. If the uImage is loaded to a different address, then the
-> +         image must be copied the uImage file to the specified load address.
+> I'd rather revert the 'fix' and think about this more (its been broken
+> pretty much forever anyway) than tinker on top like this.
 
-You seem to have an excess "the uImage file" in here.
+Ok, guys, I don't care whether it's the revert or the addition of
+rebuild_sched_domains(), but I'd like for somebody to make that
+decision and test the end result.
 
-> +         This copy is a waste of time if the uImage is in fact completely
-> +         relocatable. If your kernel and bootloader support it, you can build
-> +         a "kernel_noload" uImage rather than a "kernel" uImage, which
-> +         prevents any such copying. If unsure say N.
-> +
->  config DEFAULT_HOSTNAME
->        string "Default hostname"
->        default "(none)"
+I do agree that reverting is probably safer at this point, but can we
+get agreement on this?
 
-Thanks,
-
--- 
-Julian Calaby
-
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
+               Linus
