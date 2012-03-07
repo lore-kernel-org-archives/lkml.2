@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758424Ab2CGQ20 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 11:28:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43298 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757859Ab2CGQ2Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 11:28:24 -0500
-Date: Wed, 7 Mar 2012 16:28:22 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        Samuel Ortiz <sameo@linux.intel.com>, patches@linaro.org,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Nancy Chen <Nancy.Chen@freescale.com>
-Subject: Re: [PATCH v9] Regulator: Add Anatop regulator driver
-Message-ID: <20120307162821.GP3107@opensource.wolfsonmicro.com>
-References: <1331126658-26926-1-git-send-email-paul.liu@linaro.org>
- <20120307132225.GB17745@game.jcrosoft.org>
- <20120307134551.GL3107@opensource.wolfsonmicro.com>
- <20120307153622.GC17745@game.jcrosoft.org>
+	id S1759421Ab2CGQ25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 11:28:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757578Ab2CGQ24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 11:28:56 -0500
+Date: Wed, 7 Mar 2012 11:28:51 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Josh Hunt <joshhunt00@gmail.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, tj@kernel.org
+Subject: Re: multi-second application stall in open()
+Message-ID: <20120307162851.GC13430@redhat.com>
+References: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com>
+ <CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="90KBcPA0h13nTGdQ"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120307153622.GC17745@game.jcrosoft.org>
-X-Cookie: You will contract a rare disease.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 07, 2012 at 07:43:42AM -0600, Josh Hunt wrote:
+> On Tue, Mar 6, 2012 at 3:56 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
+> > I am trying to diagnose a stall in an application when making a call
+> > to open() with O_TRUNC. The issue was originally seen on 2.6.38 and
+> > I've since reproduced on 2.6.35. I believe the last kernel that I did
+> > not see the stall was 2.6.32. The system is under low to moderate cpu
+> > and memory load when the issue occurs. The filesystem is ext2, but I
+> > mounted it as ext4 and still saw the issue.
+> >
+> > To me it appears the O_TRUNC needs to truncate pages in the page
+> > cache, but maybe those are already out for writeback? This causes the
+> > open() to wait until that operation completes at which time it is then
+> > able to proceed. If that's true then it looks like the writeback is
+> > sitting on the queue forever waiting (tens of seconds) to be
+> > dispatched to the device.
+> >
+> > Here's some more info/data I collected:
+> > (Unfortunately the data here and attached are from separate runs so
+> > the #s will not match up file to file.)
+> >
+> > Snippet of an strace when it is hanging:
+> > 1329323286.589182 close(37)             = 0 <0.000010>
+> > 1329323286.589212 clock_gettime(0x5 /* CLOCK_??? */, {1329323286,
+> > 587579583}) = 0 <0.000007>
+> > 1329323286.589241 open("/usr/local/etc/abcd/known/test808",
+> > O_WRONLY|O_CREAT|O_TRUNC, 0644)                = 37 <76.841586>
+> > 1329323363.441841 fchmod(37, 0644)      = 0 <0.000012>
+> > 1329323363.441882 fcntl64(37, F_GETFL)  = 0x1 (flags O_WRONLY) <0.000011>
+> > 1329323363.441915 fcntl64(37, F_SETFL, O_WRONLY|O_NONBLOCK) = 0 <0.000010>
+> >
+> > To debug this more I enabled the hang check timer to dump stack when
+> > anything hung for longer than 10s. There I see the the hanging
+> > application appearing to be stuck in sync_page(). See attached dmesg
+> > for traces.
+> >
+> > I've also captured "iostat -xm 1" while the application was running
+> > and have attached a snippet of that when the problem is occurring. I
+> > see 100% utilization for many seconds and then eventually the
+> > operations complete, but the await time is extremely high. To me there
+> > doesn't look like much IO going on which could be starving out any
+> > requests.
+> >
+> > I have not been able to perform a full bisection to better understand
+> > what may be causing this, but do see this on 2.6.38, a little less
+> > frequently but still occurs on 2.6.35, and no longer see the issue on
+> > 2.6.32. If I switch slice_idle to 0 or change to the deadline
+> > scheduler the issue appears to go away in both 2.6.35 and 38.
 
---90KBcPA0h13nTGdQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Is it happening on latest kernel (3.3-rc6) ?
 
-On Wed, Mar 07, 2012 at 04:36:22PM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+Can you change the IO scheduler to deadline on sda and see if the issue
+still happens. (echo deadline > /sys/block/sda/queue/scheduler).
 
-> > This really doesn't seem at all sane for a device which is already
-> > vendor specific, it's just noise in the bindings.
+blktrace of cfq look odd. I see that some IO (async writes) are being
+submitted but CFQ did not dispatch it for a long time.  Even some unplugs
+came in still nothing happened. Also no completions are happening during
+that window. Not sure why CFQ refuses to dispatch queued writes.
 
-> No it's
+Request added by flusher.
 
-...?
+  8,0    1    36926  5028.546000122  2846  A   W 20147012 + 8 <- (8,3)
+3375152
+  8,0    1    36927  5028.546001798  2846  Q   W 20147012 + 8 [flush-8:0]
+  8,0    1    36928  5028.546009900  2846  G   W 20147012 + 8 [flush-8:0]
+  8,0    1    36929  5028.546014649  2846  I   W 20147012 + 8 (    4749)
+[flush-8:0]
 
-> Here is a good example as we have regulator generic binding & vendor
-> specific bindig
+And this request is dispatched after 22 seconds.
 
-It's not vendor specific, it's device specific and people are doing it
-even for devices with no generic bindings at all which is particularly
-silly.
+  8,0    1    37056  5050.117337221   162  D   W 20147012 + 16 (21571322572) [sync_supers]
 
-Device specific prefixes probably make sense, but vendor specific ones
-are just noise.
 
---90KBcPA0h13nTGdQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+And it completes fairly fast.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ 8,0    0    36522  5050.117686149  9657  C   W 20147012 + 16 (  348928)
+[0]
 
-iQIcBAEBAgAGBQJPV4upAAoJEBus8iNuMP3dDrAQAJxEkRJlKSPYdjgEYR8gK4HD
-LYXfRBSJL5UFUHr5WIbqBmdYJy6zcA7DhzHTDm3mJB6dbMYV75J/NSIQMiJ1TbI/
-WqMjO8WafIwB+WtdPZ8InD8gyvsUOafo4/GjHh9OuxdYLl1cDg9k3E8HTufUZabW
-nP0M6jMUB1fRKNEDXVvmxK7gXcpmOjmNNlQj3hYIroVdi3JiiY9hvQ2XJcbmXf/Y
-4DqQdbJB59EGSNIF/ej+DXwO+eAcbcAYp/Ioqs1khxN+4lVFQwqHeRXyMgnYMNn5
-VTCl43qhVxFRo/vqjMB/GnlwjdPc5p4LNmmWpf9IxTexm6rkvHfzhXi4FN88prYT
-EA/QmU0Chy4hvO3z9XfrIJX04NhPmiirzSJyKHQwB7ChdqyTAMr8QcdjBPKSRmv6
-Xi09L/GnAF7htIH4cIhqD9U1UlnbCdbJG9kBSJJWxSrG1xiDI0bIx2m1yKIV6XFR
-F2aMmLKp7W1TvhWOmUlKyWrU8VwPJBWNwxJ/vyAwPPdV1rNpDbh7sDYYLUOcxha+
-2f2DIbm/a34mB6XcWjDpZB4KSxt85IRwSCZGFHDNdy+ElkvfGCCyedPNGjdbkUv/
-rh2pz5RZ8ILuzIjODdRYu6BNJWD6GLWGdCiTI11kB1CzWO3dMXi4lqKn60K8fKfX
-h8Y72prxLk6heP4eU6Es
-=SMRj
------END PGP SIGNATURE-----
+So not sure why CFQ will hold that request for so long when other IO is
+not happening.
 
---90KBcPA0h13nTGdQ--
+Please try latest kernels and see if deadline has the same issue. If not,
+then we know somehow CFQ is related. If it still happens on latest
+kernels, can you try capturing blktrace again when you are experiencing
+the delays.
+
+Thanks
+Vivek
