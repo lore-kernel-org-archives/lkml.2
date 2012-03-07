@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab2CGJCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 04:02:20 -0500
-Received: from cassarossa.samfundet.no ([129.241.93.19]:32861 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab2CGJCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 04:02:17 -0500
-Date: Wed, 7 Mar 2012 10:00:17 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Michal Marek <mmarek@suse.cz>, Russell King <linux@arm.linux.org.uk>,
-        nico@fluxnic.net, Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, Michal Simek <monstr@monstr.eu>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH 1/3] Kbuild: centralize MKIMAGE and cmd_uimage
- definitions
-Message-ID: <20120307090017.GB17076@samfundet.no>
-References: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org>
+	id S1753531Ab2CGJHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 04:07:05 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:41557 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753009Ab2CGJHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 04:07:00 -0500
+X-IronPort-AV: E=Sophos;i="4.73,545,1325433600"; 
+   d="scan'208";a="4480137"
+Message-ID: <4F5724BC.10207@cn.fujitsu.com>
+Date: Wed, 07 Mar 2012 17:05:00 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier related
+ damage v2
+References: <20120306132735.GA2855@suse.de> <20120306122657.8e5b128d.akpm@linux-foundation.org> <20120306224201.GA17697@suse.de> <20120306145451.8eff82a6.akpm@linux-foundation.org>
+In-Reply-To: <20120306145451.8eff82a6.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-07 17:05:01,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-07 17:05:03,
+	Serialize complete at 2012-03-07 17:05:03
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Tue 06 Mar 2012 17:30:36 -0700 or thereabout, Stephen Warren wrote:
-> All ARCHs have the same definition of MKIMAGE. Move it to Makefile.lib
-> to avoid duplication.
+On Tue, 6 Mar 2012 14:54:51 -0800, Andrew Morton wrote:
+>>>> -static inline void put_mems_allowed(void)
+>>>> +/*
+>>>> + * If this returns false, the operation that took place after get_mems_allowed
+>>>> + * may have failed. It is up to the caller to retry the operation if
+>>>> + * appropriate
+>>>> + */
+>>>> +static inline bool put_mems_allowed(unsigned int seq)
+>>>>  {
+>>>> -	/*
+>>>> -	 * ensure that reading mems_allowed and mempolicy before reducing
+>>>> -	 * mems_allowed_change_disable.
+>>>> -	 *
+>>>> -	 * the write-side task will know that the read-side task is still
+>>>> -	 * reading mems_allowed or mempolicy, don't clears old bits in the
+>>>> -	 * nodemask.
+>>>> -	 */
+>>>> -	smp_mb();
+>>>> -	--ACCESS_ONCE(current->mems_allowed_change_disable);
+>>>> +	return !read_seqcount_retry(&current->mems_allowed_seq, seq);
+>>>>  }
+>>>>  
+>>>>  static inline void set_mems_allowed(nodemask_t nodemask)
+>>>
+>>> How come set_mems_allowed() still uses task_lock()?
+>>>
+>>
+>> Consistency.
+>>
+>> The task_lock is taken by kernel/cpuset.c when updating
+>> mems_allowed so it is taken here. That said, it is unnecessary to take
+>> as the two places where set_mems_allowed is used are not going to be
+>> racing. In the unlikely event that set_mems_allowed() gets another user,
+>> there is no harm is leaving the task_lock as it is. It's not in a hot
+>> path of any description.
 > 
-> All ARCHs have similar definitions of cmd_uimage. Place a sufficiently
-> parameterized version in Makefile.lib to avoid duplication.
+> But shouldn't set_mems_allowed() bump mems_allowed_seq?
 > 
-> The centralized cmd_uimage definition will allow the future introduction
-> of a centralized Kconfig option to make cmd_uimage use -T kernel_noload
-> rather than -T kernel.
-> 
-> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
-> ---
-> NOTE: I have not tested this patch in any way at all for architectures
-> other than ARM.
-> 
->  arch/arm/boot/Makefile          |   23 +++++++++--------------
->  arch/avr32/boot/images/Makefile |    9 +++------
 
-For the AVR32 related changes
+task_lock is also used to protect mempolicy, so ...
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-
--- 
-Best regards, Hans-Christian Egtvedt
+Thanks
+Miao
