@@ -1,154 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab2CGNkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 08:40:45 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:12968 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756204Ab2CGNkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 08:40:43 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 07 Mar 2012 05:40:42 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: khali@linux-fr.org, ben-linux@fluff.org, w.sang@pengutronix.de,
-        grant.likely@secretlab.ca, broonie@opensource.wolfsonmicro.com,
-        linus.walleij@linaro.org
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, ldewangan@nvidia.com
-Subject: [PATCH V1] i2c: gpio: Use open drain support from gpio driver
-Date: Wed,  7 Mar 2012 19:08:14 +0530
-Message-Id: <1331127494-6913-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S1757903Ab2CGNmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 08:42:53 -0500
+Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:53747 "EHLO nsa.gov"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756222Ab2CGNmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 08:42:51 -0500
+X-Greylist: delayed 900 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Mar 2012 08:42:51 EST
+X-TM-IMSS-Message-ID: <125d37c20001ad47@nsa.gov>
+Subject: Re: [PATCH] selinux: init target class when add avc callback
+From: Stephen Smalley <sds@tycho.nsa.gov>
+To: Eric Paris <eparis@parisplace.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, gaowanlong@cn.fujitsu.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+In-Reply-To: <1331080893.6253.1.camel@localhost>
+References: <1328406808-11309-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	 <4F56A4E2.5050001@cn.fujitsu.com>
+	 <20120306161543.63c3fc54.akpm@linux-foundation.org>
+	 <1331080893.6253.1.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Organization: National Security Agency
+Date: Wed, 07 Mar 2012 08:27:31 -0500
+Message-ID: <1331126851.16697.16.camel@moss-pluto>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The gpio core driver (gpio library) supports the open
-drain pin handling. Therefore, it is not require it
-to handle in the i2c-gpio driver, just require
-to pass the OPEN_DRAIN type flag when requesting the gpio.
+On Tue, 2012-03-06 at 19:41 -0500, Eric Paris wrote:
+> On Tue, 2012-03-06 at 16:15 -0800, Andrew Morton wrote:
+> > On Wed, 07 Mar 2012 07:59:30 +0800
+> > Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
+> > 
+> > > On 02/05/2012 09:53 AM, Wanlong Gao wrote:
+> > > 
+> > > > Target security class should be initialized when add avc callback.
+> > > > Although tclass is userless in callbacks now, but it may be used
+> > > > in the future .
+> > > > 
+> > > > Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> > > > ---
+> > > >  security/selinux/avc.c |    1 +
+> > > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+> > > > index dca1c22..27495e6 100644
+> > > > --- a/security/selinux/avc.c
+> > > > +++ b/security/selinux/avc.c
+> > > > @@ -576,6 +576,7 @@ int avc_add_callback(int (*callback)(u32 event, u32 ssid, u32 tsid,
+> > > >  	c->events = events;
+> > > >  	c->ssid = ssid;
+> > > >  	c->tsid = tsid;
+> > > > +	c->tclass = tclass;
+> > > >  	c->perms = perms;
+> > > >  	c->next = avc_callbacks;
+> > > >  	avc_callbacks = c;
+> > 
+> > Perhaps James can take a look at this?
+> > 
+> > avc_add_callback() looks a bit odd.  It uses GFP_ATOMIC, but that is
+> > unnecessary because avc_add_callback() is only ever called from
+> > module_init() code.  And if it isn't only ever called from
+> > module_init() code then it needs some locking for that list.
+> 
+> I'm a bad maintainer.  I should have done something with this patch.
+> Adding sds, the only other person who ever actually maintains this code,
+> to the thread.
+> 
+> __initcall() functions aren't serialized?  I guess that would be bad and
+> we would need a lock.  I wonder if there are other places I assumed
+> __initcall() would be serialized (note that all of these call sites are
+> built in and not modules if that makes a difference)
+> 
+> I'll probably just rip all of that ssid, tsid, tclass, perms, stuff out.
+> If all these years noone uses callbacks for anything other than reset
+> why do we have it at all.  Probably more simplification we can do around
+> avc_update_node() too...
+> 
+> Stephen, thoughts on ripping stuff out?
 
-Remove the handling of open drain pin in the i2c-gpio driver.
+Yes, you should be able to replace GFP_ATOMIC with GFP_KERNEL there and
+rip out the other callback fields/arguments as they are presently
+unused.  Legacy of the original Flask code, where there were other
+avc_ss_* interfaces for revoke and friends.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/i2c/busses/i2c-gpio.c |   78 ++++++++++++++--------------------------
- 1 files changed, 27 insertions(+), 51 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-gpio.c b/drivers/i2c/busses/i2c-gpio.c
-index 69fbfae..662a747 100644
---- a/drivers/i2c/busses/i2c-gpio.c
-+++ b/drivers/i2c/busses/i2c-gpio.c
-@@ -16,22 +16,7 @@
- #include <linux/platform_device.h>
- #include <linux/gpio.h>
- 
--/* Toggle SDA by changing the direction of the pin */
--static void i2c_gpio_setsda_dir(void *data, int state)
--{
--	struct i2c_gpio_platform_data *pdata = data;
--
--	if (state)
--		gpio_direction_input(pdata->sda_pin);
--	else
--		gpio_direction_output(pdata->sda_pin, 0);
--}
--
--/*
-- * Toggle SDA by changing the output value of the pin. This is only
-- * valid for pins configured as open drain (i.e. setting the value
-- * high effectively turns off the output driver.)
-- */
-+/* Toggle SDA by setting value, gpio library take care of open drain pins.*/
- static void i2c_gpio_setsda_val(void *data, int state)
- {
- 	struct i2c_gpio_platform_data *pdata = data;
-@@ -39,23 +24,7 @@ static void i2c_gpio_setsda_val(void *data, int state)
- 	gpio_set_value(pdata->sda_pin, state);
- }
- 
--/* Toggle SCL by changing the direction of the pin. */
--static void i2c_gpio_setscl_dir(void *data, int state)
--{
--	struct i2c_gpio_platform_data *pdata = data;
--
--	if (state)
--		gpio_direction_input(pdata->scl_pin);
--	else
--		gpio_direction_output(pdata->scl_pin, 0);
--}
--
--/*
-- * Toggle SCL by changing the output value of the pin. This is used
-- * for pins that are configured as open drain and for output-only
-- * pins. The latter case will break the i2c protocol, but it will
-- * often work in practice.
-- */
-+ /* Toggle SCL by setting value, gpio library take care of open drain pins.*/
- static void i2c_gpio_setscl_val(void *data, int state)
- {
- 	struct i2c_gpio_platform_data *pdata = data;
-@@ -83,6 +52,8 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
- 	struct i2c_algo_bit_data *bit_data;
- 	struct i2c_adapter *adap;
- 	int ret;
-+	unsigned long sda_gpio_flags;
-+	unsigned long scl_gpio_flags;
- 
- 	pdata = pdev->dev.platform_data;
- 	if (!pdata)
-@@ -96,28 +67,33 @@ static int __devinit i2c_gpio_probe(struct platform_device *pdev)
- 	if (!bit_data)
- 		goto err_alloc_bit_data;
- 
--	ret = gpio_request(pdata->sda_pin, "sda");
--	if (ret)
-+	/* Initially, SCL and SDA pin should be HIGH */
-+	sda_gpio_flags = GPIOF_OUT_INIT_HIGH;
-+	scl_gpio_flags = GPIOF_OUT_INIT_HIGH;
-+
-+	if (pdata->sda_is_open_drain)
-+		sda_gpio_flags |= GPIOF_OPEN_DRAIN;
-+
-+	if (pdata->scl_is_open_drain && !pdata->scl_is_output_only)
-+		scl_gpio_flags |= GPIOF_OPEN_DRAIN;
-+
-+
-+
-+	ret = gpio_request_one(pdata->sda_pin, sda_gpio_flags, "sda");
-+	if (ret) {
-+		pr_err("%s(): Error in requesting sda gpio%d, ret %d\n",
-+				__func__, pdata->sda_pin, ret);
- 		goto err_request_sda;
--	ret = gpio_request(pdata->scl_pin, "scl");
--	if (ret)
-+	}
-+	ret = gpio_request_one(pdata->scl_pin, scl_gpio_flags, "scl");
-+	if (ret) {
-+		pr_err("%s(): Error in requesting scl gpio%d, ret %d\n",
-+				__func__, pdata->scl_pin, ret);
- 		goto err_request_scl;
--
--	if (pdata->sda_is_open_drain) {
--		gpio_direction_output(pdata->sda_pin, 1);
--		bit_data->setsda = i2c_gpio_setsda_val;
--	} else {
--		gpio_direction_input(pdata->sda_pin);
--		bit_data->setsda = i2c_gpio_setsda_dir;
- 	}
- 
--	if (pdata->scl_is_open_drain || pdata->scl_is_output_only) {
--		gpio_direction_output(pdata->scl_pin, 1);
--		bit_data->setscl = i2c_gpio_setscl_val;
--	} else {
--		gpio_direction_input(pdata->scl_pin);
--		bit_data->setscl = i2c_gpio_setscl_dir;
--	}
-+	bit_data->setsda = i2c_gpio_setsda_val;
-+	bit_data->setscl = i2c_gpio_setscl_val;
- 
- 	if (!pdata->scl_is_output_only)
- 		bit_data->getscl = i2c_gpio_getscl;
 -- 
-1.7.1.1
+Stephen Smalley
+National Security Agency
 
