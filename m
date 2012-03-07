@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab2CGGH7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 01:07:59 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45677 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751452Ab2CGGH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 01:07:58 -0500
-Date: Wed, 7 Mar 2012 07:07:25 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Namhyung Kim <namhyung@gmail.com>, Arun Sharma <asharma@fb.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        dsahern@gmail.com, ravitillo@lbl.gov, khandual@linux.vnet.ibm.com,
-        robert.richter@amd.com, ming.m.lin@intel.com, vweaver1@eecs.utk.edu,
-        andi@firstfloor.org
-Subject: Re: [RFC] perf report: Implement symbol filtering on TUI
-Message-ID: <20120307060724.GA4241@elte.hu>
-References: <20120306062546.GA622@elte.hu>
- <1331085470-32594-1-git-send-email-namhyung.kim@lge.com>
+	id S1752571Ab2CGGKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 01:10:49 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32215 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920Ab2CGGKr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 01:10:47 -0500
+Date: Wed, 7 Mar 2012 09:12:54 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: mchehab@infradead.org, dheitmueller@kernellabs.com, hans.verkuil@cisco.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] [media] dvb: negative value assigned to unsigned int in
+ CDRXD().
+Message-ID: <20120307061254.GQ22598@mwanda>
+References: <1331091663-4790-1-git-send-email-santoshprasadnayak@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FcSpk3Icpd/Pbul4"
 Content-Disposition: inline
-In-Reply-To: <1331085470-32594-1-git-send-email-namhyung.kim@lge.com>
+In-Reply-To: <1331091663-4790-1-git-send-email-santoshprasadnayak@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090208.4F56FBDE.0013,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Namhyung Kim <namhyung.kim@lge.com> wrote:
+--FcSpk3Icpd/Pbul4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> As Ingo requested, symbol filtering feature was missing on TUI.
-> Add 's' key to get input from user, and do simple filtering by
-> strstr(). To turn filtering off, just enter no name by pressing
-> 's' followed by ENTER.
-> 
-> There should be many issues, but I just want to release this
-> to get some feedbacks.
+On Wed, Mar 07, 2012 at 09:11:03AM +0530, santosh nayak wrote:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>=20
+> In CDRXD(), Negative number is assigned to unsigned variable
+> 'state->noise_cal.tdCal2.
+>=20
+> Members of 'SNoiseCal' should be 'signed short'.
+>=20
 
-I'd love it if in addition to the hotkey, if I typed the obvious 
-sequence:
+In your changelogs could you please write something about how this
+change will affect what the user sees.  That way users know if it
+fixes something they care about and they will apply your patch.
 
- $ perf report sched
+regards,
+dan carpenter
 
-... then it would turn into such a filter automagically.
 
-Thanks,
+--FcSpk3Icpd/Pbul4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	Ingo
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPVvxmAAoJEOnZkXI/YHqRAbkQAIy8RpIKTMxYKM+PF7HbH4P8
+xWLqR5e2txpBRlC/Pgp5FjmG/qB4utg4FuGibRctGnUoSMP+ayqE2/QbBfKVqQRi
+e9E3Y9HB6hHZJJoFQA3v6ZGbAWcGxF4+T3vZuq3F7+LI6gnKbtxqefJ7nsPKyI1t
+KEwjCbsrziGS/VC+WFyZTdm41vWQ5yFCtc28fd9eiGfJ2Y9o4a/7CkrbvQ15r0Lo
+R5gk7QtsQGZvoU9yf5FB15cnBl1ulor0PAZKLhwzvSAnIZINDAmVVHG0mGodSES8
+aR1PtS34GFL81EP4Nw57NEIZsvcrw5mMbEvrmzeKa3ghurPAfPlwaPbV+cJkN9Zc
+QF8EaFxzZ4bvT9PKGmRSUkw9QVO01W3MVBTY5oJI3sx9G4O5bZmcSdrF+Radlj3A
+Lmh0Z0f9opxjL1cKMdv/yzRwQUZBGhAW4sz2VRFmKHHY6yMDTmvAiQuToWFZh1h/
++Pc/UrvwY08nupDr2jsB9QszPHFrRXqxkbjZXqI9ZRqeHc53dUi0oNgcuhE5zIhC
+T+oxTxkG5f7IXE5DSvm/f8QGBCYzuUS26tTzYGH43amOr1VUkwy/xn2sJLlR05ZW
+fVRCfXFMeIjTIfytOCtO8KpRBXlhA6hdzamazvr6L37sT2Co9A671OZIxKa8Yuua
+bfL9GVFppnX56VNEBdZj
+=u9IJ
+-----END PGP SIGNATURE-----
+
+--FcSpk3Icpd/Pbul4--
