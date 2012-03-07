@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab2CGJzT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 04:55:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64876 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab2CGJzQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 04:55:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120307093026.GM17370@n2100.arm.linux.org.uk>
-References: <Pine.LNX.4.64.1202011610050.26261@axis700.grange>
-	<Pine.LNX.4.64.1203021341590.913@axis700.grange>
-	<1331022623.24656.191.camel@vkoul-udesk3>
-	<Pine.LNX.4.64.1203060935460.9300@axis700.grange>
-	<1331035739.24656.201.camel@vkoul-udesk3>
-	<Pine.LNX.4.64.1203061339330.9300@axis700.grange>
-	<1331101687.24656.319.camel@vkoul-udesk3>
-	<Pine.LNX.4.64.1203070917380.19595@axis700.grange>
-	<20120307093026.GM17370@n2100.arm.linux.org.uk>
-Date: Wed, 7 Mar 2012 10:55:16 +0100
-Message-ID: <CACRpkdZ-dG9pSDdhUB0Vo+v4qt3cX0SvWBECj0P2w1nvnxYBew@mail.gmail.com>
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Narayanan G <narayanan.gopalakrishnan@stericsson.com>,
-        Per Forlin <per.forlin@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754291Ab2CGJzz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 04:55:55 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:4928 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753731Ab2CGJzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 04:55:53 -0500
+From: Andrew Vagin <avagin@openvz.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Cc: avagin@openvz.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] uevent: send events in correct order according to seqnum (v2)
+Date: Wed,  7 Mar 2012 13:59:02 +0400
+Message-Id: <1331114342-6187-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 10:30 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
+The queue handling in the udev daemon assumes that the events are
+ordered.
 
-> The code required to support slave device transfers is very much the same
-> for each driver (that's partly because I'm writing my drivers in the same
-> way.)  Essentially, slave channels aren't physical channels themselves,
-> but virtual channels which get assigned to physical channels at some point.
+Before this patch uevent_seqnum is incremented under sequence_lock,
+than an event is send uner uevent_sock_mutex. I want to say that code
+contained a window between incrementing seqnum and sending an event.
 
-Actually in the COH901318 driver each device has a dedicated physical
-channel. It looks like some hardware engineer took the PL080 VHDL
-code and just copy/pasted as many instances of the channel engine as
-was needed to provide a unique channel for each device.
+This patch locks uevent_sock_mutex before incrementing uevent_seqnum.
 
-I've been scratching my head over that when I've thought about
-merging the two drivers, because the register set and LLI is actually
-very similar.
+v2: delete sequence_lock, uevent_seqnum is protected by uevent_sock_mutex
 
-> I would really like to see some common infrastructure for handling these
-> virtual channels so I don't have to write yet another version of that code,
-> and that's something I'll be working on.
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ lib/kobject_uevent.c |   15 ++++++---------
+ 1 files changed, 6 insertions(+), 9 deletions(-)
 
-Please go ahead with this! We have the same problem in the
-DMA40 driver basically, but in this thing the hardware actually takes
-care of the virtual-over-physical channel arbitration if you want to,
-which makes the "virtual" channels have physical registers and
-confusing things a bit.
+diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
+index e66e9b6..15a7ab9 100644
+--- a/lib/kobject_uevent.c
++++ b/lib/kobject_uevent.c
+@@ -29,16 +29,17 @@
+ 
+ u64 uevent_seqnum;
+ char uevent_helper[UEVENT_HELPER_PATH_LEN] = CONFIG_UEVENT_HELPER_PATH;
+-static DEFINE_SPINLOCK(sequence_lock);
+ #ifdef CONFIG_NET
+ struct uevent_sock {
+ 	struct list_head list;
+ 	struct sock *sk;
+ };
+ static LIST_HEAD(uevent_sock_list);
+-static DEFINE_MUTEX(uevent_sock_mutex);
+ #endif
+ 
++/* This lock protects uevent_seqnum and uevent_sock_list */
++static DEFINE_MUTEX(uevent_sock_mutex);
++
+ /* the strings here must match the enum in include/linux/kobject.h */
+ static const char *kobject_actions[] = {
+ 	[KOBJ_ADD] =		"add",
+@@ -136,7 +137,6 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
+ 	struct kobject *top_kobj;
+ 	struct kset *kset;
+ 	const struct kset_uevent_ops *uevent_ops;
+-	u64 seq;
+ 	int i = 0;
+ 	int retval = 0;
+ #ifdef CONFIG_NET
+@@ -243,17 +243,14 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
+ 	else if (action == KOBJ_REMOVE)
+ 		kobj->state_remove_uevent_sent = 1;
+ 
++	mutex_lock(&uevent_sock_mutex);
+ 	/* we will send an event, so request a new sequence number */
+-	spin_lock(&sequence_lock);
+-	seq = ++uevent_seqnum;
+-	spin_unlock(&sequence_lock);
+-	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)seq);
++	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)++uevent_seqnum);
+ 	if (retval)
+ 		goto exit;
+ 
+ #if defined(CONFIG_NET)
+ 	/* send netlink message */
+-	mutex_lock(&uevent_sock_mutex);
+ 	list_for_each_entry(ue_sk, &uevent_sock_list, list) {
+ 		struct sock *uevent_sock = ue_sk->sk;
+ 		struct sk_buff *skb;
+@@ -290,8 +287,8 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
+ 		} else
+ 			retval = -ENOMEM;
+ 	}
+-	mutex_unlock(&uevent_sock_mutex);
+ #endif
++	mutex_unlock(&uevent_sock_mutex);
+ 
+ 	/* call uevent_helper, usually only enabled during early boot */
+ 	if (uevent_helper[0] && !kobj_usermode_filter(kobj)) {
+-- 
+1.7.1
 
-(However in the DMA40 case it may be some point in actually trying to
-just use the physical channels in that driver and have the dmaengine core
-arbitrate these under some circumstances, we already have some
-special flags to lock down certain physical channels.)
-
-Yours,
-Linus Walleij
