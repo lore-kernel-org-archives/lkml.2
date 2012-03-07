@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759752Ab2CGTUU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 14:20:20 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44508 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755982Ab2CGTUT (ORCPT
+	id S1759797Ab2CGTUm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 14:20:42 -0500
+Received: from 8.mo2.mail-out.ovh.net ([188.165.52.147]:43441 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759676Ab2CGTUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 14:20:19 -0500
-Date: Wed, 7 Mar 2012 19:20:18 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Remove unused i2c variable in
- s5m8767_pmic_probe
-Message-ID: <20120307192018.GA3107@opensource.wolfsonmicro.com>
-References: <1331085732.7432.1.camel@phoenix>
+	Wed, 7 Mar 2012 14:20:40 -0500
+Date: Wed, 7 Mar 2012 20:08:20 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Michal Marek <mmarek@suse.cz>,
+        linux-arch@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Mike Frysinger <vapier@gentoo.org>,
+        linux-sh@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>,
+        uclinux-dist-devel@blackfin.uclinux.org, sparclinux@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH 2/3] Kbuild: Implement CONFIG_UIMAGE_KERNEL_NOLOAD
+Message-ID: <20120307190820.GD27213@game.jcrosoft.org>
+References: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org>
+ <1331080238-1524-2-git-send-email-swarren@wwwdotorg.org>
+ <20120307180815.GA27213@game.jcrosoft.org>
+ <alpine.LFD.2.02.1203071336210.24151@xanadu.home>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XoSOsMJQ8mz74oyx"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331085732.7432.1.camel@phoenix>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1203071336210.24151@xanadu.home>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 13015965873080937400
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrvdejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrvdejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 13:50 Wed 07 Mar     , Nicolas Pitre wrote:
+> On Wed, 7 Mar 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> 
+> > On 17:30 Tue 06 Mar     , Stephen Warren wrote:
+> > > This allows the user to use U-Boot's mkimage's -T kernel_noload option
+> > > if their arch Kconfig allows it, and they desire.
+> > > 
+> > > Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+> > > ---
+> > > The next patch enables this new CONFIG_ALLOW_ option for ARM. I assume
+> > > that some other architectures will also be able to enable it, but I'm
+> > > not familiar enough with any to know which.
+> > I'm going to repeat. I don't think any impromevent here.
+> 
+> You know what?  I agree with you... on a conceptual level only though.
+> 
+> In reality, some people are are just too used to it, either for 
+> emotional reasons or simply because that's what was there before so they 
+> simply perpetuated it without thinking further, or whatever.  REmoving 
+> that support would just upset a lot of people.  And frankly we have 
+> better things to do than starting a flamewar over this.
+My concern is this new feature is available on new version of U-Boot only
+and people that does not have it and built the uImage are going to ask the
+question. Why bla bla bla....
 
---XoSOsMJQ8mz74oyx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Where people are supposed to RTFM
 
-On Wed, Mar 07, 2012 at 10:02:12AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+I do do not want to have the answer this and manage this.
+> 
+> So the next best thing is to make this u-Boot stuff well contained in a 
+> common place and make sure it doesn't spread incoherently over multiple 
+> architecture's directories and makefiles.  This way the u-Boot cruft 
+> won't be the ARM maintainer, or the PPC maintainer, or the SPARC 
+> maintainer, or any other architecture maintainer's business, but the 
+> responsibility of those who do care about it without affecting anyone 
+> else.
+Ditto here
 
-Applied, thanks.
+People does not read the doc they as lazy and I do not want to manage this.
 
---XoSOsMJQ8mz74oyx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> 
+> > And the uImage format here is called the legacy format where now U-Boot
+> > support a new format based on DT format.
+> > 
+> > Will you plan to add it too?
+> 
+> Why not if someone cares?  At least this will be done only 
+> once, centrally, without having to involve architecture maintainers.
+So you manage this because I will not answer one e-mail that ask for help
+Because for my point of view RTFM or boot the zImage
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPV7TpAAoJEBus8iNuMP3dMh8P/2IMmCPtq7jxOhZEh71LUWhA
-rk0FwgNuXAhlkQWbNubbKBh3PyeG7r0i9dIubcbRsnLRAi19pGiKDpF4oBDmLqQy
-TQ15FFoCpvDfLFO+mfANBY3SBbhHNUlJSILJjPBloLcND+GFGSajr0UByDyC0WHv
-mGX+QMU1SmOXL4acA/yic1/sxbYETGeYBUTm+6R37QHiAJttkAGno9tehAdtSkRK
-iiE6iSYi48OcSEbBKgYONVH4NQTLEM/LiAS7KrYea/FbeGOTb/tvK74g94toxnGE
-eqUWcHq/EwdpcgefCnse/R0FubWwjcTcCJVrWubvYpkhmSkz70JW57oTUaYpHMPi
-EL9qPIEBhFNloAkodwRAtI3Nkxj8P8KezWcl9As2R6VfXJLGIFoiTm/tCgxaDasC
-BBleKGyMYSWSC8as25VsKFJ6k+SywSF5u4WPTBQqhhgXVRCKhLQEsLjPUoq7o222
-tf08mRSQQrPZQe3YKxwZs8YdyZPv6hHOJ5s/V/Q0QGZ8FE8q/jejtBBp5Iv0Umlh
-GQySjByZMG7JiRiyq83APZyvtQw05ZGYyDnk8IyKfpDc+P2np1nQHRCc37C93f5b
-l0Ub2wAkk2oX5n9nGKJoHMvyCeXErRIILm9WSIj31Tb+qXvAU/MVs9CTdb4HFWSH
-1LKDGSX2Za7TbxhtdBl7
-=rWCz
------END PGP SIGNATURE-----
-
---XoSOsMJQ8mz74oyx--
+Best Regards,
+J.
