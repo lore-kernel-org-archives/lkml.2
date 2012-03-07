@@ -1,82 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030350Ab2CGVeV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 16:34:21 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:33947 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758278Ab2CGVeQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 16:34:16 -0500
-Message-ID: <1331156046.2191.185.camel@work-vm>
-Subject: [GIT PULL] staging: Android updates
-From: John Stultz <john.stultz@linaro.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Android Kernel Team <kernel-team@android.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Date: Wed, 07 Mar 2012 13:34:06 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030721-7408-0000-0000-00000348FC2D
+	id S965203Ab2CGVgr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 16:36:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44363 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750917Ab2CGVgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 16:36:43 -0500
+Date: Wed, 7 Mar 2012 22:36:41 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
+In-Reply-To: <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>
+Message-ID: <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz>
+References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg, 
-	Just wanted to send along some Android updates to the staging-next tree
-so they can be queued for 3.4. I've pulled these from the
-common/android-3.3 branch, and made only some minor changes to keep
-everything in the staging dir and to avoid compile issues on x86.
+On Tue, 6 Mar 2012, benjamin.tissoires wrote:
 
-The patches can be browsed over here:
-http://git.linaro.org/gitweb?p=people/jstultz/android-dev.git;a=shortlog;h=refs/heads/dev/android-staging-updates
+> From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> 
+> The code is inspired from the one present in the bttv module.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+> ---
+> 
+> As I mentioned in the mail 0/5, I'd really like to have your opinion on this
+> one. I copied the code from bttv, but it forces us to change hid_device which
+> is not very good for ABI changes reasons.
 
-thanks
--john
+Haven't closely inspected the patch yet, I will comment on it later. But 
+generally, I wouldn't be worried about changing hid_device per se ... it's 
+not really an ABI, it's not exported to userspace.
 
+It's internal kernel-ABI, yes. But we are free to change that in any way 
+we wish.
 
-The following changes since commit 1ec41a31fb695682cab7fc7c1f6ced84d188b6f9:
-
-  staging: ozwpan: remove debug allocator (2012-03-02 16:51:09 -0800)
-
-are available in the git repository at:
-  git://git.linaro.org/people/jstultz/android-dev.git dev/android-staging-updates
-
-Colin Cross (11):
-      android: binder: fix warning
-      android: ram_console: move footer strings
-      android: ram_console: drop early buffer support
-      android: ram_console: drop verbose ram_console support
-      android: ram_console: split out persistent ram
-      android: persistent_ram: refactor ecc support
-      android: persistent_ram: handle reserving and mapping memory
-      android: persistent_ram: make persistent_ram_write atomic
-      android: persistent_ram: add notrace to persistent_ram_write
-      android: persistent_trace: ftrace into persistent_ram
-      android: staging: ram_console: fix crash in ram_console_late_init
-
-Dima Zavin (1):
-      android: ram_console: set CON_ANYTIME console flag
-
-John Stultz (1):
-      android: lowmemorykiller: Fix warning on 64bit
-
-Nick Kralevich (1):
-      android: ram_console: honor dmesg_restrict
-
- drivers/staging/android/Kconfig            |   70 +---
- drivers/staging/android/Makefile           |    4 +
- drivers/staging/android/binder.c           |    2 +-
- drivers/staging/android/lowmemorykiller.c  |    2 +-
- drivers/staging/android/persistent_ram.c   |  470 ++++++++++++++++++++++++++++
- drivers/staging/android/persistent_ram.h   |   78 +++++
- drivers/staging/android/ram_console.c      |  412 +++++--------------------
- drivers/staging/android/trace_persistent.c |  242 ++++++++++++++
- 8 files changed, 888 insertions(+), 392 deletions(-)
- create mode 100644 drivers/staging/android/persistent_ram.c
- create mode 100644 drivers/staging/android/persistent_ram.h
- create mode 100644 drivers/staging/android/trace_persistent.c
-
-
+-- 
+Jiri Kosina
+SUSE Labs
