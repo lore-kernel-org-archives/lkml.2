@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593Ab2CGMqq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 07:46:46 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:63102 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758551Ab2CGMqd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 07:46:33 -0500
-Date: Wed, 7 Mar 2012 13:45:48 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
-In-Reply-To: <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
-Message-ID: <Pine.LNX.4.64.1203071342010.19595@axis700.grange>
-References: <Pine.LNX.4.64.1202011610050.26261@axis700.grange>
- <Pine.LNX.4.64.1203021341590.913@axis700.grange> <1331022623.24656.191.camel@vkoul-udesk3>
- <Pine.LNX.4.64.1203060935460.9300@axis700.grange> <1331035739.24656.201.camel@vkoul-udesk3>
- <Pine.LNX.4.64.1203061339330.9300@axis700.grange> <1331101687.24656.319.camel@vkoul-udesk3>
- <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
- <20120307093026.GM17370@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
- <20120307103112.GP17370@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
+	id S1758604Ab2CGMtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 07:49:33 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52397 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757468Ab2CGMtc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 07:49:32 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:QUqe9R1SUoQ/qQIe9bog5NiyX6IGCTV2MZzmDys4D6r
- VTw3bq4KDdPWZhCg8yv3sfDlX9xt/vfPV+4vKdsCr57PkIg+dZ
- tv6OsMMetpwB/7uHbYw9fIHhaYIv78zEVL/TVMrZUowmierxkK
- 6sc1/j842mAnZQlL6p0pcvUqhvGWQezYha1+pGiTiCk96WLvwh
- 6GKq/EzI3o9xlRL54lFRxufR2D62cMY6V8wR5jQe166rRn7kRP
- /zKRqEiK0PNWeupbWMj6qS1nmEDo7V3ojp4FshGYQHJkmr845p
- Z0/1PesTLjhJBWlwx77hqi/7vd2aUnW/rSOdIOzC+THa654IRm
- V1dgoSATLOuT+YYTTzuXOxbNN1yvTwZ/YcbUqb8I2cpBjl/9LK
- 8fDuOc3fsWwLg==
+In-Reply-To: <20120305154753.GA14604@elte.hu>
+References: <20120224094048.GA7952@quad>
+	<20120305154753.GA14604@elte.hu>
+Date: Wed, 7 Mar 2012 13:49:30 +0100
+Message-ID: <CABPqkBQ6rYstBwLYsGrRZEj4faPR2i0k7b4QasrhRD-9JH9DTA@mail.gmail.com>
+Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
+From: Stephane Eranian <eranian@google.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        dsahern@gmail.com, ravitillo@lbl.gov, khandual@linux.vnet.ibm.com,
+        asharma@fb.com, robert.richter@amd.com, ming.m.lin@intel.com,
+        vweaver1@eecs.utk.edu, andi@firstfloor.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Mar 2012, Guennadi Liakhovetski wrote:
+On Mon, Mar 5, 2012 at 4:47 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> Another usability bug of the new branch sampling feature is that
+> typing the obvious:
+>
+>  $ perf record -b ./myprog
+>
+> does not do the obvious thing and default to 'any' but throws a
+> *very* unhelpful generic perf error:
+>
+Ok, so looked at this. Given the option parsing code, looks like
+we would have to split the option in two: -b and something else
+to disambiguate cmdline such as:
 
-> 2. (goal: eliminate filter function look-ups) proposed by Linus W
-> 
-> (a) client issues
-> 	dma_request_slave_channel(dev, "MMC-RX")
-> (b) the dmaengine core scans a platform-provided list of channel mappings 
->     and picks up _the_ correct channel (****)
+$ perf record -b foo
+$ perf record -b any_call foo
+any_call: no such file or directory
 
-I think, this could work well with Russell's idea to implement virtual DMA 
-channels centrally in dmaengine core.
+The code cannot disambiguate between any_call being a branch filter
+vs. the command
+to run, given that -b has now an optional argument.
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+What we can do is split: -b and --branch-filter for instance. The former
+takes no argument and sets up branch-stack to ANY. The other one requires
+a parameter.
+
+I am almost done with  TUI navigation of branch samples.
+
+>  usage: perf record [<options>] [<command>]
+>    or: perf record [<options>] -- <command> [<options>]
+>
+>  ...
+>
+> Really, we should do better than this. Only people who *want* to
+> specify finer LBR filters should be forced to specify them.
+>
+> Thanks,
+>
+>        Ingo
