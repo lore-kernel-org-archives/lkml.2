@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758797Ab2CGDbR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 22:31:17 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33729 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755880Ab2CGDbP convert rfc822-to-8bit (ORCPT
+	id S1758919Ab2CGDl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 22:41:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45039 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756241Ab2CGDl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 22:31:15 -0500
+	Tue, 6 Mar 2012 22:41:58 -0500
+Date: Tue, 6 Mar 2012 19:41:55 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Rafael Aquini <aquini@redhat.com>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>
+Subject: Re: [PATCH -v2] mm: SLAB Out-of-memory diagnostics
+In-Reply-To: <20120305181041.GA9829@x61.redhat.com>
+Message-ID: <alpine.DEB.2.00.1203061941210.24600@chino.kir.corp.google.com>
+References: <20120305181041.GA9829@x61.redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20120306123959.1921bcca.akpm@linux-foundation.org>
-References: <1331045377.17099.2.camel@deneb.redhat.com>
-	<1331064994-6693-1-git-send-email-siddhesh.poyarekar@gmail.com>
-	<20120306123959.1921bcca.akpm@linux-foundation.org>
-Date: Wed, 7 Mar 2012 09:01:15 +0530
-Message-ID: <CAAHN_R1uTxVAKTTR53nMgGP=3_yXNYF_BSEcjzKv40fruRinnA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mm: Fix task_nommu build regression in linux-next
-From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mark Salter <msalter@redhat.com>, linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 2:09 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed,  7 Mar 2012 01:46:33 +0530
-> Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com> wrote:
->
->> Commit b7b2a0afacada237005068294cb0ccc49d32889e resulted in a build
->> failure for nommu builds:
->
-> Bare git commit IDs aren't very useful, because the ID of a patch can
-> be different in different trees.  And in linux-next, the ID of a patch
-> can change over time.  This is why we like to refer to commits using the
-> formulation b7b2a0afacad ("procfs: mark thread stack correctly in
-> proc/<pid>/maps").
+On Mon, 5 Mar 2012, Rafael Aquini wrote:
 
-Thanks, I'll keep this in mind.
+> diff --git a/mm/slab.c b/mm/slab.c
+> index f0bd785..4aeb5e7 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -1731,6 +1731,52 @@ static int __init cpucache_init(void)
+>  }
+>  __initcall(cpucache_init);
+>  
+> +static noinline void
+> +slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
+> +{
+> +	struct kmem_list3 *l3;
+> +	struct slab *slabp;
+> +	unsigned long flags;
+> +	int node;
+> +
+> +	printk(KERN_WARNING
+> +		"SLAB: Unable to allocate memory on node %d (gfp=0x%x)\n",
+> +		nodeid, gfpflags);
+> +	printk(KERN_WARNING "   cache: %s, object size: %d, order: %d\n",
+> +		cachep->name, cachep->buffer_size, cachep->gfporder);
+> +
+> +	for_each_online_node(node) {
+> +		unsigned long active_objs = 0, num_objs = 0, free_objects = 0;
+> +		unsigned long active_slabs = 0, num_slabs = 0;
+> +
+> +		l3 = cachep->nodelists[node];
+> +		if (!l3)
+> +			continue;
+> +
+> +		spin_lock_irqsave(&l3->list_lock, flags);
 
-
--- 
-Siddhesh Poyarekar
-http://siddhesh.in
+Could be spin_lock_irq(&l3->list_lock);
