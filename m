@@ -1,119 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964909Ab2CGEb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 23:31:28 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:58041 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932223Ab2CGEb0 convert rfc822-to-8bit (ORCPT
+	id S1759424Ab2CGEdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 23:33:40 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:10957 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759030Ab2CGEdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 23:31:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <1331018040-30725-20-git-send-email-yinghai@kernel.org>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
-	<1331018040-30725-20-git-send-email-yinghai@kernel.org>
-Date: Tue, 6 Mar 2012 21:31:24 -0700
-Message-ID: <CABhMZUX_pv2Wx4u+kqwcyCOpUnZ3yi68cVpV9TAzsqx2DF5DRQ@mail.gmail.com>
-Subject: Re: [PATCH 19/23] PCI: add /sys/bus/pci/rescan_root
-From: Bjorn Helgaas <bjorn.helgaas@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 6 Mar 2012 23:33:39 -0500
+X-AuditID: cbfee61b-b7c62ae000000989-69-4f56e5219ac6
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: axel.lin@gmail.com, linux-kernel@vger.kernel.org
+Cc: "'Liam Girdwood'" <lrg@ti.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+References: <1331093522.3143.3.camel@phoenix>
+ <CAF+7xWkxLZkFV=oh-daLeBchd=vFjw5jeBLNqmMiSu4LYQEYOA@mail.gmail.com>
+In-reply-to: <CAF+7xWkxLZkFV=oh-daLeBchd=vFjw5jeBLNqmMiSu4LYQEYOA@mail.gmail.com>
+Subject: RE: [PATCH] regulator: Rename s5m8767_convert_voltage to
+ s5m8767_get_proper_voltage_sel
+Date: Wed, 07 Mar 2012 13:33:37 +0900
+Message-id: <047801ccfc1b$76f07b50$64d171f0$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Acz8GSRIXyyKw1KCTYyKb/QWataWxQAAF/GA
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->
-> It will be used to rediscover removed pci root buses.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-doc@vger.kernel.org
-> ---
->  Documentation/ABI/testing/sysfs-bus-pci |    9 +++++++++
->  drivers/pci/pci-sysfs.c                 |   21 +++++++++++++++++++++
->  2 files changed, 30 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-bus-pci
-> b/Documentation/ABI/testing/sysfs-bus-pci
-> index 22392de..eb826bd 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-pci
-> +++ b/Documentation/ABI/testing/sysfs-bus-pci
-> @@ -66,6 +66,15 @@ Description:
->                re-discover previously removed devices.
->                Depends on CONFIG_HOTPLUG.
->
-> +What:          /sys/bus/pci/rescan_root
-> +Date:          March 2012
-> +Contact:       Linux PCI developers <linux-pci@vger.kernel.org>
-> +Description:
-> +               Writing a non-zero value to this attribute will
-> +               cause a rescan of all PCI root buses in the system, and
-> +               re-discover previously removed PCI root buses.
+Hi,
 
-This seems sort of backwards to me.  Architecture-specific code
-enumerated the host bridges/root buses in the first place, not the PCI
-core.  Now we're asking the PCI core (/sys/bus/pci) to re-enumerate
-them.
+> > I was confused by the function name, s5m8767_convert_voltage() converts
+> what to what?
+Convert means that Normal Voltage unit to 8767 internal voltage register
+unit.
+> BTW, I'm also confused by s5m8767_set_high and s5m8767_set_low functions.
+> Both function sets the same gpios to the same state. ( by different order
+)
+> Maybe we need comments (or rename) for both functions.
+S5M8767A can be controlled with 3 GPIO.
+To control voltage with GPIO, Order is very important.
+Because Voltage inversion should not be happened.
+If DVFS table is like a below,
+1.5Ghz  1.5V
+1.0Ghz  1.0V
+0.5Ghz  0.5V
 
-But maybe it's still the right answer, I dunno.
+If System try to change 1.0Ghz(1.0V) -> 1.5Ghz(1.5V)
+Absolutely 0.5V should not be set.
 
-> +               Depends on CONFIG_HOTPLUG.
-> +
->  What:          /sys/bus/pci/devices/.../msi_irqs/
->  Date:          September, 2011
->  Contact:       Neil Horman <nhorman@tuxdriver.com>
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index f855b4b..d6221e5 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -302,8 +302,29 @@ static ssize_t bus_rescan_store(struct bus_type *bus,
-> const char *buf,
->        return count;
->  }
->
-> +void __weak acpi_pci_root_rescan(void) { }
-> +void __weak pcibios_root_rescan(void) { }
-> +
-> +static ssize_t bus_rescan_root_store(struct bus_type *bus, const char
-> *buf,
-> +                               size_t count)
-> +{
-> +       unsigned long val;
-> +
-> +       if (strict_strtoul(buf, 0, &val) < 0)
-> +               return -EINVAL;
-> +
-> +       if (val) {
-> +               mutex_lock(&pci_remove_rescan_mutex);
-> +               acpi_pci_root_rescan();
+Thanks,
+Sangbeom.
 
-This architecture-dependent function name should not be here.  How
-will we make this work for powerpc, sparc, etc.?
-
-> +               pcibios_root_rescan();
-> +               mutex_unlock(&pci_remove_rescan_mutex);
-> +       }
-> +       return count;
-> +}
-> +
->  struct bus_attribute pci_bus_attrs[] = {
->        __ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, bus_rescan_store),
-> +       __ATTR(rescan_root, (S_IWUSR|S_IWGRP), NULL,
-> bus_rescan_root_store),
->        __ATTR_NULL
->  };
->
-> --
-> 1.7.7
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
