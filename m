@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782Ab2CGT6L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 14:58:11 -0500
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:31124
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932760Ab2CGT6I convert rfc822-to-8bit
+	id S1030375Ab2CGT7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 14:59:37 -0500
+Received: from bay0-omc3-s25.bay0.hotmail.com ([65.54.190.163]:56062 "EHLO
+	bay0-omc3-s25.bay0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932729Ab2CGT7g convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 14:58:08 -0500
-X-SpamScore: -16
-X-BigFish: VS-16(zz9371I542M1432N98dK4015Izz1202hzz8275bhz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC101.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: KY Srinivasan <kys@microsoft.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Olaf Hering <olaf@aepfle.de>
-Subject: RE: [PATCH] net/hyperv: Advertise hv_netvsc instead of netvsc as
- driver name
-Thread-Topic: [PATCH] net/hyperv: Advertise hv_netvsc instead of netvsc as
- driver name
-Thread-Index: AQHM/JSG1nuVKL/c60qAlPTf0dg/p5ZfNf4AgAAJjqA=
-Date: Wed, 7 Mar 2012 19:57:53 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DCD4CA3@TK5EX14MBXC227.redmond.corp.microsoft.com>
-References: <1331147131-6660-1-git-send-email-haiyangz@microsoft.com>
- <20120307192204.GA9163@kroah.com>
-In-Reply-To: <20120307192204.GA9163@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.70]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 7 Mar 2012 14:59:36 -0500
+Message-ID: <BAY167-W127BF20C0952D601BC4381FBD560@phx.gbl>
+X-Originating-IP: [66.87.0.153]
+From: Xiachen Dong <xiachendong@hotmail.com>
+To: <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: RE: 2.6.36 and higher version kernel slower than 2.6.25.1 kernel?
+Date: Wed, 7 Mar 2012 14:59:35 -0500
+Importance: Normal
+In-Reply-To: <20120307194728.GA26341@kroah.com>
+References: <BAY167-W124DBC204D9E95FC00BAA44BD560@phx.gbl>,<20120307194728.GA26341@kroah.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+X-OriginalArrivalTime: 07 Mar 2012 19:59:35.0780 (UTC) FILETIME=[D2277240:01CCFC9C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Thanks for your reply.
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Wednesday, March 07, 2012 2:22 PM
-> To: Haiyang Zhang
-> Cc: KY Srinivasan; davem@davemloft.net; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; devel@linuxdriverproject.org; Olaf Hering
-> Subject: Re: [PATCH] net/hyperv: Advertise hv_netvsc instead of netvsc as
-> driver name
-> 
-> On Wed, Mar 07, 2012 at 11:05:31AM -0800, Haiyang Zhang wrote:
-> > From: Olaf Hering <olaf@aepfle.de>
-> >
-> > Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> > ---
-> >  drivers/net/hyperv/netvsc_drv.c |    6 ++++--
-> >  1 files changed, 4 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/net/hyperv/netvsc_drv.c
-> b/drivers/net/hyperv/netvsc_drv.c
-> > index 0ae7a1a..53d1ee5 100644
-> > --- a/drivers/net/hyperv/netvsc_drv.c
-> > +++ b/drivers/net/hyperv/netvsc_drv.c
-> > @@ -40,6 +40,8 @@
-> >
-> >  #include "hyperv_net.h"
-> >
-> > +#define MODULE_NAME "hv_netvsc"
-> 
-> No, please use the built-in macro for this and don't define your own,
-> that's totally redundant.
+There could be quite some code change from 2.6.25.1 to 2.6.36. What we are doing now is to find the first version starting from 2.6.25.1 that has the performance hit. Then we start comparing the code and see what's changed. Looks like 2.6.28.7 is OK.
 
-I have submitted a patch using the built-in KBUILD_MODNAME.
+Haven't tried 3.2.29 yet because 3.2.29 probably won't be available in the BSP from our board manufacturer in the near future. I'll try 3.2.29 tonight on X86 CPU  anyway and get you updated.
+
 Thanks,
-- Haiyang
 
+Xiachen
+
+----------------------------------------
+> Date: Wed, 7 Mar 2012 11:47:28 -0800
+> From: gregkh@linuxfoundation.org
+> To: xiachendong@hotmail.com
+> CC: linux-kernel@vger.kernel.org
+> Subject: Re: 2.6.36 and higher version kernel slower than 2.6.25.1 kernel?
+>
+> On Wed, Mar 07, 2012 at 12:04:33PM -0500, Xiachen Dong wrote:
+> >
+> > Hi,
+> >
+> > Recently we upgrade the OS for our AT91RM9200 platform from 2.6.25.1
+> > to 2.6.36. We run the SQLITE3 database insertion tests for the new
+> > kernel. The test result shows that 2.6.36 kernel is around 10% slower
+> > than the 2.6.25.1.
+>
+> Ick.
+>
+> As you noted this is still present in 3.0.23, any chance to try out
+> 3.2.9?
+>
+> And as you seem to have a good reproducable test, can you run 'git
+> bisect' between 2.6.35 and 2.6.36 to find the patch that causes this
+> problem so we can work on resolving it?
+>
+> thanks,
+>
+> greg k-h
+ 		 	   		  
