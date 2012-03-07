@@ -1,119 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab2CGPts (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 10:49:48 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:38577 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab2CGPtq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 10:49:46 -0500
-Message-ID: <4F578388.7050603@linux.vnet.ibm.com>
-Date: Wed, 07 Mar 2012 21:19:28 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1755663Ab2CGPuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 10:50:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26643 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753979Ab2CGPup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 10:50:45 -0500
+Date: Wed, 7 Mar 2012 10:50:18 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando@oss.ntt.co.jp>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, mingo@elte.hu,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de
+Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
+ crash path
+Message-ID: <20120307155018.GA13430@redhat.com>
+References: <20120216215603.GH9751@redhat.com>
+ <m1y5s2ku36.fsf@fess.ebiederm.org>
+ <m1fwe9bpk2.fsf@fess.ebiederm.org>
+ <20120217195430.GO9751@redhat.com>
+ <m1y5s07rn3.fsf@fess.ebiederm.org>
+ <20120220151419.GU9751@redhat.com>
+ <m1obss39a4.fsf@fess.ebiederm.org>
+ <20120221135934.GF26998@redhat.com>
+ <m1ipip6xe8.fsf@fess.ebiederm.org>
+ <4F573E1C.2060909@oss.ntt.co.jp>
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "prashanth@linux.vnet.ibm.com" <prashanth@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        "paulmck@linux.vnet.ibm.com >> \"Paul E. McKenney\"" 
-	<paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH bisected regression] sched: rebuild sched domains at suspend/resume
-References: <20120306204357.13169.90791.stgit@zurg> <4F5763CD.8050903@linux.vnet.ibm.com> <4F578176.9060808@openvz.org>
-In-Reply-To: <4F578176.9060808@openvz.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12030715-8878-0000-0000-00000192DBE7
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F573E1C.2060909@oss.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2012 09:10 PM, Konstantin Khlebnikov wrote:
-
-> Srivatsa S. Bhat wrote:
->> On 03/07/2012 02:15 AM, Konstantin Khlebnikov wrote:
->>
->>> This is fix for suspend/resume regression introduced in commit
->>> 8f2f748b0656
->>> ("CPU hotplug, cpusets, suspend: Don't touch cpusets during
->>> suspend/resume")
->>> Without this patch suspend always hangs on my thinkpad x220 (2 x CPU
->>> * HT).
->>>
->>
->>
->> Hey, with commit 8f2f748b0656, suspend/resume works perfectly for me!
->> I ran it
->> multiple times just to make sure, and everything worked just great.
->>
->> Apart from that, I even tried suspend/resume after building the kernel
->> with
->> and without CONFIG_CPUSETS. Both cases worked perfectly.
->>
->> So, I am really surprised at what you stated above. Are you *really*
->> sure you
->> are facing suspend hangs *because* of the above commit?
->>
->> And AFAICS hardware doesn't matter for the code in question, but in
->> any case,
->> the laptop on which I tested it is:
->> Thinkpad T420 (Intel core i5-2540M), 2 cores * HT (total 4 logical cpus).
->>
->> Also, the patch you posted here doesn't make much sense.. nor does it
->> give a
->> clue as to what might be wrong at your end (if anything is really
->> wrong, that
->> is). Do you have CONFIG_CPUSETS set or unset? Could you share your
->> .config?
+On Wed, Mar 07, 2012 at 07:53:16PM +0900, Fernando Luis Vázquez Cao wrote:
+> On 03/01/2012 08:19 AM, Eric W. Biederman wrote:
 > 
-> my kernel config in attachment. CONFIG_CPUSETS=n
+> >Don Zickus<dzickus@redhat.com>  writes:
+> >>It probably is, except I never hacked on idt code before and my assembly
+> >>isn't that good.  I have been trying to find examples to copy from to give
+> >>it a try.  So far I was using early_idt_handlers with early_printk to see
+> >>if I could capture some printk messages while jumping from the first
+> >>kernel to the second kernel (when the other early_idt_handlers would kick
+> >>in for the second kernel).
+> >>
+> >>Tips?  Better examples?
+> >That is a particularly good example.  When I took a quick look earlier
+> >that is the first place we reload the idt in the kernel boot so that is
+> >one of two places that needs to be modified.
 > 
->>
->> Coming to your patch, assuming you have CONFIG_CPUSETS enabled, then,
->> calling rebuild_sched_domains() at that point is useless because the
->> cpusets
->> weren't changed at all. So generate_sched_domains() would generate the
->> same
->> sched domain partitions that is already there.. And hence
->> partition_sched_domains() would essentially do nothing.. no sched
->> domain is
->> destroyed, and no new domains are created.
->>
->> However, if CONFIG_CPUSETS is unset, then, before commit 8f2f748b0656,
->> partition_sched_domains(1, NULL, NULL) would have been invoked, thus
->> rebuilding
->> a single sched domain. And that is why I specifically also tested commit
->> 8f2f748b0656 with CONFIG_CPUSETS unset - and that also worked fine (as I
->> mentioned above).
->>
->> So could you please check again?
->>
->> By the way, you can use the pm-test framework (see
->> Documentation/power/basic-
->> pm-debugging.txt) to pin-point which stage is causing the hang.
->> Specifically, the stage where CPU hotplug is done is 'processors'.
->>
->> So you should probably try out this level:
->> # echo processors>  /sys/power/pm_test
->> # echo mem>  /sys/power/state
->>
->> Replacing processors with core enables even deeper level suspend testing.
+> Hi Eric, Don
 > 
-> Your patch has obvious side-effect.
-> Bug reproducing is very stable, it disappears if revert your patch or
-> apply mine.
-> Problem may be not in your patch, it may only trigger some longstanding
-> bug.
+> Sorry for chiming in so late.
+> 
+> We run into the same NMI problems and wrote some patches that tackle
+> the kernel boot side of things. They have been extensively tested using
+> qemu-kvm and things seem to be working as expected (after receiving an
+> early NMI the kernel continues without problem; after the iret there is no
+> stack corruption or register corruption).
 
+What happens if NMI happens while we are still in purgatory code?
 
-Thanks a lot for the confirmation! Let us revert commit 8f2f748b0656 then.
-
-Regards,
-
-Srivatsa S. Bhat
-
+Thanks
+Vivek
