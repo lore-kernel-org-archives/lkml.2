@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759560Ab2CGS3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 13:29:23 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49951 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754785Ab2CGS3U (ORCPT
+	id S1759580Ab2CGSbG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 13:31:06 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33866 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755407Ab2CGSbC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 13:29:20 -0500
-Message-ID: <4F57A8FA.8080208@wwwdotorg.org>
-Date: Wed, 07 Mar 2012 11:29:14 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Wed, 7 Mar 2012 13:31:02 -0500
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@gmail.com>
-CC: Michal Marek <mmarek@suse.cz>, linux-arch@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Mike Frysinger <vapier@gentoo.org>, nico@fluxnic.net,
-        linux-sh@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>,
-        uclinux-dist-devel@blackfin.uclinux.org, sparclinux@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: Re: [PATCH 1/3] Kbuild: centralize MKIMAGE and cmd_uimage definitions
-References: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org> <CA+5PVA7PCow=Z7TpPtQYp3ye6uKFSp3XsdH75Pe9BRu9Vyy21g@mail.gmail.com>
-In-Reply-To: <CA+5PVA7PCow=Z7TpPtQYp3ye6uKFSp3XsdH75Pe9BRu9Vyy21g@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <20120305104538.GC18556@elte.hu>
+References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
+	<tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
+	<86zkbxusu2.fsf@sumi.keithp.com>
+	<4F52B6F0.6060902@zytor.com>
+	<86wr71up4j.fsf@sumi.keithp.com>
+	<20120305104538.GC18556@elte.hu>
+Date: Wed, 7 Mar 2012 10:31:01 -0800
+X-Google-Sender-Auth: 2D2d0ZmAOI15I0ypXRnP8YTsLg0
+Message-ID: <CAE9FiQWFa=cBSHz=NkhhEbMriJqnhSpWwhwxjjyRLKVbMUme4A@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix
+ CONFIG_X86_32 oops
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Keith Packard <keithp@keithp.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        mingo@redhat.com, mjg@redhat.com, linux-kernel@vger.kernel.org,
+        rui.zhang@intel.com, huang.ying.caritas@gmail.com,
+        stable@vger.kernel.org, matt.fleming@intel.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2012 07:15 AM, Josh Boyer wrote:
-> On Tue, Mar 6, 2012 at 7:30 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> All ARCHs have the same definition of MKIMAGE. Move it to Makefile.lib
->> to avoid duplication.
+On Mon, Mar 5, 2012 at 2:45 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> ( Cc:-ed Yinghai - he can spot memory layout related bugs with
+>  amazing efficiency. )
+>
+>  n/t
+>
+> * Keith Packard <keithp@keithp.com> wrote:
+>
+>> <#part sign=pgpmime>
+>> On Sat, 03 Mar 2012 16:27:28 -0800, "H. Peter Anvin" <hpa@zytor.com> wrote:
 >>
->> All ARCHs have similar definitions of cmd_uimage. Place a sufficiently
->> parameterized version in Makefile.lib to avoid duplication.
+>> > Do you have the dmesg from your MBA?  I'm wondering what the memory map
+>> > looks like...
 >>
->> The centralized cmd_uimage definition will allow the future introduction
->> of a centralized Kconfig option to make cmd_uimage use -T kernel_noload
->> rather than -T kernel.
-...
-> Is there a reason you skipped powerpc?
+>> Here's the first part of dmesg from a running kernel (3.3-rc1 plus some
+>> DRM patches). Let me know if I cut this off too soon...
 
-grepping the powerpc makefiles showed no hits on MKIMAGE, mkimage or
-cmd_uimage.
+hi, Keith,
 
-Looking a little harder now, this is all inside the shell script
-arch/powerpc/boot/wrapper. I'm not really sure quite how to unify that
-shell script with the makefile use of mkimage. Do you have any ideas?
+What is problem there? your system can not boot with latest kernel
+when EFI is used?
+
+Thanks
+
+Yinghai
