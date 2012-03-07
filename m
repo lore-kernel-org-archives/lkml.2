@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab2CGG0B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 01:26:01 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44360 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab2CGGZ7 (ORCPT
+	id S1752563Ab2CGG3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 01:29:48 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62211 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab2CGG3r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 01:25:59 -0500
-Message-ID: <4F56FF6A.6030808@gmail.com>
-Date: Wed, 07 Mar 2012 14:25:46 +0800
-From: Zhengwang Ruan <ruan.zhengwang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+	Wed, 7 Mar 2012 01:29:47 -0500
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: gregkh@linuxfoundation.org, arve@android.com, chris+android@zenthought.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] Staging:android: Initialise buffer and buffer_size
- before used
-References: <1331087818-9942-1-git-send-email-ruan.zhengwang@gmail.com> <1331087818-9942-2-git-send-email-ruan.zhengwang@gmail.com> <20120307060017.GP22598@mwanda> <4F56F99E.3000206@gmail.com> <20120307062033.GA674@mwanda>
-In-Reply-To: <20120307062033.GA674@mwanda>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABhMZUWDngY6jL8jkxQ+SHzEHqTS4i3DqtCD7DUBtL4QS58ovA@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+	<1331018040-30725-24-git-send-email-yinghai@kernel.org>
+	<CAErSpo5TjhNv1W=PxSPO6qXfhW1Mi4dMp83vj82=O_hFOq1vow@mail.gmail.com>
+	<CAE9FiQXsY7Dn5TGtD1ARM_KFdz1V1hJOvYAy6e4msM=i3VfhDg@mail.gmail.com>
+	<CABhMZUWDngY6jL8jkxQ+SHzEHqTS4i3DqtCD7DUBtL4QS58ovA@mail.gmail.com>
+Date: Tue, 6 Mar 2012 22:29:46 -0800
+X-Google-Sender-Auth: jIRF7J_Lftmy6LwJZdWzGT5zueg
+Message-ID: <CAE9FiQV23maKVMrk7h1cJxYfxrqJcKu7GfwFYUJfSDfh8g-KFQ@mail.gmail.com>
+Subject: Re: [PATCH 23/23] x86, PCI: add pcibios_root_rescan
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bjorn.helgaas@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 6, 2012 at 7:49 PM, Bjorn Helgaas <bjorn.helgaas@gmail.com> wrote:
 
-
-
--------- Original Message --------
-From: Dan Carpenter
-Sent: 2012年03月07日 星期三 09时20分33秒
-To: Zhengwang Ruan
-Subject: Re: [PATCH 2/2 v2] Staging:android: Initialise buffer and
-buffer_size before used
-> On Wed, Mar 07, 2012 at 02:01:02PM +0800, Zhengwang Ruan wrote:
->> I found I did not send this patch to everyone listed by
->> get_maintainer.pl, and I didn't get any response, so I made another
->> try today. :-)
+>> my sandbridge system has cpu bus 0x7f, and 0xff in DSDT.
 >>
-> Please just be patient.
+>> but nehalem and westmere system does not have cpu bus 0xf8, ... 0xff.
 >
-> It is a messy thing because now there are comments on this resend
-> which will never be read until after the original patch submission
-> is applied.  If people want their comments read, they should go to
-> the original patch and write something there.
+> I think you're saying that on some machines, the BIOS decided not to
+> expose host bridges leading to CPU devices, and you want to discover
+> those devices anyway. �(What's the reason you want to discover them?)
 
-Yes, got it! I will avoid making similar mistakes again in the future. 
-Thank you for your clarification, it is quite helpful!
+current code for mmconf will set pcibios_last_bios according to mmconf
+bus range.
 
-Thanks,
--Zhengwang
-> regards,
-> dan carpenter
->
+so it legacy peer root bus fix up will discover those cpu buses.
 
+then if some one remove them through
+echo 1 > /sys/devices/pci0000:ff/pci_bus/0000:ff/remove
+
+then
+
+echo 1 > /sys/bus/pci/rescan_root
+
+will not recover those cpu buses without this patch.
+
+Yinghai
