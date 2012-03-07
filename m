@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab2CGGGd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 01:06:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:58777 "EHLO mga11.intel.com"
+	id S1752465Ab2CGGH7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 01:07:59 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45677 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923Ab2CGGGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 01:06:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="125987553"
-Subject: Re: fork_idle from wq cleanup
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Aaron Durbin <adurbin@google.com>,
-        Paul Turner <pjt@google.com>, Yong Zhang <yong.zhang0@gmail.com>,
-        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-In-Reply-To: <1331070074-31717-1-git-send-email-venki@google.com>
-References: <1330710103.30167.84.camel@sbsiddha-desk.sc.intel.com>
-	 <1331070074-31717-1-git-send-email-venki@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel
-Date: Tue, 06 Mar 2012 22:06:21 -0800
-Message-ID: <1331100381.2259.2.camel@sbsiddha-mobl2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1751452Ab2CGGH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 01:07:58 -0500
+Date: Wed, 7 Mar 2012 07:07:25 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@gmail.com>, Arun Sharma <asharma@fb.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        dsahern@gmail.com, ravitillo@lbl.gov, khandual@linux.vnet.ibm.com,
+        robert.richter@amd.com, ming.m.lin@intel.com, vweaver1@eecs.utk.edu,
+        andi@firstfloor.org
+Subject: Re: [RFC] perf report: Implement symbol filtering on TUI
+Message-ID: <20120307060724.GA4241@elte.hu>
+References: <20120306062546.GA622@elte.hu>
+ <1331085470-32594-1-git-send-email-namhyung.kim@lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331085470-32594-1-git-send-email-namhyung.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-06 at 13:41 -0800, Venkatesh Pallipadi wrote:
-> I looked at avoiding the wq stuff. But, there is no easy/clean way to do
-> if as we have number of routines within copy_process assume current
-> being the parent.
-> 
-> But, we can move most of the complication out of arch code into generic code
-> and share it across multiple archs. Here is the patch for that.
-> 
-> We can easily add x86 percpu idle task on top of this cleanup (except for
-> mini-circus to switch idle_task of CPU 0).
-> 
-> Sorry. The patches for ia64, mips, powerpc and s390 are untested and are in
-> "should work" category.
-> 
-> Overall diffstat looks like
-> ---
->  arch/ia64/kernel/smpboot.c |   49 ++---------------------------
->  arch/mips/kernel/smp.c     |   47 +---------------------------
->  arch/powerpc/kernel/smp.c  |   63 ++++----------------------------------
->  arch/s390/kernel/smp.c     |   38 +++--------------------
->  arch/x86/kernel/smpboot.c  |   74 ++++++---------------------------------------
->  include/linux/sched.h      |    1 
->  kernel/fork.c              |   48 +++++++++++++++++++++++++++++
->  7 files changed, 79 insertions(+), 241 deletions(-)
-> 
 
-Looks good to me.
+* Namhyung Kim <namhyung.kim@lge.com> wrote:
 
-Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> As Ingo requested, symbol filtering feature was missing on TUI.
+> Add 's' key to get input from user, and do simple filtering by
+> strstr(). To turn filtering off, just enter no name by pressing
+> 's' followed by ENTER.
+> 
+> There should be many issues, but I just want to release this
+> to get some feedbacks.
 
+I'd love it if in addition to the hotkey, if I typed the obvious 
+sequence:
+
+ $ perf report sched
+
+... then it would turn into such a filter automagically.
+
+Thanks,
+
+	Ingo
