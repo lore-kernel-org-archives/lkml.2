@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932815Ab2CGW4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 17:56:34 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49719 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932632Ab2CGW4b (ORCPT
+	id S1030857Ab2CGXAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 18:00:09 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:62879 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030246Ab2CGXAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 17:56:31 -0500
-Date: Wed, 7 Mar 2012 14:56:29 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH] MAINTAINERS: update my email address
-Message-ID: <20120307225629.GA24934@quad.lixom.net>
-References: <1330995516-22160-1-git-send-email-swarren@nvidia.com>
+	Wed, 7 Mar 2012 18:00:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Howells <dhowells@redhat.com>
+Subject: Re: [RFC][PATCH 00/29] Disintegrate and kill asm/system.h
+Date: Wed, 7 Mar 2012 22:59:05 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: paul.gortmaker@windriver.com, hpa@zytor.com, torvalds@linux-foundation.org,
+        sfr@canb.auug.org.au, mingo@redhat.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <201203072146.51494.arnd@arndb.de> <20120307194548.15987.36073.stgit@warthog.procyon.org.uk> <20425.1331160006@redhat.com>
+In-Reply-To: <20425.1331160006@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330995516-22160-1-git-send-email-swarren@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203072259.06012.arnd@arndb.de>
+X-Provags-ID: V02:K0:fUszJ+ZGEO6g6LCiiQSGbgcxGL3UnsEFXV5ct7N/rTS
+ 2jq2YUiAYMx1tndy98bBve8+V7D9dPU4xttoqhOdwbgUWhPZDw
+ ajjH5+feAi1CBTUBtRSx97Imx0EapmsETPxB5k7CL7xae5CvoE
+ 4Evi2x6Zmv6iNINHMdZZs1bHqobElDfvlGyXDwe82hWCVFcT+P
+ zH60cobiFwLOZQn0aCXpnYXYgZKPKKxknFV+rwQby0ZMMHN9e6
+ 6+LGHyy3Echv/Ymk8XRpsjtOLKIBp8H9bGC3NLd0a6jntvMrEr
+ 2b9Vo64yWpJXaRkqZt0Kj1rdLuEOX8Auc/iBK+Df2y9/A1hSB6
+ u/pSYD51OC3ZrCaT0QrA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 05, 2012 at 05:58:36PM -0700, Stephen Warren wrote:
-> From: Stephen Warren <swarren@wwwdotorg.org>
+On Wednesday 07 March 2012, David Howells wrote:
+> Arnd Bergmann <arnd@arndb.de> wrote:
 > 
-> My nvidia.com address is hosted by MS Exchange Server and isn't suitable
-> for receiving patches. Update my MAINTAINERS entry to something that is.
-> Note: The old address continues to work, I just want to ensure that I
-> receive patches at the new one where possible.
+> > One part you were missing seems to be include/asm-generic/system.h, which is
+> > used on openrisc and contains a lot of the things you move to other
+> > places. It would be helpful to split that up as well.
 > 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+> Hmmm...  okay.  How that is used from an arch that doesn't have an
+> asm/system.h?
 
-Thanks, I reworded the subject line and applied directly to the arm-soc
-next/maintainers branch.
+We're migration towards using generic-y in arch/*/include/arm/Kbuild now.
+When you create header files that have reasonable defaults that can be
+shared across multiple architectures, I think you should do that for the
+new header files as well.
 
+> > >     (4) asm/atomic.h
+> > >
+> > >         Move xchg() and cmpxchg() here as they're full word atomic ops and
+> > >         frequently used by atomic_xchg() and atomic_cmpxchg().
+> > 
+> > Well, the thing with xchg and cmpxchg is that they operate on arbirary-sized
+> > integers, not atomic_t, unlike everything else in atomic.h.
+> > 
+> > Some architectures already have an asm/cmpxchg.h, which seems more appropriate
+> > here.
+> 
+> So I saw.  It might be worth making an asm/xchg.h and asm/cmpxchg.h for each
+> arch - or maybe just put both in asm/xchg.h or asm/cmpxchg.h.  Where do I
+> include it from though?  One nice thing about sticking them in asm/atomic.h is
+> that usually gets all instances, and they're frequently used from there.  How
+> about I have asm/atomic.h #include asm/{,cmp}xchg.h?
 
--Olof
+Yes, that makes sense and is probably required anyway for the obvious implementation
+of atomic_cmpxchg().
+
+	Arnd
