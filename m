@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab2CGMwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 07:52:23 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34673 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757715Ab2CGMwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 07:52:21 -0500
-Date: Wed, 7 Mar 2012 16:52:17 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH] prctl: Use CAP_SYS_RESOUCE for PR_SET_MM option
-Message-ID: <20120307125217.GC20558@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758697Ab2CGMxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 07:53:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:41536 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757715Ab2CGMxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 07:53:32 -0500
+Message-Id: <aefc95$3e4jv1@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="115494881"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 6/9] drm/i915/intel_i2c: return -ENXIO for device NAK
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Sameer Nanda <snanda@chromium.org>
+In-Reply-To: <CAGS+omByuSWzV1Pa_ODugq9rrZ2DtgU_LPWDAfbrR_q_zuDvYQ@mail.gmail.com>
+References: <1331121050-17857-1-git-send-email-djkurtz@chromium.org> <1331121050-17857-7-git-send-email-djkurtz@chromium.org> <aefc95$3e4bn0@orsmga001.jf.intel.com> <CAGS+omByuSWzV1Pa_ODugq9rrZ2DtgU_LPWDAfbrR_q_zuDvYQ@mail.gmail.com>
+Date: Wed, 07 Mar 2012 12:53:21 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CAP_SYS_ADMIN is already overloaded left and right,
-so to have more finegrained access control use
-CAP_SYS_RESOUCE here.
+On Wed, 7 Mar 2012 20:41:03 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> On Wed, Mar 7, 2012 at 8:12 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> > On Wed,  7 Mar 2012 19:50:47 +0800, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> >> Return -ENXIO if a device NAKs a transaction.
+> >>
+> >> Note: We should return -ETIMEDOUT, too if the transaction times out,
+> >> however, that error path is currently handled by the 'bit-bang fallback'.
+> >>
+> >> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> >
+> > Can you clarify what the rule is if an error is detected part-way
+> > through a xfer?
+> 
+> A priceless comment from drivers/i2c/i2c-core::i2c_transfer...
 
-The CAP_SYS_RESOUCE is chosen because this prctl
-option allows a current process to adjust some
-fields of memory map descriptor which rather
-represent what the process owns: pointers to
-code, data, stack segments, command line,
-auxilary vector data and etc.
-
-Suggested-by: Michael Kerrisk <mtk.manpages@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Kees Cook <keescook@chromium.org>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- kernel/sys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6.git/kernel/sys.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -1712,7 +1712,7 @@ static int prctl_set_mm(int opt, unsigne
- 	if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
- 		return -EINVAL;
+Thanks, that is about as consistent as one expects with i2c. ;)
  
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!capable(CAP_SYS_RESOURCE))
- 		return -EPERM;
- 
- 	if (addr >= TASK_SIZE)
+> This doesn't specify what to do if the transfer doesn't get an ACK
+> during another phase of the transfer.
+> However, it does say to send -ENXIO "if no ACK during address phase",
+> which is a subset of the possible no-ACK conditions during a transfer.
+>  Thus, I choose to return ENXIO in all no-ACK cases, to ensure we send
+> it during the one case that is specified.
+
+This (and a summary of the rest) deserves to be captured as a comment in
+the code.
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
