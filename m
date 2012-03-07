@@ -1,74 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759537Ab2CGRvQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 12:51:16 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:41338 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932508Ab2CGRvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 12:51:13 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19rsB4aIEVPe73ta2PokY3o
-Date: Wed, 7 Mar 2012 09:51:01 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Sekhar Nori <nsekhar@ti.com>, Jamie Iles <jamie@jamieiles.com>,
-        Kevin Hilman <khilman@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        David Brown <davidb@codeaurora.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Barry Song <baohua.song@csr.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Jiandong Zheng <jdzheng@broadcom.com>,
-        Colin Cross <ccross@android.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Roland Stigge <stigge@antcom.de>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Pre-merge-window status of the arm-soc tree
-Message-ID: <20120307175100.GH12083@atomide.com>
-References: <201203062054.55434.arnd@arndb.de>
+	id S932534Ab2CGRwD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 12:52:03 -0500
+Received: from mail.anarazel.de ([217.115.131.40]:47074 "EHLO mail.anarazel.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932246Ab2CGRv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 12:51:57 -0500
+X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Wed, 07 Mar 2012 12:51:57 EST
+From: Andres Freund <andres@anarazel.de>
+To: Chris Mason <chris.mason@oracle.com>
+Subject: Re: [PATCH 1/2] LSEEK: BTRFS: Avoid i_mutex for SEEK_{CUR,SET,END}
+Date: Wed, 7 Mar 2012 18:16:06 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-rc5-andres-00066-g500dd23; KDE/4.6.5; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        robertmhaas@gmail.com, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org> <20111102082915.GA28153@infradead.org> <20111105152749.GA5576@shiny>
+In-Reply-To: <20111105152749.GA5576@shiny>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201203062054.55434.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203071816.07282.andres@anarazel.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd & Olof,
-
-* Arnd Bergmann <arnd@arndb.de> [120306 12:26]:
+On Saturday, November 05, 2011 04:27:49 PM Chris Mason wrote:
+> On Wed, Nov 02, 2011 at 04:29:15AM -0400, Christoph Hellwig wrote:
+> > Andres, can you check with Chris that the btrfs changes made it to
+> > his tree?  The core lseek changes from Andi are in mainline now, but
+> > I think these bits are better off going through Chrises btrfs tree.
 > 
-> * Russell now has a branch that contains patches from his tree that
-> directly impact stuff in arm-soc. We had a lot of nasty conflicts
-> the last time around, which resulted in some of the patches from
-> arm-soc not making it in during the merge window. Pulling the
-> rmk/for-armsoc branch into arm-soc hopefully lets us avoid this
-> situation in the future because we will fix the conflicts much
-> earlier.
+> I'm pulling these in, thanks!
+I just stumbled uppon this email when opening up my email client which 
+triggered me to recheck the issue - do you have pulled those? A very quick 
+look didn't intoicate so.
 
-There's also two urgent issues pending for omap in case you
-are filtering mails on keywords to make them safe to read :)
-
-See this:
-
-http://www.spinics.net/lists/arm-kernel/msg163661.html
-
-Also, after that is out of the way, I have two more pull request
-ready for fixes for various build and warning issues Russell
-has reported.
-
-Regards,
-
-Tony 
+Andres
+> > On Sat, Oct 01, 2011 at 10:49:27PM +0200, Andres Freund wrote:
+> > > Don't need the i_mutex for those cases, only for SEEK_HOLE/DATA.
+> > > 
+> > > Really-From: Andi Kleen <ak@linux.intel.com>
+> > > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> > > Signed-off-by: Andres Freund <andres@anarazel.de>
+> > > ---
+> > > 
+> > >  fs/btrfs/file.c |   27 +++++++++++----------------
+> > >  1 files changed, 11 insertions(+), 16 deletions(-)
+> > > 
+> > > diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+> > > index 7a13337..5bc7116 100644
+> > > --- a/fs/btrfs/file.c
+> > > +++ b/fs/btrfs/file.c
+> > > @@ -1809,24 +1809,19 @@ static loff_t btrfs_file_llseek(struct file
+> > > *file, loff_t offset, int origin)
+> > > 
+> > >  	struct inode *inode = file->f_mapping->host;
+> > >  	int ret;
+> > > 
+> > > +	if (origin != SEEK_DATA && origin != SEEK_HOLE)
+> > > +		return generic_file_llseek(file, offset, origin);
+> > > +
+> > > 
+> > >  	mutex_lock(&inode->i_mutex);
+> > > 
+> > > -	switch (origin) {
+> > > -	case SEEK_END:
+> > > -	case SEEK_CUR:
+> > > -		offset = generic_file_llseek(file, offset, origin);
+> > > -		goto out;
+> > > -	case SEEK_DATA:
+> > > -	case SEEK_HOLE:
+> > > -		if (offset >= i_size_read(inode)) {
+> > > -			mutex_unlock(&inode->i_mutex);
+> > > -			return -ENXIO;
+> > > -		}
+> > > +	if (offset >= i_size_read(inode)) {
+> > > +		mutex_unlock(&inode->i_mutex);
+> > > +		return -ENXIO;
+> > > +	}
+> > > 
+> > > -		ret = find_desired_extent(inode, &offset, origin);
+> > > -		if (ret) {
+> > > -			mutex_unlock(&inode->i_mutex);
+> > > -			return ret;
+> > > -		}
+> > > +	ret = find_desired_extent(inode, &offset, origin);
+> > > +	if (ret) {
+> > > +		mutex_unlock(&inode->i_mutex);
+> > > +		return ret;
+> > > 
+> > >  	}
+> > >  	
+> > >  	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET)) {
+> > 
+> > ---end quoted text---
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
