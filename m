@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758604Ab2CGMtd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 07:49:33 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52397 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757468Ab2CGMtc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 07:49:32 -0500
+	id S1758638Ab2CGMwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 07:52:23 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34673 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757715Ab2CGMwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 07:52:21 -0500
+Date: Wed, 7 Mar 2012 16:52:17 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH] prctl: Use CAP_SYS_RESOUCE for PR_SET_MM option
+Message-ID: <20120307125217.GC20558@moon>
 MIME-Version: 1.0
-In-Reply-To: <20120305154753.GA14604@elte.hu>
-References: <20120224094048.GA7952@quad>
-	<20120305154753.GA14604@elte.hu>
-Date: Wed, 7 Mar 2012 13:49:30 +0100
-Message-ID: <CABPqkBQ6rYstBwLYsGrRZEj4faPR2i0k7b4QasrhRD-9JH9DTA@mail.gmail.com>
-Subject: Re: [PATCH] perf report: auto-detect branch stack sampling mode
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        dsahern@gmail.com, ravitillo@lbl.gov, khandual@linux.vnet.ibm.com,
-        asharma@fb.com, robert.richter@amd.com, ming.m.lin@intel.com,
-        vweaver1@eecs.utk.edu, andi@firstfloor.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 5, 2012 at 4:47 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> Another usability bug of the new branch sampling feature is that
-> typing the obvious:
->
->  $ perf record -b ./myprog
->
-> does not do the obvious thing and default to 'any' but throws a
-> *very* unhelpful generic perf error:
->
-Ok, so looked at this. Given the option parsing code, looks like
-we would have to split the option in two: -b and something else
-to disambiguate cmdline such as:
+CAP_SYS_ADMIN is already overloaded left and right,
+so to have more finegrained access control use
+CAP_SYS_RESOUCE here.
 
-$ perf record -b foo
-$ perf record -b any_call foo
-any_call: no such file or directory
+The CAP_SYS_RESOUCE is chosen because this prctl
+option allows a current process to adjust some
+fields of memory map descriptor which rather
+represent what the process owns: pointers to
+code, data, stack segments, command line,
+auxilary vector data and etc.
 
-The code cannot disambiguate between any_call being a branch filter
-vs. the command
-to run, given that -b has now an optional argument.
+Suggested-by: Michael Kerrisk <mtk.manpages@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Tejun Heo <tj@kernel.org>
+CC: Oleg Nesterov <oleg@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Kees Cook <keescook@chromium.org>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ kernel/sys.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-What we can do is split: -b and --branch-filter for instance. The former
-takes no argument and sets up branch-stack to ANY. The other one requires
-a parameter.
-
-I am almost done with  TUI navigation of branch samples.
-
->  usage: perf record [<options>] [<command>]
->    or: perf record [<options>] -- <command> [<options>]
->
->  ...
->
-> Really, we should do better than this. Only people who *want* to
-> specify finer LBR filters should be forced to specify them.
->
-> Thanks,
->
->        Ingo
+Index: linux-2.6.git/kernel/sys.c
+===================================================================
+--- linux-2.6.git.orig/kernel/sys.c
++++ linux-2.6.git/kernel/sys.c
+@@ -1712,7 +1712,7 @@ static int prctl_set_mm(int opt, unsigne
+ 	if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
+ 		return -EINVAL;
+ 
+-	if (!capable(CAP_SYS_ADMIN))
++	if (!capable(CAP_SYS_RESOURCE))
+ 		return -EPERM;
+ 
+ 	if (addr >= TASK_SIZE)
