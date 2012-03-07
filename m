@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755915Ab2CGXaP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 18:30:15 -0500
-Received: from bureau60.ns.utoronto.ca ([128.100.132.147]:56863 "EHLO
-	bureau60.ns.utoronto.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab2CGXaL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 18:30:11 -0500
-Message-ID: <4F57EF6F.2010408@utoronto.ca>
-Date: Wed, 07 Mar 2012 18:29:51 -0500
-From: Steven Truelove <steven.truelove@utoronto.ca>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1758711Ab2CGXcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 18:32:55 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63042 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755667Ab2CGXcw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 18:32:52 -0500
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: wli@holomorphy.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] Correct alignment of huge page requests.
-References: <1330830176-19449-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1330830176-19449-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAE9FiQV23maKVMrk7h1cJxYfxrqJcKu7GfwFYUJfSDfh8g-KFQ@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+ <1331018040-30725-24-git-send-email-yinghai@kernel.org> <CAErSpo5TjhNv1W=PxSPO6qXfhW1Mi4dMp83vj82=O_hFOq1vow@mail.gmail.com>
+ <CAE9FiQXsY7Dn5TGtD1ARM_KFdz1V1hJOvYAy6e4msM=i3VfhDg@mail.gmail.com>
+ <CABhMZUWDngY6jL8jkxQ+SHzEHqTS4i3DqtCD7DUBtL4QS58ovA@mail.gmail.com> <CAE9FiQV23maKVMrk7h1cJxYfxrqJcKu7GfwFYUJfSDfh8g-KFQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 7 Mar 2012 16:32:31 -0700
+Message-ID: <CAErSpo5T8-hrtMufDeo_EfupQX3neyoA9ufjN2UYro7-2SXc+Q@mail.gmail.com>
+Subject: Re: [PATCH 23/23] x86, PCI: add pcibios_root_rescan
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bjorn.helgaas@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/03/2012 10:02 PM, Naoya Horiguchi wrote:
-> On Thu, Mar 01, 2012 at 09:58:41PM -0500, Steven Truelove wrote:
->> When calling shmget() with SHM_HUGETLB, shmget aligns the request size to PAGE_SIZE, but this is not sufficient.  Modified hugetlb_file_setup() to align requests to the huge page size, and to accept an address argument so that all alignment checks can be performed in hugetlb_file_setup(), rather than in its callers.  Changed newseg and mmap_pgoff to match new prototype and eliminated a now redundant alignment check.
-> I think only rounding up request size in shmget() is not sufficient,
-> because later shmat() also have alignment check and fails to mmap()
-> to unaligned address.
-> Maybe file->f_op->get_unmapped_area() (or hugetlb_get_unmapped_area())
-> should have round up code, I think.
-> Could you try it?
-
-Because the allocation is done in shmget() and the the address is not 
-provided until shmat(), I don't see a way to make this work reasonably.  
-I would argue that only allowing aligned addresses, or allowing the 
-kernel to choose the address, is a reasonable restriction on SHM_HUGETLB 
-usage.
-
-Regarding your other comments, I will submit a revised patch.
-
-Thanks,
-
-Steven Truelove
-
-
-> And a few comments below,
+On Tue, Mar 6, 2012 at 11:29 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, Mar 6, 2012 at 7:49 PM, Bjorn Helgaas <bjorn.helgaas@gmail.com> wrote:
 >
->> Signed-off-by: Steven Truelove<steven.truelove@utoronto.ca>
->> ---
->>   fs/hugetlbfs/inode.c    |   12 ++++++++----
->>   include/linux/hugetlb.h |    3 ++-
->>   ipc/shm.c               |    2 +-
->>   mm/mmap.c               |    6 +++---
->>   4 files changed, 14 insertions(+), 9 deletions(-)
+>>> my sandbridge system has cpu bus 0x7f, and 0xff in DSDT.
+>>>
+>>> but nehalem and westmere system does not have cpu bus 0xf8, ... 0xff.
 >>
->> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
->> index 1e85a7a..a97b7cc 100644
->> --- a/fs/hugetlbfs/inode.c
->> +++ b/fs/hugetlbfs/inode.c
->> @@ -928,7 +928,7 @@ static int can_do_hugetlb_shm(void)
->>   	return capable(CAP_IPC_LOCK) || in_group_p(sysctl_hugetlb_shm_group);
->>   }
->>
->> -struct file *hugetlb_file_setup(const char *name, size_t size,
->> +struct file *hugetlb_file_setup(const char *name, unsigned long addr, size_t size,
-> Just a nitpick, this line is over 80 characters.
-> checkpatch.pl should warn.
+>> I think you're saying that on some machines, the BIOS decided not to
+>> expose host bridges leading to CPU devices, and you want to discover
+>> those devices anyway.  (What's the reason you want to discover them?)
 >
->>   				vm_flags_t acctflag,
->>   				struct user_struct **user, int creat_flags)
->>   {
->> @@ -938,6 +938,8 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
->>   	struct path path;
->>   	struct dentry *root;
->>   	struct qstr quick_string;
->> +	struct hstate *hstate;
->> +	int num_pages;
-> Is unsigned long better?
+> current code for mmconf will set pcibios_last_bios according to mmconf
+> bus range.
 >
-> Thanks,
-> Naoya
+> so it legacy peer root bus fix up will discover those cpu buses.
 >
+> then if some one remove them through
+> echo 1 > /sys/devices/pci0000:ff/pci_bus/0000:ff/remove
+>
+> then
+>
+> echo 1 > /sys/bus/pci/rescan_root
+>
+> will not recover those cpu buses without this patch.
+
+What's the reason we need to discover those CPU devices in the first place?
+
+I don't think the current policy of blindly probing for things should
+be continued forever.
