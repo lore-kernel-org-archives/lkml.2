@@ -1,139 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab2CGFTW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 00:19:22 -0500
-Received: from mga03.intel.com ([143.182.124.21]:54249 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137Ab2CGFTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 00:19:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="115696327"
-Date: Tue, 6 Mar 2012 21:14:18 -0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ilya Tumaykin <librarian_rus@yahoo.com>
-Subject: Re: [ 03/34] lib: proportion: lower PROP_MAX_SHIFT to 32 on 64-bit
- kernel
-Message-ID: <20120307051418.GA10819@localhost>
-References: <20120301214654.GA13231@kroah.com>
- <20120301213922.703908387@linuxfoundation.org>
- <20120305150657.GB11238@quack.suse.cz>
- <20120305213126.GA16807@localhost>
- <20120306203508.GB8781@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120306203508.GB8781@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751212Ab2CGFWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 00:22:18 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:43185 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2CGFWQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 00:22:16 -0500
+Date: Wed, 07 Mar 2012 00:22:11 -0500 (EST)
+Message-Id: <20120307.002211.1109938489960237946.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 06 Mar 2012 21:22:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 09:35:08PM +0100, Jan Kara wrote:
-> On Mon 05-03-12 13:31:26, Wu Fengguang wrote:
-> > On Mon, Mar 05, 2012 at 04:06:57PM +0100, Jan Kara wrote:
-> > > On Thu 01-03-12 13:39:25, Greg KH wrote:
-> > > > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> > >   Not that I'd see anything wrong with this patch for 2.6.32. But it is
-> > > also unnecessary since the code which was triggering the overflow does not
-> > > exist in 2.6.32. So maybe just on the grounds of not applying unneeded
-> > > patchs I'd skip this one.
-> > 
-> > FYI I never see this divide error for pre-3.2 kernels. However I've
-> > run into problem (2) before 3.2 which makes bdi dirty threshold go
-> > wild. So it seems safer to go with this patch.
-> > 
-> > To be frank the boxes that run into bugs (1) or (2) do not have
-> > Terabytes of memory to create the big shift value in
-> > calc_period_shift() which is the sufficient condition for triggering
-> > the bugs as described in the below changelog. However the bugs do
-> > magically go away with the patch applied. Perhaps this patch breaks
-> > one necessary condition for triggering the bugs in a small memory box.
->   The patch went in -stable kernel so this is mostly an academic discussion
-> but Documentation/stable_kernel_rules.txt says among other things:
->  - It must fix a real bug that bothers people (not a, "This could be a
->    problem..." type thing).
->  - It must fix a problem that causes a build error (but not for things
->    marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
->    security issue, or some "oh, that's not good" issue.  In short,
->    something critical.
-> 
->   This patch simply didn't pass these two conditions for me for 2.6.32 and
-> your arguments didn't convince me it's a critical thing either...
 
-I see the point. We need *demonstrated* critical bugs for pushing the
-fix to -stable.
+1) TCP can chop up SACK'd SKBs below below the unacked send
+   sequence and that breaks lots of stuff.  Fix from Neal Cardwell.
 
-By this criterion, I agree that there are no strong reasons for
-including this patch in -stable.
+2) There is code in ipv6 to properly join and leave the all-routers
+   multicast code when the forwarding setting is changed, but once
+   forwarding is turned on, we don't do the join for newly registered
+   devices.  Fix from Li Wei.
 
-Thanks,
-Fengguang
+3) Netfilter's NAT module autoload in ctnetlink drops a spinlock around
+   a sleeping call, problem is this code path doesn't actually hold that
+   lock.  Fix from Pablo Neira Ayuso.
 
-> 								Honza
-> 
-> > > > ------------------
-> > > > 
-> > > > From: Wu Fengguang <fengguang.wu@intel.com>
-> > > > 
-> > > > commit 3310225dfc71a35a2cc9340c15c0e08b14b3c754 upstream.
-> > > > 
-> > > > PROP_MAX_SHIFT should be set to <=32 on 64-bit box. This fixes two bugs
-> > > > in the below lines of bdi_dirty_limit():
-> > > > 
-> > > > 	bdi_dirty *= numerator;
-> > > > 	do_div(bdi_dirty, denominator);
-> > > > 
-> > > > 1) divide error: do_div() only uses the lower 32 bit of the denominator,
-> > > >    which may trimmed to be 0 when PROP_MAX_SHIFT > 32.
-> > > > 
-> > > > 2) overflow: (bdi_dirty * numerator) could easily overflow if numerator
-> > > >    used up to 48 bits, leaving only 16 bits to bdi_dirty
-> > > > 
-> > > > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > > Reported-by: Ilya Tumaykin <librarian_rus@yahoo.com>
-> > > > Tested-by: Ilya Tumaykin <librarian_rus@yahoo.com>
-> > > > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > > 
-> > > > ---
-> > > >  include/linux/proportions.h |    4 ++++
-> > > >  1 file changed, 4 insertions(+)
-> > > > 
-> > > > --- a/include/linux/proportions.h
-> > > > +++ b/include/linux/proportions.h
-> > > > @@ -81,7 +81,11 @@ void prop_inc_percpu(struct prop_descrip
-> > > >   * Limit the time part in order to ensure there are some bits left for the
-> > > >   * cycle counter and fraction multiply.
-> > > >   */
-> > > > +#if BITS_PER_LONG == 32
-> > > >  #define PROP_MAX_SHIFT (3*BITS_PER_LONG/4)
-> > > > +#else
-> > > > +#define PROP_MAX_SHIFT (BITS_PER_LONG/2)
-> > > > +#endif
-> > > >  
-> > > >  #define PROP_FRAC_SHIFT		(BITS_PER_LONG - PROP_MAX_SHIFT - 1)
-> > > >  #define PROP_FRAC_BASE		(1UL << PROP_FRAC_SHIFT)
-> > > > 
-> > > > 
-> > > > --
-> > > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > > the body of a message to majordomo@vger.kernel.org
-> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > > Please read the FAQ at  http://www.tux.org/lkml/
-> > > -- 
-> > > Jan Kara <jack@suse.cz>
-> > > SUSE Labs, CR
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+4) TG3 uses the wrong interfaces to hook into the new byte queue limit
+   support.  It uses the device level interfaces, which is fine for
+   single queue devices, but on more recent chips this driver supports
+   multiqueue so we have to use the multiqueue BQL APIs.  Fix from Tom
+   Herbert.
+
+5) r8169 resume fix from Francois Romieu.
+
+6) Add some cxgb4 device IDs, from Vipul Pandya.
+
+Please pull, thanks a lot!
+
+The following changes since commit 55062d061790b43aee01ab3f9ac57b8596254f19:
+
+  x86: fix typo in recent find_vma_prev purge (2012-03-06 18:48:13 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Florian Westphal (1):
+      bridge: netfilter: don't call iptables on vlan packets if sysctl is off
+
+Li Wei (1):
+      IPv6: Fix not join all-router mcast group when forwarding set.
+
+Neal Cardwell (1):
+      tcp: fix tcp_shift_skb_data() to not shift SACKed data below snd_una
+
+Pablo Neira Ayuso (3):
+      netfilter: ctnetlink: remove incorrect spin_[un]lock_bh on NAT module autoload
+      netfilter: bridge: fix wrong pointer dereference
+      netfilter: nf_conntrack: fix early_drop with reliable event delivery
+
+Santosh Nayak (1):
+      netfilter: ebtables: fix wrong name length while copying to user-space
+
+Sjur Brændeland (1):
+      caif-hsi: Set default MTU to 4096
+
+Tom Herbert (1):
+      tg3: Fix to use multi queue BQL interfaces
+
+Vipul Pandya (2):
+      cxgb4: Add support for Chelsio's T480-CR and T440-LP-CR adapters
+      cxgb4vf: Add support for Chelsio's T480-CR and T440-LP-CR adapters
+
+Yevgeny Petrilin (1):
+      mlx4_core: remove buggy sched_queue masking
+
+françois romieu (1):
+      r8169: runtime resume before shutdown.
+
+ drivers/net/caif/caif_hsi.c                        |    2 +-
+ drivers/net/ethernet/broadcom/tg3.c                |    6 ++--
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c    |    2 +
+ .../net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c    |    2 +
+ drivers/net/ethernet/mellanox/mlx4/qp.c            |    5 ---
+ drivers/net/ethernet/realtek/r8169.c               |    5 +++
+ net/bridge/br_netfilter.c                          |   32 +++++++++++--------
+ net/bridge/netfilter/ebtables.c                    |   16 ++++++++--
+ net/ipv4/tcp_input.c                               |    4 ++
+ net/ipv6/addrconf.c                                |    4 ++
+ net/netfilter/nf_conntrack_core.c                  |    8 ++++-
+ net/netfilter/nf_conntrack_netlink.c               |    3 --
+ 12 files changed, 58 insertions(+), 31 deletions(-)
