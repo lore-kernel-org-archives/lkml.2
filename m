@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab2CGILR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 03:11:17 -0500
-Received: from mga09.intel.com ([134.134.136.24]:34948 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753339Ab2CGILQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 03:11:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="118540736"
-Subject: Re: [PATCH 01/14] dmaengine: imx-dma: merge old dma-v1.c with
- imx-dma.c
-From: Vinod Koul <vinod.koul@intel.com>
-To: javier Martin <javier.martin@vista-silicon.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        dan.j.williams@intel.com
-In-Reply-To: <CACKLOr0iBSMd8hNdmeAiMWgyyUb_b1=5n47N97hu9EP2Zu9OsQ@mail.gmail.com>
-References: <1330964196-32623-1-git-send-email-javier.martin@vista-silicon.com>
-	 <1330964196-32623-2-git-send-email-javier.martin@vista-silicon.com>
-	 <1331102571.24656.324.camel@vkoul-udesk3>
-	 <CACKLOr0iBSMd8hNdmeAiMWgyyUb_b1=5n47N97hu9EP2Zu9OsQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 07 Mar 2012 13:45:58 +0530
-Message-ID: <1331108158.24656.330.camel@vkoul-udesk3>
+	id S1753970Ab2CGIMF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 03:12:05 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:32837 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339Ab2CGIMD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 03:12:03 -0500
+Date: Wed, 7 Mar 2012 17:18:26 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4 changelog-v2] KVM: Switch to srcu-less
+ get_dirty_log()
+Message-Id: <20120307171826.1bb12481.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120306152850.GB3353@amt.cnet>
+References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120303142148.2689454b30dc86d84c4a19f5@gmail.com>
+	<20120306111540.GA29914@amt.cnet>
+	<20120306234317.2817d2071038d11ab3831c82@gmail.com>
+	<20120306150104.GA3041@amt.cnet>
+	<20120307002317.d8682de9c6ccd6af8ccac467@gmail.com>
+	<20120306152850.GB3353@amt.cnet>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-07 at 08:52 +0100, javier Martin wrote:
-> Hi Vinod,
-> 
-> On 7 March 2012 07:42, Vinod Koul <vinod.koul@intel.com> wrote:
-> > On Mon, 2012-03-05 at 17:16 +0100, Javier Martin wrote:
-> > Sascha,
-> > Are there any more users of dmac in mach-imx?
-> 
-> No, there are no other users of mach-imx. In fact, it was Sascha's
-> idea to make this merge [1].
-Then please move the file in 1st patch, also it would be easily clear
-what parts are added, deleted and moved.
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-Otherwise the series looks fine except that it needs to have a better
-changelog on why you are removing certain field/struct. It helps to
-document the motivation of doing certain change, you will find that you
-wont remember that six months down the line :)
-
-Also I am looking for Tested-By from people who have use imx-dma.
-
+> > We cannot drop the lock.
+> > Do you mean doing TLB flush each time before dropping the lock?
 > 
-> > If not then why not move the code, rather than copy.
-> > If yes can we move them as well?
-> 
-> I do remove the code in mach-imx in PATCH 14/14. I considered it was
-> better doing this in the last patch to keep the old code available
-> during the whole development process.
-> 
-> [1] https://lkml.org/lkml/2012/2/9/171
-> 
+> Yes, only if there is contention (see cond_resched_lock).
 
+But how can we conditionally call kvm_flush_remote_tlbs() from
+inside __cond_resched_lock right before spin_unlock()?
 
--- 
-~Vinod
+We need another API.
 
+	Takuya
