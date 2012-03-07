@@ -1,81 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759519Ab2CGRfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 12:35:46 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:26060 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758683Ab2CGRfo (ORCPT
+	id S932450Ab2CGRhU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 12:37:20 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51869 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756625Ab2CGRhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 12:35:44 -0500
-Date: Wed, 7 Mar 2012 20:37:52 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: santosh prasad nayak <santoshprasadnayak@gmail.com>
-Cc: Mark Salyzyn <mark_salyzyn@xyratex.com>, wharms@bfs.de,
-        lindar_liu <lindar_liu@usish.com>,
-        James Bottomley <JBottomley@parallels.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Jack Wang <jack_wang@usish.com>
-Subject: Re: [PATCH] [SCSI] pm8001: fix endian issue with code optimization.
-Message-ID: <20120307173751.GS22598@mwanda>
-References: <4f4a4580.aa3a440a.34c7.2776@mx.google.com>
- <4AB8AEEB15F74D15A87019F5663EA805@usish.com.cn>
- <D65B94D9-B33A-436F-9BCE-A500B35652D2@xyratex.com>
- <00F74E64-A5EC-4DF8-A347-2D8BC5659638@xyratex.com>
- <4F5785A9.2040707@bfs.de>
- <2E1367F2-077A-4654-8932-4FDAEE56240B@xyratex.com>
- <CAOD=uF67VkUnqYQQpgP=+0ndw-x+c1uWqN3-JUAVN24bgV2c=w@mail.gmail.com>
+	Wed, 7 Mar 2012 12:37:18 -0500
+Message-ID: <4F579CCA.2060907@gmail.com>
+Date: Wed, 07 Mar 2012 09:37:14 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MdJ3p2aQbVp3YFXz"
-Content-Disposition: inline
-In-Reply-To: <CAOD=uF67VkUnqYQQpgP=+0ndw-x+c1uWqN3-JUAVN24bgV2c=w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-CT-RefId: str=0001.0A090201.4F579C66.00D8,ss=1,re=0.000,fgs=0
+To: Felix Fietkau <nbd@openwrt.org>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux-netdev <netdev@vger.kernel.org>,
+        Linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
+ DMADBG_7=0x00008040
+References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org>
+In-Reply-To: <4F579A88.6030503@openwrt.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/07/2012 09:27 AM, Felix Fietkau wrote:
+> On 2012-03-07 4:24 PM, Justin P. Mattock wrote:
+>> On 03/07/2012 07:19 AM, Mohammed Shafi wrote:
+>>> On Wed, Mar 7, 2012 at 7:55 PM, Justin P. Mattock
+>>> <justinmattock@gmail.com>   wrote:
+>>>> ath9k craps out from time to time(more annoying if anything)
+>>>>
+>>>> [44309.840830] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44309.858246] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>>> [44309.858255] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> when we start RX up
+>>>> [44309.932801] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44309.950352] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>>> [44309.950361] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> when we start RX up
+>>>> [44310.024301] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44310.041641] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>>> [44310.041646] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> when we start RX up
+>>>> [44310.116316] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44310.133909] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>>> [44310.133918] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> when we start RX up
+>>>> [44310.208021] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44310.225752] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>>> [44310.225761] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> when we start RX up
+>>>> [44310.299922] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44310.317579] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
+>>>> [44310.317587] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> whe
+>>>
+>>> this is has become a know issue but less harmful, please try to see if
+>>> the workaround of disabling power save helps
+>>>
+>>> iw dev wlanX set power_save off
+>>>
+>>
+>> ok! I have set that on the machine.. will see if I get this message in
+>> the upcoming weeks.
+> Also, please try this patch with powersave enabled:
+> http://nbd.name/ps-fix.patch
+>
+> - Felix
+>
 
---MdJ3p2aQbVp3YFXz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I will give that a try as well..
 
-On Wed, Mar 07, 2012 at 10:54:17PM +0530, santosh prasad nayak wrote:
->  static void process_one_iomb(struct pm8001_hba_info *pm8001_ha, void *piomb)
->  {
-> -       u32 pHeader = (u32)*(u32 *)piomb;
-> -       u8 opc = (u8)(pHeader & 0xFFF);
-> +       __le32 pHeader = (__le32)*(__le32 *)piomb;
-                           ^^^^^^^^
-You could drop this cast, "*(__le32 *)piomb" is already an __le32
-data type.
+Thanks!
 
-regards,
-dan carpenter
+Justin P. Mattock
 
-
-
---MdJ3p2aQbVp3YFXz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPV5zvAAoJEOnZkXI/YHqR1wsP/2N7xa91n+Fe71cgiKE8k+W/
-GZv9rk/mFmVmSqbTv8akmIzHlL93f5LSgw0guzAqqlcD117D8tVigkH/L7M0hKkS
-OoLF2oRBLH7XMt667FESu0snd/mqDnmMAQituZZipjE3/SbdefYttkWHlX3x0z6B
-Dgs7v0UcvA5fWsYb0anTByQJutLO2cXlo9nkFf7OkAyzkoXz1F9vXCwpStsYuNni
-+I/+tMFrkQ2WrUPTvk8rd/9ftcImW4vIx+EFryjfGlMmz+okG40LLfxdE22g2qBC
-DjvYGKhLPA5Zbzf9CSL0512ROJTMJtrSziH15xFpiN2NJxJf2Rc0niLPG3q1QUVs
-k1oH8jE8Z6kQiwMzQttHaOo2Ckn6BquGCUd8wRkHAkky5C18AducKC1IJ+0hPURD
-vD7SGiHb50y3SHczvBM0bbRQkUo9EWxh6l2Fg7tmXUvY8xxTft96tO+DNUTCH5hw
-p9bEjqA0xegBfBDdsPShxy2Mc5982brJ8YH5gu8dupzIBASMVD+tWcmfOb1hGnZ/
-9vrX0RDMveTrIAm4k+DCtLhFKrrMcx0ud5QlDvzb48m82QqDS22rpe4HfVktOw2z
-iYAExby4ORfy3xGRTzGTXSbxHEDaA0f91PRi1qq4ImmOIPTza/hblOFhsCTJuAVx
-hoOPZ3uk8ff0OzbycAsI
-=PxwE
------END PGP SIGNATURE-----
-
---MdJ3p2aQbVp3YFXz--
