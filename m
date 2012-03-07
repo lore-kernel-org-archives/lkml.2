@@ -1,289 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756671Ab2CGLpY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 06:45:24 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:61236 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab2CGLpW (ORCPT
+	id S1756969Ab2CGLqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 06:46:35 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43528 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756882Ab2CGLqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 06:45:22 -0500
-Date: Wed, 7 Mar 2012 14:44:10 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Andre@jasper.es
-Subject: Re: [GIT PULL] RCU changes for v3.3
-Message-ID: <20120307114410.GA4214@swordfish.minsk.epam.com>
-References: <20120105135432.GA31450@elte.hu>
- <1327422312.7231.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20120124165312.GG2531@linux.vnet.ibm.com>
- <1327425208.7231.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20120124194140.GB2381@linux.vnet.ibm.com>
- <20120124232911.GA11327@linux.vnet.ibm.com>
+	Wed, 7 Mar 2012 06:46:34 -0500
+Date: Wed, 7 Mar 2012 11:46:32 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH v3] sound/soc/lapis: add platform driver for ML7213
+Message-ID: <20120307114631.GE3107@opensource.wolfsonmicro.com>
+References: <1329976011-2251-1-git-send-email-tomoya.rohm@gmail.com>
+ <1329976011-2251-2-git-send-email-tomoya.rohm@gmail.com>
+ <20120302163915.GD6056@opensource.wolfsonmicro.com>
+ <CANKRQni8hPoHEsV2VecbgKBdfS5+rit0-jXzz_d8F_nY5-dN3g@mail.gmail.com>
+ <20120306115246.GD19635@opensource.wolfsonmicro.com>
+ <CANKRQngg+8LJvb-+Byv6XPqqWFyCU1U+-hppuxo_=CM1qLUF_Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SxgehGEc6vB0cZwN"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120124232911.GA11327@linux.vnet.ibm.com>
+In-Reply-To: <CANKRQngg+8LJvb-+Byv6XPqqWFyCU1U+-hppuxo_=CM1qLUF_Q@mail.gmail.com>
+X-Cookie: You will contract a rare disease.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (01/24/12 15:29), Paul E. McKenney wrote:
-> On Tue, Jan 24, 2012 at 01:11:37PM -0800, Paul E. McKenney wrote:
-> > On Tue, Jan 24, 2012 at 08:57:49PM +0100, Eric Dumazet wrote:
-> > > Le mardi 24 janvier 2012 à 11:41 -0800, Paul E. McKenney a écrit :
-> > > 
-> > > > Ah, I see...  I need to find one of trace_power_start(),
-> > > > trace_power_frequency(), or trace_power_end().  I would have to guess
-> > > > that this is either the trace_power_start() or the trace_power_end()
-> > > > called from drivers/cpuidle/cpuidle.c lines 97 and 102.  Those are
-> > > > within cpuidle_idle_call(), which are called from cpu_idle() in
-> > > > arch/x86/kernel/process_32.c and arch/x86/kernel/process_64.c, so this
-> > > > sounds plausible.
-> > > > 
-> > > > And they are indeed busted -- RCU believes the CPU is idle at the point
-> > > > that cpuidle_idle_call() is invoked.
-> > > > 
-> > > > A hacky patch is below.  Here are some of my concerns with it:
-> > > > 
-> > > > 1.	Is there a configuration in which the scheduler clock gets
-> > > > 	turned off, but in which cpuidle_idle_call() always returns
-> > > > 	zero?  If so, we either really need RCU to consider the entire
-> > > > 	inner loop to be idle (thus needing to snapshot the value of
-> > > > 	cpuidle_idle_call() in the outer loop) or we need explicit calls
-> > > > 	to rcu_sched_qs() and friends.
-> > > > 
-> > > > 	Yes, we could momentarily exit RCU idleness mode, but I would
-> > > > 	need to think that one through...
-> > > > 
-> > > > 2.	I am not totally confident that I have the order of operations
-> > > > 	surrounding the call to pm_idle() correct.
-> > > > 
-> > > > 3.	This only addresses x86, and it looks like a few other architectures
-> > > > 	have this same problem.
-> > > > 
-> > > > 4.	Probably other things that I haven't thought of.
-> > > > 
-> > > > That said, the patch does seem to compile, at least on my 32-bit
-> > > > laptop...
-> > > > 
-> > > > 							Thanx, Paul
-> > > > 
-> > > > ------------------------------------------------------------------------
-> > > > 
-> > > > idle: Avoid using RCU when RCU thinks the CPU is idle
-> > > > 
-> > > > The x86 idle loops invoke cpuidle_idle_call() which uses tracing
-> > > > which uses RCU.  Unfortunately, these idle loops have already
-> > > > told RCU to ignore this CPU when they call it.  This patch hacks
-> > > > the idle loops to avoid this problem, but probably causing several
-> > > > other problems in the process.
-> > > > 
-> > > > Not-yet-signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > ---
-> > > 
-> > > Hi Paul
-> > > 
-> > > Just tested it on my x86_64 machine, but warnings are still here
-> > > 
-> > > Thanks !
-> > 
-> > Gah!!!  The mwait_idle() function itself (which is the default value of
-> > the pm_idle function pointer) uses tracing and thus RCU!  What part of
-> > "don't use RCU from idle CPUs" was unclear, one wonders?
-> > 
-> > Ah well, the good news is that we can now detect such abuse and fix it.
-> > 
-> > But fixing it appears to require pushing rcu_idle_enter() and
-> > rcu_idle_exit() pairs down to the bottom of each and every idle loop
-> > and governor.
-> > 
-> > So...  The cpuidle_idle_call() function has an idle loop inside of itself,
-> > namely the ->enter() call for the desired target state.  It does tracing
-> > on both sides of that call.  Should the ->enter() calls actually avoid
-> > use of tracing, I could push the rcu_idle_enter() and rcu_idle_exit()
-> > down into cpuidle_idle_call().  We seem to have a ladder_governor and
-> > a menu_governor in 3.2, and these have states, which in turn have ->enter
-> > functions.
-> > 
-> > Hmmm...  Residual power dissipation is given in milliwatts.  I could
-> > imagine some heartburn from many of the more aggressive embedded folks,
-> > given that they might prefer microwatts -- or maybe even nanowatts,
-> > for all I know.
-> > 
-> > There are a bunch of states defined in drivers/idle/intel_idle.c,
-> > and these use intel_idle() as their ->enter() states.  This one looks
-> > to have a nice place for rcu_idle_enter() and rcu_idle_exit().
-> > 
-> > But I also need to push rcu_idle_enter() and rcu_idle_exit() into any
-> > function that can be assigned to pm_idle():  default_idle(), poll_idle(),
-> > mwait_idle(), and amd_e400_idle().  OK, that is not all -that- bad,
-> > though this must also be done for a number of other architectures as well.
-> > 
-> > OK, will post a patch.  I will need testing -- clearly my testing on KVM
-> > is missing a few important code paths...
-> 
-> And here is another version of the patch.
-> 
-> 							Thanx, Paul
->
 
+--SxgehGEc6vB0cZwN
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hello,
-I just hit the same problem.
+On Wed, Mar 07, 2012 at 10:30:05AM +0900, Tomoya MORINAGA wrote:
+> On Tue, Mar 6, 2012 at 8:52 PM, Mark Brown
 
-Is this patch scheduled for 3.3 until release or will land during 3.4
-merge window?
+> >> if these platform devices aren't used, device detection doesn't work c=
+orrectly.
+> >> So, I added these.
 
+> > You've not actually mentioned the problem you were seeing...
 
-	-ss
- 
-> ------------------------------------------------------------------------
-> 
-> x86: Avoid invoking RCU when CPU is idle
-> 
-> The idle loop is a quiscent state for RCU, which means that RCU ignores
-> CPUs that have told RCU that they are idle via rcu_idle_enter().  There
-> are nevertheless quite a few places where idle CPUs use RCU, most commonly
-> indirectly via tracing.  This patch fixes these problems for x86.
-> 
-> Many of these bugs have been in the kernel for quite some time, but
-> Frederic's recent change now gives warnings.
-> 
-> This patch takes the straightforward approach of pushing the
-> rcu_idle_enter()/rcu_idle_exit() pair further down into the core
-> of the idle loop.
-> 
-> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> index 15763af..f6978b0 100644
-> --- a/arch/x86/kernel/process.c
-> +++ b/arch/x86/kernel/process.c
-> @@ -386,17 +386,21 @@ void default_idle(void)
->  		 */
->  		smp_mb();
->  
-> +		rcu_idle_enter();
->  		if (!need_resched())
->  			safe_halt();	/* enables interrupts racelessly */
->  		else
->  			local_irq_enable();
-> +		rcu_idle_exit();
->  		current_thread_info()->status |= TS_POLLING;
->  		trace_power_end(smp_processor_id());
->  		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
->  	} else {
->  		local_irq_enable();
->  		/* loop is done by the caller */
-> +		rcu_idle_enter();
->  		cpu_relax();
-> +		rcu_idle_exit();
->  	}
->  }
->  #ifdef CONFIG_APM_MODULE
-> @@ -457,14 +461,19 @@ static void mwait_idle(void)
->  
->  		__monitor((void *)&current_thread_info()->flags, 0, 0);
->  		smp_mb();
-> +		rcu_idle_enter();
->  		if (!need_resched())
->  			__sti_mwait(0, 0);
->  		else
->  			local_irq_enable();
-> +		rcu_idle_exit();
->  		trace_power_end(smp_processor_id());
->  		trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
-> -	} else
-> +	} else {
->  		local_irq_enable();
-> +		rcu_idle_enter();
-> +		rcu_idle_exit();
-> +	}
->  }
->  
->  /*
-> @@ -477,8 +486,10 @@ static void poll_idle(void)
->  	trace_power_start(POWER_CSTATE, 0, smp_processor_id());
->  	trace_cpu_idle(0, smp_processor_id());
->  	local_irq_enable();
-> +	rcu_idle_enter();
->  	while (!need_resched())
->  		cpu_relax();
-> +	rcu_idle_exit();
->  	trace_power_end(smp_processor_id());
->  	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
->  }
-> diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-> index 485204f..6d9d4d5 100644
-> --- a/arch/x86/kernel/process_32.c
-> +++ b/arch/x86/kernel/process_32.c
-> @@ -100,7 +100,6 @@ void cpu_idle(void)
->  	/* endless idle loop with no priority at all */
->  	while (1) {
->  		tick_nohz_idle_enter();
-> -		rcu_idle_enter();
->  		while (!need_resched()) {
->  
->  			check_pgt_cache();
-> @@ -117,7 +116,6 @@ void cpu_idle(void)
->  				pm_idle();
->  			start_critical_timings();
->  		}
-> -		rcu_idle_exit();
->  		tick_nohz_idle_exit();
->  		preempt_enable_no_resched();
->  		schedule();
-> diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-> index 9b9fe4a..55a1a35 100644
-> --- a/arch/x86/kernel/process_64.c
-> +++ b/arch/x86/kernel/process_64.c
-> @@ -140,13 +140,9 @@ void cpu_idle(void)
->  			/* Don't trace irqs off for idle */
->  			stop_critical_timings();
->  
-> -			/* enter_idle() needs rcu for notifiers */
-> -			rcu_idle_enter();
-> -
->  			if (cpuidle_idle_call())
->  				pm_idle();
->  
-> -			rcu_idle_exit();
->  			start_critical_timings();
->  
->  			/* In many cases the interrupt that ended idle
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index 20bce51..a9ddab8 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -261,6 +261,7 @@ static int intel_idle(struct cpuidle_device *dev,
->  	kt_before = ktime_get_real();
->  
->  	stop_critical_timings();
-> +	rcu_idle_enter();
->  	if (!need_resched()) {
->  
->  		__monitor((void *)&current_thread_info()->flags, 0, 0);
-> @@ -268,6 +269,7 @@ static int intel_idle(struct cpuidle_device *dev,
->  		if (!need_resched())
->  			__mwait(eax, ecx);
->  	}
-> +	rcu_idle_exit();
->  
->  	start_critical_timings();
->  
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+> I saw mapping problem between machine driver and platform driver.
+> e.g.  cpu_dai_name "ml7213ioh"
+
+You've still not explained the problem you're seeing but this sounds
+like something that should work.  Please address the
+
+> > Apart from anything else you've got the interrupt requested as
+> > IRQF_SHARED so the interrupt could get called at any time. =A0It's also
+> > not clear that you've got the hardware in a known good state.
+
+> Do you mean request_irq should move to somewhere, like open() or
+> hw_params() or ... ?
+
+You need to do enough hardware and software initialisation prior to
+requesting the interrupt to ensure that if an interrupt does happen it
+won't cause any ill effects.  Checks in the interrupt handler to make
+sure things like the ALSA layer stuff have been set up can also be used
+to make the interrupt handler safer.
+
+--SxgehGEc6vB0cZwN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPV0qQAAoJEBus8iNuMP3d9kcP/2yo8o1Xczs+p5ql8OHX3G+X
+hTuK8IljSTK44DJKoNPxwhet5qJml05OjqZEH3sjb5VSCG029tfgHJiZ8ga/wL1D
++vga8M/y8y8Lmo3PJ1IFZ/wpSXJMiWQxKBMOfMdLsFs2K9WWzXwo+OHdfSGG4GSs
+U7rjBFIXtwaLxNWKYIphG4M+CV0Fg6ibwtTsy9vrYA0+F9+taC0N+n8k2ZhLYBgy
+Y/8RP87Ay0iqC+kkPKakR9gdkdstXYCj2kymzOd9sKomt9lyuBuuN0wu4CZjuSEg
+LeIS3IVXncx30qONI4wy/iBMWFTNqeXLAje5MRSAPvuCdEsHloB5L8LZD2VP+3Fl
++B3JdOhd3KdXl7UoO2+AZsI+wJASzXcFrXbt+ykvwEJv0ewY/LFItKfhlqWpQfES
+AO/a22I8RlVO5T3f8bTdXWJegMKlkLQUcYebFJ5O4vTbYUENJHY2PCTf3xiy/BMK
+riVPbb1Bz6utin+fbFZsP8DG/iZcu7bgnYzH2LAl9mJYv8WzEeJojLzYApyq72Ky
+Mew58cyQ8EANMSfscw/ApNnpfeZMjbJtP5xdrxYN1t03YRxP6/OrRxC9tQ2/xysc
+Q8izVNXhgl1MBGoY7pXgj2Y1RBNkGCUZl+rluuzsMrcX6zyRtMWSCCfRgxjeKxeL
+nVJNfg0x8UMz4j4m8I88
+=BC/K
+-----END PGP SIGNATURE-----
+
+--SxgehGEc6vB0cZwN--
