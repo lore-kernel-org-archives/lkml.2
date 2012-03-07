@@ -1,91 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030282Ab2CGUFp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 15:05:45 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57559 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759748Ab2CGUFn convert rfc822-to-8bit (ORCPT
+	id S1030330Ab2CGUGb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 15:06:31 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53451 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030212Ab2CGUGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 15:05:43 -0500
+	Wed, 7 Mar 2012 15:06:30 -0500
+Date: Wed, 7 Mar 2012 12:06:26 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Xiachen Dong <xiachendong@hotmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.36 and higher version kernel slower than 2.6.25.1 kernel?
+Message-ID: <20120307200626.GA3086@kroah.com>
+References: <BAY167-W124DBC204D9E95FC00BAA44BD560@phx.gbl>
+ <20120307194728.GA26341@kroah.com>
+ <BAY167-W127BF20C0952D601BC4381FBD560@phx.gbl>
 MIME-Version: 1.0
-In-Reply-To: <20120307184615.GA29005@redhat.com>
-References: <1144797072.59663.1331142646789.JavaMail.root@storentr1.softathome.com>
-	<1830531676.59669.1331142673402.JavaMail.root@storentr1.softathome.com>
-	<20120307184615.GA29005@redhat.com>
-Date: Wed, 7 Mar 2012 21:05:43 +0100
-Message-ID: <CAO6Zf6C_0e=mdz=iZQtBvVn35Dp6KCBzXfo0PPLm1vs5h7inLA@mail.gmail.com>
-Subject: Re: 'khelper' (child) is stuck in endless loop: do_signal() and !user_mode(regs)
-From: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Dmitry ADAMUSHKA (EXT)" <dmitry.adamushka_ext@softathome.com>,
-        Ingo Molnar <mingo@elte.hu>, Ralf Baechle <ralf@linux-mips.org>,
-        wouter.cloetens@softathome.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BAY167-W127BF20C0952D601BC4381FBD560@phx.gbl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
+On Wed, Mar 07, 2012 at 02:59:35PM -0500, Xiachen Dong wrote:
+> 
+> Thanks for your reply.
+> 
+> There could be quite some code change from 2.6.25.1 to 2.6.36. What we
+> are doing now is to find the first version starting from 2.6.25.1 that
+> has the performance hit. Then we start comparing the code and see
+> what's changed. Looks like 2.6.28.7 is OK.
 
-> On 03/07, Dmitry ADAMUSHKA (EXT) wrote:
->>
->> Now, the assumptions (the question is whether these are true for the recent kernels):
->>
->> 1) TIF_SIGPENDING can be set for 'khelper' while it's running in ____call_usermodehelper()
->>    between (a) flush_signal_handlers() and (b) kernel_execve() => so TIF_SIGPENDING is set;
->
-> Yes, but it is not khelper. It is another kernel thread. Yes, its
-> ->comm[] was copied from parent, so ps/etc can show it as khelper.
+'git bisect' will do all of this for you pretty quickly, I'd recommend
+doing that (but start by saying that 2.6.28 is good, that will speed it
+up.)
 
-Sure, that's why I indicated 'khelper' (child).
+> Haven't tried 3.2.29 yet because 3.2.29 probably won't be available in
+> the BSP from our board manufacturer in the near future. I'll try
+> 3.2.29 tonight on X86 CPU  anyway and get you updated.
 
->
->> 2) kernel_execve() can fail in ____call_usermodehelper().
->>
->> The later one is less of an assumption; let's say, it fails due to a shortage of memory (or whatever).
->>
->> If (1) is true, then
->>
->> the pre-conditions:
->>
->> - a kernel space task;
->>
->> 'khelper' running ____call_usermodehelper() in our case.
->>
->> - TIF_SIGPENDING is set.
->>
->> A signal has been delivered, say, as a result of kill(-1, SIGKILL).
->>
->> The endless loop is as follows:
->>
->> * syscall_exit_work:
->>  - work_pending:            // start_of_the_loop
->
-> We shouldn't be here. This is the kernel thread.
+Why isn't the BSP upstream?  Any pointers to where the patch for it is,
+to get that merged properly?
 
-Note that kernel_execve() is backed up by a full fledged syscall (not
-just a function call, at least on MIPS and x86), so I assume that all
-the usual syscall-related stuff applies here as well.
+thanks,
 
->
-> And if start_thread() was already called, then
->
->>  - work_notify_sig:
->>    - do_notify_resume()
->>      - do_signal()          ==> if (!user_mode(regs)) return; so signals are not handled
->
-> user_mode() is no longer true.
-
-!user_mode() is true. Note, the failure of kernel_execve() is one of
-the pre-conditions. So we have a kernel thread returning from a real
-syscall (hence, syscall_exit and co) with TIF_SIGPENDING.
-
->
-> Once again, I can be wrong, I'll read this email tomorrow.
->
-
-Great, thanks!
-
-
--- Dmitry
+greg k-h
