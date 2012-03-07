@@ -1,104 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab2CGJQm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 04:16:42 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:46846 "EHLO song.cn.fujitsu.com"
+	id S1753975Ab2CGJRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 04:17:30 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:62319 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934Ab2CGJQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 04:16:39 -0500
+	id S1751262Ab2CGJR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 04:17:27 -0500
 X-IronPort-AV: E=Sophos;i="4.73,545,1325433600"; 
-   d="scan'208";a="4480304"
-Message-ID: <4F572892.5010803@cn.fujitsu.com>
-Date: Wed, 07 Mar 2012 17:21:22 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+   d="scan'208";a="4480319"
+Message-ID: <4F572730.8000000@cn.fujitsu.com>
+Date: Wed, 07 Mar 2012 17:15:28 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Lai Jiangshan <eag0628@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        patches@linaro.org
-Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine call_srcu()
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>	<1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>	<1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>	<1331034734.11248.287.camel@twins>	<CACvQF52-kZze+SptSCJtsaj=d6b3vg=VgU+Wbqyz-ebYynnUwA@mail.gmail.com> <CAOtvUMfzMv4AzvaPSWuiV1YM4qh24Eyke1Dm5963Ch+EDsY8=g@mail.gmail.com>
-In-Reply-To: <CAOtvUMfzMv4AzvaPSWuiV1YM4qh24Eyke1Dm5963Ch+EDsY8=g@mail.gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpuset: mm: Reduce large amounts of memory barrier related
+ damage v2
+References: <20120306132735.GA2855@suse.de>
+In-Reply-To: <20120306132735.GA2855@suse.de>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-07 17:14:38,
+ 2012-03-07 17:15:29,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-07 17:14:44,
-	Serialize complete at 2012-03-07 17:14:44
+ 2012-03-07 17:15:32,
+	Serialize complete at 2012-03-07 17:15:32
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2012 04:10 PM, Gilad Ben-Yossef wrote:
-> On Tue, Mar 6, 2012 at 4:44 PM, Lai Jiangshan <eag0628@gmail.com> wrote:
->> On Tue, Mar 6, 2012 at 7:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>> On Tue, 2012-03-06 at 17:57 +0800, Lai Jiangshan wrote:
->>>> +void srcu_barrier(struct srcu_struct *sp)
->>>> +{
->>>> +       struct srcu_sync sync;
->>>> +       struct srcu_head *head = &sync.head;
->>>> +       unsigned long chck_seq; /* snap */
->>>> +
->>>> +       int idle_loop = 0;
->>>> +       int cpu;
->>>> +       struct srcu_cpu_struct *scp;
->>>> +
->>>> +       spin_lock_irq(&sp->gp_lock);
->>>> +       chck_seq = sp->chck_seq;
->>>> +       for_each_possible_cpu(cpu) {
->>>
->>> ARGH!! this is really not ok.. so we spend all this time killing
->>> srcu_sync_expidited and co because they prod at all cpus for no good
->>> reason, and what do you do?
->>
->> it is srcu_barrier(), it have to wait all callbacks complete for all
->> cpus since it is per-cpu
->> implementation.
-> 
-> I would say it only needs to wait for callbacks to complete for all
-> CPUs that has a callback pending.
+On Tue, 6 Mar 2012 13:27:35 +0000, Mel Gorman wrote:
+[skip]
+> @@ -964,7 +964,6 @@ static void cpuset_change_task_nodemask(struct task_struct *tsk,
+>  {
+>  	bool need_loop;
+>  
+> -repeat:
+>  	/*
+>  	 * Allow tasks that have access to memory reserves because they have
+>  	 * been OOM killed to get memory anywhere.
+> @@ -983,45 +982,19 @@ repeat:
+>  	 */
+>  	need_loop = task_has_mempolicy(tsk) ||
+>  			!nodes_intersects(*newmems, tsk->mems_allowed);
+> -	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+> -	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+>  
+> -	/*
+> -	 * ensure checking ->mems_allowed_change_disable after setting all new
+> -	 * allowed nodes.
+> -	 *
+> -	 * the read-side task can see an nodemask with new allowed nodes and
+> -	 * old allowed nodes. and if it allocates page when cpuset clears newly
+> -	 * disallowed ones continuous, it can see the new allowed bits.
+> -	 *
+> -	 * And if setting all new allowed nodes is after the checking, setting
+> -	 * all new allowed nodes and clearing newly disallowed ones will be done
+> -	 * continuous, and the read-side task may find no node to alloc page.
+> -	 */
+> -	smp_mb();
+> +	if (need_loop)
+> +		write_seqcount_begin(&tsk->mems_allowed_seq);
+>  
+> -	/*
+> -	 * Allocation of memory is very fast, we needn't sleep when waiting
+> -	 * for the read-side.
+> -	 */
+> -	while (need_loop && ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
+> -		task_unlock(tsk);
+> -		if (!task_curr(tsk))
+> -			yield();
+> -		goto repeat;
+> -	}
+> -
+> -	/*
+> -	 * ensure checking ->mems_allowed_change_disable before clearing all new
+> -	 * disallowed nodes.
+> -	 *
+> -	 * if clearing newly disallowed bits before the checking, the read-side
+> -	 * task may find no node to alloc page.
+> -	 */
+> -	smp_mb();
+> +	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
+> +	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP1);
+>  
+>  	mpol_rebind_task(tsk, newmems, MPOL_REBIND_STEP2);
+>  	tsk->mems_allowed = *newmems;
+> +
+> +	if (need_loop)
+> +		write_seqcount_end(&tsk->mems_allowed_seq);
+> +
+>  	task_unlock(tsk);
+>  }
 
-Right.
-The code above flush_workqueue() wait until all of them are delivered.
-flush_workqueue() wait until all of them are completely invoked.
+With this patch, we needn't break the nodemask update into two steps.
 
-> 
-> Unless I misunderstood something, that is what your code does already
-> - it does not wait for completion,
-> or schedules a work on a CPU that does not has a callback pending, right?
-> 
->>
->>>
->>> Also, what happens if your cpu isn't actually online?
->>
->> The workqueue handles it, not here, if a cpu state machine has callbacks, the
->> state machine is started, if it has no callback,  srcu_barrier() does
->> nothing for
->> this cpu
-> 
-> I understand the point is that offline cpus wont have callbacks, so
-> nothing would be
-> done for them, but still, is that a reason to even check? why not use
-> for_each_online_cpu
+Beside that, we need deal with fork() carefully, or it is possible that the child
+task will be set to a wrong nodemask.
 
-It is possible that the offline cpus have callbacks during hot-plugging.
-
-> 
-> I think that if a cpu that was offline went online after your check
-> and managed to get an
-> SRCU callback pending it is by definition not a callback srcu_barrier
-> needs to wait for
-> since it went pending at a later time then srcu_barrier was called. Or
-> have I missed something?
-> 
-> Thanks,
-> Gilad
-> 
-
+Thanks
+Miao
