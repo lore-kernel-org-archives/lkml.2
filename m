@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab2CGC44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 21:56:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:9862 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755568Ab2CGC4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 21:56:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="125939605"
-Date: Wed, 7 Mar 2012 10:55:25 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: David Miller <davem@davemloft.net>, alex.shi@intel.com,
-        eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        tim.c.chen@intel.com, ying.huang@intel.com, netdev@vger.kernel.org
-Subject: Re: TCP_STREAM performance regression on commit b3613118
-Message-ID: <20120307025525.GB21919@feng-i7>
-References: <1329472239.2861.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <20120217.133327.1178765872497293871.davem@davemloft.net>
- <1330656317.21053.1411.camel@debian>
- <20120301.220743.2174015405223036036.davem@davemloft.net>
- <20120306081117.GA17375@feng-i7>
- <4F55CA25.2070503@redhat.com>
+	id S1759043Ab2CGDAb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 22:00:31 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:47409 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756144Ab2CGDA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 22:00:29 -0500
+X-IronPort-AV: E=Sophos;i="4.73,543,1325433600"; 
+   d="scan'208";a="4476387"
+Message-ID: <4F56CBB6.90100@cn.fujitsu.com>
+Date: Wed, 07 Mar 2012 10:45:10 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F55CA25.2070503@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Eric Blake <eblake@redhat.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v2] deal with guest paniced event
+References: <4F56BEF2.4020405@cn.fujitsu.com> <4F56C0E1.1090703@cn.fujitsu.com> <4F56CA9E.2040907@redhat.com>
+In-Reply-To: <4F56CA9E.2040907@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-07 10:41:32,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-07 10:41:38,
+	Serialize complete at 2012-03-07 10:41:38
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 04:26:13PM +0800, Jason Wang wrote:
-> On 03/06/2012 04:11 PM, Feng Tang wrote:
-> >On Thu, Mar 01, 2012 at 10:07:43PM -0500, David Miller wrote:
-> >>>  From: Alex Shi<alex.shi@intel.com>
-> >>>  Date: Fri, 02 Mar 2012 10:45:17 +0800
-> >>>
-> >>>>  >  Add CC to tang feng, He is working on this issue.
-> >>>  >  Is he?  I'm pretty sure this is due to the TCP receive
-> >>window growing
-> >>>  issue Eric Dumazet, Neal Cardwell and I are discussing in the thread
-> >>>  starting at:
-> >>>  >  http://marc.info/?l=linux-netdev&m=132916352815286&w=2
-> >Yes, probably, as we did find some clue related with the tcp_r/wmem.
-> >
-> >Here is the regression we found:
-> >On some machines, we found there is about 10% resgression of netperf
-> >TCP-64K loopback test between 3.2 and 3.3-rc1. The exact test is:
-> >./netperf -t TCP_STREAM -l 60 -H 127.0.0.1 -i 50,3 -I 99,5 -- -s 32768 -S 32768 -m 4096
-> >
-> >
-> >The test machine is a 2 socket Quad Core Core 2 Duo server(2.66GHz) with
-> >8 GB RAM. Following are the debug info (ifconfig/netstat -s/tcp_rwmem)
-> >before and after the test:
-> >
-> >The most obvious differences I can see are:
-> >1) 311 GB vs 241 GB from ifconfig
-> >2) the difference of the tcp_r/wmem
+At 03/07/2012 10:40 AM, Eric Blake Wrote:
+> On 03/06/2012 06:58 PM, Wen Congyang wrote:
+>> When the host knows the guest is paniced, it will set
+>> exit_reason to KVM_EXIT_GUEST_PANICED. So if qemu receive
+>> this exit_reason, we can send a event to tell management
+>> application that the guest is paniced and set the guest
+>> status to RUN_STATE_PANICED.
 > 
-> Hi:
-> 
-> Could you try the newest kernel? Looks like the difference has been
-> already fixed by commit c43b874d5d714f271b80d4c3f49e05d0cbf51ed2.
+> s/PANICED/PANICKED/ throughout your series, for the correct spelling of
+> the past tense of panic.
 
-Yeah, with the newest kernel, the regression of this simple test is gone,
-the performance difference with 3.2 kernel is now only about 1-2%. Thanks
-for the info.
+Sorry for my bad english. I will update it.
 
-- Feng
+Thanks
+Wen Congyang
 
 > 
-> Thanks
+
