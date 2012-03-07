@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab2CGVZh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 16:25:37 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:65496 "EHLO
+	id S1758022Ab2CGVX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 16:23:27 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61992 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932297Ab2CGVX3 (ORCPT
+	with ESMTP id S1753264Ab2CGVXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 16:23:29 -0500
+	Wed, 7 Mar 2012 16:23:22 -0500
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, Trond.Myklebust@netapp.com, sfrench@samba.org,
         sage@newdream.net, ericvh@gmail.com, mszeredi@suse.cz
-Subject: [PATCH 19/25] vfs: remove nameidata argument from vfs_create
-Date: Wed,  7 Mar 2012 22:22:36 +0100
-Message-Id: <1331155362-11132-20-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 15/25] ceph: implement i_op->atomic_open() and i_op->atomic_create()
+Date: Wed,  7 Mar 2012 22:22:32 +0100
+Message-Id: <1331155362-11132-16-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
 References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
@@ -24,116 +24,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-All callers of vfs_create() pass a NULL nameidata.  So this argument can be
-removed.
+Instead of calling ceph_lookup_open() from ->lookup and ->create, call it from
+->atomic_open and ->atomic_create.
+
+CEPH does non-create open in ->atomic_open and create-open in ->atomic_create.
+To prevent unnecessary call to ->atomic_open the FS_NO_LOOKUP_CREATE flag is set
+in the filesystem flags to only call ->atomic_open on non-create opens.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/cachefiles/namei.c |    2 +-
- fs/ecryptfs/inode.c   |    2 +-
- fs/namei.c            |    5 ++---
- fs/nfsd/vfs.c         |    4 ++--
- include/linux/fs.h    |    2 +-
- ipc/mqueue.c          |    2 +-
- 6 files changed, 8 insertions(+), 9 deletions(-)
+ fs/ceph/dir.c   |   33 +++++++++------------------------
+ fs/ceph/file.c  |   22 +++++++++++-----------
+ fs/ceph/super.c |    2 +-
+ fs/ceph/super.h |    5 +++--
+ 4 files changed, 24 insertions(+), 38 deletions(-)
 
-diff --git a/fs/cachefiles/namei.c b/fs/cachefiles/namei.c
-index a0358c2..faa933f 100644
---- a/fs/cachefiles/namei.c
-+++ b/fs/cachefiles/namei.c
-@@ -567,7 +567,7 @@ lookup_again:
- 			if (ret < 0)
- 				goto create_error;
- 			start = jiffies;
--			ret = vfs_create(dir->d_inode, next, S_IFREG, NULL);
-+			ret = vfs_create(dir->d_inode, next, S_IFREG);
- 			cachefiles_hist(cachefiles_create_histogram, start);
- 			if (ret < 0)
- 				goto create_error;
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index ab35b11..b6d0d69 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -173,7 +173,7 @@ ecryptfs_do_create(struct inode *directory_inode,
- 		inode = ERR_CAST(lower_dir_dentry);
- 		goto out;
- 	}
--	rc = vfs_create(lower_dir_dentry->d_inode, lower_dentry, mode, NULL);
-+	rc = vfs_create(lower_dir_dentry->d_inode, lower_dentry, mode);
- 	if (rc) {
- 		printk(KERN_ERR "%s: Failure to create dentry in lower fs; "
- 		       "rc = [%d]\n", __func__, rc);
-diff --git a/fs/namei.c b/fs/namei.c
-index b991aa0..fadc95c 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2101,8 +2101,7 @@ out_err:
- 	return ERR_PTR(error);
+diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
+index c4b7832..62b10e7 100644
+--- a/fs/ceph/dir.c
++++ b/fs/ceph/dir.c
+@@ -594,14 +594,6 @@ static struct dentry *ceph_lookup(struct inode *dir, struct dentry *dentry,
+ 	if (err < 0)
+ 		return ERR_PTR(err);
+ 
+-	/* open (but not create!) intent? */
+-	if (nd &&
+-	    (nd->flags & LOOKUP_OPEN) &&
+-	    !(nd->intent.open.flags & O_CREAT)) {
+-		int mode = nd->intent.open.create_mode & ~current->fs->umask;
+-		return ceph_lookup_open(dir, dentry, nd, mode);
+-	}
+-
+ 	/* can we conclude ENOENT locally? */
+ 	if (dentry->d_inode == NULL) {
+ 		struct ceph_inode_info *ci = ceph_inode(dir);
+@@ -699,26 +691,18 @@ static int ceph_mknod(struct inode *dir, struct dentry *dentry,
+ 	return err;
  }
  
--int vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
--	       struct nameidata *nd)
-+int vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode)
+-static int ceph_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+-		       struct nameidata *nd)
++struct file *ceph_create(struct inode *dir, struct dentry *dentry,
++			 struct opendata *od, unsigned flags, umode_t mode)
  {
- 	struct file *res;
- 	unsigned open_flag = O_RDONLY|O_CREAT|O_EXCL;
-@@ -2856,7 +2855,7 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
- 		goto out_drop_write;
- 	switch (mode & S_IFMT) {
- 		case 0: case S_IFREG:
--			error = vfs_create(path.dentry->d_inode,dentry,mode,NULL);
-+			error = vfs_create(path.dentry->d_inode, dentry, mode);
- 			break;
- 		case S_IFCHR: case S_IFBLK:
- 			error = vfs_mknod(path.dentry->d_inode,dentry,mode,
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index edf6d3e..26470ad 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -1321,7 +1321,7 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
- 	err = 0;
- 	switch (type) {
- 	case S_IFREG:
--		host_err = vfs_create(dirp, dchild, iap->ia_mode, NULL);
-+		host_err = vfs_create(dirp, dchild, iap->ia_mode);
- 		if (!host_err)
- 			nfsd_check_ignore_resizing(iap);
- 		break;
-@@ -1484,7 +1484,7 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
- 		goto out;
+-	dout("create in dir %p dentry %p name '%.*s'\n",
+-	     dir, dentry, dentry->d_name.len, dentry->d_name.name);
++	bool created = true;
+ 
+-	if (ceph_snap(dir) != CEPH_NOSNAP)
+-		return -EROFS;
++	if (!od) {
++		int err = ceph_mknod(dir, dentry, mode, 0);
+ 
+-	if (nd) {
+-		BUG_ON((nd->flags & LOOKUP_OPEN) == 0);
+-		dentry = ceph_lookup_open(dir, dentry, nd, mode);
+-		/* hrm, what should i do here if we get aliased? */
+-		if (IS_ERR(dentry))
+-			return PTR_ERR(dentry);
+-		return 0;
++		return err ? ERR_PTR(err) : NULL;
  	}
  
--	host_err = vfs_create(dirp, dchild, iap->ia_mode, NULL);
-+	host_err = vfs_create(dirp, dchild, iap->ia_mode);
- 	if (host_err < 0) {
- 		fh_drop_write(fhp);
- 		goto out_nfserr;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index af291bb..23268f4 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1534,7 +1534,7 @@ extern void unlock_super(struct super_block *);
- /*
-  * VFS helper functions..
+-	/* fall back to mknod */
+-	return ceph_mknod(dir, dentry, (mode & ~S_IFMT) | S_IFREG, 0);
++	return ceph_lookup_open(dir, dentry, od, flags, mode, &created);
+ }
+ 
+ static int ceph_symlink(struct inode *dir, struct dentry *dentry,
+@@ -1356,7 +1340,8 @@ const struct inode_operations ceph_dir_iops = {
+ 	.unlink = ceph_unlink,
+ 	.rmdir = ceph_unlink,
+ 	.rename = ceph_rename,
+-	.create = ceph_create,
++	.atomic_create = ceph_create,
++	.atomic_open = ceph_lookup_open,
+ };
+ 
+ const struct dentry_operations ceph_dentry_ops = {
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index 2fe9a3e..6a00f89 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -214,21 +214,16 @@ out:
+  * may_open() fails, the struct *file gets cleaned up (i.e.
+  * ceph_release gets called).  So fear not!
   */
--extern int vfs_create(struct inode *, struct dentry *, umode_t, struct nameidata *);
-+extern int vfs_create(struct inode *, struct dentry *, umode_t);
- extern int vfs_mkdir(struct inode *, struct dentry *, umode_t);
- extern int vfs_mknod(struct inode *, struct dentry *, umode_t, dev_t);
- extern int vfs_symlink(struct inode *, struct dentry *, const char *);
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 86ee272..b31b495 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -634,7 +634,7 @@ static struct file *do_create(struct ipc_namespace *ipc_ns, struct dentry *dir,
- 	ret = mnt_want_write(ipc_ns->mq_mnt);
- 	if (ret)
+-/*
+- * flags
+- *  path_lookup_open   -> LOOKUP_OPEN
+- *  path_lookup_create -> LOOKUP_OPEN|LOOKUP_CREATE
+- */
+-struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
+-				struct nameidata *nd, int mode)
++struct file *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
++			      struct opendata *od, unsigned flags, umode_t mode,
++			      bool *created)
+ {
+ 	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
+ 	struct ceph_mds_client *mdsc = fsc->mdsc;
+-	struct file *file;
++	struct file *file = NULL;
+ 	struct ceph_mds_request *req;
+ 	struct dentry *ret;
+ 	int err;
+-	int flags = nd->intent.open.flags;
+ 
+ 	dout("ceph_lookup_open dentry %p '%.*s' flags %d mode 0%o\n",
+ 	     dentry, dentry->d_name.len, dentry->d_name.name, flags, mode);
+@@ -254,14 +249,19 @@ struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
+ 		err = ceph_handle_notrace_create(dir, dentry);
+ 	if (err)
  		goto out;
--	ret = vfs_create(dir->d_inode, dentry, mode, NULL);
-+	ret = vfs_create(dir->d_inode, dentry, mode);
- 	dentry->d_fsdata = NULL;
- 	if (ret)
- 		goto out_drop_write;
+-	file = lookup_instantiate_filp(nd, req->r_dentry, ceph_open);
++	file = finish_open(od, req->r_dentry, ceph_open);
+ 	if (IS_ERR(file))
+ 		err = PTR_ERR(file);
+ out:
+ 	ret = ceph_finish_lookup(req, dentry, err);
+ 	ceph_mdsc_put_request(req);
+ 	dout("ceph_lookup_open result=%p\n", ret);
+-	return ret;
++
++	if (IS_ERR(ret))
++		return ERR_CAST(ret);
++
++	dput(ret);
++	return err ? ERR_PTR(err) : file;
+ }
+ 
+ int ceph_release(struct inode *inode, struct file *file)
+diff --git a/fs/ceph/super.c b/fs/ceph/super.c
+index 00de2c9..6e87fc2 100644
+--- a/fs/ceph/super.c
++++ b/fs/ceph/super.c
+@@ -915,7 +915,7 @@ static struct file_system_type ceph_fs_type = {
+ 	.name		= "ceph",
+ 	.mount		= ceph_mount,
+ 	.kill_sb	= ceph_kill_sb,
+-	.fs_flags	= FS_RENAME_DOES_D_MOVE,
++	.fs_flags	= FS_RENAME_DOES_D_MOVE | FS_NO_LOOKUP_CREATE,
+ };
+ 
+ #define _STRINGIFY(x) #x
+diff --git a/fs/ceph/super.h b/fs/ceph/super.h
+index c6b2cba..cf66773 100644
+--- a/fs/ceph/super.h
++++ b/fs/ceph/super.h
+@@ -804,8 +804,9 @@ extern int ceph_copy_from_page_vector(struct page **pages,
+ 				    loff_t off, size_t len);
+ extern struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags);
+ extern int ceph_open(struct inode *inode, struct file *file);
+-extern struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
+-				       struct nameidata *nd, int mode);
++extern struct file *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
++				     struct opendata *od, unsigned flags,
++				     umode_t mode, bool *);
+ extern int ceph_release(struct inode *inode, struct file *filp);
+ 
+ /* dir.c */
 -- 
 1.7.7
 
