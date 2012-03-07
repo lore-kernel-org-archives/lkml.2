@@ -1,486 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758377Ab2CGM2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 07:28:42 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42692 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab2CGM2l convert rfc822-to-8bit (ORCPT
+	id S1758403Ab2CGMaj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 07:30:39 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:63147 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756545Ab2CGMai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 07:28:41 -0500
+	Wed, 7 Mar 2012 07:30:38 -0500
+Date: Wed, 7 Mar 2012 13:30:23 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
+In-Reply-To: <20120307103112.GP17370@n2100.arm.linux.org.uk>
+Message-ID: <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
+References: <Pine.LNX.4.64.1202011610050.26261@axis700.grange>
+ <Pine.LNX.4.64.1203021341590.913@axis700.grange> <1331022623.24656.191.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1203060935460.9300@axis700.grange> <1331035739.24656.201.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1203061339330.9300@axis700.grange> <1331101687.24656.319.camel@vkoul-udesk3>
+ <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+ <20120307093026.GM17370@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
+ <20120307103112.GP17370@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1331095694-27780-2-git-send-email-david@gibson.dropbear.id.au>
-References: <1331095694-27780-1-git-send-email-david@gibson.dropbear.id.au>
-	<1331095694-27780-2-git-send-email-david@gibson.dropbear.id.au>
-Date: Wed, 7 Mar 2012 20:28:39 +0800
-Message-ID: <CAJd=RBCPFtyLzxyzRVKzypErt_Te1guT8gi6qu1cLvNVFVOgKQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] hugepages: Fix use after free bug in "quota" handling
-From: Hillf Danton <dhillf@gmail.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: akpm@linux-foundation.org, hughd@google.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, Andrew Barry <abarry@cray.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:4G9NCcgLeZM90SI3bw8h2YE5KJyaFxsWa57B/zDvhGB
+ Xc7VWW3VZ5w7KSfP6RQwASqIAQo0ItZonMJIHEVies1oAL5A2X
+ Ze0nX0dulYxj7bdyh4Ff/R4F/0tC9nRaJr0apoo+U7M+7nexvl
+ yHADyZIbYPjLb4UoMf9XOM3HI30lYoFsyy00mKFyT451fdYWfD
+ ZSI03KfLxzuiXoT75cW6ij9uvFsCh6rR4qDjUaeNfD2PgVJ8pJ
+ O2nR3naqn1dsTdr4IVXOs2IybQYWN9Tj3JAW0OOo7DpUZGMII7
+ ctfbpAFYFNF/BkdGku4o2ErlZ55uD1w19Bza0PVNSEbBcuCaPP
+ IR/9CAc00y3rYudyuaNaWUOmouzuR4ND7qOwjlHvcw8ZGQ1BLh
+ GxF3dEO/nhIpQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 12:48 PM, David Gibson
-<david@gibson.dropbear.id.au> wrote:
-> hugetlbfs_{get,put}_quota() are badly named.  They don't interact with the
-> general quota handling code, and they don't much resemble its behaviour.
-> Rather than being about maintaining limits on on-disk block usage by
-> particular users, they are instead about maintaining limits on in-memory
-> page usage (including anonymous MAP_PRIVATE copied-on-write pages)
-> associated with a particular hugetlbfs filesystem instance.
->
-> Worse, they work by having callbacks to the hugetlbfs filesystem code from
-> the low-level page handling code, in particular from free_huge_page().
-> This is a layering violation of itself, but more importantly, if the kernel
-> does a get_user_pages() on hugepages (which can happen from KVM amongst
-> others), then the free_huge_page() can be delayed until after the
-> associated inode has already been freed.  If an unmount occurs at the
-> wrong time, even the hugetlbfs superblock where the "quota" limits are
-> stored may have been freed.
->
-> Andrew Barry proposed a patch to fix this by having hugepages, instead of
-> storing a pointer to their address_space and reaching the superblock from
-> there, had the hugepages store pointers directly to the superblock, bumping
-> the reference count as appropriate to avoid it being freed.  Andrew Morton
-> rejected that version, however, on the grounds that it made the existing
-> layering violation worse.
->
-> This is a reworked version of Andrew's patch, which removes the extra, and
-> some of the existing, layering violation.  It works by introducing the
-> concept of a hugepage "subpool" at the lower hugepage mm layer - that is
-> a finite logical pool of hugepages to allocate from.  hugetlbfs now creates
-> a subpool for each filesystem instance with a page limit set, and a pointer
-> to the subpool gets added to each allocated hugepage, instead of the
-> address_space pointer used now.  The subpool has its own lifetime and is
-> only freed once all pages in it _and_ all other references to it (i.e.
-> superblocks) are gone.
->
-> subpools are optional - a NULL subpool pointer is taken by the code to mean
-> that no subpool limits are in effect.
->
-> Previous discussion of this bug found in:  "Fix refcounting in hugetlbfs
-> quota handling.". See:  https://lkml.org/lkml/2011/8/11/28 or
-> http://marc.info/?l=linux-mm&m=126928970510627&w=1
->
-> v2: Fixed a bug spotted by Hillf Danton, and removed the extra parameter to
-> alloc_huge_page() - since it already takes the vma, it is not necessary.
->
-> Signed-off-by: Andrew Barry <abarry@cray.com>
-> Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Hillf Danton <dhillf@gmail.com>
-> ---
->  fs/hugetlbfs/inode.c    |   54 +++++++-----------
->  include/linux/hugetlb.h |   14 ++++--
->  mm/hugetlb.c            |  135 +++++++++++++++++++++++++++++++++++++---------
->  3 files changed, 139 insertions(+), 64 deletions(-)
->
-> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> index bb0e366..74c6ba2 100644
-> --- a/fs/hugetlbfs/inode.c
-> +++ b/fs/hugetlbfs/inode.c
-> @@ -626,9 +626,15 @@ static int hugetlbfs_statfs(struct dentry *dentry, struct kstatfs *buf)
->                spin_lock(&sbinfo->stat_lock);
->                /* If no limits set, just report 0 for max/free/used
->                 * blocks, like simple_statfs() */
-> -               if (sbinfo->max_blocks >= 0) {
-> -                       buf->f_blocks = sbinfo->max_blocks;
-> -                       buf->f_bavail = buf->f_bfree = sbinfo->free_blocks;
-> +               if (sbinfo->spool) {
-> +                       long free_pages;
-> +
-> +                       spin_lock(&sbinfo->spool->lock);
-> +                       buf->f_blocks = sbinfo->spool->max_hpages;
-> +                       free_pages = sbinfo->spool->max_hpages
-> +                               - sbinfo->spool->used_hpages;
-> +                       buf->f_bavail = buf->f_bfree = free_pages;
-> +                       spin_unlock(&sbinfo->spool->lock);
->                        buf->f_files = sbinfo->max_inodes;
->                        buf->f_ffree = sbinfo->free_inodes;
->                }
-> @@ -644,6 +650,10 @@ static void hugetlbfs_put_super(struct super_block *sb)
->
->        if (sbi) {
->                sb->s_fs_info = NULL;
-> +
-> +               if (sbi->spool)
-> +                       hugepage_put_subpool(sbi->spool);
-> +
->                kfree(sbi);
->        }
->  }
-> @@ -874,10 +884,14 @@ hugetlbfs_fill_super(struct super_block *sb, void *data, int silent)
->        sb->s_fs_info = sbinfo;
->        sbinfo->hstate = config.hstate;
->        spin_lock_init(&sbinfo->stat_lock);
-> -       sbinfo->max_blocks = config.nr_blocks;
-> -       sbinfo->free_blocks = config.nr_blocks;
->        sbinfo->max_inodes = config.nr_inodes;
->        sbinfo->free_inodes = config.nr_inodes;
-> +       sbinfo->spool = NULL;
-> +       if (config.nr_blocks != -1) {
-> +               sbinfo->spool = hugepage_new_subpool(config.nr_blocks);
-> +               if (!sbinfo->spool)
-> +                       goto out_free;
-> +       }
->        sb->s_maxbytes = MAX_LFS_FILESIZE;
->        sb->s_blocksize = huge_page_size(config.hstate);
->        sb->s_blocksize_bits = huge_page_shift(config.hstate);
-> @@ -896,38 +910,12 @@ hugetlbfs_fill_super(struct super_block *sb, void *data, int silent)
->        sb->s_root = root;
->        return 0;
->  out_free:
-> +       if (sbinfo->spool)
-> +               kfree(sbinfo->spool);
->        kfree(sbinfo);
->        return -ENOMEM;
->  }
->
-> -int hugetlb_get_quota(struct address_space *mapping, long delta)
-> -{
-> -       int ret = 0;
-> -       struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
-> -
-> -       if (sbinfo->free_blocks > -1) {
-> -               spin_lock(&sbinfo->stat_lock);
-> -               if (sbinfo->free_blocks - delta >= 0)
-> -                       sbinfo->free_blocks -= delta;
-> -               else
-> -                       ret = -ENOMEM;
-> -               spin_unlock(&sbinfo->stat_lock);
-> -       }
-> -
-> -       return ret;
-> -}
-> -
-> -void hugetlb_put_quota(struct address_space *mapping, long delta)
-> -{
-> -       struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
-> -
-> -       if (sbinfo->free_blocks > -1) {
-> -               spin_lock(&sbinfo->stat_lock);
-> -               sbinfo->free_blocks += delta;
-> -               spin_unlock(&sbinfo->stat_lock);
-> -       }
-> -}
-> -
->  static struct dentry *hugetlbfs_mount(struct file_system_type *fs_type,
->        int flags, const char *dev_name, void *data)
->  {
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 7adc492..cf01817 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -14,6 +14,15 @@ struct user_struct;
->  #include <linux/shm.h>
->  #include <asm/tlbflush.h>
->
-> +struct hugepage_subpool {
-> +       spinlock_t lock;
-> +       long count;
-> +       long max_hpages, used_hpages;
-> +};
-> +
-> +struct hugepage_subpool *hugepage_new_subpool(long nr_blocks);
-> +void hugepage_put_subpool(struct hugepage_subpool *spool);
-> +
->  int PageHuge(struct page *page);
->
->  void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
-> @@ -129,12 +138,11 @@ enum {
->
->  #ifdef CONFIG_HUGETLBFS
->  struct hugetlbfs_sb_info {
-> -       long    max_blocks;   /* blocks allowed */
-> -       long    free_blocks;  /* blocks free */
->        long    max_inodes;   /* inodes allowed */
->        long    free_inodes;  /* inodes free */
->        spinlock_t      stat_lock;
->        struct hstate *hstate;
-> +       struct hugepage_subpool *spool;
->  };
->
->  static inline struct hugetlbfs_sb_info *HUGETLBFS_SB(struct super_block *sb)
-> @@ -146,8 +154,6 @@ extern const struct file_operations hugetlbfs_file_operations;
->  extern const struct vm_operations_struct hugetlb_vm_ops;
->  struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
->                                struct user_struct **user, int creat_flags);
-> -int hugetlb_get_quota(struct address_space *mapping, long delta);
-> -void hugetlb_put_quota(struct address_space *mapping, long delta);
->
->  static inline int is_file_hugepages(struct file *file)
->  {
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 5f34bd8..36b38b3a 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -53,6 +53,84 @@ static unsigned long __initdata default_hstate_size;
->  */
->  static DEFINE_SPINLOCK(hugetlb_lock);
->
-> +static inline void unlock_or_release_subpool(struct hugepage_subpool *spool)
-> +{
-> +       bool free = (spool->count == 0) && (spool->used_hpages == 0);
-> +
-> +       spin_unlock(&spool->lock);
-> +
-> +       /* If no pages are used, and no other handles to the subpool
-> +        * remain, free the subpool the subpool remain */
-> +       if (free)
-> +               kfree(spool);
-> +}
-> +
-> +struct hugepage_subpool *hugepage_new_subpool(long nr_blocks)
-> +{
-> +       struct hugepage_subpool *spool;
-> +
-> +       spool = kmalloc(sizeof(*spool), GFP_KERNEL);
-> +       if (!spool)
-> +               return NULL;
-> +
-> +       spin_lock_init(&spool->lock);
-> +       spool->count = 1;
-> +       spool->max_hpages = nr_blocks;
-> +       spool->used_hpages = 0;
-> +
-> +       return spool;
-> +}
-> +
-> +void hugepage_put_subpool(struct hugepage_subpool *spool)
-> +{
-> +       spin_lock(&spool->lock);
-> +       BUG_ON(!spool->count);
-> +       spool->count--;
-> +       unlock_or_release_subpool(spool);
-> +}
-> +
-> +static int hugepage_subpool_get_pages(struct hugepage_subpool *spool,
-> +                                     long delta)
-> +{
-> +       int ret = 0;
-> +
-> +       if (!spool)
-> +               return 0;
-> +
-> +       spin_lock(&spool->lock);
-> +       if ((spool->used_hpages + delta) <= spool->max_hpages) {
-> +               spool->used_hpages += delta;
-> +       } else {
-> +               ret = -ENOMEM;
-> +       }
-> +       spin_unlock(&spool->lock);
-> +
-> +       return ret;
-> +}
-> +
-> +static void hugepage_subpool_put_pages(struct hugepage_subpool *spool,
-> +                                      long delta)
-> +{
-> +       if (!spool)
-> +               return;
-> +
-> +       spin_lock(&spool->lock);
-> +       spool->used_hpages -= delta;
-> +       /* If hugetlbfs_put_super couldn't free spool due to
-> +       * an outstanding quota reference, free it now. */
-> +       unlock_or_release_subpool(spool);
-> +}
-> +
-> +static inline struct hugepage_subpool *subpool_inode(struct inode *inode)
-> +{
-> +       return HUGETLBFS_SB(inode->i_sb)->spool;
-> +}
-> +
-> +static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
-> +{
-> +       return subpool_inode(vma->vm_file->f_dentry->d_inode);
-> +}
-> +
->  /*
->  * Region tracking -- allows tracking of reservations and instantiated pages
->  *                    across the pages in a mapping.
-> @@ -533,9 +611,9 @@ static void free_huge_page(struct page *page)
->         */
->        struct hstate *h = page_hstate(page);
->        int nid = page_to_nid(page);
-> -       struct address_space *mapping;
-> +       struct hugepage_subpool *spool =
-> +               (struct hugepage_subpool *)page_private(page);
->
-> -       mapping = (struct address_space *) page_private(page);
->        set_page_private(page, 0);
->        page->mapping = NULL;
->        BUG_ON(page_count(page));
-> @@ -551,8 +629,7 @@ static void free_huge_page(struct page *page)
->                enqueue_huge_page(h, page);
->        }
->        spin_unlock(&hugetlb_lock);
-> -       if (mapping)
-> -               hugetlb_put_quota(mapping, 1);
-> +       hugepage_subpool_put_pages(spool, 1);
+On Wed, 7 Mar 2012, Russell King - ARM Linux wrote:
 
-Like current code, quota is handed back *unconditionally*, but ...
+> On Wed, Mar 07, 2012 at 11:02:46AM +0100, Guennadi Liakhovetski wrote:
+> > Right, I thought about virtual DMA channels, but I really hoped we 
+> > wouldn't have to do that;-)
+> 
+> We have to do it because on many systems, we have N request signals and
+> M channels, where M << N.  If we don't do that, then we run into problems
+> with tying up DMA channels when they're not being used.
+> 
+> For example, the SA11x0 IrDA driver uses two virtual channels, one for
+> receive and one for transmit.  The SA11x0 has a total of five DMA
+> channels.
 
->  }
->
->  static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
-> @@ -966,11 +1043,12 @@ static void return_unused_surplus_pages(struct hstate *h,
->  /*
->  * Determine if the huge page at addr within the vma has an associated
->  * reservation.  Where it does not we will need to logically increase
-> - * reservation and actually increase quota before an allocation can occur.
-> - * Where any new reservation would be required the reservation change is
-> - * prepared, but not committed.  Once the page has been quota'd allocated
-> - * an instantiated the change should be committed via vma_commit_reservation.
-> - * No action is required on failure.
-> + * reservation and actually increase subpool usage before an allocation
-> + * can occur.  Where any new reservation would be required the
-> + * reservation change is prepared, but not committed.  Once the page
-> + * has been allocated from the subpool and instantiated the change should
-> + * be committed via vma_commit_reservation.  No action is required on
-> + * failure.
->  */
->  static long vma_needs_reservation(struct hstate *h,
->                        struct vm_area_struct *vma, unsigned long addr)
-> @@ -1019,24 +1097,24 @@ static void vma_commit_reservation(struct hstate *h,
->  static struct page *alloc_huge_page(struct vm_area_struct *vma,
->                                    unsigned long addr, int avoid_reserve)
->  {
-> +       struct hugepage_subpool *spool = subpool_vma(vma);
->        struct hstate *h = hstate_vma(vma);
->        struct page *page;
-> -       struct address_space *mapping = vma->vm_file->f_mapping;
-> -       struct inode *inode = mapping->host;
->        long chg;
->
->        /*
-> -        * Processes that did not create the mapping will have no reserves and
-> -        * will not have accounted against quota. Check that the quota can be
-> -        * made before satisfying the allocation
-> -        * MAP_NORESERVE mappings may also need pages and quota allocated
-> -        * if no reserve mapping overlaps.
-> +        * Processes that did not create the mapping will have no
-> +        * reserves and will not have accounted against subpool
-> +        * limit. Check that the subpool limit can be made before
-> +        * satisfying the allocation MAP_NORESERVE mappings may also
-> +        * need pages and subpool limit allocated allocated if no reserve
-> +        * mapping overlaps.
->         */
->        chg = vma_needs_reservation(h, vma, addr);
->        if (chg < 0)
->                return ERR_PTR(-VM_FAULT_OOM);
->        if (chg)
-> -               if (hugetlb_get_quota(inode->i_mapping, chg))
-> +               if (hugepage_subpool_get_pages(spool, chg))
->                        return ERR_PTR(-VM_FAULT_SIGBUS);
+Huh, that certainly justifies channel virtualisation, yes.
 
-... quota is allocated only if needed.
+> To waste two of them on IrDA when it's half-duplex is just
+> silly.  Doing the whole 'request+free' thing is also silly because
+> switching between tx and rx mode is timing-critical.
+> 
+> Plus, it's a lot easier for driver writers to request their DMA channels
+> at the start, and hold them until they've completed - less complicated
+> error checking, less latency, more throughput etc.
+> 
+> > Would we then also have to use virtual DMAC 
+> > instances? Given that the core operates in terms of DMA-controller devices 
+> > and channels and the hardware is also built around those concepts, it 
+> > seems a natural choice to use a 1-to-1 correspondence.
+> 
+> That depends what you want from virtual DMA channels.  At the moment, most
+> setups are about virtual DMA channels within a DMA device itself.  So we
+> expose just the virtual DMA channels and hide the physical channels within
+> the depths of the driver.
+> 
+> > In the sh-mobile case, AFAIK, until now we can have N DMA controllers of M 
+> > types. Within each type the controllers are identical, meaning also, that 
+> > all channels on them can be configured to work with all the same devices. 
+> > Currently that's also what we present to the dmaengine core and to 
+> > clients: N controllers. Whereas it has been suggested a couple of times, 
+> > that neither the core nore clients should be bothered with specific DMA 
+> > controller instances, so, we might as well just present M virtual 
+> > controllers to the system - 1 of each type, each with a unique capability 
+> > set?
+> 
+> I am aware of these kinds of setup, but at the moment I think there's
+> enough of a big problem to solve with dmaengine without having it made
+> even bigger.  It's already a big enough headache trying to work out
+> sane ways to provide library based functionality which can be shared
+> between the DMA engine drivers...
+> 
+> I've been chipping away at this problem since Jan 2011 and so far all
+> I've managed to produce sanely is the consolidation of cookie handling.
+> I have two versions of virtual channels, one based on the PL08x code
+> and one based on my new SA11x0 code which will probably be shared with
+> an OMAP DMA engine driver I'm working on, but I haven't looked at making
+> all these drivers work with one set of virtual channel code yet (mainly
+> due to crippled PL08x hardware.)
 
-Given that mismatch, are you fixing the use-after-free bug, or
-quota maintenance, or both?
+Ok, let me try to begin a yet another attempt to describe possible DMA 
+channel allocation and configuration possibilites. Please, add any missing 
+ones, then we can hopefully select  the best one.
 
->
->        spin_lock(&hugetlb_lock);
-> @@ -1046,12 +1124,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->        if (!page) {
->                page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
->                if (!page) {
-> -                       hugetlb_put_quota(inode->i_mapping, chg);
-> +                       hugepage_subpool_put_pages(spool, chg);
->                        return ERR_PTR(-VM_FAULT_SIGBUS);
->                }
->        }
->
-> -       set_page_private(page, (unsigned long) mapping);
-> +       set_page_private(page, (unsigned long)spool);
->
->        vma_commit_reservation(h, vma, addr);
->
-> @@ -2072,6 +2150,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
->  {
->        struct hstate *h = hstate_vma(vma);
->        struct resv_map *reservations = vma_resv_map(vma);
-> +       struct hugepage_subpool *spool = subpool_vma(vma);
->        unsigned long reserve;
->        unsigned long start;
->        unsigned long end;
-> @@ -2087,7 +2166,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
->
->                if (reserve) {
->                        hugetlb_acct_memory(h, -reserve);
-> -                       hugetlb_put_quota(vma->vm_file->f_mapping, reserve);
-> +                       hugepage_subpool_put_pages(spool, reserve);
->                }
->        }
->  }
-> @@ -2316,7 +2395,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
->         */
->        address = address & huge_page_mask(h);
->        pgoff = vma_hugecache_offset(h, vma, address);
-> -       mapping = (struct address_space *)page_private(page);
-> +       mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
->
->        /*
->         * Take the mapping lock for the duration of the table walk. As
-> @@ -2869,11 +2948,12 @@ int hugetlb_reserve_pages(struct inode *inode,
->  {
->        long ret, chg;
->        struct hstate *h = hstate_inode(inode);
-> +       struct hugepage_subpool *spool = subpool_inode(inode);
->
->        /*
->         * Only apply hugepage reservation if asked. At fault time, an
->         * attempt will be made for VM_NORESERVE to allocate a page
-> -        * and filesystem quota without using reserves
-> +        * without using reserves
->         */
->        if (vm_flags & VM_NORESERVE)
->                return 0;
-> @@ -2900,17 +2980,17 @@ int hugetlb_reserve_pages(struct inode *inode,
->        if (chg < 0)
->                return chg;
->
-> -       /* There must be enough filesystem quota for the mapping */
-> -       if (hugetlb_get_quota(inode->i_mapping, chg))
-> +       /* There must be enough pages in the subpool for the mapping */
-> +       if (hugepage_subpool_get_pages(spool, chg))
->                return -ENOSPC;
->
->        /*
->         * Check enough hugepages are available for the reservation.
-> -        * Hand back the quota if there are not
-> +        * Hand the pages back to the subpool if there are not
->         */
->        ret = hugetlb_acct_memory(h, chg);
->        if (ret < 0) {
-> -               hugetlb_put_quota(inode->i_mapping, chg);
-> +               hugepage_subpool_put_pages(spool, chg);
->                return ret;
->        }
->
-> @@ -2934,12 +3014,13 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
->  {
->        struct hstate *h = hstate_inode(inode);
->        long chg = region_truncate(&inode->i_mapping->private_list, offset);
-> +       struct hugepage_subpool *spool = subpool_inode(inode);
->
->        spin_lock(&inode->i_lock);
->        inode->i_blocks -= (blocks_per_huge_page(h) * freed);
->        spin_unlock(&inode->i_lock);
->
-> -       hugetlb_put_quota(inode->i_mapping, (chg - freed));
-> +       hugepage_subpool_put_pages(spool, (chg - freed));
->        hugetlb_acct_memory(h, -(chg - freed));
->  }
->
-> --
-> 1.7.9.1
+1. The current scheme is:
+
+(a) client issues
+	dma_request_channel()
+    with an optional filter function as parameter
+(b) the core picks up a suitable from its PoV DMA controller device and a 
+    channel on it and calls the filter function with that channel as an 
+    argument
+(c) the filter function can verify, whether that channel is suitable or 
+    not (*)
+(d) the client driver then can call
+	dmaengine_slave_config()
+    to provide any additional channel configuration information to the DMA 
+    controller driver (**)
+(e) if the filter has rejected this channel, the core jumps to the next 
+    DMA controller instance (***)
+
+2. (goal: eliminate filter function look-ups) proposed by Linus W
+
+(a) client issues
+	dma_request_slave_channel(dev, "MMC-RX")
+(b) the dmaengine core scans a platform-provided list of channel mappings 
+    and picks up _the_ correct channel (****)
+
+3. Jassi's idea with capabilities has been rejected by Russell
+
+4. (goal: simplify the allocation and configuration procedure) proposed by 
+   myself
+
+(a) as in (1) client issues
+	dma_request_channel()
+    with an additional slave configuration parameter
+(b) the core picks up a suitable from its PoV DMA controller device and a 
+    channel on it, (optionally) calls the filter
+(c) the core calls DMA controller driver's
+	.device_alloc_chan_resources()
+    method, which verifies, whether the channel can be configured for the 
+    requesting slave, if not, an error is returned and the next DMA 
+    controller instance is checked by the core
+
+Naturally, my preference goes for (4) because (a) I think, it is the DMA 
+controller driver, that has to decide, whether the channel is suitable for 
+a specific slave, (b) changes to the core are minimal, simple and 
+trivially backwards-compatible, (c) the core is not cluttered with 
+hw-specific channel mappings, (d) the additional call to 
+dmaengine_slave_config() can be eliminated.
+
+Thanks
+Guennadi
+
+(*) in sh-mobile case this would translate to walking a list of DMAC 
+instances, provided by the platform, and verifying, whether this channel 
+is suitable for this client. E.g., on sh7372 we would have (at least, 
+possibly more in the future) 2 such lists: type-A - for most clients, and 
+type-B - for USB controllers, then each device, willing to use DMA would 
+need a pointer to one of those two lists in their platform data...
+
+(**) on sh-mobile struct dma_slave_config provides no useful information 
+for this configuration task, so, it would have to be embedded in a larger 
+hw-specific struct, with the actual struct dma_slave_config almost 
+completely wasted...
+
+(***) this is actually a "lucky" decision for sh-mobile, because once one 
+channel turned out to be unsuitable for a client, all other channels on 
+this controller will be unsuitable too.
+
+(****) two comments here: (1) I'm not sure it's good enough to let the 
+core select a channel, I'd rather DMA controller driver do that, (2) to 
+make it work with non 1-to-1 mappings virtual channels _and_ controller 
+instances have to be used.
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
