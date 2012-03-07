@@ -1,65 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab2CGPta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 10:49:30 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41544 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628Ab2CGPt3 convert rfc822-to-8bit (ORCPT
+	id S1755137Ab2CGPts (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 10:49:48 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:38577 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab2CGPtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 10:49:29 -0500
+	Wed, 7 Mar 2012 10:49:46 -0500
+Message-ID: <4F578388.7050603@linux.vnet.ibm.com>
+Date: Wed, 07 Mar 2012 21:19:28 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120307152703.GD2348@linux.vnet.ibm.com>
-References: <20120105135432.GA31450@elte.hu>
-	<1327422312.7231.22.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20120124165312.GG2531@linux.vnet.ibm.com>
-	<1327425208.7231.26.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	<20120124194140.GB2381@linux.vnet.ibm.com>
-	<20120124232911.GA11327@linux.vnet.ibm.com>
-	<20120307114410.GA4214@swordfish.minsk.epam.com>
-	<CA+5PVA4CdtQYbJBvpoAa7iyWegBpJaDBcFfXpXYX=pARw_SBSA@mail.gmail.com>
-	<20120307152703.GD2348@linux.vnet.ibm.com>
-Date: Wed, 7 Mar 2012 10:49:26 -0500
-Message-ID: <CA+5PVA7q03ZTLtFZH98KvtLbreSx65uGEBJmT02-vCHgogHaMg@mail.gmail.com>
-Subject: Re: [GIT PULL] RCU changes for v3.3
-From: Josh Boyer <jwboyer@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Andre@jasper.es
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        "prashanth@linux.vnet.ibm.com" <prashanth@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        "paulmck@linux.vnet.ibm.com >> \"Paul E. McKenney\"" 
+	<paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH bisected regression] sched: rebuild sched domains at suspend/resume
+References: <20120306204357.13169.90791.stgit@zurg> <4F5763CD.8050903@linux.vnet.ibm.com> <4F578176.9060808@openvz.org>
+In-Reply-To: <4F578176.9060808@openvz.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12030715-8878-0000-0000-00000192DBE7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 10:27 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Mar 07, 2012 at 09:09:39AM -0500, Josh Boyer wrote:
->> On Wed, Mar 7, 2012 at 6:44 AM, Sergey Senozhatsky
->> <sergey.senozhatsky@gmail.com> wrote:
->> > Hello,
->> > I just hit the same problem.
->> >
->> > Is this patch scheduled for 3.3 until release or will land during 3.4
->> > merge window?
->>
->> There are 3 patches in Paul's 3.4 queue, and another 9 of Steven Rostedt's
->> that fix this.  They'll wind up in 3.4.
->>
->> I looked at reverting the patch that adds this new warning and it doesn't
->> trivially revert.
->
-> What are you based on?  I should be able to disable the warning for
-> you easily enough.
+On 03/07/2012 09:10 PM, Konstantin Khlebnikov wrote:
 
-3.3.  I think I tried reverting 00f49e5729af602deb559b0cf293a00b625e8636 and
-it failed.  Then I locally commented out the WARN_ONCE in the functions which
-got rid of that, but we still get a 'suspicious RCU usage' warning when
-running powertop.  I gave up after that, since it all goes away if we disable
-the debugging options and you have fixes queued for 3.4.
+> Srivatsa S. Bhat wrote:
+>> On 03/07/2012 02:15 AM, Konstantin Khlebnikov wrote:
+>>
+>>> This is fix for suspend/resume regression introduced in commit
+>>> 8f2f748b0656
+>>> ("CPU hotplug, cpusets, suspend: Don't touch cpusets during
+>>> suspend/resume")
+>>> Without this patch suspend always hangs on my thinkpad x220 (2 x CPU
+>>> * HT).
+>>>
+>>
+>>
+>> Hey, with commit 8f2f748b0656, suspend/resume works perfectly for me!
+>> I ran it
+>> multiple times just to make sure, and everything worked just great.
+>>
+>> Apart from that, I even tried suspend/resume after building the kernel
+>> with
+>> and without CONFIG_CPUSETS. Both cases worked perfectly.
+>>
+>> So, I am really surprised at what you stated above. Are you *really*
+>> sure you
+>> are facing suspend hangs *because* of the above commit?
+>>
+>> And AFAICS hardware doesn't matter for the code in question, but in
+>> any case,
+>> the laptop on which I tested it is:
+>> Thinkpad T420 (Intel core i5-2540M), 2 cores * HT (total 4 logical cpus).
+>>
+>> Also, the patch you posted here doesn't make much sense.. nor does it
+>> give a
+>> clue as to what might be wrong at your end (if anything is really
+>> wrong, that
+>> is). Do you have CONFIG_CPUSETS set or unset? Could you share your
+>> .config?
+> 
+> my kernel config in attachment. CONFIG_CPUSETS=n
+> 
+>>
+>> Coming to your patch, assuming you have CONFIG_CPUSETS enabled, then,
+>> calling rebuild_sched_domains() at that point is useless because the
+>> cpusets
+>> weren't changed at all. So generate_sched_domains() would generate the
+>> same
+>> sched domain partitions that is already there.. And hence
+>> partition_sched_domains() would essentially do nothing.. no sched
+>> domain is
+>> destroyed, and no new domains are created.
+>>
+>> However, if CONFIG_CPUSETS is unset, then, before commit 8f2f748b0656,
+>> partition_sched_domains(1, NULL, NULL) would have been invoked, thus
+>> rebuilding
+>> a single sched domain. And that is why I specifically also tested commit
+>> 8f2f748b0656 with CONFIG_CPUSETS unset - and that also worked fine (as I
+>> mentioned above).
+>>
+>> So could you please check again?
+>>
+>> By the way, you can use the pm-test framework (see
+>> Documentation/power/basic-
+>> pm-debugging.txt) to pin-point which stage is causing the hang.
+>> Specifically, the stage where CPU hotplug is done is 'processors'.
+>>
+>> So you should probably try out this level:
+>> # echo processors>  /sys/power/pm_test
+>> # echo mem>  /sys/power/state
+>>
+>> Replacing processors with core enables even deeper level suspend testing.
+> 
+> Your patch has obvious side-effect.
+> Bug reproducing is very stable, it disappears if revert your patch or
+> apply mine.
+> Problem may be not in your patch, it may only trigger some longstanding
+> bug.
 
-josh
+
+Thanks a lot for the confirmation! Let us revert commit 8f2f748b0656 then.
+
+Regards,
+
+Srivatsa S. Bhat
+
