@@ -1,113 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759421Ab2CGQ25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 11:28:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757578Ab2CGQ24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 11:28:56 -0500
-Date: Wed, 7 Mar 2012 11:28:51 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Josh Hunt <joshhunt00@gmail.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, tj@kernel.org
-Subject: Re: multi-second application stall in open()
-Message-ID: <20120307162851.GC13430@redhat.com>
-References: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com>
- <CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
+	id S1759508Ab2CGQ3a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 11:29:30 -0500
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:37835 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758618Ab2CGQ32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 11:29:28 -0500
+Message-ID: <4F578CE0.6030106@hp.com>
+Date: Wed, 07 Mar 2012 11:29:20 -0500
+From: Vladislav Yasevich <vladislav.yasevich@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Poirier <bpoirier@suse.de>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>,
+        Sridhar Samudrala <sri@us.ibm.com>, cluster-devel@redhat.com,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dlm, sctp: Do not allocate a fd for peeloff
+References: <1331134862-14812-1-git-send-email-bpoirier@suse.de>
+In-Reply-To: <1331134862-14812-1-git-send-email-bpoirier@suse.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 07, 2012 at 07:43:42AM -0600, Josh Hunt wrote:
-> On Tue, Mar 6, 2012 at 3:56 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
-> > I am trying to diagnose a stall in an application when making a call
-> > to open() with O_TRUNC. The issue was originally seen on 2.6.38 and
-> > I've since reproduced on 2.6.35. I believe the last kernel that I did
-> > not see the stall was 2.6.32. The system is under low to moderate cpu
-> > and memory load when the issue occurs. The filesystem is ext2, but I
-> > mounted it as ext4 and still saw the issue.
-> >
-> > To me it appears the O_TRUNC needs to truncate pages in the page
-> > cache, but maybe those are already out for writeback? This causes the
-> > open() to wait until that operation completes at which time it is then
-> > able to proceed. If that's true then it looks like the writeback is
-> > sitting on the queue forever waiting (tens of seconds) to be
-> > dispatched to the device.
-> >
-> > Here's some more info/data I collected:
-> > (Unfortunately the data here and attached are from separate runs so
-> > the #s will not match up file to file.)
-> >
-> > Snippet of an strace when it is hanging:
-> > 1329323286.589182 close(37)             = 0 <0.000010>
-> > 1329323286.589212 clock_gettime(0x5 /* CLOCK_??? */, {1329323286,
-> > 587579583}) = 0 <0.000007>
-> > 1329323286.589241 open("/usr/local/etc/abcd/known/test808",
-> > O_WRONLY|O_CREAT|O_TRUNC, 0644)                = 37 <76.841586>
-> > 1329323363.441841 fchmod(37, 0644)      = 0 <0.000012>
-> > 1329323363.441882 fcntl64(37, F_GETFL)  = 0x1 (flags O_WRONLY) <0.000011>
-> > 1329323363.441915 fcntl64(37, F_SETFL, O_WRONLY|O_NONBLOCK) = 0 <0.000010>
-> >
-> > To debug this more I enabled the hang check timer to dump stack when
-> > anything hung for longer than 10s. There I see the the hanging
-> > application appearing to be stuck in sync_page(). See attached dmesg
-> > for traces.
-> >
-> > I've also captured "iostat -xm 1" while the application was running
-> > and have attached a snippet of that when the problem is occurring. I
-> > see 100% utilization for many seconds and then eventually the
-> > operations complete, but the await time is extremely high. To me there
-> > doesn't look like much IO going on which could be starving out any
-> > requests.
-> >
-> > I have not been able to perform a full bisection to better understand
-> > what may be causing this, but do see this on 2.6.38, a little less
-> > frequently but still occurs on 2.6.35, and no longer see the issue on
-> > 2.6.32. If I switch slice_idle to 0 or change to the deadline
-> > scheduler the issue appears to go away in both 2.6.35 and 38.
+On 03/07/2012 10:41 AM, Benjamin Poirier wrote:
+> avoids allocating a fd that a) propagates to every kernel thread and
+> usermodehelper b) is not properly released.
+> 
+> References: http://article.gmane.org/gmane.linux.network.drbd/22529
+> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 
-Is it happening on latest kernel (3.3-rc6) ?
+It might make sense to change sctp_do_peeloff to take the association id as
+the first argument and not do the mapping from id to association yourself.
+It's a bit ugly to expose internal sctp structures outside of SCTP.
 
-Can you change the IO scheduler to deadline on sda and see if the issue
-still happens. (echo deadline > /sys/block/sda/queue/scheduler).
+-vlad
 
-blktrace of cfq look odd. I see that some IO (async writes) are being
-submitted but CFQ did not dispatch it for a long time.  Even some unplugs
-came in still nothing happened. Also no completions are happening during
-that window. Not sure why CFQ refuses to dispatch queued writes.
+> ---
+>  fs/dlm/lowcomms.c       |   28 ++++++++++++++--------------
+>  include/net/sctp/sctp.h |    1 +
+>  net/sctp/socket.c       |    5 +++--
+>  3 files changed, 18 insertions(+), 16 deletions(-)
+> 
+> diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
+> index 0b3109e..f6645b2 100644
+> --- a/fs/dlm/lowcomms.c
+> +++ b/fs/dlm/lowcomms.c
+> @@ -52,6 +52,7 @@
+>  #include <linux/mutex.h>
+>  #include <linux/sctp.h>
+>  #include <linux/slab.h>
+> +#include <net/sctp/sctp.h>
+>  #include <net/sctp/user.h>
+>  #include <net/ipv6.h>
+>  
+> @@ -474,9 +475,8 @@ static void process_sctp_notification(struct connection *con,
+>  			int prim_len, ret;
+>  			int addr_len;
+>  			struct connection *new_con;
+> -			sctp_peeloff_arg_t parg;
+> -			int parglen = sizeof(parg);
+> -			int err;
+> +			sctp_assoc_t associd;
+> +			struct sctp_association *asoc;
+>  
+>  			/*
+>  			 * We get this before any data for an association.
+> @@ -525,23 +525,23 @@ static void process_sctp_notification(struct connection *con,
+>  				return;
+>  
+>  			/* Peel off a new sock */
+> -			parg.associd = sn->sn_assoc_change.sac_assoc_id;
+> -			ret = kernel_getsockopt(con->sock, IPPROTO_SCTP,
+> -						SCTP_SOCKOPT_PEELOFF,
+> -						(void *)&parg, &parglen);
+> +			sctp_lock_sock(con->sock->sk);
+> +			associd = sn->sn_assoc_change.sac_assoc_id;
+> +			asoc = sctp_id2assoc(con->sock->sk, associd);
+> +			if (!asoc) {
+> +				log_print("sctp_id2assoc error");
+> +				sctp_release_sock(con->sock->sk);
+> +				return;
+> +			}
+> +			ret = sctp_do_peeloff(asoc, &new_con->sock);
+> +			sctp_release_sock(con->sock->sk);
+>  			if (ret < 0) {
+>  				log_print("Can't peel off a socket for "
+>  					  "connection %d to node %d: err=%d",
+> -					  parg.associd, nodeid, ret);
+> -				return;
+> -			}
+> -			new_con->sock = sockfd_lookup(parg.sd, &err);
+> -			if (!new_con->sock) {
+> -				log_print("sockfd_lookup error %d", err);
+> +					  associd, nodeid, ret);
+>  				return;
+>  			}
+>  			add_sock(new_con->sock, new_con);
+> -			sockfd_put(new_con->sock);
+>  
+>  			log_print("connecting to %d sctp association %d",
+>  				 nodeid, (int)sn->sn_assoc_change.sac_assoc_id);
+> diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
+> index d368561..31e36db 100644
+> --- a/include/net/sctp/sctp.h
+> +++ b/include/net/sctp/sctp.h
+> @@ -413,6 +413,7 @@ static inline sctp_assoc_t sctp_assoc2id(const struct sctp_association *asoc)
+>  /* Look up the association by its id.  */
+>  struct sctp_association *sctp_id2assoc(struct sock *sk, sctp_assoc_t id);
+>  
+> +int sctp_do_peeloff(struct sctp_association *asoc, struct socket **sockp);
+>  
+>  /* A macro to walk a list of skbs.  */
+>  #define sctp_skb_for_each(pos, head, tmp) \
+> diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+> index 408ebd0..ae8944c 100644
+> --- a/net/sctp/socket.c
+> +++ b/net/sctp/socket.c
+> @@ -239,6 +239,7 @@ struct sctp_association *sctp_id2assoc(struct sock *sk, sctp_assoc_t id)
+>  
+>  	return asoc;
+>  }
+> +EXPORT_SYMBOL(sctp_id2assoc);
+>  
+>  /* Look up the transport from an address and an assoc id. If both address and
+>   * id are specified, the associations matching the address and the id should be
+> @@ -4170,8 +4171,7 @@ static int sctp_getsockopt_autoclose(struct sock *sk, int len, char __user *optv
+>  }
+>  
+>  /* Helper routine to branch off an association to a new socket.  */
+> -SCTP_STATIC int sctp_do_peeloff(struct sctp_association *asoc,
+> -				struct socket **sockp)
+> +int sctp_do_peeloff(struct sctp_association *asoc, struct socket **sockp)
+>  {
+>  	struct sock *sk = asoc->base.sk;
+>  	struct socket *sock;
+> @@ -4206,6 +4206,7 @@ SCTP_STATIC int sctp_do_peeloff(struct sctp_association *asoc,
+>  
+>  	return err;
+>  }
+> +EXPORT_SYMBOL(sctp_do_peeloff);
+>  
+>  static int sctp_getsockopt_peeloff(struct sock *sk, int len, char __user *optval, int __user *optlen)
+>  {
 
-Request added by flusher.
-
-  8,0    1    36926  5028.546000122  2846  A   W 20147012 + 8 <- (8,3)
-3375152
-  8,0    1    36927  5028.546001798  2846  Q   W 20147012 + 8 [flush-8:0]
-  8,0    1    36928  5028.546009900  2846  G   W 20147012 + 8 [flush-8:0]
-  8,0    1    36929  5028.546014649  2846  I   W 20147012 + 8 (    4749)
-[flush-8:0]
-
-And this request is dispatched after 22 seconds.
-
-  8,0    1    37056  5050.117337221   162  D   W 20147012 + 16 (21571322572) [sync_supers]
-
-
-And it completes fairly fast.
-
- 8,0    0    36522  5050.117686149  9657  C   W 20147012 + 16 (  348928)
-[0]
-
-So not sure why CFQ will hold that request for so long when other IO is
-not happening.
-
-Please try latest kernels and see if deadline has the same issue. If not,
-then we know somehow CFQ is related. If it still happens on latest
-kernels, can you try capturing blktrace again when you are experiencing
-the delays.
-
-Thanks
-Vivek
