@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab2CGMLA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 07:11:00 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:46801 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756334Ab2CGMK7 (ORCPT
+	id S1757646Ab2CGMLS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 07:11:18 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64344 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757548Ab2CGMLR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 07:10:59 -0500
-Message-ID: <4F575045.9010904@linux.vnet.ibm.com>
-Date: Wed, 07 Mar 2012 20:10:45 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Wed, 7 Mar 2012 07:11:17 -0500
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: m.szyprowski@samsung.com, "Barry Song" <Barry.Song@csr.com>
+Cc: workgroup.linux@csr.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "Barry Song" <Baohua.Song@csr.com>
+Subject: Re: [PATCH v4] mm: cma: add a simple kernel module as the helper to
+ test CMA
+References: <1331120259-30780-1-git-send-email-Barry.Song@csr.com>
+Date: Wed, 07 Mar 2012 13:11:13 +0100
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: PATCH 1/2] rmap: cleanup anon_vma_prepare
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12030712-5564-0000-0000-000001B42FC0
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.wasuszai3l0zgt@mpn-glaptop>
+In-Reply-To: <1331120259-30780-1-git-send-email-Barry.Song@csr.com>
+User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the common function anon_vma_chain_link() to link vma and anon_vma
+On Wed, 07 Mar 2012 12:37:39 +0100, Barry Song <Barry.Song@csr.com> wrote:
+> Any write request to /dev/cma_test will let the module to allocate memory from
+> CMA, for example:
+>
+> 1st time
+> $ echo 1024 > /dev/cma_test
+> will require cma_test to request 1MB(1024KB)
+> 2nd time
+> $ echo 2048 > /dev/cma_test
+> will require cma_test to request 2MB(2048KB)
+>
+> Any read request to /dev/cma_test will let the module to free the 1st valid
+> memory from CMA, for example:
+>
+> 1st time
+> $ cat /dev/cma_test
+> will require cma_test to free the 1MB allocated in the first write request
+> 2nd time
+> $ cat /dev/cma_test
+> will require cma_test to free the 2MB allocated in the second write request
+>
+> Signed-off-by: Barry Song <Baohua.Song@csr.com>
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- mm/rmap.c |   35 ++++++++++++++++-------------------
- 1 files changed, 16 insertions(+), 19 deletions(-)
+Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index c8454e0..55c5064 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -120,6 +120,21 @@ static void anon_vma_chain_free(struct anon_vma_chain *anon_vma_chain)
- 	kmem_cache_free(anon_vma_chain_cachep, anon_vma_chain);
- }
-
-+static void anon_vma_chain_link(struct vm_area_struct *vma,
-+				struct anon_vma_chain *avc,
-+				struct anon_vma *anon_vma)
-+{
-+	avc->vma = vma;
-+	avc->anon_vma = anon_vma;
-+	list_add(&avc->same_vma, &vma->anon_vma_chain);
-+
-+	/*
-+	 * It's critical to add new vmas to the tail of the anon_vma,
-+	 * see comment in huge_memory.c:__split_huge_page().
-+	 */
-+	list_add_tail(&avc->same_anon_vma, &anon_vma->head);
-+}
-+
- /**
-  * anon_vma_prepare - attach an anon_vma to a memory region
-  * @vma: the memory region in question
-@@ -175,10 +190,7 @@ int anon_vma_prepare(struct vm_area_struct *vma)
- 		spin_lock(&mm->page_table_lock);
- 		if (likely(!vma->anon_vma)) {
- 			vma->anon_vma = anon_vma;
--			avc->anon_vma = anon_vma;
--			avc->vma = vma;
--			list_add(&avc->same_vma, &vma->anon_vma_chain);
--			list_add_tail(&avc->same_anon_vma, &anon_vma->head);
-+			anon_vma_chain_link(vma, avc, anon_vma);
- 			allocated = NULL;
- 			avc = NULL;
- 		}
-@@ -224,21 +236,6 @@ static inline void unlock_anon_vma_root(struct anon_vma *root)
- 		mutex_unlock(&root->mutex);
- }
-
--static void anon_vma_chain_link(struct vm_area_struct *vma,
--				struct anon_vma_chain *avc,
--				struct anon_vma *anon_vma)
--{
--	avc->vma = vma;
--	avc->anon_vma = anon_vma;
--	list_add(&avc->same_vma, &vma->anon_vma_chain);
--
--	/*
--	 * It's critical to add new vmas to the tail of the anon_vma,
--	 * see comment in huge_memory.c:__split_huge_page().
--	 */
--	list_add_tail(&avc->same_anon_vma, &anon_vma->head);
--}
--
- /*
-  * Attach the anon_vmas from src to dst.
-  * Returns 0 on success, -ENOMEM on failure.
 -- 
-1.7.7.6
-
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
