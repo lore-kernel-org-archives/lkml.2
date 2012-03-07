@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab2CGLwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 06:52:37 -0500
-Received: from mail-gx0-f202.google.com ([209.85.161.202]:35329 "EHLO
-	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab2CGLvA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 06:51:00 -0500
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 2/9] drm/i915/intel_i2c: assign HDMI port D to pin pair 6
-Date: Wed,  7 Mar 2012 19:50:43 +0800
-Message-Id: <1331121050-17857-3-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331121050-17857-1-git-send-email-djkurtz@chromium.org>
-References: <1331121050-17857-1-git-send-email-djkurtz@chromium.org>
+	id S1756905Ab2CGLxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 06:53:35 -0500
+Received: from antcom.de ([188.40.178.216]:59299 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755380Ab2CGLxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 06:53:34 -0500
+Message-ID: <4F574C38.4030006@antcom.de>
+Date: Wed, 07 Mar 2012 12:53:28 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM IT Research & Development
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: davem@davemloft.net, jeffrey.t.kirsher@intel.com,
+        alexander.h.duyck@intel.com, eilong@broadcom.com,
+        ian.campbell@citrix.com, netdev@vger.kernel.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org, baruch@tkos.co.il,
+        joe@perches.com
+Subject: Re: [PATCH v5] lpc32xx: Added ethernet driver
+References: <1331067664-9124-1-git-send-email-stigge@antcom.de> <201203062134.38077.arnd@arndb.de>
+In-Reply-To: <201203062134.38077.arnd@arndb.de>
+X-Enigmail-Version: 1.3.4
+OpenPGP: url=subkeys.pgp.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to i915 documentation [1], "Port D" (DP/HDMI Port D) is
-actually gmbus pin pair 6 (gmbus0.2:0 == 110b GPIOF), not 7 (111b).
-Pin pair 7 is a reserved pair.
+Hi Arnd,
 
-[1] Documentation for [DevSNB+] and [DevIBX], as found on
-http://intellinuxgraphics.org
+On 03/06/2012 10:34 PM, Arnd Bergmann wrote:
+> This should eventually both become run-time options based on the device tree.
+> I don't know if you planned to do that anyway, but if you want the same kernel
+> binary to be used for systems in different configurations, you cannot have
+> compile-time decisions that are exclusive-or. Since you don't support device
+> tree yet but plan to do that in the future, you could add a comment here
+> about it, or you could even prepare it for that case already by passing the
+> device into the functions that will be required for reading the properties.
 
-Note: the "reserved" and "disabled" pairs do not actually map to a
-physical pair of pins, nor GPIO regs and shouldn't be initialized or used.
-Fixing this is left for a later patch.
+Good point.
 
-This bug has not been noticed for two reasons:
- 1) "gmbus" mode is currently disabled - all transfers are actually using
-    "bit-bang" mode which uses the GPIO port 5 (the "HDMI/DPD CTLDATA/CLK"
-    pair), at register 0x5024 (defined as GPIOF i915_reg.h).
-    Since this is the correct pair of pins for HDMI1, transfers succeed.
+I prefer putting a comment for now, because upon the planned device tree
+introduction in lpc32xx, an internal change in lpc_eth.c will be
+necessary anyway, so there is no need to already introduce unused
+parameters at this point.
 
- 2) Even if gmbus mode is re-enabled, the first attempted transaction
-    will fail because it tries to use the wrong ("Reserved") pin pair.
-    However, the driver immediately falls back again to the bit-bang
-    method, which correctly uses GPIOF, so again, transfers succeed.
+Thanks,
 
-However, if gmbus mode is re-enabled and the GPIO fall-back mode is
-disabled, then reading an attached monitor's EDID fail.
-
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/gpu/drm/i915/i915_reg.h  |    6 +++---
- drivers/gpu/drm/i915/intel_i2c.c |    4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 03c53fc..56af0df 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -697,9 +697,9 @@
- #define   GMBUS_PORT_PANEL	3
- #define   GMBUS_PORT_DPC	4 /* HDMIC */
- #define   GMBUS_PORT_DPB	5 /* SDVO, HDMIB */
--				  /* 6 reserved */
--#define   GMBUS_PORT_DPD	7 /* HDMID */
--#define   GMBUS_NUM_PORTS       8
-+#define   GMBUS_PORT_DPD	6 /* HDMID */
-+#define   GMBUS_PORT_RESERVED	7 /* 7 reserved */
-+#define   GMBUS_NUM_PORTS	8
- #define GMBUS1			0x5104 /* command/status */
- #define   GMBUS_SW_CLR_INT	(1<<31)
- #define   GMBUS_SW_RDY		(1<<30)
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index a94e383..45ce1d2 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -157,8 +157,8 @@ intel_gpio_create(struct drm_i915_private *dev_priv, u32 pin)
- 		GPIOC,
- 		GPIOD,
- 		GPIOE,
--		0,
- 		GPIOF,
-+		0,
- 	};
- 	struct intel_gpio *gpio;
- 
-@@ -377,8 +377,8 @@ int intel_setup_gmbus(struct drm_device *dev)
- 		"panel",
- 		"dpc",
- 		"dpb",
--		"reserved",
- 		"dpd",
-+		"reserved",
- 	};
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	int ret, i;
--- 
-1.7.7.3
-
+Roland
