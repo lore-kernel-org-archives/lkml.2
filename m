@@ -1,95 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965325Ab2CGWlB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 17:41:01 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:25812 "EHLO mx2.netapp.com"
+	id S965328Ab2CGWmq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 17:42:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50424 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965218Ab2CGWk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 17:40:57 -0500
-X-IronPort-AV: E=Sophos;i="4.73,549,1325491200"; 
-   d="scan'208";a="631575329"
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] NFSv4: Return the delegation if the server returns NFS4ERR_OPENMODE
-Date: Wed,  7 Mar 2012 17:40:49 -0500
-Message-Id: <1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
-References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
- <1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
- <1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
+	id S965280Ab2CGWmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 17:42:39 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1331156636.12805.18.camel@deneb.redhat.com>
+References: <1331156636.12805.18.camel@deneb.redhat.com> <1331155726.12805.16.camel@deneb.redhat.com> <20120307194548.15987.36073.stgit@warthog.procyon.org.uk> <20120307194725.15987.99209.stgit@warthog.procyon.org.uk> <18700.1331156191@redhat.com>
+To: Mark Salter <msalter@redhat.com>
+Cc: dhowells@redhat.com, paul.gortmaker@windriver.com, hpa@zytor.com,
+        torvalds@linux-foundation.org, sfr@canb.auug.org.au, mingo@redhat.com,
+        arnd@arndb.de, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 08/29] Disintegrate asm/system.h for C6X
+Date: Wed, 07 Mar 2012 22:42:19 +0000
+Message-ID: <20518.1331160139@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a setattr() fails because of an NFS4ERR_OPENMODE error, it is
-probably due to us holding a read delegation. Ensure that the
-recovery routines return that delegation in this case.
+Mark Salter <msalter@redhat.com> wrote:
 
-Reported-by: Miklos Szeredi <miklos@szeredi.hu>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: stable@vger.kernel.org
----
- fs/nfs/nfs4_fs.h  |    1 +
- fs/nfs/nfs4proc.c |   13 ++++++++++++-
- 2 files changed, 13 insertions(+), 1 deletions(-)
+> Kbuild takes care of it. See arch/c6x/include/Kbuild for the generic
+> headers C6X uses as-is.
 
-diff --git a/fs/nfs/nfs4_fs.h b/fs/nfs/nfs4_fs.h
-index 5c9b20b..8ccaf24 100644
---- a/fs/nfs/nfs4_fs.h
-+++ b/fs/nfs/nfs4_fs.h
-@@ -193,6 +193,7 @@ struct nfs4_exception {
- 	long timeout;
- 	int retry;
- 	struct nfs4_state *state;
-+	struct inode *inode;
- };
- 
- struct nfs4_state_recovery_ops {
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 3d26bab..bfcaa03 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -259,18 +259,28 @@ static int nfs4_handle_exception(struct nfs_server *server, int errorcode, struc
- {
- 	struct nfs_client *clp = server->nfs_client;
- 	struct nfs4_state *state = exception->state;
-+	struct inode *inode = exception->inode;
- 	int ret = errorcode;
- 
- 	exception->retry = 0;
- 	switch(errorcode) {
- 		case 0:
- 			return 0;
-+		case -NFS4ERR_OPENMODE:
-+			if (nfs_have_delegation(inode, FMODE_READ)) {
-+				nfs_inode_return_delegation(inode);
-+				exception->retry = 1;
-+				return 0;
-+			}
-+			if (state == NULL)
-+				break;
-+			nfs4_schedule_stateid_recovery(server, state);
-+			goto wait_on_recovery;
- 		case -NFS4ERR_DELEG_REVOKED:
- 		case -NFS4ERR_ADMIN_REVOKED:
- 		case -NFS4ERR_BAD_STATEID:
- 			if (state != NULL)
- 				nfs_remove_bad_delegation(state->inode);
--		case -NFS4ERR_OPENMODE:
- 			if (state == NULL)
- 				break;
- 			nfs4_schedule_stateid_recovery(server, state);
-@@ -1908,6 +1918,7 @@ static int nfs4_do_setattr(struct inode *inode, struct rpc_cred *cred,
- 	struct nfs_server *server = NFS_SERVER(inode);
- 	struct nfs4_exception exception = {
- 		.state = state,
-+		.inode = inode,
- 	};
- 	int err;
- 	do {
--- 
-1.7.7.6
+I'm still not clear on how that actually works.  Does it copy the headers to
+asm/ from asm-generic/?
 
+David
