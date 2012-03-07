@@ -1,811 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031700Ab2CGAWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 19:22:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62425 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030948Ab2CGAWT (ORCPT
+	id S932712Ab2CGA1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 19:27:24 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:58446 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759311Ab2CGA1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 19:22:19 -0500
-Authentication-Results: mr.google.com; spf=pass (google.com: domain of tshimizu818@gmail.com designates 10.42.150.200 as permitted sender) smtp.mail=tshimizu818@gmail.com; dkim=pass header.i=tshimizu818@gmail.com
-From: Takahiro Shimizu <tshimizu818@gmail.com>
-To: jeffrey.t.kirsher@intel.com, davem@davemloft.net,
-        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
-        paul.gortmaker@windriver.com, jdmason@kudzu.us, john.stultz@linaro.org,
-        richardcochran@gmail.com, arnd@arndb.de, khc@pm.waw.pl,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, Takahiro Shimizu <tshimizu818@gmail.com>
-Subject: [PATCH RE-SUBMIT] supports eg20t ptp clock
-Date: Wed,  7 Mar 2012 09:21:09 +0900
-Message-Id: <1331079669-22446-2-git-send-email-tshimizu818@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1331079669-22446-1-git-send-email-tshimizu818@gmail.com>
-References: <1331079669-22446-1-git-send-email-tshimizu818@gmail.com>
+	Tue, 6 Mar 2012 19:27:23 -0500
+Message-ID: <4F56AB74.2080301@gmail.com>
+Date: Tue, 06 Mar 2012 19:27:32 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Mikulas Patocka <mpatocka@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Shaohua Li <shaohua.li@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, kosaki.motohiro@gmail.com
+Subject: Re: [PATCH] fix bug introduced in "mm: simplify find_vma_prev()"
+References: <Pine.LNX.4.64.1203041946430.3487@file.rdu.redhat.com> <CA+55aFzX9Nj_jSdFR6PJO-G4MPi7R13TLHAxwzZo9C0MHNRBfw@mail.gmail.com> <Pine.LNX.4.64.1203061326120.22195@file.rdu.redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1203061326120.22195@file.rdu.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Supports EG20T ptp clock in the driver
+(3/6/12 1:57 PM), Mikulas Patocka wrote:
+>
+>
+> On Sun, 4 Mar 2012, Linus Torvalds wrote:
+>
+>> On Sun, Mar 4, 2012 at 4:52 PM, Mikulas Patocka<mpatocka@redhat.com>  wrote:
+>>>
+>>> This patch fixes a bug introduced in "mm: simplify find_vma_prev()". You
+>>> can apply this, or alternatively revert the original patch.
+>>
+>> Hmm.
+>>
+>> I realize the patch is a bug-fix, but I do wonder if we shouldn't look
+>> at alternatives.
+>>
+>> In particular, how about we just change the rule to be clearer, and
+>> make the rule be:
+>>
+>>   - no more find_vma_prev() AT ALL.
+>>
+>>   - callers get turned into "find_vma()" and then we have a
+>> "vma_prev()", which basically does your thing.
+>>
+>>   - many of the callers seem to be interested in "prev" *only* if they
+>> found a vma. For example, the do_mlock() kind of logic seems to be
+>> common:
+>>
+>>      vma = find_vma_prev(current->mm, start,&prev);
+>>      if (!vma || vma->vm_start>  start)
+>>          return -ENOMEM;
+>>
+>>     which implies that the current find_vma_prev() semantics are really
+>> wrong, because they force us to do extra work in this case where we
+>> really really don't care about the result.
+>>
+>> So we could do an entirely mechanical conversion of
+>>
+>>     vma = find_vma_prev(mm, address,&prev_vma);
+>>
+>> into
+>>
+>>     vma = find_vma(mm, address);
+>>     prev_vma = vma_prev(vma);
+>>
+>> and then after we've done that conversion, it looks like the bulk of
+>> them will not care about "prev_vma" if vma is NULL, so they can then
+>> be replaced with a pure
+>>
+>>     prev_vma = vma->vm_prev;
+>>
+>> instead. Leaving just the (few) cases that may care about the
+>> "previous vma may be the last vma of the VM" case.
+>>
+>> Hmm? And we'd get away from that horrible "find_vma_prev()" interface
+>> that uses pointers to vma pointers for return values. Ugh. There only
+>> seems to be nine callers in the whole kernel.
+>>
+>>                   Linus
+>
+> You can try this to remove most users of find_vma_prev (only three are
+> left --- those dealing with up-growing stack). But the patch should be
+> delayed until the next merge window.
+>
+> Mikulas
+>
 
-Changes e-mail address.
+Thank you, Mikulas for finding and fixing the bug. And sorry for the long
+delay. I was offlined a while.
 
-Signed-off-by: Takahiro Shimizu <tshimizu818@gmail.com>
+Following is the replacing last three caller of find_vma_prev. oh, I use
+find_last_vma() instead vma_prev(vma) because parisc need last vma search
+when Milulas's original testcase. Does this make sense to you? if yes, we
+can remove find_vma_prev() completely.
+
+
+
+=========================
+Subject: [PATCH] mm: introduce find_last_vma()
+
+Cc: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- drivers/ptp/Kconfig   |   13 +
- drivers/ptp/Makefile  |    1 +
- drivers/ptp/ptp_pch.c |  731 +++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 745 insertions(+), 0 deletions(-)
- create mode 100644 drivers/ptp/ptp_pch.c
+  arch/ia64/mm/fault.c   |   20 +++++++++++++-------
+  arch/parisc/mm/fault.c |    6 +++---
+  include/linux/mm.h     |    3 +++
+  mm/mmap.c              |   32 +++++++++++++++++++++++++++++++-
+  4 files changed, 50 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/ptp/Kconfig b/drivers/ptp/Kconfig
-index 68d7201..cd9bc3b 100644
---- a/drivers/ptp/Kconfig
-+++ b/drivers/ptp/Kconfig
-@@ -72,4 +72,17 @@ config DP83640_PHY
- 	  In order for this to work, your MAC driver must also
- 	  implement the skb_tx_timetamp() function.
- 
-+config PTP_1588_CLOCK_PCH
-+	tristate "Intel PCH EG20T as PTP clock"
-+	depends on PTP_1588_CLOCK
-+	depends on PCH_GBE
-+	help
-+	  This driver adds support for using the PCH EG20T as a PTP
-+	  clock. This clock is only useful if your PTP programs are
-+	  getting hardware time stamps on the PTP Ethernet packets
-+	  using the SO_TIMESTAMPING API.
-+
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called ptp_pch.
-+
- endmenu
-diff --git a/drivers/ptp/Makefile b/drivers/ptp/Makefile
-index f6933e8..8b58597 100644
---- a/drivers/ptp/Makefile
-+++ b/drivers/ptp/Makefile
-@@ -5,3 +5,4 @@
- ptp-y					:= ptp_clock.o ptp_chardev.o ptp_sysfs.o
- obj-$(CONFIG_PTP_1588_CLOCK)		+= ptp.o
- obj-$(CONFIG_PTP_1588_CLOCK_IXP46X)	+= ptp_ixp46x.o
-+obj-$(CONFIG_PTP_1588_CLOCK_PCH)	+= ptp_pch.o
-diff --git a/drivers/ptp/ptp_pch.c b/drivers/ptp/ptp_pch.c
-new file mode 100644
-index 0000000..1a06e02
---- /dev/null
-+++ b/drivers/ptp/ptp_pch.c
-@@ -0,0 +1,731 @@
-+/*
-+ * PTP 1588 clock using the EG20T PCH
-+ *
-+ * Copyright (C) 2010 OMICRON electronics GmbH
-+ * Copyright (C) 2011-2012 LAPIS SEMICONDUCTOR Co., LTD.
-+ *
-+ * This code was derived from the IXP46X driver.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <linux/ptp_clock_kernel.h>
-+
-+#define STATION_ADDR_LEN	20
-+#define PCI_DEVICE_ID_PCH_1588	0x8819
-+#define IO_MEM_BAR 1
-+
-+#define DEFAULT_ADDEND 0xA0000000
-+#define TICKS_NS_SHIFT  5
-+#define N_EXT_TS	2
-+
-+enum pch_status {
-+	PCH_SUCCESS,
-+	PCH_INVALIDPARAM,
-+	PCH_NOTIMESTAMP,
-+	PCH_INTERRUPTMODEINUSE,
-+	PCH_FAILED,
-+	PCH_UNSUPPORTED,
-+};
-+/**
-+ * struct pch_ts_regs - IEEE 1588 registers
-+ */
-+struct pch_ts_regs {
-+	u32 control;
-+	u32 event;
-+	u32 addend;
-+	u32 accum;
-+	u32 test;
-+	u32 ts_compare;
-+	u32 rsystime_lo;
-+	u32 rsystime_hi;
-+	u32 systime_lo;
-+	u32 systime_hi;
-+	u32 trgt_lo;
-+	u32 trgt_hi;
-+	u32 asms_lo;
-+	u32 asms_hi;
-+	u32 amms_lo;
-+	u32 amms_hi;
-+	u32 ch_control;
-+	u32 ch_event;
-+	u32 tx_snap_lo;
-+	u32 tx_snap_hi;
-+	u32 rx_snap_lo;
-+	u32 rx_snap_hi;
-+	u32 src_uuid_lo;
-+	u32 src_uuid_hi;
-+	u32 can_status;
-+	u32 can_snap_lo;
-+	u32 can_snap_hi;
-+	u32 ts_sel;
-+	u32 ts_st[6];
-+	u32 reserve1[14];
-+	u32 stl_max_set_en;
-+	u32 stl_max_set;
-+	u32 reserve2[13];
-+	u32 srst;
-+};
-+
-+#define PCH_TSC_RESET		(1 << 0)
-+#define PCH_TSC_TTM_MASK	(1 << 1)
-+#define PCH_TSC_ASMS_MASK	(1 << 2)
-+#define PCH_TSC_AMMS_MASK	(1 << 3)
-+#define PCH_TSC_PPSM_MASK	(1 << 4)
-+#define PCH_TSE_TTIPEND		(1 << 1)
-+#define PCH_TSE_SNS		(1 << 2)
-+#define PCH_TSE_SNM		(1 << 3)
-+#define PCH_TSE_PPS		(1 << 4)
-+#define PCH_CC_MM		(1 << 0)
-+#define PCH_CC_TA		(1 << 1)
-+
-+#define PCH_CC_MODE_SHIFT	16
-+#define PCH_CC_MODE_MASK	0x001F0000
-+#define PCH_CC_VERSION		(1 << 31)
-+#define PCH_CE_TXS		(1 << 0)
-+#define PCH_CE_RXS		(1 << 1)
-+#define PCH_CE_OVR		(1 << 0)
-+#define PCH_CE_VAL		(1 << 1)
-+#define PCH_ECS_ETH		(1 << 0)
-+
-+#define PCH_ECS_CAN		(1 << 1)
-+#define PCH_STATION_BYTES	6
-+
-+#define PCH_IEEE1588_ETH	(1 << 0)
-+#define PCH_IEEE1588_CAN	(1 << 1)
-+/**
-+ * struct pch_dev - Driver private data
-+ */
-+struct pch_dev {
-+	struct pch_ts_regs *regs;
-+	struct ptp_clock *ptp_clock;
-+	struct ptp_clock_info caps;
-+	int exts0_enabled;
-+	int exts1_enabled;
-+
-+	u32 mem_base;
-+	u32 mem_size;
-+	u32 irq;
-+	struct pci_dev *pdev;
-+	spinlock_t register_lock;
-+};
-+
-+/**
-+ * struct pch_params - 1588 module parameter
-+ */
-+struct pch_params {
-+	u8 station[STATION_ADDR_LEN];
-+};
-+
-+/* structure to hold the module parameters */
-+static struct pch_params pch_param = {
-+	"00:00:00:00:00:00"
-+};
-+
-+/*
-+ * Register access functions
-+ */
-+static inline void pch_eth_enable_set(struct pch_dev *chip)
-+{
-+	u32 val;
-+	/* SET the eth_enable bit */
-+	val = ioread32(&chip->regs->ts_sel) | (PCH_ECS_ETH);
-+	iowrite32(val, (&chip->regs->ts_sel));
-+}
-+
-+static u64 pch_systime_read(struct pch_ts_regs *regs)
-+{
-+	u64 ns;
-+	u32 lo, hi;
-+
-+	lo = ioread32(&regs->systime_lo);
-+	hi = ioread32(&regs->systime_hi);
-+
-+	ns = ((u64) hi) << 32;
-+	ns |= lo;
-+	ns <<= TICKS_NS_SHIFT;
-+
-+	return ns;
-+}
-+
-+static void pch_systime_write(struct pch_ts_regs *regs, u64 ns)
-+{
-+	u32 hi, lo;
-+
-+	ns >>= TICKS_NS_SHIFT;
-+	hi = ns >> 32;
-+	lo = ns & 0xffffffff;
-+
-+	iowrite32(lo, &regs->systime_lo);
-+	iowrite32(hi, &regs->systime_hi);
-+}
-+
-+static inline void pch_block_reset(struct pch_dev *chip)
-+{
-+	u32 val;
-+	/* Reset Hardware Assist block */
-+	val = ioread32(&chip->regs->control) | PCH_TSC_RESET;
-+	iowrite32(val, (&chip->regs->control));
-+	val = val & ~PCH_TSC_RESET;
-+	iowrite32(val, (&chip->regs->control));
-+}
-+
-+u32 pch_ch_control_read(struct pci_dev *pdev)
-+{
-+	struct pch_dev *chip = pci_get_drvdata(pdev);
-+	u32 val;
-+
-+	val = ioread32(&chip->regs->ch_control);
-+
-+	return val;
-+}
-+EXPORT_SYMBOL(pch_ch_control_read);
-+
-+void pch_ch_control_write(struct pci_dev *pdev, u32 val)
-+{
-+	struct pch_dev *chip = pci_get_drvdata(pdev);
-+
-+	iowrite32(val, (&chip->regs->ch_control));
-+}
-+EXPORT_SYMBOL(pch_ch_control_write);
-+
-+u32 pch_ch_event_read(struct pci_dev *pdev)
-+{
-+	struct pch_dev *chip = pci_get_drvdata(pdev);
-+	u32 val;
-+
-+	val = ioread32(&chip->regs->ch_event);
-+
-+	return val;
-+}
-+EXPORT_SYMBOL(pch_ch_event_read);
-+
-+void pch_ch_event_write(struct pci_dev *pdev, u32 val)
-+{
-+	struct pch_dev *chip = pci_get_drvdata(pdev);
-+
-+	iowrite32(val, (&chip->regs->ch_event));
-+}
-+EXPORT_SYMBOL(pch_ch_event_write);
-+
-+u32 pch_src_uuid_lo_read(struct pci_dev *pdev)
-+{
-+	struct pch_dev *chip = pci_get_drvdata(pdev);
-+	u32 val;
-+
-+	val = ioread32(&chip->regs->src_uuid_lo);
-+
-+	return val;
-+}
-+EXPORT_SYMBOL(pch_src_uuid_lo_read);
-+
-+u32 pch_src_uuid_hi_read(struct pci_dev *pdev)
-+{
-+	struct pch_dev *chip = pci_get_drvdata(pdev);
-+	u32 val;
-+
-+	val = ioread32(&chip->regs->src_uuid_hi);
-+
-+	return val;
-+}
-+EXPORT_SYMBOL(pch_src_uuid_hi_read);
-+
-+u64 pch_rx_snap_read(struct pci_dev *pdev)
-+{
-+	struct pch_dev *chip = pci_get_drvdata(pdev);
-+	u64 ns;
-+	u32 lo, hi;
-+
-+	lo = ioread32(&chip->regs->rx_snap_lo);
-+	hi = ioread32(&chip->regs->rx_snap_hi);
-+
-+	ns = ((u64) hi) << 32;
-+	ns |= lo;
-+
-+	return ns;
-+}
-+EXPORT_SYMBOL(pch_rx_snap_read);
-+
-+u64 pch_tx_snap_read(struct pci_dev *pdev)
-+{
-+	struct pch_dev *chip = pci_get_drvdata(pdev);
-+	u64 ns;
-+	u32 lo, hi;
-+
-+	lo = ioread32(&chip->regs->tx_snap_lo);
-+	hi = ioread32(&chip->regs->tx_snap_hi);
-+
-+	ns = ((u64) hi) << 32;
-+	ns |= lo;
-+
-+	return ns;
-+}
-+EXPORT_SYMBOL(pch_tx_snap_read);
-+
-+/* This function enables all 64 bits in system time registers [high & low].
-+This is a work-around for non continuous value in the SystemTime Register*/
-+static void pch_set_system_time_count(struct pch_dev *chip)
-+{
-+	iowrite32(0x01, &chip->regs->stl_max_set_en);
-+	iowrite32(0xFFFFFFFF, &chip->regs->stl_max_set);
-+	iowrite32(0x00, &chip->regs->stl_max_set_en);
-+}
-+
-+static void pch_reset(struct pch_dev *chip)
-+{
-+	/* Reset Hardware Assist */
-+	pch_block_reset(chip);
-+
-+	/* enable all 32 bits in system time registers */
-+	pch_set_system_time_count(chip);
-+}
-+
-+/**
-+ * pch_set_station_address() - This API sets the station address used by
-+ *				    IEEE 1588 hardware when looking at PTP
-+ *				    traffic on the  ethernet interface
-+ * @addr:	dress which contain the column separated address to be used.
-+ */
-+static int pch_set_station_address(u8 *addr, struct pci_dev *pdev)
-+{
-+	s32 i;
-+	struct pch_dev *chip = pci_get_drvdata(pdev);
-+
-+	/* Verify the parameter */
-+	if ((chip->regs == 0) || addr == (u8 *)NULL) {
-+		dev_err(&pdev->dev,
-+			"invalid params returning PCH_INVALIDPARAM\n");
-+		return PCH_INVALIDPARAM;
-+	}
-+	/* For all station address bytes */
-+	for (i = 0; i < PCH_STATION_BYTES; i++) {
-+		u32 val;
-+		s32 tmp;
-+
-+		tmp = hex_to_bin(addr[i * 3]);
-+		if (tmp < 0) {
-+			dev_err(&pdev->dev,
-+				"invalid params returning PCH_INVALIDPARAM\n");
-+			return PCH_INVALIDPARAM;
-+		}
-+		val = tmp * 16;
-+		tmp = hex_to_bin(addr[(i * 3) + 1]);
-+		if (tmp < 0) {
-+			dev_err(&pdev->dev,
-+				"invalid params returning PCH_INVALIDPARAM\n");
-+			return PCH_INVALIDPARAM;
-+		}
-+		val += tmp;
-+		/* Expects ':' separated addresses */
-+		if ((i < 5) && (addr[(i * 3) + 2] != ':')) {
-+			dev_err(&pdev->dev,
-+				"invalid params returning PCH_INVALIDPARAM\n");
-+			return PCH_INVALIDPARAM;
-+		}
-+
-+		/* Ideally we should set the address only after validating
-+							 entire string */
-+		dev_dbg(&pdev->dev, "invoking pch_station_set\n");
-+		iowrite32(val, &chip->regs->ts_st[i]);
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * Interrupt service routine
-+ */
-+static irqreturn_t isr(int irq, void *priv)
-+{
-+	struct pch_dev *pch_dev = priv;
-+	struct pch_ts_regs *regs = pch_dev->regs;
-+	struct ptp_clock_event event;
-+	u32 ack = 0, lo, hi, val;
-+
-+	val = ioread32(&regs->event);
-+
-+	if (val & PCH_TSE_SNS) {
-+		ack |= PCH_TSE_SNS;
-+		if (pch_dev->exts0_enabled) {
-+			hi = ioread32(&regs->asms_hi);
-+			lo = ioread32(&regs->asms_lo);
-+			event.type = PTP_CLOCK_EXTTS;
-+			event.index = 0;
-+			event.timestamp = ((u64) hi) << 32;
-+			event.timestamp |= lo;
-+			event.timestamp <<= TICKS_NS_SHIFT;
-+			ptp_clock_event(pch_dev->ptp_clock, &event);
-+		}
+diff --git a/arch/ia64/mm/fault.c b/arch/ia64/mm/fault.c
+index 20b3593..27ca30c 100644
+--- a/arch/ia64/mm/fault.c
++++ b/arch/ia64/mm/fault.c
+@@ -112,18 +112,16 @@ ia64_do_page_fault (unsigned long address, unsigned long isr, struct pt_regs *re
+  
+  	down_read(&mm->mmap_sem);
+  
+-	vma = find_vma_prev(mm, address, &prev_vma);
+-	if (!vma && !prev_vma )
+-		goto bad_area;
++	vma = find_vma(mm, address);
+  
+-        /*
+-         * find_vma_prev() returns vma such that address < vma->vm_end or NULL
++	/*
++         * find_vma() returns vma such that address < vma->vm_end or NULL
+           *
+           * May find no vma, but could be that the last vm area is the
+           * register backing store that needs to expand upwards, in
+-         * this case vma will be null, but prev_vma will ne non-null
++         * this case vma will be null and a stack need to be expanded.
+           */
+-        if (( !vma && prev_vma ) || (address < vma->vm_start) )
++	if (!vma || (address < vma->vm_start))
+  		goto check_expansion;
+  
+    good_area:
+@@ -177,6 +175,14 @@ ia64_do_page_fault (unsigned long address, unsigned long isr, struct pt_regs *re
+  	return;
+  
+    check_expansion:
++	if (vma)
++		prev_vma = vma->vm_prev;
++	else {
++		prev_vma = find_last_vma(mm);
++		if (!prev_vma)
++			goto bad_area;
 +	}
 +
-+	if (val & PCH_TSE_SNM) {
-+		ack |= PCH_TSE_SNM;
-+		if (pch_dev->exts1_enabled) {
-+			hi = ioread32(&regs->amms_hi);
-+			lo = ioread32(&regs->amms_lo);
-+			event.type = PTP_CLOCK_EXTTS;
-+			event.index = 1;
-+			event.timestamp = ((u64) hi) << 32;
-+			event.timestamp |= lo;
-+			event.timestamp <<= TICKS_NS_SHIFT;
-+			ptp_clock_event(pch_dev->ptp_clock, &event);
-+		}
+  	if (!(prev_vma && (prev_vma->vm_flags & VM_GROWSUP) && (address == prev_vma->vm_end))) {
+  		if (!vma)
+  			goto bad_area;
+diff --git a/arch/parisc/mm/fault.c b/arch/parisc/mm/fault.c
+index 18162ce..7b5a466 100644
+--- a/arch/parisc/mm/fault.c
++++ b/arch/parisc/mm/fault.c
+@@ -170,7 +170,7 @@ int fixup_exception(struct pt_regs *regs)
+  void do_page_fault(struct pt_regs *regs, unsigned long code,
+  			      unsigned long address)
+  {
+-	struct vm_area_struct *vma, *prev_vma;
++	struct vm_area_struct *vma;
+  	struct task_struct *tsk = current;
+  	struct mm_struct *mm = tsk->mm;
+  	unsigned long acc_type;
+@@ -180,7 +180,7 @@ void do_page_fault(struct pt_regs *regs, unsigned long code,
+  		goto no_context;
+  
+  	down_read(&mm->mmap_sem);
+-	vma = find_vma_prev(mm, address, &prev_vma);
++	vma = find_vma(mm, address);
+  	if (!vma || address < vma->vm_start)
+  		goto check_expansion;
+  /*
+@@ -222,7 +222,7 @@ good_area:
+  	return;
+  
+  check_expansion:
+-	vma = prev_vma;
++	vma = vma ? vma->vm_prev : find_last_vma(mm);
+  	if (vma && (expand_stack(vma, address) == 0))
+  		goto good_area;
+  
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 17b27cd..d758818 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1463,6 +1463,9 @@ extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
+  
+  /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
+  extern struct vm_area_struct * find_vma(struct mm_struct * mm, unsigned long addr);
++#if defined(CONFIG_STACK_GROWSUP) || defined(CONFIG_IA64)
++extern struct vm_area_struct *find_last_vma(struct mm_struct *mm);
++#endif
+  extern struct vm_area_struct * find_vma_prev(struct mm_struct * mm, unsigned long addr,
+  					     struct vm_area_struct **pprev);
+  
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 22e1a0b..3e9c186 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1605,6 +1605,32 @@ struct vm_area_struct *find_vma(struct mm_struct *mm, unsigned long addr)
+  
+  EXPORT_SYMBOL(find_vma);
+  
++#if defined(CONFIG_STACK_GROWSUP) || defined(CONFIG_IA64)
++/* Look up the last VMA,  NULL if mm have no vma. */
++struct vm_area_struct *find_last_vma(struct mm_struct *mm)
++{
++	struct vm_area_struct *vma = NULL;
++	struct rb_node *rb_node;
++
++	BUG_ON(!mm);
++
++	rb_node = mm->mm_rb.rb_node;
++	while (rb_node) {
++		vma = rb_entry(rb_node, struct vm_area_struct, vm_rb);
++		rb_node = rb_node->rb_right;
 +	}
 +
-+	if (val & PCH_TSE_TTIPEND)
-+		ack |= PCH_TSE_TTIPEND; /* this bit seems to be always set */
++	/*
++	 * This function is mainly used for a page fault. Thus recording vma
++	 * may improve the performance.
++	 */
++	if (vma)
++		mm->mmap_cache = vma;
 +
-+	if (ack) {
-+		iowrite32(ack, &regs->event);
-+		return IRQ_HANDLED;
-+	} else
-+		return IRQ_NONE;
++	return vma;
 +}
-+
-+/*
-+ * PTP clock operations
-+ */
-+
-+static int ptp_pch_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
-+{
-+	u64 adj;
-+	u32 diff, addend;
-+	int neg_adj = 0;
-+	struct pch_dev *pch_dev = container_of(ptp, struct pch_dev, caps);
-+	struct pch_ts_regs *regs = pch_dev->regs;
-+
-+	if (ppb < 0) {
-+		neg_adj = 1;
-+		ppb = -ppb;
-+	}
-+	addend = DEFAULT_ADDEND;
-+	adj = addend;
-+	adj *= ppb;
-+	diff = div_u64(adj, 1000000000ULL);
-+
-+	addend = neg_adj ? addend - diff : addend + diff;
-+
-+	iowrite32(addend, &regs->addend);
-+
-+	return 0;
-+}
-+
-+static int ptp_pch_adjtime(struct ptp_clock_info *ptp, s64 delta)
-+{
-+	s64 now;
-+	unsigned long flags;
-+	struct pch_dev *pch_dev = container_of(ptp, struct pch_dev, caps);
-+	struct pch_ts_regs *regs = pch_dev->regs;
-+
-+	spin_lock_irqsave(&pch_dev->register_lock, flags);
-+	now = pch_systime_read(regs);
-+	now += delta;
-+	pch_systime_write(regs, now);
-+	spin_unlock_irqrestore(&pch_dev->register_lock, flags);
-+
-+	return 0;
-+}
-+
-+static int ptp_pch_gettime(struct ptp_clock_info *ptp, struct timespec *ts)
-+{
-+	u64 ns;
-+	u32 remainder;
-+	unsigned long flags;
-+	struct pch_dev *pch_dev = container_of(ptp, struct pch_dev, caps);
-+	struct pch_ts_regs *regs = pch_dev->regs;
-+
-+	spin_lock_irqsave(&pch_dev->register_lock, flags);
-+	ns = pch_systime_read(regs);
-+	spin_unlock_irqrestore(&pch_dev->register_lock, flags);
-+
-+	ts->tv_sec = div_u64_rem(ns, 1000000000, &remainder);
-+	ts->tv_nsec = remainder;
-+	return 0;
-+}
-+
-+static int ptp_pch_settime(struct ptp_clock_info *ptp,
-+			   const struct timespec *ts)
-+{
-+	u64 ns;
-+	unsigned long flags;
-+	struct pch_dev *pch_dev = container_of(ptp, struct pch_dev, caps);
-+	struct pch_ts_regs *regs = pch_dev->regs;
-+
-+	ns = ts->tv_sec * 1000000000ULL;
-+	ns += ts->tv_nsec;
-+
-+	spin_lock_irqsave(&pch_dev->register_lock, flags);
-+	pch_systime_write(regs, ns);
-+	spin_unlock_irqrestore(&pch_dev->register_lock, flags);
-+
-+	return 0;
-+}
-+
-+static int ptp_pch_enable(struct ptp_clock_info *ptp,
-+			  struct ptp_clock_request *rq, int on)
-+{
-+	struct pch_dev *pch_dev = container_of(ptp, struct pch_dev, caps);
-+
-+	switch (rq->type) {
-+	case PTP_CLK_REQ_EXTTS:
-+		switch (rq->extts.index) {
-+		case 0:
-+			pch_dev->exts0_enabled = on ? 1 : 0;
-+			break;
-+		case 1:
-+			pch_dev->exts1_enabled = on ? 1 : 0;
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+		return 0;
-+	default:
-+		break;
-+	}
-+
-+	return -EOPNOTSUPP;
-+}
-+
-+static struct ptp_clock_info ptp_pch_caps = {
-+	.owner		= THIS_MODULE,
-+	.name		= "PCH timer",
-+	.max_adj	= 50000000,
-+	.n_ext_ts	= N_EXT_TS,
-+	.pps		= 0,
-+	.adjfreq	= ptp_pch_adjfreq,
-+	.adjtime	= ptp_pch_adjtime,
-+	.gettime	= ptp_pch_gettime,
-+	.settime	= ptp_pch_settime,
-+	.enable		= ptp_pch_enable,
-+};
-+
-+
-+#ifdef CONFIG_PM
-+static s32 pch_suspend(struct pci_dev *pdev, pm_message_t state)
-+{
-+	pci_disable_device(pdev);
-+	pci_enable_wake(pdev, PCI_D3hot, 0);
-+
-+	if (pci_save_state(pdev) != 0) {
-+		dev_err(&pdev->dev, "could not save PCI config state\n");
-+		return -ENOMEM;
-+	}
-+	pci_set_power_state(pdev, pci_choose_state(pdev, state));
-+
-+	return 0;
-+}
-+
-+static s32 pch_resume(struct pci_dev *pdev)
-+{
-+	s32 ret;
-+
-+	pci_set_power_state(pdev, PCI_D0);
-+	pci_restore_state(pdev);
-+	ret = pci_enable_device(pdev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "pci_enable_device failed\n");
-+		return ret;
-+	}
-+	pci_enable_wake(pdev, PCI_D3hot, 0);
-+	return 0;
-+}
-+#else
-+#define pch_suspend NULL
-+#define pch_resume NULL
 +#endif
 +
-+static void __devexit pch_remove(struct pci_dev *pdev)
-+{
-+	struct pch_dev *chip = pci_get_drvdata(pdev);
+  /*
+   * Same as find_vma, but also return a pointer to the previous VMA in *pprev.
+   * Note: pprev is set to NULL when return value is NULL.
+@@ -1789,9 +1815,13 @@ find_extend_vma(struct mm_struct *mm, unsigned long addr)
+  	struct vm_area_struct *vma, *prev;
+  
+  	addr &= PAGE_MASK;
+-	vma = find_vma_prev(mm, addr, &prev);
++	vma = find_vma(mm, addr);
+  	if (vma && (vma->vm_start <= addr))
+  		return vma;
 +
-+	ptp_clock_unregister(chip->ptp_clock);
-+	/* free the interrupt */
-+	if (pdev->irq != 0)
-+		free_irq(pdev->irq, chip);
-+
-+	/* unmap the virtual IO memory space */
-+	if (chip->regs != 0) {
-+		iounmap(chip->regs);
-+		chip->regs = 0;
-+	}
-+	/* release the reserved IO memory space */
-+	if (chip->mem_base != 0) {
-+		release_mem_region(chip->mem_base, chip->mem_size);
-+		chip->mem_base = 0;
-+	}
-+	pci_disable_device(pdev);
-+	kfree(chip);
-+	dev_info(&pdev->dev, "complete\n");
-+}
-+
-+static s32 __devinit
-+pch_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-+{
-+	s32 ret;
-+	unsigned long flags;
-+	struct pch_dev *chip;
-+
-+	chip = kzalloc(sizeof(struct pch_dev), GFP_KERNEL);
-+	if (chip == NULL)
-+		return -ENOMEM;
-+
-+	/* enable the 1588 pci device */
-+	ret = pci_enable_device(pdev);
-+	if (ret != 0) {
-+		dev_err(&pdev->dev, "could not enable the pci device\n");
-+		goto err_pci_en;
-+	}
-+
-+	chip->mem_base = pci_resource_start(pdev, IO_MEM_BAR);
-+	if (!chip->mem_base) {
-+		dev_err(&pdev->dev, "could not locate IO memory address\n");
-+		ret = -ENODEV;
-+		goto err_pci_start;
-+	}
-+
-+	/* retrieve the available length of the IO memory space */
-+	chip->mem_size = pci_resource_len(pdev, IO_MEM_BAR);
-+
-+	/* allocate the memory for the device registers */
-+	if (!request_mem_region(chip->mem_base, chip->mem_size, "1588_regs")) {
-+		dev_err(&pdev->dev,
-+			"could not allocate register memory space\n");
-+		ret = -EBUSY;
-+		goto err_req_mem_region;
-+	}
-+
-+	/* get the virtual address to the 1588 registers */
-+	chip->regs = ioremap(chip->mem_base, chip->mem_size);
-+
-+	if (!chip->regs) {
-+		dev_err(&pdev->dev, "Could not get virtual address\n");
-+		ret = -ENOMEM;
-+		goto err_ioremap;
-+	}
-+
-+	chip->caps = ptp_pch_caps;
-+	chip->ptp_clock = ptp_clock_register(&chip->caps);
-+
-+	if (IS_ERR(chip->ptp_clock))
-+		return PTR_ERR(chip->ptp_clock);
-+
-+	spin_lock_init(&chip->register_lock);
-+
-+	ret = request_irq(pdev->irq, &isr, IRQF_SHARED, KBUILD_MODNAME, chip);
-+	if (ret != 0) {
-+		dev_err(&pdev->dev, "failed to get irq %d\n", pdev->irq);
-+		goto err_req_irq;
-+	}
-+
-+	/* indicate success */
-+	chip->irq = pdev->irq;
-+	chip->pdev = pdev;
-+	pci_set_drvdata(pdev, chip);
-+
-+	spin_lock_irqsave(&chip->register_lock, flags);
-+	/* reset the ieee1588 h/w */
-+	pch_reset(chip);
-+
-+	iowrite32(DEFAULT_ADDEND, &chip->regs->addend);
-+	iowrite32(1, &chip->regs->trgt_lo);
-+	iowrite32(0, &chip->regs->trgt_hi);
-+	iowrite32(PCH_TSE_TTIPEND, &chip->regs->event);
-+	/* Version: IEEE1588 v1 and IEEE1588-2008,  Mode: All Evwnt, Locked  */
-+	iowrite32(0x80020000, &chip->regs->ch_control);
-+
-+	pch_eth_enable_set(chip);
-+
-+	if (strcmp(pch_param.station, "00:00:00:00:00:00") != 0) {
-+		if (pch_set_station_address(pch_param.station, pdev) != 0) {
-+			dev_err(&pdev->dev,
-+			"Invalid station address parameter\n"
-+			"Module loaded but station address not set correctly\n"
-+			);
-+		}
-+	}
-+	spin_unlock_irqrestore(&chip->register_lock, flags);
-+	return 0;
-+
-+err_req_irq:
-+	ptp_clock_unregister(chip->ptp_clock);
-+	iounmap(chip->regs);
-+	chip->regs = 0;
-+
-+err_ioremap:
-+	release_mem_region(chip->mem_base, chip->mem_size);
-+
-+err_req_mem_region:
-+	chip->mem_base = 0;
-+
-+err_pci_start:
-+	pci_disable_device(pdev);
-+
-+err_pci_en:
-+	kfree(chip);
-+	dev_err(&pdev->dev, "probe failed(ret=0x%x)\n", ret);
-+
-+	return ret;
-+}
-+
-+static DEFINE_PCI_DEVICE_TABLE(pch_ieee1588_pcidev_id) = {
-+	{
-+	  .vendor = PCI_VENDOR_ID_INTEL,
-+	  .device = PCI_DEVICE_ID_PCH_1588
-+	 },
-+	{0}
-+};
-+
-+static struct pci_driver pch_pcidev = {
-+	.name = KBUILD_MODNAME,
-+	.id_table = pch_ieee1588_pcidev_id,
-+	.probe = pch_probe,
-+	.remove = pch_remove,
-+	.suspend = pch_suspend,
-+	.resume = pch_resume,
-+};
-+
-+static void __exit ptp_pch_exit(void)
-+{
-+	pci_unregister_driver(&pch_pcidev);
-+}
-+
-+static s32 __init ptp_pch_init(void)
-+{
-+	s32 ret;
-+
-+	/* register the driver with the pci core */
-+	ret = pci_register_driver(&pch_pcidev);
-+
-+	return ret;
-+}
-+
-+module_init(ptp_pch_init);
-+module_exit(ptp_pch_exit);
-+
-+module_param_string(station, pch_param.station, sizeof pch_param.station, 0444);
-+MODULE_PARM_DESC(station,
-+	 "IEEE 1588 station address to use - column separated hex values");
-+
-+MODULE_AUTHOR("LAPIS SEMICONDUCTOR, <tshimizu818@gmail.com>");
-+MODULE_DESCRIPTION("PTP clock using the EG20T timer");
-+MODULE_LICENSE("GPL");
-+
++	prev = vma->vm_prev;
++	if (!prev)
++		prev = find_last_vma(mm);
+  	if (!prev || expand_stack(prev, addr))
+  		return NULL;
+  	if (prev->vm_flags & VM_LOCKED) {
 -- 
-1.7.4.4
+1.7.1
+
 
