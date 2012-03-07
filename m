@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031717Ab2CGAa6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 19:30:58 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33026 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031640Ab2CGAax (ORCPT
+	id S1031725Ab2CGAbP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 19:31:15 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43335 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031503Ab2CGAbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 19:30:53 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Russell King <linux@arm.linux.org.uk>, nico@fluxnic.net,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Mike Frysinger <vapier@gentoo.org>, Michal Simek <monstr@monstr.eu>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-arch@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH 3/3] ARM: Allow the user to enable UIMAGE_KERNEL_NOLOAD
-Date: Tue,  6 Mar 2012 17:30:38 -0700
-Message-Id: <1331080238-1524-3-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org>
-References: <1331080238-1524-1-git-send-email-swarren@wwwdotorg.org>
-X-NVConfidentiality: public
+	Tue, 6 Mar 2012 19:31:12 -0500
+Date: Tue, 6 Mar 2012 16:31:10 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Copot Alexandru <alex.mihai.c@gmail.com>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] mm: fix spelling error
+Message-Id: <20120306163110.56f67676.akpm@linux-foundation.org>
+In-Reply-To: <1330783996-7955-1-git-send-email-alex.mihai.c@gmail.com>
+References: <1330783996-7955-1-git-send-email-alex.mihai.c@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When AUTO_ZRELADDR is enabled, ARM zImages are relocatable, and hence
-the user may use mkimage's -T kernel_noload option if their bootloader
-supports it.
+On Sat,  3 Mar 2012 16:13:16 +0200
+Copot Alexandru <alex.mihai.c@gmail.com> wrote:
 
-Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
----
- arch/arm/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> Signed-off-by: Copot Alexandru <alex.mihai.c@gmail.com>
+> ---
+>  mm/vmscan.c |   14 +++++++-------
+>  1 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index c52b235..8a7c989 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2250,13 +2250,13 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
+>  				continue;	/* Let kswapd poll it */
+>  			if (COMPACTION_BUILD) {
+>  				/*
+> -				 * If we already have plenty of memory free for
+> -				 * compaction in this zone, don't free any more.
+> -				 * Even though compaction is invoked for any
+> -				 * non-zero order, only frequent costly order
+> -				 * reclamation is disruptive enough to become a
+> -				 * noticable problem, like transparent huge page
+> -				 * allocations.
+> +				 * If we already have plenty of memory free
+> +				 * for compaction in this zone, don't free any
+> +				 * more.  Even though compaction is invoked
+> +				 * for any non-zero order, only frequent
+> +				 * costly order reclamation is disruptive
+> +				 * enough to become a noticeable problem, like
+> +				 * transparent huge page allocations.
+>  				 */
+>  				if (compaction_ready(zone, sc)) {
+>  					aborted_reclaim = true;
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 4040796..5459b2e 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -2055,6 +2055,7 @@ config CRASH_DUMP
- 
- config AUTO_ZRELADDR
- 	bool "Auto calculation of the decompressed kernel image address"
-+	select ALLOW_UIMAGE_KERNEL_NOLOAD
- 	depends on !ZBOOT_ROM && !ARCH_U300
- 	help
- 	  ZRELADDR is the physical address where the decompressed kernel
--- 
-1.7.0.4
+hm, you appear to have reformatted the comment to fit into 78 column or
+something.  We have 80 to use!
+
+AFACIT the sole spelling mistake was s/noticable/noticeable/.
+
+More significantly, the comment is hard to follow.  Perhaps removing
+the "only" wold fix it up.
+
 
