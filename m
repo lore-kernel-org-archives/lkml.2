@@ -1,176 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab2CGL1R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 06:27:17 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45735 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab2CGL1P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 06:27:15 -0500
-Message-ID: <4F57465D.1000402@kernel.org>
-Date: Wed, 07 Mar 2012 11:28:29 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Grant Grundler <grundler@chromium.org>
-CC: Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benson Leung <bleung@chromium.org>, Bryan Freed <bfreed@chromium.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging:iio:tsl2563 rewrite probe error handling
-References: <1330967759-18660-1-git-send-email-grundler@chromium.org>
-In-Reply-To: <1330967759-18660-1-git-send-email-grundler@chromium.org>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755773Ab2CGLgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 06:36:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28170 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752408Ab2CGLgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 06:36:08 -0500
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] i5400_edac: Avoid calling pci_put_device() twice
+Date: Wed,  7 Mar 2012 08:35:56 -0300
+Message-Id: <1331120156-27353-1-git-send-email-mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fundamentally an excellent patch fixing some real issues, but just
-because I'm in that sort of mood I'll be fussy about the fact it is
-one patch.
+When i5400_edac driver is removed and re-loaded a few times, it causes
+an OOPS, as it is currently decrementing some PCI device usage two
+times.
 
-To nitpick, I'd have prefered this to be two patches. First that fixes
-the issues and the second that adds the additional output.  Actually
-should probably have even had a third making the white space changes.
+When called inside a loop, pci_get_device() will call
+pci_put_device(). That mangles the error count. In this specific
+case, it seems easier to just duplicate the call.
 
-In particular 'device not found' and 'device detect error' are both
-valid explanations.  Perhaps it's nice to have everything more
-consistent but that shouldn't have been in the same patch as some out
-and out fixes.  Fixes will probably get back ported to stable trees,
-error messages won't.
+Also fixes the error logic when pci_get_device fails.
 
-Still,getting the fix in place is the most important thing so if Greg
-is willing to pick this up then it has my Ack.
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/edac/i5400_edac.c |   54 +++++++++++++++++++++++++++++++-------------
+ 1 files changed, 38 insertions(+), 16 deletions(-)
 
-On 03/05/2012 05:15 PM, Grant Grundler wrote:
-> tsl2563 probe function has two minor issues with it's error handling paths:
-> 1) it is silent (did not report errors to dmesg)
-> 2) did not return failure code (mixed up use of ret and err)
-> 
-> and two major issues:
-> 3) goto fail2 would corrupt a free memory pool ("double free")
-> 4) device registration failure did NOT cancel/flush delayed work.
->    (and thus dereference a freed data structure later)
-> 
-> The "double free" is subtle and was introduced with this change:
->     Author: Jonathan Cameron <jic23@cam.ac.uk>
->     Date:   Mon Apr 18 12:58:55 2011 +0100
->     staging:iio:tsl2563 take advantage of new iio_device_allocate private data.
-oops.  Thanks for picking up on this one.
-> 
-> Originally, chip was allocated seperately. Now it's appended to the
-> indio_dev by iio_allocate_device(sizeof(*chip)). So we only need one
-> kfree call as well (in iio_free_device()).
-> 
-> Signed-off-by: Grant Grundler <grundler@chromium.org>
-Acked-by: Jonathan Cameron <jic23@kernel.org>
-> ---
->  Gory details of tracking this down are here:
->     http://crosbug.com/26819
-> 
->  Despite iio_device_registration failing, system can at least now boot.
->  Will follow up with a fix to "double register : in_intensity_both_raw"
->  error that is included in the bug report.
-> 
->  drivers/staging/iio/light/tsl2563.c |   39 +++++++++++++++++++++++-----------
->  1 files changed, 26 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
-> index 7e984bc..bf6498b 100644
-> --- a/drivers/staging/iio/light/tsl2563.c
-> +++ b/drivers/staging/iio/light/tsl2563.c
-> @@ -705,7 +705,6 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
->  	struct tsl2563_chip *chip;
->  	struct tsl2563_platform_data *pdata = client->dev.platform_data;
->  	int err = 0;
-> -	int ret;
->  	u8 id = 0;
->  
->  	indio_dev = iio_allocate_device(sizeof(*chip));
-> @@ -719,13 +718,15 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
->  
->  	err = tsl2563_detect(chip);
->  	if (err) {
-> -		dev_err(&client->dev, "device not found, error %d\n", -err);
-> +		dev_err(&client->dev, "detect error %d\n", -err);
->  		goto fail1;
->  	}
->  
->  	err = tsl2563_read_id(chip, &id);
-> -	if (err)
-> +	if (err) {
-> +		dev_err(&client->dev, "read id error %d\n", -err);
->  		goto fail1;
-> +	}
->  
->  	mutex_init(&chip->lock);
->  
-> @@ -748,40 +749,52 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
->  	indio_dev->num_channels = ARRAY_SIZE(tsl2563_channels);
->  	indio_dev->dev.parent = &client->dev;
->  	indio_dev->modes = INDIO_DIRECT_MODE;
-Certainly no problem with white space here to make the sections of
-code more obvious, but it doesn't belong in a patch with bug fixes.
-> +
->  	if (client->irq)
->  		indio_dev->info = &tsl2563_info;
->  	else
->  		indio_dev->info = &tsl2563_info_no_irq;
-> +
->  	if (client->irq) {
-> -		ret = request_threaded_irq(client->irq,
-> +		err = request_threaded_irq(client->irq,
->  					   NULL,
->  					   &tsl2563_event_handler,
->  					   IRQF_TRIGGER_RISING | IRQF_ONESHOT,
->  					   "tsl2563_event",
->  					   indio_dev);
-> -		if (ret)
-> -			goto fail2;
-> +		if (err) {
-> +			dev_err(&client->dev, "irq request error %d\n", -err);
-> +			goto fail1;
-> +		}
->  	}
-> +
->  	err = tsl2563_configure(chip);
-> -	if (err)
-> -		goto fail3;
-> +	if (err) {
-> +		dev_err(&client->dev, "configure error %d\n", -err);
-> +		goto fail2;
-> +	}
->  
->  	INIT_DELAYED_WORK(&chip->poweroff_work, tsl2563_poweroff_work);
-> +
->  	/* The interrupt cannot yet be enabled so this is fine without lock */
->  	schedule_delayed_work(&chip->poweroff_work, 5 * HZ);
->  
-> -	ret = iio_device_register(indio_dev);
-> -	if (ret)
-> +	err = iio_device_register(indio_dev);
-> +	if (err) {
-> +		dev_err(&client->dev, "iio registration error %d\n", -err);
->  		goto fail3;
-> +	}
->  
->  	return 0;
-> +
->  fail3:
-> +	cancel_delayed_work(&chip->poweroff_work);
-> +	flush_scheduled_work();
-> +fail2:
->  	if (client->irq)
->  		free_irq(client->irq, indio_dev);
-> -fail2:
-> -	iio_free_device(indio_dev);
->  fail1:
-> -	kfree(chip);
-> +	iio_free_device(indio_dev);
->  	return err;
->  }
->  
+diff --git a/drivers/edac/i5400_edac.c b/drivers/edac/i5400_edac.c
+index 74d6ec34..b44a5de 100644
+--- a/drivers/edac/i5400_edac.c
++++ b/drivers/edac/i5400_edac.c
+@@ -735,7 +735,7 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
+ 
+ 	/* Attempt to 'get' the MCH register we want */
+ 	pdev = NULL;
+-	while (!pvt->branchmap_werrors || !pvt->fsb_error_regs) {
++	while (1) {
+ 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+ 				      PCI_DEVICE_ID_INTEL_5400_ERR, pdev);
+ 		if (!pdev) {
+@@ -743,23 +743,42 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
+ 			i5400_printk(KERN_ERR,
+ 				"'system address,Process Bus' "
+ 				"device not found:"
+-				"vendor 0x%x device 0x%x ERR funcs "
++				"vendor 0x%x device 0x%x ERR func 1 "
+ 				"(broken BIOS?)\n",
+ 				PCI_VENDOR_ID_INTEL,
+ 				PCI_DEVICE_ID_INTEL_5400_ERR);
+-			goto error;
++			return -ENODEV;
+ 		}
+ 
+-		/* Store device 16 funcs 1 and 2 */
+-		switch (PCI_FUNC(pdev->devfn)) {
+-		case 1:
+-			pvt->branchmap_werrors = pdev;
+-			break;
+-		case 2:
+-			pvt->fsb_error_regs = pdev;
++		/* Store device 16 func 1 */
++		if (PCI_FUNC(pdev->devfn) == 1)
+ 			break;
++	}
++	pvt->branchmap_werrors = pdev;
++
++	pdev = NULL;
++	while (1) {
++		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
++				      PCI_DEVICE_ID_INTEL_5400_ERR, pdev);
++		if (!pdev) {
++			/* End of list, leave */
++			i5400_printk(KERN_ERR,
++				"'system address,Process Bus' "
++				"device not found:"
++				"vendor 0x%x device 0x%x ERR func 2 "
++				"(broken BIOS?)\n",
++				PCI_VENDOR_ID_INTEL,
++				PCI_DEVICE_ID_INTEL_5400_ERR);
++
++			pci_dev_put(pvt->branchmap_werrors);
++			return -ENODEV;
+ 		}
++
++		/* Store device 16 func 2 */
++		if (PCI_FUNC(pdev->devfn) == 2)
++			break;
+ 	}
++	pvt->fsb_error_regs = pdev;
+ 
+ 	debugf1("System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
+ 		pci_name(pvt->system_address),
+@@ -778,7 +797,10 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
+ 			"MC: 'BRANCH 0' device not found:"
+ 			"vendor 0x%x device 0x%x Func 0 (broken BIOS?)\n",
+ 			PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5400_FBD0);
+-		goto error;
++
++		pci_dev_put(pvt->fsb_error_regs);
++		pci_dev_put(pvt->branchmap_werrors);
++		return -ENODEV;
+ 	}
+ 
+ 	/* If this device claims to have more than 2 channels then
+@@ -796,14 +818,14 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
+ 			"(broken BIOS?)\n",
+ 			PCI_VENDOR_ID_INTEL,
+ 			PCI_DEVICE_ID_INTEL_5400_FBD1);
+-		goto error;
++
++		pci_dev_put(pvt->branch_0);
++		pci_dev_put(pvt->fsb_error_regs);
++		pci_dev_put(pvt->branchmap_werrors);
++		return -ENODEV;
+ 	}
+ 
+ 	return 0;
+-
+-error:
+-	i5400_put_devices(mci);
+-	return -ENODEV;
+ }
+ 
+ /*
+-- 
+1.7.8
 
