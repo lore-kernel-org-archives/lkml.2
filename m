@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030485Ab2CGTuh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 14:50:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43380 "EHLO mx1.redhat.com"
+	id S1030501Ab2CGTuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 14:50:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4290 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030431Ab2CGTuZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 14:50:25 -0500
+	id S1030350Ab2CGTur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 14:50:47 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 22/29] Disintegrate asm/system.h for S390
+Subject: [PATCH 24/29] Disintegrate asm/system.h for SH
 To: paul.gortmaker@windriver.com, hpa@zytor.com
 Cc: torvalds@linux-foundation.org, sfr@canb.auug.org.au, mingo@redhat.com,
         arnd@arndb.de, dhowells@redhat.com, tglx@linutronix.de,
         linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Date: Wed, 07 Mar 2012 19:50:01 +0000
-Message-ID: <20120307195001.15987.31240.stgit@warthog.procyon.org.uk>
+Date: Wed, 07 Mar 2012 19:50:23 +0000
+Message-ID: <20120307195022.15987.36696.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120307194548.15987.36073.stgit@warthog.procyon.org.uk>
 References: <20120307194548.15987.36073.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,993 +28,1470 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disintegrate asm/system.h for S390.
+Disintegrate asm/system.h for SH.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- arch/s390/crypto/crypt_s390.h       |    1 
- arch/s390/include/asm/atomic.h      |    1 
- arch/s390/include/asm/barrier.h     |   35 ++++
- arch/s390/include/asm/ctl_reg.h     |   76 +++++++++
- arch/s390/include/asm/elf.h         |    1 
- arch/s390/include/asm/exec.h        |   12 +
- arch/s390/include/asm/facility.h    |   29 ++++
- arch/s390/include/asm/mmu.h         |   14 ++
- arch/s390/include/asm/mmu_context.h |    1 
- arch/s390/include/asm/processor.h   |   16 ++
- arch/s390/include/asm/setup.h       |   14 ++
- arch/s390/include/asm/sigp.h        |    8 +
- arch/s390/include/asm/switch_to.h   |  100 ++++++++++++
- arch/s390/include/asm/system.h      |  281 -----------------------------------
- arch/s390/include/asm/uaccess.h     |    6 +
- arch/s390/kernel/compat_signal.c    |    1 
- arch/s390/kernel/early.c            |    1 
- arch/s390/kernel/process.c          |    1 
- arch/s390/kernel/ptrace.c           |    1 
- arch/s390/kernel/setup.c            |    1 
- arch/s390/kernel/signal.c           |    1 
- arch/s390/kernel/smp.c              |    1 
- arch/s390/kernel/suspend.c          |    1 
- arch/s390/kernel/vdso.c             |    1 
- arch/s390/kvm/kvm-s390.c            |    1 
- arch/s390/mm/fault.c                |    1 
- arch/s390/mm/init.c                 |    1 
- arch/s390/mm/maccess.c              |    1 
- arch/s390/oprofile/hwsampler.c      |    1 
- drivers/s390/char/sclp_cmd.c        |    1 
- drivers/s390/cio/crw.c              |    1 
- drivers/s390/crypto/ap_bus.c        |    1 
- 32 files changed, 330 insertions(+), 282 deletions(-)
- create mode 100644 arch/s390/include/asm/barrier.h
- create mode 100644 arch/s390/include/asm/ctl_reg.h
- create mode 100644 arch/s390/include/asm/exec.h
- create mode 100644 arch/s390/include/asm/facility.h
- create mode 100644 arch/s390/include/asm/switch_to.h
- delete mode 100644 arch/s390/include/asm/system.h
+ arch/sh/include/asm/atomic-irq.h     |    2 
+ arch/sh/include/asm/atomic.h         |   53 ++++++++
+ arch/sh/include/asm/auxvec.h         |    2 
+ arch/sh/include/asm/barrier.h        |   54 ++++++++
+ arch/sh/include/asm/bl_bit.h         |   10 +
+ arch/sh/include/asm/bl_bit_32.h      |   33 +++++
+ arch/sh/include/asm/bl_bit_64.h      |   38 +++++
+ arch/sh/include/asm/bug.h            |    5 +
+ arch/sh/include/asm/cache_insns.h    |   11 ++
+ arch/sh/include/asm/cache_insns_32.h |   19 +++
+ arch/sh/include/asm/cache_insns_64.h |   23 +++
+ arch/sh/include/asm/exec.h           |   10 +
+ arch/sh/include/asm/processor.h      |   15 ++
+ arch/sh/include/asm/setup.h          |    1 
+ arch/sh/include/asm/switch_to.h      |   19 +++
+ arch/sh/include/asm/switch_to_32.h   |  134 +++++++++++++++++++
+ arch/sh/include/asm/switch_to_64.h   |   35 +++++
+ arch/sh/include/asm/system.h         |  183 --------------------------
+ arch/sh/include/asm/system_32.h      |  236 ----------------------------------
+ arch/sh/include/asm/system_64.h      |   79 -----------
+ arch/sh/include/asm/traps.h          |   20 +++
+ arch/sh/include/asm/traps_32.h       |   68 ++++++++++
+ arch/sh/include/asm/traps_64.h       |   24 +++
+ arch/sh/include/asm/uaccess.h        |   14 ++
+ arch/sh/kernel/cpu/init.c            |    1 
+ arch/sh/kernel/hw_breakpoint.c       |    1 
+ arch/sh/kernel/idle.c                |    1 
+ arch/sh/kernel/process_64.c          |    1 
+ arch/sh/kernel/ptrace_64.c           |    1 
+ arch/sh/kernel/reboot.c              |    1 
+ arch/sh/kernel/traps.c               |    1 
+ arch/sh/kernel/traps_32.c            |    2 
+ arch/sh/mm/fault_32.c                |    1 
+ arch/sh/mm/flush-sh4.c               |    1 
+ 34 files changed, 601 insertions(+), 498 deletions(-)
+ create mode 100644 arch/sh/include/asm/barrier.h
+ create mode 100644 arch/sh/include/asm/bl_bit.h
+ create mode 100644 arch/sh/include/asm/bl_bit_32.h
+ create mode 100644 arch/sh/include/asm/bl_bit_64.h
+ create mode 100644 arch/sh/include/asm/cache_insns.h
+ create mode 100644 arch/sh/include/asm/cache_insns_32.h
+ create mode 100644 arch/sh/include/asm/cache_insns_64.h
+ create mode 100644 arch/sh/include/asm/exec.h
+ create mode 100644 arch/sh/include/asm/switch_to.h
+ create mode 100644 arch/sh/include/asm/switch_to_32.h
+ create mode 100644 arch/sh/include/asm/switch_to_64.h
+ delete mode 100644 arch/sh/include/asm/system.h
+ delete mode 100644 arch/sh/include/asm/system_32.h
+ delete mode 100644 arch/sh/include/asm/system_64.h
+ create mode 100644 arch/sh/include/asm/traps.h
+ create mode 100644 arch/sh/include/asm/traps_32.h
+ create mode 100644 arch/sh/include/asm/traps_64.h
 
-diff --git a/arch/s390/crypto/crypt_s390.h b/arch/s390/crypto/crypt_s390.h
-index ffd1ac2..9178db6 100644
---- a/arch/s390/crypto/crypt_s390.h
-+++ b/arch/s390/crypto/crypt_s390.h
-@@ -17,6 +17,7 @@
- #define _CRYPTO_ARCH_S390_CRYPT_S390_H
+diff --git a/arch/sh/include/asm/atomic-irq.h b/arch/sh/include/asm/atomic-irq.h
+index 467d941..9f7c566 100644
+--- a/arch/sh/include/asm/atomic-irq.h
++++ b/arch/sh/include/asm/atomic-irq.h
+@@ -1,6 +1,8 @@
+ #ifndef __ASM_SH_ATOMIC_IRQ_H
+ #define __ASM_SH_ATOMIC_IRQ_H
  
- #include <asm/errno.h>
-+#include <asm/facility.h>
++#include <linux/irqflags.h>
++
+ /*
+  * To get proper branch prediction for the main line, we must branch
+  * forward to code at the end of this object's .text section, then
+diff --git a/arch/sh/include/asm/atomic.h b/arch/sh/include/asm/atomic.h
+index 31f4a9a..de3a173 100644
+--- a/arch/sh/include/asm/atomic.h
++++ b/arch/sh/include/asm/atomic.h
+@@ -17,10 +17,13 @@
  
- #define CRYPT_S390_OP_MASK 0xFF00
- #define CRYPT_S390_FUNC_MASK 0x00FF
-diff --git a/arch/s390/include/asm/atomic.h b/arch/s390/include/asm/atomic.h
-index 1a77c09..748347b 100644
---- a/arch/s390/include/asm/atomic.h
-+++ b/arch/s390/include/asm/atomic.h
-@@ -15,6 +15,7 @@
+ #if defined(CONFIG_GUSA_RB)
+ #include <asm/atomic-grb.h>
++#include <asm/cmpxchg-grb.h>
+ #elif defined(CONFIG_CPU_SH4A)
+ #include <asm/atomic-llsc.h>
++#include <asm/cmpxchg-llsc.h>
+ #else
+ #include <asm/atomic-irq.h>
++#include <asm/cmpxchg-irq.h>
+ #endif
  
- #include <linux/compiler.h>
- #include <linux/types.h>
-+#include <asm/cmpxchg.h>
+ #define atomic_add_negative(a, v)	(atomic_add_return((a), (v)) < 0)
+@@ -33,6 +36,56 @@
+ #define atomic_inc(v)			atomic_add(1, (v))
+ #define atomic_dec(v)			atomic_sub(1, (v))
  
- #define ATOMIC_INIT(i)  { (i) }
++extern void __xchg_called_with_bad_pointer(void);
++
++#define __xchg(ptr, x, size)				\
++({							\
++	unsigned long __xchg__res;			\
++	volatile void *__xchg_ptr = (ptr);		\
++	switch (size) {					\
++	case 4:						\
++		__xchg__res = xchg_u32(__xchg_ptr, x);	\
++		break;					\
++	case 1:						\
++		__xchg__res = xchg_u8(__xchg_ptr, x);	\
++		break;					\
++	default:					\
++		__xchg_called_with_bad_pointer();	\
++		__xchg__res = x;			\
++		break;					\
++	}						\
++							\
++	__xchg__res;					\
++})
++
++#define xchg(ptr,x)	\
++	((__typeof__(*(ptr)))__xchg((ptr),(unsigned long)(x), sizeof(*(ptr))))
++
++/* This function doesn't exist, so you'll get a linker error
++ * if something tries to do an invalid cmpxchg(). */
++extern void __cmpxchg_called_with_bad_pointer(void);
++
++#define __HAVE_ARCH_CMPXCHG 1
++
++static inline unsigned long __cmpxchg(volatile void * ptr, unsigned long old,
++		unsigned long new, int size)
++{
++	switch (size) {
++	case 4:
++		return __cmpxchg_u32(ptr, old, new);
++	}
++	__cmpxchg_called_with_bad_pointer();
++	return old;
++}
++
++#define cmpxchg(ptr,o,n)						 \
++  ({									 \
++     __typeof__(*(ptr)) _o_ = (o);					 \
++     __typeof__(*(ptr)) _n_ = (n);					 \
++     (__typeof__(*(ptr))) __cmpxchg((ptr), (unsigned long)_o_,		 \
++				    (unsigned long)_n_, sizeof(*(ptr))); \
++  })
++
+ #define atomic_xchg(v, new)		(xchg(&((v)->counter), new))
+ #define atomic_cmpxchg(v, o, n)		(cmpxchg(&((v)->counter), (o), (n)))
  
-diff --git a/arch/s390/include/asm/barrier.h b/arch/s390/include/asm/barrier.h
+diff --git a/arch/sh/include/asm/auxvec.h b/arch/sh/include/asm/auxvec.h
+index 483effd..8bcc51a 100644
+--- a/arch/sh/include/asm/auxvec.h
++++ b/arch/sh/include/asm/auxvec.h
+@@ -33,4 +33,6 @@
+ #define AT_L1D_CACHESHAPE	35
+ #define AT_L2_CACHESHAPE	36
+ 
++#define AT_VECTOR_SIZE_ARCH 5 /* entries in ARCH_DLINFO */
++
+ #endif /* __ASM_SH_AUXVEC_H */
+diff --git a/arch/sh/include/asm/barrier.h b/arch/sh/include/asm/barrier.h
 new file mode 100644
-index 0000000..451273a
+index 0000000..72c103d
 --- /dev/null
-+++ b/arch/s390/include/asm/barrier.h
-@@ -0,0 +1,35 @@
++++ b/arch/sh/include/asm/barrier.h
+@@ -0,0 +1,54 @@
 +/*
-+ * Copyright IBM Corp. 1999, 2009
-+ *
-+ * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
++ * Copyright (C) 1999, 2000  Niibe Yutaka  &  Kaz Kojima
++ * Copyright (C) 2002 Paul Mundt
 + */
++#ifndef __ASM_SH_BARRIER_H
++#define __ASM_SH_BARRIER_H
 +
-+#ifndef __ASM_BARRIER_H
-+#define __ASM_BARRIER_H
++#if defined(CONFIG_CPU_SH4A) || defined(CONFIG_CPU_SH5)
++#include <asm/cache_insns.h>
++#endif
 +
 +/*
-+ * Force strict CPU ordering.
-+ * And yes, this is required on UP too when we're talking
-+ * to devices.
++ * A brief note on ctrl_barrier(), the control register write barrier.
 + *
-+ * This is very similar to the ppc eieio/sync instruction in that is
-+ * does a checkpoint syncronisation & makes sure that 
-+ * all memory ops have completed wrt other CPU's ( see 7-15 POP  DJB ).
-+ */
-+
-+#define eieio()	asm volatile("bcr 15,0" : : : "memory")
-+#define SYNC_OTHER_CORES(x)   eieio()
-+#define mb()    eieio()
-+#define rmb()   eieio()
-+#define wmb()   eieio()
-+#define read_barrier_depends() do { } while(0)
-+#define smp_mb()       mb()
-+#define smp_rmb()      rmb()
-+#define smp_wmb()      wmb()
-+#define smp_read_barrier_depends()    read_barrier_depends()
-+#define smp_mb__before_clear_bit()     smp_mb()
-+#define smp_mb__after_clear_bit()      smp_mb()
-+
-+#define set_mb(var, value)      do { var = value; mb(); } while (0)
-+
-+#endif /* __ASM_BARRIER_H */
-diff --git a/arch/s390/include/asm/ctl_reg.h b/arch/s390/include/asm/ctl_reg.h
-new file mode 100644
-index 0000000..ecde941
---- /dev/null
-+++ b/arch/s390/include/asm/ctl_reg.h
-@@ -0,0 +1,76 @@
-+/*
-+ * Copyright IBM Corp. 1999, 2009
++ * Legacy SH cores typically require a sequence of 8 nops after
++ * modification of a control register in order for the changes to take
++ * effect. On newer cores (like the sh4a and sh5) this is accomplished
++ * with icbi.
 + *
-+ * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
++ * Also note that on sh4a in the icbi case we can forego a synco for the
++ * write barrier, as it's not necessary for control registers.
++ *
++ * Historically we have only done this type of barrier for the MMUCR, but
++ * it's also necessary for the CCR, so we make it generic here instead.
 + */
-+
-+#ifndef __ASM_CTL_REG_H
-+#define __ASM_CTL_REG_H
-+
-+#ifdef __s390x__
-+
-+#define __ctl_load(array, low, high) ({				\
-+	typedef struct { char _[sizeof(array)]; } addrtype;	\
-+	asm volatile(						\
-+		"	lctlg	%1,%2,%0\n"			\
-+		: : "Q" (*(addrtype *)(&array)),		\
-+		    "i" (low), "i" (high));			\
-+	})
-+
-+#define __ctl_store(array, low, high) ({			\
-+	typedef struct { char _[sizeof(array)]; } addrtype;	\
-+	asm volatile(						\
-+		"	stctg	%1,%2,%0\n"			\
-+		: "=Q" (*(addrtype *)(&array))			\
-+		: "i" (low), "i" (high));			\
-+	})
-+
-+#else /* __s390x__ */
-+
-+#define __ctl_load(array, low, high) ({				\
-+	typedef struct { char _[sizeof(array)]; } addrtype;	\
-+	asm volatile(						\
-+		"	lctl	%1,%2,%0\n"			\
-+		: : "Q" (*(addrtype *)(&array)),		\
-+		    "i" (low), "i" (high));			\
-+})
-+
-+#define __ctl_store(array, low, high) ({			\
-+	typedef struct { char _[sizeof(array)]; } addrtype;	\
-+	asm volatile(						\
-+		"	stctl	%1,%2,%0\n"			\
-+		: "=Q" (*(addrtype *)(&array))			\
-+		: "i" (low), "i" (high));			\
-+	})
-+
-+#endif /* __s390x__ */
-+
-+#define __ctl_set_bit(cr, bit) ({	\
-+	unsigned long __dummy;		\
-+	__ctl_store(__dummy, cr, cr);	\
-+	__dummy |= 1UL << (bit);	\
-+	__ctl_load(__dummy, cr, cr);	\
-+})
-+
-+#define __ctl_clear_bit(cr, bit) ({	\
-+	unsigned long __dummy;		\
-+	__ctl_store(__dummy, cr, cr);	\
-+	__dummy &= ~(1UL << (bit));	\
-+	__ctl_load(__dummy, cr, cr);	\
-+})
++#if defined(CONFIG_CPU_SH4A) || defined(CONFIG_CPU_SH5)
++#define mb()		__asm__ __volatile__ ("synco": : :"memory")
++#define rmb()		mb()
++#define wmb()		__asm__ __volatile__ ("synco": : :"memory")
++#define ctrl_barrier()	__icbi(PAGE_OFFSET)
++#define read_barrier_depends()	do { } while(0)
++#else
++#define mb()		__asm__ __volatile__ ("": : :"memory")
++#define rmb()		mb()
++#define wmb()		__asm__ __volatile__ ("": : :"memory")
++#define ctrl_barrier()	__asm__ __volatile__ ("nop;nop;nop;nop;nop;nop;nop;nop")
++#define read_barrier_depends()	do { } while(0)
++#endif
 +
 +#ifdef CONFIG_SMP
++#define smp_mb()	mb()
++#define smp_rmb()	rmb()
++#define smp_wmb()	wmb()
++#define smp_read_barrier_depends()	read_barrier_depends()
++#else
++#define smp_mb()	barrier()
++#define smp_rmb()	barrier()
++#define smp_wmb()	barrier()
++#define smp_read_barrier_depends()	do { } while(0)
++#endif
 +
-+extern void smp_ctl_set_bit(int cr, int bit);
-+extern void smp_ctl_clear_bit(int cr, int bit);
-+#define ctl_set_bit(cr, bit) smp_ctl_set_bit(cr, bit)
-+#define ctl_clear_bit(cr, bit) smp_ctl_clear_bit(cr, bit)
++#define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
++
++#endif /* __ASM_SH_BARRIER_H */
+diff --git a/arch/sh/include/asm/bl_bit.h b/arch/sh/include/asm/bl_bit.h
+new file mode 100644
+index 0000000..45e6b9f
+--- /dev/null
++++ b/arch/sh/include/asm/bl_bit.h
+@@ -0,0 +1,10 @@
++#ifndef __ASM_SH_BL_BIT_H
++#define __ASM_SH_BL_BIT_H
++
++#ifdef CONFIG_SUPERH32
++# include "bl_bit_32.h"
++#else
++# include "bl_bit_64.h"
++#endif
++
++#endif /* __ASM_SH_BL_BIT_H */
+diff --git a/arch/sh/include/asm/bl_bit_32.h b/arch/sh/include/asm/bl_bit_32.h
+new file mode 100644
+index 0000000..fd21eee
+--- /dev/null
++++ b/arch/sh/include/asm/bl_bit_32.h
+@@ -0,0 +1,33 @@
++#ifndef __ASM_SH_BL_BIT_32_H
++#define __ASM_SH_BL_BIT_32_H
++
++static inline void set_bl_bit(void)
++{
++	unsigned long __dummy0, __dummy1;
++
++	__asm__ __volatile__ (
++		"stc	sr, %0\n\t"
++		"or	%2, %0\n\t"
++		"and	%3, %0\n\t"
++		"ldc	%0, sr\n\t"
++		: "=&r" (__dummy0), "=r" (__dummy1)
++		: "r" (0x10000000), "r" (0xffffff0f)
++		: "memory"
++	);
++}
++
++static inline void clear_bl_bit(void)
++{
++	unsigned long __dummy0, __dummy1;
++
++	__asm__ __volatile__ (
++		"stc	sr, %0\n\t"
++		"and	%2, %0\n\t"
++		"ldc	%0, sr\n\t"
++		: "=&r" (__dummy0), "=r" (__dummy1)
++		: "1" (~0x10000000)
++		: "memory"
++	);
++}
++
++#endif /* __ASM_SH_BL_BIT_32_H */
+diff --git a/arch/sh/include/asm/bl_bit_64.h b/arch/sh/include/asm/bl_bit_64.h
+new file mode 100644
+index 0000000..8ec480c
+--- /dev/null
++++ b/arch/sh/include/asm/bl_bit_64.h
+@@ -0,0 +1,38 @@
++/*
++ * Copyright (C) 2000, 2001  Paolo Alberelli
++ * Copyright (C) 2003  Paul Mundt
++ * Copyright (C) 2004  Richard Curnow
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++#ifndef __ASM_SH_BL_BIT_64_H
++#define __ASM_SH_BL_BIT_64_H
++
++#define SR_BL_LL	0x0000000010000000LL
++
++static inline void set_bl_bit(void)
++{
++	unsigned long long __dummy0, __dummy1 = SR_BL_LL;
++
++	__asm__ __volatile__("getcon	" __SR ", %0\n\t"
++			     "or	%0, %1, %0\n\t"
++			     "putcon	%0, " __SR "\n\t"
++			     : "=&r" (__dummy0)
++			     : "r" (__dummy1));
++
++}
++
++static inline void clear_bl_bit(void)
++{
++	unsigned long long __dummy0, __dummy1 = ~SR_BL_LL;
++
++	__asm__ __volatile__("getcon	" __SR ", %0\n\t"
++			     "and	%0, %1, %0\n\t"
++			     "putcon	%0, " __SR "\n\t"
++			     : "=&r" (__dummy0)
++			     : "r" (__dummy1));
++}
++
++#endif /* __ASM_SH_BL_BIT_64_H */
+diff --git a/arch/sh/include/asm/bug.h b/arch/sh/include/asm/bug.h
+index 6323f86..2b87d86 100644
+--- a/arch/sh/include/asm/bug.h
++++ b/arch/sh/include/asm/bug.h
+@@ -1,6 +1,8 @@
+ #ifndef __ASM_SH_BUG_H
+ #define __ASM_SH_BUG_H
+ 
++#include <linux/linkage.h>
++
+ #define TRAPA_BUG_OPCODE	0xc33e	/* trapa #0x3e */
+ #define BUGFLAG_UNWINDER	(1 << 1)
+ 
+@@ -107,4 +109,7 @@ do {							\
+ 
+ #include <asm-generic/bug.h>
+ 
++struct pt_regs;
++extern void die(const char *str, struct pt_regs *regs, long err) __attribute__ ((noreturn));
++
+ #endif /* __ASM_SH_BUG_H */
+diff --git a/arch/sh/include/asm/cache_insns.h b/arch/sh/include/asm/cache_insns.h
+new file mode 100644
+index 0000000..d25fbe5
+--- /dev/null
++++ b/arch/sh/include/asm/cache_insns.h
+@@ -0,0 +1,11 @@
++#ifndef __ASM_SH_CACHE_INSNS_H
++#define __ASM_SH_CACHE_INSNS_H
++
++
++#ifdef CONFIG_SUPERH32
++# include "cache_insns_32.h"
++#else
++# include "cache_insns_64.h"
++#endif
++
++#endif /* __ASM_SH_CACHE_INSNS_H */
+diff --git a/arch/sh/include/asm/cache_insns_32.h b/arch/sh/include/asm/cache_insns_32.h
+new file mode 100644
+index 0000000..7d1bb50
+--- /dev/null
++++ b/arch/sh/include/asm/cache_insns_32.h
+@@ -0,0 +1,19 @@
++#ifndef __ASM_SH_CACHE_INSNS_32_H
++#define __ASM_SH_CACHE_INSNS_32_H
++
++#if defined(CONFIG_CPU_SH4A)
++#define __icbi(addr)	__asm__ __volatile__ ( "icbi @%0\n\t" : : "r" (addr))
++#else
++#define __icbi(addr)	mb()
++#endif
++
++#define __ocbp(addr)	__asm__ __volatile__ ( "ocbp @%0\n\t" : : "r" (addr))
++#define __ocbi(addr)	__asm__ __volatile__ ( "ocbi @%0\n\t" : : "r" (addr))
++#define __ocbwb(addr)	__asm__ __volatile__ ( "ocbwb @%0\n\t" : : "r" (addr))
++
++static inline reg_size_t register_align(void *val)
++{
++	return (unsigned long)(signed long)val;
++}
++
++#endif /* __ASM_SH_CACHE_INSNS_32_H */
+diff --git a/arch/sh/include/asm/cache_insns_64.h b/arch/sh/include/asm/cache_insns_64.h
+new file mode 100644
+index 0000000..70b6357
+--- /dev/null
++++ b/arch/sh/include/asm/cache_insns_64.h
+@@ -0,0 +1,23 @@
++/*
++ * Copyright (C) 2000, 2001  Paolo Alberelli
++ * Copyright (C) 2003  Paul Mundt
++ * Copyright (C) 2004  Richard Curnow
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++#ifndef __ASM_SH_CACHE_INSNS_64_H
++#define __ASM_SH_CACHE_INSNS_64_H
++
++#define __icbi(addr)	__asm__ __volatile__ ( "icbi %0, 0\n\t" : : "r" (addr))
++#define __ocbp(addr)	__asm__ __volatile__ ( "ocbp %0, 0\n\t" : : "r" (addr))
++#define __ocbi(addr)	__asm__ __volatile__ ( "ocbi %0, 0\n\t" : : "r" (addr))
++#define __ocbwb(addr)	__asm__ __volatile__ ( "ocbwb %0, 0\n\t" : : "r" (addr))
++
++static inline reg_size_t register_align(void *val)
++{
++	return (unsigned long long)(signed long long)(signed long)val;
++}
++
++#endif /* __ASM_SH_CACHE_INSNS_64_H */
+diff --git a/arch/sh/include/asm/exec.h b/arch/sh/include/asm/exec.h
+new file mode 100644
+index 0000000..69486a9
+--- /dev/null
++++ b/arch/sh/include/asm/exec.h
+@@ -0,0 +1,10 @@
++/*
++ * Copyright (C) 1999, 2000  Niibe Yutaka  &  Kaz Kojima
++ * Copyright (C) 2002 Paul Mundt
++ */
++#ifndef __ASM_SH_EXEC_H
++#define __ASM_SH_EXEC_H
++
++#define arch_align_stack(x) (x)
++
++#endif /* __ASM_SH_EXEC_H */
+diff --git a/arch/sh/include/asm/processor.h b/arch/sh/include/asm/processor.h
+index 9c7bdfc..a229c39 100644
+--- a/arch/sh/include/asm/processor.h
++++ b/arch/sh/include/asm/processor.h
+@@ -101,6 +101,10 @@ extern struct sh_cpuinfo cpu_data[];
+ #define cpu_sleep()	__asm__ __volatile__ ("sleep" : : : "memory")
+ #define cpu_relax()	barrier()
+ 
++void default_idle(void);
++void cpu_idle_wait(void);
++void stop_this_cpu(void *);
++
+ /* Forward decl */
+ struct seq_operations;
+ struct task_struct;
+@@ -161,6 +165,17 @@ int vsyscall_init(void);
+ #define vsyscall_init() do { } while (0)
+ #endif
+ 
++/*
++ * SH-2A has both 16 and 32-bit opcodes, do lame encoding checks.
++ */
++#ifdef CONFIG_CPU_SH2A
++extern unsigned int instruction_size(unsigned int insn);
++#elif defined(CONFIG_SUPERH32)
++#define instruction_size(insn)	(2)
++#else
++#define instruction_size(insn)	(4)
++#endif
++
+ #endif /* __ASSEMBLY__ */
+ 
+ #ifdef CONFIG_SUPERH32
+diff --git a/arch/sh/include/asm/setup.h b/arch/sh/include/asm/setup.h
+index 01fa17a..465a22d 100644
+--- a/arch/sh/include/asm/setup.h
++++ b/arch/sh/include/asm/setup.h
+@@ -20,6 +20,7 @@
+ 
+ void sh_mv_setup(void);
+ void check_for_initrd(void);
++void per_cpu_trap_init(void);
+ 
+ #endif /* __KERNEL__ */
+ 
+diff --git a/arch/sh/include/asm/switch_to.h b/arch/sh/include/asm/switch_to.h
+new file mode 100644
+index 0000000..62b1941
+--- /dev/null
++++ b/arch/sh/include/asm/switch_to.h
+@@ -0,0 +1,19 @@
++/*
++ * Copyright (C) 2000, 2001  Paolo Alberelli
++ * Copyright (C) 2003  Paul Mundt
++ * Copyright (C) 2004  Richard Curnow
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++#ifndef __ASM_SH_SWITCH_TO_H
++#define __ASM_SH_SWITCH_TO_H
++
++#ifdef CONFIG_SUPERH32
++# include "switch_to_32.h"
++#else
++# include "switch_to_64.h"
++#endif
++
++#endif /* __ASM_SH_SWITCH_TO_H */
+diff --git a/arch/sh/include/asm/switch_to_32.h b/arch/sh/include/asm/switch_to_32.h
+new file mode 100644
+index 0000000..0c06551
+--- /dev/null
++++ b/arch/sh/include/asm/switch_to_32.h
+@@ -0,0 +1,134 @@
++#ifndef __ASM_SH_SWITCH_TO_32_H
++#define __ASM_SH_SWITCH_TO_32_H
++
++#ifdef CONFIG_SH_DSP
++
++#define is_dsp_enabled(tsk)						\
++	(!!(tsk->thread.dsp_status.status & SR_DSP))
++
++#define __restore_dsp(tsk)						\
++do {									\
++	register u32 *__ts2 __asm__ ("r2") =				\
++			(u32 *)&tsk->thread.dsp_status;			\
++	__asm__ __volatile__ (						\
++		".balign 4\n\t"						\
++		"movs.l	@r2+, a0\n\t"					\
++		"movs.l	@r2+, a1\n\t"					\
++		"movs.l	@r2+, a0g\n\t"					\
++		"movs.l	@r2+, a1g\n\t"					\
++		"movs.l	@r2+, m0\n\t"					\
++		"movs.l	@r2+, m1\n\t"					\
++		"movs.l	@r2+, x0\n\t"					\
++		"movs.l	@r2+, x1\n\t"					\
++		"movs.l	@r2+, y0\n\t"					\
++		"movs.l	@r2+, y1\n\t"					\
++		"lds.l	@r2+, dsr\n\t"					\
++		"ldc.l	@r2+, rs\n\t"					\
++		"ldc.l	@r2+, re\n\t"					\
++		"ldc.l	@r2+, mod\n\t"					\
++		: : "r" (__ts2));					\
++} while (0)
++
++#define __save_dsp(tsk)							\
++do {									\
++	register u32 *__ts2 __asm__ ("r2") =				\
++			(u32 *)&tsk->thread.dsp_status + 14;		\
++									\
++	__asm__ __volatile__ (						\
++		".balign 4\n\t"						\
++		"stc.l	mod, @-r2\n\t"					\
++		"stc.l	re, @-r2\n\t"					\
++		"stc.l	rs, @-r2\n\t"					\
++		"sts.l	dsr, @-r2\n\t"					\
++		"movs.l	y1, @-r2\n\t"					\
++		"movs.l	y0, @-r2\n\t"					\
++		"movs.l	x1, @-r2\n\t"					\
++		"movs.l	x0, @-r2\n\t"					\
++		"movs.l	m1, @-r2\n\t"					\
++		"movs.l	m0, @-r2\n\t"					\
++		"movs.l	a1g, @-r2\n\t"					\
++		"movs.l	a0g, @-r2\n\t"					\
++		"movs.l	a1, @-r2\n\t"					\
++		"movs.l	a0, @-r2\n\t"					\
++		: : "r" (__ts2));					\
++} while (0)
 +
 +#else
 +
-+#define ctl_set_bit(cr, bit) __ctl_set_bit(cr, bit)
-+#define ctl_clear_bit(cr, bit) __ctl_clear_bit(cr, bit)
++#define is_dsp_enabled(tsk)	(0)
++#define __save_dsp(tsk)		do { } while (0)
++#define __restore_dsp(tsk)	do { } while (0)
++#endif
 +
-+#endif /* CONFIG_SMP */
++struct task_struct *__switch_to(struct task_struct *prev,
++				struct task_struct *next);
 +
-+#endif /* __ASM_CTL_REG_H */
-diff --git a/arch/s390/include/asm/elf.h b/arch/s390/include/asm/elf.h
-index 547f1a6..c4ee39f 100644
---- a/arch/s390/include/asm/elf.h
-+++ b/arch/s390/include/asm/elf.h
-@@ -129,7 +129,6 @@ typedef s390_fp_regs compat_elf_fpregset_t;
- typedef s390_compat_regs compat_elf_gregset_t;
- 
- #include <linux/sched.h>	/* for task_struct */
--#include <asm/system.h>		/* for save_access_regs */
- #include <asm/mmu_context.h>
- 
- #include <asm/vdso.h>
-diff --git a/arch/s390/include/asm/exec.h b/arch/s390/include/asm/exec.h
++/*
++ *	switch_to() should switch tasks to task nr n, first
++ */
++#define switch_to(prev, next, last)				\
++do {								\
++	register u32 *__ts1 __asm__ ("r1");			\
++	register u32 *__ts2 __asm__ ("r2");			\
++	register u32 *__ts4 __asm__ ("r4");			\
++	register u32 *__ts5 __asm__ ("r5");			\
++	register u32 *__ts6 __asm__ ("r6");			\
++	register u32 __ts7 __asm__ ("r7");			\
++	struct task_struct *__last;				\
++								\
++	if (is_dsp_enabled(prev))				\
++		__save_dsp(prev);				\
++								\
++	__ts1 = (u32 *)&prev->thread.sp;			\
++	__ts2 = (u32 *)&prev->thread.pc;			\
++	__ts4 = (u32 *)prev;					\
++	__ts5 = (u32 *)next;					\
++	__ts6 = (u32 *)&next->thread.sp;			\
++	__ts7 = next->thread.pc;				\
++								\
++	__asm__ __volatile__ (					\
++		".balign 4\n\t"					\
++		"stc.l	gbr, @-r15\n\t"				\
++		"sts.l	pr, @-r15\n\t"				\
++		"mov.l	r8, @-r15\n\t"				\
++		"mov.l	r9, @-r15\n\t"				\
++		"mov.l	r10, @-r15\n\t"				\
++		"mov.l	r11, @-r15\n\t"				\
++		"mov.l	r12, @-r15\n\t"				\
++		"mov.l	r13, @-r15\n\t"				\
++		"mov.l	r14, @-r15\n\t"				\
++		"mov.l	r15, @r1\t! save SP\n\t"		\
++		"mov.l	@r6, r15\t! change to new stack\n\t"	\
++		"mova	1f, %0\n\t"				\
++		"mov.l	%0, @r2\t! save PC\n\t"			\
++		"mov.l	2f, %0\n\t"				\
++		"jmp	@%0\t! call __switch_to\n\t"		\
++		" lds	r7, pr\t!  with return to new PC\n\t"	\
++		".balign	4\n"				\
++		"2:\n\t"					\
++		".long	__switch_to\n"				\
++		"1:\n\t"					\
++		"mov.l	@r15+, r14\n\t"				\
++		"mov.l	@r15+, r13\n\t"				\
++		"mov.l	@r15+, r12\n\t"				\
++		"mov.l	@r15+, r11\n\t"				\
++		"mov.l	@r15+, r10\n\t"				\
++		"mov.l	@r15+, r9\n\t"				\
++		"mov.l	@r15+, r8\n\t"				\
++		"lds.l	@r15+, pr\n\t"				\
++		"ldc.l	@r15+, gbr\n\t"				\
++		: "=z" (__last)					\
++		: "r" (__ts1), "r" (__ts2), "r" (__ts4),	\
++		  "r" (__ts5), "r" (__ts6), "r" (__ts7)		\
++		: "r3", "t");					\
++								\
++	last = __last;						\
++} while (0)
++
++#define finish_arch_switch(prev)				\
++do {								\
++	if (is_dsp_enabled(prev))				\
++		__restore_dsp(prev);				\
++} while (0)
++
++#endif /* __ASM_SH_SWITCH_TO_32_H */
+diff --git a/arch/sh/include/asm/switch_to_64.h b/arch/sh/include/asm/switch_to_64.h
 new file mode 100644
-index 0000000..c4a93d6
+index 0000000..ba3129d
 --- /dev/null
-+++ b/arch/s390/include/asm/exec.h
-@@ -0,0 +1,12 @@
++++ b/arch/sh/include/asm/switch_to_64.h
+@@ -0,0 +1,35 @@
 +/*
-+ * Copyright IBM Corp. 1999, 2009
++ * Copyright (C) 2000, 2001  Paolo Alberelli
++ * Copyright (C) 2003  Paul Mundt
++ * Copyright (C) 2004  Richard Curnow
 + *
-+ * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
++#ifndef __ASM_SH_SWITCH_TO_64_H
++#define __ASM_SH_SWITCH_TO_64_H
 +
-+#ifndef __ASM_EXEC_H
-+#define __ASM_EXEC_H
-+
-+extern unsigned long arch_align_stack(unsigned long sp);
-+
-+#endif /* __ASM_EXEC_H */
-diff --git a/arch/s390/include/asm/facility.h b/arch/s390/include/asm/facility.h
-new file mode 100644
-index 0000000..0890581
---- /dev/null
-+++ b/arch/s390/include/asm/facility.h
-@@ -0,0 +1,29 @@
-+/*
-+ * Copyright IBM Corp. 1999, 2009
-+ *
-+ * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
-+ */
-+
-+#ifndef __ASM_FACILITY_H
-+#define __ASM_FACILITY_H
-+
-+#include <asm/lowcore.h>
-+
-+#define MAX_FACILITY_BIT (256*8)	/* stfle_fac_list has 256 bytes */
-+
-+/*
-+ * The test_facility function uses the bit odering where the MSB is bit 0.
-+ * That makes it easier to query facility bits with the bit number as
-+ * documented in the Principles of Operation.
-+ */
-+static inline int test_facility(unsigned long nr)
-+{
-+	unsigned char *ptr;
-+
-+	if (nr >= MAX_FACILITY_BIT)
-+		return 0;
-+	ptr = (unsigned char *) &S390_lowcore.stfle_fac_list + (nr >> 3);
-+	return (*ptr & (0x80 >> (nr & 7))) != 0;
-+}
-+
-+#endif /* __ASM_FACILITY_H */
-diff --git a/arch/s390/include/asm/mmu.h b/arch/s390/include/asm/mmu.h
-index 4506791..1c7d6ce 100644
---- a/arch/s390/include/asm/mmu.h
-+++ b/arch/s390/include/asm/mmu.h
-@@ -21,4 +21,18 @@ typedef struct {
- 	.context.pgtable_list = LIST_HEAD_INIT(name.context.pgtable_list),    \
- 	.context.gmap_list = LIST_HEAD_INIT(name.context.gmap_list),
- 
-+static inline int tprot(unsigned long addr)
-+{
-+	int rc = -EFAULT;
-+
-+	asm volatile(
-+		"	tprot	0(%1),0\n"
-+		"0:	ipm	%0\n"
-+		"	srl	%0,28\n"
-+		"1:\n"
-+		EX_TABLE(0b,1b)
-+		: "+d" (rc) : "a" (addr) : "cc");
-+	return rc;
-+}
-+
- #endif
-diff --git a/arch/s390/include/asm/mmu_context.h b/arch/s390/include/asm/mmu_context.h
-index 5682f16..5d09e40 100644
---- a/arch/s390/include/asm/mmu_context.h
-+++ b/arch/s390/include/asm/mmu_context.h
-@@ -12,6 +12,7 @@
- #include <asm/pgalloc.h>
- #include <asm/uaccess.h>
- #include <asm/tlbflush.h>
-+#include <asm/ctl_reg.h>
- #include <asm-generic/mm_hooks.h>
- 
- static inline int init_new_context(struct task_struct *tsk,
-diff --git a/arch/s390/include/asm/processor.h b/arch/s390/include/asm/processor.h
-index d25843a..320aa82 100644
---- a/arch/s390/include/asm/processor.h
-+++ b/arch/s390/include/asm/processor.h
-@@ -14,6 +14,7 @@
- #define __ASM_S390_PROCESSOR_H
- 
- #include <linux/linkage.h>
-+#include <linux/irqflags.h>
- #include <asm/cpu.h>
- #include <asm/page.h>
- #include <asm/ptrace.h>
-@@ -304,6 +305,21 @@ static inline void __noreturn disabled_wait(unsigned long code)
- }
- 
- /*
-+ * Use to set psw mask except for the first byte which
-+ * won't be changed by this function.
-+ */
-+static inline void
-+__set_psw_mask(unsigned long mask)
-+{
-+	__load_psw_mask(mask | (arch_local_save_flags() & ~(-1UL >> 8)));
-+}
-+
-+#define local_mcck_enable() \
-+	__set_psw_mask(psw_kernel_bits | PSW_MASK_DAT | PSW_MASK_MCHECK)
-+#define local_mcck_disable() \
-+	__set_psw_mask(psw_kernel_bits | PSW_MASK_DAT)
-+
-+/*
-  * Basic Machine Check/Program Check Handler.
-  */
- 
-diff --git a/arch/s390/include/asm/setup.h b/arch/s390/include/asm/setup.h
-index 097183c..b21e46e 100644
---- a/arch/s390/include/asm/setup.h
-+++ b/arch/s390/include/asm/setup.h
-@@ -140,6 +140,20 @@ extern char vmpoff_cmd[];
- #define NSS_NAME_SIZE	8
- extern char kernel_nss_name[];
- 
-+#ifdef CONFIG_PFAULT
-+extern int pfault_init(void);
-+extern void pfault_fini(void);
-+#else /* CONFIG_PFAULT */
-+#define pfault_init()		({-1;})
-+#define pfault_fini()		do { } while (0)
-+#endif /* CONFIG_PFAULT */
-+
-+extern void cmma_init(void);
-+
-+extern void (*_machine_restart)(char *command);
-+extern void (*_machine_halt)(void);
-+extern void (*_machine_power_off)(void);
-+
- #else /* __ASSEMBLY__ */
- 
- #ifndef __s390x__
-diff --git a/arch/s390/include/asm/sigp.h b/arch/s390/include/asm/sigp.h
-index 06faf6a..d7008d1 100644
---- a/arch/s390/include/asm/sigp.h
-+++ b/arch/s390/include/asm/sigp.h
-@@ -14,6 +14,14 @@
- /* Get real cpu address from logical cpu number. */
- extern unsigned short __cpu_logical_map[];
- 
-+static inline unsigned short stap(void)
-+{
-+	unsigned short cpu_address;
-+
-+	asm volatile("stap %0" : "=m" (cpu_address));
-+	return cpu_address;
-+}
-+
- static inline int cpu_logical_map(int cpu)
- {
- #ifdef CONFIG_SMP
-diff --git a/arch/s390/include/asm/switch_to.h b/arch/s390/include/asm/switch_to.h
-new file mode 100644
-index 0000000..6ad1fc7
---- /dev/null
-+++ b/arch/s390/include/asm/switch_to.h
-@@ -0,0 +1,100 @@
-+/*
-+ * Copyright IBM Corp. 1999, 2009
-+ *
-+ * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
-+ */
-+
-+#ifndef __ASM_SWITCH_TO_H
-+#define __ASM_SWITCH_TO_H
-+
++struct thread_struct;
 +struct task_struct;
 +
-+extern struct task_struct *__switch_to(void *, void *);
-+extern void update_per_regs(struct task_struct *task);
++/*
++ *	switch_to() should switch tasks to task nr n, first
++ */
++struct task_struct *sh64_switch_to(struct task_struct *prev,
++				   struct thread_struct *prev_thread,
++				   struct task_struct *next,
++				   struct thread_struct *next_thread);
 +
-+static inline void save_fp_regs(s390_fp_regs *fpregs)
-+{
-+	asm volatile(
-+		"	std	0,%O0+8(%R0)\n"
-+		"	std	2,%O0+24(%R0)\n"
-+		"	std	4,%O0+40(%R0)\n"
-+		"	std	6,%O0+56(%R0)"
-+		: "=Q" (*fpregs) : "Q" (*fpregs));
-+	if (!MACHINE_HAS_IEEE)
-+		return;
-+	asm volatile(
-+		"	stfpc	%0\n"
-+		"	std	1,%O0+16(%R0)\n"
-+		"	std	3,%O0+32(%R0)\n"
-+		"	std	5,%O0+48(%R0)\n"
-+		"	std	7,%O0+64(%R0)\n"
-+		"	std	8,%O0+72(%R0)\n"
-+		"	std	9,%O0+80(%R0)\n"
-+		"	std	10,%O0+88(%R0)\n"
-+		"	std	11,%O0+96(%R0)\n"
-+		"	std	12,%O0+104(%R0)\n"
-+		"	std	13,%O0+112(%R0)\n"
-+		"	std	14,%O0+120(%R0)\n"
-+		"	std	15,%O0+128(%R0)\n"
-+		: "=Q" (*fpregs) : "Q" (*fpregs));
-+}
-+
-+static inline void restore_fp_regs(s390_fp_regs *fpregs)
-+{
-+	asm volatile(
-+		"	ld	0,%O0+8(%R0)\n"
-+		"	ld	2,%O0+24(%R0)\n"
-+		"	ld	4,%O0+40(%R0)\n"
-+		"	ld	6,%O0+56(%R0)"
-+		: : "Q" (*fpregs));
-+	if (!MACHINE_HAS_IEEE)
-+		return;
-+	asm volatile(
-+		"	lfpc	%0\n"
-+		"	ld	1,%O0+16(%R0)\n"
-+		"	ld	3,%O0+32(%R0)\n"
-+		"	ld	5,%O0+48(%R0)\n"
-+		"	ld	7,%O0+64(%R0)\n"
-+		"	ld	8,%O0+72(%R0)\n"
-+		"	ld	9,%O0+80(%R0)\n"
-+		"	ld	10,%O0+88(%R0)\n"
-+		"	ld	11,%O0+96(%R0)\n"
-+		"	ld	12,%O0+104(%R0)\n"
-+		"	ld	13,%O0+112(%R0)\n"
-+		"	ld	14,%O0+120(%R0)\n"
-+		"	ld	15,%O0+128(%R0)\n"
-+		: : "Q" (*fpregs));
-+}
-+
-+static inline void save_access_regs(unsigned int *acrs)
-+{
-+	asm volatile("stam 0,15,%0" : "=Q" (*acrs));
-+}
-+
-+static inline void restore_access_regs(unsigned int *acrs)
-+{
-+	asm volatile("lam 0,15,%0" : : "Q" (*acrs));
-+}
-+
-+#define switch_to(prev,next,last) do {					\
-+	if (prev->mm) {							\
-+		save_fp_regs(&prev->thread.fp_regs);			\
-+		save_access_regs(&prev->thread.acrs[0]);		\
-+	}								\
-+	if (next->mm) {							\
-+		restore_fp_regs(&next->thread.fp_regs);			\
-+		restore_access_regs(&next->thread.acrs[0]);		\
-+		update_per_regs(next);					\
-+	}								\
-+	prev = __switch_to(prev,next);					\
++#define switch_to(prev,next,last)				\
++do {								\
++	if (last_task_used_math != next) {			\
++		struct pt_regs *regs = next->thread.uregs;	\
++		if (regs) regs->sr |= SR_FD;			\
++	}							\
++	last = sh64_switch_to(prev, &prev->thread, next,	\
++			      &next->thread);			\
 +} while (0)
 +
-+extern void account_vtime(struct task_struct *, struct task_struct *);
-+extern void account_tick_vtime(struct task_struct *);
 +
-+#define finish_arch_switch(prev) do {					     \
-+	set_fs(current->thread.mm_segment);				     \
-+	account_vtime(prev, current);					     \
-+} while (0)
-+
-+#endif /* __ASM_SWITCH_TO_H */
-diff --git a/arch/s390/include/asm/system.h b/arch/s390/include/asm/system.h
++#endif /* __ASM_SH_SWITCH_TO_64_H */
+diff --git a/arch/sh/include/asm/system.h b/arch/sh/include/asm/system.h
 deleted file mode 100644
-index d73cc6b..0000000
---- a/arch/s390/include/asm/system.h
+index 11fa6f3..0000000
+--- a/arch/sh/include/asm/system.h
 +++ /dev/null
-@@ -1,281 +0,0 @@
+@@ -1,183 +0,0 @@
+-#ifndef __ASM_SH_SYSTEM_H
+-#define __ASM_SH_SYSTEM_H
+-
 -/*
-- * Copyright IBM Corp. 1999, 2009
-- *
-- * Author(s): Martin Schwidefsky <schwidefsky@de.ibm.com>
+- * Copyright (C) 1999, 2000  Niibe Yutaka  &  Kaz Kojima
+- * Copyright (C) 2002 Paul Mundt
 - */
 -
--#ifndef __ASM_SYSTEM_H
--#define __ASM_SYSTEM_H
--
--#include <linux/kernel.h>
--#include <linux/errno.h>
+-#include <linux/irqflags.h>
+-#include <linux/compiler.h>
+-#include <linux/linkage.h>
 -#include <asm/types.h>
--#include <asm/ptrace.h>
--#include <asm/setup.h>
--#include <asm/processor.h>
--#include <asm/lowcore.h>
--#include <asm/cmpxchg.h>
+-#include <asm/uncached.h>
 -
--#ifdef __KERNEL__
--
--struct task_struct;
--
--extern struct task_struct *__switch_to(void *, void *);
--extern void update_per_regs(struct task_struct *task);
--
--static inline void save_fp_regs(s390_fp_regs *fpregs)
--{
--	asm volatile(
--		"	std	0,%O0+8(%R0)\n"
--		"	std	2,%O0+24(%R0)\n"
--		"	std	4,%O0+40(%R0)\n"
--		"	std	6,%O0+56(%R0)"
--		: "=Q" (*fpregs) : "Q" (*fpregs));
--	if (!MACHINE_HAS_IEEE)
--		return;
--	asm volatile(
--		"	stfpc	%0\n"
--		"	std	1,%O0+16(%R0)\n"
--		"	std	3,%O0+32(%R0)\n"
--		"	std	5,%O0+48(%R0)\n"
--		"	std	7,%O0+64(%R0)\n"
--		"	std	8,%O0+72(%R0)\n"
--		"	std	9,%O0+80(%R0)\n"
--		"	std	10,%O0+88(%R0)\n"
--		"	std	11,%O0+96(%R0)\n"
--		"	std	12,%O0+104(%R0)\n"
--		"	std	13,%O0+112(%R0)\n"
--		"	std	14,%O0+120(%R0)\n"
--		"	std	15,%O0+128(%R0)\n"
--		: "=Q" (*fpregs) : "Q" (*fpregs));
--}
--
--static inline void restore_fp_regs(s390_fp_regs *fpregs)
--{
--	asm volatile(
--		"	ld	0,%O0+8(%R0)\n"
--		"	ld	2,%O0+24(%R0)\n"
--		"	ld	4,%O0+40(%R0)\n"
--		"	ld	6,%O0+56(%R0)"
--		: : "Q" (*fpregs));
--	if (!MACHINE_HAS_IEEE)
--		return;
--	asm volatile(
--		"	lfpc	%0\n"
--		"	ld	1,%O0+16(%R0)\n"
--		"	ld	3,%O0+32(%R0)\n"
--		"	ld	5,%O0+48(%R0)\n"
--		"	ld	7,%O0+64(%R0)\n"
--		"	ld	8,%O0+72(%R0)\n"
--		"	ld	9,%O0+80(%R0)\n"
--		"	ld	10,%O0+88(%R0)\n"
--		"	ld	11,%O0+96(%R0)\n"
--		"	ld	12,%O0+104(%R0)\n"
--		"	ld	13,%O0+112(%R0)\n"
--		"	ld	14,%O0+120(%R0)\n"
--		"	ld	15,%O0+128(%R0)\n"
--		: : "Q" (*fpregs));
--}
--
--static inline void save_access_regs(unsigned int *acrs)
--{
--	asm volatile("stam 0,15,%0" : "=Q" (*acrs));
--}
--
--static inline void restore_access_regs(unsigned int *acrs)
--{
--	asm volatile("lam 0,15,%0" : : "Q" (*acrs));
--}
--
--#define switch_to(prev,next,last) do {					\
--	if (prev->mm) {							\
--		save_fp_regs(&prev->thread.fp_regs);			\
--		save_access_regs(&prev->thread.acrs[0]);		\
--	}								\
--	if (next->mm) {							\
--		restore_fp_regs(&next->thread.fp_regs);			\
--		restore_access_regs(&next->thread.acrs[0]);		\
--		update_per_regs(next);					\
--	}								\
--	prev = __switch_to(prev,next);					\
--} while (0)
--
--extern void account_vtime(struct task_struct *, struct task_struct *);
--extern void account_tick_vtime(struct task_struct *);
--
--#ifdef CONFIG_PFAULT
--extern int pfault_init(void);
--extern void pfault_fini(void);
--#else /* CONFIG_PFAULT */
--#define pfault_init()		({-1;})
--#define pfault_fini()		do { } while (0)
--#endif /* CONFIG_PFAULT */
--
--extern void cmma_init(void);
--extern int memcpy_real(void *, void *, size_t);
--extern void copy_to_absolute_zero(void *dest, void *src, size_t count);
--extern int copy_to_user_real(void __user *dest, void *src, size_t count);
--extern int copy_from_user_real(void *dest, void __user *src, size_t count);
--
--#define finish_arch_switch(prev) do {					     \
--	set_fs(current->thread.mm_segment);				     \
--	account_vtime(prev, current);					     \
--} while (0)
--
--#define nop() asm volatile("nop")
+-#define AT_VECTOR_SIZE_ARCH 5 /* entries in ARCH_DLINFO */
 -
 -/*
-- * Force strict CPU ordering.
-- * And yes, this is required on UP too when we're talking
-- * to devices.
+- * A brief note on ctrl_barrier(), the control register write barrier.
 - *
-- * This is very similar to the ppc eieio/sync instruction in that is
-- * does a checkpoint syncronisation & makes sure that 
-- * all memory ops have completed wrt other CPU's ( see 7-15 POP  DJB ).
+- * Legacy SH cores typically require a sequence of 8 nops after
+- * modification of a control register in order for the changes to take
+- * effect. On newer cores (like the sh4a and sh5) this is accomplished
+- * with icbi.
+- *
+- * Also note that on sh4a in the icbi case we can forego a synco for the
+- * write barrier, as it's not necessary for control registers.
+- *
+- * Historically we have only done this type of barrier for the MMUCR, but
+- * it's also necessary for the CCR, so we make it generic here instead.
 - */
--
--#define eieio()	asm volatile("bcr 15,0" : : : "memory")
--#define SYNC_OTHER_CORES(x)   eieio()
--#define mb()    eieio()
--#define rmb()   eieio()
--#define wmb()   eieio()
--#define read_barrier_depends() do { } while(0)
--#define smp_mb()       mb()
--#define smp_rmb()      rmb()
--#define smp_wmb()      wmb()
--#define smp_read_barrier_depends()    read_barrier_depends()
--#define smp_mb__before_clear_bit()     smp_mb()
--#define smp_mb__after_clear_bit()      smp_mb()
--
--
--#define set_mb(var, value)      do { var = value; mb(); } while (0)
--
--#ifdef __s390x__
--
--#define __ctl_load(array, low, high) ({				\
--	typedef struct { char _[sizeof(array)]; } addrtype;	\
--	asm volatile(						\
--		"	lctlg	%1,%2,%0\n"			\
--		: : "Q" (*(addrtype *)(&array)),		\
--		    "i" (low), "i" (high));			\
--	})
--
--#define __ctl_store(array, low, high) ({			\
--	typedef struct { char _[sizeof(array)]; } addrtype;	\
--	asm volatile(						\
--		"	stctg	%1,%2,%0\n"			\
--		: "=Q" (*(addrtype *)(&array))			\
--		: "i" (low), "i" (high));			\
--	})
--
--#else /* __s390x__ */
--
--#define __ctl_load(array, low, high) ({				\
--	typedef struct { char _[sizeof(array)]; } addrtype;	\
--	asm volatile(						\
--		"	lctl	%1,%2,%0\n"			\
--		: : "Q" (*(addrtype *)(&array)),		\
--		    "i" (low), "i" (high));			\
--})
--
--#define __ctl_store(array, low, high) ({			\
--	typedef struct { char _[sizeof(array)]; } addrtype;	\
--	asm volatile(						\
--		"	stctl	%1,%2,%0\n"			\
--		: "=Q" (*(addrtype *)(&array))			\
--		: "i" (low), "i" (high));			\
--	})
--
--#endif /* __s390x__ */
--
--#define __ctl_set_bit(cr, bit) ({	\
--	unsigned long __dummy;		\
--	__ctl_store(__dummy, cr, cr);	\
--	__dummy |= 1UL << (bit);	\
--	__ctl_load(__dummy, cr, cr);	\
--})
--
--#define __ctl_clear_bit(cr, bit) ({	\
--	unsigned long __dummy;		\
--	__ctl_store(__dummy, cr, cr);	\
--	__dummy &= ~(1UL << (bit));	\
--	__ctl_load(__dummy, cr, cr);	\
--})
--
--/*
-- * Use to set psw mask except for the first byte which
-- * won't be changed by this function.
-- */
--static inline void
--__set_psw_mask(unsigned long mask)
--{
--	__load_psw_mask(mask | (arch_local_save_flags() & ~(-1UL >> 8)));
--}
--
--#define local_mcck_enable() \
--	__set_psw_mask(psw_kernel_bits | PSW_MASK_DAT | PSW_MASK_MCHECK)
--#define local_mcck_disable() \
--	__set_psw_mask(psw_kernel_bits | PSW_MASK_DAT)
+-#if defined(CONFIG_CPU_SH4A) || defined(CONFIG_CPU_SH5)
+-#define mb()		__asm__ __volatile__ ("synco": : :"memory")
+-#define rmb()		mb()
+-#define wmb()		__asm__ __volatile__ ("synco": : :"memory")
+-#define ctrl_barrier()	__icbi(PAGE_OFFSET)
+-#define read_barrier_depends()	do { } while(0)
+-#else
+-#define mb()		__asm__ __volatile__ ("": : :"memory")
+-#define rmb()		mb()
+-#define wmb()		__asm__ __volatile__ ("": : :"memory")
+-#define ctrl_barrier()	__asm__ __volatile__ ("nop;nop;nop;nop;nop;nop;nop;nop")
+-#define read_barrier_depends()	do { } while(0)
+-#endif
 -
 -#ifdef CONFIG_SMP
+-#define smp_mb()	mb()
+-#define smp_rmb()	rmb()
+-#define smp_wmb()	wmb()
+-#define smp_read_barrier_depends()	read_barrier_depends()
+-#else
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+-#define smp_read_barrier_depends()	do { } while(0)
+-#endif
 -
--extern void smp_ctl_set_bit(int cr, int bit);
--extern void smp_ctl_clear_bit(int cr, int bit);
--#define ctl_set_bit(cr, bit) smp_ctl_set_bit(cr, bit)
--#define ctl_clear_bit(cr, bit) smp_ctl_clear_bit(cr, bit)
+-#define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
+-
+-#ifdef CONFIG_GUSA_RB
+-#include <asm/cmpxchg-grb.h>
+-#elif defined(CONFIG_CPU_SH4A)
+-#include <asm/cmpxchg-llsc.h>
+-#else
+-#include <asm/cmpxchg-irq.h>
+-#endif
+-
+-extern void __xchg_called_with_bad_pointer(void);
+-
+-#define __xchg(ptr, x, size)				\
+-({							\
+-	unsigned long __xchg__res;			\
+-	volatile void *__xchg_ptr = (ptr);		\
+-	switch (size) {					\
+-	case 4:						\
+-		__xchg__res = xchg_u32(__xchg_ptr, x);	\
+-		break;					\
+-	case 1:						\
+-		__xchg__res = xchg_u8(__xchg_ptr, x);	\
+-		break;					\
+-	default:					\
+-		__xchg_called_with_bad_pointer();	\
+-		__xchg__res = x;			\
+-		break;					\
+-	}						\
+-							\
+-	__xchg__res;					\
+-})
+-
+-#define xchg(ptr,x)	\
+-	((__typeof__(*(ptr)))__xchg((ptr),(unsigned long)(x), sizeof(*(ptr))))
+-
+-/* This function doesn't exist, so you'll get a linker error
+- * if something tries to do an invalid cmpxchg(). */
+-extern void __cmpxchg_called_with_bad_pointer(void);
+-
+-#define __HAVE_ARCH_CMPXCHG 1
+-
+-static inline unsigned long __cmpxchg(volatile void * ptr, unsigned long old,
+-		unsigned long new, int size)
+-{
+-	switch (size) {
+-	case 4:
+-		return __cmpxchg_u32(ptr, old, new);
+-	}
+-	__cmpxchg_called_with_bad_pointer();
+-	return old;
+-}
+-
+-#define cmpxchg(ptr,o,n)						 \
+-  ({									 \
+-     __typeof__(*(ptr)) _o_ = (o);					 \
+-     __typeof__(*(ptr)) _n_ = (n);					 \
+-     (__typeof__(*(ptr))) __cmpxchg((ptr), (unsigned long)_o_,		 \
+-				    (unsigned long)_n_, sizeof(*(ptr))); \
+-  })
+-
+-struct pt_regs;
+-
+-extern void die(const char *str, struct pt_regs *regs, long err) __attribute__ ((noreturn));
+-void free_initrd_mem(unsigned long start, unsigned long end);
+-
+-extern void *set_exception_table_vec(unsigned int vec, void *handler);
+-
+-static inline void *set_exception_table_evt(unsigned int evt, void *handler)
+-{
+-	return set_exception_table_vec(evt >> 5, handler);
+-}
+-
+-/*
+- * SH-2A has both 16 and 32-bit opcodes, do lame encoding checks.
+- */
+-#ifdef CONFIG_CPU_SH2A
+-extern unsigned int instruction_size(unsigned int insn);
+-#elif defined(CONFIG_SUPERH32)
+-#define instruction_size(insn)	(2)
+-#else
+-#define instruction_size(insn)	(4)
+-#endif
+-
+-void per_cpu_trap_init(void);
+-void default_idle(void);
+-void cpu_idle_wait(void);
+-void stop_this_cpu(void *);
+-
+-#ifdef CONFIG_SUPERH32
+-#define BUILD_TRAP_HANDLER(name)					\
+-asmlinkage void name##_trap_handler(unsigned long r4, unsigned long r5,	\
+-				    unsigned long r6, unsigned long r7,	\
+-				    struct pt_regs __regs)
+-
+-#define TRAP_HANDLER_DECL				\
+-	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);	\
+-	unsigned int vec = regs->tra;			\
+-	(void)vec;
+-#else
+-#define BUILD_TRAP_HANDLER(name)	\
+-asmlinkage void name##_trap_handler(unsigned int vec, struct pt_regs *regs)
+-#define TRAP_HANDLER_DECL
+-#endif
+-
+-BUILD_TRAP_HANDLER(address_error);
+-BUILD_TRAP_HANDLER(debug);
+-BUILD_TRAP_HANDLER(bug);
+-BUILD_TRAP_HANDLER(breakpoint);
+-BUILD_TRAP_HANDLER(singlestep);
+-BUILD_TRAP_HANDLER(fpu_error);
+-BUILD_TRAP_HANDLER(fpu_state_restore);
+-BUILD_TRAP_HANDLER(nmi);
+-
+-#define arch_align_stack(x) (x)
+-
+-struct mem_access {
+-	unsigned long (*from)(void *dst, const void __user *src, unsigned long cnt);
+-	unsigned long (*to)(void __user *dst, const void *src, unsigned long cnt);
+-};
+-
+-#ifdef CONFIG_SUPERH32
+-# include "system_32.h"
+-#else
+-# include "system_64.h"
+-#endif
+-
+-#endif
+diff --git a/arch/sh/include/asm/system_32.h b/arch/sh/include/asm/system_32.h
+deleted file mode 100644
+index a4ad1cd..0000000
+--- a/arch/sh/include/asm/system_32.h
++++ /dev/null
+@@ -1,236 +0,0 @@
+-#ifndef __ASM_SH_SYSTEM_32_H
+-#define __ASM_SH_SYSTEM_32_H
+-
+-#include <linux/types.h>
+-#include <asm/mmu.h>
+-
+-#ifdef CONFIG_SH_DSP
+-
+-#define is_dsp_enabled(tsk)						\
+-	(!!(tsk->thread.dsp_status.status & SR_DSP))
+-
+-#define __restore_dsp(tsk)						\
+-do {									\
+-	register u32 *__ts2 __asm__ ("r2") =				\
+-			(u32 *)&tsk->thread.dsp_status;			\
+-	__asm__ __volatile__ (						\
+-		".balign 4\n\t"						\
+-		"movs.l	@r2+, a0\n\t"					\
+-		"movs.l	@r2+, a1\n\t"					\
+-		"movs.l	@r2+, a0g\n\t"					\
+-		"movs.l	@r2+, a1g\n\t"					\
+-		"movs.l	@r2+, m0\n\t"					\
+-		"movs.l	@r2+, m1\n\t"					\
+-		"movs.l	@r2+, x0\n\t"					\
+-		"movs.l	@r2+, x1\n\t"					\
+-		"movs.l	@r2+, y0\n\t"					\
+-		"movs.l	@r2+, y1\n\t"					\
+-		"lds.l	@r2+, dsr\n\t"					\
+-		"ldc.l	@r2+, rs\n\t"					\
+-		"ldc.l	@r2+, re\n\t"					\
+-		"ldc.l	@r2+, mod\n\t"					\
+-		: : "r" (__ts2));					\
+-} while (0)
+-
+-
+-#define __save_dsp(tsk)							\
+-do {									\
+-	register u32 *__ts2 __asm__ ("r2") =				\
+-			(u32 *)&tsk->thread.dsp_status + 14;		\
+-									\
+-	__asm__ __volatile__ (						\
+-		".balign 4\n\t"						\
+-		"stc.l	mod, @-r2\n\t"					\
+-		"stc.l	re, @-r2\n\t"					\
+-		"stc.l	rs, @-r2\n\t"					\
+-		"sts.l	dsr, @-r2\n\t"					\
+-		"movs.l	y1, @-r2\n\t"					\
+-		"movs.l	y0, @-r2\n\t"					\
+-		"movs.l	x1, @-r2\n\t"					\
+-		"movs.l	x0, @-r2\n\t"					\
+-		"movs.l	m1, @-r2\n\t"					\
+-		"movs.l	m0, @-r2\n\t"					\
+-		"movs.l	a1g, @-r2\n\t"					\
+-		"movs.l	a0g, @-r2\n\t"					\
+-		"movs.l	a1, @-r2\n\t"					\
+-		"movs.l	a0, @-r2\n\t"					\
+-		: : "r" (__ts2));					\
+-} while (0)
 -
 -#else
 -
--#define ctl_set_bit(cr, bit) __ctl_set_bit(cr, bit)
--#define ctl_clear_bit(cr, bit) __ctl_clear_bit(cr, bit)
+-#define is_dsp_enabled(tsk)	(0)
+-#define __save_dsp(tsk)		do { } while (0)
+-#define __restore_dsp(tsk)	do { } while (0)
+-#endif
 -
--#endif /* CONFIG_SMP */
+-#if defined(CONFIG_CPU_SH4A)
+-#define __icbi(addr)	__asm__ __volatile__ ( "icbi @%0\n\t" : : "r" (addr))
+-#else
+-#define __icbi(addr)	mb()
+-#endif
 -
--#define MAX_FACILITY_BIT (256*8)	/* stfle_fac_list has 256 bytes */
+-#define __ocbp(addr)	__asm__ __volatile__ ( "ocbp @%0\n\t" : : "r" (addr))
+-#define __ocbi(addr)	__asm__ __volatile__ ( "ocbi @%0\n\t" : : "r" (addr))
+-#define __ocbwb(addr)	__asm__ __volatile__ ( "ocbwb @%0\n\t" : : "r" (addr))
+-
+-struct task_struct *__switch_to(struct task_struct *prev,
+-				struct task_struct *next);
 -
 -/*
-- * The test_facility function uses the bit odering where the MSB is bit 0.
-- * That makes it easier to query facility bits with the bit number as
-- * documented in the Principles of Operation.
+- *	switch_to() should switch tasks to task nr n, first
 - */
--static inline int test_facility(unsigned long nr)
--{
--	unsigned char *ptr;
+-#define switch_to(prev, next, last)				\
+-do {								\
+-	register u32 *__ts1 __asm__ ("r1");			\
+-	register u32 *__ts2 __asm__ ("r2");			\
+-	register u32 *__ts4 __asm__ ("r4");			\
+-	register u32 *__ts5 __asm__ ("r5");			\
+-	register u32 *__ts6 __asm__ ("r6");			\
+-	register u32 __ts7 __asm__ ("r7");			\
+-	struct task_struct *__last;				\
+-								\
+-	if (is_dsp_enabled(prev))				\
+-		__save_dsp(prev);				\
+-								\
+-	__ts1 = (u32 *)&prev->thread.sp;			\
+-	__ts2 = (u32 *)&prev->thread.pc;			\
+-	__ts4 = (u32 *)prev;					\
+-	__ts5 = (u32 *)next;					\
+-	__ts6 = (u32 *)&next->thread.sp;			\
+-	__ts7 = next->thread.pc;				\
+-								\
+-	__asm__ __volatile__ (					\
+-		".balign 4\n\t"					\
+-		"stc.l	gbr, @-r15\n\t"				\
+-		"sts.l	pr, @-r15\n\t"				\
+-		"mov.l	r8, @-r15\n\t"				\
+-		"mov.l	r9, @-r15\n\t"				\
+-		"mov.l	r10, @-r15\n\t"				\
+-		"mov.l	r11, @-r15\n\t"				\
+-		"mov.l	r12, @-r15\n\t"				\
+-		"mov.l	r13, @-r15\n\t"				\
+-		"mov.l	r14, @-r15\n\t"				\
+-		"mov.l	r15, @r1\t! save SP\n\t"		\
+-		"mov.l	@r6, r15\t! change to new stack\n\t"	\
+-		"mova	1f, %0\n\t"				\
+-		"mov.l	%0, @r2\t! save PC\n\t"			\
+-		"mov.l	2f, %0\n\t"				\
+-		"jmp	@%0\t! call __switch_to\n\t"		\
+-		" lds	r7, pr\t!  with return to new PC\n\t"	\
+-		".balign	4\n"				\
+-		"2:\n\t"					\
+-		".long	__switch_to\n"				\
+-		"1:\n\t"					\
+-		"mov.l	@r15+, r14\n\t"				\
+-		"mov.l	@r15+, r13\n\t"				\
+-		"mov.l	@r15+, r12\n\t"				\
+-		"mov.l	@r15+, r11\n\t"				\
+-		"mov.l	@r15+, r10\n\t"				\
+-		"mov.l	@r15+, r9\n\t"				\
+-		"mov.l	@r15+, r8\n\t"				\
+-		"lds.l	@r15+, pr\n\t"				\
+-		"ldc.l	@r15+, gbr\n\t"				\
+-		: "=z" (__last)					\
+-		: "r" (__ts1), "r" (__ts2), "r" (__ts4),	\
+-		  "r" (__ts5), "r" (__ts6), "r" (__ts7)		\
+-		: "r3", "t");					\
+-								\
+-	last = __last;						\
+-} while (0)
 -
--	if (nr >= MAX_FACILITY_BIT)
--		return 0;
--	ptr = (unsigned char *) &S390_lowcore.stfle_fac_list + (nr >> 3);
--	return (*ptr & (0x80 >> (nr & 7))) != 0;
--}
+-#define finish_arch_switch(prev)				\
+-do {								\
+-	if (is_dsp_enabled(prev))				\
+-		__restore_dsp(prev);				\
+-} while (0)
 -
--static inline unsigned short stap(void)
--{
--	unsigned short cpu_address;
--
--	asm volatile("stap %0" : "=m" (cpu_address));
--	return cpu_address;
--}
--
--extern void (*_machine_restart)(char *command);
--extern void (*_machine_halt)(void);
--extern void (*_machine_power_off)(void);
--
--extern unsigned long arch_align_stack(unsigned long sp);
--
--static inline int tprot(unsigned long addr)
--{
--	int rc = -EFAULT;
--
--	asm volatile(
--		"	tprot	0(%1),0\n"
--		"0:	ipm	%0\n"
--		"	srl	%0,28\n"
--		"1:\n"
--		EX_TABLE(0b,1b)
--		: "+d" (rc) : "a" (addr) : "cc");
--	return rc;
--}
--
--#endif /* __KERNEL__ */
--
+-#ifdef CONFIG_CPU_HAS_SR_RB
+-#define lookup_exception_vector()	\
+-({					\
+-	unsigned long _vec;		\
+-					\
+-	__asm__ __volatile__ (		\
+-		"stc r2_bank, %0\n\t"	\
+-		: "=r" (_vec)		\
+-	);				\
+-					\
+-	_vec;				\
+-})
+-#else
+-#define lookup_exception_vector()	\
+-({					\
+-	unsigned long _vec;		\
+-	__asm__ __volatile__ (		\
+-		"mov r4, %0\n\t"	\
+-		: "=r" (_vec)		\
+-	);				\
+-					\
+-	_vec;				\
+-})
 -#endif
-diff --git a/arch/s390/include/asm/uaccess.h b/arch/s390/include/asm/uaccess.h
-index 2b23885..8f2cada 100644
---- a/arch/s390/include/asm/uaccess.h
-+++ b/arch/s390/include/asm/uaccess.h
-@@ -16,6 +16,7 @@
-  */
- #include <linux/sched.h>
- #include <linux/errno.h>
-+#include <asm/ctl_reg.h>
- 
- #define VERIFY_READ     0
- #define VERIFY_WRITE    1
-@@ -375,4 +376,9 @@ clear_user(void __user *to, unsigned long n)
- 	return n;
- }
- 
-+extern int memcpy_real(void *, void *, size_t);
-+extern void copy_to_absolute_zero(void *dest, void *src, size_t count);
-+extern int copy_to_user_real(void __user *dest, void *src, size_t count);
-+extern int copy_from_user_real(void *dest, void __user *src, size_t count);
+-
+-static inline reg_size_t register_align(void *val)
+-{
+-	return (unsigned long)(signed long)val;
+-}
+-
+-int handle_unaligned_access(insn_size_t instruction, struct pt_regs *regs,
+-			    struct mem_access *ma, int, unsigned long address);
+-
+-static inline void trigger_address_error(void)
+-{
+-	__asm__ __volatile__ (
+-		"ldc %0, sr\n\t"
+-		"mov.l @%1, %0"
+-		:
+-		: "r" (0x10000000), "r" (0x80000001)
+-	);
+-}
+-
+-asmlinkage void do_address_error(struct pt_regs *regs,
+-				 unsigned long writeaccess,
+-				 unsigned long address);
+-asmlinkage void do_divide_error(unsigned long r4, unsigned long r5,
+-				unsigned long r6, unsigned long r7,
+-				struct pt_regs __regs);
+-asmlinkage void do_reserved_inst(unsigned long r4, unsigned long r5,
+-				unsigned long r6, unsigned long r7,
+-				struct pt_regs __regs);
+-asmlinkage void do_illegal_slot_inst(unsigned long r4, unsigned long r5,
+-				unsigned long r6, unsigned long r7,
+-				struct pt_regs __regs);
+-asmlinkage void do_exception_error(unsigned long r4, unsigned long r5,
+-				   unsigned long r6, unsigned long r7,
+-				   struct pt_regs __regs);
+-
+-static inline void set_bl_bit(void)
+-{
+-	unsigned long __dummy0, __dummy1;
+-
+-	__asm__ __volatile__ (
+-		"stc	sr, %0\n\t"
+-		"or	%2, %0\n\t"
+-		"and	%3, %0\n\t"
+-		"ldc	%0, sr\n\t"
+-		: "=&r" (__dummy0), "=r" (__dummy1)
+-		: "r" (0x10000000), "r" (0xffffff0f)
+-		: "memory"
+-	);
+-}
+-
+-static inline void clear_bl_bit(void)
+-{
+-	unsigned long __dummy0, __dummy1;
+-
+-	__asm__ __volatile__ (
+-		"stc	sr, %0\n\t"
+-		"and	%2, %0\n\t"
+-		"ldc	%0, sr\n\t"
+-		: "=&r" (__dummy0), "=r" (__dummy1)
+-		: "1" (~0x10000000)
+-		: "memory"
+-	);
+-}
+-
+-#endif /* __ASM_SH_SYSTEM_32_H */
+diff --git a/arch/sh/include/asm/system_64.h b/arch/sh/include/asm/system_64.h
+deleted file mode 100644
+index 8593bc8d..0000000
+--- a/arch/sh/include/asm/system_64.h
++++ /dev/null
+@@ -1,79 +0,0 @@
+-#ifndef __ASM_SH_SYSTEM_64_H
+-#define __ASM_SH_SYSTEM_64_H
+-
+-/*
+- * include/asm-sh/system_64.h
+- *
+- * Copyright (C) 2000, 2001  Paolo Alberelli
+- * Copyright (C) 2003  Paul Mundt
+- * Copyright (C) 2004  Richard Curnow
+- *
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License.  See the file "COPYING" in the main directory of this archive
+- * for more details.
+- */
+-#include <cpu/registers.h>
+-#include <asm/processor.h>
+-
+-/*
+- *	switch_to() should switch tasks to task nr n, first
+- */
+-struct thread_struct;
+-struct task_struct *sh64_switch_to(struct task_struct *prev,
+-				   struct thread_struct *prev_thread,
+-				   struct task_struct *next,
+-				   struct thread_struct *next_thread);
+-
+-#define switch_to(prev,next,last)				\
+-do {								\
+-	if (last_task_used_math != next) {			\
+-		struct pt_regs *regs = next->thread.uregs;	\
+-		if (regs) regs->sr |= SR_FD;			\
+-	}							\
+-	last = sh64_switch_to(prev, &prev->thread, next,	\
+-			      &next->thread);			\
+-} while (0)
+-
+-#define __icbi(addr)	__asm__ __volatile__ ( "icbi %0, 0\n\t" : : "r" (addr))
+-#define __ocbp(addr)	__asm__ __volatile__ ( "ocbp %0, 0\n\t" : : "r" (addr))
+-#define __ocbi(addr)	__asm__ __volatile__ ( "ocbi %0, 0\n\t" : : "r" (addr))
+-#define __ocbwb(addr)	__asm__ __volatile__ ( "ocbwb %0, 0\n\t" : : "r" (addr))
+-
+-static inline reg_size_t register_align(void *val)
+-{
+-	return (unsigned long long)(signed long long)(signed long)val;
+-}
+-
+-extern void phys_stext(void);
+-
+-static inline void trigger_address_error(void)
+-{
+-	phys_stext();
+-}
+-
+-#define SR_BL_LL	0x0000000010000000LL
+-
+-static inline void set_bl_bit(void)
+-{
+-	unsigned long long __dummy0, __dummy1 = SR_BL_LL;
+-
+-	__asm__ __volatile__("getcon	" __SR ", %0\n\t"
+-			     "or	%0, %1, %0\n\t"
+-			     "putcon	%0, " __SR "\n\t"
+-			     : "=&r" (__dummy0)
+-			     : "r" (__dummy1));
+-
+-}
+-
+-static inline void clear_bl_bit(void)
+-{
+-	unsigned long long __dummy0, __dummy1 = ~SR_BL_LL;
+-
+-	__asm__ __volatile__("getcon	" __SR ", %0\n\t"
+-			     "and	%0, %1, %0\n\t"
+-			     "putcon	%0, " __SR "\n\t"
+-			     : "=&r" (__dummy0)
+-			     : "r" (__dummy1));
+-}
+-
+-#endif /* __ASM_SH_SYSTEM_64_H */
+diff --git a/arch/sh/include/asm/traps.h b/arch/sh/include/asm/traps.h
+new file mode 100644
+index 0000000..fe95168
+--- /dev/null
++++ b/arch/sh/include/asm/traps.h
+@@ -0,0 +1,20 @@
++#ifndef __ASM_SH_TRAPS_H
++#define __ASM_SH_TRAPS_H
 +
- #endif /* __S390_UACCESS_H */
-diff --git a/arch/s390/kernel/compat_signal.c b/arch/s390/kernel/compat_signal.c
-index 6fe78c2..9ad08ad 100644
---- a/arch/s390/kernel/compat_signal.c
-+++ b/arch/s390/kernel/compat_signal.c
-@@ -27,6 +27,7 @@
- #include <asm/ucontext.h>
- #include <asm/uaccess.h>
- #include <asm/lowcore.h>
-+#include <asm/switch_to.h>
- #include "compat_linux.h"
- #include "compat_ptrace.h"
- #include "entry.h"
-diff --git a/arch/s390/kernel/early.c b/arch/s390/kernel/early.c
-index 52098d6..7e859f2 100644
---- a/arch/s390/kernel/early.c
-+++ b/arch/s390/kernel/early.c
-@@ -29,6 +29,7 @@
- #include <asm/sysinfo.h>
- #include <asm/cpcmd.h>
- #include <asm/sclp.h>
-+#include <asm/facility.h>
- #include "entry.h"
++
++#ifdef CONFIG_SUPERH32
++# include "traps_32.h"
++#else
++# include "traps_64.h"
++#endif
++
++BUILD_TRAP_HANDLER(address_error);
++BUILD_TRAP_HANDLER(debug);
++BUILD_TRAP_HANDLER(bug);
++BUILD_TRAP_HANDLER(breakpoint);
++BUILD_TRAP_HANDLER(singlestep);
++BUILD_TRAP_HANDLER(fpu_error);
++BUILD_TRAP_HANDLER(fpu_state_restore);
++BUILD_TRAP_HANDLER(nmi);
++
++#endif /* __ASM_SH_TRAPS_H */
+diff --git a/arch/sh/include/asm/traps_32.h b/arch/sh/include/asm/traps_32.h
+new file mode 100644
+index 0000000..cfd55ff
+--- /dev/null
++++ b/arch/sh/include/asm/traps_32.h
+@@ -0,0 +1,68 @@
++#ifndef __ASM_SH_TRAPS_32_H
++#define __ASM_SH_TRAPS_32_H
++
++#include <linux/types.h>
++#include <asm/mmu.h>
++
++#ifdef CONFIG_CPU_HAS_SR_RB
++#define lookup_exception_vector()	\
++({					\
++	unsigned long _vec;		\
++					\
++	__asm__ __volatile__ (		\
++		"stc r2_bank, %0\n\t"	\
++		: "=r" (_vec)		\
++	);				\
++					\
++	_vec;				\
++})
++#else
++#define lookup_exception_vector()	\
++({					\
++	unsigned long _vec;		\
++	__asm__ __volatile__ (		\
++		"mov r4, %0\n\t"	\
++		: "=r" (_vec)		\
++	);				\
++					\
++	_vec;				\
++})
++#endif
++
++static inline void trigger_address_error(void)
++{
++	__asm__ __volatile__ (
++		"ldc %0, sr\n\t"
++		"mov.l @%1, %0"
++		:
++		: "r" (0x10000000), "r" (0x80000001)
++	);
++}
++
++asmlinkage void do_address_error(struct pt_regs *regs,
++				 unsigned long writeaccess,
++				 unsigned long address);
++asmlinkage void do_divide_error(unsigned long r4, unsigned long r5,
++				unsigned long r6, unsigned long r7,
++				struct pt_regs __regs);
++asmlinkage void do_reserved_inst(unsigned long r4, unsigned long r5,
++				unsigned long r6, unsigned long r7,
++				struct pt_regs __regs);
++asmlinkage void do_illegal_slot_inst(unsigned long r4, unsigned long r5,
++				unsigned long r6, unsigned long r7,
++				struct pt_regs __regs);
++asmlinkage void do_exception_error(unsigned long r4, unsigned long r5,
++				   unsigned long r6, unsigned long r7,
++				   struct pt_regs __regs);
++
++#define BUILD_TRAP_HANDLER(name)					\
++asmlinkage void name##_trap_handler(unsigned long r4, unsigned long r5,	\
++				    unsigned long r6, unsigned long r7,	\
++				    struct pt_regs __regs)
++
++#define TRAP_HANDLER_DECL				\
++	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);	\
++	unsigned int vec = regs->tra;			\
++	(void)vec;
++
++#endif /* __ASM_SH_TRAPS_32_H */
+diff --git a/arch/sh/include/asm/traps_64.h b/arch/sh/include/asm/traps_64.h
+new file mode 100644
+index 0000000..c52d7f9
+--- /dev/null
++++ b/arch/sh/include/asm/traps_64.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (C) 2000, 2001  Paolo Alberelli
++ * Copyright (C) 2003  Paul Mundt
++ * Copyright (C) 2004  Richard Curnow
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++#ifndef __ASM_SH_TRAPS_64_H
++#define __ASM_SH_TRAPS_64_H
++
++extern void phys_stext(void);
++
++static inline void trigger_address_error(void)
++{
++	phys_stext();
++}
++
++#define BUILD_TRAP_HANDLER(name)	\
++asmlinkage void name##_trap_handler(unsigned int vec, struct pt_regs *regs)
++#define TRAP_HANDLER_DECL
++
++#endif /* __ASM_SH_TRAPS_64_H */
+diff --git a/arch/sh/include/asm/uaccess.h b/arch/sh/include/asm/uaccess.h
+index 075848f..050f221 100644
+--- a/arch/sh/include/asm/uaccess.h
++++ b/arch/sh/include/asm/uaccess.h
+@@ -254,5 +254,19 @@ int fixup_exception(struct pt_regs *regs);
+ unsigned long search_exception_table(unsigned long addr);
+ const struct exception_table_entry *search_exception_tables(unsigned long addr);
  
- /*
-diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
-index 9672514..ae8fdd3 100644
---- a/arch/s390/kernel/process.c
-+++ b/arch/s390/kernel/process.c
-@@ -29,6 +29,7 @@
- #include <asm/timer.h>
- #include <asm/nmi.h>
++extern void *set_exception_table_vec(unsigned int vec, void *handler);
++
++static inline void *set_exception_table_evt(unsigned int evt, void *handler)
++{
++	return set_exception_table_vec(evt >> 5, handler);
++}
++
++struct mem_access {
++	unsigned long (*from)(void *dst, const void __user *src, unsigned long cnt);
++	unsigned long (*to)(void __user *dst, const void *src, unsigned long cnt);
++};
++
++int handle_unaligned_access(insn_size_t instruction, struct pt_regs *regs,
++			    struct mem_access *ma, int, unsigned long address);
+ 
+ #endif /* __ASM_SH_UACCESS_H */
+diff --git a/arch/sh/kernel/cpu/init.c b/arch/sh/kernel/cpu/init.c
+index b95f84c..61a07da 100644
+--- a/arch/sh/kernel/cpu/init.c
++++ b/arch/sh/kernel/cpu/init.c
+@@ -24,6 +24,7 @@
+ #include <asm/io.h>
  #include <asm/smp.h>
-+#include <asm/switch_to.h>
- #include "entry.h"
+ #include <asm/sh_bios.h>
++#include <asm/setup.h>
  
- asmlinkage void ret_from_fork(void) asm ("ret_from_fork");
-diff --git a/arch/s390/kernel/ptrace.c b/arch/s390/kernel/ptrace.c
-index 441b5ada..02f300f 100644
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -28,6 +28,7 @@
+ #ifdef CONFIG_SH_FPU
+ #define cpu_has_fpu	1
+diff --git a/arch/sh/kernel/hw_breakpoint.c b/arch/sh/kernel/hw_breakpoint.c
+index efae6ab..f917376 100644
+--- a/arch/sh/kernel/hw_breakpoint.c
++++ b/arch/sh/kernel/hw_breakpoint.c
+@@ -22,6 +22,7 @@
+ #include <asm/hw_breakpoint.h>
+ #include <asm/mmu_context.h>
+ #include <asm/ptrace.h>
++#include <asm/traps.h>
+ 
+ /*
+  * Stores the breakpoints currently in use on each breakpoint address
+diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+index 17ad04f..b7c8f68 100644
+--- a/arch/sh/kernel/idle.c
++++ b/arch/sh/kernel/idle.c
+@@ -20,6 +20,7 @@
  #include <asm/pgalloc.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
-+#include <asm/switch_to.h>
- #include "entry.h"
+ #include <linux/atomic.h>
+ #include <asm/smp.h>
++#include <asm/bl_bit.h>
  
- #ifdef CONFIG_COMPAT
-diff --git a/arch/s390/kernel/setup.c b/arch/s390/kernel/setup.c
-index b7bcd21..1d7cbd3 100644
---- a/arch/s390/kernel/setup.c
-+++ b/arch/s390/kernel/setup.c
-@@ -61,6 +61,7 @@
- #include <asm/ebcdic.h>
- #include <asm/kvm_virtio.h>
- #include <asm/diag.h>
-+#include <asm/facility.h>
+ void (*pm_idle)(void);
  
- long psw_kernel_bits	= PSW_DEFAULT_KEY | PSW_MASK_BASE | PSW_ASC_PRIMARY |
- 			  PSW_MASK_EA | PSW_MASK_BA;
-diff --git a/arch/s390/kernel/signal.c b/arch/s390/kernel/signal.c
-index 2d421d9..f7abd73 100644
---- a/arch/s390/kernel/signal.c
-+++ b/arch/s390/kernel/signal.c
+diff --git a/arch/sh/kernel/process_64.c b/arch/sh/kernel/process_64.c
+index cbd4e4b..4264583 100644
+--- a/arch/sh/kernel/process_64.c
++++ b/arch/sh/kernel/process_64.c
 @@ -30,6 +30,7 @@
- #include <asm/ucontext.h>
- #include <asm/uaccess.h>
- #include <asm/lowcore.h>
+ #include <asm/pgtable.h>
+ #include <asm/mmu_context.h>
+ #include <asm/fpu.h>
 +#include <asm/switch_to.h>
- #include "entry.h"
  
- #define _BLOCKABLE (~(sigmask(SIGKILL) | sigmask(SIGSTOP)))
-diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
-index 2398ce6..baf1a98 100644
---- a/arch/s390/kernel/smp.c
-+++ b/arch/s390/kernel/smp.c
-@@ -53,6 +53,7 @@
- #include <asm/cputime.h>
- #include <asm/vdso.h>
- #include <asm/cpu.h>
-+#include <asm/facility.h>
- #include "entry.h"
+ struct task_struct *last_task_used_math = NULL;
  
- /* logical cpu to cpu address */
-diff --git a/arch/s390/kernel/suspend.c b/arch/s390/kernel/suspend.c
-index 3d8ab80..aa1494d 100644
---- a/arch/s390/kernel/suspend.c
-+++ b/arch/s390/kernel/suspend.c
+diff --git a/arch/sh/kernel/ptrace_64.c b/arch/sh/kernel/ptrace_64.c
+index 663c9ae..bc81e07 100644
+--- a/arch/sh/kernel/ptrace_64.c
++++ b/arch/sh/kernel/ptrace_64.c
+@@ -38,6 +38,7 @@
+ #include <asm/mmu_context.h>
+ #include <asm/syscalls.h>
+ #include <asm/fpu.h>
++#include <asm/traps.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/syscalls.h>
+diff --git a/arch/sh/kernel/reboot.c b/arch/sh/kernel/reboot.c
+index 7cc034b..04afe5b 100644
+--- a/arch/sh/kernel/reboot.c
++++ b/arch/sh/kernel/reboot.c
 @@ -9,6 +9,7 @@
- #include <linux/pfn.h>
- #include <linux/suspend.h>
- #include <linux/mm.h>
-+#include <asm/ctl_reg.h>
- 
- /*
-  * References to section boundaries
-diff --git a/arch/s390/kernel/vdso.c b/arch/s390/kernel/vdso.c
-index 8187da6..aed1e65 100644
---- a/arch/s390/kernel/vdso.c
-+++ b/arch/s390/kernel/vdso.c
-@@ -30,6 +30,7 @@
- #include <asm/mmu_context.h>
- #include <asm/sections.h>
- #include <asm/vdso.h>
-+#include <asm/facility.h>
- 
- #if defined(CONFIG_32BIT) || defined(CONFIG_COMPAT)
- extern char vdso32_start, vdso32_end;
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index 78d3f8a..d56de16 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -27,6 +27,7 @@
- #include <asm/lowcore.h>
- #include <asm/pgtable.h>
- #include <asm/nmi.h>
-+#include <asm/switch_to.h>
- #include "kvm-s390.h"
- #include "gaccess.h"
- 
-diff --git a/arch/s390/mm/fault.c b/arch/s390/mm/fault.c
-index 7620f61..3915870 100644
---- a/arch/s390/mm/fault.c
-+++ b/arch/s390/mm/fault.c
-@@ -35,6 +35,7 @@
- #include <asm/pgtable.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-+#include <asm/facility.h>
- #include "../kernel/entry.h"
- 
- #ifndef CONFIG_64BIT
-diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
-index 2e4870e..2bea060 100644
---- a/arch/s390/mm/init.c
-+++ b/arch/s390/mm/init.c
-@@ -37,6 +37,7 @@
- #include <asm/tlb.h>
+ #include <asm/addrspace.h>
+ #include <asm/reboot.h>
  #include <asm/tlbflush.h>
- #include <asm/sections.h>
-+#include <asm/ctl_reg.h>
++#include <asm/traps.h>
  
- pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__((__aligned__(PAGE_SIZE)));
+ void (*pm_power_off)(void);
+ EXPORT_SYMBOL(pm_power_off);
+diff --git a/arch/sh/kernel/traps.c b/arch/sh/kernel/traps.c
+index 931baa8..a87e58a 100644
+--- a/arch/sh/kernel/traps.c
++++ b/arch/sh/kernel/traps.c
+@@ -7,6 +7,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/hardirq.h>
+ #include <asm/unwinder.h>
++#include <asm/traps.h>
  
-diff --git a/arch/s390/mm/maccess.c b/arch/s390/mm/maccess.c
-index 6ea70a0..7bb15fc 100644
---- a/arch/s390/mm/maccess.c
-+++ b/arch/s390/mm/maccess.c
-@@ -12,6 +12,7 @@
- #include <linux/types.h>
- #include <linux/errno.h>
- #include <linux/gfp.h>
-+#include <asm/ctl_reg.h>
+ #ifdef CONFIG_GENERIC_BUG
+ static void handle_BUG(struct pt_regs *regs)
+diff --git a/arch/sh/kernel/traps_32.c b/arch/sh/kernel/traps_32.c
+index 227c21a..a37175d 100644
+--- a/arch/sh/kernel/traps_32.c
++++ b/arch/sh/kernel/traps_32.c
+@@ -30,6 +30,8 @@
+ #include <asm/alignment.h>
+ #include <asm/fpu.h>
+ #include <asm/kprobes.h>
++#include <asm/traps.h>
++#include <asm/bl_bit.h>
+ 
+ #ifdef CONFIG_CPU_SH2
+ # define TRAP_RESERVED_INST	4
+diff --git a/arch/sh/mm/fault_32.c b/arch/sh/mm/fault_32.c
+index ddbc2d4..324eef9 100644
+--- a/arch/sh/mm/fault_32.c
++++ b/arch/sh/mm/fault_32.c
+@@ -19,6 +19,7 @@
+ #include <asm/io_trapped.h>
+ #include <asm/mmu_context.h>
+ #include <asm/tlbflush.h>
++#include <asm/traps.h>
+ 
+ static inline int notify_page_fault(struct pt_regs *regs, int trap)
+ {
+diff --git a/arch/sh/mm/flush-sh4.c b/arch/sh/mm/flush-sh4.c
+index cef4026..75a17f5 100644
+--- a/arch/sh/mm/flush-sh4.c
++++ b/arch/sh/mm/flush-sh4.c
+@@ -1,6 +1,7 @@
+ #include <linux/mm.h>
+ #include <asm/mmu_context.h>
+ #include <asm/cacheflush.h>
++#include <asm/traps.h>
  
  /*
-  * This function writes to kernel memory bypassing DAT and possible
-diff --git a/arch/s390/oprofile/hwsampler.c b/arch/s390/oprofile/hwsampler.c
-index 9daee91..f9a0e5d 100644
---- a/arch/s390/oprofile/hwsampler.c
-+++ b/arch/s390/oprofile/hwsampler.c
-@@ -18,6 +18,7 @@
- #include <linux/oom.h>
- #include <linux/oprofile.h>
- 
-+#include <asm/facility.h>
- #include <asm/lowcore.h>
- #include <asm/irq.h>
- 
-diff --git a/drivers/s390/char/sclp_cmd.c b/drivers/s390/char/sclp_cmd.c
-index 0b54a91..2e58f47 100644
---- a/drivers/s390/char/sclp_cmd.c
-+++ b/drivers/s390/char/sclp_cmd.c
-@@ -21,6 +21,7 @@
- #include <asm/chpid.h>
- #include <asm/sclp.h>
- #include <asm/setup.h>
-+#include <asm/ctl_reg.h>
- 
- #include "sclp.h"
- 
-diff --git a/drivers/s390/cio/crw.c b/drivers/s390/cio/crw.c
-index 425f741..d0a2dff 100644
---- a/drivers/s390/cio/crw.c
-+++ b/drivers/s390/cio/crw.c
-@@ -13,6 +13,7 @@
- #include <linux/init.h>
- #include <linux/wait.h>
- #include <asm/crw.h>
-+#include <asm/ctl_reg.h>
- 
- static DEFINE_MUTEX(crw_handler_mutex);
- static crw_handler_t crw_handlers[NR_RSCS];
-diff --git a/drivers/s390/crypto/ap_bus.c b/drivers/s390/crypto/ap_bus.c
-index 090ea2a..be0caae 100644
---- a/drivers/s390/crypto/ap_bus.c
-+++ b/drivers/s390/crypto/ap_bus.c
-@@ -45,6 +45,7 @@
- #include <asm/isc.h>
- #include <linux/hrtimer.h>
- #include <linux/ktime.h>
-+#include <asm/facility.h>
- 
- #include "ap_bus.h"
- 
+  * Write back the dirty D-caches, but not invalidate them.
 
