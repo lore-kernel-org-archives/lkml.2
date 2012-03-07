@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031592Ab2CGA3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 19:29:37 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:34014 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756654Ab2CGA3f (ORCPT
+	id S1031664Ab2CGAaS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 19:30:18 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:42613 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1031547Ab2CGAaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 19:29:35 -0500
-Date: Wed, 7 Mar 2012 11:29:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Heiko Stuebner <heiko@sntech.de>
-Subject: linux-next: manual merge of the s5p tree with Linus' tree
-Message-Id: <20120307112926.84043e2f2db878026ebfd72a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__7_Mar_2012_11_29_26_+1100_3c_Li9oD24oapfyI"
+	Tue, 6 Mar 2012 19:30:16 -0500
+Message-ID: <4F56AC21.1050000@gmail.com>
+Date: Tue, 06 Mar 2012 19:30:25 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Mikulas Patocka <mpatocka@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Shaohua Li <shaohua.li@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, kosaki.motohiro@gmail.com
+Subject: Re: [PATCH] fix bug introduced in "mm: simplify find_vma_prev()"
+References: <Pine.LNX.4.64.1203041946430.3487@file.rdu.redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1203041946430.3487@file.rdu.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__7_Mar_2012_11_29_26_+1100_3c_Li9oD24oapfyI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(3/4/12 7:52 PM), Mikulas Patocka wrote:
+> Hi
+>
+> This patch fixes a bug introduced in "mm: simplify find_vma_prev()". You
+> can apply this, or alternatively revert the original patch.
+>
+> Mikulas
+>
+> ---
+>
+> mm: fix find_vma_prev
+>
+> The commit mm: simplify find_vma_prev()
+> [6bd4837de96e7d9f9bf33e59117c24fc230862ac] broke memory management on PA-RISC.
+>
+> After application of the patch, programs that allocate big arrays on the stack
+> crash with segfault, for example, this will crash if compiled without
+> optimization:
+> int main()
+> {
+> 	char array[200000];
+> 	array[199999] = 0;
+> 	return 0;
+> }
+>
+> The reason is that PA-RISC has up-growing stack and the stack is usually the
+> last memory area. In the above example, a page fault happens above the stack.
+>
+> Previously, if we passed too high address to find_vma_prev, it returned NULL
+> and stored the last VMA in *pprev. After "simplify find_vma_prev" change, it
+> stores NULL in *pprev. Consequently, the stack area is not found and it is
+> not expanded, as it used to be before the change.
+>
+> This patch restores the old behavior and makes it return the last VMA in *pprev
+> if the requested address is higher than address of any other VMA.
+>
+> Signed-off-by: Mikulas Patocka<mpatocka@redhat.com>
 
-Hi Kukjin,
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Today's linux-next merge of the s5p tree got a conflict in
-arch/arm/mach-s3c2440/common.h between commit c1ba544f8154 ("ARM:
-S3C24XX: Fix restart on S3C2442") from Linus' tree and commit
-dd6f01b5ccba ("ARM: S3C2440: move mach-s3c2440/* into mach-s3c24xx/")
-from the s5p tree.
 
-The latter removed the file so I did that.  I also added this fix up
-patch:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 7 Mar 2012 11:26:40 +1100
-Subject: [PATCH] ARM: S3C24XX: fix for Fix restart on S3C2442
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/arm/mach-s3c24xx/common.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mach-s3c24xx/common.h b/arch/arm/mach-s3c24xx/common.h
-index 62a2e19..39f5394 100644
---- a/arch/arm/mach-s3c24xx/common.h
-+++ b/arch/arm/mach-s3c24xx/common.h
-@@ -17,7 +17,7 @@ void s3c2410_restart(char mode, const char *cmd);
- #endif
-=20
- #ifdef CONFIG_CPU_S3C2440
--void s3c2440_restart(char mode, const char *cmd);
-+void s3c244x_restart(char mode, const char *cmd);
- #endif
-=20
- #endif /* __ARCH_ARM_MACH_S3C2410_COMMON_H */
---=20
-1.7.9.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__7_Mar_2012_11_29_26_+1100_3c_Li9oD24oapfyI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPVqvmAAoJEECxmPOUX5FEfcoP/2b1R6tiJ5UrgxcCg6SFsicG
-hAJCw0Gvm5J8hC2tqMU3KFQ5u5ZyYekxgxrpYN4T7xKcJ0viOqfcHqHiyMeMQMVB
-16rnvJdLP9aSZEBTm8Ji+YyT1tIdpQtksp7Gfiw1CvCsyuOO3l3th6K+TNfE+VEZ
-9sJ3+a4jvSbFG3QtC+JsKBlPx7kSFSK1JVJc8wwfCykx2JhqKvzGiCgOjisC3H6E
-6Y+Ahs5yYW9N9ZLkkS2wFlp/QD2Cx+KmrbT+XXgBqH8Epba9aWTK2TSbszXOraYF
-kjck6lG2/7nVh47ovKuFSHC7114a0xKIHAhF627wl62korX3rb0Z8KUK8eXEEW5k
-ij2WVULTxp8Yy57QmKlXeUiZS4YWgAmp8bsnUxDkwYwrNAKMibeZyTKJvEhnEGQF
-LmyAcloMiNDJLuADNk6iTPoegdniTyhLFeXyj+8fYDRrLRDod2fLSrlyGdCStnLj
-NufjV9hhtqTw3DxinLkehKKBXeEbNoCwD6bITbV0SfbNen29PBLIEiqA+g/CvM/A
-Z2PimpTkqVF7tUS+zwxkGAWcNO9tuafsDl5l29XDSvm+Tx17nB76x2MxWpGPMkh2
-2uh/78nDcBe4e92Lz5Y+94qE5xmVB6ezhRzg6iTc/mjm6EuZ1+/DJzKuzAsBXT26
-7irtDECjuenGg754n6m5
-=UbSX
------END PGP SIGNATURE-----
-
---Signature=_Wed__7_Mar_2012_11_29_26_+1100_3c_Li9oD24oapfyI--
+I prefer to remove find_vma_prev() eventually. but this is good short term solution.
