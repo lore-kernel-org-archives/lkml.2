@@ -1,126 +1,493 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760031Ab2CGTrp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 14:47:45 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52274 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760005Ab2CGTr1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 14:47:27 -0500
+	id S1760060Ab2CGTsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 14:48:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760005Ab2CGTrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 14:47:53 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 08/29] Disintegrate asm/system.h for C6X
+To: paul.gortmaker@windriver.com, hpa@zytor.com
+Cc: torvalds@linux-foundation.org, sfr@canb.auug.org.au, mingo@redhat.com,
+        arnd@arndb.de, dhowells@redhat.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Date: Wed, 07 Mar 2012 19:47:25 +0000
+Message-ID: <20120307194725.15987.99209.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120307194548.15987.36073.stgit@warthog.procyon.org.uk>
+References: <20120307194548.15987.36073.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20120307162851.GC13430@redhat.com>
-References: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com>
-	<CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
-	<20120307162851.GC13430@redhat.com>
-Date: Wed, 7 Mar 2012 13:47:25 -0600
-Message-ID: <CAKA=qzb0T62xFsDpiQ0nsnE--HQ2bXFKN2EWr4knjR_+bOshUA@mail.gmail.com>
-Subject: Re: multi-second application stall in open()
-From: Josh Hunt <joshhunt00@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org, tj@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 10:28 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Wed, Mar 07, 2012 at 07:43:42AM -0600, Josh Hunt wrote:
->> On Tue, Mar 6, 2012 at 3:56 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
->> > I am trying to diagnose a stall in an application when making a call
->> > to open() with O_TRUNC. The issue was originally seen on 2.6.38 and
->> > I've since reproduced on 2.6.35. I believe the last kernel that I did
->> > not see the stall was 2.6.32. The system is under low to moderate cpu
->> > and memory load when the issue occurs. The filesystem is ext2, but I
->> > mounted it as ext4 and still saw the issue.
->> >
->> > To me it appears the O_TRUNC needs to truncate pages in the page
->> > cache, but maybe those are already out for writeback? This causes the
->> > open() to wait until that operation completes at which time it is then
->> > able to proceed. If that's true then it looks like the writeback is
->> > sitting on the queue forever waiting (tens of seconds) to be
->> > dispatched to the device.
->> >
->> > Here's some more info/data I collected:
->> > (Unfortunately the data here and attached are from separate runs so
->> > the #s will not match up file to file.)
->> >
->> > Snippet of an strace when it is hanging:
->> > 1329323286.589182 close(37)             = 0 <0.000010>
->> > 1329323286.589212 clock_gettime(0x5 /* CLOCK_??? */, {1329323286,
->> > 587579583}) = 0 <0.000007>
->> > 1329323286.589241 open("/usr/local/etc/abcd/known/test808",
->> > O_WRONLY|O_CREAT|O_TRUNC, 0644)                = 37 <76.841586>
->> > 1329323363.441841 fchmod(37, 0644)      = 0 <0.000012>
->> > 1329323363.441882 fcntl64(37, F_GETFL)  = 0x1 (flags O_WRONLY) <0.000011>
->> > 1329323363.441915 fcntl64(37, F_SETFL, O_WRONLY|O_NONBLOCK) = 0 <0.000010>
->> >
->> > To debug this more I enabled the hang check timer to dump stack when
->> > anything hung for longer than 10s. There I see the the hanging
->> > application appearing to be stuck in sync_page(). See attached dmesg
->> > for traces.
->> >
->> > I've also captured "iostat -xm 1" while the application was running
->> > and have attached a snippet of that when the problem is occurring. I
->> > see 100% utilization for many seconds and then eventually the
->> > operations complete, but the await time is extremely high. To me there
->> > doesn't look like much IO going on which could be starving out any
->> > requests.
->> >
->> > I have not been able to perform a full bisection to better understand
->> > what may be causing this, but do see this on 2.6.38, a little less
->> > frequently but still occurs on 2.6.35, and no longer see the issue on
->> > 2.6.32. If I switch slice_idle to 0 or change to the deadline
->> > scheduler the issue appears to go away in both 2.6.35 and 38.
->
-> Is it happening on latest kernel (3.3-rc6) ?
->
-> Can you change the IO scheduler to deadline on sda and see if the issue
-> still happens. (echo deadline > /sys/block/sda/queue/scheduler).
->
-> blktrace of cfq look odd. I see that some IO (async writes) are being
-> submitted but CFQ did not dispatch it for a long time.  Even some unplugs
-> came in still nothing happened. Also no completions are happening during
-> that window. Not sure why CFQ refuses to dispatch queued writes.
->
-> Request added by flusher.
->
->  8,0    1    36926  5028.546000122  2846  A   W 20147012 + 8 <- (8,3)
-> 3375152
->  8,0    1    36927  5028.546001798  2846  Q   W 20147012 + 8 [flush-8:0]
->  8,0    1    36928  5028.546009900  2846  G   W 20147012 + 8 [flush-8:0]
->  8,0    1    36929  5028.546014649  2846  I   W 20147012 + 8 (    4749)
-> [flush-8:0]
->
-> And this request is dispatched after 22 seconds.
->
->  8,0    1    37056  5050.117337221   162  D   W 20147012 + 16 (21571322572) [sync_supers]
->
->
-> And it completes fairly fast.
->
->  8,0    0    36522  5050.117686149  9657  C   W 20147012 + 16 (  348928)
-> [0]
->
-> So not sure why CFQ will hold that request for so long when other IO is
-> not happening.
->
-> Please try latest kernels and see if deadline has the same issue. If not,
-> then we know somehow CFQ is related. If it still happens on latest
-> kernels, can you try capturing blktrace again when you are experiencing
-> the delays.
->
-> Thanks
-> Vivek
+Disintegrate asm/system.h for C6X.  Not compiled.  Appears to be missing
+asm/atomic.h and asm/bug.h.
 
-Vivek thanks for the response. I did try deadline and do not see the
-issue using that. I also do not see the problem when slice_idle is set
-to 0. Unfortunately I cannot run the testcase on 3.3-rc right now. I
-also wanted to point out that there seems to be very little IO going
-on (at least from what I can tell.) Please double check me with the
-iostat output I sent in the previous mail. I am wondering if it's
-possible that there's not enough requests here to keep things running
-smoothly? If that's a possibility?
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-Thanks
-Josh
+ arch/c6x/include/asm/atomic.h        |   68 ++++++++++++++
+ arch/c6x/include/asm/barrier.h       |   25 +++++
+ arch/c6x/include/asm/bug.h           |   19 ++++
+ arch/c6x/include/asm/processor.h     |    9 ++
+ arch/c6x/include/asm/setup.h         |    1 
+ arch/c6x/include/asm/special_insns.h |   64 +++++++++++++
+ arch/c6x/include/asm/switch_to.h     |   31 ++++++
+ arch/c6x/include/asm/system.h        |  167 ----------------------------------
+ 8 files changed, 217 insertions(+), 167 deletions(-)
+ create mode 100644 arch/c6x/include/asm/atomic.h
+ create mode 100644 arch/c6x/include/asm/barrier.h
+ create mode 100644 arch/c6x/include/asm/bug.h
+ create mode 100644 arch/c6x/include/asm/special_insns.h
+ create mode 100644 arch/c6x/include/asm/switch_to.h
+ delete mode 100644 arch/c6x/include/asm/system.h
+
+diff --git a/arch/c6x/include/asm/atomic.h b/arch/c6x/include/asm/atomic.h
+new file mode 100644
+index 0000000..510d46f
+--- /dev/null
++++ b/arch/c6x/include/asm/atomic.h
+@@ -0,0 +1,68 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#ifndef _ASM_C6X_ATOMIC_H
++#define _ASM_C6X_ATOMIC_H
++
++#include <linux/irqflags.h>
++
++/*
++ * Misc. functions
++ */
++static inline unsigned int __xchg(unsigned int x, volatile void *ptr, int size)
++{
++	unsigned int tmp;
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	switch (size) {
++	case 1:
++		tmp = 0;
++		tmp = *((unsigned char *) ptr);
++		*((unsigned char *) ptr) = (unsigned char) x;
++		break;
++	case 2:
++		tmp = 0;
++		tmp = *((unsigned short *) ptr);
++		*((unsigned short *) ptr) = x;
++		break;
++	case 4:
++		tmp = 0;
++		tmp = *((unsigned int *) ptr);
++		*((unsigned int *) ptr) = x;
++		break;
++	}
++	local_irq_restore(flags);
++	return tmp;
++}
++
++#define xchg(ptr, x) \
++	((__typeof__(*(ptr)))__xchg((unsigned int)(x), (void *) (ptr), \
++				    sizeof(*(ptr))))
++#define tas(ptr)    xchg((ptr), 1)
++
++
++#include <asm-generic/cmpxchg-local.h>
++
++/*
++ * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
++ * them available.
++ */
++#define cmpxchg_local(ptr, o, n)					\
++	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),		\
++						     (unsigned long)(o), \
++						     (unsigned long)(n), \
++						     sizeof(*(ptr))))
++#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
++
++#include <asm-generic/cmpxchg.h>
++
++#endif /* _ASM_C6X_ATOMIC_H */
+diff --git a/arch/c6x/include/asm/barrier.h b/arch/c6x/include/asm/barrier.h
+new file mode 100644
+index 0000000..a845709
+--- /dev/null
++++ b/arch/c6x/include/asm/barrier.h
+@@ -0,0 +1,25 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#ifndef _ASM_C6X_BARRIER_H
++#define _ASM_C6X_BARRIER_H
++
++#define mb()                     barrier()
++#define rmb()                    barrier()
++#define wmb()                    barrier()
++#define set_mb(var, value)       do { var = value;  mb(); } while (0)
++#define set_wmb(var, value)      do { var = value; wmb(); } while (0)
++
++#define smp_mb()	         barrier()
++#define smp_rmb()	         barrier()
++#define smp_wmb()	         barrier()
++#define smp_read_barrier_depends()	do { } while (0)
++
++#endif /* _ASM_C6X_BARRIER_H */
+diff --git a/arch/c6x/include/asm/bug.h b/arch/c6x/include/asm/bug.h
+new file mode 100644
+index 0000000..db6c7d5
+--- /dev/null
++++ b/arch/c6x/include/asm/bug.h
+@@ -0,0 +1,19 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#ifndef _ASM_C6X_BUG_H
++#define _ASM_C6X_BUG_H
++
++struct pt_regs;
++
++extern void die(char *str, struct pt_regs *fp, int nr);
++extern asmlinkage int process_exception(struct pt_regs *regs);
++
++#endif /* _ASM_C6X_BUG_H */
+diff --git a/arch/c6x/include/asm/processor.h b/arch/c6x/include/asm/processor.h
+index 8154c4e..c4f1c04 100644
+--- a/arch/c6x/include/asm/processor.h
++++ b/arch/c6x/include/asm/processor.h
+@@ -129,4 +129,13 @@ extern unsigned long get_wchan(struct task_struct *p);
+ 
+ extern const struct seq_operations cpuinfo_op;
+ 
++/* Reset the board */
++#define HARD_RESET_NOW()
++
++extern unsigned int c6x_core_freq;
++
++
++extern void (*c6x_restart)(void);
++extern void (*c6x_halt)(void);
++
+ #endif /* ASM_C6X_PROCESSOR_H */
+diff --git a/arch/c6x/include/asm/setup.h b/arch/c6x/include/asm/setup.h
+index 1808f27..a01e318 100644
+--- a/arch/c6x/include/asm/setup.h
++++ b/arch/c6x/include/asm/setup.h
+@@ -27,6 +27,7 @@ extern unsigned int c6x_devstat;
+ extern unsigned char c6x_fuse_mac[6];
+ 
+ extern void machine_init(unsigned long dt_ptr);
++extern void time_init(void);
+ 
+ #endif /* !__ASSEMBLY__ */
+ #endif /* _ASM_C6X_SETUP_H */
+diff --git a/arch/c6x/include/asm/special_insns.h b/arch/c6x/include/asm/special_insns.h
+new file mode 100644
+index 0000000..3be40df
+--- /dev/null
++++ b/arch/c6x/include/asm/special_insns.h
+@@ -0,0 +1,64 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#ifndef _ASM_C6X_SPECIAL_INSNS_H
++#define _ASM_C6X_SPECIAL_INSNS_H
++
++
++#define get_creg(reg) \
++	({ unsigned int __x; \
++	   asm volatile ("mvc .s2 " #reg ",%0\n" : "=b"(__x)); __x; })
++
++#define set_creg(reg, v) \
++	do { unsigned int __x = (unsigned int)(v); \
++		asm volatile ("mvc .s2 %0," #reg "\n" : : "b"(__x)); \
++	} while (0)
++
++#define or_creg(reg, n) \
++	do { unsigned __x, __n = (unsigned)(n);		  \
++		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
++			      "or  .l2 %1,%0,%0\n"	  \
++			      "mvc .s2 %0," #reg "\n"	  \
++			      "nop\n"			  \
++			      : "=&b"(__x) : "b"(__n));	  \
++	} while (0)
++
++#define and_creg(reg, n) \
++	do { unsigned __x, __n = (unsigned)(n);		  \
++		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
++			      "and .l2 %1,%0,%0\n"	  \
++			      "mvc .s2 %0," #reg "\n"	  \
++			      "nop\n"    \
++			      : "=&b"(__x) : "b"(__n));	  \
++	} while (0)
++
++#define get_coreid() (get_creg(DNUM) & 0xff)
++
++/* Set/get IST */
++#define set_ist(x)	set_creg(ISTP, x)
++#define get_ist()       get_creg(ISTP)
++
++/*
++ * Exception management
++ */
++asmlinkage void enable_exception(void);
++#define disable_exception()
++#define get_except_type()        get_creg(EFR)
++#define ack_exception(type)      set_creg(ECR, 1 << (type))
++#define get_iexcept()            get_creg(IERR)
++#define set_iexcept(mask)        set_creg(IERR, (mask))
++
++#define _extu(x, s, e)							\
++	({      unsigned int __x;					\
++		asm volatile ("extu .S2 %3,%1,%2,%0\n" :		\
++			      "=b"(__x) : "n"(s), "n"(e), "b"(x));	\
++	       __x; })
++
++#endif /* _ASM_C6X_SPECIAL_INSNS_H */
+diff --git a/arch/c6x/include/asm/switch_to.h b/arch/c6x/include/asm/switch_to.h
+new file mode 100644
+index 0000000..83bb5a4
+--- /dev/null
++++ b/arch/c6x/include/asm/switch_to.h
+@@ -0,0 +1,31 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#ifndef _ASM_C6X_SWITCH_TO_H
++#define _ASM_C6X_SWITCH_TO_H
++
++#define prepare_to_switch()    do { } while (0)
++
++struct task_struct;
++struct thread_struct;
++asmlinkage void *__switch_to(struct thread_struct *prev,
++			     struct thread_struct *next,
++			     struct task_struct *tsk);
++
++#define switch_to(prev, next, last)				\
++	do {							\
++		current->thread.wchan = (u_long) __builtin_return_address(0); \
++		(last) = __switch_to(&(prev)->thread,		\
++				     &(next)->thread, (prev));	\
++		mb();						\
++		current->thread.wchan = 0;			\
++	} while (0)
++
++#endif /* _ASM_C6X_SWITCH_TO_H */
+diff --git a/arch/c6x/include/asm/system.h b/arch/c6x/include/asm/system.h
+deleted file mode 100644
+index 7b1cfa9..0000000
+--- a/arch/c6x/include/asm/system.h
++++ /dev/null
+@@ -1,167 +0,0 @@
+-/*
+- *  Port on Texas Instruments TMS320C6x architecture
+- *
+- *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
+- *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
+- *
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License version 2 as
+- *  published by the Free Software Foundation.
+- */
+-#ifndef _ASM_C6X_SYSTEM_H
+-#define _ASM_C6X_SYSTEM_H
+-
+-#include <linux/linkage.h>
+-#include <linux/irqflags.h>
+-
+-#define prepare_to_switch()    do { } while (0)
+-
+-struct task_struct;
+-struct thread_struct;
+-asmlinkage void *__switch_to(struct thread_struct *prev,
+-			     struct thread_struct *next,
+-			     struct task_struct *tsk);
+-
+-#define switch_to(prev, next, last)				\
+-	do {							\
+-		current->thread.wchan = (u_long) __builtin_return_address(0); \
+-		(last) = __switch_to(&(prev)->thread,		\
+-				     &(next)->thread, (prev));	\
+-		mb();						\
+-		current->thread.wchan = 0;			\
+-	} while (0)
+-
+-/* Reset the board */
+-#define HARD_RESET_NOW()
+-
+-#define get_creg(reg) \
+-	({ unsigned int __x; \
+-	   asm volatile ("mvc .s2 " #reg ",%0\n" : "=b"(__x)); __x; })
+-
+-#define set_creg(reg, v) \
+-	do { unsigned int __x = (unsigned int)(v); \
+-		asm volatile ("mvc .s2 %0," #reg "\n" : : "b"(__x)); \
+-	} while (0)
+-
+-#define or_creg(reg, n) \
+-	do { unsigned __x, __n = (unsigned)(n);		  \
+-		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
+-			      "or  .l2 %1,%0,%0\n"	  \
+-			      "mvc .s2 %0," #reg "\n"	  \
+-			      "nop\n"			  \
+-			      : "=&b"(__x) : "b"(__n));	  \
+-	} while (0)
+-
+-#define and_creg(reg, n) \
+-	do { unsigned __x, __n = (unsigned)(n);		  \
+-		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
+-			      "and .l2 %1,%0,%0\n"	  \
+-			      "mvc .s2 %0," #reg "\n"	  \
+-			      "nop\n"    \
+-			      : "=&b"(__x) : "b"(__n));	  \
+-	} while (0)
+-
+-#define get_coreid() (get_creg(DNUM) & 0xff)
+-
+-/* Set/get IST */
+-#define set_ist(x)	set_creg(ISTP, x)
+-#define get_ist()       get_creg(ISTP)
+-
+-/*
+- * Exception management
+- */
+-asmlinkage void enable_exception(void);
+-#define disable_exception()
+-#define get_except_type()        get_creg(EFR)
+-#define ack_exception(type)      set_creg(ECR, 1 << (type))
+-#define get_iexcept()            get_creg(IERR)
+-#define set_iexcept(mask)        set_creg(IERR, (mask))
+-
+-/*
+- * Misc. functions
+- */
+-#define nop()                    asm("NOP\n");
+-#define mb()                     barrier()
+-#define rmb()                    barrier()
+-#define wmb()                    barrier()
+-#define set_mb(var, value)       do { var = value;  mb(); } while (0)
+-#define set_wmb(var, value)      do { var = value; wmb(); } while (0)
+-
+-#define smp_mb()	         barrier()
+-#define smp_rmb()	         barrier()
+-#define smp_wmb()	         barrier()
+-#define smp_read_barrier_depends()	do { } while (0)
+-
+-#define xchg(ptr, x) \
+-	((__typeof__(*(ptr)))__xchg((unsigned int)(x), (void *) (ptr), \
+-				    sizeof(*(ptr))))
+-#define tas(ptr)    xchg((ptr), 1)
+-
+-unsigned int _lmbd(unsigned int, unsigned int);
+-unsigned int _bitr(unsigned int);
+-
+-struct __xchg_dummy { unsigned int a[100]; };
+-#define __xg(x) ((volatile struct __xchg_dummy *)(x))
+-
+-static inline unsigned int __xchg(unsigned int x, volatile void *ptr, int size)
+-{
+-	unsigned int tmp;
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-
+-	switch (size) {
+-	case 1:
+-		tmp = 0;
+-		tmp = *((unsigned char *) ptr);
+-		*((unsigned char *) ptr) = (unsigned char) x;
+-		break;
+-	case 2:
+-		tmp = 0;
+-		tmp = *((unsigned short *) ptr);
+-		*((unsigned short *) ptr) = x;
+-		break;
+-	case 4:
+-		tmp = 0;
+-		tmp = *((unsigned int *) ptr);
+-		*((unsigned int *) ptr) = x;
+-		break;
+-	}
+-	local_irq_restore(flags);
+-	return tmp;
+-}
+-
+-#include <asm-generic/cmpxchg-local.h>
+-
+-/*
+- * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
+- * them available.
+- */
+-#define cmpxchg_local(ptr, o, n)					\
+-	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),		\
+-						     (unsigned long)(o), \
+-						     (unsigned long)(n), \
+-						     sizeof(*(ptr))))
+-#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
+-
+-#include <asm-generic/cmpxchg.h>
+-
+-#define _extu(x, s, e)							\
+-	({      unsigned int __x;					\
+-		asm volatile ("extu .S2 %3,%1,%2,%0\n" :		\
+-			      "=b"(__x) : "n"(s), "n"(e), "b"(x));	\
+-	       __x; })
+-
+-
+-extern unsigned int c6x_core_freq;
+-
+-struct pt_regs;
+-
+-extern void die(char *str, struct pt_regs *fp, int nr);
+-extern asmlinkage int process_exception(struct pt_regs *regs);
+-extern void time_init(void);
+-
+-extern void (*c6x_restart)(void);
+-extern void (*c6x_halt)(void);
+-
+-#endif /* _ASM_C6X_SYSTEM_H */
+
