@@ -1,416 +1,377 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758591Ab2CGOv1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 09:51:27 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:56513
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932265Ab2CGOvZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 09:51:25 -0500
-X-SpamScore: -3
-X-BigFish: VPS-3(zz936eKzz1202hzzz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M0IRXF-02-12Q-02
-X-M-MSG: 
-From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-Subject: [PATCH 1/2] Refine mutex and rcu method in module.c, kernel<3.2.9>
-Thread-Topic: [PATCH 1/2] Refine mutex and rcu method in module.c,
- kernel<3.2.9>
-Thread-Index: Acz8cbLg6k3HMRVqQxaI2PGzwf9WcQ==
-Date: Wed, 7 Mar 2012 14:51:06 +0000
-Message-ID: <491D6B4EAD0A714894D8AD22F4BDE04303289D@SCYBEXDAG04.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: ANy8 A2qv A/EG BwqJ DhyJ EaxW Ekkx FFAl FFPW Gp3l G3+R
- Hs50 IR3Z KRwj Kgf7
- K6AS;1;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{708B2CDF-718D-4E86-B578-EAAD993D0039};ZABlAG4AbgBpAHMAMQAuAGMAaABlAG4AQABhAG0AZAAuAGMAbwBtAA==;Wed,
- 07 Mar 2012 14:50:55
- GMT;WwBQAEEAVABDAEgAIAAxAC8AMgBdACAAUgBlAGYAaQBuAGUAIABtAHUAdABlAHgAIABhAG4AZAAgAHIAYwB1ACAAbQBlAHQAaABvAGQAIABpAG4AIABtAG8AZAB1AGwAZQAuAGMALAAgAGsAZQByAG4AZQBsADwAMwAuADIALgA5AD4A
-x-cr-puzzleid: {708B2CDF-718D-4E86-B578-EAAD993D0039}
-x-originating-ip: [10.237.74.102]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S964831Ab2CGO4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 09:56:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45796 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964784Ab2CGO4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 09:56:08 -0500
+Date: Wed, 7 Mar 2012 09:55:56 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, axboe@kernel.dk, hughd@google.com,
+        avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org,
+        linux-kernel@vger.kernel.org, dpshah@google.com, ctalbott@google.com,
+        rni@google.com
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-ID: <20120307145556.GA11262@redhat.com>
+References: <20120225214421.GA3401@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120227031146.GA25187@redhat.com>
+ <20120227091141.GG3401@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120227194321.GF27677@redhat.com>
+ <20120229173639.GB5930@redhat.com>
+ <20120305221321.GF1263@google.com>
+ <20120306210954.GF32148@redhat.com>
+ <20120306132034.ecaf8b20.akpm@linux-foundation.org>
+ <20120306213437.GG32148@redhat.com>
+ <20120306135531.828ca78e.akpm@linux-foundation.org>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120306135531.828ca78e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Narrow down the granularity of mutex_lock/ mutex_unlock
-2. Replace some unnecessary mutex_lock/mutex_unlock pairs with RCU
-3. Refine the consistent calling style of RCU functioan 
+On Tue, Mar 06, 2012 at 01:55:31PM -0800, Andrew Morton wrote:
 
---- module.ori.c        2012-03-07 19:59:07.890900147 +0800
-+++ module.c    2012-03-07 22:12:44.982738729 +0800
-@@ -419,11 +419,14 @@
- struct module *find_module(const char *name)
- {
-        struct module *mod;
--
--       list_for_each_entry(mod, &modules, list) {
--               if (strcmp(mod->name, name) == 0)
-+       rcu_read_lock(); 
-+       list_for_each_entry_rcu(mod, &modules, list) {
-+               if (strcmp(mod->name, name) == 0) {
-+                       rcu_read_unlock();
-                        return mod;
-+                }
-        }
-+       rcu_read_unlock();
-        return NULL;
- }
- EXPORT_SYMBOL_GPL(find_module);
-@@ -488,7 +491,7 @@
-        struct module *mod;
-        unsigned int cpu;
- 
--       preempt_disable();
-+       rcu_read_lock();
- 
-        list_for_each_entry_rcu(mod, &modules, list) {
-                if (!mod->percpu_size)
-@@ -498,13 +501,13 @@
- 
-                        if ((void *)addr >= start &&
-                            (void *)addr < start + mod->percpu_size) {
--                               preempt_enable();
-+                               rcu_read_unlock();
-                                return true;
-                        }
-                }
-        }
- 
--       preempt_enable();
-+       rcu_read_unlock();
-        return false;
- }
- 
-@@ -876,11 +879,11 @@
- {
-        struct module *owner;
- 
--       preempt_disable();
-+       rcu_read_lock();
-        if (!find_symbol(symbol, &owner, NULL, true, false))
-                BUG();
-        module_put(owner);
--       preempt_enable();
-+       rcu_read_unlock();
- }
- EXPORT_SYMBOL(__symbol_put);
- 
-@@ -1598,8 +1601,11 @@
- static int __unlink_module(void *_mod)
- {
-        struct module *mod = _mod;
--       list_del(&mod->list);
--       module_bug_cleanup(mod);
-+       mutex_lock(&module_mutex);
-+       list_del_rcu(&mod->list);
-+       module_bug_cleanup(mod);
-+       mutex_unlock(&module_mutex);
-+
-        return 0;
- }
- 
-@@ -1672,7 +1678,7 @@
- {
-        struct module *mod;
- 
--       mutex_lock(&module_mutex);
-+       rcu_read_lock();
-        list_for_each_entry_rcu(mod, &modules, list) {
-                if ((mod->module_core) && (mod->core_text_size)) {
-                        set_page_attributes(mod->module_core,
-@@ -1685,7 +1691,7 @@
-                                                set_memory_rw);
-                }
-        }
--       mutex_unlock(&module_mutex);
-+       rcu_read_unlock();
- }
- 
- /* Iterate through all modules and set each module's text as RO */
-@@ -1693,7 +1699,7 @@
- {
-        struct module *mod;
- 
--       mutex_lock(&module_mutex);
-+       rcu_read_lock();
-        list_for_each_entry_rcu(mod, &modules, list) {
-                if ((mod->module_core) && (mod->core_text_size)) {
-                        set_page_attributes(mod->module_core,
-@@ -1706,7 +1712,7 @@
-                                                set_memory_ro);
-                }
-        }
--       mutex_unlock(&module_mutex);
-+       rcu_read_unlock();
- }
- #else
- static inline void set_section_ro_nx(void *base, unsigned long text_size, unsigned long ro_size, unsigned long total_size) { }
-@@ -1729,9 +1735,7 @@
-        trace_module_free(mod);
- 
-        /* Delete from various lists */
--       mutex_lock(&module_mutex);
-        stop_machine(__unlink_module, mod, NULL);
--       mutex_unlock(&module_mutex);
-        mod_sysfs_teardown(mod);
- 
-        /* Remove dynamic debug info */
-@@ -1769,11 +1773,11 @@
-        struct module *owner;
-        const struct kernel_symbol *sym;
- 
--       preempt_disable();
-+       rcu_read_lock();
-        sym = find_symbol(symbol, &owner, NULL, true, true);
-        if (sym && strong_try_module_get(owner))
-                sym = NULL;
--       preempt_enable();
-+       rcu_read_unlock();
- 
-        return sym ? (void *)sym->value : NULL;
- }
-@@ -2866,20 +2870,13 @@
- 
-        /* Mark state as coming so strong_try_module_get() ignores us. */
-        mod->state = MODULE_STATE_COMING;
--
--       /* Now sew it into the lists so we can get lockdep and oops
--        * info during argument parsing.  No one should access us, since
--        * strong_try_module_get() will fail.
--        * lockdep/oops can run asynchronous, so use the RCU list insertion
--        * function to insert in a way safe to concurrent readers.
--        * The mutex protects against concurrent writers.
--        */
--       mutex_lock(&module_mutex);
-+        
-+        /* Concurrent writers for the global modules list are protected by RCU*/
-        if (find_module(mod->name)) {
-                err = -EEXIST;
-                goto unlock;
-        }
--
-+        
-        /* This has to be done once we're sure module name is unique. */
-        dynamic_debug_setup(info.debug, info.num_debug);
- 
-@@ -2889,7 +2886,9 @@
-                goto ddebug;
- 
-        module_bug_finalize(info.hdr, info.sechdrs, mod);
--       list_add_rcu(&mod->list, &modules);
-+
-+       mutex_lock(&module_mutex);
-+       list_add_rcu(&mod->list, &modules);
-        mutex_unlock(&module_mutex);
- 
-        /* Module is ready to execute: parsing args may do that. */
-@@ -2915,11 +2914,10 @@
-        /* Unlink carefully: kallsyms could be walking list. */
-        list_del_rcu(&mod->list);
-        module_bug_cleanup(mod);
--
-+       mutex_unlock(&module_mutex);
-  ddebug:
-        dynamic_debug_remove(info.debug);
-  unlock:
--       mutex_unlock(&module_mutex);
-        synchronize_sched();
-        kfree(mod->args);
-  free_arch_cleanup:
-@@ -3102,7 +3100,7 @@
-        struct module *mod;
-        const char *ret = NULL;
- 
--       preempt_disable();
-+       rcu_read_lock();
-        list_for_each_entry_rcu(mod, &modules, list) {
-                if (within_module_init(addr, mod) ||
-                    within_module_core(addr, mod)) {
-@@ -3117,7 +3115,7 @@
-                strncpy(namebuf, ret, KSYM_NAME_LEN - 1);
-                ret = namebuf;
-        }
--       preempt_enable();
-+       rcu_read_unlock();
-        return ret;
- }
- 
-@@ -3125,7 +3123,7 @@
- {
-        struct module *mod;
- 
--       preempt_disable();
-+       rcu_read_lock();
-        list_for_each_entry_rcu(mod, &modules, list) {
-                if (within_module_init(addr, mod) ||
-                    within_module_core(addr, mod)) {
-@@ -3135,12 +3133,12 @@
-                        if (!sym)
-                                goto out;
-                        strlcpy(symname, sym, KSYM_NAME_LEN);
--                       preempt_enable();
-+                       rcu_read_unlock();
-                        return 0;
-                }
-        }
- out:
--       preempt_enable();
-+       rcu_read_unlock();
-        return -ERANGE;
- }
- 
-@@ -3149,7 +3147,7 @@
- {
-        struct module *mod;
- 
--       preempt_disable();
-+       rcu_read_lock();
-        list_for_each_entry_rcu(mod, &modules, list) {
-                if (within_module_init(addr, mod) ||
-                    within_module_core(addr, mod)) {
-@@ -3162,12 +3160,12 @@
-                                strlcpy(modname, mod->name, MODULE_NAME_LEN);
-                        if (name)
-                                strlcpy(name, sym, KSYM_NAME_LEN);
--                       preempt_enable();
-+                       rcu_read_unlock();
-                        return 0;
-                }
-        }
- out:
--       preempt_enable();
-+       rcu_read_unlock();
-        return -ERANGE;
- }
- 
-@@ -3176,7 +3174,7 @@
- {
-        struct module *mod;
- 
--       preempt_disable();
-+       rcu_read_lock();
-        list_for_each_entry_rcu(mod, &modules, list) {
-                if (symnum < mod->num_symtab) {
-                        *value = mod->symtab[symnum].st_value;
-@@ -3185,12 +3183,12 @@
-                                KSYM_NAME_LEN);
-                        strlcpy(module_name, mod->name, MODULE_NAME_LEN);
-                        *exported = is_exported(name, *value, mod);
--                       preempt_enable();
-+                       rcu_read_unlock();
-                        return 0;
-                }
-                symnum -= mod->num_symtab;
-        }
--       preempt_enable();
-+       rcu_read_unlock();
-        return -ERANGE;
- }
- 
-@@ -3212,19 +3210,18 @@
-        char *colon;
-        unsigned long ret = 0;
- 
--       /* Don't lock: we're in enough trouble already. */
--       preempt_disable();
-        if ((colon = strchr(name, ':')) != NULL) {
-                *colon = '\0';
-                if ((mod = find_module(name)) != NULL)
-                        ret = mod_find_symname(mod, colon+1);
-                *colon = ':';
-        } else {
-+               rcu_read_lock();
-                list_for_each_entry_rcu(mod, &modules, list)
-                        if ((ret = mod_find_symname(mod, name)) != 0)
-                                break;
-+               rcu_read_unlock();
-        }
--       preempt_enable();
-        return ret;
- }
- 
-@@ -3236,14 +3233,18 @@
-        unsigned int i;
-        int ret;
- 
--       list_for_each_entry(mod, &modules, list) {
-+       rcu_read_lock();
-+       list_for_each_entry_rcu(mod, &modules, list) {
-                for (i = 0; i < mod->num_symtab; i++) {
-                        ret = fn(data, mod->strtab + mod->symtab[i].st_name,
-                                 mod, mod->symtab[i].st_value);
--                       if (ret != 0)
-+                       if (ret != 0) {
-+                               rcu_read_unlock();
-                                return ret;
-+                        }
-                }
-        }
-+       rcu_read_unlock();
-        return 0;
- }
- #endif /* CONFIG_KALLSYMS */
-@@ -3364,7 +3365,7 @@
-        const struct exception_table_entry *e = NULL;
-        struct module *mod;
- 
--       preempt_disable();
-+       rcu_read_lock();
-        list_for_each_entry_rcu(mod, &modules, list) {
-                if (mod->num_exentries == 0)
-                        continue;
-@@ -3375,7 +3376,7 @@
-                if (e)
-                        break;
-        }
--       preempt_enable();
-+       rcu_read_unlock();
- 
-        /* Now, if we found one, we are running inside it now, hence
-           we cannot unload the module, hence no refcnt needed. */
-@@ -3393,9 +3394,9 @@
- {
-        bool ret;
- 
--       preempt_disable();
-+       rcu_read_lock();
-        ret = __module_address(addr) != NULL;
--       preempt_enable();
-+       rcu_read_unlock();
- 
-        return ret;
- }
-@@ -3434,9 +3435,9 @@
- {
-        bool ret;
- 
--       preempt_disable();
-+       rcu_read_lock();
-        ret = __module_text_address(addr) != NULL;
--       preempt_enable();
-+       rcu_read_unlock();
- 
-        return ret;
- }
-@@ -3469,10 +3470,10 @@
- 
-        printk(KERN_DEFAULT "Modules linked in:");
-        /* Most callers should already have preempt disabled, but make sure */
--       preempt_disable();
-+       rcu_read_lock();
-        list_for_each_entry_rcu(mod, &modules, list)
-                printk(" %s%s", mod->name, module_flags(mod, buf));
--       preempt_enable();
-+       rcu_read_unlock();
-        if (last_unloaded_module[0])
-                printk(" [last unloaded: %s]", last_unloaded_module);
-        printk("\n");
+[..]
+> > > hoo boy that looks like an infinite loop.  What's going on here?
+> > 
+> > If allocation fails, I am trying to allocate it again in infinite loop.
+> > What should I do? Try it after sleeping a bit? Or give up after certain
+> > number of tries? This is in worker thread context though, so main IO path
+> > is not impacted.
+> 
+> On a non-preemptible unprocessor kernel it's game over, isn't it? 
+> Unless someone frees some memory from interrupt context it is time for
+> the Big Red Button.
 
+Yes.  Its an issue on non-preemptible UP kernels. I changed the logic to
+msleep(10) before retrying. Tested on UP non-preemptible kernel with
+always failing allocation and things are fine.
+
+> 
+> I'm not sure what to suggest, really - if an allocation failed then
+> there's nothing the caller can reliably do to fix that.  The best
+> approach is to fail all the way back to userspace with -ENOMEM.
+
+As user space is not waiting for this allocation, -ENOMEM is really
+not an option.
+
+> 
+> In this context I suppose you could drop a warning into the logs then
+> bale out and retry on the next IO attempt.
+
+Yes, that also can be done. I found msleep(10) to be easier solution then
+remvoing group from list, and trying again when new IO comes in. Is this
+acceptable?
+ 
+[..]
+> 
+> btw, speaking of uniprocessor: please do perform a uniprocessor build
+> and see what impact the patch has upon the size(1) output for the .o
+> files.  We should try to minimize the pointless bloat for the UP
+> kernel.
+
+But this logic is required both for UP and SMP kernels. So bloat on UP
+is not unnecessary?
+
+I ran size(1) on block/blk-cgroup.o with and without the patch and I can
+see some bloat.
+
+Without patch(UP kernel)
+------------------------
+# size block/blk-cgroup.o
+   text    data     bss     dec     hex filename
+  12950    5248      50   18248    4748 block/blk-cgroup.o
+
+With patch(UP kernel)
+------------------------
+# size block/blk-cgroup.o
+   text    data     bss     dec     hex filename
+  13316    5376      58   18750    493e block/blk-cgroup.o
+
+Here is the V3 of the patch.
+
+
+blk-cgroup: Alloc per cpu stats from worker thread in a delayed manner
+
+Current per cpu stat allocation assumes GFP_KERNEL allocation flag. But in
+IO path there are times when we want GFP_NOIO semantics. As there is no
+way to pass the allocation flags to alloc_percpu(), this patch delays the
+allocation of stats using a worker thread.
+
+v2-> tejun suggested following changes. Changed the patch accordingly.
+	- move alloc_node location in structure
+	- reduce the size of names of some of the fields
+	- Reduce the scope of locking of alloc_list_lock
+	- Simplified stat_alloc_fn() by allocating stats for all
+	  policies in one go and then assigning these to a group.
+
+v3 -> Andrew suggested to put some comments in the code. Also raised
+      concerns about trying to allocate infinitely in case of allocation
+      failure. I have changed the logic to sleep for 10ms before retrying.
+      That should take care of non-preemptible UP kernels.
+
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-cgroup.c |  139 +++++++++++++++++++++++++++++++++++++----------------
+ block/blk-cgroup.h |    2 
+ 2 files changed, 101 insertions(+), 40 deletions(-)
+
+Index: tejun-misc/block/blk-cgroup.c
+===================================================================
+--- tejun-misc.orig/block/blk-cgroup.c	2012-03-07 20:36:44.019949136 -0500
++++ tejun-misc/block/blk-cgroup.c	2012-03-07 20:37:51.188951195 -0500
+@@ -30,6 +30,15 @@ static LIST_HEAD(blkio_list);
+ static DEFINE_MUTEX(all_q_mutex);
+ static LIST_HEAD(all_q_list);
+ 
++/* List of groups pending per cpu stats allocation */
++static DEFINE_SPINLOCK(alloc_list_lock);
++static LIST_HEAD(alloc_list);
++
++/* Array of per cpu stat pointers allocated for blk groups */
++static void *pcpu_stats[BLKIO_NR_POLICIES];
++static void blkio_stat_alloc_fn(struct work_struct *);
++static DECLARE_WORK(blkio_stat_alloc_work, blkio_stat_alloc_fn);
++
+ struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
+ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
+ 
+@@ -391,6 +400,10 @@ void blkiocg_update_dispatch_stats(struc
+ 	struct blkio_group_stats_cpu *stats_cpu;
+ 	unsigned long flags;
+ 
++	/* If per cpu stats are not allocated yet, don't do any accounting. */
++	if (pd->stats_cpu == NULL)
++		return;
++
+ 	/*
+ 	 * Disabling interrupts to provide mutual exclusion between two
+ 	 * writes on same cpu. It probably is not needed for 64bit. Not
+@@ -443,6 +456,10 @@ void blkiocg_update_io_merged_stats(stru
+ 	struct blkio_group_stats_cpu *stats_cpu;
+ 	unsigned long flags;
+ 
++	/* If per cpu stats are not allocated yet, don't do any accounting. */
++	if (pd->stats_cpu == NULL)
++		return;
++
+ 	/*
+ 	 * Disabling interrupts to provide mutual exclusion between two
+ 	 * writes on same cpu. It probably is not needed for 64bit. Not
+@@ -460,6 +477,68 @@ void blkiocg_update_io_merged_stats(stru
+ }
+ EXPORT_SYMBOL_GPL(blkiocg_update_io_merged_stats);
+ 
++/*
++ * Worker for allocating per cpu stat for blk groups. This is scheduled
++ * once there are some groups on the alloc_list waiting for allocation
++ */
++static void blkio_stat_alloc_fn(struct work_struct *work)
++{
++
++	struct blkio_group *blkg, *n;
++	int i;
++
++alloc_stats:
++	spin_lock_irq(&alloc_list_lock);
++		if (list_empty(&alloc_list)) {
++			/* No more groups needing per cpu stat allocation */
++			spin_unlock_irq(&alloc_list_lock);
++			return;
++		}
++	spin_unlock_irq(&alloc_list_lock);
++
++	for (i = 0; i < BLKIO_NR_POLICIES; i++) {
++		if (pcpu_stats[i] != NULL)
++			continue;
++
++		pcpu_stats[i] = alloc_percpu(struct blkio_group_stats_cpu);
++		/* Allocatoin failed. Try again after some time. */
++		if (pcpu_stats[i] == NULL) {
++			msleep(10);
++			goto alloc_stats;
++		}
++	}
++
++	spin_lock_irq(&blkio_list_lock);
++	spin_lock(&alloc_list_lock);
++
++	list_for_each_entry_safe(blkg, n, &alloc_list, alloc_node) {
++		for (i = 0; i < BLKIO_NR_POLICIES; i++) {
++			struct blkio_policy_type *pol = blkio_policy[i];
++			struct blkg_policy_data *pd;
++
++			if (!pol)
++				continue;
++
++			if (!blkg->pd[i])
++				continue;
++
++			pd = blkg->pd[i];
++			if (pd->stats_cpu)
++				continue;
++
++			pd->stats_cpu = pcpu_stats[i];
++			pcpu_stats[i] = NULL;
++		}
++		list_del_init(&blkg->alloc_node);
++		break;
++	}
++	spin_unlock(&alloc_list_lock);
++	spin_unlock_irq(&blkio_list_lock);
++
++	/* Check if there are more groups needing per cpu stat allocation. */
++	goto alloc_stats;
++}
++
+ /**
+  * blkg_free - free a blkg
+  * @blkg: blkg to free
+@@ -491,9 +570,6 @@ static void blkg_free(struct blkio_group
+  * @q: request_queue the new blkg is associated with
+  *
+  * Allocate a new blkg assocating @blkcg and @q.
+- *
+- * FIXME: Should be called with queue locked but currently isn't due to
+- *        percpu stat breakage.
+  */
+ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
+ 				      struct request_queue *q)
+@@ -509,6 +585,7 @@ static struct blkio_group *blkg_alloc(st
+ 	spin_lock_init(&blkg->stats_lock);
+ 	blkg->q = q;
+ 	INIT_LIST_HEAD(&blkg->q_node);
++	INIT_LIST_HEAD(&blkg->alloc_node);
+ 	blkg->blkcg = blkcg;
+ 	blkg->refcnt = 1;
+ 	cgroup_path(blkcg->css.cgroup, blkg->path, sizeof(blkg->path));
+@@ -530,13 +607,6 @@ static struct blkio_group *blkg_alloc(st
+ 
+ 		blkg->pd[i] = pd;
+ 		pd->blkg = blkg;
+-
+-		/* broken, read comment in the callsite */
+-		pd->stats_cpu = alloc_percpu(struct blkio_group_stats_cpu);
+-		if (!pd->stats_cpu) {
+-			blkg_free(blkg);
+-			return NULL;
+-		}
+ 	}
+ 
+ 	/* invoke per-policy init */
+@@ -556,7 +626,7 @@ struct blkio_group *blkg_lookup_create(s
+ 				       bool for_root)
+ 	__releases(q->queue_lock) __acquires(q->queue_lock)
+ {
+-	struct blkio_group *blkg, *new_blkg;
++	struct blkio_group *blkg;
+ 
+ 	WARN_ON_ONCE(!rcu_read_lock_held());
+ 	lockdep_assert_held(q->queue_lock);
+@@ -580,48 +650,27 @@ struct blkio_group *blkg_lookup_create(s
+ 
+ 	/*
+ 	 * Allocate and initialize.
+-	 *
+-	 * FIXME: The following is broken.  Percpu memory allocation
+-	 * requires %GFP_KERNEL context and can't be performed from IO
+-	 * path.  Allocation here should inherently be atomic and the
+-	 * following lock dancing can be removed once the broken percpu
+-	 * allocation is fixed.
+ 	 */
+-	spin_unlock_irq(q->queue_lock);
+-	rcu_read_unlock();
+-
+-	new_blkg = blkg_alloc(blkcg, q);
+-
+-	rcu_read_lock();
+-	spin_lock_irq(q->queue_lock);
+-
+-	/* did bypass get turned on inbetween? */
+-	if (unlikely(blk_queue_bypass(q)) && !for_root) {
+-		blkg = ERR_PTR(blk_queue_dead(q) ? -EINVAL : -EBUSY);
+-		goto out;
+-	}
+-
+-	/* did someone beat us to it? */
+-	blkg = blkg_lookup(blkcg, q);
+-	if (unlikely(blkg))
+-		goto out;
++	blkg = blkg_alloc(blkcg, q);
+ 
+ 	/* did alloc fail? */
+-	if (unlikely(!new_blkg)) {
++	if (unlikely(!blkg)) {
+ 		blkg = ERR_PTR(-ENOMEM);
+ 		goto out;
+ 	}
+ 
+ 	/* insert */
+ 	spin_lock(&blkcg->lock);
+-	swap(blkg, new_blkg);
+-
+ 	hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
+ 	list_add(&blkg->q_node, &q->blkg_list);
+-
+ 	spin_unlock(&blkcg->lock);
++
++	spin_lock(&alloc_list_lock);
++	list_add(&blkg->alloc_node, &alloc_list);
++	/* Queue per cpu stat allocation from worker thread. */
++	queue_work(system_nrt_wq, &blkio_stat_alloc_work);
++	spin_unlock(&alloc_list_lock);
+ out:
+-	blkg_free(new_blkg);
+ 	return blkg;
+ }
+ EXPORT_SYMBOL_GPL(blkg_lookup_create);
+@@ -654,6 +703,10 @@ static void blkg_destroy(struct blkio_gr
+ 	list_del_init(&blkg->q_node);
+ 	hlist_del_init_rcu(&blkg->blkcg_node);
+ 
++	spin_lock(&alloc_list_lock);
++	list_del_init(&blkg->alloc_node);
++	spin_unlock(&alloc_list_lock);
++
+ 	/*
+ 	 * Put the reference taken at the time of creation so that when all
+ 	 * queues are gone, group can be destroyed.
+@@ -752,6 +805,9 @@ static void blkio_reset_stats_cpu(struct
+ 	struct blkg_policy_data *pd = blkg->pd[plid];
+ 	struct blkio_group_stats_cpu *stats_cpu;
+ 	int i, j, k;
++
++	if (pd->stats_cpu == NULL)
++		return;
+ 	/*
+ 	 * Note: On 64 bit arch this should not be an issue. This has the
+ 	 * possibility of returning some inconsistent value on 32bit arch
+@@ -883,6 +939,9 @@ static uint64_t blkio_read_stat_cpu(stru
+ 	struct blkio_group_stats_cpu *stats_cpu;
+ 	u64 val = 0, tval;
+ 
++	if (pd->stats_cpu == NULL)
++		return val;
++
+ 	for_each_possible_cpu(cpu) {
+ 		unsigned int start;
+ 		stats_cpu = per_cpu_ptr(pd->stats_cpu, cpu);
+Index: tejun-misc/block/blk-cgroup.h
+===================================================================
+--- tejun-misc.orig/block/blk-cgroup.h	2012-03-07 20:36:44.007949131 -0500
++++ tejun-misc/block/blk-cgroup.h	2012-03-07 20:37:51.189951195 -0500
+@@ -190,6 +190,8 @@ struct blkio_group {
+ 	spinlock_t stats_lock;
+ 	struct blkg_policy_data *pd[BLKIO_NR_POLICIES];
+ 
++	/* List of blkg waiting for per cpu stats memory to be allocated */
++	struct list_head alloc_node;
+ 	struct rcu_head rcu_head;
+ };
+ 
