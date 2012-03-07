@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030536Ab2CGWIS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 17:08:18 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41749 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030251Ab2CGWIQ (ORCPT
+	id S1030577Ab2CGWJY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 17:09:24 -0500
+Received: from www.linutronix.de ([62.245.132.108]:39057 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030251Ab2CGWJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 17:08:16 -0500
-Date: Wed, 7 Mar 2012 14:08:11 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH 08/13] android: persistent_ram: handle reserving and
- mapping memory
-Message-ID: <20120307220811.GB16652@kroah.com>
-References: <1331157503-3413-1-git-send-email-john.stultz@linaro.org>
- <1331157503-3413-9-git-send-email-john.stultz@linaro.org>
+	Wed, 7 Mar 2012 17:09:21 -0500
+Date: Wed, 7 Mar 2012 23:09:18 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Richard Weinberger <rw@linutronix.de>
+cc: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, tim.bird@am.sony.com
+Subject: Re: [RFC][PATCH 1/7] MTD: UBI: Add checkpoint on-chip layout
+In-Reply-To: <4F57CCF4.6040902@linutronix.de>
+Message-ID: <alpine.LFD.2.02.1203072252300.2742@ionos>
+References: <1329250006-22944-1-git-send-email-rw@linutronix.de> <1329250006-22944-2-git-send-email-rw@linutronix.de> <1331136589.3463.3.camel@sauron.fi.intel.com> <4F57CCF4.6040902@linutronix.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331157503-3413-9-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 07, 2012 at 01:58:18PM -0800, John Stultz wrote:
-> From: Colin Cross <ccross@android.com>
-> 
-> Replace the ioremapped memory passed in from the drivers with
-> a memblock_reserve and vmap.  Adds a new function,
-> persistent_ram_early_init, designed to be called from the machine
-> init_early callback, that calls memblock_remove and saves the
-> provided persistent ram area layout.
-> 
-> Drivers only pass in their struct device * and ecc settings.
-> Locating and mapping the memory is now handled entirely within
-> persistent_ram.
-> 
-> Also, convert ram_console to the new persistent_ram_init
-> parameters that only take a struct device * and ecc settings.
-> 
-> CC: Greg KH <gregkh@linuxfoundation.org>
-> CC: Android Kernel Team <kernel-team@android.com>
-> Change-Id: Ibc87ec27b70ed1c928eaa487503469e199973058
-> Change-Id: I12b018381a2ed5965a8a4b0da40c3e640f92b6cf
-> Signed-off-by: Colin Cross <ccross@android.com>
-> [jstultz: Fix pr_info casting issues on 64bit, folded two
-> patches as the build breaks if they are apart. Also replaced
-> phys_to_page() w/ pfn_to_page(addr>>PAGE_SHIFT), as phys_to_page
-> is only on a few arches.]
+On Wed, 7 Mar 2012, Richard Weinberger wrote:
 
-Please put your comments above the signed-off-by area, it makes it
-easier on tools that parse this area.
+> Am 07.03.2012 17:09, schrieb Artem Bityutskiy:
+> > On Tue, 2012-02-14 at 21:06 +0100, Richard Weinberger wrote:
+> > > Specify the on-chip checkpoint layout.
+> > > The checkpoint consists of two major parts.
+> > > A super block (identified via UBI_CP_SB_VOLUME_ID) and
+> > > zero or more data blocks (identified via UBI_CP_DATA_VOLUME_ID).
+> > > Data blocks are only used if whole checkpoint information does not fit
+> > > into the super block.
+> > 
+> > And superblock is also a more or less standard name used by file-system.
+> > I easily imagine difficulties and confusion when discussing UBIFS and
+> > UBI and mixing UBI and UBIFS supersblocks up. IMHO, anything unique is
+> > much better, even if it does not make much sense. E.g., "boss block" or
+> > "pomo block" (pomo = boss in Finnish).
+> > 
+> > Would you consider picking a different name as well please?
+> > 
+> 
+> Will do.
 
-thanks,
+What about FASTMAP ?
 
-greg k-h
+That's what the whole story is about. Building the logical/physical
+mappings (fast). Then call the "super block" FASTMAP_REF and the data
+stuff FASTMAP_DATA.
+
+That's the sanest I could come up with aside of smuggling in my
+favourite buzzword ROADMAP :)
+
+Of course we could stay with latin and name it: UBIUBI. ubiubi is latin
+for: where the heck is it, but I guess that's stretching it a bit :)
+
+Thanks,
+
+	tglx
+
