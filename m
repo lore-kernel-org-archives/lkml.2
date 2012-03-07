@@ -1,99 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031629Ab2CGADu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 19:03:50 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42147 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031615Ab2CGADs (ORCPT
+	id S1759374Ab2CGAJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 19:09:12 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49053 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754592Ab2CGAJJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 19:03:48 -0500
-Date: Wed, 7 Mar 2012 00:03:21 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Eric Andersson <eric.andersson@unixphere.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, alan@lxorguk.ukuu.org.uk,
-        zhengguang.guo@bosch-sensortec.com, peter.moeller@cn.bosch.com,
-        Stefan Nilsson <stefan.nilsson@unixphere.com>
-Subject: Re: [PATCHv2 2/3] misc: add support for bmp18x chips to the bmp085
- driver
-Message-ID: <20120307000320.GG19635@opensource.wolfsonmicro.com>
-References: <1331068084-17911-1-git-send-email-eric.andersson@unixphere.com>
- <1331068084-17911-3-git-send-email-eric.andersson@unixphere.com>
- <201203062127.44463.arnd@arndb.de>
- <20120306221752.GB18235@skinner.xfiles.lan>
+	Tue, 6 Mar 2012 19:09:09 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of yhlu.kernel@gmail.com designates 10.236.184.226 as permitted sender) smtp.mail=yhlu.kernel@gmail.com; dkim=pass header.i=yhlu.kernel@gmail.com
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n7zTieg8iIQ1Wja9"
-Content-Disposition: inline
-In-Reply-To: <20120306221752.GB18235@skinner.xfiles.lan>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo5TjhNv1W=PxSPO6qXfhW1Mi4dMp83vj82=O_hFOq1vow@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+	<1331018040-30725-24-git-send-email-yinghai@kernel.org>
+	<CAErSpo5TjhNv1W=PxSPO6qXfhW1Mi4dMp83vj82=O_hFOq1vow@mail.gmail.com>
+Date: Tue, 6 Mar 2012 16:09:09 -0800
+X-Google-Sender-Auth: hBMXSkDdrWEFABGalGin0m0XHis
+Message-ID: <CAE9FiQXsY7Dn5TGtD1ARM_KFdz1V1hJOvYAy6e4msM=i3VfhDg@mail.gmail.com>
+Subject: Re: [PATCH 23/23] x86, PCI: add pcibios_root_rescan
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 6, 2012 at 3:13 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Mar 6, 2012 at 12:14 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> need use it to rescan root bus that was not added via acpi probe.
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  arch/x86/pci/legacy.c |   25 +++++++++++++++++++++++++
+>>  1 files changed, 25 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/pci/legacy.c b/arch/x86/pci/legacy.c
+>> index aab0e41..7a7c78f 100644
+>> --- a/arch/x86/pci/legacy.c
+>> +++ b/arch/x86/pci/legacy.c
+>> @@ -79,3 +79,28 @@ int __init pci_subsys_init(void)
+>>        return 0;
+>>  }
+>>  subsys_initcall(pci_subsys_init);
+>> +
+>> +void __devinit pcibios_root_rescan(void)
+>> +{
+>> +       int busn;
+>> +       struct pci_bus *bus;
+>> +
+>> +       if (pcibios_last_bus <= 0 || pcibios_last_bus > 0xff)
+>> +               return;
+>> +
+>> +       for (busn = 0; busn <= pcibios_last_bus; busn++) {
+>> +               bus = pci_find_bus(0, busn);
+>> +
+>> +               if (bus)
+>> +                       continue;
+>> +
+>> +               bus = __pcibios_scan_specific_bus(busn, false);
+>> +
+>> +               if (!bus)
+>> +                       continue;
+>> +
+>> +               pci_assign_unassigned_bus_resources(bus);
+>> +
+>> +               pci_bus_add_devices(bus);
+>> +       }
+>> +}
+>
+> Does anybody call this?
 
---n7zTieg8iIQ1Wja9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+yes, in
 
-On Tue, Mar 06, 2012 at 11:17:52PM +0100, Eric Andersson wrote:
-> On 21:27 Tue 06 Mar     , Arnd Bergmann wrote:
+[PATCH 19/23] PCI: add /sys/bus/pci/rescan_root
 
-> > I don't know much about regmap, but your description sounds like you
-> > should be using it here, to simplify the differences between i2c and
-> > spi in your driver instead of implementing your own abstraction
-> > layer.
+>
+> Do we need it?  I assume we only care about host bridge hotplug via ACPI on x86.
 
-regmap provides I2C and SPI register I/O for most devices using those
-buses (and will do more buses in future I expect) and also provides
-diagnostic (things like register I/O logging and register map dumps) and
-optional cache infrastructure on top of that very cheaply (so you can
-easily do things like avoid the read part of read/modify/write cycles or
-restore the register state on resume).  The win is partly getting the
-infrastructure and partly the fact that all the code for formatting the
-data for the bus is factored out from the individual driver, usually
-there's a substantial code saving.
+my sandbridge system has cpu bus 0x7f, and 0xff in DSDT.
 
-> > IMHO this would be better expressed if you make CONFIG_BMP085 a hidden
-> > option that is selected when either BMP085_I2C or BMP085_SPI are enabled.
-> > Otherwise you make it possible to build just the base driver but neither
-> > of the front-ends, which is a bit pointless.
+but nehalem and westmere system does not have cpu bus 0xf8, ... 0xff.
 
-> This setup is inspired from other drivers such as ad525x_dpot.c and
-> ad714x.c, which also have their own bus abstraction. If regmap is a more
-> generic way of solving this I am all for it!
+>
+> Please wait a while (at least a day or two) before reposting your
+> series so people have time to take a look at the current one.  It's a
+> real nuisance to be working through a large series like this and get
+> bombed with a repost of the whole thing that tweaks some minor detail.
+>  I'd rather take some time and get as much of the discussion out of
+> the way on V1 as possible before getting to V2, V3, V4, etc.
 
-The idiom Arnd describes is the more normal one for the reasons he
-mentions - see for example what most MFDs that have this problem do.
-
-You'll need the same setup even with regmap since you'll need to
-register I2C and SPI drivers.  What you save is all the register I/O
-code - often the I2C and SPI specific code gets reduced to just calling
-regmap_init_X().  The regmap subsystem only appeared in 3.1 so lots of
-drivers predate it and could benefit from using it, we're starting to
-see conversions happening in some subsystems.
-
---n7zTieg8iIQ1Wja9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPVqW0AAoJEBus8iNuMP3dY08P/R9++r7QYPe1UA19XFSbmgyq
-dhdaHnHvQyBWM6YTaTTTucZfKryRTEdzZTlj9FRKLyI/CNX2DhnYnrAQwGPeMOGk
-82ZOQ/B+K9w6kbnreYCoDKMZ8aiFsx1Q4uok4iOU6ZCe4l/3Je45I5hqje7j3tvI
-PoJZqLP9PG8qzC1nEgcRkhLpVtEy+BCfHGHWVmXVM89k7c8IJ9bDhedzez9uqXui
-4SRUz0PyywLub73ZlByUwEJ66Ryc+W8THmH1/YgtdlnELwfXhLJhdSMWMCr+3Fb6
-frBUJKS8OvbpXiaeldegIApvsOx2mb7hawso3295frkkkaApTMak7/l953ODf2Nj
-lrYuVQ6A4ljWW2jK14Q5Ztkr2zDjztqck4/NlL/lDBET3jCbKzEejSBb4nBhQ6Uf
-A/ciwJ3EMFPV1pkkXxq41y4t1g0W1X9eYqSwcAebgEyBOobcwIcjihjB8n/zRagr
-VQKLQv3rKCxwj/JLORqBpf/2F5Xfy8wWLjiglFEYxgOkDD7jKvOJMbunZ+kUxjj5
-d1N8sW8PxWywEW2gftdaUTT3b/AbtrB+7txZ6hCJMWxzG4pj+og2hCUTU5KO+JWz
-lTVCtuSwTzQ+BIe/aj6oNCbTCCtvfilJOYEpcnAa9lFUVL1lZNI3X+ZoY8H+n7r5
-2uFHISX/Iub+78FHSyKt
-=o/Zd
------END PGP SIGNATURE-----
-
---n7zTieg8iIQ1Wja9--
+Sure.
