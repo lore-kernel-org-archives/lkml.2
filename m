@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759302Ab2CGPpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 10:45:55 -0500
-Received: from mga14.intel.com ([143.182.124.37]:24450 "EHLO mga14.intel.com"
+	id S1759373Ab2CGPp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 10:45:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43040 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754694Ab2CGPpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 10:45:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="115909398"
-Message-ID: <1331135301.32316.29.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <ext-adrian.hunter@nokia.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Date: Wed, 07 Mar 2012 17:48:21 +0200
-In-Reply-To: <20120303135558.GA9869@localhost>
-References: <20120228140022.614718843@intel.com>
-	 <20120228144747.198713792@intel.com>
-	 <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
-	 <20120301123640.GA30369@localhost> <20120301163837.GA13104@quack.suse.cz>
-	 <20120302044858.GA14802@localhost> <20120302095910.GB1744@quack.suse.cz>
-	 <20120302103951.GA13378@localhost>
-	 <20120302115700.7d970497.akpm@linux-foundation.org>
-	 <20120303135558.GA9869@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759331Ab2CGPp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 10:45:57 -0500
+Date: Wed, 7 Mar 2012 16:38:49 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Cc: Mark Salter <msalter@redhat.com>, linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH 2/2] mm/linux-next: Fix rcu locking in vm_is_stack
+Message-ID: <20120307153849.GA18879@redhat.com>
+References: <1331045377.17099.2.camel@deneb.redhat.com> <1331064994-6693-1-git-send-email-siddhesh.poyarekar@gmail.com> <1331064994-6693-2-git-send-email-siddhesh.poyarekar@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331064994-6693-2-git-send-email-siddhesh.poyarekar@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-03-03 at 21:55 +0800, Fengguang Wu wrote:
->   13   1125  /c/linux/fs/ubifs/file.c <<do_truncation>>   <===== deadlockable
+On 03/07, Siddhesh Poyarekar wrote:
+>
+> Take rcu read lock before we do anything at all with the threadgroup
+> list. Also use list_first_entry_rcu to safely get the reference to the
+> first task in the list.
 
-Sorry, but could you please explain once again how the deadlock may
-happen?
+Sorry, but both patches are absolutely wrong, afaics. This change fixes
+nothing, just obfuscates the code.
 
-> It seems they are all safe except for ubifs. ubifs may actually
-> deadlock from the above do_truncation() caller. However it should be
-> fixable because the ubifs call for writeback_inodes_sb_nr() sounds
-> very brute force writeback and wait and there may well be better way
-> out.
+Probably my explanation was not clear, let me try again.
 
-I do not think this "fixable" - this is part of UBIFS design to force
-write-back when we are not sure we have enough space.
+rcu_read_lock() can not help without the additional checks. By the
+time you take it, task->thread_group->next can point to nowhere.
 
-The problem is that we do not know how much space the dirty data in RAM
-will take on the flash media (after it is actually written-back) - e.g.,
-because we compress all the data (UBIFS performs on-the-flight
-compression). So we do pessimistic assumptions and allow dirtying more
-and more data as long as we know for sure that there is enough flash
-space on the media for the worst-case scenario (data are not
-compressible). This is what the UBIFS budgeting subsystem does.
+So,
 
-Once the budgeting sub-system sees that we are not going to have enough
-flash space for the worst-case scenario, it starts forcing write-back to
-push some dirty data out to the flash media and update the budgeting
-numbers, and get more realistic picture.
+> @@ -3932,18 +3932,20 @@ pid_t vm_is_stack(struct task_struct *task,
+>  		return task->pid;
+>
+>  	if (in_group) {
+> -		struct task_struct *t = task;
+> +		struct task_struct *t;
+>  		rcu_read_lock();
+> -		while_each_thread(task, t) {
+> +		t = list_first_entry_rcu(&task->thread_group,
+> +					 struct task_struct, thread_group);
 
-So basically, before you can change _anything_ on UBIFS file-system, you
-need to budget for the space. Even when you truncate - because
-truncation is also about allocating more space for writing the updated
-inode and update the FS index. (Remember, all writes are out-of-place in
-UBIFS because we work with raw flash, not a block device).
+It is not safe to dereference this pointer.
 
--- 
-Best Regards,
-Artem Bityutskiy
+Once again. You have the task_struct *task. It exits,
+but task->thread_group->next still points to another thread T. Now suppose
+that T exits too. But task->thread_group->next was not changed, it still
+points to T. RCU grace period passes, T is freed.
+
+After that you take rcu_read_lock(), but it is too late! >next points to
+the already freed/reused memory. How can list_first_entry_rcu() help?
+
+What you need is something like
+
+		rcu_read_lock();
+		if (!pid_alive(task))
+			goto done;
+
+		t = task;
+		do {
+			...
+		} while_each(task, t);
+
+	done:
+		rcu_read_unlock();
+
+
+And. Imho it is not good to have the (afaics exactly?) same code in
+mm/nommu.c, even with the same names. Why it is not possible to make
+a single definition?
+
+Oleg.
 
