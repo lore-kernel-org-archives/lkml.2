@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937Ab2CGFGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 00:06:13 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:64397 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750894Ab2CGFGK (ORCPT
+	id S1751804Ab2CGFGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 00:06:18 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45360 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977Ab2CGFGQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 00:06:10 -0500
+	Wed, 7 Mar 2012 00:06:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMjXkFOxfp9fnhwKFZSoUJmHObk7FaiaNNj2NSyyNMTjkw@mail.gmail.com>
-References: <1328288172-8059-1-git-send-email-sjg@chromium.org>
-	<74CDBE0F657A3D45AFBB94109FB122FF178E5D2FF5@HQMAIL01.nvidia.com>
-	<CAPnjgZ1rXEGbi3m3HeWiUxG_TbmUug0C0QZgb7_9Eiz-xPMHwg@mail.gmail.com>
-	<CAOesGMjXkFOxfp9fnhwKFZSoUJmHObk7FaiaNNj2NSyyNMTjkw@mail.gmail.com>
-Date: Tue, 6 Mar 2012 21:06:10 -0800
-X-Google-Sender-Auth: BEgVH6W0qTSsTqY14IYgkDXdhTo
-Message-ID: <CAPnjgZ3gBQyZ3BMesN+2_8ytYEz-0XtYGQwyDL3bUAp+pLoxdw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] arm: tegra: dts: USB Updates for Tegra legacy mode / OTG
-From: Simon Glass <sjg@chromium.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Stephen Warren <swarren@nvidia.com>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+In-Reply-To: <4F56EBA6.6000704@gmail.com>
+References: <1331090098-25097-1-git-send-email-Barry.Song@csr.com>
+ <4F56E0AC.8070501@gmail.com> <CAGsJ_4x4CwD+WAE9d+Xob_tfwqmE6SdBdBd5EbC64XBi4Uzvgg@mail.gmail.com>
+ <4F56EA49.8070808@gmail.com> <CAGsJ_4xJoKGt3+b_3bteoMyeO615pCxFpMpsH4LtvufFNDv6bA@mail.gmail.com>
+ <4F56EBA6.6000704@gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 7 Mar 2012 13:05:56 +0800
+Message-ID: <CAGsJ_4ypegMQVf0Xet1T5sLaaEDGh5s1Vi6w4t_UQSZp7nYQuQ@mail.gmail.com>
+Subject: Re: [PATCH v3] MM: CMA: add a simple kernel module as the helper to
+ test CMA
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Barry Song <Barry.Song@csr.com>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, mina86@mina86.com,
+        Barry Song <Baohua.Song@csr.com>, linux-arm-kernel@lists.infradead.org,
+        m.szyprowski@samsung.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Olof,
-
-On Tue, Mar 6, 2012 at 8:40 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Tue, Mar 6, 2012 at 7:16 PM, Simon Glass <sjg@chromium.org> wrote:
->> +Olof
+2012/3/7 Cong Wang <xiyou.wangcong@gmail.com>:
+> On 03/07/2012 12:57 PM, Barry Song wrote:
 >>
->> Hi,
 >>
->> On Fri, Feb 3, 2012 at 11:59 AM, Stephen Warren <swarren@nvidia.com> wrote:
->>> Simon Glass wrote at riday, February 03, 2012 9:56 AM:
->>>> This little series brings in some bindings that seem useful for U-Boot.
->>>>
->>>> I am working mostly in U-Boot, but since there is no shared .dts repo
->>>> I was asked to commit these changes to the kernel. I do not propose to
->>>> update the Linux USB drivers to match.
->>>
->>> I think the series looks reasonable, so:
->>>
->>> Acked-by: Stephen Warren <swarren@nvidia.com<>
->>>
->>> (I note that the kernel's USB driver for USB1 doesn't attempt to clear
->>> legacy mode; I wonder how we're getting away with that. Perhaps it's
->>> only been tested with a bootloader that's already cleared legacy mode)
->>>
+>> if you think so, pls do that and send v4 with your s-o-b.
 >>
->> How does this series get picked up, please?
 >
-> It drowned in the patch floods you've been sending, and it wasn't
-> addressed directly to me so I ignored it.
+> This is not a good attitude, nor helps your patch to be merged...
 >
-> Please resend and I'll apply.
+> Be collaborative.
 
-You'll be happy to hear that the flood is mostly over now. I have
-resent and copied you this time.
+some people like focusing on trivial things. i said i really didn't
+care about the details whether it is /dev, /proc, /sys.
+if you like a /proc, pls do it by yourself and i will agree. but i
+will not waste my time on that.
 
-Regards,
-Simon
-
->
->
-> Thanks,
->
-> -Olof
+-barry
