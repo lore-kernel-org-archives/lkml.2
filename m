@@ -1,69 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965312Ab2CGWkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 17:40:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27132 "EHLO mx1.redhat.com"
+	id S965339Ab2CGWlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 17:41:05 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:17362 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965295Ab2CGWkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 17:40:40 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <201203072146.51494.arnd@arndb.de>
-References: <201203072146.51494.arnd@arndb.de> <20120307194548.15987.36073.stgit@warthog.procyon.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: dhowells@redhat.com, paul.gortmaker@windriver.com, hpa@zytor.com,
-        torvalds@linux-foundation.org, sfr@canb.auug.org.au, mingo@redhat.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [RFC][PATCH 00/29] Disintegrate and kill asm/system.h
-Date: Wed, 07 Mar 2012 22:40:06 +0000
-Message-ID: <20425.1331160006@redhat.com>
+	id S965026Ab2CGWk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 17:40:57 -0500
+X-IronPort-AV: E=Sophos;i="4.73,549,1325491200"; 
+   d="scan'208";a="631575328"
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] NFS: Properly handle the case where the delegation is revoked
+Date: Wed,  7 Mar 2012 17:40:48 -0500
+Message-Id: <1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
+References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
+ <1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> wrote:
+If we know that the delegation stateid is bad or revoked, we need to
+remove that delegation as soon as possible, and then mark all the
+stateids that relied on that delegation for recovery. We cannot use
+the delegation as part of the recovery process.
 
-> One part you were missing seems to be include/asm-generic/system.h, which is
-> used on openrisc and contains a lot of the things you move to other
-> places. It would be helpful to split that up as well.
+Also note that NFSv4.1 uses a different error code (NFS4ERR_DELEG_REVOKED)
+to indicate that the delegation was revoked.
 
-Hmmm...  okay.  How that is used from an arch that doesn't have an
-asm/system.h?
+Finally, ensure that setlk() and setattr() can both recover safely from
+a revoked delegation.
 
-> >     (4) asm/atomic.h
-> >
-> >         Move xchg() and cmpxchg() here as they're full word atomic ops and
-> >         frequently used by atomic_xchg() and atomic_cmpxchg().
-> 
-> Well, the thing with xchg and cmpxchg is that they operate on arbirary-sized
-> integers, not atomic_t, unlike everything else in atomic.h.
-> 
-> Some architectures already have an asm/cmpxchg.h, which seems more appropriate
-> here.
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: stable@vger.kernel.org
+---
+ fs/nfs/delegation.c |   11 +++++++++++
+ fs/nfs/delegation.h |    1 +
+ fs/nfs/nfs4_fs.h    |    2 ++
+ fs/nfs/nfs4proc.c   |   18 ++++++++++++++++--
+ fs/nfs/nfs4state.c  |   29 +++++++++++++++++++++++++++--
+ 5 files changed, 57 insertions(+), 4 deletions(-)
 
-So I saw.  It might be worth making an asm/xchg.h and asm/cmpxchg.h for each
-arch - or maybe just put both in asm/xchg.h or asm/cmpxchg.h.  Where do I
-include it from though?  One nice thing about sticking them in asm/atomic.h is
-that usually gets all instances, and they're frequently used from there.  How
-about I have asm/atomic.h #include asm/{,cmp}xchg.h?
+diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+index 7f26540..ac889af 100644
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -466,6 +466,17 @@ static void nfs_delegation_run_state_manager(struct nfs_client *clp)
+ 		nfs4_schedule_state_manager(clp);
+ }
+ 
++void nfs_remove_bad_delegation(struct inode *inode)
++{
++	struct nfs_delegation *delegation;
++
++	delegation = nfs_detach_delegation(NFS_I(inode), NFS_SERVER(inode));
++	if (delegation) {
++		nfs_inode_find_state_and_recover(inode, &delegation->stateid);
++		nfs_free_delegation(delegation);
++	}
++}
++
+ /**
+  * nfs_expire_all_delegation_types
+  * @clp: client to process
+diff --git a/fs/nfs/delegation.h b/fs/nfs/delegation.h
+index d9322e4..691a796 100644
+--- a/fs/nfs/delegation.h
++++ b/fs/nfs/delegation.h
+@@ -45,6 +45,7 @@ void nfs_expire_unreferenced_delegations(struct nfs_client *clp);
+ void nfs_handle_cb_pathdown(struct nfs_client *clp);
+ int nfs_client_return_marked_delegations(struct nfs_client *clp);
+ int nfs_delegations_present(struct nfs_client *clp);
++void nfs_remove_bad_delegation(struct inode *inode);
+ 
+ void nfs_delegation_mark_reclaim(struct nfs_client *clp);
+ void nfs_delegation_reap_unclaimed(struct nfs_client *clp);
+diff --git a/fs/nfs/nfs4_fs.h b/fs/nfs/nfs4_fs.h
+index 4d7d0ae..5c9b20b 100644
+--- a/fs/nfs/nfs4_fs.h
++++ b/fs/nfs/nfs4_fs.h
+@@ -327,6 +327,8 @@ extern void nfs4_put_open_state(struct nfs4_state *);
+ extern void nfs4_close_state(struct nfs4_state *, fmode_t);
+ extern void nfs4_close_sync(struct nfs4_state *, fmode_t);
+ extern void nfs4_state_set_mode_locked(struct nfs4_state *, fmode_t);
++extern void nfs_inode_find_state_and_recover(struct inode *inode,
++		const nfs4_stateid *stateid);
+ extern void nfs4_schedule_lease_recovery(struct nfs_client *);
+ extern void nfs4_schedule_state_manager(struct nfs_client *);
+ extern void nfs4_schedule_path_down_recovery(struct nfs_client *clp);
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index ec9f6ef..3d26bab 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -265,8 +265,11 @@ static int nfs4_handle_exception(struct nfs_server *server, int errorcode, struc
+ 	switch(errorcode) {
+ 		case 0:
+ 			return 0;
++		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
++			if (state != NULL)
++				nfs_remove_bad_delegation(state->inode);
+ 		case -NFS4ERR_OPENMODE:
+ 			if (state == NULL)
+ 				break;
+@@ -1319,8 +1322,11 @@ int nfs4_open_delegation_recall(struct nfs_open_context *ctx, struct nfs4_state
+ 				 * The show must go on: exit, but mark the
+ 				 * stateid as needing recovery.
+ 				 */
++			case -NFS4ERR_DELEG_REVOKED:
+ 			case -NFS4ERR_ADMIN_REVOKED:
+ 			case -NFS4ERR_BAD_STATEID:
++				nfs_inode_find_state_and_recover(state->inode,
++						stateid);
+ 				nfs4_schedule_stateid_recovery(server, state);
+ 			case -EKEYEXPIRED:
+ 				/*
+@@ -1900,7 +1906,9 @@ static int nfs4_do_setattr(struct inode *inode, struct rpc_cred *cred,
+ 			   struct nfs4_state *state)
+ {
+ 	struct nfs_server *server = NFS_SERVER(inode);
+-	struct nfs4_exception exception = { };
++	struct nfs4_exception exception = {
++		.state = state,
++	};
+ 	int err;
+ 	do {
+ 		err = nfs4_handle_exception(server,
+@@ -3714,8 +3722,11 @@ nfs4_async_handle_error(struct rpc_task *task, const struct nfs_server *server,
+ 	if (task->tk_status >= 0)
+ 		return 0;
+ 	switch(task->tk_status) {
++		case -NFS4ERR_DELEG_REVOKED:
+ 		case -NFS4ERR_ADMIN_REVOKED:
+ 		case -NFS4ERR_BAD_STATEID:
++			if (state != NULL)
++				nfs_remove_bad_delegation(state->inode);
+ 		case -NFS4ERR_OPENMODE:
+ 			if (state == NULL)
+ 				break;
+@@ -4533,7 +4544,9 @@ out:
+ 
+ static int nfs4_proc_setlk(struct nfs4_state *state, int cmd, struct file_lock *request)
+ {
+-	struct nfs4_exception exception = { };
++	struct nfs4_exception exception = {
++		.state = state,
++	};
+ 	int err;
+ 
+ 	do {
+@@ -4626,6 +4639,7 @@ int nfs4_lock_delegation_recall(struct nfs4_state *state, struct file_lock *fl)
+ 				 * The show must go on: exit, but mark the
+ 				 * stateid as needing recovery.
+ 				 */
++			case -NFS4ERR_DELEG_REVOKED:
+ 			case -NFS4ERR_ADMIN_REVOKED:
+ 			case -NFS4ERR_BAD_STATEID:
+ 			case -NFS4ERR_OPENMODE:
+diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+index 4539203..0e60df1 100644
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1132,12 +1132,37 @@ void nfs4_schedule_stateid_recovery(const struct nfs_server *server, struct nfs4
+ {
+ 	struct nfs_client *clp = server->nfs_client;
+ 
+-	if (test_and_clear_bit(NFS_DELEGATED_STATE, &state->flags))
+-		nfs_async_inode_return_delegation(state->inode, &state->stateid);
+ 	nfs4_state_mark_reclaim_nograce(clp, state);
+ 	nfs4_schedule_state_manager(clp);
+ }
+ 
++void nfs_inode_find_state_and_recover(struct inode *inode,
++		const nfs4_stateid *stateid)
++{
++	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
++	struct nfs_inode *nfsi = NFS_I(inode);
++	struct nfs_open_context *ctx;
++	struct nfs4_state *state;
++	bool found = false;
++
++	spin_lock(&inode->i_lock);
++	list_for_each_entry(ctx, &nfsi->open_files, list) {
++		state = ctx->state;
++		if (state == NULL)
++			continue;
++		if (!test_bit(NFS_DELEGATED_STATE, &state->flags))
++			continue;
++		if (memcmp(state->stateid.data, stateid->data, sizeof(state->stateid.data)) != 0)
++			continue;
++		nfs4_state_mark_reclaim_nograce(clp, state);
++		found = true;
++	}
++	spin_unlock(&inode->i_lock);
++	if (found)
++		nfs4_schedule_state_manager(clp);
++}
++
++
+ static int nfs4_reclaim_locks(struct nfs4_state *state, const struct nfs4_state_recovery_ops *ops)
+ {
+ 	struct inode *inode = state->inode;
+-- 
+1.7.7.6
 
-> >     (6) asm/auxvec.h
-> >
-> >         Move AT_VECTOR_SIZE_ARCH here.
-> 
-> These two look suboptimal, but I don't have a better idea either.
-
-Well, AT_VECTOR_SIZE_ARCH is at least auxvec-related, so I think that's
-probably in the right place.
-
-> How about adding a '-include asm/system.h' gcc switch for each architecture
-> in one patch in the beginning, so that the header becomes included all the
-> time, but then remove that for each arch you go through?
-
-That might circularly dependerise, but it's worth a try.
-
-David
