@@ -1,145 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031668Ab2CGAVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 6 Mar 2012 19:21:51 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:12885 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030948Ab2CGAVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 6 Mar 2012 19:21:49 -0500
-X-IronPort-AV: E=Sophos;i="4.73,542,1325491200"; 
-   d="scan'208";a="631277121"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "xemul@parallels.com" <xemul@parallels.com>,
-        "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jbottomley@parallels.com" <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH] SUNRPC: set desired file system root before connecting
- local transports
-Thread-Topic: [PATCH] SUNRPC: set desired file system root before connecting
- local transports
-Thread-Index: AQHM9vLHZdm7svM3nkmFIPo1sSpgIZZeiDkAgAAAjoA=
-Date: Wed, 7 Mar 2012 00:21:47 +0000
-Message-ID: <1331079707.10560.56.camel@lade.trondhjem.org>
-References: <20120229145915.24030.31551.stgit@localhost6.localdomain6>
-	 <1331079588.10560.55.camel@lade.trondhjem.org>
-In-Reply-To: <1331079588.10560.55.camel@lade.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <1342B3305D261D4D8AEAE9737821F457@tahoe.netapp.com>
-MIME-Version: 1.0
+	id S1031643Ab2CGAVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 6 Mar 2012 19:21:55 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62425 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030948Ab2CGAVw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 6 Mar 2012 19:21:52 -0500
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of tshimizu818@gmail.com designates 10.50.149.129 as permitted sender) smtp.mail=tshimizu818@gmail.com; dkim=pass header.i=tshimizu818@gmail.com
+From: Takahiro Shimizu <tshimizu818@gmail.com>
+To: jeffrey.t.kirsher@intel.com, davem@davemloft.net,
+        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
+        paul.gortmaker@windriver.com, jdmason@kudzu.us, john.stultz@linaro.org,
+        richardcochran@gmail.com, arnd@arndb.de, khc@pm.waw.pl,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Takahiroi Shimizu <tshimizu818@gmail.com>
+Subject: [PATCH RE-SUBMIT] net/pch_gbe: supports eg20t ptp clock
+Date: Wed,  7 Mar 2012 09:21:08 +0900
+Message-Id: <1331079669-22446-1-git-send-email-tshimizu818@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q270Lu1Q011503
 
-On Wed, 2012-03-07 at 00:19 +0000, Myklebust, Trond wrote:
-> On Wed, 2012-02-29 at 18:59 +0400, Stanislav Kinsbursky wrote:
-> > Today, there is a problem in connecting of local SUNRPC thansports. These
-> > transports uses UNIX sockets and connection itself is done by rpciod workqueue.
-> > But UNIX sockets lookup is done in context of process file system root. I.e.
-> > all local thunsports are connecting in rpciod context.
-> > This works nice until we will try to mount NFS from process with other root -
-> > for example in container. This container can have it's own (nested) root and
-> > rcpbind process, listening on it's own unix sockets. But NFS mount attempt in
-> > this container will register new service (Lockd for example) in global rpcbind
-> > - not containers's one.
-> > This patch solves the problem by switching rpciod kernel thread's file system
-> > root to right one (stored on transport) while connecting of local transports.
-> > 
-> > Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> > 
-> > ---
-> >  fs/fs_struct.c        |    1 +
-> >  net/sunrpc/xprtsock.c |   32 ++++++++++++++++++++++++++++++--
-> >  2 files changed, 31 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/fs_struct.c b/fs/fs_struct.c
-> > index 78b519c..0f984c3 100644
-> > --- a/fs/fs_struct.c
-> > +++ b/fs/fs_struct.c
-> > @@ -36,6 +36,7 @@ void set_fs_root(struct fs_struct *fs, struct path *path)
-> >  	if (old_root.dentry)
-> >  		path_put_longterm(&old_root);
-> >  }
-> > +EXPORT_SYMBOL_GPL(set_fs_root);
-> >  
-> >  /*
-> >   * Replace the fs->{pwdmnt,pwd} with {mnt,dentry}. Put the old values.
-> > diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-> > index 4c8281d..c94c181 100644
-> > --- a/net/sunrpc/xprtsock.c
-> > +++ b/net/sunrpc/xprtsock.c
-> > @@ -37,6 +37,7 @@
-> >  #include <linux/sunrpc/svcsock.h>
-> >  #include <linux/sunrpc/xprtsock.h>
-> >  #include <linux/file.h>
-> > +#include <linux/fs_struct.h>
-> >  #ifdef CONFIG_SUNRPC_BACKCHANNEL
-> >  #include <linux/sunrpc/bc_xprt.h>
-> >  #endif
-> > @@ -255,6 +256,11 @@ struct sock_xprt {
-> >  	void			(*old_state_change)(struct sock *);
-> >  	void			(*old_write_space)(struct sock *);
-> >  	void			(*old_error_report)(struct sock *);
-> > +
-> > +	/*
-> > +	 * Saved transport creator root. Required for local transports only.
-> > +	 */
-> > +	struct path		root;
-> >  };
-> >  
-> >  /*
-> > @@ -1891,6 +1897,7 @@ static void xs_local_setup_socket(struct work_struct *work)
-> >  	struct rpc_xprt *xprt = &transport->xprt;
-> >  	struct socket *sock;
-> >  	int status = -EIO;
-> > +	struct path root;
-> >  
-> >  	if (xprt->shutdown)
-> >  		goto out;
-> > @@ -1908,7 +1915,14 @@ static void xs_local_setup_socket(struct work_struct *work)
-> >  	dprintk("RPC:       worker connecting xprt %p via AF_LOCAL to %s\n",
-> >  			xprt, xprt->address_strings[RPC_DISPLAY_ADDR]);
-> >  
-> > +	get_fs_root(current->fs, &root);
-> > +	set_fs_root(current->fs, &transport->root);
-> > +
-> >  	status = xs_local_finish_connecting(xprt, sock);
-> > +
-> > +	set_fs_root(current->fs, &root);
-> > +	path_put(&root);
-> > +
-> >  	switch (status) {
-> >  	case 0:
-> 
-> Hi Stanislav,
-> 
-> What happens here if the mount namespace of the process that originally
-> created the sock_xprt no longer exists? Should we care about that case?
-> 
-> Cheers
->   Trond
+From: Takahiroi Shimizu <tshimizu818@gmail.com>
 
-BTW: We will in any case need Al Viro and Christoph's ACK in order to
-export the set_fs_root() function.
+Supports EG20T ptp clock in the driver
 
+Changes e-mail address.
+
+Signed-off-by: Takahiro Shimizu <tshimizu818@gmail.com>
+---
+ drivers/net/ethernet/oki-semi/pch_gbe/Kconfig      |   13 ++
+ drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h    |   13 ++
+ .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |  217 +++++++++++++++++++-
+ 3 files changed, 240 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig b/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
+index 00bc4fc..bce0164 100644
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
+@@ -20,3 +20,16 @@ config PCH_GBE
+ 	  purpose use.
+ 	  ML7223/ML7831 is companion chip for Intel Atom E6xx series.
+ 	  ML7223/ML7831 is completely compatible for Intel EG20T PCH.
++
++if PCH_GBE
++
++config PCH_PTP
++	bool "PCH PTP clock support"
++	default n
++	depends on PTP_1588_CLOCK_PCH
++	---help---
++	  Say Y here if you want to use Precision Time Protocol (PTP) in the
++	  driver. PTP is a method to precisely synchronize distributed clocks
++	  over Ethernet networks.
++
++endif # PCH_GBE
+diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
+index a09a071..dd14915 100644
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
+@@ -630,6 +630,9 @@ struct pch_gbe_adapter {
+ 	unsigned long tx_queue_len;
+ 	bool have_msi;
+ 	bool rx_stop_flag;
++	int hwts_tx_en;
++	int hwts_rx_en;
++	struct pci_dev *ptp_pdev;
+ };
+ 
+ extern const char pch_driver_version[];
+@@ -648,6 +651,16 @@ extern void pch_gbe_free_tx_resources(struct pch_gbe_adapter *adapter,
+ extern void pch_gbe_free_rx_resources(struct pch_gbe_adapter *adapter,
+ 				       struct pch_gbe_rx_ring *rx_ring);
+ extern void pch_gbe_update_stats(struct pch_gbe_adapter *adapter);
++#ifdef CONFIG_PCH_PTP
++extern u32 pch_ch_control_read(struct pci_dev *pdev);
++extern void pch_ch_control_write(struct pci_dev *pdev, u32 val);
++extern u32 pch_ch_event_read(struct pci_dev *pdev);
++extern void pch_ch_event_write(struct pci_dev *pdev, u32 val);
++extern u32 pch_src_uuid_lo_read(struct pci_dev *pdev);
++extern u32 pch_src_uuid_hi_read(struct pci_dev *pdev);
++extern u64 pch_rx_snap_read(struct pci_dev *pdev);
++extern u64 pch_tx_snap_read(struct pci_dev *pdev);
++#endif
+ 
+ /* pch_gbe_param.c */
+ extern void pch_gbe_check_options(struct pch_gbe_adapter *adapter);
+diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+index 3ead111..aa54ede 100644
+--- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
+@@ -1,6 +1,6 @@
+ /*
+  * Copyright (C) 1999 - 2010 Intel Corporation.
+- * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
++ * Copyright (C) 2010 - 2012 LAPIS SEMICONDUCTOR CO., LTD.
+  *
+  * This code was derived from the Intel e1000e Linux driver.
+  *
+@@ -21,6 +21,10 @@
+ #include "pch_gbe.h"
+ #include "pch_gbe_api.h"
+ #include <linux/module.h>
++#ifdef CONFIG_PCH_PTP
++#include <linux/net_tstamp.h>
++#include <linux/ptp_classify.h>
++#endif
+ 
+ #define DRV_VERSION     "1.00"
+ const char pch_driver_version[] = DRV_VERSION;
+@@ -95,12 +99,195 @@ const char pch_driver_version[] = DRV_VERSION;
+ 
+ #define PCH_GBE_INT_DISABLE_ALL		0
+ 
++#ifdef CONFIG_PCH_PTP
++/* Macros for ieee1588 */
++#define TICKS_NS_SHIFT  5
++
++/* 0x40 Time Synchronization Channel Control Register Bits */
++#define MASTER_MODE   (1<<0)
++#define SLAVE_MODE    (0<<0)
++#define V2_MODE       (1<<31)
++#define CAP_MODE0     (0<<16)
++#define CAP_MODE2     (1<<17)
++
++/* 0x44 Time Synchronization Channel Event Register Bits */
++#define TX_SNAPSHOT_LOCKED (1<<0)
++#define RX_SNAPSHOT_LOCKED (1<<1)
++#endif
++
+ static unsigned int copybreak __read_mostly = PCH_GBE_COPYBREAK_DEFAULT;
+ 
+ static int pch_gbe_mdio_read(struct net_device *netdev, int addr, int reg);
+ static void pch_gbe_mdio_write(struct net_device *netdev, int addr, int reg,
+ 			       int data);
+ 
++#ifdef CONFIG_PCH_PTP
++static struct sock_filter ptp_filter[] = {
++	PTP_FILTER
++};
++
++static int pch_ptp_match(struct sk_buff *skb, u16 uid_hi, u32 uid_lo, u16 seqid)
++{
++	u8 *data = skb->data;
++	unsigned int offset;
++	u16 *hi, *id;
++	u32 lo;
++
++	if ((sk_run_filter(skb, ptp_filter) != PTP_CLASS_V2_IPV4) &&
++		(sk_run_filter(skb, ptp_filter) != PTP_CLASS_V1_IPV4)) {
++		return 0;
++	}
++
++	offset = ETH_HLEN + IPV4_HLEN(data) + UDP_HLEN;
++
++	if (skb->len < offset + OFF_PTP_SEQUENCE_ID + sizeof(seqid))
++		return 0;
++
++	hi = (u16 *)(data + offset + OFF_PTP_SOURCE_UUID);
++	id = (u16 *)(data + offset + OFF_PTP_SEQUENCE_ID);
++
++	memcpy(&lo, &hi[1], sizeof(lo));
++
++	return (uid_hi == *hi &&
++		uid_lo == lo &&
++		seqid  == *id);
++}
++
++static void pch_rx_timestamp(
++			struct pch_gbe_adapter *adapter, struct sk_buff *skb)
++{
++	struct skb_shared_hwtstamps *shhwtstamps;
++	struct pci_dev *pdev;
++	u64 ns;
++	u32 hi, lo, val;
++	u16 uid, seq;
++
++	if (!adapter->hwts_rx_en)
++		return;
++
++	/* Get ieee1588's dev information */
++	pdev = adapter->ptp_pdev;
++
++	val = pch_ch_event_read(pdev);
++
++	if (!(val & RX_SNAPSHOT_LOCKED))
++		return;
++
++	lo = pch_src_uuid_lo_read(pdev);
++	hi = pch_src_uuid_hi_read(pdev);
++
++	uid = hi & 0xffff;
++	seq = (hi >> 16) & 0xffff;
++
++	if (!pch_ptp_match(skb, htons(uid), htonl(lo), htons(seq)))
++		goto out;
++
++	ns = pch_rx_snap_read(pdev);
++	ns <<= TICKS_NS_SHIFT;
++
++	shhwtstamps = skb_hwtstamps(skb);
++	memset(shhwtstamps, 0, sizeof(*shhwtstamps));
++	shhwtstamps->hwtstamp = ns_to_ktime(ns);
++out:
++	pch_ch_event_write(pdev, RX_SNAPSHOT_LOCKED);
++}
++
++static void pch_tx_timestamp(
++			struct pch_gbe_adapter *adapter, struct sk_buff *skb)
++{
++	struct skb_shared_hwtstamps shhwtstamps;
++	struct pci_dev *pdev;
++	struct skb_shared_info *shtx;
++	u64 ns;
++	u32 cnt, val;
++
++	shtx = skb_shinfo(skb);
++	if (unlikely(shtx->tx_flags & SKBTX_HW_TSTAMP && adapter->hwts_tx_en))
++		shtx->tx_flags |= SKBTX_IN_PROGRESS;
++	else
++		return;
++
++	/* Get ieee1588's dev information */
++	pdev = adapter->ptp_pdev;
++
++	/*
++	 * This really stinks, but we have to poll for the Tx time stamp.
++	 * Usually, the time stamp is ready after 4 to 6 microseconds.
++	 */
++	for (cnt = 0; cnt < 100; cnt++) {
++		val = pch_ch_event_read(pdev);
++		if (val & TX_SNAPSHOT_LOCKED)
++			break;
++		udelay(1);
++	}
++	if (!(val & TX_SNAPSHOT_LOCKED)) {
++		shtx->tx_flags &= ~SKBTX_IN_PROGRESS;
++		return;
++	}
++
++	ns = pch_tx_snap_read(pdev);
++	ns <<= TICKS_NS_SHIFT;
++
++	memset(&shhwtstamps, 0, sizeof(shhwtstamps));
++	shhwtstamps.hwtstamp = ns_to_ktime(ns);
++	skb_tstamp_tx(skb, &shhwtstamps);
++
++	pch_ch_event_write(pdev, TX_SNAPSHOT_LOCKED);
++}
++
++static int hwtstamp_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
++{
++	struct hwtstamp_config cfg;
++	struct pch_gbe_adapter *adapter = netdev_priv(netdev);
++	struct pci_dev *pdev;
++
++	if (copy_from_user(&cfg, ifr->ifr_data, sizeof(cfg)))
++		return -EFAULT;
++
++	if (cfg.flags) /* reserved for future extensions */
++		return -EINVAL;
++
++	/* Get ieee1588's dev information */
++	pdev = adapter->ptp_pdev;
++
++	switch (cfg.tx_type) {
++	case HWTSTAMP_TX_OFF:
++		adapter->hwts_tx_en = 0;
++		break;
++	case HWTSTAMP_TX_ON:
++		adapter->hwts_tx_en = 1;
++		break;
++	default:
++		return -ERANGE;
++	}
++
++	switch (cfg.rx_filter) {
++	case HWTSTAMP_FILTER_NONE:
++		adapter->hwts_rx_en = 0;
++		break;
++	case HWTSTAMP_FILTER_PTP_V1_L4_SYNC:
++		adapter->hwts_rx_en = 0;
++		pch_ch_control_write(pdev, (SLAVE_MODE | CAP_MODE0));
++		break;
++	case HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ:
++		adapter->hwts_rx_en = 1;
++		pch_ch_control_write(pdev, (MASTER_MODE | CAP_MODE0));
++		break;
++	case HWTSTAMP_FILTER_PTP_V2_EVENT:
++		adapter->hwts_rx_en = 1;
++		pch_ch_control_write(pdev, (V2_MODE | CAP_MODE2));
++		break;
++	default:
++		return -ERANGE;
++	}
++
++	/* Clear out any old time stamps. */
++	pch_ch_event_write(pdev, TX_SNAPSHOT_LOCKED | RX_SNAPSHOT_LOCKED);
++
++	return copy_to_user(ifr->ifr_data, &cfg, sizeof(cfg)) ? -EFAULT : 0;
++}
++#endif
++
+ inline void pch_gbe_mac_load_mac_addr(struct pch_gbe_hw *hw)
+ {
+ 	iowrite32(0x01, &hw->reg->MAC_ADDR_LOAD);
+@@ -1072,6 +1259,11 @@ static void pch_gbe_tx_queue(struct pch_gbe_adapter *adapter,
+ 	iowrite32(tx_ring->dma +
+ 		  (int)sizeof(struct pch_gbe_tx_desc) * ring_num,
+ 		  &hw->reg->TX_DSC_SW_P);
++
++#ifdef CONFIG_PCH_PTP
++	pch_tx_timestamp(adapter, skb);
++#endif
++
+ 	dev_kfree_skb_any(skb);
+ }
+ 
+@@ -1543,6 +1735,11 @@ pch_gbe_clean_rx(struct pch_gbe_adapter *adapter,
+ 				adapter->stats.multicast++;
+ 			/* Write meta date of skb */
+ 			skb_put(skb, length);
++
++#ifdef CONFIG_PCH_PTP
++			pch_rx_timestamp(adapter, skb);
++#endif
++
+ 			skb->protocol = eth_type_trans(skb, netdev);
+ 			if (tcp_ip_status & PCH_GBE_RXD_ACC_STAT_TCPIPOK)
+ 				skb->ip_summed = CHECKSUM_NONE;
+@@ -2147,6 +2344,11 @@ static int pch_gbe_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
+ 
+ 	pr_debug("cmd : 0x%04x\n", cmd);
+ 
++#ifdef CONFIG_PCH_PTP
++	if (cmd == SIOCSHWTSTAMP)
++		return hwtstamp_ioctl(netdev, ifr, cmd);
++#endif
++
+ 	return generic_mii_ioctl(&adapter->mii, if_mii(ifr), cmd, NULL);
+ }
+ 
+@@ -2440,6 +2642,15 @@ static int pch_gbe_probe(struct pci_dev *pdev,
+ 		goto err_free_netdev;
+ 	}
+ 
++#ifdef CONFIG_PCH_PTP
++	adapter->ptp_pdev = pci_get_bus_and_slot(adapter->pdev->bus->number,
++					       PCI_DEVFN(12, 4));
++	if (ptp_filter_init(ptp_filter, ARRAY_SIZE(ptp_filter))) {
++		pr_err("Bad ptp filter\n");
++		return -EINVAL;
++	}
++#endif
++
+ 	netdev->netdev_ops = &pch_gbe_netdev_ops;
+ 	netdev->watchdog_timeo = PCH_GBE_WATCHDOG_PERIOD;
+ 	netif_napi_add(netdev, &adapter->napi,
+@@ -2504,7 +2715,7 @@ static int pch_gbe_probe(struct pci_dev *pdev,
+ 	netif_carrier_off(netdev);
+ 	netif_stop_queue(netdev);
+ 
+-	dev_dbg(&pdev->dev, "OKIsemi(R) PCH Network Connection\n");
++	dev_dbg(&pdev->dev, "PCH Network Connection\n");
+ 
+ 	device_set_wakeup_enable(&pdev->dev, 1);
+ 	return 0;
+@@ -2605,7 +2816,7 @@ module_init(pch_gbe_init_module);
+ module_exit(pch_gbe_exit_module);
+ 
+ MODULE_DESCRIPTION("EG20T PCH Gigabit ethernet Driver");
+-MODULE_AUTHOR("OKI SEMICONDUCTOR, <toshiharu-linux@dsn.okisemi.com>");
++MODULE_AUTHOR("LAPIS SEMICONDUCTOR, <tshimizu818@gmail.com>");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(DRV_VERSION);
+ MODULE_DEVICE_TABLE(pci, pch_gbe_pcidev_id);
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+1.7.4.4
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
