@@ -1,69 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab2CGVW1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 16:22:27 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56168 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab2CGVW0 (ORCPT
+	id S932244Ab2CGVXF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 16:23:05 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47153 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755720Ab2CGVW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 16:22:26 -0500
-Date: Thu, 8 Mar 2012 01:22:21 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
-        Kees Cook <keescook@chromium.org>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Paul Bolle <pebolle@tiscali.nl>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm] prctl: Use CAP_SYS_RESOURCE for PR_SET_MM option
-Message-ID: <20120307212221.GD6215@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 Mar 2012 16:22:58 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hch@infradead.org, Trond.Myklebust@netapp.com, sfrench@samba.org,
+        sage@newdream.net, ericvh@gmail.com, mszeredi@suse.cz
+Subject: [PATCH 02/25] vfs: reorganize do_last()
+Date: Wed,  7 Mar 2012 22:22:19 +0100
+Message-Id: <1331155362-11132-3-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
+References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CAP_SYS_ADMIN is already overloaded left and right,
-so to have more fine-grained access control use
-CAP_SYS_RESOURCE here.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-The CAP_SYS_RESOUCE is chosen because this prctl
-option allows a current process to adjust some
-fields of memory map descriptor which rather
-represents what the process owns: pointers to
-code, data, stack segments, command line,
-auxiliary vector data and etc.
+Make the slow lookup part of O_CREAT and non-O_CREAT opens common.
 
-Suggested-by: Michael Kerrisk <mtk.manpages@gmail.com>
-Acked-by: Kees Cook <keescook@chromium.org>
-Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: Paul Bolle <pebolle@tiscali.nl>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+This allows atomic_open to be hooked into the slow lookup part.
+
+The audit_inode() from after mutex_unlock() was moved down just before the "ok:"
+label.  Is this correct?
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
+ fs/namei.c |   93 +++++++++++++++++++++++++++++++++++------------------------
+ 1 files changed, 55 insertions(+), 38 deletions(-)
 
-Typo is fixed.
-
- kernel/sys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6.git/kernel/sys.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -1712,7 +1712,7 @@ static int prctl_set_mm(int opt, unsigne
- 	if (arg5 || (arg4 && opt != PR_SET_MM_AUXV))
- 		return -EINVAL;
+diff --git a/fs/namei.c b/fs/namei.c
+index f9639bf..ff8bc94 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2113,6 +2113,8 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	int want_write = 0;
+ 	int acc_mode = op->acc_mode;
+ 	struct file *filp;
++	struct inode *inode;
++	int symlink_ok = 0;
+ 	int error;
  
--	if (!capable(CAP_SYS_ADMIN))
-+	if (!capable(CAP_SYS_RESOURCE))
- 		return -EPERM;
+ 	nd->flags &= ~LOOKUP_PARENT;
+@@ -2144,47 +2146,38 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	}
  
- 	if (addr >= TASK_SIZE)
+ 	if (!(open_flag & O_CREAT)) {
+-		int symlink_ok = 0;
+ 		if (nd->last.name[nd->last.len])
+ 			nd->flags |= LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
+ 		if (open_flag & O_PATH && !(nd->flags & LOOKUP_FOLLOW))
+ 			symlink_ok = 1;
+ 		/* we _can_ be in RCU mode here */
+-		error = walk_component(nd, path, &nd->last, LAST_NORM,
+-					!symlink_ok);
+-		if (error < 0)
+-			return ERR_PTR(error);
+-		if (error) /* symlink */
+-			return NULL;
+-		/* sayonara */
++		error = lookup_fast(nd, &nd->last, path, &inode);
++		if (error <= 0) {
++			if (error)
++				goto terminate;
++
++			goto finish_lookup;
++		}
++		/* cached lookup failed, no longer in RCU mode */
++	} else {
++		/* create side of things */
++
++		/*
++		 * This will *only* deal with leaving RCU mode - LOOKUP_JUMPED
++		 * has been cleared when we got to the last component we are
++		 * about to look up
++		 */
+ 		error = complete_walk(nd);
+ 		if (error)
+ 			return ERR_PTR(error);
+ 
+-		error = -ENOTDIR;
+-		if (nd->flags & LOOKUP_DIRECTORY) {
+-			if (!nd->inode->i_op->lookup)
+-				goto exit;
+-		}
+-		audit_inode(pathname, nd->path.dentry);
+-		goto ok;
++		audit_inode(pathname, dir);
++		error = -EISDIR;
++		/* trailing slashes? */
++		if (nd->last.name[nd->last.len])
++			goto exit;
+ 	}
+ 
+-	/* create side of things */
+-	/*
+-	 * This will *only* deal with leaving RCU mode - LOOKUP_JUMPED has been
+-	 * cleared when we got to the last component we are about to look up
+-	 */
+-	error = complete_walk(nd);
+-	if (error)
+-		return ERR_PTR(error);
+-
+-	audit_inode(pathname, dir);
+-	error = -EISDIR;
+-	/* trailing slashes? */
+-	if (nd->last.name[nd->last.len])
+-		goto exit;
+-
+ 	mutex_lock(&dir->d_inode->i_mutex);
+ 
+ 	dentry = lookup_hash(nd);
+@@ -2197,9 +2190,14 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	path->dentry = dentry;
+ 	path->mnt = nd->path.mnt;
+ 
+-	/* Negative dentry, just create the file */
++	/* Negative dentry, create the file if O_CREAT */
+ 	if (!dentry->d_inode) {
+ 		umode_t mode = op->mode;
++
++		error = -ENOENT;
++		if (!(open_flag & O_CREAT))
++			goto exit_mutex_unlock;
++
+ 		if (!IS_POSIXACL(dir->d_inode))
+ 			mode &= ~current_umask();
+ 		/*
+@@ -2233,7 +2231,6 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	 * It already exists.
+ 	 */
+ 	mutex_unlock(&dir->d_inode->i_mutex);
+-	audit_inode(pathname, path->dentry);
+ 
+ 	error = -EEXIST;
+ 	if (open_flag & O_EXCL)
+@@ -2243,22 +2240,38 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	if (error)
+ 		goto exit_dput;
+ 
++	inode = path->dentry->d_inode;
++finish_lookup:
+ 	error = -ENOENT;
+-	if (!path->dentry->d_inode)
+-		goto exit_dput;
++	if (!inode) {
++		path_to_nameidata(path, nd);
++		goto terminate;
++	}
+ 
+-	if (path->dentry->d_inode->i_op->follow_link)
++	if (should_follow_link(inode, !symlink_ok)) {
++		if (nd->flags & LOOKUP_RCU) {
++			if (unlikely(unlazy_walk(nd, path->dentry))) {
++				error = -ECHILD;
++				goto terminate;
++			}
++		}
+ 		return NULL;
++	}
+ 
+ 	path_to_nameidata(path, nd);
+-	nd->inode = path->dentry->d_inode;
+-	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
++	nd->inode = inode;
++
+ 	error = complete_walk(nd);
+ 	if (error)
+ 		return ERR_PTR(error);
+ 	error = -EISDIR;
+-	if (S_ISDIR(nd->inode->i_mode))
++	if ((open_flag & O_CREAT) && S_ISDIR(inode->i_mode))
++		goto exit;
++	error = -ENOTDIR;
++	if (nd->flags & LOOKUP_DIRECTORY && !inode->i_op->lookup)
+ 		goto exit;
++
++	audit_inode(pathname, nd->path.dentry);
+ ok:
+ 	if (!S_ISREG(nd->inode->i_mode))
+ 		will_truncate = 0;
+@@ -2303,6 +2316,10 @@ exit_dput:
+ exit:
+ 	filp = ERR_PTR(error);
+ 	goto out;
++
++terminate:
++	terminate_walk(nd);
++	return ERR_PTR(error);
+ }
+ 
+ static struct file *path_openat(int dfd, const char *pathname,
+-- 
+1.7.7
+
