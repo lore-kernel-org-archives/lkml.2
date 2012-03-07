@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508Ab2CGXYH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 18:24:07 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35648 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab2CGXYE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 18:24:04 -0500
+	id S1755374Ab2CGX2L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 18:28:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16894 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752530Ab2CGX2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 18:28:08 -0500
+Date: Wed, 7 Mar 2012 20:20:56 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4 changelog-v2] KVM: Switch to srcu-less get_dirty_log()
+Message-ID: <20120307232056.GA29570@amt.cnet>
+References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
+ <20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp>
+ <20120303142148.2689454b30dc86d84c4a19f5@gmail.com>
+ <20120306111540.GA29914@amt.cnet>
+ <20120306234317.2817d2071038d11ab3831c82@gmail.com>
+ <20120306150104.GA3041@amt.cnet>
+ <20120307002317.d8682de9c6ccd6af8ccac467@gmail.com>
+ <20120306152850.GB3353@amt.cnet>
+ <20120307171826.1bb12481.yoshikawa.takuya@oss.ntt.co.jp>
 MIME-Version: 1.0
-X-Originating-IP: [172.22.162.26]
-In-Reply-To: <CAK=WgbYsZUzTos_sXd+ZayKfPc=sxL7v0Q_==bTMh-_4XiMWiw@mail.gmail.com>
-References: <CAK=WgbYsZUzTos_sXd+ZayKfPc=sxL7v0Q_==bTMh-_4XiMWiw@mail.gmail.com>
-Date: Wed, 7 Mar 2012 15:24:02 -0800
-Message-ID: <CAOesGMgtK76q0KYM0SVMd1GSayUZ6WMOedrh3HM-x+WsXYj6PQ@mail.gmail.com>
-Subject: Re: [GIT PULL] fixing and cleaning up rpmsg/remoteproc for 3.4
-From: Olof Johansson <olof@lixom.net>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Asselstine <mark.asselstine@windriver.com>,
-        Brian Swetland <swetland@google.com>, "Grosen, Mark" <mgrosen@ti.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>, "Clark, Rob" <rob@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120307171826.1bb12481.yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 10:09 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> Hi Arnd,
+On Wed, Mar 07, 2012 at 05:18:26PM +0900, Takuya Yoshikawa wrote:
+> Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> 
+> > > We cannot drop the lock.
+> > > Do you mean doing TLB flush each time before dropping the lock?
+> > 
+> > Yes, only if there is contention (see cond_resched_lock).
+> 
+> But how can we conditionally call kvm_flush_remote_tlbs() from
+> inside __cond_resched_lock right before spin_unlock()?
 >
-> Please pull:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git
-> rpmsg-fixes-and-more-for-3.4
->
-> To get a few rpmsg/remoteproc fixes, cleanups and some generalization
-> work for 3.4.
->
-> Again, I should have sent the Kconfig patch earlier in a separate pull
-> request. Sorry about that.
+> We need another API.
 
-Pulled, thanks.
+Yep, a callback into cond_resched_lock_cb (or something) 
+could do it.
 
-
--Olof
