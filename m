@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab2CGKIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 05:08:10 -0500
-Received: from tundra.namei.org ([65.99.196.166]:57182 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab2CGKIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 05:08:09 -0500
-Date: Wed, 7 Mar 2012 21:08:05 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        David Safford <safford@linux.vnet.ibm.com>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-Subject: Re: [PATCH v2 00/11] ima: appraisal extension
-In-Reply-To: <1330629048-5933-1-git-send-email-zohar@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.02.1203072057350.29863@tundra.namei.org>
-References: <1330629048-5933-1-git-send-email-zohar@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1755353Ab2CGKI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 05:08:26 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42706 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753964Ab2CGKIY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 05:08:24 -0500
+Date: Wed, 7 Mar 2012 12:08:19 +0200 (EET)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+cc: linux-kernel@vger.kernel.org, leonid.moiseichuk@nokia.com,
+        David Rientjes <rientjes@google.com>, mingo@elte.hu
+Subject: Re: [PATCH] vmevent: Use 'struct vmevent_attr' for vmevent_fd()
+ ABI
+In-Reply-To: <20120306225937.GA24931@oksana.dev.rtsoft.ru>
+Message-ID: <alpine.LFD.2.02.1203071203320.1774@tux.localdomain>
+References: <1331067079-2163-1-git-send-email-penberg@kernel.org> <20120306225937.GA24931@oksana.dev.rtsoft.ru>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 1 Mar 2012, Mimi Zohar wrote:
+On Wed, 7 Mar 2012, Anton Vorontsov wrote:
+> Sorry for hijacking this thread, but speaking of big
+> changes. Are there any plans or ideas to add other methods
+> of sampling, i.e. something not timer-based?
 
-> IMA currently maintains an integrity measurement list used to assert the
-> integrity of the running system to a third party.  The IMA-appraisal
-> extension adds local integrity validation and enforcement of the
-> measurement against a "good" value stored as an extended attribute
-> 'security.ima'. 
+Yes and no.
 
-Do you know if any distros are planning on integrating EVM/IMA?
+Linux already has non-timer based "vm events" via tracepoints. There's 
+absolutely no need to reinvent the wheel so we should integrate with perf 
+more closely.
 
-What about Tizen ?  The now defunct MeeGo project weas previously the 
-main intended user.
+The biggest open question is whether or not a new syscall is needed for 
+configuring memory thresholds and such.
 
-
-
-
-- James
--- 
-James Morris
-<jmorris@namei.org>
+			Pekka
