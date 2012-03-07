@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab2CGKmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 05:42:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54119 "EHLO mx2.suse.de"
+	id S1755383Ab2CGKqo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 05:46:44 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:46367 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372Ab2CGKmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 05:42:44 -0500
-Date: Wed, 7 Mar 2012 11:42:40 +0100
-From: Jan Kara <jack@suse.cz>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>,
-        viro@ZenIV.linux.org.uk, Christoph Hellwig <hch@infradead.org>
-Subject: Re: inode->i_wb_list corruption.
-Message-ID: <20120307104240.GB18658@quack.suse.cz>
-References: <20120306185137.GA15881@redhat.com>
- <20120306210307.GC8781@quack.suse.cz>
- <20120307072608.GA24087@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120307072608.GA24087@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751241Ab2CGKqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 05:46:43 -0500
+From: Andrew Vagin <avagin@openvz.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Cc: avagin@openvz.org, linux-hotplug@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] uevent: send events in correct order according to seqnum (v3)
+Date: Wed,  7 Mar 2012 14:49:56 +0400
+Message-Id: <1331117396-11600-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 06-03-12 23:26:08, Wu Fengguang wrote:
-> On Tue, Mar 06, 2012 at 10:03:07PM +0100, Jan Kara wrote:
-> > On Tue 06-03-12 13:51:37, Dave Jones wrote:
-> > > We've had three separate reports against 3.2.x recently where the linked list debugging
-> > > is getting tripped up by the prev->next pointer being null instead of pointing
-> > > to the current list entry while walking the i_wb_list
-> > > 
-> > > Call traces are slightly different each time, but all end up walking i_wb_list 
-> > > in dput -> d_kill -> i_put -> evict -> inode_wb_list_del
-> > > 
-> > > What protects that list ? It looks to be just bdi->wb.list_lock ?
-> > > 
-> > > 
-> > > full reports at:
-> > > https://bugzilla.redhat.com/show_bug.cgi?id=784741
-> > > https://bugzilla.redhat.com/show_bug.cgi?id=799229
-> > > https://bugzilla.redhat.com/show_bug.cgi?id=799692
-> >   Hum, interesting! I'd guess this might be caused by f758eeab - adding
-> > Fengguang and Christoph to CC. But I'm really failing to see how this could
-> > happen but interesting thing is that in two of the three cases the files
-> > are on virtual filesystems (once cgroup, once sysfs). These both use
-> > noop_backing_dev_info.
-> 
-> sysfs/cgroup forgot to init inode->i_wb_list?
-  Umm, it's not *that* simple I'd say. E.g. sysfs doesn't provide
-alloc_inode() method so we use inode_cachep for allocations. And that cache
-is configured to use inode_init_once().
+The queue handling in the udev daemon assumes that the events are
+ordered.
 
-Also note that the error message is:
-list_del corruption. prev->next should be ffff8801c2f41b18, but was (null)
+Before this patch uevent_seqnum is incremented under sequence_lock,
+than an event is send uner uevent_sock_mutex. I want to say that code
+contained a window between incrementing seqnum and sending an event.
 
-Which means that our inode had correct i_wb_list.prev but the previous
-inode had NULL in i_wb_list.next. But that means that both inodes were
-linked into the list at some point. So it does not seem like an
-initialization issue to me...
+This patch locks uevent_sock_mutex before incrementing uevent_seqnum.
 
-								Honza
+v2: delete sequence_lock, uevent_seqnum is protected by uevent_sock_mutex
+v3: unlock the mutex before the goto exit
 
-> --- linux.orig/fs/inode.c	2012-02-22 19:20:48.374799955 -0800
-> +++ linux/fs/inode.c	2012-03-06 23:11:29.133899478 -0800
-> @@ -193,6 +193,7 @@ int inode_init_always(struct super_block
->  	inode->i_private = NULL;
->  	inode->i_mapping = mapping;
->  	INIT_LIST_HEAD(&inode->i_dentry);	/* buggered by rcu freeing */
-> +	INIT_LIST_HEAD(&inode->i_wb_list);
->  #ifdef CONFIG_FS_POSIX_ACL
->  	inode->i_acl = inode->i_default_acl = ACL_NOT_CACHED;
->  #endif
+Thanks for Kay for the comments.
+
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ lib/kobject_uevent.c |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
+index e66e9b6..75cbdb5 100644
+--- a/lib/kobject_uevent.c
++++ b/lib/kobject_uevent.c
+@@ -29,16 +29,17 @@
+ 
+ u64 uevent_seqnum;
+ char uevent_helper[UEVENT_HELPER_PATH_LEN] = CONFIG_UEVENT_HELPER_PATH;
+-static DEFINE_SPINLOCK(sequence_lock);
+ #ifdef CONFIG_NET
+ struct uevent_sock {
+ 	struct list_head list;
+ 	struct sock *sk;
+ };
+ static LIST_HEAD(uevent_sock_list);
+-static DEFINE_MUTEX(uevent_sock_mutex);
+ #endif
+ 
++/* This lock protects uevent_seqnum and uevent_sock_list */
++static DEFINE_MUTEX(uevent_sock_mutex);
++
+ /* the strings here must match the enum in include/linux/kobject.h */
+ static const char *kobject_actions[] = {
+ 	[KOBJ_ADD] =		"add",
+@@ -136,7 +137,6 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
+ 	struct kobject *top_kobj;
+ 	struct kset *kset;
+ 	const struct kset_uevent_ops *uevent_ops;
+-	u64 seq;
+ 	int i = 0;
+ 	int retval = 0;
+ #ifdef CONFIG_NET
+@@ -243,17 +243,16 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
+ 	else if (action == KOBJ_REMOVE)
+ 		kobj->state_remove_uevent_sent = 1;
+ 
++	mutex_lock(&uevent_sock_mutex);
+ 	/* we will send an event, so request a new sequence number */
+-	spin_lock(&sequence_lock);
+-	seq = ++uevent_seqnum;
+-	spin_unlock(&sequence_lock);
+-	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)seq);
+-	if (retval)
++	retval = add_uevent_var(env, "SEQNUM=%llu", (unsigned long long)++uevent_seqnum);
++	if (retval) {
++		mutex_unlock(&uevent_sock_mutex);
+ 		goto exit;
++	}
+ 
+ #if defined(CONFIG_NET)
+ 	/* send netlink message */
+-	mutex_lock(&uevent_sock_mutex);
+ 	list_for_each_entry(ue_sk, &uevent_sock_list, list) {
+ 		struct sock *uevent_sock = ue_sk->sk;
+ 		struct sk_buff *skb;
+@@ -290,8 +289,8 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
+ 		} else
+ 			retval = -ENOMEM;
+ 	}
+-	mutex_unlock(&uevent_sock_mutex);
+ #endif
++	mutex_unlock(&uevent_sock_mutex);
+ 
+ 	/* call uevent_helper, usually only enabled during early boot */
+ 	if (uevent_helper[0] && !kobj_usermode_filter(kobj)) {
+-- 
+1.7.1
+
