@@ -1,47 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab2CGLDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 06:03:42 -0500
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:37716 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab2CGLDj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 06:03:39 -0500
+	id S1755479Ab2CGLIJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 06:08:09 -0500
+Received: from mout4.freenet.de ([195.4.92.94]:53603 "EHLO mout4.freenet.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751415Ab2CGLII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 06:08:08 -0500
+Message-ID: <4F574113.8030906@01019freenet.de>
+Date: Wed, 07 Mar 2012 12:05:55 +0100
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Firefox/10.0.2 SeaMonkey/2.7.2
 MIME-Version: 1.0
-In-Reply-To: <1331117396-11600-1-git-send-email-avagin@openvz.org>
-References: <1331117396-11600-1-git-send-email-avagin@openvz.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 7 Mar 2012 12:03:19 +0100
-Message-ID: <CAPXgP12kQm9dZdjh3Vch2ebrn21jW6r-=gVssmvU3WqJ6VE70g@mail.gmail.com>
-Subject: Re: [PATCH] uevent: send events in correct order according to seqnum (v3)
-To: Andrew Vagin <avagin@openvz.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-hotplug@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Subject: Re: Corrupted files after suspend to disk
+References: <201202162251.47063.rjw@sisk.pl> <Pine.LNX.4.44L0.1202161722310.1150-100000@iolanthe.rowland.org> <CAFLxGvwWBWTmv+uUH87UB3Ly31hjVU5kWpSyihGDKj6_8oc6WA@mail.gmail.com> <201202170016.14313.rjw@sisk.pl> <jj5qhh$5j5$1@ID-44327.news.uni-berlin.de> <jj684d$6ng$1@ID-44327.news.uni-berlin.de> <CAFLxGvwazkbisZ0Ax==-Yyv2h5mYtnK-S2bOegZHX5g+rB2krQ@mail.gmail.com>
+In-Reply-To: <CAFLxGvwazkbisZ0Ax==-Yyv2h5mYtnK-S2bOegZHX5g+rB2krQ@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 11:49, Andrew Vagin <avagin@openvz.org> wrote:
-> The queue handling in the udev daemon assumes that the events are
-> ordered.
->
-> Before this patch uevent_seqnum is incremented under sequence_lock,
-> than an event is send uner uevent_sock_mutex. I want to say that code
-> contained a window between incrementing seqnum and sending an event.
->
-> This patch locks uevent_sock_mutex before incrementing uevent_seqnum.
->
-> v2: delete sequence_lock, uevent_seqnum is protected by uevent_sock_mutex
-> v3: unlock the mutex before the goto exit
->
-> Thanks for Kay for the comments.
->
-> Signed-off-by: Andrew Vagin <avagin@openvz.org>
+richard -rw- weinberger schrieb:
+> On Wed, Mar 7, 2012 at 12:54 AM, Andreas Hartmann
+> <andihartmann@01019freenet.de> wrote:
+>> Andreas Hartmann schrieb:
+>>> Rafael J. Wysocki schrieb:
+>>>> On Friday, February 17, 2012, richard -rw- weinberger wrote:
+>>>>> On Thu, Feb 16, 2012 at 11:26 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>>>>>> On Thu, 16 Feb 2012, Rafael J. Wysocki wrote:
+>>>>>>
+>>>>>>>> FWIW, we've been seeing a number of hard to diagnose failures
+>>>>>>>> with suspend to disk for the last few releases in Fedora.
+>>>>>>>> Eric Sandeen has been chasing https://bugzilla.redhat.com/show_bug.cgi?id=744275
+>>>>>>>> for a while, but there's no smoking gun that really explains what's
+>>>>>>>> getting into these states. Further complicating things, is that it
+>>>>>>>> doesn't seem to be 100% reproducable.
+>>>>>>>
+>>>>>>> I wonder if that's reproducible with the filesystems freezing patch I posted
+>>>>>>> some time ago (it will need some rebasing to apply to the current mainline or
+>>>>>>> 3.2.y).
+>>>>>
+>>>>> Where can I find this patch?
+>>>>> I'll happily test it.
+>>>>> But it may take some time as the bug is not easy to reproduce.
+>>>>
+>>>> This is the last version posted:
+>>>>
+>>>> http://marc.info/?l=linux-kernel&m=132775832509351&w=4
+>>>>
+>>>> However, it only may help if you use the kernel-based hibernation i.e.
+>>>> "echo disk > /sys/power/state" (that may be worth testing without the
+>>>> patch too, but Fedora is using this AFAICS, so it probably has that
+>>>> problem too).
+>>>
+>>> I'm having the same problem. Please take a look at the following bug
+>>> report at suse for more information:
+>>>
+>>> https://bugzilla.novell.com/show_bug.cgi?id=732908
+>>>
+>>> Do you know, which way of suspending openSUSE uses in 12.1?
+>>
+>> I changed SLEEP_MODULE="uswsusp" to "kernel" in
+>> /usr/lib/pm-utils/defaults and tested your patch mentioned above with
+>> linux 3.2.9.
+>>
+>> Unfortunately the behaviour didn't change at all - I can see the same
+>> problems as before.
+>>
+>> I tested with and without X. I tested with the call "pm-hibernate" and
+>> with "echo disk > /sys/power/state". I always could see the corrupted
+>> files after 2 to 4 times of hibernating / resuming.
+>>
+>>
+>> Kind regards,
+>> Andreas
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> On my system kernel suspend *seems* to work.
+> I've seen no corrupted files so far.
+> 
+> But sometimes the resume is failing. (One out of 5 resumes fails).
+> I was unable to get any kernel output.
+> 
+> So I'm not sure whether this is the same issue
+> or another one. :-\
 
-Looks good to me. Works fine in a kvm installation here.
-Feel free to add:
-  Tested-By: Kay Sievers <kay.sievers@vrfy.org>
+I'm pretty sure that this is the same issue. What you are telling
+correlates with my research here.
+I even got resumes where the machine came up again, but nothing could be
+done (it wasn't possible to switch of the password secured screen saver
+any more - login at the shell wasn't possible, too, because the started
+bash crashed), because of some relevant libraries have been broken.
+Reboot with CTRL-ALT-DEL often doesn't work, too, because of the lack of
+bash.
+But afterwards, I could see in logfiles, that there were file
+corruptions (e.g. in ~/.xsession-errors).
 
-Thanks lot for the udev debugging and taking care of it,
-Kay
+It's absolute easy for me to reproduce the problem, because it's just
+more or less every time without doing something special. It isn't even
+necessary to have a running X session. Runlevel 3 is enough to get the
+problem triggered.
+
+I'm checking the md5 sum of some directories each time after resuming
+with this script:
+
+#!/bin/sh
+
+dir="/bin /sbin /lib /lib64 /usr/lib64 /usr/bin /usr/sbin"
+
+for i in $dir
+do
+    echo "$i"
+    cd $i
+    md5sum -c md5sum.out | grep -v "OK"
+done
+
+
+The initial creation is done directly after a fresh boot with this script:
+
+#!/bin/sh
+
+dir="/bin /sbin /lib /lib64 /usr/lib64 /usr/bin /usr/sbin"
+
+for i in $dir
+do
+    echo "$i"
+    cd $i
+    rm md5sum.out
+    md5sum * > md5sum.out
+done
+
+
+What about the filesystem layout (openSUSE 12.1)? I'm using the
+following layout:
+
+- /dev/sda
+- /dev/sda1 -> /boot
+- /dev/sda2 -> cr_sda2 (crypted partition with cryptsetup luksOpen ...)
+- cr_sda2 is a PV for LVM
+- The PV is put to the VG "system"
+- The following LV's are part of the VG system:
+	/root
+	swap
+	/usr
+	/var
+	/home
+	/opt
+
+cr_sda2 is decrypted during initrd.
+
+
+Kind regards,
+Andreas
