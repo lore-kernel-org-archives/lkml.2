@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748Ab2CGJZX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 04:25:23 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48850 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab2CGJZT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 04:25:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <1331108158.24656.330.camel@vkoul-udesk3>
-References: <1330964196-32623-1-git-send-email-javier.martin@vista-silicon.com>
-	<1330964196-32623-2-git-send-email-javier.martin@vista-silicon.com>
-	<1331102571.24656.324.camel@vkoul-udesk3>
-	<CACKLOr0iBSMd8hNdmeAiMWgyyUb_b1=5n47N97hu9EP2Zu9OsQ@mail.gmail.com>
-	<1331108158.24656.330.camel@vkoul-udesk3>
-Date: Wed, 7 Mar 2012 10:25:19 +0100
-Message-ID: <CACKLOr1VHkLeCnUDcOEuBBjN5iY72ADvqXoNk0NR_N95fkd6Kg@mail.gmail.com>
-Subject: Re: [PATCH 01/14] dmaengine: imx-dma: merge old dma-v1.c with imx-dma.c
-From: javier Martin <javier.martin@vista-silicon.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        dan.j.williams@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754371Ab2CGJcp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 04:32:45 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:19835 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2CGJcm convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:13:1>);
+	Wed, 7 Mar 2012 04:32:42 -0500
+Message-Id: <4F5739760200007800076DA6@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 07 Mar 2012 09:33:26 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Santosh Jodh" <Santosh.Jodh@citrix.com>, <konrad@darnok.org>
+Cc: "David Vrabel" <david.vrabel@citrix.com>,
+        "Ian Campbell" <Ian.Campbell@citrix.com>,
+        "Paul Durrant" <Paul.Durrant@citrix.com>,
+        "waldi@debian.org" <waldi@debian.org>,
+        "weiyi.huang@gmail.com" <weiyi.huang@gmail.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        "joe.jin@oracle.com" <joe.jin@oracle.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "lersek@redhat.com" <lersek@redhat.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "dgdegra@tycho.nsa.gov" <dgdegra@tycho.nsa.gov>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>
+Subject: Re: [Xen-devel] [PATCH 0001/001] xen: multi page ring support
+ for block devices
+References: <1330701099-18281-1-git-send-email-santoshprasadnayak@gmail.com>
+ <7914B38A4445B34AA16EB9F1352942F1010A1FA12364@SJCPMAILBOX01.citrite.net>
+ <CAPbh3rsExLtohBwVd_scYuO=GN1iZE5egQQ3x5M59YUno5Rtyw@mail.gmail.com>
+In-Reply-To: <CAPbh3rsExLtohBwVd_scYuO=GN1iZE5egQQ3x5M59YUno5Rtyw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7 March 2012 09:15, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Wed, 2012-03-07 at 08:52 +0100, javier Martin wrote:
->> Hi Vinod,
->>
->> On 7 March 2012 07:42, Vinod Koul <vinod.koul@intel.com> wrote:
->> > On Mon, 2012-03-05 at 17:16 +0100, Javier Martin wrote:
->> > Sascha,
->> > Are there any more users of dmac in mach-imx?
->>
->> No, there are no other users of mach-imx. In fact, it was Sascha's
->> idea to make this merge [1].
-> Then please move the file in 1st patch, also it would be easily clear
-> what parts are added, deleted and moved.
+>>> On 06.03.12 at 18:20, Konrad Rzeszutek Wilk <konrad@darnok.org> wrote:
+>  -> the usage of XenbusStateInitWait? Why do we introduce that? Looks
+> like a fix to something.
 
-All right, I will, but I'll wait for Sascha and others to comment on
-the series too.
+No, this is required to get the negotiation working (the frontend must
+not try to read the new nodes until it can be certain that the backend
+populated them). However, as already pointed out in an earlier reply
+to Santosh, the way this is done here doesn't appear to allow for the
+backend to already be in InitWait state when the frontend gets
+invoked.
 
-> Otherwise the series looks fine except that it needs to have a better
-> changelog on why you are removing certain field/struct. It helps to
-> document the motivation of doing certain change, you will find that you
-> wont remember that six months down the line :)
+> -> XENBUS_MAX_RING_PAGES - why 2? Why not 4? What is the optimal
+> default size for SSD usage? 16?
 
-Thanks for the suggestion, I'll rewrite my changelogs.
+What do SSDs have to do with a XenBus definition? Imo it's wrong (and
+unnecessary) to introduce a limit at the XenBus level at all - each driver
+can do this for itself.
 
-> Also I am looking for Tested-By from people who have use imx-dma.
+As to the limit for SSDs in the block interface - I don't think the number
+of possibly simultaneous requests has anything to do with this. Instead,
+I'd expect the request number/size/segments extension that NetBSD
+apparently implements to possibly have an effect.
 
-That would be awesome. I've tested this series with a test battery which covers:
-- mxcmmc
-- audio
-- dmatest module
+Jan
 
-
--- 
-Javier Martin
-Vista Silicon S.L.
-CDTUC - FASE C - Oficina S-345
-Avda de los Castros s/n
-39005- Santander. Cantabria. Spain
-+34 942 25 32 60
-www.vista-silicon.com
