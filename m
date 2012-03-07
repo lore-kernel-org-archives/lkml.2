@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030850Ab2CGWuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 17:50:11 -0500
-Received: from nn7.de ([85.214.94.156]:57172 "EHLO nn7.de"
+	id S932686Ab2CGWwV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 17:52:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2653 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752095Ab2CGWuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 17:50:08 -0500
-Message-ID: <1331160605.32484.24.camel@no>
-Subject: gs_change ... kswapd0 exited with preempt_count 1
-From: Soeren Sonnenburg <sonne@debian.org>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 07 Mar 2012 23:50:05 +0100
-Organization: 
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-YDY2sHxdGwYn5LIA+nXT"
-X-Mailer: Evolution 3.2.2-1 
+	id S932221Ab2CGWwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 17:52:19 -0500
+Subject: Re: [PATCH 08/29] Disintegrate asm/system.h for C6X
+From: Mark Salter <msalter@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: paul.gortmaker@windriver.com, hpa@zytor.com, torvalds@linux-foundation.org,
+        sfr@canb.auug.org.au, mingo@redhat.com, arnd@arndb.de,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Date: Wed, 07 Mar 2012 17:52:01 -0500
+In-Reply-To: <20518.1331160139@redhat.com>
+References: <1331156636.12805.18.camel@deneb.redhat.com>
+	 <1331155726.12805.16.camel@deneb.redhat.com>
+	 <20120307194548.15987.36073.stgit@warthog.procyon.org.uk>
+	 <20120307194725.15987.99209.stgit@warthog.procyon.org.uk>
+	 <18700.1331156191@redhat.com> <20518.1331160139@redhat.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1331160723.12805.25.camel@deneb.redhat.com>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-03-07 at 22:42 +0000, David Howells wrote:
+> Mark Salter <msalter@redhat.com> wrote:
+> 
+> > Kbuild takes care of it. See arch/c6x/include/Kbuild for the generic
+> > headers C6X uses as-is.
+> 
+> I'm still not clear on how that actually works.  Does it copy the headers to
+> asm/ from asm-generic/?
 
---=-YDY2sHxdGwYn5LIA+nXT
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: quoted-printable
+It creates $(obj)/arch/$(arch)/include/generated/asm/foo.h which has:
 
-Hi,
+#include <asm-generic/foo.h>
 
-I am chasing a bug I cannot make any sense of: I have a i7 based server
-on an intel board that runs just fine for days but then suddenly dies
-with the backtraces below on git master but also any older kernel
-version I tried. The system is running this config
-http://7nn.de/debugging/config.gz
+See scripts/Makefile.asm-generic
 
-And no matter what I do I keep getting kernel panics after a couple of
-days (or weeks) that all involve kswapd0 / gs_change:
+--Mark
 
-http://7nn.de/debugging/panic-3.2.0.jpg
-http://7nn.de/debugging/panic-3.3.0-rc5.jpg
 
-Any ideas,
-Soeren
---=20
-For the one fact about the future of which we can be certain is that it
-will be utterly fantastic. -- Arthur C. Clarke, 1962
-
---=-YDY2sHxdGwYn5LIA+nXT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCAAGBQJPV+YdAAoJEH82z1Wqh6p3jEIP/0SzzoW87gwOlBgUFtBmU33s
-6BoQbTsZvBkvivEwaHvzgPThesEf2swhMAtkdMHcowEoN1qwp7HIPFrzOpXr9g7x
-CiuA4EEaoiSKTT8Sv1GHZUDRGiM1ms3TZQrnzHqKKHXLNTn3xrO2gRr7/TFK6jF+
-JPfb7c8UlEVN/jXcPLD8azeNrY/L0zRwTAxt/AcM56BlDnn4nrTZGT2/hjUgpseU
-2fOUPUgO8ncXo8bt4EtiaZx6mYs9j3OMPDyWhmNL4CqL3D+aPlx1rkt5S2wm4tSu
-wdEDP1ZSGvaSrj1ptiDGrUZWx62kGVoUVl/v+/egjV1b3cQlDCF64yzLgG3gzjCe
-f/9T4wpTP9MOZ9LL12nQG1K1NMoHpMP1EDE2ypYVNY0j8tvqhG/ELoWYAtuF5vMn
-pRT1Uqgle2rokV8szTE7nOSA3i+J/kBDid5sb0g5FX/l5MXgXzQQt3CcihGdSWeY
-FuStIL7n0GdfrMxyNpm1d2HwHYcPrCTwgNYnjvPVVBT0dQCQ4pOIEnIAlyJbntae
-4US2otYA91pRjPvsbAUpiyCQToELD3JhdA51H8taFPDt98N5gFDFu/1BIIzWzcKB
-5CaANrJ1aPOjax5eg7ftla+JvU3yD02Oixw9uDiRRKEzWtK33Vs15uaFU+lDBL6q
-HXkg8CleuuUhnqneG+h/
-=3Fju
------END PGP SIGNATURE-----
-
---=-YDY2sHxdGwYn5LIA+nXT--
