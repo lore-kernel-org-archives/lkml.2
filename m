@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab2CGR0S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 12:26:18 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:45103 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756985Ab2CGR0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 12:26:17 -0500
-Date: Wed, 7 Mar 2012 20:28:32 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: santosh nayak <santoshprasadnayak@gmail.com>
-Cc: JBottomley@parallels.com, matthew@wil.cx, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v2] [SCSI] sd: set BIO_MAPPED_INTEGRITY bit correctly in
- sd_dif_prepare()
-Message-ID: <20120307172832.GR22598@mwanda>
-References: <1331139652-25870-1-git-send-email-santoshprasadnayak@gmail.com>
+	id S1759390Ab2CGR1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 12:27:39 -0500
+Received: from nbd.name ([46.4.11.11]:41390 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754978Ab2CGR1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 12:27:38 -0500
+Message-ID: <4F579A88.6030503@openwrt.org>
+Date: Wed, 07 Mar 2012 18:27:36 +0100
+From: Felix Fietkau <nbd@openwrt.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kJZGYML2m3vFaueA"
-Content-Disposition: inline
-In-Reply-To: <1331139652-25870-1-git-send-email-santoshprasadnayak@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090205.4F579A35.00A7,ss=1,re=0.000,fgs=0
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux-netdev <netdev@vger.kernel.org>,
+        Linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
+ DMADBG_7=0x00008040
+References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com>
+In-Reply-To: <4F577D9B.7020402@gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2012-03-07 4:24 PM, Justin P. Mattock wrote:
+> On 03/07/2012 07:19 AM, Mohammed Shafi wrote:
+>> On Wed, Mar 7, 2012 at 7:55 PM, Justin P. Mattock
+>> <justinmattock@gmail.com>  wrote:
+>>> ath9k craps out from time to time(more annoying if anything)
+>>>
+>>> [44309.840830] ath: Failed to stop TX DMA, queues=0x001!
+>>> [44309.858246] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>> [44309.858255] ath: Could not stop RX, we could be confusing the DMA engine
+>>> when we start RX up
+>>> [44309.932801] ath: Failed to stop TX DMA, queues=0x001!
+>>> [44309.950352] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>> [44309.950361] ath: Could not stop RX, we could be confusing the DMA engine
+>>> when we start RX up
+>>> [44310.024301] ath: Failed to stop TX DMA, queues=0x001!
+>>> [44310.041641] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>> [44310.041646] ath: Could not stop RX, we could be confusing the DMA engine
+>>> when we start RX up
+>>> [44310.116316] ath: Failed to stop TX DMA, queues=0x001!
+>>> [44310.133909] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>> [44310.133918] ath: Could not stop RX, we could be confusing the DMA engine
+>>> when we start RX up
+>>> [44310.208021] ath: Failed to stop TX DMA, queues=0x001!
+>>> [44310.225752] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>> [44310.225761] ath: Could not stop RX, we could be confusing the DMA engine
+>>> when we start RX up
+>>> [44310.299922] ath: Failed to stop TX DMA, queues=0x001!
+>>> [44310.317579] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
+>>> [44310.317587] ath: Could not stop RX, we could be confusing the DMA engine
+>>> whe
+>>
+>> this is has become a know issue but less harmful, please try to see if
+>> the workaround of disabling power save helps
+>>
+>> iw dev wlanX set power_save off
+>>
+> 
+> ok! I have set that on the machine.. will see if I get this message in 
+> the upcoming weeks.
+Also, please try this patch with powersave enabled:
+http://nbd.name/ps-fix.patch
 
---kJZGYML2m3vFaueA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-A patch for this already went in.
-
-commit 9354f1b8e6c55c335d1c4fb10d0ae7a041935240
-Author: Muthu Kumar <muthu.lkml@gmail.com>
-Date:   Mon Mar 5 14:59:16 2012 -0800
-
-    floppy/scsi: fix setting of BIO flags
-
-Sorry about that.
-
-regards,
-dan carpenter
-
-
-
---kJZGYML2m3vFaueA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPV5q/AAoJEOnZkXI/YHqRc9AP/Rb/QN03dDqJFs8cscz8tDTj
-Zy5Qj61igzY0ZwbzPnOY7+ZcIA337S1qYcBsHxQElWO50oX4D9Pk28FHTdjdAfD8
-62o5rdoVDHqI7G+z9m+S8YrTpe5/G7qIXBVKIW7fEHxhsP07o/itLFQEAdYUwC4s
-mSJLdC2VctG/NYg40nxSNSFBWpkSxKSBiFWqFFPHR4tVsEHnknr1rBq7FSP85D0Z
-vA9zRKBFFb9KgvysdBYlM2CmsBKQYr6Z3MpwKhqRM60XK+d6FXHH+Ck8ar/pukHi
-gQAU850Frpgd844ft6r/OY7ZWDo2PrNnlZOxBUpOVDnT2UjJe+brOEb5nnk6i2Tf
-NfaWLS4rFCMX8lSH5woNyrrxUYIGgpbeH2U0ddpLL5OVaJte2yBhN9/nAWX/PW5k
-WHxR+WsLtORIhtw+uCWcphLpUmUd+40RVAgg2MX2wJ8N+yxPcJfhw0uRcBy/Qryy
-GS/hfsNAFLgpnX4wXboWi2AnrOFIdXV9xATqLmC8JDBE3X+EvUhsOcSf46bzGtUx
-00V4nTyaljX9jYh7vkrKFkoX5zSSwJ7YYgylggkSlK+qH7av6lc8LdPFy2GCRPS5
-K8cFMXdjBIQ23Hv0rv9z05vyonfYC5FqsdVzPrI8JofHrSlxy+Otmlwzoxfm9ft5
-Mik8jV14403l+gtaJBNi
-=mOHd
------END PGP SIGNATURE-----
-
---kJZGYML2m3vFaueA--
+- Felix
