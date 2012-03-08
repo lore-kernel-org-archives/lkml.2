@@ -1,127 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759290Ab2CHAEE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 19:04:04 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:51873 "EHLO
-	mail-lpp01m020-f174.google.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758585Ab2CHAEB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 19:04:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <1331018040-30725-17-git-send-email-yinghai@kernel.org>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org> <1331018040-30725-17-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 7 Mar 2012 17:03:39 -0700
-Message-ID: <CAErSpo59kzBL1ApWuWWcymd9UR3m3vB3zkUoJezn66As+-97dQ@mail.gmail.com>
-Subject: Re: [PATCH 16/23] PCI: add pci bus removal through /sys/.../pci_bus/.../remove
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1759330Ab2CHAE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 19:04:26 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:39947 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758585Ab2CHAEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 19:04:25 -0500
+Message-ID: <1331165061.20565.19.camel@joe2Laptop>
+Subject: Re: decode GFP flags in oom killer output.
+From: Joe Perches <joe@perches.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Date: Wed, 07 Mar 2012 16:04:21 -0800
+In-Reply-To: <20120307233939.GB5574@redhat.com>
+References: <20120307233939.GB5574@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> it supports both pci root bus and pci bus under pci bridge.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: linux-doc@vger.kernel.org
-> ---
->  Documentation/ABI/testing/sysfs-bus-pci |    8 ++++++++
->  drivers/pci/pci-sysfs.c                 |   28 ++++++++++++++++++++++++++++
->  2 files changed, 36 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
-> index 95f0f37..22392de 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-pci
-> +++ b/Documentation/ABI/testing/sysfs-bus-pci
-> @@ -92,6 +92,14 @@ Description:
->                hot-remove the PCI device and any of its children.
->                Depends on CONFIG_HOTPLUG.
->
-> +What:          /sys/bus/pci/devices/.../pci_bus/.../remove
-> +Date:          March 2012
-> +Contact:       Linux PCI developers <linux-pci@vger.kernel.org>
-> +Description:
-> +               Writing a non-zero value to this attribute will
-> +               hot-remove the PCI bus and any of its children.
+On Wed, 2012-03-07 at 18:39 -0500, Dave Jones wrote:
+> Decoding these flags by hand in oom reports is tedious,
+> and error-prone.
 
-Is this the interface we want?  It seems like the ultimate goal is to
-remove the *host bridge*, i.e., the PNP0A08 device on x86.  If that's
-the case, the logical thing seems like a
-/sys/bus/acpi/devices/PNP0A08:00/remove file.
+trivial notes...
 
-All the current "remove" attributes are for *devices*, e.g.,
-/sys/devices/pci0000:00/0000:00:03.0/remove, not for *buses*.
+> diff -durpN '--exclude-from=/home/davej/.exclude' -u src/git-trees/kernel/linux/mm/oom_kill.c linux-dj/mm/oom_kill.c
+[]
+> @@ -416,13 +416,40 @@ static void dump_tasks(const struct mem_
+>  	}
+>  }
+>  
+> +static unsigned char *gfp_flag_texts[32] = {
 
-I'm not sure it makes sense to talk about removing a "bus" and leaving
-the upstream bridge (either a host bridge or a P2P bridge).  I think
-it'd make more sense to remove the bridge itself, which would of
-course have the consequence of removing the secondary bus.
+static const char *gfp_flags_text[sizeof(gfp_t) * 8)
 
-> +               Depends on CONFIG_HOTPLUG.
+> +	"DMA", "HIGHMEM", "DMA32", "MOVABLE",
+> +	"WAIT", "HIGH", "IO", "FS",
+> +	"COLD", "NOWARN", "REPEAT", "NOFAIL",
+> +	"NORETRY", NULL, "COMP", "ZERO",
+> +	"NOMEMALLOC", "HARDWALL", "THISNODE", "RECLAIMABLE",
+> +	NULL, "NOTRACK", "NO_KSWAPD", "OTHER_NODE",
+> +};
 > +
->  What:          /sys/bus/pci/devices/.../pci_bus/.../rescan
->  Date:          May 2011
->  Contact:       Linux PCI developers <linux-pci@vger.kernel.org>
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index 1794508..f855b4b 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -385,6 +385,33 @@ remove_store(struct device *dev, struct device_attribute *dummy,
->        return count;
->  }
->
-> +static void bus_remove_callback(struct device *dev)
+> +static void decode_gfp_mask(gfp_t gfp_mask, char *out_string)
 > +{
-> +       struct pci_bus *bus = to_pci_bus(dev);
+> +	unsigned int i;
 > +
-> +       mutex_lock(&pci_remove_rescan_mutex);
-> +       pci_stop_and_remove_bus(bus);
-> +       mutex_unlock(&pci_remove_rescan_mutex);
-> +}
-> +static ssize_t
-> +dev_bus_remove_store(struct device *dev, struct device_attribute *attr,
-> +                const char *buf, size_t count)
-> +{
-> +       int ret = 0;
-> +       unsigned long val;
-> +
-> +       if (kstrtoul(buf, 0, &val) < 0)
-> +               return -EINVAL;
-> +
-> +       if (val)
-> +               ret = device_schedule_callback(dev, bus_remove_callback);
-> +
-> +       if (ret)
-> +               count = ret;
-> +
-> +       return count;
+> +	for (i = 0; i < 32; i++) {
+
+< sizeof(gfp_t * 8)
+
+> +		if (gfp_mask & (1 << i)) {
+
+(gfp_t)1 << i
+
+> +			if (gfp_flag_texts[i])
+> +				out_string += sprintf(out_string, "%s ", gfp_flag_texts[i]);
+> +			else
+> +				out_string += sprintf(out_string, "reserved! ");
+
+	not much use to exclamation points.
+
+> +		}
+> +	}
+> +	out_string = "\0";
+
+	out_string[-1] = 0;
 > +}
 > +
->  static void bus_rescan_callback(struct device *dev)
->  {
->        struct pci_bus *bus = to_pci_bus(dev);
-> @@ -444,6 +471,7 @@ struct device_attribute pci_dev_attrs[] = {
->  struct device_attribute pcibus_dev_attrs[] = {
->  #ifdef CONFIG_HOTPLUG
->        __ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, dev_bus_rescan_store),
-> +       __ATTR(remove, (S_IWUSR|S_IWGRP), NULL, dev_bus_remove_store),
->  #endif
->        __ATTR(cpuaffinity, S_IRUGO, pci_bus_show_cpumaskaffinity, NULL),
->        __ATTR(cpulistaffinity, S_IRUGO, pci_bus_show_cpulistaffinity, NULL),
+>  static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+>  			struct mem_cgroup *memcg, const nodemask_t *nodemask)
+>  {
+> +	char gfp_string[80];
+
+maybe a static buffer instead of stack?
+
+>  	task_lock(current);
+> -	pr_warning("%s invoked oom-killer: gfp_mask=0x%x, order=%d, "
+> +	decode_gfp_mask(gfp_mask, gfp_string);
+> +	pr_warning("%s invoked oom-killer: gfp_mask=0x%x [%s], order=%d, "
+>  		"oom_adj=%d, oom_score_adj=%d\n",
+
+Maybe nicer to coalesce the format.
+
+> -		current->comm, gfp_mask, order, current->signal->oom_adj,
+> +		current->comm, gfp_mask, gfp_string,
+> +		order, current->signal->oom_adj,
+>  		current->signal->oom_score_adj);
+>  	cpuset_print_task_mems_allowed(current);
+>  	task_unlock(current);
+> 
 > --
-> 1.7.7
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+
