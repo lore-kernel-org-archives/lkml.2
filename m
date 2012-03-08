@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758314Ab2CHSzO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:55:14 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48929 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757493Ab2CHSyO (ORCPT
+	id S1758361Ab2CHSzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:55:33 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:48276 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757747Ab2CHSyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:54:14 -0500
+	Thu, 8 Mar 2012 13:54:09 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, dpshah@google.com,
         ctalbott@google.com, rni@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/5] blkcg: simplify stat reset
-Date: Thu,  8 Mar 2012 10:53:58 -0800
-Message-Id: <1331232840-16044-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 1/5] blkcg: alloc per cpu stats from worker thread in a delayed manner
+Date: Thu,  8 Mar 2012 10:53:56 -0800
+Message-Id: <1331232840-16044-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1331232840-16044-1-git-send-email-tj@kernel.org>
 References: <1331232840-16044-1-git-send-email-tj@kernel.org>
@@ -21,189 +21,290 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blkiocg_reset_stats() implements stat reset for blkio.reset_stats
-cgroupfs file.  This feature is very unconventional and something
-which shouldn't have been merged.  It's only useful when there's only
-one user or tool looking at the stats.  As soon as multiple users
-and/or tools are involved, it becomes useless as resetting disrupts
-other usages.  There are very good reasons why all other stats expect
-readers to read values at the start and end of a period and subtract
-to determine delta over the period.
+From: Vivek Goyal <vgoyal@redhat.com>
 
-The implementation is rather complex - some fields shouldn't be
-cleared and it saves some fields, resets whole and restores for some
-reason.  Reset of percpu stats is also racy.  The comment points to
-64bit store atomicity for the reason but even without that stores for
-zero can simply race with other CPUs doing RMW and get clobbered.
+Current per cpu stat allocation assumes GFP_KERNEL allocation flag. But in
+IO path there are times when we want GFP_NOIO semantics. As there is no
+way to pass the allocation flags to alloc_percpu(), this patch delays the
+allocation of stats using a worker thread.
 
-Simplify reset by
+v2-> tejun suggested following changes. Changed the patch accordingly.
+	- move alloc_node location in structure
+	- reduce the size of names of some of the fields
+	- Reduce the scope of locking of alloc_list_lock
+	- Simplified stat_alloc_fn() by allocating stats for all
+	  policies in one go and then assigning these to a group.
 
-* Clear selectively instead of resetting and restoring.
+v3 -> Andrew suggested to put some comments in the code. Also raised
+      concerns about trying to allocate infinitely in case of allocation
+      failure. I have changed the logic to sleep for 10ms before retrying.
+      That should take care of non-preemptible UP kernels.
 
-* Grouping debug stat fields to be reset and using memset() over them.
+v4 -> Tejun had more suggestions.
+	- drop list_for_each_entry_all()
+	- instead of msleep() use queue_delayed_work()
+	- Some cleanups realted to more compact coding.
 
-* Not caring about stats_lock.
+v5-> tejun suggested more cleanups leading to more compact code.
 
-* Using memset() to reset percpu stats.
+tj: - Relocated pcpu_stats into blkio_stat_alloc_fn().
+    - Minor comment update.
+    - This also fixes suspicious RCU usage warning caused by invoking
+      cgroup_path() from blkg_alloc() without holding RCU read lock.
+      Now that blkg_alloc() doesn't require sleepable context, RCU
+      read lock from blkg_lookup_create() is maintained throughout
+      blkg_alloc().
 
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c |   80 ++++++++++++++++-----------------------------------
- block/blk-cgroup.h |   14 ++++++++-
- 2 files changed, 37 insertions(+), 57 deletions(-)
+ block/blk-cgroup.c |  129 ++++++++++++++++++++++++++++++++++++----------------
+ block/blk-cgroup.h |    2 +
+ 2 files changed, 91 insertions(+), 40 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 6eedf3a..759bc58 100644
+index ee962f3..622fb41 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -779,83 +779,53 @@ EXPORT_SYMBOL_GPL(__blkg_release);
- static void blkio_reset_stats_cpu(struct blkio_group *blkg, int plid)
- {
- 	struct blkg_policy_data *pd = blkg->pd[plid];
--	struct blkio_group_stats_cpu *stats_cpu;
--	int i, j, k;
-+	int cpu;
+@@ -30,6 +30,13 @@ static LIST_HEAD(blkio_list);
+ static DEFINE_MUTEX(all_q_mutex);
+ static LIST_HEAD(all_q_list);
  
- 	if (pd->stats_cpu == NULL)
- 		return;
--	/*
--	 * Note: On 64 bit arch this should not be an issue. This has the
--	 * possibility of returning some inconsistent value on 32bit arch
--	 * as 64bit update on 32bit is non atomic. Taking care of this
--	 * corner case makes code very complicated, like sending IPIs to
--	 * cpus, taking care of stats of offline cpus etc.
--	 *
--	 * reset stats is anyway more of a debug feature and this sounds a
--	 * corner case. So I am not complicating the code yet until and
--	 * unless this becomes a real issue.
--	 */
--	for_each_possible_cpu(i) {
--		stats_cpu = per_cpu_ptr(pd->stats_cpu, i);
--		stats_cpu->sectors = 0;
--		for(j = 0; j < BLKIO_STAT_CPU_NR; j++)
--			for (k = 0; k < BLKIO_STAT_TOTAL; k++)
--				stats_cpu->stat_arr_cpu[j][k] = 0;
++/* List of groups pending per cpu stats allocation */
++static DEFINE_SPINLOCK(alloc_list_lock);
++static LIST_HEAD(alloc_list);
 +
-+	for_each_possible_cpu(cpu) {
-+		struct blkio_group_stats_cpu *sc =
-+			per_cpu_ptr(pd->stats_cpu, cpu);
++static void blkio_stat_alloc_fn(struct work_struct *);
++static DECLARE_DELAYED_WORK(blkio_stat_alloc_work, blkio_stat_alloc_fn);
 +
-+		sc->sectors = 0;
-+		memset(sc->stat_arr_cpu, 0, sizeof(sc->stat_arr_cpu));
- 	}
+ struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
+ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
+ 
+@@ -391,6 +398,10 @@ void blkiocg_update_dispatch_stats(struct blkio_group *blkg,
+ 	struct blkio_group_stats_cpu *stats_cpu;
+ 	unsigned long flags;
+ 
++	/* If per cpu stats are not allocated yet, don't do any accounting. */
++	if (pd->stats_cpu == NULL)
++		return;
++
+ 	/*
+ 	 * Disabling interrupts to provide mutual exclusion between two
+ 	 * writes on same cpu. It probably is not needed for 64bit. Not
+@@ -443,6 +454,10 @@ void blkiocg_update_io_merged_stats(struct blkio_group *blkg,
+ 	struct blkio_group_stats_cpu *stats_cpu;
+ 	unsigned long flags;
+ 
++	/* If per cpu stats are not allocated yet, don't do any accounting. */
++	if (pd->stats_cpu == NULL)
++		return;
++
+ 	/*
+ 	 * Disabling interrupts to provide mutual exclusion between two
+ 	 * writes on same cpu. It probably is not needed for 64bit. Not
+@@ -460,6 +475,60 @@ void blkiocg_update_io_merged_stats(struct blkio_group *blkg,
  }
+ EXPORT_SYMBOL_GPL(blkiocg_update_io_merged_stats);
  
- static int
- blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
- {
--	struct blkio_cgroup *blkcg;
-+	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
- 	struct blkio_group *blkg;
--	struct blkio_group_stats *stats;
- 	struct hlist_node *n;
--	uint64_t queued[BLKIO_STAT_TOTAL];
- 	int i;
--#ifdef CONFIG_DEBUG_BLK_CGROUP
--	bool idling, waiting, empty;
--	unsigned long long now = sched_clock();
--#endif
- 
--	blkcg = cgroup_to_blkio_cgroup(cgroup);
- 	spin_lock(&blkio_list_lock);
- 	spin_lock_irq(&blkcg->lock);
++/*
++ * Worker for allocating per cpu stat for blk groups. This is scheduled on
++ * the system_nrt_wq once there are some groups on the alloc_list waiting
++ * for allocation.
++ */
++static void blkio_stat_alloc_fn(struct work_struct *work)
++{
++	static void *pcpu_stats[BLKIO_NR_POLICIES];
++	struct delayed_work *dwork = to_delayed_work(work);
++	struct blkio_group *blkg;
++	int i;
++	bool empty = false;
 +
-+	/*
-+	 * Note that stat reset is racy - it doesn't synchronize against
-+	 * stat updates.  This is a debug feature which shouldn't exist
-+	 * anyway.  If you get hit by a race, retry.
-+	 */
- 	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
- 		struct blkio_policy_type *pol;
- 
- 		list_for_each_entry(pol, &blkio_list, list) {
- 			struct blkg_policy_data *pd = blkg->pd[pol->plid];
--
--			spin_lock(&blkg->stats_lock);
--			stats = &pd->stats;
-+			struct blkio_group_stats *stats = &pd->stats;
++alloc_stats:
++	for (i = 0; i < BLKIO_NR_POLICIES; i++) {
++		if (pcpu_stats[i] != NULL)
++			continue;
 +
-+			/* queued stats shouldn't be cleared */
-+			for (i = 0; i < ARRAY_SIZE(stats->stat_arr); i++)
-+				if (i != BLKIO_STAT_QUEUED)
-+					memset(stats->stat_arr[i], 0,
-+					       sizeof(stats->stat_arr[i]));
-+			stats->time = 0;
- #ifdef CONFIG_DEBUG_BLK_CGROUP
--			idling = blkio_blkg_idling(stats);
--			waiting = blkio_blkg_waiting(stats);
--			empty = blkio_blkg_empty(stats);
-+			memset((void *)stats + BLKG_STATS_DEBUG_CLEAR_START, 0,
-+			       BLKG_STATS_DEBUG_CLEAR_SIZE);
- #endif
--			for (i = 0; i < BLKIO_STAT_TOTAL; i++)
--				queued[i] = stats->stat_arr[BLKIO_STAT_QUEUED][i];
--			memset(stats, 0, sizeof(struct blkio_group_stats));
--			for (i = 0; i < BLKIO_STAT_TOTAL; i++)
--				stats->stat_arr[BLKIO_STAT_QUEUED][i] = queued[i];
--#ifdef CONFIG_DEBUG_BLK_CGROUP
--			if (idling) {
--				blkio_mark_blkg_idling(stats);
--				stats->start_idle_time = now;
--			}
--			if (waiting) {
--				blkio_mark_blkg_waiting(stats);
--				stats->start_group_wait_time = now;
--			}
--			if (empty) {
--				blkio_mark_blkg_empty(stats);
--				stats->start_empty_time = now;
--			}
--#endif
--			spin_unlock(&blkg->stats_lock);
++		pcpu_stats[i] = alloc_percpu(struct blkio_group_stats_cpu);
++
++		/* Allocation failed. Try again after some time. */
++		if (pcpu_stats[i] == NULL) {
++			queue_delayed_work(system_nrt_wq, dwork,
++						msecs_to_jiffies(10));
++			return;
++		}
++	}
++
++	spin_lock_irq(&blkio_list_lock);
++	spin_lock(&alloc_list_lock);
++
++	/* cgroup got deleted or queue exited. */
++	if (!list_empty(&alloc_list)) {
++		blkg = list_first_entry(&alloc_list, struct blkio_group,
++						alloc_node);
++		for (i = 0; i < BLKIO_NR_POLICIES; i++) {
++			struct blkg_policy_data *pd = blkg->pd[i];
++
++			if (blkio_policy[i] && pd && !pd->stats_cpu)
++				swap(pd->stats_cpu, pcpu_stats[i]);
++		}
++
++		list_del_init(&blkg->alloc_node);
++	}
++
++	empty = list_empty(&alloc_list);
++
++	spin_unlock(&alloc_list_lock);
++	spin_unlock_irq(&blkio_list_lock);
++
++	if (!empty)
++		goto alloc_stats;
++}
++
+ /**
+  * blkg_free - free a blkg
+  * @blkg: blkg to free
+@@ -491,9 +560,6 @@ static void blkg_free(struct blkio_group *blkg)
+  * @q: request_queue the new blkg is associated with
+  *
+  * Allocate a new blkg assocating @blkcg and @q.
+- *
+- * FIXME: Should be called with queue locked but currently isn't due to
+- *        percpu stat breakage.
+  */
+ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
+ 				      struct request_queue *q)
+@@ -509,6 +575,7 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
+ 	spin_lock_init(&blkg->stats_lock);
+ 	blkg->q = q;
+ 	INIT_LIST_HEAD(&blkg->q_node);
++	INIT_LIST_HEAD(&blkg->alloc_node);
+ 	blkg->blkcg = blkcg;
+ 	blkg->refcnt = 1;
+ 	cgroup_path(blkcg->css.cgroup, blkg->path, sizeof(blkg->path));
+@@ -530,13 +597,6 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
+ 
+ 		blkg->pd[i] = pd;
+ 		pd->blkg = blkg;
 -
--			/* Reset Per cpu stats which don't take blkg->stats_lock */
- 			blkio_reset_stats_cpu(blkg, pol->plid);
- 		}
+-		/* broken, read comment in the callsite */
+-		pd->stats_cpu = alloc_percpu(struct blkio_group_stats_cpu);
+-		if (!pd->stats_cpu) {
+-			blkg_free(blkg);
+-			return NULL;
+-		}
  	}
+ 
+ 	/* invoke per-policy init */
+@@ -556,7 +616,7 @@ struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
+ 				       bool for_root)
+ 	__releases(q->queue_lock) __acquires(q->queue_lock)
+ {
+-	struct blkio_group *blkg, *new_blkg;
++	struct blkio_group *blkg;
+ 
+ 	WARN_ON_ONCE(!rcu_read_lock_held());
+ 	lockdep_assert_held(q->queue_lock);
+@@ -580,48 +640,27 @@ struct blkio_group *blkg_lookup_create(struct blkio_cgroup *blkcg,
+ 
+ 	/*
+ 	 * Allocate and initialize.
+-	 *
+-	 * FIXME: The following is broken.  Percpu memory allocation
+-	 * requires %GFP_KERNEL context and can't be performed from IO
+-	 * path.  Allocation here should inherently be atomic and the
+-	 * following lock dancing can be removed once the broken percpu
+-	 * allocation is fixed.
+ 	 */
+-	spin_unlock_irq(q->queue_lock);
+-	rcu_read_unlock();
+-
+-	new_blkg = blkg_alloc(blkcg, q);
+-
+-	rcu_read_lock();
+-	spin_lock_irq(q->queue_lock);
+-
+-	/* did bypass get turned on inbetween? */
+-	if (unlikely(blk_queue_bypass(q)) && !for_root) {
+-		blkg = ERR_PTR(blk_queue_dead(q) ? -EINVAL : -EBUSY);
+-		goto out;
+-	}
+-
+-	/* did someone beat us to it? */
+-	blkg = blkg_lookup(blkcg, q);
+-	if (unlikely(blkg))
+-		goto out;
++	blkg = blkg_alloc(blkcg, q);
+ 
+ 	/* did alloc fail? */
+-	if (unlikely(!new_blkg)) {
++	if (unlikely(!blkg)) {
+ 		blkg = ERR_PTR(-ENOMEM);
+ 		goto out;
+ 	}
+ 
+ 	/* insert */
+ 	spin_lock(&blkcg->lock);
+-	swap(blkg, new_blkg);
+-
+ 	hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
+ 	list_add(&blkg->q_node, &q->blkg_list);
+-
+ 	spin_unlock(&blkcg->lock);
++
++	spin_lock(&alloc_list_lock);
++	list_add(&blkg->alloc_node, &alloc_list);
++	/* Queue per cpu stat allocation from worker thread. */
++	queue_delayed_work(system_nrt_wq, &blkio_stat_alloc_work, 0);
++	spin_unlock(&alloc_list_lock);
+ out:
+-	blkg_free(new_blkg);
+ 	return blkg;
+ }
+ EXPORT_SYMBOL_GPL(blkg_lookup_create);
+@@ -654,6 +693,10 @@ static void blkg_destroy(struct blkio_group *blkg)
+ 	list_del_init(&blkg->q_node);
+ 	hlist_del_init_rcu(&blkg->blkcg_node);
+ 
++	spin_lock(&alloc_list_lock);
++	list_del_init(&blkg->alloc_node);
++	spin_unlock(&alloc_list_lock);
++
+ 	/*
+ 	 * Put the reference taken at the time of creation so that when all
+ 	 * queues are gone, group can be destroyed.
+@@ -752,6 +795,9 @@ static void blkio_reset_stats_cpu(struct blkio_group *blkg, int plid)
+ 	struct blkg_policy_data *pd = blkg->pd[plid];
+ 	struct blkio_group_stats_cpu *stats_cpu;
+ 	int i, j, k;
++
++	if (pd->stats_cpu == NULL)
++		return;
+ 	/*
+ 	 * Note: On 64 bit arch this should not be an issue. This has the
+ 	 * possibility of returning some inconsistent value on 32bit arch
+@@ -883,6 +929,9 @@ static uint64_t blkio_read_stat_cpu(struct blkio_group *blkg, int plid,
+ 	struct blkio_group_stats_cpu *stats_cpu;
+ 	u64 val = 0, tval;
+ 
++	if (pd->stats_cpu == NULL)
++		return val;
++
+ 	for_each_possible_cpu(cpu) {
+ 		unsigned int start;
+ 		stats_cpu = per_cpu_ptr(pd->stats_cpu, cpu);
 diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 6c8e3e3..1fa3c5e 100644
+index 98cd853..1de32fe 100644
 --- a/block/blk-cgroup.h
 +++ b/block/blk-cgroup.h
-@@ -131,21 +131,31 @@ struct blkio_group_stats {
+@@ -190,6 +190,8 @@ struct blkio_group {
+ 	spinlock_t stats_lock;
+ 	struct blkg_policy_data *pd[BLKIO_NR_POLICIES];
  
- 	/* Total time spent waiting for it to be assigned a timeslice. */
- 	uint64_t group_wait_time;
--	uint64_t start_group_wait_time;
- 
- 	/* Time spent idling for this blkio_group */
- 	uint64_t idle_time;
--	uint64_t start_idle_time;
- 	/*
- 	 * Total time when we have requests queued and do not contain the
- 	 * current active queue.
- 	 */
- 	uint64_t empty_time;
-+
-+	/* fields after this shouldn't be cleared on stat reset */
-+	uint64_t start_group_wait_time;
-+	uint64_t start_idle_time;
- 	uint64_t start_empty_time;
- 	uint16_t flags;
- #endif
++	/* List of blkg waiting for per cpu stats memory to be allocated */
++	struct list_head alloc_node;
+ 	struct rcu_head rcu_head;
  };
  
-+#ifdef CONFIG_DEBUG_BLK_CGROUP
-+#define BLKG_STATS_DEBUG_CLEAR_START	\
-+	offsetof(struct blkio_group_stats, unaccounted_time)
-+#define BLKG_STATS_DEBUG_CLEAR_SIZE	\
-+	(offsetof(struct blkio_group_stats, start_group_wait_time) - \
-+	 BLKG_STATS_DEBUG_CLEAR_START)
-+#endif
-+
- /* Per cpu blkio group stats */
- struct blkio_group_stats_cpu {
- 	uint64_t sectors;
 -- 
 1.7.7.3
 
