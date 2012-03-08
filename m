@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab2CHMSg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 07:18:36 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:52649
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757194Ab2CHMSc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 07:18:32 -0500
-X-SpamScore: -4
-X-BigFish: VPS-4(zz9371I98dKzz1202hzz8275bh8275dhz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M0KFIQ-02-D53-02
-X-M-MSG: 
-From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-To: Rusty Russell <rusty@ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
-Subject: RE: [PATCH 1/2] Refine mutex and rcu method in module.c,
- kernel<3.2.9>
-Thread-Topic: [PATCH 1/2] Refine mutex and rcu method in module.c,
- kernel<3.2.9>
-Thread-Index: Acz8cbLg6k3HMRVqQxaI2PGzwf9WcQAV53YAABY7RRA=
-Date: Thu, 8 Mar 2012 12:18:19 +0000
-Message-ID: <491D6B4EAD0A714894D8AD22F4BDE043032A1A@SCYBEXDAG04.amd.com>
-References: <491D6B4EAD0A714894D8AD22F4BDE04303289D@SCYBEXDAG04.amd.com>
- <87ipifwiwh.fsf@rustcorp.com.au>
-In-Reply-To: <87ipifwiwh.fsf@rustcorp.com.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.74.102]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757043Ab2CHMTm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 07:19:42 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45320 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751431Ab2CHMTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 07:19:41 -0500
+Date: Thu, 8 Mar 2012 13:19:24 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] perf script: Add script to collect and display IBS
+ samples
+Message-ID: <20120308121924.GA19674@elte.hu>
+References: <20111223103329.GC4749@elte.hu>
+ <20111223111958.GE16765@erda.amd.com>
+ <20111223135340.GB21382@elte.hu>
+ <1324649698.24803.55.camel@twins>
+ <20111223144040.GB2297@elte.hu>
+ <20111223161701.GF16765@erda.amd.com>
+ <20111223163930.GA5983@elte.hu>
+ <20111223165030.GG16765@erda.amd.com>
+ <20111230095521.GA12077@elte.hu>
+ <20120202112133.GR16322@erda.amd.com>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120202112133.GR16322@erda.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rusty Russell [mailto:rusty@ozlabs.org] 
-Sent: Thursday, March 08, 2012 5:18 PM
-To: Chen, Dennis (SRDC SW); linux-kernel@vger.kernel.org
-Cc: Chen, Dennis (SRDC SW)
-Subject: Re: [PATCH 1/2] Refine mutex and rcu method in module.c, kernel<3.2.9>
 
-On Wed, 7 Mar 2012 14:51:06 +0000, "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com> wrote:
-> 1. Narrow down the granularity of mutex_lock/ mutex_unlock
-> 2. Replace some unnecessary mutex_lock/mutex_unlock pairs with RCU
-> 3. Refine the consistent calling style of RCU functioan 
+* Robert Richter <robert.richter@amd.com> wrote:
 
-Hi Dennis,
+> > To help your effort we could tentatively put the patches 
+> > into a separate tip:perf/ibs topic branch if everyone agrees 
+> > otherwise, which can go upstream once it's complete and 
+> > usable.
+> 
+> This would be very helpful for me. So far I see following 
+> patches for this on top of today's tip/perf/core (623ec99):
+> 
+> 08e232d perf, x86: Implement IBS event configuration
+> 05efba4 perf, x86: Implement IBS interrupt handler
+> b0532b2 perf, x86: Implement IBS pmu control ops
+> 56ccf1a perf, x86: Implement 64 bit counter support for IBS
+> 98e655c perf tool: Parse general/raw events from sysfs
+> aac22da perf tools: Add pmu mappings to header information
+> f1f062d perf script: Add script to collect and display IBS samples
 
-        This follows a logical evolution, where we wean off the mutex,
-but AFAICT this is lost in the noise.  Taking the mutex might be naive,
-but adding or removing a module is the slow path.  Or am I missing
-something?
+I've applied the following 4 kernel patches to perf/x86-ibs:
 
-> -
-> -       /* Now sew it into the lists so we can get lockdep and oops
-> -        * info during argument parsing.  No one should access us, since
-> -        * strong_try_module_get() will fail.
-> -        * lockdep/oops can run asynchronous, so use the RCU list insertion
-> -        * function to insert in a way safe to concurrent readers.
-> -        * The mutex protects against concurrent writers.
-> -        */
-> -       mutex_lock(&module_mutex);
-> +        
-> +        /* Concurrent writers for the global modules list are protected by RCU*/
->         if (find_module(mod->name)) {
->                 err = -EEXIST;
->                 goto unlock;
->         }
+ db98c5faf8cb: perf/x86: Implement 64-bit counter support for IBS
+ 4db2e8e6500d: perf/x86: Implement IBS pmu control ops
+ b7074f1fbd61: perf/x86: Implement IBS interrupt handler
+ 510419435c69: perf/x86: Implement IBS event configuration
 
-RCU does not protect concurrent writers:
+and pushed it out.
 
-> -
-> +        
->         /* This has to be done once we're sure module name is unique. */
->         dynamic_debug_setup(info.debug, info.num_debug);
+We can apply any tooling changes to this branch as well.
 
-Now this is racy...
+I suspect being able to skid-less profile on AMD CPUs, using 
+IBS, would be a useful feature to users. What would be required 
+for that to work?
 
-======================================================================================
+Thanks,
 
-Hi Rusty,
-
-I known RCU doesn't protect concurrent writers, so all the writers for the global modules list has been 
-protected by the original module_mutex in the 2-patch, I just make the scope of module_mutex become smaller 
-as it can, for example, dynamic_debug_setup doesn't touch modules, so it should not be in the protection of
-module_mutex.
-
-I am a person like to see a perfect world, especially in the kernel space:) Maybe I can write a test case
-to trigger something you don't expect to see while the original codes will...let's think about it
-
-BRs,
-Dennis 
-
+	Ingo
