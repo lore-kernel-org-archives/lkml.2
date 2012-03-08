@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759366Ab2CHAGk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 19:06:40 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:41838 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756993Ab2CHAGi (ORCPT
+	id S1759381Ab2CHAIn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 19:08:43 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58196 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756993Ab2CHAIk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 19:06:38 -0500
-Date: Wed, 7 Mar 2012 16:06:33 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: [PATCHSET] blkcg: accumulated blkcg updates
-Message-ID: <20120308000633.GH30676@google.com>
-References: <1329875223-5102-1-git-send-email-tj@kernel.org>
- <20120305210726.GC1263@google.com>
- <20120305210836.GD1263@google.com>
- <20120306150709.GA32148@redhat.com>
- <20120306162455.GB32148@redhat.com>
- <20120306183942.GC32148@redhat.com>
- <20120306190211.GD32148@redhat.com>
+	Wed, 7 Mar 2012 19:08:40 -0500
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Dave Jones" <davej@redhat.com>
+Cc: "Linux Kernel" <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: decode GFP flags in oom killer output.
+References: <20120307233939.GB5574@redhat.com> <op.watq2ixr3l0zgt@mpn-glaptop>
+ <20120308000233.GA10695@redhat.com>
+Date: Thu, 08 Mar 2012 01:08:38 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120306190211.GD32148@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.watr0ors3l0zgt@mpn-glaptop>
+In-Reply-To: <20120308000233.GA10695@redhat.com>
+User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 08 Mar 2012 01:02:33 +0100, Dave Jones <davej@redhat.com> wrote:
 
-On Tue, Mar 06, 2012 at 02:02:11PM -0500, Vivek Goyal wrote:
-> Ok, found it. Basically we have not initialized the q->queue_head during
-> queue creation. Hence we end up thinking that q->queue_head is not empty.
-> 
-> So following fixed the issue for me. I still don't understand the special
-> cased code (q->queue_head is not empty but don't kick queue).
+> On Thu, Mar 08, 2012 at 12:48:08AM +0100, Michal Nazarewicz wrote:
+> > >  static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+> > >  			struct mem_cgroup *memcg, const nodemask_t *nodemask)
+> > >  {
+> > > +	char gfp_string[80];
+> >
+> > For ~0, the string will be 256 characters followed by a NUL byte byte at the end.
+> > This combination may make no sense, but the point is that you need to take length
+> > of the buffer into account, probably by using snprintf() and a counter.
+>
+> alternatively, we could just use a bigger buffer here.
 
-It was mainly to avoid adding a new requirement as we didn't use to
-require queue_head to be empty on exit.  I didn't realize we weren't
-initializing queue_head from alloc.  Jens folded your fix into the
-original patch, so we might not need the special case anymore.
-
-I'll post fix for the RCU deref warning shortly.
-
-Thanks.
+Allocating 257 bytes on stack does not seem like a good idea especially inside of
+OOM killer, where probably quite a bit of the stack was already consumed prior to
+reaching this function.
 
 -- 
-tejun
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
