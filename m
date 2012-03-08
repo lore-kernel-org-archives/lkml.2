@@ -1,143 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758982Ab2CHXFy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 18:05:54 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46129 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab2CHXFx (ORCPT
+	id S1758949Ab2CHXNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 18:13:05 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:58602 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753165Ab2CHXNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 18:05:53 -0500
-Message-ID: <1331247941.3570.1.camel@phoenix>
-Subject: [PATCH] regulator: Use array to store dcdc_range settings for
- tps65912
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Margarita Olaya Cabrera <magi@slimlogic.co.uk>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Fri, 09 Mar 2012 07:05:41 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Thu, 8 Mar 2012 18:13:02 -0500
+Message-ID: <4F593CF8.2000105@amacapital.net>
+Date: Thu, 08 Mar 2012 15:12:56 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, dchinner@redhat.com,
+        Jaya Kumar <jayalk@intworks.biz>, Sage Weil <sage@newdream.net>,
+        ceph-devel@vger.kernel.org, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        v9fs-developer@lists.sourceforge.net,
+        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
+        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 00/11 v2] Push file_update_time() into .page_mkwrite
+References: <1330602103-8851-1-git-send-email-jack@suse.cz>
+In-Reply-To: <1330602103-8851-1-git-send-email-jack@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Then we can use the regulator id as array index to access the array.
-This change makes the code simpler.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps65912-regulator.c |   70 +++++++++-----------------------
- 1 files changed, 20 insertions(+), 50 deletions(-)
-
-diff --git a/drivers/regulator/tps65912-regulator.c b/drivers/regulator/tps65912-regulator.c
-index b685757..a654602 100644
---- a/drivers/regulator/tps65912-regulator.c
-+++ b/drivers/regulator/tps65912-regulator.c
-@@ -114,10 +114,7 @@ struct tps65912_reg {
- 	struct mutex io_lock;
- 	int mode;
- 	int (*get_ctrl_reg)(int);
--	int dcdc1_range;
--	int dcdc2_range;
--	int dcdc3_range;
--	int dcdc4_range;
-+	int dcdc_range[TPS65912_NUM_DCDC];
- 	int pwm_mode_reg;
- 	int eco_reg;
- };
-@@ -125,46 +122,31 @@ struct tps65912_reg {
- static int tps65912_get_range(struct tps65912_reg *pmic, int id)
- {
- 	struct tps65912 *mfd = pmic->mfd;
--
--	if (id > TPS65912_REG_DCDC4)
--		return 0;
-+	int range;
- 
- 	switch (id) {
- 	case TPS65912_REG_DCDC1:
--		pmic->dcdc1_range = tps65912_reg_read(mfd,
--							TPS65912_DCDC1_LIMIT);
--		if (pmic->dcdc1_range < 0)
--			return pmic->dcdc1_range;
--		pmic->dcdc1_range = (pmic->dcdc1_range &
--			DCDC_LIMIT_RANGE_MASK) >> DCDC_LIMIT_RANGE_SHIFT;
--		return pmic->dcdc1_range;
-+		range = tps65912_reg_read(mfd, TPS65912_DCDC1_LIMIT);
-+		break;
- 	case TPS65912_REG_DCDC2:
--		pmic->dcdc2_range = tps65912_reg_read(mfd,
--							TPS65912_DCDC2_LIMIT);
--		if (pmic->dcdc2_range < 0)
--			return pmic->dcdc2_range;
--		pmic->dcdc2_range = (pmic->dcdc2_range &
--			DCDC_LIMIT_RANGE_MASK) >> DCDC_LIMIT_RANGE_SHIFT;
--		return pmic->dcdc2_range;
-+		range = tps65912_reg_read(mfd, TPS65912_DCDC2_LIMIT);
-+		break;
- 	case TPS65912_REG_DCDC3:
--		pmic->dcdc3_range = tps65912_reg_read(mfd,
--							TPS65912_DCDC3_LIMIT);
--		if (pmic->dcdc3_range < 0)
--			return pmic->dcdc3_range;
--		pmic->dcdc3_range = (pmic->dcdc3_range &
--			DCDC_LIMIT_RANGE_MASK) >> DCDC_LIMIT_RANGE_SHIFT;
--		return pmic->dcdc3_range;
-+		range = tps65912_reg_read(mfd, TPS65912_DCDC3_LIMIT);
-+		break;
- 	case TPS65912_REG_DCDC4:
--		pmic->dcdc4_range = tps65912_reg_read(mfd,
--							TPS65912_DCDC4_LIMIT);
--		if (pmic->dcdc4_range < 0)
--			return pmic->dcdc4_range;
--		pmic->dcdc4_range = (pmic->dcdc4_range &
--			DCDC_LIMIT_RANGE_MASK) >> DCDC_LIMIT_RANGE_SHIFT;
--		return pmic->dcdc4_range;
-+		range = tps65912_reg_read(mfd, TPS65912_DCDC4_LIMIT);
-+		break;
- 	default:
- 		return 0;
- 	}
-+
-+	if (range >= 0)
-+		range = (range & DCDC_LIMIT_RANGE_MASK)
-+			>> DCDC_LIMIT_RANGE_SHIFT;
-+
-+	pmic->dcdc_range[id] = range;
-+	return range;
- }
- 
- static unsigned long tps65912_vsel_to_uv_range0(u8 vsel)
-@@ -512,22 +494,10 @@ static int tps65912_list_voltage_dcdc(struct regulator_dev *dev,
- 	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
- 	int range, voltage = 0, id = rdev_get_id(dev);
- 
--	switch (id) {
--	case TPS65912_REG_DCDC1:
--		range = pmic->dcdc1_range;
--		break;
--	case TPS65912_REG_DCDC2:
--		range = pmic->dcdc2_range;
--		break;
--	case TPS65912_REG_DCDC3:
--		range = pmic->dcdc3_range;
--		break;
--	case TPS65912_REG_DCDC4:
--		range = pmic->dcdc4_range;
--		break;
--	default:
-+	if (id > TPS65912_REG_DCDC4)
- 		return -EINVAL;
--	}
-+
-+	range = pmic->dcdc_range[id];
- 
- 	switch (range) {
- 	case 0:
--- 
-1.7.5.4
+On 03/01/2012 03:41 AM, Jan Kara wrote:
+>   Hello,
+> 
+>   to provide reliable support for filesystem freezing, filesystems need to have
+> complete control over when metadata is changed. In particular,
+> file_update_time() calls from page fault code make it impossible for
+> filesystems to prevent inodes from being dirtied while the filesystem is
+> frozen.
+> 
+> To fix the issue, this patch set changes page fault code to call
+> file_update_time() only when ->page_mkwrite() callback is not provided. If the
+> callback is provided, it is the responsibility of the filesystem to perform
+> update of i_mtime / i_ctime if needed. We also push file_update_time() call
+> to all existing ->page_mkwrite() implementations if the time update does not
+> obviously happen by other means. If you know your filesystem does not need
+> update of modification times in ->page_mkwrite() handler, please speak up and
+> I'll drop the patch for your filesystem.
+> 
+> As a side note, an alternative would be to remove call of file_update_time()
+> from page fault code altogether and require all filesystems needing it to do
+> that in their ->page_mkwrite() implementation. That is certainly possible
+> although maybe slightly inefficient and would require auditting 100+
+> vm_operations_structs *shiver*.
 
 
 
+IMO updating file times should happen when changes get written out, not
+when a page is made writable, for two reasons:
+
+1. Correctness.  With the current approach, it's very easy for files to
+be changed after the last mtime update -- any changes between mkwrite
+and actual writeback won't affect mtime.
+
+2. Performance.  I have an application (presumably guessable from my
+email address) for which blocking in page_mkwrite is an absolute
+show-stopper.  (In fact it's so bad that we reverted back to running on
+Windows until I hacked up a kernel to not do this.)  I have an incorrect
+patch [1] to fix it, but I haven't gotten around to a real fix.  (I also
+have stable pages reverted in my kernel.  Some day I'll submit a patch
+to make it a filesystem option.  Or maybe it should even be a block
+device / queue property like the alignment offset and optimal io size --
+there are plenty of block device and file combinations which don't
+benefit at all from stable pages.)
+
+I'd prefer if file_update_time in page_mkwrite didn't proliferate.  A
+better fix is probably to introduce a new inode flag, update it when a
+page is undirtied, and then dirty and write the inode from the writeback
+path.  (Kind of like my patch, but with an inode flag instead of a page
+flag, and with the file_update_time done from the fs.)
+
+[1] http://patchwork.ozlabs.org/patch/122516/
+
+--Andy
