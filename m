@@ -1,68 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab2CHG20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 01:28:26 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:39199 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab2CHG2X (ORCPT
+	id S1754229Ab2CHG3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 01:29:33 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18317 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab2CHG3a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 01:28:23 -0500
-Date: Thu, 8 Mar 2012 17:28:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Drake <dsd@laptop.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20120308172808.6b611b842fba4e77fb8271bb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__8_Mar_2012_17_28_08_+1100_MIR6rtEzPDTLAdYT"
+	Thu, 8 Mar 2012 01:29:30 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 07 Mar 2012 22:29:28 -0800
+From: Alok Chauhan <alokc@nvidia.com>
+To: Alok Chauhan <alokc@nvidia.com>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "bones@secretlab.ca" <bones@secretlab.ca>,
+        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
+        "dgreid@google.com" <dgreid@google.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 8 Mar 2012 11:59:23 +0530
+Subject: RE: [PATCH v2] i2c: tegra: Add delay before reset the controller
+Thread-Topic: [PATCH v2] i2c: tegra: Add delay before reset the controller
+Thread-Index: Aczn10lWpb5PShHDQf2cM1OgAjqKtwDBOvTQBIYM6JA=
+Message-ID: <7A0BFCFE3DA5CD47B0FB7984326F201A136B886672@BGMAIL01.nvidia.com>
+References: <1324898081-10308-1-git-send-email-alokc@nvidia.com>
+ <CAM=Q2cs+myCvph7OXvCDTG7y48oNTfRtjsDzQaKiEXzjdu3pzA@mail.gmail.com>
+ <7A0BFCFE3DA5CD47B0FB7984326F201A13689D386F@BGMAIL01.nvidia.com>
+In-Reply-To: <7A0BFCFE3DA5CD47B0FB7984326F201A13689D386F@BGMAIL01.nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__8_Mar_2012_17_28_08_+1100_MIR6rtEzPDTLAdYT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi all,
 
-Hi Andrew,
+If there are no more concern then can we merge this patch to i2c tegra driver? 
 
-Today's linux-next merge of the akpm tree got a conflict in
-arch/x86/platform/olpc/olpc-xo15-sci.c between commit d1f42e314c9c
-("x86/olpc/xo15/sci: Enable lid close wakeup control") from the tip tree
-and commit "x86, olpc-xo15-sci: enable lid close wakeup control through
-sysfs" from the akpm tree.
+Thanks
+Alok
 
-I assume that these were meant to be the same patch, so I dropped the one
-from the akpm tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+On Mon, Dec 26, 2011 at 4:44 PM, Alok Chauhan <alokc@nvidia.com> wrote:
+> From: Alok Chauhan <alokc@nvidia.com>
+>
+> In NACK error condition, I2C controller violates clock-to-data setup 
+> time before stop. In Software, because of this reset of controller is 
+> happening before I2C controller could complete STOP condition.
+>
+> Added delay of 2 clock period before reset the controller in case of 
+> NACK error.
+>
+> Signed-off-by: Alok Chauhan <alokc@nvidia.com>
+> ---
+> Instead of setting constant value for delay as was in previous patch, 
+> now in the current modification delay will be calculated based on clock frequency of the bus.
+>  drivers/i2c/busses/i2c-tegra.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-tegra.c 
+> b/drivers/i2c/busses/i2c-tegra.c index 6381604..62e197c 100644
+> --- a/drivers/i2c/busses/i2c-tegra.c
+> +++ b/drivers/i2c/busses/i2c-tegra.c
+> @@ -517,6 +517,14 @@ static int tegra_i2c_xfer_msg(struct 
+> tegra_i2c_dev *i2c_dev,
+>        if (likely(i2c_dev->msg_err == I2C_ERR_NONE))
+>                return 0;
+>
+> +       /*
+> +        * In NACK error condition resetting of I2C controller happens
+> +        * before STOP condition is properly completed by I2C 
+> + controller,
+> +        * so wait for 2 clock cycle to complete STOP condition.
+> +        */
 
---Signature=_Thu__8_Mar_2012_17_28_08_+1100_MIR6rtEzPDTLAdYT
-Content-Type: application/pgp-signature
+>>>>Why do you need to reset the controller in case of a NACK.
+>>>This is required because of hardware limitations. Without reset we can't flus the internal hardware registers.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPWFF4AAoJEECxmPOUX5FEHwEP/i7R3rtEBT7IxuIgkXwEG4oJ
-1MnzVbCoBxZBBk/nH4JCxB8ntaqDcrW6LQgAAuG2UCb6gZOk4m5crTt0xi1RWEDJ
-s6TdlgoBA80L+vxWUnt8mKYfmwbzLqKjD2FSPH21b4RsfausZwKtr5cNy1r61hCC
-h18FL0ehi5JFcab1EVO0Yqu63unKzbMsPBmh2kBq69KByMoy7ZKmVkQCyk0kEJSz
-wyQPwxLdtdLSHgiAL4unwL32gtzysi8i5a6G1ZvLlEsNxtoDJE18sNlpHarGEDLQ
-2/LEpJWiY1DTxQGSD2peYrPJe59UBS+WPQNkhKQxFYwASybAo4SsTZGVqE8iAUgg
-rEs/0syKkqscyZHnwCeC6huYiFnX2zCzF+sh4f4ueWIBUGTjjuM71EmCHmcSnm+h
-yS19mx6kU/jqOs7fHyUtjfh+GgHLluEP8rOUwyHAqRda9QKHadiDTCY0oCuK73uq
-CgjZSFUsXtJuv631QKGe6eFLm8mu9RsDRSuzrZcTF3onjjQCXinjp9LJnI+7/wOE
-5McRDwH2YBieRJ6LgYTm/RyKUWdT9ZN4y/fqmQWSNbio+sIe0p8IhwHzurjSZpYd
-Js2Z4aT7gA9EjrEey/AtvqbZwvsNtp+128L84qileDrzWPYIx7i2ywilxPseENBC
-ApXWUUxw0qPU6jzHd5Fn
-=1KQz
------END PGP SIGNATURE-----
-
---Signature=_Thu__8_Mar_2012_17_28_08_+1100_MIR6rtEzPDTLAdYT--
+> +       if (i2c_dev->msg_err == I2C_ERR_NO_ACK)
+> +               udelay(DIV_ROUND_UP(2 * 1000000, 
+> + i2c_dev->bus_clk_rate));
+> +
+>        tegra_i2c_init(i2c_dev);
+>        if (i2c_dev->msg_err == I2C_ERR_NO_ACK) {
+>                if (msg->flags & I2C_M_IGNORE_NAK)
+> --
+> 1.7.4.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" 
+> in the body of a message to majordomo@vger.kernel.org More majordomo 
+> info at  http://vger.kernel.org/majordomo-info.html
+--
+To unsubscribe from this list: send the line "unsubscribe linux-i2c" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
