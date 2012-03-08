@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758817Ab2CHWoj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 17:44:39 -0500
-Received: from antcom.de ([188.40.178.216]:48504 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753889Ab2CHWoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 17:44:38 -0500
-Message-ID: <4F593652.90809@antcom.de>
-Date: Thu, 08 Mar 2012 23:44:34 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20120216 Icedove/8.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
-        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de
-Subject: Re: [PATCH v4] USB: Support for LPC32xx SoC
-References: <1331244574-32570-1-git-send-email-stigge@antcom.de> <20120308222234.GA25576@kroah.com>
-In-Reply-To: <20120308222234.GA25576@kroah.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1758912Ab2CHWot (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 17:44:49 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:41006 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab2CHWoq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 17:44:46 -0500
+Message-ID: <1331246669.11248.449.camel@twins>
+Subject: Re: [PATCH] hugetlbfs: lockdep annotate root inode properly
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, davej@redhat.com, jboyer@redhat.com,
+        tyhicks@canonical.com, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Date: Thu, 08 Mar 2012 23:44:29 +0100
+In-Reply-To: <20120308214425.GA23916@ZenIV.linux.org.uk>
+References: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	 <20120308130256.c7855cbd.akpm@linux-foundation.org>
+	 <20120308214425.GA23916@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2012-03-08 at 21:44 +0000, Al Viro wrote:
+> I suspect that they right thing would be to have a way to set explicit
+> nesting rules, not tied to speficic call trace. 
 
-On 08/03/12 23:22, Greg Kroah-Hartman wrote:
-> So, should this function just be called something else, for the type of
-> hardware (lpc32xx?), and then do this check within the function?
-
-Right. LPC32xx and PNX4008 seem to share much of the functionality but
-they don't share the bits() part. How about renaming (the static)
-
-pnx4008_set_usb_bits()
-pnx4008_unset_usb_bits()
-
-to
-
-set_usb_bits()
-unset_usb_bits()
-
-and internally doing machine_is_pnx4008() dependent stuff?
-
-Regarding the other pnx4008_*() functions that are shared with lpc32xx,
-they only inherit the name for historical reasons. Which naming scheme
-should apply here if change is due? One common name between those two
-would be "nxp". We could replace everything common between pnx4008 and
-lpc32xx with nxp (including ths driver name) and handle the small
-pnx4008-specific stuff via machine_is_pnx4008().
-
-Thanks in advance,
-
-Roland
+See might_lock() / might_lock_read(), these are used to implement
+might_fault(), which is used to annotate paths that could -- but rarely
+do -- fault.
