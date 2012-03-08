@@ -1,102 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab2CHGRZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 01:17:25 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:45649 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034Ab2CHGRY (ORCPT
+	id S1753898Ab2CHGYm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 01:24:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47812 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab2CHGYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 01:17:24 -0500
-Date: Thu, 8 Mar 2012 17:17:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the  tree
-Message-Id: <20120308171716.67ef72a3b195ef25f1d781d6@canb.auug.org.au>
-In-Reply-To: <20120308170303.c113c6c34b8a7ae95caeb592@canb.auug.org.au>
-References: <20120308170303.c113c6c34b8a7ae95caeb592@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__8_Mar_2012_17_17_16_+1100_3nz4HUxYWJpr2pc7"
+	Thu, 8 Mar 2012 01:24:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120307173157.GT3107@opensource.wolfsonmicro.com>
+References: <1331127494-6913-1-git-send-email-ldewangan@nvidia.com>
+	<20120307173157.GT3107@opensource.wolfsonmicro.com>
+Date: Thu, 8 Mar 2012 07:24:39 +0100
+Message-ID: <CACRpkdaEHOGA2XfW1SMJodyf9oTNRF7kk9ErQeSpBv_2TFj=Rg@mail.gmail.com>
+Subject: Re: [PATCH V1] i2c: gpio: Use open drain support from gpio driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, khali@linux-fr.org,
+        ben-linux@fluff.org, w.sang@pengutronix.de, grant.likely@secretlab.ca,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__8_Mar_2012_17_17_16_+1100_3nz4HUxYWJpr2pc7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi guys,
-
-Sorry for the cut and paste mess ... :-(
-
-On Thu, 8 Mar 2012 17:03:03 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+On Wed, Mar 7, 2012 at 6:31 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Wed, Mar 07, 2012 at 07:08:14PM +0530, Laxman Dewangan wrote:
+>> The gpio core driver (gpio library) supports the open
+>> drain pin handling. Therefore, it is not require it
+>> to handle in the i2c-gpio driver, just require
+>> to pass the OPEN_DRAIN type flag when requesting the gpio.
 >
-> Hi all,
->=20
-> Today's linux-next merge of the arm-soc tree got a conflict in arch/arm/m=
-ach-omap1/board-palmz71.c between commit  ("") from the  tree and commit  (=
-"") from the arm-soc tree.
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/mach-omap1/board-palmz71.c between commit ddba6c7f7ec6 ("OMAP1:
-> pass LCD config with omapfb_set_lcd_config()") from the omap_dss2 tree
-> and commit 2e3ee9f45b3c ("ARM: OMAP1: Move most of plat/io.h into local
-> iomap.h") from the arm-soc tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary.
->=20
-> --=20
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->=20
-> diff --cc arch/arm/mach-omap1/board-palmz71.c
-> index 9924c70,c1cd0f2..0000000
-> --- a/arch/arm/mach-omap1/board-palmz71.c
-> +++ b/arch/arm/mach-omap1/board-palmz71.c
-> @@@ -27,9 -27,9 +27,10 @@@
->   #include <linux/mtd/mtd.h>
->   #include <linux/mtd/partitions.h>
->   #include <linux/mtd/physmap.h>
->  +#include <linux/omapfb.h>
-> + #include <linux/spi/spi.h>
-> + #include <linux/spi/ads7846.h>
->  =20
-> - #include <mach/hardware.h>
->   #include <asm/mach-types.h>
->   #include <asm/mach/arch.h>
->   #include <asm/mach/map.h>
+> Reviwed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>
+> but note that this is a new gpiolib feature in -next and will need to
+> either be applied via Grant's tree or wait until after the merge window.
 
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+I'd ask Grant to take this into the GPIO tree if Broonie can ACK it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__8_Mar_2012_17_17_16_+1100_3nz4HUxYWJpr2pc7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPWE7sAAoJEECxmPOUX5FEVzkP/3t5wP4AQfj4c653Q4r/CHzB
-u/fO0m0Qt+YaNDYh5iWeJYZv/hL7rAvbI/0Hzq2TQdVBRM/JuBM36HhlKKsSU3nN
-uauLXRmU8zNL6N9hF8n5t9KG2I3riPNKmGXDGrI2AnBvk1BfbdqnWwdTaROKuJJn
-Qz/YBbBA99/xoqn8cXOnOyZ3H0iYi7I4LbXNSp/3diJCTPc7QT6odTXadPlvQpqb
-oMd3PtClOvoIMnPX+UklUdEGPih5M1nWA5wL1nEAAHz8JM0vgNpGQz9L496YBYey
-LN7nU+/ILsG/GBgVrVMVNqYcnlSk5Sor+QxNEUg9V9d9yMeWXDTu1CWMBKzl5dQB
-G09e3Mfu8qOw3aDvOWOPa1DGRJoLfV9Sbb5DK5JczVfSgolVZVzoMWaBFX+cnCsx
-x28hiH1obiqj5EIynPA0A4HLbHbfINOo2Ogm88/WGQLwROM/DWloyFu3LhI0URBQ
-2lL44OKRHr9NLDkovYIZYMNDzEM6tGLSaEKLiRQ+SwOqgGjS+Epoij7fnGdzWOuf
-8FcAwVwsZSwJ0lpo7OQdRbOtPRORhU9SC28n0dUbud9rQ/xF4L1DqZ6sVRCTmKaO
-KEC9KgU0ntVh5m2o7N1ZpzyZrsDJrlZkyF3310hI6upIkOyr6EDP0yt2Nqh/ns46
-o5KjszWequtavXnrOLlC
-=6713
------END PGP SIGNATURE-----
-
---Signature=_Thu__8_Mar_2012_17_17_16_+1100_3nz4HUxYWJpr2pc7--
+Yours,
+Linus Walleij
