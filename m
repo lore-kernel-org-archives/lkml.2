@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab2CHVIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:08:53 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:38598 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab2CHVIv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:08:51 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: chaitanya g <chaitanyag3.14@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-References: <CAOvk4sHM0buk8TW1w8n3EgnNHh6r=57RTUQXKNrCeBFcXjQ7Sg@mail.gmail.com>
-Date: Thu, 08 Mar 2012 13:12:10 -0800
-In-Reply-To: <CAOvk4sHM0buk8TW1w8n3EgnNHh6r=57RTUQXKNrCeBFcXjQ7Sg@mail.gmail.com>
-	(chaitanya g.'s message of "Thu, 23 Feb 2012 13:04:09 +0530")
-Message-ID: <m1haxyyez9.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753631Ab2CHVJi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:09:38 -0500
+Received: from fieldses.org ([174.143.236.118]:43549 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752890Ab2CHVJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 16:09:35 -0500
+Date: Thu, 8 Mar 2012 16:09:34 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Olga Kornievskaia <aglo@citi.umich.edu>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] NFSv4: Return the delegation if the server returns
+ NFS4ERR_OPENMODE
+Message-ID: <20120308210933.GD9273@fieldses.org>
+References: <1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
+ <1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
+ <1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
+ <CAN-5tyG-w+ie3sxTwNA6e9x=CojxyDaJScJuCbS+9VE=yTmJNA@mail.gmail.com>
+ <1331230525.2472.39.camel@lade.trondhjem.org>
+ <CAN-5tyFYE5ECtv__C9S_GMT1gBMQ4+6WPS-1BjmSE7vHoRAQdw@mail.gmail.com>
+ <20120308204205.GB9273@fieldses.org>
+ <1331239814.11759.1.camel@lade.trondhjem.org>
+ <20120308205737.GC9273@fieldses.org>
+ <1331240562.11759.5.camel@lade.trondhjem.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+Bgq+R7OcTwaKtssJja0kY0JKWu729JR0=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0064]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;chaitanya g <chaitanyag3.14@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: Linux kernel : sysctl registering table under same proc name (path) gives warning and call trace while unregistering
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <1331240562.11759.5.camel@lade.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-chaitanya g <chaitanyag3.14@gmail.com> writes:
+On Thu, Mar 08, 2012 at 09:02:43PM +0000, Myklebust, Trond wrote:
+> On Thu, 2012-03-08 at 15:57 -0500, J. Bruce Fields wrote:
+> > On Thu, Mar 08, 2012 at 08:50:14PM +0000, Myklebust, Trond wrote:
+> > > On Thu, 2012-03-08 at 15:42 -0500, J. Bruce Fields wrote:
+> > > > On Thu, Mar 08, 2012 at 03:23:34PM -0500, Olga Kornievskaia wrote:
+> > > > > On Thu, Mar 8, 2012 at 1:15 PM, Myklebust, Trond
+> > > > > <Trond.Myklebust@netapp.com> wrote:
+> > > > > > On Thu, 2012-03-08 at 12:52 -0500, Olga Kornievskaia wrote:
+> > > > > >> wouldn't it be better for you to proactively return a read delegation
+> > > > > >> then unnecessarily erroring?
+> > > > > >
+> > > > > > If nobody else holds a delegation, then the NFS client is actually
+> > > > > > allowed to keep its read delegation while writing to the file. It does
+> > > > > > admittedly need to request an OPEN stateid for write in that case...
+> > > > > > (See section 10.4 of RFC3530bis draft 16)
+> > > > > 
+> > > > > If we both agree that there has to be a request for an open stateid for
+> > > > > a write, then instead of returning the read delegation if the client receives
+> > > > > err_openmode (when it send the request with read delegation stateid
+> > > > > as you said per 3560bis), can't the client resend the setattr with the open
+> > > > > stateid? The ordering of the stateid usage is a "should" and not a "must".
+> > > > > 
+> > > > > In rfc5661, it really doesn't make sense to ever send a setattr with
+> > > > > a read delegation stateid. According to 9.1.2, the server "MUST" return
+> > > > > err_open_mode" error in that case.
+> > > > > 
+> > > > > I gather you are in this case dealing with 4.0 delegations. But I wonder
+> > > > > if you'll do something else for 4.1 delegation then?
+> > > > 
+> > > > 3530bis has the same language ("...must verify that the access mode
+> > > > allows writing and return an NFS4ERR_OPENMODE error if it does not").
+> > > 
+> > > OK, so we shouldn't send the delegation stateid either for v4 or v4.1.
+> > > However should we pre-emptively return the delegation? I've been
+> > > assuming not.
+> > 
+> > The server's only legal option is to recall it, so it seems odd not to
+> > pre-emptively return--but as you say there's nothing to prevent the
+> > server from then handing one right back, possibly before you get a
+> > chance to send the setattr.
+> 
+> Why would it need to recall it if this is the only client holding a
+> delegation? I agree that for the case of NFSv4 once we don't send the
+> stateid, the server has no way to know that this is the same client, but
+> the NFSv4.1 server doesn't have that limitation.
+> 
+> > (And the linux server might well do that--maybe it should have some
+> > heuristic not to hand out a delegation that was just returned--not so
+> > much for this case as just because a return is a sign that the
+> > delegation isn't useful to that client.)
+> 
+> Umm... An NFSv4.1 client could simply request a delegation. As I said
+> earlier, we don't keep tabs on what other processes are doing.
 
-> Hello there,
->
-> I am creating a sysctl kernel module to register 2 hierarchy under
-> same proc name. For e.g.
->
->   my_net
->   |          |
-> net1  net2
->  |         |
-> t1        t2
->
-> So, I used register_sysctl_paths() API. Everything works fine when
-> registering the sysctl tables net1 net2 under path name my_net.
->
-> Problem is when unregistering the tables dmesg shows kernel tainted
-> warning and a call trace.
->
-> Here, is pastebin link to the warning message http://pastebin.com/NfLQhikJ
->
-> Here is pastebin link to module source http://pastebin.com/jSfPW5Y5
+You're right, I wasn't thinking about the 4.1 case: so in the 4.1 case,
+the server does know which client the setattr is coming from, and has
+the option not to recall.  And in 4.1 you have the option of asking for
+no delegation.
 
-Adding those as attachments or simple inline inclusions would have been
-much easier to work with.
+So your question was whether to preemptively return in the 4.0 case?
 
-> Kindly, please help me to resolve this panic.
-
-Well it wasn't a panic, it was a WARN_ON, and you are running against a
-very old kernel.  The .ctl_name field no longer exists.  I guess it says
-2.6.32.something.
-
-The only possibility is you have run afoul of the current sysctl rule
-that you must create a sysctl path before you add child entries and you
-must destroy a sysctl path before you remove child entries.  It is
-extremely non-intuitive, and should be fixed in my current sysctl tree.
-
-Eric
+--b.
