@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756942Ab2CHLr0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:47:26 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55223 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753510Ab2CHLrZ (ORCPT
+	id S1757057Ab2CHLs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:48:28 -0500
+Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:33360 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510Ab2CHLs0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:47:25 -0500
-Date: Thu, 8 Mar 2012 11:47:22 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH v6] sound/soc/codecs: add LAPIS Semiconductor ML26124
-Message-ID: <20120308114704.GH3638@opensource.wolfsonmicro.com>
-References: <20120229235147.GM8295@opensource.wolfsonmicro.com>
- <CANKRQngOkGTPM9AWEaHoaNQCyN65B_ESB24ctcT_DiEen050fg@mail.gmail.com>
- <20120302125819.GE3230@opensource.wolfsonmicro.com>
- <CANKRQngoDf_U8U7txG0AT1TKmSeq2FfqwjWD7EEiLROWzn+f5Q@mail.gmail.com>
- <20120306100012.GC19635@opensource.wolfsonmicro.com>
- <CANKRQniUnEPawXZHcPH9kG0hDiaZ-eJ_vOQrCefB0ntCu98D6g@mail.gmail.com>
- <20120306121222.GK19635@opensource.wolfsonmicro.com>
- <CANKRQnjFB8G5iRKZLQok+qnQrPXf7vcRGto_OyL+1=VNBTnetw@mail.gmail.com>
- <20120307114811.GF3107@opensource.wolfsonmicro.com>
- <CANKRQnh2JqhZBYLP=U_isgthh2pFT89_qBeypda1ciUJzoRXYw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/8E7gjuj425jZz9t"
-Content-Disposition: inline
-In-Reply-To: <CANKRQnh2JqhZBYLP=U_isgthh2pFT89_qBeypda1ciUJzoRXYw@mail.gmail.com>
-X-Cookie: Don't Worry, Be Happy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Mar 2012 06:48:26 -0500
+Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=iso-8859-1
+From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+In-Reply-To: <20120308113009.GA11416@polaris.bitmath.org>
+Date: Thu, 8 Mar 2012 12:48:24 +0100
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E18D154F-E02F-4DF9-8749-7F9EF92792CB@enac.fr>
+References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>  <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz>  <20120308105737.GA11201@polaris.bitmath.org>  <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr> <20120308113009.GA11416@polaris.bitmath.org>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---/8E7gjuj425jZz9t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Le 8 mars 2012 à 12:30, Henrik Rydberg a écrit :
+> 
+> The device-driver matching is done in the kernel, but driver (aka
+> module) loading is done from userland. The crux is to be able to tell
+> userland what driver to load for a certain device. In this case, it
+> means giving more information to userland via the device/modalias
+> construct. Or at least, that is the question. :-)
+> 
 
-On Thu, Mar 08, 2012 at 11:24:36AM +0900, Tomoya MORINAGA wrote:
+Oook, I understand. The current solution used by distros is to load the hid module statically, but then we don't want to do it for every new kind of device-specific module, right? Is this your point? 
 
-> If so, do you mean that I should just add explanation (like as I
-> explained before)
-> why the function() is necessary to above prototype of ml26124_update_bits() ?
+I had the feeling that the current hid code was somehow trying to be universal, thus making the point moot, and figured that we would need to reintegrate hid-multitouch into hid-core at some point. You're suggesting another, more distributed option, in which new categories of HID devices appear from time to time and are handled in new modules, right? Sounds interesting to me, I'd like to hear what the original designers of the hid module think of it.
 
-Probably also make the interface clearer about the fact that it operates
-on multiple registers too.
+Cheers,
 
---/8E7gjuj425jZz9t
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+St.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPWJw/AAoJEBus8iNuMP3dcr8QAIDRwdcF+a2ufcQuEs+Znh9e
-YIq9UK2AjuNKOv7UMXU8qLdDbNVX+nbQ63hGoYGAgBcdBEK2CrfTKug2Zlzki+Bb
-meiox6CvTQGwBonPnkgFERb6G2NKL8BcxJlgCfI4lfmzGIZve+rqfEJD7U0LssT5
-AybI97a7nPLQfodZbkscSga1LU9uf1ksIYeGLUHiwdpwdtkJxtY/6DStBsNOXmz5
-aWpfIl2aIcZG4qfPVXUMnRr/sCGDZos0dgdBcBK7aYvMrvrGRCrc4gFtQOm81TRp
-/d45Zm6H08U5EpxcNJSSSgjJ31lpmNyJAS3HjLwaTg2cuF+SHCuqNnAafsw1Nwiw
-RqlXYFr5Rl0f3ANQG2t17MkeoL70P2BCYqGm7lzb0Ott/wKkrTvLGt99ax2pm27C
-GPvczdQnneLGhQZIHfdMOgLaL0+6gZPyh5ta/lXj7xlY58aNaJNcDY5ELCWWhZag
-k1BJOrBfdoZ+3zFCdFxtqVxwguc7cvbIZqSA6GaE9ZMHGq51IH7l2SROx3EiGbTc
-zO1lMkHkrUY9ybAKi8gNFtKwRz/1nwh6PrjU6QECTYcYsTZgrbiHmbfaT6vUKJpO
-reasi4phDvAXw8zkCzGBnP4iwCepcrnTWE6dXJI/YM/U4pxeZYv7kl/06fRGRPf1
-KIiXrjEG1nr7RDxukqjE
-=0MFD
------END PGP SIGNATURE-----
-
---/8E7gjuj425jZz9t--
