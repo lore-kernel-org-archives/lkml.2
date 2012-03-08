@@ -1,118 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab2CHLRM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:17:12 -0500
-Received: from mail.meprolight.com ([194.90.149.17]:29767 "EHLO meprolight.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752679Ab2CHLRJ convert rfc822-to-8bit (ORCPT
+	id S1756610Ab2CHLSu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:18:50 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:34196 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab2CHLSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:17:09 -0500
-From: Alex Gershgorin <alexg@meprolight.com>
-To: "'Fabio Estevam'" <festevam@gmail.com>
-CC: Fabio Estevam <fabio.estevam@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'g.liakhovetski@gmx.de'" <g.liakhovetski@gmx.de>,
-        "'s.hauer@pengutronix.de'" <s.hauer@pengutronix.de>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Date: Thu, 8 Mar 2012 13:16:50 +0200
-Subject: RE: I.MX35 PDK
-Thread-Topic: I.MX35 PDK
-Thread-Index: Acz8bROfk55DvXDsQ1+z4dFakUW3WgArwTUg
-Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CBD666A28@MEP-EXCH.meprolight.com>
-In-Reply-To: <CAOMZO5DnP7+zupy9vwBPS0+2XtKM1+nLbwCqBzuCqEG5OWbZRQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 8 Mar 2012 06:18:45 -0500
+Date: Thu, 8 Mar 2012 12:18:28 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: paul.gortmaker@windriver.com, hpa@zytor.com, torvalds@linux-foundation.org,
+        sfr@canb.auug.org.au, mingo@redhat.com, arnd@arndb.de,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 22/29] Disintegrate asm/system.h for S390
+Message-ID: <20120308121828.2cdbdc8c@de.ibm.com>
+In-Reply-To: <20120307195001.15987.31240.stgit@warthog.procyon.org.uk>
+References: <20120307194548.15987.36073.stgit@warthog.procyon.org.uk>
+	<20120307195001.15987.31240.stgit@warthog.procyon.org.uk>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12030811-5024-0000-0000-000001EBCFF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
+On Wed, 07 Mar 2012 19:50:01 +0000
+David Howells <dhowells@redhat.com> wrote:
 
-Thanks for you response...
+> diff --git a/arch/s390/include/asm/sigp.h b/arch/s390/include/asm/sigp.h
+> index 06faf6a..d7008d1 100644
+> --- a/arch/s390/include/asm/sigp.h
+> +++ b/arch/s390/include/asm/sigp.h
+> @@ -14,6 +14,14 @@
+>  /* Get real cpu address from logical cpu number. */
+>  extern unsigned short __cpu_logical_map[];
+> 
+> +static inline unsigned short stap(void)
+> +{
+> +	unsigned short cpu_address;
+> +
+> +	asm volatile("stap %0" : "=m" (cpu_address));
+> +	return cpu_address;
+> +}
+> +
+>  static inline int cpu_logical_map(int cpu)
+>  {
+>  #ifdef CONFIG_SMP
 
-> in spite of this I get from ov2640 driver error
-> Here Linux Kernel boot message:
->
-> "Linux video capture interface: v2.00
-> soc-camera-pdrv soc-camera-pdrv.0: Probing soc-camera-pdrv.0
-> mx3-camera mx3-camera.0: MX3 Camera driver attached to camera 0
-> ov2640 0-0030: Product ID error fb:fb"
->
-> I cannot understand what the problem is, if someone tested this?
+This hunk will conflict with "[PATCH] rework smp code" in the linux-next
+tree. The sigp.h header is disintegrated as well..
+But except for this little hiccup I like the idea to split system.h,
+makes a lot of sense.
 
->>Looks like a I2C issue.
+-- 
+blue skies,
+   Martin.
 
->>Check the I2C1 pad settings in the mainline kernel.
+"Reality continues to ruin my life." - Calvin.
 
->>On FSL kernel we have:
-
-#<<define PAD_CONFIG (PAD_CTL_HYS_SCHMITZ | PAD_CTL_PKE_ENABLE |
->>PAD_CTL_PUE_PUD | PAD_CTL_ODE_OpenDrain)
-
-	<<switch (i2c_num) {
-	<<case 0:
-		<<mxc_request_iomux(MX35_PIN_I2C1_CLK, MUX_CONFIG_SION);
-		<<mxc_request_iomux(MX35_PIN_I2C1_DAT, MUX_CONFIG_SION);
-
-		<<mxc_iomux_set_pad(MX35_PIN_I2C1_CLK, PAD_CONFIG);
-		<<mxc_iomux_set_pad(MX35_PIN_I2C1_DAT, PAD_CONFIG);
-
->>Also check if you are getting the proper voltage levels at the I2C1 lines.
-
-Yes this I2C problem, all I2C slave device need response to Host CPU by pulls I2C data bus to low, in other words generate ACK, the clock pulse for the acknowledge bit is always created by the bus master.
-
-In this case, the camera tries to reset the data bus and generate an ACK, but the voltage drops to the area of two volts, although it should be reset to zero.
-I replaced R172 with 10K on CPU board and got a good result, but there are other surprises 
-
-Linux video capture interface: v2.00
-soc-camera-pdrv soc-camera-pdrv.0: Probing soc-camera-pdrv.0
-mx3-camera mx3-camera.0: MX3 Camera driver attached to camera 0
-ov2640 0-0030: ov2640 Product ID 26:42 Manufacturer ID 7f:a2
-i2c i2c-0: OV2640 Probed
-mx3-camera mx3-camera.0: MX3 Camera driver detached from camera 0
-dmaengine: failed to get dma1chan0: (-22)
-dmaengine: failed to get dma1chan1: (-22)
-dmaengine: failed to get dma1chan2: (-22)
-dmaengine: failed to get dma1chan3: (-22)
-dmaengine: failed to get dma1chan4: (-22)
-dmaengine: failed to get dma1chan5: (-22)
-dmaengine: failed to get dma1chan6: (-22)
-dmaengine: failed to get dma1chan7: (-22)
-dmaengine: failed to get dma1chan8: (-22)
-dmaengine: failed to get dma1chan9: (-22)
-dmaengine: failed to get dma1chan10: (-22)
-dmaengine: failed to get dma1chan11: (-22)
-dmaengine: failed to get dma1chan12: (-22)
-dmaengine: failed to get dma1chan13: (-22)
-dmaengine: failed to get dma1chan14: (-22)
-dmaengine: failed to get dma1chan15: (-22)
-dmaengine: failed to get dma1chan16: (-22)
-dmaengine: failed to get dma1chan17: (-22)
-dmaengine: failed to get dma1chan18: (-22)
-dmaengine: failed to get dma1chan19: (-22)
-dmaengine: failed to get dma1chan20: (-22)
-dmaengine: failed to get dma1chan21: (-22)
-dmaengine: failed to get dma1chan22: (-22)
-dmaengine: failed to get dma1chan23: (-22)
-dmaengine: failed to get dma1chan24: (-22)
-dmaengine: failed to get dma1chan25: (-22)
-dmaengine: failed to get dma1chan26: (-22)
-dmaengine: failed to get dma1chan27: (-22)
-dmaengine: failed to get dma1chan28: (-22)
-dmaengine: failed to get dma1chan29: (-22)
-dmaengine: failed to get dma1chan30: (-22):
-
-
-What is the problem? 
-Guennadi please help me understand 
-
-Thanks,
- 
-Alex Gershgorin
