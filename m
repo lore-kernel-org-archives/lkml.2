@@ -1,229 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab2CHJLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 04:11:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50843 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755814Ab2CHJLg (ORCPT
+	id S1755688Ab2CHJP4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 04:15:56 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:39094 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752159Ab2CHJPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 04:11:36 -0500
-From: Bryan Wu <bryan.wu@canonical.com>
-To: rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
-        linux@arm.linux.org.uk
-Subject: [PATCH 3/3] led-triggers: create a trigger for CPU activity
-Date: Thu,  8 Mar 2012 17:11:03 +0800
-Message-Id: <1331197863-25564-3-git-send-email-bryan.wu@canonical.com>
+	Thu, 8 Mar 2012 04:15:49 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, akpm@linux-foundation.org, davej@redhat.com,
+        jboyer@redhat.com, tyhicks@canonical.com
+Cc: linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH] hugetlbfs: lockdep annotate root inode properly
+Date: Thu,  8 Mar 2012 14:45:16 +0530
+Message-Id: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
-References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
+x-cbid: 12030800-3568-0000-0000-00000155A585
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attempting to consolidate the ARM LED code, this removes the
-custom RealView LED trigger code to turn LEDs on and off in
-response to CPU activity and replace it with a standard trigger.
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-(bryan.wu@canonical.com:
-It moves arch/arm/kernel/leds.c syscore stubs into this trigger.
-It also provides ledtrig_cpu trigger event stub in <linux/leds.h>.
-Although it was inspired by ARM work, it can be used in other arch.)
+This fix the below lockdep warning
 
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+ ======================================================
+ [ INFO: possible circular locking dependency detected ]
+ 3.3.0-rc4+ #190 Not tainted
+ -------------------------------------------------------
+ shared/1568 is trying to acquire lock:
+  (&sb->s_type->i_mutex_key#12){+.+.+.}, at: [<ffffffff811efa0f>] hugetlbfs_file_mmap+0x7d/0x108
 
-Reviewed-by: Jamie Iles <jamie@jamieiles.com>
-Tested-by: Jochen Friedrich <jochen@scram.de>
+ but task is already holding lock:
+  (&mm->mmap_sem){++++++}, at: [<ffffffff810f5589>] sys_mmap_pgoff+0xd4/0x12f
+
+ which lock already depends on the new lock.
+
+
+ the existing dependency chain (in reverse order) is:
+
+ -> #1 (&mm->mmap_sem){++++++}:
+        [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
+        [<ffffffff810ee439>] might_fault+0x6d/0x90
+        [<ffffffff8111bc12>] filldir+0x6a/0xc2
+        [<ffffffff81129942>] dcache_readdir+0x5c/0x222
+        [<ffffffff8111be58>] vfs_readdir+0x76/0xac
+        [<ffffffff8111bf6a>] sys_getdents+0x79/0xc9
+        [<ffffffff816940a2>] system_call_fastpath+0x16/0x1b
+
+ -> #0 (&sb->s_type->i_mutex_key#12){+.+.+.}:
+        [<ffffffff8109f40a>] __lock_acquire+0xa6c/0xd60
+        [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
+        [<ffffffff816916be>] __mutex_lock_common+0x48/0x350
+        [<ffffffff81691a85>] mutex_lock_nested+0x2a/0x31
+        [<ffffffff811efa0f>] hugetlbfs_file_mmap+0x7d/0x108
+        [<ffffffff810f4fd0>] mmap_region+0x26f/0x466
+        [<ffffffff810f545b>] do_mmap_pgoff+0x294/0x2ee
+        [<ffffffff810f55a9>] sys_mmap_pgoff+0xf4/0x12f
+        [<ffffffff8103d1f2>] sys_mmap+0x1d/0x1f
+        [<ffffffff816940a2>] system_call_fastpath+0x16/0x1b
+
+ other info that might help us debug this:
+
+  Possible unsafe locking scenario:
+
+        CPU0                    CPU1
+        ----                    ----
+   lock(&mm->mmap_sem);
+                                lock(&sb->s_type->i_mutex_key#12);
+                                lock(&mm->mmap_sem);
+   lock(&sb->s_type->i_mutex_key#12);
+
+  *** DEADLOCK ***
+
+ 1 lock held by shared/1568:
+  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810f5589>] sys_mmap_pgoff+0xd4/0x12f
+
+ stack backtrace:
+ Pid: 1568, comm: shared Not tainted 3.3.0-rc4+ #190
+ Call Trace:
+  [<ffffffff81688bf9>] print_circular_bug+0x1f8/0x209
+  [<ffffffff8109f40a>] __lock_acquire+0xa6c/0xd60
+  [<ffffffff8110e7b6>] ? files_lglock_local_lock_cpu+0x61/0x61
+  [<ffffffff811efa0f>] ? hugetlbfs_file_mmap+0x7d/0x108
+  [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
+  [<ffffffff811efa0f>] ? hugetlbfs_file_mmap+0x7d/0x108
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- drivers/leds/Kconfig       |   10 ++++
- drivers/leds/Makefile      |    1 +
- drivers/leds/ledtrig-cpu.c |  119 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/leds.h       |   15 ++++++
- 4 files changed, 145 insertions(+), 0 deletions(-)
- create mode 100644 drivers/leds/ledtrig-cpu.c
+ fs/hugetlbfs/inode.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 3f17f0d..f7f4761 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -457,6 +457,16 @@ config LEDS_TRIGGER_BACKLIGHT
- 
- 	  If unsure, say N.
- 
-+config LEDS_TRIGGER_CPU
-+	tristate "LED CPU Trigger"
-+	depends on LEDS_TRIGGERS
-+	help
-+	  This allows LEDs to be controlled by active CPUs. This shows
-+	  the active CPUs across an array of LEDs so you can see what
-+	  CPUs are active on the system at any given moment.
-+
-+	  If unsure, say N.
-+
- config LEDS_TRIGGER_GPIO
- 	tristate "LED GPIO Trigger"
- 	depends on LEDS_TRIGGERS
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index 1fc6875..6629916 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -56,4 +56,5 @@ obj-$(CONFIG_LEDS_TRIGGER_IDE_DISK)	+= ledtrig-ide-disk.o
- obj-$(CONFIG_LEDS_TRIGGER_HEARTBEAT)	+= ledtrig-heartbeat.o
- obj-$(CONFIG_LEDS_TRIGGER_BACKLIGHT)	+= ledtrig-backlight.o
- obj-$(CONFIG_LEDS_TRIGGER_GPIO)		+= ledtrig-gpio.o
-+obj-$(CONFIG_LEDS_TRIGGER_CPU)		+= ledtrig-cpu.o
- obj-$(CONFIG_LEDS_TRIGGER_DEFAULT_ON)	+= ledtrig-default-on.o
-diff --git a/drivers/leds/ledtrig-cpu.c b/drivers/leds/ledtrig-cpu.c
-new file mode 100644
-index 0000000..49f7879
---- /dev/null
-+++ b/drivers/leds/ledtrig-cpu.c
-@@ -0,0 +1,119 @@
-+/*
-+ * ledtrig-cpu.c - LED trigger based on CPU activity
-+ *
-+ * Copyright 2011 Linus Walleij <linus.walleij@linaro.org>
-+ * Copyright 2011 Bryan Wu <bryan.wu@canonical.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/percpu.h>
-+#include <linux/syscore_ops.h>
-+#include "leds.h"
-+
-+static DEFINE_PER_CPU(struct led_trigger *, cpu_trig);
-+static DEFINE_PER_CPU(char [8], trig_name);
-+
-+void ledtrig_cpu(enum cpu_led_event ledevt)
-+{
-+	struct led_trigger *trig = __get_cpu_var(cpu_trig);
-+
-+	if (!trig)
-+		return;
-+
-+	/* Locate the correct CPU LED */
-+	switch (ledevt) {
-+	case CPU_LED_IDLE_END:
-+	case CPU_LED_START:
-+		/* Will turn the LED on, max brightness */
-+		led_trigger_event(trig, LED_FULL);
-+		break;
-+
-+	case CPU_LED_IDLE_START:
-+	case CPU_LED_STOP:
-+	case CPU_LED_HALTED:
-+		/* Will turn the LED off */
-+		led_trigger_event(trig, LED_OFF);
-+		break;
-+
-+	default:
-+		/* Will leave the LED as it is */
-+		break;
-+	}
-+}
-+EXPORT_SYMBOL(ledtrig_cpu);
-+
-+static int ledtrig_cpu_syscore_suspend(void)
-+{
-+	ledtrig_cpu(CPU_LED_STOP);
-+	return 0;
-+}
-+
-+static void ledtrig_cpu_syscore_resume(void)
-+{
-+	ledtrig_cpu(CPU_LED_START);
-+}
-+
-+static void ledtrig_cpu_syscore_shutdown(void)
-+{
-+	ledtrig_cpu(CPU_LED_HALTED);
-+}
-+
-+static struct syscore_ops ledtrig_cpu_syscore_ops = {
-+	.shutdown	= ledtrig_cpu_syscore_shutdown,
-+	.suspend	= ledtrig_cpu_syscore_suspend,
-+	.resume		= ledtrig_cpu_syscore_resume,
-+};
-+
-+static void __init ledtrig_cpu_register(void *info)
-+{
-+	int cpuid = smp_processor_id();
-+	struct led_trigger *trig;
-+	char *name = __get_cpu_var(trig_name);
-+
-+	snprintf(name, 8, "cpu%d", cpuid);
-+	led_trigger_register_simple(name, &trig);
-+
-+	pr_info("LED trigger %s indicate activity on CPU %d\n",
-+		trig->name, cpuid);
-+
-+	__get_cpu_var(cpu_trig) = trig;
-+}
-+
-+static void __exit ledtrig_cpu_unregister(void *info)
-+{
-+	struct led_trigger *trig = __get_cpu_var(cpu_trig);
-+	char *name = __get_cpu_var(trig_name);
-+
-+	led_trigger_unregister_simple(trig);
-+	__get_cpu_var(cpu_trig) = NULL;
-+	memset(name, 0, 8);
-+}
-+
-+static int __init ledtrig_cpu_init(void)
-+{
-+	on_each_cpu(ledtrig_cpu_register, NULL, 1);
-+	register_syscore_ops(&ledtrig_cpu_syscore_ops);
-+
-+	return 0;
-+}
-+module_init(ledtrig_cpu_init);
-+
-+static void __exit ledtrig_cpu_exit(void)
-+{
-+	on_each_cpu(ledtrig_cpu_unregister, NULL, 1);
-+	unregister_syscore_ops(&ledtrig_cpu_syscore_ops);
-+}
-+module_exit(ledtrig_cpu_exit);
-+
-+MODULE_AUTHOR("Linus Walleij <linus.walleij@linaro.org>");
-+MODULE_AUTHOR("Bryan Wu <bryan.wu@canonical.com>");
-+MODULE_DESCRIPTION("CPU LED trigger");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index 5884def..2afecb7 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -210,4 +210,19 @@ struct gpio_led_platform_data {
- struct platform_device *gpio_led_register_device(
- 		int id, const struct gpio_led_platform_data *pdata);
- 
-+#if defined(CONFIG_LEDS_TRIGGER_CPU) || defined(CONFIG_LEDS_TRIGGER_CPU_MODULE)
-+enum cpu_led_event {
-+	CPU_LED_IDLE_START,	/* CPU enters idle */
-+	CPU_LED_IDLE_END,	/* CPU idle ends */
-+	CPU_LED_START,		/* Machine starts, especially resume */
-+	CPU_LED_STOP,		/* Machine stops, especially suspend */
-+	CPU_LED_HALTED,		/* Machine shutdown */
-+};
-+
-+/* Use this routine to handle LEDs */
-+extern void ledtrig_cpu(enum cpu_led_event evt);
-+#else
-+#define ledtrig_cpu(evt) do {} while (0)
-+#endif
-+
- #endif		/* __LINUX_LEDS_H_INCLUDED */
+NOTE: This patch also require 
+http://thread.gmane.org/gmane.linux.file-systems/58795/focus=59565
+to remove the lockdep warning
+
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index 3645cd3..ca4fa70 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -459,6 +459,7 @@ static struct inode *hugetlbfs_get_root(struct super_block *sb,
+ 		inode->i_fop = &simple_dir_operations;
+ 		/* directory inodes start off with i_nlink == 2 (for "." entry) */
+ 		inc_nlink(inode);
++		lockdep_annotate_inode_mutex_key(inode);
+ 	}
+ 	return inode;
+ }
 -- 
 1.7.9
 
