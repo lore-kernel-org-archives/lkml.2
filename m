@@ -1,96 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755877Ab2CHLFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:05:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42110 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754355Ab2CHLFv (ORCPT
+	id S1756598Ab2CHLGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:06:36 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65399 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab2CHLGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:05:51 -0500
-Date: Thu, 8 Mar 2012 11:05:49 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH v3] sound/soc/lapis: add platform driver for ML7213
-Message-ID: <20120308110548.GG3638@opensource.wolfsonmicro.com>
-References: <1329976011-2251-1-git-send-email-tomoya.rohm@gmail.com>
- <1329976011-2251-2-git-send-email-tomoya.rohm@gmail.com>
- <20120302163915.GD6056@opensource.wolfsonmicro.com>
- <CANKRQni8hPoHEsV2VecbgKBdfS5+rit0-jXzz_d8F_nY5-dN3g@mail.gmail.com>
- <20120306115246.GD19635@opensource.wolfsonmicro.com>
- <CANKRQngg+8LJvb-+Byv6XPqqWFyCU1U+-hppuxo_=CM1qLUF_Q@mail.gmail.com>
- <20120307114631.GE3107@opensource.wolfsonmicro.com>
- <CANKRQnh2x-EYyaiOaz58zBeAe7PKWNS6cE+yyha5jSvignigHw@mail.gmail.com>
+	Thu, 8 Mar 2012 06:06:33 -0500
+Message-ID: <4F5892B1.3070008@suse.cz>
+Date: Thu, 08 Mar 2012 12:06:25 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120229 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TmwHKJoIRFM7Mu/A"
-Content-Disposition: inline
-In-Reply-To: <CANKRQnh2x-EYyaiOaz58zBeAe7PKWNS6cE+yyha5jSvignigHw@mail.gmail.com>
-X-Cookie: Don't Worry, Be Happy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Willy Tarreau <w@1wt.eu>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Tony Luck <tony.luck@intel.com>, Jiri Slaby <jirislaby@gmail.com>,
+        raven@themaw.net
+Subject: Re: Build broken on s390 and ia64 [was: Linux 2.6.32.58]
+References: <20120304180911.GA7336@kroah.com> <4F54A46A.6000305@suse.cz> <20120305120241.GA3627@osiris.boeblingen.de.ibm.com> <4F54B618.1090301@suse.cz> <20120305223338.GE2930@1wt.eu>
+In-Reply-To: <20120305223338.GE2930@1wt.eu>
+X-Enigmail-Version: 1.4
+Content-Type: multipart/mixed;
+ boundary="------------090501020904000104020705"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------090501020904000104020705
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
---TmwHKJoIRFM7Mu/A
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/05/2012 11:33 PM, Willy Tarreau wrote:
+> Hi,
+> 
+> On Mon, Mar 05, 2012 at 01:48:24PM +0100, Jiri Slaby wrote:
+>>>>> Linus Torvalds (2): Fix autofs compile without CONFIG_COMPAT
+>>>>
+>>>> But who defines is_compat_task *with* CONFIG_COMPAT on ia64?
+>>>>
+>>>> fs/autofs4/inode.c: In function 'autofs4_fill_super':
+>>>> fs/autofs4/inode.c:345: error: implicit declaration of function
+>>>> 'is_compat_task'
+>>>
+>>> The ia64 compat code got entirely removed, since it was broken:
+>>>
+>>> 32974ad4907cdde6c9de612cd1b2ee0568fb9409 "[IA64] Remove COMPAT_IA32 support"
+>>
+>> Yes, but that is even in 2.6.34. So the fix for autofs is incomplete in
+>> .32 as it breaks build on configs which used to work.
+> 
+> So in the end, does anybody have an idea what is missing from this patch ?
+> I'm not sure that reverting the autofs fix is a right solution either :-/
 
-On Thu, Mar 08, 2012 at 11:06:47AM +0900, Tomoya MORINAGA wrote:
-> On Wed, Mar 7, 2012 at 8:46 PM, Mark Brown
+Nobody relevant? Hmm... I use the attached patch. If there are no
+objections, I will add a header there and send to Willy.
 
-> > You've still not explained the problem you're seeing but this sounds
-> > like something that should work. =A0Please address the
+thanks,
+-- 
+js
+suse labs
 
-> * Faced problem if there are no platform settings.
-> machine driver's hw_params is not called
-> platform_driver's functions(snd_pcm_ops, snd_soc_platform_driver) are
-> not called.
+--------------090501020904000104020705
+Content-Type: text/x-patch;
+ name="ia64-is_compat_task-fix.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="ia64-is_compat_task-fix.patch"
 
-> As a result, the following message is not showed . (by soc_pcm.c)
-> printk(KERN_INFO "asoc: %s <-> %s mapping ok\n", codec_dai->name,
->          cpu_dai->name);
+---
+ arch/ia64/include/asm/compat.h |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-This makes no sense.  Registering a platform device will have *no*
-impact on ASoC, it only cares if the relevant ASoC function drivers have
-come up.  Probably there was some other problem with what you were doing
-but it's hard to say...
+--- a/arch/ia64/include/asm/compat.h
++++ b/arch/ia64/include/asm/compat.h
+@@ -204,4 +204,9 @@ arch_compat_alloc_user_space (long len)
+ 	return (void __user *) (((regs->r12 & 0xffffffff) & -16) - len);
+ }
+ 
++/* for !COMPAT this is defined in linux/compat.h */
++#ifdef CONFIG_COMPAT
++#define is_compat_task() (0)
++#endif
++
+ #endif /* _ASM_IA64_COMPAT_H */
 
-> I can understand your concern.
-> Let me clarify your think.
-> You think that interrupt handler must check whether ALSA initialization h=
-as
-> already finished or not before interrupt process executes.
-> Right?
-
-Or it should be safe to run even in the card has not come up yet, either
-way is fine.
-
---TmwHKJoIRFM7Mu/A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPWJKGAAoJEBus8iNuMP3dcFUP/AhjPC3KkXsflquAimYtGQkX
-83wSaKoZEzzEcKpxHk37GAUzuJmmXCw0kVkIubrGm49ptvWNYM5j7u0bleYhnznA
-NGD1ivdh1funyk0jVkbKWleXArj+Ug/mxPCetwDxvF9cX7S6EBtCmxUo5ITOft2f
-CRY0RVQ/ZyfSIHEyxv8+PE/42a+QONc94YZOv4btYfEAY0nIb0M9kua0AJGKwF0C
-KeRhJavz7bDboDbJRPJieSTNzB+zyI6E714+mQrrg3Eb1CgGunL/iLlasF3tMJIL
-DCVLkVM7N29ZDgBf98eFk99eNpzInYBvSt9e7JA4prvEBskAclLWICItJzOsCNuD
-R7WCgPJxJKt8eFc0SZ0SVEPgNOag/47d/7KGG//vo7B+9PU1/J3NFvI3w/PBUOIw
-L3fSp488xj6umNcoA1y0CFAfZ0S8bCWHPJoBfrDnIogaTgFqimkw8AeUDQUjE84S
-qk3VXb/0de/8VtKlmLe5ESfGc3mafhP91M79orSUX8CYN4pTLbTUeeWFNTdXE/Cd
-rSTZWOe74uRgkp+CcTgy580sDiVzQlJz+Sz3KTQAMiRyDpdbqeiKdAE+A/U72l8g
-G0NAYKhh7hM4sFkILhke9rALAglDqGC/Cf+PkafLhpIa87khUlAeL/Ij5N2YmTly
-XoeH3MJh3xkfCnmij7+8
-=r798
------END PGP SIGNATURE-----
-
---TmwHKJoIRFM7Mu/A--
+--------------090501020904000104020705--
