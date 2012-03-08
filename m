@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758331Ab2CHQoA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 11:44:00 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:49377 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756499Ab2CHQnz (ORCPT
+	id S1758296Ab2CHQsr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 11:48:47 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60081 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756731Ab2CHQso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 11:43:55 -0500
-Message-ID: <4F58E1C5.5090704@ti.com>
-Date: Thu, 08 Mar 2012 22:13:49 +0530
-From: Aneesh V <aneesh@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
+	Thu, 8 Mar 2012 11:48:44 -0500
+Date: Fri, 9 Mar 2012 00:54:03 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: Control page reclaim granularity
+Message-ID: <20120308165403.GA10005@gmail.com>
+Mail-Followup-To: Minchan Kim <minchan@kernel.org>,
+	linux-mm <linux-mm@kvack.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>, riel@redhat.com,
+	kosaki.motohiro@jp.fujitsu.com
 MIME-Version: 1.0
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 1/8] OMAP4: hwmod: add EMIF hw mod data
-References: <1331222065-3579-1-git-send-email-aneesh@ti.com> <1331222065-3579-2-git-send-email-aneesh@ti.com> <4F58E13C.8040906@ti.com>
-In-Reply-To: <4F58E13C.8040906@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120308093514.GA28856@barrios>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 March 2012 10:11 PM, Cousson, Benoit wrote:
-> Hi Aneesh
->
-> On 3/8/2012 4:54 PM, Aneesh V wrote:
->> From: Benoit Cousson<b-cousson@ti.com>
->>
->> Add hwmod data for EMIF IP instances in OMAP4.
->
-> Paul has just posted an OMAP4 hwmod series (ARM: OMAP4: hwmod data: add
-> almost all remaining IP blocks) that does contain the EMIF hwmods, so
-> assuming that you are not adding some custom dev_attr here, it should
-> work for you.
+Hi Minchan,
 
-Ok. I will test with that tomorrow and drop this patch.
+Sorry, I forgot to say that I don't subscribe linux-mm and linux-kernel
+mailing list.  So please Cc me.
 
-Thanks,
-Aneesh
+IMHO, maybe we should re-think about how does user use mmap(2).  I
+describe the cases I known in our product system.  They can be
+categorized into two cases.  One is mmaped all data files into memory
+and sometime it uses write(2) to append some data, and another uses
+mmap(2)/munmap(2) and read(2)/write(2) to manipulate the files.  In the
+second case,  the application wants to keep mmaped page into memory and
+let file pages to be reclaimed firstly.  So, IMO, when application uses
+mmap(2) to manipulate files, it is possible to imply that it wants keep
+these mmaped pages into memory and do not be reclaimed.  At least these
+pages do not be reclaimed early than file pages.  I think that maybe we
+can recover that routine and provide a sysctl parameter to let the user
+to set this ratio between mmaped pages and file pages.
+
+Regards,
+Zheng
