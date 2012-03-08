@@ -1,109 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653Ab2CHNVJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 08:21:09 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:40540 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754926Ab2CHNVG convert rfc822-to-8bit
+	id S1755073Ab2CHNcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 08:32:17 -0500
+Received: from xyratex195.xyratex.com ([194.131.166.195]:44627 "EHLO
+	XY01EX21.xy01.xyratex.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752085Ab2CHNcP convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 08:21:06 -0500
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
+	Thu, 8 Mar 2012 08:32:15 -0500
+Subject: Re: [PATCH 1/2] [SCSI] pm8001: Fix bogus interrupt state flag issue.
+Mime-Version: 1.0 (Apple Message framework v1257)
 Content-Type: text/plain; charset=us-ascii
+From: Mark Salyzyn <mark_salyzyn@xyratex.com>
+In-Reply-To: <1330263210-25134-1-git-send-email-santoshprasadnayak@gmail.com>
+Date: Thu, 8 Mar 2012 08:32:09 -0500
+Cc: Mark Salyzyn <mark_salyzyn@xyratex.com>, Jack Wang <jack_wang@usish.com>,
+        lindar_liu <lindar_liu@usish.com>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>
 Content-Transfer-Encoding: 8BIT
-Subject: [RFC] Scheduler recorder and playback
-Date: Thu, 8 Mar 2012 15:20:53 +0200
-Message-Id: <85A3EFC3-FAE0-4B3A-AAA0-85FA435A9F7B@antoniou-consulting.com>
-Cc: linaro-kernel@lists.linaro.org, linaro-dev@lists.linaro.org,
-        Steven Goss <steve.goss@ti.com>, Kevin Hilman <khilman@ti.com>,
-        Matt Porter <mporter@ti.com>, Kumar Gala <galak@ti.com>,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>, charles.garcia-tobin@arm.com,
-        Morten Rasmussen <morten.rasmussen@arm.com>, chris.redpath@arm.com,
-        Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        dmitry.antipov@linaro.org, Stephane Sintes <s-sintes@ti.com>
-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0 (Apple Message framework v1084)
-X-Mailer: Apple Mail (2.1084)
+Message-Id: <528D7E8A-B2F6-4EDB-A7C0-E0BF494038D0@xyratex.com>
+References: <1330263210-25134-1-git-send-email-santoshprasadnayak@gmail.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+X-Mailer: Apple Mail (2.1257)
+X-OriginalArrivalTime: 08 Mar 2012 13:32:11.0630 (UTC) FILETIME=[DDF960E0:01CCFD2F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+NAK
 
-There's considerable activity in the subject of the scheduler lately and how to 
-adapt it to the peculiarities of the new class of hardware coming out lately,
-like the big.LITTLE class of devices from a number of manufacturers.
+In the fragment below, the 'spin_lock_irqsave(&t->task_state_lock, flags);' is 100% legitimate. The change you did was not inert, and result in the IRQ being disabled upon exit should a SAS_TASK_STATE_ABORTED task state condition occur.
 
-The platforms that Linux runs are very diverse, and run differing workloads.
-For example most consumer devices will very likely run something like Android, 
-with common use cases such as audio and/or video playback. Methods to achieve
-lower power consumption using a power aware scheduler are under investigation.
+I propose (annotated below) you leave the flags automatic variable, but uninitialized. The changes surrounding spin_*lock_irq*(&pm8001_ha->lock, flags) are OK, but revert back the changes surrounding the spin_*lock_irq*(&t->task->state_lock,flags) so that lock would be properly nested.
 
-Similarly for server applications, or VM hosting, the behavior of the scheduler
-shouldn't have adverse performance implications; any power saving on top of that
-would be a welcome improvement.
+To be pedantic, and to be more correct, this code should have spawned a work queue task to perform the t->task_done(t) operation in a separate thread rather than inline and precariously unlocked; but that would be beyond the scope of these changes and should be left for future work to decide if it is even necessary. Not sure how such a change would affect performance (using the work queue) ... so I am 'afraid' of pushing such a change in any case given the relatively reliable operation of this driver (and the dynamic nature of the changes Dan is making to the SATA side of things for instance ;-} ).
 
-The current issue is that scheduler development is not easily shared between
-developers. Each developer has their own 'itch', be it Android use cases, server
-workloads, VM, etc. The risk is high of optimizing for one's own use case and
-causing severe degradation on most other use cases.
+I am sorry for taking so long to get to the task of reviewing this (and the previous) code. I look forward to your comments.
 
-One way to fix this problem would be the development of a method with which one
-could perform a given use-case workload in a host, record the activity in a 
-interchangeable portable trace format file, and then play it back on another
-host via a playback application that will generate an approximately similar load
-which was observed during recording.
+Sincerely -- Mark Salyzyn
 
-The way that the two hosts respond under the same load generated by the playback
-application can be compared, so that the performance of the two scheduler implementations
-measured in various metrics (like performance, power consumption etc.) can be
-evaluated.
+On Feb 26, 2012, at 8:33 AM, santosh nayak wrote:
 
-The fidelity of the this approximation is of great importance but it is debatable
-if it is possible to have a fully identical load generated, since details of the hosts
-might differ in such a way that such a thing is impossible. 
-I believe that it should be possible at least to simulate a purely CPU load, and the
-blocking behavior of tasks, in such a way that it would result in scheduler decisions 
-that can be compared and shared among developers.  
-
-The recording part I believe can be handled by the kernel's tracing infrastructure,
-either by using the existing tracepoints, or need be adding more; possibly even
-creating a new tracer solely for this purpose.
-Since some applications can adapt their behavior according to insufficient system
-resources (think media players that can drop frames for example), I think it would
-be beneficial to record such events to the same trace file.
-
-The trace file should have a portable format so that it can be freely shared between
-developers. An ASCII format like we currently use should be OK, as long as it
-doesn't cause too much of an effect during execution of the recording.
-
-The playback application can be implemented via two ways. 
-
-One way, which is the LinSched way would be to have the full scheduler implementation
-compiled as part of said application, and use application specific methods to evaluate
-performance. While this will work, it won't allow comparison of the two hosts in a meaningful
-manner.
-
-For both scheduler and platform evaluation, the playback application will generate the load
-on the running host by simulating the source host's recorded work load session.
-That means emulating process activity like forks, thread spawning, blocking on resources
-etc. It is not clear to me yet if that's possible without using some kind of kernel
-level helper module, but not requiring such is desirable.
-
-Since one would have the full trace of scheduling activity: past, present and future; there would
-be the possibility of generating a perfect schedule (as defined by best performance, or best
-power consumption), and use it as a yardstick of evaluation against the actual scheduler.
-Comparing the results, you would get an estimate of the best case improvement that could be
-achieved if the ideal scheduler existed.
-
-I know this is a bit long, but I hope this can be a basis of thinking on how to go about
-developing this.
-
-Regards
-
--- Pantelis
-
-
- 
-
+> @@ -2207,7 +2206,6 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
+> static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
+> {
+> 	struct sas_task *t;
+> -	unsigned long flags = 0;
+MGS>	unsigned long flags;
+> 	struct task_status_struct *ts;
+> 	struct pm8001_ccb_info *ccb;
+> 	struct pm8001_device *pm8001_dev;
+> @@ -2287,9 +2285,9 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
+> 			ts->stat = SAS_QUEUE_FULL;
+> 			pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+> 			mb();/*ditto*/
+> -			spin_unlock_irqrestore(&pm8001_ha->lock, flags);
+> +			spin_unlock_irq(&pm8001_ha->lock);
+> 			t->task_done(t);
+> -			spin_lock_irqsave(&pm8001_ha->lock, flags);
+> +			spin_lock_irq(&pm8001_ha->lock);
+> 			return;
+> 		}
+> 		break;
+> @@ -2387,31 +2385,31 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
+> 		ts->stat = SAS_OPEN_TO;
+> 		break;
+> 	}
+> -	spin_lock_irqsave(&t->task_state_lock, flags);
+> +	spin_lock_irq(&t->task_state_lock);
+MGS>	spin_lock_irqsave(&t->task_state_lock, flags);
+> 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
+> 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
+> 	t->task_state_flags |= SAS_TASK_STATE_DONE;
+> 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
+> -		spin_unlock_irqrestore(&t->task_state_lock, flags);
+> +		spin_unlock_irq(&t->task_state_lock);
+MGS>		spin_unlock_irqrestore(&t->task_state_lock, flags);
+> 		PM8001_FAIL_DBG(pm8001_ha,
+> 			pm8001_printk("task 0x%p done with io_status 0x%x"
+> 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
+> 			t, event, ts->resp, ts->stat));
+> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+> 	} else if (t->uldd_task) {
+> -		spin_unlock_irqrestore(&t->task_state_lock, flags);
+> +		spin_unlock_irq(&t->task_state_lock);
+> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+> 		mb();/* ditto */
+> -		spin_unlock_irqrestore(&pm8001_ha->lock, flags);
+> +		spin_unlock_irq(&pm8001_ha->lock);
+> 		t->task_done(t);
+> -		spin_lock_irqsave(&pm8001_ha->lock, flags);
+> +		spin_lock_irq(&pm8001_ha->lock);
+> 	} else if (!t->uldd_task) {
+> -		spin_unlock_irqrestore(&t->task_state_lock, flags);
+> +		spin_unlock_irq(&t->task_state_lock);
+> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+> 		mb();/*ditto*/
+> -		spin_unlock_irqrestore(&pm8001_ha->lock, flags);
+> +		spin_unlock_irq(&pm8001_ha->lock);
+> 		t->task_done(t);
+> -		spin_lock_irqsave(&pm8001_ha->lock, flags);
+> +		spin_lock_irq(&pm8001_ha->lock);
+> 	}
+> }
 
