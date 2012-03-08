@@ -1,132 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab2CHVd1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:33:27 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:44395 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756977Ab2CHVdY (ORCPT
+	id S1757078Ab2CHVeB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:34:01 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:45802 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755058Ab2CHVd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:33:24 -0500
-Subject: Re: [PATCH 3.3.0-rc3] Fix use-after-free in acpi_map_lsapic
-From: Alok Kataria <akataria@vmware.com>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Petr Vandrovec <petr@vmware.com>,
-        the arch/x86 maintainers <x86@kernel.org>, lenb@kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        dcovelli@vmware.com
-In-Reply-To: <1331240475.1156.104.camel@misato.fc.hp.com>
-References: <20120216000643.GA7508@petr-dev3.eng.vmware.com>
-	 <1331149730.25361.24.camel@ank32.eng.vmware.com>
-	 <1331240475.1156.104.camel@misato.fc.hp.com>
-Content-Type: text/plain
-Date: Thu, 08 Mar 2012 13:33:24 -0800
-Message-Id: <1331242404.5753.7.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 16:33:58 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <20120130222717.GA6393@kroah.com>
+	<m18vkoirv9.fsf@fess.ebiederm.org> <4F27C6EB.2070305@suse.cz>
+	<m14nvc82jo.fsf@fess.ebiederm.org>
+	<CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
+	<m1wr87ywex.fsf@fess.ebiederm.org>
+	<m1ehueyz20.fsf_-_@fess.ebiederm.org>
+	<CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
+	<CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
+	<4F54BFEC.6000206@suse.cz> <20120305160953.GA3870@kroah.com>
+	<m1r4x2wzdt.fsf_-_@fess.ebiederm.org>
+	<m1linawza5.fsf_-_@fess.ebiederm.org>
+Date: Thu, 08 Mar 2012 13:37:17 -0800
+In-Reply-To: <m1linawza5.fsf_-_@fess.ebiederm.org> (Eric W. Biederman's
+	message of "Thu, 08 Mar 2012 13:36:34 -0800")
+Message-ID: <m1haxywz8y.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18SYeIpp9CCChGPM5p6gQ0sDzaDeBe/vjM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_05 8+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+	*  0.0 SUBJ_OBFU_PUNCT_FEW Possible punctuation-obfuscated Subject: header
+	*  0.3 SUBJ_OBFU_PUNCT_MANY Punctuation-obfuscated Subject: header
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Spam-Relay-Country: **
+Subject: [PATCH 3/3] sysfs: Remove SYSFS_FLAG_REMOVED and use sd->s_nlink == 0 instead.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi, 
 
-On Thu, 2012-03-08 at 14:01 -0700, Toshi Kani wrote:
-> On Wed, 2012-03-07 at 11:48 -0800, Alok Kataria wrote:
-> > Len, anyone else, 
-> > 
-> > Any comments on this one ? This fixes a important bug during cpu hotadd
-> > where the kernel fails to recognize all the newly added cpus.
-> > 
-> > Thanks,
-> > Alok
-> > 
-> > 
-> > On Wed, 2012-02-15 at 16:06 -0800, Petr Vandrovec wrote:
-> > > From: Petr Vandrovec <petr@vmware.com>
-> > > 
-> > > When processor is being hot-added to the system, acpi_map_lsapic invokes
-> > > ACPI _MAT method to find APIC ID and flags, verifies that returned structure
-> > > is indeed ACPI's local APIC structure, and that flags contain MADT_ENABLED
-> > > bit.  Then saves APIC ID, frees structure - and accesses structure when
-> > > computing arguments for acpi_register_lapic call.  Which sometime leads
-> > > to acpi_register_lapic call being made with second argument zero, failing
-> > > to bring processor online with error 'Unable to map lapic to logical cpu
-> > > number'.
-> > > 
-> > > As lapic->lapic_flags & ACPI_MADT_ENABLED was already confirmed to be non-zero
-> > > few lines above, we can just pass unconditional ACPI_MADT_ENABLED to the
-> > > acpi_register_lapic.
-> > > 
-> > > Thanks, Petr
-> > > 
-> > > Signed-off-by: Petr Vandrovec <petr@vmware.com>
-> > > Signed-off-by: Alok Kataria <akataria@vmware.com>
-> > > 
-> > > 
-> > > diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-> > > index ce664f3..a4a0901 100644
-> > > --- a/arch/x86/kernel/acpi/boot.c
-> > > +++ b/arch/x86/kernel/acpi/boot.c
-> > > @@ -650,7 +650,7 @@ static int __cpuinit _acpi_map_lsapic(acpi_handle handle, int *pcpu)
-> > >  		goto free_tmp_map;
-> > >  
-> > >  	cpumask_copy(tmp_map, cpu_present_mask);
-> > > -	acpi_register_lapic(physid, lapic->lapic_flags & ACPI_MADT_ENABLED);
-> > > +	acpi_register_lapic(physid, ACPI_MADT_ENABLED);
-> 
-> The change looks good. I suggest you also add the following line to
-> prevent such bug in future.
-> 
->         kfree(buffer.pointer);
->         buffer.length = ACPI_ALLOCATE_BUFFER;
->         buffer.pointer = NULL;
-> +       lapic = NULL;
+Now that we have a nlink field in sysfs_dirent report deleted
+files and directories the traditional way with nlink == 0.
 
-That's a good suggestion, below is the updated patch. Thanks !!
---
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+---
+ fs/sysfs/dir.c   |   11 +++++------
+ fs/sysfs/sysfs.h |    1 -
+ 2 files changed, 5 insertions(+), 7 deletions(-)
 
-From: Petr Vandrovec <petr@vmware.com>
-
-When processor is being hot-added to the system, acpi_map_lsapic invokes
-ACPI _MAT method to find APIC ID and flags, verifies that returned structure
-is indeed ACPI's local APIC structure, and that flags contain MADT_ENABLED
-bit.  Then saves APIC ID, frees structure - and accesses structure when
-computing arguments for acpi_register_lapic call.  Which sometime leads
-to acpi_register_lapic call being made with second argument zero, failing
-to bring processor online with error 'Unable to map lapic to logical cpu
-number'.
-
-As lapic->lapic_flags & ACPI_MADT_ENABLED was already confirmed to be non-zero
-few lines above, we can just pass unconditional ACPI_MADT_ENABLED to the
-acpi_register_lapic.
-
-Signed-off-by: Petr Vandrovec <petr@vmware.com>
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
-Cc : Toshi Kani <toshi.kani@hp.com>
-
-
-Index: linux-2.6/arch/x86/kernel/acpi/boot.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/acpi/boot.c	2012-01-24 14:48:56.000000000 -0800
-+++ linux-2.6/arch/x86/kernel/acpi/boot.c	2012-03-08 13:25:39.000000000 -0800
-@@ -642,6 +642,7 @@ static int __cpuinit _acpi_map_lsapic(ac
- 	kfree(buffer.pointer);
- 	buffer.length = ACPI_ALLOCATE_BUFFER;
- 	buffer.pointer = NULL;
-+	lapic = NULL;
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index 1526567..b5471d1 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -202,7 +202,7 @@ static void sysfs_deactivate(struct sysfs_dirent *sd)
+ 	DECLARE_COMPLETION_ONSTACK(wait);
+ 	int v;
  
- 	if (!alloc_cpumask_var(&tmp_map, GFP_KERNEL))
- 		goto out;
-@@ -650,7 +651,7 @@ static int __cpuinit _acpi_map_lsapic(ac
- 		goto free_tmp_map;
+-	BUG_ON(!(sd->s_flags & SYSFS_FLAG_REMOVED));
++	BUG_ON(sd->s_nlink != 0);
  
- 	cpumask_copy(tmp_map, cpu_present_mask);
--	acpi_register_lapic(physid, lapic->lapic_flags & ACPI_MADT_ENABLED);
-+	acpi_register_lapic(physid, ACPI_MADT_ENABLED);
+ 	if (!(sysfs_type(sd) & SYSFS_ACTIVE_REF))
+ 		return;
+@@ -279,7 +279,7 @@ void release_sysfs_dirent(struct sysfs_dirent * sd)
+ static int sysfs_dentry_delete(const struct dentry *dentry)
+ {
+ 	struct sysfs_dirent *sd = dentry->d_fsdata;
+-	return !!(sd->s_flags & SYSFS_FLAG_REMOVED);
++	return sd->s_nlink == 0;
+ }
  
- 	/*
- 	 * If mp_register_lapic successfully generates a new logical cpu
-
-
-
+ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+@@ -294,7 +294,7 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
+ 	mutex_lock(&sysfs_mutex);
+ 
+ 	/* The sysfs dirent has been deleted */
+-	if (sd->s_flags & SYSFS_FLAG_REMOVED)
++	if (sd->s_nlink == 0)
+ 		goto out_bad;
+ 
+ 	/* The sysfs dirent has been moved? */
+@@ -534,7 +534,7 @@ void sysfs_remove_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
+ {
+ 	struct sysfs_inode_attrs *ps_iattr;
+ 
+-	BUG_ON(sd->s_flags & SYSFS_FLAG_REMOVED);
++	BUG_ON(sd->s_nlink == 0);
+ 
+ 	sysfs_unlink_sibling(sd);
+ 
+@@ -546,7 +546,6 @@ void sysfs_remove_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
+ 	}
+ 
+ 	sd->s_nlink = 0;
+-	sd->s_flags |= SYSFS_FLAG_REMOVED;
+ 	sd->u.removed_list = acxt->removed;
+ 	acxt->removed = sd;
+ }
+@@ -946,7 +945,7 @@ static struct sysfs_dirent *sysfs_dir_pos(const void *ns,
+ 	struct sysfs_dirent *parent_sd,	loff_t hash, struct sysfs_dirent *pos)
+ {
+ 	if (pos) {
+-		int valid = !(pos->s_flags & SYSFS_FLAG_REMOVED) &&
++		int valid = (pos->s_nlink > 0) &&
+ 			pos->s_parent == parent_sd &&
+ 			hash == pos->s_hash;
+ 		sysfs_put(pos);
+diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
+index 71f9bf7..db2c5c5 100644
+--- a/fs/sysfs/sysfs.h
++++ b/fs/sysfs/sysfs.h
+@@ -98,7 +98,6 @@ struct sysfs_dirent {
+ #define SYSFS_NS_TYPE_SHIFT		4
+ 
+ #define SYSFS_FLAG_MASK			~(SYSFS_NS_TYPE_MASK|SYSFS_TYPE_MASK)
+-#define SYSFS_FLAG_REMOVED		0x080
+ 
+ static inline unsigned int sysfs_type(struct sysfs_dirent *sd)
+ {
+-- 
+1.7.2.5
 
