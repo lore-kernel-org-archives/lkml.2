@@ -1,134 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab2CHOPN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 09:15:13 -0500
-Received: from sr-smtp.usish.com ([210.5.144.203]:49847 "EHLO
-	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab2CHOPL (ORCPT
+	id S1755666Ab2CHOXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 09:23:33 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:55766 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754781Ab2CHOX3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 09:15:11 -0500
-Date: Thu, 8 Mar 2012 22:15:03 +0800
-From: jack_wang <jack_wang@usish.com>
-To: "Mark Salyzyn" <mark_salyzyn@xyratex.com>,
-        "santosh nayak" <santoshprasadnayak@gmail.com>
-Cc: "Mark Salyzyn" <mark_salyzyn@xyratex.com>,
-        lindar_liu <lindar_liu@usish.com>,
-        "James Bottomley" <JBottomley@parallels.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        kernel-janitors <kernel-janitors@vger.kernel.org>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>
-Reply-To: jack_wang <jack_wang@usish.com>
-Subject: Re: Re: [PATCH 1/2] [SCSI] pm8001: Fix bogus interrupt state flag issue.
-References: <1330263210-25134-1-git-send-email-santoshprasadnayak@gmail.com>, 
-	<528D7E8A-B2F6-4EDB-A7C0-E0BF494038D0@xyratex.com>
-X-Priority: 3
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.87[cn]
-Mime-Version: 1.0
-Message-ID: <201203082215017182231@usish.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Thu, 8 Mar 2012 09:23:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <1331211877.11248.390.camel@twins>
+References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
+	<1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
+	<1331027858-7648-4-git-send-email-laijs@cn.fujitsu.com>
+	<4F56DBDA.1020608@cn.fujitsu.com>
+	<1331211877.11248.390.camel@twins>
+Date: Thu, 8 Mar 2012 22:17:44 +0800
+Message-ID: <CACvQF52uELYus6qSk0b_K=LRXByN1nr_ExSYojS02gY-yrdYSw@mail.gmail.com>
+Subject: Re: [RFC PATCH 5/5 single-thread-version] implement per-domain
+ single-thread state machine call_srcu()
+From: Lai Jiangshan <eag0628@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q28EG3SU023456
 
-Thanks Mark for look into this.You're right. The change for task_state_lock is not right.
-Sorry for not look carefully about the change.
+On Thu, Mar 8, 2012 at 9:04 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-03-07 at 11:54 +0800, Lai Jiangshan wrote:
+>> +static void srcu_advance_batches(struct srcu_struct *sp)
+>> +{
+>> +       int idx = 1 - (sp->completed & 0x1UL);
+>> +
+>> +       /*
+>> +        * SRCU read-side critical sections are normally short, so check
+>> +        * twice after a flip.
+>> +        */
+>> +       if (!rcu_batch_empty(&sp->batch_check1) ||
+>> +           !rcu_batch_empty(&sp->batch_check0)) {
+>> +               if (try_check_zero(sp, idx, 1)) {
+>> +                       rcu_batch_move(&sp->batch_done, &sp->batch_check1);
+>> +                       rcu_batch_move(&sp->batch_check1, &sp->batch_check0);
+>> +                       if (!rcu_batch_empty(&sp->batch_check1)) {
+>> +                               srcu_flip(sp);
+>> +                               if (try_check_zero(sp, 1 - idx, 2)) {
+>> +                                       rcu_batch_move(&sp->batch_done,
+>> +                                               &sp->batch_check1);
+>> +                               }
+>> +                       }
+>> +               }
+>> +       }
+>> +}
+>
+
+Good, Thanks,
+
+I'm thinking how to introduce the comments(original in __synchronize_srcu())
+back. Your code will make it easier. (the comments are still needed to rewrite
+before bring them back, need help!)
+
+I will use your code with a little changed.
+
+> static void srcu_advance_batches(struct srcu_struct *sp)
+> {
+>        int idx = 1 - (sp->completed & 1);
+
+(sp->completed & 1) ^ 1;
 
 
+>
+>        if (rcu_batch_empty(&sp->batch_check0) &&
+>            rcu_batch_empty(&sp->batch_check1))
+>                return;
+>
+>        if (!try_check_zero(sp, idx, 1))
+>                return;
+>
+>        rcu_batch_move(&sp->batch_done,   &sp->batch_check1);
 
---------------
-jack_wang
->NAK
+....
+
+>        rcu_batch_move(&sp->batch_check1, &sp->batch_check0);
 >
->In the fragment below, the 'spin_lock_irqsave(&t->task_state_lock, flags);' is 100% legitimate. The change you did was not inert, and result in the IRQ being disabled upon exit should a SAS_TASK_STATE_ABORTED task state condition occur.
+>        if (rcu_batch_empty(&sp->batch_check1))
+>                return;
 >
->I propose (annotated below) you leave the flags automatic variable, but uninitialized. The changes surrounding spin_*lock_irq*(&pm8001_ha->lock, flags) are OK, but revert back the changes surrounding the spin_*lock_irq*(&t->task->state_lock,flags) so that lock would be properly nested.
+>        srcu_flip(sp);
+
+        if (rcu_batch_empty(&sp->batch_check0))
+                return;
+
+        srcu_flip(sp);
+        rcu_batch_move(&sp->batch_check1, &sp->batch_check0);
+
+make it match the changlog:
+3) ->batch_check1 after finish its first check_zero and the flip
+
 >
->To be pedantic, and to be more correct, this code should have spawned a work queue task to perform the t->task_done(t) operation in a separate thread rather than inline and precariously unlocked; but that would be beyond the scope of these changes and should be left for future work to decide if it is even necessary. Not sure how such a change would affect performance (using the work queue) ... so I am 'afraid' of pushing such a change in any case given the relatively reliable operation of this driver (and the dynamic nature of the changes Dan is making to the SATA side of things for instance ;-} ).
+>        if (!try_check_zero(sp, idx^1, 2))
+>                return;
 >
->I am sorry for taking so long to get to the task of reviewing this (and the previous) code. I look forward to your comments.
+>        rcu_batch_move(&sp->batch_done, &sp->batch_check1);
+> }
 >
->Sincerely -- Mark Salyzyn
->
->On Feb 26, 2012, at 8:33 AM, santosh nayak wrote:
->
->> @@ -2207,7 +2206,6 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
->> static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
->> {
->> 	struct sas_task *t;
->> -	unsigned long flags = 0;
->MGS>	unsigned long flags;
->> 	struct task_status_struct *ts;
->> 	struct pm8001_ccb_info *ccb;
->> 	struct pm8001_device *pm8001_dev;
->> @@ -2287,9 +2285,9 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
->> 			ts->stat = SAS_QUEUE_FULL;
->> 			pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->> 			mb();/*ditto*/
->> -			spin_unlock_irqrestore(&pm8001_ha->lock, flags);
->> +			spin_unlock_irq(&pm8001_ha->lock);
->> 			t->task_done(t);
->> -			spin_lock_irqsave(&pm8001_ha->lock, flags);
->> +			spin_lock_irq(&pm8001_ha->lock);
->> 			return;
->> 		}
->> 		break;
->> @@ -2387,31 +2385,31 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
->> 		ts->stat = SAS_OPEN_TO;
->> 		break;
->> 	}
->> -	spin_lock_irqsave(&t->task_state_lock, flags);
->> +	spin_lock_irq(&t->task_state_lock);
->MGS>	spin_lock_irqsave(&t->task_state_lock, flags);
->> 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
->> 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
->> 	t->task_state_flags |= SAS_TASK_STATE_DONE;
->> 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
->> -		spin_unlock_irqrestore(&t->task_state_lock, flags);
->> +		spin_unlock_irq(&t->task_state_lock);
->MGS>		spin_unlock_irqrestore(&t->task_state_lock, flags);
->> 		PM8001_FAIL_DBG(pm8001_ha,
->> 			pm8001_printk("task 0x%p done with io_status 0x%x"
->> 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
->> 			t, event, ts->resp, ts->stat));
->> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->> 	} else if (t->uldd_task) {
->> -		spin_unlock_irqrestore(&t->task_state_lock, flags);
->> +		spin_unlock_irq(&t->task_state_lock);
->> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->> 		mb();/* ditto */
->> -		spin_unlock_irqrestore(&pm8001_ha->lock, flags);
->> +		spin_unlock_irq(&pm8001_ha->lock);
->> 		t->task_done(t);
->> -		spin_lock_irqsave(&pm8001_ha->lock, flags);
->> +		spin_lock_irq(&pm8001_ha->lock);
->> 	} else if (!t->uldd_task) {
->> -		spin_unlock_irqrestore(&t->task_state_lock, flags);
->> +		spin_unlock_irq(&t->task_state_lock);
->> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->> 		mb();/*ditto*/
->> -		spin_unlock_irqrestore(&pm8001_ha->lock, flags);
->> +		spin_unlock_irq(&pm8001_ha->lock);
->> 		t->task_done(t);
->> -		spin_lock_irqsave(&pm8001_ha->lock, flags);
->> +		spin_lock_irq(&pm8001_ha->lock);
->> 	}
->> }
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->__________ Information from ESET NOD32 Antivirus, version of virus signature database 5659 (20101129) __________
->
->The message was checked by ESET NOD32 Antivirus.
->
->http://www.eset.com
->
->
->ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Seems like a more readable version.. do check I didn't mess up the logic
+> though.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
