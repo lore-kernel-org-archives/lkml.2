@@ -1,82 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab2CHU5n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:57:43 -0500
-Received: from fieldses.org ([174.143.236.118]:39237 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab2CHU5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:57:39 -0500
-Date: Thu, 8 Mar 2012 15:57:37 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Olga Kornievskaia <aglo@citi.umich.edu>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] NFSv4: Return the delegation if the server returns
- NFS4ERR_OPENMODE
-Message-ID: <20120308205737.GC9273@fieldses.org>
-References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
- <1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
- <1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
- <1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
- <CAN-5tyG-w+ie3sxTwNA6e9x=CojxyDaJScJuCbS+9VE=yTmJNA@mail.gmail.com>
- <1331230525.2472.39.camel@lade.trondhjem.org>
- <CAN-5tyFYE5ECtv__C9S_GMT1gBMQ4+6WPS-1BjmSE7vHoRAQdw@mail.gmail.com>
- <20120308204205.GB9273@fieldses.org>
- <1331239814.11759.1.camel@lade.trondhjem.org>
+	id S1752489Ab2CHU7Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:59:25 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43519 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab2CHU7X convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 15:59:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331239814.11759.1.camel@lade.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120305234240.GB1360@burratino>
+References: <20110307021127.GB31188@google.com>
+	<alpine.LFD.2.00.1103082114270.2787@localhost6.localdomain6>
+	<20110309112550.GA3050@google.com>
+	<alpine.LFD.2.00.1103101948540.2787@localhost6.localdomain6>
+	<20110311021654.GA26122@google.com>
+	<20110311024851.GC26122@google.com>
+	<20120305000112.GA27512@burratino>
+	<3908561D78D1C84285E8C5FCA982C28F041A65@ORSMSX104.amr.corp.intel.com>
+	<20120305234240.GB1360@burratino>
+Date: Thu, 8 Mar 2012 21:59:21 +0100
+Message-ID: <CAA9xbM4iviwVG2VrdEiTom6SueLDviHC+An87ypvQGR1665iwg@mail.gmail.com>
+Subject: Re: [regression] Re: [PATCH 2/3] futex: Sanitize cmpxchg_futex_value_locked
+ API
+From: =?ISO-8859-1?Q?=C9meric_Maschino?= <emeric.maschino@gmail.com>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>,
+        Patrick Baggett <baggett.patrick@gmail.com>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 08:50:14PM +0000, Myklebust, Trond wrote:
-> On Thu, 2012-03-08 at 15:42 -0500, J. Bruce Fields wrote:
-> > On Thu, Mar 08, 2012 at 03:23:34PM -0500, Olga Kornievskaia wrote:
-> > > On Thu, Mar 8, 2012 at 1:15 PM, Myklebust, Trond
-> > > <Trond.Myklebust@netapp.com> wrote:
-> > > > On Thu, 2012-03-08 at 12:52 -0500, Olga Kornievskaia wrote:
-> > > >> wouldn't it be better for you to proactively return a read delegation
-> > > >> then unnecessarily erroring?
-> > > >
-> > > > If nobody else holds a delegation, then the NFS client is actually
-> > > > allowed to keep its read delegation while writing to the file. It does
-> > > > admittedly need to request an OPEN stateid for write in that case...
-> > > > (See section 10.4 of RFC3530bis draft 16)
-> > > 
-> > > If we both agree that there has to be a request for an open stateid for
-> > > a write, then instead of returning the read delegation if the client receives
-> > > err_openmode (when it send the request with read delegation stateid
-> > > as you said per 3560bis), can't the client resend the setattr with the open
-> > > stateid? The ordering of the stateid usage is a "should" and not a "must".
-> > > 
-> > > In rfc5661, it really doesn't make sense to ever send a setattr with
-> > > a read delegation stateid. According to 9.1.2, the server "MUST" return
-> > > err_open_mode" error in that case.
-> > > 
-> > > I gather you are in this case dealing with 4.0 delegations. But I wonder
-> > > if you'll do something else for 4.1 delegation then?
-> > 
-> > 3530bis has the same language ("...must verify that the access mode
-> > allows writing and return an NFS4ERR_OPENMODE error if it does not").
-> 
-> OK, so we shouldn't send the delegation stateid either for v4 or v4.1.
-> However should we pre-emptively return the delegation? I've been
-> assuming not.
+Hello,
 
-The server's only legal option is to recall it, so it seems odd not to
-pre-emptively return--but as you say there's nothing to prevent the
-server from then handing one right back, possibly before you get a
-chance to send the setattr.
+Warning, long answer...
 
-(And the linux server might well do that--maybe it should have some
-heuristic not to hand out a delegation that was just returned--not so
-much for this case as just because a return is a sign that the
-delegation isn't useful to that client.)
+Le 6 mars 2012 00:42, Jonathan Nieder <jrnieder@gmail.com> a écrit :
+> Émeric, was the bisection result reproducible?  E.g., if you try
+> building 37a9d912b24f and 37a9d912b24f^ again, does the former
+> consistently produce and the latter consistently not produce a crashy
+> system?
 
---b.
+Yes, definitely.
+
+Building 37a9d912b24f leads to a broken kernel-2.6.38-rc8+ with the
+symptoms described in [1]. Simply reverting 37a9d912b24f produces a
+100% working kernel (well, w.r.t. the symptoms described in [1] of
+course).
+
+We exchanged a couple PMs with Tony on this subject. He first asked me
+to check whether the issue is really because of the change in the ia64
+bits of futex_atomic_cmpxchg_inatomic or not:
+
+(Tony Luck, by PM, wrote to Emeric Maschino)
+
+Could you try a half-revert of the kernel change.  Take the original
+code for futex_atomic_cmpxchg_inatomic() but name it
+ORIG_futex_atomic_cmpxchg_inatomic() then write the new as a wrapper
+around the old one - something like:
+
+futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr, u32
+oldval, u32 newval)
+{
+        int ret;
+
+        ret = ORIG_futex_atomic_cmpxchg_inatomic(uaddr, oldval, newval);
+        *uval = oldval;
+        return (ret != oldval) ? ret : 0; /* ret<0 ?? ... this can't
+cover all cases, but should be able to do something good enough */
+}
+
+If this makes the problem go away - we can start staring at the asm
+bits some more to see just what is wrong with this new version of the
+function.
+
+
+I thus followed Tony's recommendation. Below is the result:
+
+(Emeric Maschino, by PM, wrote to Tony Luck)
+
+Well, partly. (about Tony's last remark: "If this makes the problem go away")
+
+With a wrapper around the original API like you suggested above:
+- the terminal window no more crashes when you hit the Tab key
+- Iceweasel/Firefox no more triggers a X restart when clicking on a
+menu or a button
+- gdb no more exits early with a SIGTRAP signal.
+That's for the good news.
+
+The bad news: with the wrapper around the original API, I nevertheless
+experience new side-effects:
+- GDM3 no more displays user list, nor buttons, so you can't enter a X
+session from there. I had to shut GDM3 down and manually enter a X
+session with startx
+- ioquake3-based Quake3 demo freezes while initializing sound.
+As you already did noticed, perhaps are we hitting ret < 0 values there.
+
+Is there something else I can try to help debugging further?
+
+
+Tony then asked me to provide him with a reduced test case he could play with:
+
+(Tony Luck, by PM, wrote to Emeric Maschino)
+
+OK - so we do have a problem in the new implementation of this
+function (otherwise this change shouldn't have had much effect).
+
+I'd like a simple user mode test case that uses futexes to some
+trivial thing. Doesn't matter whether it shows a problem, I can tweak
+the test to try running into whatever corner case is causing the
+problem.
+
+
+And this is where I'm actually stuck.
+
+Tony also pointed to me a futex test suite:
+
+(Tony Luck, by PM, wrote to Emeric Maschino)
+
+I found a futex test suite:
+
+        git:://git.kernel.org/pub/scm/linux/kernel/git/dvhart/futextest.git
+
+but it runs equally badly on kernel pre/post this change (I compared
+v2.6.36 as the pre version, and current linus tree as the post).
+
+Bah! an x86 system fails in the same way (pthread_create calls fail
+for many tests - meaning they get skipped).
+
+
+I don't know exactly how Tony run the test suite. On my side,
+kernel-2.6.38-rc8+ (minus 37a9d912b24f) passed successfully. But it
+had to be run as root, otherwise you'll get pthread_create errors as
+experienced by Tony.
+
+By contrast, rebuilding with 37a9d912b24f, test suite failed at second
+test (futex_requeue_pi with locked argument). In fact, the test never
+returns. Looking at the code, it seems to wait for the completion of
+started threads, returning a value computed from the return value of
+the individual futex_cmp_requeue_pi calls:
+
+(in signal_wakerfn)
+[...]
+while (task_count < THREAD_MAX [...] ) {
+     [...]
+     args->ret = futex_cmp_requeue_pi([...]);
+     [...]
+     task_count += args->ret;
+     [...]
+}
+
+So, if the meaning of the futex API has changed, perhaps some programs
+(like this test) need to be updated accordingly.
+
+Anyway, as Tony and Jonathan may remember, we recently had an issue on
+ia64 about udev > 167 running bad because of missing accept4 syscall
+into (Debian) kernel 2.6.38-2-mckinley. It thus wasn't easy to me to
+stick with old 2.6.38 while udev was updated. Since this issue has
+been fixed in Debian kernel 3.2.0-1-mckinley, I switched to this one,
+that brought the futex issue we're now talking about.
+
+Now, recompiling and running futex test suite under kernel
+3.2.0-1-mckinley, I'm getting different results. Running
+futex_requeue_pi without any parameter gives:
+
+ERROR: No such process: FUTEX_CMP_REQUEUE_PI failed
+
+For memories, this test passed successfully with 2.6.38-rc8+, with AND
+without 37a9d912b24f included.
+
+Now, adding locked argument, I'm getting:
+
+ERROR: Function not implemented: FUTEX_REQUEUE_PI failed
+
+Huh? Both these tests nevertheless gracefully return with kernel 3.2,
+while the second test enters in an unfinite loop with buggy
+2.6.38-rc8+.
+
+Here's where I am for now: I still didn't found a simple futex user
+code sample for Tony (or others) to play with.
+
+Any help and guidance greatly appreciated ;-)
+
+     Emeric
+
+
+[1] https://bugzilla.kernel.org/show_bug.cgi?id=42757
