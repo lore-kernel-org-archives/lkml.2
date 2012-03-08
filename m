@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab2CHCbk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 21:31:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:1294 "EHLO mga09.intel.com"
+	id S1754297Ab2CHCeB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 21:34:01 -0500
+Received: from ozlabs.org ([203.10.76.45]:46443 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752833Ab2CHCbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 21:31:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="118882982"
-Subject: Re: [RFC patch] spindep: add cross cache lines checking
-From: Alex Shi <alex.shi@intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: gcc@gcc.gnu.org, Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de,
-        "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        x86@kernel.org, andi.kleen@intel.com, gcc-help@gcc.gnu.org
-In-Reply-To: <201203071154.36059.arnd@arndb.de>
-References: <1330917630.18835.44.camel@debian>
-	 <201203060932.45223.arnd@arndb.de> <1331108607.18835.343.camel@debian>
-	 <201203071154.36059.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Mar 2012 10:30:47 +0800
-Message-ID: <1331173847.18835.355.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1752299Ab2CHCd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 21:33:57 -0500
+From: Michael Neuling <mikey@neuling.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        Russell King <rmk@arm.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: linux-next: manual merge of the powerpc tree with the arm tree
+In-reply-to: <20120308120422.e071cba36425eacbee1f8d98@canb.auug.org.au>
+References: <20120308120422.e071cba36425eacbee1f8d98@canb.auug.org.au>
+Comments: In-reply-to Stephen Rothwell <sfr@canb.auug.org.au>
+   message dated "Thu, 08 Mar 2012 12:04:22 +1100."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
+Date: Thu, 08 Mar 2012 13:33:56 +1100
+Message-ID: <25744.1331174036@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 1, it is alignof bug for default gcc on my fc15 and Ubuntu 11.10 etc?
-> > 
-> > struct sub {
-> >         int  raw_lock;
-> >         char a;
-> > };
-> > struct foo {
-> >         struct sub z;
-> >         int slk;
-> >         char y;
-> > }__attribute__((packed));
-> > 
-> > struct foo f1;
-> > 
-> > __alignof__(f1.z.raw_lock) is 4, but its address actually can align on
-> > one byte. 
+> Today's linux-next merge of the powerpc tree got a conflict in
+> arch/powerpc/Kconfig between commit 2ed86b16eabe ("irq: make SPARSE_IRQ
+> an optionally hidden option") from the arm tree and commit ad5b7f1350c2
+> ("powerpc: Make SPARSE_IRQ required") from the powerpc tree.
 > 
-> That looks like correct behavior, because the alignment of raw_lock inside of
-> struct sub is still 4. But it does mean that there can be cases where the
-> compile-time check is not sufficient, so we might want the run-time check
-> as well, at least under some config option.
+> I fixed it up (see below) and can carry the fix as necessary.
+> --=20
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/powerpc/Kconfig
+> index bf7dbc2,4eecaaa..0000000
+> --- a/arch/powerpc/Kconfig
+> +++ b/arch/powerpc/Kconfig
+> @@@ -133,7 -133,8 +133,8 @@@ config PP
+>   	select HAVE_REGS_AND_STACK_ACCESS_API
+>   	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
+>   	select HAVE_GENERIC_HARDIRQS
+>  -	select HAVE_SPARSE_IRQ
+>  +	select MAY_HAVE_SPARSE_IRQ
+> + 	select SPARSE_IRQ
 
-According to explanation of gcc, seems it should return 1 when it can be
-align on char. And then it's useful for design intend. Any comments from
-gcc guys? 
-====
-http://gcc.gnu.org/onlinedocs/gcc/Alignment.html
-The keyword __alignof__ allows you to inquire about how an object is
-aligned, or the minimum alignment usually required by a type. Its syntax
-is just like sizeof.
+Surely we only need SPARSE_IRQ now and not MAY_HAVE_SPARSE_IRQ.  
 
+In fact, keeping MAY_HAVE_SPARSE_IRQ seems to make SPARSE_IRQ user
+selectable, which we don't want anymore since ad5b7f1350c2.
 
-
+Mikey
