@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab2CHJP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 04:15:56 -0500
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:39094 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab2CHJPt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 04:15:49 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, akpm@linux-foundation.org, davej@redhat.com,
-        jboyer@redhat.com, tyhicks@canonical.com
-Cc: linux-kernel@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH] hugetlbfs: lockdep annotate root inode properly
-Date: Thu,  8 Mar 2012 14:45:16 +0530
-Message-Id: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9
-x-cbid: 12030800-3568-0000-0000-00000155A585
+	id S1755924Ab2CHJRU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 04:17:20 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:60423 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755825Ab2CHJRP convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Thu, 8 Mar 2012 04:17:15 -0500
+Message-Id: <4F58875A02000078000770E0@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 08 Mar 2012 09:18:02 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2, resend] ix86: tighten dependencies of CPU_SUP_*_32
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Building in support for either of these CPUs is pointless when e.g.
+M686 was selected (since such a kernel would use cmov instructions,
+which aren't available on these older CPUs).
 
-This fix the below lockdep warning
+v2: Drop (inappropriate) change to CPU_SUP_TRANSMETA_32.
 
- ======================================================
- [ INFO: possible circular locking dependency detected ]
- 3.3.0-rc4+ #190 Not tainted
- -------------------------------------------------------
- shared/1568 is trying to acquire lock:
-  (&sb->s_type->i_mutex_key#12){+.+.+.}, at: [<ffffffff811efa0f>] hugetlbfs_file_mmap+0x7d/0x108
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
- but task is already holding lock:
-  (&mm->mmap_sem){++++++}, at: [<ffffffff810f5589>] sys_mmap_pgoff+0xd4/0x12f
-
- which lock already depends on the new lock.
-
-
- the existing dependency chain (in reverse order) is:
-
- -> #1 (&mm->mmap_sem){++++++}:
-        [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
-        [<ffffffff810ee439>] might_fault+0x6d/0x90
-        [<ffffffff8111bc12>] filldir+0x6a/0xc2
-        [<ffffffff81129942>] dcache_readdir+0x5c/0x222
-        [<ffffffff8111be58>] vfs_readdir+0x76/0xac
-        [<ffffffff8111bf6a>] sys_getdents+0x79/0xc9
-        [<ffffffff816940a2>] system_call_fastpath+0x16/0x1b
-
- -> #0 (&sb->s_type->i_mutex_key#12){+.+.+.}:
-        [<ffffffff8109f40a>] __lock_acquire+0xa6c/0xd60
-        [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
-        [<ffffffff816916be>] __mutex_lock_common+0x48/0x350
-        [<ffffffff81691a85>] mutex_lock_nested+0x2a/0x31
-        [<ffffffff811efa0f>] hugetlbfs_file_mmap+0x7d/0x108
-        [<ffffffff810f4fd0>] mmap_region+0x26f/0x466
-        [<ffffffff810f545b>] do_mmap_pgoff+0x294/0x2ee
-        [<ffffffff810f55a9>] sys_mmap_pgoff+0xf4/0x12f
-        [<ffffffff8103d1f2>] sys_mmap+0x1d/0x1f
-        [<ffffffff816940a2>] system_call_fastpath+0x16/0x1b
-
- other info that might help us debug this:
-
-  Possible unsafe locking scenario:
-
-        CPU0                    CPU1
-        ----                    ----
-   lock(&mm->mmap_sem);
-                                lock(&sb->s_type->i_mutex_key#12);
-                                lock(&mm->mmap_sem);
-   lock(&sb->s_type->i_mutex_key#12);
-
-  *** DEADLOCK ***
-
- 1 lock held by shared/1568:
-  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810f5589>] sys_mmap_pgoff+0xd4/0x12f
-
- stack backtrace:
- Pid: 1568, comm: shared Not tainted 3.3.0-rc4+ #190
- Call Trace:
-  [<ffffffff81688bf9>] print_circular_bug+0x1f8/0x209
-  [<ffffffff8109f40a>] __lock_acquire+0xa6c/0xd60
-  [<ffffffff8110e7b6>] ? files_lglock_local_lock_cpu+0x61/0x61
-  [<ffffffff811efa0f>] ? hugetlbfs_file_mmap+0x7d/0x108
-  [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
-  [<ffffffff811efa0f>] ? hugetlbfs_file_mmap+0x7d/0x108
-
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/hugetlbfs/inode.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig.cpu |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-NOTE: This patch also require 
-http://thread.gmane.org/gmane.linux.file-systems/58795/focus=59565
-to remove the lockdep warning
+--- 3.3-rc6/arch/x86/Kconfig.cpu
++++ 3.3-rc6-ix86-cpu-sup-dependencies/arch/x86/Kconfig.cpu
+@@ -441,7 +441,7 @@ config CPU_SUP_INTEL
+ config CPU_SUP_CYRIX_32
+ 	default y
+ 	bool "Support Cyrix processors" if PROCESSOR_SELECT
+-	depends on !64BIT
++	depends on M386 || M486 || M586 || M586TSC || M586MMX || (EXPERT && !64BIT)
+ 	---help---
+ 	  This enables detection, tunings and quirks for Cyrix processors
+ 
+@@ -495,7 +495,7 @@ config CPU_SUP_TRANSMETA_32
+ config CPU_SUP_UMC_32
+ 	default y
+ 	bool "Support UMC processors" if PROCESSOR_SELECT
+-	depends on !64BIT
++	depends on M386 || M486 || (EXPERT && !64BIT)
+ 	---help---
+ 	  This enables detection, tunings and quirks for UMC processors
+ 
 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index 3645cd3..ca4fa70 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -459,6 +459,7 @@ static struct inode *hugetlbfs_get_root(struct super_block *sb,
- 		inode->i_fop = &simple_dir_operations;
- 		/* directory inodes start off with i_nlink == 2 (for "." entry) */
- 		inc_nlink(inode);
-+		lockdep_annotate_inode_mutex_key(inode);
- 	}
- 	return inode;
- }
--- 
-1.7.9
+
 
