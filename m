@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab2CHG7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 01:59:12 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:58222 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab2CHG7K (ORCPT
+	id S1751823Ab2CHHIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 02:08:45 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40540 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab2CHHIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 01:59:10 -0500
-Date: Wed, 07 Mar 2012 22:57:52 -0800 (PST)
-Message-Id: <20120307.225752.1535997011608677011.davem@davemloft.net>
-To: padovan@profusion.mobi
-Cc: gustavo@padovan.org, johan.hedberg@gmail.com, marcel@holtmann.org,
-        linville@tuxdriver.com, netdev@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2012-03-08
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120308054431.GE3998@joana>
-References: <20120308054431.GE3998@joana>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 8 Mar 2012 02:08:44 -0500
+Date: Thu, 8 Mar 2012 09:08:35 +0200
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: Richard Weinberger <rw@linutronix.de>
+Cc: dedekind1@gmail.com, tglx@linutronix.de, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, tim.bird@am.sony.com
+Subject: Re: [RFC][PATCH 0/7] UBI checkpointing support
+Message-ID: <20120308090835.032fe13a@pixies.home.jungo.com>
+In-Reply-To: <4F57D0C4.1050605@linutronix.de>
+References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
+	<1331138007.3463.16.camel@sauron.fi.intel.com>
+	<4F57D0C4.1050605@linutronix.de>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 07 Mar 2012 22:57:55 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gustavo Padovan <padovan@profusion.mobi>
-Date: Thu, 8 Mar 2012 02:44:31 -0300
+On Wed, 07 Mar 2012 22:19:00 +0100 Richard Weinberger <rw@linutronix.de> wrote:
+> >> All these operations scan a limited number of erase blocks which makes
+> >> the UBI init O(1) and independent of the device size.
+> >
+> > Well, is it really true? The larger is the flash the more you read and
+> > process anyway, and it is still linear, but the multiplier becomes very
+> > small, so this is a huge improvement.
+> 
+> Yes. :)
+> 
+> Using checkpointing UBI only has to scan a fixed (independent of the 
+> flash size!) number of blocks.
 
-> Hi Dave,
-> 
-> Here goes another try to merge the bluetooth-next changes. I looked to the
-> whole diff of the last pull request and fixed all the style issues you
-> reported in last pull request attempt. The diff is very big, so I may have
-> missed some places, but we are, from your coding style point of view, in a
-> much better state than before.
-> 
-> Please take a look on it and pull if you find the code suitable, otherwise
-> tell me what's wrong and how we should fix it since your coding style rules
-> are not written in CodingStyle.
-> 
-> About the patches:
->  - almost half of the patches is in the new Bluetooth Management interface, it
->  finally reached a stable state regarding its API and we now enable it by
->  default.
->  - lots of Bluetooth LE patches. This implementation is still unstable but
->    disabled by default.
->  - some L2CAP layer refactoring to make our core code more generic and
->    reusable.
->  - New HCI monitor interface to monitor Bluetooth flow.
->  - Lot of fixes and clean ups all over the Bluetooth subsystem.
+But doesn't the CP data (sorry, UBIUBI data :) need to have one
+'struct ubi_cp_ec' descriptor for each used/free PEB, and as such the
+maximum number of 'ubi_cp_ec' descriptors is total device PEBs, meaning
+CP data is still linearly scaled to device size (with a very small
+multiplier)?
 
-Pulled, thanks a lot.
+Regards,
+Shmulik
