@@ -1,107 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755073Ab2CHNcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 08:32:17 -0500
-Received: from xyratex195.xyratex.com ([194.131.166.195]:44627 "EHLO
-	XY01EX21.xy01.xyratex.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752085Ab2CHNcP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 08:32:15 -0500
-Subject: Re: [PATCH 1/2] [SCSI] pm8001: Fix bogus interrupt state flag issue.
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=us-ascii
-From: Mark Salyzyn <mark_salyzyn@xyratex.com>
-In-Reply-To: <1330263210-25134-1-git-send-email-santoshprasadnayak@gmail.com>
-Date: Thu, 8 Mar 2012 08:32:09 -0500
-Cc: Mark Salyzyn <mark_salyzyn@xyratex.com>, Jack Wang <jack_wang@usish.com>,
-        lindar_liu <lindar_liu@usish.com>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
+	id S1753841Ab2CHNnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 08:43:22 -0500
+Received: from ftp.meprolight.com ([194.90.149.17]:34518 "EHLO meprolight.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752699Ab2CHNnV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 08:43:21 -0500
+From: Alex Gershgorin <alexg@meprolight.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+CC: Fabio Estevam <fabio.estevam@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'s.hauer@pengutronix.de'" <s.hauer@pengutronix.de>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Date: Thu, 8 Mar 2012 15:43:03 +0200
+Subject: RE: I.MX35 PDK
+Thread-Topic: I.MX35 PDK
+Thread-Index: Acz9H3pOZAVRfbtPSUydCVaA1oeZsQABYluO
+Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8914@MEP-EXCH.meprolight.com>
+References: <4875438356E7CA4A8F2145FCD3E61C0B2CBD666A28@MEP-EXCH.meprolight.com>,<Pine.LNX.4.64.1203081225290.29847@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1203081225290.29847@axis700.grange>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <528D7E8A-B2F6-4EDB-A7C0-E0BF494038D0@xyratex.com>
-References: <1330263210-25134-1-git-send-email-santoshprasadnayak@gmail.com>
-To: santosh nayak <santoshprasadnayak@gmail.com>
-X-Mailer: Apple Mail (2.1257)
-X-OriginalArrivalTime: 08 Mar 2012 13:32:11.0630 (UTC) FILETIME=[DDF960E0:01CCFD2F]
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NAK
+Hi Guennadi,
 
-In the fragment below, the 'spin_lock_irqsave(&t->task_state_lock, flags);' is 100% legitimate. The change you did was not inert, and result in the IRQ being disabled upon exit should a SAS_TASK_STATE_ABORTED task state condition occur.
+Thanks for you comments...
 
-I propose (annotated below) you leave the flags automatic variable, but uninitialized. The changes surrounding spin_*lock_irq*(&pm8001_ha->lock, flags) are OK, but revert back the changes surrounding the spin_*lock_irq*(&t->task->state_lock,flags) so that lock would be properly nested.
+>>>Hi Alex
 
-To be pedantic, and to be more correct, this code should have spawned a work queue task to perform the t->task_done(t) operation in a separate thread rather than inline and precariously unlocked; but that would be beyond the scope of these changes and should be left for future work to decide if it is even necessary. Not sure how such a change would affect performance (using the work queue) ... so I am 'afraid' of pushing such a change in any case given the relatively reliable operation of this driver (and the dynamic nature of the changes Dan is making to the SATA side of things for instance ;-} ).
+>>>Why is the cc-list mangled again? Why is the V4L list dropped again?
+>>>What's so difficult about hitting the "reply-to-all" button?
 
-I am sorry for taking so long to get to the task of reviewing this (and the previous) code. I look forward to your comments.
+ You are absolutely right, I hope that now the cc-list valid.
 
-Sincerely -- Mark Salyzyn
+> Hi Fabio,
+>
+> Thanks for you response...
+>
+> > in spite of this I get from ov2640 driver error
+> > Here Linux Kernel boot message:
+> >
+> > "Linux video capture interface: v2.00
+> > soc-camera-pdrv soc-camera-pdrv.0: Probing soc-camera-pdrv.0
+> > mx3-camera mx3-camera.0: MX3 Camera driver attached to camera 0
+> > ov2640 0-0030: Product ID error fb:fb"
+> >
+> > I cannot understand what the problem is, if someone tested this?
+>
+> >>Looks like a I2C issue.
+>
+> >>Check the I2C1 pad settings in the mainline kernel.
+>
+> >>On FSL kernel we have:
+>
+> #<<define PAD_CONFIG (PAD_CTL_HYS_SCHMITZ | PAD_CTL_PKE_ENABLE |
+> >>PAD_CTL_PUE_PUD | PAD_CTL_ODE_OpenDrain)
+>
+>       <<switch (i2c_num) {
+>       <<case 0:
+>               <<mxc_request_iomux(MX35_PIN_I2C1_CLK, MUX_CONFIG_SION);
+>               <<mxc_request_iomux(MX35_PIN_I2C1_DAT, MUX_CONFIG_SION);
+>
+>               <<mxc_iomux_set_pad(MX35_PIN_I2C1_CLK, PAD_CONFIG);
+>               <<mxc_iomux_set_pad(MX35_PIN_I2C1_DAT, PAD_CONFIG);
+>
+> >>Also check if you are getting the proper voltage levels at the I2C1 lines.
+>
+> Yes this I2C problem, all I2C slave device need response to Host CPU by pulls I2C data bus to low, in other words generate ACK, the clock pulse for the acknowledge bit is always created by the bus master.
+>
+> In this case, the camera tries to reset the data bus and generate an ACK, but the voltage drops to the area of two volts, although it should be reset to zero.
+> I replaced R172 with 10K on CPU board and got a good result, but there are other surprises
+>
+> Linux video capture interface: v2.00
+> soc-camera-pdrv soc-camera-pdrv.0: Probing soc-camera-pdrv.0
+> mx3-camera mx3-camera.0: MX3 Camera driver attached to camera 0
+> ov2640 0-0030: ov2640 Product ID 26:42 Manufacturer ID 7f:a2
+> i2c i2c-0: OV2640 Probed
+> mx3-camera mx3-camera.0: MX3 Camera driver detached from camera 0
+> dmaengine: failed to get dma1chan0: (-22)
+> dmaengine: failed to get dma1chan1: (-22)
+> dmaengine: failed to get dma1chan2: (-22)
+> dmaengine: failed to get dma1chan3: (-22)
 
-On Feb 26, 2012, at 8:33 AM, santosh nayak wrote:
+>>>First of all it shows, that you're not using the newest kernel:
 
-> @@ -2207,7 +2206,6 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
-> static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
-> {
-> 	struct sas_task *t;
-> -	unsigned long flags = 0;
-MGS>	unsigned long flags;
-> 	struct task_status_struct *ts;
-> 	struct pm8001_ccb_info *ccb;
-> 	struct pm8001_device *pm8001_dev;
-> @@ -2287,9 +2285,9 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
-> 			ts->stat = SAS_QUEUE_FULL;
-> 			pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
-> 			mb();/*ditto*/
-> -			spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-> +			spin_unlock_irq(&pm8001_ha->lock);
-> 			t->task_done(t);
-> -			spin_lock_irqsave(&pm8001_ha->lock, flags);
-> +			spin_lock_irq(&pm8001_ha->lock);
-> 			return;
-> 		}
-> 		break;
-> @@ -2387,31 +2385,31 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
-> 		ts->stat = SAS_OPEN_TO;
-> 		break;
-> 	}
-> -	spin_lock_irqsave(&t->task_state_lock, flags);
-> +	spin_lock_irq(&t->task_state_lock);
-MGS>	spin_lock_irqsave(&t->task_state_lock, flags);
-> 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
-> 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
-> 	t->task_state_flags |= SAS_TASK_STATE_DONE;
-> 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
-> -		spin_unlock_irqrestore(&t->task_state_lock, flags);
-> +		spin_unlock_irq(&t->task_state_lock);
-MGS>		spin_unlock_irqrestore(&t->task_state_lock, flags);
-> 		PM8001_FAIL_DBG(pm8001_ha,
-> 			pm8001_printk("task 0x%p done with io_status 0x%x"
-> 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
-> 			t, event, ts->resp, ts->stat));
-> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
-> 	} else if (t->uldd_task) {
-> -		spin_unlock_irqrestore(&t->task_state_lock, flags);
-> +		spin_unlock_irq(&t->task_state_lock);
-> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
-> 		mb();/* ditto */
-> -		spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-> +		spin_unlock_irq(&pm8001_ha->lock);
-> 		t->task_done(t);
-> -		spin_lock_irqsave(&pm8001_ha->lock, flags);
-> +		spin_lock_irq(&pm8001_ha->lock);
-> 	} else if (!t->uldd_task) {
-> -		spin_unlock_irqrestore(&t->task_state_lock, flags);
-> +		spin_unlock_irq(&t->task_state_lock);
-> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
-> 		mb();/*ditto*/
-> -		spin_unlock_irqrestore(&pm8001_ha->lock, flags);
-> +		spin_unlock_irq(&pm8001_ha->lock);
-> 		t->task_done(t);
-> -		spin_lock_irqsave(&pm8001_ha->lock, flags);
-> +		spin_lock_irq(&pm8001_ha->lock);
-> 	}
-> }
+>>>http://thread.gmane.org/gmane.linux.ports.sh.devel/11508
 
+I use Linux version 3.3.0-rc6 it contains the changes.
+
+>>>Secondly, as Fabio just pointed out, these messages are not fatal, which
+>>>is also the reason, why I changed their priority to "debug"
+
+Ok
+
+>>>Please, describe the actual problem, that you're getting (if any) and do
+>>>add the v4l list back to the list of recipients!
+
+At this stage, for me the problem of this type are actual, for the simple reason that I see it the first time.
+Thanks for support and patience :-) 
+
+> What is the problem?
+> Guennadi please help me understand
+>
+
+Regards, 
+Alex Gershgorin
+ 
