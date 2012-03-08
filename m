@@ -1,107 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376Ab2CHUmK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:42:10 -0500
-Received: from fieldses.org ([174.143.236.118]:48876 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750794Ab2CHUmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:42:08 -0500
-Date: Thu, 8 Mar 2012 15:42:05 -0500
-To: Olga Kornievskaia <aglo@citi.umich.edu>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] NFSv4: Return the delegation if the server returns
- NFS4ERR_OPENMODE
-Message-ID: <20120308204205.GB9273@fieldses.org>
-References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
- <1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
- <1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
- <1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
- <CAN-5tyG-w+ie3sxTwNA6e9x=CojxyDaJScJuCbS+9VE=yTmJNA@mail.gmail.com>
- <1331230525.2472.39.camel@lade.trondhjem.org>
- <CAN-5tyFYE5ECtv__C9S_GMT1gBMQ4+6WPS-1BjmSE7vHoRAQdw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN-5tyFYE5ECtv__C9S_GMT1gBMQ4+6WPS-1BjmSE7vHoRAQdw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1751580Ab2CHUpM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:45:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60783 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab2CHUpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 15:45:09 -0500
+Date: Thu, 8 Mar 2012 12:45:04 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Tejun Heo <tj@kernel.org>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3.3] memcg: free mem_cgroup by RCU to fix oops
+Message-Id: <20120308124504.3639ce78.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LSU.2.00.1203072155140.11048@eggly.anvils>
+References: <alpine.LSU.2.00.1203072155140.11048@eggly.anvils>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 03:23:34PM -0500, Olga Kornievskaia wrote:
-> On Thu, Mar 8, 2012 at 1:15 PM, Myklebust, Trond
-> <Trond.Myklebust@netapp.com> wrote:
-> > On Thu, 2012-03-08 at 12:52 -0500, Olga Kornievskaia wrote:
-> >> wouldn't it be better for you to proactively return a read delegation
-> >> then unnecessarily erroring?
-> >
-> > If nobody else holds a delegation, then the NFS client is actually
-> > allowed to keep its read delegation while writing to the file. It does
-> > admittedly need to request an OPEN stateid for write in that case...
-> > (See section 10.4 of RFC3530bis draft 16)
-> 
-> If we both agree that there has to be a request for an open stateid for
-> a write, then instead of returning the read delegation if the client receives
-> err_openmode (when it send the request with read delegation stateid
-> as you said per 3560bis), can't the client resend the setattr with the open
-> stateid? The ordering of the stateid usage is a "should" and not a "must".
-> 
-> In rfc5661, it really doesn't make sense to ever send a setattr with
-> a read delegation stateid. According to 9.1.2, the server "MUST" return
-> err_open_mode" error in that case.
-> 
-> I gather you are in this case dealing with 4.0 delegations. But I wonder
-> if you'll do something else for 4.1 delegation then?
+On Wed, 7 Mar 2012 22:01:50 -0800 (PST)
+Hugh Dickins <hughd@google.com> wrote:
 
-3530bis has the same language ("...must verify that the access mode
-allows writing and return an NFS4ERR_OPENMODE error if it does not").
+> After fixing the GPF in mem_cgroup_lru_del_list(), three times one
+> machine running a similar load (moving and removing memcgs while swapping)
+> has oopsed in mem_cgroup_zone_nr_lru_pages(), when retrieving memcg zone
+> numbers for get_scan_count() for shrink_mem_cgroup_zone(): this is where a
+> struct mem_cgroup is first accessed after being chosen by mem_cgroup_iter().
+> 
+> Just what protects a struct mem_cgroup from being freed, in between
+> mem_cgroup_iter()'s css_get_next() and its css_tryget()?  css_tryget()
+> fails once css->refcnt is zero with CSS_REMOVED set in flags, yes: but
+> what if that memory is freed and reused for something else, which sets
+> "refcnt" non-zero?  Hmm, and scope for an indefinite freeze if refcnt
+> is left at zero but flags are cleared.
+> 
+> It's tempting to move the css_tryget() into css_get_next(), to make it
+> really "get" the css, but I don't think that actually solves anything:
+> the same difficulty in moving from css_id found to stable css remains.
+> 
+> But we already have rcu_read_lock() around the two, so it's easily
+> fixed if __mem_cgroup_free() just uses kfree_rcu() to free mem_cgroup.
+> 
+> However, a big struct mem_cgroup is allocated with vzalloc() instead
+> of kzalloc(), and we're not allowed to vfree() at interrupt time:
+> there doesn't appear to be a general vfree_rcu() to help with this,
+> so roll our own using schedule_work().  The compiler decently removes
+> vfree_work() and vfree_rcu() when the config doesn't need them.
+> 
+> ...
+>
+> @@ -4780,6 +4800,27 @@ out_free:
+>  }
+>  
+>  /*
+> + * Helpers for freeing a vzalloc()ed mem_cgroup by RCU,
+> + * but in process context.  The work_freeing structure is overlaid
+> + * on the rcu_freeing structure, which itself is overlaid on memsw.
+> + */
+> +static void vfree_work(struct work_struct *work)
+> +{
+> +	struct mem_cgroup *memcg;
+> +
+> +	memcg = container_of(work, struct mem_cgroup, work_freeing);
+> +	vfree(memcg);
+> +}
+> +static void vfree_rcu(struct rcu_head *rcu_head)
+> +{
+> +	struct mem_cgroup *memcg;
+> +
+> +	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
+> +	INIT_WORK(&memcg->work_freeing, vfree_work);
+> +	schedule_work(&memcg->work_freeing);
+> +}
+> +
+> +/*
+>   * At destroying mem_cgroup, references from swap_cgroup can remain.
+>   * (scanning all at force_empty is too costly...)
+>   *
+> @@ -4802,9 +4843,9 @@ static void __mem_cgroup_free(struct mem
+>  
+>  	free_percpu(memcg->stat);
+>  	if (sizeof(struct mem_cgroup) < PAGE_SIZE)
+> -		kfree(memcg);
+> +		kfree_rcu(memcg, rcu_freeing);
+>  	else
+> -		vfree(memcg);
+> +		call_rcu(&memcg->rcu_freeing, vfree_rcu);
+>  }
+>  
 
---b.
+It's fairly possible that a vfree_rcu() will later turn up in
+vmalloc.c.  I guess that for now, it's OK to add a private version and
+we can cut-n-paste it over when the need arises..
 
-> 
-> Another comment is that I was suggesting a return of delegation only
-> because (from what i recall) the 4.1 servers out there will recall the
-> previously
-> given read delegation in this case.
-> 
-> > That said, in either case we do need to deal with the fact that a new
-> > delegation may be granted after we return the old one. There is no
-> > locking around the setattr call to prevent this.
-> 
-> Can that really happen since we agreed that the client also has an open
-> stateid for write in this case?
-> 
-> >> i also don't understand how this error occurs. doing a setattr in this
-> >> case you must have used a non-special stateid. the server would only
-> >> return an err_openmode if you sent the setattr with a read delegation
-> >> stateid. i guess my question is what stateid would you use that from
-> >> client's perspective represent a write-type state id but yet a server
-> >> would flag as having wrong access type?
-> >
-> > The read delegation stateid is being sent as per the prescription in
-> > section 9.1.3.6 of RFC3530bis.
-> 
-> >> also i'm curious why would a server, instead of returning
-> >> err_openmode, would not first recall your read delegation?
-> >
-> > It could, but why do so when it can just return an error value? The
-> > presence of the delegation stateid in the SETATTR request allows it to
-> > communicate directly to the client what the problem is without the need
-> > for any callbacks.
-> 
-> > Trond Myklebust
-> > Linux NFS client maintainer
-> >
-> > NetApp
-> > Trond.Myklebust@netapp.com
-> > www.netapp.com
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
