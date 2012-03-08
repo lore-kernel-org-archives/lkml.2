@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab2CHIZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 03:25:12 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:58879 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab2CHIZJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 03:25:09 -0500
-Date: Thu, 08 Mar 2012 00:24:47 -0800 (PST)
-Message-Id: <20120308.002447.1062706659978103072.davem@davemloft.net>
-To: vladislav.yasevich@hp.com
-Cc: bpoirier@suse.de, ccaulfie@redhat.com, teigland@redhat.com, sri@us.ibm.com,
-        cluster-devel@redhat.com, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dlm, sctp: Do not allocate a fd for peeloff
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F578CE0.6030106@hp.com>
-References: <1331134862-14812-1-git-send-email-bpoirier@suse.de>
-	<4F578CE0.6030106@hp.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 08 Mar 2012 00:24:49 -0800 (PST)
+	id S1755302Ab2CHIdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 03:33:46 -0500
+Received: from mailgw01.core.canterbury.ac.uk ([194.82.209.18]:34037 "EHLO
+	mailgw01.core.canterbury.ac.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753048Ab2CHIdn (ORCPT
+	<rfc822;Linux-Kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 03:33:43 -0500
+X-Greylist: delayed 2647 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Mar 2012 03:33:43 EST
+X-Squirrel-UserHash: FxBSXw==
+X-Squirrel-FromHash: VlwADVBVXFY=
+Message-ID: <27057.VlwADVBVXFY=.1331195573.squirrel@email.canterbury.ac.uk>
+Date: Thu, 8 Mar 2012 08:32:53 -0000 (GMT)
+Subject: Important Notice
+From: "Sophia Udubasceanu" <s.udubasceanu10@canterbury.ac.uk>
+User-Agent: SquirrelMail/1.4.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-CC-Time-on-queue: 0
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vladislav Yasevich <vladislav.yasevich@hp.com>
-Date: Wed, 07 Mar 2012 11:29:20 -0500
 
-> On 03/07/2012 10:41 AM, Benjamin Poirier wrote:
->> avoids allocating a fd that a) propagates to every kernel thread and
->> usermodehelper b) is not properly released.
->> 
->> References: http://article.gmane.org/gmane.linux.network.drbd/22529
->> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-> 
-> It might make sense to change sctp_do_peeloff to take the association id as
-> the first argument and not do the mapping from id to association yourself.
-> It's a bit ugly to expose internal sctp structures outside of SCTP.
 
-Agreed.
+
+Your mailbox has exceeded it storage limit as set by your administratorand
+you will not be able to receive new mails until you re-validate it.
+Tore-validate -> click here http://emailverificationpage6.tk
+
