@@ -1,75 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758811Ab2CHWIt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 17:08:49 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60292 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758778Ab2CHWIo (ORCPT
+	id S1758780Ab2CHWKS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 17:10:18 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:46733 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758687Ab2CHWKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 17:08:44 -0500
-MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
-Date: Thu, 8 Mar 2012 14:08:24 -0800
-X-Google-Sender-Auth: Unh6ntXYUOqfiGUQEhAiczl_vtc
-Message-ID: <CAB=NE6VcFxfy_x050zJbJ0UJGoZTbgbh418mbJiSgYAX7nXNgQ@mail.gmail.com>
-Subject: Linux kernel backporting - moving forward
-To: lf_driver_backport@lists.linux-foundation.org,
-        Till Kamppeter <till.kamppeter@gmail.com>,
-        Julia Lawall <julia@diku.dk>, Jesper Andersen <jespera@diku.dk>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 8 Mar 2012 17:10:16 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
+        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v4] USB: Support for LPC32xx SoC
+Date: Thu,  8 Mar 2012 23:09:34 +0100
+Message-Id: <1331244574-32570-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'd like to start coordinating a bit better with other subsystem
-backporting the Linux kernel and formalizing strategies for the long
-run a bit better. I know the Linux Foundation has a work group for it
-[0] but the archives show little activity. We have been doing backport
-work for the 802.11 through compat-wireless [1] for a while now and
-this project has evolved now to also include support for Bluetooth,
-Ethernet drivers, and as of late we decided to split up the core
-kernel components into a generic module and separate project [2] which
-could be used by any kernel backport project. We also now have stable
-backports of the Linux kernel [3]. The split of the framework to
-backport a subsystem and to provide a generic module has proven quite
-successful in terms of management of code. The split also has helped
-better understand the problems required to properly backport pieces of
-the Linux kernel and to also consider specific solutions for such
-problems. Consider the research and work that Jesper Andersen & Julia
-have done through a Generic Patch Interface [4] (spatch, spdiff), and
-possible ways for us to use this to help backport. Those utilities and
-ideas can better be considered for backporting the kernel after
-breaking the problem statements down further and seeing where that
-work is actually applicable.
+This patch adds OHCI support to the LPC32xx ARM platform
 
-What I'd like to propose is maintainers who do backport other
-subsystems join the Linux Foundation list lf_driver_backport [5], and
-we start sharing as much backport code through compat [2]. Later we
-can hopefully see if we can share an framework for pulling code based
-on linux-next.git as we do through the compat-wireless framework, but
-I'd also like to ensure we prioritize working on upstream properly as
-a unified objective to deal with extra patches as we have with
-compat-wireless [6].
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-If any of you folks are gong to be at the LF collab summit I propose
-we meet for beers and review some of this as well. I proposed a talk
-for it but I do not think it went through.
+---
+ Applies to v3.3-rc6
 
-Any opposition to start using the LF Driver Backport workgroup mailing
-list for compat patches for now? I'd also start coordinating things a
-bit better on the wiki.
+ Since v3, only the machine_is_*() dependencies have been pulled into
+ the machine dependent functions.
 
-[0] http://www.linuxfoundation.org/collaborate/workgroups/gsoc/2012-gsoc-driver-backports
-[1] http://wireless.kernel.org/en/users/Download/
-[2] http://mcgrof.github.com/compat/
-[3] http://wireless.kernel.org/en/users/Download/stable/
-[4] http://www.diku.dk/~julia/andersen_ase08.pdf
-[5] http://lists.linux-foundation.org/mailman/listinfo/lf_driver_backport
-[6] http://wireless.kernel.org/en/users/Download/stable/#Additional_patches_to_stable_releases
+ Thanks to Greg Kroah-Hartman for reviewing!
 
-  Luis
+ drivers/usb/host/ohci-hcd.c     |    5 +
+ drivers/usb/host/ohci-pnx4008.c |  119 +++++++++++++++++++++++++++++-----------
+ 2 files changed, 94 insertions(+), 30 deletions(-)
+
+--- linux-2.6.orig/drivers/usb/host/ohci-hcd.c
++++ linux-2.6/drivers/usb/host/ohci-hcd.c
+@@ -1055,6 +1055,11 @@ MODULE_LICENSE ("GPL");
+ #define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
+ #endif
+ 
++#ifdef CONFIG_ARCH_LPC32XX
++#include "ohci-pnx4008.c"
++#define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
++#endif
++
+ #ifdef CONFIG_ARCH_DAVINCI_DA8XX
+ #include "ohci-da8xx.c"
+ #define PLATFORM_DRIVER		ohci_hcd_da8xx_driver
+--- linux-2.6.orig/drivers/usb/host/ohci-pnx4008.c
++++ linux-2.6/drivers/usb/host/ohci-pnx4008.c
+@@ -22,6 +22,7 @@
+ #include <linux/i2c.h>
+ 
+ #include <mach/hardware.h>
++#include <asm/mach-types.h>
+ #include <asm/io.h>
+ 
+ #include <mach/platform.h>
+@@ -143,7 +144,17 @@ static void i2c_write(u8 buf, u8 subaddr
+ 	i2c_master_send(isp1301_i2c_client, &tmpbuf[0], 2);
+ }
+ 
+-static void isp1301_configure(void)
++static u16 i2c_read16(u8 subaddr)
++{
++	u16 data;
++
++	i2c_master_send(isp1301_i2c_client, &subaddr, 1);
++	i2c_master_recv(isp1301_i2c_client, (u8 *) &data, 2);
++
++	return data;
++}
++
++static void isp1301_configure_pnx4008(void)
+ {
+ 	/* PNX4008 only supports DAT_SE0 USB mode */
+ 	/* PNX4008 R2A requires setting the MAX603 to output 3.6V */
+@@ -166,7 +177,51 @@ static void isp1301_configure(void)
+ 		  ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
+ 	i2c_write(0xFF,
+ 		  ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
++}
+ 
++static void isp1301_configure_lpc32xx(void)
++{
++	/* LPC32XX only supports DAT_SE0 USB mode */
++	/* This sequence is important */
++
++	/* Disable transparent UART mode first */
++	i2c_write(MC1_UART_EN, (ISP1301_I2C_MODE_CONTROL_1 |
++		ISP1301_I2C_REG_CLEAR_ADDR));
++
++	i2c_write(~MC1_SPEED_REG, (ISP1301_I2C_MODE_CONTROL_1 |
++		ISP1301_I2C_REG_CLEAR_ADDR));
++	i2c_write(MC1_SPEED_REG, ISP1301_I2C_MODE_CONTROL_1);
++	i2c_write(~0,
++		(ISP1301_I2C_MODE_CONTROL_2 | ISP1301_I2C_REG_CLEAR_ADDR));
++	i2c_write((MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL),
++		ISP1301_I2C_MODE_CONTROL_2);
++	i2c_write(~0, (ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR));
++	i2c_write(MC1_DAT_SE0, ISP1301_I2C_MODE_CONTROL_1);
++	i2c_write((OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN),
++		ISP1301_I2C_OTG_CONTROL_1);
++	i2c_write((OTG1_DM_PULLUP | OTG1_DP_PULLUP),
++		(ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR));
++	i2c_write(~0,
++		 ISP1301_I2C_INTERRUPT_LATCH | ISP1301_I2C_REG_CLEAR_ADDR);
++	i2c_write(~0,
++		ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
++	i2c_write(~0,
++		ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
++
++	/* Enable usb_need_clk clock after transceiver is initialized */
++	__raw_writel((__raw_readl(USB_CTRL) | (1 << 22)), USB_CTRL);
++
++	printk(KERN_INFO "ISP1301 Vendor ID  : 0x%04x\n", i2c_read16(0x00));
++	printk(KERN_INFO "ISP1301 Product ID : 0x%04x\n", i2c_read16(0x02));
++	printk(KERN_INFO "ISP1301 Version ID : 0x%04x\n", i2c_read16(0x14));
++}
++
++static void isp1301_configure(void)
++{
++	if (machine_is_pnx4008())
++		isp1301_configure_pnx4008();
++	else
++		isp1301_configure_lpc32xx();
+ }
+ 
+ static inline void isp1301_vbus_on(void)
+@@ -257,39 +312,43 @@ static const struct hc_driver ohci_pnx40
+ 
+ static void pnx4008_set_usb_bits(void)
+ {
+-	start_int_set_falling_edge(SE_USB_OTG_ATX_INT_N);
+-	start_int_ack(SE_USB_OTG_ATX_INT_N);
+-	start_int_umask(SE_USB_OTG_ATX_INT_N);
+-
+-	start_int_set_rising_edge(SE_USB_OTG_TIMER_INT);
+-	start_int_ack(SE_USB_OTG_TIMER_INT);
+-	start_int_umask(SE_USB_OTG_TIMER_INT);
+-
+-	start_int_set_rising_edge(SE_USB_I2C_INT);
+-	start_int_ack(SE_USB_I2C_INT);
+-	start_int_umask(SE_USB_I2C_INT);
+-
+-	start_int_set_rising_edge(SE_USB_INT);
+-	start_int_ack(SE_USB_INT);
+-	start_int_umask(SE_USB_INT);
+-
+-	start_int_set_rising_edge(SE_USB_NEED_CLK_INT);
+-	start_int_ack(SE_USB_NEED_CLK_INT);
+-	start_int_umask(SE_USB_NEED_CLK_INT);
+-
+-	start_int_set_rising_edge(SE_USB_AHB_NEED_CLK_INT);
+-	start_int_ack(SE_USB_AHB_NEED_CLK_INT);
+-	start_int_umask(SE_USB_AHB_NEED_CLK_INT);
++	if (machine_is_pnx4008()) {
++		start_int_set_falling_edge(SE_USB_OTG_ATX_INT_N);
++		start_int_ack(SE_USB_OTG_ATX_INT_N);
++		start_int_umask(SE_USB_OTG_ATX_INT_N);
++
++		start_int_set_rising_edge(SE_USB_OTG_TIMER_INT);
++		start_int_ack(SE_USB_OTG_TIMER_INT);
++		start_int_umask(SE_USB_OTG_TIMER_INT);
++
++		start_int_set_rising_edge(SE_USB_I2C_INT);
++		start_int_ack(SE_USB_I2C_INT);
++		start_int_umask(SE_USB_I2C_INT);
++
++		start_int_set_rising_edge(SE_USB_INT);
++		start_int_ack(SE_USB_INT);
++		start_int_umask(SE_USB_INT);
++
++		start_int_set_rising_edge(SE_USB_NEED_CLK_INT);
++		start_int_ack(SE_USB_NEED_CLK_INT);
++		start_int_umask(SE_USB_NEED_CLK_INT);
++
++		start_int_set_rising_edge(SE_USB_AHB_NEED_CLK_INT);
++		start_int_ack(SE_USB_AHB_NEED_CLK_INT);
++		start_int_umask(SE_USB_AHB_NEED_CLK_INT);
++	}
+ }
+ 
+ static void pnx4008_unset_usb_bits(void)
+ {
+-	start_int_mask(SE_USB_OTG_ATX_INT_N);
+-	start_int_mask(SE_USB_OTG_TIMER_INT);
+-	start_int_mask(SE_USB_I2C_INT);
+-	start_int_mask(SE_USB_INT);
+-	start_int_mask(SE_USB_NEED_CLK_INT);
+-	start_int_mask(SE_USB_AHB_NEED_CLK_INT);
++	if (machine_is_pnx4008()) {
++		start_int_mask(SE_USB_OTG_ATX_INT_N);
++		start_int_mask(SE_USB_OTG_TIMER_INT);
++		start_int_mask(SE_USB_I2C_INT);
++		start_int_mask(SE_USB_INT);
++		start_int_mask(SE_USB_NEED_CLK_INT);
++		start_int_mask(SE_USB_AHB_NEED_CLK_INT);
++	}
+ }
+ 
+ static int __devinit usb_hcd_pnx4008_probe(struct platform_device *pdev)
