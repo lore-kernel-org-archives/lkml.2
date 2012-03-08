@@ -1,117 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab2CHRwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 12:52:16 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:32859 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751563Ab2CHRwO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 12:52:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
-References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
-	<1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
-	<1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
-	<1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
-Date: Thu, 8 Mar 2012 12:52:12 -0500
-X-Google-Sender-Auth: Me-QK1ogZVInCrOsvq82Ldk-pGo
-Message-ID: <CAN-5tyG-w+ie3sxTwNA6e9x=CojxyDaJScJuCbS+9VE=yTmJNA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] NFSv4: Return the delegation if the server returns NFS4ERR_OPENMODE
-From: Olga Kornievskaia <aglo@citi.umich.edu>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753846Ab2CHRx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 12:53:27 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:53274 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab2CHRxY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 12:53:24 -0500
+Message-ID: <1331229183.14217.10.camel@aeonflux>
+Subject: Re: Resend: [PATCH] Bluetooth: Fix Endian Bug.
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Gustavo Padovan <padovan@profusion.mobi>
+Cc: santosh nayak <santoshprasadnayak@gmail.com>, davem@davemloft.net,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Date: Thu, 08 Mar 2012 09:53:03 -0800
+In-Reply-To: <20120308053320.GD3998@joana>
+References: <1330622196-12967-1-git-send-email-santoshprasadnayak@gmail.com>
+	 <20120308053320.GD3998@joana>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wouldn't it be better for you to proactively return a read delegation
-then unnecessarily erroring?
+Hi Gustavo,
 
-i also don't understand how this error occurs. doing a setattr in this
-case you must have used a non-special stateid. the server would only
-return an err_openmode if you sent the setattr with a read delegation
-stateid. i guess my question is what stateid would you use that from
-client's perspective represent a write-type state id but yet a server
-would flag as having wrong access type?
+> > Fix network to host endian conversion for L2CAP chan id.
+> > 
+> > Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> > ---
+> >  net/bluetooth/l2cap_sock.c |    5 +++--
+> >  1 files changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+> > index 401d942..86d5067 100644
+> > --- a/net/bluetooth/l2cap_sock.c
+> > +++ b/net/bluetooth/l2cap_sock.c
+> > @@ -82,7 +82,7 @@ static int l2cap_sock_bind(struct socket *sock, struct sockaddr *addr, int alen)
+> >  	}
+> >  
+> >  	if (la.l2_cid)
+> > -		err = l2cap_add_scid(chan, la.l2_cid);
+> > +		err = l2cap_add_scid(chan, __le16_to_cpu(la.l2_cid));
+> 
+> This is kind weird, la.l2_cid comes from the user, so it is already in host
+> endian. No need for convertions here.
 
-also i'm curious why would a server, instead of returning
-err_openmode, would not first recall your read delegation?
+CID and PSM are provided in little endian by user space.
 
-On Wed, Mar 7, 2012 at 5:40 PM, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
-> If a setattr() fails because of an NFS4ERR_OPENMODE error, it is
-> probably due to us holding a read delegation. Ensure that the
-> recovery routines return that delegation in this case.
->
-> Reported-by: Miklos Szeredi <miklos@szeredi.hu>
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Cc: stable@vger.kernel.org
-> ---
->  fs/nfs/nfs4_fs.h  |    1 +
->  fs/nfs/nfs4proc.c |   13 ++++++++++++-
->  2 files changed, 13 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/nfs/nfs4_fs.h b/fs/nfs/nfs4_fs.h
-> index 5c9b20b..8ccaf24 100644
-> --- a/fs/nfs/nfs4_fs.h
-> +++ b/fs/nfs/nfs4_fs.h
-> @@ -193,6 +193,7 @@ struct nfs4_exception {
->        long timeout;
->        int retry;
->        struct nfs4_state *state;
-> +       struct inode *inode;
->  };
->
->  struct nfs4_state_recovery_ops {
-> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-> index 3d26bab..bfcaa03 100644
-> --- a/fs/nfs/nfs4proc.c
-> +++ b/fs/nfs/nfs4proc.c
-> @@ -259,18 +259,28 @@ static int nfs4_handle_exception(struct nfs_server *server, int errorcode, struc
->  {
->        struct nfs_client *clp = server->nfs_client;
->        struct nfs4_state *state = exception->state;
-> +       struct inode *inode = exception->inode;
->        int ret = errorcode;
->
->        exception->retry = 0;
->        switch(errorcode) {
->                case 0:
->                        return 0;
-> +               case -NFS4ERR_OPENMODE:
-> +                       if (nfs_have_delegation(inode, FMODE_READ)) {
-> +                               nfs_inode_return_delegation(inode);
-> +                               exception->retry = 1;
-> +                               return 0;
-> +                       }
-> +                       if (state == NULL)
-> +                               break;
-> +                       nfs4_schedule_stateid_recovery(server, state);
-> +                       goto wait_on_recovery;
->                case -NFS4ERR_DELEG_REVOKED:
->                case -NFS4ERR_ADMIN_REVOKED:
->                case -NFS4ERR_BAD_STATEID:
->                        if (state != NULL)
->                                nfs_remove_bad_delegation(state->inode);
-> -               case -NFS4ERR_OPENMODE:
->                        if (state == NULL)
->                                break;
->                        nfs4_schedule_stateid_recovery(server, state);
-> @@ -1908,6 +1918,7 @@ static int nfs4_do_setattr(struct inode *inode, struct rpc_cred *cred,
->        struct nfs_server *server = NFS_SERVER(inode);
->        struct nfs4_exception exception = {
->                .state = state,
-> +               .inode = inode,
->        };
->        int err;
->        do {
-> --
-> 1.7.7.6
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Regards
+
+Marcel
+
+
