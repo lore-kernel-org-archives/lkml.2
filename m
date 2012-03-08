@@ -1,111 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab2CHSyQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:54:16 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36344 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757899Ab2CHSyM (ORCPT
+	id S1758272Ab2CHSys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:54:48 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:33012 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757292Ab2CHSyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:54:12 -0500
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, vgoyal@redhat.com
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, dpshah@google.com,
-        ctalbott@google.com, rni@google.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/5] blkcg: don't use percpu for merged stats
-Date: Thu,  8 Mar 2012 10:53:57 -0800
-Message-Id: <1331232840-16044-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331232840-16044-1-git-send-email-tj@kernel.org>
-References: <1331232840-16044-1-git-send-email-tj@kernel.org>
+	Thu, 8 Mar 2012 13:54:45 -0500
+X-Authenticated: #23875046
+X-Provags-ID: V01U2FsdGVkX1/qLQxM46nqVWZPpS8VEJzGH+83DFhTBMAYNIGidZ
+	oRny8Mgv5W8dz3
+Message-ID: <4F590069.1050207@fisher-privat.net>
+Date: Thu, 08 Mar 2012 19:54:33 +0100
+From: "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120302 Thunderbird/11.0
+MIME-Version: 1.0
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: memory corruption  after suspend - ultrabook not able to turn on
+ after failed suspend, EHCI workaround - Asus Zenbook UX31E
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent plug merge updates, merged stats are no longer called for
-plug merges and now only updated while holding queue_lock.  As
-stats_lock is scheduled to be removed, there's no reason to use percpu
-for merged stats.  Don't use percpu for merged stats.
+Hallo all,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>
----
- block/blk-cgroup.c |   26 ++++++--------------------
- block/blk-cgroup.h |    6 +++---
- 2 files changed, 9 insertions(+), 23 deletions(-)
+Alan Stern suggested me to ask on this lists. The problems seems to be 
+complicated. https://bugzilla.kernel.org/show_bug.cgi?id=42728
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 622fb41..6eedf3a 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -451,27 +451,13 @@ void blkiocg_update_io_merged_stats(struct blkio_group *blkg,
- 				    bool direction, bool sync)
- {
- 	struct blkg_policy_data *pd = blkg->pd[pol->plid];
--	struct blkio_group_stats_cpu *stats_cpu;
-+	struct blkio_group_stats *stats;
- 	unsigned long flags;
- 
--	/* If per cpu stats are not allocated yet, don't do any accounting. */
--	if (pd->stats_cpu == NULL)
--		return;
--
--	/*
--	 * Disabling interrupts to provide mutual exclusion between two
--	 * writes on same cpu. It probably is not needed for 64bit. Not
--	 * optimizing that case yet.
--	 */
--	local_irq_save(flags);
--
--	stats_cpu = this_cpu_ptr(pd->stats_cpu);
--
--	u64_stats_update_begin(&stats_cpu->syncp);
--	blkio_add_stat(stats_cpu->stat_arr_cpu[BLKIO_STAT_CPU_MERGED], 1,
--				direction, sync);
--	u64_stats_update_end(&stats_cpu->syncp);
--	local_irq_restore(flags);
-+	spin_lock_irqsave(&blkg->stats_lock, flags);
-+	stats = &pd->stats;
-+	blkio_add_stat(stats->stat_arr[BLKIO_STAT_MERGED], 1, direction, sync);
-+	spin_unlock_irqrestore(&blkg->stats_lock, flags);
- }
- EXPORT_SYMBOL_GPL(blkiocg_update_io_merged_stats);
- 
-@@ -1342,7 +1328,7 @@ static int blkiocg_file_read_map(struct cgroup *cgrp, struct cftype *cft,
- 						BLKIO_STAT_WAIT_TIME, 1, 0);
- 		case BLKIO_PROP_io_merged:
- 			return blkio_read_blkg_stats(blkcg, cft, cb,
--						BLKIO_STAT_CPU_MERGED, 1, 1);
-+						BLKIO_STAT_MERGED, 1, 0);
- 		case BLKIO_PROP_io_queued:
- 			return blkio_read_blkg_stats(blkcg, cft, cb,
- 						BLKIO_STAT_QUEUED, 1, 0);
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 1de32fe..6c8e3e3 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -29,10 +29,12 @@ enum blkio_policy_id {
- #ifdef CONFIG_BLK_CGROUP
- 
- enum stat_type {
-+	/* Number of IOs merged */
-+	BLKIO_STAT_MERGED,
- 	/* Total time spent (in ns) between request dispatch to the driver and
- 	 * request completion for IOs doen by this cgroup. This may not be
- 	 * accurate when NCQ is turned on. */
--	BLKIO_STAT_SERVICE_TIME = 0,
-+	BLKIO_STAT_SERVICE_TIME,
- 	/* Total time spent waiting in scheduler queue in ns */
- 	BLKIO_STAT_WAIT_TIME,
- 	/* Number of IOs queued up */
-@@ -57,8 +59,6 @@ enum stat_type_cpu {
- 	BLKIO_STAT_CPU_SERVICE_BYTES,
- 	/* Total IOs serviced, post merge */
- 	BLKIO_STAT_CPU_SERVICED,
--	/* Number of IOs merged */
--	BLKIO_STAT_CPU_MERGED,
- 	BLKIO_STAT_CPU_NR
- };
- 
--- 
-1.7.7.3
+So now to the problem.
 
+Symptoms are fallowing, after initiating suspend this laptop freezes. 
+After forcing after poweroff, it is really hard to power on this laptop. 
+linux kernel gets oops, windows will get BSOD.
+
+I tried /sys/power/pm_test and i got fallowing result. Setting 
+pm_test=devices do not make any problems. With pm_test=processors the 
+test runs ok, but after power off i get same result as with filed suspend.
+
+Steps to reproduce:
+- echo 0 > pm_async
+- echo processors > pm_test
+- echo mem > state
+(here the display will go off, usb mouse powered off too, after one 
+second it returns back to console .... no freezes)
+- poweroff
+- after power on, start memtest .... here i will get lots of bad memory 
+blocks.
+
+the processor is Intel Core i7-2677M. According to the specification it 
+has build in memory controller. I assume the controller is some how 
+misconfigured at suspend, this is why i get bad blocks with memtest86+. 
+It looks like the laptop stay in this broken supend mode even after 
+poweroff. To bring it back to normal i need to completely poweroff it, 
+it mean unplug battery and powersupply.
