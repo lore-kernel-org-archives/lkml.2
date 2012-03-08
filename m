@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953Ab2CHWcG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 17:32:06 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47819 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758828Ab2CHWcD (ORCPT
+	id S1758976Ab2CHWdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 17:33:41 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42941 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753889Ab2CHWdf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 17:32:03 -0500
-Date: Thu, 8 Mar 2012 23:31:56 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
-Subject: Re: [PATCH v4] USB: Support for LPC32xx SoC
-Message-ID: <20120308223155.GA19176@pengutronix.de>
-References: <1331244574-32570-1-git-send-email-stigge@antcom.de>
+	Thu, 8 Mar 2012 17:33:35 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
-Content-Disposition: inline
-In-Reply-To: <1331244574-32570-1-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <m1aa3qwyz6.fsf@fess.ebiederm.org>
+References: <1329777830-2942-1-git-send-email-masami256@gmail.com>
+	<m11up2zu03.fsf@fess.ebiederm.org>
+	<20120308211406.GA24445@kroah.com>
+	<m1aa3qwyz6.fsf@fess.ebiederm.org>
+Date: Fri, 9 Mar 2012 07:33:34 +0900
+Message-ID: <CACOXgS_HApD4PQVJyb=C+Oymhs02ztOuJy7ng=eNNXHJ8isBeg@mail.gmail.com>
+Subject: Re: [PATCH] Fix memory leak in sysfs_sd_setsecdata().
+From: Masami Ichikawa <masami256@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---7AUc2qLy4jB3hD7Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Eric, thank you for the review.
+Greg, thenk you for apply my patch.
 
+On Fri, Mar 9, 2012 at 6:43 AM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> Greg KH <gregkh@linuxfoundation.org> writes:
+>
+>> On Thu, Mar 08, 2012 at 01:02:20PM -0800, Eric W. Biederman wrote:
+>>> Masami Ichikawa <masami256@gmail.com> writes:
+>>>
+>>> > This patch fixies follwing two memory leak patterns that reported by kmemleak.
+>>> > sysfs_sd_setsecdata() is called during sys_lsetxattr() operation.
+>>> > It checks sd->s_iattr is NULL or not. Then if it is NULL, it calls
+>>> > sysfs_init_inode_attrs() to allocate memory.
+>>> > That code is this.
+>>>
+>>> I don't know how you count two memory leaks.  But there is definitely a
+>>> leak here sd->s_iattr is allocated and then never assigned.  It looks
+>>> like I introduced that leak when I re-factored the code to protect
+>>> the code with sysfs_mutex at the end of 2009.
+>>>
+>>> I am surprise the securlity label crowd has not been screaming about
+>>> selinux protection not working on sysfs for the last two years.
+>>>
+>>> I have reviewed the code and the fix looks obvious and correct.
+>>>
+>>> Greg can you pick this up?
+>>
+>> I applied it a while ago to my tree already :)
+>
+> Odd I didn't see it linux-next when I looked an hour or so ago.
+>
+> As long as it is there and it makes it to stable.
+>
+> Eric
+>
+I saw my patch in linux-next tree.
+http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commit;h=93518dd2ebafcc761a8637b2877008cfd748c202
 
-> --- linux-2.6.orig/drivers/usb/host/ohci-hcd.c
-> +++ linux-2.6/drivers/usb/host/ohci-hcd.c
-> @@ -1055,6 +1055,11 @@ MODULE_LICENSE ("GPL");
->  #define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
->  #endif
-> =20
-> +#ifdef CONFIG_ARCH_LPC32XX
-> +#include "ohci-pnx4008.c"
-> +#define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
-> +#endif
-
-Can't we just do
-
-#if defined(CONFIG_ARCH_PNX4008) || defined(CONFIG_ARCH_LPC32XX)
-
-to save the duplicate entry?
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---7AUc2qLy4jB3hD7Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk9ZM1sACgkQD27XaX1/VRuJjgCgo6pF6usxjRxbnrEb0RxKNisf
-eD8AoMOF5nqx7y1maxZcZV0HTSNPODlP
-=tvmb
------END PGP SIGNATURE-----
-
---7AUc2qLy4jB3hD7Z--
+Cheers,
+-- 
+Masami Ichikawa
+gmail: masami256@gmail.com
+Fedora project: masami@fedoraproject.org
