@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab2CHIYm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 03:24:42 -0500
-Received: from fold.natur.cuni.cz ([195.113.57.32]:43272 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752836Ab2CHIYl (ORCPT
+	id S1755045Ab2CHIZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 03:25:12 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:58879 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752836Ab2CHIZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 03:24:41 -0500
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Mar 2012 03:24:41 EST
-Message-ID: <4F586B32.90905@fold.natur.cuni.cz>
-Date: Thu, 08 Mar 2012 09:17:54 +0100
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120210 Firefox/10.0 SeaMonkey/2.7
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-3.2.9: OOPS in arch_get_unmapped_area_topdown()
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+	Thu, 8 Mar 2012 03:25:09 -0500
+Date: Thu, 08 Mar 2012 00:24:47 -0800 (PST)
+Message-Id: <20120308.002447.1062706659978103072.davem@davemloft.net>
+To: vladislav.yasevich@hp.com
+Cc: bpoirier@suse.de, ccaulfie@redhat.com, teigland@redhat.com, sri@us.ibm.com,
+        cluster-devel@redhat.com, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dlm, sctp: Do not allocate a fd for peeloff
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F578CE0.6030106@hp.com>
+References: <1331134862-14812-1-git-send-email-bpoirier@suse.de>
+	<4F578CE0.6030106@hp.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 08 Mar 2012 00:24:49 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-  does the below stacktrace of a crash on Core i7-based laptop help
-somebody to come up with a fix? I found by Google some other reports
-from the past. I can provide a .config or other information if you want.
+From: Vladislav Yasevich <vladislav.yasevich@hp.com>
+Date: Wed, 07 Mar 2012 11:29:20 -0500
 
-Mar  7 18:47:53 vostro kernel: CPU 1 
-Mar  7 18:47:53 vostro kernel: Modules linked in: usb_storage option usb_wwan usbserial cdc_ether uas usbnet
-Mar  7 18:47:53 vostro kernel: 
-Mar  7 18:47:53 vostro kernel: Pid: 26410, comm: X Not tainted 3.2.9-default #2 Dell Inc. Vostro 3550/0JGC48
-Mar  7 18:47:53 vostro kernel: RIP: 0010:[<ffffffff810dc0e0>]  [<ffffffff810dc0e0>] find_vma+0x2c/0x5a
-Mar  7 18:47:53 vostro kernel: RSP: 0018:ffff88040d38de18  EFLAGS: 00010202
-Mar  7 18:47:53 vostro kernel: RAX: ffff880206a721e0 RBX: ffff88040c6564c0 RCX: 38313d79782033f9
-Mar  7 18:47:53 vostro kernel: RDX: 38313d7978203431 RSI: 00007fbab4bd7000 RDI: ffff88040c6564c0
-Mar  7 18:47:53 vostro kernel: RBP: ffff88040d38de18 R08: 0000000000000001 R09: ffff88040c6564c0
-Mar  7 18:47:53 vostro kernel: R10: 0000000000000001 R11: 0000000000003246 R12: 0000000000038000
-Mar  7 18:47:53 vostro kernel: R13: 0000000000000000 R14: ffff88040eaf2780 R15: 00000000001059b2
-Mar  7 18:47:53 vostro kernel: FS:  00007fbaba86f880(0000) GS:ffff88041fa80000(0000) knlGS:0000000000000000
-Mar  7 18:47:53 vostro kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-Mar  7 18:47:53 vostro kernel: CR2: 00007fbab4ff1130 CR3: 000000040bbf7000 CR4: 00000000000406e0
-Mar  7 18:47:53 vostro kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-Mar  7 18:47:53 vostro kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Mar  7 18:47:53 vostro kernel: Process X (pid: 26410, threadinfo ffff88040d38c000, task ffff88040c4b78d0)
-Mar  7 18:47:53 vostro kernel:  ffff88040d38de68 ffffffff8102f434 00007fbab4bd7000 0000000000000001
-Mar  7 18:47:53 vostro kernel:  0000000000000000 0000000000038000 ffff88040eaf2780 ffff88040c4b78d0
-Mar  7 18:47:53 vostro kernel:  0000000000000001 0000000000000003 ffff88040d38de88 ffffffff810dc1ae
-Mar  7 18:47:53 vostro kernel:  [<ffffffff8102f434>] arch_get_unmapped_area_topdown+0x1cc/0x294
-Mar  7 18:47:53 vostro kernel:  [<ffffffff810dc1ae>] get_unmapped_area+0x9a/0x10e
-Mar  7 18:47:53 vostro kernel:  [<ffffffff810de3df>] do_mmap_pgoff+0xf1/0x2f0
-Mar  7 18:47:53 vostro kernel:  [<ffffffff810de6cf>] sys_mmap_pgoff+0xf1/0x129
-Mar  7 18:47:53 vostro kernel:  [<ffffffff81105b6e>] ? sys_ioctl+0x42/0x68
-Mar  7 18:47:53 vostro kernel:  [<ffffffff8102f00d>] sys_mmap+0x1d/0x1f
-Mar  7 18:47:53 vostro kernel:  [<ffffffff8162f312>] system_call_fastpath+0x16/0x1b
-Mar  7 18:47:53 vostro kernel:  RSP <ffff88040d38de18>
-Mar  7 18:47:53 vostro kernel: ---[ end trace 6d84d133cdb77497 ]---
-Mar  7 18:49:41 vostro kernel: SysRq : Emergency Sync
-Mar  7 18:49:41 vostro kernel: Emergency Sync complete
+> On 03/07/2012 10:41 AM, Benjamin Poirier wrote:
+>> avoids allocating a fd that a) propagates to every kernel thread and
+>> usermodehelper b) is not properly released.
+>> 
+>> References: http://article.gmane.org/gmane.linux.network.drbd/22529
+>> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+> 
+> It might make sense to change sctp_do_peeloff to take the association id as
+> the first argument and not do the mapping from id to association yourself.
+> It's a bit ugly to expose internal sctp structures outside of SCTP.
 
-
-
-Thank you for comments,
-Martin
+Agreed.
