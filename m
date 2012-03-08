@@ -1,149 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab2CHLep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:34:45 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:63398 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754586Ab2CHLeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:34:44 -0500
-Date: Thu, 8 Mar 2012 12:34:41 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Alex Gershgorin <alexg@meprolight.com>
-cc: "'Fabio Estevam'" <festevam@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'s.hauer@pengutronix.de'" <s.hauer@pengutronix.de>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: RE: I.MX35 PDK
-In-Reply-To: <4875438356E7CA4A8F2145FCD3E61C0B2CBD666A28@MEP-EXCH.meprolight.com>
-Message-ID: <Pine.LNX.4.64.1203081225290.29847@axis700.grange>
-References: <4875438356E7CA4A8F2145FCD3E61C0B2CBD666A28@MEP-EXCH.meprolight.com>
+	id S1756931Ab2CHLgU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:36:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4170 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753846Ab2CHLgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 06:36:19 -0500
+Date: Thu, 8 Mar 2012 11:36:07 +0000
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [RESEND][PATCH 2/2 v3] deal with guest panicked event
+Message-ID: <20120308113607.GC25529@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <4F58664D.1070800@cn.fujitsu.com>
+ <4F5868C4.2090509@cn.fujitsu.com>
+ <4F5886C4.7040100@cn.fujitsu.com>
+ <4F5897F8.6090503@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:Z0nUv6hquISiGUXJYimzodFkoPaiX+kBtdqS9/E+PnS
- cU1zAIuBhspfEaCYew02lv1Oo8LZQe0JQ+w7IgM1MaN82OzyzC
- hNOAwQTXoZbhBEBtKvedcM8OLWN73uKDQRDKFCtRyI5HvWktUT
- KQYKjLfIE2q0k/hsz5jGxQ0DHhH62U1Fj+i127hP2lJB0o7dvy
- WBWvMjvh8AZ3Ev+5LIVrIilyHZ6/60tDtunIKjrcCIM+S7u2Ql
- 3F5ZkyV134dadZH2ZrOVtvHbr9EXW0gld7FQhCseUFz9rc8mnw
- zy6E6KoKgnoGxh+kEnZ/qXQDe9Pz8seWR5z58SV2M/FqwKPtCL
- VGzBnjNMKtuQ8MwPcSzox8gzjPZdsRBnyNpAHWrL+G5014zjVi
- kR7dtgDsVzBuQ==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4F5897F8.6090503@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex
-
-Why is the cc-list mangled again? Why is the V4L list dropped again? 
-What's so difficult about hitting the "reply-to-all" button?
-
-On Thu, 8 Mar 2012, Alex Gershgorin wrote:
-
-> Hi Fabio,
-> 
-> Thanks for you response...
-> 
-> > in spite of this I get from ov2640 driver error
-> > Here Linux Kernel boot message:
+On Thu, Mar 08, 2012 at 01:28:56PM +0200, Avi Kivity wrote:
+> On 03/08/2012 12:15 PM, Wen Congyang wrote:
+> > When the host knows the guest is panicked, it will set
+> > exit_reason to KVM_EXIT_GUEST_PANICKED. So if qemu receive
+> > this exit_reason, we can send a event to tell management
+> > application that the guest is panicked and set the guest
+> > status to RUN_STATE_PANICKED.
 > >
-> > "Linux video capture interface: v2.00
-> > soc-camera-pdrv soc-camera-pdrv.0: Probing soc-camera-pdrv.0
-> > mx3-camera mx3-camera.0: MX3 Camera driver attached to camera 0
-> > ov2640 0-0030: Product ID error fb:fb"
+> > Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> > ---
+> >  kvm-all.c        |    5 +++++
+> >  monitor.c        |    3 +++
+> >  monitor.h        |    1 +
+> >  qapi-schema.json |    2 +-
+> >  qmp.c            |    3 ++-
+> >  vl.c             |    1 +
+> >  6 files changed, 13 insertions(+), 2 deletions(-)
 > >
-> > I cannot understand what the problem is, if someone tested this?
+> > diff --git a/kvm-all.c b/kvm-all.c
+> > index 77eadf6..b3c9a83 100644
+> > --- a/kvm-all.c
+> > +++ b/kvm-all.c
+> > @@ -1290,6 +1290,11 @@ int kvm_cpu_exec(CPUState *env)
+> >                      (uint64_t)run->hw.hardware_exit_reason);
+> >              ret = -1;
+> >              break;
+> > +        case KVM_EXIT_GUEST_PANICKED:
+> > +            monitor_protocol_event(QEVENT_GUEST_PANICKED, NULL);
+> > +            vm_stop(RUN_STATE_PANICKED);
+> > +            ret = -1;
+> > +            break;
+> >
 > 
-> >>Looks like a I2C issue.
-> 
-> >>Check the I2C1 pad settings in the mainline kernel.
-> 
-> >>On FSL kernel we have:
-> 
-> #<<define PAD_CONFIG (PAD_CTL_HYS_SCHMITZ | PAD_CTL_PKE_ENABLE |
-> >>PAD_CTL_PUE_PUD | PAD_CTL_ODE_OpenDrain)
-> 
-> 	<<switch (i2c_num) {
-> 	<<case 0:
-> 		<<mxc_request_iomux(MX35_PIN_I2C1_CLK, MUX_CONFIG_SION);
-> 		<<mxc_request_iomux(MX35_PIN_I2C1_DAT, MUX_CONFIG_SION);
-> 
-> 		<<mxc_iomux_set_pad(MX35_PIN_I2C1_CLK, PAD_CONFIG);
-> 		<<mxc_iomux_set_pad(MX35_PIN_I2C1_DAT, PAD_CONFIG);
-> 
-> >>Also check if you are getting the proper voltage levels at the I2C1 lines.
-> 
-> Yes this I2C problem, all I2C slave device need response to Host CPU by pulls I2C data bus to low, in other words generate ACK, the clock pulse for the acknowledge bit is always created by the bus master.
-> 
-> In this case, the camera tries to reset the data bus and generate an ACK, but the voltage drops to the area of two volts, although it should be reset to zero.
-> I replaced R172 with 10K on CPU board and got a good result, but there are other surprises 
-> 
-> Linux video capture interface: v2.00
-> soc-camera-pdrv soc-camera-pdrv.0: Probing soc-camera-pdrv.0
-> mx3-camera mx3-camera.0: MX3 Camera driver attached to camera 0
-> ov2640 0-0030: ov2640 Product ID 26:42 Manufacturer ID 7f:a2
-> i2c i2c-0: OV2640 Probed
-> mx3-camera mx3-camera.0: MX3 Camera driver detached from camera 0
-> dmaengine: failed to get dma1chan0: (-22)
-> dmaengine: failed to get dma1chan1: (-22)
-> dmaengine: failed to get dma1chan2: (-22)
-> dmaengine: failed to get dma1chan3: (-22)
+> If the management application is not aware of this event, then it will
+> never resume the guest, so it will appear hung.
 
-First of all it shows, that you're not using the newest kernel:
+Even if the mgmt app doesn't know about the QEVENT_GUEST_PANICKED, it should
+still see a QEVENT_STOP event emitted by vm_stop() surely ? So it will
+know the guest CPUs have been stopped, even if it isn't aware of the
+reason why, which seems fine to me.
 
-http://thread.gmane.org/gmane.linux.ports.sh.devel/11508
-
-Secondly, as Fabio just pointed out, these messages are not fatal, which 
-is also the reason, why I changed their priority to "debug"
-
-Please, describe the actual problem, that you're getting (if any) and do 
-add the v4l list back to the list of recipients!
-
-Thanks
-Guennadi
-
-> dmaengine: failed to get dma1chan4: (-22)
-> dmaengine: failed to get dma1chan5: (-22)
-> dmaengine: failed to get dma1chan6: (-22)
-> dmaengine: failed to get dma1chan7: (-22)
-> dmaengine: failed to get dma1chan8: (-22)
-> dmaengine: failed to get dma1chan9: (-22)
-> dmaengine: failed to get dma1chan10: (-22)
-> dmaengine: failed to get dma1chan11: (-22)
-> dmaengine: failed to get dma1chan12: (-22)
-> dmaengine: failed to get dma1chan13: (-22)
-> dmaengine: failed to get dma1chan14: (-22)
-> dmaengine: failed to get dma1chan15: (-22)
-> dmaengine: failed to get dma1chan16: (-22)
-> dmaengine: failed to get dma1chan17: (-22)
-> dmaengine: failed to get dma1chan18: (-22)
-> dmaengine: failed to get dma1chan19: (-22)
-> dmaengine: failed to get dma1chan20: (-22)
-> dmaengine: failed to get dma1chan21: (-22)
-> dmaengine: failed to get dma1chan22: (-22)
-> dmaengine: failed to get dma1chan23: (-22)
-> dmaengine: failed to get dma1chan24: (-22)
-> dmaengine: failed to get dma1chan25: (-22)
-> dmaengine: failed to get dma1chan26: (-22)
-> dmaengine: failed to get dma1chan27: (-22)
-> dmaengine: failed to get dma1chan28: (-22)
-> dmaengine: failed to get dma1chan29: (-22)
-> dmaengine: failed to get dma1chan30: (-22):
-> 
-> 
-> What is the problem? 
-> Guennadi please help me understand 
-> 
-> Thanks,
->  
-> Alex Gershgorin
-> 
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+Daniel
+-- 
+|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
+|: http://libvirt.org              -o-             http://virt-manager.org :|
+|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
+|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
