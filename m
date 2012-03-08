@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab2CHGdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 01:33:10 -0500
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:10312
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754600Ab2CHGdG (ORCPT
+	id S1754816Ab2CHGxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 01:53:21 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58949 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754360Ab2CHGxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 01:33:06 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz936eK1432N98dKzz1202hzzz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Subject: RE: [PATCH v2] powerpc/srio: Fix the compile errors when building
-	with 64bit
-From: Liu Gang <Gang.Liu@freescale.com>
-To: David Laight <David.Laight@ACULAB.COM>
-CC: <linuxppc-dev@lists.ozlabs.org>, <Alexandre.Bounine@idt.com>,
-        <r58472@freescale.com>, <linux-kernel@vger.kernel.org>,
-        <r61911@freescale.com>, <paul.gortmaker@windriver.com>,
-        <akpm@linux-foundation.org>, Shaohui Xie <Shaohui.Xie@freescale.com>
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B6E91@saturn3.aculab.com>
-References: <AE90C24D6B3A694183C094C60CF0A2F6026B6E91@saturn3.aculab.com>
-Content-Type: text/plain
-Date: Thu, 8 Mar 2012 14:31:17 +0800
-Message-ID: <1331188278.23420.157.camel@10.ap.freescale.net>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-19.el5) 
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+	Thu, 8 Mar 2012 01:53:18 -0500
+Date: Thu, 8 Mar 2012 17:53:07 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20120308175307.b295b1013728a5666fe4571a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__8_Mar_2012_17_53_07_+1100_oSzT.1M0ZZWoifDo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, David,
+--Signature=_Thu__8_Mar_2012_17_53_07_+1100_oSzT.1M0ZZWoifDo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, 2012-03-07 at 13:18 +0000, David Laight wrote:  
-> >  	pr_debug("RIO: fsl_add_outb_message(): destid %4.4x mbox %d
-> buffer " \
-> > -		 "%8.8x len %8.8x\n", rdev->destid, mbox, (int)buffer,
-> len);
-> > +		 "%8.8lx len %8.8zx\n", rdev->destid, mbox,
-> > +		(unsigned long)buffer, len);
-> 
-> Should 'buffer' be printed with %p ??
+Hi Andrew,
 
-Yes, printing with "%p" can get rid of the cast, although they have the
-same print results.
+Today's linux-next merge of the akpm tree got a conflict in
+arch/x86/mm/hugetlbpage.c between commit 097d59106a8e ("vm: avoid using
+find_vma_prev() unnecessarily") from Linus' tree and commit "hugetlb:
+drop prev_vma in hugetlb_get_unmapped_area_topdown()" from the akpm tree.
 
-Thanks a lot.
+I think the latter is a superset of the former, so I just dropped the
+changes from the former.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Liu Gang
+--Signature=_Thu__8_Mar_2012_17_53_07_+1100_oSzT.1M0ZZWoifDo
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPWFdTAAoJEECxmPOUX5FEQzEP/3+TkcxhKJQqi6E5TVvJElJ9
+cGTV0I1VmzAJpaES5piZKEMBvZgErEBVis7xCL22xSdXmPuwy3vWM2kPoGBCrfY7
+IcaIzlFORi1vb2tdUczBlJqEfLoLPyrw5pu9YuWZbr3S/kQibCCXmnhoICkRI8f+
+qRQwAyX6AUoXEYYqWviRqq+PvjfkxCFAqn8Ljz9sBFbaHdWH2XVwa/QFRxIpfXcL
+MUuLsP9sfH+JGIHk2k2B1+uG/MxoUIE9CQYQMWHFKThQ0/J67PSuaSKnXrhBiSaA
+QwvCAUgjo6y6VDTIhXntPIz9aXRos7O7f99CMDcDt9yOtiLeX8ZE3Z/R7E7lhQ/t
+6R0Slbb+ZCSchJGM5FM7iC6uO6bS/jcD+mWv8r5WyyYAPNyF15BUzpcXKIB6sITT
+Zy9E7I7LprhIx+nbEZAvnfXZo0erVkY9gyL4Qpc3tDFCep/FICtGQLXAXp4RcRFx
+q9wY8+H7jCIfhsBcQlVJJgFk812NGwIJjG5B5p83InmCdc8fZ3XwkorQ0M/Mbe0N
+x/JZ9UlJQQpe2aHL0FJ+b89mE78HeHhqH+WPPXoM6xIg7uOfEgSMXdYwa0yN1Djt
+43gsXgHR1q/SWeqmYXJFJxuPtdKWy8HiHsjCNf/763tkjcifeGGVhON74a/21u18
+9feerNRAbSb08l/MArpm
+=k4Ci
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__8_Mar_2012_17_53_07_+1100_oSzT.1M0ZZWoifDo--
