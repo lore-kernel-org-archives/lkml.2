@@ -1,136 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab2CHFxe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 00:53:34 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:46538 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab2CHFxd (ORCPT
+	id S1753074Ab2CHFzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 00:55:47 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:41024 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab2CHFzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 00:53:33 -0500
-Message-ID: <4F58495B.5080308@oss.ntt.co.jp>
-Date: Thu, 08 Mar 2012 14:53:31 +0900
-From: =?UTF-8?B?RmVybmFuZG8gTHVpcyBWw6F6cXVleiBDYW8=?= 
-	<fernando@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
-        torvalds@linux-foundation.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, mingo@elte.hu, Yinghai Lu <yinghai@kernel.org>,
-        akpm@linux-foundation.org, vgoyal@redhat.com
-Subject: Re: [PATCH 1/2] boot: ignore early NMIs
-References: <CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com> <20120216172735.GX9751@redhat.com> <CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com> <20120216215603.GH9751@redhat.com> <m1y5s2ku36.fsf@fess.ebiederm.org> <m1fwe9bpk2.fsf@fess.ebiederm.org> <20120217195430.GO9751@redhat.com> <m1y5s07rn3.fsf@fess.ebiederm.org> <20120220151419.GU9751@redhat.com> <m1obss39a4.fsf@fess.ebiederm.org> <20120221135934.GF26998@redhat.com> <m1ipip6xe8.fsf@fess.ebiederm.org> <4F573E1C.2060909@oss.ntt.co.jp> <4F573E74.5040504@oss.ntt.co.jp> <m1eht31z8e.fsf@fess.ebiederm.org>
-In-Reply-To: <m1eht31z8e.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 8 Mar 2012 00:55:45 -0500
+Date: Thu, 8 Mar 2012 16:55:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: linux-next: manual merge of the arm-soc tree with the omap_dss2
+ tree
+Message-Id: <20120308165539.8a3b718be677de97a8767cd5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__8_Mar_2012_16_55_39_+1100_r+CVUrMNoJ2P=hBP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2012 01:41 PM, Eric W. Biederman wrote:
-> Fernando Luis Vázquez Cao<fernando@oss.ntt.co.jp>  writes:
->
->> Subject: [PATCH] boot: ignore early NMIs
->>
->> From: Fernando Luis Vazquez Cao<fernando@oss.ntt.co.jp>
->>
->> NMIs very early in the boot process are rarely critical (usually
->> it just means that there was a spurious bit flip somewhere in the
->> hardware, or that this is a kdump kernel and we received an NMI
->> generated in the previous context), so the current behavior of
->> halting the system when one occurs is probably a bit over the top.
->>
->> This patch changes the early IDT so that NMIs are ignored and the
->> kernel can, hopefully, continue executing other code. Harsher
->> measures (panic, etc) are defered to the final NMI handler, which
->> can actually make an informed decision.
->>
->> This issue presented itself in our environment as seemingly
->> random hangs in kdump.
->>
->> Signed-off-by: Fernando Luis Vazquez Cao<fernando@oss.ntt.co.jp>
->> ---
->>
->> diff -urNp linux-3.3-rc6-orig/arch/x86/kernel/head64.c linux-3.3-rc6/arch/x86/kernel/head64.c
->> --- linux-3.3-rc6-orig/arch/x86/kernel/head64.c	2012-03-07 15:49:01.834241787 +0900
->> +++ linux-3.3-rc6/arch/x86/kernel/head64.c	2012-03-07 18:39:03.173732875 +0900
->> @@ -71,7 +71,7 @@ void __init x86_64_start_kernel(char * r
->>   				(__START_KERNEL&  PGDIR_MASK)));
->>   	BUILD_BUG_ON(__fix_to_virt(__end_of_fixed_addresses)<= MODULES_END);
->>
->> -	/* clear bss before set_intr_gate with early_idt_handler */
->> +	/* clear bss before set_intr_gate with early_idt_handlers */
->>   	clear_bss();
->>
->>   	/* Make NULL pointers segfault */
->> @@ -79,13 +79,8 @@ void __init x86_64_start_kernel(char * r
->>
->>   	max_pfn_mapped = KERNEL_IMAGE_SIZE>>  PAGE_SHIFT;
->>
->> -	for (i = 0; i<  NUM_EXCEPTION_VECTORS; i++) {
->> -#ifdef CONFIG_EARLY_PRINTK
->> +	for (i = 0; i<  NUM_EXCEPTION_VECTORS; i++)
->>   		set_intr_gate(i,&early_idt_handlers[i]);
->> -#else
->> -		set_intr_gate(i, early_idt_handler);
->> -#endif
->> -	}
->>   	load_idt((const struct desc_ptr *)&idt_descr);
->>
->>   	if (console_loglevel == 10)
->> diff -urNp linux-3.3-rc6-orig/arch/x86/kernel/head_64.S linux-3.3-rc6/arch/x86/kernel/head_64.S
->> --- linux-3.3-rc6-orig/arch/x86/kernel/head_64.S	2012-03-07 15:49:01.838241839 +0900
->> +++ linux-3.3-rc6/arch/x86/kernel/head_64.S	2012-03-07 18:41:21.811516876 +0900
->> @@ -270,18 +270,29 @@ bad_address:
->>   	jmp bad_address
->>
->>   	.section ".init.text","ax"
->> -#ifdef CONFIG_EARLY_PRINTK
->>   	.globl early_idt_handlers
->>   early_idt_handlers:
->> -	i = 0
->> +	vector = 0
->>   	.rept NUM_EXCEPTION_VECTORS
->> -	movl $i, %esi
->> -	jmp early_idt_handler
->> -	i = i + 1
->> +	/*
->> +	 * NMIs (vector 2) this early in the boot process are rarely critical
->> +	 * (usually it just means that there was a spurious bit flip somewhere
->> +	 * in the hardware, or that this is a kdump kernel and we received an
->> +	 * NMI generated in the previous context), so we ignore them here and
->> +	 * try to continue (see early_nmi_handler implementation below).
->> +	 * Harsher measures (panic, etc) are defered to the final NMI handler,
->> +	 * which can actually make an informed decision.
->> +	 */
->> +	.if vector == 2
->> +	jmp early_nmi_handler
-> Is just a jump and not a move followed by a jump still 10 bytes?
-> I hate to say it but I think this fails miserably for any exception
-> after a nmi.
+--Signature=_Thu__8_Mar_2012_16_55_39_+1100_r+CVUrMNoJ2P=hBP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you for the heads up! Actually, it was working for the
-exceptions after the nmi but with a corrupted esi (vector
-number). My original intention was to fill the empty space
-with nops but forgot to actually implement it... Sorry about
-that. Will fix for the next iteration.
+Hi all,
 
-> I expect the simplest solution is to modify early_idt_handler to test
-> for vector == 2.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-omap1/board-nokia770.c between commit 58e0d6ab02eb ("OMAP:
+N770: remove HWA742 platform data") from the omap_dss2 tree and commit
+2e3ee9f45b3c ("ARM: OMAP1: Move most of plat/io.h into local iomap.h")
+from the arm-soc tree.
 
-That is precisely what I did on a previous version but that would
-involve using registers which need to be saved and restored and
-I wanted to avoid using the stack in the NMI path. We would also
-need to add a "pushq rsi " in early_idt_handlers which implies
-modifying "early_idt_handlers" definition in "segment.h".
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-If you are OK with it I would like to go with the approach in
-the two patches I sent.
+diff --cc arch/arm/mach-omap1/board-nokia770.c
+index 9b6332a,abdbdb0..0000000
+--- a/arch/arm/mach-omap1/board-nokia770.c
++++ b/arch/arm/mach-omap1/board-nokia770.c
+@@@ -30,7 -29,7 +29,6 @@@
+  #include <plat/usb.h>
+  #include <plat/board.h>
+  #include <plat/keypad.h>
+- #include "common.h"
+ -#include <plat/hwa742.h>
+  #include <plat/lcd_mipid.h>
+  #include <plat/mmc.h>
+  #include <plat/clock.h>
 
+--Signature=_Thu__8_Mar_2012_16_55_39_+1100_r+CVUrMNoJ2P=hBP
+Content-Type: application/pgp-signature
 
-> Doing something less brittle than:
->> extern const char early_idt_handlers[NUM_EXCEPTION_VECTORS][10];
-> in segment.h might be a good idea as well.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Yes, I agree. I will give it some thought.
+iQIcBAEBCAAGBQJPWEnbAAoJEECxmPOUX5FE/lIP+wSIKyn7EFKDRkK0LH/rm9Ga
+QySNT63cJv58WFDQS+3+BnAO6fRFVXt7lVFJbbRVq2Oq6PbzJ0rei1u0hCRcMsa/
+Vr4sFMU4Te29YU4rM/vgl7yDf1gv0xSa4QGvFQwAHp5I6GroH6cebs0E0XNoWTQt
+rVBUW9/cTnxALnDjZdzGaKM5D58AOWW2PJOonRsEGB8+CE1UgxmXZXHeks+9D2rf
+eqEP20ynUPDA64M4E1m/syex4Wa5HIRxkODxl7mnwVOXPnKzWpNDpH9qZBmx1uTG
+FgflkBj7xGkJ/UvCEghrNZorI1mL5TpRZr8M3dCiB1seKNJ1OmvpmMW/BZnf2u9N
+wqoQ/ClIN4RNUpo/+khOfywa/Fg70t0djvUGENkLCEIE0ynHyoLISZpMOcfuqqyD
+iiRPoqA74SHFYEUT5pRKzTZl5Zeb3vW8y2tmfiUHiFiHxPOB+eiOEZk5VProwKzu
+TEGy0nUckU4+RjX71EL28jMJbQfRRabY/Grsn1i6iudbM5F+3f5NEgjcRLckVVBW
+/pofuaF3Xmd6BJEPKprQUDbN3jSAdrd7K4nVHF2Ynxopy2MmsOocI6qR4gtj0GGR
+2uuMgnTsmubRQBpFTRqfv2LzxUfiCpSU3vI+9gKWhbFMG7XiVEGzf8T9f7Ip+gwT
+MbuUIR/SAyWMBMqC0PCy
+=3wBG
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__8_Mar_2012_16_55_39_+1100_r+CVUrMNoJ2P=hBP--
