@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667Ab2CHVoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:44:18 -0500
-Received: from toast.topped-with-meat.com ([204.197.218.159]:42468 "EHLO
-	topped-with-meat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757468Ab2CHVoR (ORCPT
+	id S1757866Ab2CHVoi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:44:38 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55409 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757767Ab2CHVoh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:44:17 -0500
+	Thu, 8 Mar 2012 16:44:37 -0500
+Date: Thu, 8 Mar 2012 21:44:25 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        davej@redhat.com, jboyer@redhat.com, tyhicks@canonical.com,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] hugetlbfs: lockdep annotate root inode properly
+Message-ID: <20120308214425.GA23916@ZenIV.linux.org.uk>
+References: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20120308130256.c7855cbd.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@hack.frob.com>
-To: Jason Baron <jbaron@redhat.com>
-X-Fcc: ~/Mail/lkml
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org, avi@redhat.com,
-        cmetcalf@tilera.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2 v2] core dump: add VM_NODUMP, MADV_NODUMP, MADV_CLEAR_NODUMP
-In-Reply-To: Jason Baron's message of  Thursday, 8 March 2012 16:29:30 -0500 <f52c6c288ec291c8cdc6176673d5b0d3d33a6f14.1331238525.git.jbaron@redhat.com>
-References: <cover.1331238525.git.jbaron@redhat.com>
-	<f52c6c288ec291c8cdc6176673d5b0d3d33a6f14.1331238525.git.jbaron@redhat.com>
-X-Shopping-List: (1) Histrionic pond lions
-   (2) Sanctimonious confessions
-   (3) Stimulating solicitous pajamas
-Message-Id: <20120308214417.328502C0C8@topped-with-meat.com>
-Date: Thu,  8 Mar 2012 13:44:17 -0800 (PST)
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.0 cv=fe7WOzsF c=1 sm=1 a=u2HnU3c4MckA:10
-		a=kj9zAlcOel0A:10 a=HUqb8dNcSfkq7c8_H4QA:9 a=CjuIK1q_8ugA:10
-		a=WkljmVdYkabdwxfqvArNOQ==:117
+Content-Disposition: inline
+In-Reply-To: <20120308130256.c7855cbd.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm vaguely dubious about the desireability of using this new feature.
-(I would hate to try to debug a qemu bug from a dump where half the
-interesting state was intentionally hidden from me.)  But I don't see
-any problem with the implementation.
+On Thu, Mar 08, 2012 at 01:02:56PM -0800, Andrew Morton wrote:
+> > This fix the below lockdep warning
+> 
+> OK, what's going on here.
 
-As to the interface, I think the bits are OK but it would be more
-in keeping with the existing MADV_* names to call the new values
-MADV_DONTDUMP and MADV_DODUMP.
+Deadlock in hugetlbfs mmap getting misreported.
 
+One last time: ->mmap_sem nests inside ->i_mutex.  Both for regular
+files and for directories.  Always had.
 
-Thanks,
-Roland
+For directories there's copy_to_user() from ->readdir() done under ->i_mutex.
+For regular files there's copy_from_user() from ->write(), usually done under
+->i_mutex.  On hugetlbfs there's copy_to_user() from ->read() done under
+->i_mutex.
+
+It had not changed at all.  Lockdep sees both call chains; the only question
+is which chain is seen first.  And usually reading a directory happens earlier
+in the boot than writing into a file.  That's all there is to it.
+
+Unfortunately, the fact that call chain being reported is obviously about
+directories leads to false hopes that deadlock doesn't exist - mmap()
+obviously can't happen to a directory inode, so people hope that it's a
+false positive.  It isn't.
+
+Patch separating directory and non-directory ->i_mutex into different classes
+went in at some point, precisely due to those hopes.  It had a braino that
+made it useless.  Fix for that braino had been posted and sits my queue; I'll
+push it to Linus along with other pending fixes tonight.
+
+It will *not* eliminate the (very real) deadlock.  It might make the warning
+go away, but only if read() on hugetlbfs files doesn't happen during boot.
+
+I suspect that they right thing would be to have a way to set explicit
+nesting rules, not tied to speficic call trace.  I hadn't looked into
+lockdep guts, so no idea how much will that hurt to implement.  As in
+lockdep_lock_nests(class_outer, class_inner, message), acting as if
+there had been a call chain where class_outer had been taken before
+class_inner, with message going in place of call trace for that chain
+when we run into a conflict...
