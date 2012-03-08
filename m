@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab2CHC3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 21:29:21 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:35066 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299Ab2CHC26 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 21:28:58 -0500
-Message-ID: <4F581962.8040403@linux.vnet.ibm.com>
-Date: Thu, 08 Mar 2012 10:28:50 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: William Irwin <wli@holomorphy.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] hugetlb: drop prev_vma in hugetlb_get_unmapped_area_topdown
-References: <4F101904.8090405@linux.vnet.ibm.com> <4F101935.1040108@linux.vnet.ibm.com> <20120307140101.b0624e80.akpm@linux-foundation.org>
-In-Reply-To: <20120307140101.b0624e80.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754456Ab2CHCbk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 21:31:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:1294 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752833Ab2CHCbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 21:31:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="118882982"
+Subject: Re: [RFC patch] spindep: add cross cache lines checking
+From: Alex Shi <alex.shi@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: gcc@gcc.gnu.org, Ingo Molnar <mingo@elte.hu>, tglx@linutronix.de,
+        "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, andi.kleen@intel.com, gcc-help@gcc.gnu.org
+In-Reply-To: <201203071154.36059.arnd@arndb.de>
+References: <1330917630.18835.44.camel@debian>
+	 <201203060932.45223.arnd@arndb.de> <1331108607.18835.343.camel@debian>
+	 <201203071154.36059.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Mar 2012 10:30:47 +0800
+Message-ID: <1331173847.18835.355.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12030716-0260-0000-0000-000000A9AFA4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2012 06:01 AM, Andrew Morton wrote:
-
-> On Fri, 13 Jan 2012 19:44:53 +0800
-> Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com> wrote:
+> > 1, it is alignof bug for default gcc on my fc15 and Ubuntu 11.10 etc?
+> > 
+> > struct sub {
+> >         int  raw_lock;
+> >         char a;
+> > };
+> > struct foo {
+> >         struct sub z;
+> >         int slk;
+> >         char y;
+> > }__attribute__((packed));
+> > 
+> > struct foo f1;
+> > 
+> > __alignof__(f1.z.raw_lock) is 4, but its address actually can align on
+> > one byte. 
 > 
->> Afte call find_vma_prev(mm, addr, &prev_vma), following condition is always
->> true:
->> 	!prev_vma || (addr >= prev_vma->vm_end)
->> it can be happily drop prev_vma and use find_vma instead of find_vma_prev
-> 
-> I had to rework this patch due to 097d59106a8e4b ("vm: avoid using
-> find_vma_prev() unnecessarily") in mainline.  Can you please check my
-> handiwork?
-> 
+> That looks like correct behavior, because the alignment of raw_lock inside of
+> struct sub is still 4. But it does mean that there can be cases where the
+> compile-time check is not sufficient, so we might want the run-time check
+> as well, at least under some config option.
+
+According to explanation of gcc, seems it should return 1 when it can be
+align on char. And then it's useful for design intend. Any comments from
+gcc guys? 
+====
+http://gcc.gnu.org/onlinedocs/gcc/Alignment.html
+The keyword __alignof__ allows you to inquire about how an object is
+aligned, or the minimum alignment usually required by a type. Its syntax
+is just like sizeof.
 
 
-It looks good to me, thanks Andrew!
 
