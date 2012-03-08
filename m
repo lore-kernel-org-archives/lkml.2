@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757774Ab2CHNCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 08:02:32 -0500
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:54200 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757632Ab2CHNC3 (ORCPT
+	id S1757824Ab2CHNCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 08:02:47 -0500
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:45456 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757732Ab2CHNCb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 08:02:29 -0500
+	Thu, 8 Mar 2012 08:02:31 -0500
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
 Cc: Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3/4] mfd/prcmu-db8500: add prcmu_abb_write_masked
-Date: Thu, 8 Mar 2012 14:02:05 +0100
-Message-ID: <1331211725-9835-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 4/4] mfd/ab8500: make use of the firmware read-modify-write service
+Date: Thu, 8 Mar 2012 14:02:20 +0100
+Message-ID: <1331211740-9871-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.8
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -23,109 +23,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
 
-This patch adds driver support for the I2C read-modify-write
-service in the U8500 PRCMU firmware.
+This patch updates the AB8500 driver to make use of the I2C
+read-modify-write service in the PRCMU firmware.
 
 Signed-off-by: Mattias Nilsson <mattias.i.nilsson@stericsson.com>
-Reviewed-by: Jonas ABERG <jonas.aberg@stericsson.com>
+Reviewed-by: Mattias Wallin <mattias.wallin@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mfd/db8500-prcmu.c       |   28 +++++++++++++++++++++++++---
- include/linux/mfd/dbx500-prcmu.h |    7 +++++++
- 2 files changed, 32 insertions(+), 3 deletions(-)
+ drivers/mfd/ab8500-core.c         |   37 +++++++++++++++++++++++--------------
+ drivers/mfd/ab8500-i2c.c          |   15 ++++++++++++++-
+ include/linux/mfd/abx500/ab8500.h |    6 ++++--
+ 3 files changed, 41 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index af8e0ef..931d5e0 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -1675,6 +1675,7 @@ int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
- 	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(5))
- 		cpu_relax();
- 
-+	writeb(0, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB5));
- 	writeb(PRCMU_I2C_READ(slave), (tcdm_base + PRCM_REQ_MB5_I2C_SLAVE_OP));
- 	writeb(PRCMU_I2C_STOP_EN, (tcdm_base + PRCM_REQ_MB5_I2C_HW_BITS));
- 	writeb(reg, (tcdm_base + PRCM_REQ_MB5_I2C_REG));
-@@ -1700,16 +1701,19 @@ int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
- }
- 
- /**
-- * prcmu_abb_write() - Write register value(s) to the ABB.
-+ * prcmu_abb_write_masked() - Write masked register value(s) to the ABB.
-  * @slave:	The I2C slave address.
-  * @reg:	The (start) register address.
-  * @value:	The value(s) to write.
-+ * @mask:	The mask(s) to use.
-  * @size:	The number of registers to write.
-  *
-- * Reads register value(s) from the ABB.
-+ * Writes masked register value(s) to the ABB.
-+ * For each @value, only the bits set to 1 in the corresponding @mask
-+ * will be written. The other bits are not changed.
-  * @size has to be 1 for the current firmware version.
-  */
--int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
-+int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask, u8 size)
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index c637c8d..1f08704 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -201,29 +201,38 @@ static int mask_and_set_register_interruptible(struct ab8500 *ab8500, u8 bank,
+ 	u8 reg, u8 bitmask, u8 bitvalues)
  {
- 	int r;
+ 	int ret;
+-	u8 data;
+ 	/* put the u8 bank and u8 reg together into a an u16.
+ 	 * bank on higher 8 bits and reg in lower */
+ 	u16 addr = ((u16)bank) << 8 | reg;
  
-@@ -1721,6 +1725,7 @@ int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
- 	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(5))
- 		cpu_relax();
+ 	mutex_lock(&ab8500->lock);
  
-+	writeb(~*mask, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB5));
- 	writeb(PRCMU_I2C_WRITE(slave), (tcdm_base + PRCM_REQ_MB5_I2C_SLAVE_OP));
- 	writeb(PRCMU_I2C_STOP_EN, (tcdm_base + PRCM_REQ_MB5_I2C_HW_BITS));
- 	writeb(reg, (tcdm_base + PRCM_REQ_MB5_I2C_REG));
-@@ -1743,6 +1748,23 @@ int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
+-	ret = ab8500->read(ab8500, addr);
+-	if (ret < 0) {
+-		dev_err(ab8500->dev, "failed to read reg %#x: %d\n",
+-			addr, ret);
+-		goto out;
+-	}
++	if (ab8500->write_masked == NULL) {
++		u8 data;
+ 
+-	data = (u8)ret;
+-	data = (~bitmask & data) | (bitmask & bitvalues);
++		ret = ab8500->read(ab8500, addr);
++		if (ret < 0) {
++			dev_err(ab8500->dev, "failed to read reg %#x: %d\n",
++				addr, ret);
++			goto out;
++		}
+ 
+-	ret = ab8500->write(ab8500, addr, data);
+-	if (ret < 0)
+-		dev_err(ab8500->dev, "failed to write reg %#x: %d\n",
+-			addr, ret);
++		data = (u8)ret;
++		data = (~bitmask & data) | (bitmask & bitvalues);
++
++		ret = ab8500->write(ab8500, addr, data);
++		if (ret < 0)
++			dev_err(ab8500->dev, "failed to write reg %#x: %d\n",
++				addr, ret);
+ 
+-	dev_vdbg(ab8500->dev, "mask: addr %#x => data %#x\n", addr, data);
++		dev_vdbg(ab8500->dev, "mask: addr %#x => data %#x\n", addr,
++			data);
++		goto out;
++	}
++	ret = ab8500->write_masked(ab8500, addr, bitmask, bitvalues);
++	if (ret < 0)
++		dev_err(ab8500->dev, "failed to modify reg %#x: %d\n", addr,
++			ret);
+ out:
+ 	mutex_unlock(&ab8500->lock);
+ 	return ret;
+diff --git a/drivers/mfd/ab8500-i2c.c b/drivers/mfd/ab8500-i2c.c
+index 70a16ae..b83045f 100644
+--- a/drivers/mfd/ab8500-i2c.c
++++ b/drivers/mfd/ab8500-i2c.c
+@@ -11,7 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/mfd/abx500/ab8500.h>
+-#include <linux/mfd/db8500-prcmu.h>
++#include <linux/mfd/dbx500-prcmu.h>
+ 
+ static int ab8500_i2c_write(struct ab8500 *ab8500, u16 addr, u8 data)
+ {
+@@ -23,6 +23,18 @@ static int ab8500_i2c_write(struct ab8500 *ab8500, u16 addr, u8 data)
+ 	return ret;
  }
  
- /**
-+ * prcmu_abb_write() - Write register value(s) to the ABB.
-+ * @slave:	The I2C slave address.
-+ * @reg:	The (start) register address.
-+ * @value:	The value(s) to write.
-+ * @size:	The number of registers to write.
-+ *
-+ * Writes register value(s) to the ABB.
-+ * @size has to be 1 for the current firmware version.
-+ */
-+int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
++static int ab8500_i2c_write_masked(struct ab8500 *ab8500, u16 addr, u8 mask,
++	u8 data)
 +{
-+	u8 mask = ~0;
++	int ret;
 +
-+	return prcmu_abb_write_masked(slave, reg, value, &mask, size);
++	ret = prcmu_abb_write_masked((u8)(addr >> 8), (u8)(addr & 0xFF), &data,
++		&mask, 1);
++	if (ret < 0)
++		dev_err(ab8500->dev, "prcmu i2c error %d\n", ret);
++	return ret;
 +}
 +
-+/**
-  * prcmu_ac_wake_req - should be called whenever ARM wants to wakeup Modem
-  */
- void prcmu_ac_wake_req(void)
-diff --git a/include/linux/mfd/dbx500-prcmu.h b/include/linux/mfd/dbx500-prcmu.h
-index bac942f..19a0ff5 100644
---- a/include/linux/mfd/dbx500-prcmu.h
-+++ b/include/linux/mfd/dbx500-prcmu.h
-@@ -276,6 +276,7 @@ static inline void prcmu_get_abb_event_buffer(void __iomem **buf)
- 
- int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size);
- int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size);
-+int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask, u8 size);
- 
- int prcmu_config_clkout(u8 clkout, u8 source, u8 div);
- 
-@@ -395,6 +396,12 @@ static inline int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
- 	return -ENOSYS;
- }
- 
-+static inline int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask,
-+	u8 size)
-+{
-+	return -ENOSYS;
-+}
-+
- static inline int prcmu_config_clkout(u8 clkout, u8 source, u8 div)
+ static int ab8500_i2c_read(struct ab8500 *ab8500, u16 addr)
  {
- 	return 0;
+ 	int ret;
+@@ -59,6 +71,7 @@ static int __devinit ab8500_i2c_probe(struct platform_device *plf)
+ 
+ 	ab8500->read = ab8500_i2c_read;
+ 	ab8500->write = ab8500_i2c_write;
++	ab8500->write_masked = ab8500_i2c_write_masked;
+ 
+ 	platform_set_drvdata(plf, ab8500);
+ 
+diff --git a/include/linux/mfd/abx500/ab8500.h b/include/linux/mfd/abx500/ab8500.h
+index 78ed95b..3b551a1 100644
+--- a/include/linux/mfd/abx500/ab8500.h
++++ b/include/linux/mfd/abx500/ab8500.h
+@@ -217,6 +217,7 @@ enum ab8500_version {
+  * @version: chip version id (e.g. ab8500 or ab9540)
+  * @chip_id: chip revision id
+  * @write: register write
++ * @write_masked: masked register write
+  * @read: register read
+  * @rx_buf: rx buf for SPI
+  * @tx_buf: tx buf for SPI
+@@ -236,8 +237,9 @@ struct ab8500 {
+ 	enum ab8500_version version;
+ 	u8		chip_id;
+ 
+-	int (*write) (struct ab8500 *a8500, u16 addr, u8 data);
+-	int (*read) (struct ab8500 *a8500, u16 addr);
++	int (*write)(struct ab8500 *ab8500, u16 addr, u8 data);
++	int (*write_masked)(struct ab8500 *ab8500, u16 addr, u8 mask, u8 data);
++	int (*read)(struct ab8500 *ab8500, u16 addr);
+ 
+ 	unsigned long	tx_buf[4];
+ 	unsigned long	rx_buf[4];
 -- 
 1.7.8
 
