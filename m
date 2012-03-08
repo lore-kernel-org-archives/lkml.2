@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab2CHE7l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 23:59:41 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:49419 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab2CHE7h (ORCPT
+	id S1751491Ab2CHFcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 00:32:10 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32772 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab2CHFbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 23:59:37 -0500
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: rdunlap@xenotime.net, trivial@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH RESEND] [trivial] Documentation: broken URL in filesystems
-Date: Thu,  8 Mar 2012 05:59:24 +0100
-Message-Id: <1331182764-32564-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Thu, 8 Mar 2012 00:31:52 -0500
+From: Il Han <corone.il.han@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Il Han <corone.il.han@gmail.com>
+Subject: [PATCH] wm9090: remove unnecessary variables.
+Date: Thu,  8 Mar 2012 14:27:41 +0900
+Message-Id: <1331184461-25103-1-git-send-email-corone.il.han@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix broken link in Documentation/filesystem, replacing
-ftp://ftp.uk.linux.org/pub/linux/sct/fs/jfs/journal-design.ps.gz
-by a URL on http://kernel.org
+Unnecessary variables which are not used left.
 
-Thanks to Randy Dunlap for his advise on the best replacement
-URL to use.
+Remove them.
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Signed-off-by: Il Han <corone.il.han@gmail.com>
 ---
- Documentation/DocBook/filesystems.tmpl |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ sound/soc/codecs/wm9090.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/DocBook/filesystems.tmpl b/Documentation/DocBook/filesystems.tmpl
-index f51f285..3fca32c 100644
---- a/Documentation/DocBook/filesystems.tmpl
-+++ b/Documentation/DocBook/filesystems.tmpl
-@@ -387,7 +387,7 @@ an example.
-      <title>See also</title>
- 	<para>
- 	  <citation>
--	   <ulink url="ftp://ftp.uk.linux.org/pub/linux/sct/fs/jfs/journal-design.ps.gz">
-+	   <ulink url="http://kernel.org/pub/linux/kernel/people/sct/ext3/journal-design.ps.gz">
- 	   	Journaling the Linux ext2fs Filesystem, LinuxExpo 98, Stephen Tweedie
- 	   </ulink>
- 	  </citation>
+diff --git a/sound/soc/codecs/wm9090.c b/sound/soc/codecs/wm9090.c
+index 41ebe0d..eb09422 100644
+--- a/sound/soc/codecs/wm9090.c
++++ b/sound/soc/codecs/wm9090.c
+@@ -493,7 +493,6 @@ static int wm9090_set_bias_level(struct snd_soc_codec *codec,
+ 				 enum snd_soc_bias_level level)
+ {
+ 	u16 *reg_cache = codec->reg_cache;
+-	int i, ret;
+ 
+ 	switch (level) {
+ 	case SND_SOC_BIAS_ON:
 -- 
 1.7.4.1
 
