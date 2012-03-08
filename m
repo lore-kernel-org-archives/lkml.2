@@ -1,76 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab2CHHfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 02:35:13 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59618 "EHLO mx3.mail.elte.hu"
+	id S1753165Ab2CHHlN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 02:41:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:16209 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab2CHHfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 02:35:07 -0500
-Date: Thu, 8 Mar 2012 08:34:54 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Peter Seebach <peter.seebach@windriver.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Anton Blanchard <anton@samba.org>, paulus@samba.org, dsahern@gmail.com,
-        fweisbec@gmail.com, yanmin_zhang@linux.intel.com, emunson@mgebm.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: Incorrect use of snprintf results in SEGV
-Message-ID: <20120308073454.GD20784@elte.hu>
-References: <20120307114249.44275ca3@kryten>
- <20120307010904.GE5656@infradead.org>
- <20120306192912.59811e3e@wrlaptop>
- <20120307203725.GA4333@elte.hu>
- <1331153964.11248.362.camel@twins>
+	id S1751487Ab2CHHlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 02:41:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="118949902"
+Message-ID: <4F586266.8060504@linux.intel.com>
+Date: Wed, 07 Mar 2012 23:40:22 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331153964.11248.362.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+To: Huang Shijie <shijie8@gmail.com>
+CC: jon@jonshouse.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: Random process lockup on ARM board: alsa-lib-1.0.25, FUTEX_WAIT_PRIVATE
+References: <1329393691.6830.20.camel@jonspc> <1329512682.29051.1.camel@jonspc> <1329570128.6670.0.camel@jonspc> <4F400BBF.9020707@ladisch.de> <1329603022.1089.57.camel@jonspc> <4F41FC28.1070605@ladisch.de> <1329926198.22918.10.camel@jonspc> <4F45167A.6080706@ladisch.de> <1330043397.4669.44.camel@jonspc> <CAMiH66EdB9KN1gw_hG=34zab56RxcPKB7G2MyJALfD_5z1yeVQ@mail.gmail.com> <4F57C007.5050006@linux.intel.com> <CAMiH66E3z3H2cYQs5KQuVp_iNdusOYJ+XF6jfbJ9Z_uJ7v45_w@mail.gmail.com> <4F582949.6000708@linux.intel.com> <CAMiH66HQ=K9ucKeHP_AuXY9COd083AvsT+Nu-L2=WS-bu35rkQ@mail.gmail.com>
+In-Reply-To: <CAMiH66HQ=K9ucKeHP_AuXY9COd083AvsT+Nu-L2=WS-bu35rkQ@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Wed, 2012-03-07 at 21:37 +0100, Ingo Molnar wrote:
-> >         size_needed = snprintf_size(...);
+On 03/07/2012 08:24 PM, Huang Shijie wrote:
+> hi,
 > 
-> This would require 3 passes over the fmt+args, first to find 
-> the allocated size is insufficient, 2nd to compute the size, 
-> 3rd to fill buffer.
-
-No. The 1% case would use this separate API with its quirky 
-return value. snprintf_size() works like today's snprintf, it's 
-just *named* clearly to signal that it returns something not 
-quite intuitive and results in bugs even in code that *tries* to 
-be aware of the corner cases.
-
-> Whereas with the current "creative" API only 2 passes are 
-> needed.
+> On Thu, Mar 8, 2012 at 11:36 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+>>
+>>
+>> On 03/07/2012 06:28 PM, Huang Shijie wrote:
+>>> Hi,
+>>>
+>>> On Thu, Mar 8, 2012 at 4:07 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+>>>>
+>>>>
+>>>> On 02/29/2012 01:12 AM, Huang Shijie wrote:
+>>>>> Hi ,
+>>>>>
+>>>>> I meet a similar problem with the latest futex code.
+>>>>>
+>>>>> I play the video and the processes will hang at the futex.
+>>>>
+>>>> Are either of you able to bisect the kernel? At the very least can you
+>>>
+>>> I finially found my arch/arm/include/asm/futex.h is not the
+>>> latest, so i updated the header.
+>>
+>> Just make sure it matches your kernel version.
+>>
+>>>
+>>> And the futex issue is gone now. But a dataAbort issue appears, I am
+>>> not sure whether it caused by the futex patch.
+>>> I am debugging it now.
+>>
+>> Which APIs are you using that make the futex syscall?
+>>
 > 
-> I can imagine that back in the day of small memory and small 
-> CPU this was deemed important enough.
+> futex_wait().
+
+You are calling the futex syscall directly from your application?
+
+--
+Darren
+
 > 
-> Anyway, its all moot, this API exists and has been out in the 
-> wild for several decades now, its not like we can actually 
-> change it :-)
+> I cherry-pick the
+> " df77abc ARM: 7099/1: futex: preserve oldval in SMP
+> __futex_atomic_op" to the arch/arm/include/asm/futex.h.
+> 
 
-Of course it is moot - I am not arguing for a change in the API.
+> 
+> BR
+> Huang Shijie
+> 
+>> --
+>> Darren
+>>
+>>>
+>>>
+>>> BR
+>>> Huang Shijie
+>>>> find two kernels where it works and where it does not?
+>>>>
+>>>> Hanging on FUTEX_WAIT_PRIVATE can be the symptom for higher level
+>>>> problems including userspace locking issues and race conditions.
+>>>>
+>>>> Huang, are you also on ARM?
+>>>
+>>> Yes, FREESCALE imx6q platform.
+>>>
+>>> BR
+>>> Huang Shijie
+>>>>
+>>>> --
+>>>> Darren
+>>>>
+>>>>>
+>>>>> BR
+>>>>> Huang Shijie
+>>>>>
+>>>>> On Fri, Feb 24, 2012 at 8:29 AM, Jonathan Andrews <jon@jonshouse.co.uk> wrote:
+>>>>>> Using kernel 3.2.5 with alsa-lib 1.0.25, all compiled with generic
+>>>>>> Debian arm-linux-gnueabi toolchain.
+>>>>>>
+>>>>>> arm-linux-gnueabi-gcc (Debian 4.3.2-1.1) 4.3.2
+>>>>>> Was used to build kernel, alsa-lib and application.
+>>>>>>
+>>>>>> Changing gcc version, kernel version or alsa-lib version makes the
+>>>>>> problem worse or better, but ALL versions seem to suffer this problem. I
+>>>>>> have also seen it once on Intel (but only once so far).
+>>>>>>
+>>>>>> Something seeks broken at a lower layer than im using.  I simply don't
+>>>>>> have the skill to debug it.
+>>>>>>
+>>>>>> The hardware is a USB cm109 audio adapter, but the problem seems to show
+>>>>>> on more than this one driver.
+>>>>>>
+>>>>>> The audio application writing to alsa will freezes at random intervals,
+>>>>>> infrequent at the moment, last one was after runtime 20H 37M 29S.  Two
+>>>>>> processes are running, one reading from the sound device and one writing
+>>>>>> to the sound device. I am not using threading or anything very clever
+>>>>>> just generic alsa functions.
+>>>>>>
+>>>>>> This is the only diagnostic I can generate so far as running the
+>>>>>> application under strace slows it to the point it no longer functions
+>>>>>> enough to generate the problem.
+>>>>>>
+>>>>>> ARM / # strace -p 417
+>>>>>> Process 417 attached - interrupt to quit
+>>>>>> futex(0x175734, FUTEX_WAIT_PRIVATE, 2, NULL^C <unfinished ...>
+>>>>>> Process 417 detached
+>>>>>>
+>>>>>> ARM / # uname -a
+>>>>>> Linux (none) 3.2.5 #2 Wed Feb 22 17:11:52 GMT 2012 armv4tl GNU/Linux
+>>>>>> ARM / # uptime
+>>>>>>  22:36:19 up 22:36,  0 users,  load average: 0.15, 0.16, 0.18
+>>>>>> ARM / # cat /proc/cpuinfo
+>>>>>> Processor       : ARM920T rev 0 (v4l)
+>>>>>> BogoMIPS        : 199.06
+>>>>>> Features        : swp half thumb crunch
+>>>>>> CPU implementer : 0x41
+>>>>>> CPU architecture: 4T
+>>>>>> CPU variant     : 0x1
+>>>>>> CPU part        : 0x920
+>>>>>> CPU revision    : 0
+>>>>>>
+>>>>>>
+>>>>>> Any help welcome.
+>>>>>>
+>>>>>> Thanks,
+>>>>>> Jon
+>>>>>>
+>>>>>>
+>>>>>> --
+>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>>
+>>>> --
+>>>> Darren Hart
+>>>> Intel Open Source Technology Center
+>>>> Yocto Project - Linux Kernel
+>>
+>> --
+>> Darren Hart
+>> Intel Open Source Technology Center
+>> Yocto Project - Linux Kernel
 
-But the self-justification, as outlined in the mail I replied 
-to, is brutally wrong, and nowhere in this discussion did I see 
-the important notion mentioned that the *common case matters* - 
-so maybe reading this will keep others from committing the same 
-mistake, with newly introduced APIs.
-
-Thanks,
-
-	Ingo
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
