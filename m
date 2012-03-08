@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab2CHGKC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 01:10:02 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57605 "EHLO
+	id S1753846Ab2CHGOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 01:14:12 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44176 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab2CHGKA (ORCPT
+	with ESMTP id S1753034Ab2CHGOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 01:10:00 -0500
+	Thu, 8 Mar 2012 01:14:08 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 8 Mar 2012 15:08:26 +0900
+Date: Thu, 8 Mar 2012 15:12:32 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Hugh Dickins <hughd@google.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix mapcount check in move charge code for
- anonymous page
-Message-Id: <20120308150826.b45f1f16.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1331076667-11118-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <alpine.LSU.2.00.1203061230530.17934@eggly.anvils>
-	<1331076667-11118-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Tejun Heo <tj@kernel.org>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3.3] memcg: free mem_cgroup by RCU to fix oops
+Message-Id: <20120308151232.8a9c6e3d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.LSU.2.00.1203072155140.11048@eggly.anvils>
+References: <alpine.LSU.2.00.1203072155140.11048@eggly.anvils>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -31,92 +29,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  6 Mar 2012 18:31:07 -0500
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+On Wed, 7 Mar 2012 22:01:50 -0800 (PST)
+Hugh Dickins <hughd@google.com> wrote:
 
-> On Tue, Mar 06, 2012 at 12:55:42PM -0800, Hugh Dickins wrote:
-> > On Mon, 5 Mar 2012, Daisuke Nishimura wrote:
-> > > Hi, Horiguchi-san.
-> > > On Fri,  2 Mar 2012 15:35:08 -0500
-> > > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-> > >
-> > > > Currently charge on shared anonyous pages is supposed not to moved
-> > > > in task migration. To implement this, we need to check that mapcount > 1,
-> > > > instread of > 2. So this patch fixes it.
-> > > >
-> > > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > > > ---
-> > > >  mm/memcontrol.c |    2 +-
-> > > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > >
-> > > > diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
-> > > > index b6d1bab..785f6d3 100644
-> > > > --- linux-next-20120228.orig/mm/memcontrol.c
-> > > > +++ linux-next-20120228/mm/memcontrol.c
-> > > > @@ -5102,7 +5102,7 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
-> > > >  		return NULL;
-> > > >  	if (PageAnon(page)) {
-> > > >  		/* we don't move shared anon */
-> > > > -		if (!move_anon() || page_mapcount(page) > 2)
-> > > > +		if (!move_anon() || page_mapcount(page) > 1)
-> > > >  			return NULL;
-> > > >  	} else if (!move_file())
-> > > >  		/* we ignore mapcount for file pages */
-> > > > --
-> > > > 1.7.7.6
-> > > >
-> > > Sorry, it's my fault..
-> > > Thank you for catching this.
-> > >
-> > > Reviewed-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> >
-> > I'm perversely sorry to see this fix already wing its way into 3.3-rc,
-> > but never mind.
-> >
-> > I was puzzling over that same "> 2" test when thinking through the
-> > stats move locking, and again when swap accounting appeared to be
-> > broken through and through (now fixed by two-liner in page_cgroup.c).
-> >
-> > Why is there any test on page_mapcount(page) there at all?
-> > 2.6.34 comments it
-> > 	* TODO: We don't move charges of shared(used by multiple
-> > 	* processes) pages for now.
-> > as if it's an unwelcome restriction to be eliminated later.
+> After fixing the GPF in mem_cgroup_lru_del_list(), three times one
+> machine running a similar load (moving and removing memcgs while swapping)
+> has oopsed in mem_cgroup_zone_nr_lru_pages(), when retrieving memcg zone
+> numbers for get_scan_count() for shrink_mem_cgroup_zone(): this is where a
+> struct mem_cgroup is first accessed after being chosen by mem_cgroup_iter().
 > 
-> I see.
-> This comment implies this restiction is a temporary one.
+> Just what protects a struct mem_cgroup from being freed, in between
+> mem_cgroup_iter()'s css_get_next() and its css_tryget()?  css_tryget()
+> fails once css->refcnt is zero with CSS_REMOVED set in flags, yes: but
+> what if that memory is freed and reused for something else, which sets
+> "refcnt" non-zero?  Hmm, and scope for an indefinite freeze if refcnt
+> is left at zero but flags are cleared.
 > 
-
-We don't dicided a policy.
-
-
-
-> > I don't understand why it was ever there, and would like to remove
-> > it (and update the Documentation file) - just to remove a little
-> > unnecessary complication, including mem_cgroup_count_swap_user().
-> >
-> > The file case moves account, even when the page is not mapped into
-> > this address space, even when it's mapped into a thousand others.
-> >
-> > Why treat the anonymous so differently here?
+> It's tempting to move the css_tryget() into css_get_next(), to make it
+> really "get" the css, but I don't think that actually solves anything:
+> the same difficulty in moving from css_id found to stable css remains.
 > 
-> I'm not sure the reason, but current behavior is obviously confusing
-> (at least for me.) We need to fix it in clearer manner.
+> But we already have rcu_read_lock() around the two, so it's easily
+> fixed if __mem_cgroup_free() just uses kfree_rcu() to free mem_cgroup.
 > 
-> IMO, ideally the charge of shared (both file and anon) pages should
-> be accounted for all cgroups to which the processes mapping the pages
-> belong to, where each charge is weighted by inverse number of mapcount.
+> However, a big struct mem_cgroup is allocated with vzalloc() instead
+> of kzalloc(), and we're not allowed to vfree() at interrupt time:
+> there doesn't appear to be a general vfree_rcu() to help with this,
+> so roll our own using schedule_work().  The compiler decently removes
+> vfree_work() and vfree_rcu() when the config doesn't need them.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-One of problems is that shared file between memcg cannot be reclaimed.
-Assume independent memcgs A and B. And file X is shared between A and B but linked to
-B's LRU. Now, it's accounted to B.
-
-If we do accounting both to A and B, we cannot reclaim it. And overhead of
-memcg will be very huge.
-
-I think it may be a way to add memcg atrribute per inode by fadvise() or some
-or system config.
-
-Thanks,
--Kame
+Thank you.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
