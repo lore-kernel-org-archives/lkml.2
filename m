@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758626Ab2CHUI1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:08:27 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:20520 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758238Ab2CHUIX (ORCPT
+	id S1758662Ab2CHUIh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:08:37 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:56633 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758637Ab2CHUId convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:08:23 -0500
-Message-ID: <4F5911B1.6050600@hp.com>
-Date: Thu, 08 Mar 2012 15:08:17 -0500
-From: Vladislav Yasevich <vladislav.yasevich@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Benjamin Poirier <bpoirier@suse.de>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, cluster-devel@redhat.com,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] dlm: Do not allocate a fd for peeloff
-References: <20120308.002447.1062706659978103072.davem@davemloft.net> <1331222159-28980-1-git-send-email-bpoirier@suse.de> <1331222159-28980-2-git-send-email-bpoirier@suse.de>
-In-Reply-To: <1331222159-28980-2-git-send-email-bpoirier@suse.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 15:08:33 -0500
+Message-ID: <1331237303.11248.413.camel@twins>
+Subject: Re: [ANNOUNCE] 3.2.9-rt17
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Thu, 08 Mar 2012 21:08:23 +0100
+In-Reply-To: <1331236900.25686.462.camel@gandalf.stny.rr.com>
+References: <alpine.LFD.2.02.1203072225020.2742@ionos>
+	 <1331230991.25686.452.camel@gandalf.stny.rr.com>
+	 <1331231287.11248.396.camel@twins>
+	 <1331232159.25686.456.camel@gandalf.stny.rr.com>
+	 <1331236139.11248.407.camel@twins>
+	 <1331236900.25686.462.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2012 10:55 AM, Benjamin Poirier wrote:
-> avoids allocating a fd that a) propagates to every kernel thread and
-> usermodehelper b) is not properly released.
+On Thu, 2012-03-08 at 15:01 -0500, Steven Rostedt wrote:
 > 
-> References: http://article.gmane.org/gmane.linux.network.drbd/22529
-> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+> What I was hinting at was that the spin_lock() can boost, but it could
+> also fail if there was a deadlock detected, and it wouldn't cause the
+> system to hang. 
 
-Looks much better.
+Right, that's spin_deadlock() ;-) And you can in fact write
+spin_trydeadlock() as:
 
--vlad
+int spin_trydeadlock(spinlock_t *lock)
+{
+	return spin_deadlock(lock) != -EDEADLK;
+}
 
-> ---
->  fs/dlm/lowcomms.c |   22 ++++++++--------------
->  1 files changed, 8 insertions(+), 14 deletions(-)
-> 
-> diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-> index 0b3109e..ca0c59a 100644
-> --- a/fs/dlm/lowcomms.c
-> +++ b/fs/dlm/lowcomms.c
-> @@ -52,6 +52,7 @@
->  #include <linux/mutex.h>
->  #include <linux/sctp.h>
->  #include <linux/slab.h>
-> +#include <net/sctp/sctp.h>
->  #include <net/sctp/user.h>
->  #include <net/ipv6.h>
->  
-> @@ -474,9 +475,6 @@ static void process_sctp_notification(struct connection *con,
->  			int prim_len, ret;
->  			int addr_len;
->  			struct connection *new_con;
-> -			sctp_peeloff_arg_t parg;
-> -			int parglen = sizeof(parg);
-> -			int err;
->  
->  			/*
->  			 * We get this before any data for an association.
-> @@ -525,23 +523,19 @@ static void process_sctp_notification(struct connection *con,
->  				return;
->  
->  			/* Peel off a new sock */
-> -			parg.associd = sn->sn_assoc_change.sac_assoc_id;
-> -			ret = kernel_getsockopt(con->sock, IPPROTO_SCTP,
-> -						SCTP_SOCKOPT_PEELOFF,
-> -						(void *)&parg, &parglen);
-> +			sctp_lock_sock(con->sock->sk);
-> +			ret = sctp_do_peeloff(con->sock->sk,
-> +				sn->sn_assoc_change.sac_assoc_id,
-> +				&new_con->sock);
-> +			sctp_release_sock(con->sock->sk);
->  			if (ret < 0) {
->  				log_print("Can't peel off a socket for "
->  					  "connection %d to node %d: err=%d",
-> -					  parg.associd, nodeid, ret);
-> -				return;
-> -			}
-> -			new_con->sock = sockfd_lookup(parg.sd, &err);
-> -			if (!new_con->sock) {
-> -				log_print("sockfd_lookup error %d", err);
-> +					  (int)sn->sn_assoc_change.sac_assoc_id,
-> +					  nodeid, ret);
->  				return;
->  			}
->  			add_sock(new_con->sock, new_con);
-> -			sockfd_put(new_con->sock);
->  
->  			log_print("connecting to %d sctp association %d",
->  				 nodeid, (int)sn->sn_assoc_change.sac_assoc_id);
+The advantage of introducing spin_trydeadlock() is that you can merge it
+upstream (modulo naming) and the !RT code won't change at all.
 
+IIRC tglx said there were more sites than just the dcache that did this
+inverse lock order trylock game.
+
+Seems we're agreeing more than disagreeing.. anyway, if you care to give
+it a go.. worst that can happen is that you'll get as big a mess as tglx
+got :-)
