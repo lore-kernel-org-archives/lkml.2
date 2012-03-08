@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758983Ab2CHWXl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 17:23:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34489 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758883Ab2CHWXg (ORCPT
+	id S1758876Ab2CHWWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 17:22:06 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15050 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758728Ab2CHWWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 17:23:36 -0500
-Date: Thu, 8 Mar 2012 14:23:35 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, hugetlb: add thread name and pid to SHM_HUGETLB
- mlock rlimit warning
-Message-Id: <20120308142335.e2dc17cb.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1203081400340.23632@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1203061825070.9015@chino.kir.corp.google.com>
-	<20120308120238.c4486547.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1203081333300.23632@chino.kir.corp.google.com>
-	<20120308135643.225920ad.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1203081400340.23632@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 17:22:02 -0500
+X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=JwEzzm2Qo8kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=MW9TR38vLfj99IOdX0wA:9 a=QEXdDO2ut3YA:10 a=PHYEcKVQtTFqr12RrKEA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120308221730.807074710@goodmis.org>
+User-Agent: quilt/0.50-1
+Date: Thu, 08 Mar 2012 17:17:30 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jason Baron <jbaron@redhat.com>
+Subject: [PATCH 0/7] [GIT PULL] jump-labels: Implement 2 and 5 byte jumps
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Mar 2012 14:08:30 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
-
-> On Thu, 8 Mar 2012, Andrew Morton wrote:
-> 
-> > >  We have a get_task_comm() that does the task_lock() 
-> > > internally but requires a TASK_COMM_LEN buffer in the calling code.  It's 
-> > > just easier for the calling code to the task_lock() itself for a tiny 
-> > > little printk().
-> > 
-> > Well for a tiny little printk we could just omit the locking?  The
-> > printk() won't oops and once in a million years one person will see a
-> > garbled comm[] string?
-> > 
-> 
-> Sure, but task_lock() shouldn't be highly contended when the thread isn't 
-> forking or exiting (everything else is attaching/detaching from a cgroup 
-> or testing a mempolicy).  I've always added it (like in the oom killer for 
-> the same reason) just because the race exists.  Taking it for every thread 
-> on the system for one call to the oom killer has never slowed it down.
-
-I wasn't concerned about the performance side of things - just that
-it's such a pain over such a silly thing.
-
-btw, if the code had done
-
-	printk_once(..., get_task_comm(...), ...)
-
-the task_lock() would have been performed just a single time, rather
-than every time.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
 
+Ingo,
+
+A while ago I posted this series and you discovered a bug. I fixed that
+bug, but due to traveling and other responsibilities I'm not sure
+I posted the fix.
+
+The fix is the last patch in this series.
+
+As things have changed since the last post, there were a lot of conflicts,
+and I had to rebase the patch set against tip/perf/jump-labels and
+fix up the patches. Mostly the changes from JUMP_LABEL_* to STATIC_KEY_*.
+
+But I got this done and retested them.
+
+-- Steve
+
+Please pull the latest tip/perf/jump-label-5 tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+tip/perf/jump-label-5
+
+Head SHA1: b0fdf8910bf8e30fd3542b05062ca9a9721cf26f
+
+
+Steven Rostedt (7):
+      x86/jump-label: Use best default nops for inital jump label calls
+      x86/jump-label: Do not bother updating nops if they are correct
+      x86/jump-label: Add safety checks to jump label conversions
+      jump labels: Add infrastructure to update jump labels at compile time
+      x86/jump labels: Use etiher 5 byte or 2 byte jumps
+      x86/jump lables: Show where and what was wrong on errors
+      x86/jump labels: Handle initialization of enabled nops
+
+----
+ Makefile                          |    7 +
+ arch/Kconfig                      |    6 +
+ arch/x86/Kconfig                  |    1 +
+ arch/x86/include/asm/jump_label.h |   14 ++-
+ arch/x86/kernel/jump_label.c      |  121 ++++++++++++-
+ scripts/Makefile                  |    1 +
+ scripts/Makefile.build            |   15 ++-
+ scripts/update_jump_label.c       |  341 +++++++++++++++++++++++++++++++++=
+++++
+ scripts/update_jump_label.h       |  208 ++++++++++++++++++++++
+ 9 files changed, 700 insertions(+), 14 deletions(-)
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPWTEFAAoJEIy3vGnGbaoAzL4P/j/DjzMgYVr9cF6fluAV+XZZ
+eYiC/YhE5U/+7QTiYe9Az64gClM0IMM/9aHB6roJGPYSDIeeWGJ2eSKloCG2pvfm
+oARGTKDdIBZHLL+TUtfGEPex7d8WMkQv8WOJ9zKJrmExBMdYwJTwXEh80c8IMo04
+ax+CoVfjd7L/hUdpWIE+arRNalCA/RZBxpDUofaajDiLOado1scqK3D4v5Z/u1an
+UW8dhiiWTtVGIlIEe8EVlYf4SFzK+mGESqwO/PVJV9HxdE3OAVm+yHQ9lL/fBL4N
+g5sNpEgmPPnmI+b8r6ENX+Nuqda7HwIN/Nx42O8Qt199/Rrz/JunpKN0XTkKEDxE
+Y3IObqxrTfzTT64VM68Ef0hZMGh3QSRQIdtxKzwvjT/65HtQal4rQ11Wtnq3nCTC
+EZt05eUtJOriTowdb664j+9ELrnXeJRmJAb5OYy9SEzsvAlzPKoXT47ynrzDO7ie
+CSD8jDePRoHJFA4uF7FtjOXGu91bMQg5/j8skyeR6kV7nB5GeXcC6OWqO9yREshC
+kJa7MeWXrxlY+UDVyOcWyPUxxRfK0P+WyKFf/wQxnKmJPKhqjPnDDLVEfEQj5n0y
+V3yI7aY3q0CrVsLgXoiyIgZM2zn406R4Bx6boHlgs5HuQfEJFfpDseODb1XOfEAt
+yQVc4mpC2klqXYFaJDRG
+=ji6H
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
