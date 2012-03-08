@@ -1,97 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758240Ab2CHQcD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 11:32:03 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:45572 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab2CHQcA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 11:32:00 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Fernando Luis =?utf-8?Q?V=C3=A1zquez?= Cao 
-	<fernando@oss.ntt.co.jp>
-Cc: Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
-        torvalds@linux-foundation.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, mingo@elte.hu, Yinghai Lu <yinghai@kernel.org>,
-        akpm@linux-foundation.org, vgoyal@redhat.com
-References: <CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com>
-	<20120216172735.GX9751@redhat.com>
-	<CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com>
-	<20120216215603.GH9751@redhat.com> <m1y5s2ku36.fsf@fess.ebiederm.org>
-	<m1fwe9bpk2.fsf@fess.ebiederm.org> <20120217195430.GO9751@redhat.com>
-	<m1y5s07rn3.fsf@fess.ebiederm.org> <20120220151419.GU9751@redhat.com>
-	<m1obss39a4.fsf@fess.ebiederm.org> <20120221135934.GF26998@redhat.com>
-	<m1ipip6xe8.fsf@fess.ebiederm.org> <4F573E1C.2060909@oss.ntt.co.jp>
-	<4F573E74.5040504@oss.ntt.co.jp> <m1eht31z8e.fsf@fess.ebiederm.org>
-	<4F58495B.5080308@oss.ntt.co.jp>
-Date: Thu, 08 Mar 2012 08:35:12 -0800
-In-Reply-To: <4F58495B.5080308@oss.ntt.co.jp> ("Fernando Luis =?utf-8?Q?V?=
- =?utf-8?Q?=C3=A1zquez?= Cao"'s
-	message of "Thu, 08 Mar 2012 14:53:31 +0900")
-Message-ID: <m1r4x3yrsv.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1758041Ab2CHQdX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 11:33:23 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:46170 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751621Ab2CHQdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 11:33:22 -0500
+Date: Thu, 8 Mar 2012 08:31:13 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 3.3-rc7
+Message-ID: <20120308163113.GA30950@ericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18jbdLmdTKyxRN0n5NQM7pjODBayA5K6N8=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: =?ISO-8859-1?Q?;Fernando Luis V=c3=a1zquez Cao <fernando@oss.ntt.co.jp>?=
-X-Spam-Relay-Country: **
-Subject: Re: [PATCH 1/2] boot: ignore early NMIs
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NzB8fVQJ5HfG6fxh"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fernando Luis Vázquez Cao <fernando@oss.ntt.co.jp> writes:
+--NzB8fVQJ5HfG6fxh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->> Is just a jump and not a move followed by a jump still 10 bytes?
->> I hate to say it but I think this fails miserably for any exception
->> after a nmi.
->
-> Thank you for the heads up! Actually, it was working for the
-> exceptions after the nmi but with a corrupted esi (vector
-> number). My original intention was to fill the empty space
-> with nops but forgot to actually implement it... Sorry about
-> that. Will fix for the next iteration.
+Hi Linus,
 
-Sound good, and thank you very much for tackling this.
+Please pull hwmon fixes for Linux 3.3-rc7 from tag:
 
->> I expect the simplest solution is to modify early_idt_handler to test
->> for vector == 2.
->
-> That is precisely what I did on a previous version but that would
-> involve using registers which need to be saved and restored and
-> I wanted to avoid using the stack in the NMI path. We would also
-> need to add a "pushq rsi " in early_idt_handlers which implies
-> modifying "early_idt_handlers" definition in "segment.h".
->
-> If you are OK with it I would like to go with the approach in
-> the two patches I sent.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-I am fine with your approach.  I suggest a big fat comment mentioning
-the 10 byte requirement and the register requirement.
+Thanks,
+Guenter
 
-Neither one is locally obvious which makes it easy to goof when
-modifying the code.
+------
 
->> Doing something less brittle than:
->>> extern const char early_idt_handlers[NUM_EXCEPTION_VECTORS][10];
->> in segment.h might be a good idea as well.
->
-> Yes, I agree. I will give it some thought.
+The following changes since commit 192cfd58774b4d17b2fe8bdc77d89c2ef4e0591d:
 
-Eric
+  Linux 3.3-rc6 (2012-03-03 17:08:09 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
+
+Guenter Roeck (3):
+      hwmon: (pmbus_core) Fix maximum number of POUT alarm attributes
+      hwmon: (zl6100) Maintain delay parameter in driver instance data
+      hwmon: (jc42) Add support for AT30TS00, TS3000GB2, TSE2002GB2, and MCP9804
+
+Jean Delvare (1):
+      hwmon: (jc42) Add support for ST Microelectronics STTS2002 and STTS3000
+
+ Documentation/hwmon/jc42         |   26 ++++++++++++++++++++------
+ drivers/hwmon/Kconfig            |    5 +++--
+ drivers/hwmon/jc42.c             |   30 ++++++++++++++++++++++++++++--
+ drivers/hwmon/pmbus/pmbus_core.c |    3 ++-
+ drivers/hwmon/pmbus/zl6100.c     |   10 ++++++----
+ 5 files changed, 59 insertions(+), 15 deletions(-)
+
+--NzB8fVQJ5HfG6fxh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPWN7RAAoJEMsfJm/On5mBpZAP/j/XYI2Yw0v2ofwuf1s0/FQy
+Rs7DRxjzyVi+8RTlW5VCGkXkCRIWDqQzrdJXqtwaSm/d19QUruEiUXvtM8QzdNMW
+mGpitWxbNEyGHDvZP965B0rGHGNr9aZCvSSXdIfACBcF+MsyZvitrpF8psUEMFgH
+fCzcyfUD3j/EfwZMICzQb/U400va02ZqRvLD7I/ggawnabBZvrg9jRSNmrN8wka1
+uDk56Iw0oHZm5m+HhV6fn8JNaepyYYeanBZF7p+qBfZL1AFGhDkvpQ73/XAxtk1V
+ED4zlXzIzKy47DkU0dKde+aVcmgy22CRRDnpfaxFBE8rvsg7/vglPNbR7r0sxQzg
+wPyBFnkeBShRl4ZFMT45FMN7pvA7DRoVpMKiryBsAMqS50dOofprd24XsX/EBDMv
+WRhMPsBf5YvB4kihJJvftb/1Z0ZeV85klcApRk41vhjaFsd99b3TVdlCJ8L6pf2z
+tzxYV3Ik8IHyEoFSrXYU8PvOtK4kGNad9Oid3IBSMCUY9NRkwIzmMVmpkYzqm9MO
+i7tlyWD5Uc2rxI5FtqlTDBVTNZn0YH6r22Zk4y1Q//TkHYtbDDrnk3aifH7nmm72
+A8NPSF4gUgCZ5xjbFwMMmmYS/qY3TzPQaxgeW9X3cpLc/unQy+Pk7RKkuI7idNRR
+aUfjOppjhrQFBqVXBMn1
+=w0x8
+-----END PGP SIGNATURE-----
+
+--NzB8fVQJ5HfG6fxh--
