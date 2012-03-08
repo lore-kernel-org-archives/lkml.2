@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757056Ab2CHSjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:39:52 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44060 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986Ab2CHSju (ORCPT
+	id S1757397Ab2CHSmn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:42:43 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28869 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab2CHSmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:39:50 -0500
-Date: Thu, 8 Mar 2012 10:39:45 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Colin Cross <ccross@android.com>
-Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: Re: [PATCH 05/11] android: ram_console: split out persistent ram
-Message-ID: <20120308183945.GA29197@kroah.com>
-References: <1331170478-30538-1-git-send-email-john.stultz@linaro.org>
- <1331170478-30538-6-git-send-email-john.stultz@linaro.org>
- <20120308024203.GA25842@kroah.com>
- <CAMbhsRRDmH47r_s_-H+tnZ62c9HdE3VqeTn5Qp4kwe5EOjJ4jw@mail.gmail.com>
- <20120308173306.GA4456@kroah.com>
- <CAMbhsRQL=JrJ-a97KhbhHF5J_hD74f7wp1bVtx-n0hgQX_B3oA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMbhsRQL=JrJ-a97KhbhHF5J_hD74f7wp1bVtx-n0hgQX_B3oA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Mar 2012 13:42:40 -0500
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=WbakQ-yW8tIq98LSCMAA:9 a=WIdUc7wfisL1HtVBT2AA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331232159.25686.456.camel@gandalf.stny.rr.com>
+Subject: Re: [ANNOUNCE] 3.2.9-rt17
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Thu, 08 Mar 2012 13:42:39 -0500
+In-Reply-To: <1331231287.11248.396.camel@twins>
+References: <alpine.LFD.2.02.1203072225020.2742@ionos>
+	 <1331230991.25686.452.camel@gandalf.stny.rr.com>
+	 <1331231287.11248.396.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 10:24:11AM -0800, Colin Cross wrote:
-> On Thu, Mar 8, 2012 at 9:33 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Mar 07, 2012 at 07:06:42PM -0800, Colin Cross wrote:
-> >> On Wed, Mar 7, 2012 at 6:42 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> >> > On Wed, Mar 07, 2012 at 05:34:32PM -0800, John Stultz wrote:
-> >> >> From: Colin Cross <ccross@android.com>
-> >> >>
-> >> >> Split ram_console into two halves.
-> >> >>
-> >> >> persistent_ram is a set of apis that handle a block of memory
-> >> >> that does not get erased across a reboot.  It provides functions
-> >> >> to fill it as a single buffer or a ring buffer, and to extract
-> >> >> the old data after a reboot.  It handles ecc on the data to
-> >> >> correct bit errors introduced during reboot.
-> >> >
-> >> > That's a nice idea, but why are you rolling your own interface here and
-> >> > not using the built-in one that the kernel already provides?  Is there
-> >> > something lacking with what we have today that requires you to create
-> >> > something different?  If so, why not just modify the existing interface
-> >> > to make it work for you, that way the tools already created will work
-> >> > automatically, and you will not have problems later ripping this out and
-> >> > porting it to the in-kernel api.
-> >>
-> >> What interface are you referring to, pstore?
-> >
-> > Yes.
-> >
-> >> As I explained in the email John quoted to you,
-> >
-> > Wait, what email?  Did I miss a response here?  Have a message-id: I can
-> > search for?
+On Thu, 2012-03-08 at 19:28 +0100, Peter Zijlstra wrote:
+> On Thu, 2012-03-08 at 13:23 -0500, Steven Rostedt wrote:
+> > So basically what you tried to do was just set the owner of the lock to
+> > have the priority of the task that wants the lock, until it releases it?
+> > But by doing it without having this task sleep? 
 > 
-> Message ID 1331160054.2191.202.camel@work-vm
+> No, by having it sleep ;-)
+> 
 
-Odd, that message id never got to me :(
+That was the second part of my email.
+
+> So you do the full PI sleeping lock thing, except you return fail if you
+> loose the acquisition race on wakeup and you mark this waiter as
+> 'special'.
+> 
+> Then on every rt_mutex block you have to do a deadlock analysis on the
+> PI blocking chain (preferably shared with PI boost traversal of said
+> chain), during that scan you collect all special tagged waiters.
+> 
+> If you find a deadlock, wake all these special waiters and have them
+> return -EDEADLK.
+> 
+> I guess you could also do the full spin_deadlock() and do away with the
+> try part and purely rely on the deadlock detection.
+
+But do you release the lock first? For example, we have:
+
+@@ -410,7 +411,7 @@ static inline struct dentry *dentry_kill
+        if (inode && !spin_trylock(&inode->i_lock)) {
+ relock:
+                seq_spin_unlock(&dentry->d_lock);
+-               cpu_relax();
++               cpu_chill();
+                return dentry; /* try again with same dentry */
+        }
+
+By doing the test at the trylock, we can easily hit the deadlock,
+because we still hold dentry->d_lock. But by moving the block to the
+cpu_chill(), then we are less likely to hit the deadlock.
+
+Perhaps call it, cpu_chill_on_lock().
+
+-- Steve
+
 
