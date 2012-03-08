@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab2CHSEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:04:24 -0500
+	id S1755721Ab2CHSEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:04:35 -0500
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:51927 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075Ab2CHSEV (ORCPT
+	with ESMTP id S1755562Ab2CHSEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:04:21 -0500
-Subject: [PATCH v5 4/7] mm: rework __isolate_lru_page() page lru filter
+	Thu, 8 Mar 2012 13:04:31 -0500
+Subject: [PATCH v5 6/7] mm/memcg: rework inactive_ratio calculation
 To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
         Johannes Weiner <jweiner@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Thu, 08 Mar 2012 22:04:15 +0400
-Message-ID: <20120308180415.27621.23390.stgit@zurg>
+Date: Thu, 08 Mar 2012 22:04:25 +0400
+Message-ID: <20120308180425.27621.22067.stgit@zurg>
 In-Reply-To: <20120308175752.27621.54781.stgit@zurg>
 References: <20120308175752.27621.54781.stgit@zurg>
 User-Agent: StGit/0.15
@@ -25,212 +25,359 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds lru bit mask into lower byte of isolate_mode_t,
-this allows to simplify checks in __isolate_lru_page().
+This patch removes precalculated zone->inactive_ratio.
+Now it always calculated in inactive_anon_is_low() from current lru size.
+After that we can merge memcg and non-memcg cases and drop duplicated code.
 
-v5:
-* lru bit mask instead of special file/anon active/inactive bits
-* mark page_lru() as __always_inline, it helps gcc generate more compact code
+We can drop precalculated ratio, because its calculation fast enough to do it
+each time. Plus precalculation uses zone size as basis, this estimation not
+always match with page lru size, for example if a significant proportion
+of memory occupied by kernel objects.
+
+One userspace-visible change:
+this patch removes "inactive_ratio" field from /proc/zoneinfo.
+This field was introduced not long ago (in commit v2.6.27-5589-g556adec),
+and it has lost sense after splitting LRU lists into per-memcg parts.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
 ---
 
-add/remove: 0/0 grow/shrink: 3/4 up/down: 35/-67 (-32)
+add/remove: 1/3 grow/shrink: 5/5 up/down: 327/-549 (-222)
 function                                     old     new   delta
-static.shrink_active_list                    837     853     +16
-__isolate_lru_page                           301     317     +16
-page_evictable                               170     173      +3
-__remove_mapping                             322     319      -3
-mem_cgroup_lru_del                            73      65      -8
-static.isolate_lru_pages                    1055    1035     -20
-__mem_cgroup_commit_charge                   676     640     -36
+static.inactive_anon_is_low                    -     249    +249
+shrink_mem_cgroup_zone                      1526    1583     +57
+balance_pgdat                               1938    1954     +16
+__remove_mapping                             319     322      +3
+destroy_compound_page                        155     156      +1
+__free_pages_bootmem                         138     139      +1
+free_area_init                                49      47      -2
+__alloc_pages_nodemask                      2084    2082      -2
+zoneinfo_show_print                          467     459      -8
+get_page_from_freelist                      1985    1969     -16
+init_per_zone_wmark_min                      136      70     -66
+inactive_anon_is_low                         110       -    -110
+mem_cgroup_inactive_file_is_low              155       -    -155
+mem_cgroup_inactive_anon_is_low              190       -    -190
 ---
- include/linux/mm_inline.h |    2 +-
- include/linux/mmzone.h    |   12 +++++-------
- include/linux/swap.h      |    2 +-
- mm/compaction.c           |    4 ++--
- mm/vmscan.c               |   44 +++++++++++++++-----------------------------
- 5 files changed, 24 insertions(+), 40 deletions(-)
+ include/linux/memcontrol.h |   16 --------
+ include/linux/mmzone.h     |    7 ----
+ mm/memcontrol.c            |   38 -------------------
+ mm/page_alloc.c            |   44 ----------------------
+ mm/vmscan.c                |   88 ++++++++++++++++++++++++++++----------------
+ mm/vmstat.c                |    6 +--
+ 6 files changed, 58 insertions(+), 141 deletions(-)
 
-diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
-index 227fd3e..71e7d76 100644
---- a/include/linux/mm_inline.h
-+++ b/include/linux/mm_inline.h
-@@ -85,7 +85,7 @@ static inline enum lru_list page_off_lru(struct page *page)
-  * Returns the LRU list a page should be on, as an index
-  * into the array of LRU lists.
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 4c4b968..d189ac5 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -113,10 +113,6 @@ void mem_cgroup_iter_break(struct mem_cgroup *, struct mem_cgroup *);
+ /*
+  * For memory reclaim.
   */
--static inline enum lru_list page_lru(struct page *page)
-+static __always_inline enum lru_list page_lru(struct page *page)
- {
- 	enum lru_list lru;
+-int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg,
+-				    struct zone *zone);
+-int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg,
+-				    struct zone *zone);
+ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg);
+ unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
+ 					int nid, int zid, unsigned int lrumask);
+@@ -329,18 +325,6 @@ static inline bool mem_cgroup_disabled(void)
+ 	return true;
+ }
  
+-static inline int
+-mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg, struct zone *zone)
+-{
+-	return 1;
+-}
+-
+-static inline int
+-mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg, struct zone *zone)
+-{
+-	return 1;
+-}
+-
+ static inline unsigned long
+ mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
+ 				unsigned int lru_mask)
 diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index aa881de..3370a8c 100644
+index 6d40cc8..30f2bd4 100644
 --- a/include/linux/mmzone.h
 +++ b/include/linux/mmzone.h
-@@ -183,16 +183,14 @@ struct lruvec {
- #define LRU_ALL_EVICTABLE (LRU_ALL_FILE | LRU_ALL_ANON)
- #define LRU_ALL	     ((1 << NR_LRU_LISTS) - 1)
+@@ -378,13 +378,6 @@ struct zone {
+ 	/* Zone statistics */
+ 	atomic_long_t		vm_stat[NR_VM_ZONE_STAT_ITEMS];
  
--/* Isolate inactive pages */
--#define ISOLATE_INACTIVE	((__force isolate_mode_t)0x1)
--/* Isolate active pages */
--#define ISOLATE_ACTIVE		((__force isolate_mode_t)0x2)
-+/* Mask of LRU lists allowed for isolation */
-+#define ISOLATE_LRU_MASK	((__force isolate_mode_t)0xFF)
- /* Isolate clean file */
--#define ISOLATE_CLEAN		((__force isolate_mode_t)0x4)
-+#define ISOLATE_CLEAN		((__force isolate_mode_t)0x100)
- /* Isolate unmapped file */
--#define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x8)
-+#define ISOLATE_UNMAPPED	((__force isolate_mode_t)0x200)
- /* Isolate for asynchronous migration */
--#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x10)
-+#define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x400)
+-	/*
+-	 * The target ratio of ACTIVE_ANON to INACTIVE_ANON pages on
+-	 * this zone's LRU.  Maintained by the pageout code.
+-	 */
+-	unsigned int inactive_ratio;
+-
+-
+ 	ZONE_PADDING(_pad2_)
+ 	/* Rarely used or read-mostly fields */
  
- /* LRU Isolation modes. */
- typedef unsigned __bitwise__ isolate_mode_t;
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index ba2c8d7..dc6e6a3 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -254,7 +254,7 @@ static inline void lru_cache_add_file(struct page *page)
- /* linux/mm/vmscan.c */
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
--extern int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file);
-+extern int __isolate_lru_page(struct page *page, isolate_mode_t mode);
- extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
- 						  gfp_t gfp_mask, bool noswap);
- extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 74a8c82..5b02dbd 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -261,7 +261,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 	unsigned long last_pageblock_nr = 0, pageblock_nr;
- 	unsigned long nr_scanned = 0, nr_isolated = 0;
- 	struct list_head *migratelist = &cc->migratepages;
--	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
-+	isolate_mode_t mode = LRU_ALL_EVICTABLE;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 02af4a6..bf5121b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1174,44 +1174,6 @@ int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg)
+ 	return ret;
+ }
  
- 	/* Do not scan outside zone boundaries */
- 	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
-@@ -375,7 +375,7 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 			mode |= ISOLATE_ASYNC_MIGRATE;
+-int mem_cgroup_inactive_anon_is_low(struct mem_cgroup *memcg, struct zone *zone)
+-{
+-	unsigned long inactive_ratio;
+-	int nid = zone_to_nid(zone);
+-	int zid = zone_idx(zone);
+-	unsigned long inactive;
+-	unsigned long active;
+-	unsigned long gb;
+-
+-	inactive = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
+-						BIT(LRU_INACTIVE_ANON));
+-	active = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
+-					      BIT(LRU_ACTIVE_ANON));
+-
+-	gb = (inactive + active) >> (30 - PAGE_SHIFT);
+-	if (gb)
+-		inactive_ratio = int_sqrt(10 * gb);
+-	else
+-		inactive_ratio = 1;
+-
+-	return inactive * inactive_ratio < active;
+-}
+-
+-int mem_cgroup_inactive_file_is_low(struct mem_cgroup *memcg, struct zone *zone)
+-{
+-	unsigned long active;
+-	unsigned long inactive;
+-	int zid = zone_idx(zone);
+-	int nid = zone_to_nid(zone);
+-
+-	inactive = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
+-						BIT(LRU_INACTIVE_FILE));
+-	active = mem_cgroup_zone_nr_lru_pages(memcg, nid, zid,
+-					      BIT(LRU_ACTIVE_FILE));
+-
+-	return (active > inactive);
+-}
+-
+ struct zone_reclaim_stat *
+ mem_cgroup_get_reclaim_stat_from_page(struct page *page)
+ {
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index ea40034..2e90931 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5051,49 +5051,6 @@ void setup_per_zone_wmarks(void)
+ }
  
- 		/* Try isolate the page */
--		if (__isolate_lru_page(page, mode, 0) != 0)
-+		if (__isolate_lru_page(page, mode) != 0)
- 			continue;
- 
- 		VM_BUG_ON(PageTransCompound(page));
+ /*
+- * The inactive anon list should be small enough that the VM never has to
+- * do too much work, but large enough that each inactive page has a chance
+- * to be referenced again before it is swapped out.
+- *
+- * The inactive_anon ratio is the target ratio of ACTIVE_ANON to
+- * INACTIVE_ANON pages on this zone's LRU, maintained by the
+- * pageout code. A zone->inactive_ratio of 3 means 3:1 or 25% of
+- * the anonymous pages are kept on the inactive list.
+- *
+- * total     target    max
+- * memory    ratio     inactive anon
+- * -------------------------------------
+- *   10MB       1         5MB
+- *  100MB       1        50MB
+- *    1GB       3       250MB
+- *   10GB      10       0.9GB
+- *  100GB      31         3GB
+- *    1TB     101        10GB
+- *   10TB     320        32GB
+- */
+-static void __meminit calculate_zone_inactive_ratio(struct zone *zone)
+-{
+-	unsigned int gb, ratio;
+-
+-	/* Zone size in gigabytes */
+-	gb = zone->present_pages >> (30 - PAGE_SHIFT);
+-	if (gb)
+-		ratio = int_sqrt(10 * gb);
+-	else
+-		ratio = 1;
+-
+-	zone->inactive_ratio = ratio;
+-}
+-
+-static void __meminit setup_per_zone_inactive_ratio(void)
+-{
+-	struct zone *zone;
+-
+-	for_each_zone(zone)
+-		calculate_zone_inactive_ratio(zone);
+-}
+-
+-/*
+  * Initialise min_free_kbytes.
+  *
+  * For small machines we want it small (128k min).  For large machines
+@@ -5131,7 +5088,6 @@ int __meminit init_per_zone_wmark_min(void)
+ 	setup_per_zone_wmarks();
+ 	refresh_zone_stat_thresholds();
+ 	setup_per_zone_lowmem_reserve();
+-	setup_per_zone_inactive_ratio();
+ 	return 0;
+ }
+ module_init(init_per_zone_wmark_min)
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 9769970..0966f11 100644
+index ab5c0f6..9a41769 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1028,36 +1028,20 @@ keep_lumpy:
+@@ -1736,29 +1736,38 @@ static void shrink_active_list(unsigned long nr_to_scan,
+ }
+ 
+ #ifdef CONFIG_SWAP
+-static int inactive_anon_is_low_global(struct zone *zone)
+-{
+-	unsigned long active, inactive;
+-
+-	active = zone_page_state(zone, NR_ACTIVE_ANON);
+-	inactive = zone_page_state(zone, NR_INACTIVE_ANON);
+-
+-	if (inactive * zone->inactive_ratio < active)
+-		return 1;
+-
+-	return 0;
+-}
+-
+ /**
+  * inactive_anon_is_low - check if anonymous pages need to be deactivated
+  * @zone: zone to check
+- * @sc:   scan control of this context
   *
-  * returns 0 on success, -ve errno on failure.
+  * Returns true if the zone does not have enough inactive anon pages,
+  * meaning some active anon pages need to be deactivated.
++ *
++ * The inactive anon list should be small enough that the VM never has to
++ * do too much work, but large enough that each inactive page has a chance
++ * to be referenced again before it is swapped out.
++ *
++ * The inactive_anon ratio is the target ratio of ACTIVE_ANON to
++ * INACTIVE_ANON pages on this zone's LRU, maintained by the
++ * pageout code. A zone->inactive_ratio of 3 means 3:1 or 25% of
++ * the anonymous pages are kept on the inactive list.
++ *
++ * total     target    max
++ * memory    ratio     inactive anon
++ * -------------------------------------
++ *   10MB       1         5MB
++ *  100MB       1        50MB
++ *    1GB       3       250MB
++ *   10GB      10       0.9GB
++ *  100GB      31         3GB
++ *    1TB     101        10GB
++ *   10TB     320        32GB
   */
--int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
-+int __isolate_lru_page(struct page *page, isolate_mode_t mode)
+ static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
  {
--	bool all_lru_mode;
- 	int ret = -EINVAL;
- 
- 	/* Only take pages on the LRU. */
- 	if (!PageLRU(page))
- 		return ret;
- 
--	all_lru_mode = (mode & (ISOLATE_ACTIVE|ISOLATE_INACTIVE)) ==
--		(ISOLATE_ACTIVE|ISOLATE_INACTIVE);
--
--	/*
--	 * When checking the active state, we need to be sure we are
--	 * dealing with comparible boolean values.  Take the logical not
--	 * of each.
--	 */
--	if (!all_lru_mode && !PageActive(page) != !(mode & ISOLATE_ACTIVE))
-+	/* Isolate pages only from allowed LRU lists */
-+	if (!(mode & BIT(page_lru(page))))
- 		return ret;
- 
--	if (!all_lru_mode && !!page_is_file_cache(page) != file)
--		return ret;
--
--	/*
--	 * When this function is being called for lumpy reclaim, we
--	 * initially look into all LRU pages, active, inactive and
--	 * unevictable; only give shrink_page_list evictable pages.
--	 */
--	if (PageUnevictable(page))
--		return ret;
-+	/* All possible LRU lists must fit into isolation mask area */
-+	BUILD_BUG_ON(LRU_ALL & ~ISOLATE_LRU_MASK);
- 
- 	ret = -EBUSY;
- 
-@@ -1160,7 +1144,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 
- 		VM_BUG_ON(!PageLRU(page));
- 
--		switch (__isolate_lru_page(page, mode, file)) {
-+		switch (__isolate_lru_page(page, mode)) {
- 		case 0:
- 			mem_cgroup_lru_del(page);
- 			list_move(&page->lru, dst);
-@@ -1218,7 +1202,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 			    !PageSwapCache(cursor_page))
- 				break;
- 
--			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
-+			if (__isolate_lru_page(cursor_page, mode) == 0) {
- 				unsigned int isolated_pages;
- 
- 				mem_cgroup_lru_del(cursor_page);
-@@ -1492,7 +1476,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
- 	unsigned long nr_file;
- 	unsigned long nr_dirty = 0;
- 	unsigned long nr_writeback = 0;
--	isolate_mode_t isolate_mode = ISOLATE_INACTIVE;
-+	isolate_mode_t isolate_mode;
- 	int file = is_file_lru(lru);
- 	struct zone *zone = mz->zone;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
-@@ -1505,12 +1489,13 @@ shrink_inactive_list(unsigned long nr_to_scan, struct mem_cgroup_zone *mz,
- 			return SWAP_CLUSTER_MAX;
- 	}
- 
--	set_reclaim_mode(priority, sc, false);
--	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
--		isolate_mode |= ISOLATE_ACTIVE;
--
- 	lru_add_drain();
- 
-+	set_reclaim_mode(priority, sc, false);
++	unsigned long active, inactive;
++	unsigned int gb, ratio;
 +
-+	isolate_mode = BIT(lru);
-+	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
-+		isolate_mode |= LRU_ALL_EVICTABLE;
- 	if (!sc->may_unmap)
- 		isolate_mode |= ISOLATE_UNMAPPED;
- 	if (!sc->may_writepage)
-@@ -1668,12 +1653,13 @@ static void shrink_active_list(unsigned long nr_to_scan,
- 	struct page *page;
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
- 	unsigned long nr_rotated = 0;
--	isolate_mode_t isolate_mode = ISOLATE_ACTIVE;
-+	isolate_mode_t isolate_mode;
- 	int file = is_file_lru(lru);
- 	struct zone *zone = mz->zone;
+ 	/*
+ 	 * If we don't have swap space, anonymous page deactivation
+ 	 * is pointless.
+@@ -1766,11 +1775,26 @@ static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
+ 	if (!total_swap_pages)
+ 		return 0;
  
- 	lru_add_drain();
+-	if (!mem_cgroup_disabled())
+-		return mem_cgroup_inactive_anon_is_low(mz->mem_cgroup,
+-						       mz->zone);
++	if (mem_cgroup_disabled()) {
++		active = zone_page_state(mz->zone, NR_ACTIVE_ANON);
++		inactive = zone_page_state(mz->zone, NR_INACTIVE_ANON);
++	} else {
++		active = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
++				zone_to_nid(mz->zone), zone_idx(mz->zone),
++				BIT(LRU_ACTIVE_ANON));
++		inactive = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
++				zone_to_nid(mz->zone), zone_idx(mz->zone),
++				BIT(LRU_INACTIVE_ANON));
++	}
++
++	/* Total size in gigabytes */
++	gb = (active + inactive) >> (30 - PAGE_SHIFT);
++	if (gb)
++		ratio = int_sqrt(10 * gb);
++	else
++		ratio = 1;
  
-+	isolate_mode = BIT(lru);
- 	if (!sc->may_unmap)
- 		isolate_mode |= ISOLATE_UNMAPPED;
- 	if (!sc->may_writepage)
+-	return inactive_anon_is_low_global(mz->zone);
++	return inactive * ratio < active;
+ }
+ #else
+ static inline int inactive_anon_is_low(struct mem_cgroup_zone *mz)
+@@ -1779,16 +1803,6 @@ static inline int inactive_anon_is_low(struct mem_cgroup_zone *mz)
+ }
+ #endif
+ 
+-static int inactive_file_is_low_global(struct zone *zone)
+-{
+-	unsigned long active, inactive;
+-
+-	active = zone_page_state(zone, NR_ACTIVE_FILE);
+-	inactive = zone_page_state(zone, NR_INACTIVE_FILE);
+-
+-	return (active > inactive);
+-}
+-
+ /**
+  * inactive_file_is_low - check if file pages need to be deactivated
+  * @mz: memory cgroup and zone to check
+@@ -1805,11 +1819,21 @@ static int inactive_file_is_low_global(struct zone *zone)
+  */
+ static int inactive_file_is_low(struct mem_cgroup_zone *mz)
+ {
+-	if (!mem_cgroup_disabled())
+-		return mem_cgroup_inactive_file_is_low(mz->mem_cgroup,
+-						       mz->zone);
++	unsigned long active, inactive;
++
++	if (mem_cgroup_disabled()) {
++		active = zone_page_state(mz->zone, NR_ACTIVE_FILE);
++		inactive = zone_page_state(mz->zone, NR_INACTIVE_FILE);
++	} else {
++		active = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
++				zone_to_nid(mz->zone), zone_idx(mz->zone),
++				BIT(LRU_ACTIVE_FILE));
++		inactive = mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
++				zone_to_nid(mz->zone), zone_idx(mz->zone),
++				BIT(LRU_INACTIVE_FILE));
++	}
+ 
+-	return inactive_file_is_low_global(mz->zone);
++	return inactive < active;
+ }
+ 
+ static int inactive_list_is_low(struct mem_cgroup_zone *mz, int file)
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index f600557..2c813e1 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -1017,11 +1017,9 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
+ 	}
+ 	seq_printf(m,
+ 		   "\n  all_unreclaimable: %u"
+-		   "\n  start_pfn:         %lu"
+-		   "\n  inactive_ratio:    %u",
++		   "\n  start_pfn:         %lu",
+ 		   zone->all_unreclaimable,
+-		   zone->zone_start_pfn,
+-		   zone->inactive_ratio);
++		   zone->zone_start_pfn);
+ 	seq_putc(m, '\n');
+ }
+ 
 
