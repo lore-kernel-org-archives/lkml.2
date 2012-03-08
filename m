@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759174Ab2CHWsb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 17:48:31 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53449 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759128Ab2CHWsZ (ORCPT
+	id S1759122Ab2CHWsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 17:48:22 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52031 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759046Ab2CHWsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 17:48:25 -0500
+	Thu, 8 Mar 2012 17:48:12 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, asharma@fb.com,
         ravitillo@lbl.gov, vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com,
         dsahern@gmail.com
-Subject: [PATCH 4/4] perf report: enable TUI in branch view mode
-Date: Thu,  8 Mar 2012 23:47:48 +0100
-Message-Id: <1331246868-19905-5-git-send-email-eranian@google.com>
+Subject: [PATCH 1/4] perf record: provide default branch stack sampling mode option
+Date: Thu,  8 Mar 2012 23:47:45 +0100
+Message-Id: <1331246868-19905-2-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1331246868-19905-1-git-send-email-eranian@google.com>
 References: <1331246868-19905-1-git-send-email-eranian@google.com>
@@ -22,316 +22,184 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch updates perf report to support TUI mode
-when the perf.data file contains samples with branch
-stacks.
+This patch chanegs the logic of the -b, --branch-stack options
+of perf record.
 
-For each row in the report, it is possible to annotate
-either the source or target of each branch.
+Based on users' request, the patch provides a default filter
+mode with the -b (or --branch-any) option.  With the option,
+any type of taken branches is sampled.
+
+With -j (or --branch-filter), the user can specify any
+valid combination of branch types and privilege levels
+if supported by the underlying hardware.
+
+The -b (--branch any) is a shortcut for: --branch-filter any.
+
+$ perf record -b foo
+or
+$ perf record --branch-filter any foo
+
+For more specific filtering:
+$ perf record --branch-filter ind_call,u foo
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/builtin-report.c         |   73 ++++++++++++++++++++++++-----------
- tools/perf/util/session.c           |    1 +
- tools/perf/util/sort.h              |    6 ++-
- tools/perf/util/symbol.h            |    7 +++-
- tools/perf/util/ui/browsers/hists.c |   62 ++++++++++++++++++++++++------
- 5 files changed, 111 insertions(+), 38 deletions(-)
+ tools/perf/Documentation/perf-record.txt |   23 ++++++----
+ tools/perf/builtin-record.c              |   68 +++++++++++++++++++-----------
+ 2 files changed, 57 insertions(+), 34 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 66e8523..8e91c6e 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -64,7 +64,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 	int err = 0;
- 	unsigned i;
- 	struct hist_entry *he;
--	struct branch_info *bi;
-+	struct branch_info *bi, *bx;
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 60bddaf..a1386b2 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -153,14 +153,19 @@ corresponding events, i.e., they always refer to events defined earlier on the c
+ line.
  
- 	if ((sort__has_parent || symbol_conf.use_callchain)
- 	    && sample->callchain) {
-@@ -87,13 +87,45 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 		 * and not events sampled. Thus we use a pseudo period of 1.
- 		 */
- 		he = __hists__add_branch_entry(&evsel->hists, al, parent,
--					       &bi[i], 1);
-+				&bi[i], 1);
- 		if (he) {
-+			struct annotation *notes;
-+			err = -ENOMEM;
-+			bx = he->branch_info;
-+			if (bx->from.sym && use_browser > 0) {
-+				notes = symbol__annotation(bx->from.sym);
-+				if (!notes->src
-+				    && symbol__alloc_hist(bx->from.sym) < 0)
-+					goto out;
+ -b::
+---branch-stack::
++--branch-any::
++Enable taken branch stack sampling. Any type of taken branch may be sampled.
++This is a shortcut for --branch-filter any. See --branch-filter for more infos.
 +
-+				err = symbol__inc_addr_samples(bx->from.sym,
-+							       bx->from.map,
-+							       evsel->idx,
-+							       bx->from.al_addr);
-+				if (err)
-+					goto out;
-+			}
-+
-+			if (bx->to.sym && use_browser > 0) {
-+				notes = symbol__annotation(bx->to.sym);
-+				if (!notes->src
-+				    && symbol__alloc_hist(bx->to.sym) < 0)
-+					goto out;
-+
-+				err = symbol__inc_addr_samples(bx->to.sym,
-+							       bx->to.map,
-+							       evsel->idx,
-+							       bx->to.al_addr);
-+				if (err)
-+					goto out;
-+			}
- 			evsel->hists.stats.total_period += 1;
- 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+			err = 0;
- 		} else
- 			return -ENOMEM;
- 	}
-+out:
- 	return err;
- }
++-j::
++--branch-filter::
+ Enable taken branch stack sampling. Each sample captures a series of consecutive
+ taken branches. The number of branches captured with each sample depends on the
+ underlying hardware, the type of branches of interest, and the executed code.
+ It is possible to select the types of branches captured by enabling filters. The
+ following filters are defined:
  
-@@ -615,32 +647,19 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 	if (sort__branch_mode == -1 && has_br_stack)
- 		sort__branch_mode = 1;
+-        -  any :  any type of branches
++        - any:  any type of branches
+         - any_call: any function call or system call
+         - any_ret: any function return or system call return
+         - any_ind: any indirect branch
+@@ -169,13 +174,13 @@ It is possible to select the types of branches captured by enabling filters. The
+         - hv: only when the target is at the hypervisor level
  
-+	/* sort__branch_mode could be 0 if --no-branch-stack */
- 	if (sort__branch_mode == 1) {
--		if (use_browser)
--			fprintf(stderr, "Warning: TUI interface not supported"
--					" in branch mode\n");
--		if (symbol_conf.dso_list_str != NULL)
--			fprintf(stderr, "Warning: dso filtering not supported"
--					" in branch mode\n");
--		if (symbol_conf.sym_list_str != NULL)
--			fprintf(stderr, "Warning: symbol filtering not"
--					" supported in branch mode\n");
--
--		report.use_stdio = true;
--		use_browser = 0;
--		setup_browser(true);
--		symbol_conf.dso_list_str = NULL;
--		symbol_conf.sym_list_str = NULL;
--
- 		/*
--		 * if no sort_order is provided, then specify branch-mode
--		 * specific order
-+		 * if no sort_order is provided, then specify
-+		 * branch-mode specific order
- 		 */
- 		if (sort_order == default_sort_order)
- 			sort_order = "comm,dso_from,symbol_from,"
- 				     "dso_to,symbol_to";
+ +
+-At least one of any, any_call, any_ret, any_ind must be provided. The privilege levels may
+-be ommitted, in which case, the privilege levels of the associated event are applied to the
+-branch filter. Both kernel (k) and hypervisor (hv) privilege levels are subject to
+-permissions.  When sampling on multiple events, branch stack sampling is enabled for all
+-the sampling events. The sampled branch type is the same for all events.
+-Note that taken branch sampling may not be available on all processors.
+-The various filters must be specified as a comma separated list: -b any_ret,u,k
++The option requires at least one branch type among any, any_call, any_ret, ind_call.
++The privilege levels may be ommitted, in which case, the privilege levels of the associated
++event are applied to the branch filter. Both kernel (k) and hypervisor (hv) privilege
++levels are subject to permissions.  When sampling on multiple events, branch stack sampling
++is enabled for all the sampling events. The sampled branch type is the same for all events.
++The various filters must be specified as a comma separated list: --branch-filter any_ret,u,k
++Note that this feature may not be available on all processors.
  
--	} else if (strcmp(report.input_name, "-") != 0) {
-+	}
-+
-+	if (strcmp(report.input_name, "-") != 0) {
- 		setup_browser(true);
- 	} else {
- 		use_browser = 0;
-@@ -696,9 +715,17 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 	if (argc)
- 		usage_with_options(report_usage, options);
- 
--	sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
- 	sort_entry__setup_elide(&sort_comm, symbol_conf.comm_list, "comm", stdout);
--	sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
-+
-+	if (sort__branch_mode == 1) {
-+		sort_entry__setup_elide(&sort_dso_from, symbol_conf.dso_from_list, "dso_from", stdout);
-+		sort_entry__setup_elide(&sort_dso_to, symbol_conf.dso_to_list, "dso_to", stdout);
-+		sort_entry__setup_elide(&sort_sym_from, symbol_conf.sym_from_list, "sym_from", stdout);
-+		sort_entry__setup_elide(&sort_sym_to, symbol_conf.sym_to_list, "sym_to", stdout);
-+	} else {
-+		sort_entry__setup_elide(&sort_dso, symbol_conf.dso_list, "dso", stdout);
-+		sort_entry__setup_elide(&sort_sym, symbol_conf.sym_list, "symbol", stdout);
-+	}
- 
- 	ret = __cmd_report(&report);
- error:
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index e650de8..002ebbf 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -263,6 +263,7 @@ static void ip__resolve_ams(struct machine *self, struct thread *thread,
- 	}
- found:
- 	ams->addr = ip;
-+	ams->al_addr = al.addr;
- 	ams->sym = al.sym;
- 	ams->map = al.map;
- }
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 8505b9b..472aa5a 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -37,8 +37,10 @@ extern struct sort_entry sort_comm;
- extern struct sort_entry sort_dso;
- extern struct sort_entry sort_sym;
- extern struct sort_entry sort_parent;
--extern struct sort_entry sort_lbr_dso;
--extern struct sort_entry sort_lbr_sym;
-+extern struct sort_entry sort_dso_from;
-+extern struct sort_entry sort_dso_to;
-+extern struct sort_entry sort_sym_from;
-+extern struct sort_entry sort_sym_to;
- extern enum sort_type sort__first_dimension;
- 
- /**
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 5866ce6..ac49ef2 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -97,7 +97,11 @@ struct symbol_conf {
- 			*col_width_list_str;
-        struct strlist	*dso_list,
- 			*comm_list,
--			*sym_list;
-+			*sym_list,
-+			*dso_from_list,
-+			*dso_to_list,
-+			*sym_from_list,
-+			*sym_to_list;
- 	const char	*symfs;
+ SEE ALSO
+ --------
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 1c49d4e..a7c53a9 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -660,7 +660,7 @@ static const struct branch_mode branch_modes[] = {
  };
  
-@@ -125,6 +129,7 @@ struct addr_map_symbol {
- 	struct map    *map;
- 	struct symbol *sym;
- 	u64	      addr;
-+	u64	      al_addr;
- };
- 
- struct branch_info {
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index bfba049..951e2e9 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -805,8 +805,11 @@ static struct hist_browser *hist_browser__new(struct hists *hists)
- 		self->hists = hists;
- 		self->b.refresh = hist_browser__refresh;
- 		self->b.seek = ui_browser__hists_seek;
--		self->b.use_navkeypressed = true,
--		self->has_symbols = sort_sym.list.next != NULL;
-+		self->b.use_navkeypressed = true;
-+		if (sort__branch_mode == 1)
-+			self->has_symbols = sort_sym_from.list.next != NULL;
-+		else
-+			self->has_symbols = sort_sym.list.next != NULL;
- 	}
- 
- 	return self;
-@@ -861,6 +864,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ static int
+-parse_branch_stack(const struct option *opt, const char *str, int unset __used)
++parse_branch_stack(const struct option *opt, const char *str, int unset)
  {
- 	struct hists *self = &evsel->hists;
- 	struct hist_browser *browser = hist_browser__new(self);
-+	struct branch_info *bi;
- 	struct pstack *fstack;
- 	int key = -1;
+ #define ONLY_PLM \
+ 	(PERF_SAMPLE_BRANCH_USER	|\
+@@ -669,40 +669,53 @@ parse_branch_stack(const struct option *opt, const char *str, int unset __used)
  
-@@ -879,7 +883,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 		char *options[16];
- 		int nr_options = 0, choice = 0, i,
- 		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
--		    browse_map = -2;
-+		    annotate_f = -2, annotate_t = -2, browse_map = -2;
+ 	uint64_t *mode = (uint64_t *)opt->value;
+ 	const struct branch_mode *br;
+-	char *s, *os, *p;
++	char *s, *os = NULL, *p;
+ 	int ret = -1;
  
- 		key = hist_browser__run(browser, ev_name, timer, arg, delay_secs);
+-	*mode = 0;
++	if (unset)
++		return 0;
  
-@@ -887,7 +891,6 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			thread = hist_browser__selected_thread(browser);
- 			dso = browser->selection->map ? browser->selection->map->dso : NULL;
- 		}
+-	/* because str is read-only */
+-	s = os = strdup(str);
+-	if (!s)
++	/*
++	 * cannot set it twice, -b + --branch-filter for instance
++	 */
++	if (*mode)
+ 		return -1;
+ 
+-	for (;;) {
+-		p = strchr(s, ',');
+-		if (p)
+-			*p = '\0';
 -
- 		switch (key) {
- 		case K_TAB:
- 		case K_UNTAB:
-@@ -902,7 +905,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			if (!browser->has_symbols) {
- 				ui_browser__warning(&browser->b, delay_secs * 2,
- 			"Annotation is only available for symbolic views, "
--			"include \"sym\" in --sort to use it.");
-+			"include \"sym*\" in --sort to use it.");
- 				continue;
- 			}
- 
-@@ -972,12 +975,32 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 		if (!browser->has_symbols)
- 			goto add_exit_option;
- 
--		if (browser->selection != NULL &&
--		    browser->selection->sym != NULL &&
--		    !browser->selection->map->dso->annotate_warned &&
--		    asprintf(&options[nr_options], "Annotate %s",
--			     browser->selection->sym->name) > 0)
--			annotate = nr_options++;
-+		if (sort__branch_mode == 1) {
-+			bi = browser->he_selection->branch_info;
-+			if (browser->selection != NULL &&
-+			    bi &&
-+			    bi->from.sym != NULL &&
-+			    !bi->from.map->dso->annotate_warned &&
-+				asprintf(&options[nr_options], "Annotate %s",
-+					 bi->from.sym->name) > 0)
-+				annotate_f = nr_options++;
+-		for (br = branch_modes; br->name; br++) {
+-			if (!strcasecmp(s, br->name))
+-				break;
+-		}
+-		if (!br->name)
+-			goto error;
++	/* str may be NULL in case no arg is passed to -b */
++	if (str) {
++		/* because str is read-only */
++		s = os = strdup(str);
++		if (!s)
++			return -1;
 +
-+			if (browser->selection != NULL &&
-+			    bi &&
-+			    bi->to.sym != NULL &&
-+			    !bi->to.map->dso->annotate_warned &&
-+				asprintf(&options[nr_options], "Annotate %s",
-+					 bi->to.sym->name) > 0)
-+				annotate_t = nr_options++;
-+		} else {
++		for (;;) {
++			p = strchr(s, ',');
++			if (p)
++				*p = '\0';
 +
-+			if (browser->selection != NULL &&
-+			    browser->selection->sym != NULL &&
-+			    !browser->selection->map->dso->annotate_warned &&
-+				asprintf(&options[nr_options], "Annotate %s",
-+					 browser->selection->sym->name) > 0)
-+				annotate = nr_options++;
-+		}
- 
- 		if (thread != NULL &&
- 		    asprintf(&options[nr_options], "Zoom %s %s(%d) thread",
-@@ -1010,13 +1033,28 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 		if (choice == -1)
- 			continue;
- 
--		if (choice == annotate) {
-+		if (choice == annotate || choice == annotate_t || choice == annotate_f) {
- 			struct hist_entry *he;
- 			int err;
- do_annotate:
- 			he = hist_browser__selected_entry(browser);
- 			if (he == NULL)
- 				continue;
-+
-+			/*
-+			 * we stash the branch_info symbol + map into the
-+			 * the ms so we don't have to rewrite all the annotation
-+			 * code to use branch_info.
-+			 * in branch mode, the ms struct is not used
-+			 */
-+			if (choice == annotate_f) {
-+				he->ms.sym = he->branch_info->from.sym;
-+				he->ms.map = he->branch_info->from.map;
-+			}  else if (choice == annotate_t) {
-+				he->ms.sym = he->branch_info->to.sym;
-+				he->ms.map = he->branch_info->to.map;
++			for (br = branch_modes; br->name; br++) {
++				if (!strcasecmp(s, br->name))
++					break;
 +			}
++			if (!br->name) {
++				ui__warning("unknown branch filter %s,"
++					    " check man page\n", s);
++				goto error;
++			}
+ 
+-		*mode |= br->mode;
++			*mode |= br->mode;
+ 
+-		if (!p)
+-			break;
++			if (!p)
++				break;
+ 
+-		s = p + 1;
++			s = p + 1;
++		}
+ 	}
+ 	ret = 0;
+ 
++	/* default to any branch */
+ 	if ((*mode & ~ONLY_PLM) == 0) {
+-		error("need at least one branch type with -b\n");
+-		ret = -1;
++		*mode = PERF_SAMPLE_BRANCH_ANY;
+ 	}
+ error:
+ 	free(os);
+@@ -798,8 +811,13 @@ const struct option record_options[] = {
+ 		     "monitor event in cgroup name only",
+ 		     parse_cgroups),
+ 	OPT_STRING('u', "uid", &record.uid_str, "user", "user to profile"),
+-	OPT_CALLBACK('b', "branch-stack", &record.opts.branch_stack,
+-		     "branch mode mask", "branch stack sampling modes",
 +
- 			/*
- 			 * Don't let this be freed, say, by hists__decay_entry.
- 			 */
++	OPT_CALLBACK_NOOPT('b', "branch-any", &record.opts.branch_stack,
++		     "branch any", "sample any taken branches",
++		     parse_branch_stack),
++
++	OPT_CALLBACK('j', "branch-filter", &record.opts.branch_stack,
++		     "branch filter mask", "branch stack filter modes",
+ 		     parse_branch_stack),
+ 	OPT_END()
+ };
 -- 
 1.7.4.1
 
