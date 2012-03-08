@@ -1,105 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab2CHLds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:33:48 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57715 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754885Ab2CHLdo convert rfc822-to-8bit (ORCPT
+	id S1756906Ab2CHLep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:34:45 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:63398 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab2CHLeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:33:44 -0500
+	Thu, 8 Mar 2012 06:34:44 -0500
+Date: Thu, 8 Mar 2012 12:34:41 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Alex Gershgorin <alexg@meprolight.com>
+cc: "'Fabio Estevam'" <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'s.hauer@pengutronix.de'" <s.hauer@pengutronix.de>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: RE: I.MX35 PDK
+In-Reply-To: <4875438356E7CA4A8F2145FCD3E61C0B2CBD666A28@MEP-EXCH.meprolight.com>
+Message-ID: <Pine.LNX.4.64.1203081225290.29847@axis700.grange>
+References: <4875438356E7CA4A8F2145FCD3E61C0B2CBD666A28@MEP-EXCH.meprolight.com>
 MIME-Version: 1.0
-In-Reply-To: <CADDYkjRAUxA7n2zv1H8dfbLd29n+sZGVaRBVcTr23j_QubbJoQ@mail.gmail.com>
-References: <CADDYkjRAUxA7n2zv1H8dfbLd29n+sZGVaRBVcTr23j_QubbJoQ@mail.gmail.com>
-Date: Thu, 8 Mar 2012 12:33:42 +0100
-Message-ID: <CADDYkjS4NctGzreFHSMFq8qBO9ZjWDntaikRq+-J-fU-Jcr_vw@mail.gmail.com>
-Subject: Re: WARNING: at fs/btrfs/extent-tree.c:5985
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:Z0nUv6hquISiGUXJYimzodFkoPaiX+kBtdqS9/E+PnS
+ cU1zAIuBhspfEaCYew02lv1Oo8LZQe0JQ+w7IgM1MaN82OzyzC
+ hNOAwQTXoZbhBEBtKvedcM8OLWN73uKDQRDKFCtRyI5HvWktUT
+ KQYKjLfIE2q0k/hsz5jGxQ0DHhH62U1Fj+i127hP2lJB0o7dvy
+ WBWvMjvh8AZ3Ev+5LIVrIilyHZ6/60tDtunIKjrcCIM+S7u2Ql
+ 3F5ZkyV134dadZH2ZrOVtvHbr9EXW0gld7FQhCseUFz9rc8mnw
+ zy6E6KoKgnoGxh+kEnZ/qXQDe9Pz8seWR5z58SV2M/FqwKPtCL
+ VGzBnjNMKtuQ8MwPcSzox8gzjPZdsRBnyNpAHWrL+G5014zjVi
+ kR7dtgDsVzBuQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/6 Jacek Luczak <difrost.kernel@gmail.com>:
-> Hi All,
->
-> I've noticed today below WARN_ON from btrfs. Google shows hits in the
-> same place ([1] and [2]) but the path is different. It could happen
-> when svn checout or few rsyncs were running - now I'm not able to put
-> in correct timings. There's  btrfs_item_offset() in backtrace and I
-> was not able to find it from btrfs kernel code - there's _nr instead.
-> Am I blind?
->
-> I will try to reproduce this. Any hints based on code path how could
-> it be triggered?
->
-> Cheers,
-> -Jacek
->
-> [1] http://www.spinics.net/lists/linux-btrfs/msg15229.html
-> [2] https://bugzilla.redhat.com/show_bug.cgi?id=789632
->
-> ------------[ cut here ]------------
-> WARNING: at fs/btrfs/extent-tree.c:5985
-> btrfs_alloc_free_block+0xc5/0x292 [btrfs]()
-> Hardware name: ProLiant BL460c G6
-> Modules linked in: btrfs zlib_deflate lzo_compress ext4 jbd2 crc16
-> ipmi_devintf autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm
-> iw_cm ib_sa ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i
-> libcxgbi iw_cxgb3 ib_core cxgb3 libiscsi_tcp libiscsi
-> scsi_transport_iscsi dm_mirror dm_region_hash dm_log dm_multipath
-> video battery acpi_pad acpi_ipmi ac parport usbhid evdev
-> acpi_power_meter radeon ttm drm_kms_helper drm hwmon backlight
-> i2c_algo_bit ipmi_si bnx2x ipmi_msghandler i2c_core hpilo hpwdt
-> psmouse mdio ehci_hcd uhci_hcd
-> Pid: 4865, comm: flush-btrfs-11 Tainted: G        W    3.2.7 #2
-> Call Trace:
->  [<ffffffffa038461f>] ? btrfs_alloc_free_block+0xc5/0x292 [btrfs]
->  [<ffffffff8106901d>] ? warn_slowpath_common+0x78/0x8d
->  [<ffffffffa038461f>] ? btrfs_alloc_free_block+0xc5/0x292 [btrfs]
->  [<ffffffffa039ebad>] ? btrfs_item_offset+0x2c/0x61 [btrfs]
->  [<ffffffffa03737dc>] ? leaf_space_used+0x86/0xb5 [btrfs]
->  [<ffffffffa0377a7a>] ? split_leaf+0x2d9/0x632 [btrfs]
->  [<ffffffffa0379261>] ? btrfs_search_slot+0x6c1/0x75a [btrfs]
->  [<ffffffffa0379e6e>] ? btrfs_insert_empty_items+0x61/0xab [btrfs]
->  [<ffffffffa039507c>] ? insert_inline_extent+0xea/0x2d4 [btrfs]
->  [<ffffffffa0395389>] ? cow_file_range_inline+0x123/0x163 [btrfs]
->  [<ffffffffa038fc2c>] ? start_transaction+0x1d5/0x205 [btrfs]
->  [<ffffffffa0397137>] ? cow_file_range+0x113/0x337 [btrfs]
->  [<ffffffffa0379653>] ? btrfs_next_leaf+0x359/0x36a [btrfs]
->  [<ffffffffa0397d7b>] ? run_delalloc_nocow+0x5d9/0x673 [btrfs]
->  [<ffffffffa0397e8b>] ? run_delalloc_range+0x76/0x338 [btrfs]
->  [<ffffffff811ef37c>] ? blk_queue_bio+0x2db/0x2fb
->  [<ffffffffa03a9367>] ? __extent_writepage+0x259/0x689 [btrfs]
->  [<ffffffff811eef50>] ? generic_make_request+0x90/0xde
->  [<ffffffff811ef06a>] ? submit_bio+0xcc/0xd5
->  [<ffffffffa03a4fcc>] ? extent_writepages+0x1cc/0x2d5 [btrfs]
->  [<ffffffffa0398ed4>] ? uncompress_inline+0x141/0x141 [btrfs]
->  [<ffffffff81137956>] ? writeback_single_inode+0x109/0x291
->  [<ffffffff81137fde>] ? writeback_sb_inodes+0x156/0x1fe
->  [<ffffffff81138461>] ? wb_writeback+0x10a/0x1f8
->  [<ffffffff81073b4b>] ? lock_timer_base+0x26/0x4b
->  [<ffffffff811385bb>] ? wb_do_writeback+0x6c/0x1c1
->  [<ffffffff813e2e22>] ? schedule_timeout+0x1d6/0x1f4
->  [<ffffffff81073c7b>] ? msleep+0x1e/0x1e
->  [<ffffffff81138802>] ? bdi_writeback_thread+0x7d/0x1c1
->  [<ffffffff81138785>] ? wakeup_flusher_threads+0x75/0x75
->  [<ffffffff810822aa>] ? kthread+0x7e/0x86
->  [<ffffffff813e6a74>] ? kernel_thread_helper+0x4/0x10
->  [<ffffffff8108222c>] ? kthread_stop+0xa8/0xa8
->  [<ffffffff813e6a70>] ? gs_change+0x13/0x13
-> ---[ end trace 1547a049b7c6896a ]---
-> use_block_rsv: 11 callbacks suppressed
-> btrfs: block rsv returned -28
-> ------------[ cut here ]------------
+Hi Alex
 
-I've tried to catch that issue. Looks like that it occurs when there's
-a data move between NFS and BTRFS (now I have a dump of all processes
-from the system when issue popped up). I did not found a trigger for
-this but it seem to go inline with Niks observations [1].
+Why is the cc-list mangled again? Why is the V4L list dropped again? 
+What's so difficult about hitting the "reply-to-all" button?
 
--Jacek
+On Thu, 8 Mar 2012, Alex Gershgorin wrote:
 
-[1] http://www.spinics.net/lists/linux-btrfs/msg15292.html
+> Hi Fabio,
+> 
+> Thanks for you response...
+> 
+> > in spite of this I get from ov2640 driver error
+> > Here Linux Kernel boot message:
+> >
+> > "Linux video capture interface: v2.00
+> > soc-camera-pdrv soc-camera-pdrv.0: Probing soc-camera-pdrv.0
+> > mx3-camera mx3-camera.0: MX3 Camera driver attached to camera 0
+> > ov2640 0-0030: Product ID error fb:fb"
+> >
+> > I cannot understand what the problem is, if someone tested this?
+> 
+> >>Looks like a I2C issue.
+> 
+> >>Check the I2C1 pad settings in the mainline kernel.
+> 
+> >>On FSL kernel we have:
+> 
+> #<<define PAD_CONFIG (PAD_CTL_HYS_SCHMITZ | PAD_CTL_PKE_ENABLE |
+> >>PAD_CTL_PUE_PUD | PAD_CTL_ODE_OpenDrain)
+> 
+> 	<<switch (i2c_num) {
+> 	<<case 0:
+> 		<<mxc_request_iomux(MX35_PIN_I2C1_CLK, MUX_CONFIG_SION);
+> 		<<mxc_request_iomux(MX35_PIN_I2C1_DAT, MUX_CONFIG_SION);
+> 
+> 		<<mxc_iomux_set_pad(MX35_PIN_I2C1_CLK, PAD_CONFIG);
+> 		<<mxc_iomux_set_pad(MX35_PIN_I2C1_DAT, PAD_CONFIG);
+> 
+> >>Also check if you are getting the proper voltage levels at the I2C1 lines.
+> 
+> Yes this I2C problem, all I2C slave device need response to Host CPU by pulls I2C data bus to low, in other words generate ACK, the clock pulse for the acknowledge bit is always created by the bus master.
+> 
+> In this case, the camera tries to reset the data bus and generate an ACK, but the voltage drops to the area of two volts, although it should be reset to zero.
+> I replaced R172 with 10K on CPU board and got a good result, but there are other surprises 
+> 
+> Linux video capture interface: v2.00
+> soc-camera-pdrv soc-camera-pdrv.0: Probing soc-camera-pdrv.0
+> mx3-camera mx3-camera.0: MX3 Camera driver attached to camera 0
+> ov2640 0-0030: ov2640 Product ID 26:42 Manufacturer ID 7f:a2
+> i2c i2c-0: OV2640 Probed
+> mx3-camera mx3-camera.0: MX3 Camera driver detached from camera 0
+> dmaengine: failed to get dma1chan0: (-22)
+> dmaengine: failed to get dma1chan1: (-22)
+> dmaengine: failed to get dma1chan2: (-22)
+> dmaengine: failed to get dma1chan3: (-22)
+
+First of all it shows, that you're not using the newest kernel:
+
+http://thread.gmane.org/gmane.linux.ports.sh.devel/11508
+
+Secondly, as Fabio just pointed out, these messages are not fatal, which 
+is also the reason, why I changed their priority to "debug"
+
+Please, describe the actual problem, that you're getting (if any) and do 
+add the v4l list back to the list of recipients!
+
+Thanks
+Guennadi
+
+> dmaengine: failed to get dma1chan4: (-22)
+> dmaengine: failed to get dma1chan5: (-22)
+> dmaengine: failed to get dma1chan6: (-22)
+> dmaengine: failed to get dma1chan7: (-22)
+> dmaengine: failed to get dma1chan8: (-22)
+> dmaengine: failed to get dma1chan9: (-22)
+> dmaengine: failed to get dma1chan10: (-22)
+> dmaengine: failed to get dma1chan11: (-22)
+> dmaengine: failed to get dma1chan12: (-22)
+> dmaengine: failed to get dma1chan13: (-22)
+> dmaengine: failed to get dma1chan14: (-22)
+> dmaengine: failed to get dma1chan15: (-22)
+> dmaengine: failed to get dma1chan16: (-22)
+> dmaengine: failed to get dma1chan17: (-22)
+> dmaengine: failed to get dma1chan18: (-22)
+> dmaengine: failed to get dma1chan19: (-22)
+> dmaengine: failed to get dma1chan20: (-22)
+> dmaengine: failed to get dma1chan21: (-22)
+> dmaengine: failed to get dma1chan22: (-22)
+> dmaengine: failed to get dma1chan23: (-22)
+> dmaengine: failed to get dma1chan24: (-22)
+> dmaengine: failed to get dma1chan25: (-22)
+> dmaengine: failed to get dma1chan26: (-22)
+> dmaengine: failed to get dma1chan27: (-22)
+> dmaengine: failed to get dma1chan28: (-22)
+> dmaengine: failed to get dma1chan29: (-22)
+> dmaengine: failed to get dma1chan30: (-22):
+> 
+> 
+> What is the problem? 
+> Guennadi please help me understand 
+> 
+> Thanks,
+>  
+> Alex Gershgorin
+> 
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
