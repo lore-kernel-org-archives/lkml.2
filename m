@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab2CHKZW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 05:25:22 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57673 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412Ab2CHKZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 05:25:17 -0500
-Date: Thu, 8 Mar 2012 11:24:50 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tony Luck <tony.luck@intel.com>, x86 <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] mce: Fix RCU warning
-Message-ID: <20120308102450.GA28434@elte.hu>
-References: <20120307114138.GA21202@aftab>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120307114138.GA21202@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1752460Ab2CHK2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 05:28:19 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47870 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab2CHK2R convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 05:28:17 -0500
+Message-ID: <1331202480.11248.375.camel@twins>
+Subject: Re: runnable tasks never making it to a runqueue where they can run?
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Roland Dreier <roland@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Paul Turner <pjt@google.com>, Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Date: Thu, 08 Mar 2012 11:28:00 +0100
+In-Reply-To: <CAG4TOxM2yGvFo5O9x0M6H2GONPyF9XVOLwonfS-1gkpskkO+0w@mail.gmail.com>
+References: <CAL1RGDUbxcx+cCM_mf1nFJ=Jz0SyaiW0ffxiY4gZ6KNWzJCnMg@mail.gmail.com>
+	 <1331137905.11248.355.camel@twins>
+	 <CAG4TOxM2yGvFo5O9x0M6H2GONPyF9XVOLwonfS-1gkpskkO+0w@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2012-03-07 at 10:03 -0800, Roland Dreier wrote:
+> 
+> So could the fact that we don't have CPU 11 in our affinity
+> mask cause the scheduler not to try the CPU 23 runqueue?
+> Is it only looking at the first SMT sibling or something? 
 
-* Borislav Petkov <bp@amd64.org> wrote:
+Yes, I think we've conspired against your use-case here.
 
-> Hi Ingo,
-> 
-> the following fixes an RCU splat which at least Srivatsa and I can
-> trigger. It would be lovely if it went in into tip:urgent and to Linus
-> before 3.3 is out.
-> 
-> Oh, and I ventured a try with signed tags, it looks good from here but
-> let me know if I've missed anything.
-> 
-> Thanks a lot.
-> 
-> The following changes since commit 192cfd58774b4d17b2fe8bdc77d89c2ef4e0591d:
-> 
->   Linux 3.3-rc6 (2012-03-03 17:08:09 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/mce-fix-for-3.3-rc6
-> 
-> for you to fetch changes up to b11e3d782b9c065b3b2fb543bfb0d97801822dc0:
-> 
->   x86, mce: Fix rcu splat in drain_mce_log_buffer() (2012-03-07 11:44:29 +0100)
-> 
-> ----------------------------------------------------------------
-> Fix a RCU warning in MCE code
-> 
-> ----------------------------------------------------------------
-> Srivatsa S. Bhat (1):
->       x86, mce: Fix rcu splat in drain_mce_log_buffer()
-> 
->  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+select_task_rq_fair() will very likely end up in select_idle_sibling()
+which will never select the smt1 if smt0 is idle (even if smt0 isn't in
+the cpus allowed mask) -- Vatsa is currently reworking that area, this
+is something he might want to consider.
 
-Pulled, thanks!
+The regular load-balancer works by pulling tasks towards itself, this
+works on the sched domains, it iterates bottom up through the domains,
+but only the first cpu in the specific domain gets to go up.
 
-	Ingo
+This means that SMT1 will only ever pull from SMT0, and only SMT0 will
+go up to the core level and (possibly) beyond to pull load. Now your
+task -- due to its affinity mask -- can never be pulled to SMT0 and
+hence will never end up on SMT1.
+
+There's a number of very convoluted hacks in the load-balancer to
+kinda-sort-of deal with affinity masks that are miss-aligned wrt the
+domain setup, but they're painful and very likely lacking (as
+demonstrated here).
+
+For a while I've been toying with the idea of making the least-loaded
+cpu in the mask go up in the balance pass -- as opposed to the first cpu
+in the mask. This might be the justification, and push, I was needing.
+
+In any case, load-balancing in the presence of affinity masks is an
+'interesting' problem :-)
