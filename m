@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758316Ab2CHUBg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:01:36 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:58274 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab2CHUBc (ORCPT
+	id S1758583Ab2CHUBx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:01:53 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9267 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758367Ab2CHUBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:01:32 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] [IA64] hpsim, fix SAL handling in fw-emu
-Date: Thu,  8 Mar 2012 21:01:16 +0100
-Message-Id: <1331236879-20124-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <20120308195028.GA17564@kroah.com>
-References: <20120308195028.GA17564@kroah.com>
+	Thu, 8 Mar 2012 15:01:42 -0500
+X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=qL2bEeoSVyO6-YR97C0A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331236900.25686.462.camel@gandalf.stny.rr.com>
+Subject: Re: [ANNOUNCE] 3.2.9-rt17
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Thu, 08 Mar 2012 15:01:40 -0500
+In-Reply-To: <1331236139.11248.407.camel@twins>
+References: <alpine.LFD.2.02.1203072225020.2742@ionos>
+	 <1331230991.25686.452.camel@gandalf.stny.rr.com>
+	 <1331231287.11248.396.camel@twins>
+	 <1331232159.25686.456.camel@gandalf.stny.rr.com>
+	 <1331236139.11248.407.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The switch-cases of SAL_FREQ_BASE generate non-relocatable code. The
-same as for the ifs one level upper. This causes oopses early in boot
-because the kernel jumps to the hell instead of the offset in sal
-callback.
+On Thu, 2012-03-08 at 20:48 +0100, Peter Zijlstra wrote:
+> On Thu, 2012-03-08 at 13:42 -0500, Steven Rostedt wrote:
+> > cpu_chill_on_lock().
+> 
+> I think what you were hinting at is:
+> 
+>   spin_lock(&lock);
+>   spin_unlock(&lock);
 
-So use ifs here for SAL_FREQ_BASE decision too.
+Exactly.
 
-Isn't there any compiler directive or settings to solve that cleanly?
+> 
+> which is the rt_mutex implementation of spin_unlock_wait(). No new
+> function needed for that.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
- arch/ia64/hp/sim/boot/fw-emu.c |   17 ++++-------------
- 1 file changed, 4 insertions(+), 13 deletions(-)
+Yes but...
+> 
+> Trouble is that you cannot use inode->i_lock as explained..
 
-diff --git a/arch/ia64/hp/sim/boot/fw-emu.c b/arch/ia64/hp/sim/boot/fw-emu.c
-index bf6d9d8..0216e28 100644
---- a/arch/ia64/hp/sim/boot/fw-emu.c
-+++ b/arch/ia64/hp/sim/boot/fw-emu.c
-@@ -160,28 +160,19 @@ sal_emulator (long index, unsigned long in1, unsigned long in2,
- 	 */
- 	status = 0;
- 	if (index == SAL_FREQ_BASE) {
--		switch (in1) {
--		      case SAL_FREQ_BASE_PLATFORM:
-+		if (in1 == SAL_FREQ_BASE_PLATFORM)
- 			r9 = 200000000;
--			break;
--
--		      case SAL_FREQ_BASE_INTERVAL_TIMER:
-+		else if (in1 == SAL_FREQ_BASE_INTERVAL_TIMER) {
- 			/*
- 			 * Is this supposed to be the cr.itc frequency
- 			 * or something platform specific?  The SAL
- 			 * doc ain't exactly clear on this...
- 			 */
- 			r9 = 700000000;
--			break;
--
--		      case SAL_FREQ_BASE_REALTIME_CLOCK:
-+		} else if (in1 == SAL_FREQ_BASE_REALTIME_CLOCK)
- 			r9 = 1;
--			break;
--
--		      default:
-+		else
- 			status = -1;
--			break;
--		}
- 	} else if (index == SAL_SET_VECTORS) {
- 		;
- 	} else if (index == SAL_GET_STATE_INFO) {
--- 
-1.7.9.2
+Right!
+
+
+What I was hinting at was that the spin_lock() can boost, but it could
+also fail if there was a deadlock detected, and it wouldn't cause the
+system to hang.
+
+-- Steve
 
 
