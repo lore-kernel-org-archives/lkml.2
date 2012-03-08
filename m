@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758657Ab2CHV4r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:56:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33580 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757789Ab2CHV4q (ORCPT
+	id S1758698Ab2CHV5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:57:37 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36083 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757815Ab2CHV5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:56:46 -0500
-Date: Thu, 8 Mar 2012 13:56:43 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, hugetlb: add thread name and pid to SHM_HUGETLB
- mlock rlimit warning
-Message-Id: <20120308135643.225920ad.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1203081333300.23632@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1203061825070.9015@chino.kir.corp.google.com>
-	<20120308120238.c4486547.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1203081333300.23632@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 16:57:35 -0500
+Date: Fri, 9 Mar 2012 01:57:31 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andy Lutomirski <luto@amacapital.net>, Kees Cook <keescook@chromium.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
+Message-ID: <20120308215731.GP21812@moon>
+References: <20120308165112.GF21812@moon>
+ <CAGXu5j+4RRGjzVxLSyz0CZCNMj4dPOxJp3pYGSN_sXFsiMhUaQ@mail.gmail.com>
+ <20120308194008.GJ21812@moon>
+ <CALCETrXpQOpAN64gfG-=iyXXy4Tid=9FyKVrT2grQxRgNPC-fg@mail.gmail.com>
+ <20120308200729.GL21812@moon>
+ <CALCETrXc9Etit+DUuxKtUwRKmqbwbE5vhDNYWgs0ijEesY8cUA@mail.gmail.com>
+ <20120308202136.GM21812@moon>
+ <CALCETrVe6VQgdEkZBv24ZaS-N8bFLr9umhgmBsHB6CMH699ykA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVe6VQgdEkZBv24ZaS-N8bFLr9umhgmBsHB6CMH699ykA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Mar 2012 13:37:57 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
-
-> On Thu, 8 Mar 2012, Andrew Morton wrote:
+On Thu, Mar 08, 2012 at 12:24:38PM -0800, Andy Lutomirski wrote:
 > 
-> > > --- a/fs/hugetlbfs/inode.c
-> > > +++ b/fs/hugetlbfs/inode.c
-> > > @@ -946,7 +946,11 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
-> > >  	if (creat_flags == HUGETLB_SHMFS_INODE && !can_do_hugetlb_shm()) {
-> > >  		*user = current_user();
-> > >  		if (user_shm_lock(size, *user)) {
-> > > -			printk_once(KERN_WARNING "Using mlock ulimits for SHM_HUGETLB is deprecated\n");
-> > > +			task_lock(current);
-> > > +			printk_once(KERN_WARNING
-> > > +				"%s (%d): Using mlock ulimits for SHM_HUGETLB is deprecated\n",
-> > > +				current->comm, current->pid);
-> > > +			task_unlock(current);
-> > 
-> > I assume the task_lock() is there to protect current->comm.
+> nnp is no_new_privs, which is my patch and is almost, but not quite,
+> very relevant to this discussion.  Hence my confusion ;)
 > 
-> Yup.
+> FWIW, since I've touched this code recently, the cleanup you're
+> suggesting sounds good.
 > 
-> > If so, it
-> > is unneeded - we're protecting against prctl(PR_SET_NAME), and
-> > PR_SET_NAME only operates on current, and we know this task isn't
-> > currently running PR_SET_NAME.
-> > 
-> > If there's a way for another task to alter this task's ->comm then we
-> > _do_ need locking.  But there isn't a way, I hope.
-> > 
-> 
-> I wish there wasn't as well, it would prevent a lot of the currently buggy 
-> reads to current->comm and allow us to avoid so many otherwise pointless 
-> task_lock()s.
-> 
-> This protects against /proc/pid/comm, which is writable by threads in the 
-> same thread group.
 
-Oh crap.
+Andy, Kees, I guess the patch below might be a helper we need,
+while I'm not sure on naming. hm?
 
->  We have a get_task_comm() that does the task_lock() 
-> internally but requires a TASK_COMM_LEN buffer in the calling code.  It's 
-> just easier for the calling code to the task_lock() itself for a tiny 
-> little printk().
+	Cyrill
+---
+ include/linux/fs.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Well for a tiny little printk we could just omit the locking?  The
-printk() won't oops and once in a million years one person will see a
-garbled comm[] string?
-
+Index: linux-2.6.git/include/linux/fs.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/fs.h
++++ linux-2.6.git/include/linux/fs.h
+@@ -2669,5 +2669,11 @@ static inline void inode_has_no_xattr(st
+ 		inode->i_flags |= S_NOSEC;
+ }
+ 
++static inline bool file_may_exec(struct file *f)
++{
++	return S_ISREG(f->f_path.dentry->d_inode->i_mode) &&
++		!(f->f_path.mnt->mnt_flags & MNT_NOEXEC);
++}
++
+ #endif /* __KERNEL__ */
+ #endif /* _LINUX_FS_H */
