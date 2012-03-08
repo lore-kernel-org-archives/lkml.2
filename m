@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab2CHKkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 05:40:09 -0500
-Received: from damascus.uab.es ([158.109.168.135]:40280 "EHLO damascus.uab.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755134Ab2CHKkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 05:40:03 -0500
-Date: Thu, 08 Mar 2012 12:40:31 +0100
-From: Davidlohr Bueso <dave@gnu.org>
-Subject: Re: [PATCH] KVM: x86: add paging gcc optimization
-In-reply-to: <4F587FB6.1070803@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Message-id: <1331206831.28711.0.camel@offworld>
-Organization: GNU
-MIME-version: 1.0
-X-Mailer: Evolution 3.0.3-2
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-X-Spam-Tests: ALL_TRUSTED=-1
-X-imss-version: 2.054
-X-imss-result: Passed
-X-imss-scanInfo: M:P L:N SM:0
-X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18760.006)
-X-imss-scores: Clean:99.90000 C:2 M:3 S:5 R:5
-X-imss-settings: Baseline:3 C:3 M:3 S:3 R:3 (0.5000 0.5000)
-References: <1331150569.25969.1.camel@offbook> <4F587FB6.1070803@redhat.com>
+	id S1755210Ab2CHKkz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 05:40:55 -0500
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:21566
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751029Ab2CHKkv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 05:40:51 -0500
+X-SpamScore: -19
+X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4R8275bhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M0KAZQ-02-8VS-02
+X-M-MSG: 
+Date: Thu, 8 Mar 2012 11:40:38 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Jason Wang <jasowang@redhat.com>
+CC: <mtosatti@redhat.com>, <avi@redhat.com>, <kvm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kvm: svm: count all irq windows exit
+Message-ID: <20120308104038.GQ10684@amd.com>
+References: <20120308100756.3984.25343.stgit@amd-6168-8-1.englab.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120308100756.3984.25343.stgit@amd-6168-8-1.englab.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 11:45 +0200, Avi Kivity wrote:
-> On 03/07/2012 10:02 PM, Davidlohr Bueso wrote:
-> > From: Davidlohr Bueso <dave@gnu.org>
-> >
-> > Since most guests will have paging enabled for memory management, add likely() and unlikely()
-> > optimizations around is_paging() checks.
-> >
-> > Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> > ---
-> >  arch/x86/kvm/mmu.c |    6 +++---
-> >  arch/x86/kvm/svm.c |    6 +++---
-> >  arch/x86/kvm/vmx.c |   16 ++++++++--------
-> >  arch/x86/kvm/x86.c |    8 ++++----
-> >  4 files changed, 18 insertions(+), 18 deletions(-)
-> >
-> > diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> > index 4cb1642..84f1e95 100644
-> > --- a/arch/x86/kvm/mmu.c
-> > +++ b/arch/x86/kvm/mmu.c
-> > @@ -3320,7 +3320,7 @@ static int init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
-> >  	context->get_pdptr = kvm_pdptr_read;
-> >  	context->inject_page_fault = kvm_inject_page_fault;
-> >  
-> > -	if (!is_paging(vcpu)) {
-> > +	if (unlikely(!is_paging(vcpu))) {
-> >
+On Thu, Mar 08, 2012 at 06:07:56PM +0800, Jason Wang wrote:
+> Also count the exits of fast-path.
+
+And align it with how it is counted in VMX.
+
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+
+Acked-by: Joerg Roedel <joerg.roedel@amd.com>
+
+> ---
+>  arch/x86/kvm/svm.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Just change is_paging itself():
-
-Ok, yes, makes more sense. I'll resend the patch. 
-
-Thanks.
-
-> 
->  static inline int is_paging(struct kvm_vcpu *vcpu)
->  {
-> -    return kvm_read_cr0_bits(vcpu, X86_CR0_PG);
-> +    return likely(kvm_read_cr0_bits(vcpu, X86_CR0_PG));
->   }
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index 53efd59..5ef7233 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -3235,6 +3235,7 @@ static int interrupt_window_interception(struct vcpu_svm *svm)
+>  	svm_clear_vintr(svm);
+>  	svm->vmcb->control.int_ctl &= ~V_IRQ_MASK;
+>  	mark_dirty(svm->vmcb, VMCB_INTR);
+> +	++svm->vcpu.stat.irq_window_exits;
+>  	/*
+>  	 * If the user space waits to inject interrupts, exit as soon as
+>  	 * possible
+> @@ -3242,7 +3243,6 @@ static int interrupt_window_interception(struct vcpu_svm *svm)
+>  	if (!irqchip_in_kernel(svm->vcpu.kvm) &&
+>  	    kvm_run->request_interrupt_window &&
+>  	    !kvm_cpu_has_interrupt(&svm->vcpu)) {
+> -		++svm->vcpu.stat.irq_window_exits;
+>  		kvm_run->exit_reason = KVM_EXIT_IRQ_WINDOW_OPEN;
+>  		return 0;
+>  	}
 > 
 
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
