@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360Ab2CHLzc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:55:32 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:47981 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757206Ab2CHLz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:55:29 -0500
-Date: Thu, 8 Mar 2012 17:25:06 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Roland Dreier <roland@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>, Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: runnable tasks never making it to a runqueue where they can run?
-Message-ID: <20120308115506.GA22656@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <CAL1RGDUbxcx+cCM_mf1nFJ=Jz0SyaiW0ffxiY4gZ6KNWzJCnMg@mail.gmail.com>
- <1331137905.11248.355.camel@twins>
- <CAG4TOxM2yGvFo5O9x0M6H2GONPyF9XVOLwonfS-1gkpskkO+0w@mail.gmail.com>
- <1331202480.11248.375.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1331202480.11248.375.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12030811-4790-0000-0000-000001B1545F
+	id S1757378Ab2CHL4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:56:30 -0500
+Received: from mga09.intel.com ([134.134.136.24]:9094 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753510Ab2CHL43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 06:56:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="119012068"
+Message-ID: <1331207881.7257.37.camel@sauron.fi.intel.com>
+Subject: Re: [RFC][PATCH 0/7] UBI checkpointing support
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <rw@linutronix.de>
+Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>, tglx@linutronix.de,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tim.bird@am.sony.com
+Date: Thu, 08 Mar 2012 13:58:01 +0200
+In-Reply-To: <4F587A28.6080205@linutronix.de>
+References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
+	 <1331138007.3463.16.camel@sauron.fi.intel.com>
+	 <4F57D0C4.1050605@linutronix.de>
+	 <20120308090835.032fe13a@pixies.home.jungo.com>
+	 <4F587A28.6080205@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-03-08 11:28:00]:
+On Thu, 2012-03-08 at 10:21 +0100, Richard Weinberger wrote:
+> On 08.03.2012 08:08, Shmulik Ladkani wrote:
+> > But doesn't the CP data (sorry, UBIUBI data :) need to have one
+> > 'struct ubi_cp_ec' descriptor for each used/free PEB, and as such the
+> > maximum number of 'ubi_cp_ec' descriptors is total device PEBs, meaning
+> > CP data is still linearly scaled to device size (with a very small
+> > multiplier)?
+> >
+> 
+> It's UBIVIS data. :D
 
-> select_task_rq_fair() will very likely end up in select_idle_sibling()
-> which will never select the smt1 if smt0 is idle
+I have a suggestion for the property of the new term. Because your old
+one can be both a noun and a verb (write a checkpoint, to checkpoint),
+the new term should probably have the same property.
 
-s/idle/busy?
+To write the ubibis and to ubibis? Hmm... not sure.
 
-> (even if smt0 isn't in
-> the cpus allowed mask) -- Vatsa is currently reworking that area, this
-> is something he might want to consider.
+To write the fastmap and to fastmap or decide to not fastmap because all
+PEBs within the first 64 have too high erasecounter? Sounds better IMO.
 
-The patch I sent couple of days back should likely fix this issue:
+> The size of the checkpoint depends on the number of free/used PEBs.
+> But in most cases the checkpoints fits into one or two PEBs.
+> Because larger devices have larger erase blocks...
 
-http://marc.info/?l=linux-kernel&m=133096114129607&w=2
+They do, but the eraseblock size grows much slower AFAICS.
 
-- vatsa
+-- 
+Best Regards,
+Artem Bityutskiy
 
