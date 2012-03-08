@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2CHVEt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:04:49 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58438 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab2CHVEq convert rfc822-to-8bit (ORCPT
+	id S1753245Ab2CHVFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:05:44 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62248 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab2CHVFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:04:46 -0500
-Message-ID: <1331240674.11248.427.camel@twins>
-Subject: Re: [PATCH v2] x86,nmi: Fix page faults by nmiaction if kmemcheck
- is enabled
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>
-Date: Thu, 08 Mar 2012 22:04:34 +0100
-In-Reply-To: <1331240549-13120-1-git-send-email-dzickus@redhat.com>
-References: <1331240549-13120-1-git-send-email-dzickus@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 8 Mar 2012 16:05:43 -0500
+Date: Thu, 8 Mar 2012 13:05:37 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [PATCH] sysfs: Optionally count subdirectories to support buggy
+ applications
+Message-ID: <20120308210537.GA32436@kroah.com>
+References: <4F27C6EB.2070305@suse.cz>
+ <m14nvc82jo.fsf@fess.ebiederm.org>
+ <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
+ <m1wr87ywex.fsf@fess.ebiederm.org>
+ <m1ehueyz20.fsf_-_@fess.ebiederm.org>
+ <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
+ <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
+ <4F54BFEC.6000206@suse.cz>
+ <20120305160953.GA3870@kroah.com>
+ <CA+55aFy1PXiNkXw08tDM7G9AO0_92xm2mEFF961-4Wpizo+6KQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFy1PXiNkXw08tDM7G9AO0_92xm2mEFF961-4Wpizo+6KQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 16:02 -0500, Don Zickus wrote:
-> From: Li Zhong <zhong@linux.vnet.ibm.com>
+On Mon, Mar 05, 2012 at 08:47:27AM -0800, Linus Torvalds wrote:
+> On Mon, Mar 5, 2012 at 8:09 AM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> >
+> > I don't remember.  I thought there was a proposed patch for this issue
+> > from Eric, but I don't see it in my queue anywhere.
 > 
-> This patch tries to fix the problem of page fault exception caused by
-> accessing nmiaction structure in nmi if kmemcheck is enabled.
+> That patch was an abortion. Adding a config option for behavior like
+> this is totally bogus, and the only reason for that config option was
+> that sysfs did silly things.
 > 
-> If kmemcheck is enabled, the memory allocated through slab are in pages
-> that are marked non-present, so that some checks could be done in the
-> page fault handling code ( e.g. whether the memory is read before
-> written to ).
-> As nmiaction is allocated in this way, so it resides in a non-present
-> page. Then there is a page fault while the nmi code accessing the
-> nmiaction structure, which would then cause a warning by
-> WARN_ON_ONCE(in_nmi()) in kmemcheck_fault(), called by do_page_fault().
+> It's only in -next, though, I was assuming that the whole "Kill nlink
+> counting" commit never makes it to me. Because I won't take it.
 > 
-> v2: as Peter suggested, changed the nmiaction to use static storage.
+> I outlined how the counting could easily be done without actually
+> having to maintain an explicit count in the sysfs.
 > 
-> v3: as Peter suggested, use macro to shorten the codes. Also keep the
-> original usage of register_nmi_handler, so users of this call doesn't
-> need change.
-> 
-> [simplified wrappers -dcz]
-> 
-> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> Signed-off-by: Don Zickus <dzickus@redhat.com> 
+> Or we should just keep doing the counting.
 
-Thanks!
+Ok, I've now reverted this patch in my tree.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+greg k-h
