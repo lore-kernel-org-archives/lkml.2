@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab2CHVDC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:03:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60828 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab2CHVC6 (ORCPT
+	id S1752996Ab2CHVEe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:04:34 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49315 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751895Ab2CHVEd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:02:58 -0500
-Date: Thu, 8 Mar 2012 13:02:56 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, davej@redhat.com, jboyer@redhat.com,
-        tyhicks@canonical.com, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: Re: [PATCH] hugetlbfs: lockdep annotate root inode properly
-Message-Id: <20120308130256.c7855cbd.akpm@linux-foundation.org>
-In-Reply-To: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 16:04:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <1331238865.25686.474.camel@gandalf.stny.rr.com>
+References: <1331237591-4406-1-git-send-email-jkacur@redhat.com>
+	<1331237840.25686.470.camel@gandalf.stny.rr.com>
+	<20120308142257.145e0968@redhat.com>
+	<1331238865.25686.474.camel@gandalf.stny.rr.com>
+Date: Thu, 8 Mar 2012 22:04:32 +0100
+X-Google-Sender-Auth: AD5kCUChauRdQhctTX6DjXOz7M0
+Message-ID: <CAONaPpGrmKq-CE3RQzLnKqCZV0DRm9niR+3eeywUFtGkYoL5Uw@mail.gmail.com>
+Subject: Re: [PATCH-RT] preempt.h: Fix implicit declaration of 'preempt_check_resched_rt'
+From: John Kacur <jkacur@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Clark Williams <williams@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  8 Mar 2012 14:45:16 +0530
-"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Thu, Mar 8, 2012 at 9:34 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 2012-03-08 at 14:22 -0600, Clark Williams wrote:
+>> On Thu, 08 Mar 2012 15:17:20 -0500
+>> Steven Rostedt <rostedt@goodmis.org> wrote:
+>>
+>> > On Thu, 2012-03-08 at 21:13 +0100, John Kacur wrote:
+>> > > When building a non-preempt kernel where CONFIG_PREEMPT_COUNT is not
+>> > > defined the following build break occurs.
+>> > >
+>> > > /home/jkacur/linux-rt/block/blk-softirq.c: In function ‘trigger_softirq’:
+>> > > /home/jkacur/linux-rt/block/blk-softirq.c:54: error: implicit declaration of function ‘preempt_check_resched_rt’
+>> > > make[2]: *** [block/blk-softirq.o] Error 1
+>> > > make[1]: *** [block/blk-softirq.o] Error 2
+>> > > make: *** [sub-make] Error 2
+>> > >
+>> > > This patch fixes the build error by adding a define to the
+>> > > !CONFIG_PREEMPT_COUNT section.
+>> > >
+>> > > Signed-off-by: Clark Williams <williams@redhat.com>
+>> >
+>> > Why Clark's SOB? Did he write it and send it to you?
+>>
+>> I suppose to be technically correct it should have been a Tested-by:
+>>
+>> John found it while I was working on it and I tested it for him.
+>
+> Either a "Reported-by" if you mentioned it to John and he fixed it, or a
+> "Tested-by" if he fixed it and you tested it. You can have both if that
+> is true too.
+>
+> But "Signed-off-by" has supposed legal significance. It means that you
+> are responsible for this patch. Either you authored it, or it went
+> through you to get to the git repo (ie. you are the maintainer that took
+> the patch).
+>
+> All other tags are FYI only. Only the SOB is required and has real
+> meaning. Also, you should *never* add a SOB to a patch without the
+> person explicitly giving it to you.
+>
+> -- Steve
+>
 
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> This fix the below lockdep warning
+Good, understood. Please change to
 
-OK, what's going on here.
+Tested-by: Clark Willilams <williams@redhat.com>
+Signed-off-by: John Kacur <jkacur@redhat.com>
 
->  ======================================================
->  [ INFO: possible circular locking dependency detected ]
->  3.3.0-rc4+ #190 Not tainted
->  -------------------------------------------------------
->  shared/1568 is trying to acquire lock:
->   (&sb->s_type->i_mutex_key#12){+.+.+.}, at: [<ffffffff811efa0f>] hugetlbfs_file_mmap+0x7d/0x108
-> 
->  but task is already holding lock:
->   (&mm->mmap_sem){++++++}, at: [<ffffffff810f5589>] sys_mmap_pgoff+0xd4/0x12f
-> 
->  which lock already depends on the new lock.
-> 
-> 
->  the existing dependency chain (in reverse order) is:
-> 
->  -> #1 (&mm->mmap_sem){++++++}:
->         [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
->         [<ffffffff810ee439>] might_fault+0x6d/0x90
->         [<ffffffff8111bc12>] filldir+0x6a/0xc2
->         [<ffffffff81129942>] dcache_readdir+0x5c/0x222
->         [<ffffffff8111be58>] vfs_readdir+0x76/0xac
->         [<ffffffff8111bf6a>] sys_getdents+0x79/0xc9
->         [<ffffffff816940a2>] system_call_fastpath+0x16/0x1b
-> 
->  -> #0 (&sb->s_type->i_mutex_key#12){+.+.+.}:
->         [<ffffffff8109f40a>] __lock_acquire+0xa6c/0xd60
->         [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
->         [<ffffffff816916be>] __mutex_lock_common+0x48/0x350
->         [<ffffffff81691a85>] mutex_lock_nested+0x2a/0x31
->         [<ffffffff811efa0f>] hugetlbfs_file_mmap+0x7d/0x108
->         [<ffffffff810f4fd0>] mmap_region+0x26f/0x466
->         [<ffffffff810f545b>] do_mmap_pgoff+0x294/0x2ee
->         [<ffffffff810f55a9>] sys_mmap_pgoff+0xf4/0x12f
->         [<ffffffff8103d1f2>] sys_mmap+0x1d/0x1f
->         [<ffffffff816940a2>] system_call_fastpath+0x16/0x1b
-> 
->  other info that might help us debug this:
-> 
->   Possible unsafe locking scenario:
-> 
->         CPU0                    CPU1
->         ----                    ----
->    lock(&mm->mmap_sem);
->                                 lock(&sb->s_type->i_mutex_key#12);
->                                 lock(&mm->mmap_sem);
->    lock(&sb->s_type->i_mutex_key#12);
-> 
->   *** DEADLOCK ***
-> 
->  1 lock held by shared/1568:
->   #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810f5589>] sys_mmap_pgoff+0xd4/0x12f
-> 
->  stack backtrace:
->  Pid: 1568, comm: shared Not tainted 3.3.0-rc4+ #190
->  Call Trace:
->   [<ffffffff81688bf9>] print_circular_bug+0x1f8/0x209
->   [<ffffffff8109f40a>] __lock_acquire+0xa6c/0xd60
->   [<ffffffff8110e7b6>] ? files_lglock_local_lock_cpu+0x61/0x61
->   [<ffffffff811efa0f>] ? hugetlbfs_file_mmap+0x7d/0x108
->   [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
->   [<ffffffff811efa0f>] ? hugetlbfs_file_mmap+0x7d/0x108
-> 
+Note that the patch is for 3.2.9-rt17
 
-Why have these lockdep warnings started coming out now - was the VFS
-changed to newly take i_mutex somewhere in the directory handling?
-
-
-Sigh.  Was lockdep_annotate_inode_mutex_key() sufficiently
-self-explanatory to justify leaving it undocumented?
-
-<goes off and reads e096d0c7e2e>
-
-OK, the patch looks correct given the explanation in e096d0c7e2e, but
-I'd like to understand why it becomes necessary only now.
-
-> NOTE: This patch also require 
-> http://thread.gmane.org/gmane.linux.file-systems/58795/focus=59565
-> to remove the lockdep warning
-
-And that patch has been basically ignored.
-
-Sigh.  I guess I'll grab both patches, but I'm not confident in doing
-so without an overall explanation of what is happening here.
-
-
+Thanks
