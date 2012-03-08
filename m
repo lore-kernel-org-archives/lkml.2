@@ -1,213 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab2CHJLV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 04:11:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50833 "EHLO
+	id S1755773Ab2CHJLc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 04:11:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50838 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582Ab2CHJLS (ORCPT
+	with ESMTP id S1755688Ab2CHJLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 04:11:18 -0500
+	Thu, 8 Mar 2012 04:11:25 -0500
 From: Bryan Wu <bryan.wu@canonical.com>
 To: rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
         linux@arm.linux.org.uk
-Subject: [PATCH 1/3] led-class: change back LEDS_CLASS to tristate instead of bool
-Date: Thu,  8 Mar 2012 17:11:01 +0800
-Message-Id: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
+Subject: [PATCH 2/3] led-triggers: use atomic kzalloc during led trigger registering
+Date: Thu,  8 Mar 2012 17:11:02 +0800
+Message-Id: <1331197863-25564-2-git-send-email-bryan.wu@canonical.com>
 X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
+References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After moving some core functions to led-core.c, led-class.c can be built as
-module again.
+kzalloc might cause sleep and will generate some warning detected by lockdep,
+when call led_trigger_register_simple on each cpu cores in SMP. This patch fix
+this.
+
+[    1.999938] ------------[ cut here ]------------
+[    2.004791] WARNING: at kernel/lockdep.c:2664 lockdep_trace_alloc+0xd8/0xf0()
+[    2.012298] Modules linked in:
+[    2.015563] [<c001b0cc>] (unwind_backtrace+0x0/0xf0) from [<c0052408>] (warn_slowpath_common+0x4c/0x64)
+[    2.025451] [<c0052408>] (warn_slowpath_common+0x4c/0x64) from [<c005243c>] (warn_slowpath_null+0x1c/0x24)
+[    2.035583] [<c005243c>] (warn_slowpath_null+0x1c/0x24) from [<c008be28>] (lockdep_trace_alloc+0xd8/0xf0)
+[    2.045684] [<c008be28>] (lockdep_trace_alloc+0xd8/0xf0) from [<c00feeb4>] (kmem_cache_alloc_trace+0x2c/0x148)
+[    2.056213] [<c00feeb4>] (kmem_cache_alloc_trace+0x2c/0x148) from [<c03770a0>] (led_trigger_register_simple+0x20/0x74)
+[    2.067474] [<c03770a0>] (led_trigger_register_simple+0x20/0x74) from [<c0627a30>] (ledtrig_cpu_register+0x4c/0x8c)
+[    2.078460] [<c0627a30>] (ledtrig_cpu_register+0x4c/0x8c) from [<c0094ca4>] (generic_smp_call_function_single_interrupt+0xcc/0x138)
+[    2.090911] [<c0094ca4>] (generic_smp_call_function_single_interrupt+0xcc/0x138) from [<c0008408>] (do_IPI+0xb0/0x128)
+[    2.102172] [<c0008408>] (do_IPI+0xb0/0x128) from [<c045921c>] (__irq_svc+0x3c/0x100)
+[    2.110412] Exception stack(0xc07adf70 to 0xc07adfb8)
+[    2.115722] df60:                                     c07c80f8 0000fb45 00000000 c07c80f8
+[    2.124328] df80: c07ac000 c0837be4 c0464b64 c07c9d8c 00000000 411fc092 00000000 00000000
+[    2.132934] dfa0: c0649760 c07adfb8 c07c5c58 c0014d50 20000013 ffffffff
+[    2.139892] [<c045921c>] (__irq_svc+0x3c/0x100) from [<c0014d50>] (default_idle+0x30/0x38)
+[    2.148590] [<c0014d50>] (default_idle+0x30/0x38) from [<c0014f74>] (cpu_idle+0xb4/0xf4)
+[    2.157135] [<c0014f74>] (cpu_idle+0xb4/0xf4) from [<c0602778>] (start_kernel+0x2a8/0x2fc)
+[    2.165832] [<c0602778>] (start_kernel+0x2a8/0x2fc) from [<80008040>] (0x80008040)
+[    2.173797] ---[ end trace 97549d21d8dad3f5 ]---
 
 Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
 ---
- drivers/leds/Kconfig     |    2 +-
- drivers/leds/led-class.c |   70 ----------------------------------------------
- drivers/leds/led-core.c  |   70 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 71 insertions(+), 71 deletions(-)
+ drivers/leds/led-triggers.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 9ca28fc..3f17f0d 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -17,7 +17,7 @@ menuconfig NEW_LEDS
- if NEW_LEDS
+diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+index 46b4c76..74d0ba7 100644
+--- a/drivers/leds/led-triggers.c
++++ b/drivers/leds/led-triggers.c
+@@ -255,7 +255,7 @@ void led_trigger_register_simple(const char *name, struct led_trigger **tp)
+ 	struct led_trigger *trigger;
+ 	int err;
  
- config LEDS_CLASS
--	bool "LED Class Support"
-+	tristate "LED Class Support"
- 	help
- 	  This option enables the led sysfs class in /sys/class/leds.  You'll
- 	  need this to do anything useful with LEDs.  If unsure, say N.
-diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-index 0c8739c..5bff843 100644
---- a/drivers/leds/led-class.c
-+++ b/drivers/leds/led-class.c
-@@ -110,50 +110,6 @@ static void led_timer_function(unsigned long data)
- 	mod_timer(&led_cdev->blink_timer, jiffies + msecs_to_jiffies(delay));
- }
+-	trigger = kzalloc(sizeof(struct led_trigger), GFP_KERNEL);
++	trigger = kzalloc(sizeof(struct led_trigger), GFP_ATOMIC);
  
--static void led_stop_software_blink(struct led_classdev *led_cdev)
--{
--	/* deactivate previous settings */
--	del_timer_sync(&led_cdev->blink_timer);
--	led_cdev->blink_delay_on = 0;
--	led_cdev->blink_delay_off = 0;
--}
--
--static void led_set_software_blink(struct led_classdev *led_cdev,
--				   unsigned long delay_on,
--				   unsigned long delay_off)
--{
--	int current_brightness;
--
--	current_brightness = led_get_brightness(led_cdev);
--	if (current_brightness)
--		led_cdev->blink_brightness = current_brightness;
--	if (!led_cdev->blink_brightness)
--		led_cdev->blink_brightness = led_cdev->max_brightness;
--
--	if (led_get_trigger_data(led_cdev) &&
--	    delay_on == led_cdev->blink_delay_on &&
--	    delay_off == led_cdev->blink_delay_off)
--		return;
--
--	led_stop_software_blink(led_cdev);
--
--	led_cdev->blink_delay_on = delay_on;
--	led_cdev->blink_delay_off = delay_off;
--
--	/* never on - don't blink */
--	if (!delay_on)
--		return;
--
--	/* never off - just set to brightness */
--	if (!delay_off) {
--		led_set_brightness(led_cdev, led_cdev->blink_brightness);
--		return;
--	}
--
--	mod_timer(&led_cdev->blink_timer, jiffies + 1);
--}
--
--
- /**
-  * led_classdev_suspend - suspend an led_classdev.
-  * @led_cdev: the led_classdev to suspend.
-@@ -262,32 +218,6 @@ void led_classdev_unregister(struct led_classdev *led_cdev)
- }
- EXPORT_SYMBOL_GPL(led_classdev_unregister);
- 
--void led_blink_set(struct led_classdev *led_cdev,
--		   unsigned long *delay_on,
--		   unsigned long *delay_off)
--{
--	del_timer_sync(&led_cdev->blink_timer);
--
--	if (led_cdev->blink_set &&
--	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
--		return;
--
--	/* blink with 1 Hz as default if nothing specified */
--	if (!*delay_on && !*delay_off)
--		*delay_on = *delay_off = 500;
--
--	led_set_software_blink(led_cdev, *delay_on, *delay_off);
--}
--EXPORT_SYMBOL(led_blink_set);
--
--void led_brightness_set(struct led_classdev *led_cdev,
--			enum led_brightness brightness)
--{
--	led_stop_software_blink(led_cdev);
--	led_cdev->brightness_set(led_cdev, brightness);
--}
--EXPORT_SYMBOL(led_brightness_set);
--
- static int __init leds_init(void)
- {
- 	leds_class = class_create(THIS_MODULE, "leds");
-diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
-index 016d19f..d686004 100644
---- a/drivers/leds/led-core.c
-+++ b/drivers/leds/led-core.c
-@@ -23,3 +23,73 @@ EXPORT_SYMBOL_GPL(leds_list_lock);
- 
- LIST_HEAD(leds_list);
- EXPORT_SYMBOL_GPL(leds_list);
-+
-+static void led_stop_software_blink(struct led_classdev *led_cdev)
-+{
-+	/* deactivate previous settings */
-+	del_timer_sync(&led_cdev->blink_timer);
-+	led_cdev->blink_delay_on = 0;
-+	led_cdev->blink_delay_off = 0;
-+}
-+
-+static void led_set_software_blink(struct led_classdev *led_cdev,
-+				   unsigned long delay_on,
-+				   unsigned long delay_off)
-+{
-+	int current_brightness;
-+
-+	current_brightness = led_get_brightness(led_cdev);
-+	if (current_brightness)
-+		led_cdev->blink_brightness = current_brightness;
-+	if (!led_cdev->blink_brightness)
-+		led_cdev->blink_brightness = led_cdev->max_brightness;
-+
-+	if (led_get_trigger_data(led_cdev) &&
-+	    delay_on == led_cdev->blink_delay_on &&
-+	    delay_off == led_cdev->blink_delay_off)
-+		return;
-+
-+	led_stop_software_blink(led_cdev);
-+
-+	led_cdev->blink_delay_on = delay_on;
-+	led_cdev->blink_delay_off = delay_off;
-+
-+	/* never on - don't blink */
-+	if (!delay_on)
-+		return;
-+
-+	/* never off - just set to brightness */
-+	if (!delay_off) {
-+		led_set_brightness(led_cdev, led_cdev->blink_brightness);
-+		return;
-+	}
-+
-+	mod_timer(&led_cdev->blink_timer, jiffies + 1);
-+}
-+
-+
-+void led_blink_set(struct led_classdev *led_cdev,
-+		   unsigned long *delay_on,
-+		   unsigned long *delay_off)
-+{
-+	del_timer_sync(&led_cdev->blink_timer);
-+
-+	if (led_cdev->blink_set &&
-+	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
-+		return;
-+
-+	/* blink with 1 Hz as default if nothing specified */
-+	if (!*delay_on && !*delay_off)
-+		*delay_on = *delay_off = 500;
-+
-+	led_set_software_blink(led_cdev, *delay_on, *delay_off);
-+}
-+EXPORT_SYMBOL(led_blink_set);
-+
-+void led_brightness_set(struct led_classdev *led_cdev,
-+			enum led_brightness brightness)
-+{
-+	led_stop_software_blink(led_cdev);
-+	led_cdev->brightness_set(led_cdev, brightness);
-+}
-+EXPORT_SYMBOL(led_brightness_set);
+ 	if (trigger) {
+ 		trigger->name = name;
 -- 
 1.7.9
 
