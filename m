@@ -1,46 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757057Ab2CHLs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:48:28 -0500
-Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:33360 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753510Ab2CHLs0 convert rfc822-to-8bit (ORCPT
+	id S1757249Ab2CHLsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:48:40 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:58240 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757200Ab2CHLsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:48:26 -0500
-Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=iso-8859-1
-From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-In-Reply-To: <20120308113009.GA11416@polaris.bitmath.org>
-Date: Thu, 8 Mar 2012 12:48:24 +0100
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E18D154F-E02F-4DF9-8749-7F9EF92792CB@enac.fr>
-References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>  <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz>  <20120308105737.GA11201@polaris.bitmath.org>  <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr> <20120308113009.GA11416@polaris.bitmath.org>
-To: "Henrik Rydberg" <rydberg@euromail.se>
-X-Mailer: Apple Mail (2.1084)
+	Thu, 8 Mar 2012 06:48:38 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V2 4/9] memcg: Add non reclaim resource tracking to memcg
+In-Reply-To: <20120308145628.f911419d.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1330593380-1361-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120302173816.9796f243.kamezawa.hiroyu@jp.fujitsu.com> <87ipikdyud.fsf@linux.vnet.ibm.com> <20120308145628.f911419d.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 08 Mar 2012 17:18:21 +0530
+Message-ID: <871up39uuy.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12030811-2000-0000-0000-000006AF3DC2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Le 8 mars 2012 à 12:30, Henrik Rydberg a écrit :
+On Thu, 8 Mar 2012 14:56:28 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Sun, 04 Mar 2012 23:37:22 +0530
+> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 > 
-> The device-driver matching is done in the kernel, but driver (aka
-> module) loading is done from userland. The crux is to be able to tell
-> userland what driver to load for a certain device. In this case, it
-> means giving more information to userland via the device/modalias
-> construct. Or at least, that is the question. :-)
+> > On Fri, 2 Mar 2012 17:38:16 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > On Thu,  1 Mar 2012 14:46:15 +0530
+> > > "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> > > 
+> > > > +	help
+> > > > +	  Add non reclaim resource management to memory resource controller.
+> > > > +	  Currently only HugeTLB pages will be managed using this extension.
+> > > > +	  The controller limit is enforced during mmap(2), so that
+> > > > +	  application can fall back to allocations using smaller page size
+> > > > +	  if the memory controller limit prevented them from allocating HugeTLB
+> > > > +	  pages.
+> > > > +
+> > > 
+> > > Hm. In other thread, KMEM accounting is discussed. There is 2 proposals and
+> > >  - 1st is accounting only reclaimable slabs (as dcache etc.)
+> > >  - 2nd is accounting all slab allocations.
+> > > 
+> > > Here, 2nd one includes NORECLAIM kmem cache. (Discussion is not ended.)
+> > > 
+> > > So, for your developments,  How about MEM_RES_CTLR_HUGEPAGE ?
+> > 
+> > Frankly I didn't like the noreclaim name, I also didn't want to indicate
+> > HUGEPAGE, because the code doesn't make any huge page assumption.
+> 
+> You can add this config for HUGEPAGE interfaces.
+> Later we can sort out other configs.
 > 
 
-Oook, I understand. The current solution used by distros is to load the hid module statically, but then we don't want to do it for every new kind of device-specific module, right? Is this your point? 
+Will do
 
-I had the feeling that the current hid code was somehow trying to be universal, thus making the point moot, and figured that we would need to reintegrate hid-multitouch into hid-core at some point. You're suggesting another, more distributed option, in which new categories of HID devices appear from time to time and are handled in new modules, right? Sounds interesting to me, I'd like to hear what the original designers of the hid module think of it.
+> 
+> > > 
+> > > 
+> > > >  config CGROUP_MEM_RES_CTLR_SWAP
+> > > >  	bool "Memory Resource Controller Swap Extension"
+> > > >  	depends on CGROUP_MEM_RES_CTLR && SWAP
+> > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > > > index 6728a7a..b00d028 100644
+> > > > --- a/mm/memcontrol.c
+> > > > +++ b/mm/memcontrol.c
+> > > > @@ -49,6 +49,7 @@
+> > > >  #include <linux/page_cgroup.h>
+> > > >  #include <linux/cpu.h>
+> > > >  #include <linux/oom.h>
+> > > > +#include <linux/region.h>
+> > > >  #include "internal.h"
+> > > >  #include <net/sock.h>
+> > > >  #include <net/tcp_memcontrol.h>
+> > > > @@ -214,6 +215,11 @@ static void mem_cgroup_threshold(struct mem_cgroup *memcg);
+> > > >  static void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
+> > > >  
+> > > >  /*
+> > > > + * Currently only hugetlbfs pages are tracked using no reclaim
+> > > > + * resource count. So we need only MAX_HSTATE res counter
+> > > > + */
+> > > > +#define MEMCG_MAX_NORECLAIM HUGE_MAX_HSTATE
+> > > > +/*
+> > > >   * The memory controller data structure. The memory controller controls both
+> > > >   * page cache and RSS per cgroup. We would eventually like to provide
+> > > >   * statistics based on the statistics developed by Rik Van Riel for clock-pro,
+> > > > @@ -235,6 +241,11 @@ struct mem_cgroup {
+> > > >  	 */
+> > > >  	struct res_counter memsw;
+> > > >  	/*
+> > > > +	 * the counter to account for non reclaim resources
+> > > > +	 * like hugetlb pages
+> > > > +	 */
+> > > > +	struct res_counter no_rcl_res[MEMCG_MAX_NORECLAIM];
+> > > 
+> > > struct res_counter hugepages;
+> > > 
+> > > will be ok.
+> > > 
+> > 
+> > My goal was to make this patch not to mention hugepages, because
+> > it doesn't really have any depedency on hugepages. That is one of the reason
+> > for adding MEMCG_MAX_NORECLAIM. Later if we want other in memory file system
+> > (shmemfs) to limit the resource usage in a similar fashion, we should be
+> > able to use this memcg changes.
+> > 
+> > May be for this patchset I can make the changes you suggested and later
+> > when we want to reuse the code make it more generic ?
+> > 
+> 
+> yes. If there is no user interface change, internal code change will be welcomed.
+> 
 
-Cheers,
+Ok
 
-St.
+> 
+> > 
+> > > 
+> > > > +	/*
+> > > >  	 * Per cgroup active and inactive list, similar to the
+> > > >  	 * per zone LRU lists.
+> > > >  	 */
+> > > > @@ -4887,6 +4898,7 @@ err_cleanup:
+> > > >  static struct cgroup_subsys_state * __ref
+> > > >  mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+> > > >  {
+> > > > +	int idx;
+> > > >  	struct mem_cgroup *memcg, *parent;
+> > > >  	long error = -ENOMEM;
+> > > >  	int node;
+> > > > @@ -4922,6 +4934,10 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+> > > >  	if (parent && parent->use_hierarchy) {
+> > > >  		res_counter_init(&memcg->res, &parent->res);
+> > > >  		res_counter_init(&memcg->memsw, &parent->memsw);
+> > > > +		for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++) {
+> > > > +			res_counter_init(&memcg->no_rcl_res[idx],
+> > > > +					 &parent->no_rcl_res[idx]);
+> > > > +		}
+> > > 
+> > > You can remove this kinds of loop and keep your implemenation simple.
+> > 
+> > 
+> > Can you explain this ? How can we remote the loop ?. We want to track
+> > each huge page size as a seperate resource. 
+> > 
+> Ah, sorry. I miseed it. please ignore.
+> 
+> 
+> 
+> > > > +long mem_cgroup_try_noreclaim_charge(struct list_head *chg_list,
+> > > > +				     unsigned long from, unsigned long to,
+> > > > +				     int idx)
+> > > > +{
+> > > > +	long chg;
+> > > > +	int ret = 0;
+> > > > +	unsigned long csize;
+> > > > +	struct mem_cgroup *memcg;
+> > > > +	struct res_counter *fail_res;
+> > > > +
+> > > > +	/*
+> > > > +	 * Get the task cgroup within rcu_readlock and also
+> > > > +	 * get cgroup reference to make sure cgroup destroy won't
+> > > > +	 * race with page_charge. We don't allow a cgroup destroy
+> > > > +	 * when the cgroup have some charge against it
+> > > > +	 */
+> > > > +	rcu_read_lock();
+> > > > +	memcg = mem_cgroup_from_task(current);
+> > > > +	css_get(&memcg->css);
+> > > 
+> > > css_tryget() ?
+> > > 
+> > 
+> > 
+> > Why ?
+> > 
+> 
+> current<->cgroup relationship isn't under any locks. So, we do speculative
+> access with rcu_read_lock() and css_tryget().
+> 
+
+Will update.
+
+Right now i am redoing the patch to see if enforcing limit during
+page fault (alloc_huge_page()) and page free (free_huge_page()) simplifies
+the patchset. Only problem with that approach is, application should have
+a clear idea about it's hugepage usage, or else enforcing the limit at
+fault time will result in application getting SIGBUS. But otherwise the approach
+simplifies the cgroup removal and brings the code much closer to memcg
+design.
+
+-aneesh
 
