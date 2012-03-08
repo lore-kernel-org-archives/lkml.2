@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab2CHNJN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 08:09:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:47642 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab2CHNJK convert rfc822-to-8bit (ORCPT
+	id S1755171Ab2CHNQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 08:16:48 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47400 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab2CHNQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 08:09:10 -0500
-Message-ID: <1331212113.11248.392.camel@twins>
-Subject: Re: [RFC PATCH 5/5 single-thread-version] implement per-domain
- single-thread state machine call_srcu()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        patches@linaro.org
-Date: Thu, 08 Mar 2012 14:08:33 +0100
-In-Reply-To: <4F56DBDA.1020608@cn.fujitsu.com>
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
-	 <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
-	 <1331027858-7648-4-git-send-email-laijs@cn.fujitsu.com>
-	 <4F56DBDA.1020608@cn.fujitsu.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Thu, 8 Mar 2012 08:16:46 -0500
+Date: Thu, 8 Mar 2012 15:16:40 +0200
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: dedekind1@gmail.com
+Cc: Richard Weinberger <rw@linutronix.de>, tglx@linutronix.de,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        tim.bird@am.sony.com
+Subject: Re: [RFC][PATCH 0/7] UBI checkpointing support
+Message-ID: <20120308151640.0a7aa240@halley>
+In-Reply-To: <1331207881.7257.37.camel@sauron.fi.intel.com>
+References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
+	<1331138007.3463.16.camel@sauron.fi.intel.com>
+	<4F57D0C4.1050605@linutronix.de>
+	<20120308090835.032fe13a@pixies.home.jungo.com>
+	<4F587A28.6080205@linutronix.de>
+	<1331207881.7257.37.camel@sauron.fi.intel.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-07 at 11:54 +0800, Lai Jiangshan wrote:
-> This patch is on the top of the 4 previous patches(1/6, 2/6, 3/6, 4/6).
+On Thu, 08 Mar 2012 13:58:01 +0200 Artem Bityutskiy <dedekind1@gmail.com> wrote:
+> To write the ubibis and to ubibis? Hmm... not sure.
 > 
-> o       state machine is light way and single-threaded, it is preemptible when checking.
-> 
-> o       state machine is a work_struct. So, there is no thread occupied
->         by SRCU when the srcu is not actived(no callback). And it does
->         not sleep(avoid to occupy a thread when sleep).
-> 
-> o       state machine is the only thread can flip/check/write(*) the srcu_struct,
->         so we don't need any mutex.
->         (write(*): except ->per_cpu_ref, ->running, ->batch_queue)
-> 
-> o       synchronize_srcu() is always call call_srcu().
->         synchronize_srcu_expedited() is also.
->         It is OK for mb()-based srcu are extremely fast.
-> 
-> o       In current kernel, we can expect that there are only 1 callback per gp.
->         so callback is probably called in the same CPU when it is queued.
-> 
-> The trip of a callback:
->         1) ->batch_queue when call_srcu()
-> 
->         2) ->batch_check0 when try to do check_zero
-> 
->         3) ->batch_check1 after finish its first check_zero and the flip
-> 
->         4) ->batch_done after finish its second check_zero
-> 
-> The current requirement of the callbacks:
->         The callback will be called inside process context.
->         The callback should be fast without any sleeping path.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com> 
+> To write the fastmap and to fastmap or decide to not fastmap because all
+> PEBs within the first 64 have too high erasecounter? Sounds better IMO.
 
-Aside from the nit on srcu_advance_batches() this seems like a nice
-implementation. Thanks!
+FWIW, fastmap sounds reasonable to me.
 
-I didn't fully verify the srcu state machine, but it looks about
-right :-)
+(aside from the fact that "fast" is the outcome of using the map,
+whereas the map's definition is essentially a peb/leb map).
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Anyways,
+
+CONFIG_MTD_UBI_FASTMAP, ubi_find_fastmap(), ubi_scan_fastmap(),
+ubi_read_fastmap(), ubi_update_fastmap() ...
+
+all seem pretty explanatory IMO.
+
+Using plain "map" (ubi_find_map, ubi_update_map) might also be an
+option, however it might be less obvious.
+
+Regards,
+Shmulik
