@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757842Ab2CHPqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 10:46:43 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39264 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757640Ab2CHPqk (ORCPT
+	id S1757809Ab2CHPri (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 10:47:38 -0500
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:57062 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757401Ab2CHPrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 10:46:40 -0500
+	Thu, 8 Mar 2012 10:47:35 -0500
+Message-ID: <4F58D48F.8050807@de.ibm.com>
+Date: Thu, 08 Mar 2012 16:47:27 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
 MIME-Version: 1.0
-In-Reply-To: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8918@MEP-EXCH.meprolight.com>
-References: <CAOMZO5DnP7+zupy9vwBPS0+2XtKM1+nLbwCqBzuCqEG5OWbZRQ@mail.gmail.com>
-	<4875438356E7CA4A8F2145FCD3E61C0B2CBD666A28@MEP-EXCH.meprolight.com>
-	<CAOMZO5Amo0XFf+TV7PprCL079C5Y0qKmo+k-FfShU7k4SG7W6Q@mail.gmail.com>
-	<4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8913@MEP-EXCH.meprolight.com>
-	<4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8918@MEP-EXCH.meprolight.com>
-Date: Thu, 8 Mar 2012 12:46:38 -0300
-Message-ID: <CAOMZO5A6T+WdOE41Wx6Nctwz9wk8FKaxzjbAt_woZkCnuodNYg@mail.gmail.com>
-Subject: Re: I.MX35 PDK
-From: Fabio Estevam <festevam@gmail.com>
-To: Alex Gershgorin <alexg@meprolight.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+To: Davidlohr Bueso <dave@gnu.org>
+CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] KVM: x86: add paging gcc optimization
+References: <1331207154.28711.2.camel@offworld>
+In-Reply-To: <1331207154.28711.2.camel@offworld>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12030815-3548-0000-0000-00000148C234
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/8/12, Alex Gershgorin <alexg@meprolight.com> wrote:
+On 08/03/12 12:45, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
+> 
+> Since most guests will have paging enabled for memory management, add likely() optimization
+> around CR0.PG checks.
 
-> Setting pipeline to PAUSED ...mx3-camera mx3-camera.0: MX3 Camera driver
-> attached to camera 0
-> /GstPipeline:pipeline0/GstV4l2Src:v4l2src0.GstPad:src: caps =
-> video/x-raw-yuv, format=(fourcc)UYVY, framerate=(fraction)25/1,
-> width=(int)320, height=(int)240, interlaced=(boolean)false
-> Pipeline is live and does not need PREROLL ...
-> WARNING: from element /GstPipeline:pipeline0/GstV4l2Src:v4l2src0: Could not
-> get parameters on device '/dev/video0'
-> Additional debug info:
-> v4l2src_calls.c(240): gst_v4l2src_set_capture ():
-> /GstPipeline:pipeline0/GstV4l2Src:v4l2src0:
-> system error: Invalid argument
+>  {
+> -	return kvm_read_cr0_bits(vcpu, X86_CR0_PG);
+> +	return likely(kvm_read_cr0_bits(vcpu, X86_CR0_PG));
 
-Looks like some kind of Gstreamer issue.
 
-You could also try:
-gst-launch -v v4l2src ! fbdevsink
+IMHO likely/unlikely should be considered more as fast-path/slow-path and not as often/less often.
+Is that the case here? This patch  might cause a mis-prediction for non-paging guests all 
+the time. 
 
-or gst-launch -v v4l2src ! filesink location= raw.data
+Non-paging might be really irrelevant, so I am just making a point, since
+likely/unlikely is mis-used too often especially for "most users do it that way".
 
-If you still get Gstreamer issues you can try v4l2grab utility:
-http://git.linuxtv.org/v4l-utils.git/blob/de42be924c5154732bc8dfd1c8bc7812985ab2d6?f=contrib/test/v4l2grab.c
 
-Good luck!
+Christian
+
