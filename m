@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab2CHA6p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 19:58:45 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54475 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab2CHA6k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 19:58:40 -0500
+	id S1751403Ab2CHA6m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 19:58:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978Ab2CHA6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 19:58:38 -0500
+Date: Wed, 7 Mar 2012 21:58:27 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Peter Seebach <peter.seebach@windriver.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Blanchard <anton@samba.org>,
+        paulus@samba.org, peterz@infradead.org, dsahern@gmail.com,
+        fweisbec@gmail.com, yanmin_zhang@linux.intel.com, emunson@mgebm.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: Incorrect use of snprintf results in SEGV
+Message-ID: <20120308005827.GE18932@infradead.org>
+References: <20120307114249.44275ca3@kryten>
+ <20120307010904.GE5656@infradead.org>
+ <20120306192912.59811e3e@wrlaptop>
+ <20120307203725.GA4333@elte.hu>
+ <20120307151951.7e84adb6@wrlaptop>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5T8-hrtMufDeo_EfupQX3neyoA9ufjN2UYro7-2SXc+Q@mail.gmail.com>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
-	<1331018040-30725-24-git-send-email-yinghai@kernel.org>
-	<CAErSpo5TjhNv1W=PxSPO6qXfhW1Mi4dMp83vj82=O_hFOq1vow@mail.gmail.com>
-	<CAE9FiQXsY7Dn5TGtD1ARM_KFdz1V1hJOvYAy6e4msM=i3VfhDg@mail.gmail.com>
-	<CABhMZUWDngY6jL8jkxQ+SHzEHqTS4i3DqtCD7DUBtL4QS58ovA@mail.gmail.com>
-	<CAE9FiQV23maKVMrk7h1cJxYfxrqJcKu7GfwFYUJfSDfh8g-KFQ@mail.gmail.com>
-	<CAErSpo5T8-hrtMufDeo_EfupQX3neyoA9ufjN2UYro7-2SXc+Q@mail.gmail.com>
-Date: Wed, 7 Mar 2012 16:58:39 -0800
-X-Google-Sender-Auth: 91AElwRKyljFohrzAPoMatJqF1c
-Message-ID: <CAE9FiQUHm2YOJvoxWZ57AXPcAV7T1QJnFzsWXGNAT160X3Rd6g@mail.gmail.com>
-Subject: Re: [PATCH 23/23] x86, PCI: add pcibios_root_rescan
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Bjorn Helgaas <bjorn.helgaas@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120307151951.7e84adb6@wrlaptop>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 3:32 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->
-> What's the reason we need to discover those CPU devices in the first place?
->
-> I don't think the current policy of blindly probing for things should
-> be continued forever.
+Em Wed, Mar 07, 2012 at 03:19:51PM -0600, Peter Seebach escreveu:
+> On Wed, 7 Mar 2012 21:37:25 +0100 Ingo Molnar <mingo@elte.hu> wrote:
+> >    We *DONT* want to make APIs more fragile just to accomodate a
+> >    rare, esoteric usecase!
+> 
+> I would view snprintf as an API which already exists.  If it's the
+> wrong API, by all means, write a different one -- but I would suggest
+> not using the same name for it.  If a function is going to be called
+> snprintf, IMO it should have the semantics of snprintf.  If those are
+> the wrong semantics (and they may well be), then I would say use a
+> function which has the right semantics, and isn't named snprintf.
 
-Do you want to revert follow commit?
+Right, its more a case of: Don't assume people do things you think are
+reasonable, read carefully and follow the instructions.
 
-BTW, edac never work on nehalem-ex and westmere-ex.
+At least it is not as  long as other EULAs, it is much, much shorter,
+but managed to be just as non intuitive.
 
-commit a3170c1f924ce2565c4e160b9b095e65c03b2dc6
-Author: Jan Beulich <JBeulich@novell.com>
-Date:   Wed Feb 23 10:08:10 2011 +0000
-
-    x86/PCI: derive pcibios_last_bus from ACPI MCFG
-
-    On various newer Intel systems the PCI bus(ses) the non-core devices
-    live on aren't getting announced by ACPI except through the bus range
-    covered by mmconfig. At least the i7core-edac driver depends on these
-    devices getting detected.
-
-    Mauro, could you check whether with this change the Xeon 55xx hack in
-    that driver can go away altogether, and with it the bogus exporting of
-    pcibios_scan_specific_bus()?
-
-    Signed-off-by: Jan Beulich <jbeulich@novell.com>
-    Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-    Cc: Aristeu Sergio <arozansk@redhat.com>
-    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-
-diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
-index e282886..750c346 100644
---- a/arch/x86/pci/mmconfig-shared.c
-+++ b/arch/x86/pci/mmconfig-shared.c
-@@ -606,6 +606,16 @@ static void __init __pci_mmcfg_init(int early)
-        if (list_empty(&pci_mmcfg_list))
-                return;
-
-+       if (pcibios_last_bus < 0) {
-+               const struct pci_mmcfg_region *cfg;
-+
-+               list_for_each_entry(cfg, &pci_mmcfg_list, list) {
-+                       if (cfg->segment)
-+                               break;
-+                       pcibios_last_bus = cfg->end_bus;
-+               }
-+       }
-+
-        if (pci_mmcfg_arch_init())
-                pci_probe = (pci_probe & ~PCI_PROBE_MASK) | PCI_PROBE_MMCONF;
-        else {
+- Arnaldo
