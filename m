@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab2CHB3X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 20:29:23 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:36941 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab2CHB3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 20:29:04 -0500
-Message-ID: <4F580B5F.5070304@oss.ntt.co.jp>
-Date: Thu, 08 Mar 2012 10:29:03 +0900
-From: =?ISO-8859-1?Q?Fernando_Luis_V=E1zquez_Cao?= 
-	<fernando@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1752922Ab2CHBbu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 20:31:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27086 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751948Ab2CHBbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 20:31:49 -0500
+Date: Wed, 7 Mar 2012 20:32:17 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: mcgrathr@google.com, avi@redhat.com, linux-kernel@vger.kernel.org,
+        qemu-devel@nongnu.org
+Subject: Re: [PATCH 0/2] core dump: re-purpose VM_ALWAYSDUMP to user
+ controlled VM_DONTDUMP
+Message-ID: <20120308013217.GA2443@redhat.com>
+References: <cover.1331137504.git.jbaron@redhat.com>
+ <20120307143028.5dc27570.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Vivek Goyal <vgoyal@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        linux-tip-commits@vger.kernel.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        "Eric W. Biederman" <ebiederm@xmission.com>, hpa@zytor.com,
-        mingo@elte.hu, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Subject: Re: [tip:x86/debug] x86/kdump: No need to disable ioapic/ lapic in
- crash path
-References: <20120216215603.GH9751@redhat.com> <m1y5s2ku36.fsf@fess.ebiederm.org> <m1fwe9bpk2.fsf@fess.ebiederm.org> <20120217195430.GO9751@redhat.com> <m1y5s07rn3.fsf@fess.ebiederm.org> <20120220151419.GU9751@redhat.com> <m1obss39a4.fsf@fess.ebiederm.org> <20120221135934.GF26998@redhat.com> <m1ipip6xe8.fsf@fess.ebiederm.org> <4F573E1C.2060909@oss.ntt.co.jp> <20120307155018.GA13430@redhat.com> <CAE9FiQXLMzVLH7MW2OXFCpBU+5RRN-EnshGYhkj_3sO36c1Mkg@mail.gmail.com>
-In-Reply-To: <CAE9FiQXLMzVLH7MW2OXFCpBU+5RRN-EnshGYhkj_3sO36c1Mkg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120307143028.5dc27570.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2012 03:27 AM, Yinghai Lu wrote:
+On Wed, Mar 07, 2012 at 02:30:28PM -0800, Andrew Morton wrote:
+> On Wed, 7 Mar 2012 12:00:46 -0500
+> Jason Baron <jbaron@redhat.com> wrote:
+> 
+> > Hi,
+> > 
+> > The motivation for this change was that I was looking at a way for a qemu-kvm
+> > process, to exclude the guest memory from its core dump, which can be quite
+> > large. There are already a number of filter flags in
+> > /proc/<pid>/coredump_filter, however, these allow one to specify 'types' of
+> > kernel memory, not specific address ranges (which is needed in this case).
+> > 
+> > Since there are no more vma flags available, the first patch eliminates the
+> > need for the 'VM_ALWAYSDUMP' flag. The flag is used internally by the kernel to
+> > mark vdso and vsyscall pages. However, it is simple enough to check if a vma
+> > covers a vdso or vsyscall page without the need for this flag.
+> 
+> Gee, we ran out?
+> 
+> That makes it pretty inevitable that we will grow the vma by four
+> bytes.  Once we have done that, your always_dump_vma() trickery becomes
+> unneeded and undesirable, yes?  If so, we may as well recognise reality
+> and grow the vma now.
+> 
 
-> 2012/3/7 Vivek Goyal<vgoyal@redhat.com>:
->> On Wed, Mar 07, 2012 at 07:53:16PM +0900, Fernando Luis Vázquez Cao wrote:
->>> We run into the same NMI problems and wrote some patches that tackle
->>> the kernel boot side of things. They have been extensively tested using
->>> qemu-kvm and things seem to be working as expected (after receiving an
->>> early NMI the kernel continues without problem; after the iret there is no
->>> stack corruption or register corruption).
->> What happens if NMI happens while we are still in purgatory code?
-The system triple faults. As Eric said we need to fix both the reboot path
-to kdump and kdump kernel's boot code. The two patches I sent address the
-later. I sent these first because I had time to test them properly, fix a
-real issue and can be applied independently.
+We could. The reason I didn't propose increasing them was because I saw
+in the archives that there was resistance when this was tried before:
+http://lkml.indiana.edu/hypermail/linux/kernel/1111.1/02053.html
 
+Also, the current use of 'VM_ALWAYSDUMP' is for vdso and gate pages
+exclusively. That means that VM_ALWAYSDUMP flag is 0 the majority of the
+time, and thus it probably makes sense to re-purpose it, now that we are
+tight on flags.
 
+> > The second patch then replaces the 'VM_ALWAYSDUMP' flag with a new 
+> > 'VM_DONTDUMP' flag, which can be set by userspace using new madvise flags:
+> > 'MADV_DONTDUMP', and unset via 'MADV_DUMP'. The core dump filters continue to
+> > work the same as before unless 'MADV_DONTDUMP' is set on the region.
+> > 
+> > The qemu code which implements this features is at:
+> > http://people.redhat.com/~jbaron/qemu-dump/qemu-dump.patch
+> > 
+> > In my testing the qemu core dump shrunk from 383MB -> 13MB with this patch.
+> > 
+> > I also believe that the 'MADV_DONTDUMP' flag might be useful for security
+> > sensitive apps, which might want to select which areas are dumped.
+> > 
+> 
+> Is there any way for userspace to query the state of the flag?  
+> 
 
-> yes, you are right. that is too late to set that in arch/x86/kernel/head64.c
-Of course, the reboot path needs to be fixed too. Now that I solved some
-problems I was having with my qemu-kvm test environment (NMIs injected
-through the qemu monitor only get devivered to the BSP, etc), I will make
-sure that the code I wrote for it works as expected.
-
-In the meantime, I would appreciate it if you could review/ack yesterday's
-patches.
+A place for that might be /proc/<pid>/maps, but I don't think any of
+the other vm flags are exposed.
 
 Thanks,
-Fernando
 
+-Jason
