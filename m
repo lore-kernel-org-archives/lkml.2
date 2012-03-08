@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759014Ab2CHWzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 17:55:09 -0500
-Received: from plane.gmane.org ([80.91.229.3]:55514 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758828Ab2CHWzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 17:55:07 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Christian =?utf-8?b?S8O2bmln?= <deathsimple@vodafone.de>
-Subject: Re: [PATCH] dvb-core: fix =?utf-8?b?RFZCRkVfQUxHT19IVw==?= retune bug
-Date: Thu, 8 Mar 2012 22:26:54 +0000 (UTC)
-Message-ID: <loom.20120308T231756-162@post.gmane.org>
-References: <4F304CAD.5080700@simon.arlott.org.uk>
+	id S1758862Ab2CHXFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 18:05:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34724 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab2CHXFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 18:05:07 -0500
+Date: Thu, 8 Mar 2012 15:05:05 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Roland McGrath <roland@hack.frob.com>
+Cc: Jason Baron <jbaron@redhat.com>, torvalds@linux-foundation.org,
+        avi@redhat.com, cmetcalf@tilera.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2 v2] core dump: add VM_NODUMP, MADV_NODUMP,
+ MADV_CLEAR_NODUMP
+Message-Id: <20120308150505.c9c3d309.akpm@linux-foundation.org>
+In-Reply-To: <20120308214417.328502C0C8@topped-with-meat.com>
+References: <cover.1331238525.git.jbaron@redhat.com>
+	<f52c6c288ec291c8cdc6176673d5b0d3d33a6f14.1331238525.git.jbaron@redhat.com>
+	<20120308214417.328502C0C8@topped-with-meat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 84.60.210.110 (Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:10.0.2) Gecko/20100101 Firefox/10.0.2)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simon Arlott <simon <at> fire.lp0.eu> writes:
+On Thu,  8 Mar 2012 13:44:17 -0800 (PST)
+Roland McGrath <roland@hack.frob.com> wrote:
 
-> 
-> Commit 7e07222 breaks DVBFE_ALGO_HW tuning after a retune is requested,
-> which causes bad tuning on my TBS 6920.
-> 
-> [    0.769091] pci 0000:06:00.0: [14f1:8852] type 0 class 0x000400
-> [   19.733530] CORE cx23885[0]: subsystem: 6920:8888, board: TurboSight TBS
-6920 [card=14,autodetected]
-> [  762.824912] cx24116_load_firmware: FW version 1.23.86.1
-> 
-> 7e0722215a510921cbb73ab4c37477d4dcb91bf8 [media] dvb-core: Don't pass DVBv3
-parameters on tune() fops
-> 
-> Although re_tune is set to true when FESTATE_RETUNE occurs, it is never
-> set back to false which the old code used to do when !FESTATE_RETUNE.
-> 
-> This patch sets re_tune to false if !(state & FESTATE_RETUNE).
-> 
-[snip]
-> 
-> Signed-off-by: Simon Arlott <simon <at> fire.lp0.eu>
+> I'm vaguely dubious about the desireability of using this new feature.
+> (I would hate to try to debug a qemu bug from a dump where half the
+> interesting state was intentionally hidden from me.)
 
-Please make sure that this patch is pushed upstream, since the patch who
-introduced the bug is already in 3.3-rc6 but not this fix. Otherwise:
+yup.  But the dumpability is fully controllable by userspace: one can
+easily envisage large vma's full of data which just isn't interesting
+for a dump.  Plus if you're a developer who is looking at a dump and
+important data isn't there, you can often delete one line, rebuild and
+run the test again.  
 
-Tested by: Christian König <deathsimple@vodafone.de
+>  But I don't see
+> any problem with the implementation.
+> 
+> As to the interface, I think the bits are OK but it would be more
+> in keeping with the existing MADV_* names to call the new values
+> MADV_DONTDUMP and MADV_DODUMP.
 
-
-
-
+Yup.  I queued a patch to do that.
