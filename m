@@ -1,46 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758559Ab2CHUHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:07:35 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54879 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756Ab2CHUHe (ORCPT
+	id S1758633Ab2CHUHv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:07:51 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:8980 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758581Ab2CHUHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:07:34 -0500
-Date: Fri, 9 Mar 2012 00:07:29 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
-Message-ID: <20120308200729.GL21812@moon>
-References: <20120308165112.GF21812@moon>
- <CAGXu5j+4RRGjzVxLSyz0CZCNMj4dPOxJp3pYGSN_sXFsiMhUaQ@mail.gmail.com>
- <20120308194008.GJ21812@moon>
- <CALCETrXpQOpAN64gfG-=iyXXy4Tid=9FyKVrT2grQxRgNPC-fg@mail.gmail.com>
+	Thu, 8 Mar 2012 15:07:47 -0500
+Message-ID: <4F59118C.9090605@hp.com>
+Date: Thu, 08 Mar 2012 15:07:40 -0500
+From: Vladislav Yasevich <vladislav.yasevich@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110303 Lightning/1.0b2 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXpQOpAN64gfG-=iyXXy4Tid=9FyKVrT2grQxRgNPC-fg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benjamin Poirier <bpoirier@suse.de>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Christine Caulfield <ccaulfie@redhat.com>,
+        David Teigland <teigland@redhat.com>,
+        Sridhar Samudrala <sri@us.ibm.com>, cluster-devel@redhat.com,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] sctp: Export sctp_do_peeloff
+References: <20120308.002447.1062706659978103072.davem@davemloft.net> <1331222159-28980-1-git-send-email-bpoirier@suse.de>
+In-Reply-To: <1331222159-28980-1-git-send-email-bpoirier@suse.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 12:02:50PM -0800, Andy Lutomirski wrote:
-> >
-> > I can do that if Andrew agree.
+On 03/08/2012 10:55 AM, Benjamin Poirier wrote:
+> lookup sctp_association within sctp_do_peeloff() to enable its use outside of
+> the sctp code with minimal knowledge of the former.
 > 
-> I'm a bit lost.  nnp updates the MNT_NOSUID checks, not the MNT_NOEXEC
-> checks.  (And the effects of the two flags is different in selinux for
-> historical reasons.)  I'm sure I'm missing something.
+> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
 > 
 
-Andy, I've no idea what nnp is ;) I was only about to gather those
-ISREG/MNT_NOEXEC to one helper since we indeed have a few places in
-kernel which do same thing in open-coded manner.
+Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
 
-	Cyrill
+-vlad
+
+> ---
+> Changes from v1:
+> * make sctp_do_peeloff() take the assoc id as argument so that the dlm code
+>   doesn't need to do the id to struct lookup itself
+> * split those sctp changes to their own patch
+> 
+>  include/net/sctp/sctp.h |    1 +
+>  net/sctp/socket.c       |   24 +++++++++---------------
+>  2 files changed, 10 insertions(+), 15 deletions(-)
+> 
+> diff --git a/include/net/sctp/sctp.h b/include/net/sctp/sctp.h
+> index d368561..6ee44b2 100644
+> --- a/include/net/sctp/sctp.h
+> +++ b/include/net/sctp/sctp.h
+> @@ -413,6 +413,7 @@ static inline sctp_assoc_t sctp_assoc2id(const struct sctp_association *asoc)
+>  /* Look up the association by its id.  */
+>  struct sctp_association *sctp_id2assoc(struct sock *sk, sctp_assoc_t id);
+>  
+> +int sctp_do_peeloff(struct sock *sk, sctp_assoc_t id, struct socket **sockp);
+>  
+>  /* A macro to walk a list of skbs.  */
+>  #define sctp_skb_for_each(pos, head, tmp) \
+> diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+> index 408ebd0..06b42b7 100644
+> --- a/net/sctp/socket.c
+> +++ b/net/sctp/socket.c
+> @@ -4170,14 +4170,16 @@ static int sctp_getsockopt_autoclose(struct sock *sk, int len, char __user *optv
+>  }
+>  
+>  /* Helper routine to branch off an association to a new socket.  */
+> -SCTP_STATIC int sctp_do_peeloff(struct sctp_association *asoc,
+> -				struct socket **sockp)
+> +int sctp_do_peeloff(struct sock *sk, sctp_assoc_t id, struct socket **sockp)
+>  {
+> -	struct sock *sk = asoc->base.sk;
+> +	struct sctp_association *asoc = sctp_id2assoc(sk, id);
+>  	struct socket *sock;
+>  	struct sctp_af *af;
+>  	int err = 0;
+>  
+> +	if (!asoc)
+> +		return -EINVAL;
+> +
+>  	/* An association cannot be branched off from an already peeled-off
+>  	 * socket, nor is this supported for tcp style sockets.
+>  	 */
+> @@ -4206,13 +4208,13 @@ SCTP_STATIC int sctp_do_peeloff(struct sctp_association *asoc,
+>  
+>  	return err;
+>  }
+> +EXPORT_SYMBOL(sctp_do_peeloff);
+>  
+>  static int sctp_getsockopt_peeloff(struct sock *sk, int len, char __user *optval, int __user *optlen)
+>  {
+>  	sctp_peeloff_arg_t peeloff;
+>  	struct socket *newsock;
+>  	int retval = 0;
+> -	struct sctp_association *asoc;
+>  
+>  	if (len < sizeof(sctp_peeloff_arg_t))
+>  		return -EINVAL;
+> @@ -4220,15 +4222,7 @@ static int sctp_getsockopt_peeloff(struct sock *sk, int len, char __user *optval
+>  	if (copy_from_user(&peeloff, optval, len))
+>  		return -EFAULT;
+>  
+> -	asoc = sctp_id2assoc(sk, peeloff.associd);
+> -	if (!asoc) {
+> -		retval = -EINVAL;
+> -		goto out;
+> -	}
+> -
+> -	SCTP_DEBUG_PRINTK("%s: sk: %p asoc: %p\n", __func__, sk, asoc);
+> -
+> -	retval = sctp_do_peeloff(asoc, &newsock);
+> +	retval = sctp_do_peeloff(sk, peeloff.associd, &newsock);
+>  	if (retval < 0)
+>  		goto out;
+>  
+> @@ -4239,8 +4233,8 @@ static int sctp_getsockopt_peeloff(struct sock *sk, int len, char __user *optval
+>  		goto out;
+>  	}
+>  
+> -	SCTP_DEBUG_PRINTK("%s: sk: %p asoc: %p newsk: %p sd: %d\n",
+> -			  __func__, sk, asoc, newsock->sk, retval);
+> +	SCTP_DEBUG_PRINTK("%s: sk: %p newsk: %p sd: %d\n",
+> +			  __func__, sk, newsock->sk, retval);
+>  
+>  	/* Return the fd mapped to the new socket.  */
+>  	peeloff.sd = retval;
+
