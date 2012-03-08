@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759381Ab2CHAIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 19:08:43 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58196 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993Ab2CHAIk convert rfc822-to-8bit (ORCPT
+	id S1759319Ab2CHASQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 19:18:16 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41778 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754642Ab2CHASP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 19:08:40 -0500
+	Wed, 7 Mar 2012 19:18:15 -0500
 Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Dave Jones" <davej@redhat.com>
+To: "Dave Jones" <davej@redhat.com>, "Joe Perches" <joe@perches.com>
 Cc: "Linux Kernel" <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
 Subject: Re: decode GFP flags in oom killer output.
-References: <20120307233939.GB5574@redhat.com> <op.watq2ixr3l0zgt@mpn-glaptop>
- <20120308000233.GA10695@redhat.com>
-Date: Thu, 08 Mar 2012 01:08:38 +0100
+References: <20120307233939.GB5574@redhat.com>
+ <1331165061.20565.19.camel@joe2Laptop>
+Date: Thu, 08 Mar 2012 01:18:12 +0100
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
 From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.watr0ors3l0zgt@mpn-glaptop>
-In-Reply-To: <20120308000233.GA10695@redhat.com>
+Message-ID: <op.watsgmo13l0zgt@mpn-glaptop>
+In-Reply-To: <1331165061.20565.19.camel@joe2Laptop>
 User-Agent: Opera Mail/11.61 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Mar 2012 01:02:33 +0100, Dave Jones <davej@redhat.com> wrote:
+On Thu, 08 Mar 2012 01:04:21 +0100, Joe Perches <joe@perches.com> wrote:
 
-> On Thu, Mar 08, 2012 at 12:48:08AM +0100, Michal Nazarewicz wrote:
-> > >  static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
-> > >  			struct mem_cgroup *memcg, const nodemask_t *nodemask)
-> > >  {
-> > > +	char gfp_string[80];
-> >
-> > For ~0, the string will be 256 characters followed by a NUL byte byte at the end.
-> > This combination may make no sense, but the point is that you need to take length
-> > of the buffer into account, probably by using snprintf() and a counter.
+> On Wed, 2012-03-07 at 18:39 -0500, Dave Jones wrote:
+>> +static void decode_gfp_mask(gfp_t gfp_mask, char *out_string)
+>> +{
+>> +	unsigned int i;
+>> +
+>> +	for (i = 0; i < 32; i++) {
 >
-> alternatively, we could just use a bigger buffer here.
+> < sizeof(gfp_t * 8)
+>
+>> +		if (gfp_mask & (1 << i)) {
+>
+> (gfp_t)1 << i
+>
+>> +			if (gfp_flag_texts[i])
+>> +				out_string += sprintf(out_string, "%s ", gfp_flag_texts[i]);
+>> +			else
+>> +				out_string += sprintf(out_string, "reserved! ");
+>
+> 	not much use to exclamation points.
+>
+>> +		}
+>> +	}
+>> +	out_string = "\0";
+>
+> 	out_string[-1] = 0;
 
-Allocating 257 bytes on stack does not seem like a good idea especially inside of
-OOM killer, where probably quite a bit of the stack was already consumed prior to
-reaching this function.
+Will break if gfp_mask == 0.
+
+>> +}
+>> +
 
 -- 
 Best regards,                                         _     _
