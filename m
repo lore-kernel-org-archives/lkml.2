@@ -1,87 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab2CHSWQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:22:16 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42114 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754614Ab2CHSWP (ORCPT
+	id S1756300Ab2CHSWd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:22:33 -0500
+Received: from outmail024.snc4.facebook.com ([66.220.144.158]:59780 "EHLO
+	intmgw005.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755598Ab2CHSWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:22:15 -0500
-Date: Thu, 8 Mar 2012 18:22:13 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: da7210: Update for using I2C regmap
-Message-ID: <20120308182212.GY3638@opensource.wolfsonmicro.com>
-References: <1331213696.17383.7.camel@matrix>
+	Thu, 8 Mar 2012 13:22:31 -0500
+Date: Thu, 8 Mar 2012 10:22:26 -0800
+From: Arun Sharma <asharma@fb.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
+        linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH 2/2] perf: Add a new sort order: SORT_INCLUSIVE
+Message-ID: <20120308182226.GA10065@dev3310.snc6.facebook.com>
+References: <1331160079-13821-1-git-send-email-asharma@fb.com>
+ <1331160079-13821-3-git-send-email-asharma@fb.com>
+ <20120308153933.GD7976@somewhere.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yKkvi6mMqAM+MlBZ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331213696.17383.7.camel@matrix>
-X-Cookie: Don't Worry, Be Happy.
+In-Reply-To: <20120308153933.GD7976@somewhere.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 08, 2012 at 04:39:36PM +0100, Frederic Weisbecker wrote:
+> 
+> I don't yet understand the point of this.
+> 
+> Imagine those three hists:
+> 
+> a -> b -> c
+> a -> b -> d
+> a-> e -> f
+> 
+> The fractal inverted mode (-G) will report this:
+> 
+> a--
+>   |
+>   ----- b
+>   |     |
+>   |     -----c
+>   |     |
+>   |     -----d
+>   |
+>   ----- e
+>         |
+>         -----f
+> 
 
---yKkvi6mMqAM+MlBZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Please see the test program attached. It has only two paths from main()
+to c(). But for this discussion, imagine a callgraph with 10 different
+paths.
 
-On Thu, Mar 08, 2012 at 07:04:56PM +0530, Ashish Chavan wrote:
-> Current DA7210 driver has I2C support using older register cache
-> methods. This patch updates it for latest regmap framework.
+With -G, c() appears 10 times in the callgraph and the user is required
+to manually sum up the samples to realize that the callgraph under c()
+is very expensive.
 
-I've applied this but please fix the minor issues below incrementally.
+With -s inclusive, c() will show up at the very top after main().
 
-> +static struct reg_default da7210_reg_defaults[] = {
-> +	{ 0x00, 0x00 },
+ -Arun
 
-If any of these registers don't exist they should be removed from the
-defaults table, looking at the register defines in the header the
-registers between 0x2c and 0x83 should be removed along with register 0.
+#include <stdio.h>
 
-Similarly, registers that are volatile should not have defaults
-specified.
+int sum = 0;
 
-> +	/* unlock */
-> +	regmap_write(da7210->regmap, DA7210_A_HID_UNLOCK,	0x8B);
-> +	regmap_write(da7210->regmap, DA7210_A_TEST_UNLOCK,	0xB4);
-> +	regmap_write(da7210->regmap, DA7210_A_PLL1,		0x01);
-> +	regmap_write(da7210->regmap, DA7210_A_CP_MODE,		0x7C);
-> +	/* re-lock */
-> +	regmap_write(da7210->regmap, DA7210_A_HID_UNLOCK,	0x00);
-> +	regmap_write(da7210->regmap, DA7210_A_TEST_UNLOCK,	0x00);
+#define LOOP(n)                                         \
+        {                                               \
+                int j;                                  \
+                for (j = 0; j < 10000; j++) {           \
+                        sum += j;                       \
+                }                                       \
+        }
 
-This sequence should be changed to use a regmap patch.  This will fix an
-issue you currently have with suspend and resume where the updates are
-not reapplied if the device is powered off over suspend.
+int f()
+{
+        LOOP(100);
+}
 
---yKkvi6mMqAM+MlBZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+int d()
+{
+        LOOP(100);
+        f();
+}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+int e()
+{
+	LOOP(100);
+	f();
+}
 
-iQIcBAEBAgAGBQJPWPhRAAoJEBus8iNuMP3dV8QP/jj7LNlOZ2sbg8cg0wXqU5B/
-C4Ge8cxbFY/+5Mlu9ADp9+Ceu9ggxjIfL0eRMpxFESNH8hTUYTi/Vu0iWQPKeAyc
-zXmi4SXaYoFSt6qwPz5DwIFwXAKjCXQ9qyf1BNFdixxr4e+Z1ch4upy1zZOVRO90
-zAUEiK1G1hi0ZKj4p5ImOiWlZ2XRhM/Vkmx3rDRqiSYyA8Q/UbPPsP2dxBywZ//f
-3CMyIbLs6j8K3iVgwA91OAj4+wD5m/OVh6+0xBOSa0nNdCQtGKRB053rXOqyeZ1E
-b7ZAbEQBRLnMW3edSVkQ7XqfNVAksN7ma/Lp7UB+zAE9hO6hzDq3ntnl9dX2LSDS
-pzCweywyi1xYfopS/BKB5nV0bJN/JaIz3zW7zLET5ybV5kTIfFiDo4vk4G0iRnm7
-dcVaerSNCagGPWyn0ZQtJPRFYit7Wmqm91v66xo1FkEqWZa3p+KtjwO9OtN6iukB
-SK/KtGIjE9TnFiXnQjibW8HhdgPYIq7/9uAwgljwlfAh5MirIv+lLwXCcucyDC7C
-/aySRxcdJv0Z3BfstLPqVe+tZ6HrqaWe2nv5S5irq3yHNYpEslnWZ0QWm+a+XQ8w
-GIdtityen8OASz66IihhNG/7kJdMVpWb30XN0ySnNtbPmn8kAle2ArtVmPcZIiY+
-b0l6l2mlEXzDQMZf+SCS
-=qnIU
------END PGP SIGNATURE-----
+int c()
+{
+	LOOP(100);
+	d();
+	LOOP(100);
+	e();
+}
 
---yKkvi6mMqAM+MlBZ--
+int b() 
+{
+	LOOP(70);
+	c();
+}
+
+int a() 
+{
+	LOOP(30);
+	c();
+}
+
+int main()
+{
+	int i;
+	for (i = 0; i < 10000; i++) {
+		a();
+		b();
+	}
+}
+
