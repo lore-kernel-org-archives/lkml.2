@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab2CHSuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:50:16 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:47191 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757051Ab2CHSuJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:50:09 -0500
-Message-ID: <4F58FF47.6090504@fb.com>
-Date: Thu, 8 Mar 2012 10:49:43 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1757051Ab2CHSyB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:54:01 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754104Ab2CHSx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 13:53:58 -0500
+Message-ID: <4F59003F.4050709@nod.at>
+Date: Thu, 08 Mar 2012 19:53:51 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
-        <linux-perf-users@vger.kernel.org>
-Subject: Re: [PATCH 0/2] perf: add sort by inclusive time functionality (v2)
-References: <1331160079-13821-1-git-send-email-asharma@fb.com> <20120308072901.GC20784@elte.hu> <20120308153130.GC7976@somewhere.redhat.com>
-In-Reply-To: <20120308153130.GC7976@somewhere.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: John Stultz <john.stultz@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, a.zummo@towertech.it,
+        rtc-linux@googlegroups.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RTC regression
+References: <4F4E9B71.2010407@nod.at> <1331076961.2191.165.camel@work-vm>
+In-Reply-To: <1331076961.2191.165.camel@work-vm>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-03-08_04:2012-03-08,2012-03-08,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/8/12 7:31 AM, Frederic Weisbecker wrote:
-> On Thu, Mar 08, 2012 at 08:29:01AM +0100, Ingo Molnar wrote:
+On 07.03.2012 00:36, John Stultz wrote:
+> On Wed, 2012-02-29 at 22:41 +0100, Richard Weinberger wrote:
+>> Hi!
 >>
->> * Arun Sharma<asharma@fb.com>  wrote:
+>> hwclock calls the RTC_UIE_ON ioctl to wait for a timer tick.
+>> If RTC_UIE_ON was successful it opens /dev/rtcX and waits up to 5 seconds using select()
+>> for a tick.
+>> Some RTC drivers have no support for RTC_UIE_ON and ioctl just returns -EINVAL.
+>> Drivers indicated this by setting rtc_class_ops->update_irq_enable to NULL.
+>> In this case hwclock waits in a busy loop for the next timer tick.
 >>
->>> This patch series refactors existing code a bit and adds sort by
->>> inclusive time (time spent in the function + callees).
->>>
->>> Sample command lines:
->>>
->>> # perf record -ag -- sleep 1
->>> # perf report -g graph,0.5,callee -n -s inclusive
+>> These two commits changed this behavior:
+>> 6610e08 (RTC: Rework RTC code to use timerqueue for events)
+>> 51ba60c (RTC: Cleanup rtc_class_ops->update_irq_enable())
 >>
->> So I tried this out with:
+>> rtc_class_ops->update_irq_enable was removed and rtc_update_irq_enable()
+>> is now using rtc_class_ops->set_alarm instead of rtc_class_ops->update_irq_enable.
 >>
->>    $ taskset 1 perf record -g git gc
->>
->> and got entries above 100% (in the TUI):
->>
->>    $ perf report -g graph,0.5,callee -n -s inclusive
->>
->>   +  321.11%        5628  [.] 0x392b609269
->>   +  142.27%        3774  [.] create_delta
->>   +  78.86%        1248  [.] lookup_object
->>   +  40.54%        1348  [k] system_call_fastpath
->>   [...]
->>
->> Is that expected?
-
-Yes - this is the "known bug" I noted in the cover letter
-
-The second column (samples) is still accurate and could be used for the 
-analysis.
-
+>> Some RTC devices (like mpc515x) don't support intervals smaller than one
+>> minute.
+>> rtc-mpc5121.c deals with this by rounding up to one minute.
+>> But now after commit 6610e08 RTC_UIE_ON will no longer return -EINVAL and
+>> the next tick comes somewhen within the next 60 seconds, because the driver rounded up...
+>> hwclock's select() is not happy about this and timeouts in most cases.
 >
-> I think this happens because of this:
+> Thanks for diagnosing and pointing out this issue! I hadn't been aware
+> of such hardware.
 >
-> -               hists->stats.total_period += h->period;
-> +               if (!h->inclusive)
-> +                       hists->stats.total_period += h->period;
+> Would something like the following be a better generic interface?
+> Basically allow the RTC drivers to flag that UIE is unsupported (much as
+> setting the update_irq_enable to null did prior).
 >
-> Which I'm not sure why it is needed btw.
+> Let me know if this works for you, and I'll look to see what other
+> drivers might be affected here.
+>
+> thanks
+> -john
+>
+> Add generic infrastructure to handle rtc devices that don't support UIE
+> mode.
+>
+> Signed-off-by: John Stultz<john.stultz@linaro.org>
 
-Suppose the perf.data file had 1000 samples each with a period of 1e6 
-events. total_period would be 1e9 without -s inclusive. Further, let's 
-say the callchains had an average length of 10.
+Tested-by: Richard Weinberger <richard@nod.at>
 
-Now, after adding extra entries to the histogram, total_period would be 
-1e10, which screws up the percentages. I'd like to differentiate between 
-the hist entries that were in the event stream vs the ones added for 
-inclusive time computation. Desired end result: the total_period remains 
-unchanged at 1e9.
+> diff --git a/drivers/rtc/rtc-mpc5121.c b/drivers/rtc/rtc-mpc5121.c
+> index 9d3cacc..be6d4f4 100644
+> --- a/drivers/rtc/rtc-mpc5121.c
+> +++ b/drivers/rtc/rtc-mpc5121.c
+> @@ -360,6 +360,8 @@ static int __devinit mpc5121_rtc_probe(struct platform_device *op)
+>   						&mpc5200_rtc_ops, THIS_MODULE);
+>   	}
+>
+> +	rtc->rtc.uie_unsupported = 1;
+> +
 
-This is done via:
+Please replace this line by:
+rtc->rtc->uie_unsupported = 1;
 
-+		if (i != 0)
-+			he->inclusive = 1;
-+		else
-+			orig_he = he;
-
-Either (i != 0) is not a good enough test, or the inclusive bit is not 
-getting propagated properly after histogram collapsing/resorting. This 
-is the part I need to better understand and debug.
-
-I tried to explain this problem in my first RFC message as well:
-
-http://thread.gmane.org/gmane.linux.kernel/1262289
-
-The problem Ingo is running into (and I've reproduced it on my end as 
-well) is that total_period is smaller than without -s inclusive i.e. 
-h->inclusive is 1 when it shouldn't be.
-
-  -Arun
+Thanks,
+//richard
