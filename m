@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758486Ab2CHUBp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:01:45 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:58283 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758356Ab2CHUBj (ORCPT
+	id S1758601Ab2CHUCl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:02:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60490 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758547Ab2CHUCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:01:39 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] [IA64] simserial, bail out when request_irq fails
-Date: Thu,  8 Mar 2012 21:01:19 +0100
-Message-Id: <1331236879-20124-4-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1331236879-20124-1-git-send-email-jslaby@suse.cz>
-References: <20120308195028.GA17564@kroah.com>
- <1331236879-20124-1-git-send-email-jslaby@suse.cz>
+	Thu, 8 Mar 2012 15:02:40 -0500
+Date: Thu, 8 Mar 2012 12:02:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, hugetlb: add thread name and pid to SHM_HUGETLB
+ mlock rlimit warning
+Message-Id: <20120308120238.c4486547.akpm@linux-foundation.org>
+In-Reply-To: <alpine.DEB.2.00.1203061825070.9015@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1203061825070.9015@chino.kir.corp.google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this, the code succeeds when the port is opened by root and we
-get unwanted interrupts storm on the first key stroke.
+On Tue, 6 Mar 2012 18:26:11 -0800 (PST)
+David Rientjes <rientjes@google.com> wrote:
 
-Instead of that, tell the user we failed and that we won't continue. I
-suppose, the code was copied from the serial layer where we may want
-to change the irq number, so we must allow open even of the failing
-port. This is not the case for this driver at all.
+> Add the thread name and pid of the application that is allocating shm
+> segments with MAP_HUGETLB without being a part of
+> /proc/sys/vm/hugetlb_shm_group or having CAP_IPC_LOCK.
+> 
+> This identifies the application so it may be fixed by avoiding using the
+> deprecated exception (see Documentation/feature-removal-schedule.txt).
+> 
+> ...
+>
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -946,7 +946,11 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
+>  	if (creat_flags == HUGETLB_SHMFS_INODE && !can_do_hugetlb_shm()) {
+>  		*user = current_user();
+>  		if (user_shm_lock(size, *user)) {
+> -			printk_once(KERN_WARNING "Using mlock ulimits for SHM_HUGETLB is deprecated\n");
+> +			task_lock(current);
+> +			printk_once(KERN_WARNING
+> +				"%s (%d): Using mlock ulimits for SHM_HUGETLB is deprecated\n",
+> +				current->comm, current->pid);
+> +			task_unlock(current);
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
- arch/ia64/hp/sim/simserial.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+I assume the task_lock() is there to protect current->comm.  If so, it
+is unneeded - we're protecting against prctl(PR_SET_NAME), and
+PR_SET_NAME only operates on current, and we know this task isn't
+currently running PR_SET_NAME.
 
-diff --git a/arch/ia64/hp/sim/simserial.c b/arch/ia64/hp/sim/simserial.c
-index 797e89a..60c9093 100644
---- a/arch/ia64/hp/sim/simserial.c
-+++ b/arch/ia64/hp/sim/simserial.c
-@@ -702,15 +702,8 @@ startup(struct async_struct *info)
- 			handler = rs_interrupt_single;
- 
- 		retval = request_irq(state->irq, handler, IRQ_T(info), "simserial", NULL);
--		if (retval) {
--			if (capable(CAP_SYS_ADMIN)) {
--				if (info->tty)
--					set_bit(TTY_IO_ERROR,
--						&info->tty->flags);
--				retval = 0;
--			}
-+		if (retval)
- 			goto errout;
--		}
- 	}
- 
- 	/*
--- 
-1.7.9.2
-
+If there's a way for another task to alter this task's ->comm then we
+_do_ need locking.  But there isn't a way, I hope.
 
