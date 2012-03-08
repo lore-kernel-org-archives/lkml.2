@@ -1,106 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab2CHL5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:57:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42548 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757296Ab2CHL5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:57:09 -0500
-Date: Thu, 8 Mar 2012 11:56:56 +0000
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [RESEND][PATCH 2/2 v3] deal with guest panicked event
-Message-ID: <20120308115656.GD25529@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <4F58664D.1070800@cn.fujitsu.com>
- <4F5868C4.2090509@cn.fujitsu.com>
- <4F5886C4.7040100@cn.fujitsu.com>
- <4F5897F8.6090503@redhat.com>
- <20120308113607.GC25529@redhat.com>
- <4F589D8D.4030105@redhat.com>
+	id S1757489Ab2CHL5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:57:31 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:41985 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757253Ab2CHL5Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 06:57:25 -0500
+Date: Thu, 8 Mar 2012 12:57:21 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, stable <stable@vger.kernel.org>
+Subject: Re: [PATCH 1/2] bluetooth: hci_ldisc: fix NULL-pointer dereference
+ on tty_close
+Message-ID: <20120308115721.GB4497@localhost>
+References: <1331136120-27075-1-git-send-email-jhovold@gmail.com>
+ <1331136120-27075-2-git-send-email-jhovold@gmail.com>
+ <1331148797.3392.191.camel@aeonflux>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F589D8D.4030105@redhat.com>
+In-Reply-To: <1331148797.3392.191.camel@aeonflux>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 01:52:45PM +0200, Avi Kivity wrote:
-> On 03/08/2012 01:36 PM, Daniel P. Berrange wrote:
-> > On Thu, Mar 08, 2012 at 01:28:56PM +0200, Avi Kivity wrote:
-> > > On 03/08/2012 12:15 PM, Wen Congyang wrote:
-> > > > When the host knows the guest is panicked, it will set
-> > > > exit_reason to KVM_EXIT_GUEST_PANICKED. So if qemu receive
-> > > > this exit_reason, we can send a event to tell management
-> > > > application that the guest is panicked and set the guest
-> > > > status to RUN_STATE_PANICKED.
-> > > >
-> > > > Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> > > > ---
-> > > >  kvm-all.c        |    5 +++++
-> > > >  monitor.c        |    3 +++
-> > > >  monitor.h        |    1 +
-> > > >  qapi-schema.json |    2 +-
-> > > >  qmp.c            |    3 ++-
-> > > >  vl.c             |    1 +
-> > > >  6 files changed, 13 insertions(+), 2 deletions(-)
-> > > >
-> > > > diff --git a/kvm-all.c b/kvm-all.c
-> > > > index 77eadf6..b3c9a83 100644
-> > > > --- a/kvm-all.c
-> > > > +++ b/kvm-all.c
-> > > > @@ -1290,6 +1290,11 @@ int kvm_cpu_exec(CPUState *env)
-> > > >                      (uint64_t)run->hw.hardware_exit_reason);
-> > > >              ret = -1;
-> > > >              break;
-> > > > +        case KVM_EXIT_GUEST_PANICKED:
-> > > > +            monitor_protocol_event(QEVENT_GUEST_PANICKED, NULL);
-> > > > +            vm_stop(RUN_STATE_PANICKED);
-> > > > +            ret = -1;
-> > > > +            break;
-> > > >
-> > > 
-> > > If the management application is not aware of this event, then it will
-> > > never resume the guest, so it will appear hung.
-> >
-> > Even if the mgmt app doesn't know about the QEVENT_GUEST_PANICKED, it should
-> > still see a QEVENT_STOP event emitted by vm_stop() surely ? So it will
-> > know the guest CPUs have been stopped, even if it isn't aware of the
-> > reason why, which seems fine to me.
-> 
-> No.  The guest is stopped, and there's no reason to suppose that the
-> management app will restart it.  Behaviour has changed.
-> 
-> Suppose the guest has reboot_on_panic set; now the behaviour change is
-> even more visible - service will stop completely instead of being
-> interrupted for a bit while the guest reboots.
+Hi Marcel,
 
-Hmm, so this calls for a new command line argument to control behaviour,
-similar to what we do for disk werror, eg something like
+On Wed, Mar 07, 2012 at 11:33:17AM -0800, Marcel Holtmann wrote:
+> Hi Johan,
+>
+> > Do not close protocol driver until device has been unregistered.
+> > 
+> > This fixes a race between tty_close and hci_dev_open which can result in
+> > a NULL-pointer dereference.
+> > 
+> > The line discipline closes the protocol driver while we may still have
+> > hci_dev_open sleeping on the req_lock mutex resulting in a NULL-pointer
+> > dereference when lock is acquired and hci_init_req called.
 
-  --onpanic "report|pause|stop|..."
+[...]
 
-where
+> what kernel version is this against? Our changes in bluetooth-next fixed
+> some of the destruct handling.
 
- report - emit QEVENT_GUEST_PANICKED only
- pause  - emit QEVENT_GUEST_PANICKED and pause VM
- stop   - emit QEVENT_GUEST_PANICKED and quit VM
- stop   - emit QEVENT_GUEST_PANICKED and quit VM
+This is against the latest rc as it needs to be fixed in 3.3, but I
+missed a dependency to bluetooth-next as you point out below.
 
-This would map fairly well into libvirt, where we already have config
-parameters for controlling what todo with a guest when it panics.
+> Also hci_unregister_dev should be calling the destruct handler and thus
+> your change is now accessing hu but it got freed already.
 
-Regards,
-Daniel
--- 
-|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
-|: http://libvirt.org              -o-             http://virt-manager.org :|
-|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
-|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
+You're right, my patch depends on 010666a126fc ("Bluetooth: Make
+hci-destruct callback optional") and 797fe796c4 ("Bluetooth: uart-ldisc:
+Fix memory leak and remove destruct cb") from bluetooth-next. 
+
+But since the latter one fixes a memory leak it should have been marked
+for stable as well as pushed to Linus for 3.3, right?
+
+Thanks,
+Johan
