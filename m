@@ -1,146 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab2CHRLR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 12:11:17 -0500
-Received: from xyratex198.xyratex.com ([194.131.166.198]:47061 "EHLO
-	XY01EX22.xy01.xyratex.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753801Ab2CHRLP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 12:11:15 -0500
-Subject: Re: [PATCH 1/2] [SCSI] pm8001: Fix bogus interrupt state flag issue.
-Mime-Version: 1.0 (Apple Message framework v1257)
-Content-Type: text/plain; charset=US-ASCII
-From: Mark Salyzyn <mark_salyzyn@xyratex.com>
-In-Reply-To: <CAOD=uF4+F7MYO0cqd7ogmc=K9jtE5DX3wDoMv1eTxFq48JCX2g@mail.gmail.com>
-Date: Thu, 8 Mar 2012 12:11:07 -0500
-Cc: Mark Salyzyn <mark_salyzyn@xyratex.com>, Jack Wang <jack_wang@usish.com>,
-        lindar_liu <lindar_liu@usish.com>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Transfer-Encoding: 7BIT
-Message-Id: <FA58CA70-02BE-4CCD-855C-4C5CE28EA1B2@xyratex.com>
-References: <1330263210-25134-1-git-send-email-santoshprasadnayak@gmail.com> <528D7E8A-B2F6-4EDB-A7C0-E0BF494038D0@xyratex.com> <CAOD=uF4+F7MYO0cqd7ogmc=K9jtE5DX3wDoMv1eTxFq48JCX2g@mail.gmail.com>
-To: santosh prasad nayak <santoshprasadnayak@gmail.com>
-X-Mailer: Apple Mail (2.1257)
-X-OriginalArrivalTime: 08 Mar 2012 17:11:10.0972 (UTC) FILETIME=[75A1DBC0:01CCFD4E]
+	id S1758275Ab2CHRV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 12:21:26 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:54080 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712Ab2CHRVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 12:21:23 -0500
+Date: Thu, 8 Mar 2012 12:21:17 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Richard Earnshaw <Richard.Earnshaw@arm.com>
+cc: Dave Martin <dave.martin@linaro.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+In-Reply-To: <4F5882BF.1030104@arm.com>
+Message-ID: <alpine.LFD.2.02.1203081041340.24151@xanadu.home>
+References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop> <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com> <1330360043.8557.302.camel@zakaz.uk.xensource.com> <20120227180355.GB2023@linaro.org> <1330371219.10008.34.camel@dagon.hellion.org.uk>
+ <20120228102040.GB2063@linaro.org> <1330426133.31269.70.camel@zakaz.uk.xensource.com> <alpine.DEB.2.00.1202281149210.23091@kaball-desktop> <20120229093436.GA2077@linaro.org> <1330509362.4270.20.camel@zakaz.uk.xensource.com> <20120229125826.GC2077@linaro.org>
+ <alpine.LFD.2.02.1203021528150.31242@xanadu.home> <4F5882BF.1030104@arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comments embedded
+On Thu, 8 Mar 2012, Richard Earnshaw wrote:
 
-On Mar 8, 2012, at 11:50 AM, santosh prasad nayak wrote:
-
-> Hi Mark,
+> On 02/03/12 21:15, Nicolas Pitre wrote:
+> > So, to me, the gcc documentation is perfectly clear on this topic.
+> > there really _is_ a guarantee that those asm marked variables will be in
+> > the expected registers on entry to the inline asm, given that the
+> > variable is _also_ listed as an operand to the asm statement.  But only
+> > in that case.
+> >
+> > It is true that gcc may reorder other function calls or other code
+> > around the inline asm and then intervening code can clobber any
+> > registers.  Then it is up to gcc to preserve the variable's content
+> > elsewhere when its register is used for other purposes, and restore it
+> > when some inline asm statement is referring to it.
+> >
+> > And if gcc does not do this then it is buggy.  Version 3.4.0 of gcc was
+> > buggy.  No other gcc versions in the last 7 years had such a problem or
+> > the __asmeq macro in the kernel would have told us.
+> >
+> >> Or, to summarise another way, there is no way to control which register
+> >> is used to pass something to an inline asm in general (often we get away
+> >> with this, and there are a lot of inline asms in the kernel that assume
+> >> it works, but the more you inline the more likely you are to get nasty
+> >> surprises).
+> >
+> > This statement is therefore unfounded and wrong.  Please direct the
+> > tools guy who mislead you to the above gcc documentation.
+> >
 > 
-> Thanks for your review.
+> The problem is not really about re-ordering functions but about implicit
+> functions that come from the source code; for example
 > 
-> Few queries:
+> int foo (int a, int b)
+> {
+>   register int x __asm__("r0") = 33;
 > 
-> 1. Similar changes have been made in mpi_sata_completion() surrounding
-> spin_*lock_irq*(&t->task->state_lock)
->    Should those changes also need to revert back ?
-
-I was talking generically, yes, in both set of functions, everything associated with the task_state_lock. The change as described needs to be applied to both sets of functions.
-
->> The change you did was not inert, and result in the IRQ being disabled upon exit should a
->> SAS_TASK_STATE_ABORTED task state condition occur then following block will enable IRQ.
+>   register int c __asm__("r1") = a / b; /* Ooops, clobbers r0 with
+> division function call.  */
 > 
-> 2.  I could not get this point.
->     If "SAS_TASK_STATE_ABORTED" task state condition occurs then following
->     block will enable IRQ.
+>   asm ("svc 0" : : "r" (x));
+> }
 > 
->          if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
->                spin_unlock_irq(&t->task_state_lock);
->           //   HERE IRQ will be enabled.
->                  .......
->                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->          }
+> There's nothing in the specification to say what happens if there's a
+> statement in the code that causes an implicit clobber of your assembly
+> register.
 
-Exactly, the IRQ is enabled, then the routine exits. All other paths leave the IRQ disabled (with a spin_lock_irq()).
+I'm sure gcc is full of implicit behaviors that are not mentioned in 
+the specification.  But as long as the specification is respected, then 
+there is no need to mention any unobservable side effects from a program 
+flow point of view, right?
 
-> 3.  How bad  will be "spin_lock_irq / spin_unlock_irq" in this case compared to
->     "spin_lock_irqsave / spin_unlock_irqrestore "
+Why wouldn't gcc be able to respect the documented feature by 
+preventing live variable from being clobbered and reloading them in 
+the specified register at the inline asm entry point, just like it does 
+for function calls?
 
-Efficiency is not so much the requirement, but correctness. Yes, a spin_unlock(&t->task_state_lock) will do, but the 'world' likes to see the balance of flag save/restore, one should NOT make the assumption the interrupt is enabled or disabled upon entry, and should preserve such upon exit.
+Here's an example code that shows that, unfortunately, gcc is still 
+broken with regards to the documented behavior:
 
-Given this statement, perhaps for the case of the hacks surrounding the completion handler calls and host locks, one would do a save of the irq, unlock with irq enabled, lock, and then restore it back to the value upon entry. This is balanced. Your changes make the (correct) assumption that the irq is disabled upon entry. But pedantically incorrect, I'd take the extra steps, but I do not view that as a critical deficiency in your patch.
+extern int bar(int);
+int foo(int y)
+{
+        register int x __asm__("r1") = 33;
+        y += bar(x);
+        asm ("@ x should be live in %0 here" : "+r" (x) : "r" (y));
+        y += bar(x);
+        asm ("@ x should be live in %0 here" : "+r" (x) : "r" (y));
+        return x;
+}
 
-> Regards
-> Santosh
-> 
->> 
->> I propose (annotated below) you leave the flags automatic variable, but uninitialized. The changes surrounding spin_*lock_irq*(&pm8001_ha->lock, flags) are OK, but revert back the changes surrounding the spin_*lock_irq*(&t->task->state_lock,flags) so that lock would be properly nested.
->> 
->> To be pedantic, and to be more correct, this code should have spawned a work queue task to perform the t->task_done(t) operation in a separate thread rather than inline and precariously unlocked; but that would be beyond the scope of these changes and should be left for future work to decide if it is even necessary. Not sure how such a change would affect performance (using the work queue) ... so I am 'afraid' of pushing such a change in any case given the relatively reliable operation of this driver (and the dynamic nature of the changes Dan is making to the SATA side of things for instance ;-} ).
->> 
->> I am sorry for taking so long to get to the task of reviewing this (and the previous) code. I look forward to your comments.
->> 
->> Sincerely -- Mark Salyzyn
->> 
->> On Feb 26, 2012, at 8:33 AM, santosh nayak wrote:
->> 
->>> @@ -2207,7 +2206,6 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
->>> static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
->>> {
->>>       struct sas_task *t;
->>> -     unsigned long flags = 0;
->> MGS>    unsigned long flags;
->>>       struct task_status_struct *ts;
->>>       struct pm8001_ccb_info *ccb;
->>>       struct pm8001_device *pm8001_dev;
->>> @@ -2287,9 +2285,9 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
->>>                       ts->stat = SAS_QUEUE_FULL;
->>>                       pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->>>                       mb();/*ditto*/
->>> -                     spin_unlock_irqrestore(&pm8001_ha->lock, flags);
->>> +                     spin_unlock_irq(&pm8001_ha->lock);
->>>                       t->task_done(t);
->>> -                     spin_lock_irqsave(&pm8001_ha->lock, flags);
->>> +                     spin_lock_irq(&pm8001_ha->lock);
->>>                       return;
->>>               }
->>>               break;
->>> @@ -2387,31 +2385,31 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
->>>               ts->stat = SAS_OPEN_TO;
->>>               break;
->>>       }
->>> -     spin_lock_irqsave(&t->task_state_lock, flags);
->>> +     spin_lock_irq(&t->task_state_lock);
->> MGS>    spin_lock_irqsave(&t->task_state_lock, flags);
->>>       t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
->>>       t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
->>>       t->task_state_flags |= SAS_TASK_STATE_DONE;
->>>       if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
->>> -             spin_unlock_irqrestore(&t->task_state_lock, flags);
->>> +             spin_unlock_irq(&t->task_state_lock);
->> MGS>            spin_unlock_irqrestore(&t->task_state_lock, flags);
->>>               PM8001_FAIL_DBG(pm8001_ha,
->>>                       pm8001_printk("task 0x%p done with io_status 0x%x"
->>>                       " resp 0x%x stat 0x%x but aborted by upper layer!\n",
->>>                       t, event, ts->resp, ts->stat));
->>>               pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->>>       } else if (t->uldd_task) {
->>> -             spin_unlock_irqrestore(&t->task_state_lock, flags);
->>> +             spin_unlock_irq(&t->task_state_lock);
->>>               pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->>>               mb();/* ditto */
->>> -             spin_unlock_irqrestore(&pm8001_ha->lock, flags);
->>> +             spin_unlock_irq(&pm8001_ha->lock);
->>>               t->task_done(t);
->>> -             spin_lock_irqsave(&pm8001_ha->lock, flags);
->>> +             spin_lock_irq(&pm8001_ha->lock);
->>>       } else if (!t->uldd_task) {
->>> -             spin_unlock_irqrestore(&t->task_state_lock, flags);
->>> +             spin_unlock_irq(&t->task_state_lock);
->>>               pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->>>               mb();/*ditto*/
->>> -             spin_unlock_irqrestore(&pm8001_ha->lock, flags);
->>> +             spin_unlock_irq(&pm8001_ha->lock);
->>>               t->task_done(t);
->>> -             spin_lock_irqsave(&pm8001_ha->lock, flags);
->>> +             spin_lock_irq(&pm8001_ha->lock);
->>>       }
->>> }
+Result is:
 
+foo:
+        stmfd   sp!, {r4, lr}
+        mov     r4, r0
+        mov     r0, #33
+        bl      bar
+        add     r4, r0, r4
+        @ x should be live in r1 here
+        mov     r0, r1
+        bl      bar
+        add     r0, r0, r4
+        @ x should be live in r1 here
+        mov     r0, r1
+        ldmfd   sp!, {r4, lr}
+        bx      lr
+
+To me this is clearly a bug if gcc is not able to meet the documented 
+expectation.  And the documented expectation is not at all unreasonable.
+
+
+Nicolas
