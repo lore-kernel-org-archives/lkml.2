@@ -1,68 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab2CHPx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 10:53:29 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:59345 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757258Ab2CHPx1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 10:53:27 -0500
+	id S1757935Ab2CHPyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 10:54:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35815 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757258Ab2CHPyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 10:54:03 -0500
+Date: Thu, 8 Mar 2012 16:46:41 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Dmitry ADAMUSHKA (EXT)" <dmitry.adamushka_ext@softathome.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Ralf Baechle <ralf@linux-mips.org>,
+        wouter cloetens <wouter.cloetens@softathome.com>,
+        linux-kernel@vger.kernel.org,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Subject: Re: 'khelper' (child) is stuck in endless loop: do_signal() and
+	!user_mode(regs)
+Message-ID: <20120308154641.GA10380@redhat.com>
+References: <139779962.60750.1331202718116.JavaMail.root@storentr1.softathome.com> <1331646690.60780.1331203030720.JavaMail.root@storentr1.softathome.com>
 MIME-Version: 1.0
-In-Reply-To: <m2lincifj9.fsf@bob.laptop.org>
-References: <20120301185044.29210.44521.stgit@kaulin.local>
-	<20120301185535.29210.71546.stgit@kaulin.local>
-	<4F50643B.9050500@ti.com>
-	<20120302172251.GJ18901@atomide.com>
-	<4F548457.5050205@ti.com>
-	<CANrkHUZysOnHKKUuLm0Vbo1KsNp0yUd=udjGvQ43=gTTXbWeCw@mail.gmail.com>
-	<CANrkHUaYDpv=p0p81oKWCoewyjheyZYkCqvZY7_ZQxWi_=8YFw@mail.gmail.com>
-	<m2lincifj9.fsf@bob.laptop.org>
-Date: Thu, 8 Mar 2012 21:23:10 +0530
-Message-ID: <CANrkHUbsiTz9+cRM83845=nYp82BSyje+ikV_sg3BT+64uD2XA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] mmc: omap_hsmmc: Simplify init for twl6030 MMC card detect
-From: "T Krishnamoorthy, Balaji" <balajitk@ti.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Rajendra Nayak <rnayak@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331646690.60780.1331203030720.JavaMail.root@storentr1.softathome.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 9:12 PM, Chris Ball <cjb@laptop.org> wrote:
-> Hi Balaji,
->
-> On Wed, Mar 07 2012, T Krishnamoorthy, Balaji wrote:
->> OMAP4 and OMAP3 HSMMC IP registers differ by 0x100 offset.
->> Addng the offset to platform_device resource structure
->> increments the start address for every insmod operation.
->> MMC command fails on re-insertion as module due incorrect register base.
->> Fix this by updating the ioremap base address only.
->>
->> Signed-off-by: Balaji T K <balajitk@ti.com>
->
-> Is this a regression, or has it never worked in mainline?
+Hi Dmitry,
 
-Not a regression introduced in current merge window.
-It happens on re-insertion of module.
-will post a patch with $SUBJECT
+I think you are right, but I am not expert. Add Peter.
 
+On 03/08, Dmitry ADAMUSHKA (EXT) wrote:
 >
->> Note:  eMMC detection is still failing on resertion due to card vcc
->> power off on rmmod
+> Oleg,
 >
-> And this?
+> I'm able to reproduce this problem on x86 (32 bits)
 
-This issue was hidden and uncovered after this fix.
-This problem is Vcc being powered off without sleep command.
+And I guess "32 bits" is important.
+arch/x86/kernel/sys_i386_32.c:kernel_execve() does "int 0x80".
 
+If do_execve() fails before start_thread() and TIF_SIGPENDING
+is set, entry_32.S calls do_notify_resume() and we lost.
+
+I guess this is what you meant from the very beginning ;)
+
+> It happens only when CONFIG_VM86 is disabled (I tried both). Supposedly,
+> due to the following bits of the VM86-specific code that let us break out
+> of the endless-loop.
 >
-> Thanks,
+> #ifdef CONFIG_VM86
+> #define resume_userspace_sig    check_userspace
+> #else
+> [...]
 >
-> - Chris.
-> --
-> Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-> One Laptop Per Child
+> there is the specific are-we-a-kernel-task? check here
+>
+> check_userspace:
+>         movl PT_EFLAGS(%esp), %eax      # mix EFLAGS and C
+>         movb PT_CS(%esp), %al
+>         andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
+>         cmpl $USER_RPL, %eax
+>         jb resume_kernel                # not returning to v8086 or userspace
+
+Agreed, we need the USER_RPL check.
+
+> So here are the patches to simulate the problem. Is this approach not
+> valid for one or another reason?
+>
+> Thanks in advance.
+>
+>
+> === copy-pasted ===
+>
+> --- kernel/kmod.c.orig  2012-03-08 10:26:05.504752023 +0100
+> +++ kernel/kmod.c       2012-03-08 11:25:05.028661835 +0100
+> @@ -154,6 +154,15 @@ static int ____call_usermodehelper(void
+>         /* We can run anywhere, unlike our parent keventd(). */
+>         set_cpus_allowed_ptr(current, cpu_all_mask);
+>
+> +       printk(KERN_EMERG "Unleash the signal...\n");
+> +
+> +       /*
+> +        * (1) here we emulate receiving a signal.
+> +        *     In the original case, a signal should be delivered from outside,
+> +        *     say, by "kill(-1, SIGKILL)" in busybox.
+> +        */
+> +       send_sig(SIGUSR1, current, 0);
+
+Yes, this kills the task, kernel_execve() can't succeed,
+
+>         /*
+>          * Our parent is keventd, which runs with elevated scheduling priority.
+>          * Avoid propagating that into the userspace child.
+> @@ -181,6 +190,19 @@ static int ____call_usermodehelper(void
+>
+>         commit_creds(new);
+>
+> +       /* (2) here we emulate the failure of kernel_execve().
+> +        *     In real life, the failure can be due to a memory shortage,
+> +        *     or something else.
+> +         *     In our case, it happens when a board reboots - same as (1) above.
+> +        */
+> +       retval = kernel_execve(NULL,
+> +                              (const char *const *)sub_info->argv,
+> +                              (const char *const *)sub_info->envp);
+
+and I guess it can't even return.
+
+> +       printk(KERN_EMERG "x86 is rock-solid!");
+> +       flush_signals(current);
+> +
+> +       /* If we survived the test, let's continue so the user should not notice. */
+>         retval = kernel_execve(sub_info->path,
+>                                (const char *const *)sub_info->argv,
+>                                (const char *const *)sub_info->envp);
+>
+> and another one
+>
+> --- arch/x86/kernel/signal.c.orig       2012-03-08 11:18:19.702651943 +0100
+> +++ arch/x86/kernel/signal.c    2012-03-08 10:31:18.682304346 +0100
+> @@ -765,8 +765,11 @@ static void do_signal(struct pt_regs *re
+>          * X86_32: vm86 regs switched out by assembly code before reaching
+>          * here, so testing against kernel CS suffices.
+>          */
+> -       if (!user_mode(regs))
+> +       if (!user_mode(regs)) {
+> +               printk(KERN_EMERG "* endless loop\n");
+> +               dump_stack();
+>                 return;
+> +       }
+
+so yes, it enters the endless loop.
+
+I do not know what should be fixed, kernel_execve() or system_call paths.
+
+Oleg.
+
