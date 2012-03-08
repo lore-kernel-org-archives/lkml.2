@@ -1,103 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751229Ab2CHA6a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 19:58:30 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41583 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978Ab2CHA63 (ORCPT
+	id S1751502Ab2CHA6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 19:58:45 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54475 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab2CHA6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 19:58:29 -0500
-Date: Thu, 8 Mar 2012 11:57:26 +1100
-From: David Gibson <dwg@au1.ibm.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: akpm@linux-foundation.org, hughd@google.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, Andrew Barry <abarry@cray.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] hugepages: Fix use after free bug in "quota" handling
-Message-ID: <20120308005726.GA10735@truffala.fritz.box>
-Mail-Followup-To: David Gibson <dwg@au1.ibm.com>,
-	Hillf Danton <dhillf@gmail.com>, akpm@linux-foundation.org,
-	hughd@google.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-	Andrew Barry <abarry@cray.com>, Mel Gorman <mgorman@suse.de>,
-	Minchan Kim <minchan.kim@gmail.com>,
-	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-References: <1331095694-27780-1-git-send-email-david@gibson.dropbear.id.au>
- <1331095694-27780-2-git-send-email-david@gibson.dropbear.id.au>
- <CAJd=RBCPFtyLzxyzRVKzypErt_Te1guT8gi6qu1cLvNVFVOgKQ@mail.gmail.com>
+	Wed, 7 Mar 2012 19:58:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJd=RBCPFtyLzxyzRVKzypErt_Te1guT8gi6qu1cLvNVFVOgKQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12030714-7014-0000-0000-000000B1A3E5
+In-Reply-To: <CAErSpo5T8-hrtMufDeo_EfupQX3neyoA9ufjN2UYro7-2SXc+Q@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+	<1331018040-30725-24-git-send-email-yinghai@kernel.org>
+	<CAErSpo5TjhNv1W=PxSPO6qXfhW1Mi4dMp83vj82=O_hFOq1vow@mail.gmail.com>
+	<CAE9FiQXsY7Dn5TGtD1ARM_KFdz1V1hJOvYAy6e4msM=i3VfhDg@mail.gmail.com>
+	<CABhMZUWDngY6jL8jkxQ+SHzEHqTS4i3DqtCD7DUBtL4QS58ovA@mail.gmail.com>
+	<CAE9FiQV23maKVMrk7h1cJxYfxrqJcKu7GfwFYUJfSDfh8g-KFQ@mail.gmail.com>
+	<CAErSpo5T8-hrtMufDeo_EfupQX3neyoA9ufjN2UYro7-2SXc+Q@mail.gmail.com>
+Date: Wed, 7 Mar 2012 16:58:39 -0800
+X-Google-Sender-Auth: 91AElwRKyljFohrzAPoMatJqF1c
+Message-ID: <CAE9FiQUHm2YOJvoxWZ57AXPcAV7T1QJnFzsWXGNAT160X3Rd6g@mail.gmail.com>
+Subject: Re: [PATCH 23/23] x86, PCI: add pcibios_root_rescan
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Bjorn Helgaas <bjorn.helgaas@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 07, 2012 at 08:28:39PM +0800, Hillf Danton wrote:
-> On Wed, Mar 7, 2012 at 12:48 PM, David Gibson
-> <david@gibson.dropbear.id.au> wrote:
-[snip]
-> >  /*
-> >  * Region tracking -- allows tracking of reservations and instantiated pages
-> >  *                    across the pages in a mapping.
-> > @@ -533,9 +611,9 @@ static void free_huge_page(struct page *page)
-> >         */
-> >        struct hstate *h = page_hstate(page);
-> >        int nid = page_to_nid(page);
-> > -       struct address_space *mapping;
-> > +       struct hugepage_subpool *spool =
-> > +               (struct hugepage_subpool *)page_private(page);
-> >
-> > -       mapping = (struct address_space *) page_private(page);
-> >        set_page_private(page, 0);
-> >        page->mapping = NULL;
-> >        BUG_ON(page_count(page));
-> > @@ -551,8 +629,7 @@ static void free_huge_page(struct page *page)
-> >                enqueue_huge_page(h, page);
-> >        }
-> >        spin_unlock(&hugetlb_lock);
-> > -       if (mapping)
-> > -               hugetlb_put_quota(mapping, 1);
-> > +       hugepage_subpool_put_pages(spool, 1);
-> 
-> Like current code, quota is handed back *unconditionally*, but ...
+On Wed, Mar 7, 2012 at 3:32 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+> What's the reason we need to discover those CPU devices in the first place?
+>
+> I don't think the current policy of blindly probing for things should
+> be continued forever.
 
-[snip]
-> >        /*
-> > -        * Processes that did not create the mapping will have no reserves and
-> > -        * will not have accounted against quota. Check that the quota can be
-> > -        * made before satisfying the allocation
-> > -        * MAP_NORESERVE mappings may also need pages and quota allocated
-> > -        * if no reserve mapping overlaps.
-> > +        * Processes that did not create the mapping will have no
-> > +        * reserves and will not have accounted against subpool
-> > +        * limit. Check that the subpool limit can be made before
-> > +        * satisfying the allocation MAP_NORESERVE mappings may also
-> > +        * need pages and subpool limit allocated allocated if no reserve
-> > +        * mapping overlaps.
-> >         */
-> >        chg = vma_needs_reservation(h, vma, addr);
-> >        if (chg < 0)
-> >                return ERR_PTR(-VM_FAULT_OOM);
-> >        if (chg)
-> > -               if (hugetlb_get_quota(inode->i_mapping, chg))
-> > +               if (hugepage_subpool_get_pages(spool, chg))
-> >                        return ERR_PTR(-VM_FAULT_SIGBUS);
-> 
-> ... quota is allocated only if needed.
-> 
-> Given that mismatch, are you fixing the use-after-free bug, or
-> quota maintenance, or both?
+Do you want to revert follow commit?
 
-As you say, this is as before.  So I'm only fixing the use-after-free
-bug.
+BTW, edac never work on nehalem-ex and westmere-ex.
 
--- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+commit a3170c1f924ce2565c4e160b9b095e65c03b2dc6
+Author: Jan Beulich <JBeulich@novell.com>
+Date:   Wed Feb 23 10:08:10 2011 +0000
 
+    x86/PCI: derive pcibios_last_bus from ACPI MCFG
+
+    On various newer Intel systems the PCI bus(ses) the non-core devices
+    live on aren't getting announced by ACPI except through the bus range
+    covered by mmconfig. At least the i7core-edac driver depends on these
+    devices getting detected.
+
+    Mauro, could you check whether with this change the Xeon 55xx hack in
+    that driver can go away altogether, and with it the bogus exporting of
+    pcibios_scan_specific_bus()?
+
+    Signed-off-by: Jan Beulich <jbeulich@novell.com>
+    Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+    Cc: Aristeu Sergio <arozansk@redhat.com>
+    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+
+diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
+index e282886..750c346 100644
+--- a/arch/x86/pci/mmconfig-shared.c
++++ b/arch/x86/pci/mmconfig-shared.c
+@@ -606,6 +606,16 @@ static void __init __pci_mmcfg_init(int early)
+        if (list_empty(&pci_mmcfg_list))
+                return;
+
++       if (pcibios_last_bus < 0) {
++               const struct pci_mmcfg_region *cfg;
++
++               list_for_each_entry(cfg, &pci_mmcfg_list, list) {
++                       if (cfg->segment)
++                               break;
++                       pcibios_last_bus = cfg->end_bus;
++               }
++       }
++
+        if (pci_mmcfg_arch_init())
+                pci_probe = (pci_probe & ~PCI_PROBE_MASK) | PCI_PROBE_MMCONF;
+        else {
