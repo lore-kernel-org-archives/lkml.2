@@ -1,58 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758272Ab2CHSys (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:54:48 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:33012 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757292Ab2CHSyp (ORCPT
+	id S1758314Ab2CHSzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:55:14 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48929 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757493Ab2CHSyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:54:45 -0500
-X-Authenticated: #23875046
-X-Provags-ID: V01U2FsdGVkX1/qLQxM46nqVWZPpS8VEJzGH+83DFhTBMAYNIGidZ
-	oRny8Mgv5W8dz3
-Message-ID: <4F590069.1050207@fisher-privat.net>
-Date: Thu, 08 Mar 2012 19:54:33 +0100
-From: "Oleksij Rempel (fishor)" <bug-track@fisher-privat.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120302 Thunderbird/11.0
-MIME-Version: 1.0
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: memory corruption  after suspend - ultrabook not able to turn on
- after failed suspend, EHCI workaround - Asus Zenbook UX31E
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	Thu, 8 Mar 2012 13:54:14 -0500
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, vgoyal@redhat.com
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, dpshah@google.com,
+        ctalbott@google.com, rni@google.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3/5] blkcg: simplify stat reset
+Date: Thu,  8 Mar 2012 10:53:58 -0800
+Message-Id: <1331232840-16044-4-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1331232840-16044-1-git-send-email-tj@kernel.org>
+References: <1331232840-16044-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hallo all,
+blkiocg_reset_stats() implements stat reset for blkio.reset_stats
+cgroupfs file.  This feature is very unconventional and something
+which shouldn't have been merged.  It's only useful when there's only
+one user or tool looking at the stats.  As soon as multiple users
+and/or tools are involved, it becomes useless as resetting disrupts
+other usages.  There are very good reasons why all other stats expect
+readers to read values at the start and end of a period and subtract
+to determine delta over the period.
 
-Alan Stern suggested me to ask on this lists. The problems seems to be 
-complicated. https://bugzilla.kernel.org/show_bug.cgi?id=42728
+The implementation is rather complex - some fields shouldn't be
+cleared and it saves some fields, resets whole and restores for some
+reason.  Reset of percpu stats is also racy.  The comment points to
+64bit store atomicity for the reason but even without that stores for
+zero can simply race with other CPUs doing RMW and get clobbered.
 
-So now to the problem.
+Simplify reset by
 
-Symptoms are fallowing, after initiating suspend this laptop freezes. 
-After forcing after poweroff, it is really hard to power on this laptop. 
-linux kernel gets oops, windows will get BSOD.
+* Clear selectively instead of resetting and restoring.
 
-I tried /sys/power/pm_test and i got fallowing result. Setting 
-pm_test=devices do not make any problems. With pm_test=processors the 
-test runs ok, but after power off i get same result as with filed suspend.
+* Grouping debug stat fields to be reset and using memset() over them.
 
-Steps to reproduce:
-- echo 0 > pm_async
-- echo processors > pm_test
-- echo mem > state
-(here the display will go off, usb mouse powered off too, after one 
-second it returns back to console .... no freezes)
-- poweroff
-- after power on, start memtest .... here i will get lots of bad memory 
-blocks.
+* Not caring about stats_lock.
 
-the processor is Intel Core i7-2677M. According to the specification it 
-has build in memory controller. I assume the controller is some how 
-misconfigured at suspend, this is why i get bad blocks with memtest86+. 
-It looks like the laptop stay in this broken supend mode even after 
-poweroff. To bring it back to normal i need to completely poweroff it, 
-it mean unplug battery and powersupply.
+* Using memset() to reset percpu stats.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-cgroup.c |   80 ++++++++++++++++-----------------------------------
+ block/blk-cgroup.h |   14 ++++++++-
+ 2 files changed, 37 insertions(+), 57 deletions(-)
+
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 6eedf3a..759bc58 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -779,83 +779,53 @@ EXPORT_SYMBOL_GPL(__blkg_release);
+ static void blkio_reset_stats_cpu(struct blkio_group *blkg, int plid)
+ {
+ 	struct blkg_policy_data *pd = blkg->pd[plid];
+-	struct blkio_group_stats_cpu *stats_cpu;
+-	int i, j, k;
++	int cpu;
+ 
+ 	if (pd->stats_cpu == NULL)
+ 		return;
+-	/*
+-	 * Note: On 64 bit arch this should not be an issue. This has the
+-	 * possibility of returning some inconsistent value on 32bit arch
+-	 * as 64bit update on 32bit is non atomic. Taking care of this
+-	 * corner case makes code very complicated, like sending IPIs to
+-	 * cpus, taking care of stats of offline cpus etc.
+-	 *
+-	 * reset stats is anyway more of a debug feature and this sounds a
+-	 * corner case. So I am not complicating the code yet until and
+-	 * unless this becomes a real issue.
+-	 */
+-	for_each_possible_cpu(i) {
+-		stats_cpu = per_cpu_ptr(pd->stats_cpu, i);
+-		stats_cpu->sectors = 0;
+-		for(j = 0; j < BLKIO_STAT_CPU_NR; j++)
+-			for (k = 0; k < BLKIO_STAT_TOTAL; k++)
+-				stats_cpu->stat_arr_cpu[j][k] = 0;
++
++	for_each_possible_cpu(cpu) {
++		struct blkio_group_stats_cpu *sc =
++			per_cpu_ptr(pd->stats_cpu, cpu);
++
++		sc->sectors = 0;
++		memset(sc->stat_arr_cpu, 0, sizeof(sc->stat_arr_cpu));
+ 	}
+ }
+ 
+ static int
+ blkiocg_reset_stats(struct cgroup *cgroup, struct cftype *cftype, u64 val)
+ {
+-	struct blkio_cgroup *blkcg;
++	struct blkio_cgroup *blkcg = cgroup_to_blkio_cgroup(cgroup);
+ 	struct blkio_group *blkg;
+-	struct blkio_group_stats *stats;
+ 	struct hlist_node *n;
+-	uint64_t queued[BLKIO_STAT_TOTAL];
+ 	int i;
+-#ifdef CONFIG_DEBUG_BLK_CGROUP
+-	bool idling, waiting, empty;
+-	unsigned long long now = sched_clock();
+-#endif
+ 
+-	blkcg = cgroup_to_blkio_cgroup(cgroup);
+ 	spin_lock(&blkio_list_lock);
+ 	spin_lock_irq(&blkcg->lock);
++
++	/*
++	 * Note that stat reset is racy - it doesn't synchronize against
++	 * stat updates.  This is a debug feature which shouldn't exist
++	 * anyway.  If you get hit by a race, retry.
++	 */
+ 	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
+ 		struct blkio_policy_type *pol;
+ 
+ 		list_for_each_entry(pol, &blkio_list, list) {
+ 			struct blkg_policy_data *pd = blkg->pd[pol->plid];
+-
+-			spin_lock(&blkg->stats_lock);
+-			stats = &pd->stats;
++			struct blkio_group_stats *stats = &pd->stats;
++
++			/* queued stats shouldn't be cleared */
++			for (i = 0; i < ARRAY_SIZE(stats->stat_arr); i++)
++				if (i != BLKIO_STAT_QUEUED)
++					memset(stats->stat_arr[i], 0,
++					       sizeof(stats->stat_arr[i]));
++			stats->time = 0;
+ #ifdef CONFIG_DEBUG_BLK_CGROUP
+-			idling = blkio_blkg_idling(stats);
+-			waiting = blkio_blkg_waiting(stats);
+-			empty = blkio_blkg_empty(stats);
++			memset((void *)stats + BLKG_STATS_DEBUG_CLEAR_START, 0,
++			       BLKG_STATS_DEBUG_CLEAR_SIZE);
+ #endif
+-			for (i = 0; i < BLKIO_STAT_TOTAL; i++)
+-				queued[i] = stats->stat_arr[BLKIO_STAT_QUEUED][i];
+-			memset(stats, 0, sizeof(struct blkio_group_stats));
+-			for (i = 0; i < BLKIO_STAT_TOTAL; i++)
+-				stats->stat_arr[BLKIO_STAT_QUEUED][i] = queued[i];
+-#ifdef CONFIG_DEBUG_BLK_CGROUP
+-			if (idling) {
+-				blkio_mark_blkg_idling(stats);
+-				stats->start_idle_time = now;
+-			}
+-			if (waiting) {
+-				blkio_mark_blkg_waiting(stats);
+-				stats->start_group_wait_time = now;
+-			}
+-			if (empty) {
+-				blkio_mark_blkg_empty(stats);
+-				stats->start_empty_time = now;
+-			}
+-#endif
+-			spin_unlock(&blkg->stats_lock);
+-
+-			/* Reset Per cpu stats which don't take blkg->stats_lock */
+ 			blkio_reset_stats_cpu(blkg, pol->plid);
+ 		}
+ 	}
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 6c8e3e3..1fa3c5e 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -131,21 +131,31 @@ struct blkio_group_stats {
+ 
+ 	/* Total time spent waiting for it to be assigned a timeslice. */
+ 	uint64_t group_wait_time;
+-	uint64_t start_group_wait_time;
+ 
+ 	/* Time spent idling for this blkio_group */
+ 	uint64_t idle_time;
+-	uint64_t start_idle_time;
+ 	/*
+ 	 * Total time when we have requests queued and do not contain the
+ 	 * current active queue.
+ 	 */
+ 	uint64_t empty_time;
++
++	/* fields after this shouldn't be cleared on stat reset */
++	uint64_t start_group_wait_time;
++	uint64_t start_idle_time;
+ 	uint64_t start_empty_time;
+ 	uint16_t flags;
+ #endif
+ };
+ 
++#ifdef CONFIG_DEBUG_BLK_CGROUP
++#define BLKG_STATS_DEBUG_CLEAR_START	\
++	offsetof(struct blkio_group_stats, unaccounted_time)
++#define BLKG_STATS_DEBUG_CLEAR_SIZE	\
++	(offsetof(struct blkio_group_stats, start_group_wait_time) - \
++	 BLKG_STATS_DEBUG_CLEAR_START)
++#endif
++
+ /* Per cpu blkio group stats */
+ struct blkio_group_stats_cpu {
+ 	uint64_t sectors;
+-- 
+1.7.7.3
+
