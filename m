@@ -1,122 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab2CHDnn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 22:43:43 -0500
-Received: from mga14.intel.com ([143.182.124.37]:8806 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754622Ab2CHDnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 22:43:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="116198969"
-Message-ID: <4F582AC1.6040300@linux.intel.com>
-Date: Wed, 07 Mar 2012 19:42:57 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1755228Ab2CHDr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 22:47:28 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48084 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755038Ab2CHDr0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 22:47:26 -0500
+Date: Wed, 7 Mar 2012 19:47:22 -0800
+From: mark gross <markgross@thegnar.org>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Dave Jones <mavej@redhat.com>, linux-pm@vger.kernel.org,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] PM / QoS: Introduce new classes: DMA-Throughput and
+ DVFS-Latency
+Message-ID: <20120308034722.GA10286@envy17>
+Reply-To: markgross@thegnar.org
+References: <13197479.540821330911965933.JavaMail.weblogic@epv6ml06>
+ <1331096521-26026-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-To: jon@jonshouse.co.uk
-CC: Huang Shijie <shijie8@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: Random process lockup on ARM board: alsa-lib-1.0.25, FUTEX_WAIT_PRIVATE
-References: <1329393691.6830.20.camel@jonspc>  <1329512682.29051.1.camel@jonspc> <1329570128.6670.0.camel@jonspc>  <4F400BBF.9020707@ladisch.de> <1329603022.1089.57.camel@jonspc>  <4F41FC28.1070605@ladisch.de> <1329926198.22918.10.camel@jonspc>  <4F45167A.6080706@ladisch.de> <1330043397.4669.44.camel@jonspc>  <CAMiH66EdB9KN1gw_hG=34zab56RxcPKB7G2MyJALfD_5z1yeVQ@mail.gmail.com>  <4F57C007.5050006@linux.intel.com> <1331155368.14407.109.camel@jonspc>
-In-Reply-To: <1331155368.14407.109.camel@jonspc>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331096521-26026-1-git-send-email-myungjoo.ham@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 03/07/2012 01:22 PM, Jonathan Andrews wrote:
-> On Wed, 2012-03-07 at 12:07 -0800, Darren Hart wrote:
->>
->> On 02/29/2012 01:12 AM, Huang Shijie wrote:
->>> Hi ,
->>>
->>> I meet a similar problem with the latest futex code.
->>>
->>> I play the video and the processes will hang at the futex.
->>
->> Are either of you able to bisect the kernel?
-> I'm not a kernel hacker what do you mean ?
-
-Google for "git bisect". It's a way to divide-and-conquer and find
-exactly where the kernel stops working for you. You would need a known
-working kernel though. If you don't have a known working kernel, then
-this is either a long standing bug (not a regression) or, I suspect more
-likely, a locking bug or race in the userspace code.
-
-When you see your thread stuck in FUTEX_WAIT_PRIVATE, that in and of
-itself is not indication of a problem. It's waiting there to be woken
-(FUTEX_WAKE_PRIVATE) by another thread in your application. So the
-questions you should be asking are:
-
-Why is it blocked?
-	pthread_cond_wait()?
-	pthread_mutex_lock()?
-
-Why isn't it being woken up?
-	Did you call pthread_cond_broadcast() without taking the mutex
-	first?
-
-There are other API that use futexes under the covers. You should be
-able to sort out where in your application your threads are blocked and
-thus determine which API you are using - and from there how you were
-expecting that to get woken up. These calls may be being made from
-within ALSA, in which case you may need to elicit the help of the ALSA
-developers.
-
---
-Darren
-
+On Wed, Mar 07, 2012 at 02:02:01PM +0900, MyungJoo Ham wrote:
+> 1. CPU_DMA_THROUGHPUT
 > 
->>  At the very least can you
->> find two kernels where it works and where it does not?
->>
->> Hanging on FUTEX_WAIT_PRIVATE can be the symptom for higher level
->> problems including userspace locking issues and race conditions.
+> This might look simliar to CPU_DMA_LATENCY. However, there are H/W
+> blocks that creates QoS requirement based on DMA throughput, not
+> latency, while their (those QoS requester H/W blocks) services are
+> short-term bursts that cannot be effectively responsed by DVFS
+> mechanisms (CPUFreq and Devfreq).
 > 
+> In the Exynos4412 systems that are being tested, such H/W blocks include
+> MFC (multi-function codec)'s decoding and enconding features, TV-out
+> (including HDMI), and Cameras. When the display is operated at 60Hz,
+> each chunk of task should be done within 16ms and the workload on DMA is
+> not well spread and fluctuates between frames; some frame requires more
+> and some do not and within a frame, the workload also fluctuates
+> heavily and the tasks within a frame are usually not parallelized; they
+> are processed through specific H/W blocks, not CPU cores. They often
+> have PPMU capabilities; however, they need to be polled very frequently
+> in order to let DVFS mechanisms react properly. (less than 5ms).
 > 
-> My workload is UDP network audio.  I have compiled my code with and
-> without ALSA support. The version without ALSA seems to run forever, the
-> version with ALSA works on ARM for between a few minutes and a few
-> hours. On Intel the same futex stall problem occurs, but it may take
-> runtime of days.
+> For such specific tasks, allowing them to request QoS requirements seems
+> adequete because DVFS mechanisms (as long as the polling rate is 5ms or
+> longer) cannot follow up with them. Besides, the device drivers know
+> when to request and cancel QoS exactly.
 > 
-> I have two processes running. One RX process that takes UDP packets from
-> the network mixes them and presents them to ALSA as an audio stream, the
-> second process takes audio from the sound device and transmits it as a
-> UDP audio stream.  The two processes are independent. 
+> 2. DVFS_LATENCY
 > 
-> My workload is atypical as I need to both transmit and receive audio via
-> UDP on a 27/7 basis.
+> Both CPUFreq and Devfreq have response latency to a sudden workload
+> increase. With near-100% (e.g., 95%) up-threshold, the average response
+> latency is approximately 1.5 x polling-rate.
 > 
-> So far I have experienced the problem on 3 kernels, but I have tried
-> only 3 kernels it may be all 2.6 kernels that suffer.
+> A specific polling rate (e.g., 100ms) may generally fit for its system;
+> however, there could be exceptions for that. For example,
+> - When a user input suddenly starts: typing, clicking, moving cursors, and
+>   such, the user might need the full performance immediately. However,
+>   we do not know whether the full performance is actually needed or not
+>   until we calculate the utilization; thus, we need to calculate it
+>   faster with user inputs or any similar events. Specifying QoS on CPU
+>   processing power or Memory bandwidth at every user input is an
+>   overkill because there are many cases where such speed-up isn't
+>   necessary.
+> - When a device driver needs a faster performance response from DVFS
+>   mechanism. This could be addressed by simply putting QoS requests.
+>   However, such QoS requests may keep the system running fast
+>   unnecessary in some cases, especially if a) the device's resource
+>   usage bursts with some duration (e.g., 100ms-long bursts) and
+>   b) the driver doesn't know when such burst come. MMC/WiFi often had
+>   such behaviors although there are possibilities that part (b) might
+>   be addressed with further efforts.
 > 
-> My development PC is "Linux jonspc 2.6.32.26-175.fc12.i686 #1 SMP Wed
-> Dec 1 21:52:04 UTC 2010 i686 athlon i386 GNU/Linux"
+> The cases shown above can be tackled with putting QoS requests on the
+> response time or latency of DVFS mechanism, which is directly related to
+> its polling interval (if the DVFS mechanism is polling based).
 > 
-> My ARM board target:
-> ARM / # uname -a
-> Linux (none) 3.2.5 #2 Wed Feb 22 17:11:52 GMT 2012 armv4tl GNU/Linux
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 > 
-> And my ARM target running its older kernel was (2.6.36).
+> --
+> Changes from v2
+> - Rebased on the recent PM QoS patches, resolving the merge conflict.
+> 
+> Changes from RFC(v1)
+> - Added omitted part (registering new classes)
+> ---
+>  include/linux/pm_qos.h |    4 ++++
+>  kernel/power/qos.c     |   31 ++++++++++++++++++++++++++++++-
+>  2 files changed, 34 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
+> index c8a541e..0ee7caa 100644
+> --- a/include/linux/pm_qos.h
+> +++ b/include/linux/pm_qos.h
+> @@ -14,6 +14,8 @@ enum {
+>  	PM_QOS_CPU_DMA_LATENCY,
+>  	PM_QOS_NETWORK_LATENCY,
+>  	PM_QOS_NETWORK_THROUGHPUT,
+> +	PM_QOS_CPU_DMA_THROUGHPUT,
+> +	PM_QOS_DVFS_RESPONSE_LATENCY,
 >  
-> I have an strace of the process running and stalling on the PC.
-> The file is 2GB, its not a fast link sorry.
+>  	/* insert new class ID */
+>  	PM_QOS_NUM_CLASSES,
+> @@ -24,6 +26,8 @@ enum {
+>  #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
+>  #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
+>  #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
+> +#define PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE	0
+> +#define PM_QOS_DVFS_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
+>  #define PM_QOS_DEV_LAT_DEFAULT_VALUE		0
 >  
-> http://www.jonshouse.co.uk/download/a_stop.txt
-> 
-> 
-> Many thanks,
-> Jon
-> 
-> 
-> 
+>  struct pm_qos_request {
+> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
+> index d6d6dbd..3e122db 100644
+> --- a/kernel/power/qos.c
+> +++ b/kernel/power/qos.c
+> @@ -101,11 +101,40 @@ static struct pm_qos_object network_throughput_pm_qos = {
+>  };
+>  
+>  
+> +static BLOCKING_NOTIFIER_HEAD(cpu_dma_throughput_notifier);
+> +static struct pm_qos_constraints cpu_dma_tput_constraints = {
+> +	.list = PLIST_HEAD_INIT(cpu_dma_tput_constraints.list),
+> +	.target_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
+> +	.default_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
+> +	.type = PM_QOS_MAX,
+> +	.notifiers = &cpu_dma_throughput_notifier,
+> +};
+> +static struct pm_qos_object cpu_dma_throughput_pm_qos = {
+> +	.constraints = &cpu_dma_tput_constraints,
+> +	.name = "cpu_dma_throughput",
+> +};
+> +
+> +
+> +static BLOCKING_NOTIFIER_HEAD(dvfs_lat_notifier);
+> +static struct pm_qos_constraints dvfs_lat_constraints = {
+> +	.list = PLIST_HEAD_INIT(dvfs_lat_constraints.list),
+> +	.target_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
+> +	.default_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
+> +	.type = PM_QOS_MIN,
+> +	.notifiers = &dvfs_lat_notifier,
+> +};
+> +static struct pm_qos_object dvfs_lat_pm_qos = {
+> +	.constraints = &dvfs_lat_constraints,
+> +	.name = "dvfs_latency",
+> +};
+> +
+>  static struct pm_qos_object *pm_qos_array[] = {
+>  	&null_pm_qos,
+>  	&cpu_dma_pm_qos,
+>  	&network_lat_pm_qos,
+> -	&network_throughput_pm_qos
+> +	&network_throughput_pm_qos,
+> +	&cpu_dma_throughput_pm_qos,
+> +	&dvfs_lat_pm_qos,
+>  };
+>  
+>  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+> -- 
+> 1.7.4.1
+>
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+The cpu_dma_throughput looks ok to me.  I do however; wonder about the
+dvfs_lat_pm_qos.  Should that knob be exposed to user mode?  Does that
+matter so much?  why can't dvfs_lat use the cpu_dma_lat?
+
+BTW I'll be out of town for the next 10 days and probably will not get
+to this email account until I get home.
+
+--mark
+
