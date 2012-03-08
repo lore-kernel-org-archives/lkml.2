@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab2CHSih (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:38:37 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:38006 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab2CHSif (ORCPT
+	id S1757056Ab2CHSjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:39:52 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44060 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986Ab2CHSju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:38:35 -0500
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFHjS0PFKx8
-X-RZG-CLASS-ID: mo00
-Date: Thu, 8 Mar 2012 19:38:20 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Greg KH <greg@kroah.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org,
-        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: Re: [PATCH] net/hyperv: Advertise hv_netvsc instead of netvsc as
- driver name
-Message-ID: <20120308183820.GA25015@aepfle.de>
-References: <1331147131-6660-1-git-send-email-haiyangz@microsoft.com>
- <20120307201746.GA20900@aepfle.de>
- <20120307204946.GA4413@kroah.com>
- <20120308061615.GA25237@aepfle.de>
- <20120308155219.GC5907@kroah.com>
- <20120308161221.GA31415@aepfle.de>
- <20120308174220.GB17192@kroah.com>
+	Thu, 8 Mar 2012 13:39:50 -0500
+Date: Thu, 8 Mar 2012 10:39:45 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Colin Cross <ccross@android.com>
+Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [PATCH 05/11] android: ram_console: split out persistent ram
+Message-ID: <20120308183945.GA29197@kroah.com>
+References: <1331170478-30538-1-git-send-email-john.stultz@linaro.org>
+ <1331170478-30538-6-git-send-email-john.stultz@linaro.org>
+ <20120308024203.GA25842@kroah.com>
+ <CAMbhsRRDmH47r_s_-H+tnZ62c9HdE3VqeTn5Qp4kwe5EOjJ4jw@mail.gmail.com>
+ <20120308173306.GA4456@kroah.com>
+ <CAMbhsRQL=JrJ-a97KhbhHF5J_hD74f7wp1bVtx-n0hgQX_B3oA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120308174220.GB17192@kroah.com>
-User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMbhsRQL=JrJ-a97KhbhHF5J_hD74f7wp1bVtx-n0hgQX_B3oA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, Greg KH wrote:
-
-> On Thu, Mar 08, 2012 at 05:12:21PM +0100, Olaf Hering wrote:
-> > On Thu, Mar 08, Greg KH wrote:
-> > 
-> > > > hwinfo uses it to recognize a network interface (storage in case of
-> > > > hv_storvsc).
-> > > 
-> > > That tool should report the real module name, not rely on the name to
-> > > match based on the structure, if you really care about the real module
-> > > name.
-> > 
-> > Its about the driver symlink, not the module name. 
-> > 
-> > I think most, if not all, (relevant) drivers use some sort of
-> > KBUILD_MODNAME. Why should this driver be any different?
+On Thu, Mar 08, 2012 at 10:24:11AM -0800, Colin Cross wrote:
+> On Thu, Mar 8, 2012 at 9:33 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Wed, Mar 07, 2012 at 07:06:42PM -0800, Colin Cross wrote:
+> >> On Wed, Mar 7, 2012 at 6:42 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> >> > On Wed, Mar 07, 2012 at 05:34:32PM -0800, John Stultz wrote:
+> >> >> From: Colin Cross <ccross@android.com>
+> >> >>
+> >> >> Split ram_console into two halves.
+> >> >>
+> >> >> persistent_ram is a set of apis that handle a block of memory
+> >> >> that does not get erased across a reboot.  It provides functions
+> >> >> to fill it as a single buffer or a ring buffer, and to extract
+> >> >> the old data after a reboot.  It handles ecc on the data to
+> >> >> correct bit errors introduced during reboot.
+> >> >
+> >> > That's a nice idea, but why are you rolling your own interface here and
+> >> > not using the built-in one that the kernel already provides?  Is there
+> >> > something lacking with what we have today that requires you to create
+> >> > something different?  If so, why not just modify the existing interface
+> >> > to make it work for you, that way the tools already created will work
+> >> > automatically, and you will not have problems later ripping this out and
+> >> > porting it to the in-kernel api.
+> >>
+> >> What interface are you referring to, pstore?
+> >
+> > Yes.
+> >
+> >> As I explained in the email John quoted to you,
+> >
+> > Wait, what email?  Did I miss a response here?  Have a message-id: I can
+> > search for?
 > 
-> It shouldn't, I'm not saying that at all.  I'm only objecting to the
-> insistance that this be something worthwhile for 3.3-final which should
-> be out any day now.
+> Message ID 1331160054.2191.202.camel@work-vm
 
-Since its an API we could settle on the new string, which is already in
-distro use.
+Odd, that message id never got to me :(
 
-Olaf
