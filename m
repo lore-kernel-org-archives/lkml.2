@@ -1,149 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758377Ab2CHQvU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 11:51:20 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49483 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758114Ab2CHQvS (ORCPT
+	id S1757996Ab2CHQyW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 11:54:22 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:50822 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753254Ab2CHQyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 11:51:18 -0500
-Date: Thu, 8 Mar 2012 20:51:12 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
-Message-ID: <20120308165112.GF21812@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Mar 2012 11:54:19 -0500
+Message-ID: <1331225648.2585.27.camel@aks>
+Subject: [RFC 1/2] kvm: host-side changes for tmem on KVM
+From: Akshay Karle <akshay.a.karle@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, konrad.wilk@oracle.com,
+        kvm@vger.kernel.org, ashu tripathi <er.ashutripathi@gmail.com>,
+        nishant gulhane <nishant.s.gulhane@gmail.com>,
+        Shreyas Mahure <shreyas.mahure@gmail.com>,
+        amarmore2006 <amarmore2006@gmail.com>,
+        mahesh mohan <mahesh6490@gmail.com>
+Date: Thu, 08 Mar 2012 22:24:08 +0530
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg, could you please take a look once you get a minute (no urgency).
+From: Akshay Karle <akshay.a.karle@gmail.com>
+Subject: [RFC 1/2] kvm: host-side changes for tmem on KVM
 
-	Cyrill
+Working at host:
+Once the guest exits to the kvm host, the host determines that the guest exited
+to perform some tmem operation(done at kvm_emulate_hypercall)and then
+we use zcache to implement this required operations(performed by kvm_pv_tmem_op).
+
 ---
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: c/r: prctl: Add ability to set new mm_struct::exe_file v3
+Diffstat for host patch:
+ arch/x86/include/asm/kvm_host.h      |    1 
+ arch/x86/kvm/x86.c                   |    4 +
+ drivers/staging/zcache/zcache-main.c |   98 ++++++++++++++++++++++++++++++++---
+ 3 files changed, 95 insertions(+), 8 deletions(-)
 
-When we do restore we would like to have a way to setup
-a former mm_struct::exe_file so that /proc/pid/exe would
-point to the original executable file a process had at
-checkpoint time.
-
-For this the PR_SET_MM_EXE_FILE code is introduced.
-This option takes a file descriptor which will be
-set as new /proc/$pid/exe symlink.
-
-This feature is available iif CONFIG_CHECKPOINT_RESTORE is set.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Kees Cook <keescook@chromium.org>
-CC: Tejun Heo <tj@kernel.org>
----
- include/linux/prctl.h |    1 +
- kernel/sys.c          |   50 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 51 insertions(+)
-
-Index: linux-2.6.git/include/linux/prctl.h
-===================================================================
---- linux-2.6.git.orig/include/linux/prctl.h
-+++ linux-2.6.git/include/linux/prctl.h
-@@ -118,5 +118,6 @@
- # define PR_SET_MM_ENV_START		10
- # define PR_SET_MM_ENV_END		11
- # define PR_SET_MM_AUXV			12
-+# define PR_SET_MM_EXE_FILE		13
+diff -Napur vanilla/linux-3.1.5/arch/x86/include/asm/kvm_host.h linux-3.1.5//arch/x86/include/asm/kvm_host.h
+--- vanilla/linux-3.1.5/arch/x86/include/asm/kvm_host.h	2011-12-09 22:27:05.000000000 +0530
++++ linux-3.1.5//arch/x86/include/asm/kvm_host.h	2012-03-05 14:09:41.648006153 +0530
+@@ -668,6 +668,7 @@ int emulator_write_phys(struct kvm_vcpu
+ 			  const void *val, int bytes);
+ int kvm_pv_mmu_op(struct kvm_vcpu *vcpu, unsigned long bytes,
+ 		  gpa_t addr, unsigned long *ret);
++int kvm_pv_tmem_op(struct kvm_vcpu *vcpu, gpa_t addr, unsigned long *ret);
+ u8 kvm_get_guest_memory_type(struct kvm_vcpu *vcpu, gfn_t gfn);
  
- #endif /* _LINUX_PRCTL_H */
-Index: linux-2.6.git/kernel/sys.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -36,6 +36,8 @@
- #include <linux/personality.h>
- #include <linux/ptrace.h>
- #include <linux/fs_struct.h>
-+#include <linux/file.h>
-+#include <linux/mount.h>
- #include <linux/gfp.h>
- #include <linux/syscore_ops.h>
- #include <linux/version.h>
-@@ -1701,6 +1703,50 @@ static bool vma_flags_mismatch(struct vm
- 		(vma->vm_flags & banned);
- }
+ extern bool tdp_enabled;
+diff -Napur vanilla/linux-3.1.5/arch/x86/kvm/x86.c linux-3.1.5//arch/x86/kvm/x86.c
+--- vanilla/linux-3.1.5/arch/x86/kvm/x86.c	2011-12-09 22:27:05.000000000 +0530
++++ linux-3.1.5//arch/x86/kvm/x86.c	2012-03-05 14:09:41.652006083 +0530
+@@ -5267,6 +5267,10 @@ int kvm_emulate_hypercall(struct kvm_vcp
+ 	case KVM_HC_MMU_OP:
+ 		r = kvm_pv_mmu_op(vcpu, a0, hc_gpa(vcpu, a1, a2), &ret);
+ 		break;
++	case KVM_HC_TMEM:
++		r = kvm_pv_tmem_op(vcpu, a0, &ret);
++		ret = ret - 1000;
++		break;
+ 	default:
+ 		ret = -KVM_ENOSYS;
+ 		break;
+diff -Napur vanilla/linux-3.1.5/drivers/staging/zcache/zcache-main.c linux-3.1.5//drivers/staging/zcache/zcache-main.c
+--- vanilla/linux-3.1.5/drivers/staging/zcache/zcache-main.c	2011-12-09 22:27:05.000000000 +0530
++++ linux-3.1.5//drivers/staging/zcache/zcache-main.c	2012-03-05 14:10:31.264006031 +0530
+@@ -30,6 +30,7 @@
+ #include <linux/atomic.h>
+ #include <linux/math64.h>
+ #include "tmem.h"
++#include "kvm-tmem.h"
  
-+static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
+ #include "../zram/xvmalloc.h" /* if built in drivers/staging */
+ 
+@@ -669,7 +670,6 @@ static struct zv_hdr *zv_create(struct x
+ 	int chunks = (alloc_size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
+ 	int ret;
+ 
+-	BUG_ON(!irqs_disabled());
+ 	BUG_ON(chunks >= NCHUNKS);
+ 	ret = xv_malloc(xvpool, alloc_size,
+ 			&page, &offset, ZCACHE_GFP_MASK);
+@@ -1313,7 +1313,6 @@ static int zcache_compress(struct page *
+ 	unsigned char *wmem = __get_cpu_var(zcache_workmem);
+ 	char *from_va;
+ 
+-	BUG_ON(!irqs_disabled());
+ 	if (unlikely(dmem == NULL || wmem == NULL))
+ 		goto out;  /* no buffer, so can't compress */
+ 	from_va = kmap_atomic(from, KM_USER0);
+@@ -1533,7 +1532,6 @@ static int zcache_put_page(int cli_id, i
+ 	struct tmem_pool *pool;
+ 	int ret = -1;
+ 
+-	BUG_ON(!irqs_disabled());
+ 	pool = zcache_get_pool_by_id(cli_id, pool_id);
+ 	if (unlikely(pool == NULL))
+ 		goto out;
+@@ -1898,6 +1896,67 @@ struct frontswap_ops zcache_frontswap_re
+ #endif
+ 
+ /*
++ * tmem op to support tmem in kvm guests
++ */
++
++int kvm_pv_tmem_op(struct kvm_vcpu *vcpu, gpa_t addr, unsigned long *ret)
 +{
-+	struct file *exe_file;
-+	struct dentry *dentry;
-+	int err;
++	struct tmem_ops op;
++	struct tmem_oid oid;
++	uint64_t pfn;
++	struct page *page;
++	int r;
 +
-+	exe_file = fget(fd);
-+	if (!exe_file)
-+		return -EBADF;
++	r = kvm_read_guest(vcpu->kvm, addr, &op, sizeof(op));
++	if (r < 0)
++		return r;
 +
-+	dentry = exe_file->f_path.dentry;
-+
-+	/*
-+	 * Because the original mm->exe_file
-+	 * points to executable file, make sure
-+	 * this one is executable as well to not
-+	 * break "big" picture and proc/pid/exe
-+	 * symlink will be still pointing to
-+	 * executable one.
-+	 */
-+	err = -EACCES;
-+	if (!S_ISREG(dentry->d_inode->i_mode)	||
-+	    exe_file->f_path.mnt->mnt_flags & MNT_NOEXEC)
-+		goto exit;
-+
-+	err = inode_permission(dentry->d_inode, MAY_EXEC);
-+	if (err)
-+		goto exit;
-+
-+	down_write(&mm->mmap_sem);
-+	if (mm->num_exe_file_vmas) {
-+		fput(mm->exe_file);
-+		mm->exe_file = exe_file;
-+		exe_file = NULL;
-+	} else
-+		set_mm_exe_file(mm, exe_file);
-+	up_write(&mm->mmap_sem);
-+
-+exit:
-+	if (exe_file)
-+		fput(exe_file);
-+	return err;
++	switch (op.cmd) {
++	case TMEM_NEW_POOL:
++		*ret = zcache_new_pool(op.u.new.cli_id, op.u.new.flags);
++		break;
++	case TMEM_DESTROY_POOL:
++		*ret = zcache_destroy_pool(op.u.gen.cli_id, op.pool_id);
++		break;
++	case TMEM_NEW_PAGE:
++		break;
++	case TMEM_PUT_PAGE:
++		pfn = gfn_to_pfn(vcpu->kvm, op.u.gen.pfn);
++		page = pfn_to_page(pfn);
++		oid.oid[0] = op.u.gen.oid[0];
++		oid.oid[1] = op.u.gen.oid[1];
++		oid.oid[2] = op.u.gen.oid[2];
++		VM_BUG_ON(!PageLocked(page));
++		*ret = zcache_put_page(op.u.gen.cli_id, op.pool_id,
++				&oid, op.u.gen.index, page);
++		break;
++	case TMEM_GET_PAGE:
++		pfn = gfn_to_pfn(vcpu->kvm, op.u.gen.pfn);
++		page = pfn_to_page(pfn);
++		oid.oid[0] = op.u.gen.oid[0];
++		oid.oid[1] = op.u.gen.oid[1];
++		oid.oid[2] = op.u.gen.oid[2];
++		*ret = zcache_get_page(TMEM_CLI, op.pool_id,
++				&oid, op.u.gen.index, page);
++		break;
++	case TMEM_FLUSH_PAGE:
++		oid.oid[0] = op.u.gen.oid[0];
++		oid.oid[1] = op.u.gen.oid[1];
++		oid.oid[2] = op.u.gen.oid[2];
++		*ret = zcache_flush_page(op.u.gen.cli_id, op.pool_id,
++				&oid, op.u.gen.index);
++		break;
++	case TMEM_FLUSH_OBJECT:
++		oid.oid[0] = op.u.gen.oid[0];
++		oid.oid[1] = op.u.gen.oid[1];
++		oid.oid[2] = op.u.gen.oid[2];
++		*ret = zcache_flush_object(op.u.gen.cli_id, op.pool_id, &oid);
++		break;
++	}
++	return 0;
 +}
 +
- static int prctl_set_mm(int opt, unsigned long addr,
- 			unsigned long arg4, unsigned long arg5)
++/*
+  * zcache initialization
+  * NOTE FOR NOW zcache MUST BE PROVIDED AS A KERNEL BOOT PARAMETER OR
+  * NOTHING HAPPENS!
+@@ -1934,10 +1993,19 @@ static int __init no_frontswap(char *s)
+ 
+ __setup("nofrontswap", no_frontswap);
+ 
++static int kvm_tmem_enabled = 0;
++
++static int __init enable_kvm_tmem(char *s)
++{
++	kvm_tmem_enabled = 1;
++	return 1;
++}
++
++__setup("kvmtmem", enable_kvm_tmem);
++
+ static int __init zcache_init(void)
  {
-@@ -1715,6 +1761,9 @@ static int prctl_set_mm(int opt, unsigne
- 	if (!capable(CAP_SYS_RESOURCE))
- 		return -EPERM;
- 
-+	if (opt == PR_SET_MM_EXE_FILE)
-+		return prctl_set_mm_exe_file(mm, (unsigned int)addr);
-+
- 	if (addr >= TASK_SIZE)
- 		return -EINVAL;
- 
-@@ -1837,6 +1886,7 @@ static int prctl_set_mm(int opt, unsigne
- 
- 		return 0;
+ 	int ret = 0;
+-
+ #ifdef CONFIG_SYSFS
+ 	ret = sysfs_create_group(mm_kobj, &zcache_attr_group);
+ 	if (ret) {
+@@ -1946,7 +2014,7 @@ static int __init zcache_init(void)
  	}
-+
- 	default:
- 		error = -EINVAL;
+ #endif /* CONFIG_SYSFS */
+ #if defined(CONFIG_CLEANCACHE) || defined(CONFIG_FRONTSWAP)
+-	if (zcache_enabled) {
++	if (zcache_enabled || kvm_tmem_enabled) {
+ 		unsigned int cpu;
+ 
+ 		tmem_register_hostops(&zcache_hostops);
+@@ -1966,11 +2034,25 @@ static int __init zcache_init(void)
+ 				sizeof(struct tmem_objnode), 0, 0, NULL);
+ 	zcache_obj_cache = kmem_cache_create("zcache_obj",
+ 				sizeof(struct tmem_obj), 0, 0, NULL);
+-	ret = zcache_new_client(LOCAL_CLIENT);
+-	if (ret) {
+-		pr_err("zcache: can't create client\n");
++	if(kvm_tmem_enabled) {
++		ret = zcache_new_client(TMEM_CLI);
++		if(ret) {
++			pr_err("zcache: can't create client\n");
++			goto out;
++		}
++		zbud_init();
++		register_shrinker(&zcache_shrinker);
++		pr_info("zcache: transcendent memory enabled using kernel "
++			"for kvm guests\n");
  		goto out;
+ 	}
++	else {
++		ret = zcache_new_client(LOCAL_CLIENT);
++		if (ret) {
++			pr_err("zcache: can't create client\n");
++			goto out;
++		}
++	}
+ #endif
+ #ifdef CONFIG_CLEANCACHE
+ 	if (zcache_enabled && use_cleancache) {
+
+
