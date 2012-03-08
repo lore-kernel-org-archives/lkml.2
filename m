@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab2CHV1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:27:42 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63333 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754216Ab2CHV1j (ORCPT
+	id S1757019Ab2CHV2I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:28:08 -0500
+Received: from caiajhbdccac.dreamhost.com ([208.97.132.202]:58577 "EHLO
+	homiemail-a60.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752924Ab2CHV2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:27:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <1331239814.11759.1.camel@lade.trondhjem.org>
-References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
-	<1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
-	<1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
-	<1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
-	<CAN-5tyG-w+ie3sxTwNA6e9x=CojxyDaJScJuCbS+9VE=yTmJNA@mail.gmail.com>
-	<1331230525.2472.39.camel@lade.trondhjem.org>
-	<CAN-5tyFYE5ECtv__C9S_GMT1gBMQ4+6WPS-1BjmSE7vHoRAQdw@mail.gmail.com>
-	<20120308204205.GB9273@fieldses.org>
-	<1331239814.11759.1.camel@lade.trondhjem.org>
-Date: Thu, 8 Mar 2012 16:27:37 -0500
-X-Google-Sender-Auth: DlpHAijcb-gXW_DnpXeRGlMki8o
-Message-ID: <CAN-5tyHBxnWQ_Yi1dGeBcAtq=PbSfqSRN0_dUY-gLcDVZWytWQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] NFSv4: Return the delegation if the server returns NFS4ERR_OPENMODE
-From: Olga Kornievskaia <aglo@citi.umich.edu>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 8 Mar 2012 16:28:05 -0500
+Subject: Re: [PATCH v2] KVM: x86: add paging gcc optimization
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        KVM <kvm@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4F58D48F.8050807@de.ibm.com>
+References: <1331207154.28711.2.camel@offworld>
+	 <4F58D48F.8050807@de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Thu, 08 Mar 2012 22:27:59 +0100
+Message-ID: <1331242079.2592.4.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 8, 2012 at 3:50 PM, Myklebust, Trond
-<Trond.Myklebust@netapp.com> wrote:
-> On Thu, 2012-03-08 at 15:42 -0500, J. Bruce Fields wrote:
->> On Thu, Mar 08, 2012 at 03:23:34PM -0500, Olga Kornievskaia wrote:
->> > On Thu, Mar 8, 2012 at 1:15 PM, Myklebust, Trond
->> > <Trond.Myklebust@netapp.com> wrote:
->> > > On Thu, 2012-03-08 at 12:52 -0500, Olga Kornievskaia wrote:
->> > >> wouldn't it be better for you to proactively return a read delegation
->> > >> then unnecessarily erroring?
->> > >
->> > > If nobody else holds a delegation, then the NFS client is actually
->> > > allowed to keep its read delegation while writing to the file. It does
->> > > admittedly need to request an OPEN stateid for write in that case...
->> > > (See section 10.4 of RFC3530bis draft 16)
->> >
->> > If we both agree that there has to be a request for an open stateid for
->> > a write, then instead of returning the read delegation if the client receives
->> > err_openmode (when it send the request with read delegation stateid
->> > as you said per 3560bis), can't the client resend the setattr with the open
->> > stateid? The ordering of the stateid usage is a "should" and not a "must".
->> >
->> > In rfc5661, it really doesn't make sense to ever send a setattr with
->> > a read delegation stateid. According to 9.1.2, the server "MUST" return
->> > err_open_mode" error in that case.
->> >
->> > I gather you are in this case dealing with 4.0 delegations. But I wonder
->> > if you'll do something else for 4.1 delegation then?
->>
->> 3530bis has the same language ("...must verify that the access mode
->> allows writing and return an NFS4ERR_OPENMODE error if it does not").
->
-> OK, so we shouldn't send the delegation stateid either for v4 or v4.1.
-> However should we pre-emptively return the delegation? I've been
-> assuming not.
+On Thu, 2012-03-08 at 16:47 +0100, Christian Borntraeger wrote:
+> On 08/03/12 12:45, Davidlohr Bueso wrote:
+> > From: Davidlohr Bueso <dave@gnu.org>
+> > 
+> > Since most guests will have paging enabled for memory management, add likely() optimization
+> > around CR0.PG checks.
+> 
+> >  {
+> > -	return kvm_read_cr0_bits(vcpu, X86_CR0_PG);
+> > +	return likely(kvm_read_cr0_bits(vcpu, X86_CR0_PG));
+> 
+> 
+> IMHO likely/unlikely should be considered more as fast-path/slow-path and not as often/less often.
+> Is that the case here? This patch  might cause a mis-prediction for non-paging guests all 
+> the time. 
 
-It would be nice not to pre-emptively return delegations but for that
-we need server implementors to get on board with the idea.
+Branch predictions are all about probability of occurrence, and I cannot
+imagine guests having paging disabled and mapping gva->gpa directly, so
+for most of the cases it would be beneficial. For those peculiar users
+that actually don't use paging, then yes, mispredictions would occur.
+
+- Davidlohr
+
+> 
+> Non-paging might be really irrelevant, so I am just making a point, since
+> likely/unlikely is mis-used too often especially for "most users do it that way".
+> 
+> 
+> Christian
+> 
+> 
+
+
