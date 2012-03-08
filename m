@@ -1,231 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab2CHPze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 10:55:34 -0500
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:58427 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758142Ab2CHPzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 10:55:32 -0500
-From: Aneesh V <aneesh@ti.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-omap@vger.kernel.org, Aneesh V <aneesh@ti.com>,
-        Greg KH <greg@kroah.com>
-Subject: [PATCH 8/8] misc: emif: add debugfs entries for emif
-Date: Thu,  8 Mar 2012 21:24:25 +0530
-Message-Id: <1331222065-3579-9-git-send-email-aneesh@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1331222065-3579-1-git-send-email-aneesh@ti.com>
-References: <1331222065-3579-1-git-send-email-aneesh@ti.com>
+	id S1758217Ab2CHP4K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 10:56:10 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:44804 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757854Ab2CHP4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 10:56:07 -0500
+Message-ID: <1331222161.30848.1.camel@joe2Laptop>
+Subject: [PATCH 1/2 V2] checkpatch: Warn on use of yield()
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 08 Mar 2012 07:56:01 -0800
+In-Reply-To: <1331057839.2140.12.camel@joe2Laptop>
+References: <1331057839.2140.12.camel@joe2Laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add debug entries for:
-	1. calculated registers per frequency
-	2. last polled value of MR4(temperature level
-	   of LPDDR2 memory)
+Using yield() is generally wrong.  Warn on its use.
 
-Cc: Greg KH <greg@kroah.com>
-Signed-off-by: Aneesh V <aneesh@ti.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
-Changes since RFC:
-- None
----
- drivers/misc/emif.c |  138 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 138 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/misc/emif.c b/drivers/misc/emif.c
-index da79dd6..79fb161 100644
---- a/drivers/misc/emif.c
-+++ b/drivers/misc/emif.c
-@@ -18,6 +18,7 @@
- #include <linux/platform_device.h>
- #include <linux/interrupt.h>
- #include <linux/slab.h>
-+#include <linux/debugfs.h>
- #include <linux/seq_file.h>
- #include <linux/module.h>
- #include <linux/list.h>
-@@ -47,6 +48,7 @@
-  *				frequency change (i.e. corresponding to the
-  *				frequency in effect at the moment)
-  * @plat_data:			Pointer to saved platform data.
-+ * @debugfs_root:		dentry to the root folder for EMIF in debugfs
-  */
- struct emif_data {
- 	u8				duplicate;
-@@ -60,6 +62,7 @@ struct emif_data {
- 	struct emif_regs		*regs_cache[EMIF_MAX_NUM_FREQUENCIES];
- 	struct emif_regs		*curr_regs;
- 	struct emif_platform_data	*plat_data;
-+	struct dentry			*debugfs_root;
- };
+V2: Test checkpatches first next time...
+    Add missing close parenthesis
+
+ scripts/checkpatch.pl |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 04eb9eb..135cb8f 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3344,6 +3344,12 @@ sub process {
+ 			     "__func__ should be used instead of gcc specific __FUNCTION__\n"  . $herecurr);
+ 		}
  
- static struct emif_data *emif1;
-@@ -68,6 +71,130 @@ static unsigned long	irq_state;
- static u32		t_ck; /* DDR clock period in ps */
- static LIST_HEAD(device_list);
- 
-+static void do_emif_regdump_show(struct seq_file *s, struct emif_data *emif,
-+	struct emif_regs *regs)
-+{
-+	u32 type = emif->plat_data->device_info->type;
-+	u32 ip_rev = emif->plat_data->ip_rev;
++# check for use of yield()
++		if ($line =~ /\byield\s*\(\s*\)/) {
++			WARN("YIELD",
++			     "Using yield() is generally wrong. See yield() kernel-doc (sched/core.c)\n"  . $herecurr);
++		}
 +
-+	seq_printf(s, "EMIF register cache dump for %dMHz\n",
-+		regs->freq/100000);
-+
-+	seq_printf(s, "ref_ctrl_shdw\t: 0x%08x\n", regs->ref_ctrl_shdw);
-+	seq_printf(s, "sdram_tim1_shdw\t: 0x%08x\n", regs->sdram_tim1_shdw);
-+	seq_printf(s, "sdram_tim2_shdw\t: 0x%08x\n", regs->sdram_tim2_shdw);
-+	seq_printf(s, "sdram_tim3_shdw\t: 0x%08x\n", regs->sdram_tim3_shdw);
-+
-+	if (ip_rev == EMIF_4D) {
-+		seq_printf(s, "read_idle_ctrl_shdw_normal\t: 0x%08x\n",
-+			regs->read_idle_ctrl_shdw_normal);
-+		seq_printf(s, "read_idle_ctrl_shdw_volt_ramp\t: 0x%08x\n",
-+			regs->read_idle_ctrl_shdw_volt_ramp);
-+	} else if (ip_rev == EMIF_4D5) {
-+		seq_printf(s, "dll_calib_ctrl_shdw_normal\t: 0x%08x\n",
-+			regs->dll_calib_ctrl_shdw_normal);
-+		seq_printf(s, "dll_calib_ctrl_shdw_volt_ramp\t: 0x%08x\n",
-+			regs->dll_calib_ctrl_shdw_volt_ramp);
-+	}
-+
-+	if (type == DDR_TYPE_LPDDR2_S2 || type == DDR_TYPE_LPDDR2_S4) {
-+		seq_printf(s, "ref_ctrl_shdw_derated\t: 0x%08x\n",
-+			regs->ref_ctrl_shdw_derated);
-+		seq_printf(s, "sdram_tim1_shdw_derated\t: 0x%08x\n",
-+			regs->sdram_tim1_shdw_derated);
-+		seq_printf(s, "sdram_tim3_shdw_derated\t: 0x%08x\n",
-+			regs->sdram_tim3_shdw_derated);
-+	}
-+}
-+
-+static int emif_regdump_show(struct seq_file *s, void *unused)
-+{
-+	struct emif_data	*emif	= s->private;
-+	struct emif_regs	**regs_cache;
-+	int			i;
-+
-+	if (emif->duplicate)
-+		regs_cache = emif1->regs_cache;
-+	else
-+		regs_cache = emif->regs_cache;
-+
-+	for (i = 0; i < EMIF_MAX_NUM_FREQUENCIES && regs_cache[i]; i++) {
-+		do_emif_regdump_show(s, emif, regs_cache[i]);
-+		seq_printf(s, "\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static int emif_regdump_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, emif_regdump_show, inode->i_private);
-+}
-+
-+static const struct file_operations emif_regdump_fops = {
-+	.open			= emif_regdump_open,
-+	.read			= seq_read,
-+	.release		= single_release,
-+};
-+
-+static int emif_mr4_show(struct seq_file *s, void *unused)
-+{
-+	struct emif_data *emif = s->private;
-+
-+	seq_printf(s, "MR4=%d\n", emif->temperature_level);
-+	return 0;
-+}
-+
-+static int emif_mr4_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, emif_mr4_show, inode->i_private);
-+}
-+
-+static const struct file_operations emif_mr4_fops = {
-+	.open			= emif_mr4_open,
-+	.read			= seq_read,
-+	.release		= single_release,
-+};
-+
-+static int __init emif_debugfs_init(struct emif_data *emif)
-+{
-+	struct dentry	*dentry;
-+	int		ret;
-+
-+	dentry = debugfs_create_dir(dev_name(emif->dev), NULL);
-+	if (IS_ERR(dentry)) {
-+		ret = PTR_ERR(dentry);
-+		goto err0;
-+	}
-+	emif->debugfs_root = dentry;
-+
-+	dentry = debugfs_create_file("regcache_dump", S_IRUGO,
-+			emif->debugfs_root, emif, &emif_regdump_fops);
-+	if (IS_ERR(dentry)) {
-+		ret = PTR_ERR(dentry);
-+		goto err1;
-+	}
-+
-+	dentry = debugfs_create_file("mr4", S_IRUGO,
-+			emif->debugfs_root, emif, &emif_mr4_fops);
-+	if (IS_ERR(dentry)) {
-+		ret = PTR_ERR(dentry);
-+		goto err1;
-+	}
-+
-+	return 0;
-+err1:
-+	debugfs_remove_recursive(emif->debugfs_root);
-+err0:
-+	return ret;
-+}
-+
-+static void __exit emif_debugfs_exit(struct emif_data *emif)
-+{
-+	debugfs_remove_recursive(emif->debugfs_root);
-+	emif->debugfs_root = NULL;
-+}
-+
- /*
-  * Calculate the period of DDR clock from frequency value
-  */
-@@ -1174,6 +1301,7 @@ static int __init emif_probe(struct platform_device *pdev)
- 	}
- 
- 	emif_onetime_settings(emif);
-+	emif_debugfs_init(emif);
- 	disable_and_clear_all_interrupts(emif);
- 	setup_interrupts(emif, irq);
- 
-@@ -1197,6 +1325,15 @@ error:
- 	return -ENODEV;
- }
- 
-+static int __exit emif_remove(struct platform_device *pdev)
-+{
-+	struct emif_data *emif = platform_get_drvdata(pdev);
-+
-+	emif_debugfs_exit(emif);
-+
-+	return 0;
-+}
-+
- static void emif_shutdown(struct platform_device *pdev)
- {
- 	struct emif_data	*emif = platform_get_drvdata(pdev);
-@@ -1507,6 +1644,7 @@ static void __attribute__((unused)) freq_post_notify_handling(void)
- }
- 
- static struct platform_driver emif_driver = {
-+	.remove		= __exit_p(emif_remove),
- 	.shutdown	= emif_shutdown,
- 	.driver = {
- 		.name = "emif",
--- 
-1.7.1
+ # check for semaphores initialized locked
+ 		if ($line =~ /^.\s*sema_init.+,\W?0\W?\)/) {
+ 			WARN("CONSIDER_COMPLETION",
+
 
