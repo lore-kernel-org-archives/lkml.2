@@ -1,129 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab2CHSWd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:22:33 -0500
-Received: from outmail024.snc4.facebook.com ([66.220.144.158]:59780 "EHLO
-	intmgw005.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755598Ab2CHSWb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:22:31 -0500
-Date: Thu, 8 Mar 2012 10:22:26 -0800
-From: Arun Sharma <asharma@fb.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
-        linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH 2/2] perf: Add a new sort order: SORT_INCLUSIVE
-Message-ID: <20120308182226.GA10065@dev3310.snc6.facebook.com>
-References: <1331160079-13821-1-git-send-email-asharma@fb.com>
- <1331160079-13821-3-git-send-email-asharma@fb.com>
- <20120308153933.GD7976@somewhere.redhat.com>
+	id S1756724Ab2CHSW4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:22:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50187 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752862Ab2CHSWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 13:22:55 -0500
+Date: Thu, 8 Mar 2012 13:22:45 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, axboe@kernel.dk,
+        hughd@google.com, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dpshah@google.com, ctalbott@google.com, rni@google.com
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-ID: <20120308182245.GC22922@redhat.com>
+References: <20120305221321.GF1263@google.com>
+ <20120306210954.GF32148@redhat.com>
+ <20120306132034.ecaf8b20.akpm@linux-foundation.org>
+ <20120306213437.GG32148@redhat.com>
+ <20120306135531.828ca78e.akpm@linux-foundation.org>
+ <20120307145556.GA11262@redhat.com>
+ <20120307150549.955d6f9c.akpm@linux-foundation.org>
+ <20120308175708.GB22922@redhat.com>
+ <20120308180833.GA25508@google.com>
+ <20120308181125.GB25508@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120308153933.GD7976@somewhere.redhat.com>
+In-Reply-To: <20120308181125.GB25508@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 04:39:36PM +0100, Frederic Weisbecker wrote:
+On Thu, Mar 08, 2012 at 10:11:25AM -0800, Tejun Heo wrote:
+> On Thu, Mar 08, 2012 at 10:08:33AM -0800, Tejun Heo wrote:
+> > It's probably from something forgetting to put cgroup and pre_destroy
+> > waiting for it.  Such bugs would have been masked before but now show
+> > up as stalls during rmdir.  I'm not too happy with how cgroup is
+> > handling cgroup file additions and removals and hoping to implement
+> > proper 'sever' semantics similar to that of sysfs.  In the longer
+> > term, such behavior should go away but for now we'll just have to hunt
+> > down the actual bug to avoid stalls (which we have to do anyway but
+> > it's more visible now).
 > 
-> I don't yet understand the point of this.
-> 
-> Imagine those three hists:
-> 
-> a -> b -> c
-> a -> b -> d
-> a-> e -> f
-> 
-> The fractal inverted mode (-G) will report this:
-> 
-> a--
->   |
->   ----- b
->   |     |
->   |     -----c
->   |     |
->   |     -----d
->   |
->   ----- e
->         |
->         -----f
-> 
+> Hmm... I'll probably need it for dynamic file additions and removals
+> for dynamic policy updates && the blkcg changes are scheduled for
+> 3.5-rc1 window (not 3.4-rc1), so we should have enough time to resolve
+> this.
 
-Please see the test program attached. It has only two paths from main()
-to c(). But for this discussion, imagine a callgraph with 10 different
-paths.
+Does that mean in 3.4 we will continue to kill throttling groups and lose
+all the policies and stats upon elevator change? So 3.4 will be one odd
+release w.r.t this user visible change.
 
-With -G, c() appears 10 times in the callgraph and the user is required
-to manually sum up the samples to realize that the callgraph under c()
-is very expensive.
-
-With -s inclusive, c() will show up at the very top after main().
-
- -Arun
-
-#include <stdio.h>
-
-int sum = 0;
-
-#define LOOP(n)                                         \
-        {                                               \
-                int j;                                  \
-                for (j = 0; j < 10000; j++) {           \
-                        sum += j;                       \
-                }                                       \
-        }
-
-int f()
-{
-        LOOP(100);
-}
-
-int d()
-{
-        LOOP(100);
-        f();
-}
-
-int e()
-{
-	LOOP(100);
-	f();
-}
-
-int c()
-{
-	LOOP(100);
-	d();
-	LOOP(100);
-	e();
-}
-
-int b() 
-{
-	LOOP(70);
-	c();
-}
-
-int a() 
-{
-	LOOP(30);
-	c();
-}
-
-int main()
-{
-	int i;
-	for (i = 0; i < 10000; i++) {
-		a();
-		b();
-	}
-}
-
+Thanks
+Vivek
