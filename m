@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758678Ab2CHU0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:26:20 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56664 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369Ab2CHU0R convert rfc822-to-8bit (ORCPT
+	id S1758538Ab2CHU2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:28:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49739 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753165Ab2CHU2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:26:17 -0500
-Message-ID: <1331238369.11248.426.camel@twins>
-Subject: Re: [ANNOUNCE] 3.2.9-rt17
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Thu, 08 Mar 2012 21:26:09 +0100
-In-Reply-To: <1331237441.25686.469.camel@gandalf.stny.rr.com>
-References: <alpine.LFD.2.02.1203072225020.2742@ionos>
-	 <1331230991.25686.452.camel@gandalf.stny.rr.com>
-	 <1331231287.11248.396.camel@twins>
-	 <1331232159.25686.456.camel@gandalf.stny.rr.com>
-	 <1331235579.11248.402.camel@twins>
-	 <1331237441.25686.469.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 8 Mar 2012 15:28:07 -0500
+Date: Fri, 9 Mar 2012 00:28:02 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
+Message-ID: <20120308202802.GN21812@moon>
+References: <20120308165112.GF21812@moon>
+ <CAGXu5j+4RRGjzVxLSyz0CZCNMj4dPOxJp3pYGSN_sXFsiMhUaQ@mail.gmail.com>
+ <20120308194008.GJ21812@moon>
+ <CALCETrXpQOpAN64gfG-=iyXXy4Tid=9FyKVrT2grQxRgNPC-fg@mail.gmail.com>
+ <20120308200729.GL21812@moon>
+ <CALCETrXc9Etit+DUuxKtUwRKmqbwbE5vhDNYWgs0ijEesY8cUA@mail.gmail.com>
+ <20120308202136.GM21812@moon>
+ <CALCETrVe6VQgdEkZBv24ZaS-N8bFLr9umhgmBsHB6CMH699ykA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALCETrVe6VQgdEkZBv24ZaS-N8bFLr9umhgmBsHB6CMH699ykA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 15:10 -0500, Steven Rostedt wrote:
+On Thu, Mar 08, 2012 at 12:24:38PM -0800, Andy Lutomirski wrote:
+...
+> >
+> > I've been in To: field that's why I replied you about nnp
+> > (and, btw, what nnp is? not "Net national product" I suppose,
+> >  this hint wikipedia gave me)
 > 
-> By doing a spin_trydeadlock() while still holding the d_lock, if the
-> holder of the i_lock was blocked on that d_lock then it would detect the
-> failure, and release the lock and continue the loop. This doesn't solve
-> anything. Just because we released the lock, we are still preempting the
-> holder of the d_lock
+> nnp is no_new_privs, which is my patch and is almost, but not quite,
+> very relevant to this discussion.  Hence my confusion ;)
 
-->i_lock, right?
+Ah, good to know (I'm on 3.3-rc6 now, so I've not yet noticed
+this nnp helper :)
 
-> , and if we are higher in priority, we will never let the owner run.
+> 
+> FWIW, since I've touched this code recently, the cleanup you're
+> suggesting sounds good.
 
-So, suppose:
+OK, once I prepare the helper we will see how it fits with
+other code.
 
-task-A				task-B
-
-lock ->i_lock
-				lock ->d_lock
-lock ->d_lock <blocks>
-				trylock ->i_lock
-
-In this case B's trylock will insta-fail (with -EDEADLK) and we unlock
-->d_lock in the existing retry logic. That dropping of ->d_lock will
-then wake A, but since B is higher prio A we don't actually run A and
-B's retry loop will re-acquire ->d_lock.
-
-Crap.. there's also the fact that A doesn't get (or stays) boosted.
-
-I can only think of ugly things to do, like on the deadlock scan, force
-assign the first waiter of the inverted lock to owner (in this case the
-deadlock is on ->d_lock so assign A), so that the moment we release
-->d_lock our re-acquisition fails because its already owned by A, at
-that point B will block and boost A.
-
-There's just the little detail of having two owners for a little while..
-
-> But just sleeping a tick sounds like a heuristic that may someday fail.
-
-Oh absolutely agreed, ideally someone would find a way to implement the
--EDEADLK stuff for rt-mutex in a way that doesn't make tglx sad and
-actually works.
+	Cyrill
