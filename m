@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757043Ab2CHMTm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 07:19:42 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45320 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431Ab2CHMTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 07:19:41 -0500
-Date: Thu, 8 Mar 2012 13:19:24 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] perf script: Add script to collect and display IBS
- samples
-Message-ID: <20120308121924.GA19674@elte.hu>
-References: <20111223103329.GC4749@elte.hu>
- <20111223111958.GE16765@erda.amd.com>
- <20111223135340.GB21382@elte.hu>
- <1324649698.24803.55.camel@twins>
- <20111223144040.GB2297@elte.hu>
- <20111223161701.GF16765@erda.amd.com>
- <20111223163930.GA5983@elte.hu>
- <20111223165030.GG16765@erda.amd.com>
- <20111230095521.GA12077@elte.hu>
- <20120202112133.GR16322@erda.amd.com>
+	id S1757405Ab2CHMVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 07:21:49 -0500
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:55104 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756627Ab2CHMVs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 07:21:48 -0500
+X-SENDER-IP: [85.230.168.211]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmiPAAmkWE9V5qjTPGdsb2JhbABCigaqFgOBChkBAQEBNzSCCgEBBAEyASMWDQULCAMYLhQlChouh2oJt0wTinCFCGMElUSFdY0I
+X-IronPort-AV: E=Sophos;i="4.73,552,1325458800"; 
+   d="scan'208";a="279199463"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 8 Mar 2012 13:23:03 +0100
+To: =?iso-8859-1?Q?St=E9phane?= Chatty <chatty@enac.fr>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
+Message-ID: <20120308122303.GA11989@polaris.bitmath.org>
+References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com>
+ <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>
+ <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz>
+ <20120308105737.GA11201@polaris.bitmath.org>
+ <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr>
+ <20120308113009.GA11416@polaris.bitmath.org>
+ <E18D154F-E02F-4DF9-8749-7F9EF92792CB@enac.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120202112133.GR16322@erda.amd.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <E18D154F-E02F-4DF9-8749-7F9EF92792CB@enac.fr>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Robert Richter <robert.richter@amd.com> wrote:
-
-> > To help your effort we could tentatively put the patches 
-> > into a separate tip:perf/ibs topic branch if everyone agrees 
-> > otherwise, which can go upstream once it's complete and 
-> > usable.
+On Thu, Mar 08, 2012 at 12:48:24PM +0100, Stéphane Chatty wrote:
 > 
-> This would be very helpful for me. So far I see following 
-> patches for this on top of today's tip/perf/core (623ec99):
+> Le 8 mars 2012 à 12:30, Henrik Rydberg a écrit :
+> > 
+> > The device-driver matching is done in the kernel, but driver (aka
+> > module) loading is done from userland. The crux is to be able to tell
+> > userland what driver to load for a certain device. In this case, it
+> > means giving more information to userland via the device/modalias
+> > construct. Or at least, that is the question. :-)
+> > 
 > 
-> 08e232d perf, x86: Implement IBS event configuration
-> 05efba4 perf, x86: Implement IBS interrupt handler
-> b0532b2 perf, x86: Implement IBS pmu control ops
-> 56ccf1a perf, x86: Implement 64 bit counter support for IBS
-> 98e655c perf tool: Parse general/raw events from sysfs
-> aac22da perf tools: Add pmu mappings to header information
-> f1f062d perf script: Add script to collect and display IBS samples
+> Oook, I understand. The current solution used by distros is to load
+> the hid module statically, but then we don't want to do it for every
+> new kind of device-specific module, right? Is this your point?
 
-I've applied the following 4 kernel patches to perf/x86-ibs:
+Yes, half of it. The other half is the observation that the problem of
+device-driver assignment we face for hid devices seems to originate in
+the definition of what a hid device is, i.e., the hid device
+identifier. If the identifier was more detailed and one could
+construct a new hid device dynamically from the reports, the problem
+would go away. Consequentually, a more detailed identifier would solve
+the module-loading problem as well. The major concern I have is if
+this is feasible from a compatibility point of view.
 
- db98c5faf8cb: perf/x86: Implement 64-bit counter support for IBS
- 4db2e8e6500d: perf/x86: Implement IBS pmu control ops
- b7074f1fbd61: perf/x86: Implement IBS interrupt handler
- 510419435c69: perf/x86: Implement IBS event configuration
+> I had the feeling that the current hid code was somehow trying to be
+> universal, thus making the point moot, and figured that we would
+> need to reintegrate hid-multitouch into hid-core at some
+> point. You're suggesting another, more distributed option, in which
+> new categories of HID devices appear from time to time and are
+> handled in new modules, right? Sounds interesting to me, I'd like to
+> hear what the original designers of the hid module think of it.
 
-and pushed it out.
+Me too. Reading through the module code, it really seems to put
+userland in charge, only providing sufficient information to be able
+to load the right modules. If this was fully possible in hid, at least
+one of the special blacklists would disappear. One would also be able
+to split the current hid-input into several different drivers, for
+instance, gaining some clarity in addition to memory savings.
 
-We can apply any tooling changes to this branch as well.
-
-I suspect being able to skid-less profile on AMD CPUs, using 
-IBS, would be a useful feature to users. What would be required 
-for that to work?
-
-Thanks,
-
-	Ingo
+Henrik
