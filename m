@@ -1,200 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab2CHLsk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:48:40 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:58240 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757200Ab2CHLsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:48:38 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V2 4/9] memcg: Add non reclaim resource tracking to memcg
-In-Reply-To: <20120308145628.f911419d.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1330593380-1361-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120302173816.9796f243.kamezawa.hiroyu@jp.fujitsu.com> <87ipikdyud.fsf@linux.vnet.ibm.com> <20120308145628.f911419d.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 08 Mar 2012 17:18:21 +0530
-Message-ID: <871up39uuy.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
+	id S1757240Ab2CHLum (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:50:42 -0500
+Received: from 1wt.eu ([62.212.114.60]:62958 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753565Ab2CHLuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 06:50:39 -0500
+Date: Thu, 8 Mar 2012 12:47:02 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Tony Luck <tony.luck@intel.com>, Jiri Slaby <jirislaby@gmail.com>,
+        raven@themaw.net
+Subject: Re: Build broken on s390 and ia64 [was: Linux 2.6.32.58]
+Message-ID: <20120308114702.GA21607@1wt.eu>
+References: <20120304180911.GA7336@kroah.com> <4F54A46A.6000305@suse.cz> <20120305120241.GA3627@osiris.boeblingen.de.ibm.com> <4F54B618.1090301@suse.cz> <20120305223338.GE2930@1wt.eu> <4F5892B1.3070008@suse.cz>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12030811-2000-0000-0000-000006AF3DC2
+Content-Disposition: inline
+In-Reply-To: <4F5892B1.3070008@suse.cz>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Mar 2012 14:56:28 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Sun, 04 Mar 2012 23:37:22 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Thu, Mar 08, 2012 at 12:06:25PM +0100, Jiri Slaby wrote:
+> > So in the end, does anybody have an idea what is missing from this patch ?
+> > I'm not sure that reverting the autofs fix is a right solution either :-/
 > 
-> > On Fri, 2 Mar 2012 17:38:16 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > > On Thu,  1 Mar 2012 14:46:15 +0530
-> > > "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> > > 
-> > > > +	help
-> > > > +	  Add non reclaim resource management to memory resource controller.
-> > > > +	  Currently only HugeTLB pages will be managed using this extension.
-> > > > +	  The controller limit is enforced during mmap(2), so that
-> > > > +	  application can fall back to allocations using smaller page size
-> > > > +	  if the memory controller limit prevented them from allocating HugeTLB
-> > > > +	  pages.
-> > > > +
-> > > 
-> > > Hm. In other thread, KMEM accounting is discussed. There is 2 proposals and
-> > >  - 1st is accounting only reclaimable slabs (as dcache etc.)
-> > >  - 2nd is accounting all slab allocations.
-> > > 
-> > > Here, 2nd one includes NORECLAIM kmem cache. (Discussion is not ended.)
-> > > 
-> > > So, for your developments,  How about MEM_RES_CTLR_HUGEPAGE ?
-> > 
-> > Frankly I didn't like the noreclaim name, I also didn't want to indicate
-> > HUGEPAGE, because the code doesn't make any huge page assumption.
-> 
-> You can add this config for HUGEPAGE interfaces.
-> Later we can sort out other configs.
-> 
+> Nobody relevant? Hmm... I use the attached patch. If there are no
+> objections, I will add a header there and send to Willy.
 
-Will do
+Thanks Jiri !
+I will probably publish a new review this week-end.
 
-> 
-> > > 
-> > > 
-> > > >  config CGROUP_MEM_RES_CTLR_SWAP
-> > > >  	bool "Memory Resource Controller Swap Extension"
-> > > >  	depends on CGROUP_MEM_RES_CTLR && SWAP
-> > > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > > > index 6728a7a..b00d028 100644
-> > > > --- a/mm/memcontrol.c
-> > > > +++ b/mm/memcontrol.c
-> > > > @@ -49,6 +49,7 @@
-> > > >  #include <linux/page_cgroup.h>
-> > > >  #include <linux/cpu.h>
-> > > >  #include <linux/oom.h>
-> > > > +#include <linux/region.h>
-> > > >  #include "internal.h"
-> > > >  #include <net/sock.h>
-> > > >  #include <net/tcp_memcontrol.h>
-> > > > @@ -214,6 +215,11 @@ static void mem_cgroup_threshold(struct mem_cgroup *memcg);
-> > > >  static void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
-> > > >  
-> > > >  /*
-> > > > + * Currently only hugetlbfs pages are tracked using no reclaim
-> > > > + * resource count. So we need only MAX_HSTATE res counter
-> > > > + */
-> > > > +#define MEMCG_MAX_NORECLAIM HUGE_MAX_HSTATE
-> > > > +/*
-> > > >   * The memory controller data structure. The memory controller controls both
-> > > >   * page cache and RSS per cgroup. We would eventually like to provide
-> > > >   * statistics based on the statistics developed by Rik Van Riel for clock-pro,
-> > > > @@ -235,6 +241,11 @@ struct mem_cgroup {
-> > > >  	 */
-> > > >  	struct res_counter memsw;
-> > > >  	/*
-> > > > +	 * the counter to account for non reclaim resources
-> > > > +	 * like hugetlb pages
-> > > > +	 */
-> > > > +	struct res_counter no_rcl_res[MEMCG_MAX_NORECLAIM];
-> > > 
-> > > struct res_counter hugepages;
-> > > 
-> > > will be ok.
-> > > 
-> > 
-> > My goal was to make this patch not to mention hugepages, because
-> > it doesn't really have any depedency on hugepages. That is one of the reason
-> > for adding MEMCG_MAX_NORECLAIM. Later if we want other in memory file system
-> > (shmemfs) to limit the resource usage in a similar fashion, we should be
-> > able to use this memcg changes.
-> > 
-> > May be for this patchset I can make the changes you suggested and later
-> > when we want to reuse the code make it more generic ?
-> > 
-> 
-> yes. If there is no user interface change, internal code change will be welcomed.
-> 
-
-Ok
-
-> 
-> > 
-> > > 
-> > > > +	/*
-> > > >  	 * Per cgroup active and inactive list, similar to the
-> > > >  	 * per zone LRU lists.
-> > > >  	 */
-> > > > @@ -4887,6 +4898,7 @@ err_cleanup:
-> > > >  static struct cgroup_subsys_state * __ref
-> > > >  mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
-> > > >  {
-> > > > +	int idx;
-> > > >  	struct mem_cgroup *memcg, *parent;
-> > > >  	long error = -ENOMEM;
-> > > >  	int node;
-> > > > @@ -4922,6 +4934,10 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
-> > > >  	if (parent && parent->use_hierarchy) {
-> > > >  		res_counter_init(&memcg->res, &parent->res);
-> > > >  		res_counter_init(&memcg->memsw, &parent->memsw);
-> > > > +		for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++) {
-> > > > +			res_counter_init(&memcg->no_rcl_res[idx],
-> > > > +					 &parent->no_rcl_res[idx]);
-> > > > +		}
-> > > 
-> > > You can remove this kinds of loop and keep your implemenation simple.
-> > 
-> > 
-> > Can you explain this ? How can we remote the loop ?. We want to track
-> > each huge page size as a seperate resource. 
-> > 
-> Ah, sorry. I miseed it. please ignore.
-> 
-> 
-> 
-> > > > +long mem_cgroup_try_noreclaim_charge(struct list_head *chg_list,
-> > > > +				     unsigned long from, unsigned long to,
-> > > > +				     int idx)
-> > > > +{
-> > > > +	long chg;
-> > > > +	int ret = 0;
-> > > > +	unsigned long csize;
-> > > > +	struct mem_cgroup *memcg;
-> > > > +	struct res_counter *fail_res;
-> > > > +
-> > > > +	/*
-> > > > +	 * Get the task cgroup within rcu_readlock and also
-> > > > +	 * get cgroup reference to make sure cgroup destroy won't
-> > > > +	 * race with page_charge. We don't allow a cgroup destroy
-> > > > +	 * when the cgroup have some charge against it
-> > > > +	 */
-> > > > +	rcu_read_lock();
-> > > > +	memcg = mem_cgroup_from_task(current);
-> > > > +	css_get(&memcg->css);
-> > > 
-> > > css_tryget() ?
-> > > 
-> > 
-> > 
-> > Why ?
-> > 
-> 
-> current<->cgroup relationship isn't under any locks. So, we do speculative
-> access with rcu_read_lock() and css_tryget().
-> 
-
-Will update.
-
-Right now i am redoing the patch to see if enforcing limit during
-page fault (alloc_huge_page()) and page free (free_huge_page()) simplifies
-the patchset. Only problem with that approach is, application should have
-a clear idea about it's hugepage usage, or else enforcing the limit at
-fault time will result in application getting SIGBUS. But otherwise the approach
-simplifies the cgroup removal and brings the code much closer to memcg
-design.
-
--aneesh
+Willy
 
