@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758081Ab2CHPzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 10:55:18 -0500
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:36553 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757607Ab2CHPzM (ORCPT
+	id S1758152Ab2CHPzc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 10:55:32 -0500
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:33614 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758116Ab2CHPzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 10:55:12 -0500
+	Thu, 8 Mar 2012 10:55:25 -0500
 From: Aneesh V <aneesh@ti.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-omap@vger.kernel.org, Aneesh V <aneesh@ti.com>,
         Greg KH <greg@kroah.com>
-Subject: [PATCH 5/8] misc: emif: handle frequency and voltage change events
-Date: Thu,  8 Mar 2012 21:24:22 +0530
-Message-Id: <1331222065-3579-6-git-send-email-aneesh@ti.com>
+Subject: [PATCH 7/8] misc: emif: add one-time settings
+Date: Thu,  8 Mar 2012 21:24:24 +0530
+Message-Id: <1331222065-3579-8-git-send-email-aneesh@ti.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1331222065-3579-1-git-send-email-aneesh@ti.com>
 References: <1331222065-3579-1-git-send-email-aneesh@ti.com>
@@ -21,1132 +21,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change SDRAM timings and other settings as necessary
-on voltage and frequency changes. We calculate these
-register settings based on data from the device data
-sheet and inputs such a frequency, voltage state(stable
-or ramping), temperature level etc.
-
-TODO: frequency and voltage change handling needs to
-be integrated with clock framework and regulator
-framework respectively. This is not done today
-due to missing pieces in the kernel.
+Add settings that are not dependent on frequency
+or any other transient parameters. This includes
+- power managment control init
+- impedence calibration control
+- frequency independent phy configuration registers
+- initialization of temperature polling
 
 Cc: Greg KH <greg@kroah.com>
 Signed-off-by: Aneesh V <aneesh@ti.com>
 ---
 Changes since RFC:
-- Added comment in commit log as well as code about
-  missing integration part that needs to be done in
-  future
-- Removed some settings that were relevant only for
-  DDR3
-- Correction in temperature derated value of tim3
-- Added errata i735 and i728  workarounds. As part of
-  this we need to now maintain a list of all devices
-  in the driver and iterate through them in some cases
-- Improved synchronization. Added protection for newly
-  identified cases of potential race conditions.
-- Minor changes in patch organization. struct members
-  needed by this patch now defined here.
+- Improved commit log
+- Changes for errata i728 workaround
 ---
- drivers/misc/emif.c |  894 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- drivers/misc/emif.h |  130 ++++++++-
- 2 files changed, 1020 insertions(+), 4 deletions(-)
+ drivers/misc/emif.c |  147 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 147 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/misc/emif.c b/drivers/misc/emif.c
-index 4a7048a..5ab130b 100644
+index 09d0e68..da79dd6 100644
 --- a/drivers/misc/emif.c
 +++ b/drivers/misc/emif.c
-@@ -21,6 +21,7 @@
- #include <linux/seq_file.h>
- #include <linux/module.h>
- #include <linux/list.h>
-+#include <linux/spinlock.h>
- #include <misc/jedec_ddr.h>
- #include "emif.h"
+@@ -78,6 +78,24 @@ static void set_ddr_clk_period(u32 freq)
+ }
  
-@@ -37,20 +38,595 @@
-  * @node:			node in the device list
-  * @base:			base address of memory-mapped IO registers.
-  * @dev:			device pointer.
-+ * @addressing			table with addressing information from the spec
-+ * @regs_cache:			An array of 'struct emif_regs' that stores
-+ *				calculated register values for different
-+ *				frequencies, to avoid re-calculating them on
-+ *				each DVFS transition.
-+ * @curr_regs:			The set of register values used in the last
-+ *				frequency change (i.e. corresponding to the
-+ *				frequency in effect at the moment)
-  * @plat_data:			Pointer to saved platform data.
+ /*
++ * Get bus width used by EMIF. Note that this may be different from the
++ * bus width of the DDR devices used. For instance two 16-bit DDR devices
++ * may be connected to a given CS of EMIF. In this case bus width as far
++ * as EMIF is concerned is 32, where as the DDR bus width is 16 bits.
++ */
++static u32 get_emif_bus_width(struct emif_data *emif)
++{
++	u32		width;
++	void __iomem	*base = emif->base;
++
++	width = (readl(base + EMIF_SDRAM_CONFIG) & NARROW_MODE_MASK)
++			>> NARROW_MODE_SHIFT;
++	width = width == 0 ? 32 : 16;
++
++	return width;
++}
++
++/*
+  * Get the CL from SDRAM_CONFIG register
   */
- struct emif_data {
- 	u8				duplicate;
- 	u8				temperature_level;
-+	u8				lpmode;
- 	struct list_head		node;
-+	unsigned long			irq_state;
- 	void __iomem			*base;
- 	struct device			*dev;
+ static u32 get_cl(struct emif_data *emif)
+@@ -372,6 +390,70 @@ static u32 get_sdram_tim_3_shdw(const struct lpddr2_timings *timings,
+ 	return tim3;
+ }
+ 
++static u32 get_zq_config_reg(const struct lpddr2_addressing *addressing,
++		bool cs1_used, bool cal_resistors_per_cs)
++{
++	u32 zq = 0, val = 0;
++
++	val = EMIF_ZQCS_INTERVAL_US * 1000 / addressing->tREFI_ns;
++	zq |= val << ZQ_REFINTERVAL_SHIFT;
++
++	val = DIV_ROUND_UP(T_ZQCL_DEFAULT_NS, T_ZQCS_DEFAULT_NS) - 1;
++	zq |= val << ZQ_ZQCL_MULT_SHIFT;
++
++	val = DIV_ROUND_UP(T_ZQINIT_DEFAULT_NS, T_ZQCL_DEFAULT_NS) - 1;
++	zq |= val << ZQ_ZQINIT_MULT_SHIFT;
++
++	zq |= ZQ_SFEXITEN_ENABLE << ZQ_SFEXITEN_SHIFT;
++
++	if (cal_resistors_per_cs)
++		zq |= ZQ_DUALCALEN_ENABLE << ZQ_DUALCALEN_SHIFT;
++	else
++		zq |= ZQ_DUALCALEN_DISABLE << ZQ_DUALCALEN_SHIFT;
++
++	zq |= ZQ_CS0EN_MASK; /* CS0 is used for sure */
++
++	val = cs1_used ? 1 : 0;
++	zq |= val << ZQ_CS1EN_SHIFT;
++
++	return zq;
++}
++
++static u32 get_temp_alert_config(const struct lpddr2_addressing *addressing,
++		const struct emif_custom_configs *custom_configs, bool cs1_used,
++		u32 sdram_io_width, u32 emif_bus_width)
++{
++	u32 alert = 0, interval, devcnt;
++
++	if (custom_configs && (custom_configs->mask &
++				EMIF_CUSTOM_CONFIG_TEMP_ALERT_POLL_INTERVAL))
++		interval = custom_configs->temp_alert_poll_interval_ms;
++	else
++		interval = TEMP_ALERT_POLL_INTERVAL_DEFAULT_MS;
++
++	interval *= 1000000;			/* Convert to ns */
++	interval /= addressing->tREFI_ns;	/* Convert to refresh cycles */
++	alert |= (interval << TA_REFINTERVAL_SHIFT);
++
++	/*
++	 * sdram_io_width is in 'log2(x) - 1' form. Convert emif_bus_width
++	 * also to this form and subtract to get TA_DEVCNT, which is
++	 * in log2(x) form.
++	 */
++	emif_bus_width = __fls(emif_bus_width) - 1;
++	devcnt = emif_bus_width - sdram_io_width;
++	alert |= devcnt << TA_DEVCNT_SHIFT;
++
++	/* DEVWDT is in 'log2(x) - 3' form */
++	alert |= (sdram_io_width - 2) << TA_DEVWDT_SHIFT;
++
++	alert |= 1 << TA_SFEXITEN_SHIFT;
++	alert |= 1 << TA_CS0EN_SHIFT;
++	alert |= (cs1_used ? 1 : 0) << TA_CS1EN_SHIFT;
++
++	return alert;
++}
++
+ static u32 get_read_idle_ctrl_shdw(u8 volt_ramp)
+ {
+ 	u32 idle = 0, val = 0;
+@@ -815,6 +897,70 @@ static int __init setup_interrupts(struct emif_data *emif, u32 irq)
+ 
+ }
+ 
++static void __init emif_onetime_settings(struct emif_data *emif)
++{
++	u32				pwr_mgmt_ctrl, zq, temp_alert_cfg;
++	void __iomem			*base = emif->base;
 +	const struct lpddr2_addressing	*addressing;
-+	struct emif_regs		*regs_cache[EMIF_MAX_NUM_FREQUENCIES];
-+	struct emif_regs		*curr_regs;
- 	struct emif_platform_data	*plat_data;
- };
- 
- static struct emif_data *emif1;
-+static spinlock_t	emif_lock;
-+static unsigned long	irq_state;
-+static u32		t_ck; /* DDR clock period in ps */
- static LIST_HEAD(device_list);
- 
-+/*
-+ * Calculate the period of DDR clock from frequency value
-+ */
-+static void set_ddr_clk_period(u32 freq)
-+{
-+	/* Divide 10^12 by frequency to get period in ps */
-+	t_ck = (u32)DIV_ROUND_UP_ULL(1000000000000ull, freq);
-+}
++	const struct ddr_device_info	*device_info;
 +
-+/*
-+ * Get the CL from SDRAM_CONFIG register
-+ */
-+static u32 get_cl(struct emif_data *emif)
-+{
-+	u32		cl;
-+	void __iomem	*base = emif->base;
-+
-+	cl = (readl(base + EMIF_SDRAM_CONFIG) & CL_MASK) >> CL_SHIFT;
-+
-+	return cl;
-+}
-+
-+static void set_lpmode(struct emif_data *emif, u8 lpmode)
-+{
-+	u32 temp;
-+	void __iomem *base = emif->base;
-+
-+	temp = readl(base + EMIF_POWER_MANAGEMENT_CONTROL);
-+	temp &= ~LP_MODE_MASK;
-+	temp |= (lpmode << LP_MODE_SHIFT);
-+	writel(temp, base + EMIF_POWER_MANAGEMENT_CONTROL);
-+}
-+
-+static void do_freq_update(void)
-+{
-+	struct emif_data *emif;
++	device_info = emif->plat_data->device_info;
++	addressing = get_addressing_table(device_info);
 +
 +	/*
-+	 * Workaround for errata i728: Disable LPMODE during FREQ_UPDATE
-+	 *
-+	 * i728 DESCRIPTION:
-+	 * The EMIF automatically puts the SDRAM into self-refresh mode
-+	 * after the EMIF has not performed accesses during
-+	 * EMIF_PWR_MGMT_CTRL[7:4] REG_SR_TIM number of DDR clock cycles
-+	 * and the EMIF_PWR_MGMT_CTRL[10:8] REG_LP_MODE bit field is set
-+	 * to 0x2. If during a small window the following three events
-+	 * occur:
-+	 * - The SR_TIMING counter expires
-+	 * - And frequency change is requested
-+	 * - And OCP access is requested
-+	 * Then it causes instable clock on the DDR interface.
-+	 *
-+	 * WORKAROUND
-+	 * To avoid the occurrence of the three events, the workaround
-+	 * is to disable the self-refresh when requesting a frequency
-+	 * change. Before requesting a frequency change the software must
-+	 * program EMIF_PWR_MGMT_CTRL[10:8] REG_LP_MODE to 0x0. When the
-+	 * frequency change has been done, the software can reprogram
-+	 * EMIF_PWR_MGMT_CTRL[10:8] REG_LP_MODE to 0x2
++	 * Init power management settings
++	 * We don't know the frequency yet. Use a high frequency
++	 * value for a conservative timeout setting
 +	 */
-+	list_for_each_entry(emif, &device_list, node) {
-+		if (emif->lpmode == EMIF_LP_MODE_SELF_REFRESH)
-+			set_lpmode(emif, EMIF_LP_MODE_DISABLE);
-+	}
++	pwr_mgmt_ctrl = get_pwr_mgmt_ctrl(1000000000, emif,
++			emif->plat_data->ip_rev);
++	writel(pwr_mgmt_ctrl, base + EMIF_POWER_MANAGEMENT_CONTROL);
++
++	/* Init ZQ calibration settings */
++	zq = get_zq_config_reg(addressing, device_info->cs1_used,
++		device_info->cal_resistors_per_cs);
++	writel(zq, base + EMIF_SDRAM_OUTPUT_IMPEDANCE_CALIBRATION_CONFIG);
++
++	/* Check temperature level temperature level*/
++	get_temperature_level(emif);
++	if (emif->temperature_level == SDRAM_TEMP_VERY_HIGH_SHUTDOWN)
++		dev_emerg(emif->dev, "SDRAM temperature exceeds operating limit.. Needs shut down!!!\n");
++
++	/* Init temperature polling */
++	temp_alert_cfg = get_temp_alert_config(addressing,
++		emif->plat_data->custom_configs, device_info->cs1_used,
++		device_info->io_width, get_emif_bus_width(emif));
++	writel(temp_alert_cfg, base + EMIF_TEMPERATURE_ALERT_CONFIG);
 +
 +	/*
-+	 * TODO: Do FREQ_UPDATE here when an API
-+	 * is available for this as part of the new
-+	 * clock framework
++	 * Program external PHY control registers that are not frequency
++	 * dependent
 +	 */
-+
-+	list_for_each_entry(emif, &device_list, node) {
-+		if (emif->lpmode == EMIF_LP_MODE_SELF_REFRESH)
-+			set_lpmode(emif, EMIF_LP_MODE_SELF_REFRESH);
-+	}
-+}
-+
-+/* Find addressing table entry based on the device's type and density */
-+static const struct lpddr2_addressing *get_addressing_table(
-+	const struct ddr_device_info *device_info)
-+{
-+	u32		index, type, density;
-+
-+	type = device_info->type;
-+	density = device_info->density;
-+
-+	switch (type) {
-+	case DDR_TYPE_LPDDR2_S4:
-+		index = density - 1;
-+		break;
-+	case DDR_TYPE_LPDDR2_S2:
-+		switch (density) {
-+		case DDR_DENSITY_1Gb:
-+		case DDR_DENSITY_2Gb:
-+			index = density + 3;
-+			break;
-+		default:
-+			index = density - 1;
-+		}
-+		break;
-+	default:
-+		return NULL;
-+	}
-+
-+	return &lpddr2_jedec_addressing_table[index];
-+}
-+
-+/*
-+ * Find the the right timing table from the array of timing
-+ * tables of the device using DDR clock frequency
-+ */
-+static const struct lpddr2_timings *get_timings_table(struct emif_data *emif,
-+		u32 freq)
-+{
-+	u32				i, min, max, freq_nearest;
-+	const struct lpddr2_timings	*timings = NULL;
-+	const struct lpddr2_timings	*timings_arr = emif->plat_data->timings;
-+	struct				device *dev = emif->dev;
-+
-+	/* Start with a very high frequency - 1GHz */
-+	freq_nearest = 1000000000;
-+
-+	/*
-+	 * Find the timings table such that:
-+	 *  1. the frequency range covers the required frequency(safe) AND
-+	 *  2. the max_freq is closest to the required frequency(optimal)
-+	 */
-+	for (i = 0; i < emif->plat_data->timings_arr_size; i++) {
-+		max = timings_arr[i].max_freq;
-+		min = timings_arr[i].min_freq;
-+		if ((freq >= min) && (freq <= max) && (max < freq_nearest)) {
-+			freq_nearest = max;
-+			timings = &timings_arr[i];
-+		}
-+	}
-+
-+	if (!timings)
-+		dev_err(dev, "%s: couldn't find timings for - %dHz\n",
-+			__func__, freq);
-+
-+	dev_dbg(dev, "%s: timings table: freq %d, speed bin freq %d\n",
-+		__func__, freq, freq_nearest);
-+
-+	return timings;
-+}
-+
-+static u32 get_sdram_ref_ctrl_shdw(u32 freq,
-+		const struct lpddr2_addressing *addressing)
-+{
-+	u32 ref_ctrl_shdw = 0, val = 0, freq_khz, t_refi;
-+
-+	/* Scale down frequency and t_refi to avoid overflow */
-+	freq_khz = freq / 1000;
-+	t_refi = addressing->tREFI_ns / 100;
-+
-+	/*
-+	 * refresh rate to be set is 'tREFI(in us) * freq in MHz
-+	 * division by 10000 to account for change in units
-+	 */
-+	val = t_refi * freq_khz / 10000;
-+	ref_ctrl_shdw |= val << REFRESH_RATE_SHIFT;
-+
-+	return ref_ctrl_shdw;
-+}
-+
-+static u32 get_sdram_tim_1_shdw(const struct lpddr2_timings *timings,
-+		const struct lpddr2_min_tck *min_tck,
-+		const struct lpddr2_addressing *addressing)
-+{
-+	u32 tim1 = 0, val = 0;
-+
-+	val = max(min_tck->tWTR, DIV_ROUND_UP(timings->tWTR, t_ck)) - 1;
-+	tim1 |= val << T_WTR_SHIFT;
-+
-+	if (addressing->num_banks == B8)
-+		val = DIV_ROUND_UP(timings->tFAW, t_ck*4);
-+	else
-+		val = max(min_tck->tRRD, DIV_ROUND_UP(timings->tRRD, t_ck));
-+	tim1 |= (val - 1) << T_RRD_SHIFT;
-+
-+	val = DIV_ROUND_UP(timings->tRAS_min + timings->tRPab, t_ck) - 1;
-+	tim1 |= val << T_RC_SHIFT;
-+
-+	val = max(min_tck->tRASmin, DIV_ROUND_UP(timings->tRAS_min, t_ck));
-+	tim1 |= (val - 1) << T_RAS_SHIFT;
-+
-+	val = max(min_tck->tWR, DIV_ROUND_UP(timings->tWR, t_ck)) - 1;
-+	tim1 |= val << T_WR_SHIFT;
-+
-+	val = max(min_tck->tRCD, DIV_ROUND_UP(timings->tRCD, t_ck)) - 1;
-+	tim1 |= val << T_RCD_SHIFT;
-+
-+	val = max(min_tck->tRPab, DIV_ROUND_UP(timings->tRPab, t_ck)) - 1;
-+	tim1 |= val << T_RP_SHIFT;
-+
-+	return tim1;
-+}
-+
-+static u32 get_sdram_tim_1_shdw_derated(const struct lpddr2_timings *timings,
-+		const struct lpddr2_min_tck *min_tck,
-+		const struct lpddr2_addressing *addressing)
-+{
-+	u32 tim1 = 0, val = 0;
-+
-+	val = max(min_tck->tWTR, DIV_ROUND_UP(timings->tWTR, t_ck)) - 1;
-+	tim1 = val << T_WTR_SHIFT;
-+
-+	/*
-+	 * tFAW is approximately 4 times tRRD. So add 1875*4 = 7500ps
-+	 * to tFAW for de-rating
-+	 */
-+	if (addressing->num_banks == B8) {
-+		val = DIV_ROUND_UP(timings->tFAW + 7500, 4 * t_ck) - 1;
-+	} else {
-+		val = DIV_ROUND_UP(timings->tRRD + 1875, t_ck);
-+		val = max(min_tck->tRRD, val) - 1;
-+	}
-+	tim1 |= val << T_RRD_SHIFT;
-+
-+	val = DIV_ROUND_UP(timings->tRAS_min + timings->tRPab + 1875, t_ck);
-+	tim1 |= (val - 1) << T_RC_SHIFT;
-+
-+	val = DIV_ROUND_UP(timings->tRAS_min + 1875, t_ck);
-+	val = max(min_tck->tRASmin, val) - 1;
-+	tim1 |= val << T_RAS_SHIFT;
-+
-+	val = max(min_tck->tWR, DIV_ROUND_UP(timings->tWR, t_ck)) - 1;
-+	tim1 |= val << T_WR_SHIFT;
-+
-+	val = max(min_tck->tRCD, DIV_ROUND_UP(timings->tRCD + 1875, t_ck));
-+	tim1 |= (val - 1) << T_RCD_SHIFT;
-+
-+	val = max(min_tck->tRPab, DIV_ROUND_UP(timings->tRPab + 1875, t_ck));
-+	tim1 |= (val - 1) << T_RP_SHIFT;
-+
-+	return tim1;
-+}
-+
-+static u32 get_sdram_tim_2_shdw(const struct lpddr2_timings *timings,
-+		const struct lpddr2_min_tck *min_tck,
-+		const struct lpddr2_addressing *addressing,
-+		u32 type)
-+{
-+	u32 tim2 = 0, val = 0;
-+
-+	val = min_tck->tCKE - 1;
-+	tim2 |= val << T_CKE_SHIFT;
-+
-+	val = max(min_tck->tRTP, DIV_ROUND_UP(timings->tRTP, t_ck)) - 1;
-+	tim2 |= val << T_RTP_SHIFT;
-+
-+	/* tXSNR = tRFCab_ps + 10 ns(tRFCab_ps for LPDDR2). */
-+	val = DIV_ROUND_UP(addressing->tRFCab_ps + 10000, t_ck) - 1;
-+	tim2 |= val << T_XSNR_SHIFT;
-+
-+	/* XSRD same as XSNR for LPDDR2 */
-+	tim2 |= val << T_XSRD_SHIFT;
-+
-+	val = max(min_tck->tXP, DIV_ROUND_UP(timings->tXP, t_ck)) - 1;
-+	tim2 |= val << T_XP_SHIFT;
-+
-+	return tim2;
-+}
-+
-+static u32 get_sdram_tim_3_shdw(const struct lpddr2_timings *timings,
-+		const struct lpddr2_min_tck *min_tck,
-+		const struct lpddr2_addressing *addressing,
-+		u32 type, u32 ip_rev, u32 derated)
-+{
-+	u32 tim3 = 0, val = 0, t_dqsck;
-+
-+	val = timings->tRAS_max_ns / addressing->tREFI_ns - 1;
-+	val = val > 0xF ? 0xF : val;
-+	tim3 |= val << T_RAS_MAX_SHIFT;
-+
-+	val = DIV_ROUND_UP(addressing->tRFCab_ps, t_ck) - 1;
-+	tim3 |= val << T_RFC_SHIFT;
-+
-+	t_dqsck = (derated == EMIF_DERATED_TIMINGS) ?
-+		timings->tDQSCK_max_derated : timings->tDQSCK_max;
-+	if (ip_rev == EMIF_4D5)
-+		val = DIV_ROUND_UP(t_dqsck + 1000, t_ck) - 1;
-+	else
-+		val = DIV_ROUND_UP(t_dqsck, t_ck) - 1;
-+
-+	tim3 |= val << T_TDQSCKMAX_SHIFT;
-+
-+	val = DIV_ROUND_UP(timings->tZQCS, t_ck) - 1;
-+	tim3 |= val << ZQ_ZQCS_SHIFT;
-+
-+	val = DIV_ROUND_UP(timings->tCKESR, t_ck);
-+	val = max(min_tck->tCKESR, val) - 1;
-+	tim3 |= val << T_CKESR_SHIFT;
-+
-+	if (ip_rev == EMIF_4D5) {
-+		tim3 |= (EMIF_T_CSTA - 1) << T_CSTA_SHIFT;
-+
-+		val = DIV_ROUND_UP(EMIF_T_PDLL_UL, 128) - 1;
-+		tim3 |= val << T_PDLL_UL_SHIFT;
-+	}
-+
-+	return tim3;
-+}
-+
-+static u32 get_read_idle_ctrl_shdw(u8 volt_ramp)
-+{
-+	u32 idle = 0, val = 0;
-+
-+	/*
-+	 * Maximum value in normal conditions and increased frequency
-+	 * when voltage is ramping
-+	 */
-+	if (volt_ramp)
-+		val = READ_IDLE_INTERVAL_DVFS / t_ck / 64 - 1;
-+	else
-+		val = 0x1FF;
-+
-+	/*
-+	 * READ_IDLE_CTRL register in EMIF4D has same offset and fields
-+	 * as DLL_CALIB_CTRL in EMIF4D5, so use the same shifts
-+	 */
-+	idle |= val << DLL_CALIB_INTERVAL_SHIFT;
-+	idle |= EMIF_READ_IDLE_LEN_VAL << ACK_WAIT_SHIFT;
-+
-+	return idle;
-+}
-+
-+static u32 get_dll_calib_ctrl_shdw(u8 volt_ramp)
-+{
-+	u32 calib = 0, val = 0;
-+
-+	if (volt_ramp == DDR_VOLTAGE_RAMPING)
-+		val = DLL_CALIB_INTERVAL_DVFS / t_ck / 16 - 1;
-+	else
-+		val = 0; /* Disabled when voltage is stable */
-+
-+	calib |= val << DLL_CALIB_INTERVAL_SHIFT;
-+	calib |= DLL_CALIB_ACK_WAIT_VAL << ACK_WAIT_SHIFT;
-+
-+	return calib;
-+}
-+
-+static u32 get_ddr_phy_ctrl_1_attilaphy_4d(const struct lpddr2_timings *timings,
-+	u32 freq, u8 RL)
-+{
-+	u32 phy = EMIF_DDR_PHY_CTRL_1_BASE_VAL_ATTILAPHY, val = 0;
-+
-+	val = RL + DIV_ROUND_UP(timings->tDQSCK_max, t_ck) - 1;
-+	phy |= val << READ_LATENCY_SHIFT_4D;
-+
-+	if (freq <= 100000000)
-+		val = EMIF_DLL_SLAVE_DLY_CTRL_100_MHZ_AND_LESS_ATTILAPHY;
-+	else if (freq <= 200000000)
-+		val = EMIF_DLL_SLAVE_DLY_CTRL_200_MHZ_ATTILAPHY;
-+	else
-+		val = EMIF_DLL_SLAVE_DLY_CTRL_400_MHZ_ATTILAPHY;
-+
-+	phy |= val << DLL_SLAVE_DLY_CTRL_SHIFT_4D;
-+
-+	return phy;
-+}
-+
-+static u32 get_phy_ctrl_1_intelliphy_4d5(u32 freq, u8 cl)
-+{
-+	u32 phy = EMIF_DDR_PHY_CTRL_1_BASE_VAL_INTELLIPHY, half_delay;
-+
-+	/*
-+	 * DLL operates at 266 MHz. If DDR frequency is near 266 MHz,
-+	 * half-delay is not needed else set half-delay
-+	 */
-+	if (freq >= 265000000 && freq < 267000000)
-+		half_delay = 0;
-+	else
-+		half_delay = 1;
-+
-+	phy |= half_delay << DLL_HALF_DELAY_SHIFT_4D5;
-+	phy |= ((cl + DIV_ROUND_UP(EMIF_PHY_TOTAL_READ_LATENCY_INTELLIPHY_PS,
-+			t_ck) - 1) << READ_LATENCY_SHIFT_4D5);
-+
-+	return phy;
-+}
-+
-+static u32 get_ext_phy_ctrl_2_intelliphy_4d5(void)
-+{
-+	u32 fifo_we_slave_ratio;
-+
-+	fifo_we_slave_ratio =  DIV_ROUND_CLOSEST(
-+		EMIF_INTELLI_PHY_DQS_GATE_OPENING_DELAY_PS * 256 , t_ck);
-+
-+	return fifo_we_slave_ratio | fifo_we_slave_ratio << 11 |
-+		fifo_we_slave_ratio << 22;
-+}
-+
-+static u32 get_ext_phy_ctrl_3_intelliphy_4d5(void)
-+{
-+	u32 fifo_we_slave_ratio;
-+
-+	fifo_we_slave_ratio =  DIV_ROUND_CLOSEST(
-+		EMIF_INTELLI_PHY_DQS_GATE_OPENING_DELAY_PS * 256 , t_ck);
-+
-+	return fifo_we_slave_ratio >> 10 | fifo_we_slave_ratio << 1 |
-+		fifo_we_slave_ratio << 12 | fifo_we_slave_ratio << 23;
-+}
-+
-+static u32 get_ext_phy_ctrl_4_intelliphy_4d5(void)
-+{
-+	u32 fifo_we_slave_ratio;
-+
-+	fifo_we_slave_ratio =  DIV_ROUND_CLOSEST(
-+		EMIF_INTELLI_PHY_DQS_GATE_OPENING_DELAY_PS * 256 , t_ck);
-+
-+	return fifo_we_slave_ratio >> 9 | fifo_we_slave_ratio << 2 |
-+		fifo_we_slave_ratio << 13;
-+}
-+
-+static u32 get_pwr_mgmt_ctrl(u32 freq, struct emif_data *emif, u32 ip_rev)
-+{
-+	u32 pwr_mgmt_ctrl	= 0, timeout;
-+	u32 lpmode		= EMIF_LP_MODE_SELF_REFRESH;
-+	u32 timeout_perf	= EMIF_LP_MODE_TIMEOUT_PERFORMANCE;
-+	u32 timeout_pwr		= EMIF_LP_MODE_TIMEOUT_POWER;
-+	u32 freq_threshold	= EMIF_LP_MODE_FREQ_THRESHOLD;
-+
-+	struct emif_custom_configs *cust_cfgs = emif->plat_data->custom_configs;
-+
-+	if (cust_cfgs && (cust_cfgs->mask & EMIF_CUSTOM_CONFIG_LPMODE)) {
-+		lpmode		= cust_cfgs->lpmode;
-+		timeout_perf	= cust_cfgs->lpmode_timeout_performance;
-+		timeout_pwr	= cust_cfgs->lpmode_timeout_power;
-+		freq_threshold  = cust_cfgs->lpmode_freq_threshold;
-+	}
-+
-+	/* Timeout based on DDR frequency */
-+	timeout = freq >= freq_threshold ? timeout_perf : timeout_pwr;
-+
-+	/* The value to be set in register is "log2(timeout) - 3" */
-+	if (timeout < 16) {
-+		timeout = 0;
-+	} else {
-+		timeout = __fls(timeout) - 3;
-+		if (timeout & (timeout - 1))
-+			timeout++;
-+	}
-+
-+	switch (lpmode) {
-+	case EMIF_LP_MODE_CLOCK_STOP:
-+		pwr_mgmt_ctrl = (timeout << CS_TIM_SHIFT) |
-+					SR_TIM_MASK | PD_TIM_MASK;
-+		break;
-+	case EMIF_LP_MODE_SELF_REFRESH:
-+		/* Workaround for errata i735 */
-+		if (timeout < 6)
-+			timeout = 6;
-+
-+		pwr_mgmt_ctrl = (timeout << SR_TIM_SHIFT) |
-+					CS_TIM_MASK | PD_TIM_MASK;
-+		break;
-+	case EMIF_LP_MODE_PWR_DN:
-+		pwr_mgmt_ctrl = (timeout << PD_TIM_SHIFT) |
-+					CS_TIM_MASK | SR_TIM_MASK;
-+		break;
-+	case EMIF_LP_MODE_DISABLE:
-+	default:
-+		pwr_mgmt_ctrl = CS_TIM_MASK |
-+					PD_TIM_MASK | SR_TIM_MASK;
-+	}
-+
-+	/* No CS_TIM in EMIF_4D5 */
-+	if (ip_rev == EMIF_4D5)
-+		pwr_mgmt_ctrl &= ~CS_TIM_MASK;
-+
-+	pwr_mgmt_ctrl |= lpmode << LP_MODE_SHIFT;
-+
-+	return pwr_mgmt_ctrl;
-+}
-+
-+/*
-+ * Program EMIF shadow registers that are not dependent on temperature
-+ * or voltage
-+ */
-+static void setup_registers(struct emif_data *emif, struct emif_regs *regs)
-+{
-+	void __iomem	*base = emif->base;
-+
-+	writel(regs->sdram_tim2_shdw, base + EMIF_SDRAM_TIMING_2_SHDW);
-+	writel(regs->phy_ctrl_1_shdw, base + EMIF_DDR_PHY_CTRL_1_SHDW);
-+
-+	/* Settings specific for EMIF4D5 */
-+	if (emif->plat_data->ip_rev != EMIF_4D5)
++	if (emif->plat_data->phy_type != EMIF_PHY_TYPE_INTELLIPHY)
 +		return;
-+	writel(regs->ext_phy_ctrl_2_shdw, base + EMIF_EXT_PHY_CTRL_2_SHDW);
-+	writel(regs->ext_phy_ctrl_3_shdw, base + EMIF_EXT_PHY_CTRL_3_SHDW);
-+	writel(regs->ext_phy_ctrl_4_shdw, base + EMIF_EXT_PHY_CTRL_4_SHDW);
-+}
-+
-+/*
-+ * When voltage ramps dll calibration and forced read idle should
-+ * happen more often
-+ */
-+static void setup_volt_sensitive_regs(struct emif_data *emif,
-+		struct emif_regs *regs, u32 volt_state)
-+{
-+	u32		calib_ctrl;
-+	void __iomem	*base = emif->base;
-+
-+	/*
-+	 * EMIF_READ_IDLE_CTRL in EMIF4D refers to the same register as
-+	 * EMIF_DLL_CALIB_CTRL in EMIF4D5 and dll_calib_ctrl_shadow_*
-+	 * is an alias of the respective read_idle_ctrl_shdw_* (members of
-+	 * a union). So, the below code takes care of both cases
-+	 */
-+	if (volt_state == DDR_VOLTAGE_RAMPING)
-+		calib_ctrl = regs->dll_calib_ctrl_shdw_volt_ramp;
-+	else
-+		calib_ctrl = regs->dll_calib_ctrl_shdw_normal;
-+
-+	writel(calib_ctrl, base + EMIF_DLL_CALIB_CTRL_SHDW);
-+}
-+
-+/*
-+ * setup_temperature_sensitive_regs() - set the timings for temperature
-+ * sensitive registers. This happens once at initialisation time based
-+ * on the temperature at boot time and subsequently based on the temperature
-+ * alert interrupt. Temperature alert can happen when the temperature
-+ * increases or drops. So this function can have the effect of either
-+ * derating the timings or going back to nominal values.
-+ */
-+static void setup_temperature_sensitive_regs(struct emif_data *emif,
-+		struct emif_regs *regs)
-+{
-+	u32		tim1, tim3, ref_ctrl, type;
-+	void __iomem	*base = emif->base;
-+	u32		temperature;
-+
-+	type = emif->plat_data->device_info->type;
-+
-+	tim1 = regs->sdram_tim1_shdw;
-+	tim3 = regs->sdram_tim3_shdw;
-+	ref_ctrl = regs->ref_ctrl_shdw;
-+
-+	/* No de-rating for non-lpddr2 devices */
-+	if (type != DDR_TYPE_LPDDR2_S2 && type != DDR_TYPE_LPDDR2_S4)
-+		goto out;
-+
-+	temperature = emif->temperature_level;
-+	if (temperature == SDRAM_TEMP_HIGH_DERATE_REFRESH) {
-+		ref_ctrl = regs->ref_ctrl_shdw_derated;
-+	} else if (temperature == SDRAM_TEMP_HIGH_DERATE_REFRESH_AND_TIMINGS) {
-+		tim1 = regs->sdram_tim1_shdw_derated;
-+		tim3 = regs->sdram_tim3_shdw_derated;
-+		ref_ctrl = regs->ref_ctrl_shdw_derated;
-+	}
-+
-+out:
-+	writel(tim1, base + EMIF_SDRAM_TIMING_1_SHDW);
-+	writel(tim3, base + EMIF_SDRAM_TIMING_3_SHDW);
-+	writel(ref_ctrl, base + EMIF_SDRAM_REFRESH_CTRL_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_1_VAL, base + EMIF_EXT_PHY_CTRL_1_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_5_VAL, base + EMIF_EXT_PHY_CTRL_5_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_6_VAL, base + EMIF_EXT_PHY_CTRL_6_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_7_VAL, base + EMIF_EXT_PHY_CTRL_7_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_8_VAL, base + EMIF_EXT_PHY_CTRL_8_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_9_VAL, base + EMIF_EXT_PHY_CTRL_9_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_10_VAL, base + EMIF_EXT_PHY_CTRL_10_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_11_VAL, base + EMIF_EXT_PHY_CTRL_11_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_12_VAL, base + EMIF_EXT_PHY_CTRL_12_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_13_VAL, base + EMIF_EXT_PHY_CTRL_13_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_14_VAL, base + EMIF_EXT_PHY_CTRL_14_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_15_VAL, base + EMIF_EXT_PHY_CTRL_15_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_16_VAL, base + EMIF_EXT_PHY_CTRL_16_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_17_VAL, base + EMIF_EXT_PHY_CTRL_17_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_18_VAL, base + EMIF_EXT_PHY_CTRL_18_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_19_VAL, base + EMIF_EXT_PHY_CTRL_19_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_20_VAL, base + EMIF_EXT_PHY_CTRL_20_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_21_VAL, base + EMIF_EXT_PHY_CTRL_21_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_22_VAL, base + EMIF_EXT_PHY_CTRL_22_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_23_VAL, base + EMIF_EXT_PHY_CTRL_23_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_24_VAL, base + EMIF_EXT_PHY_CTRL_24_SHDW);
 +}
 +
  static void get_default_timings(struct emif_data *emif)
  {
  	struct emif_platform_data *pd = emif->plat_data;
-@@ -234,10 +810,8 @@ static int __init emif_probe(struct platform_device *pdev)
+@@ -1027,6 +1173,7 @@ static int __init emif_probe(struct platform_device *pdev)
  		goto error;
  	}
  
--	if (!emif1)
--		emif1 = emif;
--
- 	list_add(&emif->node, &device_list);
-+	emif->addressing = get_addressing_table(emif->plat_data->device_info);
++	emif_onetime_settings(emif);
+ 	disable_and_clear_all_interrupts(emif);
+ 	setup_interrupts(emif, irq);
  
- 	/* Save pointers to each other in emif and device structures */
- 	emif->dev = &pdev->dev;
-@@ -257,6 +831,18 @@ static int __init emif_probe(struct platform_device *pdev)
- 		goto error;
- 	}
- 
-+	/* One-time actions taken on probing the first device */
-+	if (!emif1) {
-+		emif1 = emif;
-+		spin_lock_init(&emif_lock);
-+
-+		/*
-+		 * TODO: register notifiers for frequency and voltage
-+		 * change here once the respective frameworks are
-+		 * available
-+		 */
-+	}
-+
- 	dev_info(&pdev->dev, "%s: device configured with addr = %p\n",
- 		__func__, emif->base);
- 
-@@ -265,6 +851,308 @@ error:
- 	return -ENODEV;
- }
- 
-+static int get_emif_reg_values(struct emif_data *emif, u32 freq,
-+		struct emif_regs *regs)
-+{
-+	u32				cs1_used, ip_rev, phy_type;
-+	u32				cl, type;
-+	const struct lpddr2_timings	*timings;
-+	const struct lpddr2_min_tck	*min_tck;
-+	const struct ddr_device_info	*device_info;
-+	const struct lpddr2_addressing	*addressing;
-+	struct emif_data		*emif_for_calc;
-+	struct device			*dev;
-+	const struct emif_custom_configs *custom_configs;
-+
-+	dev = emif->dev;
-+	/*
-+	 * If the devices on this EMIF instance is duplicate of EMIF1,
-+	 * use EMIF1 details for the calculation
-+	 */
-+	emif_for_calc	= emif->duplicate ? emif1 : emif;
-+	timings		= get_timings_table(emif_for_calc, freq);
-+	addressing	= emif_for_calc->addressing;
-+	if (!timings || !addressing) {
-+		dev_err(dev, "%s: not enough data available for %dHz",
-+			__func__, freq);
-+		return -1;
-+	}
-+
-+	device_info	= emif_for_calc->plat_data->device_info;
-+	type		= device_info->type;
-+	cs1_used	= device_info->cs1_used;
-+	ip_rev		= emif_for_calc->plat_data->ip_rev;
-+	phy_type	= emif_for_calc->plat_data->phy_type;
-+
-+	min_tck		= emif_for_calc->plat_data->min_tck;
-+	custom_configs	= emif_for_calc->plat_data->custom_configs;
-+
-+	set_ddr_clk_period(freq);
-+
-+	regs->ref_ctrl_shdw = get_sdram_ref_ctrl_shdw(freq, addressing);
-+	regs->sdram_tim1_shdw = get_sdram_tim_1_shdw(timings, min_tck,
-+			addressing);
-+	regs->sdram_tim2_shdw = get_sdram_tim_2_shdw(timings, min_tck,
-+			addressing, type);
-+	regs->sdram_tim3_shdw = get_sdram_tim_3_shdw(timings, min_tck,
-+		addressing, type, ip_rev, EMIF_NORMAL_TIMINGS);
-+
-+	cl = get_cl(emif);
-+
-+	if (phy_type == EMIF_PHY_TYPE_ATTILAPHY && ip_rev == EMIF_4D) {
-+		regs->phy_ctrl_1_shdw = get_ddr_phy_ctrl_1_attilaphy_4d(
-+			timings, freq, cl);
-+	} else if (phy_type == EMIF_PHY_TYPE_INTELLIPHY && ip_rev == EMIF_4D5) {
-+		regs->phy_ctrl_1_shdw = get_phy_ctrl_1_intelliphy_4d5(freq, cl);
-+		regs->ext_phy_ctrl_2_shdw = get_ext_phy_ctrl_2_intelliphy_4d5();
-+		regs->ext_phy_ctrl_3_shdw = get_ext_phy_ctrl_3_intelliphy_4d5();
-+		regs->ext_phy_ctrl_4_shdw = get_ext_phy_ctrl_4_intelliphy_4d5();
-+	} else {
-+		return -1;
-+	}
-+
-+	/* Only timeout values in pwr_mgmt_ctrl_shdw register */
-+	regs->pwr_mgmt_ctrl_shdw =
-+		get_pwr_mgmt_ctrl(freq, emif_for_calc, ip_rev) &
-+		(CS_TIM_MASK | SR_TIM_MASK | PD_TIM_MASK);
-+
-+	if (ip_rev & EMIF_4D) {
-+		regs->read_idle_ctrl_shdw_normal =
-+			get_read_idle_ctrl_shdw(DDR_VOLTAGE_STABLE);
-+
-+		regs->read_idle_ctrl_shdw_volt_ramp =
-+			get_read_idle_ctrl_shdw(DDR_VOLTAGE_RAMPING);
-+	} else if (ip_rev & EMIF_4D5) {
-+		regs->dll_calib_ctrl_shdw_normal =
-+			get_dll_calib_ctrl_shdw(DDR_VOLTAGE_STABLE);
-+
-+		regs->dll_calib_ctrl_shdw_volt_ramp =
-+			get_dll_calib_ctrl_shdw(DDR_VOLTAGE_RAMPING);
-+	}
-+
-+	if (type == DDR_TYPE_LPDDR2_S2 || type == DDR_TYPE_LPDDR2_S4) {
-+		regs->ref_ctrl_shdw_derated = get_sdram_ref_ctrl_shdw(freq / 4,
-+			addressing);
-+
-+		regs->sdram_tim1_shdw_derated =
-+			get_sdram_tim_1_shdw_derated(timings, min_tck,
-+				addressing);
-+
-+		regs->sdram_tim3_shdw_derated = get_sdram_tim_3_shdw(timings,
-+			min_tck, addressing, type, ip_rev,
-+			EMIF_DERATED_TIMINGS);
-+	}
-+
-+	regs->freq = freq;
-+
-+	return 0;
-+}
-+
-+/*
-+ * get_regs() - gets the cached emif_regs structure for a given EMIF instance
-+ * given frequency(freq):
-+ *
-+ * As an optimisation, every EMIF instance other than EMIF1 shares the
-+ * register cache with EMIF1 if the devices connected on this instance
-+ * are same as that on EMIF1(indicated by the duplicate flag)
-+ *
-+ * If we do not have an entry corresponding to the frequency given, we
-+ * allocate a new entry and calculate the values
-+ *
-+ * Upon finding the right reg dump, save it in curr_regs. It can be
-+ * directly used for thermal de-rating and voltage ramping changes.
-+ */
-+static struct emif_regs *get_regs(struct emif_data *emif, u32 freq)
-+{
-+	int			i;
-+	struct emif_regs	**regs_cache;
-+	struct emif_regs	*regs = NULL;
-+	struct device		*dev;
-+
-+	dev = emif->dev;
-+	if (emif->curr_regs && emif->curr_regs->freq == freq) {
-+		dev_dbg(dev, "%s: using curr_regs - %u Hz", __func__, freq);
-+		return emif->curr_regs;
-+	}
-+
-+	if (emif->duplicate)
-+		regs_cache = emif1->regs_cache;
-+	else
-+		regs_cache = emif->regs_cache;
-+
-+	for (i = 0; i < EMIF_MAX_NUM_FREQUENCIES && regs_cache[i]; i++) {
-+		if (regs_cache[i]->freq == freq) {
-+			regs = regs_cache[i];
-+			dev_dbg(dev,
-+				"%s: reg dump found in reg cache for %u Hz\n",
-+				__func__, freq);
-+			break;
-+		}
-+	}
-+
-+	/*
-+	 * If we don't have an entry for this frequency in the cache create one
-+	 * and calculate the values
-+	 */
-+	if (!regs) {
-+		regs = devm_kzalloc(emif->dev, sizeof(*regs), GFP_ATOMIC);
-+		if (!regs)
-+			return NULL;
-+
-+		if (get_emif_reg_values(emif, freq, regs)) {
-+			devm_kfree(emif->dev, regs);
-+			return NULL;
-+		}
-+
-+		/*
-+		 * Now look for an un-used entry in the cache and save the
-+		 * newly created struct. If there are no free entries
-+		 * over-write the last entry
-+		 */
-+		for (i = 0; i < EMIF_MAX_NUM_FREQUENCIES && regs_cache[i]; i++)
-+			;
-+
-+		if (i >= EMIF_MAX_NUM_FREQUENCIES) {
-+			dev_warn(dev, "%s: regs_cache full - reusing a slot!!\n",
-+				__func__);
-+			i = EMIF_MAX_NUM_FREQUENCIES - 1;
-+			devm_kfree(emif->dev, regs_cache[i]);
-+		}
-+		regs_cache[i] = regs;
-+	}
-+
-+	return regs;
-+}
-+
-+static void do_volt_notify_handling(struct emif_data *emif, u32 volt_state)
-+{
-+	dev_dbg(emif->dev, "%s: voltage notification : %d", __func__,
-+		volt_state);
-+
-+	if (!emif->curr_regs) {
-+		dev_err(emif->dev,
-+			"%s: volt-notify before registers are ready: %d\n",
-+			__func__, volt_state);
-+		return;
-+	}
-+
-+	setup_volt_sensitive_regs(emif, emif->curr_regs, volt_state);
-+}
-+
-+/*
-+ * TODO: voltage notify handling should be hooked up to
-+ * regulator framework as soon as the necessary support
-+ * is available in mainline kernel. This function is un-used
-+ * right now.
-+ */
-+static void __attribute__((unused)) volt_notify_handling(u32 volt_state)
-+{
-+	struct emif_data *emif;
-+
-+	spin_lock_irqsave(&emif_lock, irq_state);
-+
-+	list_for_each_entry(emif, &device_list, node)
-+		do_volt_notify_handling(emif, volt_state);
-+	do_freq_update();
-+
-+	spin_unlock_irqrestore(&emif_lock, irq_state);
-+}
-+
-+static void do_freq_pre_notify_handling(struct emif_data *emif, u32 new_freq)
-+{
-+	struct emif_regs *regs;
-+
-+	regs = get_regs(emif, new_freq);
-+	if (!regs)
-+		return;
-+
-+	emif->curr_regs = regs;
-+
-+	/*
-+	 * Update the shadow registers:
-+	 * Temperature and voltage-ramp sensitive settings are also configured
-+	 * in terms of DDR cycles. So, we need to update them too when there
-+	 * is a freq change
-+	 */
-+	dev_dbg(emif->dev, "%s: setting up shadow registers for %uHz",
-+		__func__, new_freq);
-+	setup_registers(emif, regs);
-+	setup_temperature_sensitive_regs(emif, regs);
-+	setup_volt_sensitive_regs(emif, regs, DDR_VOLTAGE_STABLE);
-+
-+	/*
-+	 * Part of workaround for errata i728. See do_freq_update()
-+	 * for more details
-+	 */
-+	if (emif->lpmode == EMIF_LP_MODE_SELF_REFRESH)
-+		set_lpmode(emif, EMIF_LP_MODE_DISABLE);
-+}
-+
-+/*
-+ * TODO: frequency notify handling should be hooked up to
-+ * clock framework as soon as the necessary support is
-+ * available in mainline kernel. This function is un-used
-+ * right now.
-+ */
-+static void __attribute__((unused)) freq_pre_notify_handling(u32 new_freq)
-+{
-+	struct emif_data *emif;
-+
-+	/*
-+	 * NOTE: we are taking the spin-lock here and releases it
-+	 * only in post-notifier. This doesn't look good and
-+	 * Sparse complains about it, but this seems to be
-+	 * un-avoidable. We need to lock a sequence of events
-+	 * that is split between EMIF and clock framework.
-+	 *
-+	 * 1. EMIF driver updates EMIF timings in shadow registers in the
-+	 *    frequency pre-notify callback from clock framework
-+	 * 2. clock framework sets up the registers for the new frequency
-+	 * 3. clock framework initiates a hw-sequence that updates
-+	 *    the frequency EMIF timings synchronously.
-+	 *
-+	 * All these 3 steps should be performed as an atomic operation
-+	 * vis-a-vis similar sequence in the EMIF interrupt handler
-+	 * for temperature events. Otherwise, there could be race
-+	 * conditions that could result in incorrect EMIF timings for
-+	 * a given frequency
-+	 */
-+	spin_lock_irqsave(&emif_lock, irq_state);
-+
-+	list_for_each_entry(emif, &device_list, node)
-+		do_freq_pre_notify_handling(emif, new_freq);
-+}
-+
-+static void do_freq_post_notify_handling(struct emif_data *emif)
-+{
-+	/*
-+	 * Part of workaround for errata i728. See do_freq_update()
-+	 * for more details
-+	 */
-+	if (emif->lpmode == EMIF_LP_MODE_SELF_REFRESH)
-+		set_lpmode(emif, EMIF_LP_MODE_SELF_REFRESH);
-+}
-+
-+/*
-+ * TODO: frequency notify handling should be hooked up to
-+ * clock framework as soon as the necessary support is
-+ * available in mainline kernel. This function is un-used
-+ * right now.
-+ */
-+static void __attribute__((unused)) freq_post_notify_handling(void)
-+{
-+	struct emif_data *emif;
-+
-+	list_for_each_entry(emif, &device_list, node)
-+		do_freq_post_notify_handling(emif);
-+
-+	/*
-+	 * Lock is done in pre-notify handler. See freq_pre_notify_handling()
-+	 * for more details
-+	 */
-+	spin_unlock_irqrestore(&emif_lock, irq_state);
-+}
-+
- static struct platform_driver emif_driver = {
- 	.driver = {
- 		.name = "emif",
-diff --git a/drivers/misc/emif.h b/drivers/misc/emif.h
-index 692b2a8..bfe08ba 100644
---- a/drivers/misc/emif.h
-+++ b/drivers/misc/emif.h
-@@ -19,6 +19,103 @@
-  */
- #define EMIF_MAX_NUM_FREQUENCIES			6
- 
-+/* State of the core voltage */
-+#define DDR_VOLTAGE_STABLE				0
-+#define DDR_VOLTAGE_RAMPING				1
-+
-+/* Defines for timing De-rating */
-+#define EMIF_NORMAL_TIMINGS				0
-+#define EMIF_DERATED_TIMINGS				1
-+
-+/* Length of the forced read idle period in terms of cycles */
-+#define EMIF_READ_IDLE_LEN_VAL				5
-+
-+/*
-+ * forced read idle interval to be used when voltage
-+ * is changed as part of DVFS/DPS - 1ms
-+ */
-+#define READ_IDLE_INTERVAL_DVFS				(1*1000000)
-+
-+/*
-+ * Forced read idle interval to be used when voltage is stable
-+ * 50us - or maximum value will do
-+ */
-+#define READ_IDLE_INTERVAL_NORMAL			(50*1000000)
-+
-+/* DLL calibration interval when voltage is NOT stable - 1us */
-+#define DLL_CALIB_INTERVAL_DVFS				(1*1000000)
-+
-+#define DLL_CALIB_ACK_WAIT_VAL				5
-+
-+/* Interval between ZQCS commands - hw team recommended value */
-+#define EMIF_ZQCS_INTERVAL_US				(50*1000)
-+/* Enable ZQ Calibration on exiting Self-refresh */
-+#define ZQ_SFEXITEN_ENABLE				1
-+/*
-+ * ZQ Calibration simultaneously on both chip-selects:
-+ * Needs one calibration resistor per CS
-+ */
-+#define	ZQ_DUALCALEN_DISABLE				0
-+#define	ZQ_DUALCALEN_ENABLE				1
-+
-+#define T_ZQCS_DEFAULT_NS				90
-+#define T_ZQCL_DEFAULT_NS				360
-+#define T_ZQINIT_DEFAULT_NS				1000
-+
-+/* DPD_EN */
-+#define DPD_DISABLE					0
-+#define DPD_ENABLE					1
-+
-+/*
-+ * Default values for the low-power entry to be used if not provided by user.
-+ * OMAP4/5 has a hw bug(i735) due to which this value can not be less than 512
-+ * Timeout values are in DDR clock 'cycles' and frequency threshold in Hz
-+ */
-+#define EMIF_LP_MODE_TIMEOUT_PERFORMANCE		2048
-+#define EMIF_LP_MODE_TIMEOUT_POWER			512
-+#define EMIF_LP_MODE_FREQ_THRESHOLD			400000000
-+
-+/* DDR_PHY_CTRL_1 values for EMIF4D - ATTILA PHY combination */
-+#define EMIF_DDR_PHY_CTRL_1_BASE_VAL_ATTILAPHY		0x049FF000
-+#define EMIF_DLL_SLAVE_DLY_CTRL_400_MHZ_ATTILAPHY	0x41
-+#define EMIF_DLL_SLAVE_DLY_CTRL_200_MHZ_ATTILAPHY	0x80
-+#define EMIF_DLL_SLAVE_DLY_CTRL_100_MHZ_AND_LESS_ATTILAPHY 0xFF
-+
-+/* DDR_PHY_CTRL_1 values for EMIF4D5 INTELLIPHY combination */
-+#define EMIF_DDR_PHY_CTRL_1_BASE_VAL_INTELLIPHY		0x0E084200
-+#define EMIF_PHY_TOTAL_READ_LATENCY_INTELLIPHY_PS	10000
-+
-+/* TEMP_ALERT_CONFIG - corresponding to temp gradient 5 C/s */
-+#define TEMP_ALERT_POLL_INTERVAL_DEFAULT_MS		360
-+
-+#define EMIF_T_CSTA					3
-+#define EMIF_T_PDLL_UL					128
-+
-+/* External PHY control registers magic values */
-+#define EMIF_EXT_PHY_CTRL_1_VAL				0x04020080
-+#define EMIF_EXT_PHY_CTRL_5_VAL				0x04010040
-+#define EMIF_EXT_PHY_CTRL_6_VAL				0x01004010
-+#define EMIF_EXT_PHY_CTRL_7_VAL				0x00001004
-+#define EMIF_EXT_PHY_CTRL_8_VAL				0x04010040
-+#define EMIF_EXT_PHY_CTRL_9_VAL				0x01004010
-+#define EMIF_EXT_PHY_CTRL_10_VAL			0x00001004
-+#define EMIF_EXT_PHY_CTRL_11_VAL			0x00000000
-+#define EMIF_EXT_PHY_CTRL_12_VAL			0x00000000
-+#define EMIF_EXT_PHY_CTRL_13_VAL			0x00000000
-+#define EMIF_EXT_PHY_CTRL_14_VAL			0x80080080
-+#define EMIF_EXT_PHY_CTRL_15_VAL			0x00800800
-+#define EMIF_EXT_PHY_CTRL_16_VAL			0x08102040
-+#define EMIF_EXT_PHY_CTRL_17_VAL			0x00000001
-+#define EMIF_EXT_PHY_CTRL_18_VAL			0x540A8150
-+#define EMIF_EXT_PHY_CTRL_19_VAL			0xA81502A0
-+#define EMIF_EXT_PHY_CTRL_20_VAL			0x002A0540
-+#define EMIF_EXT_PHY_CTRL_21_VAL			0x00000000
-+#define EMIF_EXT_PHY_CTRL_22_VAL			0x00000000
-+#define EMIF_EXT_PHY_CTRL_23_VAL			0x00000000
-+#define EMIF_EXT_PHY_CTRL_24_VAL			0x00000077
-+
-+#define EMIF_INTELLI_PHY_DQS_GATE_OPENING_DELAY_PS	1200
-+
- /* Registers offset */
- #define EMIF_MODULE_ID_AND_REVISION			0x0000
- #define EMIF_STATUS					0x0004
-@@ -458,4 +555,35 @@
- #define READ_LATENCY_SHDW_SHIFT				0
- #define READ_LATENCY_SHDW_MASK				(0x1f << 0)
- 
--#endif
-+#ifndef __ASSEMBLY__
-+/*
-+ * Structure containing shadow of important registers in EMIF
-+ * The calculation function fills in this structure to be later used for
-+ * initialisation and DVFS
-+ */
-+struct emif_regs {
-+	u32 freq;
-+	u32 ref_ctrl_shdw;
-+	u32 ref_ctrl_shdw_derated;
-+	u32 sdram_tim1_shdw;
-+	u32 sdram_tim1_shdw_derated;
-+	u32 sdram_tim2_shdw;
-+	u32 sdram_tim3_shdw;
-+	u32 sdram_tim3_shdw_derated;
-+	u32 pwr_mgmt_ctrl_shdw;
-+	union {
-+		u32 read_idle_ctrl_shdw_normal;
-+		u32 dll_calib_ctrl_shdw_normal;
-+	};
-+	union {
-+		u32 read_idle_ctrl_shdw_volt_ramp;
-+		u32 dll_calib_ctrl_shdw_volt_ramp;
-+	};
-+
-+	u32 phy_ctrl_1_shdw;
-+	u32 ext_phy_ctrl_2_shdw;
-+	u32 ext_phy_ctrl_3_shdw;
-+	u32 ext_phy_ctrl_4_shdw;
-+};
-+#endif /* __ASSEMBLY__ */
-+#endif /* __EMIF_H */
 -- 
 1.7.1
 
