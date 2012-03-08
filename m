@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab2CHRx1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 12:53:27 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:53274 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab2CHRxY (ORCPT
+	id S1753734Ab2CHRzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 12:55:14 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:38289 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751769Ab2CHRzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 12:53:24 -0500
-Message-ID: <1331229183.14217.10.camel@aeonflux>
-Subject: Re: Resend: [PATCH] Bluetooth: Fix Endian Bug.
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Gustavo Padovan <padovan@profusion.mobi>
-Cc: santosh nayak <santoshprasadnayak@gmail.com>, davem@davemloft.net,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Thu, 08 Mar 2012 09:53:03 -0800
-In-Reply-To: <20120308053320.GD3998@joana>
-References: <1330622196-12967-1-git-send-email-santoshprasadnayak@gmail.com>
-	 <20120308053320.GD3998@joana>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 8 Mar 2012 12:55:12 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+CzlNj9SKCesIT1yNnRQhe+uZZ99cJhHgF1QiWxt
+	K//Ieaga+f/JFd
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH 0/2] viafb modetable conversion
+Date: Thu,  8 Mar 2012 18:15:27 +0000
+Message-Id: <cover.1331229163.git.FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.7.9
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gustavo,
+Hi all,
 
-> > Fix network to host endian conversion for L2CAP chan id.
-> > 
-> > Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
-> > ---
-> >  net/bluetooth/l2cap_sock.c |    5 +++--
-> >  1 files changed, 3 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
-> > index 401d942..86d5067 100644
-> > --- a/net/bluetooth/l2cap_sock.c
-> > +++ b/net/bluetooth/l2cap_sock.c
-> > @@ -82,7 +82,7 @@ static int l2cap_sock_bind(struct socket *sock, struct sockaddr *addr, int alen)
-> >  	}
-> >  
-> >  	if (la.l2_cid)
-> > -		err = l2cap_add_scid(chan, la.l2_cid);
-> > +		err = l2cap_add_scid(chan, __le16_to_cpu(la.l2_cid));
-> 
-> This is kind weird, la.l2_cid comes from the user, so it is already in host
-> endian. No need for convertions here.
+finally the modetable conversion is here. The first patch does the 
+conversion to get rid of some strange things and lot of defines.
+The conversion was done by a program and causes a lot of warnings by 
+generating lines longer than 80 characters which I do not consider 
+worth fixing. A side effect of this conversion seems to be that CRTs 
+are happier with the resulting modes/clocks as the conversion program 
+used floating point and therefore the resulting pixclocks are closer to 
+what they should be.
+The second patch is just sort of performance optimization by avoiding 
+two unnecessary modetable walks.
 
-CID and PSM are provided in little endian by user space.
 
-Regards
+Best regards,
 
-Marcel
+Florian Tobias Schandinat
 
+
+Florian Tobias Schandinat (2):
+  viafb: modetable conversion
+  viafb: avoid refresh and mode lookup in set_par
+
+ drivers/video/via/dvi.c      |    2 +-
+ drivers/video/via/hw.c       |   41 +--
+ drivers/video/via/hw.h       |    4 +-
+ drivers/video/via/lcd.c      |   53 +---
+ drivers/video/via/share.h    |  331 --------------------
+ drivers/video/via/viafbdev.c |   32 +-
+ drivers/video/via/viamode.c  |  713 ++++++------------------------------------
+ drivers/video/via/viamode.h  |   11 +-
+ 8 files changed, 134 insertions(+), 1053 deletions(-)
+
+-- 
+1.7.9
 
