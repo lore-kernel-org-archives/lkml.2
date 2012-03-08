@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759216Ab2CGXx2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 18:53:28 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:53286 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758862Ab2CGXx0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 18:53:26 -0500
-Date: Wed, 7 Mar 2012 15:53:23 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
+	id S1759260Ab2CHACo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 19:02:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50305 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755410Ab2CHACl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 19:02:41 -0500
+Date: Wed, 7 Mar 2012 19:02:33 -0500
+From: Dave Jones <davej@redhat.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
 Subject: Re: decode GFP flags in oom killer output.
-In-Reply-To: <20120307233939.GB5574@redhat.com>
-Message-ID: <alpine.DEB.2.00.1203071548200.29642@chino.kir.corp.google.com>
+Message-ID: <20120308000233.GA10695@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Michal Nazarewicz <mina86@mina86.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
 References: <20120307233939.GB5574@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+ <op.watq2ixr3l0zgt@mpn-glaptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <op.watq2ixr3l0zgt@mpn-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Mar 2012, Dave Jones wrote:
+On Thu, Mar 08, 2012 at 12:48:08AM +0100, Michal Nazarewicz wrote:
+ 
+ > > +static void decode_gfp_mask(gfp_t gfp_mask, char *out_string)
+ > > +{
+ > > +	unsigned int i;
+ > > +
+ > > +	for (i = 0; i < 32; i++) {
+ > > +		if (gfp_mask & (1 << i)) {
+ > > +			if (gfp_flag_texts[i])
+ > > +				out_string += sprintf(out_string, "%s ", gfp_flag_texts[i]);
+ > > +			else
+ > > +				out_string += sprintf(out_string, "reserved! ");
+ > > +		}
+ > > +	}
+ > > +	out_string = "\0";
+ > 
+ > Uh?  Did you mean “*out_string = 0;” which is redundant anyway?
 
-> Decoding these flags by hand in oom reports is tedious,
-> and error-prone.
-> 
+Yeah, that was the intent.
+ 
+ > Also, this leaves a trailing space at the end of the string.
 
-Something like this is already done in include/trace/events/gfpflags.h so 
-there should be a generic version of this or something you can already 
-use.
+The zero was supposed to wipe it out, but I just realized it's advanced past it.
+ 
+ > >  static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+ > >  			struct mem_cgroup *memcg, const nodemask_t *nodemask)
+ > >  {
+ > > +	char gfp_string[80];
+ > 
+ > For ~0, the string will be 256 characters followed by a NUL byte byte at the end.
+ > This combination may make no sense, but the point is that you need to take length
+ > of the buffer into account, probably by using snprintf() and a counter.
 
-The problem here is that you have to allocate an additional 80-bytes for 
-the string and the oom killer is notorious for being called deep in the 
-stack and you can't statically allocate a string buffer without adding 
-additional syncronization.
+alternatively, we could just use a bigger buffer here.
+
+thanks,
+
+	Dave
