@@ -1,209 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab2CHWKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 17:10:18 -0500
-Received: from mail.work-microwave.de ([62.245.205.51]:46733 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758687Ab2CHWKQ (ORCPT
+	id S1758793Ab2CHWNK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 17:13:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:53393 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758727Ab2CHWNG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 17:10:16 -0500
-From: Roland Stigge <stigge@antcom.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
-        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v4] USB: Support for LPC32xx SoC
-Date: Thu,  8 Mar 2012 23:09:34 +0100
-Message-Id: <1331244574-32570-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Thu, 8 Mar 2012 17:13:06 -0500
+Date: Fri, 9 Mar 2012 02:12:52 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
+Message-ID: <20120308221252.GQ21812@moon>
+References: <20120308165112.GF21812@moon>
+ <CAGXu5j+4RRGjzVxLSyz0CZCNMj4dPOxJp3pYGSN_sXFsiMhUaQ@mail.gmail.com>
+ <20120308194008.GJ21812@moon>
+ <CALCETrXpQOpAN64gfG-=iyXXy4Tid=9FyKVrT2grQxRgNPC-fg@mail.gmail.com>
+ <20120308200729.GL21812@moon>
+ <CALCETrXc9Etit+DUuxKtUwRKmqbwbE5vhDNYWgs0ijEesY8cUA@mail.gmail.com>
+ <20120308202136.GM21812@moon>
+ <CALCETrVe6VQgdEkZBv24ZaS-N8bFLr9umhgmBsHB6CMH699ykA@mail.gmail.com>
+ <20120308215731.GP21812@moon>
+ <CAGXu5j+fDwk_17bLtx9KdeoCs+hxgksMvxzutJjgB76tP+NV4g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5j+fDwk_17bLtx9KdeoCs+hxgksMvxzutJjgB76tP+NV4g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds OHCI support to the LPC32xx ARM platform
+On Thu, Mar 08, 2012 at 02:03:13PM -0800, Kees Cook wrote:
+> 
+> How about "file_is_exec" instead, since it doesn't (and likely
+> shouldn't) include the inode_permission(..., EXEC)? I'd like other
+> people's thoughts on this since maybe it's not needed and I instead
+> have accidentally derailed this patch with useless bike shedding.
+> 
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Yup. Anyway, I'm leaving the former mm_struct::exe_file patch with
+EXEC test opencoded so we can do everything on top then.
 
----
- Applies to v3.3-rc6
-
- Since v3, only the machine_is_*() dependencies have been pulled into
- the machine dependent functions.
-
- Thanks to Greg Kroah-Hartman for reviewing!
-
- drivers/usb/host/ohci-hcd.c     |    5 +
- drivers/usb/host/ohci-pnx4008.c |  119 +++++++++++++++++++++++++++++-----------
- 2 files changed, 94 insertions(+), 30 deletions(-)
-
---- linux-2.6.orig/drivers/usb/host/ohci-hcd.c
-+++ linux-2.6/drivers/usb/host/ohci-hcd.c
-@@ -1055,6 +1055,11 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
- #endif
- 
-+#ifdef CONFIG_ARCH_LPC32XX
-+#include "ohci-pnx4008.c"
-+#define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
-+#endif
-+
- #ifdef CONFIG_ARCH_DAVINCI_DA8XX
- #include "ohci-da8xx.c"
- #define PLATFORM_DRIVER		ohci_hcd_da8xx_driver
---- linux-2.6.orig/drivers/usb/host/ohci-pnx4008.c
-+++ linux-2.6/drivers/usb/host/ohci-pnx4008.c
-@@ -22,6 +22,7 @@
- #include <linux/i2c.h>
- 
- #include <mach/hardware.h>
-+#include <asm/mach-types.h>
- #include <asm/io.h>
- 
- #include <mach/platform.h>
-@@ -143,7 +144,17 @@ static void i2c_write(u8 buf, u8 subaddr
- 	i2c_master_send(isp1301_i2c_client, &tmpbuf[0], 2);
- }
- 
--static void isp1301_configure(void)
-+static u16 i2c_read16(u8 subaddr)
-+{
-+	u16 data;
-+
-+	i2c_master_send(isp1301_i2c_client, &subaddr, 1);
-+	i2c_master_recv(isp1301_i2c_client, (u8 *) &data, 2);
-+
-+	return data;
-+}
-+
-+static void isp1301_configure_pnx4008(void)
- {
- 	/* PNX4008 only supports DAT_SE0 USB mode */
- 	/* PNX4008 R2A requires setting the MAX603 to output 3.6V */
-@@ -166,7 +177,51 @@ static void isp1301_configure(void)
- 		  ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
- 	i2c_write(0xFF,
- 		  ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
-+}
- 
-+static void isp1301_configure_lpc32xx(void)
-+{
-+	/* LPC32XX only supports DAT_SE0 USB mode */
-+	/* This sequence is important */
-+
-+	/* Disable transparent UART mode first */
-+	i2c_write(MC1_UART_EN, (ISP1301_I2C_MODE_CONTROL_1 |
-+		ISP1301_I2C_REG_CLEAR_ADDR));
-+
-+	i2c_write(~MC1_SPEED_REG, (ISP1301_I2C_MODE_CONTROL_1 |
-+		ISP1301_I2C_REG_CLEAR_ADDR));
-+	i2c_write(MC1_SPEED_REG, ISP1301_I2C_MODE_CONTROL_1);
-+	i2c_write(~0,
-+		(ISP1301_I2C_MODE_CONTROL_2 | ISP1301_I2C_REG_CLEAR_ADDR));
-+	i2c_write((MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL),
-+		ISP1301_I2C_MODE_CONTROL_2);
-+	i2c_write(~0, (ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR));
-+	i2c_write(MC1_DAT_SE0, ISP1301_I2C_MODE_CONTROL_1);
-+	i2c_write((OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN),
-+		ISP1301_I2C_OTG_CONTROL_1);
-+	i2c_write((OTG1_DM_PULLUP | OTG1_DP_PULLUP),
-+		(ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR));
-+	i2c_write(~0,
-+		 ISP1301_I2C_INTERRUPT_LATCH | ISP1301_I2C_REG_CLEAR_ADDR);
-+	i2c_write(~0,
-+		ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
-+	i2c_write(~0,
-+		ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
-+
-+	/* Enable usb_need_clk clock after transceiver is initialized */
-+	__raw_writel((__raw_readl(USB_CTRL) | (1 << 22)), USB_CTRL);
-+
-+	printk(KERN_INFO "ISP1301 Vendor ID  : 0x%04x\n", i2c_read16(0x00));
-+	printk(KERN_INFO "ISP1301 Product ID : 0x%04x\n", i2c_read16(0x02));
-+	printk(KERN_INFO "ISP1301 Version ID : 0x%04x\n", i2c_read16(0x14));
-+}
-+
-+static void isp1301_configure(void)
-+{
-+	if (machine_is_pnx4008())
-+		isp1301_configure_pnx4008();
-+	else
-+		isp1301_configure_lpc32xx();
- }
- 
- static inline void isp1301_vbus_on(void)
-@@ -257,39 +312,43 @@ static const struct hc_driver ohci_pnx40
- 
- static void pnx4008_set_usb_bits(void)
- {
--	start_int_set_falling_edge(SE_USB_OTG_ATX_INT_N);
--	start_int_ack(SE_USB_OTG_ATX_INT_N);
--	start_int_umask(SE_USB_OTG_ATX_INT_N);
--
--	start_int_set_rising_edge(SE_USB_OTG_TIMER_INT);
--	start_int_ack(SE_USB_OTG_TIMER_INT);
--	start_int_umask(SE_USB_OTG_TIMER_INT);
--
--	start_int_set_rising_edge(SE_USB_I2C_INT);
--	start_int_ack(SE_USB_I2C_INT);
--	start_int_umask(SE_USB_I2C_INT);
--
--	start_int_set_rising_edge(SE_USB_INT);
--	start_int_ack(SE_USB_INT);
--	start_int_umask(SE_USB_INT);
--
--	start_int_set_rising_edge(SE_USB_NEED_CLK_INT);
--	start_int_ack(SE_USB_NEED_CLK_INT);
--	start_int_umask(SE_USB_NEED_CLK_INT);
--
--	start_int_set_rising_edge(SE_USB_AHB_NEED_CLK_INT);
--	start_int_ack(SE_USB_AHB_NEED_CLK_INT);
--	start_int_umask(SE_USB_AHB_NEED_CLK_INT);
-+	if (machine_is_pnx4008()) {
-+		start_int_set_falling_edge(SE_USB_OTG_ATX_INT_N);
-+		start_int_ack(SE_USB_OTG_ATX_INT_N);
-+		start_int_umask(SE_USB_OTG_ATX_INT_N);
-+
-+		start_int_set_rising_edge(SE_USB_OTG_TIMER_INT);
-+		start_int_ack(SE_USB_OTG_TIMER_INT);
-+		start_int_umask(SE_USB_OTG_TIMER_INT);
-+
-+		start_int_set_rising_edge(SE_USB_I2C_INT);
-+		start_int_ack(SE_USB_I2C_INT);
-+		start_int_umask(SE_USB_I2C_INT);
-+
-+		start_int_set_rising_edge(SE_USB_INT);
-+		start_int_ack(SE_USB_INT);
-+		start_int_umask(SE_USB_INT);
-+
-+		start_int_set_rising_edge(SE_USB_NEED_CLK_INT);
-+		start_int_ack(SE_USB_NEED_CLK_INT);
-+		start_int_umask(SE_USB_NEED_CLK_INT);
-+
-+		start_int_set_rising_edge(SE_USB_AHB_NEED_CLK_INT);
-+		start_int_ack(SE_USB_AHB_NEED_CLK_INT);
-+		start_int_umask(SE_USB_AHB_NEED_CLK_INT);
-+	}
- }
- 
- static void pnx4008_unset_usb_bits(void)
- {
--	start_int_mask(SE_USB_OTG_ATX_INT_N);
--	start_int_mask(SE_USB_OTG_TIMER_INT);
--	start_int_mask(SE_USB_I2C_INT);
--	start_int_mask(SE_USB_INT);
--	start_int_mask(SE_USB_NEED_CLK_INT);
--	start_int_mask(SE_USB_AHB_NEED_CLK_INT);
-+	if (machine_is_pnx4008()) {
-+		start_int_mask(SE_USB_OTG_ATX_INT_N);
-+		start_int_mask(SE_USB_OTG_TIMER_INT);
-+		start_int_mask(SE_USB_I2C_INT);
-+		start_int_mask(SE_USB_INT);
-+		start_int_mask(SE_USB_NEED_CLK_INT);
-+		start_int_mask(SE_USB_AHB_NEED_CLK_INT);
-+	}
- }
- 
- static int __devinit usb_hcd_pnx4008_probe(struct platform_device *pdev)
+	Cyrill
