@@ -1,656 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab2CHVQi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:16:38 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:39646 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530Ab2CHVQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:16:36 -0500
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: vinod.koul@intel.com, dan.j.williams@intel.com, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>, jaswinder.singh@linaro.org,
-        linus.walleij@stericsson.com, leoli@freescale.com, zw@zh-kernel.org,
-        STEricsson_nomadik_linux@list.st.com, ben-linux@fluff.org,
-        kgene.kim@samsung.com, mchehab@infradead.org,
-        ludovic.desroches@atmel.com, cjb@laptop.org, g.liakhovetski@gmx.de,
-        ian@mnementh.co.uk, dwmw2@infradead.org, grant.likely@secretlab.ca,
-        alan@linux.intel.com, balbi@ti.com, FlorianSchandinat@gmx.de,
-        perex@perex.cz, tiwai@suse.de, viresh.kumar@st.com,
-        baohua.song@csr.com, srinidhi.kasagar@stericsson.com
-Subject: [PATCH 1/2 V2] dmaengine/dma_slave: introduce inline wrappers
-Date: Thu,  8 Mar 2012 16:11:18 -0500
-Message-Id: <1331241078-29977-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.8.4
+	id S1755774Ab2CHVSS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:18:18 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40350 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab2CHVSP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 16:18:15 -0500
+Message-ID: <4F592210.1030003@gmail.com>
+Date: Thu, 08 Mar 2012 13:18:08 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Felix Fietkau <nbd@openwrt.org>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux-netdev <netdev@vger.kernel.org>,
+        Linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
+ DMADBG_7=0x00008040
+References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org>
+In-Reply-To: <4F579A88.6030503@openwrt.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add inline wrappers for device_prep_slave_sg() and device_prep_dma_cyclic()
-interfaces to hide new parameter from current users of affected interfaces.
-Convert current users to use new wrappers instead of direct calls.
-Suggested by Russell King [https://lkml.org/lkml/2012/2/3/269].
+On 03/07/2012 09:27 AM, Felix Fietkau wrote:
+> On 2012-03-07 4:24 PM, Justin P. Mattock wrote:
+>> On 03/07/2012 07:19 AM, Mohammed Shafi wrote:
+>>> On Wed, Mar 7, 2012 at 7:55 PM, Justin P. Mattock
+>>> <justinmattock@gmail.com>   wrote:
+>>>> ath9k craps out from time to time(more annoying if anything)
+>>>>
+>>>> [44309.840830] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44309.858246] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>>> [44309.858255] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> when we start RX up
+>>>> [44309.932801] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44309.950352] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>>> [44309.950361] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> when we start RX up
+>>>> [44310.024301] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44310.041641] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>>> [44310.041646] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> when we start RX up
+>>>> [44310.116316] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44310.133909] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>>> [44310.133918] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> when we start RX up
+>>>> [44310.208021] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44310.225752] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
+>>>> [44310.225761] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> when we start RX up
+>>>> [44310.299922] ath: Failed to stop TX DMA, queues=0x001!
+>>>> [44310.317579] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
+>>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
+>>>> [44310.317587] ath: Could not stop RX, we could be confusing the DMA engine
+>>>> whe
+>>>
+>>> this is has become a know issue but less harmful, please try to see if
+>>> the workaround of disabling power save helps
+>>>
+>>> iw dev wlanX set power_save off
+>>>
+>>
+>> ok! I have set that on the machine.. will see if I get this message in
+>> the upcoming weeks.
+> Also, please try this patch with powersave enabled:
+> http://nbd.name/ps-fix.patch
+>
+> - Felix
+>
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
----
- arch/arm/plat-nomadik/include/plat/ste_dma40.h |    3 +-
- arch/arm/plat-samsung/dma-ops.c                |    4 +-
- drivers/media/video/mx3_camera.c               |    2 +-
- drivers/media/video/timblogiw.c                |    2 +-
- drivers/mmc/host/atmel-mci.c                   |    2 +-
- drivers/mmc/host/mmci.c                        |    2 +-
- drivers/mmc/host/mxcmmc.c                      |    2 +-
- drivers/mmc/host/mxs-mmc.c                     |    2 +-
- drivers/mmc/host/sh_mmcif.c                    |    4 +-
- drivers/mmc/host/tmio_mmc_dma.c                |    4 +-
- drivers/mtd/nand/gpmi-nand/gpmi-lib.c          |   25 ++++++++++-------------
- drivers/net/ethernet/micrel/ks8842.c           |    4 +-
- drivers/spi/spi-dw-mid.c                       |    4 +-
- drivers/spi/spi-ep93xx.c                       |    4 +-
- drivers/spi/spi-pl022.c                        |    4 +-
- drivers/spi/spi-topcliff-pch.c                 |    4 +-
- drivers/tty/serial/amba-pl011.c                |    6 +---
- drivers/tty/serial/pch_uart.c                  |    4 +-
- drivers/tty/serial/sh-sci.c                    |    4 +-
- drivers/usb/musb/ux500_dma.c                   |    3 +-
- drivers/usb/renesas_usbhs/fifo.c               |    5 +--
- drivers/video/mx3fb.c                          |    4 +-
- include/linux/dmaengine.h                      |   16 +++++++++++++++
- sound/soc/ep93xx/ep93xx-pcm.c                  |    3 +-
- sound/soc/imx/imx-pcm-dma-mx2.c                |    2 +-
- sound/soc/mxs/mxs-pcm.c                        |    2 +-
- sound/soc/sh/siu_pcm.c                         |    4 +-
- sound/soc/txx9/txx9aclc.c                      |    2 +-
- 28 files changed, 67 insertions(+), 60 deletions(-)
 
-diff --git a/arch/arm/plat-nomadik/include/plat/ste_dma40.h b/arch/arm/plat-nomadik/include/plat/ste_dma40.h
-index fd0ee84..9ff93b0 100644
---- a/arch/arm/plat-nomadik/include/plat/ste_dma40.h
-+++ b/arch/arm/plat-nomadik/include/plat/ste_dma40.h
-@@ -200,8 +200,7 @@ dma_async_tx_descriptor *stedma40_slave_mem(struct dma_chan *chan,
- 	sg.dma_address = addr;
- 	sg.length = size;
- 
--	return chan->device->device_prep_slave_sg(chan, &sg, 1,
--						  direction, flags);
-+	return dmaengine_prep_slave_sg(chan, &sg, 1, direction, flags);
- }
- 
- #else
-diff --git a/arch/arm/plat-samsung/dma-ops.c b/arch/arm/plat-samsung/dma-ops.c
-index 0747c77..a6ef396 100644
---- a/arch/arm/plat-samsung/dma-ops.c
-+++ b/arch/arm/plat-samsung/dma-ops.c
-@@ -79,11 +79,11 @@ static int samsung_dmadev_prepare(unsigned ch,
- 			    info->len, offset_in_page(info->buf));
- 		sg_dma_address(&sg) = info->buf;
- 
--		desc = chan->device->device_prep_slave_sg(chan,
-+		desc = dmaengine_prep_slave_sg(chan,
- 			&sg, 1, info->direction, DMA_PREP_INTERRUPT);
- 		break;
- 	case DMA_CYCLIC:
--		desc = chan->device->device_prep_dma_cyclic(chan,
-+		desc = dmaengine_prep_dma_cyclic(chan,
- 			info->buf, info->len, info->period, info->direction);
- 		break;
- 	default:
-diff --git a/drivers/media/video/mx3_camera.c b/drivers/media/video/mx3_camera.c
-index 7452277..93c35ef 100644
---- a/drivers/media/video/mx3_camera.c
-+++ b/drivers/media/video/mx3_camera.c
-@@ -286,7 +286,7 @@ static void mx3_videobuf_queue(struct vb2_buffer *vb)
- 		sg_dma_address(sg)	= vb2_dma_contig_plane_dma_addr(vb, 0);
- 		sg_dma_len(sg)		= new_size;
- 
--		txd = ichan->dma_chan.device->device_prep_slave_sg(
-+		txd = dmaengine_prep_slave_sg(
- 			&ichan->dma_chan, sg, 1, DMA_DEV_TO_MEM,
- 			DMA_PREP_INTERRUPT);
- 		if (!txd)
-diff --git a/drivers/media/video/timblogiw.c b/drivers/media/video/timblogiw.c
-index 4ed1c7c2..02194c0 100644
---- a/drivers/media/video/timblogiw.c
-+++ b/drivers/media/video/timblogiw.c
-@@ -564,7 +564,7 @@ static void buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
- 
- 	spin_unlock_irq(&fh->queue_lock);
- 
--	desc = fh->chan->device->device_prep_slave_sg(fh->chan,
-+	desc = dmaengine_prep_slave_sg(fh->chan,
- 		buf->sg, sg_elems, DMA_DEV_TO_MEM,
- 		DMA_PREP_INTERRUPT | DMA_COMPL_SKIP_SRC_UNMAP);
- 	if (!desc) {
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index e4449a5..f658348 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -872,7 +872,7 @@ atmci_prepare_data_dma(struct atmel_mci *host, struct mmc_data *data)
- 	sglen = dma_map_sg(chan->device->dev, data->sg,
- 			data->sg_len, direction);
- 
--	desc = chan->device->device_prep_slave_sg(chan,
-+	desc = dmaengine_prep_slave_sg(chan,
- 			data->sg, sglen, slave_dirn,
- 			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc)
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 11e589c..31747f9 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -411,7 +411,7 @@ static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
- 		return -EINVAL;
- 
- 	dmaengine_slave_config(chan, &conf);
--	desc = device->device_prep_slave_sg(chan, data->sg, nr_sg,
-+	desc = dmaengine_prep_slave_sg(chan, data->sg, nr_sg,
- 					    conf.direction, DMA_CTRL_ACK);
- 	if (!desc)
- 		goto unmap_exit;
-diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
-index 4184b79..411a79e 100644
---- a/drivers/mmc/host/mxcmmc.c
-+++ b/drivers/mmc/host/mxcmmc.c
-@@ -254,7 +254,7 @@ static int mxcmci_setup_data(struct mxcmci_host *host, struct mmc_data *data)
- 	if (nents != data->sg_len)
- 		return -EINVAL;
- 
--	host->desc = host->dma->device->device_prep_slave_sg(host->dma,
-+	host->desc = dmaengine_prep_slave_sg(host->dma,
- 		data->sg, data->sg_len, slave_dirn,
- 		DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index 382c835..65f36cf 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -324,7 +324,7 @@ static struct dma_async_tx_descriptor *mxs_mmc_prep_dma(
- 		sg_len = SSP_PIO_NUM;
- 	}
- 
--	desc = host->dmach->device->device_prep_slave_sg(host->dmach,
-+	desc = dmaengine_prep_slave_sg(host->dmach,
- 				sgl, sg_len, host->slave_dirn, append);
- 	if (desc) {
- 		desc->callback = mxs_mmc_dma_irq_callback;
-diff --git a/drivers/mmc/host/sh_mmcif.c b/drivers/mmc/host/sh_mmcif.c
-index 352d479..4002a82 100644
---- a/drivers/mmc/host/sh_mmcif.c
-+++ b/drivers/mmc/host/sh_mmcif.c
-@@ -285,7 +285,7 @@ static void sh_mmcif_start_dma_rx(struct sh_mmcif_host *host)
- 			 DMA_FROM_DEVICE);
- 	if (ret > 0) {
- 		host->dma_active = true;
--		desc = chan->device->device_prep_slave_sg(chan, sg, ret,
-+		desc = dmaengine_prep_slave_sg(chan, sg, ret,
- 			DMA_DEV_TO_MEM, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	}
- 
-@@ -334,7 +334,7 @@ static void sh_mmcif_start_dma_tx(struct sh_mmcif_host *host)
- 			 DMA_TO_DEVICE);
- 	if (ret > 0) {
- 		host->dma_active = true;
--		desc = chan->device->device_prep_slave_sg(chan, sg, ret,
-+		desc = dmaengine_prep_slave_sg(chan, sg, ret,
- 			DMA_MEM_TO_DEV, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	}
- 
-diff --git a/drivers/mmc/host/tmio_mmc_dma.c b/drivers/mmc/host/tmio_mmc_dma.c
-index 8253ec1..fff9286 100644
---- a/drivers/mmc/host/tmio_mmc_dma.c
-+++ b/drivers/mmc/host/tmio_mmc_dma.c
-@@ -88,7 +88,7 @@ static void tmio_mmc_start_dma_rx(struct tmio_mmc_host *host)
- 
- 	ret = dma_map_sg(chan->device->dev, sg, host->sg_len, DMA_FROM_DEVICE);
- 	if (ret > 0)
--		desc = chan->device->device_prep_slave_sg(chan, sg, ret,
-+		desc = dmaengine_prep_slave_sg(chan, sg, ret,
- 			DMA_DEV_TO_MEM, DMA_CTRL_ACK);
- 
- 	if (desc) {
-@@ -169,7 +169,7 @@ static void tmio_mmc_start_dma_tx(struct tmio_mmc_host *host)
- 
- 	ret = dma_map_sg(chan->device->dev, sg, host->sg_len, DMA_TO_DEVICE);
- 	if (ret > 0)
--		desc = chan->device->device_prep_slave_sg(chan, sg, ret,
-+		desc = dmaengine_prep_slave_sg(chan, sg, ret,
- 			DMA_MEM_TO_DEV, DMA_CTRL_ACK);
- 
- 	if (desc) {
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-index 7db6555..590dd5c 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-@@ -835,7 +835,7 @@ int gpmi_send_command(struct gpmi_nand_data *this)
- 		| BM_GPMI_CTRL0_ADDRESS_INCREMENT
- 		| BF_GPMI_CTRL0_XFER_COUNT(this->command_length);
- 	pio[1] = pio[2] = 0;
--	desc = channel->device->device_prep_slave_sg(channel,
-+	desc = dmaengine_prep_slave_sg(channel,
- 					(struct scatterlist *)pio,
- 					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
- 	if (!desc) {
-@@ -848,8 +848,7 @@ int gpmi_send_command(struct gpmi_nand_data *this)
- 
- 	sg_init_one(sgl, this->cmd_buffer, this->command_length);
- 	dma_map_sg(this->dev, sgl, 1, DMA_TO_DEVICE);
--	desc = channel->device->device_prep_slave_sg(channel,
--					sgl, 1, DMA_MEM_TO_DEV, 1);
-+	desc = dmaengine_prep_slave_sg(channel, sgl, 1, DMA_MEM_TO_DEV, 1);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -880,8 +879,7 @@ int gpmi_send_data(struct gpmi_nand_data *this)
- 		| BF_GPMI_CTRL0_ADDRESS(address)
- 		| BF_GPMI_CTRL0_XFER_COUNT(this->upper_len);
- 	pio[1] = 0;
--	desc = channel->device->device_prep_slave_sg(channel,
--					(struct scatterlist *)pio,
-+	desc = dmaengine_prep_slave_sg(channel, (struct scatterlist *)pio,
- 					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
- 	if (!desc) {
- 		pr_err("step 1 error\n");
-@@ -890,7 +888,7 @@ int gpmi_send_data(struct gpmi_nand_data *this)
- 
- 	/* [2] send DMA request */
- 	prepare_data_dma(this, DMA_TO_DEVICE);
--	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
-+	desc = dmaengine_prep_slave_sg(channel, &this->data_sgl,
- 						1, DMA_MEM_TO_DEV, 1);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
-@@ -916,7 +914,7 @@ int gpmi_read_data(struct gpmi_nand_data *this)
- 		| BF_GPMI_CTRL0_ADDRESS(BV_GPMI_CTRL0_ADDRESS__NAND_DATA)
- 		| BF_GPMI_CTRL0_XFER_COUNT(this->upper_len);
- 	pio[1] = 0;
--	desc = channel->device->device_prep_slave_sg(channel,
-+	desc = dmaengine_prep_slave_sg(channel,
- 					(struct scatterlist *)pio,
- 					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
- 	if (!desc) {
-@@ -926,8 +924,8 @@ int gpmi_read_data(struct gpmi_nand_data *this)
- 
- 	/* [2] : send DMA request */
- 	prepare_data_dma(this, DMA_FROM_DEVICE);
--	desc = channel->device->device_prep_slave_sg(channel, &this->data_sgl,
--						1, DMA_DEV_TO_MEM, 1);
-+	desc = dmaengine_prep_slave_sg(channel, &this->data_sgl,
-+					1, DMA_DEV_TO_MEM, 1);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
- 		return -1;
-@@ -972,8 +970,7 @@ int gpmi_send_page(struct gpmi_nand_data *this,
- 	pio[4] = payload;
- 	pio[5] = auxiliary;
- 
--	desc = channel->device->device_prep_slave_sg(channel,
--					(struct scatterlist *)pio,
-+	desc = dmaengine_prep_slave_sg(channel, (struct scatterlist *)pio,
- 					ARRAY_SIZE(pio), DMA_TRANS_NONE, 0);
- 	if (!desc) {
- 		pr_err("step 2 error\n");
-@@ -1007,7 +1004,7 @@ int gpmi_read_page(struct gpmi_nand_data *this,
- 		| BF_GPMI_CTRL0_ADDRESS(address)
- 		| BF_GPMI_CTRL0_XFER_COUNT(0);
- 	pio[1] = 0;
--	desc = channel->device->device_prep_slave_sg(channel,
-+	desc = dmaengine_prep_slave_sg(channel,
- 				(struct scatterlist *)pio, 2,
- 				DMA_TRANS_NONE, 0);
- 	if (!desc) {
-@@ -1036,7 +1033,7 @@ int gpmi_read_page(struct gpmi_nand_data *this,
- 	pio[3] = geo->page_size;
- 	pio[4] = payload;
- 	pio[5] = auxiliary;
--	desc = channel->device->device_prep_slave_sg(channel,
-+	desc = dmaengine_prep_slave_sg(channel,
- 					(struct scatterlist *)pio,
- 					ARRAY_SIZE(pio), DMA_TRANS_NONE, 1);
- 	if (!desc) {
-@@ -1055,7 +1052,7 @@ int gpmi_read_page(struct gpmi_nand_data *this,
- 		| BF_GPMI_CTRL0_ADDRESS(address)
- 		| BF_GPMI_CTRL0_XFER_COUNT(geo->page_size);
- 	pio[1] = 0;
--	desc = channel->device->device_prep_slave_sg(channel,
-+	desc = dmaengine_prep_slave_sg(channel,
- 				(struct scatterlist *)pio, 2,
- 				DMA_TRANS_NONE, 1);
- 	if (!desc) {
-diff --git a/drivers/net/ethernet/micrel/ks8842.c b/drivers/net/ethernet/micrel/ks8842.c
-index 0a85690..554fef3 100644
---- a/drivers/net/ethernet/micrel/ks8842.c
-+++ b/drivers/net/ethernet/micrel/ks8842.c
-@@ -458,7 +458,7 @@ static int ks8842_tx_frame_dma(struct sk_buff *skb, struct net_device *netdev)
- 	if (sg_dma_len(&ctl->sg) % 4)
- 		sg_dma_len(&ctl->sg) += 4 - sg_dma_len(&ctl->sg) % 4;
- 
--	ctl->adesc = ctl->chan->device->device_prep_slave_sg(ctl->chan,
-+	ctl->adesc = dmaengine_prep_slave_sg(ctl->chan,
- 		&ctl->sg, 1, DMA_MEM_TO_DEV,
- 		DMA_PREP_INTERRUPT | DMA_COMPL_SKIP_SRC_UNMAP);
- 	if (!ctl->adesc)
-@@ -570,7 +570,7 @@ static int __ks8842_start_new_rx_dma(struct net_device *netdev)
- 
- 		sg_dma_len(sg) = DMA_BUFFER_SIZE;
- 
--		ctl->adesc = ctl->chan->device->device_prep_slave_sg(ctl->chan,
-+		ctl->adesc = dmaengine_prep_slave_sg(ctl->chan,
- 			sg, 1, DMA_DEV_TO_MEM,
- 			DMA_PREP_INTERRUPT | DMA_COMPL_SKIP_SRC_UNMAP);
- 
-diff --git a/drivers/spi/spi-dw-mid.c b/drivers/spi/spi-dw-mid.c
-index 8418eb0..e6afb84 100644
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -144,7 +144,7 @@ static int mid_spi_dma_transfer(struct dw_spi *dws, int cs_change)
- 	dws->tx_sgl.dma_address = dws->tx_dma;
- 	dws->tx_sgl.length = dws->len;
- 
--	txdesc = txchan->device->device_prep_slave_sg(txchan,
-+	txdesc = dmaengine_prep_slave_sg(txchan,
- 				&dws->tx_sgl,
- 				1,
- 				DMA_MEM_TO_DEV,
-@@ -166,7 +166,7 @@ static int mid_spi_dma_transfer(struct dw_spi *dws, int cs_change)
- 	dws->rx_sgl.dma_address = dws->rx_dma;
- 	dws->rx_sgl.length = dws->len;
- 
--	rxdesc = rxchan->device->device_prep_slave_sg(rxchan,
-+	rxdesc = dmaengine_prep_slave_sg(rxchan,
- 				&dws->rx_sgl,
- 				1,
- 				DMA_DEV_TO_MEM,
-diff --git a/drivers/spi/spi-ep93xx.c b/drivers/spi/spi-ep93xx.c
-index d46e55c..6db2887 100644
---- a/drivers/spi/spi-ep93xx.c
-+++ b/drivers/spi/spi-ep93xx.c
-@@ -633,8 +633,8 @@ ep93xx_spi_dma_prepare(struct ep93xx_spi *espi, enum dma_data_direction dir)
- 	if (!nents)
- 		return ERR_PTR(-ENOMEM);
- 
--	txd = chan->device->device_prep_slave_sg(chan, sgt->sgl, nents,
--						 slave_dirn, DMA_CTRL_ACK);
-+	txd = dmaengine_prep_slave_sg(chan, sgt->sgl, nents,
-+					slave_dirn, DMA_CTRL_ACK);
- 	if (!txd) {
- 		dma_unmap_sg(chan->device->dev, sgt->sgl, sgt->nents, dir);
- 		return ERR_PTR(-ENOMEM);
-diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
-index 2f9cb43..94ccede 100644
---- a/drivers/spi/spi-pl022.c
-+++ b/drivers/spi/spi-pl022.c
-@@ -1038,7 +1038,7 @@ static int configure_dma(struct pl022 *pl022)
- 		goto err_tx_sgmap;
- 
- 	/* Send both scatterlists */
--	rxdesc = rxchan->device->device_prep_slave_sg(rxchan,
-+	rxdesc = dmaengine_prep_slave_sg(rxchan,
- 				      pl022->sgt_rx.sgl,
- 				      rx_sglen,
- 				      DMA_DEV_TO_MEM,
-@@ -1046,7 +1046,7 @@ static int configure_dma(struct pl022 *pl022)
- 	if (!rxdesc)
- 		goto err_rxdesc;
- 
--	txdesc = txchan->device->device_prep_slave_sg(txchan,
-+	txdesc = dmaengine_prep_slave_sg(txchan,
- 				      pl022->sgt_tx.sgl,
- 				      tx_sglen,
- 				      DMA_MEM_TO_DEV,
-diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-index 10182eb..8a06403 100644
---- a/drivers/spi/spi-topcliff-pch.c
-+++ b/drivers/spi/spi-topcliff-pch.c
-@@ -1078,7 +1078,7 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
- 		sg_dma_address(sg) = dma->rx_buf_dma + sg->offset;
- 	}
- 	sg = dma->sg_rx_p;
--	desc_rx = dma->chan_rx->device->device_prep_slave_sg(dma->chan_rx, sg,
-+	desc_rx = dmaengine_prep_slave_sg(dma->chan_rx, sg,
- 					num, DMA_DEV_TO_MEM,
- 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc_rx) {
-@@ -1123,7 +1123,7 @@ static void pch_spi_handle_dma(struct pch_spi_data *data, int *bpw)
- 		sg_dma_address(sg) = dma->tx_buf_dma + sg->offset;
- 	}
- 	sg = dma->sg_tx_p;
--	desc_tx = dma->chan_tx->device->device_prep_slave_sg(dma->chan_tx,
-+	desc_tx = dmaengine_prep_slave_sg(dma->chan_tx,
- 					sg, num, DMA_MEM_TO_DEV,
- 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc_tx) {
-diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index 6800f5f..3e33bf3 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -481,7 +481,7 @@ static int pl011_dma_tx_refill(struct uart_amba_port *uap)
- 		return -EBUSY;
- 	}
- 
--	desc = dma_dev->device_prep_slave_sg(chan, &dmatx->sg, 1, DMA_MEM_TO_DEV,
-+	desc = dmaengine_prep_slave_sg(chan, &dmatx->sg, 1, DMA_MEM_TO_DEV,
- 					     DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc) {
- 		dma_unmap_sg(dma_dev->dev, &dmatx->sg, 1, DMA_TO_DEVICE);
-@@ -664,7 +664,6 @@ static void pl011_dma_rx_callback(void *data);
- static int pl011_dma_rx_trigger_dma(struct uart_amba_port *uap)
- {
- 	struct dma_chan *rxchan = uap->dmarx.chan;
--	struct dma_device *dma_dev;
- 	struct pl011_dmarx_data *dmarx = &uap->dmarx;
- 	struct dma_async_tx_descriptor *desc;
- 	struct pl011_sgbuf *sgbuf;
-@@ -675,8 +674,7 @@ static int pl011_dma_rx_trigger_dma(struct uart_amba_port *uap)
- 	/* Start the RX DMA job */
- 	sgbuf = uap->dmarx.use_buf_b ?
- 		&uap->dmarx.sgbuf_b : &uap->dmarx.sgbuf_a;
--	dma_dev = rxchan->device;
--	desc = rxchan->device->device_prep_slave_sg(rxchan, &sgbuf->sg, 1,
-+	desc = dmaengine_prep_slave_sg(rxchan, &sgbuf->sg, 1,
- 					DMA_DEV_TO_MEM,
- 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	/*
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 17ae657..61743bd 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -763,7 +763,7 @@ static int dma_handle_rx(struct eg20t_port *priv)
- 
- 	sg_dma_address(sg) = priv->rx_buf_dma;
- 
--	desc = priv->chan_rx->device->device_prep_slave_sg(priv->chan_rx,
-+	desc = dmaengine_prep_slave_sg(priv->chan_rx,
- 			sg, 1, DMA_DEV_TO_MEM,
- 			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 
-@@ -922,7 +922,7 @@ static unsigned int dma_handle_tx(struct eg20t_port *priv)
- 			sg_dma_len(sg) = size;
- 	}
- 
--	desc = priv->chan_tx->device->device_prep_slave_sg(priv->chan_tx,
-+	desc = dmaengine_prep_slave_sg(priv->chan_tx,
- 					priv->sg_tx_p, nent, DMA_MEM_TO_DEV,
- 					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc) {
-diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
-index 7508579..872557f 100644
---- a/drivers/tty/serial/sh-sci.c
-+++ b/drivers/tty/serial/sh-sci.c
-@@ -1338,7 +1338,7 @@ static void sci_submit_rx(struct sci_port *s)
- 		struct scatterlist *sg = &s->sg_rx[i];
- 		struct dma_async_tx_descriptor *desc;
- 
--		desc = chan->device->device_prep_slave_sg(chan,
-+		desc = dmaengine_prep_slave_sg(chan,
- 			sg, 1, DMA_DEV_TO_MEM, DMA_PREP_INTERRUPT);
- 
- 		if (desc) {
-@@ -1453,7 +1453,7 @@ static void work_fn_tx(struct work_struct *work)
- 
- 	BUG_ON(!sg_dma_len(sg));
- 
--	desc = chan->device->device_prep_slave_sg(chan,
-+	desc = dmaengine_prep_slave_sg(chan,
- 			sg, s->sg_len_tx, DMA_MEM_TO_DEV,
- 			DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc) {
-diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
-index 97cb459..03ad80f 100644
---- a/drivers/usb/musb/ux500_dma.c
-+++ b/drivers/usb/musb/ux500_dma.c
-@@ -119,8 +119,7 @@ static bool ux500_configure_channel(struct dma_channel *channel,
- 	dma_chan->device->device_control(dma_chan, DMA_SLAVE_CONFIG,
- 					     (unsigned long) &slave_conf);
- 
--	dma_desc = dma_chan->device->
--			device_prep_slave_sg(dma_chan, &sg, 1, direction,
-+	dma_desc = dmaengine_prep_slave_sg(dma_chan, &sg, 1, direction,
- 					     DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!dma_desc)
- 		return false;
-diff --git a/drivers/usb/renesas_usbhs/fifo.c b/drivers/usb/renesas_usbhs/fifo.c
-index 72339bd..7b43093 100644
---- a/drivers/usb/renesas_usbhs/fifo.c
-+++ b/drivers/usb/renesas_usbhs/fifo.c
-@@ -783,9 +783,8 @@ static void usbhsf_dma_prepare_tasklet(unsigned long data)
- 	sg_dma_address(&sg) = pkt->dma + pkt->actual;
- 	sg_dma_len(&sg) = pkt->trans;
- 
--	desc = chan->device->device_prep_slave_sg(chan, &sg, 1, dir,
--						  DMA_PREP_INTERRUPT |
--						  DMA_CTRL_ACK);
-+	desc = dmaengine_prep_slave_sg(chan, &sg, 1, dir,
-+					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc)
- 		return;
- 
-diff --git a/drivers/video/mx3fb.c b/drivers/video/mx3fb.c
-index 727a514..eec0d7b 100644
---- a/drivers/video/mx3fb.c
-+++ b/drivers/video/mx3fb.c
-@@ -337,7 +337,7 @@ static void sdc_enable_channel(struct mx3fb_info *mx3_fbi)
- 
- 	/* This enables the channel */
- 	if (mx3_fbi->cookie < 0) {
--		mx3_fbi->txd = dma_chan->device->device_prep_slave_sg(dma_chan,
-+		mx3_fbi->txd = dmaengine_prep_slave_sg(dma_chan,
- 		      &mx3_fbi->sg[0], 1, DMA_MEM_TO_DEV, DMA_PREP_INTERRUPT);
- 		if (!mx3_fbi->txd) {
- 			dev_err(mx3fb->dev, "Cannot allocate descriptor on %d\n",
-@@ -1091,7 +1091,7 @@ static int mx3fb_pan_display(struct fb_var_screeninfo *var,
- 	if (mx3_fbi->txd)
- 		async_tx_ack(mx3_fbi->txd);
- 
--	txd = dma_chan->device->device_prep_slave_sg(dma_chan, sg +
-+	txd = dmaengine_prep_slave_sg(dma_chan, sg +
- 		mx3_fbi->cur_ipu_buf, 1, DMA_MEM_TO_DEV, DMA_PREP_INTERRUPT);
- 	if (!txd) {
- 		dev_err(fbi->device,
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 679b349..6e88f09 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -615,6 +615,22 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
- 	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags);
- }
- 
-+static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_sg(
-+	struct dma_chan *chan, struct scatterlist *sgl,	unsigned int sg_len,
-+	enum dma_transfer_direction dir, unsigned long flags)
-+{
-+	return chan->device->device_prep_slave_sg(chan, sgl, sg_len,
-+						  dir, flags);
-+}
-+
-+static inline struct dma_async_tx_descriptor *dmaengine_prep_dma_cyclic(
-+		struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
-+		size_t period_len, enum dma_transfer_direction dir)
-+{
-+	return chan->device->device_prep_dma_cyclic(chan, buf_addr, buf_len,
-+							period_len, dir);
-+}
-+
- static inline int dmaengine_terminate_all(struct dma_chan *chan)
- {
- 	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
-diff --git a/sound/soc/ep93xx/ep93xx-pcm.c b/sound/soc/ep93xx/ep93xx-pcm.c
-index de83904..50593e5 100644
---- a/sound/soc/ep93xx/ep93xx-pcm.c
-+++ b/sound/soc/ep93xx/ep93xx-pcm.c
-@@ -142,11 +142,10 @@ static int ep93xx_pcm_dma_submit(struct snd_pcm_substream *substream)
- 	struct snd_pcm_runtime *runtime = substream->runtime;
- 	struct ep93xx_runtime_data *rtd = runtime->private_data;
- 	struct dma_chan *chan = rtd->dma_chan;
--	struct dma_device *dma_dev = chan->device;
- 	struct dma_async_tx_descriptor *desc;
- 
- 	rtd->pointer_bytes = 0;
--	desc = dma_dev->device_prep_dma_cyclic(chan, runtime->dma_addr,
-+	desc = dmaengine_prep_dma_cyclic(chan, runtime->dma_addr,
- 					       rtd->period_bytes * rtd->periods,
- 					       rtd->period_bytes,
- 					       rtd->dma_data.direction);
-diff --git a/sound/soc/imx/imx-pcm-dma-mx2.c b/sound/soc/imx/imx-pcm-dma-mx2.c
-index 5780c9b..c727123 100644
---- a/sound/soc/imx/imx-pcm-dma-mx2.c
-+++ b/sound/soc/imx/imx-pcm-dma-mx2.c
-@@ -157,7 +157,7 @@ static int snd_imx_pcm_hw_params(struct snd_pcm_substream *substream,
- 
- 	iprtd->buf = (unsigned int *)substream->dma_buffer.area;
- 
--	iprtd->desc = chan->device->device_prep_dma_cyclic(chan, dma_addr,
-+	iprtd->desc = dmaengine_prep_dma_cyclic(chan, dma_addr,
- 			iprtd->period_bytes * iprtd->periods,
- 			iprtd->period_bytes,
- 			substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-diff --git a/sound/soc/mxs/mxs-pcm.c b/sound/soc/mxs/mxs-pcm.c
-index 105f42a..661b678 100644
---- a/sound/soc/mxs/mxs-pcm.c
-+++ b/sound/soc/mxs/mxs-pcm.c
-@@ -132,7 +132,7 @@ static int snd_mxs_pcm_hw_params(struct snd_pcm_substream *substream,
- 
- 	iprtd->buf = substream->dma_buffer.area;
- 
--	iprtd->desc = chan->device->device_prep_dma_cyclic(chan, dma_addr,
-+	iprtd->desc = dmaengine_prep_dma_cyclic(chan, dma_addr,
- 			iprtd->period_bytes * iprtd->periods,
- 			iprtd->period_bytes,
- 			substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-diff --git a/sound/soc/sh/siu_pcm.c b/sound/soc/sh/siu_pcm.c
-index 0193e59..5cfcc65 100644
---- a/sound/soc/sh/siu_pcm.c
-+++ b/sound/soc/sh/siu_pcm.c
-@@ -130,7 +130,7 @@ static int siu_pcm_wr_set(struct siu_port *port_info,
- 	sg_dma_len(&sg) = size;
- 	sg_dma_address(&sg) = buff;
- 
--	desc = siu_stream->chan->device->device_prep_slave_sg(siu_stream->chan,
-+	desc = dmaengine_prep_slave_sg(siu_stream->chan,
- 		&sg, 1, DMA_MEM_TO_DEV, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc) {
- 		dev_err(dev, "Failed to allocate a dma descriptor\n");
-@@ -180,7 +180,7 @@ static int siu_pcm_rd_set(struct siu_port *port_info,
- 	sg_dma_len(&sg) = size;
- 	sg_dma_address(&sg) = buff;
- 
--	desc = siu_stream->chan->device->device_prep_slave_sg(siu_stream->chan,
-+	desc = dmaengine_prep_slave_sg(siu_stream->chan,
- 		&sg, 1, DMA_DEV_TO_MEM, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
- 	if (!desc) {
- 		dev_err(dev, "Failed to allocate dma descriptor\n");
-diff --git a/sound/soc/txx9/txx9aclc.c b/sound/soc/txx9/txx9aclc.c
-index 2155461..b609d2c 100644
---- a/sound/soc/txx9/txx9aclc.c
-+++ b/sound/soc/txx9/txx9aclc.c
-@@ -132,7 +132,7 @@ txx9aclc_dma_submit(struct txx9aclc_dmadata *dmadata, dma_addr_t buf_dma_addr)
- 	sg_set_page(&sg, pfn_to_page(PFN_DOWN(buf_dma_addr)),
- 		    dmadata->frag_bytes, buf_dma_addr & (PAGE_SIZE - 1));
- 	sg_dma_address(&sg) = buf_dma_addr;
--	desc = chan->device->device_prep_slave_sg(chan, &sg, 1,
-+	desc = dmaengine_prep_slave_sg(chan, &sg, 1,
- 		dmadata->substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
- 		DMA_MEM_TO_DEV : DMA_DEV_TO_MEM,
- 		DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
--- 
-1.7.8.4
+probably to early to tell if this patch is working or not(since this bug 
+is shows up randomly), but I have applied this to the current Mainline 
+and am so far not seeing the DMA failed to stop
+as for any issues: waking up from suspend I get no 
+connection(rmmod/modprobe recovers this) then after a few suspends the 
+connection is real crappy(on and offline).
+
+dmesg with debug gives me this:
+
+[ 8804.908128] ath: PDADC (0,   0): a2f0 68686868
+[ 8804.908132] ath: PDADC: Chain 0 | PDADC 112 Value 104 | PDADC 113 
+Value 104 | PDADC 114 Value 104 | PDADC 115 Value 104 |
+[ 8804.908137] ath: PDADC (0,   0): a2f4 68686868
+[ 8804.908141] ath: PDADC: Chain 0 | PDADC 116 Value 104 | PDADC 117 
+Value 104 | PDADC 118 Value 104 | PDADC 119 Value 104 |
+[ 8804.908145] ath: PDADC (0,   0): a2f8 68686868
+[ 8804.908149] ath: PDADC: Chain 0 | PDADC 120 Value 104 | PDADC 121 
+Value 104 | PDADC 122 Value 104 | PDADC 123 Value 104 |
+[ 8804.908154] ath: PDADC (0,   0): a2fc 68686868
+[ 8804.908158] ath: PDADC: Chain 0 | PDADC 124 Value 104 | PDADC 125 
+Value 104 | PDADC 126 Value 104 | PDADC 127 Value 104 |
+[ 8804.908506] ath: Getting spur idx:0 is2Ghz:1 val:8000
+[ 8804.908609] ath: Enable MIB counters
+[ 8804.908632] ath: ANI parameters:
+[ 8804.908635] ath: noiseImmunityLevel=0, spurImmunityLevel=7, 
+ofdmWeakSigDetectOff=1
+[ 8804.908638] ath: cckWeakSigThreshold=0, firstepLevel=0, listenTime=0
+[ 8804.908641] ath: ofdmPhyErrCount=0, cckPhyErrCount=0
+[ 8804.908643]
+[ 8804.908646] ath: Writing ofdmbase=12582412   cckbase=12582712
+[ 8804.908669] ath: New interrupt mask 0xf4041071
+[ 8804.908672] ath: new IMR 0x918414b0
+[ 8804.908679] ath: enable IER
+[ 8804.908690] ath: AR_IMR 0x918414b0 IER 0x1
+[ 8804.945518] ath: disable IER
+[ 8804.945554] ath: enable IER
+[ 8804.945565] ath: AR_IMR 0x918414b0 IER 0x1
+[ 8805.031114] ath: Set channel: 2422 MHz type: 0
+[ 8805.031243] ath: disable IER
+[ 8805.031380] ath: Disable MIB counters
+[ 8805.031425] ath: Reset to 2422 MHz, HT40: 0 fastcc: 0
+[ 8805.031441] ath: NF calibrated [ctl] [chain 0] is -114
+[ 8805.033988] ath: PDADC (0,   0): a280 04030201
+[ 8805.033995] ath: PDADC: Chain 0 | PDADC   0 Value   1 | PDADC   1 
+Value   2 | PDADC   2 Value   3 | PDADC   3 Value   4 |
+[ 8805.034002] ath: PDADC (0,   0): a284 08070605
+[ 8805.034007] ath: PDADC: Chain 0 | PDADC   4 Value   5 | PDADC   5 
+Value   6 | PDADC   6 Value   7 | PDADC   7 Value   8 |
+[ 8805.034013] ath: PDADC (0,   0): a288 0c0b0a09
+[ 8805.034019] ath: PDADC: Chain 0 | PDADC   8 Value   9 | PDADC   9 
+Value  10 | PDADC  10 Value  11 | PDADC  11 Value  12 |
+[ 8805.034025] ath: PDADC (0,   0): a28c 100f0e0d
+[ 8805.034030] ath: PDADC: Chain 0 | PDADC  12 Value  13 | PDADC  13 
+Value  14 | PDADC  14 Value  15 | PDADC  15 Value  16 |
+[ 8805.034037] ath: PDADC (0,   0): a290 18161412
+[ 8805.034042] ath: PDADC: Chain 0 | PDADC  16 Value  18 | PDADC  17 
+Value  20 | PDADC  18 Value  22 | PDADC  19 Value  24 |
+[ 8805.034048] ath: PDADC (0,   0): a294 23201d1a
+[ 8805.034053] ath: PDADC: Chain 0 | PDADC  20 Value  26 | PDADC  21 
+Value  29 | PDADC  22 Value  32 | PDADC  23 Value  35 |
+[ 8805.034059] ath: PDADC (0,   0): a298 302b2825
+[ 8805.034064] ath: PDADC: Chain 0 | PDADC  24 Value  37 | PDADC  25 
+Value  40 | PDADC  26 Value  43 | PDADC  27 Value  48 |
+[ 8805.034070] ath: PDADC (0,   0): a29c 45403b36
+[ 8805.034075] ath: PDADC: Chain 0 | PDADC  28 Value  54 | PDADC  29 
+Value  59 | PDADC  30 Value  64 | PDADC  31 Value  69 |
+[ 8805.034081] ath: PDADC (0,   0): a2a0 5a544f4a
+[ 8805.034086] ath: PDADC: Chain 0 | PDADC  32 Value  74 | PDADC  33 
+Value  79 | PDADC  34 Value  84 | PDADC  35 Value  90 |
+[ 8805.034092] ath: PDADC (0,   0): a2a4 726c6660
+[ 8805.034098] ath: PDADC: Chain 0 | PDADC  36 Value  96 | PDADC  37 
+Value 102 | PDADC  38 Value 108 | PDADC  39 Value 114 |
+[ 8805.034104] ath: PDADC (0,   0): a2a8 0f0d0b09
+[ 8805.034110] ath: PDADC: Chain 0 | PDADC  40 Value   9 | PDADC  41 
+Value  11 | PDADC  42 Value  13 | PDADC  43 Value  15 |
+[ 8805.034116] ath: PDADC (0,   0): a2ac 17151311
+[ 8805.034121] ath: PDADC: Chain 0 | PDADC  44 Value  17 | PDADC  45 
+Value  19 | PDADC  46 Value  21 | PDADC  47 Value  23 |
+[ 8805.034127] ath: PDADC (0,   0): a2b0 201d1b19
+[ 8805.034133] ath: PDADC: Chain 0 | PDADC  48 Value  25 | PDADC  49 
+Value  27 | PDADC  50 Value  29 | PDADC  51 Value  32 |
+[ 8805.034139] ath: PDADC (0,   0): a2b4 2b282522
+[ 8805.034145] ath: PDADC: Chain 0 | PDADC  52 Value  34 | PDADC  53 
+Value  37 | PDADC  54 Value  40 | PDADC  55 Value  43 |
+[ 8805.034151] ath: PDADC (0,   0): a2b8 3935312e
+[ 8805.034156] ath: PDADC: Chain 0 | PDADC  56 Value  46 | PDADC  57 
+Value  49 | PDADC  58 Value  53 | PDADC  59 Value  57 |
+[ 8805.034163] ath: PDADC (0,   0): a2bc 4b44403c
+[ 8805.034168] ath: PDADC: Chain 0 | PDADC  60 Value  60 | PDADC  61 
+Value  64 | PDADC  62 Value  68 | PDADC  63 Value  75 |
+[ 8805.034174] ath: PDADC (0,   0): a2c0 67605952
+[ 8805.034179] ath: PDADC: Chain 0 | PDADC  64 Value  82 | PDADC  65 
+Value  89 | PDADC  66 Value  96 | PDADC  67 Value 103 |
+[ 8805.034185] ath: PDADC (0,   0): a2c4 7575756e
+[ 8805.034190] ath: PDADC: Chain 0 | PDADC  68 Value 110 | PDADC  69 
+Value 117 | PDADC  70 Value 117 | PDADC  71 Value 117 |
+[ 8805.034196] ath: PDADC (0,   0): a2c8 75757575
+[ 8805.034202] ath: PDADC: Chain 0 | PDADC  72 Value 117 | PDADC  73 
+Value 117 | PDADC  74 Value 117 | PDADC  75 Value 117 |
+[ 8805.034208] ath: PDADC (0,   0): a2cc 75757575
+[ 8805.034213] ath: PDADC: Chain 0 | PDADC  76 Value 117 | PDADC  77 
+Value 117 | PDADC  78 Value 117 | PDADC  79 Value 117 |
+[ 8805.034219] ath: PDADC (0,   0): a2d0 75757575
+[ 8805.034224] ath: PDADC: Chain 0 | PDADC  80 Value 117 | PDADC  81 
+Value 117 | PDADC  82 Value 117 | PDADC  83 Value 117 |
+[ 8805.034230] ath: PDADC (0,   0): a2d4 75757575
+[ 8805.034236] ath: PDADC: Chain 0 | PDADC  84 Value 117 | PDADC  85 
+Value 117 | PDADC  86 Value 117 | PDADC  87 Value 117 |
+[ 8805.034241] ath: PDADC (0,   0): a2d8 75757575
+[ 8805.034246] ath: PDADC: Chain 0 | PDADC  88 Value 117 | PDADC  89 
+Value 117 | PDADC  90 Value 117 | PDADC  91 Value 117 |
+[ 8805.034252] ath: PDADC (0,   0): a2dc 75757575
+[ 8805.034257] ath: PDADC: Chain 0 | PDADC  92 Value 117 | PDADC  93 
+Value 117 | PDADC  94 Value 117 | PDADC  95 Value 117 |
+[ 8805.034264] ath: PDADC (0,   0): a2e0 75757575
+[ 8805.034269] ath: PDADC: Chain 0 | PDADC  96 Value 117 | PDADC  97 
+Value 117 | PDADC  98 Value 117 | PDADC  99 Value 117 |
+[ 8805.034275] ath: PDADC (0,   0): a2e4 75757575
+[ 8805.034281] ath: PDADC: Chain 0 | PDADC 100 Value 117 | PDADC 101 
+Value 117 | PDADC 102 Value 117 | PDADC 103 Value 117 |
+[ 8805.034286] ath: PDADC (0,   0): a2e8 75757575
+[ 8805.034292] ath: PDADC: Chain 0 | PDADC 104 Value 117 | PDADC 105 
+Value 117 | PDADC 106 Value 117 | PDADC 107 Value 117 |
+[ 8805.034298] ath: PDADC (0,   0): a2ec 75757575
+[ 8805.034303] ath: PDADC: Chain 0 | PDADC 108 Value 117 | PDADC 109 
+Value 117 | PDADC 110 Value 117 | PDADC 111 Value 117 |
+[ 8805.034310] ath: PDADC (0,   0): a2f0 75757575
+[ 8805.034315] ath: PDADC: Chain 0 | PDADC 112 Value 117 | PDADC 113 
+Value 117 | PDADC 114 Value 117 | PDADC 115 Value 117 |
+[ 8805.034321] ath: PDADC (0,   0): a2f4 75757575
+[ 8805.034326] ath: PDADC: Chain 0 | PDADC 116 Value 117 | PDADC 117 
+Value 117 | PDADC 118 Value 117 | PDADC 119 Value 117 |
+[ 8805.034332] ath: PDADC (0,   0): a2f8 75757575
+[ 8805.034338] ath: PDADC: Chain 0 | PDADC 120 Value 117 | PDADC 121 
+Value 117 | PDADC 122 Value 117 | PDADC 123 Value 117 |
+[ 8805.034344] ath: PDADC (0,   0): a2fc 75757575
+[ 8805.034349] ath: PDADC: Chain 0 | PDADC 124 Value 117 | PDADC 125 
+Value 117 | PDADC 126 Value 117 | PDADC 127 Value 117 |
+[ 8805.034377] ath: Getting spur idx:0 is2Ghz:1 val:8000
+[ 8805.036119] ath: Reset TX queue: 0
+[ 8805.036125] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
+[ 8805.036130] ath: Reset TX queue: 1
+[ 8805.036135] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
+[ 8805.036140] ath: Reset TX queue: 2
+[ 8805.036146] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
+[ 8805.036151] ath: Reset TX queue: 3
+[ 8805.036157] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
+[ 8805.036163] ath: Reset TXQ, inactive queue: 4
+[ 8805.036167] ath: Reset TXQ, inactive queue: 5
+[ 8805.036171] ath: Reset TXQ, inactive queue: 6
+[ 8805.036175] ath: Reset TXQ, inactive queue: 7
+[ 8805.036180] ath: Reset TX queue: 8
+[ 8805.036195] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
+[ 8805.036201] ath: Reset TX queue: 9
+[ 8805.036216] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
+[ 8805.036230] ath: ah->misc_mode 0x4
+[ 8805.037647] ath: Running PA Calibration
+[ 8805.038316] ath: enabling ADC Gain Calibration
+[ 8805.038320] ath: enabling ADC DC Calibration
+[ 8805.038324] ath: enabling IQ Calibration
+[ 8805.038333] ath: starting ADC Gain Calibration
+[ 8805.038471] ath: Enable MIB counters
+[ 8805.038496] ath: ANI parameters:
+[ 8805.038501] ath: noiseImmunityLevel=0, spurImmunityLevel=7, 
+ofdmWeakSigDetectOff=1
+[ 8805.038507] ath: cckWeakSigThreshold=0, firstepLevel=2, listenTime=0
+[ 8805.038511] ath: ofdmPhyErrCount=0, cckPhyErrCount=0
+[ 8805.038513]
+[ 8805.038521] ath: ANI parameters:
+[ 8805.038525] ath: noiseImmunityLevel=0, spurImmunityLevel=7, 
+ofdmWeakSigDetectOff=1
+[ 8805.038531] ath: cckWeakSigThreshold=0, firstepLevel=2, listenTime=0
+[ 8805.038536] ath: ofdmPhyErrCount=0, cckPhyErrCount=0
+[ 8805.038538]
+[ 8805.038543] ath: Writing ofdmbase=12582412   cckbase=12582712
+[ 8805.038578] ath: New interrupt mask 0xf4041071
+[ 8805.038583] ath: new IMR 0x918414b0
+[ 8805.038592] ath: enable IER
+[ 8805.038604] ath: AR_IMR 0x918414b0 IER 0x1
+[ 8805.038695] ath: Set HW RX filter: 0x207
+[ 8805.038724] ieee80211 phy5: device now idle
+[ 8805.038826] ath: AWAKE -> FULL-SLEEP
+[ 8805.038911] ath: FULL-SLEEP -> AWAKE
+[ 8805.041787] ath: AWAKE -> FULL-SLEEP
+[ 8805.041808] ieee80211 phy5: device no longer idle - working
+[ 8805.041817] ath: FULL-SLEEP -> AWAKE
+[ 8805.044666] wlan0: authenticate with 00:1e:2a:62:6b:1e (try 1)
+[ 8805.044679] ath: transmitting packet, skb: f6b88c00
+[ 8805.044688] ath: qnum: 0, txq depth: 0
+[ 8805.044690] ath: TXDP[0] = 2ecd6e8c (eecd6e8c)
+[ 8805.044692] ath: Enable TXE on queue: 0
+[ 8805.242495] wlan0: authenticate with 00:1e:2a:62:6b:1e (try 2)
+[ 8805.242511] ath: transmitting packet, skb: f71309c0
+[ 8805.242521] ath: qnum: 0, txq depth: 1
+[ 8805.242525] ath: link[0] (eecd6e8c)=2ecd6ef0 (eecd6ef0)
+[ 8805.242528] ath: Enable TXE on queue: 0
+[ 8805.441878] wlan0: authenticate with 00:1e:2a:62:6b:1e (try 3)
+[ 8805.441893] ath: transmitting packet, skb: f6b88b40
+[ 8805.441903] ath: qnum: 0, txq depth: 2
+[ 8805.441907] ath: link[0] (eecd6ef0)=2ecd6f54 (eecd6f54)
+[ 8805.441911] ath: Enable TXE on queue: 0
+[ 8805.641298] wlan0: authentication with 00:1e:2a:62:6b:1e timed out
+[ 8805.641445] ieee80211 phy5: device now idle
+
+
+will continue running the system to see if I get anymore leads on this 
+issue.
+
+Justin P. Mattock
+
+
 
