@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab2CHUQQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:16:16 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63767 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758238Ab2CHUQP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:16:15 -0500
+	id S1758665Ab2CHUQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:16:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38067 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758603Ab2CHUQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 15:16:24 -0500
+Date: Thu, 8 Mar 2012 15:16:16 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, axboe@kernel.dk,
+        hughd@google.com, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dpshah@google.com, ctalbott@google.com, rni@google.com
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-ID: <20120308201616.GD22922@redhat.com>
+References: <20120229173639.GB5930@redhat.com>
+ <20120305221321.GF1263@google.com>
+ <20120306210954.GF32148@redhat.com>
+ <20120306132034.ecaf8b20.akpm@linux-foundation.org>
+ <20120306213437.GG32148@redhat.com>
+ <20120306135531.828ca78e.akpm@linux-foundation.org>
+ <20120307145556.GA11262@redhat.com>
+ <20120307150549.955d6f9c.akpm@linux-foundation.org>
+ <20120308175708.GB22922@redhat.com>
+ <20120308180833.GA25508@google.com>
 MIME-Version: 1.0
-In-Reply-To: <20120308200729.GL21812@moon>
-References: <20120308165112.GF21812@moon> <CAGXu5j+4RRGjzVxLSyz0CZCNMj4dPOxJp3pYGSN_sXFsiMhUaQ@mail.gmail.com>
- <20120308194008.GJ21812@moon> <CALCETrXpQOpAN64gfG-=iyXXy4Tid=9FyKVrT2grQxRgNPC-fg@mail.gmail.com>
- <20120308200729.GL21812@moon>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 8 Mar 2012 12:15:55 -0800
-Message-ID: <CALCETrXc9Etit+DUuxKtUwRKmqbwbE5vhDNYWgs0ijEesY8cUA@mail.gmail.com>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120308180833.GA25508@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 8, 2012 at 12:07 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> On Thu, Mar 08, 2012 at 12:02:50PM -0800, Andy Lutomirski wrote:
->> >
->> > I can do that if Andrew agree.
->>
->> I'm a bit lost.  nnp updates the MNT_NOSUID checks, not the MNT_NOEXEC
->> checks.  (And the effects of the two flags is different in selinux for
->> historical reasons.)  I'm sure I'm missing something.
->>
->
-> Andy, I've no idea what nnp is ;) I was only about to gather those
-> ISREG/MNT_NOEXEC to one helper since we indeed have a few places in
-> kernel which do same thing in open-coded manner.
+On Thu, Mar 08, 2012 at 10:08:33AM -0800, Tejun Heo wrote:
 
-Am I not the Andrew you were referring to?
+[..]
+> > Tejun, I noticed that in UP case, once in a while cgroup removal is
+> > hanging. Looks like it is hung in cgroup_rmdir() somewhere. I will debug
+> > more to find out what is happening. May be blkcg->refcount issue.
+> 
+> It's probably from something forgetting to put cgroup and pre_destroy
+> waiting for it.  Such bugs would have been masked before but now show
+> up as stalls during rmdir.
 
---Andy
+I am not sure what is happening here yet. What I have noticed that
+somebody is holding a reference on blkg->refcnt and that's why css->refcnt
+is not zero hence rmdir is hanging.
+
+I susect it is cfqq refcount on blkg which is not released till cfqq is
+reclaimed.
+
+Looking at the code, in general it seems to be a problem. If a task 
+issues bunch of IO, changes the cgroup and does not issue IO any more
+for some time, that means old cfqq will still be linked to task's
+cic and still be holding reference to blkg and one can't remove the
+cgroup.
+
+We had this disucssion in the past. So looks like to get rid of this
+problem, you will have to drop old cic->cfqq association during
+cgroup change to avoid hanging rmdir.
+
+Thanks
+Vivek
