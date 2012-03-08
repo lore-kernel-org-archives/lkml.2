@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758330Ab2CHVvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:51:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40986 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757682Ab2CHVvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:51:40 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120308184331.GC31129@windriver.com>
-References: <20120308184331.GC31129@windriver.com> <20120307194548.15987.36073.stgit@warthog.procyon.org.uk>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>, dwmw2@infradead.org
-Cc: dhowells@redhat.com, hpa@zytor.com, torvalds@linux-foundation.org,
-        sfr@canb.auug.org.au, mingo@redhat.com, arnd@arndb.de,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [RFC][PATCH 00/29] Disintegrate and kill asm/system.h
-Date: Thu, 08 Mar 2012 21:51:16 +0000
-Message-ID: <15564.1331243476@redhat.com>
+	id S1758630Ab2CHVxA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:53:00 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:38795 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757870Ab2CHVw6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 16:52:58 -0500
+Date: Thu, 08 Mar 2012 13:52:35 -0800 (PST)
+Message-Id: <20120308.135235.216702729705858755.davem@davemloft.net>
+To: vladislav.yasevich@hp.com
+Cc: bpoirier@suse.de, ccaulfie@redhat.com, teigland@redhat.com, sri@us.ibm.com,
+        cluster-devel@redhat.com, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] sctp: Export sctp_do_peeloff
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F59118C.9090605@hp.com>
+References: <20120308.002447.1062706659978103072.davem@davemloft.net>
+	<1331222159-28980-1-git-send-email-bpoirier@suse.de>
+	<4F59118C.9090605@hp.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 08 Mar 2012 13:52:36 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+From: Vladislav Yasevich <vladislav.yasevich@hp.com>
+Date: Thu, 08 Mar 2012 15:07:40 -0500
 
-> You'll want to be grabbing some of these to close the gaps then:
+> On 03/08/2012 10:55 AM, Benjamin Poirier wrote:
+>> lookup sctp_association within sctp_do_peeloff() to enable its use outside of
+>> the sctp code with minimal knowledge of the former.
+>> 
+>> Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+>> 
 > 
-> http://www.kernel.org/pub/tools/crosstool/files/bin/x86_64/
-> 
-> They have been a great help to me.
+> Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
 
-I have more toolchains available to me than are available there.
-
-I managed to build binutils for every arch apart from unicore32 (and hexagon
-and c6x which weren't upstream at the time).
-
-Of those for which I have binutils, I couldn't manage to build gcc for avr32,
-ia64, microblaze and openrisc.  I'm not sure whether I need a special compiler
-for sh64, but it doesn't seem so.
-
-Hopefully at some point they'll become RPMs in Fedora.  I just need to kick
-David Woodhouse a bit to finish the review.
-
-David
+Applied to net-next.
