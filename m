@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759138Ab2CHXkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 18:40:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35565 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752351Ab2CHXkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 18:40:22 -0500
-Date: Thu, 8 Mar 2012 18:40:16 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Josh Hunt <joshhunt00@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, tj@kernel.org
-Subject: Re: multi-second application stall in open()
-Message-ID: <20120308234016.GA925@redhat.com>
-References: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com>
- <CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
- <20120307162851.GC13430@redhat.com>
- <4F57AF4A.6080703@kernel.dk>
- <CAKA=qzak6N-6oHVjDozJ6KLMSWXEgzZf1xaC_1cgnoaUCyw8Ag@mail.gmail.com>
- <CAKA=qzaHJ0OcbvtT-mwKBUBvzPkxE4r-bW6gDvicKhoQeyFWEg@mail.gmail.com>
+	id S932149Ab2CHXkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 18:40:52 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54403 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756665Ab2CHXks (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 18:40:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKA=qzaHJ0OcbvtT-mwKBUBvzPkxE4r-bW6gDvicKhoQeyFWEg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <m1zkbqu46w.fsf@fess.ebiederm.org>
+References: <20120130222717.GA6393@kroah.com> <m18vkoirv9.fsf@fess.ebiederm.org>
+ <4F27C6EB.2070305@suse.cz> <m14nvc82jo.fsf@fess.ebiederm.org>
+ <CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
+ <m1wr87ywex.fsf@fess.ebiederm.org> <m1ehueyz20.fsf_-_@fess.ebiederm.org>
+ <CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
+ <CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
+ <4F54BFEC.6000206@suse.cz> <20120305160953.GA3870@kroah.com>
+ <CA+55aFy1PXiNkXw08tDM7G9AO0_92xm2mEFF961-4Wpizo+6KQ@mail.gmail.com> <m1zkbqu46w.fsf@fess.ebiederm.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 8 Mar 2012 15:40:26 -0800
+X-Google-Sender-Auth: HW-2zncvHBL-u6NFU_LYDnbGbzE
+Message-ID: <CA+55aFwSETK6bz5-q6HMKGqnweTPuR-MA6w-19-Fto13jDU4GA@mail.gmail.com>
+Subject: Re: [PATCH] sysfs: Optionally count subdirectories to support buggy applications
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Jiri Slaby <jirislaby@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 04:22:31PM -0600, Josh Hunt wrote:
+On Thu, Mar 8, 2012 at 2:18 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>
+> Keeping compatibility is easy enough that it looks like it is worth
+> doing, but maintaining 30+ years of backwards compatibility
 
-[..]
-> A crude bisection seems to show that if I revert "blkio: Set
-> must_dispatch only if we decided to not dispatch the request"
-> (bf7919371025412978268efca4b09dd847acb395) I no longer see the stalls
-> in 2.6.35. However this does not seem to solve the problem if I revert
-> it in 2.6.38.
+Stop right there.
 
-Strange. If this was the problem it should have fixed it in 2.6.38 also.
-BTW, the blktrace you sent was from 2.6.38 or 2.6.35 kernels.
+This is *not* about some arbitrary "30-year backwards compatibility".
 
-> 
-> By setting slice_idle to 0, does this basically disable plugging?
+This is about your patch BREAKING EXISTING BINARIES.
 
-It disables idling and not plugging.
+So stop the f*&^ing around already. The patch was shown to be broken,
+stop making excuses, and stop blathering.
 
-> Based on the blktrace info it seems that something is going wrong with
-> plugging with my testcase. I'm just wondering why setting slice_idle
-> to 0 seems to resolve my issue? Also, since we see unplugs in the
-> blktrace how could the requests still not be getting sent to the disk?
+End of story. Binary compatibility is more important than *any* of
+your patches. If you continue to argue anything else or making
+excuses, I'm going to ask people to just ignore your patches entirely.
 
-Unplug will just try to kick the queue. That does not mean that request
-will be dispatched. And that's the question that why are we not
-dispatching requests.
+Seriously. Binary compatibility is *so* important that I do not want
+to have anything to do with kernel developers who don't understand
+that importance. If you continue to pooh-pooh the issue, you only show
+yourself to be unreliable.  Don't do it.
 
-I had another look at traces and I think it is not just async write, but
-there is was sync write request queued and we have not dispatched that
-too for a long time.
+Dammit, I'm continually surprised by the *idiots* out there that don't
+understand that binary compatibility is one of the absolute top
+priorities. The *only* reason for an OS kernel existing in the first
+place is to serve user-space. The kernel has no relevance on its own.
+Breaking existing binaries - and then not acknowledging how horribly
+bad that was - is just about the *worst* offense any kernel developer
+can do.
 
-Added request here.
+Because that shows that they don't understand what the whole *point*
+of the kernel was after all. We're not masturbating around with some
+research project.  We never were. Even when Linux was young, the whole
+and only point was to make a *usable* system. It's why it's not some
+crazy drug-induced microkernel or other random crazy thing.
 
-  8,0    1    36921  5028.492019664   162  A  WS 63 + 8 <- (8,1) 0
-  8,0    1    36922  5028.492021620   162  Q  WS 63 + 8 [sync_supers]
-  8,0    1    36923  5028.492029721   162  G  WS 63 + 8 [sync_supers]
-  8,0    1    36924  5028.492040617   162  I   W 63 + 8 (   10896)
-[sync_supers]
-  8,0    1        0  5028.492044807     0  m   N cfq162 insert_request
-  8,0    1        0  5028.492046763     0  m   N cfq162 add_to_rr
+Really.
 
-And after a long time we dispatched the request.
-
-  8,0    0        0  5050.116841906     0  m   N cfq162 set_active wl_prio:0 wl_type:1
-  8,0    0        0  5050.116844979     0  m   N cfq162 fifo=ffff8800e8787aa0
-  8,0    0        0  5050.116846655     0  m   N cfq162 dispatch_insert
-  8,0    0        0  5050.116849728     0  m   N cfq162 dispatched a
-request
-  8,0    0        0  5050.116851683     0  m   N cfq162 activate rq, drv=1
-  8,0    0    36518  5050.116853360   166  D   W 63 + 8 (21624812743)
-[kblockd/0]
-  8,0    0    36519  5050.117236650  9671  C   W 63 + 8 (  383290) [0]
-
-So it is not async requestss being starved by sync request issue, most
-likely.
-
-Are you using any of the blk cgroup stuff?
-
-Can you put some more trace messages to figure out what's happening.
-I think you can try putting some trace messages in following functions.
-
-__blk_run_queue()
-cfq_select_queue()
-
-and try to narrow down why CFQ refuses to dispatch the request when
-this happens.
-
-Thanks
-Vivek
+                     Linus
