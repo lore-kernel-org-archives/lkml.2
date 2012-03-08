@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758601Ab2CHUCl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:02:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60490 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758547Ab2CHUCk (ORCPT
+	id S1758499Ab2CHUDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:03:14 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49678 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758187Ab2CHUDK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:02:40 -0500
-Date: Thu, 8 Mar 2012 12:02:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch] mm, hugetlb: add thread name and pid to SHM_HUGETLB
- mlock rlimit warning
-Message-Id: <20120308120238.c4486547.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1203061825070.9015@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1203061825070.9015@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 15:03:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120308194008.GJ21812@moon>
+References: <20120308165112.GF21812@moon> <CAGXu5j+4RRGjzVxLSyz0CZCNMj4dPOxJp3pYGSN_sXFsiMhUaQ@mail.gmail.com>
+ <20120308194008.GJ21812@moon>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 8 Mar 2012 12:02:50 -0800
+Message-ID: <CALCETrXpQOpAN64gfG-=iyXXy4Tid=9FyKVrT2grQxRgNPC-fg@mail.gmail.com>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Mar 2012 18:26:11 -0800 (PST)
-David Rientjes <rientjes@google.com> wrote:
-
-> Add the thread name and pid of the application that is allocating shm
-> segments with MAP_HUGETLB without being a part of
-> /proc/sys/vm/hugetlb_shm_group or having CAP_IPC_LOCK.
-> 
-> This identifies the application so it may be fixed by avoiding using the
-> deprecated exception (see Documentation/feature-removal-schedule.txt).
-> 
+On Thu, Mar 8, 2012 at 11:40 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> On Thu, Mar 08, 2012 at 11:31:58AM -0800, Kees Cook wrote:
 > ...
+>> > +       err = -EACCES;
+>> > +       if (!S_ISREG(dentry->d_inode->i_mode)   ||
+>> > +           exe_file->f_path.mnt->mnt_flags & MNT_NOEXEC)
+>> > +               goto exit;
+>>
+>> I'm starting to notice that this pattern (testing ISREG and
+>> MNT_NOEXEC) is getting repeated a few times in the kernel, and at
+>> least the no-new-privs patch (not yet in -mm but hopefully soon given
+>> the seccomp_filter work) updates this pattern everywhere. Perhaps this
+>> should be extracted into a helper first, and then this patch can call
+>> that helper here? (And then nnp can just update the single helper.)
+>>
 >
-> --- a/fs/hugetlbfs/inode.c
-> +++ b/fs/hugetlbfs/inode.c
-> @@ -946,7 +946,11 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
->  	if (creat_flags == HUGETLB_SHMFS_INODE && !can_do_hugetlb_shm()) {
->  		*user = current_user();
->  		if (user_shm_lock(size, *user)) {
-> -			printk_once(KERN_WARNING "Using mlock ulimits for SHM_HUGETLB is deprecated\n");
-> +			task_lock(current);
-> +			printk_once(KERN_WARNING
-> +				"%s (%d): Using mlock ulimits for SHM_HUGETLB is deprecated\n",
-> +				current->comm, current->pid);
-> +			task_unlock(current);
+> I can do that if Andrew agree.
 
-I assume the task_lock() is there to protect current->comm.  If so, it
-is unneeded - we're protecting against prctl(PR_SET_NAME), and
-PR_SET_NAME only operates on current, and we know this task isn't
-currently running PR_SET_NAME.
+I'm a bit lost.  nnp updates the MNT_NOSUID checks, not the MNT_NOEXEC
+checks.  (And the effects of the two flags is different in selinux for
+historical reasons.)  I'm sure I'm missing something.
 
-If there's a way for another task to alter this task's ->comm then we
-_do_ need locking.  But there isn't a way, I hope.
+--Andy
 
+>
+>        Cyrill
