@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758949Ab2CHXNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 18:13:05 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:58602 "EHLO
+	id S1758968Ab2CHXP2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 18:15:28 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:61110 "EHLO
 	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753165Ab2CHXNC (ORCPT
+	by vger.kernel.org with ESMTP id S1753165Ab2CHXP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 18:13:02 -0500
-Message-ID: <4F593CF8.2000105@amacapital.net>
-Date: Thu, 08 Mar 2012 15:12:56 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Thu, 8 Mar 2012 18:15:27 -0500
+Date: Thu, 8 Mar 2012 15:15:21 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, Alasdair G Kergon <agk@redhat.com>,
+        Will Drewry <wad@chromium.org>, Elly Jones <ellyjones@chromium.org>,
+        Milan Broz <mbroz@redhat.com>, Olof Johansson <olofj@chromium.org>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: workqueues and percpu (was: [PATCH] dm: remake of the verity
+ target)
+Message-ID: <20120308231521.GA2968@htj.dyndns.org>
+References: <1330648393-20692-1-git-send-email-msb@chromium.org>
+ <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
+ <20120306215947.GB27051@google.com>
+ <Pine.LNX.4.64.1203081656590.31821@file.rdu.redhat.com>
+ <20120308143909.bfc4cb4d.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, dchinner@redhat.com,
-        Jaya Kumar <jayalk@intworks.biz>, Sage Weil <sage@newdream.net>,
-        ceph-devel@vger.kernel.org, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org, Eric Van Hensbergen <ericvh@gmail.com>,
-        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
-        v9fs-developer@lists.sourceforge.net,
-        Miklos Szeredi <miklos@szeredi.hu>, fuse-devel@lists.sourceforge.net,
-        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 00/11 v2] Push file_update_time() into .page_mkwrite
-References: <1330602103-8851-1-git-send-email-jack@suse.cz>
-In-Reply-To: <1330602103-8851-1-git-send-email-jack@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120308143909.bfc4cb4d.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/01/2012 03:41 AM, Jan Kara wrote:
->   Hello,
+Hello,
+
+On Thu, Mar 08, 2012 at 02:39:09PM -0800, Andrew Morton wrote:
+> > I looked at it --- and using percpu variables in workqueues isn't safe 
+> > because the workqueue can change CPU if the CPU is hot-unplugged.
+
+Generally, I don't think removing preemption enable/disable around
+percpu variable access is a worthwhile optimization unles it's on
+really really really hot path.  We'll eventually add debug annotations
+to percpu accessors and the ones used outside proper preemption
+protections would need to be updated anyway.
+
+> > dm-crypt has the same bug --- it also uses workqueue with per-cpu 
+> > variables and assumes that the CPU doesn't change for a single work item.
+> > 
+> > This program shows that work executed in a workqueue can be switched to a 
+> > different CPU.
+> > 
+> > I'm wondering how much other kernel code assumes that workqueues are bound 
+> > to a specific CPU, which isn't true if we unplug that CPU.
 > 
->   to provide reliable support for filesystem freezing, filesystems need to have
-> complete control over when metadata is changed. In particular,
-> file_update_time() calls from page fault code make it impossible for
-> filesystems to prevent inodes from being dirtied while the filesystem is
-> frozen.
+> ugh.
 > 
-> To fix the issue, this patch set changes page fault code to call
-> file_update_time() only when ->page_mkwrite() callback is not provided. If the
-> callback is provided, it is the responsibility of the filesystem to perform
-> update of i_mtime / i_ctime if needed. We also push file_update_time() call
-> to all existing ->page_mkwrite() implementations if the time update does not
-> obviously happen by other means. If you know your filesystem does not need
-> update of modification times in ->page_mkwrite() handler, please speak up and
-> I'll drop the patch for your filesystem.
+> We really don't want to have to avoid using workqueues because of some
+> daft issue with CPU hot-unplug.
+
+Using or not using wq is orthogonal tho.  Using kthreads directly
+requires hooking into CPU hotplug callbacks and one might as well call
+flush_work_sync() from there instead of shutting down kthread.
+
+> And yes, there are assumptions in various work handlers that they
+> will be pinned to a single CPU.  Finding and fixing those
+> assumptions would be painful.
+>
+> Heck, even debug_smp_processor_id() can be wrong in the presence of the
+> cpu-unplug thing.
+
+Yeah, that's a generic problem with cpu unplug.
+
+> I'm not sure what we can do about it really, apart from blocking unplug
+> until all the target CPU's workqueues have been cleared.  And/or refusing
+> to unplug a CPU until all pinned-to-that-cpu kernel threads have been
+> shut down or pinned elsewhere (which is the same thing, only more
+> general).
 > 
-> As a side note, an alternative would be to remove call of file_update_time()
-> from page fault code altogether and require all filesystems needing it to do
-> that in their ->page_mkwrite() implementation. That is certainly possible
-> although maybe slightly inefficient and would require auditting 100+
-> vm_operations_structs *shiver*.
+> Tejun, is this new behaviour?  I do recall that a long time ago we
+> wrestled with unplug-vs-worker-threads and I ended up OK with the
+> result, but I forget what it was.  IIRC Rusty was involved.
 
+Unfortunately, yes, this is a new behavior.  Before, we could have
+unbound delays during unplug from work items.  Now, we have CPU
+affinity assumption breakage.  The behavior change was primarily to
+allow long running work items to use regular workqueues without
+worrying about inducing delay across cpu hotplug operations, which is
+important as it's also used on suspend / hibernation, especially on
+mobile platforms.
 
+During the cmwq conversion, I ended up auditing a lot of (I think I
+went through most of them) workqueue users and IIRC there weren't too
+many which required stable affinity.
 
-IMO updating file times should happen when changes get written out, not
-when a page is made writable, for two reasons:
+> That being said, I don't think it's worth compromising the DM code
+> because of this workqueue wart: lots of other code has the same wart,
+> and we should find a centralised fix for it.
 
-1. Correctness.  With the current approach, it's very easy for files to
-be changed after the last mtime update -- any changes between mkwrite
-and actual writeback won't affect mtime.
+Probably the best way to solve this is introducing pinned attribute to
+workqueues and have them drained automatically on cpu hotplug events.
+It'll require auditing workqueue users but I guess we'll just have to
+do it given that we need to actually distinguish the ones need to be
+pinned.  Or maybe we can use explicit queue_work_on() to distinguish
+the ones which require pinning.
 
-2. Performance.  I have an application (presumably guessable from my
-email address) for which blocking in page_mkwrite is an absolute
-show-stopper.  (In fact it's so bad that we reverted back to running on
-Windows until I hacked up a kernel to not do this.)  I have an incorrect
-patch [1] to fix it, but I haven't gotten around to a real fix.  (I also
-have stable pages reverted in my kernel.  Some day I'll submit a patch
-to make it a filesystem option.  Or maybe it should even be a block
-device / queue property like the alignment offset and optimal io size --
-there are plenty of block device and file combinations which don't
-benefit at all from stable pages.)
+Another approach would be requiring all workqueues to be drained on
+cpu offlining and requiring any work item which may stall to use
+unbound wq.  IMHO, picking out the ones which may stall would be much
+less obvious than the ones which require cpu pinning.
 
-I'd prefer if file_update_time in page_mkwrite didn't proliferate.  A
-better fix is probably to introduce a new inode flag, update it when a
-page is undirtied, and then dirty and write the inode from the writeback
-path.  (Kind of like my patch, but with an inode flag instead of a page
-flag, and with the file_update_time done from the fs.)
+Better ideas?
 
-[1] http://patchwork.ozlabs.org/patch/122516/
+Thanks.
 
---Andy
+-- 
+tejun
