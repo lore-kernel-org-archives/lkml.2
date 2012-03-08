@@ -1,133 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab2CHMg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 07:36:59 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:61387 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757436Ab2CHMg5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 07:36:57 -0500
-Date: Thu, 8 Mar 2012 13:36:47 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Linus Walleij <linus.walleij@linaro.org>
-cc: Vinod Koul <vinod.koul@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Jassi Brar <jassisinghbrar@gmail.com>,
+	id S1757656Ab2CHMxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 07:53:31 -0500
+Received: from mga03.intel.com ([143.182.124.21]:19680 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753358Ab2CHMx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 07:53:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="116346385"
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
+ __dma_request_channel()
+From: Vinod Koul <vinod.koul@intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
-In-Reply-To: <CACRpkdY4y6Dj+G0zNoeY5DGWW1CRXez4pVCju2SXc=9oNyzdGw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1203081304300.29847@axis700.grange>
+In-Reply-To: <1331206459.4657.59.camel@vkoul-udesk3>
 References: <1331101687.24656.319.camel@vkoul-udesk3>
- <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
- <20120307093026.GM17370@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
- <20120307103112.GP17370@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
- <20120307124620.GT17370@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
- <20120307142634.GA18787@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
- <20120307162755.GB18787@n2100.arm.linux.org.uk> <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
- <1331188201.4657.51.camel@vkoul-udesk3> <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
- <CACRpkdY4y6Dj+G0zNoeY5DGWW1CRXez4pVCju2SXc=9oNyzdGw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:jBm2Nr1WFmv5JpVPFL8qFTMQUQ8Ksys4KI5GMNq0siX
- rLFRMl3n4c+hA5X42yfrqZoeWY4rZqJZCjFneK95NFkS7nqeGZ
- CISwmyr99HDOP3D7Dy0EassL6D+lihKFeGh3XKTLuAPk9olNan
- I0iNTCCuf5YkQY9+BSgm6jREaQMykowgOjqY7ai3vt2vQNVLwM
- J2C7tfY66wdXSYE2Fj33xsN9NK5Syd6w/Q9Q84sGzOEjqjQ8lx
- citp+5uEiAK086ZWaj92xQrgtQmDTSCrvr3GmejMwuZoCUGto/
- P1CCz7Bofs7Q8Hov06/718ZfkR69zqIn1c1J/9rl86CpDHCFhF
- 4vCuUAmowJzo4nU5zMlviunODjmwGVEiEO/jBxIIH4zRoMUQKY
- nidsPbmc3cLAA==
+	 <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+	 <20120307093026.GM17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
+	 <20120307103112.GP17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
+	 <20120307124620.GT17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
+	 <20120307142634.GA18787@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
+	 <20120307162755.GB18787@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
+	 <1331188201.4657.51.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
+	 <1331204128.4657.54.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
+	 <1331206459.4657.59.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 08 Mar 2012 18:28:33 +0530
+Message-ID: <1331211513.4657.67.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Mar 2012, Linus Walleij wrote:
-
-> On Thu, Mar 8, 2012 at 11:16 AM, Guennadi Liakhovetski
-> <g.liakhovetski@gmx.de> wrote:
+On Thu, 2012-03-08 at 17:04 +0530, Vinod Koul wrote:
+> On Thu, 2012-03-08 at 12:22 +0100, Guennadi Liakhovetski wrote:
+> > On Thu, 8 Mar 2012, Vinod Koul wrote:
+> > 
+> > > On Thu, 2012-03-08 at 11:16 +0100, Guennadi Liakhovetski wrote:
+> > > > I still have the impression, that my specific use-case (sh-mobile), where 
+> > > > channels can be freely configured for use by _ANY_ client on one of 
+> > > > _SEVERAL_ DMAC instances, is not fully understood or taken into account. 
+> > > > For this driver any kind of fixed mapping means, that we'd have to use 
+> > > > both virtual channels and controllers, adding _a lot_ of complexity to the 
+> > > > DMAC driver and making the dmaengine core just an "obfuscation layer." 
+> > > > Yes, I remember Russell proposing core helpers for this. They would help, 
+> > > > but (1) when would they be available, (2) how well would they be suitable 
+> > > > for us, (3) they'd take the coding / maintainance burden away, but 
+> > > > wouldn't reduce complexity and run-time overhead. 
+> > > Lets try to address you case as well.
+> > > On a typical platform
+> > 
+> > Let's take the mackerel board with the sh7372 SoC. it's not the state of 
+> > the art, but that's what I'm currently working with and it should give us 
+> > a good enough idea
+> > 
+> > > 1) how many dma controllers you have?
+> > 
+> > currently supported 5 of 3 types (3 of type A, 1 of each of the types B 
+> > and C), all handled by the same driver
+> > 
+> > > 2) how many clients you have
+> > 
+> > huh... many. Maybe like 20 or more, and more, that are not yet supported, 
+> > using type A, and 1 for each of types B and C
+> > 
+> > > 3) which client can use what controller channel? How is mapping decided,
+> > > do you have a mux, is it hard wired by soc designers,....?
+> > 
+> > In general - with all the current sh-mobile hardware, that I'm aware of - 
+> > there can be several controller instances on an SoC of each controller 
+> > type. Inside each type all instances and all channels are freely 
+> > configurable. So, of 20 Type A clients they can use any channels on any 
+> > one of the 3 type A controllers. Types B and C are "degenerate" cases, 
+> > there clients are practically hard-wired to a specific DMA controller.
+> > 
+> > So, we don't have to decide on mappings for type A. We just pick up any 
+> > free channels on any controller and configure them accordingly. Whether 
+> > there's a mux somewhere - you can say so, but it's all inside the SoC, and 
+> > it's configured automatically ones you configure a physical channel to 
+> > serve a specific client.
+> > 
+> > > Can you pls give a description so that we ensure all models fit in the
+> > > final solution?
+> > 
+> > That's what I've been trying to do since several days now... I've been 
+> > saying "multiple controllers with multiple channels all freely 
+> > configurable for any device from a list" again and again... Seems I'm 
+> > speaking some strange language, that noone understands.
+> Okay. One more question before I can tell you how it can work for you
+> without you sweating it out :-)
 > 
-> >(...) our case can be handled _very_ easily:
-> >
-> > 1. a client requests a channel of a specific type
-> > 2. one of channels of that type, residing on one of compatible
-> >   controllers, is allocated, configured and handed in to the client
-> >
-> > That's it. No filtering, no post-allocation configuration - at least so
-> > far. And penalising such a simple case by forcing it to use virtual
-> > channels and filter through some unnatural mappings doesn't seem very
-> > productive to me.
+> So you have:
+> case A: Here you have N dmacs and M controllers, any controller can use
+> any channel, No constraints on channel assignments, right?
+> case B: Some hardwired controllers P which can only be used by a set
+> clients Q?
 > 
-> But you do realize that this increases the complexity of the
-> dmaengine and means more maintenance burden for the
-> subsystem maintainer that will after this have to think in two
-> different sematic ways about channel retrieveal - yeah this one
-> passes that as parameter and this one has a config struct
-> provided, then this one use a filter function still - etc.
+> Anything else I missed in your description?
+Assuming I didn't miss...
 
-Yes, I do. This is why I've marked it an RFC - I'm open to a discussion, 
-what's the best solution to suit us all.
+The case B can be handled without sweat by platforms channel mapping
+information.
 
-> That is, of course, unless you convert all the existing DMA
-> engines to do it the same way, then it's redesigning proper.
+Case A where we don't find that devices exist in map, thus being treated
+as generic DMA channels and can be handled easily in sequence. So when
+someone in Q request a channel it would get first channel in Ps
 
-No, don't think it would be reasonable or maybe even possible to 
-completely remove the filter. At least this wasn't an (immediate) goal of 
-this patch. However, if we decide, that in principle such an API extension 
-should make filters redundant, we can gradually over time look at various 
-drivers and get rid of the filters.
+This way we handle both of them in a transparent manner to both clients
+and controllers. 
 
-> In that case I am much more positive to the change, even
-> if it doesn't take us all the way to the new channel mappings
-> we want to have.
-> 
-> You haven't stated whether you will go in and rewrite the other
-> drivers to use this scheme or whether you will just add this one
-> kludge to handle this one DMA controller, then just update
-> all others to ignore the parameter. (You'd obviously have to
-> do that to get this to even compile...)
-> 
-> So the *proper* way to refactor to using this scheme would
-> be to introduce this new scheme *and* remove the filter
-> function from all the other drivers and DMA engine at large,
-> so it's not needed anymore. Which means a bit of refactoring.
-> 
-> Currently drivers have to pass a filter function from
-> platform data to filter out relevant channels, and with
-> the new style (this patch plus removing all filter functions)
-> it will be passing something else instead. That's all
-> fine, and actually an improvement, because passing around
-> a filter function is not as good as passing some struct
-> with data.
+Perhaps we can also add capability to know that if channel is to be
+searched in map or not - would be anyway required for non slave cases.
 
-Agree in principle, but I don't think I can claim, that I'm sufficiently 
-certain, that all drivers can be reasonably converted. At least, thinking 
-again about Russell's approach to implementing filters in DMA device 
-drivers themselves, it seems to me, it should indeed be possible to quite 
-easily just pass the same argument, that's currently passed to the filter 
-function, to the allocation request instead and call the filter internally 
-in .device_alloc_chan_resources() in the very beginning instead.
+-- 
+~Vinod
 
-> So does RFC patch mean you will fix this up for everyone
-> or does it mean something else?
-
-I currently count almost 40 calls to dma_request_channel() and around 
-20-25 DMA drivers in the kernel... So, I'm not sure whether it's 
-reasonable to try to pull such a change globally over one release cycle.
-
-Thanks
-Guennadi
-
-> If you're not also planning to get rid of the filter functions
-> for all other drivers I don't see this going anywhere right
-> now. It is not beneficial for dmaengine, the only benefit
-> is one more kludgy driver to maintain.
-> 
-> Yours,
-> Linus Walleij
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
