@@ -1,82 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab2CHJIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 04:08:14 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:1187 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582Ab2CHJII (ORCPT
+	id S1755646Ab2CHJLV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 04:11:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50833 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754582Ab2CHJLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 04:08:08 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6642"; a="168261685"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>
-Subject: [PATCH] staging: ram_console: Fix section mismatches
-Date: Thu,  8 Mar 2012 01:08:04 -0800
-Message-Id: <1331197684-9163-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.3.327.g2980b
-In-Reply-To: <1331170478-30538-1-git-send-email-john.stultz@linaro.org>
-References: <1331170478-30538-1-git-send-email-john.stultz@linaro.org>
+	Thu, 8 Mar 2012 04:11:18 -0500
+From: Bryan Wu <bryan.wu@canonical.com>
+To: rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        linux@arm.linux.org.uk
+Subject: [PATCH 1/3] led-class: change back LEDS_CLASS to tristate instead of bool
+Date: Thu,  8 Mar 2012 17:11:01 +0800
+Message-Id: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: vmlinux.o(.text+0x25d5fc): Section mismatch in reference
-from the function ram_console_driver_probe() to the function
-.init.text:ram_console_init()
-The function ram_console_driver_probe() references
-the function __init ram_console_init().
-This is often because ram_console_driver_probe lacks a __init
-annotation or the annotation of ram_console_init is wrong.
+After moving some core functions to led-core.c, led-class.c can be built as
+module again.
 
-Mark ram_console_driver_probe() as __devinit because it's a probe
-function and propagate the __devinit markings to the __init
-functions the probe calls.
-
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
 ---
+ drivers/leds/Kconfig     |    2 +-
+ drivers/leds/led-class.c |   70 ----------------------------------------------
+ drivers/leds/led-core.c  |   70 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 71 insertions(+), 71 deletions(-)
 
-Can we merge this patch too? Maybe we can get rid of the 
-lateinit call too?
-
- drivers/staging/android/ram_console.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/android/ram_console.c b/drivers/staging/android/ram_console.c
-index 73215e2..9525994 100644
---- a/drivers/staging/android/ram_console.c
-+++ b/drivers/staging/android/ram_console.c
-@@ -153,7 +153,7 @@ void ram_console_enable_console(int enabled)
- 		ram_console.flags &= ~CON_ENABLED;
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index 9ca28fc..3f17f0d 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -17,7 +17,7 @@ menuconfig NEW_LEDS
+ if NEW_LEDS
+ 
+ config LEDS_CLASS
+-	bool "LED Class Support"
++	tristate "LED Class Support"
+ 	help
+ 	  This option enables the led sysfs class in /sys/class/leds.  You'll
+ 	  need this to do anything useful with LEDs.  If unsure, say N.
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index 0c8739c..5bff843 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -110,50 +110,6 @@ static void led_timer_function(unsigned long data)
+ 	mod_timer(&led_cdev->blink_timer, jiffies + msecs_to_jiffies(delay));
  }
  
--static void __init
-+static void __devinit
- ram_console_save_old(struct ram_console_buffer *buffer, char *dest)
- {
- 	size_t old_log_size = buffer->size;
-@@ -205,7 +205,7 @@ ram_console_save_old(struct ram_console_buffer *buffer, char *dest)
- 	       &buffer->data[0], buffer->start);
+-static void led_stop_software_blink(struct led_classdev *led_cdev)
+-{
+-	/* deactivate previous settings */
+-	del_timer_sync(&led_cdev->blink_timer);
+-	led_cdev->blink_delay_on = 0;
+-	led_cdev->blink_delay_off = 0;
+-}
+-
+-static void led_set_software_blink(struct led_classdev *led_cdev,
+-				   unsigned long delay_on,
+-				   unsigned long delay_off)
+-{
+-	int current_brightness;
+-
+-	current_brightness = led_get_brightness(led_cdev);
+-	if (current_brightness)
+-		led_cdev->blink_brightness = current_brightness;
+-	if (!led_cdev->blink_brightness)
+-		led_cdev->blink_brightness = led_cdev->max_brightness;
+-
+-	if (led_get_trigger_data(led_cdev) &&
+-	    delay_on == led_cdev->blink_delay_on &&
+-	    delay_off == led_cdev->blink_delay_off)
+-		return;
+-
+-	led_stop_software_blink(led_cdev);
+-
+-	led_cdev->blink_delay_on = delay_on;
+-	led_cdev->blink_delay_off = delay_off;
+-
+-	/* never on - don't blink */
+-	if (!delay_on)
+-		return;
+-
+-	/* never off - just set to brightness */
+-	if (!delay_off) {
+-		led_set_brightness(led_cdev, led_cdev->blink_brightness);
+-		return;
+-	}
+-
+-	mod_timer(&led_cdev->blink_timer, jiffies + 1);
+-}
+-
+-
+ /**
+  * led_classdev_suspend - suspend an led_classdev.
+  * @led_cdev: the led_classdev to suspend.
+@@ -262,32 +218,6 @@ void led_classdev_unregister(struct led_classdev *led_cdev)
  }
+ EXPORT_SYMBOL_GPL(led_classdev_unregister);
  
--static int __init ram_console_init(struct ram_console_buffer *buffer,
-+static int __devinit ram_console_init(struct ram_console_buffer *buffer,
- 				   size_t buffer_size, char *old_buf)
+-void led_blink_set(struct led_classdev *led_cdev,
+-		   unsigned long *delay_on,
+-		   unsigned long *delay_off)
+-{
+-	del_timer_sync(&led_cdev->blink_timer);
+-
+-	if (led_cdev->blink_set &&
+-	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
+-		return;
+-
+-	/* blink with 1 Hz as default if nothing specified */
+-	if (!*delay_on && !*delay_off)
+-		*delay_on = *delay_off = 500;
+-
+-	led_set_software_blink(led_cdev, *delay_on, *delay_off);
+-}
+-EXPORT_SYMBOL(led_blink_set);
+-
+-void led_brightness_set(struct led_classdev *led_cdev,
+-			enum led_brightness brightness)
+-{
+-	led_stop_software_blink(led_cdev);
+-	led_cdev->brightness_set(led_cdev, brightness);
+-}
+-EXPORT_SYMBOL(led_brightness_set);
+-
+ static int __init leds_init(void)
  {
- #ifdef CONFIG_ANDROID_RAM_CONSOLE_ERROR_CORRECTION
-@@ -306,7 +306,7 @@ static ssize_t ram_console_ecc_string(char *str, size_t len)
- #endif
- }
+ 	leds_class = class_create(THIS_MODULE, "leds");
+diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+index 016d19f..d686004 100644
+--- a/drivers/leds/led-core.c
++++ b/drivers/leds/led-core.c
+@@ -23,3 +23,73 @@ EXPORT_SYMBOL_GPL(leds_list_lock);
  
--static int ram_console_driver_probe(struct platform_device *pdev)
-+static int __devinit ram_console_driver_probe(struct platform_device *pdev)
- {
- 	struct resource *res = pdev->resource;
- 	size_t start;
+ LIST_HEAD(leds_list);
+ EXPORT_SYMBOL_GPL(leds_list);
++
++static void led_stop_software_blink(struct led_classdev *led_cdev)
++{
++	/* deactivate previous settings */
++	del_timer_sync(&led_cdev->blink_timer);
++	led_cdev->blink_delay_on = 0;
++	led_cdev->blink_delay_off = 0;
++}
++
++static void led_set_software_blink(struct led_classdev *led_cdev,
++				   unsigned long delay_on,
++				   unsigned long delay_off)
++{
++	int current_brightness;
++
++	current_brightness = led_get_brightness(led_cdev);
++	if (current_brightness)
++		led_cdev->blink_brightness = current_brightness;
++	if (!led_cdev->blink_brightness)
++		led_cdev->blink_brightness = led_cdev->max_brightness;
++
++	if (led_get_trigger_data(led_cdev) &&
++	    delay_on == led_cdev->blink_delay_on &&
++	    delay_off == led_cdev->blink_delay_off)
++		return;
++
++	led_stop_software_blink(led_cdev);
++
++	led_cdev->blink_delay_on = delay_on;
++	led_cdev->blink_delay_off = delay_off;
++
++	/* never on - don't blink */
++	if (!delay_on)
++		return;
++
++	/* never off - just set to brightness */
++	if (!delay_off) {
++		led_set_brightness(led_cdev, led_cdev->blink_brightness);
++		return;
++	}
++
++	mod_timer(&led_cdev->blink_timer, jiffies + 1);
++}
++
++
++void led_blink_set(struct led_classdev *led_cdev,
++		   unsigned long *delay_on,
++		   unsigned long *delay_off)
++{
++	del_timer_sync(&led_cdev->blink_timer);
++
++	if (led_cdev->blink_set &&
++	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
++		return;
++
++	/* blink with 1 Hz as default if nothing specified */
++	if (!*delay_on && !*delay_off)
++		*delay_on = *delay_off = 500;
++
++	led_set_software_blink(led_cdev, *delay_on, *delay_off);
++}
++EXPORT_SYMBOL(led_blink_set);
++
++void led_brightness_set(struct led_classdev *led_cdev,
++			enum led_brightness brightness)
++{
++	led_stop_software_blink(led_cdev);
++	led_cdev->brightness_set(led_cdev, brightness);
++}
++EXPORT_SYMBOL(led_brightness_set);
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.9
 
