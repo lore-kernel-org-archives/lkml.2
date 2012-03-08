@@ -1,98 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab2CHRre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 12:47:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63879 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027Ab2CHRrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 12:47:32 -0500
-Date: Thu, 8 Mar 2012 18:40:23 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Cc: Mark Salter <msalter@redhat.com>, linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH 2/2] mm/linux-next: Fix rcu locking in vm_is_stack
-Message-ID: <20120308174023.GA13424@redhat.com>
-References: <1331045377.17099.2.camel@deneb.redhat.com> <1331064994-6693-1-git-send-email-siddhesh.poyarekar@gmail.com> <1331064994-6693-2-git-send-email-siddhesh.poyarekar@gmail.com> <20120307153849.GA18879@redhat.com> <CAAHN_R3JW=7VUSOEkiZMctz8zq_njAdJgngMoRF_EDZ4krVbTg@mail.gmail.com>
+	id S1753523Ab2CHRvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 12:51:24 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60905 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab2CHRvX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 12:51:23 -0500
+Date: Thu, 8 Mar 2012 17:51:19 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] aio: fix the "too late munmap()" race
+Message-ID: <20120308175119.GY23916@ZenIV.linux.org.uk>
+References: <20120307051634.GR23916@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAHN_R3JW=7VUSOEkiZMctz8zq_njAdJgngMoRF_EDZ4krVbTg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120307051634.GR23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08, Siddhesh Poyarekar wrote:
->
-> On Wed, Mar 7, 2012 at 9:08 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > rcu_read_lock() can not help without the additional checks. By the
-> > time you take it, task->thread_group->next can point to nowhere.
->
-> I thought I understood this the second time, but I think I haven't.
->
-> > Once again. You have the task_struct *task. It exits,
-> > but task->thread_group->next still points to another thread T. Now suppose
-> > that T exits too. But task->thread_group->next was not changed, it still
-> > points to T. RCU grace period passes, T is freed.
->
-> This is the point I haven't understood. From what I understand about
-> rcu, the rcu update will first update task->thread_group->next
+Current code has put_ioctx() called asynchronously from aio_fput_routine();
+that's done *after* we have killed the request that used to pin ioctx,
+so there's nothing to stop io_destroy() waiting in wait_for_all_aios()
+from progressing.  As the result, we can end up with async call of
+put_ioctx() being the last one and possibly happening during exit_mmap()
+or elf_core_dump(), neither of which expects stray munmap() being done
+to them...
 
-Not in this case. see __unhash_process(p)->list_del_rcu(p->thread_group).
+We do need to prevent _freeing_ ioctx until aio_fput_routine() is done
+with that, but that's all we care about - neither io_destroy() nor
+exit_aio() will progress past wait_for_all_aios() until aio_fput_routine()
+does really_put_req(), so the ioctx teardown won't be done until then
+and we don't care about the contents of ioctx past that point.
 
-You missed the fact that ->thread_group differs from the "usual" rcu
-protected list. The _head_ of the list can be list_del_rcu'd. Not the
-first/last/any entry, even the head.
+Since actual freeing of these suckers is RCU-delayed, we don't need to
+bump ioctx refcount when request goes into list for async removal.
+All we need is rcu_read_lock held just over the ->ctx_lock-protected
+area in aio_fput_routine().
 
-Or IOW, we do not really have the head. Every task is the list entry,
-but it also can be be used as a head by while_each_thread().
-
-> and
-> then reclaim the struct it pointed to and not the other way around. So
-> with:
->
-> >>               rcu_read_lock();
-> >> -             while_each_thread(task, t) {
-> >> +             t = list_first_entry_rcu(&task->thread_group,
-> >> +                                      struct task_struct, thread_group);
->
-> since I have the rcu_read_lock when I'm touching the rcu protected
-> list,
-
-It is not rcu-protected if this task has already exited, that is why
-you need (say) pid_alive() check.
-
-> I guess there is a corner case where the current task is released and
-> thread_group is rcu_list_del()'d.
-
-Yes, assuming that "current" means this "task",
-
-> In that case too, before this
-> happens, the proc entry is removed
-
-I guess you meant proc_flush_task()... Not sure I really understand,
-it can't "remove" the opened entry. This is just optimization which
-tries to shrink the cache.
-
-But this doesn't matter, it can exit right after get_pid_task() succeeds.
-(OK, and after mm_for_maps() in this particular case, otherwise m_start()
-fails).
-
-> and the task namespace is unmounted
-> from /proc.
-
-Again, this doesn't matter, but note the nr == 1 check. This is only
-called when init exits and this simply does kern_unmount().
-
-> Also, the thread_group being deleted from list is merely
-> an update of references and we should get the next element
-
-Yes, yes, yes, but this "next element" can exit too before you take
-rcu_read_lock, and in this case the deleted entry won't be updated.
-That is the problem.
-
-Oleg.
-
+Cc: stable@vger.kernel.org
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+[on top of the previous patch, applies to anything past 2008 when freeing
+via call_rcu() went in; earlier versions just need kmem_cache_free() done
+via call_rcu() as commit abf137dd7712132ee56d5b3143c2ff61a72a5faa does,
+except that we don't really need to delay playing with aio_nr - mainline
+also will be better off by not bothering with that]
+diff --git a/fs/aio.c b/fs/aio.c
+index f6578cb..8cf3796 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -228,12 +228,6 @@ static void __put_ioctx(struct kioctx *ctx)
+ 	call_rcu(&ctx->rcu_head, ctx_rcu_free);
+ }
+ 
+-static inline void get_ioctx(struct kioctx *kioctx)
+-{
+-	BUG_ON(atomic_read(&kioctx->users) <= 0);
+-	atomic_inc(&kioctx->users);
+-}
+-
+ static inline int try_get_ioctx(struct kioctx *kioctx)
+ {
+ 	return atomic_inc_not_zero(&kioctx->users);
+@@ -609,11 +603,16 @@ static void aio_fput_routine(struct work_struct *data)
+ 			fput(req->ki_filp);
+ 
+ 		/* Link the iocb into the context's free list */
++		rcu_read_lock();
+ 		spin_lock_irq(&ctx->ctx_lock);
+ 		really_put_req(ctx, req);
++		/*
++		 * at that point ctx might've been killed, but actual
++		 * freeing is RCU'd
++		 */
+ 		spin_unlock_irq(&ctx->ctx_lock);
++		rcu_read_unlock();
+ 
+-		put_ioctx(ctx);
+ 		spin_lock_irq(&fput_lock);
+ 	}
+ 	spin_unlock_irq(&fput_lock);
+@@ -644,7 +643,6 @@ static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+ 	 * this function will be executed w/out any aio kthread wakeup.
+ 	 */
+ 	if (unlikely(!fput_atomic(req->ki_filp))) {
+-		get_ioctx(ctx);
+ 		spin_lock(&fput_lock);
+ 		list_add(&req->ki_list, &fput_head);
+ 		spin_unlock(&fput_lock);
