@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757340Ab2CHLyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:54:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16464 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756972Ab2CHLyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:54:06 -0500
-Message-ID: <4F589DD7.1040704@redhat.com>
-Date: Thu, 08 Mar 2012 13:53:59 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1757360Ab2CHLzc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:55:32 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:47981 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757206Ab2CHLz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 06:55:29 -0500
+Date: Thu, 8 Mar 2012 17:25:06 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Roland Dreier <roland@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Paul Turner <pjt@google.com>, Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: runnable tasks never making it to a runqueue where they can run?
+Message-ID: <20120308115506.GA22656@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <CAL1RGDUbxcx+cCM_mf1nFJ=Jz0SyaiW0ffxiY4gZ6KNWzJCnMg@mail.gmail.com>
+ <1331137905.11248.355.camel@twins>
+ <CAG4TOxM2yGvFo5O9x0M6H2GONPyF9XVOLwonfS-1gkpskkO+0w@mail.gmail.com>
+ <1331202480.11248.375.camel@twins>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: Re: linux-next: Tree for Mar 7 (kvm)
-References: <20120307181009.bc377d39ae4f1d575305c693@canb.auug.org.au> <4F57E791.6070205@xenotime.net>
-In-Reply-To: <4F57E791.6070205@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1331202480.11248.375.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12030811-4790-0000-0000-000001B1545F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2012 12:56 AM, Randy Dunlap wrote:
-> On 03/06/2012 11:10 PM, Stephen Rothwell wrote:
->
-> > Hi all,
-> > 
-> > Changes since 20120306:
-> > 
-> > The kvm tree lost its build failure.
->
->
-> I'm getting this build error on X86_32 (i386):
->
-> arch/x86/kvm/x86.c:1042: Error: no instruction mnemonic suffix given and no register operands; can't size instruction
->
->
+* Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-03-08 11:28:00]:
 
-Patch to follow.
+> select_task_rq_fair() will very likely end up in select_idle_sibling()
+> which will never select the smt1 if smt0 is idle
 
--- 
-error compiling committee.c: too many arguments to function
+s/idle/busy?
+
+> (even if smt0 isn't in
+> the cpus allowed mask) -- Vatsa is currently reworking that area, this
+> is something he might want to consider.
+
+The patch I sent couple of days back should likely fix this issue:
+
+http://marc.info/?l=linux-kernel&m=133096114129607&w=2
+
+- vatsa
 
