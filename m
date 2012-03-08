@@ -1,83 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab2CHBf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 20:35:27 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:50985 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab2CHBfX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 20:35:23 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Colin Cross <ccross@android.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 09/11] android: persistent_ram: add notrace to persistent_ram_write
-Date: Wed,  7 Mar 2012 17:34:36 -0800
-Message-Id: <1331170478-30538-10-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1331170478-30538-1-git-send-email-john.stultz@linaro.org>
-References: <1331170478-30538-1-git-send-email-john.stultz@linaro.org>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030801-3270-0000-0000-000004A0A14C
+	id S1753981Ab2CHBfP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 20:35:15 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:54668 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752730Ab2CHBfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 20:35:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
+	twt+n5Ll37OslTPrXLphdEJk28pbFrI6H79Z9SiM6OtCUDCXsKDgxp6M1fGoID86
+	V37XSXq5iK93Aiz2JLwQqxam/3pgvGY1Knaloi2fAzKu6drrurs8YrdogzwzsqRr
+	wZhC4Y73/9ORt937GiLEZP8xPrcdWfCqUCqmbOTsY3s=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.10-rc0
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 07 Mar 2012 17:35:07 -0800
+Message-ID: <7v7gyvkh84.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: F09C36BE-68BE-11E1-8C8B-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Cross <ccross@android.com>
 
-Add the notrace attribute to persistent_ram_write and the
-non-ecc functions that it calls to allow persistent_ram to
-be used for ftracing (only when ecc is disabled).
+A release candidate Git 1.7.10-rc0 is now available for testing at
+the usual places.
 
-CC: Greg KH <gregkh@linuxfoundation.org>
-CC: Android Kernel Team <kernel-team@android.com>
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- drivers/staging/android/persistent_ram.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+The release tarballs are found at:
 
-diff --git a/drivers/staging/android/persistent_ram.c b/drivers/staging/android/persistent_ram.c
-index 3eb2fb4..e08f257 100644
---- a/drivers/staging/android/persistent_ram.c
-+++ b/drivers/staging/android/persistent_ram.c
-@@ -96,7 +96,7 @@ static inline ssize_t buffer_size_add_clamp(struct persistent_ram_zone *prz,
- 	return 0;
- }
- 
--static void persistent_ram_encode_rs8(struct persistent_ram_zone *prz,
-+static void notrace persistent_ram_encode_rs8(struct persistent_ram_zone *prz,
- 	uint8_t *data, size_t len, uint8_t *ecc)
- {
- 	int i;
-@@ -121,7 +121,7 @@ static int persistent_ram_decode_rs8(struct persistent_ram_zone *prz,
- 				NULL, 0, NULL, 0, NULL);
- }
- 
--static void persistent_ram_update_ecc(struct persistent_ram_zone *prz,
-+static void notrace persistent_ram_update_ecc(struct persistent_ram_zone *prz,
- 	unsigned int start, unsigned int count)
- {
- 	struct persistent_ram_buffer *buffer = prz->buffer;
-@@ -258,7 +258,7 @@ ssize_t persistent_ram_ecc_string(struct persistent_ram_zone *prz,
- 	return ret;
- }
- 
--static void persistent_ram_update(struct persistent_ram_zone *prz,
-+static void notrace persistent_ram_update(struct persistent_ram_zone *prz,
- 	const void *s, unsigned int start, unsigned int count)
- {
- 	struct persistent_ram_buffer *buffer = prz->buffer;
-@@ -288,7 +288,7 @@ persistent_ram_save_old(struct persistent_ram_zone *prz)
- 	memcpy(prz->old_log + size - start, &buffer->data[0], start);
- }
- 
--int persistent_ram_write(struct persistent_ram_zone *prz,
-+int notrace persistent_ram_write(struct persistent_ram_zone *prz,
- 	const void *s, unsigned int count)
- {
- 	int rem;
--- 
-1.7.3.2.146.gca209
+    http://code.google.com/p/git-core/downloads/list
 
+and their SHA-1 checksums are:
+
+96d1d25fd4f681246009b24fcaa4e41d88223f5b  git-1.7.10.rc0.tar.gz
+a8c76f12980a287e0f6a0f285768ab492caaed98  git-htmldocs-1.7.10.rc0.tar.gz
+8f5f8aa4f692eb3d6e3549f6eb0fb0b5419c2f57  git-manpages-1.7.10.rc0.tar.gz
+
+Also the following public repositories all have a copy of the v1.7.10.rc0
+tag and the master branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+The other day, soon after announcement of the 1.7.9.3 maintenance
+release, there was a report that some tests did not pass on one
+platform.  Even though it is better than not seeing one, such a late
+report saddens us, especially because the exact test breakage has
+been in the master and next branches for quite some time for people
+to catch before it goes to any released versions.
+
+Please test this and later pre-releases to make sure no such late
+report has to come for the upcoming 1.7.10 final.
+
+Thanks.
+
+
+Git v1.7.10 Release Notes (draft)
+=========================
+
+Compatibility Notes
+-------------------
+
+ * From this release on, the "git merge" command in an interactive
+   session will start an editor when it automatically resolves the
+   merge for the user to explain the resulting commit, just like the
+   "git commit" command does when it wasn't given a commit message.
+
+   If you have a script that runs "git merge" and keeps its standard
+   input and output attached to the user's terminal, and if you do not
+   want the user to explain the resulting merge commits, you can
+   export GIT_MERGE_AUTOEDIT environment variable set to "no", like
+   this:
+
+	#!/bin/sh
+	GIT_MERGE_AUTOEDIT=no
+	export GIT_MERGE_AUTOEDIT
+
+   to disable this behaviour (if you want your users to explain their
+   merge commits, you do not have to do anything).  Alternatively, you
+   can give the "--no-edit" option to individual invocations of the
+   "git merge" command if you know everybody who uses your script has
+   Git v1.7.8 or newer.
+
+
+Updates since v1.7.9
+--------------------
+
+UI, Workflows & Features
+
+ * Teams for localizing the messages from the Porcelain layer of
+   commands are starting to form, thanks to Jiang Xin who volunteered
+   to be the localization coordinator.  An initial set of translated
+   messages for simplified chinese is available.
+
+ * The configuration mechanism learned an "include" facility; an
+   assignment to the include.path pseudo-variable causes the named
+   file to be included in-place when Git looks up configuration
+   variables.
+
+ * A content filter (clean/smudge) used to be just a way to make the
+   recorded contents "more useful", and allowed to fail; a filter can
+   new optionally be marked as "required".
+
+ * Options whose names begin with "--no-" (e.g. the "--no-verify"
+   option of the "git commit" command) can be negated by omitting
+   "no-" from its name, e.g. "git commit --verify".
+
+ * "git am" learned to pass "-b" option to underlying "git mailinfo", so
+   that bracketed string other than "PATCH" at the beginning can be kept.
+
+ * "git clone" learned "--single-branch" option to limit cloning to a
+   single branch (surprise!).
+
+ * "git clone" learned to detach the HEAD in the resulting repository
+   when the source repository's HEAD does not point to a branch.
+
+ * When showing a patch while ignoring whitespace changes, the context
+   lines are taken from the postimage, in order to make it easier to
+   view the output.
+
+ * "git diff --stat" learned to adjust the width of the output on
+   wider terminals, and give more columns to pathnames as needed.
+
+ * "diff-highlight" filter (in contrib/) was updated to produce more
+   aesthetically pleasing output.
+
+ * "fsck" learned "--no-dangling" option to omit dangling object
+   information.
+
+ * "git log -G" learned to pay attention to the "-i" option and can
+   find patch hunks that introduce or remove a string that matches the
+   given pattern ignoring the case.
+
+ * "git merge" in an interactive session learned to spawn the editor
+   by default to let the user edit the auto-generated merge message,
+   to encourage people to explain their merges better. Legacy scripts
+   can export GIT_MERGE_AUTOEDIT=no to retain the historical behavior.
+   Both "git merge" and "git pull" can be given --no-edit from the
+   command line to accept the auto-generated merge message.
+
+ * The advise message given when the user didn't give enough clue on
+   what to merge to "git pull" and "git merge" has been updated to
+   be more concise and easier to understand.
+
+ * "git push" learned the "--prune" option, similar to "git fetch".
+
+ * "git symbolic-ref" learned the "--short" option to abbreviate the
+   refname it shows unambiguously.
+
+ * "git tag --list" can be given "--points-at <object>" to limit its
+   output to those that point at the given object.
+
+ * "gitweb" allows intermediate entries in the directory hierarchy
+   that leads to a projects to be clicked, which in turn shows the
+   list of projects inside that directory.
+
+ * "gitweb" learned to read various pieces of information for the
+   repositories lazily, instead of reading everything that could be
+   needed (including the ones that are not necessary for a specific
+   task).
+
+ * Project search in "gitweb" shows the substring that matched in the
+   project name and description highlighted.
+
+Foreign Interface
+
+ * Improved handling of views, labels and branches in "git-p4" (in contrib).
+
+ * "git-p4" (in contrib) suffered from unnecessary merge conflicts when
+   p4 expanded the embedded $RCS$-like keywords; it can be now told to
+   unexpand them.
+
+ * Some "git-svn" updates.
+
+ * "vcs-svn"/"svn-fe" learned to read dumps with svn-deltas and
+   support incremental imports.
+
+ * "git difftool/mergetool" learned to drive DeltaWalker.
+
+Performance
+
+ * Unnecessary calls to parse_object() "git upload-pack" makes in
+   response to "git fetch", have been eliminated, to help performance
+   in repositories with excessive number of refs.
+
+Internal Implementation (please report possible regressions)
+
+ * Recursive call chains in "git index-pack" to deal with long delta
+   chains have been flattened, to reduce the stack footprint.
+
+ * Use of add_extra_ref() API is now gone, to make it possible to
+   cleanly restructure the overall refs API.
+
+ * The command line parser of "git pack-objects" now uses parse-options
+   API.
+
+ * The test suite supports the new "test_pause" helper function.
+
+ * Parallel to the test suite, there is a beginning of performance
+   benchmarking framework.
+
+ * t/Makefile is adjusted to prevent newer versions of GNU make from
+   running tests in seemingly random order.
+
+ * The code to check if a path points at a file beyond a symbolic link
+   has been restructured to be thread-safe.
+
+Also contains minor documentation updates and code clean-ups.
+
+
+Fixes since v1.7.9
+------------------
+
+Unless otherwise noted, all the fixes since v1.7.9 in the maintenance
+releases are contained in this release (see release notes to them for
+details).
+
+ * "git bundle" did not record boundary commits correctly when there
+   are many of them.
+   (merge efe4be1 tr/maint-bundle-boundary later to maint).
+
+ * "git diff-index" and its friends at the plumbing level showed the
+   "diff --git" header and nothing else for a path whose cached stat
+   info is dirty without actual difference when asked to produce a
+   patch. This was a longstanding bug that we could have fixed long
+   time ago.
+   (merge b3f01ff jc/maint-diff-patch-header later to maint).
+
+ * The code to synthesize the fake ancestor tree used by 3-way merge
+   fallback in "git am" was not prepared to read a patch created with
+   a non-standard -p<num> value.
+   (merge a61ba26 jc/am-3-nonstandard-popt later to maint).
+
+ * "gitweb" used to drop warnings in the log file when "heads" view is
+   accessed in a repository whose HEAD does not point at a valid
+   branch.
