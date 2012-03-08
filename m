@@ -1,293 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab2CHVSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:18:18 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40350 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753987Ab2CHVSP (ORCPT
+	id S1755953Ab2CHVTj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:19:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54277 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab2CHVTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:18:15 -0500
-Message-ID: <4F592210.1030003@gmail.com>
-Date: Thu, 08 Mar 2012 13:18:08 -0800
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 8 Mar 2012 16:19:38 -0500
+Date: Thu, 8 Mar 2012 15:19:27 -0600
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        davej@redhat.com, jboyer@redhat.com, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] hugetlbfs: lockdep annotate root inode properly
+Message-ID: <20120308211926.GB6546@boyd>
+References: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20120308130256.c7855cbd.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Felix Fietkau <nbd@openwrt.org>
-CC: Mohammed Shafi <shafi.wireless@gmail.com>, linux-kernel@vger.kernel.org,
-        Linux-netdev <netdev@vger.kernel.org>,
-        Linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
- DMADBG_7=0x00008040
-References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org>
-In-Reply-To: <4F579A88.6030503@openwrt.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="qcHopEYAB45HaUaB"
+Content-Disposition: inline
+In-Reply-To: <20120308130256.c7855cbd.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2012 09:27 AM, Felix Fietkau wrote:
-> On 2012-03-07 4:24 PM, Justin P. Mattock wrote:
->> On 03/07/2012 07:19 AM, Mohammed Shafi wrote:
->>> On Wed, Mar 7, 2012 at 7:55 PM, Justin P. Mattock
->>> <justinmattock@gmail.com>   wrote:
->>>> ath9k craps out from time to time(more annoying if anything)
->>>>
->>>> [44309.840830] ath: Failed to stop TX DMA, queues=0x001!
->>>> [44309.858246] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
->>>> [44309.858255] ath: Could not stop RX, we could be confusing the DMA engine
->>>> when we start RX up
->>>> [44309.932801] ath: Failed to stop TX DMA, queues=0x001!
->>>> [44309.950352] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
->>>> [44309.950361] ath: Could not stop RX, we could be confusing the DMA engine
->>>> when we start RX up
->>>> [44310.024301] ath: Failed to stop TX DMA, queues=0x001!
->>>> [44310.041641] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
->>>> [44310.041646] ath: Could not stop RX, we could be confusing the DMA engine
->>>> when we start RX up
->>>> [44310.116316] ath: Failed to stop TX DMA, queues=0x001!
->>>> [44310.133909] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
->>>> [44310.133918] ath: Could not stop RX, we could be confusing the DMA engine
->>>> when we start RX up
->>>> [44310.208021] ath: Failed to stop TX DMA, queues=0x001!
->>>> [44310.225752] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00008040
->>>> [44310.225761] ath: Could not stop RX, we could be confusing the DMA engine
->>>> when we start RX up
->>>> [44310.299922] ath: Failed to stop TX DMA, queues=0x001!
->>>> [44310.317579] ath: DMA failed to stop in 10 ms AR_CR=0x00000024
->>>> AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
->>>> [44310.317587] ath: Could not stop RX, we could be confusing the DMA engine
->>>> whe
->>>
->>> this is has become a know issue but less harmful, please try to see if
->>> the workaround of disabling power save helps
->>>
->>> iw dev wlanX set power_save off
->>>
->>
->> ok! I have set that on the machine.. will see if I get this message in
->> the upcoming weeks.
-> Also, please try this patch with powersave enabled:
-> http://nbd.name/ps-fix.patch
->
-> - Felix
->
 
+--qcHopEYAB45HaUaB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-probably to early to tell if this patch is working or not(since this bug 
-is shows up randomly), but I have applied this to the current Mainline 
-and am so far not seeing the DMA failed to stop
-as for any issues: waking up from suspend I get no 
-connection(rmmod/modprobe recovers this) then after a few suspends the 
-connection is real crappy(on and offline).
+On 2012-03-08 13:02:56, Andrew Morton wrote:
+> On Thu,  8 Mar 2012 14:45:16 +0530
+> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+>=20
+> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> >=20
+> > This fix the below lockdep warning
+>=20
+> OK, what's going on here.
+>=20
+> >  =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D
+> >  [ INFO: possible circular locking dependency detected ]
+> >  3.3.0-rc4+ #190 Not tainted
+> >  -------------------------------------------------------
+> >  shared/1568 is trying to acquire lock:
+> >   (&sb->s_type->i_mutex_key#12){+.+.+.}, at: [<ffffffff811efa0f>] huget=
+lbfs_file_mmap+0x7d/0x108
+> >=20
+> >  but task is already holding lock:
+> >   (&mm->mmap_sem){++++++}, at: [<ffffffff810f5589>] sys_mmap_pgoff+0xd4=
+/0x12f
+> >=20
+> >  which lock already depends on the new lock.
+> >=20
+> >=20
+> >  the existing dependency chain (in reverse order) is:
+> >=20
+> >  -> #1 (&mm->mmap_sem){++++++}:
+> >         [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
+> >         [<ffffffff810ee439>] might_fault+0x6d/0x90
+> >         [<ffffffff8111bc12>] filldir+0x6a/0xc2
+> >         [<ffffffff81129942>] dcache_readdir+0x5c/0x222
+> >         [<ffffffff8111be58>] vfs_readdir+0x76/0xac
+> >         [<ffffffff8111bf6a>] sys_getdents+0x79/0xc9
+> >         [<ffffffff816940a2>] system_call_fastpath+0x16/0x1b
+> >=20
+> >  -> #0 (&sb->s_type->i_mutex_key#12){+.+.+.}:
+> >         [<ffffffff8109f40a>] __lock_acquire+0xa6c/0xd60
+> >         [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
+> >         [<ffffffff816916be>] __mutex_lock_common+0x48/0x350
+> >         [<ffffffff81691a85>] mutex_lock_nested+0x2a/0x31
+> >         [<ffffffff811efa0f>] hugetlbfs_file_mmap+0x7d/0x108
+> >         [<ffffffff810f4fd0>] mmap_region+0x26f/0x466
+> >         [<ffffffff810f545b>] do_mmap_pgoff+0x294/0x2ee
+> >         [<ffffffff810f55a9>] sys_mmap_pgoff+0xf4/0x12f
+> >         [<ffffffff8103d1f2>] sys_mmap+0x1d/0x1f
+> >         [<ffffffff816940a2>] system_call_fastpath+0x16/0x1b
+> >=20
+> >  other info that might help us debug this:
+> >=20
+> >   Possible unsafe locking scenario:
+> >=20
+> >         CPU0                    CPU1
+> >         ----                    ----
+> >    lock(&mm->mmap_sem);
+> >                                 lock(&sb->s_type->i_mutex_key#12);
+> >                                 lock(&mm->mmap_sem);
+> >    lock(&sb->s_type->i_mutex_key#12);
+> >=20
+> >   *** DEADLOCK ***
+> >=20
+> >  1 lock held by shared/1568:
+> >   #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810f5589>] sys_mmap_pgoff=
++0xd4/0x12f
+> >=20
+> >  stack backtrace:
+> >  Pid: 1568, comm: shared Not tainted 3.3.0-rc4+ #190
+> >  Call Trace:
+> >   [<ffffffff81688bf9>] print_circular_bug+0x1f8/0x209
+> >   [<ffffffff8109f40a>] __lock_acquire+0xa6c/0xd60
+> >   [<ffffffff8110e7b6>] ? files_lglock_local_lock_cpu+0x61/0x61
+> >   [<ffffffff811efa0f>] ? hugetlbfs_file_mmap+0x7d/0x108
+> >   [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
+> >   [<ffffffff811efa0f>] ? hugetlbfs_file_mmap+0x7d/0x108
+> >=20
+>=20
+> Why have these lockdep warnings started coming out now - was the VFS
+> changed to newly take i_mutex somewhere in the directory handling?
 
-dmesg with debug gives me this:
+I'm not sure that they're new warnings. My patch (linked to below) may
+have just gave folks a false hope that their nagging lockdep problems
+are over.
 
-[ 8804.908128] ath: PDADC (0,   0): a2f0 68686868
-[ 8804.908132] ath: PDADC: Chain 0 | PDADC 112 Value 104 | PDADC 113 
-Value 104 | PDADC 114 Value 104 | PDADC 115 Value 104 |
-[ 8804.908137] ath: PDADC (0,   0): a2f4 68686868
-[ 8804.908141] ath: PDADC: Chain 0 | PDADC 116 Value 104 | PDADC 117 
-Value 104 | PDADC 118 Value 104 | PDADC 119 Value 104 |
-[ 8804.908145] ath: PDADC (0,   0): a2f8 68686868
-[ 8804.908149] ath: PDADC: Chain 0 | PDADC 120 Value 104 | PDADC 121 
-Value 104 | PDADC 122 Value 104 | PDADC 123 Value 104 |
-[ 8804.908154] ath: PDADC (0,   0): a2fc 68686868
-[ 8804.908158] ath: PDADC: Chain 0 | PDADC 124 Value 104 | PDADC 125 
-Value 104 | PDADC 126 Value 104 | PDADC 127 Value 104 |
-[ 8804.908506] ath: Getting spur idx:0 is2Ghz:1 val:8000
-[ 8804.908609] ath: Enable MIB counters
-[ 8804.908632] ath: ANI parameters:
-[ 8804.908635] ath: noiseImmunityLevel=0, spurImmunityLevel=7, 
-ofdmWeakSigDetectOff=1
-[ 8804.908638] ath: cckWeakSigThreshold=0, firstepLevel=0, listenTime=0
-[ 8804.908641] ath: ofdmPhyErrCount=0, cckPhyErrCount=0
-[ 8804.908643]
-[ 8804.908646] ath: Writing ofdmbase=12582412   cckbase=12582712
-[ 8804.908669] ath: New interrupt mask 0xf4041071
-[ 8804.908672] ath: new IMR 0x918414b0
-[ 8804.908679] ath: enable IER
-[ 8804.908690] ath: AR_IMR 0x918414b0 IER 0x1
-[ 8804.945518] ath: disable IER
-[ 8804.945554] ath: enable IER
-[ 8804.945565] ath: AR_IMR 0x918414b0 IER 0x1
-[ 8805.031114] ath: Set channel: 2422 MHz type: 0
-[ 8805.031243] ath: disable IER
-[ 8805.031380] ath: Disable MIB counters
-[ 8805.031425] ath: Reset to 2422 MHz, HT40: 0 fastcc: 0
-[ 8805.031441] ath: NF calibrated [ctl] [chain 0] is -114
-[ 8805.033988] ath: PDADC (0,   0): a280 04030201
-[ 8805.033995] ath: PDADC: Chain 0 | PDADC   0 Value   1 | PDADC   1 
-Value   2 | PDADC   2 Value   3 | PDADC   3 Value   4 |
-[ 8805.034002] ath: PDADC (0,   0): a284 08070605
-[ 8805.034007] ath: PDADC: Chain 0 | PDADC   4 Value   5 | PDADC   5 
-Value   6 | PDADC   6 Value   7 | PDADC   7 Value   8 |
-[ 8805.034013] ath: PDADC (0,   0): a288 0c0b0a09
-[ 8805.034019] ath: PDADC: Chain 0 | PDADC   8 Value   9 | PDADC   9 
-Value  10 | PDADC  10 Value  11 | PDADC  11 Value  12 |
-[ 8805.034025] ath: PDADC (0,   0): a28c 100f0e0d
-[ 8805.034030] ath: PDADC: Chain 0 | PDADC  12 Value  13 | PDADC  13 
-Value  14 | PDADC  14 Value  15 | PDADC  15 Value  16 |
-[ 8805.034037] ath: PDADC (0,   0): a290 18161412
-[ 8805.034042] ath: PDADC: Chain 0 | PDADC  16 Value  18 | PDADC  17 
-Value  20 | PDADC  18 Value  22 | PDADC  19 Value  24 |
-[ 8805.034048] ath: PDADC (0,   0): a294 23201d1a
-[ 8805.034053] ath: PDADC: Chain 0 | PDADC  20 Value  26 | PDADC  21 
-Value  29 | PDADC  22 Value  32 | PDADC  23 Value  35 |
-[ 8805.034059] ath: PDADC (0,   0): a298 302b2825
-[ 8805.034064] ath: PDADC: Chain 0 | PDADC  24 Value  37 | PDADC  25 
-Value  40 | PDADC  26 Value  43 | PDADC  27 Value  48 |
-[ 8805.034070] ath: PDADC (0,   0): a29c 45403b36
-[ 8805.034075] ath: PDADC: Chain 0 | PDADC  28 Value  54 | PDADC  29 
-Value  59 | PDADC  30 Value  64 | PDADC  31 Value  69 |
-[ 8805.034081] ath: PDADC (0,   0): a2a0 5a544f4a
-[ 8805.034086] ath: PDADC: Chain 0 | PDADC  32 Value  74 | PDADC  33 
-Value  79 | PDADC  34 Value  84 | PDADC  35 Value  90 |
-[ 8805.034092] ath: PDADC (0,   0): a2a4 726c6660
-[ 8805.034098] ath: PDADC: Chain 0 | PDADC  36 Value  96 | PDADC  37 
-Value 102 | PDADC  38 Value 108 | PDADC  39 Value 114 |
-[ 8805.034104] ath: PDADC (0,   0): a2a8 0f0d0b09
-[ 8805.034110] ath: PDADC: Chain 0 | PDADC  40 Value   9 | PDADC  41 
-Value  11 | PDADC  42 Value  13 | PDADC  43 Value  15 |
-[ 8805.034116] ath: PDADC (0,   0): a2ac 17151311
-[ 8805.034121] ath: PDADC: Chain 0 | PDADC  44 Value  17 | PDADC  45 
-Value  19 | PDADC  46 Value  21 | PDADC  47 Value  23 |
-[ 8805.034127] ath: PDADC (0,   0): a2b0 201d1b19
-[ 8805.034133] ath: PDADC: Chain 0 | PDADC  48 Value  25 | PDADC  49 
-Value  27 | PDADC  50 Value  29 | PDADC  51 Value  32 |
-[ 8805.034139] ath: PDADC (0,   0): a2b4 2b282522
-[ 8805.034145] ath: PDADC: Chain 0 | PDADC  52 Value  34 | PDADC  53 
-Value  37 | PDADC  54 Value  40 | PDADC  55 Value  43 |
-[ 8805.034151] ath: PDADC (0,   0): a2b8 3935312e
-[ 8805.034156] ath: PDADC: Chain 0 | PDADC  56 Value  46 | PDADC  57 
-Value  49 | PDADC  58 Value  53 | PDADC  59 Value  57 |
-[ 8805.034163] ath: PDADC (0,   0): a2bc 4b44403c
-[ 8805.034168] ath: PDADC: Chain 0 | PDADC  60 Value  60 | PDADC  61 
-Value  64 | PDADC  62 Value  68 | PDADC  63 Value  75 |
-[ 8805.034174] ath: PDADC (0,   0): a2c0 67605952
-[ 8805.034179] ath: PDADC: Chain 0 | PDADC  64 Value  82 | PDADC  65 
-Value  89 | PDADC  66 Value  96 | PDADC  67 Value 103 |
-[ 8805.034185] ath: PDADC (0,   0): a2c4 7575756e
-[ 8805.034190] ath: PDADC: Chain 0 | PDADC  68 Value 110 | PDADC  69 
-Value 117 | PDADC  70 Value 117 | PDADC  71 Value 117 |
-[ 8805.034196] ath: PDADC (0,   0): a2c8 75757575
-[ 8805.034202] ath: PDADC: Chain 0 | PDADC  72 Value 117 | PDADC  73 
-Value 117 | PDADC  74 Value 117 | PDADC  75 Value 117 |
-[ 8805.034208] ath: PDADC (0,   0): a2cc 75757575
-[ 8805.034213] ath: PDADC: Chain 0 | PDADC  76 Value 117 | PDADC  77 
-Value 117 | PDADC  78 Value 117 | PDADC  79 Value 117 |
-[ 8805.034219] ath: PDADC (0,   0): a2d0 75757575
-[ 8805.034224] ath: PDADC: Chain 0 | PDADC  80 Value 117 | PDADC  81 
-Value 117 | PDADC  82 Value 117 | PDADC  83 Value 117 |
-[ 8805.034230] ath: PDADC (0,   0): a2d4 75757575
-[ 8805.034236] ath: PDADC: Chain 0 | PDADC  84 Value 117 | PDADC  85 
-Value 117 | PDADC  86 Value 117 | PDADC  87 Value 117 |
-[ 8805.034241] ath: PDADC (0,   0): a2d8 75757575
-[ 8805.034246] ath: PDADC: Chain 0 | PDADC  88 Value 117 | PDADC  89 
-Value 117 | PDADC  90 Value 117 | PDADC  91 Value 117 |
-[ 8805.034252] ath: PDADC (0,   0): a2dc 75757575
-[ 8805.034257] ath: PDADC: Chain 0 | PDADC  92 Value 117 | PDADC  93 
-Value 117 | PDADC  94 Value 117 | PDADC  95 Value 117 |
-[ 8805.034264] ath: PDADC (0,   0): a2e0 75757575
-[ 8805.034269] ath: PDADC: Chain 0 | PDADC  96 Value 117 | PDADC  97 
-Value 117 | PDADC  98 Value 117 | PDADC  99 Value 117 |
-[ 8805.034275] ath: PDADC (0,   0): a2e4 75757575
-[ 8805.034281] ath: PDADC: Chain 0 | PDADC 100 Value 117 | PDADC 101 
-Value 117 | PDADC 102 Value 117 | PDADC 103 Value 117 |
-[ 8805.034286] ath: PDADC (0,   0): a2e8 75757575
-[ 8805.034292] ath: PDADC: Chain 0 | PDADC 104 Value 117 | PDADC 105 
-Value 117 | PDADC 106 Value 117 | PDADC 107 Value 117 |
-[ 8805.034298] ath: PDADC (0,   0): a2ec 75757575
-[ 8805.034303] ath: PDADC: Chain 0 | PDADC 108 Value 117 | PDADC 109 
-Value 117 | PDADC 110 Value 117 | PDADC 111 Value 117 |
-[ 8805.034310] ath: PDADC (0,   0): a2f0 75757575
-[ 8805.034315] ath: PDADC: Chain 0 | PDADC 112 Value 117 | PDADC 113 
-Value 117 | PDADC 114 Value 117 | PDADC 115 Value 117 |
-[ 8805.034321] ath: PDADC (0,   0): a2f4 75757575
-[ 8805.034326] ath: PDADC: Chain 0 | PDADC 116 Value 117 | PDADC 117 
-Value 117 | PDADC 118 Value 117 | PDADC 119 Value 117 |
-[ 8805.034332] ath: PDADC (0,   0): a2f8 75757575
-[ 8805.034338] ath: PDADC: Chain 0 | PDADC 120 Value 117 | PDADC 121 
-Value 117 | PDADC 122 Value 117 | PDADC 123 Value 117 |
-[ 8805.034344] ath: PDADC (0,   0): a2fc 75757575
-[ 8805.034349] ath: PDADC: Chain 0 | PDADC 124 Value 117 | PDADC 125 
-Value 117 | PDADC 126 Value 117 | PDADC 127 Value 117 |
-[ 8805.034377] ath: Getting spur idx:0 is2Ghz:1 val:8000
-[ 8805.036119] ath: Reset TX queue: 0
-[ 8805.036125] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
-[ 8805.036130] ath: Reset TX queue: 1
-[ 8805.036135] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
-[ 8805.036140] ath: Reset TX queue: 2
-[ 8805.036146] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
-[ 8805.036151] ath: Reset TX queue: 3
-[ 8805.036157] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
-[ 8805.036163] ath: Reset TXQ, inactive queue: 4
-[ 8805.036167] ath: Reset TXQ, inactive queue: 5
-[ 8805.036171] ath: Reset TXQ, inactive queue: 6
-[ 8805.036175] ath: Reset TXQ, inactive queue: 7
-[ 8805.036180] ath: Reset TX queue: 8
-[ 8805.036195] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
-[ 8805.036201] ath: Reset TX queue: 9
-[ 8805.036216] ath: tx ok 0x0 err 0x0 desc 0x10f eol 0x10f urn 0x0
-[ 8805.036230] ath: ah->misc_mode 0x4
-[ 8805.037647] ath: Running PA Calibration
-[ 8805.038316] ath: enabling ADC Gain Calibration
-[ 8805.038320] ath: enabling ADC DC Calibration
-[ 8805.038324] ath: enabling IQ Calibration
-[ 8805.038333] ath: starting ADC Gain Calibration
-[ 8805.038471] ath: Enable MIB counters
-[ 8805.038496] ath: ANI parameters:
-[ 8805.038501] ath: noiseImmunityLevel=0, spurImmunityLevel=7, 
-ofdmWeakSigDetectOff=1
-[ 8805.038507] ath: cckWeakSigThreshold=0, firstepLevel=2, listenTime=0
-[ 8805.038511] ath: ofdmPhyErrCount=0, cckPhyErrCount=0
-[ 8805.038513]
-[ 8805.038521] ath: ANI parameters:
-[ 8805.038525] ath: noiseImmunityLevel=0, spurImmunityLevel=7, 
-ofdmWeakSigDetectOff=1
-[ 8805.038531] ath: cckWeakSigThreshold=0, firstepLevel=2, listenTime=0
-[ 8805.038536] ath: ofdmPhyErrCount=0, cckPhyErrCount=0
-[ 8805.038538]
-[ 8805.038543] ath: Writing ofdmbase=12582412   cckbase=12582712
-[ 8805.038578] ath: New interrupt mask 0xf4041071
-[ 8805.038583] ath: new IMR 0x918414b0
-[ 8805.038592] ath: enable IER
-[ 8805.038604] ath: AR_IMR 0x918414b0 IER 0x1
-[ 8805.038695] ath: Set HW RX filter: 0x207
-[ 8805.038724] ieee80211 phy5: device now idle
-[ 8805.038826] ath: AWAKE -> FULL-SLEEP
-[ 8805.038911] ath: FULL-SLEEP -> AWAKE
-[ 8805.041787] ath: AWAKE -> FULL-SLEEP
-[ 8805.041808] ieee80211 phy5: device no longer idle - working
-[ 8805.041817] ath: FULL-SLEEP -> AWAKE
-[ 8805.044666] wlan0: authenticate with 00:1e:2a:62:6b:1e (try 1)
-[ 8805.044679] ath: transmitting packet, skb: f6b88c00
-[ 8805.044688] ath: qnum: 0, txq depth: 0
-[ 8805.044690] ath: TXDP[0] = 2ecd6e8c (eecd6e8c)
-[ 8805.044692] ath: Enable TXE on queue: 0
-[ 8805.242495] wlan0: authenticate with 00:1e:2a:62:6b:1e (try 2)
-[ 8805.242511] ath: transmitting packet, skb: f71309c0
-[ 8805.242521] ath: qnum: 0, txq depth: 1
-[ 8805.242525] ath: link[0] (eecd6e8c)=2ecd6ef0 (eecd6ef0)
-[ 8805.242528] ath: Enable TXE on queue: 0
-[ 8805.441878] wlan0: authenticate with 00:1e:2a:62:6b:1e (try 3)
-[ 8805.441893] ath: transmitting packet, skb: f6b88b40
-[ 8805.441903] ath: qnum: 0, txq depth: 2
-[ 8805.441907] ath: link[0] (eecd6ef0)=2ecd6f54 (eecd6f54)
-[ 8805.441911] ath: Enable TXE on queue: 0
-[ 8805.641298] wlan0: authentication with 00:1e:2a:62:6b:1e timed out
-[ 8805.641445] ieee80211 phy5: device now idle
+>=20
+>=20
+> Sigh.  Was lockdep_annotate_inode_mutex_key() sufficiently
+> self-explanatory to justify leaving it undocumented?
+>=20
+> <goes off and reads e096d0c7e2e>
+>=20
+> OK, the patch looks correct given the explanation in e096d0c7e2e, but
+> I'd like to understand why it becomes necessary only now.
+>=20
+> > NOTE: This patch also require=20
+> > http://thread.gmane.org/gmane.linux.file-systems/58795/focus=3D59565
+> > to remove the lockdep warning
+>=20
+> And that patch has been basically ignored.
 
+Al commented on it here:
 
-will continue running the system to see if I get anymore leads on this 
-issue.
+https://lkml.org/lkml/2012/2/16/518
 
-Justin P. Mattock
+He said that while my patch is correct, taking i_mutex inside mmap_sem
+is still wrong.
 
+Tyler
 
+>=20
+> Sigh.  I guess I'll grab both patches, but I'm not confident in doing
+> so without an overall explanation of what is happening here.
+>=20
+>=20
 
+--qcHopEYAB45HaUaB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCgAGBQJPWSJeAAoJENaSAD2qAscKKEAP/jk/2bRr2jMoH7hDrkrK8zS1
+PUd18+vCk0kUlpsvZy4LL6tvXqoyCJxXmebEfSnhJ+7AMB45dNa0yt516Til0qZD
+y0ScheMlbYnlVIWtG3iOs2bvdonvVH1ON9lj+xjnq9YLK4q4XotsNGD5QPsxcFf4
++eKjS7Ltc014+yXXA10PUio2csBwXuor9dYkrvvkBI0Vq1U40pECgE4qm9StbLhh
+Ka6e4q+DzKN9Q+Mmef7wqBsZ83fDlI7kvRI6WrAohWDTGvtGckekxeD0OxIs/T+E
+BaIsLGnQVQe3JuKPbfLYEhUgJe/qYNgr/AKe+5aITSZ0bAv2M17JA20WHWkaNUmW
+6G0/CZorFV/aRyc5e7bOydWfihtJyDtV2oHGAY9nU78vXPror9E+q7iOyK5V1gtj
++q2YnrweiFit9wwZ74xIwFXZcpPVQJan2b/ojWwID710N23YW08D2rG1xuzazLhJ
+zPZD2BdX0cpK2TGGVEVZRJ66AStxH2vM/UXkt8dMQ/UgFrZMNoTV+PVPMQ9o/zoJ
+CsRtkPoEY8ZWTQsyzEv6QegzrM848AeOyR+9aWD4cSAdaBT8IjaBdH8LppvfoAy7
+YLNUJ1NE0KsTvSynR4Cmkfkfy5SxvLpFQRUKco62BZErvkUDKfMzb2ZGkJZ08Gdu
+s4kTvOjpvjPNSpEd3OXB
+=kDX/
+-----END PGP SIGNATURE-----
+
+--qcHopEYAB45HaUaB--
