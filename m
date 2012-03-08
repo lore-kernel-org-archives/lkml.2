@@ -1,95 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab2CHRvY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 12:51:24 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60905 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab2CHRvX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 12:51:23 -0500
-Date: Thu, 8 Mar 2012 17:51:19 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] aio: fix the "too late munmap()" race
-Message-ID: <20120308175119.GY23916@ZenIV.linux.org.uk>
-References: <20120307051634.GR23916@ZenIV.linux.org.uk>
+	id S1753555Ab2CHRwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 12:52:16 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:32859 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751563Ab2CHRwO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 12:52:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120307051634.GR23916@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
+References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
+	<1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
+	<1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
+	<1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
+Date: Thu, 8 Mar 2012 12:52:12 -0500
+X-Google-Sender-Auth: Me-QK1ogZVInCrOsvq82Ldk-pGo
+Message-ID: <CAN-5tyG-w+ie3sxTwNA6e9x=CojxyDaJScJuCbS+9VE=yTmJNA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] NFSv4: Return the delegation if the server returns NFS4ERR_OPENMODE
+From: Olga Kornievskaia <aglo@citi.umich.edu>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code has put_ioctx() called asynchronously from aio_fput_routine();
-that's done *after* we have killed the request that used to pin ioctx,
-so there's nothing to stop io_destroy() waiting in wait_for_all_aios()
-from progressing.  As the result, we can end up with async call of
-put_ioctx() being the last one and possibly happening during exit_mmap()
-or elf_core_dump(), neither of which expects stray munmap() being done
-to them...
+wouldn't it be better for you to proactively return a read delegation
+then unnecessarily erroring?
 
-We do need to prevent _freeing_ ioctx until aio_fput_routine() is done
-with that, but that's all we care about - neither io_destroy() nor
-exit_aio() will progress past wait_for_all_aios() until aio_fput_routine()
-does really_put_req(), so the ioctx teardown won't be done until then
-and we don't care about the contents of ioctx past that point.
+i also don't understand how this error occurs. doing a setattr in this
+case you must have used a non-special stateid. the server would only
+return an err_openmode if you sent the setattr with a read delegation
+stateid. i guess my question is what stateid would you use that from
+client's perspective represent a write-type state id but yet a server
+would flag as having wrong access type?
 
-Since actual freeing of these suckers is RCU-delayed, we don't need to
-bump ioctx refcount when request goes into list for async removal.
-All we need is rcu_read_lock held just over the ->ctx_lock-protected
-area in aio_fput_routine().
+also i'm curious why would a server, instead of returning
+err_openmode, would not first recall your read delegation?
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
-[on top of the previous patch, applies to anything past 2008 when freeing
-via call_rcu() went in; earlier versions just need kmem_cache_free() done
-via call_rcu() as commit abf137dd7712132ee56d5b3143c2ff61a72a5faa does,
-except that we don't really need to delay playing with aio_nr - mainline
-also will be better off by not bothering with that]
-diff --git a/fs/aio.c b/fs/aio.c
-index f6578cb..8cf3796 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -228,12 +228,6 @@ static void __put_ioctx(struct kioctx *ctx)
- 	call_rcu(&ctx->rcu_head, ctx_rcu_free);
- }
- 
--static inline void get_ioctx(struct kioctx *kioctx)
--{
--	BUG_ON(atomic_read(&kioctx->users) <= 0);
--	atomic_inc(&kioctx->users);
--}
--
- static inline int try_get_ioctx(struct kioctx *kioctx)
- {
- 	return atomic_inc_not_zero(&kioctx->users);
-@@ -609,11 +603,16 @@ static void aio_fput_routine(struct work_struct *data)
- 			fput(req->ki_filp);
- 
- 		/* Link the iocb into the context's free list */
-+		rcu_read_lock();
- 		spin_lock_irq(&ctx->ctx_lock);
- 		really_put_req(ctx, req);
-+		/*
-+		 * at that point ctx might've been killed, but actual
-+		 * freeing is RCU'd
-+		 */
- 		spin_unlock_irq(&ctx->ctx_lock);
-+		rcu_read_unlock();
- 
--		put_ioctx(ctx);
- 		spin_lock_irq(&fput_lock);
- 	}
- 	spin_unlock_irq(&fput_lock);
-@@ -644,7 +643,6 @@ static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
- 	 * this function will be executed w/out any aio kthread wakeup.
- 	 */
- 	if (unlikely(!fput_atomic(req->ki_filp))) {
--		get_ioctx(ctx);
- 		spin_lock(&fput_lock);
- 		list_add(&req->ki_list, &fput_head);
- 		spin_unlock(&fput_lock);
+On Wed, Mar 7, 2012 at 5:40 PM, Trond Myklebust
+<Trond.Myklebust@netapp.com> wrote:
+> If a setattr() fails because of an NFS4ERR_OPENMODE error, it is
+> probably due to us holding a read delegation. Ensure that the
+> recovery routines return that delegation in this case.
+>
+> Reported-by: Miklos Szeredi <miklos@szeredi.hu>
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  fs/nfs/nfs4_fs.h  |    1 +
+>  fs/nfs/nfs4proc.c |   13 ++++++++++++-
+>  2 files changed, 13 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/nfs/nfs4_fs.h b/fs/nfs/nfs4_fs.h
+> index 5c9b20b..8ccaf24 100644
+> --- a/fs/nfs/nfs4_fs.h
+> +++ b/fs/nfs/nfs4_fs.h
+> @@ -193,6 +193,7 @@ struct nfs4_exception {
+>        long timeout;
+>        int retry;
+>        struct nfs4_state *state;
+> +       struct inode *inode;
+>  };
+>
+>  struct nfs4_state_recovery_ops {
+> diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+> index 3d26bab..bfcaa03 100644
+> --- a/fs/nfs/nfs4proc.c
+> +++ b/fs/nfs/nfs4proc.c
+> @@ -259,18 +259,28 @@ static int nfs4_handle_exception(struct nfs_server *server, int errorcode, struc
+>  {
+>        struct nfs_client *clp = server->nfs_client;
+>        struct nfs4_state *state = exception->state;
+> +       struct inode *inode = exception->inode;
+>        int ret = errorcode;
+>
+>        exception->retry = 0;
+>        switch(errorcode) {
+>                case 0:
+>                        return 0;
+> +               case -NFS4ERR_OPENMODE:
+> +                       if (nfs_have_delegation(inode, FMODE_READ)) {
+> +                               nfs_inode_return_delegation(inode);
+> +                               exception->retry = 1;
+> +                               return 0;
+> +                       }
+> +                       if (state == NULL)
+> +                               break;
+> +                       nfs4_schedule_stateid_recovery(server, state);
+> +                       goto wait_on_recovery;
+>                case -NFS4ERR_DELEG_REVOKED:
+>                case -NFS4ERR_ADMIN_REVOKED:
+>                case -NFS4ERR_BAD_STATEID:
+>                        if (state != NULL)
+>                                nfs_remove_bad_delegation(state->inode);
+> -               case -NFS4ERR_OPENMODE:
+>                        if (state == NULL)
+>                                break;
+>                        nfs4_schedule_stateid_recovery(server, state);
+> @@ -1908,6 +1918,7 @@ static int nfs4_do_setattr(struct inode *inode, struct rpc_cred *cred,
+>        struct nfs_server *server = NFS_SERVER(inode);
+>        struct nfs4_exception exception = {
+>                .state = state,
+> +               .inode = inode,
+>        };
+>        int err;
+>        do {
+> --
+> 1.7.7.6
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
