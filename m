@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab2CHV05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:26:57 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53357 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab2CHV04 (ORCPT
+	id S1756683Ab2CHV1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:27:42 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63333 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754216Ab2CHV1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:26:56 -0500
-From: Fabio Estevam <festevam@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: vinod.koul@intel.com, kernel@pengutronix.de,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] dma: imx-dma: Fix build by including <linux/module.h>
-Date: Thu,  8 Mar 2012 18:26:45 -0300
-Message-Id: <1331242005-15533-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 8 Mar 2012 16:27:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <1331239814.11759.1.camel@lade.trondhjem.org>
+References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
+	<1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
+	<1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
+	<1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
+	<CAN-5tyG-w+ie3sxTwNA6e9x=CojxyDaJScJuCbS+9VE=yTmJNA@mail.gmail.com>
+	<1331230525.2472.39.camel@lade.trondhjem.org>
+	<CAN-5tyFYE5ECtv__C9S_GMT1gBMQ4+6WPS-1BjmSE7vHoRAQdw@mail.gmail.com>
+	<20120308204205.GB9273@fieldses.org>
+	<1331239814.11759.1.camel@lade.trondhjem.org>
+Date: Thu, 8 Mar 2012 16:27:37 -0500
+X-Google-Sender-Auth: DlpHAijcb-gXW_DnpXeRGlMki8o
+Message-ID: <CAN-5tyHBxnWQ_Yi1dGeBcAtq=PbSfqSRN0_dUY-gLcDVZWytWQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] NFSv4: Return the delegation if the server returns NFS4ERR_OPENMODE
+From: Olga Kornievskaia <aglo@citi.umich.edu>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 13ae246 (includecheck: delete any duplicate instances of module.) removed
-a duplicated module.h inclusion from imx-dma.c.
+On Thu, Mar 8, 2012 at 3:50 PM, Myklebust, Trond
+<Trond.Myklebust@netapp.com> wrote:
+> On Thu, 2012-03-08 at 15:42 -0500, J. Bruce Fields wrote:
+>> On Thu, Mar 08, 2012 at 03:23:34PM -0500, Olga Kornievskaia wrote:
+>> > On Thu, Mar 8, 2012 at 1:15 PM, Myklebust, Trond
+>> > <Trond.Myklebust@netapp.com> wrote:
+>> > > On Thu, 2012-03-08 at 12:52 -0500, Olga Kornievskaia wrote:
+>> > >> wouldn't it be better for you to proactively return a read delegation
+>> > >> then unnecessarily erroring?
+>> > >
+>> > > If nobody else holds a delegation, then the NFS client is actually
+>> > > allowed to keep its read delegation while writing to the file. It does
+>> > > admittedly need to request an OPEN stateid for write in that case...
+>> > > (See section 10.4 of RFC3530bis draft 16)
+>> >
+>> > If we both agree that there has to be a request for an open stateid for
+>> > a write, then instead of returning the read delegation if the client receives
+>> > err_openmode (when it send the request with read delegation stateid
+>> > as you said per 3560bis), can't the client resend the setattr with the open
+>> > stateid? The ordering of the stateid usage is a "should" and not a "must".
+>> >
+>> > In rfc5661, it really doesn't make sense to ever send a setattr with
+>> > a read delegation stateid. According to 9.1.2, the server "MUST" return
+>> > err_open_mode" error in that case.
+>> >
+>> > I gather you are in this case dealing with 4.0 delegations. But I wonder
+>> > if you'll do something else for 4.1 delegation then?
+>>
+>> 3530bis has the same language ("...must verify that the access mode
+>> allows writing and return an NFS4ERR_OPENMODE error if it does not").
+>
+> OK, so we shouldn't send the delegation stateid either for v4 or v4.1.
+> However should we pre-emptively return the delegation? I've been
+> assuming not.
 
-,and commit 865d9438 (drivers/dma: linux/module.h included twice) did the same.
-
-Let one linux/module.h be included so that it can be built again.
-
-This fix the following error:
-
-C      drivers/dma/imx-dma.o
-drivers/dma/imx-dma.c:658: error: expected declaration specifiers or '...' before string constant
-drivers/dma/imx-dma.c:658: warning: data definition has no type or storage class
-drivers/dma/imx-dma.c:658: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
-drivers/dma/imx-dma.c:658: warning: function declaration isn't a prototype
-drivers/dma/imx-dma.c:659: error: expected declaration specifiers or '...' before string constant
-drivers/dma/imx-dma.c:659: warning: data definition has no type or storage class
-drivers/dma/imx-dma.c:659: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-drivers/dma/imx-dma.c:659: warning: function declaration isn't a prototype
-drivers/dma/imx-dma.c:660: error: expected declaration specifiers or '...' before string constant
-drivers/dma/imx-dma.c:660: warning: data definition has no type or storage class
-drivers/dma/imx-dma.c:660: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-drivers/dma/imx-dma.c:660: warning: function declaration isn't a prototype
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/dma/imx-dma.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index ca78fca..7be8d1f 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -25,6 +25,7 @@
- #include <linux/slab.h>
- #include <linux/platform_device.h>
- #include <linux/dmaengine.h>
-+#include <linux/module.h>
- 
- #include <asm/irq.h>
- #include <mach/dma-v1.h>
--- 
-1.7.1
-
+It would be nice not to pre-emptively return delegations but for that
+we need server implementors to get on board with the idea.
