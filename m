@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758691Ab2CHUXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:23:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758638Ab2CHUXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:23:05 -0500
-Date: Thu, 8 Mar 2012 14:22:57 -0600
-From: Clark Williams <williams@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: John Kacur <jkacur@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH-RT] preempt.h: Fix implicit declaration of
- 'preempt_check_resched_rt'
-Message-ID: <20120308142257.145e0968@redhat.com>
-In-Reply-To: <1331237840.25686.470.camel@gandalf.stny.rr.com>
-References: <1331237591-4406-1-git-send-email-jkacur@redhat.com>
-	<1331237840.25686.470.camel@gandalf.stny.rr.com>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/LuFE.LJSrYG2aSfCDYHFWHE"; protocol="application/pgp-signature"
+	id S1758697Ab2CHUXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:23:38 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63897 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758587Ab2CHUXg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 15:23:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <1331230525.2472.39.camel@lade.trondhjem.org>
+References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
+	<1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
+	<1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
+	<1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
+	<CAN-5tyG-w+ie3sxTwNA6e9x=CojxyDaJScJuCbS+9VE=yTmJNA@mail.gmail.com>
+	<1331230525.2472.39.camel@lade.trondhjem.org>
+Date: Thu, 8 Mar 2012 15:23:34 -0500
+X-Google-Sender-Auth: FWjmvVkCdBXgNg6JXWn4p68F1xA
+Message-ID: <CAN-5tyFYE5ECtv__C9S_GMT1gBMQ4+6WPS-1BjmSE7vHoRAQdw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] NFSv4: Return the delegation if the server returns NFS4ERR_OPENMODE
+From: Olga Kornievskaia <aglo@citi.umich.edu>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/LuFE.LJSrYG2aSfCDYHFWHE
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 8, 2012 at 1:15 PM, Myklebust, Trond
+<Trond.Myklebust@netapp.com> wrote:
+> On Thu, 2012-03-08 at 12:52 -0500, Olga Kornievskaia wrote:
+>> wouldn't it be better for you to proactively return a read delegation
+>> then unnecessarily erroring?
+>
+> If nobody else holds a delegation, then the NFS client is actually
+> allowed to keep its read delegation while writing to the file. It does
+> admittedly need to request an OPEN stateid for write in that case...
+> (See section 10.4 of RFC3530bis draft 16)
 
-On Thu, 08 Mar 2012 15:17:20 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+If we both agree that there has to be a request for an open stateid for
+a write, then instead of returning the read delegation if the client receives
+err_openmode (when it send the request with read delegation stateid
+as you said per 3560bis), can't the client resend the setattr with the open
+stateid? The ordering of the stateid usage is a "should" and not a "must".
 
-> On Thu, 2012-03-08 at 21:13 +0100, John Kacur wrote:
-> > When building a non-preempt kernel where CONFIG_PREEMPT_COUNT is not
-> > defined the following build break occurs.
-> >=20
-> > /home/jkacur/linux-rt/block/blk-softirq.c: In function =E2=80=98trigger=
-_softirq=E2=80=99:
-> > /home/jkacur/linux-rt/block/blk-softirq.c:54: error: implicit declarati=
-on of function =E2=80=98preempt_check_resched_rt=E2=80=99
-> > make[2]: *** [block/blk-softirq.o] Error 1
-> > make[1]: *** [block/blk-softirq.o] Error 2
-> > make: *** [sub-make] Error 2
-> >=20
-> > This patch fixes the build error by adding a define to the
-> > !CONFIG_PREEMPT_COUNT section.
-> >=20
-> > Signed-off-by: Clark Williams <williams@redhat.com>
->=20
-> Why Clark's SOB? Did he write it and send it to you?
+In rfc5661, it really doesn't make sense to ever send a setattr with
+a read delegation stateid. According to 9.1.2, the server "MUST" return
+err_open_mode" error in that case.
 
-I suppose to be technically correct it should have been a Tested-by:
+I gather you are in this case dealing with 4.0 delegations. But I wonder
+if you'll do something else for 4.1 delegation then?
 
-John found it while I was working on it and I tested it for him.
+Another comment is that I was suggesting a return of delegation only
+because (from what i recall) the 4.1 servers out there will recall the
+previously
+given read delegation in this case.
 
-Clark
+> That said, in either case we do need to deal with the fact that a new
+> delegation may be granted after we return the old one. There is no
+> locking around the setattr call to prevent this.
 
---Sig_/LuFE.LJSrYG2aSfCDYHFWHE
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Can that really happen since we agreed that the client also has an open
+stateid for write in this case?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+>> i also don't understand how this error occurs. doing a setattr in this
+>> case you must have used a non-special stateid. the server would only
+>> return an err_openmode if you sent the setattr with a read delegation
+>> stateid. i guess my question is what stateid would you use that from
+>> client's perspective represent a write-type state id but yet a server
+>> would flag as having wrong access type?
+>
+> The read delegation stateid is being sent as per the prescription in
+> section 9.1.3.6 of RFC3530bis.
 
-iEYEARECAAYFAk9ZFSEACgkQHyuj/+TTEp3kIACguH7BwiC80rl9qQadE+vH802s
-gOQAnje4VOoe66LvE/Pyh77qa8CbU4Ys
-=+k8L
------END PGP SIGNATURE-----
+>> also i'm curious why would a server, instead of returning
+>> err_openmode, would not first recall your read delegation?
+>
+> It could, but why do so when it can just return an error value? The
+> presence of the delegation stateid in the SETATTR request allows it to
+> communicate directly to the client what the problem is without the need
+> for any callbacks.
 
---Sig_/LuFE.LJSrYG2aSfCDYHFWHE--
+> Trond Myklebust
+> Linux NFS client maintainer
+>
+> NetApp
+> Trond.Myklebust@netapp.com
+> www.netapp.com
+>
