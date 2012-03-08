@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab2CHHaT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 02:30:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55511 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751993Ab2CHHaS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 02:30:18 -0500
-Date: Wed, 7 Mar 2012 23:32:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20120307233220.5a76aa3c.akpm@linux-foundation.org>
-In-Reply-To: <20120308175307.b295b1013728a5666fe4571a@canb.auug.org.au>
-References: <20120308175307.b295b1013728a5666fe4571a@canb.auug.org.au>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752730Ab2CHHfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 02:35:13 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59618 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487Ab2CHHfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 02:35:07 -0500
+Date: Thu, 8 Mar 2012 08:34:54 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Seebach <peter.seebach@windriver.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Anton Blanchard <anton@samba.org>, paulus@samba.org, dsahern@gmail.com,
+        fweisbec@gmail.com, yanmin_zhang@linux.intel.com, emunson@mgebm.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: Incorrect use of snprintf results in SEGV
+Message-ID: <20120308073454.GD20784@elte.hu>
+References: <20120307114249.44275ca3@kryten>
+ <20120307010904.GE5656@infradead.org>
+ <20120306192912.59811e3e@wrlaptop>
+ <20120307203725.GA4333@elte.hu>
+ <1331153964.11248.362.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331153964.11248.362.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Mar 2012 17:53:07 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> Hi Andrew,
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, 2012-03-07 at 21:37 +0100, Ingo Molnar wrote:
+> >         size_needed = snprintf_size(...);
 > 
-> Today's linux-next merge of the akpm tree got a conflict in
-> arch/x86/mm/hugetlbpage.c between commit 097d59106a8e ("vm: avoid using
-> find_vma_prev() unnecessarily") from Linus' tree and commit "hugetlb:
-> drop prev_vma in hugetlb_get_unmapped_area_topdown()" from the akpm tree.
+> This would require 3 passes over the fmt+args, first to find 
+> the allocated size is insufficient, 2nd to compute the size, 
+> 3rd to fill buffer.
+
+No. The 1% case would use this separate API with its quirky 
+return value. snprintf_size() works like today's snprintf, it's 
+just *named* clearly to signal that it returns something not 
+quite intuitive and results in bugs even in code that *tries* to 
+be aware of the corner cases.
+
+> Whereas with the current "creative" API only 2 passes are 
+> needed.
 > 
-> I think the latter is a superset of the former, so I just dropped the
-> changes from the former.
+> I can imagine that back in the day of small memory and small 
+> CPU this was deemed important enough.
+> 
+> Anyway, its all moot, this API exists and has been out in the 
+> wild for several decades now, its not like we can actually 
+> change it :-)
 
-Actually they're different.  I reworked the earlier patch as below.
+Of course it is moot - I am not arguing for a change in the API.
 
+But the self-justification, as outlined in the mail I replied 
+to, is brutally wrong, and nowhere in this discussion did I see 
+the important notion mentioned that the *common case matters* - 
+so maybe reading this will keep others from committing the same 
+mistake, with newly introduced APIs.
 
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: hugetlb: drop prev_vma in hugetlb_get_unmapped_area_topdown()
+Thanks,
 
-After the call find_vma_prev(mm, addr, &prev_vma), the following condition
-is always true:
-
-	!prev_vma || (addr >= prev_vma->vm_end)
-
-it can happily drop prev_vma and use find_vma() instead of find_vma_prev().
-
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- arch/x86/mm/hugetlbpage.c |   23 +++++++----------------
- 1 file changed, 7 insertions(+), 16 deletions(-)
-
-diff -puN arch/x86/mm/hugetlbpage.c~hugetlb-drop-prev_vma-in-hugetlb_get_unmapped_area_topdown arch/x86/mm/hugetlbpage.c
---- a/arch/x86/mm/hugetlbpage.c~hugetlb-drop-prev_vma-in-hugetlb_get_unmapped_area_topdown
-+++ a/arch/x86/mm/hugetlbpage.c
-@@ -308,7 +308,7 @@ static unsigned long hugetlb_get_unmappe
- {
- 	struct hstate *h = hstate_file(file);
- 	struct mm_struct *mm = current->mm;
--	struct vm_area_struct *vma, *prev_vma;
-+	struct vm_area_struct *vma;
- 	unsigned long base = mm->mmap_base, addr = addr0;
- 	unsigned long largest_hole = mm->cached_hole_size;
- 	int first_time = 1;
-@@ -334,25 +334,16 @@ try_again:
- 		 * i.e. return with success:
- 		 */
- 		vma = find_vma(mm, addr);
--		if (!vma)
--			return addr;
--
--		/*
--		 * new region fits between prev_vma->vm_end and
--		 * vma->vm_start, use it:
--		 */
--		prev_vma = vma->vm_prev;
--		if (addr + len <= vma->vm_start &&
--		            (!prev_vma || (addr >= prev_vma->vm_end))) {
-+		if (vma)
-+			prev_vma = vma->vm_prev;
-+		if (!vma || addr + len <= vma->vm_start) {
- 			/* remember the address as a hint for next time */
- 		        mm->cached_hole_size = largest_hole;
- 		        return (mm->free_area_cache = addr);
--		} else {
-+		} else if (mm->free_area_cache == vma->vm_end) {
- 			/* pull free_area_cache down to the first hole */
--		        if (mm->free_area_cache == vma->vm_end) {
--				mm->free_area_cache = vma->vm_start;
--				mm->cached_hole_size = largest_hole;
--			}
-+			mm->free_area_cache = vma->vm_start;
-+			mm->cached_hole_size = largest_hole;
- 		}
- 
- 		/* remember the largest hole we saw so far */
-_
-
-
+	Ingo
