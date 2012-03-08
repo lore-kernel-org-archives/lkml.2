@@ -1,214 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032Ab2CHMSW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 07:18:22 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34250 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194Ab2CHMST (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 07:18:19 -0500
-Date: Thu, 8 Mar 2012 12:17:55 +0000
-From: Dave Martin <dave.martin@linaro.org>
-To: Richard Earnshaw <Richard.Earnshaw@arm.com>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
- to the hypervisor
-Message-ID: <20120308121755.GA2703@linaro.org>
-References: <20120227180355.GB2023@linaro.org>
- <1330371219.10008.34.camel@dagon.hellion.org.uk>
- <20120228102040.GB2063@linaro.org>
- <1330426133.31269.70.camel@zakaz.uk.xensource.com>
- <alpine.DEB.2.00.1202281149210.23091@kaball-desktop>
- <20120229093436.GA2077@linaro.org>
- <1330509362.4270.20.camel@zakaz.uk.xensource.com>
- <20120229125826.GC2077@linaro.org>
- <alpine.LFD.2.02.1203021528150.31242@xanadu.home>
- <4F5882BF.1030104@arm.com>
+	id S1757429Ab2CHMSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 07:18:36 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:52649
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757194Ab2CHMSc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 07:18:32 -0500
+X-SpamScore: -4
+X-BigFish: VPS-4(zz9371I98dKzz1202hzz8275bh8275dhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M0KFIQ-02-D53-02
+X-M-MSG: 
+From: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+To: Rusty Russell <rusty@ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+Subject: RE: [PATCH 1/2] Refine mutex and rcu method in module.c,
+ kernel<3.2.9>
+Thread-Topic: [PATCH 1/2] Refine mutex and rcu method in module.c,
+ kernel<3.2.9>
+Thread-Index: Acz8cbLg6k3HMRVqQxaI2PGzwf9WcQAV53YAABY7RRA=
+Date: Thu, 8 Mar 2012 12:18:19 +0000
+Message-ID: <491D6B4EAD0A714894D8AD22F4BDE043032A1A@SCYBEXDAG04.amd.com>
+References: <491D6B4EAD0A714894D8AD22F4BDE04303289D@SCYBEXDAG04.amd.com>
+ <87ipifwiwh.fsf@rustcorp.com.au>
+In-Reply-To: <87ipifwiwh.fsf@rustcorp.com.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.74.102]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F5882BF.1030104@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 09:58:23AM +0000, Richard Earnshaw wrote:
-> On 02/03/12 21:15, Nicolas Pitre wrote:
-> > [ coming back from vacation and trying to catch up ]
-> >
-> > On Wed, 29 Feb 2012, Dave Martin wrote:
-> >
-> >> Just had a chat with some tools guys -- apparently, when passing register
-> >> arguments to gcc inline asms there really isn't a guarantee that those
-> >> variables will be in the expected registers on entry to the inline asm.
-> >>
-> >> If gcc reorders other function calls or other code around the inline asm
-> >> (which it can do, except under certain controlled situations), then
-> >> intervening code can clobber any registers in general.
-> >
-> > I'm hearing this argument about once every year or so for the last 8
-> > years.  I think that the tools people are getting confused between
-> > themselves as you may get a different interpretation of what gcc should
-> > do depending to whom you happen to talk to.
-> >
-> > I did submit a bug to gcc in 2004 about this:
-> >
-> >       http://gcc.gnu.org/bugzilla/show_bug.cgi?id=15089
-> >
-> > You can see the confusion among gcc developers lurking there.
-> >
-> > So let's quote the relevant gcc documentation:
-> >
-> > -> * C Extensions::    GNU extensions to the C language family.
-> >    -> * Explicit Reg Vars::   Defining variables residing in specified registers.
-> >
-> > |GNU C allows you to put a few global variables into specified hardware
-> > |registers.  You can also specify the register in which an ordinary
-> > |register variable should be allocated.
-> > |
-> > |   * Global register variables reserve registers throughout the program.
-> > |     This may be useful in programs such as programming language
-> > |     interpreters which have a couple of global variables that are
-> > |     accessed very often.
-> > |
-> > |   * Local register variables in specific registers do not reserve the
-> > |     registers, except at the point where they are used as input or
-> > |     output operands in an `asm' statement and the `asm' statement
-> > |     itself is not deleted.  The compiler's data flow analysis is
-> > |     capable of determining where the specified registers contain live
-> > |     values, and where they are available for other uses.  Stores into
-> > |     local register variables may be deleted when they appear to be
-> > |     dead according to dataflow analysis.  References to local register
-> > |     variables may be deleted or moved or simplified.
-> > |
-> > |     These local variables are sometimes convenient for use with the
-> > |     extended `asm' feature (*note Extended Asm::), if you want to
-> > |     write one output of the assembler instruction directly into a
-> > |     particular register.  (This will work provided the register you
-> > |     specify fits the constraints specified for that operand in the
-> > |     `asm'.)
-> >
-> >       -> * Local Reg Vars::
-> >
-> > [...]
-> >
-> > | Defining such a register variable does not reserve the register; it
-> > |remains available for other uses in places where flow control
-> > |determines the variable's value is not live.
-> > |
-> > | This option does not guarantee that GCC will generate code that has
-> > |this variable in the register you specify at all times.  You may not
-> > |code an explicit reference to this register in the _assembler
-> > |instruction template_ part of an `asm' statement and assume it will
-> > |always refer to this variable.  However, using the variable as an `asm'
-> > |_operand_ guarantees that the specified register is used for the
-> > |operand.
+From: Rusty Russell [mailto:rusty@ozlabs.org] 
+Sent: Thursday, March 08, 2012 5:18 PM
+To: Chen, Dennis (SRDC SW); linux-kernel@vger.kernel.org
+Cc: Chen, Dennis (SRDC SW)
+Subject: Re: [PATCH 1/2] Refine mutex and rcu method in module.c, kernel<3.2.9>
 
-Hmmm, it's a while since I saw that documentation, and it had clearly
-fallen out of my head when I made my previous statements...
+On Wed, 7 Mar 2012 14:51:06 +0000, "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com> wrote:
+> 1. Narrow down the granularity of mutex_lock/ mutex_unlock
+> 2. Replace some unnecessary mutex_lock/mutex_unlock pairs with RCU
+> 3. Refine the consistent calling style of RCU functioan 
 
-> >
-> > So, to me, the gcc documentation is perfectly clear on this topic.
-> > there really _is_ a guarantee that those asm marked variables will be in
-> > the expected registers on entry to the inline asm, given that the
-> > variable is _also_ listed as an operand to the asm statement.  But only
-> > in that case.
-> >
-> > It is true that gcc may reorder other function calls or other code
-> > around the inline asm and then intervening code can clobber any
-> > registers.  Then it is up to gcc to preserve the variable's content
-> > elsewhere when its register is used for other purposes, and restore it
-> > when some inline asm statement is referring to it.
-> >
-> > And if gcc does not do this then it is buggy.  Version 3.4.0 of gcc was
-> > buggy.  No other gcc versions in the last 7 years had such a problem or
-> > the __asmeq macro in the kernel would have told us.
-> >
-> >> Or, to summarise another way, there is no way to control which register
-> >> is used to pass something to an inline asm in general (often we get away
-> >> with this, and there are a lot of inline asms in the kernel that assume
-> >> it works, but the more you inline the more likely you are to get nasty
-> >> surprises).
-> >
-> > This statement is therefore unfounded and wrong.  Please direct the
-> > tools guy who mislead you to the above gcc documentation.
-> >
-> 
-> The problem is not really about re-ordering functions but about implicit
-> functions that come from the source code; for example
-> 
-> int foo (int a, int b)
-> {
->   register int x __asm__("r0") = 33;
-> 
->   register int c __asm__("r1") = a / b; /* Ooops, clobbers r0 with
-> division function call.  */
-> 
->   asm ("svc 0" : : "r" (x));
-> }
+Hi Dennis,
 
-|   * Local register variables in specific registers do not reserve the
-|     registers, except at the point where they are used as input or
-|     output operands in an `asm' statement and the `asm' statement
-|     itself is not deleted.  The compiler's data flow analysis is
+        This follows a logical evolution, where we wean off the mutex,
+but AFAICT this is lost in the noise.  Taking the mutex might be naive,
+but adding or removing a module is the slow path.  Or am I missing
+something?
 
-So, I guess the issue is how to interpret this statement in the context
-of the above code:  i.e., what does it mean for a register to be reserved
-for a local register variable?
+> -
+> -       /* Now sew it into the lists so we can get lockdep and oops
+> -        * info during argument parsing.  No one should access us, since
+> -        * strong_try_module_get() will fail.
+> -        * lockdep/oops can run asynchronous, so use the RCU list insertion
+> -        * function to insert in a way safe to concurrent readers.
+> -        * The mutex protects against concurrent writers.
+> -        */
+> -       mutex_lock(&module_mutex);
+> +        
+> +        /* Concurrent writers for the global modules list are protected by RCU*/
+>         if (find_module(mod->name)) {
+>                 err = -EEXIST;
+>                 goto unlock;
+>         }
 
-"The above paragraph says that Local register variables [do] reserve the
-registers _[at] the point_ where they are used as input or output
-operands in an `asm' statement and the `asm' statement itself is not
-deleted." (my emphasis)
+RCU does not protect concurrent writers:
 
-Under that reading, r0 must be reserved for x on entry to the asm, but
-not necessarily at points preceding that.  If the asm sees anything in
-r0 except for x, that would be noncompliant with the above paragraph.
+> -
+> +        
+>         /* This has to be done once we're sure module name is unique. */
+>         dynamic_debug_setup(info.debug, info.num_debug);
 
-Nevertheless, a slightly modified version of the above which does not
-allow gcc to optimise the asm away does trigger just the kind of
-behaviour you describe:
+Now this is racy...
 
-int foo(int a, int b)
-{
-	register int x asm("r0") = 33;
-	register int c asm("r1") = a / b;
+======================================================================================
 
-	asm("svc 0" : "+r" (x) : "r" (c));
+Hi Rusty,
 
-	return x;
-}
+I known RCU doesn't protect concurrent writers, so all the writers for the global modules list has been 
+protected by the original module_mutex in the 2-patch, I just make the scope of module_mutex become smaller 
+as it can, for example, dynamic_debug_setup doesn't touch modules, so it should not be in the protection of
+module_mutex.
 
- -->
+I am a person like to see a perfect world, especially in the kernel space:) Maybe I can write a test case
+to trigger something you don't expect to see while the original codes will...let's think about it
 
-00000000 <foo>:
-   0:   e92d4008        push    {r3, lr}
-   4:   ebfffffe        bl      0 <__aeabi_idiv>
-   8:   e1a01000        mov     r1, r0
-   c:   ef000000        svc     0x00000000
-  10:   e8bd8008        pop     {r3, pc}
+BRs,
+Dennis 
 
-
-This is doubly weird: x is an I/O to the asm with a "+r" constraint,
-so even if the asm("rX") assignments are not guaranteed, then x should
-be _somewhere_ on entry to the asm (even if not in r0).  But it is
-completely gone.
-
-Is this allowed, or wrong?  I don't see how this can be rationalised
-with the gcc documentation that Nico quoted.
-
-Have I missed something?
-
-Cheers
----Dave
