@@ -1,249 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894Ab2CHUsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:48:45 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54812 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab2CHUsm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:48:42 -0500
+	id S1751991Ab2CHUuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:50:19 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:31885 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751146Ab2CHUuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 15:50:16 -0500
+X-IronPort-AV: E=Sophos;i="4.73,553,1325491200"; 
+   d="scan'208";a="631884499"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Olga Kornievskaia <aglo@citi.umich.edu>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] NFSv4: Return the delegation if the server returns
+ NFS4ERR_OPENMODE
+Thread-Topic: [PATCH 2/2] NFSv4: Return the delegation if the server returns
+ NFS4ERR_OPENMODE
+Thread-Index: AQHM/LNZTVOlz2021kCDLkZUy1AmJZZhNRYAgAAGfYCAACPOAIAABSyAgAACRwA=
+Date: Thu, 8 Mar 2012 20:50:14 +0000
+Message-ID: <1331239814.11759.1.camel@lade.trondhjem.org>
+References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
+	 <1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
+	 <1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
+	 <1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
+	 <CAN-5tyG-w+ie3sxTwNA6e9x=CojxyDaJScJuCbS+9VE=yTmJNA@mail.gmail.com>
+	 <1331230525.2472.39.camel@lade.trondhjem.org>
+	 <CAN-5tyFYE5ECtv__C9S_GMT1gBMQ4+6WPS-1BjmSE7vHoRAQdw@mail.gmail.com>
+	 <20120308204205.GB9273@fieldses.org>
+In-Reply-To: <20120308204205.GB9273@fieldses.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <15E5548A396897479E6F835DED20EF19@tahoe.netapp.com>
 MIME-Version: 1.0
-In-Reply-To: <FA58CA70-02BE-4CCD-855C-4C5CE28EA1B2@xyratex.com>
-References: <1330263210-25134-1-git-send-email-santoshprasadnayak@gmail.com>
-	<528D7E8A-B2F6-4EDB-A7C0-E0BF494038D0@xyratex.com>
-	<CAOD=uF4+F7MYO0cqd7ogmc=K9jtE5DX3wDoMv1eTxFq48JCX2g@mail.gmail.com>
-	<FA58CA70-02BE-4CCD-855C-4C5CE28EA1B2@xyratex.com>
-Date: Fri, 9 Mar 2012 02:18:41 +0530
-Message-ID: <CAOD=uF5Ngu+0mBUc63aHRNCyL254a19pXpwymHYdemmUTKK7Ng@mail.gmail.com>
-Subject: Re: [PATCH 1/2] [SCSI] pm8001: Fix bogus interrupt state flag issue.
-From: santosh prasad nayak <santoshprasadnayak@gmail.com>
-To: Mark Salyzyn <mark_salyzyn@xyratex.com>
-Cc: Jack Wang <jack_wang@usish.com>, lindar_liu <lindar_liu@usish.com>,
-        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q28KoP5w025293
 
-I did changes as per Mark's  suggestion.
+On Thu, 2012-03-08 at 15:42 -0500, J. Bruce Fields wrote:
+> On Thu, Mar 08, 2012 at 03:23:34PM -0500, Olga Kornievskaia wrote:
+> > On Thu, Mar 8, 2012 at 1:15 PM, Myklebust, Trond
+> > <Trond.Myklebust@netapp.com> wrote:
+> > > On Thu, 2012-03-08 at 12:52 -0500, Olga Kornievskaia wrote:
+> > >> wouldn't it be better for you to proactively return a read delegation
+> > >> then unnecessarily erroring?
+> > >
+> > > If nobody else holds a delegation, then the NFS client is actually
+> > > allowed to keep its read delegation while writing to the file. It does
+> > > admittedly need to request an OPEN stateid for write in that case...
+> > > (See section 10.4 of RFC3530bis draft 16)
+> > 
+> > If we both agree that there has to be a request for an open stateid for
+> > a write, then instead of returning the read delegation if the client receives
+> > err_openmode (when it send the request with read delegation stateid
+> > as you said per 3560bis), can't the client resend the setattr with the open
+> > stateid? The ordering of the stateid usage is a "should" and not a "must".
+> > 
+> > In rfc5661, it really doesn't make sense to ever send a setattr with
+> > a read delegation stateid. According to 9.1.2, the server "MUST" return
+> > err_open_mode" error in that case.
+> > 
+> > I gather you are in this case dealing with 4.0 delegations. But I wonder
+> > if you'll do something else for 4.1 delegation then?
+> 
+> 3530bis has the same language ("...must verify that the access mode
+> allows writing and return an NFS4ERR_OPENMODE error if it does not").
 
-The following patch is only for review not a formal one.
-After getting reviewed, I will send a formal patch
+OK, so we shouldn't send the delegation stateid either for v4 or v4.1.
+However should we pre-emptively return the delegation? I've been
+assuming not.
 
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
-index 3619f6e..9d82ee5 100644
---- a/drivers/scsi/pm8001/pm8001_hwi.c
-+++ b/drivers/scsi/pm8001/pm8001_hwi.c
-@@ -2093,6 +2093,7 @@ mpi_sata_completion(struct pm8001_hba_info
-*pm8001_ha, void *piomb)
-        struct ata_task_resp *resp ;
-        u32 *sata_resp;
-        struct pm8001_device *pm8001_dev;
-+       unsigned long flags;
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-        psataPayload = (struct sata_completion_resp *)(piomb + 4);
-        status = le32_to_cpu(psataPayload->status);
-@@ -2382,26 +2383,26 @@ mpi_sata_completion(struct pm8001_hba_info
-*pm8001_ha, void *piomb)
-                ts->stat = SAS_DEV_NO_RESPONSE;
-                break;
-        }
--       spin_lock_irq(&t->task_state_lock);
-+       spin_lock_irqsave(&t->task_state_lock, flags);
-        t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
-        t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
-        t->task_state_flags |= SAS_TASK_STATE_DONE;
-        if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
--               spin_unlock_irq(&t->task_state_lock);
-+               spin_unlock_irqrestore(&t->task_state_lock, flags);
-                PM8001_FAIL_DBG(pm8001_ha,
-                        pm8001_printk("task 0x%p done with io_status 0x%x"
-                        " resp 0x%x stat 0x%x but aborted by upper layer!\n",
-                        t, status, ts->resp, ts->stat));
-                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
-        } else if (t->uldd_task) {
--               spin_unlock_irq(&t->task_state_lock);
-+               spin_unlock_irqrestore(&t->task_state_lock, flags);
-                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
-                mb();/* ditto */
-                spin_unlock_irq(&pm8001_ha->lock);
-                t->task_done(t);
-                spin_lock_irq(&pm8001_ha->lock);
-        } else if (!t->uldd_task) {
--               spin_unlock_irq(&t->task_state_lock);
-+               spin_unlock_irqrestore(&t->task_state_lock, flags);
-                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
-                mb();/*ditto*/
-                spin_unlock_irq(&pm8001_ha->lock);
-@@ -2423,6 +2424,7 @@ static void mpi_sata_event(struct
-pm8001_hba_info *pm8001_ha , void *piomb)
-        u32 tag = le32_to_cpu(psataPayload->tag);
-        u32 port_id = le32_to_cpu(psataPayload->port_id);
-        u32 dev_id = le32_to_cpu(psataPayload->device_id);
-+       unsigned long flags;
-
-        ccb = &pm8001_ha->ccb_info[tag];
-        t = ccb->task;
-@@ -2593,26 +2595,26 @@ static void mpi_sata_event(struct
-pm8001_hba_info *pm8001_ha , void *piomb)
-                ts->stat = SAS_OPEN_TO;
-                break;
-        }
--       spin_lock_irq(&t->task_state_lock);
-+       spin_lock_irqsave(&t->task_state_lock, flags);
-        t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
-        t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
-        t->task_state_flags |= SAS_TASK_STATE_DONE;
-        if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
--               spin_unlock_irq(&t->task_state_lock);
-+               spin_unlock_irqrestore(&t->task_state_lock, flags);
-                PM8001_FAIL_DBG(pm8001_ha,
-                        pm8001_printk("task 0x%p done with io_status 0x%x"
-                        " resp 0x%x stat 0x%x but aborted by upper layer!\n",
-                        t, event, ts->resp, ts->stat));
-                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
-        } else if (t->uldd_task) {
--               spin_unlock_irq(&t->task_state_lock);
-+               spin_unlock_irqrestore(&t->task_state_lock, flags);
-                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
-                mb();/* ditto */
-                spin_unlock_irq(&pm8001_ha->lock);
-                t->task_done(t);
-                spin_lock_irq(&pm8001_ha->lock);
-        } else if (!t->uldd_task) {
--               spin_unlock_irq(&t->task_state_lock);
-+               spin_unlock_irqrestore(&t->task_state_lock, flags);
-                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
-                mb();/*ditto*/
-                spin_unlock_irq(&pm8001_ha->lock);
-
-
-
-Regards
-Santosh
-
-On Thu, Mar 8, 2012 at 10:41 PM, Mark Salyzyn <mark_salyzyn@xyratex.com> wrote:
-> Comments embedded
->
-> On Mar 8, 2012, at 11:50 AM, santosh prasad nayak wrote:
->
->> Hi Mark,
->>
->> Thanks for your review.
->>
->> Few queries:
->>
->> 1. Similar changes have been made in mpi_sata_completion() surrounding
->> spin_*lock_irq*(&t->task->state_lock)
->>    Should those changes also need to revert back ?
->
-> I was talking generically, yes, in both set of functions, everything associated with the task_state_lock. The change as described needs to be applied to both sets of functions.
->
->>> The change you did was not inert, and result in the IRQ being disabled upon exit should a
->>> SAS_TASK_STATE_ABORTED task state condition occur then following block will enable IRQ.
->>
->> 2.  I could not get this point.
->>     If "SAS_TASK_STATE_ABORTED" task state condition occurs then following
->>     block will enable IRQ.
->>
->>          if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
->>                spin_unlock_irq(&t->task_state_lock);
->>           //   HERE IRQ will be enabled.
->>                  .......
->>                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->>          }
->
-> Exactly, the IRQ is enabled, then the routine exits. All other paths leave the IRQ disabled (with a spin_lock_irq()).
->
->> 3.  How bad  will be "spin_lock_irq / spin_unlock_irq" in this case compared to
->>     "spin_lock_irqsave / spin_unlock_irqrestore "
->
-> Efficiency is not so much the requirement, but correctness. Yes, a spin_unlock(&t->task_state_lock) will do, but the 'world' likes to see the balance of flag save/restore, one should NOT make the assumption the interrupt is enabled or disabled upon entry, and should preserve such upon exit.
->
-> Given this statement, perhaps for the case of the hacks surrounding the completion handler calls and host locks, one would do a save of the irq, unlock with irq enabled, lock, and then restore it back to the value upon entry. This is balanced. Your changes make the (correct) assumption that the irq is disabled upon entry. But pedantically incorrect, I'd take the extra steps, but I do not view that as a critical deficiency in your patch.
->
->> Regards
->> Santosh
->>
->>>
->>> I propose (annotated below) you leave the flags automatic variable, but uninitialized. The changes surrounding spin_*lock_irq*(&pm8001_ha->lock, flags) are OK, but revert back the changes surrounding the spin_*lock_irq*(&t->task->state_lock,flags) so that lock would be properly nested.
->>>
->>> To be pedantic, and to be more correct, this code should have spawned a work queue task to perform the t->task_done(t) operation in a separate thread rather than inline and precariously unlocked; but that would be beyond the scope of these changes and should be left for future work to decide if it is even necessary. Not sure how such a change would affect performance (using the work queue) ... so I am 'afraid' of pushing such a change in any case given the relatively reliable operation of this driver (and the dynamic nature of the changes Dan is making to the SATA side of things for instance ;-} ).
->>>
->>> I am sorry for taking so long to get to the task of reviewing this (and the previous) code. I look forward to your comments.
->>>
->>> Sincerely -- Mark Salyzyn
->>>
->>> On Feb 26, 2012, at 8:33 AM, santosh nayak wrote:
->>>
->>>> @@ -2207,7 +2206,6 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
->>>> static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
->>>> {
->>>>       struct sas_task *t;
->>>> -     unsigned long flags = 0;
->>> MGS>    unsigned long flags;
->>>>       struct task_status_struct *ts;
->>>>       struct pm8001_ccb_info *ccb;
->>>>       struct pm8001_device *pm8001_dev;
->>>> @@ -2287,9 +2285,9 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
->>>>                       ts->stat = SAS_QUEUE_FULL;
->>>>                       pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->>>>                       mb();/*ditto*/
->>>> -                     spin_unlock_irqrestore(&pm8001_ha->lock, flags);
->>>> +                     spin_unlock_irq(&pm8001_ha->lock);
->>>>                       t->task_done(t);
->>>> -                     spin_lock_irqsave(&pm8001_ha->lock, flags);
->>>> +                     spin_lock_irq(&pm8001_ha->lock);
->>>>                       return;
->>>>               }
->>>>               break;
->>>> @@ -2387,31 +2385,31 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
->>>>               ts->stat = SAS_OPEN_TO;
->>>>               break;
->>>>       }
->>>> -     spin_lock_irqsave(&t->task_state_lock, flags);
->>>> +     spin_lock_irq(&t->task_state_lock);
->>> MGS>    spin_lock_irqsave(&t->task_state_lock, flags);
->>>>       t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
->>>>       t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
->>>>       t->task_state_flags |= SAS_TASK_STATE_DONE;
->>>>       if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
->>>> -             spin_unlock_irqrestore(&t->task_state_lock, flags);
->>>> +             spin_unlock_irq(&t->task_state_lock);
->>> MGS>            spin_unlock_irqrestore(&t->task_state_lock, flags);
->>>>               PM8001_FAIL_DBG(pm8001_ha,
->>>>                       pm8001_printk("task 0x%p done with io_status 0x%x"
->>>>                       " resp 0x%x stat 0x%x but aborted by upper layer!\n",
->>>>                       t, event, ts->resp, ts->stat));
->>>>               pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->>>>       } else if (t->uldd_task) {
->>>> -             spin_unlock_irqrestore(&t->task_state_lock, flags);
->>>> +             spin_unlock_irq(&t->task_state_lock);
->>>>               pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->>>>               mb();/* ditto */
->>>> -             spin_unlock_irqrestore(&pm8001_ha->lock, flags);
->>>> +             spin_unlock_irq(&pm8001_ha->lock);
->>>>               t->task_done(t);
->>>> -             spin_lock_irqsave(&pm8001_ha->lock, flags);
->>>> +             spin_lock_irq(&pm8001_ha->lock);
->>>>       } else if (!t->uldd_task) {
->>>> -             spin_unlock_irqrestore(&t->task_state_lock, flags);
->>>> +             spin_unlock_irq(&t->task_state_lock);
->>>>               pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
->>>>               mb();/*ditto*/
->>>> -             spin_unlock_irqrestore(&pm8001_ha->lock, flags);
->>>> +             spin_unlock_irq(&pm8001_ha->lock);
->>>>               t->task_done(t);
->>>> -             spin_lock_irqsave(&pm8001_ha->lock, flags);
->>>> +             spin_lock_irq(&pm8001_ha->lock);
->>>>       }
->>>> }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
