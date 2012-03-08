@@ -1,68 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab2CHPpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 10:45:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37687 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757515Ab2CHPpb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757647Ab2CHPpb (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 8 Mar 2012 10:45:31 -0500
-Date: Thu, 8 Mar 2012 07:45:25 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        x86 <x86@kernel.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 16/23] PCI: add pci bus removal through
- /sys/.../pci_bus/.../remove
-Message-ID: <20120308154525.GB5907@kroah.com>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
- <1331018040-30725-17-git-send-email-yinghai@kernel.org>
- <CAErSpo59kzBL1ApWuWWcymd9UR3m3vB3zkUoJezn66As+-97dQ@mail.gmail.com>
- <CAE9FiQVTng2Bi4z9YY9CustC7KkTr-6+qFaaqu8F4dd0WAKGig@mail.gmail.com>
- <CAErSpo72DxcCtMedHUu=t1-bGXp3sqa+hCgP2tNT=z6EfiHTJQ@mail.gmail.com>
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49765 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753839Ab2CHPp2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 10:45:28 -0500
+Date: Thu, 8 Mar 2012 16:45:21 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        linaro-dev@lists.linaro.org, Steven Goss <steve.goss@ti.com>,
+        Kevin Hilman <khilman@ti.com>, Matt Porter <mporter@ti.com>,
+        Kumar Gala <galak@ti.com>, Robin Randhawa <robin.randhawa@arm.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, charles.garcia-tobin@arm.com,
+        Morten Rasmussen <morten.rasmussen@arm.com>, chris.redpath@arm.com,
+        Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        dmitry.antipov@linaro.org, Stephane Sintes <s-sintes@ti.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC] Scheduler recorder and playback
+Message-ID: <20120308154519.GE7976@somewhere.redhat.com>
+References: <85A3EFC3-FAE0-4B3A-AAA0-85FA435A9F7B@antoniou-consulting.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAErSpo72DxcCtMedHUu=t1-bGXp3sqa+hCgP2tNT=z6EfiHTJQ@mail.gmail.com>
+In-Reply-To: <85A3EFC3-FAE0-4B3A-AAA0-85FA435A9F7B@antoniou-consulting.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 07, 2012 at 09:45:18PM -0700, Bjorn Helgaas wrote:
-> >> I'm not sure it makes sense to talk about removing a "bus" and leaving
-> >> the upstream bridge (either a host bridge or a P2P bridge).  I think
-> >> it'd make more sense to remove the bridge itself, which would of
-> >> course have the consequence of removing the secondary bus.
-> >
-> > for root bus, that remove pci_host_bridge and pci root bus.
-> >
-> > for pci bus under pci bridge, will remove that pci bus, but will still
-> > keep  that pci bridge.
-> > that should be ok. just like some pci bridge is there, and later can
-> > not create child bus for it.
-> >
-> > there is one case: during test busn_alloc, i need to remove all device
-> > on one bus, and
-> > use setpci to change bridge bus number register. then use rescan
-> > bridge to create new bus.
-> >
-> > with this one, I just need to remove that bus, instead of remove
-> > children devices one by one.
+On Thu, Mar 08, 2012 at 03:20:53PM +0200, Pantelis Antoniou wrote:
+> Hi there,
 > 
-> I don't think making it convenient for manual testing is an argument
-> for this interface.  For sysfs interfaces it is more important to make
-> something that fits well into the grand plan of how things Should
-> Work.  If you need internal helper functions for convenience, I'm OK
-> with that, because it's easier to change those than to change sysfs
-> interfaces.
+> There's considerable activity in the subject of the scheduler lately and how to 
+> adapt it to the peculiarities of the new class of hardware coming out lately,
+> like the big.LITTLE class of devices from a number of manufacturers.
+> 
+> The platforms that Linux runs are very diverse, and run differing workloads.
+> For example most consumer devices will very likely run something like Android, 
+> with common use cases such as audio and/or video playback. Methods to achieve
+> lower power consumption using a power aware scheduler are under investigation.
+> 
+> Similarly for server applications, or VM hosting, the behavior of the scheduler
+> shouldn't have adverse performance implications; any power saving on top of that
+> would be a welcome improvement.
+> 
+> The current issue is that scheduler development is not easily shared between
+> developers. Each developer has their own 'itch', be it Android use cases, server
+> workloads, VM, etc. The risk is high of optimizing for one's own use case and
+> causing severe degradation on most other use cases.
+> 
+> One way to fix this problem would be the development of a method with which one
+> could perform a given use-case workload in a host, record the activity in a 
+> interchangeable portable trace format file, and then play it back on another
+> host via a playback application that will generate an approximately similar load
+> which was observed during recording.
+> 
+> The way that the two hosts respond under the same load generated by the playback
+> application can be compared, so that the performance of the two scheduler implementations
+> measured in various metrics (like performance, power consumption etc.) can be
+> evaluated.
+> 
+> The fidelity of the this approximation is of great importance but it is debatable
+> if it is possible to have a fully identical load generated, since details of the hosts
+> might differ in such a way that such a thing is impossible. 
+> I believe that it should be possible at least to simulate a purely CPU load, and the
+> blocking behavior of tasks, in such a way that it would result in scheduler decisions 
+> that can be compared and shared among developers.  
+> 
+> The recording part I believe can be handled by the kernel's tracing infrastructure,
+> either by using the existing tracepoints, or need be adding more; possibly even
+> creating a new tracer solely for this purpose.
+> Since some applications can adapt their behavior according to insufficient system
+> resources (think media players that can drop frames for example), I think it would
+> be beneficial to record such events to the same trace file.
+> 
+> The trace file should have a portable format so that it can be freely shared between
+> developers. An ASCII format like we currently use should be OK, as long as it
+> doesn't cause too much of an effect during execution of the recording.
+> 
+> The playback application can be implemented via two ways. 
+> 
+> One way, which is the LinSched way would be to have the full scheduler implementation
+> compiled as part of said application, and use application specific methods to evaluate
+> performance. While this will work, it won't allow comparison of the two hosts in a meaningful
+> manner.
+> 
+> For both scheduler and platform evaluation, the playback application will generate the load
+> on the running host by simulating the source host's recorded work load session.
+> That means emulating process activity like forks, thread spawning, blocking on resources
+> etc. It is not clear to me yet if that's possible without using some kind of kernel
+> level helper module, but not requiring such is desirable.
+> 
+> Since one would have the full trace of scheduling activity: past, present and future; there would
+> be the possibility of generating a perfect schedule (as defined by best performance, or best
+> power consumption), and use it as a yardstick of evaluation against the actual scheduler.
+> Comparing the results, you would get an estimate of the best case improvement that could be
+> achieved if the ideal scheduler existed.
+> 
+> I know this is a bit long, but I hope this can be a basis of thinking on how to go about
+> developing this.
+> 
+> Regards
+> 
+> -- Pantelis
+> 
 
-If it's "only" for testing, then put it in debugfs, not sysfs.
+Hi,
 
-thanks,
-
-greg k-h
+May be you could have a look at the perf sched tool.
+It has a replay feature. I think it perform well basic replay but it can
+certainly be enhanced.
+ 
+>  
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
