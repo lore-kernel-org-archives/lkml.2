@@ -1,105 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab2CHG3d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 01:29:33 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18317 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab2CHG3a convert rfc822-to-8bit (ORCPT
+	id S1754586Ab2CHGcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 01:32:54 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:48388 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab2CHGcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 01:29:30 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 07 Mar 2012 22:29:28 -0800
-From: Alok Chauhan <alokc@nvidia.com>
-To: Alok Chauhan <alokc@nvidia.com>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        Stephen Warren <swarren@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "bones@secretlab.ca" <bones@secretlab.ca>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "dgreid@google.com" <dgreid@google.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 8 Mar 2012 11:59:23 +0530
-Subject: RE: [PATCH v2] i2c: tegra: Add delay before reset the controller
-Thread-Topic: [PATCH v2] i2c: tegra: Add delay before reset the controller
-Thread-Index: Aczn10lWpb5PShHDQf2cM1OgAjqKtwDBOvTQBIYM6JA=
-Message-ID: <7A0BFCFE3DA5CD47B0FB7984326F201A136B886672@BGMAIL01.nvidia.com>
-References: <1324898081-10308-1-git-send-email-alokc@nvidia.com>
- <CAM=Q2cs+myCvph7OXvCDTG7y48oNTfRtjsDzQaKiEXzjdu3pzA@mail.gmail.com>
- <7A0BFCFE3DA5CD47B0FB7984326F201A13689D386F@BGMAIL01.nvidia.com>
-In-Reply-To: <7A0BFCFE3DA5CD47B0FB7984326F201A13689D386F@BGMAIL01.nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 8 Mar 2012 01:32:51 -0500
+Date: Thu, 8 Mar 2012 17:32:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Philip A. Prindeville" <philipp@redfish-solutions.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the akpm tree with the tip tree
+Message-Id: <20120308173244.2100f2f8eff02e303023d30f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__8_Mar_2012_17_32_44_+1100_SrPOLZK3H_fi6mio"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+--Signature=_Thu__8_Mar_2012_17_32_44_+1100_SrPOLZK3H_fi6mio
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If there are no more concern then can we merge this patch to i2c tegra driver? 
+Hi Andrew,
 
-Thanks
-Alok
+Today's linux-next merge of the akpm tree got a conflict in
+arch/x86/Kconfig between commit da4e3302949f ("x86/geode/net5501: Add
+platform driver for Soekris Engineering net5501") from the tip tree and
+commit "geos: platform driver for Geos and Geos2 single-board computers"
+from the akpm tree.
 
-On Mon, Dec 26, 2011 at 4:44 PM, Alok Chauhan <alokc@nvidia.com> wrote:
-> From: Alok Chauhan <alokc@nvidia.com>
->
-> In NACK error condition, I2C controller violates clock-to-data setup 
-> time before stop. In Software, because of this reset of controller is 
-> happening before I2C controller could complete STOP condition.
->
-> Added delay of 2 clock period before reset the controller in case of 
-> NACK error.
->
-> Signed-off-by: Alok Chauhan <alokc@nvidia.com>
-> ---
-> Instead of setting constant value for delay as was in previous patch, 
-> now in the current modification delay will be calculated based on clock frequency of the bus.
->  drivers/i2c/busses/i2c-tegra.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-tegra.c 
-> b/drivers/i2c/busses/i2c-tegra.c index 6381604..62e197c 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -517,6 +517,14 @@ static int tegra_i2c_xfer_msg(struct 
-> tegra_i2c_dev *i2c_dev,
->        if (likely(i2c_dev->msg_err == I2C_ERR_NONE))
->                return 0;
->
-> +       /*
-> +        * In NACK error condition resetting of I2C controller happens
-> +        * before STOP condition is properly completed by I2C 
-> + controller,
-> +        * so wait for 2 clock cycle to complete STOP condition.
-> +        */
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->>>>Why do you need to reset the controller in case of a NACK.
->>>This is required because of hardware limitations. Without reset we can't flus the internal hardware registers.
+diff --cc arch/x86/Kconfig
+index 97a7a56,a985f6b..0000000
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@@ -2151,12 -2151,13 +2151,19 @@@ config ALI
+ =20
+  	  Note: You have to set alix.force=3D1 for boards with Award BIOS.
+ =20
+ +config NET5501
+ +	bool "Soekris Engineering net5501 System Support (LEDS, GPIO, etc)"
+ +	select GPIOLIB
+ +	---help---
+ +	  This option enables system support for the Soekris Engineering net5501.
+ +
++ config GEOS
++ 	bool "Traverse Technologies GEOS System Support (LEDS, GPIO, etc)"
++ 	select GPIOLIB
++ 	depends on DMI
++ 	---help---
++ 	  This option enables system support for the Traverse Technologies GEOS.
++=20
+  endif # X86_32
+ =20
+  config AMD_NB
 
+--Signature=_Thu__8_Mar_2012_17_32_44_+1100_SrPOLZK3H_fi6mio
+Content-Type: application/pgp-signature
 
-> +       if (i2c_dev->msg_err == I2C_ERR_NO_ACK)
-> +               udelay(DIV_ROUND_UP(2 * 1000000, 
-> + i2c_dev->bus_clk_rate));
-> +
->        tegra_i2c_init(i2c_dev);
->        if (i2c_dev->msg_err == I2C_ERR_NO_ACK) {
->                if (msg->flags & I2C_M_IGNORE_NAK)
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-i2c" 
-> in the body of a message to majordomo@vger.kernel.org More majordomo 
-> info at  http://vger.kernel.org/majordomo-info.html
---
-To unsubscribe from this list: send the line "unsubscribe linux-i2c" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPWFKMAAoJEECxmPOUX5FEE4UP/0lynv6JWBoMDXzNGxAHlHSF
+vkDvk+k7zvS3EXe6+8SF7l+HsgtEXdqBZAA4BbBQhDZo5/7OuSqWdMnN/14+GR79
+oI8Ligb1b1IEkGPZJPOjqBvqJ70AnT0+YQ58Noao2RxT4J5HNkKK2FTB59oZnoAm
+BlJOKaL2KQhke0ZyN9Of5if40HsrWDX495ccVXS+dlYoJWINHHQGm3vlJmK3NBVY
+KCM+U9gSH0f1yzfm7oyyn+XZQnTVbcBtQRWuYnarGyYGW3aWQbr0nzAFKgCnEXCB
+zrouIhZsLT4WBQCbYegBR7iMr2k/fGkZWSHOWW7yZwOxtwzmeT0xlnNPgrUeIpRm
+XROnbbRTXUZaXs4w3p1x5GhJFcaVINnKr/KrosKqWbRZNPadLh6XIOQuAR32vszX
+OrNSzGcfmVpgbDYubae2MpxqNOU9IwS6MFPnIhWb4uYEztX8z2I5hS3wfH4rz8jY
+6XfWd60EomlDMSy++JQ2B/SezNcV3694qt/7rn8MyGFl4jWpoGGn1Nuwtx3U5CGX
+2eLKd6P0v0UJSSWW/KSUbsaUcS+Wf8nxPiF+X88GhYI+a6eUyx751mv7thqD0N5D
+T13ODk7D3KGXkASE9GvujxAUpn9FHtJ9fu88KjFW3+EtIqhs8ids1ZTMpgNGYH2G
+4KnC9EN+xj8/0C05gffN
+=hCTK
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__8_Mar_2012_17_32_44_+1100_SrPOLZK3H_fi6mio--
