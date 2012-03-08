@@ -1,93 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758236Ab2CHP5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 10:57:12 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:65016 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758005Ab2CHP5E (ORCPT
+	id S1758173Ab2CHQAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 11:00:30 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:48511 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757212Ab2CHQA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 10:57:04 -0500
-From: Benjamin Poirier <bpoirier@suse.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Christine Caulfield <ccaulfie@redhat.com>,
-        David Teigland <teigland@redhat.com>,
-        Vlad Yasevich <vladislav.yasevich@hp.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, cluster-devel@redhat.com,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] dlm: Do not allocate a fd for peeloff
-Date: Thu,  8 Mar 2012 10:55:59 -0500
-Message-Id: <1331222159-28980-2-git-send-email-bpoirier@suse.de>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1331222159-28980-1-git-send-email-bpoirier@suse.de>
-References: <20120308.002447.1062706659978103072.davem@davemloft.net>
- <1331222159-28980-1-git-send-email-bpoirier@suse.de>
+	Thu, 8 Mar 2012 11:00:27 -0500
+From: Aneesh V <aneesh@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-omap@vger.kernel.org, Benoit Cousson <b-cousson@ti.com>
+Subject: [PATCH 1/8] OMAP4: hwmod: add EMIF hw mod data
+Date: Thu,  8 Mar 2012 21:24:18 +0530
+Message-Id: <1331222065-3579-2-git-send-email-aneesh@ti.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1331222065-3579-1-git-send-email-aneesh@ti.com>
+References: <1331222065-3579-1-git-send-email-aneesh@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-avoids allocating a fd that a) propagates to every kernel thread and
-usermodehelper b) is not properly released.
+From: Benoit Cousson <b-cousson@ti.com>
 
-References: http://article.gmane.org/gmane.linux.network.drbd/22529
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+Add hwmod data for EMIF IP instances in OMAP4.
+
+Signed-off-by: Benoit Cousson <b-cousson@ti.com>
 ---
- fs/dlm/lowcomms.c |   22 ++++++++--------------
- 1 files changed, 8 insertions(+), 14 deletions(-)
+Changes since RFC:
+- Improved commit log
+---
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  110 ++++++++++++++++++++++++++++
+ 1 files changed, 110 insertions(+), 0 deletions(-)
 
-diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-index 0b3109e..ca0c59a 100644
---- a/fs/dlm/lowcomms.c
-+++ b/fs/dlm/lowcomms.c
-@@ -52,6 +52,7 @@
- #include <linux/mutex.h>
- #include <linux/sctp.h>
- #include <linux/slab.h>
-+#include <net/sctp/sctp.h>
- #include <net/sctp/user.h>
- #include <net/ipv6.h>
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+index f9f1510..2b107c7 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -5480,6 +5480,111 @@ static struct omap_hwmod omap44xx_usb_tll_hs_hwmod = {
+ 	.slaves_cnt	= ARRAY_SIZE(omap44xx_usb_tll_hs_slaves),
+ };
  
-@@ -474,9 +475,6 @@ static void process_sctp_notification(struct connection *con,
- 			int prim_len, ret;
- 			int addr_len;
- 			struct connection *new_con;
--			sctp_peeloff_arg_t parg;
--			int parglen = sizeof(parg);
--			int err;
++/*
++ * 'emif' class
++ * external memory interface no1
++ */
++
++static struct omap_hwmod_class omap44xx_emif_hwmod_class = {
++	.name	= "emif",
++};
++
++/* emif1 */
++static struct omap_hwmod omap44xx_emif1_hwmod;
++static struct omap_hwmod_irq_info omap44xx_emif1_irqs[] = {
++	{ .irq = 110 + OMAP44XX_IRQ_GIC_START },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod_addr_space omap44xx_emif1_addrs[] = {
++	{
++		.pa_start	= 0x4c000000,
++		.pa_end		= 0x4c0000ff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{ }
++};
++
++/* emif_fw -> emif1 */
++static struct omap_hwmod_ocp_if omap44xx_emif_fw__emif1 = {
++	.master		= &omap44xx_emif_fw_hwmod,
++	.slave		= &omap44xx_emif1_hwmod,
++	.clk		= "l3_div_ck",
++	.addr		= omap44xx_emif1_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++/* emif1 slave ports */
++static struct omap_hwmod_ocp_if *omap44xx_emif1_slaves[] = {
++	&omap44xx_emif_fw__emif1,
++};
++
++static struct omap_hwmod omap44xx_emif1_hwmod = {
++	.name		= "emif1",
++	.class		= &omap44xx_emif_hwmod_class,
++	.flags		= HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET,
++	.mpu_irqs	= omap44xx_emif1_irqs,
++	.main_clk	= "emif1_fck",
++	.clkdm_name	= "l3_emif_clkdm",
++	.prcm		= {
++		.omap4 = {
++			.clkctrl_offs = OMAP4_CM_MEMIF_EMIF_1_CLKCTRL_OFFSET,
++			.context_offs = OMAP4_RM_MEMIF_EMIF_1_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_HWCTRL,
++		},
++	},
++	.slaves		= omap44xx_emif1_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_emif1_slaves),
++};
++
++/* emif2 */
++static struct omap_hwmod omap44xx_emif2_hwmod;
++static struct omap_hwmod_irq_info omap44xx_emif2_irqs[] = {
++	{ .irq = 111 + OMAP44XX_IRQ_GIC_START },
++	{ .irq = -1 }
++};
++
++static struct omap_hwmod_addr_space omap44xx_emif2_addrs[] = {
++	{
++		.pa_start	= 0x4d000000,
++		.pa_end		= 0x4d0000ff,
++		.flags		= ADDR_TYPE_RT
++	},
++	{ }
++};
++
++/* emif_fw -> emif2 */
++static struct omap_hwmod_ocp_if omap44xx_emif_fw__emif2 = {
++	.master		= &omap44xx_emif_fw_hwmod,
++	.slave		= &omap44xx_emif2_hwmod,
++	.clk		= "l3_div_ck",
++	.addr		= omap44xx_emif2_addrs,
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++/* emif2 slave ports */
++static struct omap_hwmod_ocp_if *omap44xx_emif2_slaves[] = {
++	&omap44xx_emif_fw__emif2,
++};
++
++static struct omap_hwmod omap44xx_emif2_hwmod = {
++	.name		= "emif2",
++	.class		= &omap44xx_emif_hwmod_class,
++	.flags		= HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET,
++	.mpu_irqs	= omap44xx_emif2_irqs,
++	.main_clk	= "emif2_fck",
++	.clkdm_name	= "l3_emif_clkdm",
++	.prcm		= {
++		.omap4 = {
++			.clkctrl_offs = OMAP4_CM_MEMIF_EMIF_1_CLKCTRL_OFFSET,
++			.context_offs = OMAP4_RM_MEMIF_EMIF_1_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_HWCTRL,
++		}
++	},
++	.slaves		= omap44xx_emif2_slaves,
++	.slaves_cnt	= ARRAY_SIZE(omap44xx_emif2_slaves),
++};
++
+ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
  
- 			/*
- 			 * We get this before any data for an association.
-@@ -525,23 +523,19 @@ static void process_sctp_notification(struct connection *con,
- 				return;
+ 	/* dmm class */
+@@ -5629,6 +5734,11 @@ static __initdata struct omap_hwmod *omap44xx_hwmods[] = {
+ 	/* wd_timer class */
+ 	&omap44xx_wd_timer2_hwmod,
+ 	&omap44xx_wd_timer3_hwmod,
++
++	/* emif class */
++	&omap44xx_emif1_hwmod,
++	&omap44xx_emif2_hwmod,
++
+ 	NULL,
+ };
  
- 			/* Peel off a new sock */
--			parg.associd = sn->sn_assoc_change.sac_assoc_id;
--			ret = kernel_getsockopt(con->sock, IPPROTO_SCTP,
--						SCTP_SOCKOPT_PEELOFF,
--						(void *)&parg, &parglen);
-+			sctp_lock_sock(con->sock->sk);
-+			ret = sctp_do_peeloff(con->sock->sk,
-+				sn->sn_assoc_change.sac_assoc_id,
-+				&new_con->sock);
-+			sctp_release_sock(con->sock->sk);
- 			if (ret < 0) {
- 				log_print("Can't peel off a socket for "
- 					  "connection %d to node %d: err=%d",
--					  parg.associd, nodeid, ret);
--				return;
--			}
--			new_con->sock = sockfd_lookup(parg.sd, &err);
--			if (!new_con->sock) {
--				log_print("sockfd_lookup error %d", err);
-+					  (int)sn->sn_assoc_change.sac_assoc_id,
-+					  nodeid, ret);
- 				return;
- 			}
- 			add_sock(new_con->sock, new_con);
--			sockfd_put(new_con->sock);
- 
- 			log_print("connecting to %d sctp association %d",
- 				 nodeid, (int)sn->sn_assoc_change.sac_assoc_id);
 -- 
-1.7.7
+1.7.1
 
