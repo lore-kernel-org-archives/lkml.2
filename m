@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757265Ab2CHVhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:37:17 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48632 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756377Ab2CHVhO convert rfc822-to-8bit (ORCPT
+	id S1757359Ab2CHViB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:38:01 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33331 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756298Ab2CHVh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:37:14 -0500
-Message-ID: <1331242625.11248.433.camel@twins>
-Subject: Re: [ANNOUNCE] 3.2.9-rt17
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Thu, 08 Mar 2012 22:37:05 +0100
-In-Reply-To: <1331242574.25686.505.camel@gandalf.stny.rr.com>
-References: <alpine.LFD.2.02.1203072225020.2742@ionos>
-	 <1331230991.25686.452.camel@gandalf.stny.rr.com>
-	 <1331231287.11248.396.camel@twins>
-	 <1331232159.25686.456.camel@gandalf.stny.rr.com>
-	 <1331235579.11248.402.camel@twins>
-	 <1331237441.25686.469.camel@gandalf.stny.rr.com>
-	 <1331238369.11248.426.camel@twins>
-	 <1331240882.25686.499.camel@gandalf.stny.rr.com>
-	 <1331241627.11248.430.camel@twins>
-	 <1331241940.25686.502.camel@gandalf.stny.rr.com>
-	 <1331242104.11248.432.camel@twins>
-	 <1331242574.25686.505.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 8 Mar 2012 16:37:59 -0500
+Date: Thu, 8 Mar 2012 13:37:57 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [patch] mm, hugetlb: add thread name and pid to SHM_HUGETLB
+ mlock rlimit warning
+In-Reply-To: <20120308120238.c4486547.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1203081333300.23632@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1203061825070.9015@chino.kir.corp.google.com> <20120308120238.c4486547.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 16:36 -0500, Steven Rostedt wrote:
-> On Thu, 2012-03-08 at 22:28 +0100, Peter Zijlstra wrote:
-> > On Thu, 2012-03-08 at 16:25 -0500, Steven Rostedt wrote:
-> > > 
-> > > How would this be different than what mainline does? When the lock is
-> > > released, it will wake up the other task. 
-> > 
-> > mainline has ticket locks, the rt-mutex stuff has equal priority lock
-> > stealing, waking up the blocked task will take so long our running loop
-> > will have re-acquired ->d_lock again before it even gets to trying.
-> 
-> And we have adaptive mutexes.
-> 
-> So we wake up the task (now with the higher priority), by the time it
-> wakes up, the original task retook the lock. But because of adaptive
-> mutexes, as this task takes the lock it notices that the owner is still
-> running, and it will spin and not sleep.
-> 
-> Now when the original task releases the lock again, the other task can
-> take it just like it does on mainline.
+On Thu, 8 Mar 2012, Andrew Morton wrote:
 
-Now interleave it with a third task of even higher priority that puts
-the spinner to sleep.
+> > --- a/fs/hugetlbfs/inode.c
+> > +++ b/fs/hugetlbfs/inode.c
+> > @@ -946,7 +946,11 @@ struct file *hugetlb_file_setup(const char *name, size_t size,
+> >  	if (creat_flags == HUGETLB_SHMFS_INODE && !can_do_hugetlb_shm()) {
+> >  		*user = current_user();
+> >  		if (user_shm_lock(size, *user)) {
+> > -			printk_once(KERN_WARNING "Using mlock ulimits for SHM_HUGETLB is deprecated\n");
+> > +			task_lock(current);
+> > +			printk_once(KERN_WARNING
+> > +				"%s (%d): Using mlock ulimits for SHM_HUGETLB is deprecated\n",
+> > +				current->comm, current->pid);
+> > +			task_unlock(current);
+> 
+> I assume the task_lock() is there to protect current->comm.
+
+Yup.
+
+> If so, it
+> is unneeded - we're protecting against prctl(PR_SET_NAME), and
+> PR_SET_NAME only operates on current, and we know this task isn't
+> currently running PR_SET_NAME.
+> 
+> If there's a way for another task to alter this task's ->comm then we
+> _do_ need locking.  But there isn't a way, I hope.
+> 
+
+I wish there wasn't as well, it would prevent a lot of the currently buggy 
+reads to current->comm and allow us to avoid so many otherwise pointless 
+task_lock()s.
+
+This protects against /proc/pid/comm, which is writable by threads in the 
+same thread group.  We have a get_task_comm() that does the task_lock() 
+internally but requires a TASK_COMM_LEN buffer in the calling code.  It's 
+just easier for the calling code to the task_lock() itself for a tiny 
+little printk().
