@@ -1,96 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758948Ab2CHWWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 17:22:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23045 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758899Ab2CHWWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 17:22:08 -0500
-Date: Thu, 8 Mar 2012 17:21:53 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Mandeep Singh Baines <msb@chromium.org>
-cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        Alasdair G Kergon <agk@redhat.com>, Will Drewry <wad@chromium.org>,
-        Elly Jones <ellyjones@chromium.org>, Milan Broz <mbroz@redhat.com>,
-        Olof Johansson <olofj@chromium.org>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: workqueues and percpu (was: [PATCH] dm: remake of the verity target)
-In-Reply-To: <20120306215947.GB27051@google.com>
-Message-ID: <Pine.LNX.4.64.1203081656590.31821@file.rdu.redhat.com>
-References: <1330648393-20692-1-git-send-email-msb@chromium.org>
- <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com> <20120306215947.GB27051@google.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758926Ab2CHWWK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 17:22:10 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15050 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758820Ab2CHWWD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 17:22:03 -0500
+X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=EQrbfHX8H6cA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=meVymXHHAAAA:8 a=_busI_Le17HC7A9jns0A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=IlIHHVnFY4zYrncXXyQA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-Id: <20120308222201.165735678@goodmis.org>
+User-Agent: quilt/0.50-1
+Date: Thu, 08 Mar 2012 17:17:31 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jason Baron <jbaron@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 1/7] x86/jump-label: Use best default nops for inital jump label calls
+References: <20120308221730.807074710@goodmis.org>
+Content-Disposition: inline; filename=0001-x86-jump-label-Use-best-default-nops-for-inital-jump.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+From: Steven Rostedt <srostedt@redhat.com>
 
-On Tue, 6 Mar 2012, Mandeep Singh Baines wrote:
+As specified by H. Peter Anvin, the best nops for x86 without knowing
+the running computer is:
 
-> You are
-> allocated a complete shash_desc per I/O. We only allocate one per CPU.
+32bit:
+  0x3e, 0x8d, 0x74, 0x26, 0x00 also known as GENERIC_NOP5_ATOMIC
 
-I looked at it --- and using percpu variables in workqueues isn't safe 
-because the workqueue can change CPU if the CPU is hot-unplugged.
+64bit:
+  0x0f, 0x1f, 0x44, 0x00, 0x00  also known as P6_NOP5_ATOMIC
 
-dm-crypt has the same bug --- it also uses workqueue with per-cpu 
-variables and assumes that the CPU doesn't change for a single work item.
+Currently the default nop that is used by jump label is:
 
-This program shows that work executed in a workqueue can be switched to a 
-different CPU.
+ 0xe9 0x00 0x00 0x00 0x00
 
-I'm wondering how much other kernel code assumes that workqueues are bound 
-to a specific CPU, which isn't true if we unplug that CPU.
+Which is really a 5byte jump to the next position.
 
-Mikulas
+It's better to use a real nop than a jmp.
 
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Jason Baron <jbaron@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ arch/x86/include/asm/jump_label.h |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
-/*
- * A proof of concept that a work item executed on a workqueue may change CPU
- * when CPU hot-unplugging is used.
- * Compile this as a module and run:
- * insmod test.ko; sleep 1; echo 0 >/sys/devices/system/cpu/cpu1/online
- * You see that the work item starts executing on CPU 1 and ends up executing
- * on different CPU, usually 0.
- */
+diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_=
+label.h
+index 3a16c14..64507f3 100644
+--- a/arch/x86/include/asm/jump_label.h
++++ b/arch/x86/include/asm/jump_label.h
+@@ -3,18 +3,23 @@
+=20
+ #ifdef __KERNEL__
+=20
++#include <linux/stringify.h>
+ #include <linux/types.h>
+ #include <asm/nops.h>
+ #include <asm/asm.h>
+=20
+ #define JUMP_LABEL_NOP_SIZE 5
+=20
+-#define STATIC_KEY_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
++#ifdef CONFIG_X86_64
++# define STATIC_KEY_INIT_NOP P6_NOP5_ATOMIC
++#else
++# define STATIC_KEY_INIT_NOP GENERIC_NOP5_ATOMIC
++#endif
+=20
+ static __always_inline bool arch_static_branch(struct static_key *key)
+ {
+ 	asm goto("1:"
+-		STATIC_KEY_INITIAL_NOP
++		".byte " __stringify(STATIC_KEY_INIT_NOP) "\n\t"
+ 		".pushsection __jump_table,  \"aw\" \n\t"
+ 		_ASM_ALIGN "\n\t"
+ 		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
+--=20
+1.7.8.3
 
-#include <linux/module.h>
-#include <linux/delay.h>
 
-static struct workqueue_struct *wq;
-static struct work_struct work;
 
-static void do_work(struct work_struct *w)
-{
-	printk("starting work on cpu %d\n", smp_processor_id());
-	msleep(10000);
-	printk("finishing work on cpu %d\n", smp_processor_id());
-}
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-static int __init test_init(void)
-{
-	printk("module init\n");
-	wq = alloc_workqueue("testd", WQ_MEM_RECLAIM | WQ_CPU_INTENSIVE, 1);
-	if (!wq) {
-		printk("alloc_workqueue failed\n");
-		return -ENOMEM;
-	}
-	INIT_WORK(&work, do_work);
-	queue_work_on(1, wq, &work);
-	return 0;
-}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-static void __exit test_exit(void)
-{
-	destroy_workqueue(wq);
-	printk("module exit\n");
-}
+iQIcBAABAgAGBQJPWTEJAAoJEIy3vGnGbaoA7qsP/Avfv57Pt4iHFxZxigIbKdlL
+258/7hz/uU+b+VrTVWkF8u515VeD6ZAF5zW/62n2lzFjyeXT3ZAHCALXTWrlit9W
+hIUNOYYB2iUagrCMYftMw4w4Ivh3wMLMdbg68i1o617zdU9dhr/ycC5g1pjOIu+Y
+G3H25UPVLeXLspEjyqJIdjozIGJB0a4fYI4LTCiaP0ERb4KU5tXb2GqURcjsiZ5J
+w6VCU5xTdG2Gz4SkliCKKkzXXv8/CEFDfZOarT4BKGYOfFrhPjuB/Xxn7UExuAul
+NrKVQ6U9dEQxM6Hymf8RoAe7WDuVHxiGmjsZYIEaMsRoOUlnlA2h2L5Z9HND0lX2
+X937Pdd0I1POya7usi/g9yP/86NwoW2igcYSXkxpiLgM5Pq+tMJzFTi6rGEc2SuL
+ctO1vyt7EU4dPcWTurFh70DBFJLwhnuMKgugcX4kjDSTrxMNVmX4Z8tMOvtOvKVU
+vWab14mnomD8pB8UnRwR5yzwMGV5B/TXCWxgLRfkbxrCdma5AXI+sbkw9m45cFDx
+wYbXJIjXknguz3FiwFj/DqGuZjV2UUaGVgkdAnvoYHpmq49jerhlig5jPNYBjVWM
+GvyBS3LoNbQLgOYk8SgjYlolUgvbZrbrR82GyKaTP3TwNKcg2ARuX4B9iFlIOKZy
+tc/BYFrtNJpw2lQG+afD
+=XFGu
+-----END PGP SIGNATURE-----
 
-module_init(test_init)
-module_exit(test_exit)
-MODULE_LICENSE("GPL");
+--00GvhwF7k39YY--
