@@ -1,162 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab2CHVL2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:11:28 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53107 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754101Ab2CHVL0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:11:26 -0500
-Date: Thu, 8 Mar 2012 13:11:20 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
-        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de
-Subject: Re: [PATCH RESEND v3] USB: Support for LPC32xx SoC
-Message-ID: <20120308211120.GB21058@kroah.com>
-References: <1331068913-9321-1-git-send-email-stigge@antcom.de>
+	id S1755120Ab2CHVLj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:11:39 -0500
+Received: from mga14.intel.com ([143.182.124.37]:53020 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754473Ab2CHVL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 16:11:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="116556820"
+Message-ID: <4F592053.40007@linux.intel.com>
+Date: Thu, 08 Mar 2012 13:10:43 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331068913-9321-1-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Feng Tang <feng.tang@intel.com>, Alan Cox <alan@linux.intel.com>,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 3/4] pch_uart: Add user_uartclk parameter
+References: <cover.1330539597.git.dvhart@linux.intel.com> <8d2f6dc994198252c7afe323bba6aa6b4cd3dd83.1330539597.git.dvhart@linux.intel.com> <20120308185615.GA13866@kroah.com>
+In-Reply-To: <20120308185615.GA13866@kroah.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 10:21:53PM +0100, Roland Stigge wrote:
-> This patch adds OHCI support to the LPC32xx ARM platform
+
+
+On 03/08/2012 10:56 AM, Greg Kroah-Hartman wrote:
+> On Wed, Feb 29, 2012 at 10:24:46AM -0800, Darren Hart wrote:
+>> For cases where boards with non-default clocks are not yet added to the kernel
+>> or when the clock varies across hardware revisions, it is useful to be
+>> able to specify the UART clock on the kernel command line.
+>>
+>> Add the user_uartclk parameter and prefer it, if set, to the default and
+>> board specific UART clock settings. Specify user_uartclock on the command-line
+>> with "pch_uart.user_uartclk=48000000".
+>>
+>> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+>> CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+>> CC: Feng Tang <feng.tang@intel.com>
+>> CC: Alan Cox <alan@linux.intel.com>
+>> ---
+>>  drivers/tty/serial/pch_uart.c |    5 +++++
+>>  1 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+>> index 3a2b0ae..105d982 100644
+>> --- a/drivers/tty/serial/pch_uart.c
+>> +++ b/drivers/tty/serial/pch_uart.c
+>> @@ -290,6 +290,7 @@ static struct pch_uart_driver_data drv_dat[] = {
+>>  static struct eg20t_port *pch_uart_ports[PCH_UART_NR];
+>>  #endif
+>>  static unsigned int default_baud = 9600;
+>> +static unsigned int user_uartclk = 0;
+>>  static const int trigger_level_256[4] = { 1, 64, 128, 224 };
+>>  static const int trigger_level_64[4] = { 1, 16, 32, 56 };
+>>  static const int trigger_level_16[4] = { 1, 4, 8, 14 };
+>> @@ -300,6 +301,9 @@ static int pch_uart_get_uartclk(void)
+>>  {
+>>  	const char *cmp;
+>>  
+>> +	if (user_uartclk)
+>> +		return user_uartclk;
+>> +
+>>  	cmp = dmi_get_system_info(DMI_BOARD_NAME);
+>>  	if (cmp && strstr(cmp, "CM-iTC"))
+>>  		return CMITC_UARTCLK;
+>> @@ -1799,3 +1803,4 @@ module_exit(pch_uart_module_exit);
+>>  MODULE_LICENSE("GPL v2");
+>>  MODULE_DESCRIPTION("Intel EG20T PCH UART PCI Driver");
+>>  module_param(default_baud, uint, S_IRUGO);
+>> +module_param(user_uartclk, uint, S_IRUGO);
 > 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> 
-> ---
->  drivers/usb/host/ohci-hcd.c     |    5 +++
->  drivers/usb/host/ohci-pnx4008.c |   66 +++++++++++++++++++++++++++++++++++++---
->  2 files changed, 67 insertions(+), 4 deletions(-)
-> 
-> --- linux-2.6.orig/drivers/usb/host/ohci-hcd.c
-> +++ linux-2.6/drivers/usb/host/ohci-hcd.c
-> @@ -1055,6 +1055,11 @@ MODULE_LICENSE ("GPL");
->  #define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
->  #endif
->  
-> +#ifdef CONFIG_ARCH_LPC32XX
-> +#include "ohci-pnx4008.c"
-> +#define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
-> +#endif
-> +
->  #ifdef CONFIG_ARCH_DAVINCI_DA8XX
->  #include "ohci-da8xx.c"
->  #define PLATFORM_DRIVER		ohci_hcd_da8xx_driver
-> --- linux-2.6.orig/drivers/usb/host/ohci-pnx4008.c
-> +++ linux-2.6/drivers/usb/host/ohci-pnx4008.c
-> @@ -22,6 +22,7 @@
->  #include <linux/i2c.h>
->  
->  #include <mach/hardware.h>
-> +#include <asm/mach-types.h>
->  #include <asm/io.h>
->  
->  #include <mach/platform.h>
-> @@ -143,7 +144,17 @@ static void i2c_write(u8 buf, u8 subaddr
->  	i2c_master_send(isp1301_i2c_client, &tmpbuf[0], 2);
->  }
->  
-> -static void isp1301_configure(void)
-> +static u16 i2c_read16(u8 subaddr)
-> +{
-> +	u16 data;
-> +
-> +	i2c_master_send(isp1301_i2c_client, &subaddr, 1);
-> +	i2c_master_recv(isp1301_i2c_client, (u8 *) &data, 2);
-> +
-> +	return data;
-> +}
-> +
-> +static void isp1301_configure_pnx4008(void)
->  {
->  	/* PNX4008 only supports DAT_SE0 USB mode */
->  	/* PNX4008 R2A requires setting the MAX603 to output 3.6V */
-> @@ -166,7 +177,51 @@ static void isp1301_configure(void)
->  		  ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
->  	i2c_write(0xFF,
->  		  ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
-> +}
->  
-> +static void isp1301_configure_lpc32xx(void)
-> +{
-> +	/* LPC32XX only supports DAT_SE0 USB mode */
-> +	/* This sequence is important */
-> +
-> +	/* Disable transparent UART mode first */
-> +	i2c_write(MC1_UART_EN, (ISP1301_I2C_MODE_CONTROL_1 |
-> +		ISP1301_I2C_REG_CLEAR_ADDR));
-> +
-> +	i2c_write(~MC1_SPEED_REG, (ISP1301_I2C_MODE_CONTROL_1 |
-> +		ISP1301_I2C_REG_CLEAR_ADDR));
-> +	i2c_write(MC1_SPEED_REG, ISP1301_I2C_MODE_CONTROL_1);
-> +	i2c_write(~0,
-> +		(ISP1301_I2C_MODE_CONTROL_2 | ISP1301_I2C_REG_CLEAR_ADDR));
-> +	i2c_write((MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL),
-> +		ISP1301_I2C_MODE_CONTROL_2);
-> +	i2c_write(~0, (ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR));
-> +	i2c_write(MC1_DAT_SE0, ISP1301_I2C_MODE_CONTROL_1);
-> +	i2c_write((OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN),
-> +		ISP1301_I2C_OTG_CONTROL_1);
-> +	i2c_write((OTG1_DM_PULLUP | OTG1_DP_PULLUP),
-> +		(ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR));
-> +	i2c_write(~0,
-> +		 ISP1301_I2C_INTERRUPT_LATCH | ISP1301_I2C_REG_CLEAR_ADDR);
-> +	i2c_write(~0,
-> +		ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
-> +	i2c_write(~0,
-> +		ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
-> +
-> +	/* Enable usb_need_clk clock after transceiver is initialized */
-> +	__raw_writel((__raw_readl(USB_CTRL) | (1 << 22)), USB_CTRL);
-> +
-> +	printk(KERN_INFO "ISP1301 Vendor ID  : 0x%04x\n", i2c_read16(0x00));
-> +	printk(KERN_INFO "ISP1301 Product ID : 0x%04x\n", i2c_read16(0x02));
-> +	printk(KERN_INFO "ISP1301 Version ID : 0x%04x\n", i2c_read16(0x14));
-> +}
-> +
-> +static void isp1301_configure(void)
-> +{
-> +	if (machine_is_pnx4008())
-> +		isp1301_configure_pnx4008();
-> +	else
-> +		isp1301_configure_lpc32xx();
->  }
->  
->  static inline void isp1301_vbus_on(void)
-> @@ -375,7 +430,8 @@ static int __devinit usb_hcd_pnx4008_pro
->  	}
->  
->  	/* Set all USB bits in the Start Enable register */
-> -	pnx4008_set_usb_bits();
-> +	if (machine_is_pnx4008())
-> +		pnx4008_set_usb_bits();
->  
->  	hcd->rsrc_start = pdev->resource[0].start;
->  	hcd->rsrc_len = pdev->resource[0].end - pdev->resource[0].start + 1;
-> @@ -404,7 +460,8 @@ static int __devinit usb_hcd_pnx4008_pro
->  
->  	pnx4008_stop_hc();
->  out4:
-> -	pnx4008_unset_usb_bits();
-> +	if (machine_is_pnx4008())
-> +		pnx4008_unset_usb_bits();
+> I don't object to this, but you should provide some documentation on
+> what this option does.  How about a follow-on patch using
+> MODULE_PARM_DESC() for both of these options to help people out with how
+> they should be used?
 
-How come some of these pnx4008_* functions you have wrapped in
-machine_is_pnx4008(), but not all of them?
+Will do (now I'm traveling, so might be a day). Will include with the
+rebase to linux-next.
 
-Actually, why don't those functions do that kind of checking themselves,
-without having to do this before you call them each time?
-
-Consistancy is key.
-
-thanks,
-
-greg k-h
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
