@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912Ab2CHL3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:29:24 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49653 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756677Ab2CHL3V (ORCPT
+	id S1756843Ab2CHL3K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:29:10 -0500
+Received: from mga07.intel.com ([143.182.124.22]:24644 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752541Ab2CHL3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:29:21 -0500
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
- __dma_request_channel()
-From: Vinod Koul <vkoul@infradead.org>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: vinod.koul@intel.com, Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
-References: <1331101687.24656.319.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
-	 <20120307093026.GM17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
-	 <20120307103112.GP17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
-	 <20120307124620.GT17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
-	 <20120307142634.GA18787@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
-	 <20120307162755.GB18787@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
-	 <1331188201.4657.51.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
-	 <1331204128.4657.54.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
+	Thu, 8 Mar 2012 06:29:05 -0500
+Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix
+ CONFIG_X86_32 oops
+From: Matt Fleming <matt.fleming@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@kernel.org>, mingo@redhat.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, keithp@keithp.com, rui.zhang@intel.com,
+        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <CAE9FiQUoRMA_PYnOEt0ZUYXLq=hNZtDuLifT=+R72HtrwfF6AA@mail.gmail.com>
+References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
+	 <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
+	 <CAE9FiQWFpsZotawqPD4738jTayB=KOGo0W9+AT2go3GYk1v_sQ@mail.gmail.com>
+	 <4F45B35D.1010702@zytor.com>
+	 <CAE9FiQUbyYYN5orG_RyVm=P-8wNh=YsET1VzGojpFTfJPueHqA@mail.gmail.com>
+	 <4F471651.3080609@zytor.com> <4F4C3BA2.1070708@kernel.org>
+	 <1331116250.3539.35.camel@mfleming-mobl1.ger.corp.intel.com>
+	 <CAE9FiQUoRMA_PYnOEt0ZUYXLq=hNZtDuLifT=+R72HtrwfF6AA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Mar 2012 17:04:19 +0530
-Message-ID: <1331206459.4657.59.camel@vkoul-udesk3>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Thu, 08 Mar 2012 11:28:47 +0000
+Message-ID: <1331206127.3539.69.camel@mfleming-mobl1.ger.corp.intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 12:22 +0100, Guennadi Liakhovetski wrote:
-> On Thu, 8 Mar 2012, Vinod Koul wrote:
+On Wed, 2012-03-07 at 10:05 -0800, Yinghai Lu wrote:
+> > -
+> > -       max_low_pfn_mapped = init_memory_mapping(0, end_pfn << PAGE_SHIFT);
+> > -       max_pfn_mapped = max_low_pfn_mapped;
+> > +       /* max_low_pfn_mapped is updated here */
+> > +       max_pfn_mapped = init_memory_mapping();
+> >
+> >  #ifdef CONFIG_X86_64
+> >        if (max_pfn > max_low_pfn) {
+> > -               max_pfn_mapped = init_memory_mapping(1UL<<32,
+> > -                                                    max_pfn<<PAGE_SHIFT);
+> >                /* can we preseve max_low_pfn ?*/
+> >                max_low_pfn = max_pfn;
+> >        }
 > 
-> > On Thu, 2012-03-08 at 11:16 +0100, Guennadi Liakhovetski wrote:
-> > > I still have the impression, that my specific use-case (sh-mobile), where 
-> > > channels can be freely configured for use by _ANY_ client on one of 
-> > > _SEVERAL_ DMAC instances, is not fully understood or taken into account. 
-> > > For this driver any kind of fixed mapping means, that we'd have to use 
-> > > both virtual channels and controllers, adding _a lot_ of complexity to the 
-> > > DMAC driver and making the dmaengine core just an "obfuscation layer." 
-> > > Yes, I remember Russell proposing core helpers for this. They would help, 
-> > > but (1) when would they be available, (2) how well would they be suitable 
-> > > for us, (3) they'd take the coding / maintainance burden away, but 
-> > > wouldn't reduce complexity and run-time overhead. 
-> > Lets try to address you case as well.
-> > On a typical platform
+> you may need to move those three lines before
+> max_pfn_mapped = init_memory_mapping()
 > 
-> Let's take the mackerel board with the sh7372 SoC. it's not the state of 
-> the art, but that's what I'm currently working with and it should give us 
-> a good enough idea
-> 
-> > 1) how many dma controllers you have?
-> 
-> currently supported 5 of 3 types (3 of type A, 1 of each of the types B 
-> and C), all handled by the same driver
-> 
-> > 2) how many clients you have
-> 
-> huh... many. Maybe like 20 or more, and more, that are not yet supported, 
-> using type A, and 1 for each of types B and C
-> 
-> > 3) which client can use what controller channel? How is mapping decided,
-> > do you have a mux, is it hard wired by soc designers,....?
-> 
-> In general - with all the current sh-mobile hardware, that I'm aware of - 
-> there can be several controller instances on an SoC of each controller 
-> type. Inside each type all instances and all channels are freely 
-> configurable. So, of 20 Type A clients they can use any channels on any 
-> one of the 3 type A controllers. Types B and C are "degenerate" cases, 
-> there clients are practically hard-wired to a specific DMA controller.
-> 
-> So, we don't have to decide on mappings for type A. We just pick up any 
-> free channels on any controller and configure them accordingly. Whether 
-> there's a mux somewhere - you can say so, but it's all inside the SoC, and 
-> it's configured automatically ones you configure a physical channel to 
-> serve a specific client.
-> 
-> > Can you pls give a description so that we ensure all models fit in the
-> > final solution?
-> 
-> That's what I've been trying to do since several days now... I've been 
-> saying "multiple controllers with multiple channels all freely 
-> configurable for any device from a list" again and again... Seems I'm 
-> speaking some strange language, that noone understands.
-Okay. One more question before I can tell you how it can work for you
-without you sweating it out :-)
+> otherwise for x86_64, memory from [4G, TOMH) will not be directly mapped.
 
-So you have:
-case A: Here you have N dmacs and M controllers, any controller can use
-any channel, No constraints on channel assignments, right?
-case B: Some hardwired controllers P which can only be used by a set
-clients Q?
+I'm afraid I don't understand what you mean. The changes in my patch
+mean that init_memory_mapping() doesn't work the way it previously did.
+It will map all the regions in the e820 table and presumably the top of
+memory is contained within one of those regions.
 
-Anything else I missed in your description?
-
-
+Could you clarify what you think the problem is? Unfortunately I don't
+have a test machine with large amounts of RAM so it's entirely possible
+I've made a mistake somewhere.
 
