@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab2CHVjx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:39:53 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:46925 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab2CHVju (ORCPT
+	id S1757417Ab2CHVkx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:40:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33209 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755009Ab2CHVkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:39:50 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Masami Ichikawa <masami256@gmail.com>, linux-kernel@vger.kernel.org,
-        stable <stable@vger.kernel.org>
-References: <1329777830-2942-1-git-send-email-masami256@gmail.com>
-	<m11up2zu03.fsf@fess.ebiederm.org> <20120308211406.GA24445@kroah.com>
-Date: Thu, 08 Mar 2012 13:43:09 -0800
-In-Reply-To: <20120308211406.GA24445@kroah.com> (Greg KH's message of "Thu, 8
-	Mar 2012 13:14:06 -0800")
-Message-ID: <m1aa3qwyz6.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX18ObGFc/N/oCdaB0HO+9ZtyadDfMHhH64E=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0077]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Greg KH <gregkh@linuxfoundation.org>
-X-Spam-Relay-Country: **
-Subject: Re: [PATCH] Fix memory leak in sysfs_sd_setsecdata().
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Thu, 8 Mar 2012 16:40:52 -0500
+Date: Thu, 8 Mar 2012 13:40:50 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        davej@redhat.com, jboyer@redhat.com, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: Re: [PATCH] hugetlbfs: lockdep annotate root inode properly
+Message-Id: <20120308134050.f53a0b2f.akpm@linux-foundation.org>
+In-Reply-To: <20120308211926.GB6546@boyd>
+References: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20120308130256.c7855cbd.akpm@linux-foundation.org>
+	<20120308211926.GB6546@boyd>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@linuxfoundation.org> writes:
+On Thu, 8 Mar 2012 15:19:27 -0600
+Tyler Hicks <tyhicks@canonical.com> wrote:
 
-> On Thu, Mar 08, 2012 at 01:02:20PM -0800, Eric W. Biederman wrote:
->> Masami Ichikawa <masami256@gmail.com> writes:
->> 
->> > This patch fixies follwing two memory leak patterns that reported by kmemleak.
->> > sysfs_sd_setsecdata() is called during sys_lsetxattr() operation.
->> > It checks sd->s_iattr is NULL or not. Then if it is NULL, it calls
->> > sysfs_init_inode_attrs() to allocate memory.
->> > That code is this.
->> 
->> I don't know how you count two memory leaks.  But there is definitely a
->> leak here sd->s_iattr is allocated and then never assigned.  It looks
->> like I introduced that leak when I re-factored the code to protect
->> the code with sysfs_mutex at the end of 2009.
->> 
->> I am surprise the securlity label crowd has not been screaming about
->> selinux protection not working on sysfs for the last two years.
->> 
->> I have reviewed the code and the fix looks obvious and correct.
->> 
->> Greg can you pick this up?
->
-> I applied it a while ago to my tree already :)
+> > 
+> > 
+> > Sigh.  Was lockdep_annotate_inode_mutex_key() sufficiently
+> > self-explanatory to justify leaving it undocumented?
+> > 
+> > <goes off and reads e096d0c7e2e>
+> > 
+> > OK, the patch looks correct given the explanation in e096d0c7e2e, but
+> > I'd like to understand why it becomes necessary only now.
+> > 
+> > > NOTE: This patch also require 
+> > > http://thread.gmane.org/gmane.linux.file-systems/58795/focus=59565
+> > > to remove the lockdep warning
+> > 
+> > And that patch has been basically ignored.
+> 
+> Al commented on it here:
+> 
+> https://lkml.org/lkml/2012/2/16/518
+> 
+> He said that while my patch is correct, taking i_mutex inside mmap_sem
+> is still wrong.
 
-Odd I didn't see it linux-next when I looked an hour or so ago.
+OK, thanks, yup.  Taking i_mutex in file_operations.mmap() is wrong.
 
-As long as it is there and it makes it to stable.
+Is hugetlbfs actually deadlockable because of this, or is it the case
+that the i_mutex->mmap_sem ordering happens to never happen for this
+filesystem?  Although we shouldn't go and create incompatible lock
+ranking rules for different filesystems!
 
-Eric
+So we need to pull the i_mutex out of hugetlbfs_file_mmap().  What's it
+actually trying to do in there?  If we switch to
+i_size_read()/i_size_write() then AFAICT the problem comes down to
+hugetlb_reserve_pages().
+
+hugetlb_reserve_pages() fiddles with i_mapping->private_list and the fs
+owns private_list and is free to use a lock other than i_mutex to
+protect it.  (In fact i_mapping.private_lock is the usual lock for
+private_list).
+
+
+
+So from a quick scan here I'm thinking that a decent fix is to remove
+the i_mutex locking from hugetlbfs_file_mmap(), switch
+hugetlbfs_file_mmap() to i_size_read/write then use a hugetlb-private
+lock to protect i_mapping->private_list.  region_chg() will do
+GFP_KERNEL allocations under that lock, so some care is needed.
 
