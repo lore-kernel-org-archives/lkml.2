@@ -1,307 +1,585 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab2CHOtp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 09:49:45 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:56495 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753708Ab2CHOtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 09:49:41 -0500
-Date: Thu, 8 Mar 2012 08:49:37 -0600
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Jes Sorensen <jes@sgi.com>,
-        Ingo Molnar <mingo@redhat.com>, "H . Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-altix@sgi.com, x86@kernel.org,
-        chenkeping@huawei.com
-Subject: Re: [PATCH] IRQ: normalize chip->irq_set_affinity return value on
- x86 and IA64
-Message-ID: <20120308144937.GA2213@sgi.com>
-References: <1331046112-19526-1-git-send-email-jiang.liu@huawei.com>
+	id S1756297Ab2CHOug (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 09:50:36 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:46878 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635Ab2CHOue (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 09:50:34 -0500
+Date: Thu, 8 Mar 2012 11:50:24 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RFC] perf tools: Handle old kernels when opening perf
+ event
+Message-ID: <20120308145024.GA1764@infradead.org>
+References: <1331191731-29541-1-git-send-email-namhyung.kim@lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331046112-19526-1-git-send-email-jiang.liu@huawei.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1331191731-29541-1-git-send-email-namhyung.kim@lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 11:01:52PM +0800, Jiang Liu wrote:
-> On x86 and IA64 platforms, interrupt controller chip's irq_set_affinity()
-> method always copies affinity mask to irq_data->affinity field but still
-> returns 0(IRQ_SET_MASK_OK). That return value causes the interrupt core
-> logic unnecessarily copies the mask to irq_data->affinity field again.
-> So return IRQ_SET_MASK_OK_NOCOPY instead of IRQ_SET_MASK_OK to get rid of
-> the duplicated copy operation.
+Em Thu, Mar 08, 2012 at 04:28:51PM +0900, Namhyung Kim escreveu:
+> Changing default value of perf_guest back to false caused problems on old
+> kernels and its fix bc76efe64533 ("perf tools: Handle kernels that don't
+> support attr.exclude_{guest,host}") worked well for perf record/top.
 > 
-> This patch applies to v3.3-rc6 and has been tested on x86 platforms.
+> But I've just realized that using specific events on perf stat makes same
+> kind of troubles too. It's because the parse_events calls event_attr_init
+> for all events so that it would have exclude_guest set.
 > 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Instead of fixing perf stat, I thought that changing perf_evsel__open()
+> is more appropriate. Please take a look and give comments - especially
+> on ->time_not_needed handling in builtin-record.c (I guess the original
+> code had a bug) and checking ->sample_id_all_missing inside of
+> perf_evsel__config (I believe checking it before perf_evsel__open is
+> meaningless since it will always have the same value - so I dropped it).
+
+One problem here is to have all those pr_debug calls down in the
+perf_evlist class, they need to be better conveyed to the user, and that
+depends on the kind of interface being used (stdio, TUI, GTK).
+
+One approach tried till the GTK patch was proposed was to just check the
+value of perf_browser or some UI fops table to do it at that level.
+
+But Pekka argued that we should allow tool writers to have more freedom
+than that, i.e. handle things as flexibly as possible.
+
+The way to do that, that I discussed with David Ahern some time ago, was
+to have per class errno enums, and then a per class strerror (really an
+strerror_r) that would map the integer error number to an string.
+
+Doing that we would also avoid having to bloat the python binding (or
+libperf at some point) with the pr_debug, etc machinery.
+
+For instance, with your patch applied, try running
+tools/perf/python/twatch.py :-)
+
+Other than that, yeah, I think perf_attr_conf is needed and the rest of
+the patch looks ok, will look again after you address the above
+comments,
+
+Thanks!
+
+- Arnaldo
+ 
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 > ---
->  arch/ia64/kernel/iosapic.c     |    4 +++-
->  arch/ia64/kernel/msi_ia64.c    |    4 ++--
->  arch/ia64/sn/kernel/irq.c      |    2 +-
->  arch/ia64/sn/kernel/msi_sn.c   |    2 +-
->  arch/x86/kernel/apic/io_apic.c |   11 ++++++-----
->  arch/x86/platform/uv/uv_irq.c  |    2 +-
->  kernel/irq/internals.h         |    3 +++
->  kernel/irq/manage.c            |   39 ++++++++++++++++++++++-----------------
->  kernel/irq/migration.c         |    6 +-----
->  9 files changed, 40 insertions(+), 33 deletions(-)
+>  tools/perf/builtin-record.c |   32 ++++-----------------
+>  tools/perf/builtin-stat.c   |    5 ++-
+>  tools/perf/builtin-test.c   |   21 +++++++++++--
+>  tools/perf/builtin-top.c    |   25 +++-------------
+>  tools/perf/perf.h           |    8 ++++-
+>  tools/perf/util/evlist.c    |    5 ++-
+>  tools/perf/util/evlist.h    |    3 +-
+>  tools/perf/util/evsel.c     |   65 +++++++++++++++++++++++++++++++++++-------
+>  tools/perf/util/evsel.h     |    9 ++++--
+>  tools/perf/util/python.c    |   11 ++++++-
+>  10 files changed, 111 insertions(+), 73 deletions(-)
 > 
-> diff --git a/arch/ia64/kernel/iosapic.c b/arch/ia64/kernel/iosapic.c
-> index b0f9afe..98f5fa6 100644
-> --- a/arch/ia64/kernel/iosapic.c
-> +++ b/arch/ia64/kernel/iosapic.c
-> @@ -374,8 +374,10 @@ iosapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
->  		iosapic_write(iosapic, IOSAPIC_RTE_LOW(rte_index), low32);
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index 75d230fef202..b926082012b8 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -181,9 +181,11 @@ static void perf_record__open(struct perf_record *rec)
+>  	struct perf_evlist *evlist = rec->evlist;
+>  	struct perf_session *session = rec->session;
+>  	struct perf_record_opts *opts = &rec->opts;
+> +	struct perf_attr_conf attr_conf;
+>  
+>  	first = list_entry(evlist->entries.next, struct perf_evsel, node);
+>  
+> +	memset(&attr_conf, 0, sizeof(attr_conf));
+>  	perf_evlist__config_attrs(evlist, opts);
+>  
+>  	list_for_each_entry(pos, &evlist->entries, node) {
+> @@ -201,18 +203,14 @@ static void perf_record__open(struct perf_record *rec)
+>  		 * We need to move counter creation to perf_session, support
+>  		 * different sample_types, etc.
+>  		 */
+> -		bool time_needed = attr->sample_type & PERF_SAMPLE_TIME;
+> +		attr_conf.time_not_needed = !opts->sample_time &&
+> +					    !opts->raw_samples;
+>  
+>  		if (opts->group && pos != first)
+>  			group_fd = first->fd;
+> -fallback_missing_features:
+> -		if (opts->exclude_guest_missing)
+> -			attr->exclude_guest = attr->exclude_host = 0;
+> -retry_sample_id:
+> -		attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
+>  try_again:
+>  		if (perf_evsel__open(pos, evlist->cpus, evlist->threads,
+> -				     opts->group, group_fd) < 0) {
+> +				     opts->group, group_fd, &attr_conf) < 0) {
+>  			int err = errno;
+>  
+>  			if (err == EPERM || err == EACCES) {
+> @@ -221,23 +219,6 @@ try_again:
+>  			} else if (err ==  ENODEV && opts->cpu_list) {
+>  				die("No such device - did you specify"
+>  					" an out-of-range profile CPU?\n");
+> -			} else if (err == EINVAL) {
+> -				if (!opts->exclude_guest_missing &&
+> -				    (attr->exclude_guest || attr->exclude_host)) {
+> -					pr_debug("Old kernel, cannot exclude "
+> -						 "guest or host samples.\n");
+> -					opts->exclude_guest_missing = true;
+> -					goto fallback_missing_features;
+> -				} else if (!opts->sample_id_all_missing) {
+> -					/*
+> -					 * Old kernel, no attr->sample_id_type_all field
+> -					 */
+> -					opts->sample_id_all_missing = true;
+> -					if (!opts->sample_time && !opts->raw_samples && !time_needed)
+> -						attr->sample_type &= ~PERF_SAMPLE_TIME;
+> -
+> -					goto retry_sample_id;
+> -				}
+>  			}
+>  
+>  			/*
+> @@ -245,8 +226,7 @@ try_again:
+>  			 * based cpu-clock-tick sw counter, which
+>  			 * is always available even if no PMU support:
+>  			 */
+> -			if (attr->type == PERF_TYPE_HARDWARE
+> -					&& attr->config == PERF_COUNT_HW_CPU_CYCLES) {
+> +			if (perf_evsel__match(pos, HARDWARE, HW_CPU_CYCLES)) {
+>  
+>  				if (verbose)
+>  					ui__warning("The cycles event is not supported, "
+> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+> index ea40e4e8b227..5e3cf43177f5 100644
+> --- a/tools/perf/builtin-stat.c
+> +++ b/tools/perf/builtin-stat.c
+> @@ -174,6 +174,7 @@ static struct perf_event_attr very_very_detailed_attrs[] = {
+>  
+>  
+>  struct perf_evlist		*evsel_list;
+> +struct perf_attr_conf 		attr_conf;
+>  
+>  static bool			system_wide			=  false;
+>  static int			run_idx				=  0;
+> @@ -295,14 +296,14 @@ static int create_perf_stat_counter(struct perf_evsel *evsel,
+>  
+>  	if (system_wide)
+>  		return perf_evsel__open_per_cpu(evsel, evsel_list->cpus,
+> -						group, group_fd);
+> +						group, group_fd, &attr_conf);
+>  	if (!target_pid && !target_tid) {
+>  		attr->disabled = 1;
+>  		attr->enable_on_exec = 1;
 >  	}
 >  
-
-Maybe I haven't looked thoroughly enough, but could you point out where
-the mask is being copied in this function?
-
-> +	return IRQ_SET_MASK_OK_NOCOPY;
-> +#else
-> +	return IRQ_SET_MASK_OK;
->  #endif
-> -	return 0;
+>  	return perf_evsel__open_per_thread(evsel, evsel_list->threads,
+> -					   group, group_fd);
+> +					   group, group_fd, &attr_conf);
 >  }
 >  
 >  /*
-> diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
-> index 94e0db7..e155770 100644
-> --- a/arch/ia64/kernel/msi_ia64.c
-> +++ b/arch/ia64/kernel/msi_ia64.c
-> @@ -41,7 +41,7 @@ static int ia64_set_msi_irq_affinity(struct irq_data *idata,
->  	write_msi_msg(irq, &msg);
->  	cpumask_copy(idata->affinity, cpumask_of(cpu));
+> diff --git a/tools/perf/builtin-test.c b/tools/perf/builtin-test.c
+> index 3e087ce8daa6..6492bcfb0698 100644
+> --- a/tools/perf/builtin-test.c
+> +++ b/tools/perf/builtin-test.c
+> @@ -270,6 +270,7 @@ static int test__open_syscall_event(void)
+>  	struct thread_map *threads;
+>  	struct perf_evsel *evsel;
+>  	struct perf_event_attr attr;
+> +	struct perf_attr_conf attr_conf;
+>  	unsigned int nr_open_calls = 111, i;
+>  	int id = trace_event__id("sys_enter_open");
 >  
-> -	return 0;
-> +	return IRQ_SET_MASK_OK_NOCOPY;
->  }
->  #endif /* CONFIG_SMP */
->  
-> @@ -157,7 +157,7 @@ static int dmar_msi_set_affinity(struct irq_data *data,
->  	dmar_msi_write(irq, &msg);
->  	cpumask_copy(data->affinity, mask);
->  
-> -	return 0;
-> +	return IRQ_SET_MASK_OK_NOCOPY;
->  }
->  #endif /* CONFIG_SMP */
->  
-> diff --git a/arch/ia64/sn/kernel/irq.c b/arch/ia64/sn/kernel/irq.c
-> index dfac09a..f444208 100644
-> --- a/arch/ia64/sn/kernel/irq.c
-> +++ b/arch/ia64/sn/kernel/irq.c
-> @@ -216,7 +216,7 @@ static int sn_set_affinity_irq(struct irq_data *data,
->  				 sn_irq_lh[irq], list)
->  		(void)sn_retarget_vector(sn_irq_info, nasid, slice);
-
-Again, could you point out where the mask is being copied in this function?
-
->  
-> -	return 0;
-> +	return IRQ_SET_MASK_OK_NOCOPY;
->  }
->  
->  #ifdef CONFIG_SMP
-> diff --git a/arch/ia64/sn/kernel/msi_sn.c b/arch/ia64/sn/kernel/msi_sn.c
-> index 2b98b9e..ebb5b55 100644
-> --- a/arch/ia64/sn/kernel/msi_sn.c
-> +++ b/arch/ia64/sn/kernel/msi_sn.c
-> @@ -208,7 +208,7 @@ static int sn_set_msi_irq_affinity(struct irq_data *data,
->  	write_msi_msg(irq, &msg);
->  	cpumask_copy(data->affinity, cpu_mask);
->  
-> -	return 0;
-> +	return IRQ_SET_MASK_OK_NOCOPY;
->  }
->  #endif /* CONFIG_SMP */
->  
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index fb07275..a81f888 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -2346,6 +2346,7 @@ ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
->  		/* Only the high 8 bits are valid. */
->  		dest = SET_APIC_LOGICAL_ID(dest);
->  		__target_IO_APIC_irq(irq, dest, data->chip_data);
-> +		ret = IRQ_SET_MASK_OK_NOCOPY;
+> @@ -293,7 +294,9 @@ static int test__open_syscall_event(void)
+>  		goto out_thread_map_delete;
 >  	}
->  	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
->  	return ret;
-> @@ -2404,7 +2405,7 @@ ir_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
->  		send_cleanup_vector(cfg);
 >  
->  	cpumask_copy(data->affinity, mask);
-> -	return 0;
-> +	return IRQ_SET_MASK_OK_NOCOPY;
->  }
+> -	if (perf_evsel__open_per_thread(evsel, threads, false, NULL) < 0) {
+> +	memset(&attr_conf, 0, sizeof(attr_conf));
+> +	if (perf_evsel__open_per_thread(evsel, threads, false, NULL,
+> +					&attr_conf) < 0) {
+>  		pr_debug("failed to open counter: %s, "
+>  			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+>  			 strerror(errno));
+> @@ -335,6 +338,7 @@ static int test__open_syscall_event_on_all_cpus(void)
+>  	struct cpu_map *cpus;
+>  	struct perf_evsel *evsel;
+>  	struct perf_event_attr attr;
+> +	struct perf_attr_conf attr_conf;
+>  	unsigned int nr_open_calls = 111, i;
+>  	cpu_set_t cpu_set;
+>  	int id = trace_event__id("sys_enter_open");
+> @@ -368,7 +372,9 @@ static int test__open_syscall_event_on_all_cpus(void)
+>  		goto out_thread_map_delete;
+>  	}
 >  
->  #else
-> @@ -3209,7 +3210,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+> -	if (perf_evsel__open(evsel, cpus, threads, false, NULL) < 0) {
+> +	memset(&attr_conf, 0, sizeof(attr_conf));
+> +	if (perf_evsel__open(evsel, cpus, threads, false, NULL,
+> +			     &attr_conf) < 0) {
+>  		pr_debug("failed to open counter: %s, "
+>  			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+>  			 strerror(errno));
+> @@ -467,6 +473,7 @@ static int test__basic_mmap(void)
+>  		.sample_type	= PERF_SAMPLE_ID,
+>  		.watermark	= 0,
+>  	};
+> +	struct perf_attr_conf attr_conf;
+>  	cpu_set_t cpu_set;
+>  	const char *syscall_names[] = { "getsid", "getppid", "getpgrp",
+>  					"getpgid", };
+> @@ -523,6 +530,8 @@ static int test__basic_mmap(void)
+>  	attr.wakeup_events = 1;
+>  	attr.sample_period = 1;
 >  
->  	__write_msi_msg(data->msi_desc, &msg);
->  
-> -	return 0;
-> +	return IRQ_SET_MASK_OK_NOCOPY;
->  }
->  #endif /* CONFIG_SMP */
->  
-> @@ -3366,7 +3367,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
->  
->  	dmar_msi_write(irq, &msg);
->  
-> -	return 0;
-> +	return IRQ_SET_MASK_OK_NOCOPY;
->  }
->  
->  #endif /* CONFIG_SMP */
-> @@ -3419,7 +3420,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
->  
->  	hpet_msi_write(data->handler_data, &msg);
->  
-> -	return 0;
-> +	return IRQ_SET_MASK_OK_NOCOPY;
->  }
->  
->  #endif /* CONFIG_SMP */
-> @@ -3499,7 +3500,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
->  		return -1;
->  
->  	target_ht_irq(data->irq, dest, cfg->vector);
-> -	return 0;
-> +	return IRQ_SET_MASK_OK_NOCOPY;
->  }
->  
->  #endif
-> diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-> index f25c276..a22c416 100644
-> --- a/arch/x86/platform/uv/uv_irq.c
-> +++ b/arch/x86/platform/uv/uv_irq.c
-> @@ -222,7 +222,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
->  	if (cfg->move_in_progress)
->  		send_cleanup_vector(cfg);
->  
-> -	return 0;
-> +	return IRQ_SET_MASK_OK_NOCOPY;
->  }
->  
->  /*
-> diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-> index b795231..2c49c40 100644
-> --- a/kernel/irq/internals.h
-> +++ b/kernel/irq/internals.h
-> @@ -103,6 +103,9 @@ extern int irq_select_affinity_usr(unsigned int irq, struct cpumask *mask);
->  
->  extern void irq_set_thread_affinity(struct irq_desc *desc);
->  
-> +extern int irq_do_set_affinity(struct irq_data *data,
-> +			       const struct cpumask *dest, bool force);
+> +	memset(&attr_conf, 0, sizeof(attr_conf));
 > +
->  /* Inline functions for support of irq chips on slow busses */
->  static inline void chip_bus_lock(struct irq_desc *desc)
+>  	for (i = 0; i < nsyscalls; ++i) {
+>  		attr.config = ids[i];
+>  		evsels[i] = perf_evsel__new(&attr, i);
+> @@ -533,7 +542,8 @@ static int test__basic_mmap(void)
+>  
+>  		perf_evlist__add(evlist, evsels[i]);
+>  
+> -		if (perf_evsel__open(evsels[i], cpus, threads, false, NULL) < 0) {
+> +		if (perf_evsel__open(evsels[i], cpus, threads, false, NULL,
+> +				     &attr_conf) < 0) {
+>  			pr_debug("failed to open counter: %s, "
+>  				 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+>  				 strerror(errno));
+> @@ -1019,6 +1029,7 @@ static int test__PERF_RECORD(void)
+>  	struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
+>  	struct perf_evsel *evsel;
+>  	struct perf_sample sample;
+> +	struct perf_attr_conf attr_conf;
+>  	const char *cmd = "sleep";
+>  	const char *argv[] = { cmd, "1", NULL, };
+>  	char *bname;
+> @@ -1097,11 +1108,13 @@ static int test__PERF_RECORD(void)
+>  		goto out_free_cpu_mask;
+>  	}
+>  
+> +	memset(&attr_conf, 0, sizeof(attr_conf));
+> +
+>  	/*
+>  	 * Call sys_perf_event_open on all the fds on all the evsels,
+>  	 * grouping them if asked to.
+>  	 */
+> -	err = perf_evlist__open(evlist, opts.group);
+> +	err = perf_evlist__open(evlist, opts.group, &attr_conf);
+>  	if (err < 0) {
+>  		pr_debug("perf_evlist__open: %s\n", strerror(errno));
+>  		goto out_delete_evlist;
+> diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+> index e3c63aef8efc..b3fd28a573dd 100644
+> --- a/tools/perf/builtin-top.c
+> +++ b/tools/perf/builtin-top.c
+> @@ -843,6 +843,9 @@ static void perf_top__start_counters(struct perf_top *top)
 >  {
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index a9a9dbe..b410b0b 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -139,6 +139,25 @@ static inline void
->  irq_get_pending(struct cpumask *mask, struct irq_desc *desc) { }
->  #endif
->  
-> +int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
-> +			bool force)
-> +{
-> +	struct irq_desc *desc = irq_data_to_desc(data);
-> +	struct irq_chip *chip = irq_data_get_irq_chip(data);
-> +	int ret;
+>  	struct perf_evsel *counter, *first;
+>  	struct perf_evlist *evlist = top->evlist;
+> +	struct perf_attr_conf attr_conf;
 > +
-> +	ret = chip->irq_set_affinity(data, mask, false);
-> +	switch (ret) {
-> +	case IRQ_SET_MASK_OK:
-> +		cpumask_copy(data->affinity, mask);
-> +	case IRQ_SET_MASK_OK_NOCOPY:
-> +		irq_set_thread_affinity(desc);
-> +		ret = 0;
+> +	memset(&attr_conf, 0, sizeof(attr_conf));
+>  
+>  	first = list_entry(evlist->entries.next, struct perf_evsel, node);
+>  
+> @@ -872,34 +875,16 @@ static void perf_top__start_counters(struct perf_top *top)
+>  		attr->mmap = 1;
+>  		attr->comm = 1;
+>  		attr->inherit = top->inherit;
+> -fallback_missing_features:
+> -		if (top->exclude_guest_missing)
+> -			attr->exclude_guest = attr->exclude_host = 0;
+> -retry_sample_id:
+> -		attr->sample_id_all = top->sample_id_all_missing ? 0 : 1;
+> +
+>  try_again:
+>  		if (perf_evsel__open(counter, top->evlist->cpus,
+>  				     top->evlist->threads, top->group,
+> -				     group_fd) < 0) {
+> +				     group_fd, &attr_conf) < 0) {
+>  			int err = errno;
+>  
+>  			if (err == EPERM || err == EACCES) {
+>  				ui__error_paranoid();
+>  				goto out_err;
+> -			} else if (err == EINVAL) {
+> -				if (!top->exclude_guest_missing &&
+> -				    (attr->exclude_guest || attr->exclude_host)) {
+> -					pr_debug("Old kernel, cannot exclude "
+> -						 "guest or host samples.\n");
+> -					top->exclude_guest_missing = true;
+> -					goto fallback_missing_features;
+> -				} else if (!top->sample_id_all_missing) {
+> -					/*
+> -					 * Old kernel, no attr->sample_id_type_all field
+> -					 */
+> -					top->sample_id_all_missing = true;
+> -					goto retry_sample_id;
+> -				}
+>  			}
+>  			/*
+>  			 * If it's cycles then fall back to hrtimer
+> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> index f0227e93665d..60c3fcab384a 100644
+> --- a/tools/perf/perf.h
+> +++ b/tools/perf/perf.h
+> @@ -198,8 +198,6 @@ struct perf_record_opts {
+>  	bool	     raw_samples;
+>  	bool	     sample_address;
+>  	bool	     sample_time;
+> -	bool	     sample_id_all_missing;
+> -	bool	     exclude_guest_missing;
+>  	bool	     system_wide;
+>  	bool	     period;
+>  	unsigned int freq;
+> @@ -210,4 +208,10 @@ struct perf_record_opts {
+>  	const char   *cpu_list;
+>  };
+>  
+> +struct perf_attr_conf {
+> +	bool	     sample_id_all_missing;
+> +	bool	     exclude_guest_missing;
+> +	bool	     time_not_needed;
+> +};
+> +
+>  #endif
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index 159263d17c2d..eee83a0e6231 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -738,7 +738,8 @@ void perf_evlist__set_selected(struct perf_evlist *evlist,
+>  	evlist->selected = evsel;
+>  }
+>  
+> -int perf_evlist__open(struct perf_evlist *evlist, bool group)
+> +int perf_evlist__open(struct perf_evlist *evlist, bool group,
+> +		      struct perf_attr_conf *attr_conf)
+>  {
+>  	struct perf_evsel *evsel, *first;
+>  	int err, ncpus, nthreads;
+> @@ -752,7 +753,7 @@ int perf_evlist__open(struct perf_evlist *evlist, bool group)
+>  			group_fd = first->fd;
+>  
+>  		err = perf_evsel__open(evsel, evlist->cpus, evlist->threads,
+> -				       group, group_fd);
+> +				       group, group_fd, attr_conf);
+>  		if (err < 0)
+>  			goto out_err;
+>  	}
+> diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+> index 21f1c9e57f13..84676747d945 100644
+> --- a/tools/perf/util/evlist.h
+> +++ b/tools/perf/util/evlist.h
+> @@ -78,7 +78,8 @@ struct perf_evsel *perf_evlist__id2evsel(struct perf_evlist *evlist, u64 id);
+>  
+>  union perf_event *perf_evlist__mmap_read(struct perf_evlist *self, int idx);
+>  
+> -int perf_evlist__open(struct perf_evlist *evlist, bool group);
+> +int perf_evlist__open(struct perf_evlist *evlist, bool group,
+> +		      struct perf_attr_conf *attr_conf);
+>  
+>  void perf_evlist__config_attrs(struct perf_evlist *evlist,
+>  			       struct perf_record_opts *opts);
+> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+> index 302d49a9f985..b8154e873e6d 100644
+> --- a/tools/perf/util/evsel.c
+> +++ b/tools/perf/util/evsel.c
+> @@ -68,7 +68,6 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+>  	struct perf_event_attr *attr = &evsel->attr;
+>  	int track = !evsel->idx; /* only the first counter needs these */
+>  
+> -	attr->sample_id_all = opts->sample_id_all_missing ? 0 : 1;
+>  	attr->inherit	    = !opts->no_inherit;
+>  	attr->read_format   = PERF_FORMAT_TOTAL_TIME_ENABLED |
+>  			      PERF_FORMAT_TOTAL_TIME_RUNNING |
+> @@ -111,9 +110,8 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+>  	if (opts->period)
+>  		attr->sample_type	|= PERF_SAMPLE_PERIOD;
+>  
+> -	if (!opts->sample_id_all_missing &&
+> -	    (opts->sample_time || opts->system_wide ||
+> -	     !opts->no_inherit || opts->cpu_list))
+> +	if (opts->sample_time || opts->system_wide ||
+> +	     !opts->no_inherit || opts->cpu_list)
+>  		attr->sample_type	|= PERF_SAMPLE_TIME;
+>  
+>  	if (opts->raw_samples) {
+> @@ -287,7 +285,7 @@ int __perf_evsel__read(struct perf_evsel *evsel,
+>  	return 0;
+>  }
+>  
+> -static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+> +static int ___perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+>  			      struct thread_map *threads, bool group,
+>  			      struct xyarray *group_fds)
+>  {
+> @@ -339,6 +337,47 @@ out_close:
+>  	return err;
+>  }
+>  
+> +static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+> +			      struct thread_map *threads, bool group,
+> +			      struct xyarray *group_fds,
+> +			      struct perf_attr_conf *attr_conf)
+> +{
+> +	int ret;
+> +	struct perf_event_attr *attr = &evsel->attr;
+> +
+> +retry:
+> +	if (attr_conf->exclude_guest_missing)
+> +		attr->exclude_guest = attr->exclude_host = 0;
+> +
+> +	attr->sample_id_all = attr_conf->sample_id_all_missing ? 0 : 1;
+> +
+> +	ret = ___perf_evsel__open(evsel, cpus, threads, group, group_fds);
+> +	if (ret == -EINVAL) {
+> +		/*
+> +		 * The order of checking is important since it reflects when
+> +		 * the new bit was included to kernel. The recent feature bit
+> +		 * should be checked earlier so that it cannot disable the
+> +		 * unintended feature(s).
+> +		 */
+> +		if (!attr_conf->exclude_guest_missing &&
+> +		    (attr->exclude_guest || attr->exclude_host)) {
+> +			pr_debug("Old kernel, cannot exclude "
+> +				 "guest or host samples.\n");
+> +			attr_conf->exclude_guest_missing = true;
+> +			goto retry;
+> +		} else if (!attr_conf->sample_id_all_missing) {
+> +			pr_debug("Old kernel, cannot set sample_id_all.\n");
+> +
+> +			attr_conf->sample_id_all_missing = true;
+> +			if (attr_conf->time_not_needed)
+> +				attr->sample_type &= ~PERF_SAMPLE_TIME;
+> +			goto retry;
+> +		}
 > +	}
 > +
 > +	return ret;
 > +}
 > +
->  int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+>  void perf_evsel__close(struct perf_evsel *evsel, int ncpus, int nthreads)
 >  {
->  	struct irq_chip *chip = irq_data_get_irq_chip(data);
-> @@ -149,14 +168,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
->  		return -EINVAL;
+>  	if (evsel->fd == NULL)
+> @@ -367,7 +406,8 @@ static struct {
 >  
->  	if (irq_can_move_pcntxt(data)) {
-> -		ret = chip->irq_set_affinity(data, mask, false);
-> -		switch (ret) {
-> -		case IRQ_SET_MASK_OK:
-> -			cpumask_copy(data->affinity, mask);
-> -		case IRQ_SET_MASK_OK_NOCOPY:
-> -			irq_set_thread_affinity(desc);
-> -			ret = 0;
-> -		}
-> +		ret = irq_do_set_affinity(data, mask, false);
->  	} else {
->  		irqd_set_move_pending(data);
->  		irq_copy_pending(desc, mask);
-> @@ -280,9 +292,7 @@ EXPORT_SYMBOL_GPL(irq_set_affinity_notifier);
->  static int
->  setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
+>  int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+>  		     struct thread_map *threads, bool group,
+> -		     struct xyarray *group_fd)
+> +		     struct xyarray *group_fd,
+> +		     struct perf_attr_conf *attr_conf)
 >  {
-> -	struct irq_chip *chip = irq_desc_get_chip(desc);
->  	struct cpumask *set = irq_default_affinity;
-> -	int ret;
+>  	if (cpus == NULL) {
+>  		/* Work around old compiler warnings about strict aliasing */
+> @@ -377,23 +417,26 @@ int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+>  	if (threads == NULL)
+>  		threads = &empty_thread_map.map;
 >  
->  	/* Excludes PER_CPU and NO_BALANCE interrupts */
->  	if (!irq_can_set_affinity(irq))
-> @@ -301,13 +311,8 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
->  	}
+> -	return __perf_evsel__open(evsel, cpus, threads, group, group_fd);
+> +	return __perf_evsel__open(evsel, cpus, threads, group, group_fd,
+> +				  attr_conf);
+>  }
 >  
->  	cpumask_and(mask, cpu_online_mask, set);
-> -	ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
-> -	switch (ret) {
-> -	case IRQ_SET_MASK_OK:
-> -		cpumask_copy(desc->irq_data.affinity, mask);
-> -	case IRQ_SET_MASK_OK_NOCOPY:
-> -		irq_set_thread_affinity(desc);
-> -	}
-> +	irq_do_set_affinity(&desc->irq_data, mask, false);
+>  int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
+>  			     struct cpu_map *cpus, bool group,
+> -			     struct xyarray *group_fd)
+> +			     struct xyarray *group_fd,
+> +			     struct perf_attr_conf *attr_conf)
+>  {
+>  	return __perf_evsel__open(evsel, cpus, &empty_thread_map.map, group,
+> -				  group_fd);
+> +				  group_fd, attr_conf);
+>  }
+>  
+>  int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+>  				struct thread_map *threads, bool group,
+> -				struct xyarray *group_fd)
+> +				struct xyarray *group_fd,
+> +				struct perf_attr_conf *attr_conf)
+>  {
+>  	return __perf_evsel__open(evsel, &empty_cpu_map.map, threads, group,
+> -				  group_fd);
+> +				  group_fd, attr_conf);
+>  }
+>  
+>  static int perf_event__parse_id_sample(const union perf_event *event, u64 type,
+> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+> index 326b8e4d5035..2c72e805e7ed 100644
+> --- a/tools/perf/util/evsel.h
+> +++ b/tools/perf/util/evsel.h
+> @@ -91,13 +91,16 @@ void perf_evsel__close_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+>  
+>  int perf_evsel__open_per_cpu(struct perf_evsel *evsel,
+>  			     struct cpu_map *cpus, bool group,
+> -			     struct xyarray *group_fds);
+> +			     struct xyarray *group_fds,
+> +			     struct perf_attr_conf *attr_conf);
+>  int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+>  				struct thread_map *threads, bool group,
+> -				struct xyarray *group_fds);
+> +				struct xyarray *group_fds,
+> +				struct perf_attr_conf *attr_conf);
+>  int perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
+>  		     struct thread_map *threads, bool group,
+> -		     struct xyarray *group_fds);
+> +		     struct xyarray *group_fds,
+> +		     struct perf_attr_conf *attr_conf);
+>  void perf_evsel__close(struct perf_evsel *evsel, int ncpus, int nthreads);
+>  
+>  #define perf_evsel__match(evsel, t, c)		\
+> diff --git a/tools/perf/util/python.c b/tools/perf/util/python.c
+> index e03b58a48424..b9fd7ec4ce18 100644
+> --- a/tools/perf/util/python.c
+> +++ b/tools/perf/util/python.c
+> @@ -611,6 +611,7 @@ static PyObject *pyrf_evsel__open(struct pyrf_evsel *pevsel,
+>  	PyObject *pcpus = NULL, *pthreads = NULL;
+>  	int group = 0, inherit = 0;
+>  	static char *kwlist[] = { "cpus", "threads", "group", "inherit", NULL };
+> +	struct perf_attr_conf attr_conf;
+>  
+>  	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOii", kwlist,
+>  					 &pcpus, &pthreads, &group, &inherit))
+> @@ -623,11 +624,15 @@ static PyObject *pyrf_evsel__open(struct pyrf_evsel *pevsel,
+>  		cpus = ((struct pyrf_cpu_map *)pcpus)->cpus;
+>  
+>  	evsel->attr.inherit = inherit;
 > +
->  	return 0;
->  }
->  #else
-> diff --git a/kernel/irq/migration.c b/kernel/irq/migration.c
-> index 4742090..ef04dab 100644
-> --- a/kernel/irq/migration.c
-> +++ b/kernel/irq/migration.c
-> @@ -44,11 +44,7 @@ void irq_move_masked_irq(struct irq_data *idata)
+> +	memset(&attr_conf, 0, sizeof(attr_conf));
+> +
+>  	/*
+>  	 * This will group just the fds for this single evsel, to group
+>  	 * multiple events, use evlist.open().
 >  	 */
->  	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
->  		   < nr_cpu_ids))
-> -		if (!chip->irq_set_affinity(&desc->irq_data,
-> -					    desc->pending_mask, false)) {
-> -			cpumask_copy(desc->irq_data.affinity, desc->pending_mask);
-> -			irq_set_thread_affinity(desc);
-> -		}
-> +		irq_do_set_affinity(&desc->irq_data, desc->pending_mask, false);
+> -	if (perf_evsel__open(evsel, cpus, threads, group, NULL) < 0) {
+> +	if (perf_evsel__open(evsel, cpus, threads, group, NULL,
+> +			     &attr_conf) < 0) {
+>  		PyErr_SetFromErrno(PyExc_OSError);
+>  		return NULL;
+>  	}
+> @@ -824,11 +829,13 @@ static PyObject *pyrf_evlist__open(struct pyrf_evlist *pevlist,
+>  	struct perf_evlist *evlist = &pevlist->evlist;
+>  	int group = 0;
+>  	static char *kwlist[] = { "group", NULL };
+> +	struct perf_attr_conf attr_conf;
 >  
->  	cpumask_clear(desc->pending_mask);
->  }
+>  	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOii", kwlist, &group))
+>  		return NULL;
+>  
+> -	if (perf_evlist__open(evlist, group) < 0) {
+> +	memset(&attr_conf, 0, sizeof(attr_conf));
+> +	if (perf_evlist__open(evlist, group, &attr_conf) < 0) {
+>  		PyErr_SetFromErrno(PyExc_OSError);
+>  		return NULL;
+>  	}
 > -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 1.7.9
