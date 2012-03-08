@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab2CHSJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:09:45 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36782 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751273Ab2CHSJn (ORCPT
+	id S1755299Ab2CHSLe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:11:34 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59997 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753573Ab2CHSLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:09:43 -0500
-Date: Thu, 8 Mar 2012 18:09:41 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Rename s5m8767_convert_voltage to
- s5m8767_get_proper_voltage_sel
-Message-ID: <20120308180941.GX3638@opensource.wolfsonmicro.com>
-References: <1331093522.3143.3.camel@phoenix>
+	Thu, 8 Mar 2012 13:11:32 -0500
+Date: Thu, 8 Mar 2012 10:11:25 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, axboe@kernel.dk,
+        hughd@google.com, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
+        dpshah@google.com, ctalbott@google.com, rni@google.com
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-ID: <20120308181125.GB25508@google.com>
+References: <20120229173639.GB5930@redhat.com>
+ <20120305221321.GF1263@google.com>
+ <20120306210954.GF32148@redhat.com>
+ <20120306132034.ecaf8b20.akpm@linux-foundation.org>
+ <20120306213437.GG32148@redhat.com>
+ <20120306135531.828ca78e.akpm@linux-foundation.org>
+ <20120307145556.GA11262@redhat.com>
+ <20120307150549.955d6f9c.akpm@linux-foundation.org>
+ <20120308175708.GB22922@redhat.com>
+ <20120308180833.GA25508@google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qn4G1eBrv+t66M9q"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331093522.3143.3.camel@phoenix>
-X-Cookie: Don't Worry, Be Happy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120308180833.GA25508@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 08, 2012 at 10:08:33AM -0800, Tejun Heo wrote:
+> It's probably from something forgetting to put cgroup and pre_destroy
+> waiting for it.  Such bugs would have been masked before but now show
+> up as stalls during rmdir.  I'm not too happy with how cgroup is
+> handling cgroup file additions and removals and hoping to implement
+> proper 'sever' semantics similar to that of sysfs.  In the longer
+> term, such behavior should go away but for now we'll just have to hunt
+> down the actual bug to avoid stalls (which we have to do anyway but
+> it's more visible now).
 
---Qn4G1eBrv+t66M9q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hmm... I'll probably need it for dynamic file additions and removals
+for dynamic policy updates && the blkcg changes are scheduled for
+3.5-rc1 window (not 3.4-rc1), so we should have enough time to resolve
+this.
 
-On Wed, Mar 07, 2012 at 12:12:02PM +0800, Axel Lin wrote:
-> This function finds the smallest voltage that falls within the specified range,
-> and then returns the selector. This rename makes the intention more clear.
+Thanks.
 
-Sangbeom, are you OK with this change?
-
---Qn4G1eBrv+t66M9q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPWPXeAAoJEBus8iNuMP3deokQAJk+x6pFOXnEkLWxr2TDTYy4
-991wNB6WUth47KCNBuSDg3swcJpVugh1ySg/0fGnstaOndGW5VhWLJylYVQhmUul
-+P2A4iRP1tfZqlp9Uh58MZxsM/y4GnLLjqHYpaUM/2G/EBqLMROODKkeAN9w5AXx
-vLX6TBlZ0O0emhpz0KHO9jhALURuIyoCpYIRzH1oImDW6AfAzlejtJh0g+cGop63
-VHVV3jC+Dl6zWh+k5oQGx/cQ41A/IAwtZX6AKhqetP9tmlu5VkhLuUDaeUdGoM06
-sBBa+ce9lNymtDzbsWdWnvbkOMb8sftrQXWSUEmtOiYs2krsKQewzmpVfT7Uj+UK
-lR8TM9IJtR5Pemuo/DeabSzlL6GxauSYWMLM8t9CnM3dD2UiWhQzVzQ789ZUvOo6
-pxe6qYuqMgv+wTkEjRDDlp8hd9K7u1Y16mhZiMCY5ZLSmrhqj42uAHgssYl6j9wz
-nCJnIfFliDFAXS37zqYWcl1mIphz4U9GS9E8drepOw6ChDmzJfkYDuP3bL0ziS3U
-qSKw8oGIdW/jKJIempXjAkOJexEAOiwJljYD/BUdFvxSb8tz4uDIDxjOUH1ibxu8
-AemRuB+GJWxbN2ZmlUmFa/Gg6lKk3KqHgH8uQkROmfRFHbDFJEcx6A7wjBAWsW7L
-E1/O4fPucH9PfR+Go+Pg
-=6cQc
------END PGP SIGNATURE-----
-
---Qn4G1eBrv+t66M9q--
+-- 
+tejun
