@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab2CHIEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 03:04:45 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:25464 "EHLO song.cn.fujitsu.com"
+	id S1754422Ab2CHIFx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 03:05:53 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:54430 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753981Ab2CHIEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 03:04:42 -0500
+	id S1753495Ab2CHIFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 03:05:52 -0500
 X-IronPort-AV: E=Sophos;i="4.73,551,1325433600"; 
-   d="scan'208";a="4488987"
-Message-ID: <4F58687F.6060305@cn.fujitsu.com>
-Date: Thu, 08 Mar 2012 16:06:23 +0800
+   d="scan'208";a="4488997"
+Message-ID: <4F5868C4.2090509@cn.fujitsu.com>
+Date: Thu, 08 Mar 2012 16:07:32 +0800
 From: Wen Congyang <wency@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
@@ -19,95 +19,116 @@ To: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "Daniel P. Berrange" <berrange@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: [PATCH 1/2 v3] update linux-headers
+Subject: [PATCH 2/2 v3] deal with guest panicked event
 References: <4F58664D.1070800@cn.fujitsu.com>
 In-Reply-To: <4F58664D.1070800@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-08 16:02:43,
+ 2012-03-08 16:03:50,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-08 16:02:45,
-	Serialize complete at 2012-03-08 16:02:45
+ 2012-03-08 16:03:54,
+	Serialize complete at 2012-03-08 16:03:54
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When the host knows the guest is panicked, it will set
+exit_reason to KVM_EXIT_GUEST_PANICKED. So if qemu receive
+this exit_reason, we can send a event to tell management
+application that the guest is panicked and set the guest
+status to RUN_STATE_PANICKED.
+
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 ---
- linux-headers/asm-s390/kvm.h   |    2 ++
- linux-headers/linux/kvm.h      |    7 +++++++
- linux-headers/linux/kvm_para.h |    1 +
- 3 files changed, 10 insertions(+), 0 deletions(-)
+ kvm-all.c        |    4 ++++
+ monitor.c        |    3 +++
+ monitor.h        |    1 +
+ qapi-schema.json |    2 +-
+ qmp.c            |    3 ++-
+ vl.c             |    1 +
+ 6 files changed, 12 insertions(+), 2 deletions(-)
 
-diff --git a/linux-headers/asm-s390/kvm.h b/linux-headers/asm-s390/kvm.h
-index 9acbde4..9607667 100644
---- a/linux-headers/asm-s390/kvm.h
-+++ b/linux-headers/asm-s390/kvm.h
-@@ -44,10 +44,12 @@ struct kvm_guest_debug_arch {
- #define KVM_SYNC_PREFIX (1UL << 0)
- #define KVM_SYNC_GPRS   (1UL << 1)
- #define KVM_SYNC_ACRS   (1UL << 2)
-+#define KVM_SYNC_CRS    (1UL << 3)
- /* definition of registers in kvm_run */
- struct kvm_sync_regs {
- 	__u64 prefix;	/* prefix register */
- 	__u64 gprs[16];	/* general purpose registers */
- 	__u32 acrs[16];	/* access registers */
-+	__u64 crs[16];	/* control registers */
- };
- #endif
-diff --git a/linux-headers/linux/kvm.h b/linux-headers/linux/kvm.h
-index f6b5343..aa1c65e 100644
---- a/linux-headers/linux/kvm.h
-+++ b/linux-headers/linux/kvm.h
-@@ -163,6 +163,7 @@ struct kvm_pit_config {
- #define KVM_EXIT_OSI              18
- #define KVM_EXIT_PAPR_HCALL	  19
- #define KVM_EXIT_S390_UCONTROL	  20
-+#define KVM_EXIT_GUEST_PANICKED	  21
+diff --git a/kvm-all.c b/kvm-all.c
+index 77eadf6..01062af 100644
+--- a/kvm-all.c
++++ b/kvm-all.c
+@@ -1290,6 +1290,10 @@ int kvm_cpu_exec(CPUState *env)
+                     (uint64_t)run->hw.hardware_exit_reason);
+             ret = -1;
+             break;
++        case KVM_EXIT_GUEST_PANICKED:
++            monitor_protocol_event(QEVENT_GUEST_PANICKED, NULL);
++            vm_stop(RUN_STATE_PANICKED);
++            break;
+         case KVM_EXIT_INTERNAL_ERROR:
+             ret = kvm_handle_internal_error(env, run);
+             break;
+diff --git a/monitor.c b/monitor.c
+index cbdfbad..a0ad0a9 100644
+--- a/monitor.c
++++ b/monitor.c
+@@ -494,6 +494,9 @@ void monitor_protocol_event(MonitorEvent event, QObject *data)
+         case QEVENT_WAKEUP:
+             event_name = "WAKEUP";
+             break;
++        case QEVENT_GUEST_PANICKED:
++            event_name = "GUEST_PANICKED";
++            break;
+         default:
+             abort();
+             break;
+diff --git a/monitor.h b/monitor.h
+index 0d49800..94e8a3c 100644
+--- a/monitor.h
++++ b/monitor.h
+@@ -41,6 +41,7 @@ typedef enum MonitorEvent {
+     QEVENT_DEVICE_TRAY_MOVED,
+     QEVENT_SUSPEND,
+     QEVENT_WAKEUP,
++    QEVENT_GUEST_PANICKED,
+     QEVENT_MAX,
+ } MonitorEvent;
  
- /* For KVM_EXIT_INTERNAL_ERROR */
- #define KVM_INTERNAL_ERROR_EMULATION 1
-@@ -588,6 +589,7 @@ struct kvm_ppc_pvinfo {
- #define KVM_CAP_TSC_DEADLINE_TIMER 72
- #define KVM_CAP_S390_UCONTROL 73
- #define KVM_CAP_SYNC_REGS 74
-+#define KVM_CAP_PCI_2_3 75
+diff --git a/qapi-schema.json b/qapi-schema.json
+index 5f293c4..4f1ae20 100644
+--- a/qapi-schema.json
++++ b/qapi-schema.json
+@@ -121,7 +121,7 @@
+ { 'enum': 'RunState',
+   'data': [ 'debug', 'inmigrate', 'internal-error', 'io-error', 'paused',
+             'postmigrate', 'prelaunch', 'finish-migrate', 'restore-vm',
+-            'running', 'save-vm', 'shutdown', 'watchdog' ] }
++            'running', 'save-vm', 'shutdown', 'watchdog', 'panicked' ] }
  
- #ifdef KVM_CAP_IRQ_ROUTING
+ ##
+ # @StatusInfo:
+diff --git a/qmp.c b/qmp.c
+index a182b51..e535969 100644
+--- a/qmp.c
++++ b/qmp.c
+@@ -148,7 +148,8 @@ void qmp_cont(Error **errp)
+         error_set(errp, QERR_MIGRATION_EXPECTED);
+         return;
+     } else if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
+-               runstate_check(RUN_STATE_SHUTDOWN)) {
++               runstate_check(RUN_STATE_SHUTDOWN) ||
++               runstate_check(RUN_STATE_PANICKED)) {
+         error_set(errp, QERR_RESET_REQUIRED);
+         return;
+     }
+diff --git a/vl.c b/vl.c
+index 97ab2b9..65390fa 100644
+--- a/vl.c
++++ b/vl.c
+@@ -359,6 +359,7 @@ static const RunStateTransition runstate_transitions_def[] = {
+     { RUN_STATE_RUNNING, RUN_STATE_SAVE_VM },
+     { RUN_STATE_RUNNING, RUN_STATE_SHUTDOWN },
+     { RUN_STATE_RUNNING, RUN_STATE_WATCHDOG },
++    { RUN_STATE_RUNNING, RUN_STATE_PANICKED },
  
-@@ -784,6 +786,9 @@ struct kvm_s390_ucas_mapping {
- /* Available with KVM_CAP_TSC_CONTROL */
- #define KVM_SET_TSC_KHZ           _IO(KVMIO,  0xa2)
- #define KVM_GET_TSC_KHZ           _IO(KVMIO,  0xa3)
-+/* Available with KVM_CAP_PCI_2_3 */
-+#define KVM_ASSIGN_SET_INTX_MASK  _IOW(KVMIO,  0xa4, \
-+				       struct kvm_assigned_pci_dev)
+     { RUN_STATE_SAVE_VM, RUN_STATE_RUNNING },
  
- /*
-  * ioctls for vcpu fds
-@@ -857,6 +862,8 @@ struct kvm_s390_ucas_mapping {
- #define KVM_SET_ONE_REG		  _IOW(KVMIO,  0xac, struct kvm_one_reg)
- 
- #define KVM_DEV_ASSIGN_ENABLE_IOMMU	(1 << 0)
-+#define KVM_DEV_ASSIGN_PCI_2_3		(1 << 1)
-+#define KVM_DEV_ASSIGN_MASK_INTX	(1 << 2)
- 
- struct kvm_assigned_pci_dev {
- 	__u32 assigned_dev_id;
-diff --git a/linux-headers/linux/kvm_para.h b/linux-headers/linux/kvm_para.h
-index 7bdcf93..9be20ee 100644
---- a/linux-headers/linux/kvm_para.h
-+++ b/linux-headers/linux/kvm_para.h
-@@ -19,6 +19,7 @@
- #define KVM_HC_MMU_OP			2
- #define KVM_HC_FEATURES			3
- #define KVM_HC_PPC_MAP_MAGIC_PAGE	4
-+#define KVM_HC_GUEST_PANICKED		5
- 
- /*
-  * hypercalls use architecture specific
 -- 
 1.7.1
 
