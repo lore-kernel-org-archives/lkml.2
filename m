@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab2CHL4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:56:30 -0500
-Received: from mga09.intel.com ([134.134.136.24]:9094 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753510Ab2CHL43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:56:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="119012068"
-Message-ID: <1331207881.7257.37.camel@sauron.fi.intel.com>
-Subject: Re: [RFC][PATCH 0/7] UBI checkpointing support
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Richard Weinberger <rw@linutronix.de>
-Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>, tglx@linutronix.de,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        tim.bird@am.sony.com
-Date: Thu, 08 Mar 2012 13:58:01 +0200
-In-Reply-To: <4F587A28.6080205@linutronix.de>
-References: <1329250006-22944-1-git-send-email-rw@linutronix.de>
-	 <1331138007.3463.16.camel@sauron.fi.intel.com>
-	 <4F57D0C4.1050605@linutronix.de>
-	 <20120308090835.032fe13a@pixies.home.jungo.com>
-	 <4F587A28.6080205@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757394Ab2CHL4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:56:55 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34547 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755154Ab2CHL4v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 06:56:51 -0500
+Date: Thu, 8 Mar 2012 12:56:47 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, stable <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/2] bluetooth: hci_core: fix NULL-pointer dereference at
+ unregister
+Message-ID: <20120308115647.GA4497@localhost>
+References: <1331136120-27075-1-git-send-email-jhovold@gmail.com>
+ <1331136120-27075-3-git-send-email-jhovold@gmail.com>
+ <1331148560.3392.189.camel@aeonflux>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331148560.3392.189.camel@aeonflux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 10:21 +0100, Richard Weinberger wrote:
-> On 08.03.2012 08:08, Shmulik Ladkani wrote:
-> > But doesn't the CP data (sorry, UBIUBI data :) need to have one
-> > 'struct ubi_cp_ec' descriptor for each used/free PEB, and as such the
-> > maximum number of 'ubi_cp_ec' descriptors is total device PEBs, meaning
-> > CP data is still linearly scaled to device size (with a very small
-> > multiplier)?
-> >
+Hi Marcel,
+
+On Wed, Mar 07, 2012 at 11:29:20AM -0800, Marcel Holtmann wrote:
+> Hi Johan,
 > 
-> It's UBIVIS data. :D
+> > Make sure hci_dev_open returns immediately if hci_dev_unregister has
+> > been called.
+> > 
+> > This fixes a race between hci_dev_open and hci_dev_unregister which can
+> > lead to a NULL-pointer dereference.
 
-I have a suggestion for the property of the new term. Because your old
-one can be both a noun and a verb (write a checkpoint, to checkpoint),
-the new term should probably have the same property.
+[...]
 
-To write the ubibis and to ubibis? Hmm... not sure.
+> what version of the kernel is this patch against? Since we cleaned up
+> the flags in bluetooth-next tree. Also in addition you can not just add
+> flags here.
 
-To write the fastmap and to fastmap or decide to not fastmap because all
-PEBs within the first 64 have too high erasecounter? Sounds better IMO.
+As this to be fixed in 3.3 it is against 3.3-rc6.
 
-> The size of the checkpoint depends on the number of free/used PEBs.
-> But in most cases the checkpoints fits into one or two PEBs.
-> Because larger devices have larger erase blocks...
+> >  /*
+> > diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+> > index 5aeb624..3937ce3 100644
+> > --- a/net/bluetooth/hci_core.c
+> > +++ b/net/bluetooth/hci_core.c
+> > @@ -525,6 +525,11 @@ int hci_dev_open(__u16 dev)
+> >  
+> >  	hci_req_lock(hdev);
+> >  
+> > +	if (test_bit(HCI_UNREGISTER, &hdev->flags)) {
+> > +		ret = -ENODEV;
+> > +		goto done;
+> > +	}
+> > +
+> >  	if (hdev->rfkill && rfkill_blocked(hdev->rfkill)) {
+> >  		ret = -ERFKILL;
+> >  		goto done;
+> > @@ -1577,6 +1582,8 @@ void hci_unregister_dev(struct hci_dev *hdev)
+> >  
+> >  	BT_DBG("%p name %s bus %d", hdev, hdev->name, hdev->bus);
+> >  
+> > +	set_bit(HCI_UNREGISTER, &hdev->flags);
+> > +
+> >  	write_lock(&hci_dev_list_lock);
+> >  	list_del(&hdev->list);
+> >  	write_unlock(&hci_dev_list_lock);
+> 
+> Is this really enough to protect this race condition?
 
-They do, but the eraseblock size grows much slower AFAICS.
+1. first hci_dev_open grabs req lock
+2. second hci_dev_open sleeps on req lock
+3. hci_dev_unregister sleep on req lock (in do_close)
+4. first hci_dev_open times out and releases req lock
 
--- 
-Best Regards,
-Artem Bityutskiy
+Now either a) the second open grabs the lock or b) close does. 
 
+a) The second open will time out eventually as well and setting a flag
+   at unregister will only speed things up (at least when the first
+   patch in my series is applied -- otherwise this leads to a
+   NULL-pointer exception as well).
+
+b) If close grabs the lock while we have open sleeping on it things go
+   really bad and this is the case this patch intends to fix.
+
+As far as I can see, a flag set at unregister (before acquiring the lock)
+will suffice to fix this race, but perhaps I'm missing something?
+
+Where should such an internal flag be added as hdev->flags can not be
+used? hdev->dev_flags?
+
+Thanks,
+Johan
