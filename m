@@ -1,119 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758968Ab2CHXP2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 18:15:28 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:61110 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753165Ab2CHXP1 (ORCPT
+	id S1759065Ab2CHXUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 18:20:47 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:54432 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753165Ab2CHXUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 18:15:27 -0500
-Date: Thu, 8 Mar 2012 15:15:21 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, Alasdair G Kergon <agk@redhat.com>,
-        Will Drewry <wad@chromium.org>, Elly Jones <ellyjones@chromium.org>,
-        Milan Broz <mbroz@redhat.com>, Olof Johansson <olofj@chromium.org>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: workqueues and percpu (was: [PATCH] dm: remake of the verity
- target)
-Message-ID: <20120308231521.GA2968@htj.dyndns.org>
-References: <1330648393-20692-1-git-send-email-msb@chromium.org>
- <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
- <20120306215947.GB27051@google.com>
- <Pine.LNX.4.64.1203081656590.31821@file.rdu.redhat.com>
- <20120308143909.bfc4cb4d.akpm@linux-foundation.org>
+	Thu, 8 Mar 2012 18:20:44 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EACs8WU95LFyt/2dsb2JhbABDtSiBCIIKAQEFOhwjEAgDDgouFCUDIROICbovE5BDBJVEkBmCdw
+Date: Fri, 9 Mar 2012 10:20:41 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
+        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH 11/19] xfs: Convert to new freezing code
+Message-ID: <20120308232041.GU3592@dastard>
+References: <1330963277-26336-1-git-send-email-jack@suse.cz>
+ <1330963277-26336-12-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120308143909.bfc4cb4d.akpm@linux-foundation.org>
+In-Reply-To: <1330963277-26336-12-git-send-email-jack@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Mar 05, 2012 at 05:01:09PM +0100, Jan Kara wrote:
+> Generic code now blocks all writers from standard write paths. So we block all
+> writers coming from ioctl and replace blocking of transactions on frozen
+> filesystem with a debugging check. As a bonus, we get a protection of ioctl
+> against racing remount read-only. We also convert xfs_file_aio_write() to a
+> non-racy freeze protection.
+....
+> diff --git a/fs/xfs/xfs_trans.c b/fs/xfs/xfs_trans.c
+> index 329b06a..6468a2a 100644
+> --- a/fs/xfs/xfs_trans.c
+> +++ b/fs/xfs/xfs_trans.c
+> @@ -577,7 +577,6 @@ xfs_trans_alloc(
+>  	xfs_mount_t	*mp,
+>  	uint		type)
+>  {
+> -	xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
+>  	return _xfs_trans_alloc(mp, type, KM_SLEEP);
+>  }
 
-On Thu, Mar 08, 2012 at 02:39:09PM -0800, Andrew Morton wrote:
-> > I looked at it --- and using percpu variables in workqueues isn't safe 
-> > because the workqueue can change CPU if the CPU is hot-unplugged.
+So what is there to stop internal XFS threads from starting
+transactions when the filesystem is frozen? Previously this
+SB_FREEZE_TRANS would guarantee even internal fucntions would get
+stopped, but now there's nothing?
 
-Generally, I don't think removing preemption enable/disable around
-percpu variable access is a worthwhile optimization unles it's on
-really really really hot path.  We'll eventually add debug annotations
-to percpu accessors and the ones used outside proper preemption
-protections would need to be updated anyway.
+I do beleive that ext4 has the same problem (the issue reported with
+the lazy inode init background thread), and I can see that any other
+filesystem that can make modifications via internal triggers will
+see the same problem - freeze doesn't block them any more...
 
-> > dm-crypt has the same bug --- it also uses workqueue with per-cpu 
-> > variables and assumes that the CPU doesn't change for a single work item.
-> > 
-> > This program shows that work executed in a workqueue can be switched to a 
-> > different CPU.
-> > 
-> > I'm wondering how much other kernel code assumes that workqueues are bound 
-> > to a specific CPU, which isn't true if we unplug that CPU.
-> 
-> ugh.
-> 
-> We really don't want to have to avoid using workqueues because of some
-> daft issue with CPU hot-unplug.
+Cheers,
 
-Using or not using wq is orthogonal tho.  Using kthreads directly
-requires hooking into CPU hotplug callbacks and one might as well call
-flush_work_sync() from there instead of shutting down kthread.
-
-> And yes, there are assumptions in various work handlers that they
-> will be pinned to a single CPU.  Finding and fixing those
-> assumptions would be painful.
->
-> Heck, even debug_smp_processor_id() can be wrong in the presence of the
-> cpu-unplug thing.
-
-Yeah, that's a generic problem with cpu unplug.
-
-> I'm not sure what we can do about it really, apart from blocking unplug
-> until all the target CPU's workqueues have been cleared.  And/or refusing
-> to unplug a CPU until all pinned-to-that-cpu kernel threads have been
-> shut down or pinned elsewhere (which is the same thing, only more
-> general).
-> 
-> Tejun, is this new behaviour?  I do recall that a long time ago we
-> wrestled with unplug-vs-worker-threads and I ended up OK with the
-> result, but I forget what it was.  IIRC Rusty was involved.
-
-Unfortunately, yes, this is a new behavior.  Before, we could have
-unbound delays during unplug from work items.  Now, we have CPU
-affinity assumption breakage.  The behavior change was primarily to
-allow long running work items to use regular workqueues without
-worrying about inducing delay across cpu hotplug operations, which is
-important as it's also used on suspend / hibernation, especially on
-mobile platforms.
-
-During the cmwq conversion, I ended up auditing a lot of (I think I
-went through most of them) workqueue users and IIRC there weren't too
-many which required stable affinity.
-
-> That being said, I don't think it's worth compromising the DM code
-> because of this workqueue wart: lots of other code has the same wart,
-> and we should find a centralised fix for it.
-
-Probably the best way to solve this is introducing pinned attribute to
-workqueues and have them drained automatically on cpu hotplug events.
-It'll require auditing workqueue users but I guess we'll just have to
-do it given that we need to actually distinguish the ones need to be
-pinned.  Or maybe we can use explicit queue_work_on() to distinguish
-the ones which require pinning.
-
-Another approach would be requiring all workqueues to be drained on
-cpu offlining and requiring any work item which may stall to use
-unbound wq.  IMHO, picking out the ones which may stall would be much
-less obvious than the ones which require cpu pinning.
-
-Better ideas?
-
-Thanks.
-
+Dave.
 -- 
-tejun
+Dave Chinner
+david@fromorbit.com
