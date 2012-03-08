@@ -1,108 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab2CHNVB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 08:21:01 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53175 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752270Ab2CHNU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 08:20:59 -0500
-Date: Thu, 8 Mar 2012 18:48:24 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
-Subject: Re: [PATCH] uprobes/core: handle breakpoint and signal step
- exception.
-Message-ID: <20120308131824.GC13284@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120223110245.12459.7391.sendpatchset@srdronam.in.ibm.com>
- <20120227091212.GA7092@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120227091212.GA7092@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030813-7182-0000-0000-000000FE8251
+	id S1755653Ab2CHNVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 08:21:09 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:40540 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754926Ab2CHNVG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 08:21:06 -0500
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: [RFC] Scheduler recorder and playback
+Date: Thu, 8 Mar 2012 15:20:53 +0200
+Message-Id: <85A3EFC3-FAE0-4B3A-AAA0-85FA435A9F7B@antoniou-consulting.com>
+Cc: linaro-kernel@lists.linaro.org, linaro-dev@lists.linaro.org,
+        Steven Goss <steve.goss@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Matt Porter <mporter@ti.com>, Kumar Gala <galak@ti.com>,
+        Robin Randhawa <robin.randhawa@arm.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>, charles.garcia-tobin@arm.com,
+        Morten Rasmussen <morten.rasmussen@arm.com>, chris.redpath@arm.com,
+        Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        dmitry.antipov@linaro.org, Stephane Sintes <s-sintes@ti.com>
+To: linux-kernel@vger.kernel.org
+Mime-Version: 1.0 (Apple Message framework v1084)
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  
-> >  #include <linux/kdebug.h>
-> >  #include <asm/insn.h>
-> >  
-> > +#ifdef CONFIG_X86_32
-> > +#define is_32bit_app(tsk) 1
-> > +#else
-> > +#define is_32bit_app(tsk) (test_tsk_thread_flag(tsk, TIF_IA32))
-> > +#endif
-> 
-> Small detail, we prefer to use this variant:
-> 
-> #ifdef X
-> # define foo()
-> #else
-> # define bar()
-> #endif
-> 
-> to give the construct more visual structure.
-> 
-> Also, please put it into asm/compat.h and use it at other places 
-> within arch/x86/ as well, there's half a dozen similar patterns 
-> of TIP_IA32 tests in arch/x86/. Please make this a separate 
-> patch, preceding this patch.
+Hi there,
 
-I am facing a problem doing the above.
-I did some changes in arch/x86/kernel/signal.c and included compat.h 
-and compilation fails on tip tree that the commit 
-d1a797f388
+There's considerable activity in the subject of the scheduler lately and how to 
+adapt it to the peculiarities of the new class of hardware coming out lately,
+like the big.LITTLE class of devices from a number of manufacturers.
 
-In file included from ../arch/x86/kernel/signal.c:42:
-../arch/x86/include/asm/compat.h: In function ‘arch_compat_alloc_user_space’:
-../arch/x86/include/asm/compat.h:238: error: ‘old_rsp’ undeclared (first use in this function)
-../arch/x86/include/asm/compat.h:238: error: (Each undeclared identifier is reported only once
-../arch/x86/include/asm/compat.h:238: error: for each function it appears in.)
-../arch/x86/include/asm/compat.h:238: warning: type defaults to ‘int’ in declaration of ‘pfo_ret__’            
+The platforms that Linux runs are very diverse, and run differing workloads.
+For example most consumer devices will very likely run something like Android, 
+with common use cases such as audio and/or video playback. Methods to achieve
+lower power consumption using a power aware scheduler are under investigation.
+
+Similarly for server applications, or VM hosting, the behavior of the scheduler
+shouldn't have adverse performance implications; any power saving on top of that
+would be a welcome improvement.
+
+The current issue is that scheduler development is not easily shared between
+developers. Each developer has their own 'itch', be it Android use cases, server
+workloads, VM, etc. The risk is high of optimizing for one's own use case and
+causing severe degradation on most other use cases.
+
+One way to fix this problem would be the development of a method with which one
+could perform a given use-case workload in a host, record the activity in a 
+interchangeable portable trace format file, and then play it back on another
+host via a playback application that will generate an approximately similar load
+which was observed during recording.
+
+The way that the two hosts respond under the same load generated by the playback
+application can be compared, so that the performance of the two scheduler implementations
+measured in various metrics (like performance, power consumption etc.) can be
+evaluated.
+
+The fidelity of the this approximation is of great importance but it is debatable
+if it is possible to have a fully identical load generated, since details of the hosts
+might differ in such a way that such a thing is impossible. 
+I believe that it should be possible at least to simulate a purely CPU load, and the
+blocking behavior of tasks, in such a way that it would result in scheduler decisions 
+that can be compared and shared among developers.  
+
+The recording part I believe can be handled by the kernel's tracing infrastructure,
+either by using the existing tracepoints, or need be adding more; possibly even
+creating a new tracer solely for this purpose.
+Since some applications can adapt their behavior according to insufficient system
+resources (think media players that can drop frames for example), I think it would
+be beneficial to record such events to the same trace file.
+
+The trace file should have a portable format so that it can be freely shared between
+developers. An ASCII format like we currently use should be OK, as long as it
+doesn't cause too much of an effect during execution of the recording.
+
+The playback application can be implemented via two ways. 
+
+One way, which is the LinSched way would be to have the full scheduler implementation
+compiled as part of said application, and use application specific methods to evaluate
+performance. While this will work, it won't allow comparison of the two hosts in a meaningful
+manner.
+
+For both scheduler and platform evaluation, the playback application will generate the load
+on the running host by simulating the source host's recorded work load session.
+That means emulating process activity like forks, thread spawning, blocking on resources
+etc. It is not clear to me yet if that's possible without using some kind of kernel
+level helper module, but not requiring such is desirable.
+
+Since one would have the full trace of scheduling activity: past, present and future; there would
+be the possibility of generating a perfect schedule (as defined by best performance, or best
+power consumption), and use it as a yardstick of evaluation against the actual scheduler.
+Comparing the results, you would get an estimate of the best case improvement that could be
+achieved if the ideal scheduler existed.
+
+I know this is a bit long, but I hope this can be a basis of thinking on how to go about
+developing this.
+
+Regards
+
+-- Pantelis
 
 
-I see old_rsp declared only under CONFIG_X86_64 in asm/processor.h 
-
-The below helps resolve the problem.
----------
-diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
-index 9c9b6dc..147e790 100644
---- a/arch/x86/include/asm/compat.h
-+++ b/arch/x86/include/asm/compat.h
-@@ -233,9 +233,11 @@ static inline void __user *arch_compat_alloc_user_space(long len)
  
- 	if (test_thread_flag(TIF_IA32)) {
- 		sp = task_pt_regs(current)->sp;
-+#ifdef CONFIG_X86_64
- 	} else {
- 		/* -128 for the x32 ABI redzone */
- 		sp = __this_cpu_read(old_rsp) - 128;
-+#endif
- 	}
- 
- 	return (void __user *)round_down(sp - len, 16);
 
-
------------
-
-But I wanted to check if there is any reason why we cant include asm/compat.h in arch/x86/kernel/signal.c.
-
--- 
-Thanks and Regards
-Srikar
 
