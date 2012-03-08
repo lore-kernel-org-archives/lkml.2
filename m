@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab2CHMAm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 07:00:42 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49207 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651Ab2CHMAm convert rfc822-to-8bit (ORCPT
+	id S1757333Ab2CHMKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 07:10:48 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:46478 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755038Ab2CHMKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 07:00:42 -0500
-Message-ID: <1331208028.11248.384.camel@twins>
-Subject: Re: runnable tasks never making it to a runqueue where they can run?
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Roland Dreier <roland@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Paul Turner <pjt@google.com>, Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Thu, 08 Mar 2012 13:00:28 +0100
-In-Reply-To: <20120308115506.GA22656@linux.vnet.ibm.com>
-References: <CAL1RGDUbxcx+cCM_mf1nFJ=Jz0SyaiW0ffxiY4gZ6KNWzJCnMg@mail.gmail.com>
-	 <1331137905.11248.355.camel@twins>
-	 <CAG4TOxM2yGvFo5O9x0M6H2GONPyF9XVOLwonfS-1gkpskkO+0w@mail.gmail.com>
-	 <1331202480.11248.375.camel@twins>
-	 <20120308115506.GA22656@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 8 Mar 2012 07:10:46 -0500
+MIME-Version: 1.0
+Date: Thu, 8 Mar 2012 13:10:45 +0100
+Message-ID: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com>
+Subject: kernel BUG at fs/btrfs/delayed-inode.c:1466!
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 17:25 +0530, Srivatsa Vaddagiri wrote:
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-03-08 11:28:00]:
-> 
-> > select_task_rq_fair() will very likely end up in select_idle_sibling()
-> > which will never select the smt1 if smt0 is idle
-> 
-> s/idle/busy?
+Hi,
 
-Uhm, yeah ;-)
+this shown up today. I had to do a hard reboot as graceful hanged on sync().
 
-> > (even if smt0 isn't in
-> > the cpus allowed mask) -- Vatsa is currently reworking that area, this
-> > is something he might want to consider.
-> 
-> The patch I sent couple of days back should likely fix this issue:
-> 
-> http://marc.info/?l=linux-kernel&m=133096114129607&w=2
+------------[ cut here ]------------
+kernel BUG at fs/btrfs/delayed-inode.c:1466!
+invalid opcode: 0000 [#1] SMP
+CPU 10
+Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
+autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
+ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
+ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
+dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
+parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
+hwmon backlight i2c_algo_bit ipmi_si bnx2x ipmi_msghandler i2c_core
+hpwdt hpilo psmouse mdio uhci_hcd ehci_hcd
 
-Ah, thanks for reminding me, I need to go stare at that!
+Pid: 1488, comm: mips-wrs-linux- Tainted: G        W    3.2.7 #2 HP
+ProLiant BL460c G6
+RIP: 0010:[<ffffffffa03559f9>]  [<ffffffffa03559f9>]
+btrfs_delete_delayed_dir_index+0xe9/0x157 [btrfs]
+RSP: 0018:ffff8805d5b43ba8  EFLAGS: 00010286
+RAX: 00000000ffffffe4 RBX: ffff8805f0a57c00 RCX: 0000000002b06e0a
+RDX: 00000000ffffffe4 RSI: 0000000000018000 RDI: ffff880bee4c8150
+RBP: 00000000fffffff4 R08: ffffea002fd582c0 R09: 0000001a00000000
+R10: 0000000000000001 R11: ffff880bf58c7800 R12: ffff8801059cf0e0
+R13: ffff8801059cf128 R14: ffff8805d5b43bb8 R15: ffff880bf58c7800
+FS:  0000000000000000(0000) GS:ffff880c1fca0000(0063) knlGS:00000000f77566c0
+CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+CR2: 000000000807b3b9 CR3: 0000000953a76000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process mips-wrs-linux- (pid: 1488, threadinfo ffff8805d5b42000, task
+ffff8805b4acec00)
+Stack:
+ 0000000000000085 ffff880bf0984870 000000000033bef7 0000000000008560
+ 0000000000000000 00000000000007bf ffff880bf0984870 00000000000009d9
+ 0000000000000000 ffff880bf560b1b0 ffff8805c29a5e88 000000000033bef7
+Call Trace:
+ [<ffffffffa03210e5>] ? __btrfs_unlink_inode+0x172/0x25e [btrfs]
+ [<ffffffffa032158c>] ? btrfs_rename+0x38b/0x55b [btrfs]
+ [<ffffffff81124e8c>] ? vfs_rename+0x202/0x382
+ [<ffffffff81127312>] ? sys_renameat+0x169/0x1e5
+ [<ffffffff81051164>] ? do_page_fault+0x39b/0x3af
+ [<ffffffff8112c35e>] ? dput+0x3f/0x126
+ [<ffffffff8111ee28>] ? vfs_fstatat+0x57/0x60
+ [<ffffffff81057176>] ? sys32_lstat64+0x20/0x29
+ [<ffffffff810a72f2>] ? audit_syscall_entry+0x176/0x1a1
+ [<ffffffff813e6c30>] ? sysenter_dispatch+0x7/0x2e
+Code: 4c 89 ef e8 ad d6 08 e1 eb 74 fc 48 8d 78 18 4c 89 f6 48 89 c2
+a5 a5 a5 a5 a4 4c 89 fe 48 8b 7c 24 08 e8 58 e9 ff ff 85 c0 74 04 <0f>
+0b eb fe 4c 89 ef e8 5c d6 08 e1 ba 02 00 00 00 48 89 de 4c
+RIP  [<ffffffffa03559f9>] btrfs_delete_delayed_dir_index+0xe9/0x157 [btrfs]
+ RSP <ffff8805d5b43ba8>
+---[ end trace cc1045e0105e2505 ]---
+
+-Jacek
