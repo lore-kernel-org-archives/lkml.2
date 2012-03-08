@@ -1,183 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab2CHDr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 22:47:28 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48084 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755038Ab2CHDr0 (ORCPT
+	id S1755254Ab2CHDvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 22:51:55 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58345 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754811Ab2CHDvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 22:47:26 -0500
-Date: Wed, 7 Mar 2012 19:47:22 -0800
-From: mark gross <markgross@thegnar.org>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Dave Jones <mavej@redhat.com>, linux-pm@vger.kernel.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
-        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] PM / QoS: Introduce new classes: DMA-Throughput and
- DVFS-Latency
-Message-ID: <20120308034722.GA10286@envy17>
-Reply-To: markgross@thegnar.org
-References: <13197479.540821330911965933.JavaMail.weblogic@epv6ml06>
- <1331096521-26026-1-git-send-email-myungjoo.ham@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331096521-26026-1-git-send-email-myungjoo.ham@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 7 Mar 2012 22:51:54 -0500
+Date: Thu, 8 Mar 2012 14:51:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        Russell King <rmk@arm.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: linux-next: manual merge of the powerpc tree with the arm tree
+Message-Id: <20120308145131.fad50bbc79c36f0b0b12d101@canb.auug.org.au>
+In-Reply-To: <25744.1331174036@neuling.org>
+References: <20120308120422.e071cba36425eacbee1f8d98@canb.auug.org.au>
+	<25744.1331174036@neuling.org>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__8_Mar_2012_14_51_31_+1100_qb3nrSWB2o1L7.Z="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 07, 2012 at 02:02:01PM +0900, MyungJoo Ham wrote:
-> 1. CPU_DMA_THROUGHPUT
-> 
-> This might look simliar to CPU_DMA_LATENCY. However, there are H/W
-> blocks that creates QoS requirement based on DMA throughput, not
-> latency, while their (those QoS requester H/W blocks) services are
-> short-term bursts that cannot be effectively responsed by DVFS
-> mechanisms (CPUFreq and Devfreq).
-> 
-> In the Exynos4412 systems that are being tested, such H/W blocks include
-> MFC (multi-function codec)'s decoding and enconding features, TV-out
-> (including HDMI), and Cameras. When the display is operated at 60Hz,
-> each chunk of task should be done within 16ms and the workload on DMA is
-> not well spread and fluctuates between frames; some frame requires more
-> and some do not and within a frame, the workload also fluctuates
-> heavily and the tasks within a frame are usually not parallelized; they
-> are processed through specific H/W blocks, not CPU cores. They often
-> have PPMU capabilities; however, they need to be polled very frequently
-> in order to let DVFS mechanisms react properly. (less than 5ms).
-> 
-> For such specific tasks, allowing them to request QoS requirements seems
-> adequete because DVFS mechanisms (as long as the polling rate is 5ms or
-> longer) cannot follow up with them. Besides, the device drivers know
-> when to request and cancel QoS exactly.
-> 
-> 2. DVFS_LATENCY
-> 
-> Both CPUFreq and Devfreq have response latency to a sudden workload
-> increase. With near-100% (e.g., 95%) up-threshold, the average response
-> latency is approximately 1.5 x polling-rate.
-> 
-> A specific polling rate (e.g., 100ms) may generally fit for its system;
-> however, there could be exceptions for that. For example,
-> - When a user input suddenly starts: typing, clicking, moving cursors, and
->   such, the user might need the full performance immediately. However,
->   we do not know whether the full performance is actually needed or not
->   until we calculate the utilization; thus, we need to calculate it
->   faster with user inputs or any similar events. Specifying QoS on CPU
->   processing power or Memory bandwidth at every user input is an
->   overkill because there are many cases where such speed-up isn't
->   necessary.
-> - When a device driver needs a faster performance response from DVFS
->   mechanism. This could be addressed by simply putting QoS requests.
->   However, such QoS requests may keep the system running fast
->   unnecessary in some cases, especially if a) the device's resource
->   usage bursts with some duration (e.g., 100ms-long bursts) and
->   b) the driver doesn't know when such burst come. MMC/WiFi often had
->   such behaviors although there are possibilities that part (b) might
->   be addressed with further efforts.
-> 
-> The cases shown above can be tackled with putting QoS requests on the
-> response time or latency of DVFS mechanism, which is directly related to
-> its polling interval (if the DVFS mechanism is polling based).
-> 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> --
-> Changes from v2
-> - Rebased on the recent PM QoS patches, resolving the merge conflict.
-> 
-> Changes from RFC(v1)
-> - Added omitted part (registering new classes)
-> ---
->  include/linux/pm_qos.h |    4 ++++
->  kernel/power/qos.c     |   31 ++++++++++++++++++++++++++++++-
->  2 files changed, 34 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> index c8a541e..0ee7caa 100644
-> --- a/include/linux/pm_qos.h
-> +++ b/include/linux/pm_qos.h
-> @@ -14,6 +14,8 @@ enum {
->  	PM_QOS_CPU_DMA_LATENCY,
->  	PM_QOS_NETWORK_LATENCY,
->  	PM_QOS_NETWORK_THROUGHPUT,
-> +	PM_QOS_CPU_DMA_THROUGHPUT,
-> +	PM_QOS_DVFS_RESPONSE_LATENCY,
->  
->  	/* insert new class ID */
->  	PM_QOS_NUM_CLASSES,
-> @@ -24,6 +26,8 @@ enum {
->  #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
->  #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
->  #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-> +#define PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE	0
-> +#define PM_QOS_DVFS_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
->  #define PM_QOS_DEV_LAT_DEFAULT_VALUE		0
->  
->  struct pm_qos_request {
-> diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-> index d6d6dbd..3e122db 100644
-> --- a/kernel/power/qos.c
-> +++ b/kernel/power/qos.c
-> @@ -101,11 +101,40 @@ static struct pm_qos_object network_throughput_pm_qos = {
->  };
->  
->  
-> +static BLOCKING_NOTIFIER_HEAD(cpu_dma_throughput_notifier);
-> +static struct pm_qos_constraints cpu_dma_tput_constraints = {
-> +	.list = PLIST_HEAD_INIT(cpu_dma_tput_constraints.list),
-> +	.target_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
-> +	.type = PM_QOS_MAX,
-> +	.notifiers = &cpu_dma_throughput_notifier,
-> +};
-> +static struct pm_qos_object cpu_dma_throughput_pm_qos = {
-> +	.constraints = &cpu_dma_tput_constraints,
-> +	.name = "cpu_dma_throughput",
-> +};
-> +
-> +
-> +static BLOCKING_NOTIFIER_HEAD(dvfs_lat_notifier);
-> +static struct pm_qos_constraints dvfs_lat_constraints = {
-> +	.list = PLIST_HEAD_INIT(dvfs_lat_constraints.list),
-> +	.target_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
-> +	.default_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
-> +	.type = PM_QOS_MIN,
-> +	.notifiers = &dvfs_lat_notifier,
-> +};
-> +static struct pm_qos_object dvfs_lat_pm_qos = {
-> +	.constraints = &dvfs_lat_constraints,
-> +	.name = "dvfs_latency",
-> +};
-> +
->  static struct pm_qos_object *pm_qos_array[] = {
->  	&null_pm_qos,
->  	&cpu_dma_pm_qos,
->  	&network_lat_pm_qos,
-> -	&network_throughput_pm_qos
-> +	&network_throughput_pm_qos,
-> +	&cpu_dma_throughput_pm_qos,
-> +	&dvfs_lat_pm_qos,
->  };
->  
->  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> -- 
-> 1.7.4.1
+--Signature=_Thu__8_Mar_2012_14_51_31_+1100_qb3nrSWB2o1L7.Z=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Mikey,
+
+On Thu, 08 Mar 2012 13:33:56 +1100 Michael Neuling <mikey@neuling.org> wrot=
+e:
 >
+> Surely we only need SPARSE_IRQ now and not MAY_HAVE_SPARSE_IRQ. =20
+>=20
+> In fact, keeping MAY_HAVE_SPARSE_IRQ seems to make SPARSE_IRQ user
+> selectable, which we don't want anymore since ad5b7f1350c2.
 
-The cpu_dma_throughput looks ok to me.  I do however; wonder about the
-dvfs_lat_pm_qos.  Should that knob be exposed to user mode?  Does that
-matter so much?  why can't dvfs_lat use the cpu_dma_lat?
+Yes, indeed. I will fix up the merge resolution for tomorrow.
 
-BTW I'll be out of town for the next 10 days and probably will not get
-to this email account until I get home.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---mark
+--Signature=_Thu__8_Mar_2012_14_51_31_+1100_qb3nrSWB2o1L7.Z=
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPWCzDAAoJEECxmPOUX5FER+oP/26BkUtVgGjB9+/Oqv737c0x
+6MzRh+6SpOoQe7E6SsBKIBMCL57FUqZIRZ2ATnZ4d0PllPiobcZgSJB/4GTpOc9y
+gLAA1lWrtrpeWhZqQLegmQ7fDz7jRjiAaIkXPiVuAtib0QFK7POK0r4mrUbdeHKx
+i0wYQn6xfQ7bN1c3gGTkpFZuwmf+zbOcGYPM6IcsCOAX3tb56w3oPbDyw9x9C8rf
+rFgAzMDKOq+6ey8SKnIixGRzeNASDVWhkguFAA6CRD89OMKshRpvfBfLWngQu8HW
+BIIEoWmlSRjNtQsWPI0cQyBW7yp9Q04FmsBeReJdYp2+uZNx61tKWW/vvy3Nli/9
+yv6w3ngc6Wc0Tw+56fOHmnSPjHTe5aQsUkTND7co1fZ7YdCdo2E9L7/49zk2FG35
+d1qYiAAw5p3i54W9OoK2hSn6P9XZ52yhFmNrr3GGSb0+xCKINTitpPx7vr8UPepi
+BE2Q7E6O3pLeO9NI58iF4nM6KG3laJv4DupfBJWUVtC2NJCsYOW5io5Vwe6b7vG0
+WDzCBFtp92tK+r6rIkkQ1mu1+JyVZv79lTysaDgL3fp56CdIyOHhomagWZRvL2cv
+DlLX5jr3WCLaVTkwBxdZ6yKLxzvvFEBNa99TT5gH1e6wFGag33VQuTiwz7JTbx1z
+82gEp+Zy9fiNpkBHgAsC
+=etEQ
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__8_Mar_2012_14_51_31_+1100_qb3nrSWB2o1L7.Z=--
