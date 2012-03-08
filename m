@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab2CHA6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 19:58:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58907 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab2CHA6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 19:58:38 -0500
-Date: Wed, 7 Mar 2012 21:58:27 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Peter Seebach <peter.seebach@windriver.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Anton Blanchard <anton@samba.org>,
-        paulus@samba.org, peterz@infradead.org, dsahern@gmail.com,
-        fweisbec@gmail.com, yanmin_zhang@linux.intel.com, emunson@mgebm.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: Incorrect use of snprintf results in SEGV
-Message-ID: <20120308005827.GE18932@infradead.org>
-References: <20120307114249.44275ca3@kryten>
- <20120307010904.GE5656@infradead.org>
- <20120306192912.59811e3e@wrlaptop>
- <20120307203725.GA4333@elte.hu>
- <20120307151951.7e84adb6@wrlaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120307151951.7e84adb6@wrlaptop>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753097Ab2CHBEi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 20:04:38 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:54678 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab2CHBEf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 20:04:35 -0500
+Date: Thu, 8 Mar 2012 12:04:22 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: linux-next: manual merge of the powerpc tree with the arm tree
+Message-Id: <20120308120422.e071cba36425eacbee1f8d98@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__8_Mar_2012_12_04_22_+1100_4rv=5QsZlsW4prit"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Mar 07, 2012 at 03:19:51PM -0600, Peter Seebach escreveu:
-> On Wed, 7 Mar 2012 21:37:25 +0100 Ingo Molnar <mingo@elte.hu> wrote:
-> >    We *DONT* want to make APIs more fragile just to accomodate a
-> >    rare, esoteric usecase!
-> 
-> I would view snprintf as an API which already exists.  If it's the
-> wrong API, by all means, write a different one -- but I would suggest
-> not using the same name for it.  If a function is going to be called
-> snprintf, IMO it should have the semantics of snprintf.  If those are
-> the wrong semantics (and they may well be), then I would say use a
-> function which has the right semantics, and isn't named snprintf.
+--Signature=_Thu__8_Mar_2012_12_04_22_+1100_4rv=5QsZlsW4prit
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right, its more a case of: Don't assume people do things you think are
-reasonable, read carefully and follow the instructions.
+Hi all,
 
-At least it is not as  long as other EULAs, it is much, much shorter,
-but managed to be just as non intuitive.
+Today's linux-next merge of the powerpc tree got a conflict in
+arch/powerpc/Kconfig between commit 2ed86b16eabe ("irq: make SPARSE_IRQ
+an optionally hidden option") from the arm tree and commit ad5b7f1350c2
+("powerpc: Make SPARSE_IRQ required") from the powerpc tree.
 
-- Arnaldo
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/powerpc/Kconfig
+index bf7dbc2,4eecaaa..0000000
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@@ -133,7 -133,8 +133,8 @@@ config PP
+  	select HAVE_REGS_AND_STACK_ACCESS_API
+  	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
+  	select HAVE_GENERIC_HARDIRQS
+ -	select HAVE_SPARSE_IRQ
+ +	select MAY_HAVE_SPARSE_IRQ
++ 	select SPARSE_IRQ
+  	select IRQ_PER_CPU
+  	select GENERIC_IRQ_SHOW
+  	select GENERIC_IRQ_SHOW_LEVEL
+
+--Signature=_Thu__8_Mar_2012_12_04_22_+1100_4rv=5QsZlsW4prit
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPWAWWAAoJEECxmPOUX5FEH7QP/j6Y3U7+zv7/KWkSwFsgu8uG
+JdlmDFbdo/OXrYtUx2i0E+Y6zV53rn6Yq1ZeDf5iAkbrgjiZ/z071eJAG3uuEKaK
+jhuQy2u4Ww7sfQQd5+gZNTiODX4175XUt2tXFCK9sQ/4mdGso14TO5HJo3zKP9z6
+C/9rPqRHYmfLboJMWLr6Jv6DGmIdI31/HsSRD2+DM12i4RZOa07de0bKm4mtFzOC
+JbV1NULFD8vdB8XhxiLX2ZKiDxFHb6whJ/1i87MVPJ75NleboNUZzQ2aK6zQxlMr
+zFNw+2/f+a++O7Lx2pBHpCJiLtWTXbZS9CbJiE0DXUUmuwYDGteZqJ0F8MMxbxgN
+jlRBH+sKVtX1fgO642h2E++fCAxSvFbMB2Q+N/55oS/sZCZ41fW7qitpE7sLvh07
+oFhsI6rf8fR30btc6M6b7U/ZUzGU9hdIrYh8+ISDNe6LYiB5Wdw7cATEwFE1AUGG
+HheHmLPwhb6oq8QldgDlr7asDcpML7W8edXm2yfM7KbI620Nxvq1N54Bz7yUVAvF
+/7yUx87I/TG4fS1LVuPLHrytKGq4tIROq2bTwor1bp+MDVFy4IWhAVKzU3ZWF2dP
+zmviAB8F2rVgBZhyXZZd91MRRfkAV1jN1xPNOaaW5DQcYRp5eWDTz0iYrhHpQBsk
+L3rglVqwyMNajl/IMng5
+=lPb/
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__8_Mar_2012_12_04_22_+1100_4rv=5QsZlsW4prit--
