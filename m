@@ -1,167 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab2CHVsZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:48:25 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48134 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757639Ab2CHVsX (ORCPT
+	id S1757812Ab2CHVuB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:50:01 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55150 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757193Ab2CHVuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:48:23 -0500
-Date: Fri, 9 Mar 2012 01:48:17 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Matt Helsley <matthltc@us.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
-Message-ID: <20120308214817.GO21812@moon>
-References: <20120308165112.GF21812@moon>
- <20120308182623.GA17221@redhat.com>
- <20120308190303.GG21812@moon>
- <20120308190534.GA19827@redhat.com>
- <20120308192504.GH21812@moon>
- <20120308192559.GA20782@redhat.com>
+	Thu, 8 Mar 2012 16:50:00 -0500
+Date: Thu, 8 Mar 2012 21:49:52 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tyler Hicks <tyhicks@canonical.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-mm@kvack.org, davej@redhat.com, jboyer@redhat.com,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: Re: [PATCH] hugetlbfs: lockdep annotate root inode properly
+Message-ID: <20120308214951.GB23916@ZenIV.linux.org.uk>
+References: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20120308130256.c7855cbd.akpm@linux-foundation.org>
+ <20120308211926.GB6546@boyd>
+ <20120308134050.f53a0b2f.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120308192559.GA20782@redhat.com>
+In-Reply-To: <20120308134050.f53a0b2f.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 08:25:59PM +0100, Oleg Nesterov wrote:
-...
-> 
-> But please-please document the new special case in the changelog.
-> 
+On Thu, Mar 08, 2012 at 01:40:50PM -0800, Andrew Morton wrote:
 
-Oleg, will the following change log sound more or less fine?
+> OK, thanks, yup.  Taking i_mutex in file_operations.mmap() is wrong.
 
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: c/r: prctl: Add ability to set new mm_struct::exe_file v4
+... or in .release() (munmap() does fput() under mmap_sem).
 
-When we do restore we would like to have a way to setup
-a former mm_struct::exe_file so that /proc/pid/exe would
-point to the original executable file a process had at
-checkpoint time.
+> Is hugetlbfs actually deadlockable because of this, or is it the case
+> that the i_mutex->mmap_sem ordering happens to never happen for this
+> filesystem?
 
-For this the PR_SET_MM_EXE_FILE code is introduced.
-This option takes a file descriptor which will be
-set as a source for new /proc/$pid/exe symlink.
+Yes, it is.  Look at read(2) on hugetlbfs; it copies userland data
+while holding ->i_mutex.  So we have
 
-Note it allows to change /proc/$pid/exe iif there
-are no VM_EXECUTABLE vmas present for current process,
-simply because this feature is a special to C/R
-and mm::num_exe_file_vmas become meaningless after
-that.
+read(2):
+mutex_lock(&A)
+down_read(&B)
 
-This feature is available iif CONFIG_CHECKPOINT_RESTORE is set.
+mmap(2):
+down_write(&B);
+mutex_lock(&A);
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Oleg Nesterov <oleg@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Kees Cook <keescook@chromium.org>
-CC: Tejun Heo <tj@kernel.org>
-CC: Matt Helsley <matthltc@us.ibm.com>
----
- include/linux/prctl.h |    1 
- kernel/sys.c          |   54 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 55 insertions(+)
+which is an obvious deadlock.
 
-Index: linux-2.6.git/include/linux/prctl.h
-===================================================================
---- linux-2.6.git.orig/include/linux/prctl.h
-+++ linux-2.6.git/include/linux/prctl.h
-@@ -118,5 +118,6 @@
- # define PR_SET_MM_ENV_START		10
- # define PR_SET_MM_ENV_END		11
- # define PR_SET_MM_AUXV			12
-+# define PR_SET_MM_EXE_FILE		13
- 
- #endif /* _LINUX_PRCTL_H */
-Index: linux-2.6.git/kernel/sys.c
-===================================================================
---- linux-2.6.git.orig/kernel/sys.c
-+++ linux-2.6.git/kernel/sys.c
-@@ -36,6 +36,8 @@
- #include <linux/personality.h>
- #include <linux/ptrace.h>
- #include <linux/fs_struct.h>
-+#include <linux/file.h>
-+#include <linux/mount.h>
- #include <linux/gfp.h>
- #include <linux/syscore_ops.h>
- #include <linux/version.h>
-@@ -1701,6 +1703,55 @@ static bool vma_flags_mismatch(struct vm
- 		(vma->vm_flags & banned);
- }
- 
-+static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
-+{
-+	struct file *exe_file;
-+	struct dentry *dentry;
-+	int err;
-+
-+	exe_file = fget(fd);
-+	if (!exe_file)
-+		return -EBADF;
-+
-+	dentry = exe_file->f_path.dentry;
-+
-+	/*
-+	 * Because the original mm->exe_file
-+	 * points to executable file, make sure
-+	 * this one is executable as well to not
-+	 * break an overall picture.
-+	 */
-+	err = -EACCES;
-+	if (!S_ISREG(dentry->d_inode->i_mode)	||
-+	    exe_file->f_path.mnt->mnt_flags & MNT_NOEXEC)
-+		goto exit;
-+
-+	err = inode_permission(dentry->d_inode, MAY_EXEC);
-+	if (err)
-+		goto exit;
-+
-+	/*
-+	 * Setting new mm::exe_file is only allowed
-+	 * when no executable VMAs left. This is
-+	 * special C/R case when a restored program
-+	 * need to change own /proc/$pid/exe symlink.
-+	 * After this call mm::num_exe_file_vmas become
-+	 * meaningless.
-+	 */
-+	down_write(&mm->mmap_sem);
-+	if (mm->num_exe_file_vmas == 0) {
-+		set_mm_exe_file(mm, exe_file);
-+		exe_file = NULL;
-+	} else
-+		err = -EBUSY;
-+	up_write(&mm->mmap_sem);
-+
-+exit:
-+	if (exe_file)
-+		fput(exe_file);
-+	return err;
-+}
-+
- static int prctl_set_mm(int opt, unsigned long addr,
- 			unsigned long arg4, unsigned long arg5)
- {
-@@ -1715,6 +1766,9 @@ static int prctl_set_mm(int opt, unsigne
- 	if (!capable(CAP_SYS_RESOURCE))
- 		return -EPERM;
- 
-+	if (opt == PR_SET_MM_EXE_FILE)
-+		return prctl_set_mm_exe_file(mm, (unsigned int)addr);
-+
- 	if (addr >= TASK_SIZE)
- 		return -EINVAL;
- 
+> So we need to pull the i_mutex out of hugetlbfs_file_mmap().
+
+IIRC, you have a patch in your tree doing just that...
