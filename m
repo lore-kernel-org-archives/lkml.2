@@ -1,185 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab2CHVDG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:03:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993Ab2CHVDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753067Ab2CHVDC (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 8 Mar 2012 16:03:02 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: <x86@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH v2] x86,nmi: Fix page faults by nmiaction if kmemcheck is enabled
-Date: Thu,  8 Mar 2012 16:02:29 -0500
-Message-Id: <1331240549-13120-1-git-send-email-dzickus@redhat.com>
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60828 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab2CHVC6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 16:02:58 -0500
+Date: Thu, 8 Mar 2012 13:02:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, davej@redhat.com, jboyer@redhat.com,
+        tyhicks@canonical.com, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] hugetlbfs: lockdep annotate root inode properly
+Message-Id: <20120308130256.c7855cbd.akpm@linux-foundation.org>
+In-Reply-To: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+On Thu,  8 Mar 2012 14:45:16 +0530
+"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-This patch tries to fix the problem of page fault exception caused by
-accessing nmiaction structure in nmi if kmemcheck is enabled.
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> This fix the below lockdep warning
 
-If kmemcheck is enabled, the memory allocated through slab are in pages
-that are marked non-present, so that some checks could be done in the
-page fault handling code ( e.g. whether the memory is read before
-written to ).
-As nmiaction is allocated in this way, so it resides in a non-present
-page. Then there is a page fault while the nmi code accessing the
-nmiaction structure, which would then cause a warning by
-WARN_ON_ONCE(in_nmi()) in kmemcheck_fault(), called by do_page_fault().
+OK, what's going on here.
 
-v2: as Peter suggested, changed the nmiaction to use static storage.
+>  ======================================================
+>  [ INFO: possible circular locking dependency detected ]
+>  3.3.0-rc4+ #190 Not tainted
+>  -------------------------------------------------------
+>  shared/1568 is trying to acquire lock:
+>   (&sb->s_type->i_mutex_key#12){+.+.+.}, at: [<ffffffff811efa0f>] hugetlbfs_file_mmap+0x7d/0x108
+> 
+>  but task is already holding lock:
+>   (&mm->mmap_sem){++++++}, at: [<ffffffff810f5589>] sys_mmap_pgoff+0xd4/0x12f
+> 
+>  which lock already depends on the new lock.
+> 
+> 
+>  the existing dependency chain (in reverse order) is:
+> 
+>  -> #1 (&mm->mmap_sem){++++++}:
+>         [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
+>         [<ffffffff810ee439>] might_fault+0x6d/0x90
+>         [<ffffffff8111bc12>] filldir+0x6a/0xc2
+>         [<ffffffff81129942>] dcache_readdir+0x5c/0x222
+>         [<ffffffff8111be58>] vfs_readdir+0x76/0xac
+>         [<ffffffff8111bf6a>] sys_getdents+0x79/0xc9
+>         [<ffffffff816940a2>] system_call_fastpath+0x16/0x1b
+> 
+>  -> #0 (&sb->s_type->i_mutex_key#12){+.+.+.}:
+>         [<ffffffff8109f40a>] __lock_acquire+0xa6c/0xd60
+>         [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
+>         [<ffffffff816916be>] __mutex_lock_common+0x48/0x350
+>         [<ffffffff81691a85>] mutex_lock_nested+0x2a/0x31
+>         [<ffffffff811efa0f>] hugetlbfs_file_mmap+0x7d/0x108
+>         [<ffffffff810f4fd0>] mmap_region+0x26f/0x466
+>         [<ffffffff810f545b>] do_mmap_pgoff+0x294/0x2ee
+>         [<ffffffff810f55a9>] sys_mmap_pgoff+0xf4/0x12f
+>         [<ffffffff8103d1f2>] sys_mmap+0x1d/0x1f
+>         [<ffffffff816940a2>] system_call_fastpath+0x16/0x1b
+> 
+>  other info that might help us debug this:
+> 
+>   Possible unsafe locking scenario:
+> 
+>         CPU0                    CPU1
+>         ----                    ----
+>    lock(&mm->mmap_sem);
+>                                 lock(&sb->s_type->i_mutex_key#12);
+>                                 lock(&mm->mmap_sem);
+>    lock(&sb->s_type->i_mutex_key#12);
+> 
+>   *** DEADLOCK ***
+> 
+>  1 lock held by shared/1568:
+>   #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810f5589>] sys_mmap_pgoff+0xd4/0x12f
+> 
+>  stack backtrace:
+>  Pid: 1568, comm: shared Not tainted 3.3.0-rc4+ #190
+>  Call Trace:
+>   [<ffffffff81688bf9>] print_circular_bug+0x1f8/0x209
+>   [<ffffffff8109f40a>] __lock_acquire+0xa6c/0xd60
+>   [<ffffffff8110e7b6>] ? files_lglock_local_lock_cpu+0x61/0x61
+>   [<ffffffff811efa0f>] ? hugetlbfs_file_mmap+0x7d/0x108
+>   [<ffffffff8109fb8f>] lock_acquire+0xd5/0xfa
+>   [<ffffffff811efa0f>] ? hugetlbfs_file_mmap+0x7d/0x108
+> 
 
-v3: as Peter suggested, use macro to shorten the codes. Also keep the
-original usage of register_nmi_handler, so users of this call doesn't
-need change.
+Why have these lockdep warnings started coming out now - was the VFS
+changed to newly take i_mutex somewhere in the directory handling?
 
-[simplified wrappers -dcz]
 
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/include/asm/nmi.h |   20 ++++++++++++-
- arch/x86/kernel/nmi.c      |   65 ++++---------------------------------------
- 2 files changed, 24 insertions(+), 61 deletions(-)
+Sigh.  Was lockdep_annotate_inode_mutex_key() sufficiently
+self-explanatory to justify leaving it undocumented?
 
-diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-index fd3f9f1..2a17e57 100644
---- a/arch/x86/include/asm/nmi.h
-+++ b/arch/x86/include/asm/nmi.h
-@@ -35,8 +35,24 @@ enum {
- 
- typedef int (*nmi_handler_t)(unsigned int, struct pt_regs *);
- 
--int register_nmi_handler(unsigned int, nmi_handler_t, unsigned long,
--			 const char *);
-+struct nmiaction {
-+	struct list_head list;
-+	nmi_handler_t handler;
-+	unsigned int flags;
-+	const char *name;
-+};
-+
-+#define register_nmi_handler(t, fn, fg, n)		\
-+({							\
-+	static struct nmiaction fn##_na = {		\
-+		.handler = (fn),			\
-+		.name = (n),				\
-+		.flags = (fg),				\
-+	};						\
-+	__register_nmi_handler((t), &fn##_na);	\
-+})
-+
-+int __register_nmi_handler(unsigned int, struct nmiaction *);
- 
- void unregister_nmi_handler(unsigned int, const char *);
- 
-diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
-index 47acaf3..f13302d 100644
---- a/arch/x86/kernel/nmi.c
-+++ b/arch/x86/kernel/nmi.c
-@@ -31,14 +31,6 @@
- #include <asm/nmi.h>
- #include <asm/x86_init.h>
- 
--#define NMI_MAX_NAMELEN	16
--struct nmiaction {
--	struct list_head list;
--	nmi_handler_t handler;
--	unsigned int flags;
--	char *name;
--};
--
- struct nmi_desc {
- 	spinlock_t lock;
- 	struct list_head head;
-@@ -107,11 +99,14 @@ static int notrace __kprobes nmi_handle(unsigned int type, struct pt_regs *regs,
- 	return handled;
- }
- 
--static int __setup_nmi(unsigned int type, struct nmiaction *action)
-+int __register_nmi_handler(unsigned int type, struct nmiaction *action)
- {
- 	struct nmi_desc *desc = nmi_to_desc(type);
- 	unsigned long flags;
- 
-+	if (!action->handler)
-+		return -EINVAL;
-+
- 	spin_lock_irqsave(&desc->lock, flags);
- 
- 	/*
-@@ -133,8 +128,9 @@ static int __setup_nmi(unsigned int type, struct nmiaction *action)
- 	spin_unlock_irqrestore(&desc->lock, flags);
- 	return 0;
- }
-+EXPORT_SYMBOL(__register_nmi_handler);
- 
--static struct nmiaction *__free_nmi(unsigned int type, const char *name)
-+void unregister_nmi_handler(unsigned int type, const char *name)
- {
- 	struct nmi_desc *desc = nmi_to_desc(type);
- 	struct nmiaction *n;
-@@ -157,56 +153,7 @@ static struct nmiaction *__free_nmi(unsigned int type, const char *name)
- 
- 	spin_unlock_irqrestore(&desc->lock, flags);
- 	synchronize_rcu();
--	return (n);
- }
--
--int register_nmi_handler(unsigned int type, nmi_handler_t handler,
--			unsigned long nmiflags, const char *devname)
--{
--	struct nmiaction *action;
--	int retval = -ENOMEM;
--
--	if (!handler)
--		return -EINVAL;
--
--	action = kzalloc(sizeof(struct nmiaction), GFP_KERNEL);
--	if (!action)
--		goto fail_action;
--
--	action->handler = handler;
--	action->flags = nmiflags;
--	action->name = kstrndup(devname, NMI_MAX_NAMELEN, GFP_KERNEL);
--	if (!action->name)
--		goto fail_action_name;
--
--	retval = __setup_nmi(type, action);
--
--	if (retval)
--		goto fail_setup_nmi;
--
--	return retval;
--
--fail_setup_nmi:
--	kfree(action->name);
--fail_action_name:
--	kfree(action);
--fail_action:	
--
--	return retval;
--}
--EXPORT_SYMBOL_GPL(register_nmi_handler);
--
--void unregister_nmi_handler(unsigned int type, const char *name)
--{
--	struct nmiaction *a;
--
--	a = __free_nmi(type, name);
--	if (a) {
--		kfree(a->name);
--		kfree(a);
--	}
--}
--
- EXPORT_SYMBOL_GPL(unregister_nmi_handler);
- 
- static notrace __kprobes void
--- 
-1.7.7.6
+<goes off and reads e096d0c7e2e>
+
+OK, the patch looks correct given the explanation in e096d0c7e2e, but
+I'd like to understand why it becomes necessary only now.
+
+> NOTE: This patch also require 
+> http://thread.gmane.org/gmane.linux.file-systems/58795/focus=59565
+> to remove the lockdep warning
+
+And that patch has been basically ignored.
+
+Sigh.  I guess I'll grab both patches, but I'm not confident in doing
+so without an overall explanation of what is happening here.
+
 
