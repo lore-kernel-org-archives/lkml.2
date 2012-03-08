@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2CHB24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 20:28:56 -0500
-Received: from mail.us.es ([193.147.175.20]:57555 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751848Ab2CHB2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 20:28:53 -0500
-Date: Thu, 8 Mar 2012 02:28:49 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: jengelh@medozas.de, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        rostedt@goodmis.org
-Subject: Re: [PATCH v6] Netfilter ring buffer support
-Message-ID: <20120308012849.GA9164@1984>
-References: <1330989588-26833-1-git-send-email-richard@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330989588-26833-1-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753330Ab2CHB3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 20:29:31 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:36957 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752730Ab2CHB3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 20:29:22 -0500
+Date: Thu, 8 Mar 2012 10:35:45 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4 changelog-v2] KVM: Switch to srcu-less
+ get_dirty_log()
+Message-Id: <20120308103545.24b81093.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120307232520.GB29570@amt.cnet>
+References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120303142148.2689454b30dc86d84c4a19f5@gmail.com>
+	<20120306111540.GA29914@amt.cnet>
+	<20120306234317.2817d2071038d11ab3831c82@gmail.com>
+	<20120306150104.GA3041@amt.cnet>
+	<20120307002317.d8682de9c6ccd6af8ccac467@gmail.com>
+	<20120306152850.GB3353@amt.cnet>
+	<20120307170745.3147f776.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120307232520.GB29570@amt.cnet>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 12:19:42AM +0100, Richard Weinberger wrote:
-> This patch set merges ipt_LOG and ip6t_LOG and adds ring buffer support
-> to xt_LOG.
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
+
+> What is worrying are large memory cases: think of the 50GB slot case.
+> 100ms hold time is pretty bad (and reacquiring the lock is relatively
+> simple).
 > 
-> Using "--ring" an user can create LOG rules which log messages into
-> one or more ring buffers.
-> Each ring buffer is represented as pipe-like file in
-> /proc/net/netfilter/nf_log_ring/.
 
-I've spent part of the evening testing this and checking its
-possibilities, the drawbacks that I see for this contribution are:
+OK, I agree basically.
 
-* it uses the /proc entry, we have rejected similar add-ons in the
-  past that have used these interfaces.
-* one single reader can be reading at a time.
+But let me explain one thing before deciding what I should do next.
 
-Having said that, I still think that the feature that this provides
-is useful, but I think that implementing this in user-space over
-nfnetlink_log results in a much more flexible solution.
+With my method, even when we use a 50GB slot, the hold time will be under
+10ms -- not 100ms -- if the memory actually updated from the last time is
+1GB (256K dirty pages).
 
-I have made proof-of-concept daemon (it's a quick hack of several
-hours) that implements the similar feature over nfnetlink_log,
-advantages are:
+> >   8747274.0   10973.3       33.3      -31%    -3%    256K
+  Note that this unit-test was done on my tiny core-i3 32-bit host.
+  On servers which can install more than 50GB memory, this will become
+  much faster: actually my live migration tests done on Xeon saw much
+  better numbers.  Unit-test has been tuned for the worst case.
 
-* You don't need to upgrade your kernel / iptables.
-* You only need to install libnfnetlink, libnetfilter_log and the
-  daemon.
-* It can be extended to support multiple readers.
+I admit that if the dirty memory size is more than 10GB, we may see over
+100ms hold time you are worrying about.
 
-So my conclusion is that you can make this in userspace in a much more
-flexible way.
+  For that I was proposing introducing a new GET_DIRTY_LOG API which can
+  restrict the number of dirty pages we get the log - but this is a long
+  term goal.
 
-You can find it here:
 
-http://1984.lsi.us.es/git/rlogd/
+So, I am OK to try to introduce cond_resched_lock_cb() as you suggested.
+But, as I explained above, my current implementation does not introduce
+any real regression concerning to mmu_lock hold time:
 
-The initial commit provides some description on how to use it:
+  Before we could see 10ms hold time in real workloads:
+  > funcgraph_entry:      ! 9783.060 us |  kvm_mmu_slot_remove_write_access();
 
-http://1984.lsi.us.es/git/rlogd/commit/?id=ccb88a8dc8ad674b860f2d3edabf07fe4830baf3
+  I have never seen ms hold time with my method in the same workloads.
 
-I don't plan to develop / maintain that software. The last thing I
-want in my todo list is yet another thing to maintain. If someone is
-interested, please, feel free to grab it, make a nice website for it
-and maintain it.
+So, it would be helpful if you can apply the patch series and I can work
+on top of that: although I cannot use servers with 100GB memory now,
+migrating a guest with 16GB memory or so may be possible later: I need
+to reserve servers for that.
 
-The repository also contains an unfinished patch to add LOG format
-support to libnetfilter_log.
+I also want to know "mmu_lock -- TLB flush"-decoupling plan.  We will not
+need to introduce cond_resched_lock_cb() in sched.h if that is possible.
+
+Thanks,
+	Takuya
