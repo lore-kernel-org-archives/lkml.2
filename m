@@ -1,84 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab2CHLkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:40:09 -0500
-Received: from 124-248-200-58.sunnyvision.com ([124.248.200.58]:47441 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756684Ab2CHLkD (ORCPT
+	id S1753745Ab2CHLqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:46:34 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63855 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab2CHLqd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:40:03 -0500
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com BDD93DF5AF
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 08EE34FB16
-Message-ID: <O7OSSiHaA@tcts1.seed.net.tw>
-From: design@dedicatedserver.com.hk
-Subject: Web development service
-X-Mailer: rnr85zQtmaKTAM1FW0
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Thu,  8 Mar 2012 19:24:13 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 8 Mar 2012 06:46:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
+References: <1331101687.24656.319.camel@vkoul-udesk3>
+	<Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+	<20120307093026.GM17370@n2100.arm.linux.org.uk>
+	<Pine.LNX.4.64.1203071041030.19595@axis700.grange>
+	<20120307103112.GP17370@n2100.arm.linux.org.uk>
+	<Pine.LNX.4.64.1203071149190.19595@axis700.grange>
+	<20120307124620.GT17370@n2100.arm.linux.org.uk>
+	<Pine.LNX.4.64.1203071416060.19595@axis700.grange>
+	<20120307142634.GA18787@n2100.arm.linux.org.uk>
+	<Pine.LNX.4.64.1203071602330.19595@axis700.grange>
+	<20120307162755.GB18787@n2100.arm.linux.org.uk>
+	<Pine.LNX.4.64.1203071906040.19595@axis700.grange>
+	<1331188201.4657.51.camel@vkoul-udesk3>
+	<Pine.LNX.4.64.1203080902170.29847@axis700.grange>
+Date: Thu, 8 Mar 2012 12:46:32 +0100
+Message-ID: <CACRpkdY4y6Dj+G0zNoeY5DGWW1CRXez4pVCju2SXc=9oNyzdGw@mail.gmail.com>
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Jassi Brar <jassisinghbrar@gmail.com>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q28BeaN5022492
 
-Dear all,
-Please see below is our general job reference and web design package, 
+On Thu, Mar 8, 2012 at 11:16 AM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
 
-Total 12 pages web design service
-- Two language version
-- All the webpage design is included:
-- Theme development;
-- Design Study;
-- Original Layout / Artwork Design;
-- Steady HTML / Flash Web page development;
-- Search Engine Applicable;
-- Basic Graphic Flash Banner x1;
-- All text contents, logos and related product photos should be provided by client
- Product eCatalogue (Product Page)
+>(...) our case can be handled _very_ easily:
+>
+> 1. a client requests a channel of a specific type
+> 2. one of channels of that type, residing on one of compatible
+>   controllers, is allocated, configured and handed in to the client
+>
+> That's it. No filtering, no post-allocation configuration - at least so
+> far. And penalising such a simple case by forcing it to use virtual
+> channels and filter through some unnatural mappings doesn't seem very
+> productive to me.
 
-- CMS Function of add /edit Products with Contents & Photos
-- Maximum 10 fields include Photos and Contents
-- Text Editor for Detail Contents (if need)
-- Support text descriptions and photos updating
-- 1 Level categories management
-- Database support with un-limit Products create
-- Not include Data input
-- Standard Admin panel with login function (1 admin account)
-Content management system (Activities page)
+But you do realize that this increases the complexity of the
+dmaengine and means more maintenance burden for the
+subsystem maintainer that will after this have to think in two
+different sematic ways about channel retrieveal - yeah this one
+passes that as parameter and this one has a config struct
+provided, then this one use a filter function still - etc.
 
-- Basic CMS function of add / edit items
-- Max. 5 fields per item
-- Support photos and text descriptions
-- Front-end support 1 page only (Comapny activities page)
-- Database support with un-limit Products create
-- Not include Data input
-- Integrated Admin Panel
-Enquiry form function (Contact Us)
-- Form to mail
-Package price : $38,000
+That is, of course, unless you convert all the existing DMA
+engines to do it the same way, then it's redesigning proper.
 
-Yoy may click the hyperlink to see some of our design reference.
+In that case I am much more positive to the change, even
+if it doesn't take us all the way to the new channel mappings
+we want to have.
 
-Job reference
+You haven't stated whether you will go in and rewrite the other
+drivers to use this scheme or whether you will just add this one
+kludge to handle this one DMA controller, then just update
+all others to ignore the parameter. (You'd obviously have to
+do that to get this to even compile...)
 
-http://www.hk-belle.com/
-http://www.mirabell.com.hk/
-http://www.nikijodi.com/
-http://www.joy-peace.com/
-http://www.staccato.com
-http://www.chicks.com.hk/
+So the *proper* way to refactor to using this scheme would
+be to introduce this new scheme *and* remove the filter
+function from all the other drivers and DMA engine at large,
+so it's not needed anymore. Which means a bit of refactoring.
 
-Program reference
-http://www.gloryskygroup.com/index.aspx?lang=big5
-http://www.mydriver.com.hk/
- 
-Best Regards,
-Eric Chan
-Senior Sales Executive
+Currently drivers have to pass a filter function from
+platform data to filter out relevant channels, and with
+the new style (this patch plus removing all filter functions)
+it will be passing something else instead. That's all
+fine, and actually an improvement, because passing around
+a filter function is not as good as passing some struct
+with data.
 
-If you do not wish to further receive this event message, email subscriber@dedicatedserver.com.hk to unsubscribe this message
+So does RFC patch mean you will fix this up for everyone
+or does it mean something else?
 
+If you're not also planning to get rid of the filter functions
+for all other drivers I don't see this going anywhere right
+now. It is not beneficial for dmaengine, the only benefit
+is one more kludgy driver to maintain.
 
+Yours,
+Linus Walleij
