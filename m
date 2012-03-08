@@ -1,108 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab2CHCj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 21:39:57 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:57098 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab2CHCjx (ORCPT
+	id S1754274Ab2CHCmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 21:42:12 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:33884 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751132Ab2CHCmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 21:39:53 -0500
-Date: Thu, 8 Mar 2012 13:39:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Jones <davej@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Dave Jones <davej@redhat.com>, Kevin Hilman <khilman@ti.com>,
-        =?UTF-8?B?IkhlaWtvIFN0w7xibmVyIg==?= <heiko@sntech.de>
-Subject: linux-next: manual merge of the cpufreq tree with the
- cpufreq-current tree
-Message-Id: <20120308133942.45065b61e8a8a6bf0e2aa2ed@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__8_Mar_2012_13_39_42_+1100_/eRjWi6gvuS8Ic.u"
+	Wed, 7 Mar 2012 21:42:08 -0500
+Date: Wed, 7 Mar 2012 18:42:03 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [PATCH 05/11] android: ram_console: split out persistent ram
+Message-ID: <20120308024203.GA25842@kroah.com>
+References: <1331170478-30538-1-git-send-email-john.stultz@linaro.org>
+ <1331170478-30538-6-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331170478-30538-6-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__8_Mar_2012_13_39_42_+1100_/eRjWi6gvuS8Ic.u
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Mar 07, 2012 at 05:34:32PM -0800, John Stultz wrote:
+> From: Colin Cross <ccross@android.com>
+> 
+> Split ram_console into two halves.
+> 
+> persistent_ram is a set of apis that handle a block of memory
+> that does not get erased across a reboot.  It provides functions
+> to fill it as a single buffer or a ring buffer, and to extract
+> the old data after a reboot.  It handles ecc on the data to
+> correct bit errors introduced during reboot.
 
-Hi Dave,
+That's a nice idea, but why are you rolling your own interface here and
+not using the built-in one that the kernel already provides?  Is there
+something lacking with what we have today that requires you to create
+something different?  If so, why not just modify the existing interface
+to make it work for you, that way the tools already created will work
+automatically, and you will not have problems later ripping this out and
+porting it to the in-kernel api.
 
-Today's linux-next merge of the cpufreq tree got a conflict in
-drivers/cpufreq/Kconfig.arm between commit b09db45c56c2 ("cpufreq: OMAP
-driver depends CPUfreq tables") from the cpufreq-current tree and commit
-34ee55075265 ("[CPUFREQ] Add S3C2416/S3C2450 cpufreq driver") from the
-cpufreq tree.
+Because of this, sorry, I can't take the rest of these patches in this
+series.  If the 10th or 11th ones are needed, care to refresh it against
+my tree and resend it so that I can take it?
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+thanks,
 
-diff --cc drivers/cpufreq/Kconfig.arm
-index 82f1aa9,dc59abf..0000000
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@@ -2,11 -2,28 +2,33 @@@
-  # ARM CPU Frequency scaling drivers
-  #
- =20
- +config ARM_OMAP2PLUS_CPUFREQ
- +	bool "TI OMAP2+"
- +	default ARCH_OMAP2PLUS
- +	select CPU_FREQ_TABLE
- +
-+ config ARM_S3C2416_CPUFREQ
-+ 	bool "S3C2416 CPU Frequency scaling support"
-+ 	depends on CPU_S3C2416
-+ 	help
-+ 	  This adds the CPUFreq driver for the Samsung S3C2416 and
-+ 	  S3C2450 SoC. The S3C2416 supports changing the rate of the
-+ 	  armdiv clock source and also entering a so called dynamic
-+ 	  voltage scaling mode in which it is possible to reduce the
-+ 	  core voltage of the cpu.
-+=20
-+ 	  If in doubt, say N.
-+=20
-+ config ARM_S3C2416_CPUFREQ_VCORESCALE
-+ 	bool "Allow voltage scaling for S3C2416 arm core (EXPERIMENTAL)"
-+ 	depends on ARM_S3C2416_CPUFREQ && REGULATOR && EXPERIMENTAL
-+ 	help
-+ 	  Enable CPU voltage scaling when entering the dvs mode.
-+ 	  It uses information gathered through existing hardware and
-+ 	  tests but not documented in any datasheet.
-+=20
-+ 	  If in doubt, say N.
-+=20
-  config ARM_S3C64XX_CPUFREQ
-  	bool "Samsung S3C64XX"
-  	depends on CPU_S3C6410
-
---Signature=_Thu__8_Mar_2012_13_39_42_+1100_/eRjWi6gvuS8Ic.u
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPWBvuAAoJEECxmPOUX5FEX4IQAKkgBzmGxcdPzXwe3+uIuutt
-rT9M0uzmMM1CAtirxad9XoOKL3/LNyIOhEc8hcnwkcblMl8SZCqNpznaz4YUMhZ+
-rO+sP7LTxrycYiFv6a8I4IlzQXWZydPG3JiiFbUsg7cHMsBmpr+Y1EH7W/yBWjfI
-qDQ7QL4Sy8vQk/qDWxeN4iHiBiMWJlG3USo5gqcyEGrGA6j2brzkov3NUcr9E/uE
-S0asexAx9I65Q4xvXCa5S8uw2qxWu6IlK8Cn1GSeWKBzYdd6Pl194dxIxUQ7eHZx
-Sd0BPv1PpLFvr3NO3yL7eyPEfq5GU/pUUCh7ACmmARNl2B6MCCTsknip0MGXHQsh
-QvRAY+shkKcBpPIEdExf1b3tXhhOQUUIeqrM+xQZcHJDjVmG57Ia9GvEQAHy/+n9
-a99g/zzZM9owYbkf4RtKjTIYoMIqQ1YFLPbLoWC9AoSlAq04dEktpR8shhowMBEa
-4x8JMcvQt5g4P1+ZQ6gZND/IMvG/kLcTf9t1QC+XDFwCFqvbnQk1f3nIdMiJ1CRT
-r55gWYGmTjCU9vJAkY5i84J8u7K7Xy9cz/svHVfy17fUM01IgPGMTI/TPWDoK+Qq
-utCEyXc8i3R8j4Yj/o/IvhvlN8XWaVnIvfwuSAd7fBxsK9+FDUm8JAEcSHUzaKLc
-hk2ZudbmT3Bjot0UumDk
-=IMuY
------END PGP SIGNATURE-----
-
---Signature=_Thu__8_Mar_2012_13_39_42_+1100_/eRjWi6gvuS8Ic.u--
+greg k-h
