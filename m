@@ -1,182 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab2CHGZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 01:25:29 -0500
-Received: from mga14.intel.com ([143.182.124.37]:5427 "EHLO mga14.intel.com"
+	id S1754194Ab2CHG2F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 01:28:05 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:56723 "EHLO londo.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754081Ab2CHGZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 01:25:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="116241858"
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
- __dma_request_channel()
-From: Vinod Koul <vinod.koul@intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
-References: <1331101687.24656.319.camel@vkoul-udesk3>
-	 <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
-	 <20120307093026.GM17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
-	 <20120307103112.GP17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
-	 <20120307124620.GT17370@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
-	 <20120307142634.GA18787@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
-	 <20120307162755.GB18787@n2100.arm.linux.org.uk>
-	 <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Mar 2012 12:00:01 +0530
-Message-ID: <1331188201.4657.51.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751162Ab2CHG2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 01:28:01 -0500
+Date: Thu, 8 Mar 2012 07:27:39 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: "Turquette, Mike" <mturquette@ti.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
+Message-ID: <20120308062739.GE18513@lunn.ch>
+Mail-Followup-To: "Turquette, Mike" <mturquette@ti.com>,
+	Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+	Paul Walmsley <paul@pwsan.com>, linaro-dev@lists.linaro.org,
+	Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+	Stephen Boyd <sboyd@codeaurora.org>,
+	Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+	Rob Herring <rob.herring@calxeda.com>,
+	Richard Zhao <richard.zhao@linaro.org>,
+	Grant Likely <grant.likely@secretlab.ca>,
+	Deepak Saxena <dsaxena@linaro.org>,
+	Saravana Kannan <skannan@codeaurora.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Shawn Guo <shawn.guo@freescale.com>,
+	Amit Kucheria <amit.kucheria@linaro.org>,
+	Russell King <linux@arm.linux.org.uk>,
+	Jeremy Kerr <jeremy.kerr@canonical.com>,
+	Arnd Bergman <arnd.bergmann@linaro.org>,
+	linux-arm-kernel@lists.infradead.org
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
+ <1330763341-3437-4-git-send-email-mturquette@linaro.org>
+ <20120303133158.GA26882@pengutronix.de>
+ <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com>
+ <20120304115201.GB26882@pengutronix.de>
+ <CAJOA=zP8d8wm==7=svOzh03Ft-1_LV71q0mA6Pncrh5vQSWGEA@mail.gmail.com>
+ <20120305073836.GU3852@pengutronix.de>
+ <CAJOA=zMs75ZQ24g5PXpSLV3AJzWEo12g86G8+4+ryQR_cTYpzA@mail.gmail.com>
+ <20120306190039.GJ3852@pengutronix.de>
+ <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-07 at 19:21 +0100, Guennadi Liakhovetski wrote:
-> > 
-> > Why are you thinking that the filter function implementation has to be
-> > provided by the peripheral driver?  That's just wrong and broken.
-> 
-> Again: because I don't like adding private APIs to a generic one.
-> 
-> > Think about it - how does the peripheral driver know what kind of dma
-> > channel its filter function has been passed - to give an example, if
-> > you built into your kernel support for the PL08x DMA engine, and lets
-> > say you had PL08x DMA engine hardware, how would your filter function
-> > decide whether it was one of your per-device channels or whether it
-> > was a PL08x DMA engine channel?
-> 
-> Sorry, there must be a confusion here: I was not proposing the above 
-> implementation for all hardware types, I don't have a good overview of all 
-> possible DMA engine scenarious and, fortunately, I don't have to implement 
-> anything that generic:-)
-> 
-> Even though I did write above "arch/arm/mach-shmobile/board-*.c" it 
-> probably wasn't clear enough: I was only talking about the shdma DMA 
-> engine driver and its clients. And so far on all sh-mobile hardware, that 
-> I'm aware of, we haven't been mixing DMA engine types on the same 
-> hardware. This is going to change soon, as soon as we get USBHS?-DMAC 
-> support in the kernel, but even then, those controllers will not be 
-> interchangeable: only USBHS devices will be served by USBHS-DMAC 
-> controllers, the rest can be served by any other controller. So, matching 
-> on a DMA controller device would perfectly suffice.
-> 
-> Of course, client drivers have no access to those device objects, that's 
-> why those lists have to be provided to them by the platform code.
-We are trying to solve this problem by making it a client or dmac
-problem rather than a platform problem. We *miss* the point here in
-discussion that platform *knows* the channel mapping and *not* dmac or
-client, so any solution not based on this would not work, so let the
-platform provide this to dmaengine.
+> Assuming that some day OMAP code can be refactored to allow for lazy
+> (or at least initcall-based) registration of clocks then perhaps your
+> suggestion can take root.  Which leads me to this question: are there
+> any other platforms out there that require the level of expose to
+> struct clk present in this patchset?  OMAP does, for now, but if that
+> changes then I need to know if others require this as well.
 
-We can have the map as* 
-[*with due credit to Linus Walleij, whose idea I have extended a small
-bit to have multiple channel and 1 to many mapping]
+Hi Mike
 
-struct dmaengine_map {
-	char *ch_name;
-	char *client_name;
-	char *dmac_name;
-	unsigned int ch;
-};
+For kirkwood, i use static clk's for all but my root clock. I cannot
+statically know the rate of the root clock, so i have to determine it
+at boot time using heuristics, PCI ID, etc.
 
-struct dmaengine_map[] = {
-	{
-		.name = "MMC-RX",
-		.client_name = "mmc.0",
-		.dmac_name = "pl08x.0",
-		.ch = 0;
-	},
-	/* mmc.0 device can use pl08x.0 controller ch 0 */
-	{
-		.name = "MMC-TX",
-		.client_name = "mmc.0",
-		.dmac_name = "pl08x.0",
-		.ch = 1;
-	},
-	/* mmc.0 device can use pl08x.0 controller ch 1 */
-	{
-		.name = "SSP-TX",
-		.client_name = "pl022.0",
-		.dmac_name = "pl022.0",
-		.ch = 1;
-	},
-	/* SSP-TX device can use pl022.0 controller ch 1 */
-	{
-		.name = "SSP-RX",
-		.client_name = "pl022.0",
-		.dmac_name = "pl022.0",
-		.ch = 2;
-	},
-	/* SSP-TX device can use pl022.0 controller ch 2 */
-	{
-		.name = "MMC-TX",
-		.client_name = "pl022.0",
-		.dmac_name = "pl022.0",
-		.ch = 2;
-	},
-	/* BTW I ahve ultra spl hardware where
-	 * SSP-TX device can also use pl022.0 controller ch 2 */
-	...
-};
-This also takes care care of many to 1 mapping where a channel can talk
-to multiple clients and dmaengine choose first in list.
+I used statics thinking it would be less code. No idea if it actually
+is, and there is nothing stopping me moving to creating the clocks
+after creating the root clock.
 
-If we do virtual channels (which I would advise) then we can have 1-1
-mapping, even otherwise dmaengine can pick first channel, and client has
-right to refuse (filter fn ofcourse!)
+One comment i have about the current static clks. I completely missing
+you need to call __clk_init() on them and so ended up with lots of
+division by zero errors, since they did not have a parent, and so the
+code seemed not be to able to determine the rate.
 
-So we can add 
-int dmaengine_add_channel_map(struct dmaengine_map *map, unsigned int num_entries)
-{
-	/* store this map into dmaengine and use for channle allocation */
-}
-This map can be given by device tree, board files, etc based on each
-what the respective arch deems the best way.
+So 
 
-And based on yesterday discussion, I like Russell's idea of hiding
-dma_slave_config, so:
+1) Please add __clk_init() to the documentation in the section about
+   static clocks.
 
-struct dma_chan *dma_request_channel_config(mask, fn, data, config)
-{
-        struct dma_chan *c = dma_request_channel(mask, fn, data);
+2) Should maybe the name change? It seems strange having to call a
+   __X() function. If this is a function which is supposed to be used,
+   drop the __. Maybe clk_static_register()?
 
-        if (c) {
-                if (dmaengine_slave_config(c, config)) {
-                        dma_release_channel(c);
-                        c = NULL;
-                }
-        }
-        return c;
-}
+3) Maybe, if the parent is missing, clk_get_rate() should return an
+   error?
 
-where
-struct dma_chan *dma_request_channel(mask, fn, data)
-{
-	for_each_match_in_map(c, map) {
-		if (fn && ! fn(c, data))
-			continue;
-		return chan;
-	}
-	return NULL;
-}
-
-At this point the client has the channel it needs to use .prepare_xxx
-API without the need of anything else...
-
-Does this model fit all?
-
--- 
-~Vinod
-
-
-
+Andrew
