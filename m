@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758665Ab2CHUQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:16:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38067 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758603Ab2CHUQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:16:24 -0500
-Date: Thu, 8 Mar 2012 15:16:16 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, axboe@kernel.dk,
-        hughd@google.com, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dpshah@google.com, ctalbott@google.com, rni@google.com
-Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
- and remove stats_lock
-Message-ID: <20120308201616.GD22922@redhat.com>
-References: <20120229173639.GB5930@redhat.com>
- <20120305221321.GF1263@google.com>
- <20120306210954.GF32148@redhat.com>
- <20120306132034.ecaf8b20.akpm@linux-foundation.org>
- <20120306213437.GG32148@redhat.com>
- <20120306135531.828ca78e.akpm@linux-foundation.org>
- <20120307145556.GA11262@redhat.com>
- <20120307150549.955d6f9c.akpm@linux-foundation.org>
- <20120308175708.GB22922@redhat.com>
- <20120308180833.GA25508@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120308180833.GA25508@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758599Ab2CHURX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:17:23 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33388 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757740Ab2CHURW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 15:17:22 -0500
+X-Authority-Analysis: v=2.0 cv=Xp94yC59 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=HIWqMhtmd3UA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=20KFwNOVAAAA:8 a=_A4SmhEBqFzf8A16jBsA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331237840.25686.470.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH-RT] preempt.h: Fix implicit declaration of
+ 'preempt_check_resched_rt'
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John Kacur <jkacur@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Clark Williams <williams@redhat.com>
+Date: Thu, 08 Mar 2012 15:17:20 -0500
+In-Reply-To: <1331237591-4406-1-git-send-email-jkacur@redhat.com>
+References: <1331237591-4406-1-git-send-email-jkacur@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 10:08:33AM -0800, Tejun Heo wrote:
-
-[..]
-> > Tejun, I noticed that in UP case, once in a while cgroup removal is
-> > hanging. Looks like it is hung in cgroup_rmdir() somewhere. I will debug
-> > more to find out what is happening. May be blkcg->refcount issue.
+On Thu, 2012-03-08 at 21:13 +0100, John Kacur wrote:
+> When building a non-preempt kernel where CONFIG_PREEMPT_COUNT is not
+> defined the following build break occurs.
 > 
-> It's probably from something forgetting to put cgroup and pre_destroy
-> waiting for it.  Such bugs would have been masked before but now show
-> up as stalls during rmdir.
+> /home/jkacur/linux-rt/block/blk-softirq.c: In function ‘trigger_softirq’:
+> /home/jkacur/linux-rt/block/blk-softirq.c:54: error: implicit declaration of function ‘preempt_check_resched_rt’
+> make[2]: *** [block/blk-softirq.o] Error 1
+> make[1]: *** [block/blk-softirq.o] Error 2
+> make: *** [sub-make] Error 2
+> 
+> This patch fixes the build error by adding a define to the
+> !CONFIG_PREEMPT_COUNT section.
+> 
+> Signed-off-by: Clark Williams <williams@redhat.com>
 
-I am not sure what is happening here yet. What I have noticed that
-somebody is holding a reference on blkg->refcnt and that's why css->refcnt
-is not zero hence rmdir is hanging.
+Why Clark's SOB? Did he write it and send it to you?
 
-I susect it is cfqq refcount on blkg which is not released till cfqq is
-reclaimed.
+-- Steve
 
-Looking at the code, in general it seems to be a problem. If a task 
-issues bunch of IO, changes the cgroup and does not issue IO any more
-for some time, that means old cfqq will still be linked to task's
-cic and still be holding reference to blkg and one can't remove the
-cgroup.
+> Signed-off-by: John Kacur <jkacur@redhat.com>
+> ---
+>  include/linux/preempt.h |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+> index fa40695..58d8982 100644
+> --- a/include/linux/preempt.h
+> +++ b/include/linux/preempt.h
+> @@ -107,6 +107,7 @@ do { \
+>  #define preempt_disable_notrace()		do { } while (0)
+>  #define preempt_enable_no_resched_notrace()	do { } while (0)
+>  #define preempt_enable_notrace()		do { } while (0)
+> +#define preempt_check_resched_rt()	do { } while (0)
+>  
+>  #endif /* CONFIG_PREEMPT_COUNT */
+>  
 
-We had this disucssion in the past. So looks like to get rid of this
-problem, you will have to drop old cic->cfqq association during
-cgroup change to avoid hanging rmdir.
 
-Thanks
-Vivek
