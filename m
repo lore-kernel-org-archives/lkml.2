@@ -1,513 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751092Ab2CHEbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 23:31:55 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:49917 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab2CHEbx (ORCPT
+	id S1751272Ab2CHEiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 23:38:00 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:60164 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab2CHEh4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 23:31:53 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: David Gibson <david@gibson.dropbear.id.au>, akpm@linux-foundation.org,
-        hughd@google.com
-Cc: paulus@samba.org, linux-kernel@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Andrew Barry <abarry@cray.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>, Hillf Danton <dhillf@gmail.com>
-Subject: Re: [PATCH 2/2] hugepages: Fix use after free bug in "quota" handling
-In-Reply-To: <1331095694-27780-2-git-send-email-david@gibson.dropbear.id.au>
-References: <1331095694-27780-1-git-send-email-david@gibson.dropbear.id.au> <1331095694-27780-2-git-send-email-david@gibson.dropbear.id.au>
-User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Thu, 08 Mar 2012 10:00:57 +0530
-Message-ID: <878vjbaf3y.fsf@linux.vnet.ibm.com>
+	Wed, 7 Mar 2012 23:37:56 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Fernando Luis =?utf-8?Q?V=C3=A1zquez?= Cao 
+	<fernando@oss.ntt.co.jp>
+Cc: Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, mingo@elte.hu,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, vgoyal@redhat.com
+References: <CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com>
+	<20120216172735.GX9751@redhat.com>
+	<CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com>
+	<20120216215603.GH9751@redhat.com> <m1y5s2ku36.fsf@fess.ebiederm.org>
+	<m1fwe9bpk2.fsf@fess.ebiederm.org> <20120217195430.GO9751@redhat.com>
+	<m1y5s07rn3.fsf@fess.ebiederm.org> <20120220151419.GU9751@redhat.com>
+	<m1obss39a4.fsf@fess.ebiederm.org> <20120221135934.GF26998@redhat.com>
+	<m1ipip6xe8.fsf@fess.ebiederm.org> <4F573E1C.2060909@oss.ntt.co.jp>
+	<4F573E74.5040504@oss.ntt.co.jp>
+Date: Wed, 07 Mar 2012 20:41:05 -0800
+In-Reply-To: <4F573E74.5040504@oss.ntt.co.jp> ("Fernando Luis =?utf-8?Q?V?=
+ =?utf-8?Q?=C3=A1zquez?= Cao"'s
+	message of "Wed, 07 Mar 2012 19:54:44 +0900")
+Message-ID: <m1eht31z8e.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12030718-1396-0000-0000-000000C91D69
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19CBQYt1L8SGQosuJLJU+8dtPVoDUZikPc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
+	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: =?ISO-8859-1?Q?;Fernando Luis V=c3=a1zquez Cao <fernando@oss.ntt.co.jp>?=
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH 1/2] boot: ignore early NMIs
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  7 Mar 2012 15:48:14 +1100, David Gibson <david@gibson.dropbear.id.au> wrote:
-> hugetlbfs_{get,put}_quota() are badly named.  They don't interact with the
-> general quota handling code, and they don't much resemble its behaviour.
-> Rather than being about maintaining limits on on-disk block usage by
-> particular users, they are instead about maintaining limits on in-memory
-> page usage (including anonymous MAP_PRIVATE copied-on-write pages)
-> associated with a particular hugetlbfs filesystem instance.
-> 
-> Worse, they work by having callbacks to the hugetlbfs filesystem code from
-> the low-level page handling code, in particular from free_huge_page().
-> This is a layering violation of itself, but more importantly, if the kernel
-> does a get_user_pages() on hugepages (which can happen from KVM amongst
-> others), then the free_huge_page() can be delayed until after the
-> associated inode has already been freed.  If an unmount occurs at the
-> wrong time, even the hugetlbfs superblock where the "quota" limits are
-> stored may have been freed.
-> 
-> Andrew Barry proposed a patch to fix this by having hugepages, instead of
-> storing a pointer to their address_space and reaching the superblock from
-> there, had the hugepages store pointers directly to the superblock, bumping
-> the reference count as appropriate to avoid it being freed.  Andrew Morton
-> rejected that version, however, on the grounds that it made the existing
-> layering violation worse.
-> 
-> This is a reworked version of Andrew's patch, which removes the extra, and
-> some of the existing, layering violation.  It works by introducing the
-> concept of a hugepage "subpool" at the lower hugepage mm layer - that is
-> a finite logical pool of hugepages to allocate from.  hugetlbfs now creates
-> a subpool for each filesystem instance with a page limit set, and a pointer
-> to the subpool gets added to each allocated hugepage, instead of the
-> address_space pointer used now.  The subpool has its own lifetime and is
-> only freed once all pages in it _and_ all other references to it (i.e.
-> superblocks) are gone.
-> 
-> subpools are optional - a NULL subpool pointer is taken by the code to mean
-> that no subpool limits are in effect.
-> 
-> Previous discussion of this bug found in:  "Fix refcounting in hugetlbfs
-> quota handling.". See:  https://lkml.org/lkml/2011/8/11/28 or
-> http://marc.info/?l=linux-mm&m=126928970510627&w=1
-> 
-> v2: Fixed a bug spotted by Hillf Danton, and removed the extra parameter to
-> alloc_huge_page() - since it already takes the vma, it is not necessary.
-> 
-> Signed-off-by: Andrew Barry <abarry@cray.com>
-> Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Hillf Danton <dhillf@gmail.com>
+Fernando Luis Vázquez Cao <fernando@oss.ntt.co.jp> writes:
+
+> Subject: [PATCH] boot: ignore early NMIs
+>
+> From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+>
+> NMIs very early in the boot process are rarely critical (usually
+> it just means that there was a spurious bit flip somewhere in the
+> hardware, or that this is a kdump kernel and we received an NMI
+> generated in the previous context), so the current behavior of
+> halting the system when one occurs is probably a bit over the top.
+>
+> This patch changes the early IDT so that NMIs are ignored and the
+> kernel can, hopefully, continue executing other code. Harsher
+> measures (panic, etc) are defered to the final NMI handler, which
+> can actually make an informed decision.
+>
+> This issue presented itself in our environment as seemingly
+> random hangs in kdump.
+>
+> Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
 > ---
->  fs/hugetlbfs/inode.c    |   54 +++++++-----------
->  include/linux/hugetlb.h |   14 ++++--
->  mm/hugetlb.c            |  135 +++++++++++++++++++++++++++++++++++++---------
->  3 files changed, 139 insertions(+), 64 deletions(-)
-> 
-> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> index bb0e366..74c6ba2 100644
-> --- a/fs/hugetlbfs/inode.c
-> +++ b/fs/hugetlbfs/inode.c
-> @@ -626,9 +626,15 @@ static int hugetlbfs_statfs(struct dentry *dentry, struct kstatfs *buf)
->  		spin_lock(&sbinfo->stat_lock);
->  		/* If no limits set, just report 0 for max/free/used
->  		 * blocks, like simple_statfs() */
-> -		if (sbinfo->max_blocks >= 0) {
-> -			buf->f_blocks = sbinfo->max_blocks;
-> -			buf->f_bavail = buf->f_bfree = sbinfo->free_blocks;
-> +		if (sbinfo->spool) {
-> +			long free_pages;
-> +
-> +			spin_lock(&sbinfo->spool->lock);
-> +			buf->f_blocks = sbinfo->spool->max_hpages;
-> +			free_pages = sbinfo->spool->max_hpages
-> +				- sbinfo->spool->used_hpages;
-> +			buf->f_bavail = buf->f_bfree = free_pages;
-> +			spin_unlock(&sbinfo->spool->lock);
->  			buf->f_files = sbinfo->max_inodes;
->  			buf->f_ffree = sbinfo->free_inodes;
->  		}
-> @@ -644,6 +650,10 @@ static void hugetlbfs_put_super(struct super_block *sb)
-> 
->  	if (sbi) {
->  		sb->s_fs_info = NULL;
-> +
-> +		if (sbi->spool)
-> +			hugepage_put_subpool(sbi->spool);
-> +
->  		kfree(sbi);
->  	}
->  }
-> @@ -874,10 +884,14 @@ hugetlbfs_fill_super(struct super_block *sb, void *data, int silent)
->  	sb->s_fs_info = sbinfo;
->  	sbinfo->hstate = config.hstate;
->  	spin_lock_init(&sbinfo->stat_lock);
-> -	sbinfo->max_blocks = config.nr_blocks;
-> -	sbinfo->free_blocks = config.nr_blocks;
->  	sbinfo->max_inodes = config.nr_inodes;
->  	sbinfo->free_inodes = config.nr_inodes;
-> +	sbinfo->spool = NULL;
-> +	if (config.nr_blocks != -1) {
-> +		sbinfo->spool = hugepage_new_subpool(config.nr_blocks);
-> +		if (!sbinfo->spool)
-> +			goto out_free;
-> +	}
->  	sb->s_maxbytes = MAX_LFS_FILESIZE;
->  	sb->s_blocksize = huge_page_size(config.hstate);
->  	sb->s_blocksize_bits = huge_page_shift(config.hstate);
-> @@ -896,38 +910,12 @@ hugetlbfs_fill_super(struct super_block *sb, void *data, int silent)
->  	sb->s_root = root;
->  	return 0;
->  out_free:
-> +	if (sbinfo->spool)
-> +		kfree(sbinfo->spool);
-
-kfree() should handle NULL 
-
-
->  	kfree(sbinfo);
->  	return -ENOMEM;
->  }
-> 
-> -int hugetlb_get_quota(struct address_space *mapping, long delta)
-> -{
-> -	int ret = 0;
-> -	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
-> -
-> -	if (sbinfo->free_blocks > -1) {
-> -		spin_lock(&sbinfo->stat_lock);
-> -		if (sbinfo->free_blocks - delta >= 0)
-> -			sbinfo->free_blocks -= delta;
-> -		else
-> -			ret = -ENOMEM;
-> -		spin_unlock(&sbinfo->stat_lock);
+>
+> diff -urNp linux-3.3-rc6-orig/arch/x86/kernel/head64.c linux-3.3-rc6/arch/x86/kernel/head64.c
+> --- linux-3.3-rc6-orig/arch/x86/kernel/head64.c	2012-03-07 15:49:01.834241787 +0900
+> +++ linux-3.3-rc6/arch/x86/kernel/head64.c	2012-03-07 18:39:03.173732875 +0900
+> @@ -71,7 +71,7 @@ void __init x86_64_start_kernel(char * r
+>  				(__START_KERNEL & PGDIR_MASK)));
+>  	BUILD_BUG_ON(__fix_to_virt(__end_of_fixed_addresses) <= MODULES_END);
+>  
+> -	/* clear bss before set_intr_gate with early_idt_handler */
+> +	/* clear bss before set_intr_gate with early_idt_handlers */
+>  	clear_bss();
+>  
+>  	/* Make NULL pointers segfault */
+> @@ -79,13 +79,8 @@ void __init x86_64_start_kernel(char * r
+>  
+>  	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+>  
+> -	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++) {
+> -#ifdef CONFIG_EARLY_PRINTK
+> +	for (i = 0; i < NUM_EXCEPTION_VECTORS; i++)
+>  		set_intr_gate(i, &early_idt_handlers[i]);
+> -#else
+> -		set_intr_gate(i, early_idt_handler);
+> -#endif
 > -	}
-> -
-> -	return ret;
-> -}
-> -
-> -void hugetlb_put_quota(struct address_space *mapping, long delta)
-> -{
-> -	struct hugetlbfs_sb_info *sbinfo = HUGETLBFS_SB(mapping->host->i_sb);
-> -
-> -	if (sbinfo->free_blocks > -1) {
-> -		spin_lock(&sbinfo->stat_lock);
-> -		sbinfo->free_blocks += delta;
-> -		spin_unlock(&sbinfo->stat_lock);
-> -	}
-> -}
-> -
->  static struct dentry *hugetlbfs_mount(struct file_system_type *fs_type,
->  	int flags, const char *dev_name, void *data)
->  {
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 7adc492..cf01817 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -14,6 +14,15 @@ struct user_struct;
->  #include <linux/shm.h>
->  #include <asm/tlbflush.h>
-> 
-> +struct hugepage_subpool {
-> +	spinlock_t lock;
-> +	long count;
-> +	long max_hpages, used_hpages;
-> +};
+>  	load_idt((const struct desc_ptr *)&idt_descr);
+>  
+>  	if (console_loglevel == 10)
+> diff -urNp linux-3.3-rc6-orig/arch/x86/kernel/head_64.S linux-3.3-rc6/arch/x86/kernel/head_64.S
+> --- linux-3.3-rc6-orig/arch/x86/kernel/head_64.S	2012-03-07 15:49:01.838241839 +0900
+> +++ linux-3.3-rc6/arch/x86/kernel/head_64.S	2012-03-07 18:41:21.811516876 +0900
+> @@ -270,18 +270,29 @@ bad_address:
+>  	jmp bad_address
+>  
+>  	.section ".init.text","ax"
+> -#ifdef CONFIG_EARLY_PRINTK
+>  	.globl early_idt_handlers
+>  early_idt_handlers:
+> -	i = 0
+> +	vector = 0
+>  	.rept NUM_EXCEPTION_VECTORS
+> -	movl $i, %esi
+> -	jmp early_idt_handler
+> -	i = i + 1
+> +	/*
+> +	 * NMIs (vector 2) this early in the boot process are rarely critical
+> +	 * (usually it just means that there was a spurious bit flip somewhere
+> +	 * in the hardware, or that this is a kdump kernel and we received an
+> +	 * NMI generated in the previous context), so we ignore them here and
+> +	 * try to continue (see early_nmi_handler implementation below).
+> +	 * Harsher measures (panic, etc) are defered to the final NMI handler,
+> +	 * which can actually make an informed decision.
+> +	 */
+> +	.if vector == 2
+> +	jmp early_nmi_handler
+
+Is just a jump and not a move followed by a jump still 10 bytes?
+I hate to say it but I think this fails miserably for any exception
+after a nmi.
+
+I expect the simplest solution is to modify early_idt_handler to test
+for vector == 2.
+
+Doing something less brittle than:
+> extern const char early_idt_handlers[NUM_EXCEPTION_VECTORS][10];
+in segment.h might be a good idea as well.
+
+Eric
+
+> +	.else
+> +	movl $vector, %esi
+> +	jmp early_exception_handler
+> +	.endif
+> +	vector = vector + 1
+>  	.endr
+> -#endif
+>  
+> -ENTRY(early_idt_handler)
+> +early_exception_handler:
+>  #ifdef CONFIG_EARLY_PRINTK
+>  	cmpl $2,early_recursion_flag(%rip)
+>  	jz  1f
+> @@ -315,6 +326,9 @@ ENTRY(early_idt_handler)
+>  1:	hlt
+>  	jmp 1b
+>  
+> +early_nmi_handler:
+> +	iretq
 > +
-> +struct hugepage_subpool *hugepage_new_subpool(long nr_blocks);
-> +void hugepage_put_subpool(struct hugepage_subpool *spool);
-> +
->  int PageHuge(struct page *page);
-> 
->  void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
-> @@ -129,12 +138,11 @@ enum {
-> 
->  #ifdef CONFIG_HUGETLBFS
->  struct hugetlbfs_sb_info {
-> -	long	max_blocks;   /* blocks allowed */
-> -	long	free_blocks;  /* blocks free */
->  	long	max_inodes;   /* inodes allowed */
->  	long	free_inodes;  /* inodes free */
->  	spinlock_t	stat_lock;
->  	struct hstate *hstate;
-> +	struct hugepage_subpool *spool;
->  };
-> 
->  static inline struct hugetlbfs_sb_info *HUGETLBFS_SB(struct super_block *sb)
-> @@ -146,8 +154,6 @@ extern const struct file_operations hugetlbfs_file_operations;
->  extern const struct vm_operations_struct hugetlb_vm_ops;
->  struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
->  				struct user_struct **user, int creat_flags);
-> -int hugetlb_get_quota(struct address_space *mapping, long delta);
-> -void hugetlb_put_quota(struct address_space *mapping, long delta);
-> 
->  static inline int is_file_hugepages(struct file *file)
->  {
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 5f34bd8..36b38b3a 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -53,6 +53,84 @@ static unsigned long __initdata default_hstate_size;
->   */
->  static DEFINE_SPINLOCK(hugetlb_lock);
-> 
-> +static inline void unlock_or_release_subpool(struct hugepage_subpool *spool)
-> +{
-> +	bool free = (spool->count == 0) && (spool->used_hpages == 0);
-> +
-
-I have not see that style in other part of kernel. May be with proper
-
-if (spool->count == 0 && spool->used_hpages == 0)
-   free = 1
-
-> +	spin_unlock(&spool->lock);
-> +
-
-
-Having the spin_lock held across functions is also strange. Since there
-are only two callers, may be this can be inlined in the callers ?
-
-
-> +	/* If no pages are used, and no other handles to the subpool
-> +	 * remain, free the subpool the subpool remain */
-> +	if (free)
-> +		kfree(spool);
-> +}
-> +
-> +struct hugepage_subpool *hugepage_new_subpool(long nr_blocks)
-> +{
-> +	struct hugepage_subpool *spool;
-> +
-> +	spool = kmalloc(sizeof(*spool), GFP_KERNEL);
-> +	if (!spool)
-> +		return NULL;
-> +
-> +	spin_lock_init(&spool->lock);
-> +	spool->count = 1;
-> +	spool->max_hpages = nr_blocks;
-> +	spool->used_hpages = 0;
-> +
-> +	return spool;
-> +}
-> +
-> +void hugepage_put_subpool(struct hugepage_subpool *spool)
-> +{
-> +	spin_lock(&spool->lock);
-> +	BUG_ON(!spool->count);
-> +	spool->count--;
-> +	unlock_or_release_subpool(spool);
-> +}
-> +
-> +static int hugepage_subpool_get_pages(struct hugepage_subpool *spool,
-> +				      long delta)
-
-s/long delta/long hpage/ or something like that ?
-
-
-> +{
-> +	int ret = 0;
-> +
-> +	if (!spool)
-> +		return 0;
-> +
-> +	spin_lock(&spool->lock);
-> +	if ((spool->used_hpages + delta) <= spool->max_hpages) {
-> +		spool->used_hpages += delta;
-> +	} else {
-> +		ret = -ENOMEM;
-> +	}
-> +	spin_unlock(&spool->lock);
-> +
-> +	return ret;
-> +}
-> +
-> +static void hugepage_subpool_put_pages(struct hugepage_subpool *spool,
-> +				       long delta)
-> +{
-> +	if (!spool)
-> +		return;
-> +
-> +	spin_lock(&spool->lock);
-> +	spool->used_hpages -= delta;
-> +	/* If hugetlbfs_put_super couldn't free spool due to
-> +	* an outstanding quota reference, free it now. */
-> +	unlock_or_release_subpool(spool);
-> +}
-> +
-> +static inline struct hugepage_subpool *subpool_inode(struct inode
-> *inode)
-
-s/subpool_inode/subpool_from_inode/ ?
-
-> +{
-> +	return HUGETLBFS_SB(inode->i_sb)->spool;
-> +}
-> +
-> +static inline struct hugepage_subpool *subpool_vma(struct
-> vm_area_struct *vma)
-
-s/subpool_vma/subpool_from_vma/ ?
-
-> +{
-> +	return subpool_inode(vma->vm_file->f_dentry->d_inode);
-> +}
-> +
->  /*
->   * Region tracking -- allows tracking of reservations and instantiated pages
->   *                    across the pages in a mapping.
-> @@ -533,9 +611,9 @@ static void free_huge_page(struct page *page)
->  	 */
->  	struct hstate *h = page_hstate(page);
->  	int nid = page_to_nid(page);
-> -	struct address_space *mapping;
-> +	struct hugepage_subpool *spool =
-> +		(struct hugepage_subpool *)page_private(page);
-> 
-> -	mapping = (struct address_space *) page_private(page);
->  	set_page_private(page, 0);
->  	page->mapping = NULL;
->  	BUG_ON(page_count(page));
-> @@ -551,8 +629,7 @@ static void free_huge_page(struct page *page)
->  		enqueue_huge_page(h, page);
->  	}
->  	spin_unlock(&hugetlb_lock);
-> -	if (mapping)
-> -		hugetlb_put_quota(mapping, 1);
-> +	hugepage_subpool_put_pages(spool, 1);
-
-
-We would still need the if () checking there. When we do echo x >
-/proc/sys/vm/nr_hugepages we would call free_huge_page to prepare new
-huge page pool. But we don't have page_private set for them.
-
-
->  }
-> 
->  static void prep_new_huge_page(struct hstate *h, struct page *page, int nid)
-> @@ -966,11 +1043,12 @@ static void return_unused_surplus_pages(struct hstate *h,
->  /*
->   * Determine if the huge page at addr within the vma has an associated
->   * reservation.  Where it does not we will need to logically increase
-> - * reservation and actually increase quota before an allocation can occur.
-> - * Where any new reservation would be required the reservation change is
-> - * prepared, but not committed.  Once the page has been quota'd allocated
-> - * an instantiated the change should be committed via vma_commit_reservation.
-> - * No action is required on failure.
-> + * reservation and actually increase subpool usage before an allocation
-> + * can occur.  Where any new reservation would be required the
-> + * reservation change is prepared, but not committed.  Once the page
-> + * has been allocated from the subpool and instantiated the change should
-> + * be committed via vma_commit_reservation.  No action is required on
-> + * failure.
->   */
->  static long vma_needs_reservation(struct hstate *h,
->  			struct vm_area_struct *vma, unsigned long addr)
-> @@ -1019,24 +1097,24 @@ static void vma_commit_reservation(struct hstate *h,
->  static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  				    unsigned long addr, int avoid_reserve)
->  {
-> +	struct hugepage_subpool *spool = subpool_vma(vma);
->  	struct hstate *h = hstate_vma(vma);
->  	struct page *page;
-> -	struct address_space *mapping = vma->vm_file->f_mapping;
-> -	struct inode *inode = mapping->host;
->  	long chg;
-> 
->  	/*
-> -	 * Processes that did not create the mapping will have no reserves and
-> -	 * will not have accounted against quota. Check that the quota can be
-> -	 * made before satisfying the allocation
-> -	 * MAP_NORESERVE mappings may also need pages and quota allocated
-> -	 * if no reserve mapping overlaps.
-> +	 * Processes that did not create the mapping will have no
-> +	 * reserves and will not have accounted against subpool
-> +	 * limit. Check that the subpool limit can be made before
-> +	 * satisfying the allocation MAP_NORESERVE mappings may also
-> +	 * need pages and subpool limit allocated allocated if no reserve
-> +	 * mapping overlaps.
->  	 */
->  	chg = vma_needs_reservation(h, vma, addr);
->  	if (chg < 0)
->  		return ERR_PTR(-VM_FAULT_OOM);
->  	if (chg)
-> -		if (hugetlb_get_quota(inode->i_mapping, chg))
-> +		if (hugepage_subpool_get_pages(spool, chg))
->  			return ERR_PTR(-VM_FAULT_SIGBUS);
-> 
->  	spin_lock(&hugetlb_lock);
-> @@ -1046,12 +1124,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  	if (!page) {
->  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
->  		if (!page) {
-> -			hugetlb_put_quota(inode->i_mapping, chg);
-> +			hugepage_subpool_put_pages(spool, chg);
->  			return ERR_PTR(-VM_FAULT_SIGBUS);
->  		}
->  	}
-> 
-> -	set_page_private(page, (unsigned long) mapping);
-> +	set_page_private(page, (unsigned long)spool);
-> 
->  	vma_commit_reservation(h, vma, addr);
-> 
-> @@ -2072,6 +2150,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
->  {
->  	struct hstate *h = hstate_vma(vma);
->  	struct resv_map *reservations = vma_resv_map(vma);
-> +	struct hugepage_subpool *spool = subpool_vma(vma);
->  	unsigned long reserve;
->  	unsigned long start;
->  	unsigned long end;
-> @@ -2087,7 +2166,7 @@ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
-> 
->  		if (reserve) {
->  			hugetlb_acct_memory(h, -reserve);
-> -			hugetlb_put_quota(vma->vm_file->f_mapping, reserve);
-> +			hugepage_subpool_put_pages(spool, reserve);
->  		}
->  	}
->  }
-> @@ -2316,7 +2395,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
->  	 */
->  	address = address & huge_page_mask(h);
->  	pgoff = vma_hugecache_offset(h, vma, address);
-> -	mapping = (struct address_space *)page_private(page);
-> +	mapping = vma->vm_file->f_dentry->d_inode->i_mapping;
-> 
->  	/*
->  	 * Take the mapping lock for the duration of the table walk. As
-> @@ -2869,11 +2948,12 @@ int hugetlb_reserve_pages(struct inode *inode,
->  {
->  	long ret, chg;
->  	struct hstate *h = hstate_inode(inode);
-> +	struct hugepage_subpool *spool = subpool_inode(inode);
-> 
->  	/*
->  	 * Only apply hugepage reservation if asked. At fault time, an
->  	 * attempt will be made for VM_NORESERVE to allocate a page
-> -	 * and filesystem quota without using reserves
-> +	 * without using reserves
->  	 */
->  	if (vm_flags & VM_NORESERVE)
->  		return 0;
-> @@ -2900,17 +2980,17 @@ int hugetlb_reserve_pages(struct inode *inode,
->  	if (chg < 0)
->  		return chg;
-> 
-> -	/* There must be enough filesystem quota for the mapping */
-> -	if (hugetlb_get_quota(inode->i_mapping, chg))
-> +	/* There must be enough pages in the subpool for the mapping */
-> +	if (hugepage_subpool_get_pages(spool, chg))
->  		return -ENOSPC;
-> 
->  	/*
->  	 * Check enough hugepages are available for the reservation.
-> -	 * Hand back the quota if there are not
-> +	 * Hand the pages back to the subpool if there are not
->  	 */
->  	ret = hugetlb_acct_memory(h, chg);
->  	if (ret < 0) {
-> -		hugetlb_put_quota(inode->i_mapping, chg);
-> +		hugepage_subpool_put_pages(spool, chg);
->  		return ret;
->  	}
-> 
-> @@ -2934,12 +3014,13 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
->  {
->  	struct hstate *h = hstate_inode(inode);
->  	long chg = region_truncate(&inode->i_mapping->private_list, offset);
-> +	struct hugepage_subpool *spool = subpool_inode(inode);
-> 
->  	spin_lock(&inode->i_lock);
->  	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
->  	spin_unlock(&inode->i_lock);
-> 
-> -	hugetlb_put_quota(inode->i_mapping, (chg - freed));
-> +	hugepage_subpool_put_pages(spool, (chg - freed));
->  	hugetlb_acct_memory(h, -(chg - freed));
->  }
-> 
-
--aneesh
-
+>  #ifdef CONFIG_EARLY_PRINTK
+>  early_recursion_flag:
+>  	.long 0
