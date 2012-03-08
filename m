@@ -1,104 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580Ab2CHUpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:45:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60783 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab2CHUpJ (ORCPT
+	id S1751894Ab2CHUsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:48:45 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54812 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab2CHUsm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:45:09 -0500
-Date: Thu, 8 Mar 2012 12:45:04 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Tejun Heo <tj@kernel.org>, Ying Han <yinghan@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3.3] memcg: free mem_cgroup by RCU to fix oops
-Message-Id: <20120308124504.3639ce78.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LSU.2.00.1203072155140.11048@eggly.anvils>
-References: <alpine.LSU.2.00.1203072155140.11048@eggly.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 15:48:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <FA58CA70-02BE-4CCD-855C-4C5CE28EA1B2@xyratex.com>
+References: <1330263210-25134-1-git-send-email-santoshprasadnayak@gmail.com>
+	<528D7E8A-B2F6-4EDB-A7C0-E0BF494038D0@xyratex.com>
+	<CAOD=uF4+F7MYO0cqd7ogmc=K9jtE5DX3wDoMv1eTxFq48JCX2g@mail.gmail.com>
+	<FA58CA70-02BE-4CCD-855C-4C5CE28EA1B2@xyratex.com>
+Date: Fri, 9 Mar 2012 02:18:41 +0530
+Message-ID: <CAOD=uF5Ngu+0mBUc63aHRNCyL254a19pXpwymHYdemmUTKK7Ng@mail.gmail.com>
+Subject: Re: [PATCH 1/2] [SCSI] pm8001: Fix bogus interrupt state flag issue.
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: Mark Salyzyn <mark_salyzyn@xyratex.com>
+Cc: Jack Wang <jack_wang@usish.com>, lindar_liu <lindar_liu@usish.com>,
+        James Bottomley <JBottomley@parallels.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Mar 2012 22:01:50 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
+I did changes as per Mark's  suggestion.
 
-> After fixing the GPF in mem_cgroup_lru_del_list(), three times one
-> machine running a similar load (moving and removing memcgs while swapping)
-> has oopsed in mem_cgroup_zone_nr_lru_pages(), when retrieving memcg zone
-> numbers for get_scan_count() for shrink_mem_cgroup_zone(): this is where a
-> struct mem_cgroup is first accessed after being chosen by mem_cgroup_iter().
-> 
-> Just what protects a struct mem_cgroup from being freed, in between
-> mem_cgroup_iter()'s css_get_next() and its css_tryget()?  css_tryget()
-> fails once css->refcnt is zero with CSS_REMOVED set in flags, yes: but
-> what if that memory is freed and reused for something else, which sets
-> "refcnt" non-zero?  Hmm, and scope for an indefinite freeze if refcnt
-> is left at zero but flags are cleared.
-> 
-> It's tempting to move the css_tryget() into css_get_next(), to make it
-> really "get" the css, but I don't think that actually solves anything:
-> the same difficulty in moving from css_id found to stable css remains.
-> 
-> But we already have rcu_read_lock() around the two, so it's easily
-> fixed if __mem_cgroup_free() just uses kfree_rcu() to free mem_cgroup.
-> 
-> However, a big struct mem_cgroup is allocated with vzalloc() instead
-> of kzalloc(), and we're not allowed to vfree() at interrupt time:
-> there doesn't appear to be a general vfree_rcu() to help with this,
-> so roll our own using schedule_work().  The compiler decently removes
-> vfree_work() and vfree_rcu() when the config doesn't need them.
-> 
-> ...
+The following patch is only for review not a formal one.
+After getting reviewed, I will send a formal patch
+
+
+diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
+index 3619f6e..9d82ee5 100644
+--- a/drivers/scsi/pm8001/pm8001_hwi.c
++++ b/drivers/scsi/pm8001/pm8001_hwi.c
+@@ -2093,6 +2093,7 @@ mpi_sata_completion(struct pm8001_hba_info
+*pm8001_ha, void *piomb)
+        struct ata_task_resp *resp ;
+        u32 *sata_resp;
+        struct pm8001_device *pm8001_dev;
++       unsigned long flags;
+
+        psataPayload = (struct sata_completion_resp *)(piomb + 4);
+        status = le32_to_cpu(psataPayload->status);
+@@ -2382,26 +2383,26 @@ mpi_sata_completion(struct pm8001_hba_info
+*pm8001_ha, void *piomb)
+                ts->stat = SAS_DEV_NO_RESPONSE;
+                break;
+        }
+-       spin_lock_irq(&t->task_state_lock);
++       spin_lock_irqsave(&t->task_state_lock, flags);
+        t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
+        t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
+        t->task_state_flags |= SAS_TASK_STATE_DONE;
+        if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
+-               spin_unlock_irq(&t->task_state_lock);
++               spin_unlock_irqrestore(&t->task_state_lock, flags);
+                PM8001_FAIL_DBG(pm8001_ha,
+                        pm8001_printk("task 0x%p done with io_status 0x%x"
+                        " resp 0x%x stat 0x%x but aborted by upper layer!\n",
+                        t, status, ts->resp, ts->stat));
+                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+        } else if (t->uldd_task) {
+-               spin_unlock_irq(&t->task_state_lock);
++               spin_unlock_irqrestore(&t->task_state_lock, flags);
+                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+                mb();/* ditto */
+                spin_unlock_irq(&pm8001_ha->lock);
+                t->task_done(t);
+                spin_lock_irq(&pm8001_ha->lock);
+        } else if (!t->uldd_task) {
+-               spin_unlock_irq(&t->task_state_lock);
++               spin_unlock_irqrestore(&t->task_state_lock, flags);
+                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+                mb();/*ditto*/
+                spin_unlock_irq(&pm8001_ha->lock);
+@@ -2423,6 +2424,7 @@ static void mpi_sata_event(struct
+pm8001_hba_info *pm8001_ha , void *piomb)
+        u32 tag = le32_to_cpu(psataPayload->tag);
+        u32 port_id = le32_to_cpu(psataPayload->port_id);
+        u32 dev_id = le32_to_cpu(psataPayload->device_id);
++       unsigned long flags;
+
+        ccb = &pm8001_ha->ccb_info[tag];
+        t = ccb->task;
+@@ -2593,26 +2595,26 @@ static void mpi_sata_event(struct
+pm8001_hba_info *pm8001_ha , void *piomb)
+                ts->stat = SAS_OPEN_TO;
+                break;
+        }
+-       spin_lock_irq(&t->task_state_lock);
++       spin_lock_irqsave(&t->task_state_lock, flags);
+        t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
+        t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
+        t->task_state_flags |= SAS_TASK_STATE_DONE;
+        if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
+-               spin_unlock_irq(&t->task_state_lock);
++               spin_unlock_irqrestore(&t->task_state_lock, flags);
+                PM8001_FAIL_DBG(pm8001_ha,
+                        pm8001_printk("task 0x%p done with io_status 0x%x"
+                        " resp 0x%x stat 0x%x but aborted by upper layer!\n",
+                        t, event, ts->resp, ts->stat));
+                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+        } else if (t->uldd_task) {
+-               spin_unlock_irq(&t->task_state_lock);
++               spin_unlock_irqrestore(&t->task_state_lock, flags);
+                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+                mb();/* ditto */
+                spin_unlock_irq(&pm8001_ha->lock);
+                t->task_done(t);
+                spin_lock_irq(&pm8001_ha->lock);
+        } else if (!t->uldd_task) {
+-               spin_unlock_irq(&t->task_state_lock);
++               spin_unlock_irqrestore(&t->task_state_lock, flags);
+                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+                mb();/*ditto*/
+                spin_unlock_irq(&pm8001_ha->lock);
+
+
+
+Regards
+Santosh
+
+On Thu, Mar 8, 2012 at 10:41 PM, Mark Salyzyn <mark_salyzyn@xyratex.com> wrote:
+> Comments embedded
 >
-> @@ -4780,6 +4800,27 @@ out_free:
->  }
->  
->  /*
-> + * Helpers for freeing a vzalloc()ed mem_cgroup by RCU,
-> + * but in process context.  The work_freeing structure is overlaid
-> + * on the rcu_freeing structure, which itself is overlaid on memsw.
-> + */
-> +static void vfree_work(struct work_struct *work)
-> +{
-> +	struct mem_cgroup *memcg;
-> +
-> +	memcg = container_of(work, struct mem_cgroup, work_freeing);
-> +	vfree(memcg);
-> +}
-> +static void vfree_rcu(struct rcu_head *rcu_head)
-> +{
-> +	struct mem_cgroup *memcg;
-> +
-> +	memcg = container_of(rcu_head, struct mem_cgroup, rcu_freeing);
-> +	INIT_WORK(&memcg->work_freeing, vfree_work);
-> +	schedule_work(&memcg->work_freeing);
-> +}
-> +
-> +/*
->   * At destroying mem_cgroup, references from swap_cgroup can remain.
->   * (scanning all at force_empty is too costly...)
->   *
-> @@ -4802,9 +4843,9 @@ static void __mem_cgroup_free(struct mem
->  
->  	free_percpu(memcg->stat);
->  	if (sizeof(struct mem_cgroup) < PAGE_SIZE)
-> -		kfree(memcg);
-> +		kfree_rcu(memcg, rcu_freeing);
->  	else
-> -		vfree(memcg);
-> +		call_rcu(&memcg->rcu_freeing, vfree_rcu);
->  }
->  
-
-It's fairly possible that a vfree_rcu() will later turn up in
-vmalloc.c.  I guess that for now, it's OK to add a private version and
-we can cut-n-paste it over when the need arises..
-
+> On Mar 8, 2012, at 11:50 AM, santosh prasad nayak wrote:
+>
+>> Hi Mark,
+>>
+>> Thanks for your review.
+>>
+>> Few queries:
+>>
+>> 1. Similar changes have been made in mpi_sata_completion() surrounding
+>> spin_*lock_irq*(&t->task->state_lock)
+>>    Should those changes also need to revert back ?
+>
+> I was talking generically, yes, in both set of functions, everything associated with the task_state_lock. The change as described needs to be applied to both sets of functions.
+>
+>>> The change you did was not inert, and result in the IRQ being disabled upon exit should a
+>>> SAS_TASK_STATE_ABORTED task state condition occur then following block will enable IRQ.
+>>
+>> 2.  I could not get this point.
+>>     If "SAS_TASK_STATE_ABORTED" task state condition occurs then following
+>>     block will enable IRQ.
+>>
+>>          if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
+>>                spin_unlock_irq(&t->task_state_lock);
+>>           //   HERE IRQ will be enabled.
+>>                  .......
+>>                pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+>>          }
+>
+> Exactly, the IRQ is enabled, then the routine exits. All other paths leave the IRQ disabled (with a spin_lock_irq()).
+>
+>> 3.  How bad  will be "spin_lock_irq / spin_unlock_irq" in this case compared to
+>>     "spin_lock_irqsave / spin_unlock_irqrestore "
+>
+> Efficiency is not so much the requirement, but correctness. Yes, a spin_unlock(&t->task_state_lock) will do, but the 'world' likes to see the balance of flag save/restore, one should NOT make the assumption the interrupt is enabled or disabled upon entry, and should preserve such upon exit.
+>
+> Given this statement, perhaps for the case of the hacks surrounding the completion handler calls and host locks, one would do a save of the irq, unlock with irq enabled, lock, and then restore it back to the value upon entry. This is balanced. Your changes make the (correct) assumption that the irq is disabled upon entry. But pedantically incorrect, I'd take the extra steps, but I do not view that as a critical deficiency in your patch.
+>
+>> Regards
+>> Santosh
+>>
+>>>
+>>> I propose (annotated below) you leave the flags automatic variable, but uninitialized. The changes surrounding spin_*lock_irq*(&pm8001_ha->lock, flags) are OK, but revert back the changes surrounding the spin_*lock_irq*(&t->task->state_lock,flags) so that lock would be properly nested.
+>>>
+>>> To be pedantic, and to be more correct, this code should have spawned a work queue task to perform the t->task_done(t) operation in a separate thread rather than inline and precariously unlocked; but that would be beyond the scope of these changes and should be left for future work to decide if it is even necessary. Not sure how such a change would affect performance (using the work queue) ... so I am 'afraid' of pushing such a change in any case given the relatively reliable operation of this driver (and the dynamic nature of the changes Dan is making to the SATA side of things for instance ;-} ).
+>>>
+>>> I am sorry for taking so long to get to the task of reviewing this (and the previous) code. I look forward to your comments.
+>>>
+>>> Sincerely -- Mark Salyzyn
+>>>
+>>> On Feb 26, 2012, at 8:33 AM, santosh nayak wrote:
+>>>
+>>>> @@ -2207,7 +2206,6 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
+>>>> static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
+>>>> {
+>>>>       struct sas_task *t;
+>>>> -     unsigned long flags = 0;
+>>> MGS>    unsigned long flags;
+>>>>       struct task_status_struct *ts;
+>>>>       struct pm8001_ccb_info *ccb;
+>>>>       struct pm8001_device *pm8001_dev;
+>>>> @@ -2287,9 +2285,9 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
+>>>>                       ts->stat = SAS_QUEUE_FULL;
+>>>>                       pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+>>>>                       mb();/*ditto*/
+>>>> -                     spin_unlock_irqrestore(&pm8001_ha->lock, flags);
+>>>> +                     spin_unlock_irq(&pm8001_ha->lock);
+>>>>                       t->task_done(t);
+>>>> -                     spin_lock_irqsave(&pm8001_ha->lock, flags);
+>>>> +                     spin_lock_irq(&pm8001_ha->lock);
+>>>>                       return;
+>>>>               }
+>>>>               break;
+>>>> @@ -2387,31 +2385,31 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
+>>>>               ts->stat = SAS_OPEN_TO;
+>>>>               break;
+>>>>       }
+>>>> -     spin_lock_irqsave(&t->task_state_lock, flags);
+>>>> +     spin_lock_irq(&t->task_state_lock);
+>>> MGS>    spin_lock_irqsave(&t->task_state_lock, flags);
+>>>>       t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
+>>>>       t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
+>>>>       t->task_state_flags |= SAS_TASK_STATE_DONE;
+>>>>       if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
+>>>> -             spin_unlock_irqrestore(&t->task_state_lock, flags);
+>>>> +             spin_unlock_irq(&t->task_state_lock);
+>>> MGS>            spin_unlock_irqrestore(&t->task_state_lock, flags);
+>>>>               PM8001_FAIL_DBG(pm8001_ha,
+>>>>                       pm8001_printk("task 0x%p done with io_status 0x%x"
+>>>>                       " resp 0x%x stat 0x%x but aborted by upper layer!\n",
+>>>>                       t, event, ts->resp, ts->stat));
+>>>>               pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+>>>>       } else if (t->uldd_task) {
+>>>> -             spin_unlock_irqrestore(&t->task_state_lock, flags);
+>>>> +             spin_unlock_irq(&t->task_state_lock);
+>>>>               pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+>>>>               mb();/* ditto */
+>>>> -             spin_unlock_irqrestore(&pm8001_ha->lock, flags);
+>>>> +             spin_unlock_irq(&pm8001_ha->lock);
+>>>>               t->task_done(t);
+>>>> -             spin_lock_irqsave(&pm8001_ha->lock, flags);
+>>>> +             spin_lock_irq(&pm8001_ha->lock);
+>>>>       } else if (!t->uldd_task) {
+>>>> -             spin_unlock_irqrestore(&t->task_state_lock, flags);
+>>>> +             spin_unlock_irq(&t->task_state_lock);
+>>>>               pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+>>>>               mb();/*ditto*/
+>>>> -             spin_unlock_irqrestore(&pm8001_ha->lock, flags);
+>>>> +             spin_unlock_irq(&pm8001_ha->lock);
+>>>>               t->task_done(t);
+>>>> -             spin_lock_irqsave(&pm8001_ha->lock, flags);
+>>>> +             spin_lock_irq(&pm8001_ha->lock);
+>>>>       }
+>>>> }
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
