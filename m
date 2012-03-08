@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab2CHSAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:00:52 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:53868 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752849Ab2CHSAu (ORCPT
+	id S1754437Ab2CHSEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:04:08 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51927 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752849Ab2CHSEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:00:50 -0500
-X-Sasl-enc: Mis8pAenBvh4fY9sKu8fEWlcddvODNU9p5fJNWW1Oe7a 1331229649
-Date: Thu, 8 Mar 2012 10:00:48 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the tip tree
-Message-ID: <20120308180048.GC26516@kroah.com>
-References: <20120308152110.12c805f59c45251d79bcb24b@canb.auug.org.au>
+	Thu, 8 Mar 2012 13:04:04 -0500
+Subject: [PATCH v5 0/7] mm: some cleanup/rework before lru_lock splitting
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Thu, 08 Mar 2012 22:03:43 +0400
+Message-ID: <20120308175752.27621.54781.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120308152110.12c805f59c45251d79bcb24b@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 03:21:10PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the tip tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/staging/sep/sep_driver.c:55:32: fatal error: linux/rar_register.h: No such file or directory
-> 
-> Caused by commit 33e9970add94 ("x86/mid: Kill off Moorestown").
-> 
-> Following previous instructions, I have disabled the staging tree driver
-> using this patch (pending a fix in the tip tree):
+v5:
+* rebase to next-20120308
+* reworked cleanup for __isolate_lru_page()
+* bloat-o-meter results for each patch
 
-Looks good to me.  Alan, care to send me an update that fixes this
-driver for real?
+---
 
-thanks,
+Hugh Dickins (2):
+      mm/memcg: scanning_global_lru means mem_cgroup_disabled
+      mm/memcg: move reclaim_stat into lruvec
 
-greg k-h
+Konstantin Khlebnikov (5):
+      mm: push lru index into shrink_[in]active_list()
+      mm: rework __isolate_lru_page() page lru filter
+      mm: rework reclaim_stat counters
+      mm/memcg: rework inactive_ratio calculation
+      mm/memcg: use vm_swappiness from target memory cgroup
+
+
+ include/linux/memcontrol.h |   25 -----
+ include/linux/mm_inline.h  |    2 
+ include/linux/mmzone.h     |   51 ++++-----
+ include/linux/swap.h       |    2 
+ mm/compaction.c            |    4 -
+ mm/memcontrol.c            |   86 ++++------------
+ mm/page_alloc.c            |   50 ---------
+ mm/swap.c                  |   43 +++-----
+ mm/vmscan.c                |  241 +++++++++++++++++++++-----------------------
+ mm/vmstat.c                |    6 -
+ 10 files changed, 178 insertions(+), 332 deletions(-)
+
+-- 
+Signature
