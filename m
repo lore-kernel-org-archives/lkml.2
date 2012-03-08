@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab2CHSLe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:11:34 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59997 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573Ab2CHSLc (ORCPT
+	id S1756135Ab2CHSMO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:12:14 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:36398 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab2CHSMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:11:32 -0500
-Date: Thu, 8 Mar 2012 10:11:25 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, axboe@kernel.dk,
-        hughd@google.com, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dpshah@google.com, ctalbott@google.com, rni@google.com
-Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
- and remove stats_lock
-Message-ID: <20120308181125.GB25508@google.com>
-References: <20120229173639.GB5930@redhat.com>
- <20120305221321.GF1263@google.com>
- <20120306210954.GF32148@redhat.com>
- <20120306132034.ecaf8b20.akpm@linux-foundation.org>
- <20120306213437.GG32148@redhat.com>
- <20120306135531.828ca78e.akpm@linux-foundation.org>
- <20120307145556.GA11262@redhat.com>
- <20120307150549.955d6f9c.akpm@linux-foundation.org>
- <20120308175708.GB22922@redhat.com>
- <20120308180833.GA25508@google.com>
+	Thu, 8 Mar 2012 13:12:10 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6643"; a="170721488"
+Message-ID: <4F58F677.8030102@codeaurora.org>
+Date: Thu, 08 Mar 2012 10:12:07 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120308180833.GA25508@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        Android Kernel Team <kernel-team@android.com>
+Subject: Re: [PATCH] staging: ram_console: Fix section mismatches
+References: <1331170478-30538-1-git-send-email-john.stultz@linaro.org> <1331197684-9163-1-git-send-email-sboyd@codeaurora.org> <20120308175645.GA22682@kroah.com>
+In-Reply-To: <20120308175645.GA22682@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 10:08:33AM -0800, Tejun Heo wrote:
-> It's probably from something forgetting to put cgroup and pre_destroy
-> waiting for it.  Such bugs would have been masked before but now show
-> up as stalls during rmdir.  I'm not too happy with how cgroup is
-> handling cgroup file additions and removals and hoping to implement
-> proper 'sever' semantics similar to that of sysfs.  In the longer
-> term, such behavior should go away but for now we'll just have to hunt
-> down the actual bug to avoid stalls (which we have to do anyway but
-> it's more visible now).
+On 03/08/12 09:56, Greg KH wrote:
+> On Thu, Mar 08, 2012 at 01:08:04AM -0800, Stephen Boyd wrote:
+>> WARNING: vmlinux.o(.text+0x25d5fc): Section mismatch in reference
+>> from the function ram_console_driver_probe() to the function
+>> .init.text:ram_console_init()
+>> The function ram_console_driver_probe() references
+>> the function __init ram_console_init().
+>> This is often because ram_console_driver_probe lacks a __init
+>> annotation or the annotation of ram_console_init is wrong.
+>>
+>> Mark ram_console_driver_probe() as __devinit because it's a probe
+>> function and propagate the __devinit markings to the __init
+>> functions the probe calls.
+> What .config configuration causes this to happen?  I don't see this here
+> in my builds, what am I doing wrong?
+>
 
-Hmm... I'll probably need it for dynamic file additions and removals
-for dynamic policy updates && the blkcg changes are scheduled for
-3.5-rc1 window (not 3.4-rc1), so we should have enough time to resolve
-this.
+#
+# Android
+#
+CONFIG_ANDROID=y
+# CONFIG_ANDROID_BINDER_IPC is not set
+# CONFIG_ASHMEM is not set
+# CONFIG_ANDROID_LOGGER is not set
+CONFIG_ANDROID_RAM_CONSOLE=y
+# CONFIG_ANDROID_RAM_CONSOLE_ERROR_CORRECTION is not set
+# CONFIG_ANDROID_TIMED_OUTPUT is not set
+# CONFIG_ANDROID_LOW_MEMORY_KILLER is not set
+# CONFIG_ANDROID_SWITCH is not set
+# CONFIG_PHONE is not set
 
-Thanks.
+
+Perhaps you're missing this patch if you're on an ARM compiler?
+
+6e2e340 (ARM: 7324/1: modpost: Fix section warnings for ARM for many
+compilers, 2012-02-14)
 
 -- 
-tejun
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
