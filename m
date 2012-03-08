@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756843Ab2CHL3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 06:29:10 -0500
-Received: from mga07.intel.com ([143.182.124.22]:24644 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752541Ab2CHL3F (ORCPT
+	id S1756800Ab2CHLbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 06:31:35 -0500
+Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:38517 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502Ab2CHLbd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 06:29:05 -0500
-Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix
- CONFIG_X86_32 oops
-From: Matt Fleming <matt.fleming@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@kernel.org>, mingo@redhat.com, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, keithp@keithp.com, rui.zhang@intel.com,
-        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-In-Reply-To: <CAE9FiQUoRMA_PYnOEt0ZUYXLq=hNZtDuLifT=+R72HtrwfF6AA@mail.gmail.com>
-References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
-	 <tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
-	 <CAE9FiQWFpsZotawqPD4738jTayB=KOGo0W9+AT2go3GYk1v_sQ@mail.gmail.com>
-	 <4F45B35D.1010702@zytor.com>
-	 <CAE9FiQUbyYYN5orG_RyVm=P-8wNh=YsET1VzGojpFTfJPueHqA@mail.gmail.com>
-	 <4F471651.3080609@zytor.com> <4F4C3BA2.1070708@kernel.org>
-	 <1331116250.3539.35.camel@mfleming-mobl1.ger.corp.intel.com>
-	 <CAE9FiQUoRMA_PYnOEt0ZUYXLq=hNZtDuLifT=+R72HtrwfF6AA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Thu, 08 Mar 2012 11:28:47 +0000
-Message-ID: <1331206127.3539.69.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 06:31:33 -0500
+X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Mar 2012 06:31:33 EST
+Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=iso-8859-1
+From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+In-Reply-To: <20120308105737.GA11201@polaris.bitmath.org>
+Date: Thu, 8 Mar 2012 12:21:51 +0100
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr>
+References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>  <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz> <20120308105737.GA11201@polaris.bitmath.org>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-07 at 10:05 -0800, Yinghai Lu wrote:
-> > -
-> > -       max_low_pfn_mapped = init_memory_mapping(0, end_pfn << PAGE_SHIFT);
-> > -       max_pfn_mapped = max_low_pfn_mapped;
-> > +       /* max_low_pfn_mapped is updated here */
-> > +       max_pfn_mapped = init_memory_mapping();
-> >
-> >  #ifdef CONFIG_X86_64
-> >        if (max_pfn > max_low_pfn) {
-> > -               max_pfn_mapped = init_memory_mapping(1UL<<32,
-> > -                                                    max_pfn<<PAGE_SHIFT);
-> >                /* can we preseve max_low_pfn ?*/
-> >                max_low_pfn = max_pfn;
-> >        }
-> 
-> you may need to move those three lines before
-> max_pfn_mapped = init_memory_mapping()
-> 
-> otherwise for x86_64, memory from [4G, TOMH) will not be directly mapped.
 
-I'm afraid I don't understand what you mean. The changes in my patch
-mean that init_memory_mapping() doesn't work the way it previously did.
-It will map all the regions in the e820 table and presumably the top of
-memory is contained within one of those regions.
+Le 8 mars 2012 à 11:57, Henrik Rydberg a écrit :
 
-Could you clarify what you think the problem is? Unfortunately I don't
-have a test machine with large amounts of RAM so it's entirely possible
-I've made a mistake somewhere.
+> On Wed, Mar 07, 2012 at 10:36:41PM +0100, Jiri Kosina wrote:
+>> On Tue, 6 Mar 2012, benjamin.tissoires wrote:
+>> 
+>>> From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+>>> 
+>>> The code is inspired from the one present in the bttv module.
+>>> 
+>>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
+>>> ---
+>>> 
+>>> As I mentioned in the mail 0/5, I'd really like to have your opinion on this
+>>> one. I copied the code from bttv, but it forces us to change hid_device which
+>>> is not very good for ABI changes reasons.
+>> 
+>> Haven't closely inspected the patch yet, I will comment on it later. But 
+>> generally, I wouldn't be worried about changing hid_device per se ... it's 
+>> not really an ABI, it's not exported to userspace.
+>> 
+>> It's internal kernel-ABI, yes. But we are free to change that in any way 
+>> we wish.
+>> 
+>> -- 
+> 
+> Thanks for having another go at this problem. Obviously, it is hard to
+> find a completely satisfactory solution to auto-loading in the current
+> hid framework. This latest attempt somehow comes close to the smallest
+> hackery that makes it possible. If we want to go beyond that, I think
+> we need to restructure more than the internal hid device
+> representation.
+
+Yes. I'm not sure it is what you have in mind, but my personal feeling is that the parsing of report descriptors could be restructured to make things clearer. It was designed with a simple HID-field-to-evdev-field mapping in mind, and multitouch breaks this.
+
+
+> 
+> What if we were to change the definition of a HID device on the
+> modalias level?
+> 
+> In practise, a HID device can be either an usb device, a hid device,
+
+Just to be sure: do you mean "bluetooth device"? or is there such a thing as a hid device per se? I'm asking because I've always been surprised at seeing usbhid/ in hid/, which kind of breaks the potential symmetry between USB and Bluetooth wrt hid.
+
+> a single interface on a usb bus, a special class determined by examining
+> the reports, etc. Yet, the hid modalias contains only bus type, vendor
+> and product id. This is true for the generic usb and bluetooth drivers
+> (and some very special drivers), but not really for the other devices.
+> If we were to extend the modalias description, we could cater for a
+> whole tree of hid devices. For instance, the usb id 1234 could be
+> handled by the generic usb bus driver. The multitouch sub-device
+> 1234:MT could be handled by hid-multitouch. The mouse device
+> 1234:Mouse could be handled by some other driver, etc. All the driver
+> handling could be automated in userland using the same udev mechanism
+> we have today, if only the hid uevents were modified to incorporate
+> the needed extra information.
+
+No comments on this, I need to read up on modaliases before being able to comment at all. I have a vague feeling that we are going to end up debating where it is decided to assign a device to a driver (today it's done in the kernel, you seem to suggest userland), but I know too little about modaliases to be sure.
+
+
+> 
+> Would this be a problematic change in userland, or would it be a
+> feasible, in principle?
+> 
+> Thanks,
+> Henrik
 
