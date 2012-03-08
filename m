@@ -1,119 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab2CHTEv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 14:04:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56668 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752238Ab2CHTEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 14:04:50 -0500
-Date: Thu, 8 Mar 2012 19:57:39 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: Matt Mooney <mfm@muteddisk.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: ping: drivers/staging/usbip/ abuses task_is_dead/exit_state
-Message-ID: <20120308185739.GA18935@redhat.com>
-References: <20110919214531.GA18085@sergelap> <20110920122202.GA26504@redhat.com> <20110920124419.GA10759@hallyn.com> <20110920134108.GA30749@redhat.com> <20110920143920.GA15859@redhat.com> <20110920143942.GB15859@redhat.com> <20110920151410.GA16569@redhat.com> <20110920183810.GA25159@suse.de> <20120306173925.GA17551@redhat.com> <20120306193040.GD21503@distanz.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120306193040.GD21503@distanz.ch>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757289Ab2CHTGV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 14:06:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60323 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342Ab2CHTGU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 14:06:20 -0500
+Date: Thu, 8 Mar 2012 11:06:18 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, axboe@kernel.dk, hughd@google.com,
+        avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org,
+        linux-kernel@vger.kernel.org, dpshah@google.com, ctalbott@google.com,
+        rni@google.com
+Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
+ and remove stats_lock
+Message-Id: <20120308110618.9bed7bf8.akpm@linux-foundation.org>
+In-Reply-To: <20120308175708.GB22922@redhat.com>
+References: <20120227091141.GG3401@dhcp-172-17-108-109.mtv.corp.google.com>
+	<20120227194321.GF27677@redhat.com>
+	<20120229173639.GB5930@redhat.com>
+	<20120305221321.GF1263@google.com>
+	<20120306210954.GF32148@redhat.com>
+	<20120306132034.ecaf8b20.akpm@linux-foundation.org>
+	<20120306213437.GG32148@redhat.com>
+	<20120306135531.828ca78e.akpm@linux-foundation.org>
+	<20120307145556.GA11262@redhat.com>
+	<20120307150549.955d6f9c.akpm@linux-foundation.org>
+	<20120308175708.GB22922@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06, Tobias Klauser wrote:
->
-> On 2012-03-06 at 18:39:25 +0100, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > OK, since nobody cares, probably I should make the patch even if I don't
-> > understand this code at all and can't test the change.
-> >
-> > But, Tobias, may be you can explain what this task_is_dead() check was
-> > supposed to do?
->
-> As mentioned in the commit message, this was needed for me to work
-> around a NULL pointer dereference I got during unbinding
+On Thu, 8 Mar 2012 12:57:08 -0500
+Vivek Goyal <vgoyal@redhat.com> wrote:
 
-Where? OK, I guess you do not remember the trace ;)
+> On Wed, Mar 07, 2012 at 03:05:49PM -0800, Andrew Morton wrote:
+> 
+> [..]
+> > > > btw, speaking of uniprocessor: please do perform a uniprocessor build
+> > > > and see what impact the patch has upon the size(1) output for the .o
+> > > > files.  We should try to minimize the pointless bloat for the UP
+> > > > kernel.
+> > > 
+> > > But this logic is required both for UP and SMP kernels. So bloat on UP
+> > > is not unnecessary?
+> > 
+> > UP doesn't need a per-cpu variable, hence it doesn't need to run
+> > alloc_per_cpu() at all.  For UP all we need to do is to aggregate a
+> > `struct blkio_group_stats' within `struct blkg_policy_data'?
+> > 
+> > This could still be done with suitable abstraction and wrappers. 
+> > Whether that's desirable depends on how fat the API ends up, I guess.
+> > 
+> 
+> Ok, here is the patch which gets rid of allocating per cpu stats in case
+> of UP. Here are the size stats with and without patch.
+> 
+> Without patch (UP kernel)
+> -------------------------
+> # size block/blk-cgroup.o
+>    text    data     bss     dec     hex filename
+>   13377    5504      58   18939    49fb block/blk-cgroup.o
+> 
+> With patch (UP kernel)
+> ----------------------
+> # size block/blk-cgroup.o
+>    text    data     bss     dec     hex filename
+>   12678    5312      49   18039    4677 block/blk-cgroup.o
+> 
+> Do you think it is worth introducing these ifdefs.
 
-> (I only
-> experienced this behaviour on the nios2 platform though, couldn't
-> reproduce it on e.g. x86_64).
+That's a fairly nice improvement and the ifdeffery isn't excessive.
 
-OK,
+I'd be concerned about having two such different code paths though: it
+weakens our performance testing coverage and I expect that most core
+kernel developers only test SMP.
 
-> I wasn't really familiar with the codebase of usbip (and still am not)
-> but came up with the fix by more or less blindly copying what the
-> opposite side is checking for in stub_shutdown_connection(). This fixed
-> the behaviour for me and seemed legitimate as it was done equally there.
+Perhaps a better approach would be to make the percpu stuff separately
+configurable, so that SMP people can test it and so that small SMP can
+avoid it as well.  (Do we know that the percpu feature is a net win on
+a 2-way?).
 
-But this looks "obviously wrong", and afaics just hides the problem.
-Not to mention this check is racy, it is simply unsafe to dereference
-this task_struct if the kthread has already exited.
-
-At first glance we need something like the patch below (and stub_dev.c
-needs the same fix). It assumes that:
-
-	- vhci_shutdown_connection() is the only caller of kthread_stop(),
-	  iow nobody else does kthread_stop(tcp_*x)
-
-	- we can't leak the task_struct, vhci_shutdown_connection() should
-	  be called in any case at some point.
-
-I'll try to grep more, but perhaps you can ack my understanding?
-
-Oleg.
-
---- x/drivers/staging/usbip/vhci_sysfs.c
-+++ x/drivers/staging/usbip/vhci_sysfs.c
-@@ -155,6 +155,16 @@ static int valid_args(__u32 rhport, enum
- 	return 0;
- }
- 
-+#define kthread_get_run(threadfn, data, namefmt, ...)			   \
-+({									   \
-+	struct task_struct *__k						   \
-+		= kthread_create(threadfn, data, namefmt, ## __VA_ARGS__); \
-+	if (!IS_ERR(__k)) {						   \
-+		get_task_struct(__k);
-+		wake_up_process(__k);					   \
-+	}								   \
-+	__k;								   \
-+})
- /*
-  * To start a new USB/IP attachment, a userland program needs to setup a TCP
-  * connection and then write its socket descriptor with remote device
-@@ -222,8 +232,8 @@ static ssize_t store_attach(struct devic
- 	spin_unlock(&the_controller->lock);
- 	/* end the lock */
- 
--	vdev->ud.tcp_rx = kthread_run(vhci_rx_loop, &vdev->ud, "vhci_rx");
--	vdev->ud.tcp_tx = kthread_run(vhci_tx_loop, &vdev->ud, "vhci_tx");
-+	vdev->ud.tcp_rx = kthread_get_run(vhci_rx_loop, &vdev->ud, "vhci_rx");
-+	vdev->ud.tcp_tx = kthread_get_run(vhci_tx_loop, &vdev->ud, "vhci_tx");
- 
- 	rh_port_connect(rhport, speed);
- 
---- x/drivers/staging/usbip/vhci_hcd.c
-+++ x/drivers/staging/usbip/vhci_hcd.c
-@@ -860,10 +860,14 @@ static void vhci_shutdown_connection(str
- 	}
- 
- 	/* kill threads related to this sdev, if v.c. exists */
--	if (vdev->ud.tcp_rx && !task_is_dead(vdev->ud.tcp_rx))
-+	if (vdev->ud.tcp_rx) {
- 		kthread_stop(vdev->ud.tcp_rx);
--	if (vdev->ud.tcp_tx && !task_is_dead(vdev->ud.tcp_tx))
-+		put_task_struct(vdev->ud.tcp_rx);
-+	}
-+	if (vdev->ud.tcp_tx) {
- 		kthread_stop(vdev->ud.tcp_tx);
-+		put_task_struct(vdev->ud.tcp_tx);
-+	}
- 
- 	pr_info("stop threads\n");
- 
+It's quite common for us to degrade UP in favor of SMP, often in the
+area of percpuification.  This is bad.  But blkcg surely isn't the most
+appropriate place to start addressing this :(
 
