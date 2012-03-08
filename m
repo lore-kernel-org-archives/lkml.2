@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab2CHSpv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:45:51 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:56192 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753139Ab2CHSps (ORCPT
+	id S1755915Ab2CHSuD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:50:03 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38614 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab2CHSt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:45:48 -0500
-X-Sasl-enc: 34WaeUUVsOwh+J05faYoUXThy5w6XV0c4yDKXPHfgJFo 1331232346
-Date: Thu, 8 Mar 2012 10:45:45 -0800
-From: Greg KH <greg@kroah.com>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: davem@davemloft.net, netdev@vger.kernel.org,
-        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: Re: [PATCH] net/hyperv: Advertise hv_netvsc instead of netvsc as
- driver name
-Message-ID: <20120308184545.GA1100@kroah.com>
-References: <1331147131-6660-1-git-send-email-haiyangz@microsoft.com>
- <20120307201746.GA20900@aepfle.de>
- <20120307204946.GA4413@kroah.com>
- <20120308061615.GA25237@aepfle.de>
- <20120308155219.GC5907@kroah.com>
- <20120308161221.GA31415@aepfle.de>
- <20120308174220.GB17192@kroah.com>
- <20120308183820.GA25015@aepfle.de>
+	Thu, 8 Mar 2012 13:49:59 -0500
+Date: Thu, 8 Mar 2012 10:49:54 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Chanho Min <chanho0207@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Alan Cox <alan@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        "Kim, Jong-Sung" <neidhard.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
+Message-ID: <20120308184954.GA1275@kroah.com>
+References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120308183820.GA25015@aepfle.de>
+In-Reply-To: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 07:38:20PM +0100, Olaf Hering wrote:
-> On Thu, Mar 08, Greg KH wrote:
+On Mon, Feb 27, 2012 at 06:30:20PM +0900, Chanho Min wrote:
+> This is another workaroud of  'https://lkml.org/lkml/2012/1/17/104'
+> with additional analysis.Bootloader can transfer control to kernel and
+> there are some pending interrupts. In this case, RXFE of the flag
+> register is set by clearing FEN(LCRH) even if rx data remains in the
+> fifo. It seems that the fifo's status is initiailized. Interrupt
+> handler can not get any data from data register because of the below
+> break condtion.
 > 
-> > On Thu, Mar 08, 2012 at 05:12:21PM +0100, Olaf Hering wrote:
-> > > On Thu, Mar 08, Greg KH wrote:
-> > > 
-> > > > > hwinfo uses it to recognize a network interface (storage in case of
-> > > > > hv_storvsc).
-> > > > 
-> > > > That tool should report the real module name, not rely on the name to
-> > > > match based on the structure, if you really care about the real module
-> > > > name.
-> > > 
-> > > Its about the driver symlink, not the module name. 
-> > > 
-> > > I think most, if not all, (relevant) drivers use some sort of
-> > > KBUILD_MODNAME. Why should this driver be any different?
-> > 
-> > It shouldn't, I'm not saying that at all.  I'm only objecting to the
-> > insistance that this be something worthwhile for 3.3-final which should
-> > be out any day now.
-> 
-> Since its an API we could settle on the new string, which is already in
-> distro use.
+> pl011_fifo_to_tty
+>  while (max_count--) {
+>    if (status & UART01x_FR_RXFE)
+> 	break;
 
-I don't really understand, but in the end, it's not up to me, it's up to
-the network maintainer when he wants to merge this to Linus.  If it were
-up to me, I would wait for 3.4.
+This patch never seemed to be agreed on, so I'm not taking it.
 
-good luck,
+Can someone, if this is still needed, and everyone agrees on how to
+solve it, please send me the needed fix?
+
+thanks,
 
 greg k-h
