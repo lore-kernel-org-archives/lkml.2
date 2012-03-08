@@ -1,127 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab2CHEpr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 23:45:47 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52068 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754266Ab2CHEpl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 23:45:41 -0500
+	id S1752577Ab2CHErV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 23:47:21 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:56591 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab2CHErS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Mar 2012 23:47:18 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Fernando Luis =?utf-8?Q?V=C3=A1zquez?= Cao 
+	<fernando@oss.ntt.co.jp>
+Cc: Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, mingo@elte.hu,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de, vgoyal@redhat.com
+References: <CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com>
+	<20120216172735.GX9751@redhat.com>
+	<CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com>
+	<20120216215603.GH9751@redhat.com> <m1y5s2ku36.fsf@fess.ebiederm.org>
+	<m1fwe9bpk2.fsf@fess.ebiederm.org> <20120217195430.GO9751@redhat.com>
+	<m1y5s07rn3.fsf@fess.ebiederm.org> <20120220151419.GU9751@redhat.com>
+	<m1obss39a4.fsf@fess.ebiederm.org> <20120221135934.GF26998@redhat.com>
+	<m1ipip6xe8.fsf@fess.ebiederm.org> <4F573E1C.2060909@oss.ntt.co.jp>
+	<4F573E74.5040504@oss.ntt.co.jp> <4F573EF0.1080501@oss.ntt.co.jp>
+Date: Wed, 07 Mar 2012 20:50:35 -0800
+In-Reply-To: <4F573EF0.1080501@oss.ntt.co.jp> ("Fernando Luis =?utf-8?Q?V?=
+ =?utf-8?Q?=C3=A1zquez?= Cao"'s
+	message of "Wed, 07 Mar 2012 19:56:48 +0900")
+Message-ID: <m1399j1ysk.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVTng2Bi4z9YY9CustC7KkTr-6+qFaaqu8F4dd0WAKGig@mail.gmail.com>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
- <1331018040-30725-17-git-send-email-yinghai@kernel.org> <CAErSpo59kzBL1ApWuWWcymd9UR3m3vB3zkUoJezn66As+-97dQ@mail.gmail.com>
- <CAE9FiQVTng2Bi4z9YY9CustC7KkTr-6+qFaaqu8F4dd0WAKGig@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 7 Mar 2012 21:45:18 -0700
-Message-ID: <CAErSpo72DxcCtMedHUu=t1-bGXp3sqa+hCgP2tNT=z6EfiHTJQ@mail.gmail.com>
-Subject: Re: [PATCH 16/23] PCI: add pci bus removal through /sys/.../pci_bus/.../remove
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-doc@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/n6oOXiVJaKhCp1X5sZCOZPnO+8Zb/9Mg=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: =?ISO-8859-1?Q?;Fernando Luis V=c3=a1zquez Cao <fernando@oss.ntt.co.jp>?=
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH 2/2] boot: add early NMI counter
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Matthew Garrett, linux-acpi for ACPI hotplug]
+Fernando Luis VÃ¡zquez Cao <fernando@oss.ntt.co.jp> writes:
 
-On Wed, Mar 7, 2012 at 5:53 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Mar 7, 2012 at 4:03 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> it supports both pci root bus and pci bus under pci bridge.
->>>
->>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>> Cc: Randy Dunlap <rdunlap@xenotime.net>
->>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->>> Cc: linux-doc@vger.kernel.org
->>> ---
->>>  Documentation/ABI/testing/sysfs-bus-pci |    8 ++++++++
->>>  drivers/pci/pci-sysfs.c                 |   28 ++++++++++++++++++++++++++++
->>>  2 files changed, 36 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
->>> index 95f0f37..22392de 100644
->>> --- a/Documentation/ABI/testing/sysfs-bus-pci
->>> +++ b/Documentation/ABI/testing/sysfs-bus-pci
->>> @@ -92,6 +92,14 @@ Description:
->>>                hot-remove the PCI device and any of its children.
->>>                Depends on CONFIG_HOTPLUG.
->>>
->>> +What:          /sys/bus/pci/devices/.../pci_bus/.../remove
->>> +Date:          March 2012
->>> +Contact:       Linux PCI developers <linux-pci@vger.kernel.org>
->>> +Description:
->>> +               Writing a non-zero value to this attribute will
->>> +               hot-remove the PCI bus and any of its children.
->>
->> Is this the interface we want?  It seems like the ultimate goal is to
->> remove the *host bridge*, i.e., the PNP0A08 device on x86.  If that's
->> the case, the logical thing seems like a
->> /sys/bus/acpi/devices/PNP0A08:00/remove file.
->>
->> All the current "remove" attributes are for *devices*, e.g.,
->> /sys/devices/pci0000:00/0000:00:03.0/remove, not for *buses*.
+> Subject: [PATCH] boot: add early NMI counter
 >
-> could add that later.
-
-Of course, we can always add things later.  What I'm concerned about
-is that once we add an interface like this to sysfs, it's difficult to
-remove.  Therefore, I don't want to add things that are clearly not
-what we really want.
-
-> I am thinking to add some non-intrusive way to make notification work
-> for root-bus hot removal/add.
-
-The Way Things Are Supposed To Work is that ACPI notifies the OS that
-a device (a PNP0A08 host bridge in this case) is being removed.  The
-OS driver does its cleanup and lets go of the device.  There are
-several things in the ACPI part of that path that are not implemented
-yet, so I understand that we might need a sysfs knob to kick things
-off.  But can't we make a knob that just calls the host bridge driver
-.remove() method, i.e., acpi_pci_root_remove()?
-
-> also in some case, cpu buses get scan during booting, could use that
-> to remove those not needed
-> root buses.
-
-I don't see the value in this.  I think you're talking about removing
-the devices we discovered by blindly probing, i.e., the ones the BIOS
-didn't tell us about.  I do think we should stop blindly probing for
-them, but I don't see what we gain by adding a sysfs knob to remove
-them.
-
->> I'm not sure it makes sense to talk about removing a "bus" and leaving
->> the upstream bridge (either a host bridge or a P2P bridge).  I think
->> it'd make more sense to remove the bridge itself, which would of
->> course have the consequence of removing the secondary bus.
+> From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
 >
-> for root bus, that remove pci_host_bridge and pci root bus.
+> We currently ignore early NMIs but it would be nice to be able to
+> know whether they actually occurred.
 >
-> for pci bus under pci bridge, will remove that pci bus, but will still
-> keep  that pci bridge.
-> that should be ok. just like some pci bridge is there, and later can
-> not create child bus for it.
->
-> there is one case: during test busn_alloc, i need to remove all device
-> on one bus, and
-> use setpci to change bridge bus number register. then use rescan
-> bridge to create new bus.
->
-> with this one, I just need to remove that bus, instead of remove
-> children devices one by one.
+> This patch adds an early NMI counter and exports it trough
+> /proc/interrupts with the name of ENM (Early NMI).
 
-I don't think making it convenient for manual testing is an argument
-for this interface.  For sysfs interfaces it is more important to make
-something that fits well into the grand plan of how things Should
-Work.  If you need internal helper functions for convenience, I'm OK
-with that, because it's easier to change those than to change sysfs
-interfaces.
+For a userspace interface I suspect we just want to dump the count
+into the NMI counter.
 
-Bjorn
+It probably makes sense to have a separate variable in early boot like
+you do, but then about the time we setup the normal NMI handler move the
+NMI count over and possibly do something like reboot if that is our
+policy.
+
+I don't see it making sense to educate userspace for an edge case like
+this.
+
+Eric
+
+
+> Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+> ---
+>
+> diff -urNp linux-3.3-rc6-orig/arch/x86/include/asm/processor.h linux-3.3-rc6/arch/x86/include/asm/processor.h
+> --- linux-3.3-rc6-orig/arch/x86/include/asm/processor.h	2012-03-07 15:49:01.826241682 +0900
+> +++ linux-3.3-rc6/arch/x86/include/asm/processor.h	2012-03-07 18:52:27.668054122 +0900
+> @@ -402,6 +402,7 @@ DECLARE_PER_CPU(char *, irq_stack_ptr);
+>  DECLARE_PER_CPU(unsigned int, irq_count);
+>  extern unsigned long kernel_eflags;
+>  extern asmlinkage void ignore_sysret(void);
+> +extern unsigned int early_nmi_count;
+>  #else	/* X86_64 */
+>  #ifdef CONFIG_CC_STACKPROTECTOR
+>  /*
+> diff -urNp linux-3.3-rc6-orig/arch/x86/kernel/head_64.S linux-3.3-rc6/arch/x86/kernel/head_64.S
+> --- linux-3.3-rc6-orig/arch/x86/kernel/head_64.S	2012-03-07 18:51:17.583160114 +0900
+> +++ linux-3.3-rc6/arch/x86/kernel/head_64.S	2012-03-07 18:54:37.205699422 +0900
+> @@ -327,6 +327,7 @@ early_exception_handler:
+>  	jmp 1b
+>  
+>  early_nmi_handler:
+> +	incl early_nmi_count(%rip) # exported as ENM in /proc/interrupts
+>  	iretq
+>  
+>  #ifdef CONFIG_EARLY_PRINTK
+> @@ -340,6 +341,10 @@ early_idt_ripmsg:
+>  #endif /* CONFIG_EARLY_PRINTK */
+>  	.previous
+>  
+> +	.globl early_nmi_count
+> +early_nmi_count:
+> +	.long 0
+> +
+>  #define NEXT_PAGE(name) \
+>  	.balign	PAGE_SIZE; \
+>  ENTRY(name)
+> diff -urNp linux-3.3-rc6-orig/arch/x86/kernel/irq.c linux-3.3-rc6/arch/x86/kernel/irq.c
+> --- linux-3.3-rc6-orig/arch/x86/kernel/irq.c	2012-03-07 15:49:01.838241839 +0900
+> +++ linux-3.3-rc6/arch/x86/kernel/irq.c	2012-03-07 18:55:14.078179448 +0900
+> @@ -125,6 +125,7 @@ int arch_show_interrupts(struct seq_file
+>  #if defined(CONFIG_X86_IO_APIC)
+>  	seq_printf(p, "%*s: %10u\n", prec, "MIS", atomic_read(&irq_mis_count));
+>  #endif
+> +	seq_printf(p, "%*s: %10u\n", prec, "ENM", early_nmi_count);
+>  	return 0;
+>  }
+>  
