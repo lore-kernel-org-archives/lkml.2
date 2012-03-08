@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab2CHGxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 01:53:21 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58949 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab2CHGxS (ORCPT
+	id S1752401Ab2CHG5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 01:57:34 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:58200 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab2CHG5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 01:53:18 -0500
-Date: Thu, 8 Mar 2012 17:53:07 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20120308175307.b295b1013728a5666fe4571a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Thu, 8 Mar 2012 01:57:30 -0500
+Date: Wed, 07 Mar 2012 22:53:17 -0800 (PST)
+Message-Id: <20120307.225317.837723066642024990.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: benh@kernel.crashing.org, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] net: powerpc: remove the legacy iSeries ethernet
+ driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120308153353.ee2ff35c8ebe7ee66fa374e9@canb.auug.org.au>
+References: <20120308152853.b5010336abbb8f90e8a2500c@canb.auug.org.au>
+	<20120308153353.ee2ff35c8ebe7ee66fa374e9@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__8_Mar_2012_17_53_07_+1100_oSzT.1M0ZZWoifDo"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 07 Mar 2012 22:53:18 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__8_Mar_2012_17_53_07_+1100_oSzT.1M0ZZWoifDo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 8 Mar 2012 15:33:53 +1100
 
-Hi Andrew,
+> This driver is specific to the PowerPC legcay iSeries platform which is
+> being removed.
+> 
+> Cc: David Miller <davem@davemloft.net>
+> Cc: <netdev@vger.kernel.org>
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-Today's linux-next merge of the akpm tree got a conflict in
-arch/x86/mm/hugetlbpage.c between commit 097d59106a8e ("vm: avoid using
-find_vma_prev() unnecessarily") from Linus' tree and commit "hugetlb:
-drop prev_vma in hugetlb_get_unmapped_area_topdown()" from the akpm tree.
-
-I think the latter is a superset of the former, so I just dropped the
-changes from the former.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__8_Mar_2012_17_53_07_+1100_oSzT.1M0ZZWoifDo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPWFdTAAoJEECxmPOUX5FEQzEP/3+TkcxhKJQqi6E5TVvJElJ9
-cGTV0I1VmzAJpaES5piZKEMBvZgErEBVis7xCL22xSdXmPuwy3vWM2kPoGBCrfY7
-IcaIzlFORi1vb2tdUczBlJqEfLoLPyrw5pu9YuWZbr3S/kQibCCXmnhoICkRI8f+
-qRQwAyX6AUoXEYYqWviRqq+PvjfkxCFAqn8Ljz9sBFbaHdWH2XVwa/QFRxIpfXcL
-MUuLsP9sfH+JGIHk2k2B1+uG/MxoUIE9CQYQMWHFKThQ0/J67PSuaSKnXrhBiSaA
-QwvCAUgjo6y6VDTIhXntPIz9aXRos7O7f99CMDcDt9yOtiLeX8ZE3Z/R7E7lhQ/t
-6R0Slbb+ZCSchJGM5FM7iC6uO6bS/jcD+mWv8r5WyyYAPNyF15BUzpcXKIB6sITT
-Zy9E7I7LprhIx+nbEZAvnfXZo0erVkY9gyL4Qpc3tDFCep/FICtGQLXAXp4RcRFx
-q9wY8+H7jCIfhsBcQlVJJgFk812NGwIJjG5B5p83InmCdc8fZ3XwkorQ0M/Mbe0N
-x/JZ9UlJQQpe2aHL0FJ+b89mE78HeHhqH+WPPXoM6xIg7uOfEgSMXdYwa0yN1Djt
-43gsXgHR1q/SWeqmYXJFJxuPtdKWy8HiHsjCNf/763tkjcifeGGVhON74a/21u18
-9feerNRAbSb08l/MArpm
-=k4Ci
------END PGP SIGNATURE-----
-
---Signature=_Thu__8_Mar_2012_17_53_07_+1100_oSzT.1M0ZZWoifDo--
+Acked-by: David S. Miller <davem@davemloft.net>
