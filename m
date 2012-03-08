@@ -1,117 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758926Ab2CHWWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 17:22:10 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15050 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758820Ab2CHWWD (ORCPT
+	id S1758956Ab2CHWWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 17:22:36 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63923 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758831Ab2CHWWc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 17:22:03 -0500
-X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=EQrbfHX8H6cA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=meVymXHHAAAA:8 a=_busI_Le17HC7A9jns0A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=IlIHHVnFY4zYrncXXyQA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-Id: <20120308222201.165735678@goodmis.org>
-User-Agent: quilt/0.50-1
-Date: Thu, 08 Mar 2012 17:17:31 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jason Baron <jbaron@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 1/7] x86/jump-label: Use best default nops for inital jump label calls
-References: <20120308221730.807074710@goodmis.org>
-Content-Disposition: inline; filename=0001-x86-jump-label-Use-best-default-nops-for-inital-jump.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Thu, 8 Mar 2012 17:22:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKA=qzak6N-6oHVjDozJ6KLMSWXEgzZf1xaC_1cgnoaUCyw8Ag@mail.gmail.com>
+References: <CAKA=qzaHqwZ8eqpLNFjxnO2fX-tgAOjmpvxgBFjv6dJeQaOW1w@mail.gmail.com>
+	<CAKA=qzZQ0YkWXpi4gKYe5yFrR9EF3+G1Wq=kWybreLXx7D30oQ@mail.gmail.com>
+	<20120307162851.GC13430@redhat.com>
+	<4F57AF4A.6080703@kernel.dk>
+	<CAKA=qzak6N-6oHVjDozJ6KLMSWXEgzZf1xaC_1cgnoaUCyw8Ag@mail.gmail.com>
+Date: Thu, 8 Mar 2012 16:22:31 -0600
+Message-ID: <CAKA=qzaHJ0OcbvtT-mwKBUBvzPkxE4r-bW6gDvicKhoQeyFWEg@mail.gmail.com>
+Subject: Re: multi-second application stall in open()
+From: Josh Hunt <joshhunt00@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tj@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Wed, Mar 7, 2012 at 3:08 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
+> On Wed, Mar 7, 2012 at 12:56 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>> On 03/07/2012 05:28 PM, Vivek Goyal wrote:
+>>> On Wed, Mar 07, 2012 at 07:43:42AM -0600, Josh Hunt wrote:
+>>>> On Tue, Mar 6, 2012 at 3:56 PM, Josh Hunt <joshhunt00@gmail.com> wrote:
+>>>>> I am trying to diagnose a stall in an application when making a call
+>>>>> to open() with O_TRUNC. The issue was originally seen on 2.6.38 and
+>>>>> I've since reproduced on 2.6.35. I believe the last kernel that I did
+>>>>> not see the stall was 2.6.32. The system is under low to moderate cpu
+>>>>> and memory load when the issue occurs. The filesystem is ext2, but I
+>>>>> mounted it as ext4 and still saw the issue.
+>>>>>
+>>>>> To me it appears the O_TRUNC needs to truncate pages in the page
+>>>>> cache, but maybe those are already out for writeback? This causes the
+>>>>> open() to wait until that operation completes at which time it is then
+>>>>> able to proceed. If that's true then it looks like the writeback is
+>>>>> sitting on the queue forever waiting (tens of seconds) to be
+>>>>> dispatched to the device.
+>>>>>
+>>>>> Here's some more info/data I collected:
+>>>>> (Unfortunately the data here and attached are from separate runs so
+>>>>> the #s will not match up file to file.)
+>>>>>
+>>>>> Snippet of an strace when it is hanging:
+>>>>> 1329323286.589182 close(37)             = 0 <0.000010>
+>>>>> 1329323286.589212 clock_gettime(0x5 /* CLOCK_??? */, {1329323286,
+>>>>> 587579583}) = 0 <0.000007>
+>>>>> 1329323286.589241 open("/usr/local/etc/abcd/known/test808",
+>>>>> O_WRONLY|O_CREAT|O_TRUNC, 0644)                = 37 <76.841586>
+>>>>> 1329323363.441841 fchmod(37, 0644)      = 0 <0.000012>
+>>>>> 1329323363.441882 fcntl64(37, F_GETFL)  = 0x1 (flags O_WRONLY) <0.000011>
+>>>>> 1329323363.441915 fcntl64(37, F_SETFL, O_WRONLY|O_NONBLOCK) = 0 <0.000010>
+>>>>>
+>>>>> To debug this more I enabled the hang check timer to dump stack when
+>>>>> anything hung for longer than 10s. There I see the the hanging
+>>>>> application appearing to be stuck in sync_page(). See attached dmesg
+>>>>> for traces.
+>>>>>
+>>>>> I've also captured "iostat -xm 1" while the application was running
+>>>>> and have attached a snippet of that when the problem is occurring. I
+>>>>> see 100% utilization for many seconds and then eventually the
+>>>>> operations complete, but the await time is extremely high. To me there
+>>>>> doesn't look like much IO going on which could be starving out any
+>>>>> requests.
+>>>>>
+>>>>> I have not been able to perform a full bisection to better understand
+>>>>> what may be causing this, but do see this on 2.6.38, a little less
+>>>>> frequently but still occurs on 2.6.35, and no longer see the issue on
+>>>>> 2.6.32. If I switch slice_idle to 0 or change to the deadline
+>>>>> scheduler the issue appears to go away in both 2.6.35 and 38.
+>>>
+>>> Is it happening on latest kernel (3.3-rc6) ?
+>>>
+>>> Can you change the IO scheduler to deadline on sda and see if the issue
+>>> still happens. (echo deadline > /sys/block/sda/queue/scheduler).
+>>>
+>>> blktrace of cfq look odd. I see that some IO (async writes) are being
+>>> submitted but CFQ did not dispatch it for a long time.  Even some unplugs
+>>> came in still nothing happened. Also no completions are happening during
+>>> that window. Not sure why CFQ refuses to dispatch queued writes.
+>>>
+>>> Request added by flusher.
+>>>
+>>>   8,0    1    36926  5028.546000122  2846  A   W 20147012 + 8 <- (8,3)
+>>> 3375152
+>>>   8,0    1    36927  5028.546001798  2846  Q   W 20147012 + 8 [flush-8:0]
+>>>   8,0    1    36928  5028.546009900  2846  G   W 20147012 + 8 [flush-8:0]
+>>>   8,0    1    36929  5028.546014649  2846  I   W 20147012 + 8 (    4749)
+>>> [flush-8:0]
+>>>
+>>> And this request is dispatched after 22 seconds.
+>>>
+>>>   8,0    1    37056  5050.117337221   162  D   W 20147012 + 16 (21571322572) [sync_supers]
+>>>
+>>>
+>>> And it completes fairly fast.
+>>>
+>>>  8,0    0    36522  5050.117686149  9657  C   W 20147012 + 16 (  348928)
+>>> [0]
+>>>
+>>> So not sure why CFQ will hold that request for so long when other IO is
+>>> not happening.
+>>>
+>>> Please try latest kernels and see if deadline has the same issue. If not,
+>>> then we know somehow CFQ is related. If it still happens on latest
+>>> kernels, can you try capturing blktrace again when you are experiencing
+>>> the delays.
+>>
+>> I'm seeing something very similar here. While testing the gtk fio
+>> client, I ran a job that issued a lot of random reads to my primary
+>> disk. 64 ios in flight, direct, libaio, 512b random reads. Firefox
+>> essentially froze, windows starting freezing up around me.
+>>
+>> I'll try and reproduce, but a quick guess would be that things starting
+>> piling up in fsync() or stalling on writes in general, since we are
+>> heavily starving those.
+>>
+>> --
+>> Jens Axboe
+>>
+> The stack traces from the hang check timer do seem to always show
+> syslogd calling fsync in my case. So this could be fsync-related. In
+> my case there does not seem to be much IO going on though (at least
+> from what I can tell.)
+>
+> --
+> Josh
 
-From: Steven Rostedt <srostedt@redhat.com>
+A crude bisection seems to show that if I revert "blkio: Set
+must_dispatch only if we decided to not dispatch the request"
+(bf7919371025412978268efca4b09dd847acb395) I no longer see the stalls
+in 2.6.35. However this does not seem to solve the problem if I revert
+it in 2.6.38.
 
-As specified by H. Peter Anvin, the best nops for x86 without knowing
-the running computer is:
+By setting slice_idle to 0, does this basically disable plugging?
+Based on the blktrace info it seems that something is going wrong with
+plugging with my testcase. I'm just wondering why setting slice_idle
+to 0 seems to resolve my issue? Also, since we see unplugs in the
+blktrace how could the requests still not be getting sent to the disk?
 
-32bit:
-  0x3e, 0x8d, 0x74, 0x26, 0x00 also known as GENERIC_NOP5_ATOMIC
-
-64bit:
-  0x0f, 0x1f, 0x44, 0x00, 0x00  also known as P6_NOP5_ATOMIC
-
-Currently the default nop that is used by jump label is:
-
- 0xe9 0x00 0x00 0x00 0x00
-
-Which is really a 5byte jump to the next position.
-
-It's better to use a real nop than a jmp.
-
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Jason Baron <jbaron@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- arch/x86/include/asm/jump_label.h |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_=
-label.h
-index 3a16c14..64507f3 100644
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -3,18 +3,23 @@
-=20
- #ifdef __KERNEL__
-=20
-+#include <linux/stringify.h>
- #include <linux/types.h>
- #include <asm/nops.h>
- #include <asm/asm.h>
-=20
- #define JUMP_LABEL_NOP_SIZE 5
-=20
--#define STATIC_KEY_INITIAL_NOP ".byte 0xe9 \n\t .long 0\n\t"
-+#ifdef CONFIG_X86_64
-+# define STATIC_KEY_INIT_NOP P6_NOP5_ATOMIC
-+#else
-+# define STATIC_KEY_INIT_NOP GENERIC_NOP5_ATOMIC
-+#endif
-=20
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
- 	asm goto("1:"
--		STATIC_KEY_INITIAL_NOP
-+		".byte " __stringify(STATIC_KEY_INIT_NOP) "\n\t"
- 		".pushsection __jump_table,  \"aw\" \n\t"
- 		_ASM_ALIGN "\n\t"
- 		_ASM_PTR "1b, %l[l_yes], %c0 \n\t"
---=20
-1.7.8.3
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPWTEJAAoJEIy3vGnGbaoA7qsP/Avfv57Pt4iHFxZxigIbKdlL
-258/7hz/uU+b+VrTVWkF8u515VeD6ZAF5zW/62n2lzFjyeXT3ZAHCALXTWrlit9W
-hIUNOYYB2iUagrCMYftMw4w4Ivh3wMLMdbg68i1o617zdU9dhr/ycC5g1pjOIu+Y
-G3H25UPVLeXLspEjyqJIdjozIGJB0a4fYI4LTCiaP0ERb4KU5tXb2GqURcjsiZ5J
-w6VCU5xTdG2Gz4SkliCKKkzXXv8/CEFDfZOarT4BKGYOfFrhPjuB/Xxn7UExuAul
-NrKVQ6U9dEQxM6Hymf8RoAe7WDuVHxiGmjsZYIEaMsRoOUlnlA2h2L5Z9HND0lX2
-X937Pdd0I1POya7usi/g9yP/86NwoW2igcYSXkxpiLgM5Pq+tMJzFTi6rGEc2SuL
-ctO1vyt7EU4dPcWTurFh70DBFJLwhnuMKgugcX4kjDSTrxMNVmX4Z8tMOvtOvKVU
-vWab14mnomD8pB8UnRwR5yzwMGV5B/TXCWxgLRfkbxrCdma5AXI+sbkw9m45cFDx
-wYbXJIjXknguz3FiwFj/DqGuZjV2UUaGVgkdAnvoYHpmq49jerhlig5jPNYBjVWM
-GvyBS3LoNbQLgOYk8SgjYlolUgvbZrbrR82GyKaTP3TwNKcg2ARuX4B9iFlIOKZy
-tc/BYFrtNJpw2lQG+afD
-=XFGu
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
+Thanks for your help.
+-- 
+Josh
