@@ -1,121 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889Ab2CHPxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 10:53:19 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:43044 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757395Ab2CHPxR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 10:53:17 -0500
-Date: Thu, 8 Mar 2012 16:53:12 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH v2] cgroups: Run subsystem fork callback from
- cgroup_post_fork()
-Message-ID: <20120308155309.GF7976@somewhere.redhat.com>
-References: <1330057410-9375-1-git-send-email-fweisbec@gmail.com>
- <1330362171-30697-1-git-send-email-fweisbec@gmail.com>
- <20120229155500.GU3090@google.com>
- <20120229162148.GA8375@somewhere.redhat.com>
- <4F4EEB0F.2000504@cn.fujitsu.com>
- <20120304135300.GA18143@somewhere.redhat.com>
- <4F5728DE.5070501@cn.fujitsu.com>
+	id S1757955Ab2CHPx3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 10:53:29 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:59345 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757258Ab2CHPx1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 10:53:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F5728DE.5070501@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <m2lincifj9.fsf@bob.laptop.org>
+References: <20120301185044.29210.44521.stgit@kaulin.local>
+	<20120301185535.29210.71546.stgit@kaulin.local>
+	<4F50643B.9050500@ti.com>
+	<20120302172251.GJ18901@atomide.com>
+	<4F548457.5050205@ti.com>
+	<CANrkHUZysOnHKKUuLm0Vbo1KsNp0yUd=udjGvQ43=gTTXbWeCw@mail.gmail.com>
+	<CANrkHUaYDpv=p0p81oKWCoewyjheyZYkCqvZY7_ZQxWi_=8YFw@mail.gmail.com>
+	<m2lincifj9.fsf@bob.laptop.org>
+Date: Thu, 8 Mar 2012 21:23:10 +0530
+Message-ID: <CANrkHUbsiTz9+cRM83845=nYp82BSyje+ikV_sg3BT+64uD2XA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] mmc: omap_hsmmc: Simplify init for twl6030 MMC card detect
+From: "T Krishnamoorthy, Balaji" <balajitk@ti.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Rajendra Nayak <rnayak@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 07, 2012 at 05:22:38PM +0800, Li Zefan wrote:
-> Frederic Weisbecker wrote:
-> > On Thu, Mar 01, 2012 at 11:20:47AM +0800, Li Zefan wrote:
-> >> 于 2012年03月01日 00:21, Frederic Weisbecker 写道:
-> >>> On Wed, Feb 29, 2012 at 07:55:00AM -0800, Mandeep Singh Baines wrote:
-> >>>> Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> >>>>> When a user freezes a cgroup, the freezer sets the subsystem state
-> >>>>> to CGROUP_FREEZING and then iterates over the tasks in the cgroup links.
-> >>>>>
-> >>>>> But there is a possible race here, although unlikely, if a task
-> >>>>> forks and the parent is preempted between write_unlock(tasklist_lock)
-> >>>>> and cgroup_post_fork(). If we freeze the cgroup while the parent
-> >>>>
-> >>>> So what if you moved cgroup_post_forks() a few lines up to be
-> >>>> inside the tasklist_lock?
-> >>>
-> >>> It won't work. Consider this scenario:
-> >>>
-> >>> CPU 0                                     CPU 1
-> >>>
-> >>>                                        cgroup_fork_callbacks()
-> >>>                                        write_lock(tasklist_lock)
-> >>> try_to_freeze_cgroup() {               add child to task list etc...
-> >>> 	cgroup_iter_start()
-> >>>         freeze tasks                        
-> >>>         cgroup_iter_end()
-> >>> }                                      cgroup_post_fork()
-> >>>                                        write_unlock(tasklist_lock)
-> >>>
-> >>> If this is not the first time we call cgroup_iter_start(), we won't go
-> >>> through the whole tasklist, we simply iterate through the css set task links.
-> >>>
-> >>> Plus we try to avoid anything under tasklist_lock when possible.
-> >>>
-> >>
-> >> Your patch won't close the race I'm afraid.
-> >>
-> >> // state will be set to FREEZING
-> >> echo FROZEN > /cgroup/sub/freezer.state
-> >>                                           write_lock(tasklist_lock)
-> >>                                           add child to task list ...
-> >> 					  write_unlock(tasklist_lock)
-> >> // state will be updated to FROZEN
-> >> cat /cgroup/sub/freezer.state
-> >> 					  cgroup_post_fork()
-> >> 					  ->freezer_fork()
-> >>
-> >> freezer_fork() will freeze the task only if the cgroup is in FREEZING
-> >> state, and will BUG if the state is FROZEN.
-> > 
-> > Good point!
-> > 
-> >>
-> >> We can fix freezer_fork(), but seems that requires we hold cgroup_mutex
-> >> in that function(), which we don't like at all. Not to say your
-> >> task_counter stuff..
-> >>
-> >> At this moment I don't see a solution without tasklist_lock involved,
-> >> any better idea?
-> > 
-> > Ok, everything would be _much_ simpler if we were adding the css set task
-> > link unconditionally.
-> > 
-> > Unfortunately this means acquiring a (global) lock unconditionally and
-> > doing a list_add() on every fork. Although the lock could perhaps
-> > be made per css set.
-> > 
-> > An idea could be to start the css set linking as soon as we create
-> > the first subdirectory of a freezer cgroup. The root css set can't be
-> > freezed and when we create the subdirectory we have no task there yet.
-> > Due to the threadgroup_lock() that follows, none of the tasks that will be
-> > attached there can be stuck in the middle of a fork so we are fine against
-> > their css_set links: we know that when we attach a task to the cgroup of that
-> > subdir, its css set link is set and we won't have any of the race we are describing.
-> > 
-> > How does that sound?
-> > 
-> 
-> I'm confused..
-> 
-> The race you described is about freezing a cgroup while a task is forking,
-> and it doesn't have something to do with attaching tasks manually and the
-> enabling of css set links. So how can the race be fixed in the way you
-> proposed?
+On Wed, Mar 7, 2012 at 9:12 PM, Chris Ball <cjb@laptop.org> wrote:
+> Hi Balaji,
+>
+> On Wed, Mar 07 2012, T Krishnamoorthy, Balaji wrote:
+>> OMAP4 and OMAP3 HSMMC IP registers differ by 0x100 offset.
+>> Addng the offset to platform_device resource structure
+>> increments the start address for every insmod operation.
+>> MMC command fails on re-insertion as module due incorrect register base.
+>> Fix this by updating the ioremap base address only.
+>>
+>> Signed-off-by: Balaji T K <balajitk@ti.com>
+>
+> Is this a regression, or has it never worked in mainline?
 
-You're right. I scratched my head so much that I got confused :-(
+Not a regression introduced in current merge window.
+It happens on re-insertion of module.
+will post a patch with $SUBJECT
+
+>
+>> Note: �eMMC detection is still failing on resertion due to card vcc
+>> power off on rmmod
+>
+> And this?
+
+This issue was hidden and uncovered after this fix.
+This problem is Vcc being powered off without sleep command.
+
+>
+> Thanks,
+>
+> - Chris.
+> --
+> Chris Ball � <cjb@laptop.org> � <http://printf.net/>
+> One Laptop Per Child
