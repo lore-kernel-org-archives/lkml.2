@@ -1,107 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab2CHCti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 21:49:38 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44474 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab2CHCtf (ORCPT
+	id S1754688Ab2CHC55 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 21:57:57 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38249 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab2CHC54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 21:49:35 -0500
-Date: Thu, 8 Mar 2012 10:54:52 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Fine granularity page reclaim
-Message-ID: <20120308025452.GA6196@gmail.com>
-Mail-Followup-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-	"linux-mm@kvack.org" <linux-mm@kvack.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20120217092205.GA9462@gmail.com>
- <4F3EB675.9030702@openvz.org>
- <20120220062006.GA5028@gmail.com>
- <4F41F1C2.3030908@openvz.org>
- <CANWLp03njY11Swiic7_mv6Gk3C=v4YYe5nLzbAjLH0KftyQftA@mail.gmail.com>
- <4F57C610.8050101@openvz.org>
+	Wed, 7 Mar 2012 21:57:56 -0500
+Date: Thu, 8 Mar 2012 03:57:40 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Tommaso Cucinotta <cucinotta@sssup.it>, Avi Kivity <avi@redhat.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Geoff Levand <geoff@infradead.org>, Christoph Lameter <cl@linux.com>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ANNOUNCE] Nohz cpusets (adaptive tickless kernel) v2-pre-20120308
+Message-ID: <20120308025738.GA7976@somewhere.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F57C610.8050101@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 12:33:20AM +0400, Konstantin Khlebnikov wrote:
-> Zheng Liu wrote:
-> >
-> >
-> >On Monday, February 20, 2012, Konstantin Khlebnikov <khlebnikov@openvz.org <mailto:khlebnikov@openvz.org>> wrote:
-> > > Zheng Liu wrote:
-> > >>
-> > >> Cc linux-kernel mailing list.
-> > >>
-> > >> On Sat, Feb 18, 2012 at 12:20:05AM +0400, Konstantin Khlebnikov wrote:
-> > >>>
-> > >>> Zheng Liu wrote:
-> > >>>>
-> > >>>> Hi all,
-> > >>>>
-> > >>>> Currently, we encounter a problem about page reclaim. In our product system,
-> > >>>> there is a lot of applictions that manipulate a number of files. In these
-> > >>>> files, they can be divided into two categories. One is index file, another is
-> > >>>> block file. The number of index files is about 15,000, and the number of
-> > >>>> block files is about 23,000 in a 2TB disk. The application accesses index
-> > >>>> file using mmap(2), and read/write block file using pread(2)/pwrite(2). We hope
-> > >>>> to hold index file in memory as much as possible, and it works well in Redhat
-> > >>>> 2.6.18-164. It is about 60-70% of index files that can be hold in memory.
-> > >>>> However, it doesn't work well in Redhat 2.6.32-133. I know in 2.6.18 that the
-> > >>>> linux uses an active list and an inactive list to handle page reclaim, and in
-> > >>>> 2.6.32 that they are divided into anonymous list and file list. So I am
-> > >>>> curious about why most of index files can be hold in 2.6.18? The index file
-> > >>>> should be replaced because mmap doesn't impact the lru list.
-> > >>>
-> > >>> There was my patch for fixing similar problem with shared/executable mapped pages
-> > >>> "vmscan: promote shared file mapped pages" commit 34dbc67a644f and commit c909e99364c
-> > >>> maybe it will help in your case.
-> > >>
-> > >> Hi Konstantin,
-> > >>
-> > >> Thank you for your reply.  I have tested it in upstream kernel.  These
-> > >> patches are useful for multi-processes applications.  But, in our product
-> > >> system, there are some applications that are multi-thread.  So
-> > >> 'references_ptes>  1' cannot help these applications to hold the data in
-> > >> memory.
-> > >
-> > > Ok, what if you mmap you data as executable, just to test.
-> > > Then these pages will be activated after first touch.
-> > > In attachment patch with per-mm flag with the same effect.
-> > >
-> >
-> >Hi Konstantin,
-> >
-> >Sorry for the delay reply.  Last two weeks I was trying these two solutions
-> >and evaluating the impacts for the performance in our product system.
-> >Good news is that these two solutions both work well. They can keep
-> >mapped files in memory under mult-thread.  But I have a question for
-> >the first solution (map the file with PROT_EXEC flag).  I think this way is
-> >too tricky.  As I said previously, these files that needs to be mapped only
-> >are normal index file, and they shouldn't be mapped with PROT_EXEC flag
-> >from the view of an application programmer.  So actually the key issue is
-> >that we should provide a mechanism, which lets different file sets can be
-> >reclaimed separately.  I am not sure whether this idea is useful or not.  So
-> >any feedbacks are welcomed.:-).  Thank you.
-> >
-> 
-> Sounds good. Yes, PROT_EXEC isn't very usable and secure, per-mm flag not
-> very flexible too. I prefer setting some kind of memory pressure priorities
-> for each vma and inode. Probably we can sort vma and inodes into different
-> cgroup-like sets and balance memory pressure between them.
-> Maybe someone was thought about it...
+Hi everyone,
 
-Thanks for your advices.  About setting pressure priorities for each vma
-and inode, I will send a new mail to mailing list to discuss this
-problem.  Maybe someone has some good ideas for it. ;-)
+Reminder of what it's all about: https://lkml.org/lkml/2011/8/15/245
 
-Regards,
-Zheng
+The whole patchset has moved forward enough that it's now time
+to release a new iteration of it. I plan to post all the patches
+soon to LKML but before that I would like to rebase against 3.3[-rc >= 6]
+and clean up a few little things, especially revisit some changelogs.
+
+So before that to happen, I still wanted to do a release in order
+to keep everyone in touch with latest changes.
+
+Latest changes can be found at:
+
+git://github.com/fweisbec/linux-dynticks.git
+	nohz/cpuset-v2-pre-20120308
+
+There is still a lot to do, but I'm glad we made some progresses with
+more idle/adaptive tickless code unification, namespace cleanups,
+RCU fixes, and various bugfixes here and there, etc...
+
+Changes since v1 (https://lkml.org/lkml/2011/8/15/245):
+
+- Rebase against latest Paul McKenney's rcu/core branch for v3.3-rc1
+
+- Adapt against latest rcu changes: introduce new APIs
+  rcu_user_enter(), rcu_user_exit(), rcu_user_enter_irq()
+  and rcu_user_exit_irq()
+
+- Handle RCU idle mode with do_notify_resume() path
+
+- Fix deadlock after double rq lock on schedule:
+	schedule() -> rq_lock -> next is idle task ->
+	tick_nohz_restart_sched_tick() -> wake up softirq ->
+	rq lock
+
+- Fix lockup while issuing flush times IPI on exit path:
+
+	CPU 0				CPU 1
+
+	read_lock(tasklist_lock)
+					write_lock_irq(tasklist_lock)
+	smp_call_function(CPU 1)
+	* deadlock *
+
+- Many namespace renames (cpuset_* to tick_nohz_*) and code migration
+from sched.c to tick-sched.c
+
+- Seperate code that determine if we can stop the idle tick and don't
+use it for adaptive tickless mode.
+
+- Fix adaptive tickless mode set on idle incidentally. TIF_NOHZ was
+then missing on the following task that ran tickless, issuing some
+illegal uses of RCU
+
+- Restart the tick anytime more than one task is on the runqueue. We were previously
+only covering wake ups, now we also handle migration and any other source of task enqueuing
+
+- Handle use of RCU in schedule() when called right before resuming userspace
+(new schedule_user() API)
+
+- Take the decision to stop the tick from irq exit instead of the middle of the timer
+interrupt. This gives more opportunity to stop it and is one step more to unify idle
+and adaptive tickless.
+
+- Unify tickless idle and tickless user/system CPU time accounting infrastructures.
+
+- If the tick is stopped adaptively and we are going to schedule the idle
+task, don't restart the tick.
+
+- Remove task_nohz_mode per cpu var and use ts->tick_stopped instead. This
+leads to more unification between idle tickless and adaptive tickless.
+
+Have fun!
