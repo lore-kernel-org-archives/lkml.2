@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758583Ab2CHUBx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:01:53 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9267 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758367Ab2CHUBm (ORCPT
+	id S1758568Ab2CHUBu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:01:50 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:58281 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755553Ab2CHUBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:01:42 -0500
-X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=qL2bEeoSVyO6-YR97C0A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1331236900.25686.462.camel@gandalf.stny.rr.com>
-Subject: Re: [ANNOUNCE] 3.2.9-rt17
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Thu, 08 Mar 2012 15:01:40 -0500
-In-Reply-To: <1331236139.11248.407.camel@twins>
-References: <alpine.LFD.2.02.1203072225020.2742@ionos>
-	 <1331230991.25686.452.camel@gandalf.stny.rr.com>
-	 <1331231287.11248.396.camel@twins>
-	 <1331232159.25686.456.camel@gandalf.stny.rr.com>
-	 <1331236139.11248.407.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 8 Mar 2012 15:01:38 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] [IA64] simserial, include some headers
+Date: Thu,  8 Mar 2012 21:01:17 +0100
+Message-Id: <1331236879-20124-2-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1331236879-20124-1-git-send-email-jslaby@suse.cz>
+References: <20120308195028.GA17564@kroah.com>
+ <1331236879-20124-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 20:48 +0100, Peter Zijlstra wrote:
-> On Thu, 2012-03-08 at 13:42 -0500, Steven Rostedt wrote:
-> > cpu_chill_on_lock().
-> 
-> I think what you were hinting at is:
-> 
->   spin_lock(&lock);
->   spin_unlock(&lock);
+And remove declarations which are already in the headers.
 
-Exactly.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+---
+ arch/ia64/hp/sim/simserial.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-> 
-> which is the rt_mutex implementation of spin_unlock_wait(). No new
-> function needed for that.
-
-Yes but...
-> 
-> Trouble is that you cannot use inode->i_lock as explained..
-
-Right!
-
-
-What I was hinting at was that the spin_lock() can boost, but it could
-also fail if there was a deadlock detected, and it wouldn't cause the
-system to hang.
-
--- Steve
+diff --git a/arch/ia64/hp/sim/simserial.c b/arch/ia64/hp/sim/simserial.c
+index bff0824..974cac8 100644
+--- a/arch/ia64/hp/sim/simserial.c
++++ b/arch/ia64/hp/sim/simserial.c
+@@ -34,9 +34,12 @@
+ #include <linux/sysrq.h>
+ 
+ #include <asm/irq.h>
++#include <asm/hpsim.h>
+ #include <asm/hw_irq.h>
+ #include <asm/uaccess.h>
+ 
++#include "hpsim_ssc.h"
++
+ #undef SIMSERIAL_DEBUG	/* define this to get some debug information */
+ 
+ #define KEYBOARD_INTR	3	/* must match with simulator! */
+@@ -45,11 +48,6 @@
+ 
+ #define IRQ_T(info) ((info->flags & ASYNC_SHARE_IRQ) ? IRQF_SHARED : IRQF_DISABLED)
+ 
+-#define SSC_GETCHAR	21
+-
+-extern long ia64_ssc (long, long, long, long, int);
+-extern void ia64_ssc_connect_irq (long intr, long irq);
+-
+ static char *serial_name = "SimSerial driver";
+ static char *serial_version = "0.6";
+ 
+-- 
+1.7.9.2
 
 
