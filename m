@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab2CHUXi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 15:23:38 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63897 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758587Ab2CHUXg (ORCPT
+	id S1758656Ab2CHUZC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 15:25:02 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65313 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab2CHUY6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 15:23:36 -0500
+	Thu, 8 Mar 2012 15:24:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <1331230525.2472.39.camel@lade.trondhjem.org>
-References: <87k42yjb0c.fsf@tucsk.pomaz.szeredi.hu>
-	<1331160049-3842-1-git-send-email-Trond.Myklebust@netapp.com>
-	<1331160049-3842-2-git-send-email-Trond.Myklebust@netapp.com>
-	<1331160049-3842-3-git-send-email-Trond.Myklebust@netapp.com>
-	<CAN-5tyG-w+ie3sxTwNA6e9x=CojxyDaJScJuCbS+9VE=yTmJNA@mail.gmail.com>
-	<1331230525.2472.39.camel@lade.trondhjem.org>
-Date: Thu, 8 Mar 2012 15:23:34 -0500
-X-Google-Sender-Auth: FWjmvVkCdBXgNg6JXWn4p68F1xA
-Message-ID: <CAN-5tyFYE5ECtv__C9S_GMT1gBMQ4+6WPS-1BjmSE7vHoRAQdw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] NFSv4: Return the delegation if the server returns NFS4ERR_OPENMODE
-From: Olga Kornievskaia <aglo@citi.umich.edu>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120308202136.GM21812@moon>
+References: <20120308165112.GF21812@moon> <CAGXu5j+4RRGjzVxLSyz0CZCNMj4dPOxJp3pYGSN_sXFsiMhUaQ@mail.gmail.com>
+ <20120308194008.GJ21812@moon> <CALCETrXpQOpAN64gfG-=iyXXy4Tid=9FyKVrT2grQxRgNPC-fg@mail.gmail.com>
+ <20120308200729.GL21812@moon> <CALCETrXc9Etit+DUuxKtUwRKmqbwbE5vhDNYWgs0ijEesY8cUA@mail.gmail.com>
+ <20120308202136.GM21812@moon>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 8 Mar 2012 12:24:38 -0800
+Message-ID: <CALCETrVe6VQgdEkZBv24ZaS-N8bFLr9umhgmBsHB6CMH699ykA@mail.gmail.com>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Will Drewry <wad@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 8, 2012 at 1:15 PM, Myklebust, Trond
-<Trond.Myklebust@netapp.com> wrote:
-> On Thu, 2012-03-08 at 12:52 -0500, Olga Kornievskaia wrote:
->> wouldn't it be better for you to proactively return a read delegation
->> then unnecessarily erroring?
+On Thu, Mar 8, 2012 at 12:21 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> On Thu, Mar 08, 2012 at 12:15:55PM -0800, Andy Lutomirski wrote:
+>> On Thu, Mar 8, 2012 at 12:07 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+>> > On Thu, Mar 08, 2012 at 12:02:50PM -0800, Andy Lutomirski wrote:
+>> >> >
+>> >> > I can do that if Andrew agree.
+>> >>
+>> >> I'm a bit lost.  nnp updates the MNT_NOSUID checks, not the MNT_NOEXEC
+>> >> checks.  (And the effects of the two flags is different in selinux for
+>> >> historical reasons.)  I'm sure I'm missing something.
+>> >>
+>> >
+>> > Andy, I've no idea what nnp is ;) I was only about to gather those
+>> > ISREG/MNT_NOEXEC to one helper since we indeed have a few places in
+>> > kernel which do same thing in open-coded manner.
+>>
+>> Am I not the Andrew you were referring to?
+>>
 >
-> If nobody else holds a delegation, then the NFS client is actually
-> allowed to keep its read delegation while writing to the file. It does
-> admittedly need to request an OPEN stateid for write in that case...
-> (See section 10.4 of RFC3530bis draft 16)
-
-If we both agree that there has to be a request for an open stateid for
-a write, then instead of returning the read delegation if the client receives
-err_openmode (when it send the request with read delegation stateid
-as you said per 3560bis), can't the client resend the setattr with the open
-stateid? The ordering of the stateid usage is a "should" and not a "must".
-
-In rfc5661, it really doesn't make sense to ever send a setattr with
-a read delegation stateid. According to 9.1.2, the server "MUST" return
-err_open_mode" error in that case.
-
-I gather you are in this case dealing with 4.0 delegations. But I wonder
-if you'll do something else for 4.1 delegation then?
-
-Another comment is that I was suggesting a return of delegation only
-because (from what i recall) the 4.1 servers out there will recall the
-previously
-given read delegation in this case.
-
-> That said, in either case we do need to deal with the fact that a new
-> delegation may be granted after we return the old one. There is no
-> locking around the setattr call to prevent this.
-
-Can that really happen since we agreed that the client also has an open
-stateid for write in this case?
-
->> i also don't understand how this error occurs. doing a setattr in this
->> case you must have used a non-special stateid. the server would only
->> return an err_openmode if you sent the setattr with a read delegation
->> stateid. i guess my question is what stateid would you use that from
->> client's perspective represent a write-type state id but yet a server
->> would flag as having wrong access type?
+> Nope, I meant Andrew Morton /because this patch is for -mm/ ;)
 >
-> The read delegation stateid is being sent as per the prescription in
-> section 9.1.3.6 of RFC3530bis.
+> I've been in To: field that's why I replied you about nnp
+> (and, btw, what nnp is? not "Net national product" I suppose,
+>  this hint wikipedia gave me)
 
->> also i'm curious why would a server, instead of returning
->> err_openmode, would not first recall your read delegation?
->
-> It could, but why do so when it can just return an error value? The
-> presence of the delegation stateid in the SETATTR request allows it to
-> communicate directly to the client what the problem is without the need
-> for any callbacks.
+nnp is no_new_privs, which is my patch and is almost, but not quite,
+very relevant to this discussion.  Hence my confusion ;)
 
-> Trond Myklebust
-> Linux NFS client maintainer
->
-> NetApp
-> Trond.Myklebust@netapp.com
-> www.netapp.com
->
+FWIW, since I've touched this code recently, the cleanup you're
+suggesting sounds good.
+
+--Andy
