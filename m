@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab2CHCWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Mar 2012 21:22:24 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:8031
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751588Ab2CHCWV (ORCPT
+	id S1753867Ab2CHCYi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Mar 2012 21:24:38 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38852 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab2CHCYh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Mar 2012 21:22:21 -0500
-X-SpamScore: -5
-X-BigFish: VPS-5(zz1454I1432N4015Izz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h93fhbe9k)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>
-CC: "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "dchen@diasemi.com" <dchen@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: RE: [PATCH 02/03] HWMON: HWMON driver for DA9052/53 PMIC v3
-Thread-Topic: [PATCH 02/03] HWMON: HWMON driver for DA9052/53 PMIC v3
-Thread-Index: AQHM/JXmEJU6Lx/WkUKbHGH3BR/mPZZfqZSw
-Date: Thu, 8 Mar 2012 02:21:34 +0000
-Message-ID: <C3AE124F08223B42BC95AEB82F0F6CED2B9A6FE5@KCHJEXMB02.kpit.com>
-References: <1330698545.21817.31.camel@dhruva>
- <1331147302.23014.370.camel@groeck-laptop>
-In-Reply-To: <1331147302.23014.370.camel@groeck-laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [113.193.129.58]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 7 Mar 2012 21:24:37 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+In-Reply-To: <20120307114811.GF3107@opensource.wolfsonmicro.com>
+References: <1329976011-2251-1-git-send-email-tomoya.rohm@gmail.com>
+	<20120229235147.GM8295@opensource.wolfsonmicro.com>
+	<CANKRQngOkGTPM9AWEaHoaNQCyN65B_ESB24ctcT_DiEen050fg@mail.gmail.com>
+	<20120302125819.GE3230@opensource.wolfsonmicro.com>
+	<CANKRQngoDf_U8U7txG0AT1TKmSeq2FfqwjWD7EEiLROWzn+f5Q@mail.gmail.com>
+	<20120306100012.GC19635@opensource.wolfsonmicro.com>
+	<CANKRQniUnEPawXZHcPH9kG0hDiaZ-eJ_vOQrCefB0ntCu98D6g@mail.gmail.com>
+	<20120306121222.GK19635@opensource.wolfsonmicro.com>
+	<CANKRQnjFB8G5iRKZLQok+qnQrPXf7vcRGto_OyL+1=VNBTnetw@mail.gmail.com>
+	<20120307114811.GF3107@opensource.wolfsonmicro.com>
+Date: Thu, 8 Mar 2012 11:24:36 +0900
+Message-ID: <CANKRQnh2JqhZBYLP=U_isgthh2pFT89_qBeypda1ciUJzoRXYw@mail.gmail.com>
+Subject: Re: [PATCH v6] sound/soc/codecs: add LAPIS Semiconductor ML26124
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q282MTUk020005
 
-> Only comment I would have is that it might make sense to use
-> DIV_ROUND_CLOSEST(). That is a minor issue, though, so feel free to add
-> 
-> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> 
-> Question is where this is going. I can not add it to hwmon-next without
-> the matching mfd changes. Any idea ?
-This patch will depends on DA9052 MFD which is already merged in main line. However this
-also depends on a incremental patch for MFD which is yet to get ACK but soon should be in. 
-> 
-> Thanks,
-> Guenter
-> 
-> 
+On Wed, Mar 7, 2012 at 8:48 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+>> If possible, I want to use framework features. However, I judged it is
+>> not possible.
+>> Let me confirm again.
+>> As I said before, all ML26124 registers need to be accessed by
+>> different address when read and write.
+>> Like below
+>> R       W
+>> $00h $01h Sampling setting
+>> $02h $03h PLL setting
+>> ...
+>> Even so, can I use framework features ?
+> No, in which case (to repeat what I said previously) you need to make
+> the code *much* clearer so the reader can understand what it is doing
+> and why it's having to open code this stuff.
 
+I understand you agree to use ml26124_update_bits(), right ?
+If so, do you mean that I should just add explanation (like as I
+explained before)
+why the function() is necessary to above prototype of ml26124_update_bits() ?
 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+thanks.
+-- 
+ROHM Co., Ltd.
+tomoya
