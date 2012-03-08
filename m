@@ -1,63 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759244Ab2CHWs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 17:48:58 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49502 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759217Ab2CHWsx (ORCPT
+	id S1759096Ab2CHWsT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 17:48:19 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52031 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759030Ab2CHWsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 17:48:53 -0500
-Date: Thu, 8 Mar 2012 14:48:49 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
-        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de
-Subject: Re: [PATCH v4] USB: Support for LPC32xx SoC
-Message-ID: <20120308224849.GA32667@kroah.com>
-References: <1331244574-32570-1-git-send-email-stigge@antcom.de>
- <20120308222234.GA25576@kroah.com>
- <4F593652.90809@antcom.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F593652.90809@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Mar 2012 17:48:15 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, asharma@fb.com,
+        ravitillo@lbl.gov, vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com,
+        dsahern@gmail.com
+Subject: [PATCH 2/4] perf record: add HEADER_BRANCH_STACK tag
+Date: Thu,  8 Mar 2012 23:47:46 +0100
+Message-Id: <1331246868-19905-3-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1331246868-19905-1-git-send-email-eranian@google.com>
+References: <1331246868-19905-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 11:44:34PM +0100, Roland Stigge wrote:
-> Hi,
-> 
-> On 08/03/12 23:22, Greg Kroah-Hartman wrote:
-> > So, should this function just be called something else, for the type of
-> > hardware (lpc32xx?), and then do this check within the function?
-> 
-> Right. LPC32xx and PNX4008 seem to share much of the functionality but
-> they don't share the bits() part. How about renaming (the static)
-> 
-> pnx4008_set_usb_bits()
-> pnx4008_unset_usb_bits()
-> 
-> to
-> 
-> set_usb_bits()
-> unset_usb_bits()
-> 
-> and internally doing machine_is_pnx4008() dependent stuff?
-> 
-> Regarding the other pnx4008_*() functions that are shared with lpc32xx,
-> they only inherit the name for historical reasons. Which naming scheme
-> should apply here if change is due? One common name between those two
-> would be "nxp". We could replace everything common between pnx4008 and
-> lpc32xx with nxp (including ths driver name) and handle the small
-> pnx4008-specific stuff via machine_is_pnx4008().
+This patch adds a new feature bit, namely,
+HEADER_BRANCH_STACK.  When present, it indicates
+that sample records may contain branch stack.
 
-That sounds more reasonable, right?  But do it in at least two patches
-to make things obvious as to what is happening.
+This could be useful to a viewer to switch to
+branch mode without having to parse all the
+samples or without a specific cmdline option.
 
-thanks,
+This will be used in a subsequent patch to
+enhance perf report with branch stacks.
 
-greg k-h
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/builtin-record.c |    3 +++
+ tools/perf/util/header.c    |   13 +++++++++++++
+ tools/perf/util/header.h    |    2 +-
+ 3 files changed, 17 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index a7c53a9..be4e1ee 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -473,6 +473,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 	if (!have_tracepoints(&evsel_list->entries))
+ 		perf_header__clear_feat(&session->header, HEADER_TRACE_INFO);
+ 
++	if (!rec->opts.branch_stack)
++		perf_header__clear_feat(&session->header, HEADER_BRANCH_STACK);
++
+ 	if (!rec->file_new) {
+ 		err = perf_session__read_header(session, output);
+ 		if (err < 0)
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index c851495..0d9b6da 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1023,6 +1023,12 @@ static int write_cpuid(int fd, struct perf_header *h __used,
+ 	return do_write_string(fd, buffer);
+ }
+ 
++static int write_branch_stack(int fd __used, struct perf_header *h __used,
++		       struct perf_evlist *evlist __used)
++{
++	return 0;
++}
++
+ static void print_hostname(struct perf_header *ph, int fd, FILE *fp)
+ {
+ 	char *str = do_read_string(fd, ph);
+@@ -1315,6 +1321,12 @@ static void print_cpuid(struct perf_header *ph, int fd, FILE *fp)
+ 	free(str);
+ }
+ 
++static void print_branch_stack(struct perf_header *ph __used, int fd __used,
++			       FILE *fp)
++{
++	fprintf(fp, "# contains samples with branch stack\n");
++}
++
+ static int __event_process_build_id(struct build_id_event *bev,
+ 				    char *filename,
+ 				    struct perf_session *session)
+@@ -1519,6 +1531,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+ 	FEAT_OPA(HEADER_CMDLINE,	cmdline),
+ 	FEAT_OPF(HEADER_CPU_TOPOLOGY,	cpu_topology),
+ 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
++	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
+ };
+ 
+ struct header_print_data {
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index e68f617..21a6be0 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -27,7 +27,7 @@ enum {
+ 	HEADER_EVENT_DESC,
+ 	HEADER_CPU_TOPOLOGY,
+ 	HEADER_NUMA_TOPOLOGY,
+-
++	HEADER_BRANCH_STACK,
+ 	HEADER_LAST_FEATURE,
+ 	HEADER_FEAT_BITS	= 256,
+ };
+-- 
+1.7.4.1
+
