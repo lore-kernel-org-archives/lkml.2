@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab2CHKTi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 05:19:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:51013 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751652Ab2CHKTg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 05:19:36 -0500
-Date: Thu, 8 Mar 2012 02:18:54 -0800
-From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-a240ada241dafe290e7532d1ddeb98fdf1419068@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        jbeulich@suse.com, JBeulich@suse.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <4F5888F902000078000770F1@nat28.tlf.novell.com>
-References: <4F5888F902000078000770F1@nat28.tlf.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86: Include probe_roms.h in probe_roms.c
-Git-Commit-ID: a240ada241dafe290e7532d1ddeb98fdf1419068
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752045Ab2CHKYG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 05:24:06 -0500
+Received: from edge10.ethz.ch ([82.130.75.186]:55394 "EHLO edge10.ethz.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751310Ab2CHKYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 05:24:03 -0500
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Mar 2012 05:24:03 EST
+From: Thomas Rast <trast@inf.ethz.ch>
+To: Junio C Hamano <gitster@pobox.com>
+CC: <git@vger.kernel.org>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git 1.7.10-rc0
+References: <7v7gyvkh84.fsf@alter.siamese.dyndns.org>
+Date: Thu, 8 Mar 2012 11:17:50 +0100
+In-Reply-To: <7v7gyvkh84.fsf@alter.siamese.dyndns.org> (Junio C. Hamano's
+	message of "Wed, 07 Mar 2012 17:35:07 -0800")
+Message-ID: <87y5rbpfap.fsf@thomas.inf.ethz.ch>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 08 Mar 2012 02:19:21 -0800 (PST)
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [129.132.153.233]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a240ada241dafe290e7532d1ddeb98fdf1419068
-Gitweb:     http://git.kernel.org/tip/a240ada241dafe290e7532d1ddeb98fdf1419068
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Thu, 8 Mar 2012 09:24:57 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 8 Mar 2012 10:57:35 +0100
+Junio C Hamano <gitster@pobox.com> writes:
 
-x86: Include probe_roms.h in probe_roms.c
+>  * Parallel to the test suite, there is a beginning of performance
+>    benchmarking framework.
 
-... to ensure that declarations and definitions are in sync.
+I just noticed that this does not work on OS X; its 'time' does not
+support the -f option.  For now I think I'm happy; it can compare
+several versions of Git on Linux to detect performance improvements or
+regressions.  Comparability across systems or platforms was never a main
+goal.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Link: http://lkml.kernel.org/r/4F5888F902000078000770F1@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/probe_roms.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+In the long run we'll have to change it to either use 'time -p'
+everywhere and parse that into shape -- at least GNU and OS X agree on
+what POSIX specifies ;-) -- or just supply a small helper utility that
+does the timings for us in a ready-to-use format.
 
-diff --git a/arch/x86/kernel/probe_roms.c b/arch/x86/kernel/probe_roms.c
-index 34e06e8..0bc72e2 100644
---- a/arch/x86/kernel/probe_roms.c
-+++ b/arch/x86/kernel/probe_roms.c
-@@ -12,6 +12,7 @@
- #include <linux/pci.h>
- #include <linux/export.h>
- 
-+#include <asm/probe_roms.h>
- #include <asm/pci-direct.h>
- #include <asm/e820.h>
- #include <asm/mmzone.h>
+-- 
+Thomas Rast
+trast@{inf,student}.ethz.ch
