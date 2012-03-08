@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab2CHJqc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 04:46:32 -0500
-Received: from smtp-out-087.synserver.de ([212.40.185.87]:1053 "EHLO
-	smtp-out-087.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab2CHJqa (ORCPT
+	id S1756081Ab2CHJ7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 04:59:23 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:39531 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752625Ab2CHJ7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 04:46:30 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 26040
-Message-ID: <4F58806E.9090500@metafoo.de>
-Date: Thu, 08 Mar 2012 10:48:30 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
+	Thu, 8 Mar 2012 04:59:20 -0500
+Message-ID: <4F5882E6.8080202@linux.vnet.ibm.com>
+Date: Thu, 08 Mar 2012 17:59:02 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] dmaengine: care sd_dma_address/len in dmaengine_prep_slave_single()
-References: <8739axwnh9.wl%kuninori.morimoto.gx@renesas.com>	<1327917366.1527.42.camel@vkoul-udesk3> <87pqe04qtk.wl%kuninori.morimoto.gx@renesas.com>
-In-Reply-To: <87pqe04qtk.wl%kuninori.morimoto.gx@renesas.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
+References: <20120308175307.b295b1013728a5666fe4571a@canb.auug.org.au> <20120307233220.5a76aa3c.akpm@linux-foundation.org> <20120308184105.5b03ec90bcddf90562181277@canb.auug.org.au> <20120307235012.847af577.akpm@linux-foundation.org>
+In-Reply-To: <20120307235012.847af577.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12030723-5140-0000-0000-000000DE1EA4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/31/2012 02:13 AM, Kuninori Morimoto wrote:
-> dmaengine_prep_slave_single() is helper macro of dmaengine.
-> But it doesn't have sg_dma_address/len() settings which are required.
-> And it used void *buf in parameter, but it should be dma_addr_t.
-> This patch fixes up it.
-> 
-> Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+On 03/08/2012 03:50 PM, Andrew Morton wrote:
 
-Hi,
 
-Any news regarding this patch? The dmaengine_prep_slave_single in upstream
-is not really usable as it is right now.
+> Doh.  The author reviewed that for me too!
+> 
+> I'll drop it - please rework, retest and resend?
+> 
 
-Thanks,
-- Lars
 
-> ---
-> V1 -> v2
-> 
-> - based on latest linus/master branch
-> 
->  include/linux/dmaengine.h |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index 679b349..97eaf57 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -606,11 +606,16 @@ static inline int dmaengine_slave_config(struct dma_chan *chan,
->  }
->  
->  static inline struct dma_async_tx_descriptor *dmaengine_prep_slave_single(
-> -	struct dma_chan *chan, void *buf, size_t len,
-> +	struct dma_chan *chan, dma_addr_t buf, size_t len,
->  	enum dma_transfer_direction dir, unsigned long flags)
->  {
->  	struct scatterlist sg;
-> -	sg_init_one(&sg, buf, len);
-> +
-> +	sg_init_table(&sg, 1);
-> +	sg_set_page(&sg, pfn_to_page(PFN_DOWN(buf)),
-> +		    len, offset_in_page(buf));
-> +	sg_dma_address(&sg) = buf;
-> +	sg_dma_len(&sg) = len;
->  
->  	return chan->device->device_prep_slave_sg(chan, &sg, 1, dir, flags);
->  }
+Andrew, the patch has been reworked.
+
+Subject: [PATCH] hugetlb: drop prev_vma in hugetlb_get_unmapped_area_topdown()
+
+After the call find_vma_prev(mm, addr, &prev_vma), the following condition
+is always true:
+
+	!prev_vma || (addr >= prev_vma->vm_end)
+
+it can happily drop prev_vma and use find_vma() instead of find_vma_prev().
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/mm/hugetlbpage.c |   18 +++++-------------
+ 1 files changed, 5 insertions(+), 13 deletions(-)
+
+diff --git a/arch/x86/mm/hugetlbpage.c b/arch/x86/mm/hugetlbpage.c
+index 8ecbb4b..0c1701b 100644
+--- a/arch/x86/mm/hugetlbpage.c
++++ b/arch/x86/mm/hugetlbpage.c
+@@ -308,7 +308,7 @@ static unsigned long hugetlb_get_unmapped_area_topdown(struct file *file,
+ {
+ 	struct hstate *h = hstate_file(file);
+ 	struct mm_struct *mm = current->mm;
+-	struct vm_area_struct *vma, *prev_vma;
++	struct vm_area_struct *vma;
+ 	unsigned long base = mm->mmap_base, addr = addr0;
+ 	unsigned long largest_hole = mm->cached_hole_size;
+ 	int first_time = 1;
+@@ -337,22 +337,14 @@ try_again:
+ 		if (!vma)
+ 			return addr;
+
+-		/*
+-		 * new region fits between prev_vma->vm_end and
+-		 * vma->vm_start, use it:
+-		 */
+-		prev_vma = vma->vm_prev;
+-		if (addr + len <= vma->vm_start &&
+-		            (!prev_vma || (addr >= prev_vma->vm_end))) {
++		if (addr + len <= vma->vm_start) {
+ 			/* remember the address as a hint for next time */
+ 		        mm->cached_hole_size = largest_hole;
+ 		        return (mm->free_area_cache = addr);
+-		} else {
++		} else if (mm->free_area_cache == vma->vm_end) {
+ 			/* pull free_area_cache down to the first hole */
+-		        if (mm->free_area_cache == vma->vm_end) {
+-				mm->free_area_cache = vma->vm_start;
+-				mm->cached_hole_size = largest_hole;
+-			}
++			mm->free_area_cache = vma->vm_start;
++			mm->cached_hole_size = largest_hole;
+ 		}
+
+ 		/* remember the largest hole we saw so far */
+-- 
+1.7.7.6
 
