@@ -1,352 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab2CHO3u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 09:29:50 -0500
-Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:47699 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753386Ab2CHO3s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 09:29:48 -0500
-X-Greylist: delayed 109185 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Mar 2012 09:29:48 EST
-Date: Thu, 8 Mar 2012 15:18:47 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Nancy Chen <Nancy.Chen@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Axel Lin <axel.lin@gmail.com>
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH v10] Regulator: Add Anatop regulator driver
-Message-ID: <20120308141847.GG27213@game.jcrosoft.org>
-References: <1331200744-5986-1-git-send-email-paul.liu@linaro.org>
+	id S1756100Ab2CHOtp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 09:49:45 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:56495 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753708Ab2CHOtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 09:49:41 -0500
+Date: Thu, 8 Mar 2012 08:49:37 -0600
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Jes Sorensen <jes@sgi.com>,
+        Ingo Molnar <mingo@redhat.com>, "H . Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-altix@sgi.com, x86@kernel.org,
+        chenkeping@huawei.com
+Subject: Re: [PATCH] IRQ: normalize chip->irq_set_affinity return value on
+ x86 and IA64
+Message-ID: <20120308144937.GA2213@sgi.com>
+References: <1331046112-19526-1-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331200744-5986-1-git-send-email-paul.liu@linaro.org>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+In-Reply-To: <1331046112-19526-1-git-send-email-jiang.liu@huawei.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 14001128292363709414
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrvdekucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrvdekucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:59 Thu 08 Mar     , Ying-Chun Liu (PaulLiu) wrote:
-> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+On Tue, Mar 06, 2012 at 11:01:52PM +0800, Jiang Liu wrote:
+> On x86 and IA64 platforms, interrupt controller chip's irq_set_affinity()
+> method always copies affinity mask to irq_data->affinity field but still
+> returns 0(IRQ_SET_MASK_OK). That return value causes the interrupt core
+> logic unnecessarily copies the mask to irq_data->affinity field again.
+> So return IRQ_SET_MASK_OK_NOCOPY instead of IRQ_SET_MASK_OK to get rid of
+> the duplicated copy operation.
 > 
-> Anatop is an integrated regulator inside i.MX6 SoC.
-> There are 3 digital regulators which controls PU, CORE (ARM), and SOC.
-> And 3 analog regulators which controls 1P1, 2P5, 3P0 (USB).
-> This patch adds the Anatop regulator driver.
+> This patch applies to v3.3-rc6 and has been tested on x86 platforms.
 > 
-> Signed-off-by: Nancy Chen <Nancy.Chen@freescale.com>
-> Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Liam Girdwood <lrg@ti.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> Cc: Axel Lin <axel.lin@gmail.com>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 > ---
->  .../bindings/regulator/anatop-regulator.txt        |   28 +++
->  drivers/regulator/Kconfig                          |    8 +
->  drivers/regulator/Makefile                         |    1 +
->  drivers/regulator/anatop-regulator.c               |  236 ++++++++++++++++++++
->  4 files changed, 273 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/regulator/anatop-regulator.txt
->  create mode 100644 drivers/regulator/anatop-regulator.c
+>  arch/ia64/kernel/iosapic.c     |    4 +++-
+>  arch/ia64/kernel/msi_ia64.c    |    4 ++--
+>  arch/ia64/sn/kernel/irq.c      |    2 +-
+>  arch/ia64/sn/kernel/msi_sn.c   |    2 +-
+>  arch/x86/kernel/apic/io_apic.c |   11 ++++++-----
+>  arch/x86/platform/uv/uv_irq.c  |    2 +-
+>  kernel/irq/internals.h         |    3 +++
+>  kernel/irq/manage.c            |   39 ++++++++++++++++++++++-----------------
+>  kernel/irq/migration.c         |    6 +-----
+>  9 files changed, 40 insertions(+), 33 deletions(-)
 > 
-> diff --git a/Documentation/devicetree/bindings/regulator/anatop-regulator.txt b/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
-> new file mode 100644
-> index 0000000..73363e76
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/anatop-regulator.txt
-> @@ -0,0 +1,28 @@
-> +Anatop Voltage regulators
-> +
-> +Required properties:
-> +- compatible: Must be "fsl,anatop-regulator"
-> +- anatop-vol-bit-shift: Bit shift for the register
-> +- anatop-vol-bit-width: Number of bits used in the register
-> +- anatop-min-bit-val: Minimum value of this register
-> +- anatop-min-voltage: Minimum voltage of this regulator
-> +- anatop-max-voltage: Maximum voltage of this regulator
-> +
-> +Any property defined as part of the core regulator
-> +binding, defined in regulator.txt, can also be used.
-> +
-> +Example:
-> +
-> +	reg_vddpu: regulator-vddpu@140 {
-> +		compatible = "fsl,anatop-regulator";
-> +		regulator-name = "vddpu";
-> +		regulator-min-microvolt = <725000>;
-> +		regulator-max-microvolt = <1300000>;
-> +		regulator-always-on;
-> +		reg = <0x140>;
-> +		anatop-vol-bit-shift = <9>;
-> +		anatop-vol-bit-width = <5>;
-> +		anatop-min-bit-val = <1>;
-> +		anatop-min-voltage = <725000>;
-> +		anatop-max-voltage = <1300000>;
-> +	};
-> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-> index 7a61b17..3857209 100644
-> --- a/drivers/regulator/Kconfig
-> +++ b/drivers/regulator/Kconfig
-> @@ -213,6 +213,14 @@ config REGULATOR_PCAP
->  	 This driver provides support for the voltage regulators of the
->  	 PCAP2 PMIC.
+> diff --git a/arch/ia64/kernel/iosapic.c b/arch/ia64/kernel/iosapic.c
+> index b0f9afe..98f5fa6 100644
+> --- a/arch/ia64/kernel/iosapic.c
+> +++ b/arch/ia64/kernel/iosapic.c
+> @@ -374,8 +374,10 @@ iosapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+>  		iosapic_write(iosapic, IOSAPIC_RTE_LOW(rte_index), low32);
+>  	}
 >  
-> +config REGULATOR_ANATOP
-> +	tristate "Freescale i.MX on-chip ANATOP LDO regulators"
-> +	depends on MFD_ANATOP
-> +	help
-> +	  Say y here to support Freescale i.MX on-chip ANATOP LDOs
-> +	  regulators. It is recommended that this option be
-> +	  enabled on i.MX6 platform.
-> +
->  config REGULATOR_MC13XXX_CORE
->  	tristate
+
+Maybe I haven't looked thoroughly enough, but could you point out where
+the mask is being copied in this function?
+
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+> +#else
+> +	return IRQ_SET_MASK_OK;
+>  #endif
+> -	return 0;
+>  }
 >  
-> diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-> index 503bac8..8440871 100644
-> --- a/drivers/regulator/Makefile
-> +++ b/drivers/regulator/Makefile
-> @@ -48,5 +48,6 @@ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
->  obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
->  obj-$(CONFIG_REGULATOR_TPS65910) += tps65910-regulator.o
->  obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
-> +obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
+>  /*
+> diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
+> index 94e0db7..e155770 100644
+> --- a/arch/ia64/kernel/msi_ia64.c
+> +++ b/arch/ia64/kernel/msi_ia64.c
+> @@ -41,7 +41,7 @@ static int ia64_set_msi_irq_affinity(struct irq_data *idata,
+>  	write_msi_msg(irq, &msg);
+>  	cpumask_copy(idata->affinity, cpumask_of(cpu));
 >  
->  ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
-> diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-> new file mode 100644
-> index 0000000..133a17b
-> --- /dev/null
-> +++ b/drivers/regulator/anatop-regulator.c
-> @@ -0,0 +1,236 @@
-> +/*
-> + * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-> + */
+> -	return 0;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>  }
+>  #endif /* CONFIG_SMP */
+>  
+> @@ -157,7 +157,7 @@ static int dmar_msi_set_affinity(struct irq_data *data,
+>  	dmar_msi_write(irq, &msg);
+>  	cpumask_copy(data->affinity, mask);
+>  
+> -	return 0;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>  }
+>  #endif /* CONFIG_SMP */
+>  
+> diff --git a/arch/ia64/sn/kernel/irq.c b/arch/ia64/sn/kernel/irq.c
+> index dfac09a..f444208 100644
+> --- a/arch/ia64/sn/kernel/irq.c
+> +++ b/arch/ia64/sn/kernel/irq.c
+> @@ -216,7 +216,7 @@ static int sn_set_affinity_irq(struct irq_data *data,
+>  				 sn_irq_lh[irq], list)
+>  		(void)sn_retarget_vector(sn_irq_info, nasid, slice);
+
+Again, could you point out where the mask is being copied in this function?
+
+>  
+> -	return 0;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>  }
+>  
+>  #ifdef CONFIG_SMP
+> diff --git a/arch/ia64/sn/kernel/msi_sn.c b/arch/ia64/sn/kernel/msi_sn.c
+> index 2b98b9e..ebb5b55 100644
+> --- a/arch/ia64/sn/kernel/msi_sn.c
+> +++ b/arch/ia64/sn/kernel/msi_sn.c
+> @@ -208,7 +208,7 @@ static int sn_set_msi_irq_affinity(struct irq_data *data,
+>  	write_msi_msg(irq, &msg);
+>  	cpumask_copy(data->affinity, cpu_mask);
+>  
+> -	return 0;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>  }
+>  #endif /* CONFIG_SMP */
+>  
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index fb07275..a81f888 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -2346,6 +2346,7 @@ ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+>  		/* Only the high 8 bits are valid. */
+>  		dest = SET_APIC_LOGICAL_ID(dest);
+>  		__target_IO_APIC_irq(irq, dest, data->chip_data);
+> +		ret = IRQ_SET_MASK_OK_NOCOPY;
+>  	}
+>  	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+>  	return ret;
+> @@ -2404,7 +2405,7 @@ ir_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+>  		send_cleanup_vector(cfg);
+>  
+>  	cpumask_copy(data->affinity, mask);
+> -	return 0;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>  }
+>  
+>  #else
+> @@ -3209,7 +3210,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+>  
+>  	__write_msi_msg(data->msi_desc, &msg);
+>  
+> -	return 0;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>  }
+>  #endif /* CONFIG_SMP */
+>  
+> @@ -3366,7 +3367,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+>  
+>  	dmar_msi_write(irq, &msg);
+>  
+> -	return 0;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>  }
+>  
+>  #endif /* CONFIG_SMP */
+> @@ -3419,7 +3420,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
+>  
+>  	hpet_msi_write(data->handler_data, &msg);
+>  
+> -	return 0;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>  }
+>  
+>  #endif /* CONFIG_SMP */
+> @@ -3499,7 +3500,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+>  		return -1;
+>  
+>  	target_ht_irq(data->irq, dest, cfg->vector);
+> -	return 0;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>  }
+>  
+>  #endif
+> diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+> index f25c276..a22c416 100644
+> --- a/arch/x86/platform/uv/uv_irq.c
+> +++ b/arch/x86/platform/uv/uv_irq.c
+> @@ -222,7 +222,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+>  	if (cfg->move_in_progress)
+>  		send_cleanup_vector(cfg);
+>  
+> -	return 0;
+> +	return IRQ_SET_MASK_OK_NOCOPY;
+>  }
+>  
+>  /*
+> diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+> index b795231..2c49c40 100644
+> --- a/kernel/irq/internals.h
+> +++ b/kernel/irq/internals.h
+> @@ -103,6 +103,9 @@ extern int irq_select_affinity_usr(unsigned int irq, struct cpumask *mask);
+>  
+>  extern void irq_set_thread_affinity(struct irq_desc *desc);
+>  
+> +extern int irq_do_set_affinity(struct irq_data *data,
+> +			       const struct cpumask *dest, bool force);
 > +
-> +/*
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> +
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> +
-> + * You should have received a copy of the GNU General Public License along
-> + * with this program; if not, write to the Free Software Foundation, Inc.,
-> + * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-> + */
-> +
-> +#include <linux/slab.h>
-> +#include <linux/device.h>
-> +#include <linux/module.h>
-> +#include <linux/err.h>
-> +#include <linux/io.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/mfd/anatop.h>
-> +#include <linux/regulator/driver.h>
-> +#include <linux/regulator/of_regulator.h>
-> +
-> +struct anatop_regulator {
-> +	const char *name;
-> +	u32 control_reg;
-> +	struct anatop *mfd;
-> +	int vol_bit_shift;
-> +	int vol_bit_width;
-> +	int min_bit_val;
-> +	int min_voltage;
-> +	int max_voltage;
-> +	struct regulator_desc rdesc;
-> +	struct regulator_init_data *initdata;
-> +};
-> +
-> +static int anatop_set_voltage(struct regulator_dev *reg, int min_uV,
-> +				  int max_uV, unsigned *selector)
+>  /* Inline functions for support of irq chips on slow busses */
+>  static inline void chip_bus_lock(struct irq_desc *desc)
+>  {
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index a9a9dbe..b410b0b 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -139,6 +139,25 @@ static inline void
+>  irq_get_pending(struct cpumask *mask, struct irq_desc *desc) { }
+>  #endif
+>  
+> +int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
+> +			bool force)
 > +{
-> +	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-> +	u32 val, sel;
-> +	int uv;
+> +	struct irq_desc *desc = irq_data_to_desc(data);
+> +	struct irq_chip *chip = irq_data_get_irq_chip(data);
+> +	int ret;
 > +
-> +	uv = min_uV;
-> +	dev_dbg(&reg->dev, "%s: uv %d, min %d, max %d\n", __func__,
-> +		uv, anatop_reg->min_voltage,
-> +		anatop_reg->max_voltage);
-> +
-> +	if (uv < anatop_reg->min_voltage) {
-> +		if (max_uV > anatop_reg->min_voltage)
-> +			uv = anatop_reg->min_voltage;
-> +		else
-> +			return -EINVAL;
+> +	ret = chip->irq_set_affinity(data, mask, false);
+> +	switch (ret) {
+> +	case IRQ_SET_MASK_OK:
+> +		cpumask_copy(data->affinity, mask);
+> +	case IRQ_SET_MASK_OK_NOCOPY:
+> +		irq_set_thread_affinity(desc);
+> +		ret = 0;
 > +	}
 > +
-> +	if (anatop_reg->control_reg) {
-> +		sel = (uv - anatop_reg->min_voltage) / 25000;
-> +		if (sel * 25000 + anatop_reg->min_voltage
-> +		    > anatop_reg->max_voltage)
-> +			return -EINVAL;
-> +		val = anatop_reg->min_bit_val + sel;
-> +		*selector = sel;
-> +		dev_dbg(&reg->dev, "%s: calculated val %d\n", __func__, val);
-> +		anatop_set_bits(anatop_reg->mfd,
-> +				anatop_reg->control_reg,
-> +				anatop_reg->vol_bit_shift,
-> +				anatop_reg->vol_bit_width,
-> +				val);
-> +		return 0;
-> +	} else {
-> +		return -ENOTSUPP;
-> +	}
-invert the test to make the code more readable
-> +}
-> +
-> +static int anatop_get_voltage_sel(struct regulator_dev *reg)
-> +{
-> +	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-> +	int selector;
-> +
-> +	if (anatop_reg->control_reg) {
-> +		u32 val = anatop_get_bits(anatop_reg->mfd,
-> +					  anatop_reg->control_reg,
-> +					  anatop_reg->vol_bit_shift,
-> +					  anatop_reg->vol_bit_width);
-> +		selector = val - anatop_reg->min_bit_val;
-> +		return selector;
-why do you need selector
-> +	} else {
-> +		return -ENOTSUPP;
-> +	}
-invert the test to make the code more readable
-> +}
-> +
-> +static int anatop_list_voltage(struct regulator_dev *reg, unsigned selector)
-> +{
-> +	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-> +	int uv;
-> +
-> +	uv = anatop_reg->min_voltage + selector * 25000;
-> +	dev_dbg(&reg->dev, "vddio = %d, selector = %u\n", uv, selector);
-> +
-> +	return uv;
-> +}
-> +
-> +static struct regulator_ops anatop_rops = {
-> +	.set_voltage     = anatop_set_voltage,
-> +	.get_voltage_sel = anatop_get_voltage_sel,
-> +	.list_voltage    = anatop_list_voltage,
-> +};
-> +
-> +static int __devinit anatop_regulator_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-you set a dev var but use &pdev->dev most of the time
-> +	struct device_node *np = dev->of_node;
-> +	struct regulator_desc *rdesc;
-> +	struct regulator_dev *rdev;
-> +	struct anatop_regulator *sreg;
-> +	struct regulator_init_data *initdata;
-> +	struct anatop *anatopmfd = dev_get_drvdata(pdev->dev.parent);
-> +	int ret = 0;
-> +
-> +	initdata = of_get_regulator_init_data(dev, np);
-> +	sreg = devm_kzalloc(dev, sizeof(*sreg), GFP_KERNEL);
-> +	if (!sreg)
-> +		return -ENOMEM;
-> +	sreg->initdata = initdata;
-> +	sreg->name = kstrdup(of_get_property(np, "regulator-name", NULL),
-> +			     GFP_KERNEL);
-> +	rdesc = &sreg->rdesc;
-> +	memset(rdesc, 0, sizeof(*rdesc));
-> +	rdesc->name = sreg->name;
-> +	rdesc->ops = &anatop_rops;
-> +	rdesc->type = REGULATOR_VOLTAGE;
-> +	rdesc->owner = THIS_MODULE;
-> +	sreg->mfd = anatopmfd;
-> +	if (of_property_read_u32(np, "reg", &sreg->control_reg)) {
-> +		dev_err(&pdev->dev, "no reg property set\n");
-> +		ret = -ENODEV;
-why not return the err return by the read_u32 or atleast print it
-> +		goto anatop_probe_end;
-> +	}
-> +	if (of_property_read_u32(np, "anatop-vol-bit-width",
-> +				 &sreg->vol_bit_width)) {
-> +		dev_err(&pdev->dev, "no anatop-vol-bit-width property set\n");
-> +		ret = -ENODEV;
-> +		goto anatop_probe_end;
-> +	}
-> +	if (of_property_read_u32(np, "anatop-vol-bit-shift",
-> +				 &sreg->vol_bit_shift)) {
-> +		dev_err(&pdev->dev, "no anatop-vol-bit-shift property set\n");
-> +		ret = -ENODEV;
-> +		goto anatop_probe_end;
-> +	}
-> +	if (of_property_read_u32(np, "anatop-min-bit-val",
-> +				 &sreg->min_bit_val)) {
-> +		dev_err(&pdev->dev, "no anatop-min-bit-val property set\n");
-> +		ret = -ENODEV;
-> +		goto anatop_probe_end;
-> +	}
-> +	if (of_property_read_u32(np, "anatop-min-voltage",
-> +				 &sreg->min_voltage)) {
-> +		dev_err(&pdev->dev, "no anatop-min-voltage property set\n");
-> +		ret = -ENODEV;
-> +		goto anatop_probe_end;
-> +	}
-> +	if (of_property_read_u32(np, "anatop-max-voltage",
-> +				 &sreg->max_voltage)) {
-> +		dev_err(&pdev->dev, "no anatop-max-voltage property set\n");
-> +		ret = -ENODEV;
-> +		goto anatop_probe_end;
-> +	}
-> +
-> +	/* register regulator */
-> +	rdev = regulator_register(rdesc, &pdev->dev,
-> +				  initdata, sreg, pdev->dev.of_node);
-> +	if (IS_ERR(rdev)) {
-> +		dev_err(&pdev->dev, "failed to register %s\n",
-> +			rdesc->name);
-> +		ret = PTR_ERR(rdev);
-> +		goto anatop_probe_end;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, rdev);
-> +
-> +anatop_probe_end:
-> +	if (ret != 0 && sreg->name)
-> +		kfree(sreg->name);
-kfree can be called with a NULL pointer
 > +	return ret;
 > +}
 > +
-> +static int __devexit anatop_regulator_remove(struct platform_device *pdev)
-> +{
-> +	struct regulator_dev *rdev = platform_get_drvdata(pdev);
-> +	struct anatop_regulator *sreg = rdev_get_drvdata(rdev);
-> +	kfree(sreg->name);
-> +	regulator_unregister(rdev);
-return from the unregister
-> +	return 0;
-> +}
-Best Regards,
-J.
+>  int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+>  {
+>  	struct irq_chip *chip = irq_data_get_irq_chip(data);
+> @@ -149,14 +168,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+>  		return -EINVAL;
+>  
+>  	if (irq_can_move_pcntxt(data)) {
+> -		ret = chip->irq_set_affinity(data, mask, false);
+> -		switch (ret) {
+> -		case IRQ_SET_MASK_OK:
+> -			cpumask_copy(data->affinity, mask);
+> -		case IRQ_SET_MASK_OK_NOCOPY:
+> -			irq_set_thread_affinity(desc);
+> -			ret = 0;
+> -		}
+> +		ret = irq_do_set_affinity(data, mask, false);
+>  	} else {
+>  		irqd_set_move_pending(data);
+>  		irq_copy_pending(desc, mask);
+> @@ -280,9 +292,7 @@ EXPORT_SYMBOL_GPL(irq_set_affinity_notifier);
+>  static int
+>  setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
+>  {
+> -	struct irq_chip *chip = irq_desc_get_chip(desc);
+>  	struct cpumask *set = irq_default_affinity;
+> -	int ret;
+>  
+>  	/* Excludes PER_CPU and NO_BALANCE interrupts */
+>  	if (!irq_can_set_affinity(irq))
+> @@ -301,13 +311,8 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
+>  	}
+>  
+>  	cpumask_and(mask, cpu_online_mask, set);
+> -	ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
+> -	switch (ret) {
+> -	case IRQ_SET_MASK_OK:
+> -		cpumask_copy(desc->irq_data.affinity, mask);
+> -	case IRQ_SET_MASK_OK_NOCOPY:
+> -		irq_set_thread_affinity(desc);
+> -	}
+> +	irq_do_set_affinity(&desc->irq_data, mask, false);
+> +
+>  	return 0;
+>  }
+>  #else
+> diff --git a/kernel/irq/migration.c b/kernel/irq/migration.c
+> index 4742090..ef04dab 100644
+> --- a/kernel/irq/migration.c
+> +++ b/kernel/irq/migration.c
+> @@ -44,11 +44,7 @@ void irq_move_masked_irq(struct irq_data *idata)
+>  	 */
+>  	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
+>  		   < nr_cpu_ids))
+> -		if (!chip->irq_set_affinity(&desc->irq_data,
+> -					    desc->pending_mask, false)) {
+> -			cpumask_copy(desc->irq_data.affinity, desc->pending_mask);
+> -			irq_set_thread_affinity(desc);
+> -		}
+> +		irq_do_set_affinity(&desc->irq_data, desc->pending_mask, false);
+>  
+>  	cpumask_clear(desc->pending_mask);
+>  }
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
