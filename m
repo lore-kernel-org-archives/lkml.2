@@ -1,82 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab2CHFzr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 00:55:47 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:41024 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab2CHFzp (ORCPT
+	id S1752859Ab2CHF6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 00:58:15 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49689 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab2CHF6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 00:55:45 -0500
-Date: Thu, 8 Mar 2012 16:55:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tony Lindgren <tony@atomide.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Subject: linux-next: manual merge of the arm-soc tree with the omap_dss2
- tree
-Message-Id: <20120308165539.8a3b718be677de97a8767cd5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Thu, 8 Mar 2012 00:58:09 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 8 Mar 2012 14:56:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, dhillf@gmail.com, aarcange@redhat.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V2 4/9] memcg: Add non reclaim resource tracking to
+ memcg
+Message-Id: <20120308145628.f911419d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <87ipikdyud.fsf@linux.vnet.ibm.com>
+References: <1330593380-1361-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1330593380-1361-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20120302173816.9796f243.kamezawa.hiroyu@jp.fujitsu.com>
+	<87ipikdyud.fsf@linux.vnet.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__8_Mar_2012_16_55_39_+1100_r+CVUrMNoJ2P=hBP"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__8_Mar_2012_16_55_39_+1100_r+CVUrMNoJ2P=hBP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 04 Mar 2012 23:37:22 +0530
+"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-Hi all,
+> On Fri, 2 Mar 2012 17:38:16 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Thu,  1 Mar 2012 14:46:15 +0530
+> > "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> > 
+> > > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-omap1/board-nokia770.c between commit 58e0d6ab02eb ("OMAP:
-N770: remove HWA742 platform data") from the omap_dss2 tree and commit
-2e3ee9f45b3c ("ARM: OMAP1: Move most of plat/io.h into local iomap.h")
-from the arm-soc tree.
+> > 
+> > > +	help
+> > > +	  Add non reclaim resource management to memory resource controller.
+> > > +	  Currently only HugeTLB pages will be managed using this extension.
+> > > +	  The controller limit is enforced during mmap(2), so that
+> > > +	  application can fall back to allocations using smaller page size
+> > > +	  if the memory controller limit prevented them from allocating HugeTLB
+> > > +	  pages.
+> > > +
+> > 
+> > Hm. In other thread, KMEM accounting is discussed. There is 2 proposals and
+> >  - 1st is accounting only reclaimable slabs (as dcache etc.)
+> >  - 2nd is accounting all slab allocations.
+> > 
+> > Here, 2nd one includes NORECLAIM kmem cache. (Discussion is not ended.)
+> > 
+> > So, for your developments,  How about MEM_RES_CTLR_HUGEPAGE ?
+> 
+> Frankly I didn't like the noreclaim name, I also didn't want to indicate
+> HUGEPAGE, because the code doesn't make any huge page assumption.
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+You can add this config for HUGEPAGE interfaces.
+Later we can sort out other configs.
 
-diff --cc arch/arm/mach-omap1/board-nokia770.c
-index 9b6332a,abdbdb0..0000000
---- a/arch/arm/mach-omap1/board-nokia770.c
-+++ b/arch/arm/mach-omap1/board-nokia770.c
-@@@ -30,7 -29,7 +29,6 @@@
-  #include <plat/usb.h>
-  #include <plat/board.h>
-  #include <plat/keypad.h>
-- #include "common.h"
- -#include <plat/hwa742.h>
-  #include <plat/lcd_mipid.h>
-  #include <plat/mmc.h>
-  #include <plat/clock.h>
 
---Signature=_Thu__8_Mar_2012_16_55_39_+1100_r+CVUrMNoJ2P=hBP
-Content-Type: application/pgp-signature
+> > 
+> > 
+> > >  config CGROUP_MEM_RES_CTLR_SWAP
+> > >  	bool "Memory Resource Controller Swap Extension"
+> > >  	depends on CGROUP_MEM_RES_CTLR && SWAP
+> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > > index 6728a7a..b00d028 100644
+> > > --- a/mm/memcontrol.c
+> > > +++ b/mm/memcontrol.c
+> > > @@ -49,6 +49,7 @@
+> > >  #include <linux/page_cgroup.h>
+> > >  #include <linux/cpu.h>
+> > >  #include <linux/oom.h>
+> > > +#include <linux/region.h>
+> > >  #include "internal.h"
+> > >  #include <net/sock.h>
+> > >  #include <net/tcp_memcontrol.h>
+> > > @@ -214,6 +215,11 @@ static void mem_cgroup_threshold(struct mem_cgroup *memcg);
+> > >  static void mem_cgroup_oom_notify(struct mem_cgroup *memcg);
+> > >  
+> > >  /*
+> > > + * Currently only hugetlbfs pages are tracked using no reclaim
+> > > + * resource count. So we need only MAX_HSTATE res counter
+> > > + */
+> > > +#define MEMCG_MAX_NORECLAIM HUGE_MAX_HSTATE
+> > > +/*
+> > >   * The memory controller data structure. The memory controller controls both
+> > >   * page cache and RSS per cgroup. We would eventually like to provide
+> > >   * statistics based on the statistics developed by Rik Van Riel for clock-pro,
+> > > @@ -235,6 +241,11 @@ struct mem_cgroup {
+> > >  	 */
+> > >  	struct res_counter memsw;
+> > >  	/*
+> > > +	 * the counter to account for non reclaim resources
+> > > +	 * like hugetlb pages
+> > > +	 */
+> > > +	struct res_counter no_rcl_res[MEMCG_MAX_NORECLAIM];
+> > 
+> > struct res_counter hugepages;
+> > 
+> > will be ok.
+> > 
+> 
+> My goal was to make this patch not to mention hugepages, because
+> it doesn't really have any depedency on hugepages. That is one of the reason
+> for adding MEMCG_MAX_NORECLAIM. Later if we want other in memory file system
+> (shmemfs) to limit the resource usage in a similar fashion, we should be
+> able to use this memcg changes.
+> 
+> May be for this patchset I can make the changes you suggested and later
+> when we want to reuse the code make it more generic ?
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+yes. If there is no user interface change, internal code change will be welcomed.
 
-iQIcBAEBCAAGBQJPWEnbAAoJEECxmPOUX5FE/lIP+wSIKyn7EFKDRkK0LH/rm9Ga
-QySNT63cJv58WFDQS+3+BnAO6fRFVXt7lVFJbbRVq2Oq6PbzJ0rei1u0hCRcMsa/
-Vr4sFMU4Te29YU4rM/vgl7yDf1gv0xSa4QGvFQwAHp5I6GroH6cebs0E0XNoWTQt
-rVBUW9/cTnxALnDjZdzGaKM5D58AOWW2PJOonRsEGB8+CE1UgxmXZXHeks+9D2rf
-eqEP20ynUPDA64M4E1m/syex4Wa5HIRxkODxl7mnwVOXPnKzWpNDpH9qZBmx1uTG
-FgflkBj7xGkJ/UvCEghrNZorI1mL5TpRZr8M3dCiB1seKNJ1OmvpmMW/BZnf2u9N
-wqoQ/ClIN4RNUpo/+khOfywa/Fg70t0djvUGENkLCEIE0ynHyoLISZpMOcfuqqyD
-iiRPoqA74SHFYEUT5pRKzTZl5Zeb3vW8y2tmfiUHiFiHxPOB+eiOEZk5VProwKzu
-TEGy0nUckU4+RjX71EL28jMJbQfRRabY/Grsn1i6iudbM5F+3f5NEgjcRLckVVBW
-/pofuaF3Xmd6BJEPKprQUDbN3jSAdrd7K4nVHF2Ynxopy2MmsOocI6qR4gtj0GGR
-2uuMgnTsmubRQBpFTRqfv2LzxUfiCpSU3vI+9gKWhbFMG7XiVEGzf8T9f7Ip+gwT
-MbuUIR/SAyWMBMqC0PCy
-=3wBG
------END PGP SIGNATURE-----
 
---Signature=_Thu__8_Mar_2012_16_55_39_+1100_r+CVUrMNoJ2P=hBP--
+> 
+> > 
+> > > +	/*
+> > >  	 * Per cgroup active and inactive list, similar to the
+> > >  	 * per zone LRU lists.
+> > >  	 */
+> > > @@ -4887,6 +4898,7 @@ err_cleanup:
+> > >  static struct cgroup_subsys_state * __ref
+> > >  mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+> > >  {
+> > > +	int idx;
+> > >  	struct mem_cgroup *memcg, *parent;
+> > >  	long error = -ENOMEM;
+> > >  	int node;
+> > > @@ -4922,6 +4934,10 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+> > >  	if (parent && parent->use_hierarchy) {
+> > >  		res_counter_init(&memcg->res, &parent->res);
+> > >  		res_counter_init(&memcg->memsw, &parent->memsw);
+> > > +		for (idx = 0; idx < MEMCG_MAX_NORECLAIM; idx++) {
+> > > +			res_counter_init(&memcg->no_rcl_res[idx],
+> > > +					 &parent->no_rcl_res[idx]);
+> > > +		}
+> > 
+> > You can remove this kinds of loop and keep your implemenation simple.
+> 
+> 
+> Can you explain this ? How can we remote the loop ?. We want to track
+> each huge page size as a seperate resource. 
+> 
+Ah, sorry. I miseed it. please ignore.
+
+
+
+> > > +long mem_cgroup_try_noreclaim_charge(struct list_head *chg_list,
+> > > +				     unsigned long from, unsigned long to,
+> > > +				     int idx)
+> > > +{
+> > > +	long chg;
+> > > +	int ret = 0;
+> > > +	unsigned long csize;
+> > > +	struct mem_cgroup *memcg;
+> > > +	struct res_counter *fail_res;
+> > > +
+> > > +	/*
+> > > +	 * Get the task cgroup within rcu_readlock and also
+> > > +	 * get cgroup reference to make sure cgroup destroy won't
+> > > +	 * race with page_charge. We don't allow a cgroup destroy
+> > > +	 * when the cgroup have some charge against it
+> > > +	 */
+> > > +	rcu_read_lock();
+> > > +	memcg = mem_cgroup_from_task(current);
+> > > +	css_get(&memcg->css);
+> > 
+> > css_tryget() ?
+> > 
+> 
+> 
+> Why ?
+> 
+
+current<->cgroup relationship isn't under any locks. So, we do speculative
+access with rcu_read_lock() and css_tryget().
+
+Thanks,
+-Kame
+
