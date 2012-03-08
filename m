@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757866Ab2CHVoi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 16:44:38 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55409 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757767Ab2CHVoh (ORCPT
+	id S1757948Ab2CHVon (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 16:44:43 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4058 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757767Ab2CHVoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 16:44:37 -0500
-Date: Thu, 8 Mar 2012 21:44:25 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        davej@redhat.com, jboyer@redhat.com, tyhicks@canonical.com,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: Re: [PATCH] hugetlbfs: lockdep annotate root inode properly
-Message-ID: <20120308214425.GA23916@ZenIV.linux.org.uk>
-References: <1331198116-13670-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120308130256.c7855cbd.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120308130256.c7855cbd.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Mar 2012 16:44:39 -0500
+X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=anWZLHutpBUnYfsKbQAA:9 a=8RIOfjV1VssmndXOg9YA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331243078.25686.510.camel@gandalf.stny.rr.com>
+Subject: Re: [ANNOUNCE] 3.2.9-rt17
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Thu, 08 Mar 2012 16:44:38 -0500
+In-Reply-To: <1331242625.11248.433.camel@twins>
+References: <alpine.LFD.2.02.1203072225020.2742@ionos>
+	 <1331230991.25686.452.camel@gandalf.stny.rr.com>
+	 <1331231287.11248.396.camel@twins>
+	 <1331232159.25686.456.camel@gandalf.stny.rr.com>
+	 <1331235579.11248.402.camel@twins>
+	 <1331237441.25686.469.camel@gandalf.stny.rr.com>
+	 <1331238369.11248.426.camel@twins>
+	 <1331240882.25686.499.camel@gandalf.stny.rr.com>
+	 <1331241627.11248.430.camel@twins>
+	 <1331241940.25686.502.camel@gandalf.stny.rr.com>
+	 <1331242104.11248.432.camel@twins>
+	 <1331242574.25686.505.camel@gandalf.stny.rr.com>
+	 <1331242625.11248.433.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 01:02:56PM -0800, Andrew Morton wrote:
-> > This fix the below lockdep warning
+On Thu, 2012-03-08 at 22:37 +0100, Peter Zijlstra wrote:
+
+> > Now when the original task releases the lock again, the other task can
+> > take it just like it does on mainline.
 > 
-> OK, what's going on here.
+> Now interleave it with a third task of even higher priority that puts
+> the spinner to sleep.
 
-Deadlock in hugetlbfs mmap getting misreported.
+So? It will eventually have to allow the task to run. Adding a "third
+higher priority" task can cause problems in any other part of the -rt
+kernel.
 
-One last time: ->mmap_sem nests inside ->i_mutex.  Both for regular
-files and for directories.  Always had.
+We don't need to worry about priority inversion. If the higher task
+blocks on the original task, it will boost its priority (even if it does
+the adaptive spin) which will again boost the task that it preempted.
 
-For directories there's copy_to_user() from ->readdir() done under ->i_mutex.
-For regular files there's copy_from_user() from ->write(), usually done under
-->i_mutex.  On hugetlbfs there's copy_to_user() from ->read() done under
-->i_mutex.
+Now we may need to add a sched_yield() in the adaptive spin to let the
+other task run.
 
-It had not changed at all.  Lockdep sees both call chains; the only question
-is which chain is seen first.  And usually reading a directory happens earlier
-in the boot than writing into a file.  That's all there is to it.
+-- Steve
 
-Unfortunately, the fact that call chain being reported is obviously about
-directories leads to false hopes that deadlock doesn't exist - mmap()
-obviously can't happen to a directory inode, so people hope that it's a
-false positive.  It isn't.
 
-Patch separating directory and non-directory ->i_mutex into different classes
-went in at some point, precisely due to those hopes.  It had a braino that
-made it useless.  Fix for that braino had been posted and sits my queue; I'll
-push it to Linus along with other pending fixes tonight.
 
-It will *not* eliminate the (very real) deadlock.  It might make the warning
-go away, but only if read() on hugetlbfs files doesn't happen during boot.
-
-I suspect that they right thing would be to have a way to set explicit
-nesting rules, not tied to speficic call trace.  I hadn't looked into
-lockdep guts, so no idea how much will that hurt to implement.  As in
-lockdep_lock_nests(class_outer, class_inner, message), acting as if
-there had been a call chain where class_outer had been taken before
-class_inner, with message going in place of call trace for that chain
-when we run into a conflict...
