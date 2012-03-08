@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab2CHS1U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:27:20 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50612 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363Ab2CHS1R (ORCPT
+	id S1756967Ab2CHS2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:28:19 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:51088 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab2CHS2S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:27:17 -0500
-Date: Thu, 8 Mar 2012 10:27:12 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, axboe@kernel.dk,
-        hughd@google.com, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dpshah@google.com, ctalbott@google.com, rni@google.com
-Subject: Re: [PATCHSET] mempool, percpu, blkcg: fix percpu stat allocation
- and remove stats_lock
-Message-ID: <20120308182712.GD25508@google.com>
-References: <20120306210954.GF32148@redhat.com>
- <20120306132034.ecaf8b20.akpm@linux-foundation.org>
- <20120306213437.GG32148@redhat.com>
- <20120306135531.828ca78e.akpm@linux-foundation.org>
- <20120307145556.GA11262@redhat.com>
- <20120307150549.955d6f9c.akpm@linux-foundation.org>
- <20120308175708.GB22922@redhat.com>
- <20120308180833.GA25508@google.com>
- <20120308181125.GB25508@google.com>
- <20120308182245.GC22922@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120308182245.GC22922@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 8 Mar 2012 13:28:18 -0500
+Message-ID: <1331231287.11248.396.camel@twins>
+Subject: Re: [ANNOUNCE] 3.2.9-rt17
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Thu, 08 Mar 2012 19:28:07 +0100
+In-Reply-To: <1331230991.25686.452.camel@gandalf.stny.rr.com>
+References: <alpine.LFD.2.02.1203072225020.2742@ionos>
+	 <1331230991.25686.452.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 01:22:45PM -0500, Vivek Goyal wrote:
-> Does that mean in 3.4 we will continue to kill throttling groups and lose
-> all the policies and stats upon elevator change? So 3.4 will be one odd
-> release w.r.t this user visible change.
+On Thu, 2012-03-08 at 13:23 -0500, Steven Rostedt wrote:
+> So basically what you tried to do was just set the owner of the lock to
+> have the priority of the task that wants the lock, until it releases it?
+> But by doing it without having this task sleep? 
 
-The whole thing is scheduled for 3.5, so no worries.
+No, by having it sleep ;-)
 
--- 
-tejun
+So you do the full PI sleeping lock thing, except you return fail if you
+loose the acquisition race on wakeup and you mark this waiter as
+'special'.
+
+Then on every rt_mutex block you have to do a deadlock analysis on the
+PI blocking chain (preferably shared with PI boost traversal of said
+chain), during that scan you collect all special tagged waiters.
+
+If you find a deadlock, wake all these special waiters and have them
+return -EDEADLK.
+
+I guess you could also do the full spin_deadlock() and do away with the
+try part and purely rely on the deadlock detection.
