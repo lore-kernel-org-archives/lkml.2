@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534Ab2CHTm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 14:42:58 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50582 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab2CHTm4 convert rfc822-to-8bit (ORCPT
+	id S1758545Ab2CHTtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 14:49:09 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56236 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758497Ab2CHTtI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 14:42:56 -0500
-Message-ID: <1331235766.11248.404.camel@twins>
-Subject: Re: [PATCH] x86,nmi: Fix page faults by nmiaction if kmemcheck is
- enabled
+	Thu, 8 Mar 2012 14:49:08 -0500
+Message-ID: <1331236139.11248.407.camel@twins>
+Subject: Re: [ANNOUNCE] 3.2.9-rt17
 From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>
-Date: Thu, 08 Mar 2012 20:42:46 +0100
-In-Reply-To: <1331234231-18914-1-git-send-email-dzickus@redhat.com>
-References: <1331234231-18914-1-git-send-email-dzickus@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Thu, 08 Mar 2012 20:48:59 +0100
+In-Reply-To: <1331232159.25686.456.camel@gandalf.stny.rr.com>
+References: <alpine.LFD.2.02.1203072225020.2742@ionos>
+	 <1331230991.25686.452.camel@gandalf.stny.rr.com>
+	 <1331231287.11248.396.camel@twins>
+	 <1331232159.25686.456.camel@gandalf.stny.rr.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -25,28 +27,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 14:17 -0500, Don Zickus wrote:
+On Thu, 2012-03-08 at 13:42 -0500, Steven Rostedt wrote:
+> cpu_chill_on_lock().
 
-> +int __register_nmi_handler(unsigned int type, unsigned int nmiflags,
-> +                                               struct nmiaction *na)
->  {
-> +       if (!na->handler)
->                 return -EINVAL;
->  
-> +       na->flags = nmiflags;
->  
-> +       return __setup_nmi(type, na);
->  }
-> +EXPORT_SYMBOL_GPL(__register_nmi_handler);
+I think what you were hinting at is:
 
-Put the na->flags thing in the CPP bit, put the !handler check in
-__setup_nmi() and loose the pointless wrappery?
+  spin_lock(&lock);
+  spin_unlock(&lock);
 
->  void unregister_nmi_handler(unsigned int type, const char *name)
->  {
-> +       __free_nmi(type, name);
->  }
->  
->  EXPORT_SYMBOL_GPL(unregister_nmi_handler); 
+which is the rt_mutex implementation of spin_unlock_wait(). No new
+function needed for that.
 
-That's another quite pointless wrapper there..
+Trouble is that you cannot use inode->i_lock as explained..
