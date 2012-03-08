@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab2CHJVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 04:21:52 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40698 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846Ab2CHJVs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 04:21:48 -0500
-Message-ID: <4F587A28.6080205@linutronix.de>
-Date: Thu, 08 Mar 2012 10:21:44 +0100
-From: Richard Weinberger <rw@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-CC: dedekind1@gmail.com, tglx@linutronix.de, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, tim.bird@am.sony.com
-Subject: Re: [RFC][PATCH 0/7] UBI checkpointing support
-References: <1329250006-22944-1-git-send-email-rw@linutronix.de> <1331138007.3463.16.camel@sauron.fi.intel.com> <4F57D0C4.1050605@linutronix.de> <20120308090835.032fe13a@pixies.home.jungo.com>
-In-Reply-To: <20120308090835.032fe13a@pixies.home.jungo.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1756097Ab2CHJWb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 04:22:31 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:55227 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755846Ab2CHJW2 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Thu, 8 Mar 2012 04:22:28 -0500
+Message-Id: <4F58889202000078000770E7@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 08 Mar 2012 09:23:14 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ix86: in kernel context print control and debug
+ registers too
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.03.2012 08:08, Shmulik Ladkani wrote:
-> But doesn't the CP data (sorry, UBIUBI data :) need to have one
-> 'struct ubi_cp_ec' descriptor for each used/free PEB, and as such the
-> maximum number of 'ubi_cp_ec' descriptors is total device PEBs, meaning
-> CP data is still linearly scaled to device size (with a very small
-> multiplier)?
->
+While for a user mode register dump it may be reasonable to skip those
+(albeit x86-64 doesn't do so), for kernel mode dumps these should be
+printed to make sure all information possibly necessary for analysis is
+available.
 
-It's UBIVIS data. :D
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
 
-The size of the checkpoint depends on the number of free/used PEBs.
-But in most cases the checkpoints fits into one or two PEBs.
-Because larger devices have larger erase blocks...
+---
+ arch/x86/kernel/dumpstack_32.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-//richard
+--- 3.3-rc6/arch/x86/kernel/dumpstack_32.c
++++ 3.3-rc6-ix86-kernel-show-all-regs/arch/x86/kernel/dumpstack_32.c
+@@ -87,7 +87,7 @@ void show_registers(struct pt_regs *regs
+ 	int i;
+ 
+ 	print_modules();
+-	__show_regs(regs, 0);
++	__show_regs(regs, !user_mode_vm(regs));
+ 
+ 	printk(KERN_EMERG "Process %.*s (pid: %d, ti=%p task=%p task.ti=%p)\n",
+ 		TASK_COMM_LEN, current->comm, task_pid_nr(current),
 
--- 
-Phone: +49 7556 91 98 91; Fax.: +49 7556 91 98 86
 
-Firmensitz: 88690 Uhldingen, Auf dem Berg 3
-Registergericht: Amtsgericht Freiburg i. Br., HRB 700 806;
-StNr. 87007/07777; Ust-Id Nr.: DE252739476
-Geschäftsführer: Heinz Egger, Thomas Gleixner
+
