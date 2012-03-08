@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab2CHSFq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 13:05:46 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51927 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868Ab2CHSEH (ORCPT
+	id S1754256Ab2CHSHc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 13:07:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36756 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751273Ab2CHSHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 13:04:07 -0500
-Subject: [PATCH v5 1/7] mm/memcg: scanning_global_lru means mem_cgroup_disabled
-To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Date: Thu, 08 Mar 2012 22:04:01 +0400
-Message-ID: <20120308180401.27621.31137.stgit@zurg>
-In-Reply-To: <20120308175752.27621.54781.stgit@zurg>
-References: <20120308175752.27621.54781.stgit@zurg>
-User-Agent: StGit/0.15
+	Thu, 8 Mar 2012 13:07:31 -0500
+Date: Thu, 8 Mar 2012 18:07:29 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Cyril Chemparathy <cyril@ti.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: Fix setting selector in tps6524x set_voltage
+ function
+Message-ID: <20120308180729.GT3638@opensource.wolfsonmicro.com>
+References: <1331172137.14592.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NQqDiQVflaif2hna"
+Content-Disposition: inline
+In-Reply-To: <1331172137.14592.1.camel@phoenix>
+X-Cookie: Don't Worry, Be Happy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hugh Dickins <hughd@google.com>
 
-Although one has to admire the skill with which it has been concealed,
-scanning_global_lru(mz) is actually just an interesting way to test
-mem_cgroup_disabled().  Too many developer hours have been wasted on
-confusing it with global_reclaim(): just use mem_cgroup_disabled().
+--NQqDiQVflaif2hna
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+On Thu, Mar 08, 2012 at 10:02:17AM +0800, Axel Lin wrote:
+> Don't assign the voltage to selector.
 
----
+Applied, thanks.
 
-add/remove: 0/0 grow/shrink: 3/1 up/down: 17/-16 (1)
-function                                     old     new   delta
-inactive_anon_is_low                         101     110      +9
-zone_nr_lru_pages                            108     114      +6
-get_reclaim_stat                              44      46      +2
-shrink_inactive_list                        1227    1211     -16
----
- mm/vmscan.c |   18 ++++--------------
- 1 files changed, 4 insertions(+), 14 deletions(-)
+--NQqDiQVflaif2hna
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 57d8ef6..8d1745c 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -164,26 +164,16 @@ static bool global_reclaim(struct scan_control *sc)
- {
- 	return !sc->target_mem_cgroup;
- }
--
--static bool scanning_global_lru(struct mem_cgroup_zone *mz)
--{
--	return !mz->mem_cgroup;
--}
- #else
- static bool global_reclaim(struct scan_control *sc)
- {
- 	return true;
- }
--
--static bool scanning_global_lru(struct mem_cgroup_zone *mz)
--{
--	return true;
--}
- #endif
- 
- static struct zone_reclaim_stat *get_reclaim_stat(struct mem_cgroup_zone *mz)
- {
--	if (!scanning_global_lru(mz))
-+	if (!mem_cgroup_disabled())
- 		return mem_cgroup_get_reclaim_stat(mz->mem_cgroup, mz->zone);
- 
- 	return &mz->zone->reclaim_stat;
-@@ -192,7 +182,7 @@ static struct zone_reclaim_stat *get_reclaim_stat(struct mem_cgroup_zone *mz)
- static unsigned long zone_nr_lru_pages(struct mem_cgroup_zone *mz,
- 				       enum lru_list lru)
- {
--	if (!scanning_global_lru(mz))
-+	if (!mem_cgroup_disabled())
- 		return mem_cgroup_zone_nr_lru_pages(mz->mem_cgroup,
- 						    zone_to_nid(mz->zone),
- 						    zone_idx(mz->zone),
-@@ -1804,7 +1794,7 @@ static int inactive_anon_is_low(struct mem_cgroup_zone *mz)
- 	if (!total_swap_pages)
- 		return 0;
- 
--	if (!scanning_global_lru(mz))
-+	if (!mem_cgroup_disabled())
- 		return mem_cgroup_inactive_anon_is_low(mz->mem_cgroup,
- 						       mz->zone);
- 
-@@ -1843,7 +1833,7 @@ static int inactive_file_is_low_global(struct zone *zone)
-  */
- static int inactive_file_is_low(struct mem_cgroup_zone *mz)
- {
--	if (!scanning_global_lru(mz))
-+	if (!mem_cgroup_disabled())
- 		return mem_cgroup_inactive_file_is_low(mz->mem_cgroup,
- 						       mz->zone);
- 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBAgAGBQJPWPVbAAoJEBus8iNuMP3dlTQP/jcvFjLO8JiOt251j3hmcTrW
+ahE+NOjYbcfqpNBcUPHzNhuCJnTa2qie0P4IpuPqy6AmHtRB+Vd9qzkKts/SFBsv
+oonXAIk2M+gJwk4JQTG/AwtOV4OIP65tsZ+XnrmDrlipKoOqiFIc7gfzM3ffk1YJ
+9fVt1z3WogP5kcQtyTXXXFcBu8M1+D9UZJTkVE5RwMwfOZ6KGW/4Qo2UbZfoTPfp
+Y85eJNSEsm78jw+jQHDbrNk9zKT4NeS1jF9ZuiuCZgoQbKtRzttiWK4XOeDJ/uW3
+rFxOnuwRblaBvfvyULuLzoWp4/K6jwn/GblGidTQ2RgtkWng8b9h5s0Brl6be21v
+420qw7Fn4p44rIUQzs3PF3URV3QXVmQZumUtXl478v4ij5LvsaPZkyXExdG+UN5W
+O0mOZjTnFzaPyN2U4aachHISz3Doa1zCuYlPEmpIZJcdm9JENuu1P/IeKUlw+qrh
+KqtqX7/MtWiTOtg0ZhOxeCRyRoDHdu14+m0zKwK4DiGIL4nAwno+dbNOLw8ZWNMK
+UqcSt8Ikh8JSYY04UESVH6D4x2TVpNkWGbnYiHyCGOiqHUaYrOU7ufgqP8tW3BkY
+uw3s+GAE/FS44A/nnbE4xHpMYhuRxc8Z8j4ovlruD3crb5nEAtLhbqR2gDdiUAKt
+r/Ixxip44T4K5C3Mxhwd
+=LrGs
+-----END PGP SIGNATURE-----
+
+--NQqDiQVflaif2hna--
