@@ -1,185 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab2CHHlN (ORCPT <rfc822;w@1wt.eu>);
+	id S1753339Ab2CHHlR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 02:41:17 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37418 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752897Ab2CHHlN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Mar 2012 02:41:13 -0500
-Received: from mga09.intel.com ([134.134.136.24]:16209 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751487Ab2CHHlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 02:41:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="118949902"
-Message-ID: <4F586266.8060504@linux.intel.com>
-Date: Wed, 07 Mar 2012 23:40:22 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Huang Shijie <shijie8@gmail.com>
-CC: jon@jonshouse.co.uk, linux-kernel@vger.kernel.org
-Subject: Re: Random process lockup on ARM board: alsa-lib-1.0.25, FUTEX_WAIT_PRIVATE
-References: <1329393691.6830.20.camel@jonspc> <1329512682.29051.1.camel@jonspc> <1329570128.6670.0.camel@jonspc> <4F400BBF.9020707@ladisch.de> <1329603022.1089.57.camel@jonspc> <4F41FC28.1070605@ladisch.de> <1329926198.22918.10.camel@jonspc> <4F45167A.6080706@ladisch.de> <1330043397.4669.44.camel@jonspc> <CAMiH66EdB9KN1gw_hG=34zab56RxcPKB7G2MyJALfD_5z1yeVQ@mail.gmail.com> <4F57C007.5050006@linux.intel.com> <CAMiH66E3z3H2cYQs5KQuVp_iNdusOYJ+XF6jfbJ9Z_uJ7v45_w@mail.gmail.com> <4F582949.6000708@linux.intel.com> <CAMiH66HQ=K9ucKeHP_AuXY9COd083AvsT+Nu-L2=WS-bu35rkQ@mail.gmail.com>
-In-Reply-To: <CAMiH66HQ=K9ucKeHP_AuXY9COd083AvsT+Nu-L2=WS-bu35rkQ@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Date: Thu, 8 Mar 2012 18:41:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20120308184105.5b03ec90bcddf90562181277@canb.auug.org.au>
+In-Reply-To: <20120307233220.5a76aa3c.akpm@linux-foundation.org>
+References: <20120308175307.b295b1013728a5666fe4571a@canb.auug.org.au>
+	<20120307233220.5a76aa3c.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__8_Mar_2012_18_41_05_+1100_HEmuPgeUYwJSaHvB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__8_Mar_2012_18_41_05_+1100_HEmuPgeUYwJSaHvB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Andrew,
 
-On 03/07/2012 08:24 PM, Huang Shijie wrote:
-> hi,
-> 
-> On Thu, Mar 8, 2012 at 11:36 AM, Darren Hart <dvhart@linux.intel.com> wrote:
->>
->>
->> On 03/07/2012 06:28 PM, Huang Shijie wrote:
->>> Hi,
->>>
->>> On Thu, Mar 8, 2012 at 4:07 AM, Darren Hart <dvhart@linux.intel.com> wrote:
->>>>
->>>>
->>>> On 02/29/2012 01:12 AM, Huang Shijie wrote:
->>>>> Hi ,
->>>>>
->>>>> I meet a similar problem with the latest futex code.
->>>>>
->>>>> I play the video and the processes will hang at the futex.
->>>>
->>>> Are either of you able to bisect the kernel? At the very least can you
->>>
->>> I finially found my arch/arm/include/asm/futex.h is not the
->>> latest, so i updated the header.
->>
->> Just make sure it matches your kernel version.
->>
->>>
->>> And the futex issue is gone now. But a dataAbort issue appears, I am
->>> not sure whether it caused by the futex patch.
->>> I am debugging it now.
->>
->> Which APIs are you using that make the futex syscall?
->>
-> 
-> futex_wait().
+On Wed, 7 Mar 2012 23:32:20 -0800 Andrew Morton <akpm@linux-foundation.org>=
+ wrote:
+>
+> Actually they're different.  I reworked the earlier patch as below.
 
-You are calling the futex syscall directly from your application?
+OK.  But some comments.
 
---
-Darren
+> diff -puN arch/x86/mm/hugetlbpage.c~hugetlb-drop-prev_vma-in-hugetlb_get_=
+unmapped_area_topdown arch/x86/mm/hugetlbpage.c
+> --- a/arch/x86/mm/hugetlbpage.c~hugetlb-drop-prev_vma-in-hugetlb_get_unma=
+pped_area_topdown
+> +++ a/arch/x86/mm/hugetlbpage.c
+> @@ -308,7 +308,7 @@ static unsigned long hugetlb_get_unmappe
+>  {
+>  	struct hstate *h =3D hstate_file(file);
+>  	struct mm_struct *mm =3D current->mm;
+> -	struct vm_area_struct *vma, *prev_vma;
+> +	struct vm_area_struct *vma;
 
-> 
-> I cherry-pick the
-> " df77abc ARM: 7099/1: futex: preserve oldval in SMP
-> __futex_atomic_op" to the arch/arm/include/asm/futex.h.
-> 
+You still remove prev_vma ...
 
-> 
-> BR
-> Huang Shijie
-> 
->> --
->> Darren
->>
->>>
->>>
->>> BR
->>> Huang Shijie
->>>> find two kernels where it works and where it does not?
->>>>
->>>> Hanging on FUTEX_WAIT_PRIVATE can be the symptom for higher level
->>>> problems including userspace locking issues and race conditions.
->>>>
->>>> Huang, are you also on ARM?
->>>
->>> Yes, FREESCALE imx6q platform.
->>>
->>> BR
->>> Huang Shijie
->>>>
->>>> --
->>>> Darren
->>>>
->>>>>
->>>>> BR
->>>>> Huang Shijie
->>>>>
->>>>> On Fri, Feb 24, 2012 at 8:29 AM, Jonathan Andrews <jon@jonshouse.co.uk> wrote:
->>>>>> Using kernel 3.2.5 with alsa-lib 1.0.25, all compiled with generic
->>>>>> Debian arm-linux-gnueabi toolchain.
->>>>>>
->>>>>> arm-linux-gnueabi-gcc (Debian 4.3.2-1.1) 4.3.2
->>>>>> Was used to build kernel, alsa-lib and application.
->>>>>>
->>>>>> Changing gcc version, kernel version or alsa-lib version makes the
->>>>>> problem worse or better, but ALL versions seem to suffer this problem. I
->>>>>> have also seen it once on Intel (but only once so far).
->>>>>>
->>>>>> Something seeks broken at a lower layer than im using.  I simply don't
->>>>>> have the skill to debug it.
->>>>>>
->>>>>> The hardware is a USB cm109 audio adapter, but the problem seems to show
->>>>>> on more than this one driver.
->>>>>>
->>>>>> The audio application writing to alsa will freezes at random intervals,
->>>>>> infrequent at the moment, last one was after runtime 20H 37M 29S.  Two
->>>>>> processes are running, one reading from the sound device and one writing
->>>>>> to the sound device. I am not using threading or anything very clever
->>>>>> just generic alsa functions.
->>>>>>
->>>>>> This is the only diagnostic I can generate so far as running the
->>>>>> application under strace slows it to the point it no longer functions
->>>>>> enough to generate the problem.
->>>>>>
->>>>>> ARM / # strace -p 417
->>>>>> Process 417 attached - interrupt to quit
->>>>>> futex(0x175734, FUTEX_WAIT_PRIVATE, 2, NULL^C <unfinished ...>
->>>>>> Process 417 detached
->>>>>>
->>>>>> ARM / # uname -a
->>>>>> Linux (none) 3.2.5 #2 Wed Feb 22 17:11:52 GMT 2012 armv4tl GNU/Linux
->>>>>> ARM / # uptime
->>>>>>  22:36:19 up 22:36,  0 users,  load average: 0.15, 0.16, 0.18
->>>>>> ARM / # cat /proc/cpuinfo
->>>>>> Processor       : ARM920T rev 0 (v4l)
->>>>>> BogoMIPS        : 199.06
->>>>>> Features        : swp half thumb crunch
->>>>>> CPU implementer : 0x41
->>>>>> CPU architecture: 4T
->>>>>> CPU variant     : 0x1
->>>>>> CPU part        : 0x920
->>>>>> CPU revision    : 0
->>>>>>
->>>>>>
->>>>>> Any help welcome.
->>>>>>
->>>>>> Thanks,
->>>>>> Jon
->>>>>>
->>>>>>
->>>>>> --
->>>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>>> the body of a message to majordomo@vger.kernel.org
->>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>
->>>> --
->>>> Darren Hart
->>>> Intel Open Source Technology Center
->>>> Yocto Project - Linux Kernel
->>
->> --
->> Darren Hart
->> Intel Open Source Technology Center
->> Yocto Project - Linux Kernel
+>  	unsigned long base =3D mm->mmap_base, addr =3D addr0;
+>  	unsigned long largest_hole =3D mm->cached_hole_size;
+>  	int first_time =3D 1;
+> @@ -334,25 +334,16 @@ try_again:
+>  		 * i.e. return with success:
+>  		 */
+>  		vma =3D find_vma(mm, addr);
+> -		if (!vma)
+> -			return addr;
+> -
+> -		/*
+> -		 * new region fits between prev_vma->vm_end and
+> -		 * vma->vm_start, use it:
+> -		 */
+> -		prev_vma =3D vma->vm_prev;
+> -		if (addr + len <=3D vma->vm_start &&
+> -		            (!prev_vma || (addr >=3D prev_vma->vm_end))) {
+> +		if (vma)
+> +			prev_vma =3D vma->vm_prev;
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+But then assign to it ...
+
+> +		if (!vma || addr + len <=3D vma->vm_start) {
+>  			/* remember the address as a hint for next time */
+>  		        mm->cached_hole_size =3D largest_hole;
+>  		        return (mm->free_area_cache =3D addr);
+> -		} else {
+> +		} else if (mm->free_area_cache =3D=3D vma->vm_end) {
+>  			/* pull free_area_cache down to the first hole */
+> -		        if (mm->free_area_cache =3D=3D vma->vm_end) {
+> -				mm->free_area_cache =3D vma->vm_start;
+> -				mm->cached_hole_size =3D largest_hole;
+> -			}
+> +			mm->free_area_cache =3D vma->vm_start;
+> +			mm->cached_hole_size =3D largest_hole;
+>  		}
+> =20
+>  		/* remember the largest hole we saw so far */
+
+But it never gets used.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__8_Mar_2012_18_41_05_+1100_HEmuPgeUYwJSaHvB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPWGKRAAoJEECxmPOUX5FEY7MQAIKecA7hTkBGubvosobfYzni
++DCOt0kEQdqw7L2XiA1IbNHjwokSGbK/0EN3oOiGItaiJcf7ZhFZgzCm7/KUTPTe
+F1lpH0a8ZAm+vlHL2/3X5IBWZltipMD2rwTWSNrN6pUGMMcR+Gnm0JTScdVH3UlW
+FGh4fmhec+zn2iM3jgKVEIFRzOiAjPSHKJFxFCYjsSpCQJfNueBii/oig8Y3KYaH
+v0smJYbV3wZ6JD1pj0bvv6tJPnPw6xNn8WIwt/QqgAICAPJiaG52rC8EWzPc8Bgr
+l3bEN0hhM6mkPh3FebdpA9B5E7PZ2IW+iTV5fHdRgKjyjv7898K272ZebmkKa5Vk
++/rujugH/CISgzFe8amF4ZvuguyxcMF54OOVbVwqWk1AkTFk8gPxQHNx44+fNEIT
+BufQDn/4ftJGUBa78iG42dTeyInql62UlYHBEkmNR7aAAPLTGemX8OpPzoRMIYJA
+mk5wgCOmJHC/8aCgXJJxTyW3HS38ax96mcyzy5xMymv/CSXgLN0h8uI6XVsvv7Gk
+YOYCCNoZEWXUUN1dksPuqBcp9BrCQiZn80OaL2q0glmRGOeqnGTO+ZdSWbXjtcKZ
+UibWw+OD6M/DElfYG/gKWAv29AUWNYv8/VYnaTUeVnBUG1LSvvLbDPA4t6Xoqybo
+Fv/iRisnVkE0Xfi6435j
+=fZUC
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__8_Mar_2012_18_41_05_+1100_HEmuPgeUYwJSaHvB--
