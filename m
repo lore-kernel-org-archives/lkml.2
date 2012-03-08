@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab2CHFd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 00:33:29 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49212 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab2CHFd1 (ORCPT
+	id S1751690Ab2CHFhy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 00:37:54 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60645 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244Ab2CHFhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 00:33:27 -0500
-Date: Thu, 8 Mar 2012 02:33:21 -0300
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: santosh nayak <santoshprasadnayak@gmail.com>
-Cc: marcel@holtmann.org, davem@davemloft.net, linux-bluetooth@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: Resend: [PATCH] Bluetooth: Fix Endian Bug.
-Message-ID: <20120308053320.GD3998@joana>
-Mail-Followup-To: santosh nayak <santoshprasadnayak@gmail.com>,
-	marcel@holtmann.org, davem@davemloft.net,
-	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <1330622196-12967-1-git-send-email-santoshprasadnayak@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330622196-12967-1-git-send-email-santoshprasadnayak@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 8 Mar 2012 00:37:53 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 8 Mar 2012 14:36:19 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] mm/memcg: rework inactive_ratio calculation
+Message-Id: <20120308143619.4f25880e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4F50678C.6010800@openvz.org>
+References: <20120229090748.29236.35489.stgit@zurg>
+	<20120229091600.29236.69514.stgit@zurg>
+	<20120302143106.d4238cda.kamezawa.hiroyu@jp.fujitsu.com>
+	<4F50678C.6010800@openvz.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Santosh,
+On Fri, 02 Mar 2012 10:24:12 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-* santosh nayak <santoshprasadnayak@gmail.com> [2012-03-01 22:46:36 +0530]:
-
-> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> KAMEZAWA Hiroyuki wrote:
+> > On Wed, 29 Feb 2012 13:16:00 +0400
+> > Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+> >
+> >> This patch removes precalculated zone->inactive_ratio.
+> >> Now it always calculated in inactive_anon_is_low() from current lru size.
+> >> After that we can merge memcg and non-memcg cases and drop duplicated code.
+> >>
+> >> We can drop precalculated ratio, because its calculation fast enough to do it
+> >> each time. Plus precalculation uses zone size as basis, this estimation not
+> >> always match with page lru size, for example if a significant proportion
+> >> of memory occupied by kernel objects.om memory cgroup which is triggered this memory reclaim.
+> This is more reason
+> >>
+> >> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+> >
+> > Maybe good....but please don't change the user interface /proc/zoneinfo implicitly.
+> > How about calculating inactive_ratio at reading /proc/zoneinfo ?
 > 
-> Fix network to host endian conversion for L2CAP chan id.
-> 
-> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
-> ---
->  net/bluetooth/l2cap_sock.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
-> index 401d942..86d5067 100644
-> --- a/net/bluetooth/l2cap_sock.c
-> +++ b/net/bluetooth/l2cap_sock.c
-> @@ -82,7 +82,7 @@ static int l2cap_sock_bind(struct socket *sock, struct sockaddr *addr, int alen)
->  	}
->  
->  	if (la.l2_cid)
-> -		err = l2cap_add_scid(chan, la.l2_cid);
-> +		err = l2cap_add_scid(chan, __le16_to_cpu(la.l2_cid));
+> I don't know... Anybody need this?
 
-This is kind weird, la.l2_cid comes from the user, so it is already in host
-endian. No need for convertions here.
+I don't like changes in user interface without any caution in feature-removal-schedule.txt
+I just don't Ack. If others say ok, please go ahead with them.
 
-	Gustavo
+Thanks,
+-Kame
+
