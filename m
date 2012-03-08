@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab2CHJTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 04:19:15 -0500
-Received: from ozlabs.org ([203.10.76.45]:56035 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755274Ab2CHJTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 04:19:11 -0500
-From: Rusty Russell <rusty@ozlabs.org>
-To: "Chen\, Dennis \(SRDC SW\)" <Dennis1.Chen@amd.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "Chen\, Dennis \(SRDC SW\)" <Dennis1.Chen@amd.com>
-Subject: Re: [PATCH 1/2] Refine mutex and rcu method in module.c, kernel<3.2.9>
-In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE04303289D@SCYBEXDAG04.amd.com>
-References: <491D6B4EAD0A714894D8AD22F4BDE04303289D@SCYBEXDAG04.amd.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 08 Mar 2012 19:48:06 +1030
-Message-ID: <87ipifwiwh.fsf@rustcorp.com.au>
+	id S1756005Ab2CHJVw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 04:21:52 -0500
+Received: from www.linutronix.de ([62.245.132.108]:40698 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755846Ab2CHJVs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 04:21:48 -0500
+Message-ID: <4F587A28.6080205@linutronix.de>
+Date: Thu, 08 Mar 2012 10:21:44 +0100
+From: Richard Weinberger <rw@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120208 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+CC: dedekind1@gmail.com, tglx@linutronix.de, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, tim.bird@am.sony.com
+Subject: Re: [RFC][PATCH 0/7] UBI checkpointing support
+References: <1329250006-22944-1-git-send-email-rw@linutronix.de> <1331138007.3463.16.camel@sauron.fi.intel.com> <4F57D0C4.1050605@linutronix.de> <20120308090835.032fe13a@pixies.home.jungo.com>
+In-Reply-To: <20120308090835.032fe13a@pixies.home.jungo.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Mar 2012 14:51:06 +0000, "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com> wrote:
-> 1. Narrow down the granularity of mutex_lock/ mutex_unlock
-> 2. Replace some unnecessary mutex_lock/mutex_unlock pairs with RCU
-> 3. Refine the consistent calling style of RCU functioan 
+On 08.03.2012 08:08, Shmulik Ladkani wrote:
+> But doesn't the CP data (sorry, UBIUBI data :) need to have one
+> 'struct ubi_cp_ec' descriptor for each used/free PEB, and as such the
+> maximum number of 'ubi_cp_ec' descriptors is total device PEBs, meaning
+> CP data is still linearly scaled to device size (with a very small
+> multiplier)?
+>
 
-Hi Dennis,
+It's UBIVIS data. :D
 
-        This follows a logical evolution, where we wean off the mutex,
-but AFAICT this is lost in the noise.  Taking the mutex might be naive,
-but adding or removing a module is the slow path.  Or am I missing
-something?
+The size of the checkpoint depends on the number of free/used PEBs.
+But in most cases the checkpoints fits into one or two PEBs.
+Because larger devices have larger erase blocks...
 
-> -
-> -       /* Now sew it into the lists so we can get lockdep and oops
-> -        * info during argument parsing.  No one should access us, since
-> -        * strong_try_module_get() will fail.
-> -        * lockdep/oops can run asynchronous, so use the RCU list insertion
-> -        * function to insert in a way safe to concurrent readers.
-> -        * The mutex protects against concurrent writers.
-> -        */
-> -       mutex_lock(&module_mutex);
-> +        
-> +        /* Concurrent writers for the global modules list are protected by RCU*/
->         if (find_module(mod->name)) {
->                 err = -EEXIST;
->                 goto unlock;
->         }
+Thanks,
+//richard
 
-RCU does not protect concurrent writers:
-
-> -
-> +        
->         /* This has to be done once we're sure module name is unique. */
->         dynamic_debug_setup(info.debug, info.num_debug);
-
-Now this is racy...
-
-Cheers,
-Rusty.
 -- 
-  How could I marry someone with more hair than me?  http://baldalex.org
+Phone: +49 7556 91 98 91; Fax.: +49 7556 91 98 86
+
+Firmensitz: 88690 Uhldingen, Auf dem Berg 3
+Registergericht: Amtsgericht Freiburg i. Br., HRB 700 806;
+StNr. 87007/07777; Ust-Id Nr.: DE252739476
+Geschäftsführer: Heinz Egger, Thomas Gleixner
