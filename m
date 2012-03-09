@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032027Ab2CIT5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:57:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46417 "EHLO
+	id S1759173Ab2CIUNH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:13:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031955Ab2CIT5d (ORCPT
+	with ESMTP id S1031212Ab2CITuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:57:33 -0500
-Message-Id: <20120309190207.270282816@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:50:16 -0500
+Message-Id: <20120309190209.139436408@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:03 -0800
+Date: Fri, 09 Mar 2012 11:03:27 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 61/95] OMAPDSS: remove wrong HDMI HPD muxing
+        alan@lxorguk.ukuu.org.uk, Jesper Juhl <jj@chaosbits.net>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 85/95] dm ioctl: do not leak argv if target message only contains whitespace
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+From: Jesper Juhl <jj@chaosbits.net>
 
-commit 7bb122d155f742fe2d79849090c825be7b4a247e upstream.
+commit 902c6a96a7cb9c50d2a8aed1788efad0a5d8f04c upstream.
 
-"hdmi_hpd" pin is muxed to INPUT and PULLUP, but the pin is not
-currently used, and in the future when it is used, the pin is used as a
-GPIO and is board specific, not an OMAP4 wide thing.
+If 'argc' is zero we jump to the 'out:' label, but this leaks the
+(unused) memory that 'dm_split_args()' allocated for 'argv' if the
+string being split consisted entirely of whitespace.  Jump to the
+'out_argv:' label instead to free up that memory.
 
-So remove the muxing for now.
-
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/board-4430sdp.c    |    4 ----
- arch/arm/mach-omap2/board-omap4panda.c |    4 ----
- 2 files changed, 8 deletions(-)
+ drivers/md/dm-ioctl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -597,12 +597,8 @@ static void __init omap_sfh7741prox_init
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -1437,7 +1437,7 @@ static int target_message(struct dm_ioct
  
- static void sdp4430_hdmi_mux_init(void)
- {
--	/* PAD0_HDMI_HPD_PAD1_HDMI_CEC */
--	omap_mux_init_signal("hdmi_hpd",
--			OMAP_PIN_INPUT_PULLUP);
- 	omap_mux_init_signal("hdmi_cec",
- 			OMAP_PIN_INPUT_PULLUP);
--	/* PAD0_HDMI_DDC_SCL_PAD1_HDMI_DDC_SDA */
- 	omap_mux_init_signal("hdmi_ddc_scl",
- 			OMAP_PIN_INPUT_PULLUP);
- 	omap_mux_init_signal("hdmi_ddc_sda",
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -481,12 +481,8 @@ int __init omap4_panda_dvi_init(void)
+ 	if (!argc) {
+ 		DMWARN("Empty message received.");
+-		goto out;
++		goto out_argv;
+ 	}
  
- static void omap4_panda_hdmi_mux_init(void)
- {
--	/* PAD0_HDMI_HPD_PAD1_HDMI_CEC */
--	omap_mux_init_signal("hdmi_hpd",
--			OMAP_PIN_INPUT_PULLUP);
- 	omap_mux_init_signal("hdmi_cec",
- 			OMAP_PIN_INPUT_PULLUP);
--	/* PAD0_HDMI_DDC_SCL_PAD1_HDMI_DDC_SDA */
- 	omap_mux_init_signal("hdmi_ddc_scl",
- 			OMAP_PIN_INPUT_PULLUP);
- 	omap_mux_init_signal("hdmi_ddc_sda",
+ 	table = dm_get_live_table(md);
 
 
