@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031551Ab2CITvx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:51:53 -0500
+	id S1031529Ab2CITvo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:51:44 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031488Ab2CITvp (ORCPT
+	with ESMTP id S1031488Ab2CITvi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:51:45 -0500
-Message-Id: <20120309190216.265758327@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:51:38 -0500
+Message-Id: <20120309190216.108317730@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:30 -0800
+Date: Fri, 09 Mar 2012 11:02:28 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@hack.frob.com>
-Subject: [ 16/68] regset: Prevent null pointer reference on readonly regsets
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [ 14/68] ALSA: hda - Add a fake mute feature
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +24,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c8e252586f8d5de906385d8cf6385fee289a825e upstream.
+commit 3868137ea41866773e75d9ac4b9988dcc361ff1d upstream.
 
-The regset common infrastructure assumed that regsets would always
-have .get and .set methods, but not necessarily .active methods.
-Unfortunately people have since written regsets without .set methods.
+Some codecs don't supply the mute amp-capabilities although the lowest
+volume gives the mute.  It'd be handy if the parser provides the mute
+mixers in such a case.
 
-Rather than putting in stub functions everywhere, handle regsets with
-null .get or .set methods explicitly.
+This patch adds an extension amp-cap bit (which is used only in the
+driver) to represent the min volume = mute state.  Also modified the
+amp cache code to support the fake mute feature when this bit is set
+but the real mute bit is unset.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Roland McGrath <roland@hack.frob.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In addition, conexant cx5051 parser uses this new feature to implement
+the missing mute controls.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42825
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/binfmt_elf.c        |    2 +-
- include/linux/regset.h |    6 ++++++
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ sound/pci/hda/hda_codec.c      |    8 ++++++--
+ sound/pci/hda/hda_codec.h      |    3 +++
+ sound/pci/hda/patch_conexant.c |   22 +++++++++++++++++++++-
+ 3 files changed, 30 insertions(+), 3 deletions(-)
 
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1422,7 +1422,7 @@ static int fill_thread_core_info(struct
- 	for (i = 1; i < view->n; ++i) {
- 		const struct user_regset *regset = &view->regsets[i];
- 		do_thread_regset_writeback(t->task, regset);
--		if (regset->core_note_type &&
-+		if (regset->core_note_type && regset->get &&
- 		    (!regset->active || regset->active(t->task, regset))) {
- 			int ret;
- 			size_t size = regset->n * regset->size;
---- a/include/linux/regset.h
-+++ b/include/linux/regset.h
-@@ -335,6 +335,9 @@ static inline int copy_regset_to_user(st
- {
- 	const struct user_regset *regset = &view->regsets[setno];
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -1651,7 +1651,11 @@ static void put_vol_mute(struct hda_code
+ 	parm = ch ? AC_AMP_SET_RIGHT : AC_AMP_SET_LEFT;
+ 	parm |= direction == HDA_OUTPUT ? AC_AMP_SET_OUTPUT : AC_AMP_SET_INPUT;
+ 	parm |= index << AC_AMP_SET_INDEX_SHIFT;
+-	parm |= val;
++	if ((val & HDA_AMP_MUTE) && !(info->amp_caps & AC_AMPCAP_MUTE) &&
++	    (info->amp_caps & AC_AMPCAP_MIN_MUTE))
++		; /* set the zero value as a fake mute */
++	else
++		parm |= val;
+ 	snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_AMP_GAIN_MUTE, parm);
+ 	info->vol[ch] = val;
+ }
+@@ -1918,7 +1922,7 @@ int snd_hda_mixer_amp_tlv(struct snd_kco
+ 	val1 = -((caps & AC_AMPCAP_OFFSET) >> AC_AMPCAP_OFFSET_SHIFT);
+ 	val1 += ofs;
+ 	val1 = ((int)val1) * ((int)val2);
+-	if (min_mute)
++	if (min_mute || (caps & AC_AMPCAP_MIN_MUTE))
+ 		val2 |= TLV_DB_SCALE_MUTE;
+ 	if (put_user(SNDRV_CTL_TLVT_DB_SCALE, _tlv))
+ 		return -EFAULT;
+--- a/sound/pci/hda/hda_codec.h
++++ b/sound/pci/hda/hda_codec.h
+@@ -302,6 +302,9 @@ enum {
+ #define AC_AMPCAP_MUTE			(1<<31)    /* mute capable */
+ #define AC_AMPCAP_MUTE_SHIFT		31
  
-+	if (!regset->get)
-+		return -EOPNOTSUPP;
++/* driver-specific amp-caps: using bits 24-30 */
++#define AC_AMPCAP_MIN_MUTE		(1 << 30) /* min-volume = mute */
 +
- 	if (!access_ok(VERIFY_WRITE, data, size))
- 		return -EIO;
+ /* Connection list */
+ #define AC_CLIST_LENGTH			(0x7f<<0)
+ #define AC_CLIST_LONG			(1<<7)
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4127,7 +4127,8 @@ static int cx_auto_add_volume_idx(struct
+ 		err = snd_hda_ctl_add(codec, nid, kctl);
+ 		if (err < 0)
+ 			return err;
+-		if (!(query_amp_caps(codec, nid, hda_dir) & AC_AMPCAP_MUTE))
++		if (!(query_amp_caps(codec, nid, hda_dir) &
++		      (AC_AMPCAP_MUTE | AC_AMPCAP_MIN_MUTE)))
+ 			break;
+ 	}
+ 	return 0;
+@@ -4372,6 +4373,22 @@ static const struct hda_codec_ops cx_aut
+ 	.reboot_notify = snd_hda_shutup_pins,
+ };
  
-@@ -358,6 +361,9 @@ static inline int copy_regset_from_user(
- {
- 	const struct user_regset *regset = &view->regsets[setno];
- 
-+	if (!regset->set)
-+		return -EOPNOTSUPP;
++/* add "fake" mute amp-caps to DACs on cx5051 so that mixer mute switches
++ * can be created (bko#42825)
++ */
++static void add_cx5051_fake_mutes(struct hda_codec *codec)
++{
++	static hda_nid_t out_nids[] = {
++		0x10, 0x11, 0
++	};
++	hda_nid_t *p;
 +
- 	if (!access_ok(VERIFY_READ, data, size))
- 		return -EIO;
++	for (p = out_nids; *p; p++)
++		snd_hda_override_amp_caps(codec, *p, HDA_OUTPUT,
++					  AC_AMPCAP_MIN_MUTE |
++					  query_amp_caps(codec, *p, HDA_OUTPUT));
++}
++
+ static int patch_conexant_auto(struct hda_codec *codec)
+ {
+ 	struct conexant_spec *spec;
+@@ -4390,6 +4407,9 @@ static int patch_conexant_auto(struct hd
+ 	case 0x14f15045:
+ 		spec->single_adc_amp = 1;
+ 		break;
++	case 0x14f15051:
++		add_cx5051_fake_mutes(codec);
++		break;
+ 	}
  
+ 	err = cx_auto_search_adcs(codec);
 
 
