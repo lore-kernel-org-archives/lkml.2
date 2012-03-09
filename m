@@ -1,41 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031526Ab2CIUIP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:08:15 -0500
-Received: from home.keithp.com ([63.227.221.253]:60186 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031009Ab2CIUIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 15:08:12 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Dave Jones <davej@redhat.com>, Yang Bai <hamo.by@gmail.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>, kernel@tesarici.cz
-Subject: Re: inode->i_wb_list corruption.
-In-Reply-To: <20120309180015.GA3862@redhat.com>
-References: <20120306185137.GA15881@redhat.com> <20120306210307.GC8781@quack.suse.cz> <20120307072608.GA24087@localhost> <20120307104240.GB18658@quack.suse.cz> <CAO_0yfNt2jgiTPZn5NkwBAjQZtk+377gG71d6QOuXQrDHjdkEg@mail.gmail.com> <20120309145713.GA21543@redhat.com> <20120309151951.GA30160@redhat.com> <CAO_0yfMYOOTvRg9=8_eYP09o0BpzSEk=8vqgNk_vV_u3-biAYA@mail.gmail.com> <20120309180015.GA3862@redhat.com>
-User-Agent: Notmuch/0.11.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 09 Mar 2012 12:08:07 -0800
-Message-ID: <868vj97d20.fsf@sumi.keithp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1030839Ab2CIUXO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:23:14 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52804 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030594Ab2CITrN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 14:47:13 -0500
+Message-Id: <20120309190204.922666262@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 09 Mar 2012 11:02:34 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, CAI Qian <caiqian@redhat.com>,
+        Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 32/95] cifs: fix dentry refcount leak when opening a FIFO on lookup
+In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<#part sign=pgpmime>
-On Fri, 9 Mar 2012 13:00:15 -0500, Dave Jones <davej@redhat.com> wrote:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-> i915_drm_thaw is a deep nest of functions though, so this is going to be
-> hard to track down where that write is coming from. Because the corruption
-> seems to happen to pages that are already allocated, we probably can't
-> even rely on DEBUG_PAGEALLOC, though it might be worth trying.
+------------------
 
-I'm worried that the write is coming through the GTT, which would make
-sense as these look like pixel values. If this is on Ironlake (core
-I3-I7 first gen), we know there are issues when VT-d is enabled, and
-the work-around for that doesn't appear to be in place for the hibernate
-resume case.
+From: Jeff Layton <jlayton@redhat.com>
 
--- 
-keith.packard@intel.com
+commit 5bccda0ebc7c0331b81ac47d39e4b920b198b2cd upstream.
+
+The cifs code will attempt to open files on lookup under certain
+circumstances. What happens though if we find that the file we opened
+was actually a FIFO or other special file?
+
+Currently, the open filehandle just ends up being leaked leading to
+a dentry refcount mismatch and oops on umount. Fix this by having the
+code close the filehandle on the server if it turns out not to be a
+regular file. While we're at it, change this spaghetti if statement
+into a switch too.
+
+Reported-by: CAI Qian <caiqian@redhat.com>
+Tested-by: CAI Qian <caiqian@redhat.com>
+Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/cifs/dir.c |   20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -584,10 +584,26 @@ cifs_lookup(struct inode *parent_dir_ino
+ 			 * If either that or op not supported returned, follow
+ 			 * the normal lookup.
+ 			 */
+-			if ((rc == 0) || (rc == -ENOENT))
++			switch (rc) {
++			case 0:
++				/*
++				 * The server may allow us to open things like
++				 * FIFOs, but the client isn't set up to deal
++				 * with that. If it's not a regular file, just
++				 * close it and proceed as if it were a normal
++				 * lookup.
++				 */
++				if (newInode && !S_ISREG(newInode->i_mode)) {
++					CIFSSMBClose(xid, pTcon, fileHandle);
++					break;
++				}
++			case -ENOENT:
+ 				posix_open = true;
+-			else if ((rc == -EINVAL) || (rc != -EOPNOTSUPP))
++			case -EOPNOTSUPP:
++				break;
++			default:
+ 				pTcon->broken_posix_open = true;
++			}
+ 		}
+ 		if (!posix_open)
+ 			rc = cifs_get_inode_info_unix(&newInode, full_path,
+
+
