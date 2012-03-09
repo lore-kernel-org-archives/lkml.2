@@ -1,95 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab2CIHkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 02:40:49 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:36494 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab2CIHks (ORCPT
+	id S1753329Ab2CIH50 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 02:57:26 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:51134 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751825Ab2CIH5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 02:40:48 -0500
-Date: Fri, 9 Mar 2012 18:40:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rob Lee <rob.lee@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Steven Rostedt <srostedt@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the cpuidle-cons tree with the tip tree
-Message-Id: <20120309184041.bd10edffa51dcd43ce069487@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Mar_2012_18_40_41_+1100_wPPm71vScCkQuqtX"
+	Fri, 9 Mar 2012 02:57:24 -0500
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Nancy Chen <Nancy.Chen@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Axel Lin <axel.lin@gmail.com>
+Subject: [PATCH v11] Regulator: Add Anatop regulator driver
+Date: Fri,  9 Mar 2012 15:57:09 +0800
+Message-Id: <1331279829-4584-1-git-send-email-paul.liu@linaro.org>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Mar_2012_18_40_41_+1100_wPPm71vScCkQuqtX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
 
-Hi Rob,
+Anatop is an integrated regulator inside i.MX6 SoC.
+There are 3 digital regulators which controls PU, CORE (ARM), and SOC.
+And 3 analog regulators which controls 1P1, 2P5, 3P0 (USB).
+This patch adds the Anatop regulator driver.
 
-Today's linux-next merge of the cpuidle-cons tree got a conflict in
-drivers/cpuidle/cpuidle.c between commit 76027ea863fc ("cpuidle/tracing:
-Denote the tracepoints as being in rcu_idle_exit() section") from the tip
-tree and commit 9adbc67f6ecf ("cpuidle: Add common time keeping and irq
-enabling") from the cpuidle-cons tree.
+Signed-off-by: Nancy Chen <Nancy.Chen@freescale.com>
+Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/Kconfig            |    8 +
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/anatop-regulator.c |  238 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 247 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/anatop-regulator.c
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index c733df5..a229de9 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -102,6 +102,14 @@ config REGULATOR_DA9052
+ 	  This driver supports the voltage regulators of DA9052-BC and
+ 	  DA9053-AA/Bx PMIC.
+ 
++config REGULATOR_ANATOP
++	tristate "Freescale i.MX on-chip ANATOP LDO regulators"
++	depends on MFD_ANATOP
++	help
++	  Say y here to support Freescale i.MX on-chip ANATOP LDOs
++	  regulators. It is recommended that this option be
++	  enabled on i.MX6 platform.
++
+ config REGULATOR_MC13XXX_CORE
+ 	tristate
+ 
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 2b09c81..b5042c8 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -15,6 +15,7 @@ obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
+ obj-$(CONFIG_REGULATOR_AB3100) += ab3100.o
+ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
+ obj-$(CONFIG_REGULATOR_AD5398) += ad5398.o
++obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
+ obj-$(CONFIG_REGULATOR_BQ24022) += bq24022.o
+ obj-$(CONFIG_REGULATOR_DA903X)	+= da903x.o
+ obj-$(CONFIG_REGULATOR_DA9052)	+= da9052-regulator.o
+diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+new file mode 100644
+index 0000000..53a2d87
+--- /dev/null
++++ b/drivers/regulator/anatop-regulator.c
+@@ -0,0 +1,238 @@
++/*
++ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <linux/slab.h>
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/mfd/anatop.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/of_regulator.h>
++
++struct anatop_regulator {
++	const char *name;
++	u32 control_reg;
++	struct anatop *mfd;
++	int vol_bit_shift;
++	int vol_bit_width;
++	int min_bit_val;
++	int min_voltage;
++	int max_voltage;
++	struct regulator_desc rdesc;
++	struct regulator_init_data *initdata;
++};
++
++static int anatop_set_voltage(struct regulator_dev *reg, int min_uV,
++				  int max_uV, unsigned *selector)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++	u32 val, sel;
++	int uv;
++
++	uv = min_uV;
++	dev_dbg(&reg->dev, "%s: uv %d, min %d, max %d\n", __func__,
++		uv, anatop_reg->min_voltage,
++		anatop_reg->max_voltage);
++
++	if (uv < anatop_reg->min_voltage) {
++		if (max_uV > anatop_reg->min_voltage)
++			uv = anatop_reg->min_voltage;
++		else
++			return -EINVAL;
++	}
++
++	if (!anatop_reg->control_reg)
++		return -ENOTSUPP;
++
++	sel = DIV_ROUND_UP(uv - anatop_reg->min_voltage, 25000);
++	if (sel * 25000 + anatop_reg->min_voltage > anatop_reg->max_voltage)
++		return -EINVAL;
++	val = anatop_reg->min_bit_val + sel;
++	*selector = sel;
++	dev_dbg(&reg->dev, "%s: calculated val %d\n", __func__, val);
++	anatop_set_bits(anatop_reg->mfd,
++			anatop_reg->control_reg,
++			anatop_reg->vol_bit_shift,
++			anatop_reg->vol_bit_width,
++			val);
++
++	return 0;
++}
++
++static int anatop_get_voltage_sel(struct regulator_dev *reg)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++	u32 val;
++
++	if (!anatop_reg->control_reg)
++		return -ENOTSUPP;
++
++	val = anatop_get_bits(anatop_reg->mfd,
++			      anatop_reg->control_reg,
++			      anatop_reg->vol_bit_shift,
++			      anatop_reg->vol_bit_width);
++
++	return val - anatop_reg->min_bit_val;
++}
++
++static int anatop_list_voltage(struct regulator_dev *reg, unsigned selector)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++	int uv;
++
++	uv = anatop_reg->min_voltage + selector * 25000;
++	dev_dbg(&reg->dev, "vddio = %d, selector = %u\n", uv, selector);
++
++	return uv;
++}
++
++static struct regulator_ops anatop_rops = {
++	.set_voltage     = anatop_set_voltage,
++	.get_voltage_sel = anatop_get_voltage_sel,
++	.list_voltage    = anatop_list_voltage,
++};
++
++static int __devinit anatop_regulator_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
++	struct regulator_desc *rdesc;
++	struct regulator_dev *rdev;
++	struct anatop_regulator *sreg;
++	struct regulator_init_data *initdata;
++	struct anatop *anatopmfd = dev_get_drvdata(pdev->dev.parent);
++	int ret = 0;
++
++	initdata = of_get_regulator_init_data(dev, np);
++	sreg = devm_kzalloc(dev, sizeof(*sreg), GFP_KERNEL);
++	if (!sreg)
++		return -ENOMEM;
++	sreg->initdata = initdata;
++	sreg->name = kstrdup(of_get_property(np, "regulator-name", NULL),
++			     GFP_KERNEL);
++	rdesc = &sreg->rdesc;
++	memset(rdesc, 0, sizeof(*rdesc));
++	rdesc->name = sreg->name;
++	rdesc->ops = &anatop_rops;
++	rdesc->type = REGULATOR_VOLTAGE;
++	rdesc->owner = THIS_MODULE;
++	sreg->mfd = anatopmfd;
++	ret = of_property_read_u32(np, "reg", &sreg->control_reg);
++	if (ret) {
++		dev_err(dev, "no reg property set\n");
++		goto anatop_probe_end;
++	}
++	ret = of_property_read_u32(np, "anatop-vol-bit-width",
++				   &sreg->vol_bit_width);
++	if (ret) {
++		dev_err(dev, "no anatop-vol-bit-width property set\n");
++		goto anatop_probe_end;
++	}
++	ret = of_property_read_u32(np, "anatop-vol-bit-shift",
++				   &sreg->vol_bit_shift);
++	if (ret) {
++		dev_err(dev, "no anatop-vol-bit-shift property set\n");
++		goto anatop_probe_end;
++	}
++	ret = of_property_read_u32(np, "anatop-min-bit-val",
++				   &sreg->min_bit_val);
++	if (ret) {
++		dev_err(dev, "no anatop-min-bit-val property set\n");
++		goto anatop_probe_end;
++	}
++	ret = of_property_read_u32(np, "anatop-min-voltage",
++				   &sreg->min_voltage);
++	if (ret) {
++		dev_err(dev, "no anatop-min-voltage property set\n");
++		goto anatop_probe_end;
++	}
++	ret = of_property_read_u32(np, "anatop-max-voltage",
++				   &sreg->max_voltage);
++	if (ret) {
++		dev_err(dev, "no anatop-max-voltage property set\n");
++		goto anatop_probe_end;
++	}
++
++	/* register regulator */
++	rdev = regulator_register(rdesc, dev,
++				  initdata, sreg, pdev->dev.of_node);
++	if (IS_ERR(rdev)) {
++		dev_err(dev, "failed to register %s\n",
++			rdesc->name);
++		ret = PTR_ERR(rdev);
++		goto anatop_probe_end;
++	}
++
++	platform_set_drvdata(pdev, rdev);
++
++anatop_probe_end:
++	if (ret)
++		kfree(sreg->name);
++
++	return ret;
++}
++
++static int __devexit anatop_regulator_remove(struct platform_device *pdev)
++{
++	struct regulator_dev *rdev = platform_get_drvdata(pdev);
++	struct anatop_regulator *sreg = rdev_get_drvdata(rdev);
++	const char *name = sreg->name;
++
++	regulator_unregister(rdev);
++	kfree(name);
++
++	return 0;
++}
++
++static struct of_device_id __devinitdata of_anatop_regulator_match_tbl[] = {
++	{ .compatible = "fsl,anatop-regulator", },
++	{ /* end */ }
++};
++
++static struct platform_driver anatop_regulator = {
++	.driver = {
++		.name	= "anatop_regulator",
++		.owner  = THIS_MODULE,
++		.of_match_table = of_anatop_regulator_match_tbl,
++	},
++	.probe	= anatop_regulator_probe,
++	.remove	= anatop_regulator_remove,
++};
++
++static int __init anatop_regulator_init(void)
++{
++	return platform_driver_register(&anatop_regulator);
++}
++postcore_initcall(anatop_regulator_init);
++
++static void __exit anatop_regulator_exit(void)
++{
++	platform_driver_unregister(&anatop_regulator);
++}
++module_exit(anatop_regulator_exit);
++
++MODULE_AUTHOR("Nancy Chen <Nancy.Chen@freescale.com>, "
++	      "Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
++MODULE_DESCRIPTION("ANATOP Regulator driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.9.1
 
-diff --cc drivers/cpuidle/cpuidle.c
-index 6588f43,56de5f7..0000000
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@@ -92,15 -109,13 +109,13 @@@ int cpuidle_idle_call(void
-  		return 0;
-  	}
- =20
-- 	target_state =3D &drv->states[next_state];
--=20
- -	trace_power_start(POWER_CSTATE, next_state, dev->cpu);
- -	trace_cpu_idle(next_state, dev->cpu);
- +	trace_power_start_rcuidle(POWER_CSTATE, next_state, dev->cpu);
- +	trace_cpu_idle_rcuidle(next_state, dev->cpu);
- =20
-- 	entered_state =3D target_state->enter(dev, drv, next_state);
-+ 	entered_state =3D cpuidle_enter_ops(dev, drv, next_state);
- =20
- -	trace_power_end(dev->cpu);
- -	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
- +	trace_power_end_rcuidle(dev->cpu);
- +	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
- =20
-  	if (entered_state >=3D 0) {
-  		/* Update cpuidle counters */
-
---Signature=_Fri__9_Mar_2012_18_40_41_+1100_wPPm71vScCkQuqtX
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPWbP5AAoJEECxmPOUX5FEMH8P/iNNw7ZbILnnNBwBGOo3QV7+
-AVeUla19wawrg+0P/X8MYl61MVq5a8sO/YLXBIq06XFPsIYXRaEoDajO8vwzGs7I
-ZCHepC0XwgT9YmjAAgUGGLtxbjpI4T6G2m7i+br04vYebROiGGExcy8G10De63MD
-fpTzFXIFdFCAm+39Zf/n5rYGq7DGwYgELl+jqE1aoNWAwZ30oUuuqNBso5cLn69b
-KNFSNZr7uF1RseJj5rfeOmkxIMhUJqhR/5EHn6gS7YuR/px81DrJAaaCTfhmnBcA
-O3sFvyHe6j/BC9cdntb5IiqwZ384STdxoxbS5ImBf2jogpk7Dgs5uwLWV95QYcaY
-2Qu4wX3F63UFTGDLID/8Kiwl6fFnvXUUPPH43qYmNdqfNRQTsnMYnBJVaVZcoOQ4
-FE1667YDsb0/7A0bl3Mmc2iwGNmEYa21x+fU+b3T+dXkkEDXFDBQx2jH4YqRQkQ+
-+n9vuWgY2oMEZnGA1OPWQxA2DVHFaxYOgSLxXfXxf88IJkjMvtWD8g7I+K/NhIsr
-k3yUbWnxg5rJSGiijcnOAna468+EF8NXjlOVtxENVooGg/vxNXQGTyKKzGg7RlQ4
-0Yeq2Kxizekoe5+Fvw4xRq7MauOAGA5bqCPT8jFxCIHGKC0jDZevgHwe+42Pcubh
-gczOswDXiuObve8dsJtk
-=b7FB
------END PGP SIGNATURE-----
-
---Signature=_Fri__9_Mar_2012_18_40_41_+1100_wPPm71vScCkQuqtX--
