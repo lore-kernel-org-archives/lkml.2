@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030264Ab2CITpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:45:40 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
+	id S1030307Ab2CITpt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:45:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964843Ab2CITph (ORCPT
+	with ESMTP id S1030274Ab2CITpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:45:37 -0500
-Message-Id: <20120309190202.594884638@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:45:44 -0500
+Message-Id: <20120309190202.757990284@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:05 -0800
+Date: Fri, 09 Mar 2012 11:02:07 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 03/95] Fix autofs compile without CONFIG_COMPAT
+        alan@lxorguk.ukuu.org.uk, Alban Browaeys <prahal@yahoo.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [ 05/95] drm/i915: Prevent a machine hang by checking crtc->active before loading lut
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,40 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Alban Browaeys <prahal@yahoo.com>
 
-commit 3c761ea05a8900a907f32b628611873f6bef24b2 upstream.
+commit aed3f09db39596e539f90b11a5016aea4d8442e1 upstream.
 
-The autofs compat handling fix caused a compile failure when
-CONFIG_COMPAT isn't defined.
+Before loading the lut (gamma), check the active state of intel_crtc,
+otherwise at least on gen2 hang ensue.
 
-Instead of adding random #ifdef'fery in autofs, let's just make the
-compat helpers earlier to use: without CONFIG_COMPAT, is_compat_task()
-just hardcodes to zero.
+This is reproducible in Xorg via:
+  xset dpms force off
+then
+  xgamma -rgamma 2.0 # freeze.
 
-We could probably do something similar for a number of other cases where
-we have #ifdef's in code, but this is the low-hanging fruit.
-
-Reported-and-tested-by: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44505
+Signed-off-by: Alban Browaeys <prahal@yahoo.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/compat.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -561,5 +561,9 @@ asmlinkage ssize_t compat_sys_process_vm
- 		unsigned long liovcnt, const struct compat_iovec __user *rvec,
- 		unsigned long riovcnt, unsigned long flags);
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -5965,7 +5965,7 @@ void intel_crtc_load_lut(struct drm_crtc
+ 	int i;
  
-+#else
-+
-+#define is_compat_task() (0)
-+
- #endif /* CONFIG_COMPAT */
- #endif /* _LINUX_COMPAT_H */
+ 	/* The clocks have to be on to load the palette. */
+-	if (!crtc->enabled)
++	if (!crtc->enabled || !intel_crtc->active)
+ 		return;
+ 
+ 	/* use legacy palette for Ironlake */
 
 
