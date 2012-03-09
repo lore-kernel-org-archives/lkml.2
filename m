@@ -1,222 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758284Ab2CIVZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:25:36 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:44920 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab2CIVZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:25:34 -0500
-Date: Sat, 10 Mar 2012 01:25:30 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, mtk.manpages@gmail.com,
-        akpm@linux-foundation.org, xemul@parallels.com,
-        linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH 2/2] Add kcmp.2 manpage
-Message-ID: <20120309212530.GE23040@moon>
-References: <1331326042-32558-1-git-send-email-gorcunov@openvz.org>
- <1331326042-32558-3-git-send-email-gorcunov@openvz.org>
- <4F5A6D09.3050704@zytor.com>
- <20120309210342.GN13346@moon>
- <4F5A72E9.5030802@zytor.com>
- <20120309211813.GO13346@moon>
+	id S1753964Ab2CIV3X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:29:23 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41968 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751584Ab2CIV3V convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 16:29:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120309211813.GO13346@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F5A6B6B.50703@wwwdotorg.org>
+References: <1331324305-1649-1-git-send-email-swarren@wwwdotorg.org>
+	<20120309203207.GB10835@windriver.com>
+	<4F5A6B6B.50703@wwwdotorg.org>
+Date: Fri, 9 Mar 2012 16:29:20 -0500
+X-Google-Sender-Auth: sEw9QvwQcX_vyMhqbRJ4i4xjIno
+Message-ID: <CAP=VYLpZv-g5ZqONzhk51nth3Wn=zHmcfytdEBH3ZX7CJKjaZw@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: Include <linux/bug.h> to prevent compile errors
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 01:18:13AM +0400, Cyrill Gorcunov wrote:
-> 
-> Ouch, sorry. Will update shortly.
-> 
+On Fri, Mar 9, 2012 at 3:43 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 03/09/2012 01:32 PM, Paul Gortmaker wrote:
+>> [[PATCH] pinctrl: Include <linux/bug.h> to prevent compile errors] On 09/03/2012 (Fri 13:18) Stephen Warren wrote:
+>>
+>>> Macros in <linux/pinctrl/machine.h> call ARRAY_SIZE(), the definition of
+>>> which eventually calls BUILD_BUG_ON_ZERO(), which is defined in
+>>> <linux/bug.h>. Include that so that every .c file using the pinctrl macros
+>>> doesn't have to do that itself.
+>>
+>> Which C files are failing?  The approach was to be adding it only
+>> for headers with static inlines which use it, and add it to C files
+>> that are actually *deploying* the macros.
+>
+> For me, the files that are failing haven't been committed upstream yet;
+> I expect them to be very soon after the 3.4 merge window completes.
+>
+> However, I expect you'll see this issue with arch/arm/mach-u300/core.c,
+> since it uses the same macros defined in pinctrl/machine.h that cause
+> the problem for me, unless one of the include files there picks up bug.h
+> already.
+>
+> As a general statement though, once pinctrl becomes more widely adopted,
+> I expect to see many files start to use macros from pinctrl/machine.h,
+> and hence implicitly use ARRAY_SIZE(), and hence even more implicitly
+> depend on linux/bug.h. I don't think it's at all reasonable to force the
+> author of every one of those files to track down 3 or 4 levels of header
+> file dependencies to find that they need linux/bug.h even though they
+> make no direct use of its features, when it's known that almost any user
+> of pinctrl/machine.h is going to hit this issue.
 
-This one should do the trick.
+There was a similar discussion before, where there was concern over
+"every one of those files" but in the end the number is a fraction of
+a percent.   There is no harm in the author knowing they are making
+_use_ of BUG stuff -- in fact if you happened to be trying to write some
+fault tolerant code, you might really be glad to know, so you could take
+steps to avoid it....
 
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Date: Sat, 10 Mar 2012 01:24:50 +0400
-Subject: [PATCH] Add kcmp.2 manpage
+Paul.
 
-NAME
-       kcmp - compare if two processes do share a particular kernel resource
 
-SYNOPSIS
-       #define _GNU_SOURCE         /* See feature_test_macros(7) */
-       #include <unistd.h>
-       #include <linux/kcmp.h>
-       #include <sys/syscall.h>   /* For SYS_xxx definitions */
-
-       int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);
-
-DESCRIPTION
-       kcmp() allows to find out if two processes identified by pid1 and pid2
-       share kernel resources such as virtual memory, file descriptors, file system etc.
-
-       The comparison type is one of the following
-
-       KCMP_FILE determines whether a file descriptor idx1 in the first process
-       is the same as another descriptor idx2 in the second process
-
-       KCMP_VM compares whether processes share address space
-
-       KCMP_FILES compares the file descriptor arrays to see whether the processes
-       share all files
-
-       KCMP_FS compares whether processes share the file system information (the current
-       umask, working directory, namespace root, etc)
-
-       KCMP_SIGHAND compares whether processes share a signal handlers table
-
-       KCMP_IO compares whether processes do share I/O context, used mainly for
-       block I/O scheduling
-
-       KCMP_SYSVSEM compares the list of undo operations associated with SYSV semaphores
-
-RETURN VALUE
-       kcmp was designed to return values suitable for sorting.  This is particularly handy
-       when one have to compare a large number of file descriptors.
-
-       The return value is merely a result of simple arithmetic comparison of kernel pointers
-       (when kernel compares resources, it uses their memory addresses).
-
-       The  easiest way to explain is to consider an example.  Lets say v1 and v2 are the
-       addresses of appropriate resources, then the return value is one of the following
-
-       0 - v1 is equal to v2 , in other words we have a shared resource here
-       1 - v1 is less than v2
-       2 - v1 is greater than v2
-       3 - v1 is not equal to but ordering information is unavailble.
-
-       On error, -1 is returned, and errno is set appropriately.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
----
- man2/kcmp.2 |  107 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 107 insertions(+), 0 deletions(-)
- create mode 100644 man2/kcmp.2
-
-diff --git a/man2/kcmp.2 b/man2/kcmp.2
-new file mode 100644
-index 0000000..6c0d3a2
---- /dev/null
-+++ b/man2/kcmp.2
-@@ -0,0 +1,107 @@
-+.TH KCMP 2 2012-02-01 "Linux" "Linux Programmer's Manual"
-+
-+.SH NAME
-+kcmp \- compare if two processes do share a particular kernel resource
-+
-+.SH SYNOPSIS
-+.nf
-+.BR "#define _GNU_SOURCE" "         /* See feature_test_macros(7) */"
-+.B #include <unistd.h>
-+.B #include <linux/kcmp.h>
-+.BR "#include <sys/syscall.h>   "  "/* For SYS_xxx definitions */"
-+
-+.BI "int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);"
-+.fi
-+
-+.SH DESCRIPTION
-+
-+.BR kcmp ()
-+allows to find out if two processes identified by
-+.I pid1
-+and
-+.I pid2
-+share kernel resources such as virtual memory,
-+file descriptors, file system etc.
-+
-+The comparison
-+.I type
-+is one of the following
-+
-+.BR KCMP_FILE
-+determines whether a file descriptor
-+.I idx1
-+in the first process is the same as another descriptor
-+.I idx2
-+in the second process
-+
-+.BR KCMP_VM
-+compares whether processes share address space
-+
-+.BR KCMP_FILES
-+compares the file descriptor arrays to see whether the processes share all files
-+
-+.BR KCMP_FS
-+compares whether processes share the file system information (the current umask,
-+working directory, namespace root, etc)
-+
-+.BR KCMP_SIGHAND
-+compares whether processes share a signal handlers table
-+
-+.BR KCMP_IO
-+compares whether processes do share I/O context,
-+used mainly for block I/O scheduling
-+
-+.BR KCMP_SYSVSEM
-+compares the list of undo operations associated with SYSV semaphores
-+
-+.SH "RETURN VALUE"
-+.B kcmp
-+was designed to return values suitable for sorting.
-+This is particularly handy when one have to compare
-+a large number of file descriptors.
-+
-+The return value is merely a result of simple arithmetic comparison
-+of kernel pointers (when kernel compares resources, it uses their
-+memory addresses).
-+
-+The easiest way to explain is to consider an example.
-+Lets say
-+.I v1
-+and
-+.I v2
-+are the addresses of appropriate resources, then the return value
-+is one of the following
-+
-+.B 0
-+\-
-+.I v1
-+is equal to
-+.IR v2 ,
-+in other words we have a shared resource here
-+
-+.B 1
-+\-
-+.I v1
-+is less than
-+.I v2
-+
-+.B 2
-+\-
-+.I v1
-+is greater than
-+.I v2
-+
-+.B 3
-+\-
-+.I v1
-+is not equal to
-+.IR v2 ,
-+but ordering information is unavailable.
-+
-+On error, \-1 is returned, and errno is set appropriately.
-+
-+.SH "CONFORMING TO"
-+.BR kcmp ()
-+is Linux specific and should not be used in programs intended to be portable.
-+.SH "SEE ALSO"
-+.BR clone (2)
--- 
-1.7.7.6
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
