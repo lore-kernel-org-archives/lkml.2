@@ -1,117 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab2CIIPA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 03:15:00 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64880 "EHLO
+	id S1753068Ab2CIIRQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 03:17:16 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48395 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700Ab2CIIO6 (ORCPT
+	with ESMTP id S1751780Ab2CIIRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 03:14:58 -0500
-From: santosh nayak <santoshprasadnayak@gmail.com>
-To: jack_wang@usish.com
-Cc: mark_salyzyn@xyratex.com, lindar_liu@usish.com, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Santosh Nayak <santoshprasadnayak@gmail.com>
-Subject: [PATCH] [SCSI] pm8001: Use spin_lock_irqsave() for task_state.
-Date: Fri,  9 Mar 2012 13:43:38 +0530
-Message-Id: <1331280818-14042-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Fri, 9 Mar 2012 03:17:14 -0500
+MIME-Version: 1.0
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <CAJ0PZbQSuG2sJngV+MzaveWvvQZM=bm_GxB_725PNv0zAx+H5A@mail.gmail.com>
+References: <13197479.540821330911965933.JavaMail.weblogic@epv6ml06>
+	<1331096521-26026-1-git-send-email-myungjoo.ham@samsung.com>
+	<201203071002.40296.rjw@sisk.pl>
+	<CAJ0PZbQSuG2sJngV+MzaveWvvQZM=bm_GxB_725PNv0zAx+H5A@mail.gmail.com>
+Date: Fri, 9 Mar 2012 17:17:13 +0900
+X-Google-Sender-Auth: 0mJTMhhWrGye6x_vm12qqmEaMSI
+Message-ID: <CAJ0PZbRGv2kAMZfTSzt-zjNeN6WBQ195ktXbUfmwFGOTBVobCA@mail.gmail.com>
+Subject: Re: [PATCH v3] PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
+        linux-pm@vger.kernel.org,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
+        markgross <markgross@thegnar.org>, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Nayak <santoshprasadnayak@gmail.com>
+On Wed, Mar 7, 2012 at 6:36 PM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
+> 2012/3/7 Rafael J. Wysocki <rjw@sisk.pl>:
+>> Hi,
+>>
+>> Can you please post all of your outstanding PM-related patches that
+>> you want me to look at in one series, so that they appear in context?
+>>
+>> I'm struggling to understand what you need all those changes for.
+>>
+>
+> Hello Rafael,
+>
+>
+> I've put the patches at
+>
+> - devfreq patches (based on your pm-devfreq branch)
+> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/devfreq-for-next
+>
+> - pm-qos patches (based on your pm-qos branch)
+> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/pm_qos-for-next
+>
+>
+> - In order to help understand, all related patches are at (do not pull
+> from here, please)
+> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/devfreq
+> devfreq patches + pm-qos patches + cpufreq patches combined. (based on
+> Linux 3.3-rc6 + some test patches.)
+> However, it does not include recent PM-QoS patches in pm-qos branch,
+> so the patches are not recent and different from the above. So please
+> do not pull from here to your branches.
+>
 
-Use spin_lock_irqsave() for task_state.
+Hi Rafael,
 
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
----
- drivers/scsi/pm8001/pm8001_hwi.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
-index 3619f6e..9d82ee5 100644
---- a/drivers/scsi/pm8001/pm8001_hwi.c
-+++ b/drivers/scsi/pm8001/pm8001_hwi.c
-@@ -2093,6 +2093,7 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
- 	struct ata_task_resp *resp ;
- 	u32 *sata_resp;
- 	struct pm8001_device *pm8001_dev;
-+	unsigned long flags;
- 
- 	psataPayload = (struct sata_completion_resp *)(piomb + 4);
- 	status = le32_to_cpu(psataPayload->status);
-@@ -2382,26 +2383,26 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
- 		ts->stat = SAS_DEV_NO_RESPONSE;
- 		break;
- 	}
--	spin_lock_irq(&t->task_state_lock);
-+	spin_lock_irqsave(&t->task_state_lock, flags);
- 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
- 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
- 	t->task_state_flags |= SAS_TASK_STATE_DONE;
- 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
--		spin_unlock_irq(&t->task_state_lock);
-+		spin_unlock_irqrestore(&t->task_state_lock, flags);
- 		PM8001_FAIL_DBG(pm8001_ha,
- 			pm8001_printk("task 0x%p done with io_status 0x%x"
- 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
- 			t, status, ts->resp, ts->stat));
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 	} else if (t->uldd_task) {
--		spin_unlock_irq(&t->task_state_lock);
-+		spin_unlock_irqrestore(&t->task_state_lock, flags);
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 		mb();/* ditto */
- 		spin_unlock_irq(&pm8001_ha->lock);
- 		t->task_done(t);
- 		spin_lock_irq(&pm8001_ha->lock);
- 	} else if (!t->uldd_task) {
--		spin_unlock_irq(&t->task_state_lock);
-+		spin_unlock_irqrestore(&t->task_state_lock, flags);
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 		mb();/*ditto*/
- 		spin_unlock_irq(&pm8001_ha->lock);
-@@ -2423,6 +2424,7 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
- 	u32 tag = le32_to_cpu(psataPayload->tag);
- 	u32 port_id = le32_to_cpu(psataPayload->port_id);
- 	u32 dev_id = le32_to_cpu(psataPayload->device_id);
-+	unsigned long flags;
- 
- 	ccb = &pm8001_ha->ccb_info[tag];
- 	t = ccb->task;
-@@ -2593,26 +2595,26 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
- 		ts->stat = SAS_OPEN_TO;
- 		break;
- 	}
--	spin_lock_irq(&t->task_state_lock);
-+	spin_lock_irqsave(&t->task_state_lock, flags);
- 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
- 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
- 	t->task_state_flags |= SAS_TASK_STATE_DONE;
- 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
--		spin_unlock_irq(&t->task_state_lock);
-+		spin_unlock_irqrestore(&t->task_state_lock, flags);
- 		PM8001_FAIL_DBG(pm8001_ha,
- 			pm8001_printk("task 0x%p done with io_status 0x%x"
- 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
- 			t, event, ts->resp, ts->stat));
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 	} else if (t->uldd_task) {
--		spin_unlock_irq(&t->task_state_lock);
-+		spin_unlock_irqrestore(&t->task_state_lock, flags);
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 		mb();/* ditto */
- 		spin_unlock_irq(&pm8001_ha->lock);
- 		t->task_done(t);
- 		spin_lock_irq(&pm8001_ha->lock);
- 	} else if (!t->uldd_task) {
--		spin_unlock_irq(&t->task_state_lock);
-+		spin_unlock_irqrestore(&t->task_state_lock, flags);
- 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
- 		mb();/*ditto*/
- 		spin_unlock_irq(&pm8001_ha->lock);
+Here goes to-be-pulled branches for linux-pm.git of yours (pm-devfreq,
+pm-qos); they have some updates since last submissions (like those
+mentioned by Mike)
+Please use the following addresses if you feel fine for them to be pulled.
+
+
+Cheers!
+MyungJoo.
+
+-------- PM / devfreq (fitted for pm-devfreq branch) ----------
+The following changes since commit e4c9d8efe6bdc844071d68960dfa2003c5cf6449:
+
+  Merge branch 'devfreq-for-next' of
+git://git.infradead.org/users/kmpark/linux-samsung into pm-devfreq
+(2012-01-25 00:02:08 +0100)
+
+are available in the git repository at:
+
+  git://git.infradead.org/users/kmpark/linux-samsung devfreq-for-next
+
+GITWEB: http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/devfreq-for-next
+
+MyungJoo Ham (2):
+      PM / devfreq: add PM QoS support
+      PM / devfreq: add relation of recommended frequency.
+
+ drivers/devfreq/devfreq.c     |  193 +++++++++++++++++++++++++++++++++++++++--
+ drivers/devfreq/exynos4_bus.c |   14 ++-
+ include/linux/devfreq.h       |   53 +++++++++++-
+ 3 files changed, 245 insertions(+), 15 deletions(-)
+
+
+
+-------- PM / QoS (fitted for pm-qos branch) ----------
+The following changes since commit a9b542ee607a8afafa9447292394959fc84ea650:
+
+  PM / QoS: unconditionally build the feature (2012-02-13 16:23:42 +0100)
+
+are available in the git repository at:
+  git://git.infradead.org/users/kmpark/linux-samsung pm_qos-for-next
+
+GITWEB: http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/pm_qos-for-next
+
+MyungJoo Ham (2):
+      PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
+      PM / QoS: add pm_qos_update_request_timeout API
+
+ include/linux/pm_qos.h |    8 +++++
+ kernel/power/qos.c     |   81 +++++++++++++++++++++++++++++++++++++++++++++++-
+
+
+
+
 -- 
-1.7.4.4
-
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
