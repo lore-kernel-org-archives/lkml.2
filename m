@@ -1,87 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759236Ab2CIARK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 19:17:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23409 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752489Ab2CIARI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 19:17:08 -0500
-Date: Thu, 8 Mar 2012 21:08:35 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, avi@redhat.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4 changelog-v2] KVM: Switch to srcu-less get_dirty_log()
-Message-ID: <20120309000835.GA25838@amt.cnet>
-References: <20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp>
- <20120303142148.2689454b30dc86d84c4a19f5@gmail.com>
- <20120306111540.GA29914@amt.cnet>
- <20120306234317.2817d2071038d11ab3831c82@gmail.com>
- <20120306150104.GA3041@amt.cnet>
- <20120307002317.d8682de9c6ccd6af8ccac467@gmail.com>
- <20120306152850.GB3353@amt.cnet>
- <20120307170745.3147f776.yoshikawa.takuya@oss.ntt.co.jp>
- <20120307232520.GB29570@amt.cnet>
- <20120308103545.24b81093.yoshikawa.takuya@oss.ntt.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120308103545.24b81093.yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759311Ab2CIARv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 19:17:51 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:49153 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759274Ab2CIARh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 19:17:37 -0500
+X-AuditID: cbfee612-b7c09ae0000024ca-47-4f594c1fd658
+Date: Fri, 09 Mar 2012 00:17:35 +0000 (GMT)
+From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
+Subject: Re: Re: [PATCH 0/3] power: max17042_battery: Add DT bindings
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: "DirkBrandewie<dirk.brandewie"@gmail.com, linux-kernel@vger.kernel.org
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120309000949480@myungjoo.ham
+Msgkey: 20120309000949480@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120309000949480@myungjoo.ham
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <33272430.5261331252254898.JavaMail.weblogic@epml04>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q290Huk0026375
 
-On Thu, Mar 08, 2012 at 10:35:45AM +0900, Takuya Yoshikawa wrote:
-> Marcelo Tosatti <mtosatti@redhat.com> wrote:
-> 
-> > What is worrying are large memory cases: think of the 50GB slot case.
-> > 100ms hold time is pretty bad (and reacquiring the lock is relatively
-> > simple).
-> > 
-> 
-> OK, I agree basically.
-> 
-> But let me explain one thing before deciding what I should do next.
-> 
-> With my method, even when we use a 50GB slot, the hold time will be under
-> 10ms -- not 100ms -- if the memory actually updated from the last time is
-> 1GB (256K dirty pages).
-> 
-> > >   8747274.0   10973.3       33.3      -31%    -3%    256K
->   Note that this unit-test was done on my tiny core-i3 32-bit host.
->   On servers which can install more than 50GB memory, this will become
->   much faster: actually my live migration tests done on Xeon saw much
->   better numbers.  Unit-test has been tuned for the worst case.
-> 
-> I admit that if the dirty memory size is more than 10GB, we may see over
-> 100ms hold time you are worrying about.
-> 
->   For that I was proposing introducing a new GET_DIRTY_LOG API which can
->   restrict the number of dirty pages we get the log - but this is a long
->   term goal.
-> 
-> 
-> So, I am OK to try to introduce cond_resched_lock_cb() as you suggested.
-> But, as I explained above, my current implementation does not introduce
-> any real regression concerning to mmu_lock hold time:
-> 
->   Before we could see 10ms hold time in real workloads:
->   > funcgraph_entry:      ! 9783.060 us |  kvm_mmu_slot_remove_write_access();
-> 
->   I have never seen ms hold time with my method in the same workloads.
-> 
-> So, it would be helpful if you can apply the patch series and I can work
-> on top of that: although I cannot use servers with 100GB memory now,
-> migrating a guest with 16GB memory or so may be possible later: I need
-> to reserve servers for that.
+Dear Karol Lewandowski,
 
-Makes sense.
+I've been confused this patchset with Dirk Brandewie's MAX17042 patchset; I though this was a follow-up version of Dirk's, which I think already acked by me.
 
-It looks good to me, Avi can you review & ack please?
+Anyway, the patches themselves look fine.
 
-> I also want to know "mmu_lock -- TLB flush"-decoupling plan.  We will not
-> need to introduce cond_resched_lock_cb() in sched.h if that is possible.
+However, have you checked the compatibility (mergability?) with the recent MAX17042 patches of Dirk Brandewie? I'm not sure about the merge status of Dirk's patchset, but, I think you need to consider his patches as they massively reshaped the device driver.
+
+Other than that, the patches look fine. (If that issue is already considered, regard this as an Acked-by.)
+
+Thank you.
+
+
+Cheers!
+MyungJoo.
+
+------- Original Message -------
+Sender : Karol Lewandowski<k.lewandowsk@samsung.com> Junior Software Engineer/SPRC-Linux (MSD)/»ï¼ºÀüÀÚ
+Date : 2012-03-08 19:32 (GMT+09:00)
+Title : Re: [PATCH 0/3] power: max17042_battery: Add DT bindings
+
+Dear MyungJoo Ham,
+
+Could you take a look at patchset I've sent? It's needed to make use of
+max17042 driver on device tree-enabled platforms.
+
+Regards,
+-- 
+Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
+
+On 22.02.2012 19:06, Karol Lewandowski wrote:
+
+> Hi,
 > 
-> Thanks,
-> 	Takuya
+> This series of patches adds bindings to max17042_battery driver making
+> it possible to instantiate it from device tree description.
+> 
+> First, convience patch, simply replaces kzalloc with devm_kzalloc
+> where possible.
+> 
+> Second, most intrusive patch adds variables orginally found only in
+> platform data to max17042_chip structure.  I decided it to do it that
+> way rather than allocating new platform data and then populating it
+> from device tree description.
+> 
+> Last patch adds DT bindings itself.
+> 
+> I would be grateful for any comments and I will be more than happy to
+> rework this patchset if needed.
+> 
+> 
+> Karol Lewandowski (3):
+>   max17042_battery: Use devm_kzalloc() where applicable
+>   max17042_battery: Preserve properties outside of platform data
+>   max17042_battery: Make it possible to instantiate driver from DT
+> 
+>  .../bindings/power_supply/max17042_battery.txt     |   18 +++++
+>  drivers/power/max17042_battery.c                   |   77 ++++++++++++++++----
+>  2 files changed, 79 insertions(+), 16 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/power_supply/max17042_battery.txt
+> 
+
+
+
+
+
+
+--
+MyungJoo Ham (ÇÔ¸íÁÖ), PHD
+System S/W Lab, S/W Platform Team, Software Center
+Samsung Electronics
+Cell: +82-10-6714-2858ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
