@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031817Ab2CITxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:53:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	id S1759412Ab2CIUQx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:16:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030525Ab2CITxb (ORCPT
+	with ESMTP id S1030979Ab2CITtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:53:31 -0500
-Message-Id: <20120309190218.736405038@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:49:11 -0500
+Message-Id: <20120309190207.658728788@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:01 -0800
+Date: Fri, 09 Mar 2012 11:03:08 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 47/68] OMAP: 4430SDP/Panda: use gpio_free_array to free HDMI gpios
-In-Reply-To: <20120309194409.GA2069@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Russell King <rmk+kernel@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [ 66/95] ARM: 7345/1: errata: update workaround for A9 erratum #743622
+In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 575753e3bea3b67eef8e454fb87f719e3f7da599 upstream.
+commit efbc74ace95338484f8d732037b99c7c77098fce upstream.
 
-Instead of freeing the GPIOs individually, use gpio_free_array().
+Erratum #743622 affects all r2 variants of the Cortex-A9 processor, so
+ensure that the workaround is applied regardless of the revision.
 
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/board-4430sdp.c    |    3 +--
- arch/arm/mach-omap2/board-omap4panda.c |    3 +--
+ arch/arm/Kconfig      |    2 +-
+ arch/arm/mm/proc-v7.S |    4 +---
  2 files changed, 2 insertions(+), 4 deletions(-)
 
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -609,8 +609,7 @@ static int sdp4430_panel_enable_hdmi(str
- 
- static void sdp4430_panel_disable_hdmi(struct omap_dss_device *dssdev)
- {
--	gpio_free(HDMI_GPIO_LS_OE);
--	gpio_free(HDMI_GPIO_HPD);
-+	gpio_free_array(sdp4430_hdmi_gpios, ARRAY_SIZE(sdp4430_hdmi_gpios));
- }
- 
- static struct omap_dss_device sdp4430_hdmi_device = {
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -645,8 +645,7 @@ static int omap4_panda_panel_enable_hdmi
- 
- static void omap4_panda_panel_disable_hdmi(struct omap_dss_device *dssdev)
- {
--	gpio_free(HDMI_GPIO_LS_OE);
--	gpio_free(HDMI_GPIO_HPD);
-+	gpio_free_array(panda_hdmi_gpios, ARRAY_SIZE(panda_hdmi_gpios));
- }
- 
- static struct omap_dss_device  omap4_panda_hdmi_device = {
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1272,7 +1272,7 @@ config ARM_ERRATA_743622
+ 	depends on CPU_V7
+ 	help
+ 	  This option enables the workaround for the 743622 Cortex-A9
+-	  (r2p0..r2p2) erratum. Under very rare conditions, a faulty
++	  (r2p*) erratum. Under very rare conditions, a faulty
+ 	  optimisation in the Cortex-A9 Store Buffer may lead to data
+ 	  corruption. This workaround sets a specific bit in the diagnostic
+ 	  register of the Cortex-A9 which disables the Store Buffer
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -352,9 +352,7 @@ __v7_setup:
+ 	mcreq	p15, 0, r10, c15, c0, 1		@ write diagnostic register
+ #endif
+ #ifdef CONFIG_ARM_ERRATA_743622
+-	teq	r6, #0x20			@ present in r2p0
+-	teqne	r6, #0x21			@ present in r2p1
+-	teqne	r6, #0x22			@ present in r2p2
++	teq	r5, #0x00200000			@ only present in r2p*
+ 	mrceq	p15, 0, r10, c15, c0, 1		@ read diagnostic register
+ 	orreq	r10, r10, #1 << 6		@ set bit #6
+ 	mcreq	p15, 0, r10, c15, c0, 1		@ write diagnostic register
 
 
