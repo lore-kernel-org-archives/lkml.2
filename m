@@ -1,123 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab2CIWEE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 17:04:04 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:64879 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520Ab2CIWEC (ORCPT
+	id S1754776Ab2CIWEs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 17:04:48 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:60307 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab2CIWEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 17:04:02 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [GIT PULL] Renesas SoC updates for v3.4
-Date: Fri, 9 Mar 2012 22:03:49 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Paul Mundt <lethal@linux-sh.org>, LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>, Rob Herring <robherring2@gmail.com>
-References: <201203092155.04731.rjw@sisk.pl> <201203092134.30191.arnd@arndb.de> <201203092252.48110.rjw@sisk.pl>
-In-Reply-To: <201203092252.48110.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203092203.49812.arnd@arndb.de>
-X-Provags-ID: V02:K0:ht/j24u+cy6CvGE/t5FSH7eXiT2Y6bF8KQsR91Bmpiu
- fQ1g17RFbthT0a1RFVhUtFY1LnAxj/Uy9TAipMFmpTr4C93Wse
- XxwuYzsSla+6TknHj52v/sv7yvFzrzrv/H8oOEISSckn6k4yLp
- VnbwPXfYS7+JwkdnuPbv6PbbYs2EeluRyAq/jVKAFsE7e2szc1
- AegXzEtFCeU6pgzWpsIQR0RmwNSDy1nzNmro7MBQLXPVfLSMhD
- su342IuP7EQDEvdWNmnBZZI0ohtHtu2XSS+jOt20HJAEjpL4cv
- IuHCARFs0rhNAkS8AIfiXZGr8aT/gu0gHNDs/E8j5kyL6ee273
- B6/OsVRb1CsVCXbynsik=
+	Fri, 9 Mar 2012 17:04:47 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@lianro.org>
+Subject: [PATCH] time: x86: Fix race switching from vsyscall to non-vsyscall clock
+Date: Fri,  9 Mar 2012 14:04:07 -0800
+Message-Id: <1331330647-31480-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030922-5518-0000-0000-000002DA42C6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 March 2012, Rafael J. Wysocki wrote:
-> Hi,
-> 
-> On Friday, March 09, 2012, Arnd Bergmann wrote:
-> > On Friday 09 March 2012, Rafael J. Wysocki wrote:
-> > > Hi,
-> > > 
-> > > Please pull Renesas SoC updates for v3.4 since commit
-> > > ce8fea7aa4ad9e3b40999a08622ef27c77159659:
-> > > 
-> > >     mmap: EINVAL not ENOMEM when rejecting VM_GROWS
-> > > 
-> > > with top-most commit f57fd2100e8273af3a9d2ff67714903d2dfd1eef
-> > 
-> > Hi Rafael,
-> > 
-> > Please rebase this on an -rc release, otherwise we get a rather
-> > messy history in the arm-soc tree.
-> 
-> Well, OK, I can rebase it on -rc7 if there is one, unless Paul
-> has already pulled from clk_ops-rename.  Paul?
+When switching from a vsyscall capable to a non-vsyscall capable
+clocksource, there was a small race, where the last vsyscall
+gettimeofday before the switch might return a invalid time value
+using the new non-vsyscall enabled clocksource values after the
+switch is complete.
 
-Why not rebase back to -rc6?
+This is due to the vsyscall code checking the vclock_mode once
+outside of the seqcount protected section. After it reads the
+vclock mode, it doesn't re-check that the sampled clock data
+that is obtained in the seqcount critical section still matches.
 
-> > 
-> > For next time, I think it would be good to make those things separate pull
-> > requests, since they are all rather big. In particular, the clk rework
-> > could be a series by itself.
-> 
-> It is a series by itself.  You can readily pull it from clk_ops-rename even. :-)
-> 
-> I'm not sure, though, what exactly the point of this would be.
+The fix is to sample vclock_mode inside the protected section,
+and as long as it isn't VCLOCK_NONE, return the calculated
+value. If it has changed and is now VCLOCK_NONE, fall back
+to the syscall gettime calculation.
 
-Mostly it helps make obvious which things are logically connected.
-Another reason is that when one of the branches has a problem, we
-can still pull all the other ones. 
-Finally, we sometimes make new topic branches in the arm-soc tree
-when a lot of maintainers send similar things, e.g. we had a 
-'next/clk' branch in the past that half of your patches would
-have applied to (this time we don't have one of those). By having
-more branches for logically separate things, it allows us to group
-them in more flexible ways across platforms.
+CC: Andy Lutomirski <luto@amacapital.net>
+CC: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: John Stultz <john.stultz@lianro.org>
+---
+ arch/x86/vdso/vclock_gettime.c |   25 ++++++++++++++++++++-----
+ 1 files changed, 20 insertions(+), 5 deletions(-)
 
-It's not very important this time, so I didn't ask you to rebase
-them just for that.
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index 6bc0e72..e7cf1dd 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -85,21 +85,28 @@ notrace static inline long vgetns(void)
+ notrace static noinline int do_realtime(struct timespec *ts)
+ {
+ 	unsigned long seq, ns;
++	int mode;
+ 	do {
+ 		seq = read_seqbegin(&gtod->lock);
++		mode = gtod->clock.vclock_mode;
+ 		ts->tv_sec = gtod->wall_time_sec;
+ 		ts->tv_nsec = gtod->wall_time_nsec;
+ 		ns = vgetns();
+ 	} while (unlikely(read_seqretry(&gtod->lock, seq)));
++
+ 	timespec_add_ns(ts, ns);
++	if (mode == VCLOCK_NONE)
++		return -1;
+ 	return 0;
+ }
+ 
+ notrace static noinline int do_monotonic(struct timespec *ts)
+ {
+ 	unsigned long seq, ns, secs;
++	int mode;
+ 	do {
+ 		seq = read_seqbegin(&gtod->lock);
++		mode = gtod->clock.vclock_mode;
+ 		secs = gtod->wall_time_sec;
+ 		ns = gtod->wall_time_nsec + vgetns();
+ 		secs += gtod->wall_to_monotonic.tv_sec;
+@@ -116,6 +123,8 @@ notrace static noinline int do_monotonic(struct timespec *ts)
+ 	ts->tv_sec = secs;
+ 	ts->tv_nsec = ns;
+ 
++	if (mode == VCLOCK_NONE)
++		return -1;
+ 	return 0;
+ }
+ 
+@@ -158,19 +167,25 @@ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+ {
+ 	switch (clock) {
+ 	case CLOCK_REALTIME:
+-		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+-			return do_realtime(ts);
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
++			if (do_realtime(ts))
++				goto fallback;
++			return 0;
++		}
+ 		break;
+ 	case CLOCK_MONOTONIC:
+-		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+-			return do_monotonic(ts);
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
++			if (do_monotonic(ts))
++				goto fallback;
++			return 0;
++		}
+ 		break;
+ 	case CLOCK_REALTIME_COARSE:
+ 		return do_realtime_coarse(ts);
+ 	case CLOCK_MONOTONIC_COARSE:
+ 		return do_monotonic_coarse(ts);
+ 	}
+-
++fallback:
+ 	return vdso_fallback_gettime(clock, ts);
+ }
+ int clock_gettime(clockid_t, struct timespec *)
+-- 
+1.7.3.2.146.gca209
 
-> > arnd@klappe2:~/linux-arm$ git grep -w __io arch/arm/mach-* | grep -v __typesafe
-> > arch/arm/mach-cns3xxx/core.c:   gic_init(0, 29, __io(CNS3XXX_TC11MP_GIC_DIST_BASE_VIRT),
-> > arch/arm/mach-cns3xxx/core.c:            __io(CNS3XXX_TC11MP_GIC_CPU_BASE_VIRT));
-> > arch/arm/mach-cns3xxx/core.c:   u32 __iomem *pm_base = __io(CNS3XXX_PM_BASE_VIRT);
-> > arch/arm/mach-cns3xxx/core.c:   cns3xxx_tmr1 = __io(CNS3XXX_TIMER1_2_3_BASE_VIRT);
-> > arch/arm/mach-cns3xxx/devices.c:        u32 __iomem *gpioa = __io(CNS3XXX_MISC_BASE_VIRT + 0x0014);
-> > arch/arm/mach-netx/generic.c:   vic_init(__io(io_p2v(NETX_PA_VIC)), 0, ~0, 0);
-> > arch/arm/mach-netx/include/mach/netx-regs.h:#define NETX_SYSTEM_REG(ofs)            __io(NETX_VA_SYSTEM + (ofs))
-> > arch/arm/mach-netx/include/mach/netx-regs.h:#define NETX_GPIO_REG(ofs)                     __io(NETX_VA_GPIO + (ofs))
-> > arch/arm/mach-netx/include/mach/netx-regs.h:#define NETX_PIO_REG(ofs)        __io(NETX_VA_PIO + (ofs))
-> > arch/arm/mach-netx/include/mach/netx-regs.h:#define NETX_MIIMU           __io(NETX_VA_MIIMU)
-> > arch/arm/mach-netx/include/mach/netx-regs.h:#define NETX_PFIFO_REG(ofs)               __io(NETX_VA_PFIFO + (ofs))
-> > arch/arm/mach-netx/include/mach/netx-regs.h:#define NETX_MEMCR_REG(ofs)               __io(NETX_VA_MEMCR + (ofs))
-> > arch/arm/mach-netx/include/mach/netx-regs.h:#define NETX_DPMAS_REG(ofs)               __io(NETX_VA_DPMAS + (ofs))
-> > arch/arm/mach-netx/include/mach/netx-regs.h:#define NETX_I2C_REG(ofs)   __io(NETX_VA_I2C, (ofs))
-> > arch/arm/mach-realview/include/mach/hardware.h:#define __io_address(n)          __io(IO_ADDRESS(n))
-> > arch/arm/mach-shmobile/board-ag5evm.c:  l2x0_init(__io(0xf0100000), 0x00460000, 0xc2000fff);
-> > arch/arm/mach-shmobile/board-bonito.c:  l2x0_init(__io(0xf0002000), 0x40440000, 0x82000fff);
-> > arch/arm/mach-shmobile/board-kota2.c:   l2x0_init(__io(0xf0100000), 0x40460000, 0x82000fff);
-> > arch/arm/mach-shmobile/include/mach/io.h:#define __io(a)                        ((void __iomem *)(a))
-> > arch/arm/mach-shmobile/intc-r8a7779.c:  void __iomem *gic_dist_base = __io(0xf0001000);
-> > arch/arm/mach-shmobile/intc-r8a7779.c:  void __iomem *gic_cpu_base = __io(0xf0000100);
-> > arch/arm/mach-shmobile/intc-sh73a0.c:   void __iomem *gic_dist_base = __io(0xf0001000);
-> > arch/arm/mach-shmobile/intc-sh73a0.c:   void __iomem *gic_cpu_base = __io(0xf0000100);
-> > arch/arm/mach-shmobile/smp-r8a7779.c:   __raw_writel(__pa(shmobile_secondary_vector), __io(AVECR));
-> > arch/arm/mach-shmobile/smp-sh73a0.c:    if (((__raw_readl(__io(PSTR)) >> (4 * cpu)) & 3) == 3)
-> > arch/arm/mach-shmobile/smp-sh73a0.c:            __raw_writel(1 << cpu, __io(WUPCR));    /* wake up */
-> > arch/arm/mach-shmobile/smp-sh73a0.c:            __raw_writel(1 << cpu, __io(SRESCR));   /* reset */
-> > arch/arm/mach-shmobile/smp-sh73a0.c:    __raw_writel(0, __io(APARMBAREA));      /* 4k */
-> > arch/arm/mach-shmobile/smp-sh73a0.c:    __raw_writel(__pa(shmobile_secondary_vector), __io(SBAR));
-> > arch/arm/mach-ux500/include/mach/hardware.h:#define __io_address(n)             __io(IO_ADDRESS(n))
-> > 
-> > These are all broken and need to be changed to something else before we add the
-> > global definition for __io.
-> 
-> While I generally agree with that, I think it's not super-urgent, is it?
-
-No, it's not. I just wanted to let you all know now so we don't forget it.
-
-	Arnd
