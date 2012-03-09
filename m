@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab2CIOmp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 09:42:45 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47922 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab2CIOmo (ORCPT
+	id S1756901Ab2CIOsL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 09:48:11 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36883 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754192Ab2CIOsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 09:42:44 -0500
-Date: Fri, 9 Mar 2012 18:42:39 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Matt Helsley <matthltc@us.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
-Message-ID: <20120309144239.GD13346@moon>
-References: <20120308190534.GA19827@redhat.com>
- <20120308192504.GH21812@moon>
- <20120308192559.GA20782@redhat.com>
- <20120308214817.GO21812@moon>
- <20120309124811.GA610@redhat.com>
- <20120309125735.GB13346@moon>
- <20120309133555.GA23040@moon>
- <20120309134732.GA3696@redhat.com>
- <20120309141349.GC13346@moon>
- <20120309142620.GA5334@redhat.com>
+	Fri, 9 Mar 2012 09:48:08 -0500
+Date: Fri, 9 Mar 2012 15:48:04 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, stable <stable@vger.kernel.org>
+Subject: Re: [PATCH 2/2 v2] bluetooth: hci_core: fix NULL-pointer dereference
+ at unregister
+Message-ID: <20120309144804.GF4497@localhost>
+References: <1331228606.14217.5.camel@aeonflux>
+ <1331297594-13332-1-git-send-email-jhovold@gmail.com>
+ <CANq1E4Rt0ctZ5cpXipJE--YmkR4OjKBXLBQkeTKWP3+Q-q37Yw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120309142620.GA5334@redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANq1E4Rt0ctZ5cpXipJE--YmkR4OjKBXLBQkeTKWP3+Q-q37Yw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 03:26:20PM +0100, Oleg Nesterov wrote:
+Hi David,
+
+On Fri, Mar 09, 2012 at 03:04:11PM +0100, David Herrmann wrote:
+> On Fri, Mar 9, 2012 at 1:53 PM, Johan Hovold <jhovold@gmail.com> wrote:
+> > Make sure hci_dev_open returns immediately if hci_dev_unregister has
+> > been called.
 > >
-> > To be sure it's not increased somewhere else before
-> > down_write taken.
-> 
-> Who can do this? Only another CLONE_VM thread. And _only_ if we
-> already have the bug in mm_exe accounting logic. And only if that
-> thread does something to trigger the bug in the small window
-> between.
-
-ok, agreed.
-
-> > > into removed_exe_file_vma().
+> > This fixes a race between hci_dev_open and hci_dev_unregister which can
+> > lead to a NULL-pointer dereference.
 > >
-> > This one looks like a good idea for me -- it's cheap and
-> > not a hot path.
-> 
-> But not in this patch, please.
-> 
-
-Sure.
-
-> > > But imho your WARN looks like "OK, I checked it lockless but I
-> > > am not sure this is correct".
+> > Bug is 100% reproducible using hciattach and a disconnected serial port:
 > >
-> > Oleg, I bet if someone will be changing num_exe_file_vmas overall
-> > idea -- this prctl code will be fixed at last moment (if ever) only
-> > because it's very specific, so I wanted to not miss such moment
-> > and add some check that the rest of the kernel is in a good state.
-> > This test is cheap but may prevent potential problem if one day
-> > mm::exe_file concept will be reworked.
-> 
-> The test is cheap indeed. If you mean performance-wise.
-> 
-> But it looks confusing, imho. I do not care about a couple of CPU
-> cycles. The code should be optimized for the reading in the first
-> place, not for executing ;) Imho, of course.
-> 
-> And once again. Following your logic you need another WARN_ON()
-> right after we drop mmap_sem. Why? To be sure it's not increased
-> somewhere else _after_ down_write taken. And another one after
-> fput.
-> 
-> Sure, bugs are possible. And yes, in theory this WARN_ON() can
-> catch some problem. But there is tradeoff. Given that you need
-> another thread to trigger the (potential) bug and the window is
-> tiny, how high do you estimate the probability it can help?
-> 
-> > Sure I can simply drop this WARN_ON ;)
-> 
-> Oh, keep it if you like it ;)
-> 
-> Yes I hate it, but you are the author and this is almost cosmetic.
+> > 0. # hciattach -n /dev/ttyO1 any noflow
+> >
+> > 1. hci_dev_open called from hci_power_on grabs req lock
+> > 2. hci_init_req executes but device fails to initialise (times out
+> >   eventually)
+> > 3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
+> > 4. hci_uart_tty_close calls hci_dev_unregister and sleeps on req lock in
+> >   hci_dev_do_close
+> > 5. hci_dev_open (1) releases req lock
+> > 6. hci_dev_do_close grabs req lock and returns as device is not up
+> > 7. hci_dev_unregister sleeps in destroy_workqueue
+> > 8. hci_dev_open (3) grabs req lock, calls hci_init_req and eventually sleeps
+> > 9. hci_dev_unregister finishes, while hci_dev_open is still running...
 
-OK, Oleg, can't argue, you've convinced me ;) I'll drop this WARN_ON.
-Would it be enough for your Reviewed-by tag? /me hides
+[...]
 
-	Cyrill
+> > diff --git a/include/net/bluetooth/hci.h b/include/net/bluetooth/hci.h
+> > index 00596e8..e8879b9 100644
+> > --- a/include/net/bluetooth/hci.h
+> > +++ b/include/net/bluetooth/hci.h
+> > @@ -93,6 +93,8 @@ enum {
+> >  * states from the controller.
+> >  */
+> >  enum {
+> > +       HCI_UNREGISTER,
+> > +
+> >        HCI_LE_SCAN,
+> >  };
+> >
+> > diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+> > index d6448f0..22b6781 100644
+> > --- a/net/bluetooth/hci_core.c
+> > +++ b/net/bluetooth/hci_core.c
+> > @@ -525,6 +525,11 @@ int hci_dev_open(__u16 dev)
+> >
+> >        hci_req_lock(hdev);
+> >
+> > +       if (test_bit(HCI_UNREGISTER, &hdev->dev_flags)) {
+> > +               ret = -ENODEV;
+> > +               goto done;
+> > +       }
+> > +
+> 
+> Isn't it enough to check for HCI_RUNNING here? We obviously have a
+> race here as we take the device with hci_dev_get(), then sleep and
+> then we do not check whether the device is still alive. However,
+> drivers are required to reset HCI_RUNNING before calling
+> hci_unregister_dev() (which is bogus anyway, but its the way we
+> handled it in the past) therefore it should be enough for us to check
+> for HCI_RUNNING.
+
+I'm afraid this won't work as hci_dev_open is responsible for setting
+HCI_RUNNING in the first place (set in hdev->open(hdev) called from
+hci_dev_open).
+
+Thanks,
+Johan
