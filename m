@@ -1,312 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030650Ab2CIUYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:24:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31308 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030558Ab2CITrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:47:05 -0500
-Message-ID: <4F5A5E2D.4090408@redhat.com>
-Date: Fri, 09 Mar 2012 16:46:53 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Add a per-dimm structure
-References: <1331120438-27523-1-git-send-email-mchehab@redhat.com> <20120308215716.GA5925@aftab> <4F59DC38.5080104@redhat.com> <20120309143806.GA11962@aftab> <4F5A329A.70702@redhat.com> <20120309184733.GB13745@aftab>
-In-Reply-To: <20120309184733.GB13745@aftab>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1031880Ab2CIUAo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:00:44 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40323 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031845Ab2CITxt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 14:53:49 -0500
+Message-Id: <20120309190219.129446135@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 09 Mar 2012 11:03:06 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [ 52/68] OMAPDSS: HDMI: PHY burnout fix
+In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 09-03-2012 15:47, Borislav Petkov escreveu:
-> On Fri, Mar 09, 2012 at 01:40:58PM -0300, Mauro Carvalho Chehab wrote:
+3.0-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+
+commit c49d005b6cc8491fad5b24f82805be2d6bcbd3dd upstream.
+
+A hardware bug in the OMAP4 HDMI PHY causes physical damage to the board
+if the HDMI PHY is kept powered on when the cable is not connected.
+
+This patch solves the problem by adding hot-plug-detection into the HDMI
+IP driver. This is not a real HPD support in the sense that nobody else
+than the IP driver gets to know about the HPD events, but is only meant
+to fix the HW bug.
+
+The strategy is simple: If the display device is turned off by the user,
+the PHY power is set to OFF. When the display device is turned on by the
+user, the PHY power is set either to LDOON or TXON, depending on whether
+the HDMI cable is connected.
+
+The reason to avoid PHY OFF when the display device is on, but the cable
+is disconnected, is that when the PHY is turned OFF, the HDMI IP is not
+"ticking" and thus the DISPC does not receive pixel clock from the HDMI
+IP. This would, for example, prevent any VSYNCs from happening, and
+would thus affect the users of omapdss. By using LDOON when the cable is
+disconnected we'll avoid the HW bug, but keep the HDMI working as usual
+from the user's point of view.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/mach-omap2/board-4430sdp.c    |    5 ++
+ arch/arm/mach-omap2/board-omap4panda.c |    5 ++
+ drivers/video/omap2/dss/hdmi.c         |   71 +++++++++++++++++++++++++++++++--
+ include/video/omapdss.h                |    5 ++
+ 4 files changed, 82 insertions(+), 4 deletions(-)
+
+--- a/arch/arm/mach-omap2/board-4430sdp.c
++++ b/arch/arm/mach-omap2/board-4430sdp.c
+@@ -610,6 +610,10 @@ static void sdp4430_panel_disable_hdmi(s
+ 	gpio_free_array(sdp4430_hdmi_gpios, ARRAY_SIZE(sdp4430_hdmi_gpios));
+ }
+ 
++static struct omap_dss_hdmi_data sdp4430_hdmi_data = {
++	.hpd_gpio = HDMI_GPIO_HPD,
++};
++
+ static struct omap_dss_device sdp4430_hdmi_device = {
+ 	.name = "hdmi",
+ 	.driver_name = "hdmi_panel",
+@@ -617,6 +621,7 @@ static struct omap_dss_device sdp4430_hd
+ 	.platform_enable = sdp4430_panel_enable_hdmi,
+ 	.platform_disable = sdp4430_panel_disable_hdmi,
+ 	.channel = OMAP_DSS_CHANNEL_DIGIT,
++	.data = &sdp4430_hdmi_data,
+ };
+ 
+ static struct omap_dss_device *sdp4430_dss_devices[] = {
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -646,6 +646,10 @@ static void omap4_panda_panel_disable_hd
+ 	gpio_free_array(panda_hdmi_gpios, ARRAY_SIZE(panda_hdmi_gpios));
+ }
+ 
++static struct omap_dss_hdmi_data omap4_panda_hdmi_data = {
++	.hpd_gpio = HDMI_GPIO_HPD,
++};
++
+ static struct omap_dss_device  omap4_panda_hdmi_device = {
+ 	.name = "hdmi",
+ 	.driver_name = "hdmi_panel",
+@@ -653,6 +657,7 @@ static struct omap_dss_device  omap4_pan
+ 	.platform_enable = omap4_panda_panel_enable_hdmi,
+ 	.platform_disable = omap4_panda_panel_disable_hdmi,
+ 	.channel = OMAP_DSS_CHANNEL_DIGIT,
++	.data = &omap4_panda_hdmi_data,
+ };
+ 
+ static struct omap_dss_device *omap4_panda_dss_devices[] = {
+--- a/drivers/video/omap2/dss/hdmi.c
++++ b/drivers/video/omap2/dss/hdmi.c
+@@ -29,6 +29,7 @@
+ #include <linux/mutex.h>
+ #include <linux/delay.h>
+ #include <linux/string.h>
++#include <linux/gpio.h>
+ #include <video/omapdss.h>
+ #if defined(CONFIG_SND_OMAP_SOC_OMAP4_HDMI) || \
+ 	defined(CONFIG_SND_OMAP_SOC_OMAP4_HDMI_MODULE)
+@@ -54,6 +55,9 @@ static struct {
+ 	u8 edid_set;
+ 	bool custom_set;
+ 	struct hdmi_config cfg;
++
++	int hpd_gpio;
++	bool phy_tx_enabled;
+ } hdmi;
+ 
+ /*
+@@ -278,6 +282,47 @@ static int hdmi_pll_reset(void)
+ 	return 0;
+ }
+ 
++static int hdmi_check_hpd_state(void)
++{
++	unsigned long flags;
++	bool hpd;
++	int r;
++	/* this should be in ti_hdmi_4xxx_ip private data */
++	static DEFINE_SPINLOCK(phy_tx_lock);
++
++	spin_lock_irqsave(&phy_tx_lock, flags);
++
++	hpd = gpio_get_value(hdmi.hpd_gpio);
++
++	if (hpd == hdmi.phy_tx_enabled) {
++		spin_unlock_irqrestore(&phy_tx_lock, flags);
++		return 0;
++	}
++
++	if (hpd)
++		r = hdmi_set_phy_pwr(HDMI_PHYPWRCMD_TXON);
++	else
++		r = hdmi_set_phy_pwr(HDMI_PHYPWRCMD_LDOON);
++
++	if (r) {
++		DSSERR("Failed to %s PHY TX power\n",
++				hpd ? "enable" : "disable");
++		goto err;
++	}
++
++	hdmi.phy_tx_enabled = hpd;
++err:
++	spin_unlock_irqrestore(&phy_tx_lock, flags);
++	return r;
++}
++
++static irqreturn_t hpd_irq_handler(int irq, void *data)
++{
++	hdmi_check_hpd_state();
++
++	return IRQ_HANDLED;
++}
++
+ static int hdmi_phy_init(void)
+ {
+ 	u16 r = 0;
+@@ -286,10 +331,6 @@ static int hdmi_phy_init(void)
+ 	if (r)
+ 		return r;
+ 
+-	r = hdmi_set_phy_pwr(HDMI_PHYPWRCMD_TXON);
+-	if (r)
+-		return r;
+-
+ 	/*
+ 	 * Read address 0 in order to get the SCP reset done completed
+ 	 * Dummy access performed to make sure reset is done
+@@ -311,6 +352,23 @@ static int hdmi_phy_init(void)
+ 	/* Write to phy address 3 to change the polarity control */
+ 	REG_FLD_MOD(HDMI_TXPHY_PAD_CFG_CTRL, 0x1, 27, 27);
+ 
++	r = request_threaded_irq(gpio_to_irq(hdmi.hpd_gpio),
++			NULL, hpd_irq_handler,
++			IRQF_DISABLED | IRQF_TRIGGER_RISING |
++			IRQF_TRIGGER_FALLING, "hpd", NULL);
++	if (r) {
++		DSSERR("HPD IRQ request failed\n");
++		hdmi_set_phy_pwr(HDMI_PHYPWRCMD_OFF);
++		return r;
++	}
++
++	r = hdmi_check_hpd_state();
++	if (r) {
++		free_irq(gpio_to_irq(hdmi.hpd_gpio), NULL);
++		hdmi_set_phy_pwr(HDMI_PHYPWRCMD_OFF);
++		return r;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -361,7 +419,9 @@ static int hdmi_pll_program(struct hdmi_
+ 
+ static void hdmi_phy_off(void)
+ {
++	free_irq(gpio_to_irq(hdmi.hpd_gpio), NULL);
+ 	hdmi_set_phy_pwr(HDMI_PHYPWRCMD_OFF);
++	hdmi.phy_tx_enabled = false;
+ }
+ 
+ static int hdmi_core_ddc_edid(u8 *pedid, int ext)
+@@ -1236,12 +1296,15 @@ void omapdss_hdmi_display_set_timing(str
+ 
+ int omapdss_hdmi_display_enable(struct omap_dss_device *dssdev)
+ {
++	struct omap_dss_hdmi_data *priv = dssdev->data;
+ 	int r = 0;
+ 
+ 	DSSDBG("ENTER hdmi_display_enable\n");
+ 
+ 	mutex_lock(&hdmi.lock);
+ 
++	hdmi.hpd_gpio = priv->hpd_gpio;
++
+ 	r = omap_dss_start_device(dssdev);
+ 	if (r) {
+ 		DSSERR("failed to start device\n");
+--- a/include/video/omapdss.h
++++ b/include/video/omapdss.h
+@@ -514,6 +514,11 @@ struct omap_dss_device {
+ 	int (*get_backlight)(struct omap_dss_device *dssdev);
+ };
+ 
++struct omap_dss_hdmi_data
++{
++	int hpd_gpio;
++};
++
+ struct omap_dss_driver {
+ 	struct device_driver driver;
+ 
 
 
-[..]
-
->>> which splits the ch0 and ch1 of the csrow? dir above into ranks. All
->>> fine and dandy but that doesn't change the whole situation - we simply
->>> talk about ranks and not chip select rows anymore. Oh well...
->>
->> Yes, it won't bring anything new there for rank-based hierarchy.
->> The only benefit in this case is that newer userspace programs/versions
->> would use the same struct as the one shown with DIMMs:
->>
->> dimm0
->> ├── dimm_dev_type
->> ├── dimm_edac_mode
->> ├── dimm_label
->> ├── dimm_location
->> ├── dimm_mem_type
->> └── dimm_size
->> dimm4
->> ├── dimm_dev_type
->> ├── dimm_edac_mode
->> ├── dimm_label
->> ├── dimm_location
->> ├── dimm_mem_type
->> └── dimm_size
->> dimm8
->> ├── dimm_dev_type
->> ├── dimm_edac_mode
->> ├── dimm_label
->> ├── dimm_location
->> ├── dimm_mem_type
->> └── dimm_size
-> 
-> Just to make sure I understand you correctly: are you saying the
-> topnodes dimm{0,4,8} are called ranks on the CS-based hw? If so, yes, I
-> agree.
-
-Yes. 
-
->>
->>
->>> Also, the following hierarchy looks ugly:
->>>
->>>  ce_csrow0
->>>  ce_csrow0_channel0
->>>  ce_csrow0_channel1
->>>  ce_csrow1
->>>  ce_csrow1_channel0
->>>  ce_csrow1_channel1
->>>  ce_csrow2
->>>  ce_csrow2_channel0
->>>  ce_csrow2_channel1
->>>  ce_csrow3
->>>  ce_csrow3_channel0
->>>  ce_csrow3_channel1
->>
->> The actual error count node names depend on how the hierarchy is 
->> organized. This is how it looks like at the i5000 machine:
->>
->> mc0
->> ├── ce_branch0
->> ├── ce_branch0_channel0
->> ├── ce_branch0_channel0_slot0
->> ├── ce_branch0_channel1
->> ├── ce_branch0_channel1_slot0
-> 
-> Yes, but this names have subdirectories written all over them, don't you
-> see that in redundant substrings in every filename?
-> 
-> IOW, it is much nicer to have:
-> 
-> mc0
-> |-> CE
->     |-> branch0
->         |-> ch0
-> 	    |-> slot0
-> 	    |-> slot1
-> 	    |-> ...
-> 	|-> ch1
-> 	    |-> slot0
-> 	    |-> slot1
-> 	    ...
->     |-> branch1
->     ...
-> |-> UE
-> ...
-
-Well, that works for me.
-
-> 
-> 
-> On CS-based controllers we simply skip "branch".
-
-Maybe we could call the last directory as "row" instead of "slot",
-in the case of CS-based controllers, in order to differentiate from
-the ones that aren't CS-based and don't have branches.
-
-There are currently one FB-DIMM memory controller like that, plus
-Sandy Bridge/Nehalem and i5100 MC's that maps memory per channel/slot.
-
-Btw, i5100 is an interesting driver... it is for DDR2 memories.
-Internally, it has a table that maps from csrow to ranks (dimm_csmap).
-
-The dimm_csmap table depends on the memory space mode: if the max allowed
-memory is 24 GB, it uses one map table; if the max allowed memory is 48GB,
-it uses another table.
-
-The memory controller works just like any other CS-based memory
-controller, but the driver itself takes care of not exposing the rank
-complexity to the EDAC core. This driver is now properly reported as
-having the minimal location "grain" as "dimms".
-
-> 
-> [..]
-> 
->>> Much better would it be if you put the ch0 and ch1 CE error count into
->>> the csrow?/ directory, i.e. something like:
->>>
->>> csrow?/ce/ch{0,1}
->>> csrow?/ue/ch{0,1}
->>
->> There is a strong technical reason for not doing it. Now, the rank or
->> dimm information is not stored anymore at the legacy structures.
->> The "csrow?" sysfs nodes are created from the struct csrow_info,
->> while the rank/dimm nodes, are created from struct dimm_info.
->>
->> A csrow? node only makes sense if the hierarchy is csrow/channel.
->> As the code should work with all kinds of hierarchy, it would require
->> two different implementations, one for each case.
->>
->> It would also mix the old representation with the new one, creating
->> a complex code for the csrow-based sysfs nodes. After having
->> the new way adopted from some kernel versions, we may think on remove
->> the old nodes,
-> 
-> yeah, we already talked about this - we need to know that no userspace
-> uses them before we do that.
-
-Sure.
-
-> 
->> as removing the csrow/ch hierarchy means to simplify
->> the EDAC code by removing the compatibility logic and data. 
->>
->> So, keeping it on a separate hierarchy helps to have a sane implementation.
-> 
-> Ok.
-> 
->> From userspace POV, creating a node tree may make it  harder to parse, as 
->> there would be, currently, at least 3 different ways for them with the 
->> current hierarchies:
->> 	csrow?/channel?/ce?
->> 	branch?/channel?/slot?/ce?
->> 	channel?/slot?/ce?
->>
->> (and more could be added, as new memory technologies/arrangements
->> may be created).
->>
->> I considered two other alternatives, before adopting this one on my patches:
->>
->> 1) remove the layer name from the name. So, the nodes could be called instead:
->>
->> 	ce_count_0:0:0
->> 	ce_count_0:0:1
->> 	ce_count_0:0
->> 	ce_count_0
->> 	ce_count_0:1:0
->> 	ce_count_0:1:1
->> 	ce_count_0:1
->> 	ce_count_1
->> 	...
->>
->> It shouldn't be hard to change the code to use this way, but it is a little
->> more confusing for users to understand.
->>
->> 2) Put all error counters into a single sub-directory, like:
->> 	error_counters
->> 	├── ce_branch0
->> 	├── ce_branch0_channel0
->> 	├── ce_branch0_channel0_slot0
->> 	├── ce_branch0_channel1
->> 	├── ce_branch0_channel1_slot0	
->> 	├── ce_branch1
->> 	├── ce_branch1_channel0
->> 	├── ce_branch1_channel0_slot0
->> 	├── ce_branch1_channel1
->> 	├── ce_branch1_channel1_slot0
->> 	├── ce_count
->> 	├── ce_noinfo_count
->> 	├── ue_branch0
->> 	├── ue_branch0_channel0
->> 	├── ue_branch0_channel0_slot0
->> 	├── ue_branch0_channel1
->> 	├── ue_branch0_channel1_slot0
->> 	├── ue_branch1
->> 	├── ue_branch1_channel0
->> 	├── ue_branch1_channel0_slot0
->> 	├── ue_branch1_channel1
->> 	├── ue_branch1_channel1_slot0
->> 	├── ue_count
->> 	└── ue_noinfo_count
->>
->> In the last case, the EDAC core would need to keep the 4
->> "general" error counters also under the mc? level (ce_count & friends).
->>
->>>
->>> so that all is clear just from looking at the directory structure. Or
->>> put it into the rank?/ hierarchy and have all per-rank info in one
->>> concentrated, self-describing location.
->>
->> Not sure if I understood what you're meaning here. Could you give an
->> example about what kind of tree are you imagining in this case?
-> 
-> Right, what I mean is that the rank?/ already contains some info:
-> 
-> rank0/
-> |-- dimm_dev_type
-> |-- dimm_edac_mode
-> |-- dimm_label
-> |-- dimm_location
-> |-- dimm_mem_type
-> `-- dimm_size
-> 
-> Now, we do the CE/UE error counting on a per-rank granularity anyway, so
-> the most natural way to have that is to add those counts to the ranks:
-> 
-> rank0/
-> |-- dimm_dev_type
-> |-- dimm_edac_mode
-> |-- dimm_label
-> |-- dimm_location
-> |-- dimm_mem_type
-> |-- CE
-> |-- UE
-> `-- dimm_size
-> 
-> And this has to be _very_ easy to do without any adding additional
-> sysfs nodes with ugly names to /sys/devices/system/edac etc. This is
-> even better grouping than the mc?/-based hierarchy I suggested above,
-> actually.
-
-Agreed. Yeah, it is easy to add CE/UE there. I actually implemented it
-on one of my internal patches, but there's an issue:
-
-The typical case for UE is to report errors by cacheline (128 bits), and
-not by DIMM. This happens on all FB-DIMM memory controllers, and also on
-several CS-based ones.
-
-For example, this is how (currently) the amd64_handle_ue() handles an
-Uncorrected Error:
-
-		error_address_to_page_and_offset(sys_addr, &page, &offset);
-		edac_mc_handle_ue(log_mci, page, offset, csrow, EDAC_MOD_STR);
-
-There's no channel info there.
-
-Maybe this is there just due to the current ABI limits. If so, with the new ABI,
-it will be possible to report on what channel the error occurred, where supported,
-but, at least on the FB-DIMM drivers I wrote, UE errors are reported by cacheline, 
-as the ECC code used by those memory controllers now use the Chipkill algorithm,
-with takes 128+16 bits, instead of 64+8 bits, in order to enhance the capability
-of correcting errors. So, while they can detect where a single error is, for
-double errors, it may not be able to correct the error, and be unable to point 
-what of the 144 bits are wrong. So, the location should point to two DIMMs instead
-of one.
-
-So, except the ECC is calculated over 64+8 bits, the UE error counters for the
-rank/dimm won't be incremented. instead, it will increment the "dual rank" or
-"dual dimm" error counter.
-
-In the case of CS-based MC's, this is the "per-csrow" UE counter. For FB-DIMMs,
-the counter will be the branch one, as the errors will affect two dimms at the
-same branch.
-
-Hm... maybe we should map it then as "channel/branch/slot",
-instead of "branch/channel/slot".
-
-One alternative would simply to remove all those intermediate counters, letting
-userspace to count the errors via perf (provided that we have a proper location
-field).
-
-Regards,
-Mauro
