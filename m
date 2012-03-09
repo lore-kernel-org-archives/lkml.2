@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030529Ab2CIUcR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:32:17 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:58952 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030188Ab2CIUcM (ORCPT
+	id S1030593Ab2CIUdm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:33:42 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40222 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030464Ab2CIUdk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 15:32:12 -0500
-Date: Fri, 9 Mar 2012 15:32:07 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Linus Walleij <linus.walleij@linaro.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pinctrl: Include <linux/bug.h> to prevent compile errors
-Message-ID: <20120309203207.GB10835@windriver.com>
-References: <1331324305-1649-1-git-send-email-swarren@wwwdotorg.org>
+	Fri, 9 Mar 2012 15:33:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1331324305-1649-1-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120309202722.GA10323@x61.redhat.com>
+References: <CAOJsxLFQjV1c7nQZMA2voybN0AdhGrKFN5svQHC2C=oP3vOD4g@mail.gmail.com>
+	<20120309202722.GA10323@x61.redhat.com>
+Date: Fri, 9 Mar 2012 22:33:39 +0200
+X-Google-Sender-Auth: KyZNajYV0dyhBirUgAo7KyPLELA
+Message-ID: <CAOJsxLHX5bU03t32ONDeuT2pq88FLAQpw7DtAxTGL8Qe0_wFzg@mail.gmail.com>
+Subject: Re: [PATCH v3] mm: SLAB Out-of-memory diagnostics
+From: Pekka Enberg <penberg@kernel.org>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
+        Josef Bacik <josef@redhat.com>, David Rientjes <rientjes@google.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[[PATCH] pinctrl: Include <linux/bug.h> to prevent compile errors] On 09/03/2012 (Fri 13:18) Stephen Warren wrote:
+On Fri, Mar 9, 2012 at 10:27 PM, Rafael Aquini <aquini@redhat.com> wrote:
+> Following the example at mm/slub.c, add out-of-memory diagnostics to the
+> SLAB allocator to help on debugging certain OOM conditions.
+>
+> An example print out looks like this:
+>
+>  <snip page allocator out-of-memory message>
+>  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
+>    cache: bio-0, object size: 192, order: 0
+>    node 0: slabs: 3/3, objs: 60/60, free: 0
+>
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
 
-> Macros in <linux/pinctrl/machine.h> call ARRAY_SIZE(), the definition of
-> which eventually calls BUILD_BUG_ON_ZERO(), which is defined in
-> <linux/bug.h>. Include that so that every .c file using the pinctrl macros
-> doesn't have to do that itself.
-
-Which C files are failing?  The approach was to be adding it only
-for headers with static inlines which use it, and add it to C files
-that are actually *deploying* the macros.
-
-Thanks,
-Paul.
-
-> 
-> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
-> ---
->  include/linux/pinctrl/machine.h |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
-> index fee4349..012731a 100644
-> --- a/include/linux/pinctrl/machine.h
-> +++ b/include/linux/pinctrl/machine.h
-> @@ -12,7 +12,9 @@
->  #ifndef __LINUX_PINCTRL_MACHINE_H
->  #define __LINUX_PINCTRL_MACHINE_H
->  
-> -#include "pinctrl-state.h"
-> +#include <linux/bug.h>
-> +
-> +#include "pinctrl.h"
->  
->  enum pinctrl_map_type {
->  	PIN_MAP_TYPE_INVALID,
-> -- 
-> 1.7.0.4
-> 
+David?
