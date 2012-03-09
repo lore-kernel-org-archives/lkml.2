@@ -1,182 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758322Ab2CIRFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:05:11 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:50197 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758219Ab2CIRFE (ORCPT
+	id S1758374Ab2CIRFQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:05:16 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:53988 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758219Ab2CIRFN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:05:04 -0500
-Date: Fri, 09 Mar 2012 18:04:45 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: [PATCH 1/2] i2c-s3c2410: Rework device type handling
-In-reply-to: <1331312686-2077-1-git-send-email-k.lewandowsk@samsung.com>
-To: ben-linux@fluff.org
-Cc: thomas.abraham@linaro.org, m.szyprowski@samsung.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        t.stanislaws@samsung.com, Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <1331312686-2077-2-git-send-email-k.lewandowsk@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.9
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <1331312686-2077-1-git-send-email-k.lewandowsk@samsung.com>
+	Fri, 9 Mar 2012 12:05:13 -0500
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 12:05:13 EST
+MIME-Version: 1.0
+In-Reply-To: <1331299252-23699-1-git-send-email-przemo@firszt.eu>
+References: <1331299252-23699-1-git-send-email-przemo@firszt.eu>
+Date: Fri, 9 Mar 2012 08:58:33 -0800
+Message-ID: <CANRwn3T0osghgP4i_e0xK8FkvKv1gXMwnumggv0pkxrDqPqKDQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] HID: wacom: Reset stylus buttons - Intuos4 WL
+From: Jason Gerecke <killertofu@gmail.com>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: jkosina@suse.cz, pinglinux@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxwacom-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorganize driver a bit to better handle device tree-based systems:
+On Fri, Mar 9, 2012 at 5:20 AM, Przemo Firszt <przemo@firszt.eu> wrote:
+> Stylus buttons have to be resetted when going out-of-prox.
+>
+> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
+> ---
+>  drivers/hid/hid-wacom.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+> index 2a440a6..5c25036 100644
+> --- a/drivers/hid/hid-wacom.c
+> +++ b/drivers/hid/hid-wacom.c
+> @@ -352,6 +352,8 @@ static void wacom_i4_parse_pen_report(struct wacom_data *wdata,
+>        case 0x80: /* Out of proximity report */
+>                input_report_key(input, BTN_TOUCH, 0);
+>                input_report_abs(input, ABS_PRESSURE, 0);
+> +               input_report_key(input, BTN_STYLUS, 0);
+> +               input_report_key(input, BTN_STYLUS2, 0);
+>                input_report_key(input, wdata->tool, 0);
+>                input_report_abs(input, ABS_MISC, 0);
+>                input_event(input, EV_MSC, MSC_SERIAL, wdata->serial);
+> --
+> 1.7.6.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
- - move machine type to driver's private structure instead of
-   quering platform device variants in runtime
+Reviewed-by: Jason Gerecke <killertofu@gmail.com>
 
- - replace s3c24xx_i2c_type enum with plain unsigned int that can
-   hold not only device type but also hw revision-specific quirks
+Jason
 
-Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/i2c/busses/i2c-s3c2410.c |   56 +++++++++++++------------------------
- 1 files changed, 20 insertions(+), 36 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index 737f721..5b400c6 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -44,8 +44,12 @@
- #include <plat/regs-iic.h>
- #include <plat/iic.h>
- 
--/* i2c controller state */
-+/* type */
-+#define TYPE_BITS		0x000000ff
-+#define TYPE_S3C2410		0x00000001
-+#define TYPE_S3C2440		0x00000002
- 
-+/* i2c controller state */
- enum s3c24xx_i2c_state {
- 	STATE_IDLE,
- 	STATE_START,
-@@ -54,14 +58,10 @@ enum s3c24xx_i2c_state {
- 	STATE_STOP
- };
- 
--enum s3c24xx_i2c_type {
--	TYPE_S3C2410,
--	TYPE_S3C2440,
--};
--
- struct s3c24xx_i2c {
- 	spinlock_t		lock;
- 	wait_queue_head_t	wait;
-+	unsigned int            type;
- 	unsigned int		suspended:1;
- 
- 	struct i2c_msg		*msg;
-@@ -88,28 +88,6 @@ struct s3c24xx_i2c {
- #endif
- };
- 
--/* default platform data removed, dev should always carry data. */
--
--/* s3c24xx_i2c_is2440()
-- *
-- * return true is this is an s3c2440
--*/
--
--static inline int s3c24xx_i2c_is2440(struct s3c24xx_i2c *i2c)
--{
--	struct platform_device *pdev = to_platform_device(i2c->dev);
--	enum s3c24xx_i2c_type type;
--
--#ifdef CONFIG_OF
--	if (i2c->dev->of_node)
--		return of_device_is_compatible(i2c->dev->of_node,
--				"samsung,s3c2440-i2c");
--#endif
--
--	type = platform_get_device_id(pdev)->driver_data;
--	return type == TYPE_S3C2440;
--}
--
- /* s3c24xx_i2c_master_complete
-  *
-  * complete the message and wake up the caller, using the given return code,
-@@ -676,7 +654,7 @@ static int s3c24xx_i2c_clockrate(struct s3c24xx_i2c *i2c, unsigned int *got)
- 
- 	writel(iiccon, i2c->regs + S3C2410_IICCON);
- 
--	if (s3c24xx_i2c_is2440(i2c)) {
-+	if (i2c->type & TYPE_S3C2440) {
- 		unsigned long sda_delay;
- 
- 		if (pdata->sda_delay) {
-@@ -847,6 +825,8 @@ static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
- }
- 
- #ifdef CONFIG_OF
-+static const struct of_device_id s3c24xx_i2c_match[];
-+
- /* s3c24xx_i2c_parse_dt
-  *
-  * Parse the device tree node and retreive the platform data.
-@@ -856,11 +836,16 @@ static void
- s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
- {
- 	struct s3c2410_platform_i2c *pdata = i2c->pdata;
-+	const struct of_device_id *match;
- 
- 	if (!np)
- 		return;
- 
- 	pdata->bus_num = -1; /* i2c bus number is dynamically assigned */
-+
-+	match = of_match_node(&s3c24xx_i2c_match[0], np);
-+	i2c->type = (unsigned int)match->data;
-+
- 	of_property_read_u32(np, "samsung,i2c-sda-delay", &pdata->sda_delay);
- 	of_property_read_u32(np, "samsung,i2c-slave-addr", &pdata->slave_addr);
- 	of_property_read_u32(np, "samsung,i2c-max-bus-freq",
-@@ -906,9 +891,10 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
- 		goto err_noclk;
- 	}
- 
--	if (pdata)
-+	if (pdata) {
- 		memcpy(i2c->pdata, pdata, sizeof(*pdata));
--	else
-+		i2c->type = platform_get_device_id(pdev)->driver_data;
-+	} else
- 		s3c24xx_i2c_parse_dt(pdev->dev.of_node, i2c);
- 
- 	strlcpy(i2c->adap.name, "s3c2410-i2c", sizeof(i2c->adap.name));
-@@ -1123,13 +1109,11 @@ MODULE_DEVICE_TABLE(platform, s3c24xx_driver_ids);
- 
- #ifdef CONFIG_OF
- static const struct of_device_id s3c24xx_i2c_match[] = {
--	{ .compatible = "samsung,s3c2410-i2c" },
--	{ .compatible = "samsung,s3c2440-i2c" },
-+	{ .compatible = "samsung,s3c2410-i2c", .data = (void *)TYPE_S3C2410 },
-+	{ .compatible = "samsung,s3c2440-i2c", .data = (void *)TYPE_S3C2440 },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, s3c24xx_i2c_match);
--#else
--#define s3c24xx_i2c_match NULL
- #endif
- 
- static struct platform_driver s3c24xx_i2c_driver = {
-@@ -1140,7 +1124,7 @@ static struct platform_driver s3c24xx_i2c_driver = {
- 		.owner	= THIS_MODULE,
- 		.name	= "s3c-i2c",
- 		.pm	= S3C24XX_DEV_PM_OPS,
--		.of_match_table = s3c24xx_i2c_match,
-+		.of_match_table = of_match_ptr(s3c24xx_i2c_match),
- 	},
- };
- 
--- 
-1.7.9
-
+Day xee-nee-svsh duu-'ushtlh-ts'it;
+nuu-wee-ya' duu-xan' 'vm-nvshtlh-ts'it.
+Huu-chan xuu naa~-gha.
