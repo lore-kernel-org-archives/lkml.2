@@ -1,191 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758891Ab2CIS5G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 13:57:06 -0500
-Received: from mail-lpp01m010-f74.google.com ([209.85.215.74]:32779 "EHLO
-	mail-lpp01m010-f74.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758739Ab2CIS4h (ORCPT
+	id S1758739Ab2CITAT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:00:19 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37232 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab2CITAR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 13:56:37 -0500
-X-Greylist: delayed 486 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 13:56:36 EST
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel@ffwll.ch>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 04/10 v2] drm/i915/intel_i2c: cleanup gmbus/gpio pin assignments
-Date: Sat, 10 Mar 2012 02:48:18 +0800
-Message-Id: <1331318904-20577-5-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
-References: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
+	Fri, 9 Mar 2012 14:00:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo5KgLWiegOtOyVb7CeMyk2yicuFJC_vfiFmeEO8hj_Muw@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+	<1331018040-30725-15-git-send-email-yinghai@kernel.org>
+	<CAErSpo6VyKpBygK3vV25q+X5YisNVPwh64jaJ_KtMO1WB=ocpw@mail.gmail.com>
+	<CAE9FiQUGCazRAJ3vaej6wndk9e-kedU7tuaw8VSRcu2RB0qQAg@mail.gmail.com>
+	<CAErSpo5KgLWiegOtOyVb7CeMyk2yicuFJC_vfiFmeEO8hj_Muw@mail.gmail.com>
+Date: Fri, 9 Mar 2012 11:00:16 -0800
+X-Google-Sender-Auth: ow3VtqKObEehm26T7tg90lcdz90
+Message-ID: <CAE9FiQVzN=JS+qNM2u9zsM05-VeghEU5hcLgy8AeDv-cMai9TQ@mail.gmail.com>
+Subject: Re: [PATCH 14/23] PCI: add __pci_remove_bus_devices()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no "disabled" port 0.  So, don't even try to initialize/scan
-it, etc.  This saves a bit of time when initializing the driver, since
-it avoids a 50ms timeout waiting for a device to respond on a port that
-doesn't even exist.
+On Fri, Mar 9, 2012 at 9:28 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Fri, Mar 9, 2012 at 12:17 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Thu, Mar 8, 2012 at 5:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>>> will use it with pci_stop_and_remove_bus later.
+>>>>
+>>>> also remove __pci_remove_behind_bridge and pci_stop_behind_bridge.
+>>>>
+>>>> they are same except one take bridge and one take bus.
+>>>>
+>>>> and we already have pci_stop_bus_devices()
+>>>>
+>>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>>> ---
+>>>>  drivers/pci/remove.c |   28 +++++++++++-----------------
+>>>>  1 files changed, 11 insertions(+), 17 deletions(-)
+>>>>
+>>>> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+>>>> index 243d59b..62c348c 100644
+>>>> --- a/drivers/pci/remove.c
+>>>> +++ b/drivers/pci/remove.c
+>>>> @@ -78,7 +78,7 @@ void pci_remove_bus(struct pci_bus *pci_bus)
+>>>>  }
+>>>>  EXPORT_SYMBOL(pci_remove_bus);
+>>>>
+>>>> -static void __pci_remove_behind_bridge(struct pci_dev *dev);
+>>>> +static void __pci_remove_bus_devices(struct pci_bus *bus);
+>>>>  /**
+>>>>  * pci_stop_and_remove_bus_device - remove a PCI device and any children
+>>>>  * @dev: the device to remove
+>>>> @@ -96,7 +96,7 @@ void __pci_remove_bus_device(struct pci_dev *dev)
+>>>>        if (dev->subordinate) {
+>>>>                struct pci_bus *b = dev->subordinate;
+>>>>
+>>>> -               __pci_remove_behind_bridge(dev);
+>>>> +               __pci_remove_bus_devices(b);
+>>>>                pci_remove_bus(b);
+>>>>                dev->subordinate = NULL;
+>>>>        }
+>>>> @@ -111,22 +111,12 @@ void pci_stop_and_remove_bus_device(struct pci_dev *dev)
+>>>>        __pci_remove_bus_device(dev);
+>>>>  }
+>>>>
+>>>> -static void __pci_remove_behind_bridge(struct pci_dev *dev)
+>>>> +static void __pci_remove_bus_devices(struct pci_bus *bus)
+>>>>  {
+>>>>        struct list_head *l, *n;
+>>>>
+>>>> -       if (dev->subordinate)
+>>>> -               list_for_each_safe(l, n, &dev->subordinate->devices)
+>>>> -                       __pci_remove_bus_device(pci_dev_b(l));
+>>>> -}
+>>>> -
+>>>> -static void pci_stop_behind_bridge(struct pci_dev *dev)
+>>>> -{
+>>>> -       struct list_head *l, *n;
+>>>> -
+>>>> -       if (dev->subordinate)
+>>>> -               list_for_each_safe(l, n, &dev->subordinate->devices)
+>>>> -                       pci_stop_bus_device(pci_dev_b(l));
+>>>> +       list_for_each_safe(l, n, &bus->devices)
+>>>> +               __pci_remove_bus_device(pci_dev_b(l));
+>>>
+>>> Use list_for_each_entry_safe() so you don't need pci_dev_b().
+>>
+>> just want to keep the patch to simple, and looks like just name renaming.
+>>
+>> also use list_for_each_safe instead of list_for_each_entry_safe
+>>
+>> could have less conversion.
+>
+> Sorry, I didn't understand the above.
+>
+> It is OK to improve code as you change it :)  list_for_each_entry() is
+> clearly an improvement over list_for_each() + some conversion macro.
 
-Similarly, don't initialize the "reserved" port 7, either.
+ok, will change that.
 
-Tested on Sandybridge (gen 6, PCH == CougarPoint) hardware.
+>
+>>>>  }
+>>>>
+>>>>  static void pci_stop_bus_devices(struct pci_bus *bus)
+>>>> @@ -158,8 +148,12 @@ static void pci_stop_bus_devices(struct pci_bus *bus)
+>>>>  */
+>>>>  void pci_stop_and_remove_behind_bridge(struct pci_dev *dev)
+>>>>  {
+>>>> -       pci_stop_behind_bridge(dev);
+>>>> -       __pci_remove_behind_bridge(dev);
+>>>> +       struct pci_bus *bus = dev->subordinate;
+>>>> +
+>>>> +       if (bus) {
+>>>
+>>> Don't check "bus" here.  If the caller screws up and passes a
+>>> non-bridge pointer, I want to learn about it rather than ignore it.
+>>
+>> old code have that
+>>           if (dev->subordinate)
+>>
+>> checking.
+>
+> Removing a test that could silently cover a programming error is also
+> an improvement.
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/gpu/drm/i915/i915_reg.h  |    1 -
- drivers/gpu/drm/i915/intel_i2c.c |   64 +++++++++++++++++--------------------
- 2 files changed, 29 insertions(+), 36 deletions(-)
+just want to cause regression.
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 56af0df..89cace2 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -699,7 +699,6 @@
- #define   GMBUS_PORT_DPB	5 /* SDVO, HDMIB */
- #define   GMBUS_PORT_DPD	6 /* HDMID */
- #define   GMBUS_PORT_RESERVED	7 /* 7 reserved */
--#define   GMBUS_NUM_PORTS	8
- #define GMBUS1			0x5104 /* command/status */
- #define   GMBUS_SW_CLR_INT	(1<<31)
- #define   GMBUS_SW_RDY		(1<<30)
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index 87a3abf..f53f525 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -35,6 +35,20 @@
- #include "i915_drm.h"
- #include "i915_drv.h"
- 
-+struct gmbus_port {
-+	const char *name;
-+	int reg;
-+};
-+
-+static const struct gmbus_port gmbus_ports[] = {
-+	{ "ssc", GPIOB },
-+	{ "vga", GPIOA },
-+	{ "panel", GPIOC },
-+	{ "dpc", GPIOD },
-+	{ "dpb", GPIOE },
-+	{ "dpd", GPIOF },
-+};
-+
- /* Intel GPIO access functions */
- 
- #define I2C_RISEFALL_TIME 20
-@@ -150,32 +164,22 @@ static void set_data(void *data, int state_high)
- static struct i2c_adapter *
- intel_gpio_create(struct drm_i915_private *dev_priv, u32 pin)
- {
--	static const int map_pin_to_reg[] = {
--		0,
--		GPIOB,
--		GPIOA,
--		GPIOC,
--		GPIOD,
--		GPIOE,
--		GPIOF,
--		0,
--	};
- 	struct intel_gpio *gpio;
- 
--	if (pin >= ARRAY_SIZE(map_pin_to_reg) || !map_pin_to_reg[pin])
--		return NULL;
-+	pin -= 1;  /* NB: -1 to map pin pair to gmbus array index */
-+	BUG_ON(pin >= ARRAY_SIZE(gmbus_ports));
- 
- 	gpio = kzalloc(sizeof(struct intel_gpio), GFP_KERNEL);
- 	if (gpio == NULL)
- 		return NULL;
- 
--	gpio->reg = map_pin_to_reg[pin];
-+	gpio->reg = gmbus_ports[pin].reg;
- 	if (HAS_PCH_SPLIT(dev_priv->dev))
- 		gpio->reg += PCH_GPIOA - GPIOA;
- 	gpio->dev_priv = dev_priv;
- 
- 	snprintf(gpio->adapter.name, sizeof(gpio->adapter.name),
--		 "i915 GPIO%c", "?BACDEF?"[pin]);
-+		 "i915 GPIO%c", "BACDEF"[pin]);
- 	gpio->adapter.owner = THIS_MODULE;
- 	gpio->adapter.algo_data	= &gpio->algo;
- 	gpio->adapter.dev.parent = &dev_priv->dev->pdev->dev;
-@@ -369,33 +373,22 @@ static const struct i2c_algorithm gmbus_algorithm = {
-  */
- int intel_setup_gmbus(struct drm_device *dev)
- {
--	static const char *names[GMBUS_NUM_PORTS] = {
--		"disabled",
--		"ssc",
--		"vga",
--		"panel",
--		"dpc",
--		"dpb",
--		"dpd",
--		"reserved",
--	};
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	int ret, i;
- 
--	dev_priv->gmbus = kcalloc(sizeof(struct intel_gmbus), GMBUS_NUM_PORTS,
--				  GFP_KERNEL);
-+	dev_priv->gmbus = kcalloc(sizeof(struct intel_gmbus),
-+				  ARRAY_SIZE(gmbus_ports), GFP_KERNEL);
- 	if (dev_priv->gmbus == NULL)
- 		return -ENOMEM;
- 
--	for (i = 0; i < GMBUS_NUM_PORTS; i++) {
-+	for (i = 0; i < ARRAY_SIZE(gmbus_ports); i++) {
- 		struct intel_gmbus *bus = &dev_priv->gmbus[i];
-+		u32 port = i + 1; /* +1 to map gmbus index to pin pair */
- 
- 		bus->adapter.owner = THIS_MODULE;
- 		bus->adapter.class = I2C_CLASS_DDC;
--		snprintf(bus->adapter.name,
--			 sizeof(bus->adapter.name),
--			 "i915 gmbus %s",
--			 names[i]);
-+		snprintf(bus->adapter.name, sizeof(bus->adapter.name),
-+			 "i915 gmbus %s", gmbus_ports[i].name);
- 
- 		bus->adapter.dev.parent = &dev->pdev->dev;
- 		bus->adapter.algo_data	= dev_priv;
-@@ -406,10 +399,10 @@ int intel_setup_gmbus(struct drm_device *dev)
- 			goto err;
- 
- 		/* By default use a conservative clock rate */
--		bus->reg0 = i | GMBUS_RATE_100KHZ;
-+		bus->reg0 = port | GMBUS_RATE_100KHZ;
- 
- 		/* XXX force bit banging until GMBUS is fully debugged */
--		bus->force_bit = intel_gpio_create(dev_priv, i);
-+		bus->force_bit = intel_gpio_create(dev_priv, port);
- 	}
- 
- 	intel_i2c_reset(dev_priv->dev);
-@@ -429,7 +422,8 @@ err:
- struct i2c_adapter *intel_gmbus_get_adapter(struct drm_i915_private *dev_priv,
- 					    unsigned pin)
- {
--	BUG_ON(pin >= GMBUS_NUM_PORTS);
-+	pin -= 1;  /* NB: -1 to map pin pair to gmbus array index */
-+	BUG_ON(pin >= ARRAY_SIZE(gmbus_ports));
- 	return &dev_priv->gmbus[pin].adapter;
- }
- 
-@@ -467,7 +461,7 @@ void intel_teardown_gmbus(struct drm_device *dev)
- 	if (dev_priv->gmbus == NULL)
- 		return;
- 
--	for (i = 0; i < GMBUS_NUM_PORTS; i++) {
-+	for (i = 0; i < ARRAY_SIZE(gmbus_ports); i++) {
- 		struct intel_gmbus *bus = &dev_priv->gmbus[i];
- 		if (bus->force_bit) {
- 			i2c_del_adapter(bus->force_bit);
--- 
-1.7.7.3
+also it is legal that some one call it for a bridge without subordinate.
 
+Yinghai
