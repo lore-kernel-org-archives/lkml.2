@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031972Ab2CIT50 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:57:26 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64616 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031955Ab2CITya (ORCPT
+	id S1759463Ab2CIUSt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:18:49 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:65266 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030848Ab2CITsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:54:30 -0500
-Message-Id: <20120309190207.102432133@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:48:31 -0500
+Message-Id: <20120309190206.700821926@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:01 -0800
+Date: Fri, 09 Mar 2012 11:02:56 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 59/95] OMAP: 4430SDP/Panda: use gpio_free_array to free HDMI gpios
+        alan@lxorguk.ukuu.org.uk, Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Kenneth Graunke <kenneth@whitecape.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [ 54/95] drm/i915: gen7: work around a system hang on IVB
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+From: Eugeni Dodonov <eugeni.dodonov@intel.com>
 
-commit 575753e3bea3b67eef8e454fb87f719e3f7da599 upstream.
+commit db099c8f963fe656108e0a068274c5580a17f69b upstream.
 
-Instead of freeing the GPIOs individually, use gpio_free_array().
+This adds the workaround for WaCatErrorRejectionIssue which could result
+in a system hang.
 
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=41353
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44610
+Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Reviewed-by: Kenneth Graunke <kenneth@whitecape.org>
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/board-4430sdp.c    |    3 +--
- arch/arm/mach-omap2/board-omap4panda.c |    3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h      |    4 ++++
+ drivers/gpu/drm/i915/intel_display.c |    5 +++++
+ 2 files changed, 9 insertions(+)
 
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -628,8 +628,7 @@ static int sdp4430_panel_enable_hdmi(str
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -2893,6 +2893,10 @@
+ #define GEN7_L3_CHICKEN_MODE_REGISTER		0xB030
+ #define  GEN7_WA_L3_CHICKEN_MODE				0x20000000
  
- static void sdp4430_panel_disable_hdmi(struct omap_dss_device *dssdev)
- {
--	gpio_free(HDMI_GPIO_LS_OE);
--	gpio_free(HDMI_GPIO_HPD);
-+	gpio_free_array(sdp4430_hdmi_gpios, ARRAY_SIZE(sdp4430_hdmi_gpios));
- }
++/* WaCatErrorRejectionIssue */
++#define GEN7_SQ_CHICKEN_MBCUNIT_CONFIG		0x9030
++#define  GEN7_SQ_CHICKEN_MBCUNIT_SQINTMOB	(1<<11)
++
+ /* PCH */
  
- static struct nokia_dsi_panel_data dsi1_panel = {
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -512,8 +512,7 @@ static int omap4_panda_panel_enable_hdmi
+ /* south display engine interrupt */
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8261,6 +8261,11 @@ static void ivybridge_init_clock_gating(
+ 	I915_WRITE(GEN7_L3_CHICKEN_MODE_REGISTER,
+ 			GEN7_WA_L3_CHICKEN_MODE);
  
- static void omap4_panda_panel_disable_hdmi(struct omap_dss_device *dssdev)
- {
--	gpio_free(HDMI_GPIO_LS_OE);
--	gpio_free(HDMI_GPIO_HPD);
-+	gpio_free_array(panda_hdmi_gpios, ARRAY_SIZE(panda_hdmi_gpios));
- }
- 
- static struct omap_dss_device  omap4_panda_hdmi_device = {
++	/* This is required by WaCatErrorRejectionIssue */
++	I915_WRITE(GEN7_SQ_CHICKEN_MBCUNIT_CONFIG,
++			I915_READ(GEN7_SQ_CHICKEN_MBCUNIT_CONFIG) |
++			GEN7_SQ_CHICKEN_MBCUNIT_SQINTMOB);
++
+ 	for_each_pipe(pipe) {
+ 		I915_WRITE(DSPCNTR(pipe),
+ 			   I915_READ(DSPCNTR(pipe)) |
 
 
