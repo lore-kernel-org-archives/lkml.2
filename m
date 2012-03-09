@@ -1,101 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab2CIJf6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 04:35:58 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:49364 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751420Ab2CIJfz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 04:35:55 -0500
-Subject: Re: linux-next: manual merge of the arm-soc tree with the
- omap_dss2 tree
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-In-Reply-To: <201203081616.12510.arnd@arndb.de>
-References: <20120308170048.f1a992bca2ca2d93fa9747bf@canb.auug.org.au>
-	 <201203081616.12510.arnd@arndb.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-KXNJ+UUi1kqhm09Jig4v"
-Date: Fri, 09 Mar 2012 11:35:51 +0200
-Message-ID: <1331285751.1927.20.camel@deskari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2
+	id S1753568Ab2CIJs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 04:48:26 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:35402 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753397Ab2CIJsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 04:48:24 -0500
+Date: Fri, 9 Mar 2012 10:48:04 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, acme@redhat.com,
+        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu,
+        khandual@linux.vnet.ibm.com, dsahern@gmail.com
+Subject: Re: [PATCH 0/4] perf tools: improve branch stack sampling
+Message-ID: <20120309094804.GA1781@elte.hu>
+References: <1331246868-19905-1-git-send-email-eranian@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331246868-19905-1-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-KXNJ+UUi1kqhm09Jig4v
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+* Stephane Eranian <eranian@google.com> wrote:
 
-Hi,
+> This patch set improves upon my LBR v6 patch series posted on
+> LKML several weeks ago. It needs to be applied on top of it.
+> 
+> This series improves perf report and perf record when used
+> with taken branch stack sampling.
+> 
+> For perf record, and based on users' feedback, it is possible
+> to omit the branch type with the -b option. In that case,
+> the filter is set to the default value of any branch type.
+> The branch-filter option is now used to specify more precise
+> branch types and privilege levels:
+> 
+>    $ perf record -b foo
+>    equivalent to:
+>    $ perf record --branch-filter any foo
+> 
+>    To filter on specific branch types:
+>    $ perf record --branch-filter any_call foo
+> 
+> For perf report, it is now possible to omit the -b option
+> and yet get branch view mode. Perf report is able to auto-detect
+> if the perf.data file contains samples with branch stack and
+> to switch to the branch mode. It is possible to override this
+> by passing --no-branch-stack.
+> 
+> Furthermore, perf report now supports TUI in branch mode.
+> It is possible to naviguate to both the source and destination
+> functions of branches.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> 
+> Stephane Eranian (4):
+>   perf record: provide default branch stack sampling mode option
+>   perf record: add HEADER_BRANCH_STACK tag
+>   perf report: auto-detect branch stack sampling mode
+>   perf report: enable TUI in branch view mode
+> 
+>  tools/perf/Documentation/perf-record.txt |   23 ++++--
+>  tools/perf/Documentation/perf-report.txt |    7 +-
+>  tools/perf/builtin-record.c              |   71 +++++++++++------
+>  tools/perf/builtin-report.c              |  121 ++++++++++++++++++++---------
+>  tools/perf/util/header.c                 |   13 +++
+>  tools/perf/util/header.h                 |    2 +-
+>  tools/perf/util/session.c                |    1 +
+>  tools/perf/util/sort.c                   |    2 +-
+>  tools/perf/util/sort.h                   |    8 +-
+>  tools/perf/util/symbol.h                 |    7 ++-
+>  tools/perf/util/ui/browsers/hists.c      |   62 ++++++++++++---
+>  11 files changed, 225 insertions(+), 92 deletions(-)
 
-On Thu, 2012-03-08 at 16:16 +0000, Arnd Bergmann wrote:
-> On Thursday 08 March 2012, Stephen Rothwell wrote:
-> > Hi all,
-> >=20
-> > Today's linux-next merge of the arm-soc tree got a conflict in
-> > arch/arm/mach-omap1/board-palmtt.c between commit ddba6c7f7ec6 ("OMAP1:
-> > pass LCD config with omapfb_set_lcd_config()") from the omap_dss2 tree
-> > and commit 2e3ee9f45b3c ("ARM: OMAP1: Move most of plat/io.h into local
-> > iomap.h") from the arm-soc tree.
-> >=20
-> > I fixed it up (see below) and can carry the fix as necessary.
->=20
-> Hi Stephen,
->=20
-> Thanks for fixing up all the conflicts between arm-soc and omap_dss2.
-> I think we should make sure they are resolved in one of the trees before
-> the merge window.
+Ok, I tried it out and this is now very usable. I particularly 
+liked the detail how the TUI now allows annotation of both the 
+source and the target symbols.
 
-Do we need to? The conflicts seemed to be trivial ones, like arm-soc
-adds/removes something that just happens to be next to something else
-that I add/remove.
+I've noticed two small usability glitches:
 
-My understanding is that it's better to leave those conflicts than to do
-"trickery" to avoid them.
+1) when annotating a symbol and typing 'q' to go back one level, 
+   it goes back *two* levels. This is intuitive when just one 
+   symbol is annotated, but confusing when there are two 
+   symbols: I frequently want to go back to annotate the other 
+   symbol as well.
 
-> Tomi, what are your plans for the omap_dss2 branch to get merged?
+2) two symbols are offered for annotation even when the source
+   RIP and target RIP is within the same symbol.
 
-Normally my tree goes via fbdev-tree (Florian's tree) to mainline.
+Anyway, I've applied all your patches to 
+tip:perf/hw-branch-sampling branch, and if the remaining issues 
+are resolved will merge them into tip:perf/core for upstream 
+merging. Depending on when the fixes arrive this could be v3.4 
+or v3.5.
 
-> Do you think you should send it to Linus first and we merge it into
-> arm-soc to resolve the conflicts?
-> Or do you want to merge it through the arm-soc tree?
-> Or should we go first and you fix up the conflicts by pulling in the
-> necessary topic branches from arm-soc into your tree?
+Thanks,
 
-If we want to resolve the conflicts, perhaps it's simplest if the dss
-tree is merged to arm-soc.
-
- Tomi
-
-
---=-KXNJ+UUi1kqhm09Jig4v
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPWc73AAoJEPo9qoy8lh71We4P/119Va7GDm09S1ocK861kNdn
-OhpSdW4MxJzSIiJ5I0aufw0Kg5FqAsOt/iknxZoXzANrl5x+kO9r2n2WMDDb3qjt
-GIbTac+2J9gShVuo/5dPsXY+vWR8PonBlJtiL4yun8l4dEfIvzoa3GyXGdFGWmwd
-2EdWgU6HRNBjRsgLHna8j+z6ZYXJViC9BumPIbXOGXi1nvIh1AZEbN8PcuVjzxu1
-osfKCXBaG88xnOx3VjXIabaNFOvz7UkBFhvKhnJp0jerD9vuKV5fHImDC5tvS6Vm
-OXF13r/G8eDqck8quuNTqunk2DbJuy3uXskw+blaLwZ9uQTP0Lt3eCljt3Hp0jy2
-w7XlnkAUpWFsSht7FCPHKfZnyQJ25a9HO/qXXMalWYS0J4f0idp0Xc40r2Vy+l6U
-rkVWtW4Er4C18wvYYqJ8g9fz3uiU5+0eBPoucmFVMFKEG9tnBTCwQRJctCpc2pp7
-cuve+id8Vorw2Bs1pyK6aIrlfRoqr5at5a3QycAZc2Wqn1898F1PG1kyfo0aR6Ei
-W9G4SAD03ZF5smvjCTRBY7CMA4ycwSDjkS7SIFWalv0YYTTt9BXf6NLMFd0uP14m
-KyyuPEoAJBDI4HyCP69l6QMieywECalD1IMi6FZGA816eAs+kRn0ZHZeRat1WOdi
-cwCsyAxE3f+nWYP1SEzG
-=Hyu4
------END PGP SIGNATURE-----
-
---=-KXNJ+UUi1kqhm09Jig4v--
-
+	Ingo
