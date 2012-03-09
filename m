@@ -1,100 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab2CIIxy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 03:53:54 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:37959 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702Ab2CIIxx (ORCPT
+	id S1754126Ab2CIIzg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 03:55:36 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:33666 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898Ab2CIIzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 03:53:53 -0500
-X-AuditID: cbfee61a-b7b78ae000001ceb-0f-4f59c51fc7a0
+	Fri, 9 Mar 2012 03:55:35 -0500
+X-AuditID: cbfee61a-b7b78ae000001ceb-76-4f59c5852a79
 From: Sangbeom Kim <sbkim73@samsung.com>
-To: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Cc: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>, sbkim01@gmail.com
-Subject: [PATCH 1/2] mfd: Add s5m regulator operation mode
-Date: Fri, 09 Mar 2012 17:53:53 +0900
-Message-id: <06ac01ccfdd2$27701c80$76505580$@com>
+To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>, lrg@ti.com,
+        linux-kernel@vger.kernel.org
+Cc: sameo@linux.intel.com, sbkim01@gmail.com
+Subject: [PATCH 2/2] regulator: Add support s5m8767 opmode operation
+Date: Fri, 09 Mar 2012 17:55:34 +0900
+Message-id: <06ad01ccfdd2$63ee8fc0$2bcbaf40$@com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Acz90iczTjIJluDLSlajekwZeLCLmw==
+Thread-index: Acz90mN3Ut70BHHgTGibZTc0YugscA==
 Content-language: ko
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add variables for opmode of s5m series.
-S5M series have 4 operation modes.
-Off mode is always regulator off mode.
-On mode is always regulator on mode.
-Lowpower mode is that regualtor operate in low-power.
-Suspend mode is that regulator operation depends on AP suspend mode.
+S5M8767A has 4 operation mode for BUCK/LDOs.
+This patch can handle opmode for s5m8767a.
 
 Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
 ---
- include/linux/mfd/s5m87xx/s5m-core.h |    1 +
- include/linux/mfd/s5m87xx/s5m-pmic.h |   29 +++++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+), 0 deletions(-)
+ drivers/regulator/s5m8767.c |   71 +++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 61 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/mfd/s5m87xx/s5m-core.h b/include/linux/mfd/s5m87xx/s5m-core.h
-index a7480b5..21603b4 100644
---- a/include/linux/mfd/s5m87xx/s5m-core.h
-+++ b/include/linux/mfd/s5m87xx/s5m-core.h
-@@ -335,6 +335,7 @@ extern int s5m_reg_update(struct s5m87xx_dev *s5m87xx, u8 reg, u8 val, u8 mask);
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index 3592ccb..ff69f50 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -28,6 +28,7 @@ struct s5m8767_info {
+ 	struct s5m87xx_dev *iodev;
+ 	int num_regulators;
+ 	struct regulator_dev **rdev;
++	struct s5m_opmode_data *opmode;
  
- struct s5m_platform_data {
- 	struct s5m_regulator_data	*regulators;
-+	struct s5m_opmode_data		*opmode;
- 	int				device_type;
- 	int				num_regulators;
+ 	int ramp_delay;
+ 	bool buck2_ramp;
+@@ -141,9 +142,56 @@ static int s5m8767_list_voltage(struct regulator_dev *rdev,
+ 	return val;
+ }
  
-diff --git a/include/linux/mfd/s5m87xx/s5m-pmic.h b/include/linux/mfd/s5m87xx/s5m-pmic.h
-index a72a5d2..a199589 100644
---- a/include/linux/mfd/s5m87xx/s5m-pmic.h
-+++ b/include/linux/mfd/s5m87xx/s5m-pmic.h
-@@ -58,6 +58,8 @@ enum s5m8767_regulators {
- 	S5M8767_REG_MAX,
- };
- 
-+#define S5M8767_ENCTRL_SHIFT  6
+-static int s5m8767_get_register(struct regulator_dev *rdev, int *reg)
++unsigned int s5m8767_opmode_reg[][4] = {
++	/* {OFF, ON, LOWPOWER, SUSPEND} */
++	/* LDO1 ... LDO28 */
++	{0x0, 0x3, 0x2, 0x1}, /* LDO1 */
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x0, 0x0, 0x0},
++	{0x0, 0x3, 0x2, 0x1}, /* LDO5 */
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1}, /* LDO10 */
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1}, /* LDO15 */
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x0, 0x0, 0x0},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1}, /* LDO20 */
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x0, 0x0, 0x0},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1}, /* LDO25 */
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1},
++	{0x0, 0x3, 0x2, 0x1}, /* LDO28 */
 +
- /* S5M8763 regulator ids */
- enum s5m8763_regulators {
- 	S5M8763_LDO1,
-@@ -97,4 +99,31 @@ struct s5m_regulator_data {
- 	struct regulator_init_data	*initdata;
- };
- 
-+/*
-+ * s5m_opmode_data - regulator operation mode data
-+ * @id: regulator id
-+ * @mode: regulator operation mode
-+ */
-+struct s5m_opmode_data {
-+	int id;
-+	int mode;
++	/* BUCK1 ... BUCK9 */
++	{0x0, 0x3, 0x1, 0x1}, /* BUCK1 */
++	{0x0, 0x3, 0x1, 0x1},
++	{0x0, 0x3, 0x1, 0x1},
++	{0x0, 0x3, 0x1, 0x1},
++	{0x0, 0x3, 0x2, 0x1}, /* BUCK5 */
++	{0x0, 0x3, 0x1, 0x1},
++	{0x0, 0x3, 0x1, 0x1},
++	{0x0, 0x3, 0x1, 0x1},
++	{0x0, 0x3, 0x1, 0x1}, /* BUCK9 */
 +};
 +
-+/*
-+ * s5m regulator operation mode
-+ * S5M_OPMODE_OFF	Regulator always OFF
-+ * S5M_OPMODE_ON	Regulator always ON
-+ * S5M_OPMODE_LOWPOWER  Regulator is on in low-power mode
-+ * S5M_OPMODE_SUSPEND   Regulator is changed by PWREN pin
-+ *			If PWREN is high, regulator is on
-+ *			If PWREN is low, regulator is off
-+ */
-+
-+enum s5m_opmode {
-+	S5M_OPMODE_OFF,
-+	S5M_OPMODE_ON,
-+	S5M_OPMODE_LOWPOWER,
-+	S5M_OPMODE_SUSPEND,
-+};
-+
- #endif /*  __LINUX_MFD_S5M_PMIC_H */
++static int s5m8767_get_register(struct regulator_dev *rdev, int *reg,
++				int *enable_ctrl)
+ {
+ 	int reg_id = rdev_get_id(rdev);
++	unsigned int mode;
++	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+ 
+ 	switch (reg_id) {
+ 	case S5M8767_LDO1 ... S5M8767_LDO2:
+@@ -168,6 +216,8 @@ static int s5m8767_get_register(struct regulator_dev *rdev, int *reg)
+ 		return -EINVAL;
+ 	}
+ 
++	mode = s5m8767->opmode[reg_id].mode;
++	*enable_ctrl = s5m8767_opmode_reg[reg_id][mode] << S5M8767_ENCTRL_SHIFT;
+ 	return 0;
+ }
+ 
+@@ -175,10 +225,10 @@ static int s5m8767_reg_is_enabled(struct regulator_dev *rdev)
+ {
+ 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+ 	int ret, reg;
+-	int mask = 0xc0, pattern = 0xc0;
++	int mask = 0xc0, enable_ctrl;
+ 	u8 val;
+ 
+-	ret = s5m8767_get_register(rdev, &reg);
++	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
+ 	if (ret == -EINVAL)
+ 		return 1;
+ 	else if (ret)
+@@ -188,33 +238,33 @@ static int s5m8767_reg_is_enabled(struct regulator_dev *rdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	return (val & mask) == pattern;
++	return (val & mask) == enable_ctrl;
+ }
+ 
+ static int s5m8767_reg_enable(struct regulator_dev *rdev)
+ {
+ 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+ 	int ret, reg;
+-	int mask = 0xc0, pattern = 0xc0;
++	int mask = 0xc0, enable_ctrl;
+ 
+-	ret = s5m8767_get_register(rdev, &reg);
++	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
+ 	if (ret)
+ 		return ret;
+ 
+-	return s5m_reg_update(s5m8767->iodev, reg, pattern, mask);
++	return s5m_reg_update(s5m8767->iodev, reg, enable_ctrl, mask);
+ }
+ 
+ static int s5m8767_reg_disable(struct regulator_dev *rdev)
+ {
+ 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+ 	int ret, reg;
+-	int  mask = 0xc0, pattern = 0xc0;
++	int  mask = 0xc0, enable_ctrl;
+ 
+-	ret = s5m8767_get_register(rdev, &reg);
++	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
+ 	if (ret)
+ 		return ret;
+ 
+-	return s5m_reg_update(s5m8767->iodev, reg, ~pattern, mask);
++	return s5m_reg_update(s5m8767->iodev, reg, ~mask, mask);
+ }
+ 
+ static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
+@@ -576,6 +626,7 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
+ 	s5m8767->buck2_ramp = pdata->buck2_ramp_enable;
+ 	s5m8767->buck3_ramp = pdata->buck3_ramp_enable;
+ 	s5m8767->buck4_ramp = pdata->buck4_ramp_enable;
++	s5m8767->opmode = pdata->opmode;
+ 
+ 	for (i = 0; i < 8; i++) {
+ 		if (s5m8767->buck2_gpiodvs) {
 -- 
 1.7.1
 
