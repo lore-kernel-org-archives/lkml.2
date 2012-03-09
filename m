@@ -1,49 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab2CIVB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:01:29 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:50105 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918Ab2CIVB2 (ORCPT
+	id S1754886Ab2CIVDt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:03:49 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63007 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918Ab2CIVDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:01:28 -0500
-Date: Fri, 09 Mar 2012 13:00:06 -0800 (PST)
-Message-Id: <20120309.130006.1423350346805366510.davem@davemloft.net>
-To: richardcochran@gmail.com
-Cc: tshimizu818@gmail.com, jeffrey.t.kirsher@intel.com,
-        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
-        paul.gortmaker@windriver.com, jdmason@kudzu.us, john.stultz@linaro.org,
-        arnd@arndb.de, khc@pm.waw.pl, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH RE-SUBMIT] net/pch_gbe: supports eg20t ptp clock
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120309173032.GA5730@netboy.at.omicron.at>
-References: <1331079669-22446-1-git-send-email-tshimizu818@gmail.com>
-	<20120306.213453.700930266749202538.davem@davemloft.net>
-	<20120309173032.GA5730@netboy.at.omicron.at>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 09 Mar 2012 13:00:08 -0800 (PST)
+	Fri, 9 Mar 2012 16:03:47 -0500
+Date: Sat, 10 Mar 2012 01:03:42 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mtk.manpages@gmail.com, akpm@linux-foundation.org, xemul@parallels.com,
+        linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH 2/2] Add kcmp.2 manpage
+Message-ID: <20120309210342.GN13346@moon>
+References: <1331326042-32558-1-git-send-email-gorcunov@openvz.org>
+ <1331326042-32558-3-git-send-email-gorcunov@openvz.org>
+ <4F5A6D09.3050704@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F5A6D09.3050704@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Cochran <richardcochran@gmail.com>
-Date: Fri, 9 Mar 2012 18:30:32 +0100
-
-> On Tue, Mar 06, 2012 at 09:34:53PM -0500, David Miller wrote:
->> 
->> You still haven't submitted this properly.
->> 
->> First, you submitted the PCH_GBE driver changes before the EG20T
->> PTP clock driver which it depends upon.
+On Fri, Mar 09, 2012 at 12:50:17PM -0800, H. Peter Anvin wrote:
+> On 03/09/2012 12:47 PM, Cyrill Gorcunov wrote:
+> > +.I v2
+> > +, but ordering information is unavailble.
 > 
-> David, both this pair of patches and the second pair apply cleanly to
-> both Torvalds mainline and to net-next. So, what are you complaining
-> about here? I am still confused.
+> Needs to be:
+> 
+> .IR v2 ,
+> 
+> ... and fix the typo in "unavailable".
+> 
 
-I'm complaining submitting changes properly, and that has nothing
-to do with where or how cleanly the patches apply.
+here we go
+
+	Cyrill
+---
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+Date: Sat, 10 Mar 2012 01:03:00 +0400
+Subject: [PATCH] Add kcmp.2 manpage
+
+NAME
+       kcmp - compare if two processes do share a particular kernel resource
+
+SYNOPSIS
+       #define _GNU_SOURCE         /* See feature_test_macros(7) */
+       #include <unistd.h>
+       #include <linux/kcmp.h>
+       #include <sys/syscall.h>   /* For SYS_xxx definitions */
+
+       int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);
+
+DESCRIPTION
+       kcmp() allows to find out if two processes identified by pid1 and pid2
+       share kernel resources such as virtual memory, file descriptors, file system etc.
+
+       The comparison type is one of the following
+
+       KCMP_FILE determines whether a file descriptor idx1 in the first process
+       is the same as another descriptor idx2 in the second process
+
+       KCMP_VM compares whether processes share address space
+
+       KCMP_FILES compares the file descriptor arrays to see whether the processes
+       share all files
+
+       KCMP_FS compares whether processes share the file system information (the current
+       umask, working directory, namespace root, etc)
+
+       KCMP_SIGHAND compares whether processes share a signal handlers table
+
+       KCMP_IO compares whether processes do share I/O context, used mainly for
+       block I/O scheduling
+
+       KCMP_SYSVSEM compares the list of undo operations associated with SYSV semaphores
+
+RETURN VALUE
+       kcmp was designed to return values suitable for sorting.  This is particularly handy
+       when one have to compare a large number of file descriptors.
+
+       The return value is merely a result of simple arithmetic comparison of kernel pointers
+       (when kernel compares resources, it uses their memory addresses).
+
+       The  easiest way to explain is to consider an example.  Lets say v1 and v2 are the
+       addresses of appropriate resources, then the return value is one of the following
+
+       0 - v1 is equal to v2 , in other words we have a shared resource here
+       1 - v1 is less than v2
+       2 - v1 is greater than v2
+       3 - v1 is not equal to but ordering information is unavailable.
+
+       On error, -1 is returned, and errno is set appropriately.
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: Pavel Emelyanov <xemul@parallels.com>
+---
+ man2/kcmp.2 |  107 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 107 insertions(+), 0 deletions(-)
+ create mode 100644 man2/kcmp.2
+
+diff --git a/man2/kcmp.2 b/man2/kcmp.2
+new file mode 100644
+index 0000000..a8615f1
+--- /dev/null
++++ b/man2/kcmp.2
+@@ -0,0 +1,107 @@
++.TH KCMP 2 2012-02-01 "Linux" "Linux Programmer's Manual"
++
++.SH NAME
++kcmp \- compare if two processes do share a particular kernel resource
++
++.SH SYNOPSIS
++.nf
++.BR "#define _GNU_SOURCE" "         /* See feature_test_macros(7) */"
++.B #include <unistd.h>
++.B #include <linux/kcmp.h>
++.BR "#include <sys/syscall.h>   "  "/* For SYS_xxx definitions */"
++
++.BI "int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);"
++.fi
++
++.SH DESCRIPTION
++
++.BR kcmp ()
++allows to find out if two processes identified by
++.IR pid1
++and
++.IR pid2
++share kernel resources such as virtual memory,
++file descriptors, file system etc.
++
++The comparison
++.IR type
++is one of the following
++
++.BR KCMP_FILE
++determines whether a file descriptor
++.IR idx1
++in the first process is the same as another descriptor
++.IR idx2
++in the second process
++
++.BR KCMP_VM
++compares whether processes share address space
++
++.BR KCMP_FILES
++compares the file descriptor arrays to see whether the processes share all files
++
++.BR KCMP_FS
++compares whether processes share the file system information (the current umask,
++working directory, namespace root, etc)
++
++.BR KCMP_SIGHAND
++compares whether processes share a signal handlers table
++
++.BR KCMP_IO
++compares whether processes do share I/O context,
++used mainly for block I/O scheduling
++
++.BR KCMP_SYSVSEM
++compares the list of undo operations associated with SYSV semaphores
++
++.SH "RETURN VALUE"
++.B kcmp
++was designed to return values suitable for sorting.
++This is particularly handy when one have to compare
++a large number of file descriptors.
++
++The return value is merely a result of simple arithmetic comparison
++of kernel pointers (when kernel compares resources, it uses their
++memory addresses).
++
++The easiest way to explain is to consider an example.
++Lets say
++.IR v1
++and
++.IR v2
++are the addresses of appropriate resources, then the return value
++is one of the following
++
++.B 0
++\-
++.IR v1
++is equal to
++.IR v2
++, in other words we have a shared resource here
++
++.B 1
++\-
++.IR v1
++is less than
++.IR v2
++
++.B 2
++\-
++.IR v1
++is greater than
++.IR v2
++
++.B 3
++\-
++.IR v1
++is not equal to
++.IR v2
++, but ordering information is unavailable.
++
++On error, \-1 is returned, and errno is set appropriately.
++
++.SH "CONFORMING TO"
++.BR kcmp ()
++is Linux specific and should not be used in programs intended to be portable.
++.SH "SEE ALSO"
++.BR clone (2)
+-- 
+1.7.7.6
+
