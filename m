@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031262Ab2CITub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:50:31 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	id S1031234Ab2CITuY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:50:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031240Ab2CITu0 (ORCPT
+	with ESMTP id S1031194Ab2CITuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:50:26 -0500
-Message-Id: <20120309190209.389491452@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:50:20 -0500
+Message-Id: <20120309190208.600624076@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:30 -0800
+Date: Fri, 09 Mar 2012 11:03:20 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mike Snitzer <snitzer@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [ 88/95] dm thin metadata: remove incorrect close_device on creation error paths
+        alan@lxorguk.ukuu.org.uk, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 78/95] hwmon: (jc42) Add support for AT30TS00, TS3000GB2, TSE2002GB2, and MCP9804
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,97 +25,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 1f3db25d8be4ac50b897b39609802183ea68a514 upstream.
+commit 1bd612a25855f4cc9345052b53d7da697dba6358 upstream.
 
-The __open_device() error paths in __create_thin() and __create_snap()
-incorrectly call __close_device() even if td was not initialized by
-__open_device().  Remove this.
+Also update IDT datasheet locations.
 
-Also document __open_device() return values, remove a redundant
-td->changed = 1 in __create_thin(), and insert an additional
-safeguard against creating an already-existing device.
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-thin-metadata.c |   22 +++++++++++++++++-----
- 1 file changed, 17 insertions(+), 5 deletions(-)
+ Documentation/hwmon/jc42 |   20 ++++++++++++++------
+ drivers/hwmon/Kconfig    |    6 +++---
+ drivers/hwmon/jc42.c     |   20 ++++++++++++++++++--
+ 3 files changed, 35 insertions(+), 11 deletions(-)
 
---- a/drivers/md/dm-thin-metadata.c
-+++ b/drivers/md/dm-thin-metadata.c
-@@ -789,6 +789,11 @@ int dm_pool_metadata_close(struct dm_poo
- 	return 0;
- }
+--- a/Documentation/hwmon/jc42
++++ b/Documentation/hwmon/jc42
+@@ -7,21 +7,29 @@ Supported chips:
+     Addresses scanned: I2C 0x18 - 0x1f
+     Datasheets:
+ 	http://www.analog.com/static/imported-files/data_sheets/ADT7408.pdf
+-  * IDT TSE2002B3, TS3000B3
+-    Prefix: 'tse2002b3', 'ts3000b3'
++  * Atmel AT30TS00
++    Prefix: 'at30ts00'
+     Addresses scanned: I2C 0x18 - 0x1f
+     Datasheets:
+-	http://www.idt.com/products/getdoc.cfm?docid=18715691
+-	http://www.idt.com/products/getdoc.cfm?docid=18715692
++	http://www.atmel.com/Images/doc8585.pdf
++  * IDT TSE2002B3, TSE2002GB2, TS3000B3, TS3000GB2
++    Prefix: 'tse2002', 'ts3000'
++    Addresses scanned: I2C 0x18 - 0x1f
++    Datasheets:
++	http://www.idt.com/sites/default/files/documents/IDT_TSE2002B3C_DST_20100512_120303152056.pdf
++	http://www.idt.com/sites/default/files/documents/IDT_TSE2002GB2A1_DST_20111107_120303145914.pdf
++	http://www.idt.com/sites/default/files/documents/IDT_TS3000B3A_DST_20101129_120303152013.pdf
++	http://www.idt.com/sites/default/files/documents/IDT_TS3000GB2A1_DST_20111104_120303151012.pdf
+   * Maxim MAX6604
+     Prefix: 'max6604'
+     Addresses scanned: I2C 0x18 - 0x1f
+     Datasheets:
+ 	http://datasheets.maxim-ic.com/en/ds/MAX6604.pdf
+-  * Microchip MCP9805, MCP98242, MCP98243, MCP9843
+-    Prefixes: 'mcp9805', 'mcp98242', 'mcp98243', 'mcp9843'
++  * Microchip MCP9804, MCP9805, MCP98242, MCP98243, MCP9843
++    Prefixes: 'mcp9804', 'mcp9805', 'mcp98242', 'mcp98243', 'mcp9843'
+     Addresses scanned: I2C 0x18 - 0x1f
+     Datasheets:
++	http://ww1.microchip.com/downloads/en/DeviceDoc/22203C.pdf
+ 	http://ww1.microchip.com/downloads/en/DeviceDoc/21977b.pdf
+ 	http://ww1.microchip.com/downloads/en/DeviceDoc/21996a.pdf
+ 	http://ww1.microchip.com/downloads/en/DeviceDoc/22153c.pdf
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -497,9 +497,9 @@ config SENSORS_JC42
+ 	  If you say yes here, you get support for JEDEC JC42.4 compliant
+ 	  temperature sensors, which are used on many DDR3 memory modules for
+ 	  mobile devices and servers.  Support will include, but not be limited
+-	  to, ADT7408, CAT34TS02, CAT6095, MAX6604, MCP9805, MCP98242, MCP98243,
+-	  MCP9843, SE97, SE98, STTS424(E), STTS2002, STTS3000, TSE2002B3, and
+-	  TS3000B3.
++	  to, ADT7408, AT30TS00, CAT34TS02, CAT6095, MAX6604, MCP9804, MCP9805,
++	  MCP98242, MCP98243, MCP9843, SE97, SE98, STTS424(E), STTS2002,
++	  STTS3000, TSE2002B3, TSE2002GB2, TS3000B3, and TS3000GB2.
  
-+/*
-+ * __open_device: Returns @td corresponding to device with id @dev,
-+ * creating it if @create is set and incrementing @td->open_count.
-+ * On failure, @td is undefined.
-+ */
- static int __open_device(struct dm_pool_metadata *pmd,
- 			 dm_thin_id dev, int create,
- 			 struct dm_thin_device **td)
-@@ -799,10 +804,16 @@ static int __open_device(struct dm_pool_
- 	struct disk_device_details details_le;
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called jc42.
+--- a/drivers/hwmon/jc42.c
++++ b/drivers/hwmon/jc42.c
+@@ -64,6 +64,7 @@ static const unsigned short normal_i2c[]
  
- 	/*
--	 * Check the device isn't already open.
-+	 * If the device is already open, return it.
- 	 */
- 	list_for_each_entry(td2, &pmd->thin_devices, list)
- 		if (td2->id == dev) {
-+			/*
-+			 * May not create an already-open device.
-+			 */
-+			if (create)
-+				return -EEXIST;
+ /* Manufacturer IDs */
+ #define ADT_MANID		0x11d4  /* Analog Devices */
++#define ATMEL_MANID		0x001f  /* Atmel */
+ #define MAX_MANID		0x004d  /* Maxim */
+ #define IDT_MANID		0x00b3  /* IDT */
+ #define MCP_MANID		0x0054  /* Microchip */
+@@ -77,15 +78,25 @@ static const unsigned short normal_i2c[]
+ #define ADT7408_DEVID		0x0801
+ #define ADT7408_DEVID_MASK	0xffff
+ 
++/* Atmel */
++#define AT30TS00_DEVID		0x8201
++#define AT30TS00_DEVID_MASK	0xffff
 +
- 			td2->open_count++;
- 			*td = td2;
- 			return 0;
-@@ -817,6 +828,9 @@ static int __open_device(struct dm_pool_
- 		if (r != -ENODATA || !create)
- 			return r;
+ /* IDT */
+ #define TS3000B3_DEVID		0x2903  /* Also matches TSE2002B3 */
+ #define TS3000B3_DEVID_MASK	0xffff
  
-+		/*
-+		 * Create new device.
-+		 */
- 		changed = 1;
- 		details_le.mapped_blocks = 0;
- 		details_le.transaction_id = cpu_to_le64(pmd->trans_id);
-@@ -882,12 +896,10 @@ static int __create_thin(struct dm_pool_
- 
- 	r = __open_device(pmd, dev, 1, &td);
- 	if (r) {
--		__close_device(td);
- 		dm_btree_remove(&pmd->tl_info, pmd->root, &key, &pmd->root);
- 		dm_btree_del(&pmd->bl_info, dev_root);
- 		return r;
- 	}
--	td->changed = 1;
- 	__close_device(td);
- 
- 	return r;
-@@ -967,14 +979,14 @@ static int __create_snap(struct dm_pool_
- 		goto bad;
- 
- 	r = __set_snapshot_details(pmd, td, origin, pmd->time);
-+	__close_device(td);
++#define TS3000GB2_DEVID		0x2912  /* Also matches TSE2002GB2 */
++#define TS3000GB2_DEVID_MASK	0xffff
 +
- 	if (r)
- 		goto bad;
+ /* Maxim */
+ #define MAX6604_DEVID		0x3e00
+ #define MAX6604_DEVID_MASK	0xffff
  
--	__close_device(td);
- 	return 0;
+ /* Microchip */
++#define MCP9804_DEVID		0x0200
++#define MCP9804_DEVID_MASK	0xfffc
++
+ #define MCP98242_DEVID		0x2000
+ #define MCP98242_DEVID_MASK	0xfffc
  
- bad:
--	__close_device(td);
- 	dm_btree_remove(&pmd->tl_info, pmd->root, &key, &pmd->root);
- 	dm_btree_remove(&pmd->details_info, pmd->details_root,
- 			&key, &pmd->details_root);
+@@ -129,8 +140,11 @@ struct jc42_chips {
+ 
+ static struct jc42_chips jc42_chips[] = {
+ 	{ ADT_MANID, ADT7408_DEVID, ADT7408_DEVID_MASK },
++	{ ATMEL_MANID, AT30TS00_DEVID, AT30TS00_DEVID_MASK },
+ 	{ IDT_MANID, TS3000B3_DEVID, TS3000B3_DEVID_MASK },
++	{ IDT_MANID, TS3000GB2_DEVID, TS3000GB2_DEVID_MASK },
+ 	{ MAX_MANID, MAX6604_DEVID, MAX6604_DEVID_MASK },
++	{ MCP_MANID, MCP9804_DEVID, MCP9804_DEVID_MASK },
+ 	{ MCP_MANID, MCP98242_DEVID, MCP98242_DEVID_MASK },
+ 	{ MCP_MANID, MCP98243_DEVID, MCP98243_DEVID_MASK },
+ 	{ MCP_MANID, MCP9843_DEVID, MCP9843_DEVID_MASK },
+@@ -167,10 +181,12 @@ static struct jc42_data *jc42_update_dev
+ 
+ static const struct i2c_device_id jc42_id[] = {
+ 	{ "adt7408", 0 },
++	{ "at30ts00", 0 },
+ 	{ "cat94ts02", 0 },
+ 	{ "cat6095", 0 },
+ 	{ "jc42", 0 },
+ 	{ "max6604", 0 },
++	{ "mcp9804", 0 },
+ 	{ "mcp9805", 0 },
+ 	{ "mcp98242", 0 },
+ 	{ "mcp98243", 0 },
+@@ -181,8 +197,8 @@ static const struct i2c_device_id jc42_i
+ 	{ "stts424", 0 },
+ 	{ "stts2002", 0 },
+ 	{ "stts3000", 0 },
+-	{ "tse2002b3", 0 },
+-	{ "ts3000b3", 0 },
++	{ "tse2002", 0 },
++	{ "ts3000", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, jc42_id);
 
 
