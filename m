@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031020Ab2CITtT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:49:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030906Ab2CITtO (ORCPT
+	id S1031045Ab2CITta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:49:30 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61197 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030906Ab2CITtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:49:14 -0500
-Message-Id: <20120309190207.738927702@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:49:25 -0500
+Message-Id: <20120309190207.970552231@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:09 -0800
+Date: Fri, 09 Mar 2012 11:03:12 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ming Lei <ming.lei@canonical.com>,
-        Will Deacon <will.deacon@arm.com>,
+        alan@lxorguk.ukuu.org.uk, Will Deacon <will.deacon@arm.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 67/95] ARM: 7354/1: perf: limit sample_period to half max_period in non-sampling mode
+Subject: [ 70/95] ARM: 7357/1: perf: fix overflow handling for xscale2 PMUs
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,150 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Will Deacon <will.deacon@arm.com>
 
-commit 5727347180ebc6b4a866fcbe00dcb39cc03acb37 upstream.
+commit 3f31ae121348afd9ed39700ea2a63c17cd7eeed1 upstream.
 
-On ARM, the PMU does not stop counting after an overflow and therefore
-IRQ latency affects the new counter value read by the kernel. This is
-significant for non-sampling runs where it is possible for the new value
-to overtake the previous one, causing the delta to be out by up to
-max_period events.
+xscale2 PMUs indicate overflow not via the PMU control register, but by
+a separate overflow FLAG register instead.
 
-Commit a737823d ("ARM: 6835/1: perf: ensure overflows aren't missed due
-to IRQ latency") attempted to fix this problem by allowing interrupt
-handlers to pass an overflow flag to the event update function, causing
-the overflow calculation to assume that the counter passed through zero
-when going from prev to new. Unfortunately, this doesn't work when
-overflow occurs on the perf_task_tick path because we have the flag
-cleared and end up computing a large negative delta.
+This patch fixes the xscale2 PMU code to use this register to detect
+to overflow and ensures that we clear any pending overflow when
+disabling a counter.
 
-This patch removes the overflow flag from armpmu_event_update and
-instead limits the sample_period to half of the max_period for
-non-sampling profiling runs.
-
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/pmu.h          |    2 +-
- arch/arm/kernel/perf_event.c        |   22 +++++++++++-----------
- arch/arm/kernel/perf_event_v6.c     |    2 +-
- arch/arm/kernel/perf_event_v7.c     |    2 +-
- arch/arm/kernel/perf_event_xscale.c |    4 ++--
- 5 files changed, 16 insertions(+), 16 deletions(-)
+ arch/arm/kernel/perf_event_xscale.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/arm/include/asm/pmu.h
-+++ b/arch/arm/include/asm/pmu.h
-@@ -125,7 +125,7 @@ int __init armpmu_register(struct arm_pm
- 
- u64 armpmu_event_update(struct perf_event *event,
- 			struct hw_perf_event *hwc,
--			int idx, int overflow);
-+			int idx);
- 
- int armpmu_event_set_period(struct perf_event *event,
- 			    struct hw_perf_event *hwc,
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -187,7 +187,7 @@ armpmu_event_set_period(struct perf_even
- u64
- armpmu_event_update(struct perf_event *event,
- 		    struct hw_perf_event *hwc,
--		    int idx, int overflow)
-+		    int idx)
- {
- 	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
- 	u64 delta, prev_raw_count, new_raw_count;
-@@ -200,13 +200,7 @@ again:
- 			     new_raw_count) != prev_raw_count)
- 		goto again;
- 
--	new_raw_count &= armpmu->max_period;
--	prev_raw_count &= armpmu->max_period;
--
--	if (overflow)
--		delta = armpmu->max_period - prev_raw_count + new_raw_count + 1;
--	else
--		delta = new_raw_count - prev_raw_count;
-+	delta = (new_raw_count - prev_raw_count) & armpmu->max_period;
- 
- 	local64_add(delta, &event->count);
- 	local64_sub(delta, &hwc->period_left);
-@@ -223,7 +217,7 @@ armpmu_read(struct perf_event *event)
- 	if (hwc->idx < 0)
- 		return;
- 
--	armpmu_event_update(event, hwc, hwc->idx, 0);
-+	armpmu_event_update(event, hwc, hwc->idx);
- }
- 
- static void
-@@ -239,7 +233,7 @@ armpmu_stop(struct perf_event *event, in
- 	if (!(hwc->state & PERF_HES_STOPPED)) {
- 		armpmu->disable(hwc, hwc->idx);
- 		barrier(); /* why? */
--		armpmu_event_update(event, hwc, hwc->idx, 0);
-+		armpmu_event_update(event, hwc, hwc->idx);
- 		hwc->state |= PERF_HES_STOPPED | PERF_HES_UPTODATE;
- 	}
- }
-@@ -519,7 +513,13 @@ __hw_perf_event_init(struct perf_event *
- 	hwc->config_base	    |= (unsigned long)mapping;
- 
- 	if (!hwc->sample_period) {
--		hwc->sample_period  = armpmu->max_period;
-+		/*
-+		 * For non-sampling runs, limit the sample_period to half
-+		 * of the counter width. That way, the new counter value
-+		 * is far less likely to overtake the previous one unless
-+		 * you have some serious IRQ latency issues.
-+		 */
-+		hwc->sample_period  = armpmu->max_period >> 1;
- 		hwc->last_period    = hwc->sample_period;
- 		local64_set(&hwc->period_left, hwc->sample_period);
- 	}
---- a/arch/arm/kernel/perf_event_v6.c
-+++ b/arch/arm/kernel/perf_event_v6.c
-@@ -520,7 +520,7 @@ armv6pmu_handle_irq(int irq_num,
- 			continue;
- 
- 		hwc = &event->hw;
--		armpmu_event_update(event, hwc, idx, 1);
-+		armpmu_event_update(event, hwc, idx);
- 		data.period = event->hw.last_period;
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
---- a/arch/arm/kernel/perf_event_v7.c
-+++ b/arch/arm/kernel/perf_event_v7.c
-@@ -1032,7 +1032,7 @@ static irqreturn_t armv7pmu_handle_irq(i
- 			continue;
- 
- 		hwc = &event->hw;
--		armpmu_event_update(event, hwc, idx, 1);
-+		armpmu_event_update(event, hwc, idx);
- 		data.period = event->hw.last_period;
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
 --- a/arch/arm/kernel/perf_event_xscale.c
 +++ b/arch/arm/kernel/perf_event_xscale.c
-@@ -257,7 +257,7 @@ xscale1pmu_handle_irq(int irq_num, void
+@@ -596,7 +596,7 @@ xscale2pmu_handle_irq(int irq_num, void
+ 		if (!event)
+ 			continue;
+ 
+-		if (!xscale2_pmnc_counter_has_overflowed(pmnc, idx))
++		if (!xscale2_pmnc_counter_has_overflowed(of_flags, idx))
  			continue;
  
  		hwc = &event->hw;
--		armpmu_event_update(event, hwc, idx, 1);
-+		armpmu_event_update(event, hwc, idx);
- 		data.period = event->hw.last_period;
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
-@@ -594,7 +594,7 @@ xscale2pmu_handle_irq(int irq_num, void
- 			continue;
+@@ -667,7 +667,7 @@ xscale2pmu_enable_event(struct hw_perf_e
+ static void
+ xscale2pmu_disable_event(struct hw_perf_event *hwc, int idx)
+ {
+-	unsigned long flags, ien, evtsel;
++	unsigned long flags, ien, evtsel, of_flags;
+ 	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
  
- 		hwc = &event->hw;
--		armpmu_event_update(event, hwc, idx, 1);
-+		armpmu_event_update(event, hwc, idx);
- 		data.period = event->hw.last_period;
- 		if (!armpmu_event_set_period(event, hwc, idx))
- 			continue;
+ 	ien = xscale2pmu_read_int_enable();
+@@ -676,26 +676,31 @@ xscale2pmu_disable_event(struct hw_perf_
+ 	switch (idx) {
+ 	case XSCALE_CYCLE_COUNTER:
+ 		ien &= ~XSCALE2_CCOUNT_INT_EN;
++		of_flags = XSCALE2_CCOUNT_OVERFLOW;
+ 		break;
+ 	case XSCALE_COUNTER0:
+ 		ien &= ~XSCALE2_COUNT0_INT_EN;
+ 		evtsel &= ~XSCALE2_COUNT0_EVT_MASK;
+ 		evtsel |= XSCALE_PERFCTR_UNUSED << XSCALE2_COUNT0_EVT_SHFT;
++		of_flags = XSCALE2_COUNT0_OVERFLOW;
+ 		break;
+ 	case XSCALE_COUNTER1:
+ 		ien &= ~XSCALE2_COUNT1_INT_EN;
+ 		evtsel &= ~XSCALE2_COUNT1_EVT_MASK;
+ 		evtsel |= XSCALE_PERFCTR_UNUSED << XSCALE2_COUNT1_EVT_SHFT;
++		of_flags = XSCALE2_COUNT1_OVERFLOW;
+ 		break;
+ 	case XSCALE_COUNTER2:
+ 		ien &= ~XSCALE2_COUNT2_INT_EN;
+ 		evtsel &= ~XSCALE2_COUNT2_EVT_MASK;
+ 		evtsel |= XSCALE_PERFCTR_UNUSED << XSCALE2_COUNT2_EVT_SHFT;
++		of_flags = XSCALE2_COUNT2_OVERFLOW;
+ 		break;
+ 	case XSCALE_COUNTER3:
+ 		ien &= ~XSCALE2_COUNT3_INT_EN;
+ 		evtsel &= ~XSCALE2_COUNT3_EVT_MASK;
+ 		evtsel |= XSCALE_PERFCTR_UNUSED << XSCALE2_COUNT3_EVT_SHFT;
++		of_flags = XSCALE2_COUNT3_OVERFLOW;
+ 		break;
+ 	default:
+ 		WARN_ONCE(1, "invalid counter number (%d)\n", idx);
+@@ -705,6 +710,7 @@ xscale2pmu_disable_event(struct hw_perf_
+ 	raw_spin_lock_irqsave(&events->pmu_lock, flags);
+ 	xscale2pmu_write_event_select(evtsel);
+ 	xscale2pmu_write_int_enable(ien);
++	xscale2pmu_write_overflow_flags(of_flags);
+ 	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
+ }
+ 
 
 
