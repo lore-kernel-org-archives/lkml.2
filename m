@@ -1,83 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab2CIGCT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 01:02:19 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:53763 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab2CIGCS (ORCPT
+	id S1751660Ab2CIGEc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 01:04:32 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:47110 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab2CIGEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 01:02:18 -0500
-Date: Fri, 9 Mar 2012 17:02:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, David Miller <davem@davemloft.net>,
-        <netdev@vger.kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: linux-next: manual merge of the tty tree with the net-next tree
-Message-Id: <20120309170201.93eec7e1108165c02ba2311c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Fri, 9 Mar 2012 01:04:30 -0500
+Date: Fri, 9 Mar 2012 15:01:09 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] memcg: avoid THP split in task migration
+Message-Id: <20120309150109.51ba8ea1.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20120309122448.92931dc6.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1330719189-20047-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1330719189-20047-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<20120309101658.8b36ce4f.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.LSU.2.00.1203081816170.18242@eggly.anvils>
+	<20120309122448.92931dc6.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.1.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Mar_2012_17_02_01_+1100_qdMZ3G.=3ir6u07Z"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Mar_2012_17_02_01_+1100_qdMZ3G.=3ir6u07Z
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 9 Mar 2012 12:24:48 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Hi Greg,
+> On Thu, 8 Mar 2012 18:33:14 -0800 (PST)
+> Hugh Dickins <hughd@google.com> wrote:
+> 
+> > On Fri, 9 Mar 2012, KAMEZAWA Hiroyuki wrote:
+> > > > +
+> > > > +	page = pmd_page(pmd);
+> > > > +	VM_BUG_ON(!page || !PageHead(page));
+> > > > +	if (!move_anon() || page_mapcount(page) != 1)
+> > > > +		return 0;
+> > > 
+> > > Could you add this ?
+> > > ==
+> > > static bool move_check_shared_map(struct page *page)
+> > > {
+> > >   /*
+> > >    * Handling of shared pages between processes is a big trouble in memcg.
+> > >    * Now, we never move shared-mapped pages between memcg at 'task' moving because
+> > >    * we have no hint which task the page is really belongs to. For example, 
+> > >    * When a task does "fork()-> move to the child other group -> exec()", the charges
+> > >    * should be stay in the original cgroup. 
+> > >    * So, check mapcount to determine we can move or not.
+> > >    */
+> > >    return page_mapcount(page) != 1;
+> > > }
+> > 
+> > That's a helpful elucidation, thank you.  However...
+> > 
+> > That is not how it has actually been behaving for the last 18 months
+> > (because of the "> 2" bug), so in practice you are asking for a change
+> > in behaviour there.
+> > 
+> Yes.
+> 
+> 
+> > And it's not how it has been and continues to behave with file pages.
+> > 
+> It's ok to add somethink like..
+> 
+> 	if (PageAnon(page) && !move_anon())
+> 		return false;
+> 	...
+> 
+> > Isn't getting that behaviour in fork-move-exec just a good reason not
+> > to set move_charge_at_immigrate?
+> > 
+> Hmm. Maybe.
+> 
+> > I think there are other scenarios where you do want all the pages to
+> > move if move_charge_at_immigrate: and that's certainly easier to
+> > describe and to understand and to code.
+> > 
+> > But if you do insist on not moving the shared, then it needs to involve
+> > something like mem_cgroup_count_swap_user() on PageSwapCache pages,
+> > rather than just the bare page_mapcount().
+> > 
+> 
+> This 'moving swap account' was a requirement from a user (NEC?).
+> But no user doesn't say 'I want to move shared pages between cgroups at task
+> move !' and I don't like to move shared objects.
+> 
+> > I'd rather delete than add code here!
+> > 
+> 
+> As a user, for Fujitsu, I believe it's insane to move task between cgroups.
+> So, I have no benefit from this code, at all.
+> Ok, maybe I'm not a stakeholder,here.
+> 
+I agree that moving tasks between cgroup is not a sane operation,
+users won't do it so frequently, but I cannot prevent that.
+That's why I implemented this feature.
 
-Today's linux-next merge of the tty tree got a conflict in
-drivers/isdn/gigaset/interface.c between commit 5bd49735db39 ("gigaset:
-Use semicolons to terminate statements") from the net-next tree and
-commit 2f16669d322e ("TTY: remove re-assignments to tty_driver members")
-from the tty tree.
+> If users say all shared pages should be moved, ok, let's move.
+> But change of behavior should be documented and implemented in an independet
+> patch. CC'ed Nishimura-san, he implemetned this, a real user.
+> 
+To be honest, shared anon is not my concern. My concern is 
+shared memory(that's why, mapcount is not checked as for file pages.
+I assume all processes sharing the same shared memory will be moved together).
+So, it's all right for me to change the behavior for shared anon(or leave
+it as it is).
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/isdn/gigaset/interface.c
-index b826dac,8f8814a..0000000
---- a/drivers/isdn/gigaset/interface.c
-+++ b/drivers/isdn/gigaset/interface.c
-@@@ -679,9 -593,8 +593,8 @@@ void gigaset_if_initdriver(struct gigas
-  	if (tty =3D=3D NULL)
-  		goto enomem;
- =20
-- 	tty->magic =3D		TTY_DRIVER_MAGIC;
- -	tty->type =3D		TTY_DRIVER_TYPE_SERIAL,
- -	tty->subtype =3D		SERIAL_TYPE_NORMAL,
- +	tty->type =3D		TTY_DRIVER_TYPE_SERIAL;
- +	tty->subtype =3D		SERIAL_TYPE_NORMAL;
-  	tty->flags =3D		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
- =20
-  	tty->driver_name =3D	procname;
-
---Signature=_Fri__9_Mar_2012_17_02_01_+1100_qdMZ3G.=3ir6u07Z
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPWZzZAAoJEECxmPOUX5FErNMP/3+T+1zQ7refcekItmt/nfEq
-h8MBwXsCMQxW77CkJZoNK6M18Ie3R1cYcyJ9XKaHRU12d//smZIqgkwHZhlfsNc7
-wo6b4tKCLDHlds9O658hwCDG8ijlyqEX5IFLeS5Js/v5k4LUSCcWGogCl2ucNFlD
-sJuhmOCshrmObgllNwZGNpNjrX3EeTtBYlKr7GqcmcNYScn1rN91srvhDhzJcqH5
-1pMhS7eo1RoukSpM0Kl36KYArjF8CihzbXrhN033TRxy2wyBeVnUiJzonfufey9L
-RQpHW1mWT7Y/nbgisTnnlRvYH+eaF3uVf5RuYwYOtbPlXZLIY0+k90qMlRSurcDW
-vVuR/EdZm69b/RK/KM4jLaejH2kG1ZBJaLWsxQj+6ptfILSKi+p4nhSBi4LQJusM
-+iqRwHCcRnV7BEPMeWRIsJXgkrCu0WaFAWLtoBUVkmSjjH3fCvQd9cvjEhwWg08R
-fYwt5Pn0v2amZuluHdifSHFXKnSWPtrpXiRc9iLTPt2T9PJqIrrzW+Gc9OBS6/mt
-Z0ctPHnOB3NhS/lhcHpGvxHZO3XwIQPXRgh9G9K579VKoo975yN6+SG6WfBXywGQ
-QSXR38v10Gshh88u10C40SuLQk6ICsySdatHaD0e2UhZo9rpM1FsHbSzE/sE/gdz
-+QHGxccNYEH07x4yEMRu
-=MTsI
------END PGP SIGNATURE-----
-
---Signature=_Fri__9_Mar_2012_17_02_01_+1100_qdMZ3G.=3ir6u07Z--
+Thanks,
+Daisuke Nishimura.
