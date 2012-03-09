@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031738Ab2CITxE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:53:04 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
+	id S1031773Ab2CITxP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:53:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031689Ab2CITw5 (ORCPT
+	with ESMTP id S1031633Ab2CITxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:52:57 -0500
-Message-Id: <20120309190217.936204433@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:53:10 -0500
+Message-Id: <20120309190217.537849686@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:51 -0800
+Date: Fri, 09 Mar 2012 11:02:46 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Keng-Yu Lin <kengyu@canonical.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: [ 37/68] ACPI / PM: Do not save/restore NVS on Asus K54C/K54HR
+        alan@lxorguk.ukuu.org.uk, Phil Sutter <phil.sutter@viprinet.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 32/68] crypto: mv_cesa - fix final callback not ignoring input data
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Keng-Yu Lin <kengyu@canonical.com>
+From: Phil Sutter <phil.sutter@viprinet.com>
 
-commit 5a50a7c32d630d6cdb13d69afabb0cc81b2f379c upstream.
+commit f8f54e190ddb4ed697036b60f5e2ae6dd45b801c upstream.
 
-The models do not resume correctly without acpi_sleep=nonvs.
+Broken by commit 6ef84509f3d439ed2d43ea40080643efec37f54f for users
+passing a request with non-zero 'nbytes' field, like e.g. testmgr.
 
-Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Tim Gardner <tim.gardner@canonical.com>
+Signed-off-by: Phil Sutter <phil.sutter@viprinet.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/sleep.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/crypto/mv_cesa.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -428,6 +428,22 @@ static struct dmi_system_id __initdata a
- 		DMI_MATCH(DMI_PRODUCT_NAME, "1000 Series"),
- 		},
- 	},
-+	{
-+	.callback = init_nvs_nosave,
-+	.ident = "Asus K54C",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "K54C"),
-+		},
-+	},
-+	{
-+	.callback = init_nvs_nosave,
-+	.ident = "Asus K54HR",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "K54HR"),
-+		},
-+	},
- 	{},
- };
- #endif /* CONFIG_SUSPEND */
+--- a/drivers/crypto/mv_cesa.c
++++ b/drivers/crypto/mv_cesa.c
+@@ -713,6 +713,7 @@ static int mv_hash_final(struct ahash_re
+ {
+ 	struct mv_req_hash_ctx *ctx = ahash_request_ctx(req);
+ 
++	ahash_request_set_crypt(req, NULL, req->result, 0);
+ 	mv_update_hash_req_ctx(ctx, 1, 0);
+ 	return mv_handle_req(&req->base);
+ }
 
 
