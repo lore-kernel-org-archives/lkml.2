@@ -1,50 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932461Ab2CIRe7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:34:59 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36355 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932316Ab2CIRe6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:34:58 -0500
+	id S1030183Ab2CIRhK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:37:10 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47722 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320Ab2CIRhI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 12:37:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVxno4xGg_SSrbBVs+nifP8+=cqS8SzD5kvVr2cvJD0wA@mail.gmail.com>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
- <CABhMZUU_YNMXAU0Mr5zQMzxrk_XkFzk1HrwAN0SQxDf8n+F9kA@mail.gmail.com>
- <CAE9FiQVNYWnZzfdNsW38P4vsD1ZpXeA+SwqqDK45SZAAphz_6A@mail.gmail.com>
- <CAErSpo7W_2skcxsgFia+4caf1MgXCt3jqXCrKdX7q3EZ-KLP2Q@mail.gmail.com> <CAE9FiQVxno4xGg_SSrbBVs+nifP8+=cqS8SzD5kvVr2cvJD0wA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 9 Mar 2012 10:34:36 -0700
-Message-ID: <CAErSpo5dXP0H77Ph91HUTA+Do4q2=sL_tdikOQpTiCLQqw1x-Q@mail.gmail.com>
-Subject: Re: [PATCH 00/23] PCI, x86: pci root bus hotplug support
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bjorn.helgaas@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1331299252-23699-2-git-send-email-przemo@firszt.eu>
+References: <1331299252-23699-1-git-send-email-przemo@firszt.eu>
+	<1331299252-23699-2-git-send-email-przemo@firszt.eu>
+Date: Fri, 9 Mar 2012 09:37:06 -0800
+Message-ID: <CANRwn3R5fFkujnsPhx++4PSQEwVNnWo_uXa9Zgb6m=SrJPtN0w@mail.gmail.com>
+Subject: Re: [Linuxwacom-devel] [PATCH 2/2] HID: wacom: Add reporting of wheel
+ for Intuos4 WL
+From: Jason Gerecke <killertofu@gmail.com>
+To: Przemo Firszt <przemo@firszt.eu>
+Cc: jkosina@suse.cz, pinglinux@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linuxwacom-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 9, 2012 at 1:19 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Thu, Mar 8, 2012 at 4:43 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-
->> The notes about "-v2, -v3, -v4, etc." are not really useful in the
->> commit changelogs. �They're helpful in the [00/] message, but not in
->> the changelogs.
+On Fri, Mar 9, 2012 at 5:20 AM, Przemo Firszt <przemo@firszt.eu> wrote:
+> This patch adds reporting of ABS_WHEEL event. Raported walues are 0..71
+> and are related to absolute location of the finger on the wheel.
 >
-> But Jesse may still need mark to figure out which one is latest?
+> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
+> ---
+>  drivers/hid/hid-wacom.c |   19 +++++++++++++++++++
+>  1 files changed, 19 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+> index 5c25036..6f65514 100644
+> --- a/drivers/hid/hid-wacom.c
+> +++ b/drivers/hid/hid-wacom.c
+> @@ -36,6 +36,7 @@
+>  struct wacom_data {
+>        __u16 tool;
+>        __u16 butstate;
+> +       __u8 whlstate;
+>        __u8 features;
+>        __u32 id;
+>        __u32 serial;
+> @@ -322,6 +323,16 @@ static void wacom_i4_parse_button_report(struct wacom_data *wdata,
+>                        struct input_dev *input, unsigned char *data)
+>  {
+>        __u16 new_butstate;
+> +       __u8 new_whlstate;
+> +       __u8 sync = 0;
+> +
+> +       new_whlstate = data[1] & 0x7f;
+> +       if (new_whlstate != wdata->whlstate) {
+> +               wdata->whlstate = new_whlstate;
+> +               input_report_key(input, BTN_TOUCH, 1);
+> +               input_report_abs(input, ABS_WHEEL, new_whlstate);
+> +               sync = 1;
+> +       }
+>
+The highest bit of data[1] is a "touched" flag that you'll want to
+check to determine if the wheel is being used. If its unset, you'll
+want to reset ABS_WHEEL and BTN_TOUCH to zero here.
 
-The way I do that is with "stg mail -v v3", which puts "[PATCH v3
-01/10]" in the subject.  IMO, that's much more useful because when you
-post a 23-patch series, I don't want to be bothered with v1, v2, v3 on
-a per-patch basis.
+>        new_butstate = (data[3] << 1) | (data[2] & 0x01);
+>        if (new_butstate != wdata->butstate) {
+> @@ -335,6 +346,10 @@ static void wacom_i4_parse_button_report(struct wacom_data *wdata,
+>                input_report_key(input, BTN_6, new_butstate & 0x040);
+>                input_report_key(input, BTN_7, new_butstate & 0x080);
+>                input_report_key(input, BTN_8, new_butstate & 0x100);
+> +               sync = 1;
+> +       }
+> +
+> +       if (sync) {
+>                input_report_key(input, BTN_TOOL_FINGER, 1);
+>                input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
+>                input_event(input, EV_MSC, MSC_SERIAL, 0xffffffff);
+> @@ -354,6 +369,7 @@ static void wacom_i4_parse_pen_report(struct wacom_data *wdata,
+>                input_report_abs(input, ABS_PRESSURE, 0);
+>                input_report_key(input, BTN_STYLUS, 0);
+>                input_report_key(input, BTN_STYLUS2, 0);
+> +               input_report_abs(input, ABS_WHEEL, 0);
+>                input_report_key(input, wdata->tool, 0);
+>                input_report_abs(input, ABS_MISC, 0);
+>                input_event(input, EV_MSC, MSC_SERIAL, wdata->serial);
+As mentioned above, this should be in wacom_i4_parse_button_report.
+The pen's loss of proximity has no bearing on the wheel's state.
 
-It's true that when you post v2, many of those 23 patches will be
-unchanged from v1, and you do have to describe that in the [v2 00/23]
-mail.  But at least it's easy to identify the entire set of v2
-patches.
+> @@ -512,6 +528,9 @@ static int wacom_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+>                input_set_abs_params(input, ABS_DISTANCE, 0, 32, 0, 0);
+>                break;
+>        case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
+> +               __set_bit(ABS_WHEEL, input->absbit);
+> +               input_set_abs_params(input, ABS_WHEEL, 0, 71, 0, 0);
+> +               input_set_capability(input, EV_MSC, MSC_SERIAL);
+>                __set_bit(ABS_MISC, input->absbit);
+>                __set_bit(BTN_2, input->keybit);
+>                __set_bit(BTN_3, input->keybit);
+> --
+> 1.7.6.4
+>
+>
+> ------------------------------------------------------------------------------
+> Virtualization & Cloud Management Using Capacity Planning
+> Cloud computing makes use of virtualization - but cloud computing
+> also focuses on allowing computing to be delivered as a service.
+> http://www.accelacomm.com/jaw/sfnl/114/51521223/
+> _______________________________________________
+> Linuxwacom-devel mailing list
+> Linuxwacom-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linuxwacom-devel
 
-Bjorn
+Jason
+
+---
+Day xee-nee-svsh duu-'ushtlh-ts'it;
+nuu-wee-ya' duu-xan' 'vm-nvshtlh-ts'it.
+Huu-chan xuu naa~-gha.
