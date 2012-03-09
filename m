@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759253Ab2CIALK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 19:11:10 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:43853 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757866Ab2CIALI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 19:11:08 -0500
-Message-ID: <1331251863.30848.4.camel@joe2Laptop>
-Subject: Re: [PATCH] init: check printed flag to skip printing message
-From: Joe Perches <joe@perches.com>
-To: Diwakar Tundlam <dtundlam@nvidia.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Phil Carmody'" <ext-phil.2.carmody@nokia.com>,
-        "'Russell King'" <rmk+kernel@arm.linux.org.uk>,
-        "'Greg Kroah-Hartman'" <gregkh@suse.de>,
-        "'Sameer Nanda'" <snanda@chromium.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Date: Thu, 08 Mar 2012 16:11:03 -0800
-In-Reply-To: <1DD7BFEDD3147247B1355BEFEFE4665237994F30F4@HQMAIL04.nvidia.com>
-References: <1327927463-4165-1-git-send-email-pdeschrijver@nvidia.com>
-	 <1328024684.2446.234.camel@twins>
-	 <1DD7BFEDD3147247B1355BEFEFE466523791832BE9@HQMAIL04.nvidia.com>
-	 <1328040137.2446.242.camel@twins>
-	 <1DD7BFEDD3147247B1355BEFEFE4665237994F30EF@HQMAIL04.nvidia.com>
-	 <1DD7BFEDD3147247B1355BEFEFE4665237994F30F4@HQMAIL04.nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1759236Ab2CIARK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 19:17:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23409 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752489Ab2CIARI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 19:17:08 -0500
+Date: Thu, 8 Mar 2012 21:08:35 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, avi@redhat.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4 changelog-v2] KVM: Switch to srcu-less get_dirty_log()
+Message-ID: <20120309000835.GA25838@amt.cnet>
+References: <20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp>
+ <20120303142148.2689454b30dc86d84c4a19f5@gmail.com>
+ <20120306111540.GA29914@amt.cnet>
+ <20120306234317.2817d2071038d11ab3831c82@gmail.com>
+ <20120306150104.GA3041@amt.cnet>
+ <20120307002317.d8682de9c6ccd6af8ccac467@gmail.com>
+ <20120306152850.GB3353@amt.cnet>
+ <20120307170745.3147f776.yoshikawa.takuya@oss.ntt.co.jp>
+ <20120307232520.GB29570@amt.cnet>
+ <20120308103545.24b81093.yoshikawa.takuya@oss.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120308103545.24b81093.yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-08 at 15:44 -0800, Diwakar Tundlam wrote:
-> Otherwise the 'Calibration skipped' message gets printed everytime a CPU is
-> hotplugged in, cluttering console for systems that frequently hotplug CPUs.
+On Thu, Mar 08, 2012 at 10:35:45AM +0900, Takuya Yoshikawa wrote:
+> Marcelo Tosatti <mtosatti@redhat.com> wrote:
+> 
+> > What is worrying are large memory cases: think of the 50GB slot case.
+> > 100ms hold time is pretty bad (and reacquiring the lock is relatively
+> > simple).
+> > 
+> 
+> OK, I agree basically.
+> 
+> But let me explain one thing before deciding what I should do next.
+> 
+> With my method, even when we use a 50GB slot, the hold time will be under
+> 10ms -- not 100ms -- if the memory actually updated from the last time is
+> 1GB (256K dirty pages).
+> 
+> > >   8747274.0   10973.3       33.3      -31%    -3%    256K
+>   Note that this unit-test was done on my tiny core-i3 32-bit host.
+>   On servers which can install more than 50GB memory, this will become
+>   much faster: actually my live migration tests done on Xeon saw much
+>   better numbers.  Unit-test has been tuned for the worst case.
+> 
+> I admit that if the dirty memory size is more than 10GB, we may see over
+> 100ms hold time you are worrying about.
+> 
+>   For that I was proposing introducing a new GET_DIRTY_LOG API which can
+>   restrict the number of dirty pages we get the log - but this is a long
+>   term goal.
+> 
+> 
+> So, I am OK to try to introduce cond_resched_lock_cb() as you suggested.
+> But, as I explained above, my current implementation does not introduce
+> any real regression concerning to mmu_lock hold time:
+> 
+>   Before we could see 10ms hold time in real workloads:
+>   > funcgraph_entry:      ! 9783.060 us |  kvm_mmu_slot_remove_write_access();
+> 
+>   I have never seen ms hold time with my method in the same workloads.
+> 
+> So, it would be helpful if you can apply the patch series and I can work
+> on top of that: although I cannot use servers with 100GB memory now,
+> migrating a guest with 16GB memory or so may be possible later: I need
+> to reserve servers for that.
 
-Perhaps this is more uniform and it saves a few bytes too.
+Makes sense.
 
-$ size init/calibrate.o*
-   text	   data	    bss	    dec	    hex	filename
-   2933	     73	    521	   3527	    dc7	init/calibrate.o.new
-   2957	     73	    513	   3543	    dd7	init/calibrate.o.old
+It looks good to me, Avi can you review & ack please?
 
- init/calibrate.c |   21 +++++++++++----------
- 1 files changed, 11 insertions(+), 10 deletions(-)
-
-diff --git a/init/calibrate.c b/init/calibrate.c
-index 5f117ca..4f0af03 100644
---- a/init/calibrate.c
-+++ b/init/calibrate.c
-@@ -267,31 +267,32 @@ void __cpuinit calibrate_delay(void)
- 
- 	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
- 		lpj = per_cpu(cpu_loops_per_jiffy, this_cpu);
--		pr_info("Calibrating delay loop (skipped) "
--				"already calibrated this CPU");
-+		if (!printed)
-+			pr_info("Calibrating delay loop%s",
-+				" (skipped) already calibrated this CPU");
- 	} else if (preset_lpj) {
- 		lpj = preset_lpj;
- 		if (!printed)
--			pr_info("Calibrating delay loop (skipped) "
--				"preset value.. ");
-+			pr_info("Calibrating delay loop%s",
-+				" (skipped) preset value..");
- 	} else if ((!printed) && lpj_fine) {
- 		lpj = lpj_fine;
--		pr_info("Calibrating delay loop (skipped), "
--			"value calculated using timer frequency.. ");
-+		pr_info("Calibrating delay loop%s",
-+			" (skipped), value calculated using timer frequency..");
- 	} else if ((lpj = calibrate_delay_is_known())) {
- 		;
- 	} else if ((lpj = calibrate_delay_direct()) != 0) {
- 		if (!printed)
--			pr_info("Calibrating delay using timer "
--				"specific routine.. ");
-+			pr_info("Calibrating delay loop%s",
-+				" using timer specific routine..");
- 	} else {
- 		if (!printed)
--			pr_info("Calibrating delay loop... ");
-+			pr_info("Calibrating delay loop%s", "...");
- 		lpj = calibrate_delay_converge();
- 	}
- 	per_cpu(cpu_loops_per_jiffy, this_cpu) = lpj;
- 	if (!printed)
--		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
-+		pr_cont(" %lu.%02lu BogoMIPS (lpj=%lu)\n",
- 			lpj/(500000/HZ),
- 			(lpj/(5000/HZ)) % 100, lpj);
- 
-
-
+> I also want to know "mmu_lock -- TLB flush"-decoupling plan.  We will not
+> need to introduce cond_resched_lock_cb() in sched.h if that is possible.
+> 
+> Thanks,
+> 	Takuya
