@@ -1,89 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab2CIJYh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 04:24:37 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:57337 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab2CIJYe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 04:24:34 -0500
-Date: Fri, 9 Mar 2012 10:24:29 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@intel.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
-In-Reply-To: <1331284918.4657.69.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1203091022200.7852@axis700.grange>
-References: <1331101687.24656.319.camel@vkoul-udesk3> 
- <Pine.LNX.4.64.1203070917380.19595@axis700.grange> 
- <20120307093026.GM17370@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
-  <20120307103112.GP17370@n2100.arm.linux.org.uk> 
- <Pine.LNX.4.64.1203071149190.19595@axis700.grange> 
- <20120307124620.GT17370@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
-  <20120307142634.GA18787@n2100.arm.linux.org.uk> 
- <Pine.LNX.4.64.1203071602330.19595@axis700.grange> 
- <20120307162755.GB18787@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
-  <1331188201.4657.51.camel@vkoul-udesk3>  <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
-  <1331204128.4657.54.camel@vkoul-udesk3>  <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
-  <1331206459.4657.59.camel@vkoul-udesk3>  <1331211513.4657.67.camel@vkoul-udesk3>
-  <Pine.LNX.4.64.1203081412550.29847@axis700.grange> <1331284918.4657.69.camel@vkoul-udesk3>
+	id S1752156Ab2CIJ3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 04:29:21 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57916 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014Ab2CIJ3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 04:29:17 -0500
+Date: Fri, 9 Mar 2012 10:28:45 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Andy Lutomirski <luto@mit.edu>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86: use enum instead of literals for trap values
+Message-ID: <20120309092845.GA10281@elte.hu>
+References: <20120309074202.GA28609@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:uefk2pclQXjw5nEvfea9xBQykvULZ4wzpUtdun37ZzE
- SjLJquW+vNxHrsZ51pOEu9MtxCPHxvyHzJzUENjr5MkVM2otTQ
- yXgxK9VpJzy2n9yHRsjxzPnVii5EPcGwW4YbKTvtJjCyok4c0w
- qN9FXe6Sl6xun1fZepjxtHcltQz+aRoRt+wECtZiHN77MxI1dE
- LPfBwgHtO/2EuOJX6aPbsj7uNZGZ0dHzz555I1NjGLwBWMAe+w
- ObVLtxvjE9QK5QdIsaHJSBn2rEfEHKl2SzRiAareSS40t4NMo1
- JTArrjeYkHPrBhQHkMzhE5zuOJWq1HvTGP04JOs/4i5I4fE5G0
- UCj3x1T8EJ5tq8PMVOiOLpdUR2VyGurmfVseI/PbjDL2MT36Hb
- mpJJP0uuMdaPQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120309074202.GA28609@www.outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Mar 2012, Vinod Koul wrote:
 
-> On Thu, 2012-03-08 at 14:18 +0100, Guennadi Liakhovetski wrote:
-> > > Assuming I didn't miss...
-> > > 
-> > > The case B can be handled without sweat by platforms channel mapping
-> > > information.
-> > > 
-> > > Case A where we don't find that devices exist in map, thus being treated
-> > > as generic DMA channels and can be handled easily in sequence. So when
-> > > someone in Q request a channel it would get first channel in Ps
-> > > 
-> > > This way we handle both of them in a transparent manner to both clients
-> > > and controllers. 
-> > > 
-> > > Perhaps we can also add capability to know that if channel is to be
-> > > searched in map or not - would be anyway required for non slave cases.
-> > 
-> > Right, but I don't understand then what this gives us. You propose some 
-> > channel maps, that will not be used for your "case A." Which means, for 
-> > "case A" nothing changes. So, the reason for this whole thread hasn't been 
-> > addressed: how to pass channel configuration to the DMA controller driver.
-> For "Case A" there should be no filtering or any issues even now. You
-> have controller requesting a channel and as long as they get a channel
-> for respective pool, it should work.
+* Kees Cook <keescook@chromium.org> wrote:
+
+> The traps are referred to by their numbers and it can be difficult to
+> understand them while reading the code without context. This patch adds
+> enumeration of the trap numbers and replaces the numbers with the correct
+> enum for x86.
 > 
-> Or is there anything else which is required in this case?
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> 
+> ---
+> I've updated Aditya Kali's earlier patch:
+> https://lkml.org/lkml/2011/4/22/328
+> ---
+>  arch/x86/include/asm/traps.h |   25 +++++++++
+>  arch/x86/kernel/irqinit.c    |    2 +-
+>  arch/x86/kernel/traps.c      |  117 ++++++++++++++++++++++--------------------
+>  3 files changed, 88 insertions(+), 56 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+> index 0012d09..768afb2 100644
+> --- a/arch/x86/include/asm/traps.h
+> +++ b/arch/x86/include/asm/traps.h
+> @@ -89,4 +89,29 @@ asmlinkage void smp_thermal_interrupt(void);
+>  asmlinkage void mce_threshold_interrupt(void);
+>  #endif
+>  
+> +/* Interrupts/Exceptions */
+> +enum {
+> +	INTR_DIV_BY_ZERO = 0,	/*  0 */
+> +	INTR_DEBUG,		/*  1 */
+> +	INTR_NMI,		/*  2 */
+> +	INTR_BREAKPOINT,	/*  3 */
+> +	INTR_OVERFLOW,		/*  4 */
+> +	INTR_BOUNDS_CHECK,	/*  5 */
+> +	INTR_INVALID_OP,	/*  6 */
+> +	INTR_NO_DEV,		/*  7 */
+> +	INTR_DBL_FAULT,		/*  8 */
+> +	INTR_SEG_OVERRUN,	/*  9 */
+> +	INTR_INVALID_TSS,	/* 10 */
+> +	INTR_NO_SEG,		/* 11 */
+> +	INTR_STACK_FAULT,	/* 12 */
+> +	INTR_GPF,		/* 13 */
+> +	INTR_PAGE_FAULT,	/* 14 */
+> +	INTR_SPURIOUS,		/* 15 */
+> +	INTR_COPROCESSOR,	/* 16 */
+> +	INTR_ALIGNMENT,		/* 17 */
+> +	INTR_MCE,		/* 18 */
+> +	INTR_SIMD_COPROCESSOR,	/* 19 */
+> +	INTR_IRET = 32,		/* 32 */
+> +};
 
-Yes, there is. You keep complaining about my use of .priv pointer, which I 
-use in the filter to pass channel configuration to the DMA controller 
-driver. That is the original reason for this whole discussion. If you're 
-fine with that, I'll just carry that .priv use over in the "simple" DMA 
-engine driver and stay happy forever:-)
+> @@ -453,14 +458,15 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
+>  /*
+>   * Note that we play around with the 'TS' bit in an attempt to get
+>   * the correct behaviour even in the presence of the asynchronous
+> - * IRQ13 behaviour
+> + * INTR_GPF behaviour
+>   */
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+> @@ -529,8 +535,9 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
+>  		info.si_code = FPE_FLTRES;
+>  	} else {
+>  		/*
+> -		 * If we're using IRQ 13, or supposedly even some trap 16
+> -		 * implementations, it's possible we get a spurious trap...
+> +		 * If we're using INTR_GPF, or supposedly even some trap
+> +		 * INTR_COPROCESSOR implementations, it's possible we get a
+> +		 * spurious trap...
+
+There's confusion in this patch between legacy IRQ #13 [vector 
+0x20 + 13 ] and #GPF general protection fault [vector 13] - they 
+are not the same.
+
+Furthermore, the INTR_ naming is not ideal either for (most of) 
+these entries: for example we don't think of a page fault as an 
+asynchronous interrupt entity - we think of it as a more or less 
+synchronous fault/exception.
+
+Thus a X86_*_FAULT_VEC naming pattern might be better:
+
+	X86_PAGE_FAULT_VEC
+	X86_DOUBLE_FAULT_VEC
+
+(With X86_*_EXCEPTION_VEC applied where appropriate.)
+
+I don't disagree with the general principle of the cleanup 
+otherwise, the numeric literals are often ambiguous and 
+confusing - as the trap 13 - irq 13 mixup above shows.
+
+Thanks,
+
+	Ingo
