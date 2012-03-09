@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab2CIQxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 11:53:19 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:56481 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754555Ab2CIQxS (ORCPT
+	id S1758149Ab2CIRA0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:00:26 -0500
+Received: from new1-smtp.messagingengine.com ([66.111.4.221]:47788 "EHLO
+	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754557Ab2CIRAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 11:53:18 -0500
-Date: Fri, 9 Mar 2012 08:53:13 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        =?utf-8?B?57yqIOWLsA==?= <miaox@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH] cgroup: fix race between fork and cgroup freezing
-Message-ID: <20120309165313.GA24890@google.com>
-References: <4F587199.6050404@cn.fujitsu.com>
- <20120308182622.GC25508@google.com>
- <4F59A27D.9080705@cn.fujitsu.com>
+	Fri, 9 Mar 2012 12:00:24 -0500
+X-Sasl-enc: Me6PfWf8WgtW/NAfk2IQzGdfxhXXQHCZNZ2oB/7gCOmD 1331312423
+Message-ID: <4F5A3726.8030505@signal11.us>
+Date: Fri, 09 Mar 2012 12:00:22 -0500
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F59A27D.9080705@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alan Ott <alan@signal11.us>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2] ARM: tegra: export tegra_gpio_{en,dis}able
+References: <1330630010-11241-2-git-send-email-alan@signal11.us> <1330727544-11617-1-git-send-email-alan@signal11.us>
+In-Reply-To: <1330727544-11617-1-git-send-email-alan@signal11.us>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
+On 03/02/2012 05:32 PM, Alan Ott wrote:
+> From: Arnd Bergmann <arnd@arndb.de>
+>
+> These two functions are used in drivers that can be
+> modules, so they need to be exported.
+>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> Acked-by: Olof Johansson <olof@lixom.net>
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Alan Ott <alan@signal11.us>
+> ---
+>  drivers/gpio/gpio-tegra.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/gpio/gpio-tegra.c b/drivers/gpio/gpio-tegra.c
+> index bdc2937..96662cc 100644
+> --- a/drivers/gpio/gpio-tegra.c
+> +++ b/drivers/gpio/gpio-tegra.c
+> @@ -107,11 +107,13 @@ void tegra_gpio_enable(int gpio)
+>  {
+>  	tegra_gpio_mask_write(GPIO_MSK_CNF(gpio), gpio, 1);
+>  }
+> +EXPORT_SYMBOL_GPL(tegra_gpio_enable);
+>  
+>  void tegra_gpio_disable(int gpio)
+>  {
+>  	tegra_gpio_mask_write(GPIO_MSK_CNF(gpio), gpio, 0);
+>  }
+> +EXPORT_SYMBOL_GPL(tegra_gpio_disable);
+>  
+>  static void tegra_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+>  {
 
-On Fri, Mar 09, 2012 at 02:26:05PM +0800, Li Zefan wrote:
-> The problem is, forks can happen at any time, so there's no way to prevent
-> forks from happening while iterating tasks in a cgroup, so controllers
-> have to deal with it. In fact freezer is somewhat aware of this issue,
-> that's why it provides the ->fork callback, but there's race.
-> 
-> This patch is not too bad (needs a bit modification). cgroup core will detect
-> (via seqcount) if something's happened to a cgroup and the tasks in it, and
-> then cgroup will notify controllers to check if newly-forked tasks should
-> be adjusted accordingly, so they will have consistent status with other tasks
-> in the same cgroup.
+Did this patch ever get picked up into someone's tree?
 
-But why can't we just do what every sane subsystem would do - link
-first and then invoke notification callback?  I mean, we're now
-essentially trying to do the following.
+Alan.
 
-1. Take some action.
-2. Trigger notification.
-3. Link the result of the action to list.
-
-So, of course, if someone tries to traverse the "results", there's a
-race window between #2 and #3.  Your fix seems to change the traverser
-to,
-
-1. Traverse the list.
-2. If something happened inbetween, take another look.
-
-But, the right thing to do would be changing the fork path to
-
-1. Take some action.
-2. Link the result of the action to list.
-3. Trigger notification.
-
-If I'm missing something, please don't feel shy to hammer it into me
-as I'm feeling very lost at the moment.
-
-Thanks.
-
--- 
-tejun
