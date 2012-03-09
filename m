@@ -1,86 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759309Ab2CIAUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 19:20:37 -0500
-Received: from www.linutronix.de ([62.245.132.108]:44548 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756334Ab2CIAUg (ORCPT
+	id S1756935Ab2CIAaL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 19:30:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35197 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621Ab2CIAaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 19:20:36 -0500
-Date: Fri, 9 Mar 2012 01:20:30 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.2.9-rt17
-In-Reply-To: <1331237441.25686.469.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LFD.2.02.1203090111240.2742@ionos>
-References: <alpine.LFD.2.02.1203072225020.2742@ionos>  <1331230991.25686.452.camel@gandalf.stny.rr.com>  <1331231287.11248.396.camel@twins>  <1331232159.25686.456.camel@gandalf.stny.rr.com>  <1331235579.11248.402.camel@twins>
- <1331237441.25686.469.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 8 Mar 2012 19:30:10 -0500
+Date: Thu, 8 Mar 2012 16:30:08 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v3 2/2] memcg: avoid THP split in task migration
+Message-Id: <20120308163008.664dcdaf.akpm@linux-foundation.org>
+In-Reply-To: <1330719189-20047-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1330719189-20047-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1330719189-20047-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Mar 2012, Steven Rostedt wrote:
+On Fri,  2 Mar 2012 15:13:09 -0500
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-> On Thu, 2012-03-08 at 20:39 +0100, Peter Zijlstra wrote:
-> 
-> > > For example, we have:
-> > > 
-> > > @@ -410,7 +411,7 @@ static inline struct dentry *dentry_kill
-> > >         if (inode && !spin_trylock(&inode->i_lock)) {
-> > >  relock:
-> > >                 seq_spin_unlock(&dentry->d_lock);
-> > > -               cpu_relax();
-> > > +               cpu_chill();
-> > >                 return dentry; /* try again with same dentry */
-> > >         }
-> > > 
-> > > By doing the test at the trylock, we can easily hit the deadlock,
-> > > because we still hold dentry->d_lock. But by moving the block to the
-> > > cpu_chill(), then we are less likely to hit the deadlock.
-> > 
-> > Actually hitting the deadlock isn't a problem, and doing it in the place
-> > of the trylock has the distinct advantage that you can actually get the
-> > lock and continue like you want.
-> 
-> By doing a spin_trydeadlock() while still holding the d_lock, if the
-> holder of the i_lock was blocked on that d_lock then it would detect the
-> failure, and release the lock and continue the loop. This doesn't solve
-> anything. Just because we released the lock, we are still preempting the
-> holder of the d_lock, and if we are higher in priority, we will never
-> let the owner run.
-> 
-> That's why I recommended doing it after releasing the lock. Of course
-> the d_put() is so screwed up because it's not just two locks involved,
-> it's a reverse chain, where this probably wont help.
-> 
-> But just sleeping a tick sounds like a heuristic that may someday fail.
+> Currently we can't do task migration among memory cgroups without THP split,
+> which means processes heavily using THP experience large overhead in task
+> migration. This patch introduce the code for moving charge of THP and makes
+> THP more valuable.
 
-And it's the only way to deal with it sanely simply because after
-dropping d_lock you CANNOT dereference inode->i_lock anymore. Care to
-read the fricking locking rules of dcache and friends ?
+Some review input from Kame and Andrea would be good, please.
 
-So yopu need to replace the trylock by try_deadlock() and boost the
-lock owner w/o blocking on the lock. That means that you need some
-other means to tell the lock owner that you are waiting for it w/o
-actually waiting. After you return from try_deadlock() you drop d_lock
-and wait for some magic event which is associated to the unlock of
-i_lock. There is no other way to deal with reverse lock ordering,
-period.
+> diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
+> index c83aeb5..b6d1bab 100644
+> --- linux-next-20120228.orig/mm/memcontrol.c
+> +++ linux-next-20120228/mm/memcontrol.c
+> @@ -5211,6 +5211,41 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
+>  	return ret;
+>  }
+>  
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +/*
+> + * We don't consider swapping or file mapped pages because THP does not
+> + * support them for now.
+> + * Caller should make sure that pmd_trans_huge(pmd) is true.
+> + */
+> +static int is_target_thp_for_mc(struct vm_area_struct *vma,
+> +		unsigned long addr, pmd_t pmd, union mc_target *target)
+> +{
+> +	struct page *page = NULL;
+> +	struct page_cgroup *pc;
+> +	int ret = 0;
 
-Now go and imagine the mess you have to create to make this work under
-all circumstances. My reference to the multiple reader boosting was
-not for fun. Though I consider that try_deadlock() idea to be in the
-same category of insanity as the original attempts of implementing
-requeue_pi with ownerless but boosted rtmutexes ....
+This should be MC_TARGET_NONE.  And this function should have a return
+type of "enum mc_target_type".  And local variable `ret' should have
+type "enum mc_target_type" as well.
 
-Thanks,
+Also, the name "is_target_thp_for_mc" doesn't make sense: an "is_foo"
+function should return a boolean result, but this function doesn't do
+that.
 
-	tglx
+> +	page = pmd_page(pmd);
+> +	VM_BUG_ON(!page || !PageHead(page));
+> +	if (!move_anon() || page_mapcount(page) != 1)
+
+More page_mapcount tricks, and we just fixed a bug in the other one and
+Hugh got upset.
+
+Can we please at least document what we're doing here?  This reader
+forgot, and cannot reremember.
+
+> +		return 0;
+
+MC_TARGET_NONE.
+
+> +	pc = lookup_page_cgroup(page);
+> +	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
+> +		ret = MC_TARGET_PAGE;
+> +		if (target) {
+> +			get_page(page);
+> +			target->page = page;
+> +		}
+> +	}
+> +	return ret;
+> +}
+> +#else
+> +static inline int is_target_thp_for_mc(struct vm_area_struct *vma,
+> +		unsigned long addr, pmd_t pmd, union mc_target *target)
+> +{
+> +	return 0;
+
+MC_TARGET_NONE.
+
+> +}
+> +#endif
+> +
+>  static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+>  					unsigned long addr, unsigned long end,
+>  					struct mm_walk *walk)
+> @@ -5219,7 +5254,14 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
+>  	pte_t *pte;
+>  	spinlock_t *ptl;
+>  
+> -	split_huge_page_pmd(walk->mm, pmd);
+> +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+> +		if (is_target_thp_for_mc(vma, addr, *pmd, NULL)
+> +		    == MC_TARGET_PAGE)
+> +			mc.precharge += HPAGE_PMD_NR;
+
+That code layout is rather an eyesore :(
+
+This:
+
+		if (is_target_thp_for_mc(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
+			mc.precharge += HPAGE_PMD_NR;
+
+is probably better, but still an eyesore.  See if we can come up with a
+shorter name than "is_target_thp_for_mc" and all will be fixed!
+
+> +		spin_unlock(&vma->vm_mm->page_table_lock);
+> +		cond_resched();
+> +		return 0;
+> +	}
+>  
+>  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>  	for (; addr != end; pte++, addr += PAGE_SIZE)
+> @@ -5378,16 +5420,51 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
+>  	struct vm_area_struct *vma = walk->private;
+>  	pte_t *pte;
+>  	spinlock_t *ptl;
+> +	int type;
+
+"enum mc_target_type".  Also choose a more specific name?  Perhaps
+`target_type'.
+
+> +	union mc_target target;
+> +	struct page *page;
+> +	struct page_cgroup *pc;
+> +
+> +	/*
+> +	 * We don't take compound_lock() here but no race with splitting thp
+> +	 * happens because:
+> +	 *  - if pmd_trans_huge_lock() returns 1, the relevant thp is not
+> +	 *    under splitting, which means there's no concurrent thp split,
+> +	 *  - if another thread runs into split_huge_page() just after we
+> +	 *    entered this if-block, the thread must wait for page table lock
+> +	 *    to be unlocked in __split_huge_page_splitting(), where the main
+> +	 *    part of thp split is not executed yet.
+> +	 */
+> +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+> +		if (!mc.precharge) {
+> +			spin_unlock(&vma->vm_mm->page_table_lock);
+> +			cond_resched();
+> +			return 0;
+> +		}
+> +		type = is_target_thp_for_mc(vma, addr, *pmd, &target);
+> +		if (type == MC_TARGET_PAGE) {
+> +			page = target.page;
+> +			if (!isolate_lru_page(page)) {
+> +				pc = lookup_page_cgroup(page);
+> +				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
+> +							     pc, mc.from, mc.to,
+> +							     false)) {
+> +					mc.precharge -= HPAGE_PMD_NR;
+> +					mc.moved_charge += HPAGE_PMD_NR;
+> +				}
+> +				putback_lru_page(page);
+> +			}
+> +			put_page(page);
+> +		}
+> +		spin_unlock(&vma->vm_mm->page_table_lock);
+> +		cond_resched();
+> +		return 0;
+> +	}
+
+cond_resched() is an ugly thing.  Are we sure that it is needed here?
+
+> -	split_huge_page_pmd(walk->mm, pmd);
+>  retry:
+>  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>  	for (; addr != end; addr += PAGE_SIZE) {
+>  		pte_t ptent = *(pte++);
+> -		union mc_target target;
+> -		int type;
+> -		struct page *page;
+> -		struct page_cgroup *pc;
+>  		swp_entry_t ent;
+>  
+>  		if (!mc.precharge)
+
