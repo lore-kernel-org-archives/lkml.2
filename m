@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab2CIRcl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:32:41 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:51628 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757759Ab2CIRck (ORCPT
+	id S932474Ab2CIRdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:33:00 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64315 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932396Ab2CIRc6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:32:40 -0500
-Date: Fri, 09 Mar 2012 18:32:37 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH 0/3] power: max17042_battery: Add DT bindings
-In-reply-to: <33272430.5261331252254898.JavaMail.weblogic@epml04>
-To: myungjoo.ham@samsung.com
-Cc: DirkBrandewie <dirk.brandewie@gmail.com>, linux-kernel@vger.kernel.org
-Message-id: <4F5A3EB5.5040405@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=EUC-KR
-Content-transfer-encoding: 8BIT
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <33272430.5261331252254898.JavaMail.weblogic@epml04>
+	Fri, 9 Mar 2012 12:32:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo5QGqW8OL10H_PajnWi0JT=UsfX4c6pXJ_hsqXPcd+NPw@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+	<1331018040-30725-8-git-send-email-yinghai@kernel.org>
+	<CAErSpo6jqr44JS4Cyfc0cR_TNbo_ETjPJUO=x2gj-Q_x4TckVA@mail.gmail.com>
+	<CAE9FiQWPk-s5F5ofO=nU05tnRhmpav+f8Cs_mBG9A-MPuK9stw@mail.gmail.com>
+	<CAErSpo5QGqW8OL10H_PajnWi0JT=UsfX4c6pXJ_hsqXPcd+NPw@mail.gmail.com>
+Date: Fri, 9 Mar 2012 09:32:57 -0800
+X-Google-Sender-Auth: eyNokHul-tQG74DprjQOgeC_PHg
+Message-ID: <CAE9FiQXMhEkMBTjnPJkB21ob9L9jNp_-8_h+xo6mOt3fFQ7xQQ@mail.gmail.com>
+Subject: Re: [PATCH 07/23] pci, dmar: Update dmar units devices list during hotplug
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        iommu@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear MungJoo,
+On Fri, Mar 9, 2012 at 9:25 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+> Well, it looks like you can change both save_dev_dmaru() *and*
+> get_dev_dmaru() to take a struct pci_dev *. 쟅 assumed that would be
+> obvious.
 
-I wasn't aware of Dirk's patchset and thus, I didn't ever try to make my
-patches compatible with it.
+no.
 
-I've found hopefully correct patchset[1] via google - it's mailing list
-posting without any feedback...  I've checked linux-next and it clearly
-hasn't been merged.
+get_dev_dmaru() have to use bus/devfn to retrieve the dev pointer.
 
-I'm happy to rework my patch but I would like to ask you about specific
-tree I should base on.  Is this patchset in some subsystem-specific
-(power?) tree? Other?
-
-[1] https://lkml.org/lkml/2012/1/24/237
-
-Regards,
--- 
-Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
-
-On 09.03.2012 01:16, 함명주 wrote:
-
-> Dear Karol Lewandowski,
-> 
-> I've been confused this patchset with Dirk Brandewie's MAX17042 patchset; I though this was a follow-up version of Dirk's, which I think already acked by me.
-> 
-> Anyway, the patches themselves look fine.
-> 
-> However, have you checked the compatibility (mergability?) with the recent MAX17042 patches of Dirk Brandewie? I'm not sure about the merge status of Dirk's patchset, but, I think you need to consider his patches as they massively reshaped the device driver.
-> 
-> Other than that, the patches look fine. (If that issue is already considered, regard this as an Acked-by.)
-> 
-> Thank you.
-> 
-> 
-> Cheers!
-> MyungJoo.
-> 
-> ------- Original Message -------
-> Sender : Karol Lewandowski<k.lewandowsk@samsung.com> Junior Software Engineer/SPRC-Linux (MSD)/삼성전자
-> Date : 2012-03-08 19:32 (GMT+09:00)
-> Title : Re: [PATCH 0/3] power: max17042_battery: Add DT bindings
-> 
-> Dear MyungJoo Ham,
-> 
-> Could you take a look at patchset I've sent? It's needed to make use of
-> max17042 driver on device tree-enabled platforms.
-> 
-> Regards,
-
-
-
-
+Yinghai
