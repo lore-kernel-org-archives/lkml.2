@@ -1,198 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab2CIAaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 19:30:11 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35197 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab2CIAaK (ORCPT
+	id S1759056Ab2CIAdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 19:33:13 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44578 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab2CIAdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 19:30:10 -0500
-Date: Thu, 8 Mar 2012 16:30:08 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH v3 2/2] memcg: avoid THP split in task migration
-Message-Id: <20120308163008.664dcdaf.akpm@linux-foundation.org>
-In-Reply-To: <1330719189-20047-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1330719189-20047-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1330719189-20047-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 19:33:11 -0500
+Date: Fri, 9 Mar 2012 01:33:08 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [ANNOUNCE] 3.2.9-rt17
+In-Reply-To: <1331241940.25686.502.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.02.1203090124160.2742@ionos>
+References: <alpine.LFD.2.02.1203072225020.2742@ionos>  <1331230991.25686.452.camel@gandalf.stny.rr.com>  <1331231287.11248.396.camel@twins>  <1331232159.25686.456.camel@gandalf.stny.rr.com>  <1331235579.11248.402.camel@twins>  <1331237441.25686.469.camel@gandalf.stny.rr.com>
+  <1331238369.11248.426.camel@twins>  <1331240882.25686.499.camel@gandalf.stny.rr.com>  <1331241627.11248.430.camel@twins> <1331241940.25686.502.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  2 Mar 2012 15:13:09 -0500
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+On Thu, 8 Mar 2012, Steven Rostedt wrote:
 
-> Currently we can't do task migration among memory cgroups without THP split,
-> which means processes heavily using THP experience large overhead in task
-> migration. This patch introduce the code for moving charge of THP and makes
-> THP more valuable.
+> On Thu, 2012-03-08 at 22:20 +0100, Peter Zijlstra wrote:
+> 
+> > Now put the thing on 2 cpus and both tasks can endlessly chase each
+> > other's tail, no? 
+> 
+> How would this be different than what mainline does? When the lock is
+> released, it will wake up the other task.
 
-Some review input from Kame and Andrea would be good, please.
+Nonsense. That code is not causing any headache in mainline simply
+because the lock holder cannot be preempted. So the contention case
+runs on different cpus. On RT the failure case is when the trylocker
+preempts the lock holder, which cannot be moved to a different cpu due
+to the implicit migrate disable. Aside of that cpu_relax() and ticket
+locks are there for a reason. They allow the other cpu to make
+progress instead of allowing the trylocking cpu to monopolize the
+cache line forever.
 
-> diff --git linux-next-20120228.orig/mm/memcontrol.c linux-next-20120228/mm/memcontrol.c
-> index c83aeb5..b6d1bab 100644
-> --- linux-next-20120228.orig/mm/memcontrol.c
-> +++ linux-next-20120228/mm/memcontrol.c
-> @@ -5211,6 +5211,41 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> +/*
-> + * We don't consider swapping or file mapped pages because THP does not
-> + * support them for now.
-> + * Caller should make sure that pmd_trans_huge(pmd) is true.
-> + */
-> +static int is_target_thp_for_mc(struct vm_area_struct *vma,
-> +		unsigned long addr, pmd_t pmd, union mc_target *target)
-> +{
-> +	struct page *page = NULL;
-> +	struct page_cgroup *pc;
-> +	int ret = 0;
+The only case where mainline can fail is when a high prio task does a
+mutex_trylock() loop and the mutex owner and the trylocker are pinned
+on the same core. Though I have not yet found code like that, but I
+have not looked too hard either :)
 
-This should be MC_TARGET_NONE.  And this function should have a return
-type of "enum mc_target_type".  And local variable `ret' should have
-type "enum mc_target_type" as well.
+It's a simple RT problem, which has been there forever, but obviously
+nobody did stress tests such code pathes on UP systems or if someone
+did he was not able to trigger it. On SMP this was not a big issue
+when task migration was almost always enabled. Due to the implicit
+migrate disable withing spinlocked regions we just made it more likely
+to happen.
 
-Also, the name "is_target_thp_for_mc" doesn't make sense: an "is_foo"
-function should return a boolean result, but this function doesn't do
-that.
+Thanks,
 
-> +	page = pmd_page(pmd);
-> +	VM_BUG_ON(!page || !PageHead(page));
-> +	if (!move_anon() || page_mapcount(page) != 1)
-
-More page_mapcount tricks, and we just fixed a bug in the other one and
-Hugh got upset.
-
-Can we please at least document what we're doing here?  This reader
-forgot, and cannot reremember.
-
-> +		return 0;
-
-MC_TARGET_NONE.
-
-> +	pc = lookup_page_cgroup(page);
-> +	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
-> +		ret = MC_TARGET_PAGE;
-> +		if (target) {
-> +			get_page(page);
-> +			target->page = page;
-> +		}
-> +	}
-> +	return ret;
-> +}
-> +#else
-> +static inline int is_target_thp_for_mc(struct vm_area_struct *vma,
-> +		unsigned long addr, pmd_t pmd, union mc_target *target)
-> +{
-> +	return 0;
-
-MC_TARGET_NONE.
-
-> +}
-> +#endif
-> +
->  static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
->  					unsigned long addr, unsigned long end,
->  					struct mm_walk *walk)
-> @@ -5219,7 +5254,14 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
->  	pte_t *pte;
->  	spinlock_t *ptl;
->  
-> -	split_huge_page_pmd(walk->mm, pmd);
-> +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-> +		if (is_target_thp_for_mc(vma, addr, *pmd, NULL)
-> +		    == MC_TARGET_PAGE)
-> +			mc.precharge += HPAGE_PMD_NR;
-
-That code layout is rather an eyesore :(
-
-This:
-
-		if (is_target_thp_for_mc(vma, addr, *pmd, NULL) == MC_TARGET_PAGE)
-			mc.precharge += HPAGE_PMD_NR;
-
-is probably better, but still an eyesore.  See if we can come up with a
-shorter name than "is_target_thp_for_mc" and all will be fixed!
-
-> +		spin_unlock(&vma->vm_mm->page_table_lock);
-> +		cond_resched();
-> +		return 0;
-> +	}
->  
->  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
->  	for (; addr != end; pte++, addr += PAGE_SIZE)
-> @@ -5378,16 +5420,51 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
->  	struct vm_area_struct *vma = walk->private;
->  	pte_t *pte;
->  	spinlock_t *ptl;
-> +	int type;
-
-"enum mc_target_type".  Also choose a more specific name?  Perhaps
-`target_type'.
-
-> +	union mc_target target;
-> +	struct page *page;
-> +	struct page_cgroup *pc;
-> +
-> +	/*
-> +	 * We don't take compound_lock() here but no race with splitting thp
-> +	 * happens because:
-> +	 *  - if pmd_trans_huge_lock() returns 1, the relevant thp is not
-> +	 *    under splitting, which means there's no concurrent thp split,
-> +	 *  - if another thread runs into split_huge_page() just after we
-> +	 *    entered this if-block, the thread must wait for page table lock
-> +	 *    to be unlocked in __split_huge_page_splitting(), where the main
-> +	 *    part of thp split is not executed yet.
-> +	 */
-> +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-> +		if (!mc.precharge) {
-> +			spin_unlock(&vma->vm_mm->page_table_lock);
-> +			cond_resched();
-> +			return 0;
-> +		}
-> +		type = is_target_thp_for_mc(vma, addr, *pmd, &target);
-> +		if (type == MC_TARGET_PAGE) {
-> +			page = target.page;
-> +			if (!isolate_lru_page(page)) {
-> +				pc = lookup_page_cgroup(page);
-> +				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
-> +							     pc, mc.from, mc.to,
-> +							     false)) {
-> +					mc.precharge -= HPAGE_PMD_NR;
-> +					mc.moved_charge += HPAGE_PMD_NR;
-> +				}
-> +				putback_lru_page(page);
-> +			}
-> +			put_page(page);
-> +		}
-> +		spin_unlock(&vma->vm_mm->page_table_lock);
-> +		cond_resched();
-> +		return 0;
-> +	}
-
-cond_resched() is an ugly thing.  Are we sure that it is needed here?
-
-> -	split_huge_page_pmd(walk->mm, pmd);
->  retry:
->  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
->  	for (; addr != end; addr += PAGE_SIZE) {
->  		pte_t ptent = *(pte++);
-> -		union mc_target target;
-> -		int type;
-> -		struct page *page;
-> -		struct page_cgroup *pc;
->  		swp_entry_t ent;
->  
->  		if (!mc.precharge)
-
+	tglx
