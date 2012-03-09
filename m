@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759079Ab2CIUL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:11:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33245 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759048Ab2CIUL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 15:11:26 -0500
-Message-ID: <4F5A63B3.1040509@zytor.com>
-Date: Fri, 09 Mar 2012 12:10:27 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Borislav Petkov <bp@amd64.org>, Kees Cook <keescook@chromium.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Andy Lutomirski <luto@mit.edu>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86: use enum instead of literals for trap values
-References: <20120309074202.GA28609@www.outflux.net>  <20120309092845.GA10281@elte.hu>  <CAGXu5j+SgWMjwNQd8w8DPSQmBVHDow=_osp57OVp4X2VU5Fe5w@mail.gmail.com>  <4F5A448D.70605@zytor.com>  <CAGXu5jKHJGmTktKNYDmpZziKRLM-bw-dTK5tboR706J_s6j7NQ@mail.gmail.com>  <20120309182829.GA13745@aftab> <1331319124.25686.580.camel@gandalf.stny.rr.com>
-In-Reply-To: <1331319124.25686.580.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1759419Ab2CIUSf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:18:35 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44901 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759256Ab2CIUSd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 15:18:33 -0500
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
+Subject: [PATCH] pinctrl: Include <linux/bug.h> to prevent compile errors
+Date: Fri,  9 Mar 2012 13:18:25 -0700
+Message-Id: <1331324305-1649-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2012 10:52 AM, Steven Rostedt wrote:
-> I agree too, except where does "XCP" come from? Is it short for
-> "exception"?
+Macros in <linux/pinctrl/machine.h> call ARRAY_SIZE(), the definition of
+which eventually calls BUILD_BUG_ON_ZERO(), which is defined in
+<linux/bug.h>. Include that so that every .c file using the pinctrl macros
+doesn't have to do that itself.
 
-Yes, short for "exception".  I hate to admit it, but it comes from the
-constants we used in the Transmeta microcode ;)
+Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+---
+ include/linux/pinctrl/machine.h |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-	-hpa
-
+diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
+index fee4349..012731a 100644
+--- a/include/linux/pinctrl/machine.h
++++ b/include/linux/pinctrl/machine.h
+@@ -12,7 +12,9 @@
+ #ifndef __LINUX_PINCTRL_MACHINE_H
+ #define __LINUX_PINCTRL_MACHINE_H
+ 
+-#include "pinctrl-state.h"
++#include <linux/bug.h>
++
++#include "pinctrl.h"
+ 
+ enum pinctrl_map_type {
+ 	PIN_MAP_TYPE_INVALID,
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.0.4
 
