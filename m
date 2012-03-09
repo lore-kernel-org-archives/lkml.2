@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab2CICg6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 21:36:58 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:45152 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab2CICg5 (ORCPT
+	id S1753536Ab2CICiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 21:38:09 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52691 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751009Ab2CICiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 21:36:57 -0500
-Date: Fri, 9 Mar 2012 13:36:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
-        Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the net-next tree with the powerpc tree
-Message-Id: <20120309133646.fb8cc30d8c2fd0ef7784d72c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Mar_2012_13_36_46_+1100_o.kx23tJ_UeCCL5P"
+	Thu, 8 Mar 2012 21:38:07 -0500
+X-AuditID: 9c930179-b7c4fae0000073fb-9a-4f596d0c98fc
+Message-ID: <4F596D0A.9050009@lge.com>
+Date: Fri, 09 Mar 2012 11:38:02 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
+        Pekka Enberg <penberg@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RFC] perf tools: Handle old kernels when opening perf
+ event
+References: <1331191731-29541-1-git-send-email-namhyung.kim@lge.com> <20120308145024.GA1764@infradead.org>
+In-Reply-To: <20120308145024.GA1764@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Mar_2012_13_36_46_+1100_o.kx23tJ_UeCCL5P
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi all,
+2012-03-08 11:50 PM, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Mar 08, 2012 at 04:28:51 PM +0900, Namhyung Kim escreveu:
+>> Changing default value of perf_guest back to false caused problems on old
+>> kernels and its fix bc76efe64533 ("perf tools: Handle kernels that don't
+>> support attr.exclude_{guest,host}") worked well for perf record/top.
+>>
+>> But I've just realized that using specific events on perf stat makes same
+>> kind of troubles too. It's because the parse_events calls event_attr_init
+>> for all events so that it would have exclude_guest set.
+>>
+>> Instead of fixing perf stat, I thought that changing perf_evsel__open()
+>> is more appropriate. Please take a look and give comments - especially
+>> on ->time_not_needed handling in builtin-record.c (I guess the original
+>> code had a bug) and checking ->sample_id_all_missing inside of
+>> perf_evsel__config (I believe checking it before perf_evsel__open is
+>> meaningless since it will always have the same value - so I dropped it).
+>
+> One problem here is to have all those pr_debug calls down in the
+> perf_evlist class, they need to be better conveyed to the user, and that
+> depends on the kind of interface being used (stdio, TUI, GTK).
+>
+> One approach tried till the GTK patch was proposed was to just check the
+> value of perf_browser or some UI fops table to do it at that level.
+>
+> But Pekka argued that we should allow tool writers to have more freedom
+> than that, i.e. handle things as flexibly as possible.
+>
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/ethernet/ibm/iseries_veth.c between commit e92a665949f6
-("net: powerpc: remove the legacy iSeries ethernet driver") from the
-powerpc tree and commit 41de8d4cff21 ("drivers/net: Remove alloc_etherdev
-error messages") from the net-next tree.
+Agreed.
 
-I just removed the file.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Fri__9_Mar_2012_13_36_46_+1100_o.kx23tJ_UeCCL5P
-Content-Type: application/pgp-signature
+> The way to do that, that I discussed with David Ahern some time ago, was
+> to have per class errno enums, and then a per class strerror (really an
+> strerror_r) that would map the integer error number to an string.
+>
+> Doing that we would also avoid having to bloat the python binding (or
+> libperf at some point) with the pr_debug, etc machinery.
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I remember that discussion. Yes, it'll show more verbose and helpful messages 
+when user got in trouble. But I don't have an idea how it helps in this 
+particular case - we anyway want to show user some message and keep going on. 
+Could you explain your idea in little more detail?
 
-iQIcBAEBCAAGBQJPWWy+AAoJEECxmPOUX5FEdH4P/ifnYy1RxHVPjCgoKvc/4uzo
-IbDU9QiuiCs3XZKqhxuMUP5+OQONJEL9xYDbu8ymmdGqML0iiASlZXhtUUbeVNBK
-2DFcu7a+gWz9yDjZrLiRrJ7EENQXSMYQe5dBXWJ6ZdmLeUL8ILfbznkS3APV+U2q
-LFGZ42Zb6Lpv3Bjs9wHnfmzHh1HtqXiLgPn0JYtaYG0Qs6IKVEtT3oQj3pKV8QyB
-Wir9UjoiFTI6dEdSqDad4uPhfeuQznLIpzfOZD3+ZQztXsFq7/HpRYj3LMYjjvOF
-jxd/TVyjVenSg12EwmcjW+75L+WDgPKjIi443pvelkCDHrThbrhpLXeTIW50o+dG
-T8HVzjPLEKIDlj417wxYGyUSwXXxft2+yG6pepAolw3blLd1DLpGZjJVRvsv9ylM
-0LRBIOQHn7EPo1vn+dNMQjKMWvbTIVtzShiGa2pfg8sZzNV9qWqrSItyCwBJV1GK
-udMikVHd0H144elXgkARzPmK+nbhvbEIWos6NDeD6+8oFBLeVjix7U3JB5YZNVUa
-vD55XiFAalVXlGPLoTMxPbBz1GEQ6A3o4Ndb6m1vq+dIGotvXlsrtKBOh9bF9lsl
-WvCFTYOHj6hUVeoxold72Kg9J/y2r8Oo4eG0ItOyzSfZsx8HIUSuddkgoO/qEf9f
-1u5oqD8hVemCFG7ZMpsK
-=GHW+
------END PGP SIGNATURE-----
 
---Signature=_Fri__9_Mar_2012_13_36_46_+1100_o.kx23tJ_UeCCL5P--
+> For instance, with your patch applied, try running
+> tools/perf/python/twatch.py :-)
+>
+
+Oops, I didn't noticed, sorry. I'll check twatch.py next time I touch python 
+binding codes.
+
+BTW, how about simply adding its own eprintf implementation?
+
+
+> Other than that, yeah, I think perf_attr_conf is needed and the rest of
+> the patch looks ok, will look again after you address the above
+> comments,
+>
+> Thanks!
+>
+> - Arnaldo
+>
+
+Thanks for your review,
+Namhyung
+
