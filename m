@@ -1,121 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030183Ab2CIRhK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:37:10 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47722 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320Ab2CIRhI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:37:08 -0500
+	id S1758394Ab2CIRiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:38:09 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54597 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964773Ab2CIRiF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 12:38:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <1331299252-23699-2-git-send-email-przemo@firszt.eu>
-References: <1331299252-23699-1-git-send-email-przemo@firszt.eu>
-	<1331299252-23699-2-git-send-email-przemo@firszt.eu>
-Date: Fri, 9 Mar 2012 09:37:06 -0800
-Message-ID: <CANRwn3R5fFkujnsPhx++4PSQEwVNnWo_uXa9Zgb6m=SrJPtN0w@mail.gmail.com>
-Subject: Re: [Linuxwacom-devel] [PATCH 2/2] HID: wacom: Add reporting of wheel
- for Intuos4 WL
-From: Jason Gerecke <killertofu@gmail.com>
-To: Przemo Firszt <przemo@firszt.eu>
-Cc: jkosina@suse.cz, pinglinux@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxwacom-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAE9FiQXMhEkMBTjnPJkB21ob9L9jNp_-8_h+xo6mOt3fFQ7xQQ@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+ <1331018040-30725-8-git-send-email-yinghai@kernel.org> <CAErSpo6jqr44JS4Cyfc0cR_TNbo_ETjPJUO=x2gj-Q_x4TckVA@mail.gmail.com>
+ <CAE9FiQWPk-s5F5ofO=nU05tnRhmpav+f8Cs_mBG9A-MPuK9stw@mail.gmail.com>
+ <CAErSpo5QGqW8OL10H_PajnWi0JT=UsfX4c6pXJ_hsqXPcd+NPw@mail.gmail.com> <CAE9FiQXMhEkMBTjnPJkB21ob9L9jNp_-8_h+xo6mOt3fFQ7xQQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 9 Mar 2012 10:37:44 -0700
+Message-ID: <CAErSpo55k_pJP2X_9jp+oBGAT_1y9hS8QNs0SgomwR-NpvimNA@mail.gmail.com>
+Subject: Re: [PATCH 07/23] pci, dmar: Update dmar units devices list during hotplug
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        iommu@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 9, 2012 at 5:20 AM, Przemo Firszt <przemo@firszt.eu> wrote:
-> This patch adds reporting of ABS_WHEEL event. Raported walues are 0..71
-> and are related to absolute location of the finger on the wheel.
+On Fri, Mar 9, 2012 at 10:32 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Mar 9, 2012 at 9:25 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>
+>> Well, it looks like you can change both save_dev_dmaru() *and*
+>> get_dev_dmaru() to take a struct pci_dev *. �I assumed that would be
+>> obvious.
 >
-> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
-> ---
->  drivers/hid/hid-wacom.c |   19 +++++++++++++++++++
->  1 files changed, 19 insertions(+), 0 deletions(-)
+> no.
 >
-> diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-> index 5c25036..6f65514 100644
-> --- a/drivers/hid/hid-wacom.c
-> +++ b/drivers/hid/hid-wacom.c
-> @@ -36,6 +36,7 @@
->  struct wacom_data {
->        __u16 tool;
->        __u16 butstate;
-> +       __u8 whlstate;
->        __u8 features;
->        __u32 id;
->        __u32 serial;
-> @@ -322,6 +323,16 @@ static void wacom_i4_parse_button_report(struct wacom_data *wdata,
->                        struct input_dev *input, unsigned char *data)
->  {
->        __u16 new_butstate;
-> +       __u8 new_whlstate;
-> +       __u8 sync = 0;
-> +
-> +       new_whlstate = data[1] & 0x7f;
-> +       if (new_whlstate != wdata->whlstate) {
-> +               wdata->whlstate = new_whlstate;
-> +               input_report_key(input, BTN_TOUCH, 1);
-> +               input_report_abs(input, ABS_WHEEL, new_whlstate);
-> +               sync = 1;
-> +       }
->
-The highest bit of data[1] is a "touched" flag that you'll want to
-check to determine if the wheel is being used. If its unset, you'll
-want to reset ABS_WHEEL and BTN_TOUCH to zero here.
+> get_dev_dmaru() have to use bus/devfn to retrieve the dev pointer.
 
->        new_butstate = (data[3] << 1) | (data[2] & 0x01);
->        if (new_butstate != wdata->butstate) {
-> @@ -335,6 +346,10 @@ static void wacom_i4_parse_button_report(struct wacom_data *wdata,
->                input_report_key(input, BTN_6, new_butstate & 0x040);
->                input_report_key(input, BTN_7, new_butstate & 0x080);
->                input_report_key(input, BTN_8, new_butstate & 0x100);
-> +               sync = 1;
-> +       }
-> +
-> +       if (sync) {
->                input_report_key(input, BTN_TOOL_FINGER, 1);
->                input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
->                input_event(input, EV_MSC, MSC_SERIAL, 0xffffffff);
-> @@ -354,6 +369,7 @@ static void wacom_i4_parse_pen_report(struct wacom_data *wdata,
->                input_report_abs(input, ABS_PRESSURE, 0);
->                input_report_key(input, BTN_STYLUS, 0);
->                input_report_key(input, BTN_STYLUS2, 0);
-> +               input_report_abs(input, ABS_WHEEL, 0);
->                input_report_key(input, wdata->tool, 0);
->                input_report_abs(input, ABS_MISC, 0);
->                input_event(input, EV_MSC, MSC_SERIAL, wdata->serial);
-As mentioned above, this should be in wacom_i4_parse_button_report.
-The pen's loss of proximity has no bearing on the wheel's state.
+I expected something like that, but all I see in the patch is this:
 
-> @@ -512,6 +528,9 @@ static int wacom_input_mapped(struct hid_device *hdev, struct hid_input *hi,
->                input_set_abs_params(input, ABS_DISTANCE, 0, 32, 0, 0);
->                break;
->        case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
-> +               __set_bit(ABS_WHEEL, input->absbit);
-> +               input_set_abs_params(input, ABS_WHEEL, 0, 71, 0, 0);
-> +               input_set_capability(input, EV_MSC, MSC_SERIAL);
->                __set_bit(ABS_MISC, input->absbit);
->                __set_bit(BTN_2, input->keybit);
->                __set_bit(BTN_3, input->keybit);
-> --
-> 1.7.6.4
->
->
-> ------------------------------------------------------------------------------
-> Virtualization & Cloud Management Using Capacity Planning
-> Cloud computing makes use of virtualization - but cloud computing
-> also focuses on allowing computing to be delivered as a service.
-> http://www.accelacomm.com/jaw/sfnl/114/51521223/
-> _______________________________________________
-> Linuxwacom-devel mailing list
-> Linuxwacom-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/linuxwacom-devel
++static void restore_dev_to_drhd(struct pci_dev *dev)
++       drhd = get_dev_dmaru(pci_domain_nr(dev->bus), dev->bus->number,
++                                dev->devfn, &i, &saved_dev_drhd_list);
 
-Jason
++static void restore_dev_to_atsr(struct pci_dev *dev)
++       atsr = get_dev_dmaru(pci_domain_nr(dev->bus), dev->bus->number,
++                                dev->devfn, &i, &saved_dev_atsr_list);
 
----
-Day xee-nee-svsh duu-'ushtlh-ts'it;
-nuu-wee-ya' duu-xan' 'vm-nvshtlh-ts'it.
-Huu-chan xuu naa~-gha.
+In both those cases, you have the struct pci_dev *.
