@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758360Ab2CIRak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:30:40 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38848 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544Ab2CIRaj (ORCPT
+	id S932424Ab2CIRcl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:32:41 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:51628 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757759Ab2CIRck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:30:39 -0500
-Date: Fri, 9 Mar 2012 18:30:32 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: tshimizu818@gmail.com, jeffrey.t.kirsher@intel.com,
-        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
-        paul.gortmaker@windriver.com, jdmason@kudzu.us, john.stultz@linaro.org,
-        arnd@arndb.de, khc@pm.waw.pl, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH RE-SUBMIT] net/pch_gbe: supports eg20t ptp clock
-Message-ID: <20120309173032.GA5730@netboy.at.omicron.at>
-References: <1331079669-22446-1-git-send-email-tshimizu818@gmail.com>
- <20120306.213453.700930266749202538.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120306.213453.700930266749202538.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 9 Mar 2012 12:32:40 -0500
+Date: Fri, 09 Mar 2012 18:32:37 +0100
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: [PATCH 0/3] power: max17042_battery: Add DT bindings
+In-reply-to: <33272430.5261331252254898.JavaMail.weblogic@epml04>
+To: myungjoo.ham@samsung.com
+Cc: DirkBrandewie <dirk.brandewie@gmail.com>, linux-kernel@vger.kernel.org
+Message-id: <4F5A3EB5.5040405@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=EUC-KR
+Content-transfer-encoding: 8BIT
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
+References: <33272430.5261331252254898.JavaMail.weblogic@epml04>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 09:34:53PM -0500, David Miller wrote:
+Dear MungJoo,
+
+I wasn't aware of Dirk's patchset and thus, I didn't ever try to make my
+patches compatible with it.
+
+I've found hopefully correct patchset[1] via google - it's mailing list
+posting without any feedback...  I've checked linux-next and it clearly
+hasn't been merged.
+
+I'm happy to rework my patch but I would like to ask you about specific
+tree I should base on.  Is this patchset in some subsystem-specific
+(power?) tree? Other?
+
+[1] https://lkml.org/lkml/2012/1/24/237
+
+Regards,
+-- 
+Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
+
+On 09.03.2012 01:16, 함명주 wrote:
+
+> Dear Karol Lewandowski,
 > 
-> You still haven't submitted this properly.
+> I've been confused this patchset with Dirk Brandewie's MAX17042 patchset; I though this was a follow-up version of Dirk's, which I think already acked by me.
 > 
-> First, you submitted the PCH_GBE driver changes before the EG20T
-> PTP clock driver which it depends upon.
+> Anyway, the patches themselves look fine.
+> 
+> However, have you checked the compatibility (mergability?) with the recent MAX17042 patches of Dirk Brandewie? I'm not sure about the merge status of Dirk's patchset, but, I think you need to consider his patches as they massively reshaped the device driver.
+> 
+> Other than that, the patches look fine. (If that issue is already considered, regard this as an Acked-by.)
+> 
+> Thank you.
+> 
+> 
+> Cheers!
+> MyungJoo.
+> 
+> ------- Original Message -------
+> Sender : Karol Lewandowski<k.lewandowsk@samsung.com> Junior Software Engineer/SPRC-Linux (MSD)/삼성전자
+> Date : 2012-03-08 19:32 (GMT+09:00)
+> Title : Re: [PATCH 0/3] power: max17042_battery: Add DT bindings
+> 
+> Dear MyungJoo Ham,
+> 
+> Could you take a look at patchset I've sent? It's needed to make use of
+> max17042 driver on device tree-enabled platforms.
+> 
+> Regards,
 
-David, both this pair of patches and the second pair apply cleanly to
-both Torvalds mainline and to net-next. So, what are you complaining
-about here? I am still confused.
 
-Thanks,
 
-Richard
 
