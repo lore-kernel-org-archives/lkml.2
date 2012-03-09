@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441Ab2CIIAh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 03:00:37 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35538 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab2CIIAf (ORCPT
+	id S1751778Ab2CIIDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 03:03:33 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62735 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079Ab2CIIDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 03:00:35 -0500
+	Fri, 9 Mar 2012 03:03:32 -0500
+X-AuditID: 9c930179-b7c4fae0000073fb-b8-4f59b94f1b5d
+Message-ID: <4F59B94D.9010206@lge.com>
+Date: Fri, 09 Mar 2012 17:03:25 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-In-Reply-To: <20120308200448.GR3852@pengutronix.de>
-References: <1331130825-14947-1-git-send-email-javier.martin@vista-silicon.com>
-	<20120308200448.GR3852@pengutronix.de>
-Date: Fri, 9 Mar 2012 09:00:35 +0100
-Message-ID: <CACKLOr2_y9aw+-79d4FfKsOuiDdOvDHAanQ6j+qF4Ynf2r5rag@mail.gmail.com>
-Subject: Re: [PATCH v2 00/13] dmaengine: imx-dma: merge dma arch code into dmaengine.
-From: javier Martin <javier.martin@vista-silicon.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dan.j.williams@intel.com, vinod.koul@intel.com, linux@arm.linux.org.uk,
-        kernel@pengutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
+Newsgroups: gmane.linux.kernel
+To: Ingo Molnar <mingo@elte.hu>
+CC: Namhyung Kim <namhyung@gmail.com>, Arun Sharma <asharma@fb.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
+        dsahern@gmail.com, ravitillo@lbl.gov, khandual@linux.vnet.ibm.com,
+        robert.richter@amd.com, ming.m.lin@intel.com, vweaver1@eecs.utk.edu,
+        andi@firstfloor.org
+Subject: Re: [RFC] perf report: Implement symbol filtering on TUI
+References: <20120306062546.GA622@elte.hu> <1331085470-32594-1-git-send-email-namhyung.kim@lge.com> <20120307060724.GA4241@elte.hu> <4F5716A2.6070804@lge.com> <20120308104432.GB25949@elte.hu> <4F59629E.6090909@lge.com> <20120309073619.GB15570@elte.hu>
+In-Reply-To: <20120309073619.GB15570@elte.hu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+Hi,
 
-On 8 March 2012 21:04, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Wed, Mar 07, 2012 at 03:33:32PM +0100, Javier Martin wrote:
->> The following series have to be applied on top of the following patches:
->> [PATCH v2 1/2] dmaengine: Add support for MEMCPY for imx-dma.
->> [PATCH v3 2/2] dmaengine: Add support for multiple descriptors for imx-dma.
->>
->> As discussed with Vinod and Sascha, the file 'arch/arm/mach-imx/dma-v1.c'
->> is deprecated and no new patches are accepted for it.
->>
->> This series merges this code into the imx-dma.c dmaengine driver.
->>
+2012-03-09 4:36 PM, Ingo Molnar wrote:
+> Well, the main problem I had was that they showed up in the
+> 'perf report sched' filtered output and messed it up.
 >
-> I can't find a branch to apply this on. Could you provide a git tree?
+> I.e. I'm not interested in unknown symbols much, I'm interested
+> in *not* seeing them when I type 'perf report sched'.
+>
 
-I'm developing and testing here:
+It should be easy to get rid of unknown symbols from filtered output. So I 
+just wanted how to deal with if someone would need to show (part of) those 
+symbols only. But now I guess it could be handled at dso/comm level.
 
-git://git.infradead.org/users/vkoul/slave-dma.git next
+Thanks,
+Namhyung
 
-> If you have to repost this series please consider using -M with git
-> format-patch.
-
-OK, thanks for the suggestion.
-
-Regards.
--- 
-Javier Martin
-Vista Silicon S.L.
-CDTUC - FASE C - Oficina S-345
-Avda de los Castros s/n
-39005- Santander. Cantabria. Spain
-+34 942 25 32 60
-www.vista-silicon.com
