@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964797Ab2CIPod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 10:44:33 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64019 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143Ab2CIPo2 (ORCPT
+	id S932418Ab2CIPpA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 10:45:00 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:56414 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755666Ab2CIPnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 10:44:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <CADDYkjTTOoLSsp5_c3SsxfAmUH=qOeE_rtLT25dOY6f-3f7Eww@mail.gmail.com>
-References: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com>
-	<20120308155211.GF4334@twin.jikos.cz>
-	<CADDYkjTG-q5+pFRFt9sGKq=cgL=ZgQaNZV=2ipBsSbuvxCa3jw@mail.gmail.com>
-	<4F595D6D.6080809@cn.fujitsu.com>
-	<20120309105537.GG4334@twin.jikos.cz>
-	<CADDYkjRcRbxxPErdMBOs55-gNHZA0GfxcsWNrVbAuv37b3rtvw@mail.gmail.com>
-	<20120309114010.GH4334@twin.jikos.cz>
-	<CADDYkjQiMpPHLq4NTe5yo1iZfCgtwTgm+3ZDRUdMACpumsdFqw@mail.gmail.com>
-	<CADDYkjRK3h_e3GPDQMpVwSwn6aQ5MwA1FoF1wFV05=LytK3chg@mail.gmail.com>
-	<20120309145406.GL4334@twin.jikos.cz>
-	<CADDYkjTTOoLSsp5_c3SsxfAmUH=qOeE_rtLT25dOY6f-3f7Eww@mail.gmail.com>
-Date: Fri, 9 Mar 2012 16:44:26 +0100
-Message-ID: <CADDYkjQsXq-bmouJ7fhCOAA2vEqSNSqRdNEmhmMpjN8wMC4v3Q@mail.gmail.com>
-Subject: Re: kernel BUG at fs/btrfs/delayed-inode.c:1466!
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: dave@jikos.cz, Jacek Luczak <difrost.kernel@gmail.com>,
-        Liu Bo <liubo2009@cn.fujitsu.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, josef@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 9 Mar 2012 10:43:53 -0500
+From: Johan Hovold <jhovold@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        David Herrmann <dh.herrmann@googlemail.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Johan Hovold <jhovold@gmail.com>,
+        stable <stable@vger.kernel.org>
+Subject: [PATCH 1/3] bluetooth: hci_ldisc: fix memory leak on tty_close
+Date: Fri,  9 Mar 2012 16:43:24 +0100
+Message-Id: <1331307806-21761-2-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.8.4
+In-Reply-To: <1331307806-21761-1-git-send-email-jhovold@gmail.com>
+References: <1331307806-21761-1-git-send-email-jhovold@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/9 Jacek Luczak <difrost.kernel@gmail.com>:
-> 2012/3/9 David Sterba <dave@jikos.cz>:
->> On Fri, Mar 09, 2012 at 03:33:24PM +0100, Jacek Luczak wrote:
->>> > Those two issues go inline. After a longer while of WARN_ON the BUG_ON
->>> > hit again.
->>>
->>> One more observation. Host is running builds from CI system. After
->>> BUG_ON pop up all builds take 50% more time to complete.
->>
->> After a BUG_ON the system is in an inconsistent state and will
->> misbehave.
->>
->>> Also I see that current load average stall at value of 7 even if host
->>> is completely idle.
->>
->> That's probably because some process is stuck in a D-state after the
->> crash.
->>
->
-> Now when I've tried to bring CI back I had to clean the broken builds
-> from BUG_ON run. The svn up fails:
->
-> open("/btrfs/project1/.svn/lock", O_WRONLY|O_CREAT|O_EXCL, 0666) = -1
-> ENOSPC (No space left on device)
->
+The hci_uart is never freed when tty is closed if the protocol has not
+been set.
 
-btrfsck shows a lot of:
-root 5 inode 52651143 errors 400
-root 5 inode 52651144 errors 400
-root 5 inode 52651163 errors 400
-root 5 inode 52651164 errors 400
-root 5 inode 52651165 errors 400
-found 142180204544 bytes used err is 1
-total csum bytes: 0
-total tree bytes: 7636135936
-total fs tree bytes: 7371886592
-btree space waste bytes: 2119907598
-file data blocks allocated: 134544068608
- referenced 134544068608
+This was discovered by David Hermann and fixed in bluetooth-next. Those
+patches are more intrusive as they remove the mandatory destructor
+completely.
 
--Jacek
+This is the minimal fix, which leaves the destructor as an empty dummy
+call for now.
+
+Cc: David Herrmann <dh.herrmann@googlemail.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
+ drivers/bluetooth/hci_ldisc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
+index 0711448..97c5faa 100644
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -237,7 +237,6 @@ static void hci_uart_destruct(struct hci_dev *hdev)
+ 		return;
+ 
+ 	BT_DBG("%s", hdev->name);
+-	kfree(hdev->driver_data);
+ }
+ 
+ /* ------ LDISC part ------ */
+@@ -316,6 +315,7 @@ static void hci_uart_tty_close(struct tty_struct *tty)
+ 				hci_free_dev(hdev);
+ 			}
+ 		}
++		kfree(hu);
+ 	}
+ }
+ 
+-- 
+1.7.8.4
+
