@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031616Ab2CIUGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:06:38 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031534Ab2CITwG (ORCPT
+	id S1031683Ab2CIUEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:04:52 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:48530 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030312Ab2CITwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:52:06 -0500
-Message-Id: <20120309190216.741029698@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:52:31 -0500
+Message-Id: <20120309190217.319548473@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:36 -0800
+Date: Fri, 09 Mar 2012 11:02:43 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Cree <mcree@orcon.net.nz>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Michel Lespinasse <walken@google.com>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: [ 22/68] alpha: fix 32/64-bit bug in futex support
+        alan@lxorguk.ukuu.org.uk,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Prashanth K Nageshappa <prashanth@linux.vnet.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jason Baron <jbaron@redhat.com>
+Subject: [ 29/68] kprobes: return proper error code from register_kprobe()
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,84 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Morton <akpm@linux-foundation.org>
+From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
 
-commit 62aca403657fe30e5235c5331e9871e676d9ea0a upstream.
+commit f986a499ef6f317d906e6f6f281be966e1237a10 upstream.
 
-Michael Cree said:
+register_kprobe() aborts if the address of the new request falls in a
+prohibited area (such as ftrace pouch, __kprobes annotated functions,
+non-kernel text addresses, jump label text).  We however don't return the
+right error on this abort, resulting in a silent failure - incorrect
+adding/reporting of kprobes ('perf probe do_fork+18' or 'perf probe
+mcount' for instance).
 
-: : I have noticed some user space problems (pulseaudio crashes in pthread
-: : code, glibc/nptl test suite failures, java compiler freezes on SMP alpha
-: : systems) that arise when using a 2.6.39 or later kernel on Alpha.
-: : Bisecting between 2.6.38 and 2.6.39 (using glibc/nptl test suite as
-: : criterion for good/bad kernel) eventually leads to:
-: :
-: : 8d7718aa082aaf30a0b4989e1f04858952f941bc is the first bad commit
-: : commit 8d7718aa082aaf30a0b4989e1f04858952f941bc
-: : Author: Michel Lespinasse <walken@google.com>
-: : Date:   Thu Mar 10 18:50:58 2011 -0800
-: :
-: :     futex: Sanitize futex ops argument types
-: :
-: :     Change futex_atomic_op_inuser and futex_atomic_cmpxchg_inatomic
-: :     prototypes to use u32 types for the futex as this is the data type the
-: :     futex core code uses all over the place.
-: :
-: : Looking at the commit I see there is a change of the uaddr argument in
-: : the Alpha architecture specific code for futexes from int to u32, but I
-: : don't see why this should cause a problem.
+In V2 we are incorporating Masami Hiramatsu's  feedback.
 
-Richard Henderson said:
+This patch fixes it by returning -EINVAL upon failure.
 
-: futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
-:                               u32 oldval, u32 newval)
-: ...
-:         :       "r"(uaddr), "r"((long)oldval), "r"(newval)
-:
-:
-: There is no 32-bit compare instruction.  These are implemented by
-: consistently extending the values to a 64-bit type.  Since the
-: load instruction sign-extends, we want to sign-extend the other
-: quantity as well (despite the fact it's logically unsigned).
-:
-: So:
-:
-: -        :       "r"(uaddr), "r"((long)oldval), "r"(newval)
-: +        :       "r"(uaddr), "r"((long)(int)oldval), "r"(newval)
-:
-: should do the trick.
+While we are here, rename the label used for exit to be more appropriate.
 
-Michael said:
-
-: This fixes the glibc test suite failures and the pulseaudio related
-: crashes, but it does not fix the java compiiler lockups that I was (and
-: are still) observing.  That is some other problem.
-
-Reported-by: Michael Cree <mcree@orcon.net.nz>
-Tested-by: Michael Cree <mcree@orcon.net.nz>
-Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Reviewed-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Signed-off-by: Prashanth K Nageshappa <prashanth@linux.vnet.ibm.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Jason Baron <jbaron@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/alpha/include/asm/futex.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/kprobes.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/arch/alpha/include/asm/futex.h
-+++ b/arch/alpha/include/asm/futex.h
-@@ -108,7 +108,7 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
- 	"	lda	$31,3b-2b(%0)\n"
- 	"	.previous\n"
- 	:	"+r"(ret), "=&r"(prev), "=&r"(cmp)
--	:	"r"(uaddr), "r"((long)oldval), "r"(newval)
-+	:	"r"(uaddr), "r"((long)(int)oldval), "r"(newval)
- 	:	"memory");
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1324,8 +1324,10 @@ int __kprobes register_kprobe(struct kpr
+ 	if (!kernel_text_address((unsigned long) p->addr) ||
+ 	    in_kprobes_functions((unsigned long) p->addr) ||
+ 	    ftrace_text_reserved(p->addr, p->addr) ||
+-	    jump_label_text_reserved(p->addr, p->addr))
+-		goto fail_with_jump_label;
++	    jump_label_text_reserved(p->addr, p->addr)) {
++		ret = -EINVAL;
++		goto cannot_probe;
++	}
  
- 	*uval = prev;
+ 	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
+ 	p->flags &= KPROBE_FLAG_DISABLED;
+@@ -1340,7 +1342,7 @@ int __kprobes register_kprobe(struct kpr
+ 		 * its code to prohibit unexpected unloading.
+ 		 */
+ 		if (unlikely(!try_module_get(probed_mod)))
+-			goto fail_with_jump_label;
++			goto cannot_probe;
+ 
+ 		/*
+ 		 * If the module freed .init.text, we couldn't insert
+@@ -1349,7 +1351,7 @@ int __kprobes register_kprobe(struct kpr
+ 		if (within_module_init((unsigned long)p->addr, probed_mod) &&
+ 		    probed_mod->state != MODULE_STATE_COMING) {
+ 			module_put(probed_mod);
+-			goto fail_with_jump_label;
++			goto cannot_probe;
+ 		}
+ 	}
+ 	preempt_enable();
+@@ -1396,7 +1398,7 @@ out:
+ 
+ 	return ret;
+ 
+-fail_with_jump_label:
++cannot_probe:
+ 	preempt_enable();
+ 	jump_label_unlock();
+ 	return -EINVAL;
 
 
