@@ -1,91 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab2CINcK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 08:32:10 -0500
-Received: from 8bytes.org ([88.198.83.132]:49394 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932368Ab2CINcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 08:32:08 -0500
-Date: Fri, 9 Mar 2012 14:32:04 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [git pull] IOMMU fixes for v3.3-rc6
-Message-ID: <20120309133204.GA10481@8bytes.org>
+	id S932388Ab2CINc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 08:32:56 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58808 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932250Ab2CINcx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 08:32:53 -0500
+Date: Fri, 9 Mar 2012 05:32:31 -0800
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Message-ID: <tip-114382a0aea97974803c942f106d462cbca5c64d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1328826068-11713-19-git-send-email-eranian@google.com>
+References: <1328826068-11713-19-git-send-email-eranian@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/hw-branch-sampling] perf tools:
+  Make perf able to read files from older ABIs
+Git-Commit-ID: 114382a0aea97974803c942f106d462cbca5c64d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 09 Mar 2012 05:32:38 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  114382a0aea97974803c942f106d462cbca5c64d
+Gitweb:     http://git.kernel.org/tip/114382a0aea97974803c942f106d462cbca5c64d
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Thu, 9 Feb 2012 23:21:08 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 9 Mar 2012 08:26:07 +0100
 
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+perf tools: Make perf able to read files from older ABIs
 
-Hi Linus,
+This patches provides a way to handle legacy perf.data
+files.  Legacy files are those using the older PERFFILE
+signature.
 
-The following changes since commit 192cfd58774b4d17b2fe8bdc77d89c2ef4e0591d:
+For those, it is still necessary to detect endianness but
+without comparing their header->attr_size with the
+tool's own version as it may be different. Instead, we use
+a reference table for all known sizes from the legacy era.
 
-  Linux 3.3-rc6 (2012-03-03 17:08:09 -0800)
+We try all the combinations for sizes and endianness. If we find
+a match, we proceed, otherwise we return: "incompatible file
+format".
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git iommu/fixes
+This is also done for the pipe-mode file format.
 
-or as a signed tag at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git iommu-fixes-v3.3-rc6
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: acme@redhat.com
+Cc: robert.richter@amd.com
+Cc: ming.m.lin@intel.com
+Cc: andi@firstfloor.org
+Cc: asharma@fb.com
+Cc: ravitillo@lbl.gov
+Cc: vweaver1@eecs.utk.edu
+Cc: khandual@linux.vnet.ibm.com
+Cc: dsahern@gmail.com
+Link: http://lkml.kernel.org/r/1328826068-11713-19-git-send-email-eranian@google.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ tools/perf/util/header.c |  122 +++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 94 insertions(+), 28 deletions(-)
 
-Jan Beulich (1):
-      x86/amd: iommu_set_device_table() must not be __init
-
-Ohad Ben-Cohen (1):
-      ARM: OMAP: fix iommu, not mailbox
-
- arch/arm/mach-omap2/mailbox.c    |    3 +--
- arch/arm/mach-omap2/omap-iommu.c |    3 ++-
- drivers/iommu/amd_iommu_init.c   |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
-
-Two fixes are queued up. The first is an additional fix for the OMAP
-initialization order issue and the second patch fixes a possible section
-mismatch which can lead to a kernel crash in the AMD IOMMU driver when
-suspend/resume is used and the compiler has not inlined the
-iommu_set_device_table function.
-
-The top-commit id on my local machine is
-
-	6b7f000eb6a0b81d7a809833edb7a457eedf8512
-
-Please pull.
-
-Thanks,
-
-	Joerg
-
-
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPWgZUAAoJECvwRC2XARrjanIP/3LDrB55SxHDduJpxyFeMqzK
-bifXzJdeLgPtBM6hzkgAplru+WsfjUjvn7L0G+TEnbV1a6/cr4K+L0GMIWOmUlTD
-wf7VgR0x/6aJ56pHtxsoUXK71VIWBGPFPp3hZEXLasD5OIZDWYHe9BwKWhMrpttT
-7ampKNIlGNAE0dEbvSaJPgmD5EswrJjunUhbDQezJN6ozqOBXPYafVrnFUo3glPG
-xUQCQw7Ts6HiWGhO4FPhAAhy/DLKG9RJGRE5ne8qOC+94EEyWTvBDrUUyXl9xCB0
-Aj7vyYjZ1q8SXX2ae9SUMj4afE4OxZ8UGgFVlbC4abkxTHPdMLyuoz7vq83UhlIj
-aip3lr7dndy/DzjV696luo3jIhoAYIznxZW7PbZfo7/KZ1TKDyQrI6Hpj/l/6Lhd
-DONgk2Ztwl7o89ZcFQzEUl/9zY6h3YSdvsyyrTHIapyPJ+yJdDTcrxMBXk16YPsG
-Tn+Vu0JwTStf+emTucJZhhGXpJauwBrKHJch8maHvrbc+xyz3+tnHfhxFm/b42lr
-j6qq4AKXBaeuwS/9n7063Ko2ewyVj5IYacqVq0rAtC4Jcm8nbkuDQwEQ0MbH9t0k
-tMvcH4C5X2LPJAxwyeFjECG9gl9X5wFL2BOXHVTvgZXD9dtqaiS2HE25pI/yH2n7
-BUsy5jl69w3oDpFeQ/OR
-=H0lM
------END PGP SIGNATURE-----
-
---RnlQjJ0d97Da+TV1--
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 6d58026..c851495 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1803,35 +1803,101 @@ out_free:
+ 	return err;
+ }
+ 
+-static int check_magic_endian(u64 *magic, struct perf_file_header *header,
+-			      struct perf_header *ph)
++static const int attr_file_abi_sizes[] = {
++	[0] = PERF_ATTR_SIZE_VER0,
++	[1] = PERF_ATTR_SIZE_VER1,
++	0,
++};
++
++/*
++ * In the legacy file format, the magic number is not used to encode endianness.
++ * hdr_sz was used to encode endianness. But given that hdr_sz can vary based
++ * on ABI revisions, we need to try all combinations for all endianness to
++ * detect the endianness.
++ */
++static int try_all_file_abis(uint64_t hdr_sz, struct perf_header *ph)
+ {
+-	int ret;
++	uint64_t ref_size, attr_size;
++	int i;
+ 
+-	/* check for legacy format */
+-	ret = memcmp(magic, __perf_magic1, sizeof(*magic));
+-	if (ret == 0) {
+-		pr_debug("legacy perf.data format\n");
+-		if (!header)
+-			return -1;
++	for (i = 0 ; attr_file_abi_sizes[i]; i++) {
++		ref_size = attr_file_abi_sizes[i]
++			 + sizeof(struct perf_file_section);
++		if (hdr_sz != ref_size) {
++			attr_size = bswap_64(hdr_sz);
++			if (attr_size != ref_size)
++				continue;
+ 
+-		if (header->attr_size != sizeof(struct perf_file_attr)) {
+-			u64 attr_size = bswap_64(header->attr_size);
++			ph->needs_swap = true;
++		}
++		pr_debug("ABI%d perf.data file detected, need_swap=%d\n",
++			 i,
++			 ph->needs_swap);
++		return 0;
++	}
++	/* could not determine endianness */
++	return -1;
++}
+ 
+-			if (attr_size != sizeof(struct perf_file_attr))
+-				return -1;
++#define PERF_PIPE_HDR_VER0	16
++
++static const size_t attr_pipe_abi_sizes[] = {
++	[0] = PERF_PIPE_HDR_VER0,
++	0,
++};
++
++/*
++ * In the legacy pipe format, there is an implicit assumption that endiannesss
++ * between host recording the samples, and host parsing the samples is the
++ * same. This is not always the case given that the pipe output may always be
++ * redirected into a file and analyzed on a different machine with possibly a
++ * different endianness and perf_event ABI revsions in the perf tool itself.
++ */
++static int try_all_pipe_abis(uint64_t hdr_sz, struct perf_header *ph)
++{
++	u64 attr_size;
++	int i;
++
++	for (i = 0 ; attr_pipe_abi_sizes[i]; i++) {
++		if (hdr_sz != attr_pipe_abi_sizes[i]) {
++			attr_size = bswap_64(hdr_sz);
++			if (attr_size != hdr_sz)
++				continue;
+ 
+ 			ph->needs_swap = true;
+ 		}
++		pr_debug("Pipe ABI%d perf.data file detected\n", i);
+ 		return 0;
+ 	}
++	return -1;
++}
++
++static int check_magic_endian(u64 magic, uint64_t hdr_sz,
++			      bool is_pipe, struct perf_header *ph)
++{
++	int ret;
++
++	/* check for legacy format */
++	ret = memcmp(&magic, __perf_magic1, sizeof(magic));
++	if (ret == 0) {
++		pr_debug("legacy perf.data format\n");
++		if (is_pipe)
++			return try_all_pipe_abis(hdr_sz, ph);
++
++		return try_all_file_abis(hdr_sz, ph);
++	}
++	/*
++	 * the new magic number serves two purposes:
++	 * - unique number to identify actual perf.data files
++	 * - encode endianness of file
++	 */
+ 
+-	/* check magic number with same endianness */
+-	if (*magic == __perf_magic2)
++	/* check magic number with one endianness */
++	if (magic == __perf_magic2)
+ 		return 0;
+ 
+-	/* check magic number but opposite endianness */
+-	if (*magic != __perf_magic2_sw)
++	/* check magic number with opposite endianness */
++	if (magic != __perf_magic2_sw)
+ 		return -1;
+ 
+ 	ph->needs_swap = true;
+@@ -1850,8 +1916,11 @@ int perf_file_header__read(struct perf_file_header *header,
+ 	if (ret <= 0)
+ 		return -1;
+ 
+-	if (check_magic_endian(&header->magic, header, ph) < 0)
++	if (check_magic_endian(header->magic,
++			       header->attr_size, false, ph) < 0) {
++		pr_debug("magic/endian check failed\n");
+ 		return -1;
++	}
+ 
+ 	if (ph->needs_swap) {
+ 		mem_bswap_64(header, offsetof(struct perf_file_header,
+@@ -1938,21 +2007,17 @@ static int perf_file_header__read_pipe(struct perf_pipe_file_header *header,
+ 	if (ret <= 0)
+ 		return -1;
+ 
+-	 if (check_magic_endian(&header->magic, NULL, ph) < 0)
++	if (check_magic_endian(header->magic, header->size, true, ph) < 0) {
++		pr_debug("endian/magic failed\n");
+ 		return -1;
++	}
++
++	if (ph->needs_swap)
++		header->size = bswap_64(header->size);
+ 
+ 	if (repipe && do_write(STDOUT_FILENO, header, sizeof(*header)) < 0)
+ 		return -1;
+ 
+-	if (header->size != sizeof(*header)) {
+-		u64 size = bswap_64(header->size);
+-
+-		if (size != sizeof(*header))
+-			return -1;
+-
+-		ph->needs_swap = true;
+-	}
+-
+ 	return 0;
+ }
+ 
+@@ -1992,6 +2057,7 @@ static int read_attr(int fd, struct perf_header *ph,
+ 
+ 	/* on file perf_event_attr size */
+ 	sz = attr->size;
++
+ 	if (ph->needs_swap)
+ 		sz = bswap_32(sz);
+ 
