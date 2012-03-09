@@ -1,136 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030715Ab2CIUYv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:24:51 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50542 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030505Ab2CITqu (ORCPT
+	id S1032069Ab2CIT6H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:58:07 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46417 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030866Ab2CIT6C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:46:50 -0500
-Message-Id: <20120309190203.691277302@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:19 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [ 17/95] ALSA: hda - Add a fake mute feature
-In-Reply-To: <20120309194424.GA2134@kroah.com>
+	Fri, 9 Mar 2012 14:58:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120309190842.GC13745@aftab>
+References: <20120309074202.GA28609@www.outflux.net>
+	<20120309092845.GA10281@elte.hu>
+	<CAGXu5j+SgWMjwNQd8w8DPSQmBVHDow=_osp57OVp4X2VU5Fe5w@mail.gmail.com>
+	<4F5A448D.70605@zytor.com>
+	<CAGXu5jKHJGmTktKNYDmpZziKRLM-bw-dTK5tboR706J_s6j7NQ@mail.gmail.com>
+	<20120309182829.GA13745@aftab>
+	<CAGXu5jJaO29hqMfACav9v8yEdHXt-SegozGuc+tigYCF6K57WA@mail.gmail.com>
+	<20120309190842.GC13745@aftab>
+Date: Fri, 9 Mar 2012 11:58:02 -0800
+X-Google-Sender-Auth: XH9yRo-LTFCSxldH2ZHZVTzhE7E
+Message-ID: <CAGXu5jL6P7JkG73+qLs402FKHTEay132EWfse3Nf_wCJihxRPg@mail.gmail.com>
+Subject: Re: [PATCH] x86: use enum instead of literals for trap values
+From: Kees Cook <keescook@chromium.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Andy Lutomirski <luto@mit.edu>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Mar 9, 2012 at 11:08 AM, Borislav Petkov <bp@amd64.org> wrote:
+> On Fri, Mar 09, 2012 at 10:54:19AM -0800, Kees Cook wrote:
+>> On Fri, Mar 9, 2012 at 10:28 AM, Borislav Petkov <bp@amd64.org> wrote:
+>> > On Fri, Mar 09, 2012 at 10:21:52AM -0800, Kees Cook wrote:
+>> >> > I have to admit personally to prefer something like X86_XCP_XX where XX
+>> >> > is the two-letter code that the Intel documentation uses for that trap,
+>> >> > i.e. #GP, #BR, #MC and so on.
+>> >>
+>> >> We need a single person to decide on this bike shed color. :) If the
+>> >> list of enum names can be agreed on, I'll be happy to do the
+>> >> search/replace for it.
+>> >
+>> > Well,
+>> >
+>> > here are my 2¢: I agree with hpa because
+>> >
+>> > a) it maps the CPU vendor documentation
+>> > b) it is nicely short
+>>
+>> How about:
+>>
+>> X86_XCP_DE = 0,         /* 0, Divide-by-zero */
+>> X86_XCP_DB,             /* 1, Debug */
+>> X86_XCP_NMI,            /* 2, Non-maskable Interrupt */
+>> X86_XCP_BP,             /* 3, Breakpoint */
+>> X86_XCP_OF,             /* 4, Overflow */
+>> X86_XCP_BR,             /* 5, Bound Range Exceeded */
+>> X86_XCP_UD,             /* 6, Invalid Opcode */
+>> X86_XCP_NM,             /* 7, Device Not Available */
+>> X86_XCP_DF,             /* 8, Double Fault */
+>> X86_XCP_OLD_MF,         /* 9, Coprocessor Segment Overrun */
+>> X86_XCP_TS,             /* 10, Invalid TSS */
+>> X86_XCP_NP,             /* 11, Segment Not Present */
+>> X86_XCP_SS,             /* 12, Stack-Segment Fault */
+>> X86_XCP_GP,             /* 13, General Protection Fault  */
+>> X86_XCP_PF,             /* 14, Page Fault */
+>> X86_XCP_RES,            /* 15, Reserved */
+>
+> So is this reserved or are we using it for Spurious IRQs? If we use it,
+> then 'RES' is a bad name. Maybe we define our own like
+>
+> X86_VEC_SP
 
-------------------
+Yeah, it's used for spurious.
 
-From: Takashi Iwai <tiwai@suse.de>
+> and then do
+>
+> X86_VEC_IR for IRET
+>
+> in the manner we assumed for the rest?
 
-commit 3868137ea41866773e75d9ac4b9988dcc361ff1d upstream.
+Sure. I wasn't sure if it was dangerous to take a two-letter combo. I
+guess if there is a future collision, we can just solve it then.
 
-Some codecs don't supply the mute amp-capabilities although the lowest
-volume gives the mute.  It'd be handy if the parser provides the mute
-mixers in such a case.
+>> X86_XCP_MF,             /* 16, x87 Floating-Point Exception */
+>> X86_XCP_AC,             /* 17, Alignment Check */
+>> X86_XCP_MC,             /* 18, Machine Check */
+>> X86_XCP_XM,             /* 19, SIMD Floating-Point Exception */
+>
+> Shouln't this be #XF actually? At least it is so in the AMD docs.
 
-This patch adds an extension amp-cap bit (which is used only in the
-driver) to represent the min volume = mute state.  Also modified the
-amp cache code to support the fake mute feature when this bit is set
-but the real mute bit is unset.
+XM in Intel, XF in AMD. I have no preference.
 
-In addition, conexant cx5051 parser uses this new feature to implement
-the missing mute controls.
+>> X86_XCP_IRET = 32,      /* 32, IRET Exception */
+>>
+>> There is a name collision for "MF", there's no mnemonic for NMI,
+>
+> Well, in the AMD docs we actually do have the '#NMI' mnemonic in use.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42825
+If AMD's list is more complete, I think that's a good enough reason to
+use "XF" above. :)
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> IRET, or the reserved "spurious" interrupt.
+>>
+>> Can use "VEC" instead "XCP", as Steven suggests.
+>
+> Yeah, because those actually are fixed interrupt vectors, as they're
+> called in the AMD docs. Makes sense.
 
----
- sound/pci/hda/hda_codec.c      |    8 ++++++--
- sound/pci/hda/hda_codec.h      |    3 +++
- sound/pci/hda/patch_conexant.c |   22 +++++++++++++++++++++-
- 3 files changed, 30 insertions(+), 3 deletions(-)
+That seems reasonable to me. Peter, how's that sound to you?
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -1795,7 +1795,11 @@ static void put_vol_mute(struct hda_code
- 	parm = ch ? AC_AMP_SET_RIGHT : AC_AMP_SET_LEFT;
- 	parm |= direction == HDA_OUTPUT ? AC_AMP_SET_OUTPUT : AC_AMP_SET_INPUT;
- 	parm |= index << AC_AMP_SET_INDEX_SHIFT;
--	parm |= val;
-+	if ((val & HDA_AMP_MUTE) && !(info->amp_caps & AC_AMPCAP_MUTE) &&
-+	    (info->amp_caps & AC_AMPCAP_MIN_MUTE))
-+		; /* set the zero value as a fake mute */
-+	else
-+		parm |= val;
- 	snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_AMP_GAIN_MUTE, parm);
- 	info->vol[ch] = val;
- }
-@@ -2062,7 +2066,7 @@ int snd_hda_mixer_amp_tlv(struct snd_kco
- 	val1 = -((caps & AC_AMPCAP_OFFSET) >> AC_AMPCAP_OFFSET_SHIFT);
- 	val1 += ofs;
- 	val1 = ((int)val1) * ((int)val2);
--	if (min_mute)
-+	if (min_mute || (caps & AC_AMPCAP_MIN_MUTE))
- 		val2 |= TLV_DB_SCALE_MUTE;
- 	if (put_user(SNDRV_CTL_TLVT_DB_SCALE, _tlv))
- 		return -EFAULT;
---- a/sound/pci/hda/hda_codec.h
-+++ b/sound/pci/hda/hda_codec.h
-@@ -298,6 +298,9 @@ enum {
- #define AC_AMPCAP_MUTE			(1<<31)    /* mute capable */
- #define AC_AMPCAP_MUTE_SHIFT		31
- 
-+/* driver-specific amp-caps: using bits 24-30 */
-+#define AC_AMPCAP_MIN_MUTE		(1 << 30) /* min-volume = mute */
-+
- /* Connection list */
- #define AC_CLIST_LENGTH			(0x7f<<0)
- #define AC_CLIST_LONG			(1<<7)
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4132,7 +4132,8 @@ static int cx_auto_add_volume_idx(struct
- 		err = snd_hda_ctl_add(codec, nid, kctl);
- 		if (err < 0)
- 			return err;
--		if (!(query_amp_caps(codec, nid, hda_dir) & AC_AMPCAP_MUTE))
-+		if (!(query_amp_caps(codec, nid, hda_dir) &
-+		      (AC_AMPCAP_MUTE | AC_AMPCAP_MIN_MUTE)))
- 			break;
- 	}
- 	return 0;
-@@ -4425,6 +4426,22 @@ static const struct snd_pci_quirk cxt_fi
- 	{}
- };
- 
-+/* add "fake" mute amp-caps to DACs on cx5051 so that mixer mute switches
-+ * can be created (bko#42825)
-+ */
-+static void add_cx5051_fake_mutes(struct hda_codec *codec)
-+{
-+	static hda_nid_t out_nids[] = {
-+		0x10, 0x11, 0
-+	};
-+	hda_nid_t *p;
-+
-+	for (p = out_nids; *p; p++)
-+		snd_hda_override_amp_caps(codec, *p, HDA_OUTPUT,
-+					  AC_AMPCAP_MIN_MUTE |
-+					  query_amp_caps(codec, *p, HDA_OUTPUT));
-+}
-+
- static int patch_conexant_auto(struct hda_codec *codec)
- {
- 	struct conexant_spec *spec;
-@@ -4443,6 +4460,9 @@ static int patch_conexant_auto(struct hd
- 	case 0x14f15045:
- 		spec->single_adc_amp = 1;
- 		break;
-+	case 0x14f15051:
-+		add_cx5051_fake_mutes(codec);
-+		break;
- 	}
- 
- 	apply_pin_fixup(codec, cxt_fixups, cxt_pincfg_tbl);
+-Kees
 
-
+-- 
+Kees Cook
+ChromeOS Security
