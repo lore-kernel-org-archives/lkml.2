@@ -1,226 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab2CIVDt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:03:49 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:63007 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918Ab2CIVDr (ORCPT
+	id S1756599Ab2CIVEF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:04:05 -0500
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:52553 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753599Ab2CIVEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:03:47 -0500
-Date: Sat, 10 Mar 2012 01:03:42 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mtk.manpages@gmail.com, akpm@linux-foundation.org, xemul@parallels.com,
-        linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH 2/2] Add kcmp.2 manpage
-Message-ID: <20120309210342.GN13346@moon>
-References: <1331326042-32558-1-git-send-email-gorcunov@openvz.org>
- <1331326042-32558-3-git-send-email-gorcunov@openvz.org>
- <4F5A6D09.3050704@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F5A6D09.3050704@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Mar 2012 16:04:02 -0500
+From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
+To: cgroups@vger.kernel.org
+Cc: suleiman@google.com, glommer@parallels.com, kamezawa.hiroyu@jp.fujitsu.com,
+        penberg@kernel.org, cl@linux.com, yinghan@google.com, hughd@google.com,
+        gthelen@google.com, peterz@infradead.org, dan.magenheimer@oracle.com,
+        hannes@cmpxchg.org, mgorman@suse.de,
+        James.Bottomley@HansenPartnership.com, linux-mm@kvack.org,
+        devel@openvz.org, linux-kernel@vger.kernel.org,
+        Suleiman Souhlal <ssouhlal@FreeBSD.org>
+Subject: [PATCH v2 00/13] Memcg Kernel Memory Tracking.
+Date: Fri,  9 Mar 2012 12:39:03 -0800
+Message-Id: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 12:50:17PM -0800, H. Peter Anvin wrote:
-> On 03/09/2012 12:47 PM, Cyrill Gorcunov wrote:
-> > +.I v2
-> > +, but ordering information is unavailble.
-> 
-> Needs to be:
-> 
-> .IR v2 ,
-> 
-> ... and fix the typo in "unavailable".
-> 
+This is v2 of my kernel memory tracking patchset for memcg.
 
-here we go
+Lots of changes based on feedback from Glauber and Kamezawa.
+In particular, I changed it to be opt-in instead of opt-out:
+In order for a slab type to be tracked, it has to be marked with
+SLAB_MEMCG_ACCT at kmem_cache_create() time.
+Currently, only dentries and kmalloc are tracked.
 
-	Cyrill
----
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Date: Sat, 10 Mar 2012 01:03:00 +0400
-Subject: [PATCH] Add kcmp.2 manpage
+Planned for v3:
+ - Slub support.
+ - Using a static_branch to remove overhead when no cgroups have been
+   created.
+ - Getting rid of kmem_cache_get_ref/drop_ref pair in kmem_cache_free.
 
-NAME
-       kcmp - compare if two processes do share a particular kernel resource
+Detailed change list from v1 (http://marc.info/?l=linux-mm&m=133038361014525):
+ - Fixed misspelling in documentation.
+ - Added flags field to struct mem_cgroup.
+ - Moved independent_kmem_limit into flags.
+ - Renamed kmem_bytes to kmem.
+ - Divided consume_stock changes into two changes.
+ - Fixed crash at boot when not every commit is applied.
+ - Moved the new fields in kmem_cache into their own struct.
+ - Got rid of SLAB_MEMCG slab flag.
+ - Dropped accounting to root.
+ - Added css_id into memcg slab name.
+ - Changed memcg cache creation to always be deferred to workqueue.
+ - Replaced bypass_bytes with overcharging the cgroup.
+ - Got rid of #ifdef CONFIG_SLAB from memcontrol.c.
+ - Got rid of __GFP_NOACCOUNT, changing to an opt-in model.
+ - Remove kmem limit when turning off independent limit.
+ - Moved the accounting of kmalloc to its own patch.
+ - Removed useless parameters from memcg_create_kmem_cache().
+ - Get a ref to the css when enqueing cache for creation.
+ - increased MAX_KMEM_CACHE_TYPES to 400.
 
-SYNOPSIS
-       #define _GNU_SOURCE         /* See feature_test_macros(7) */
-       #include <unistd.h>
-       #include <linux/kcmp.h>
-       #include <sys/syscall.h>   /* For SYS_xxx definitions */
+Suleiman Souhlal (13):
+  memcg: Consolidate various flags into a single flags field.
+  memcg: Kernel memory accounting infrastructure.
+  memcg: Uncharge all kmem when deleting a cgroup.
+  memcg: Make it possible to use the stock for more than one page.
+  memcg: Reclaim when more than one page needed.
+  slab: Add kmem_cache_gfp_flags() helper function.
+  memcg: Slab accounting.
+  memcg: Make dentry slab memory accounted in kernel memory accounting.
+  memcg: Account for kmalloc in kernel memory accounting.
+  memcg: Track all the memcg children of a kmem_cache.
+  memcg: Handle bypassed kernel memory charges.
+  memcg: Per-memcg memory.kmem.slabinfo file.
+  memcg: Document kernel memory accounting.
 
-       int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);
+ Documentation/cgroups/memory.txt |   44 +++-
+ fs/dcache.c                      |    4 +-
+ include/linux/memcontrol.h       |   30 ++-
+ include/linux/slab.h             |   56 ++++
+ include/linux/slab_def.h         |   79 +++++-
+ include/linux/slob_def.h         |    6 +
+ include/linux/slub_def.h         |    9 +
+ init/Kconfig                     |    2 +-
+ mm/memcontrol.c                  |  633 ++++++++++++++++++++++++++++++++++---
+ mm/slab.c                        |  431 +++++++++++++++++++++++---
+ 10 files changed, 1183 insertions(+), 111 deletions(-)
 
-DESCRIPTION
-       kcmp() allows to find out if two processes identified by pid1 and pid2
-       share kernel resources such as virtual memory, file descriptors, file system etc.
-
-       The comparison type is one of the following
-
-       KCMP_FILE determines whether a file descriptor idx1 in the first process
-       is the same as another descriptor idx2 in the second process
-
-       KCMP_VM compares whether processes share address space
-
-       KCMP_FILES compares the file descriptor arrays to see whether the processes
-       share all files
-
-       KCMP_FS compares whether processes share the file system information (the current
-       umask, working directory, namespace root, etc)
-
-       KCMP_SIGHAND compares whether processes share a signal handlers table
-
-       KCMP_IO compares whether processes do share I/O context, used mainly for
-       block I/O scheduling
-
-       KCMP_SYSVSEM compares the list of undo operations associated with SYSV semaphores
-
-RETURN VALUE
-       kcmp was designed to return values suitable for sorting.  This is particularly handy
-       when one have to compare a large number of file descriptors.
-
-       The return value is merely a result of simple arithmetic comparison of kernel pointers
-       (when kernel compares resources, it uses their memory addresses).
-
-       The  easiest way to explain is to consider an example.  Lets say v1 and v2 are the
-       addresses of appropriate resources, then the return value is one of the following
-
-       0 - v1 is equal to v2 , in other words we have a shared resource here
-       1 - v1 is less than v2
-       2 - v1 is greater than v2
-       3 - v1 is not equal to but ordering information is unavailable.
-
-       On error, -1 is returned, and errno is set appropriately.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
----
- man2/kcmp.2 |  107 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 107 insertions(+), 0 deletions(-)
- create mode 100644 man2/kcmp.2
-
-diff --git a/man2/kcmp.2 b/man2/kcmp.2
-new file mode 100644
-index 0000000..a8615f1
---- /dev/null
-+++ b/man2/kcmp.2
-@@ -0,0 +1,107 @@
-+.TH KCMP 2 2012-02-01 "Linux" "Linux Programmer's Manual"
-+
-+.SH NAME
-+kcmp \- compare if two processes do share a particular kernel resource
-+
-+.SH SYNOPSIS
-+.nf
-+.BR "#define _GNU_SOURCE" "         /* See feature_test_macros(7) */"
-+.B #include <unistd.h>
-+.B #include <linux/kcmp.h>
-+.BR "#include <sys/syscall.h>   "  "/* For SYS_xxx definitions */"
-+
-+.BI "int syscall(__NR_kcmp, pid1, pid2, type, idx1, idx2);"
-+.fi
-+
-+.SH DESCRIPTION
-+
-+.BR kcmp ()
-+allows to find out if two processes identified by
-+.IR pid1
-+and
-+.IR pid2
-+share kernel resources such as virtual memory,
-+file descriptors, file system etc.
-+
-+The comparison
-+.IR type
-+is one of the following
-+
-+.BR KCMP_FILE
-+determines whether a file descriptor
-+.IR idx1
-+in the first process is the same as another descriptor
-+.IR idx2
-+in the second process
-+
-+.BR KCMP_VM
-+compares whether processes share address space
-+
-+.BR KCMP_FILES
-+compares the file descriptor arrays to see whether the processes share all files
-+
-+.BR KCMP_FS
-+compares whether processes share the file system information (the current umask,
-+working directory, namespace root, etc)
-+
-+.BR KCMP_SIGHAND
-+compares whether processes share a signal handlers table
-+
-+.BR KCMP_IO
-+compares whether processes do share I/O context,
-+used mainly for block I/O scheduling
-+
-+.BR KCMP_SYSVSEM
-+compares the list of undo operations associated with SYSV semaphores
-+
-+.SH "RETURN VALUE"
-+.B kcmp
-+was designed to return values suitable for sorting.
-+This is particularly handy when one have to compare
-+a large number of file descriptors.
-+
-+The return value is merely a result of simple arithmetic comparison
-+of kernel pointers (when kernel compares resources, it uses their
-+memory addresses).
-+
-+The easiest way to explain is to consider an example.
-+Lets say
-+.IR v1
-+and
-+.IR v2
-+are the addresses of appropriate resources, then the return value
-+is one of the following
-+
-+.B 0
-+\-
-+.IR v1
-+is equal to
-+.IR v2
-+, in other words we have a shared resource here
-+
-+.B 1
-+\-
-+.IR v1
-+is less than
-+.IR v2
-+
-+.B 2
-+\-
-+.IR v1
-+is greater than
-+.IR v2
-+
-+.B 3
-+\-
-+.IR v1
-+is not equal to
-+.IR v2
-+, but ordering information is unavailable.
-+
-+On error, \-1 is returned, and errno is set appropriately.
-+
-+.SH "CONFORMING TO"
-+.BR kcmp ()
-+is Linux specific and should not be used in programs intended to be portable.
-+.SH "SEE ALSO"
-+.BR clone (2)
--- 
-1.7.7.6
+-- Suleiman
 
