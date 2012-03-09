@@ -1,41 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab2CIXtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 18:49:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36616 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753800Ab2CIXtL (ORCPT
+	id S1755342Ab2CIX6w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 18:58:52 -0500
+Received: from mail-fa0-f74.google.com ([209.85.161.74]:60147 "EHLO
+	mail-fa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753854Ab2CIX6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 18:49:11 -0500
-Date: Fri, 9 Mar 2012 15:49:08 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] thp: add HPAGE_PMD_* definitions for
- !CONFIG_TRANSPARENT_HUGEPAGE
-In-Reply-To: <1330719189-20047-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.DEB.2.00.1203091547550.2419@chino.kir.corp.google.com>
-References: <1330719189-20047-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 9 Mar 2012 18:58:51 -0500
+Subject: [PATCH] sched, x86: fix overflow in cyc2ns_offset
+In-Reply-To: <1331320982.26253.114.camel@work-vm>
+To: johnstultzjohnstul@us.ibm.com
+From: Salman Qazi <sqazi@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 09 Mar 2012 15:58:48 -0800
+Message-ID: <20120309235630.12496.3056.stgit@dungbeetle.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2 Mar 2012, Naoya Horiguchi wrote:
+When a machine boots up, the TSC generally gets reset.  However, when
+kexec is used to boot into a kernel, the TSC value would be carried
+over from the previous kernel.  The computation of cycns_offset in
+set_cyc2ns_scale is prone to an overflow, if the machine has been up
+more than 208 days prior to the kexec.  The overflow happens when
+we multiply *scale, even though there is enough room to store the
+final answer.  We fix this issue by decomposing tsc_now into the
+quotient and remainder of division by CYC2NS_SCALE_FACTOR and then
+performing the multiplication separately on the two components.
 
-> These macros will be used in later patch, where all usage are expected
-> to be optimized away without #ifdef CONFIG_TRANSPARENT_HUGEPAGE.
-> But to detect unexpected usages, we convert existing BUG() to BUILD_BUG().
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Acked-by: Hillf Danton <dhillf@gmail.com>
-> Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Refactor code to share the calculation with the previous
+fix in __cycles_2_ns.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Salman Qazi <sqazi@google.com>
+---
+ arch/x86/include/asm/timer.h |    8 ++------
+ arch/x86/kernel/tsc.c        |    3 ++-
+ include/linux/kernel.h       |   13 +++++++++++++
+ 3 files changed, 17 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
+index 431793e..34baa0e 100644
+--- a/arch/x86/include/asm/timer.h
++++ b/arch/x86/include/asm/timer.h
+@@ -57,14 +57,10 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
+ 
+ static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+ {
+-	unsigned long long quot;
+-	unsigned long long rem;
+ 	int cpu = smp_processor_id();
+ 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
+-	quot = (cyc >> CYC2NS_SCALE_FACTOR);
+-	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
+-	ns += quot * per_cpu(cyc2ns, cpu) +
+-		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
++	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
++			(1UL << CYC2NS_SCALE_FACTOR));
+ 	return ns;
+ }
+ 
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index a62c201..183c592 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -620,7 +620,8 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+ 
+ 	if (cpu_khz) {
+ 		*scale = (NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR)/cpu_khz;
+-		*offset = ns_now - (tsc_now * *scale >> CYC2NS_SCALE_FACTOR);
++		*offset = ns_now - mult_frac(tsc_now, *scale,
++					     (1UL << CYC2NS_SCALE_FACTOR));
+ 	}
+ 
+ 	sched_clock_idle_wakeup_event(0);
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index e834342..d801acb 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -85,6 +85,19 @@
+ }							\
+ )
+ 
++/*
++ * Multiplies an integer by a fraction, while avoiding unnecessary
++ * overflow or loss of precision.
++ */
++#define mult_frac(x, numer, denom)(			\
++{							\
++	typeof(x) quot = (x) / (denom);			\
++	typeof(x) rem  = (x) % (denom);			\
++	(quot * (numer)) + ((rem * (numer)) / (denom));	\
++}							\
++)
++
++
+ #define _RET_IP_		(unsigned long)__builtin_return_address(0)
+ #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
+ 
+
