@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759502Ab2CIAFe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 19:05:34 -0500
-Received: from smtp4.mundo-r.com ([212.51.32.151]:41263 "EHLO
+	id S932250Ab2CIAFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 19:05:31 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:31437 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759156Ab2CIAEW (ORCPT
+	with ESMTP id S1758700Ab2CIAEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Mar 2012 19:04:22 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap4EAN1HWU9bdWOb/2dsb2JhbABDhTWwe4ILAQUjDwEjIxAlAhgOAgI5AxsGARKIDqgakgWBL44RgRYElUWFZYNchleCZA
+X-IronPort-Anti-Spam-Result: Ap4EAN1HWU9bdWOb/2dsb2JhbABDhTWwe4ILAQUjBAsBIyMQJQIYDgICOQMbBgESiA6oGpIFgS+OEYEWBJVFhWWDXIZXgmQ
 X-IronPort-AV: E=Sophos;i="4.73,554,1325458800"; 
-   d="scan'208";a="886086956"
+   d="scan'208";a="886086954"
 From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
 	<vjaquez@igalia.com>
 To: Omar Ramirez Luna <omar.ramirez@ti.com>,
@@ -18,9 +18,9 @@ To: Omar Ramirez Luna <omar.ramirez@ti.com>,
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Felipe Contreras <felipe.contreras@nokia.com>,
         linux-omap@vger.kernel.org
-Subject: [PATCH 10/17] staging: tidspbridge: remove io_init() and io_exit()
-Date: Fri,  9 Mar 2012 01:03:45 +0100
-Message-Id: <059463ad3da393eb5dd45c6069095dfdef1a93b3.1331250369.git.vjaquez@igalia.com>
+Subject: [PATCH 11/17] staging: tidspbridge: remove cmm_init() and cmm_exit()
+Date: Fri,  9 Mar 2012 01:03:46 +0100
+Message-Id: <4bebbc21b35a37555e4883637233c78e5408ba19.1331250369.git.vjaquez@igalia.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <cover.1331250368.git.vjaquez@igalia.com>
 References: <cover.1331250368.git.vjaquez@igalia.com>
@@ -33,8 +33,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The io module has a io_init() and a io_exit() whose only purpose is to
-keep a reference counting which is not used at all.
+The cmm module has a cmm_init() and a cmm_exit() whose only purpose is
+to keep a reference counting which is not used at all.
 
 This patch removes these functions and the reference count variable.
 
@@ -42,134 +42,121 @@ There is no functional changes.
 
 Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
 ---
- drivers/staging/tidspbridge/include/dspbridge/io.h |   29 --------------------
- drivers/staging/tidspbridge/pmgr/dspapi.c          |   10 +-----
- drivers/staging/tidspbridge/pmgr/io.c              |   28 -------------------
- 3 files changed, 2 insertions(+), 65 deletions(-)
+ .../staging/tidspbridge/include/dspbridge/cmm.h    |   30 --------------------
+ drivers/staging/tidspbridge/pmgr/cmm.c             |   29 -------------------
+ drivers/staging/tidspbridge/pmgr/dev.c             |   23 ++------------
+ 3 files changed, 4 insertions(+), 78 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/io.h b/drivers/staging/tidspbridge/include/dspbridge/io.h
-index 500bbd7..7505718 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/io.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/io.h
-@@ -55,7 +55,6 @@ struct io_attrs {
-  *      -EINVAL: Invalid DSP word size (must be > 0).
-  *               Invalid base address for DSP communications.
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cmm.h b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
+index aff2205..c66bcf7 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cmm.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
+@@ -79,7 +79,6 @@ extern void *cmm_calloc_buf(struct cmm_object *hcmm_mgr,
+  *      -EPERM:      Failed to initialize critical sect sync object.
+  *
   *  Requires:
-- *      io_init(void) called.
-  *      io_man != NULL.
-  *      mgr_attrts != NULL.
+- *      cmm_init(void) called.
+  *      ph_cmm_mgr != NULL.
+  *      mgr_attrts->min_block_size >= 4 bytes.
   *  Ensures:
-@@ -74,36 +73,8 @@ extern int io_create(struct io_mgr **io_man,
-  *      0:        Success.
-  *      -EFAULT:    hio_mgr was invalid.
-  *  Requires:
-- *      io_init(void) called.
-  *  Ensures:
-  */
- extern int io_destroy(struct io_mgr *hio_mgr);
+@@ -111,20 +110,6 @@ extern int cmm_create(struct cmm_object **ph_cmm_mgr,
+ extern int cmm_destroy(struct cmm_object *hcmm_mgr, bool force);
  
--/*
-- *  ======== io_exit ========
+ /*
+- *  ======== cmm_exit ========
 - *  Purpose:
-- *      Discontinue usage of the IO module.
+- *     Discontinue usage of module. Cleanup CMM module if CMM cRef reaches zero.
 - *  Parameters:
+- *     n/a
 - *  Returns:
+- *     n/a
 - *  Requires:
-- *      io_init(void) previously called.
+- *     CMM is initialized.
 - *  Ensures:
-- *      Resources, if any acquired in io_init(void), are freed when the last
-- *      client of IO calls io_exit(void).
 - */
--extern void io_exit(void);
+-extern void cmm_exit(void);
 -
 -/*
-- *  ======== io_init ========
+  *  ======== cmm_free_buf ========
+  *  Purpose:
+  *      Free the given buffer.
+@@ -185,19 +170,6 @@ extern int cmm_get_info(struct cmm_object *hcmm_mgr,
+ 			       struct cmm_info *cmm_info_obj);
+ 
+ /*
+- *  ======== cmm_init ========
 - *  Purpose:
-- *      Initialize the IO module's private state.
+- *      Initializes private state of CMM module.
 - *  Parameters:
 - *  Returns:
 - *      TRUE if initialized; FALSE if error occurred.
 - *  Requires:
 - *  Ensures:
-- *      A requirement for each of the other public CHNL functions.
+- *      CMM initialized.
 - */
--extern bool io_init(void);
--
- #endif /* CHNL_ */
-diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
-index 5201bed..b9ca24c 100644
---- a/drivers/staging/tidspbridge/pmgr/dspapi.c
-+++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
-@@ -268,7 +268,6 @@ void api_exit(void)
- 	if (api_c_refs == 0) {
- 		/* Release all modules initialized in api_init(). */
- 		dev_exit();
--		io_exit();
- 		mgr_exit();
- 	}
- }
-@@ -281,24 +280,19 @@ void api_exit(void)
- bool api_init(void)
- {
- 	bool ret = true;
--	bool fdev, fio;
-+	bool fdev;
- 	bool fmgr;
- 
- 	if (api_c_refs == 0) {
- 		/* initialize driver and other modules */
- 		fmgr = mgr_init();
--		fio = io_init();
- 		fdev = dev_init();
--		ret = fdev && fio;
--		ret = ret && fmgr;
-+		ret = fdev && fmgr;
- 		if (!ret) {
- 
- 			if (fmgr)
- 				mgr_exit();
- 
--			if (fio)
--				io_exit();
--
- 			if (fdev)
- 				dev_exit();
- 		}
-diff --git a/drivers/staging/tidspbridge/pmgr/io.c b/drivers/staging/tidspbridge/pmgr/io.c
-index a56b085..4073c9c 100644
---- a/drivers/staging/tidspbridge/pmgr/io.c
-+++ b/drivers/staging/tidspbridge/pmgr/io.c
-@@ -30,9 +30,6 @@
- #include <ioobj.h>
- #include <dspbridge/io.h>
- 
--/*  ----------------------------------- Globals */
--static u32 refs;
--
- /*
-  *  ======== io_create ========
-  *  Purpose:
-@@ -94,28 +91,3 @@ int io_destroy(struct io_mgr *hio_mgr)
- 
- 	return status;
- }
+-extern bool cmm_init(void);
 -
 -/*
-- *  ======== io_exit ========
+  *  ======== cmm_register_gppsm_seg ========
+  *  Purpose:
+  *      Register a block of SM with the CMM.
+@@ -333,7 +305,6 @@ extern int cmm_xlator_free_buf(struct cmm_xlatorobject *xlator,
+  *      0:        Success.
+  *      -EFAULT:    Bad translator handle.
+  *  Requires:
+- *      (refs > 0)
+  *      (paddr != NULL)
+  *      (ul_size > 0)
+  *  Ensures:
+@@ -355,7 +326,6 @@ extern int cmm_xlator_info(struct cmm_xlatorobject *xlator,
+  *  Returns:
+  *     Valid address on success, else NULL.
+  *  Requires:
+- *      refs > 0
+  *      paddr != NULL
+  *      xtype >= CMM_VA2PA) && (xtype <= CMM_DSPPA2PA)
+  *  Ensures:
+diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c b/drivers/staging/tidspbridge/pmgr/cmm.c
+index 3366e60..4a800da 100644
+--- a/drivers/staging/tidspbridge/pmgr/cmm.c
++++ b/drivers/staging/tidspbridge/pmgr/cmm.c
+@@ -131,9 +131,6 @@ struct cmm_mnode {
+ 	u32 client_proc;	/* Process that allocated this mem block */
+ };
+ 
+-/*  ----------------------------------- Globals */
+-static u32 refs;		/* module reference count */
+-
+ /*  ----------------------------------- Function Prototypes */
+ static void add_to_free_list(struct cmm_allocator *allocator,
+ 			     struct cmm_mnode *pnode);
+@@ -317,17 +314,6 @@ int cmm_destroy(struct cmm_object *hcmm_mgr, bool force)
+ }
+ 
+ /*
+- *  ======== cmm_exit ========
 - *  Purpose:
-- *      Discontinue usage of the IO module.
+- *      Discontinue usage of module; free resources when reference count
+- *      reaches 0.
 - */
--void io_exit(void)
+-void cmm_exit(void)
 -{
 -	refs--;
 -}
 -
 -/*
-- *  ======== io_init ========
+  *  ======== cmm_free_buf ========
+  *  Purpose:
+  *      Free the given buffer.
+@@ -446,21 +432,6 @@ int cmm_get_info(struct cmm_object *hcmm_mgr,
+ }
+ 
+ /*
+- *  ======== cmm_init ========
 - *  Purpose:
-- *      Initialize the IO module's private state.
+- *      Initializes private state of CMM module.
 - */
--bool io_init(void)
+-bool cmm_init(void)
 -{
 -	bool ret = true;
 -
@@ -178,6 +165,54 @@ index a56b085..4073c9c 100644
 -
 -	return ret;
 -}
+-
+-/*
+  *  ======== cmm_register_gppsm_seg ========
+  *  Purpose:
+  *      Register a block of SM with the CMM to be used for later GPP SM
+diff --git a/drivers/staging/tidspbridge/pmgr/dev.c b/drivers/staging/tidspbridge/pmgr/dev.c
+index 883765e..734d47e 100644
+--- a/drivers/staging/tidspbridge/pmgr/dev.c
++++ b/drivers/staging/tidspbridge/pmgr/dev.c
+@@ -658,10 +658,8 @@ void dev_exit(void)
+ {
+ 	refs--;
+ 
+-	if (refs == 0) {
+-		cmm_exit();
++	if (refs == 0)
+ 		dmm_exit();
+-	}
+ }
+ 
+ /*
+@@ -671,23 +669,10 @@ void dev_exit(void)
+  */
+ bool dev_init(void)
+ {
+-	bool cmm_ret, dmm_ret, ret = true;
+-
+-	if (refs == 0) {
+-		cmm_ret = cmm_init();
+-		dmm_ret = dmm_init();
+-
+-		ret = cmm_ret && dmm_ret;
+-
+-		if (!ret) {
+-			if (cmm_ret)
+-				cmm_exit();
++	bool ret = true;
+ 
+-			if (dmm_ret)
+-				dmm_exit();
+-
+-		}
+-	}
++	if (refs == 0)
++		dmm_init();
+ 
+ 	if (ret)
+ 		refs++;
 -- 
 1.7.9.1
 
