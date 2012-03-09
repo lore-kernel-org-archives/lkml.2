@@ -1,164 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab2CISpz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 13:45:55 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56105 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab2CISpy (ORCPT
+	id S1754794Ab2CISr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 13:47:59 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42393 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab2CISr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 13:45:54 -0500
-Message-ID: <4F5A4FDE.1030305@gmail.com>
-Date: Fri, 09 Mar 2012 10:45:50 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Fri, 9 Mar 2012 13:47:57 -0500
+Date: Fri, 9 Mar 2012 19:47:33 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Add a per-dimm structure
+Message-ID: <20120309184733.GB13745@aftab>
+References: <1331120438-27523-1-git-send-email-mchehab@redhat.com>
+ <20120308215716.GA5925@aftab>
+ <4F59DC38.5080104@redhat.com>
+ <20120309143806.GA11962@aftab>
+ <4F5A329A.70702@redhat.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: David Daney <david.s.daney@gmail.com>, Rob Herring <robherring2@gmail.com>,
-        David Daney <ddaney.cavm@gmail.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 4/5] MIPS: Octeon: Setup irq_domains for interrupts.
-References: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com> <1330563422-14078-5-git-send-email-ddaney.cavm@gmail.com> <4F50D7C2.7080204@gmail.com> <4F510B8E.3070201@cavium.com> <20120302190744.571E03E1C63@localhost> <4F511FB0.5070901@cavium.com> <4F527285.1020500@gmail.com> <4F52F90C.5060306@gmail.com> <20120309055704.465823E0901@localhost>
-In-Reply-To: <20120309055704.465823E0901@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F5A329A.70702@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2012 09:57 PM, Grant Likely wrote:
-> On Sat, 03 Mar 2012 21:09:32 -0800, David Daney<david.s.daney@gmail.com>  wrote:
->> On 03/03/2012 11:35 AM, Rob Herring wrote:
->>> On 03/02/2012 01:29 PM, David Daney wrote:
->>>> On 03/02/2012 11:07 AM, Grant Likely wrote:
->>>>> +static void __init octeon_irq_set_ciu_mapping(unsigned int irq,
->>>>> +                          unsigned int line,
->>>>> +                          unsigned int bit,
->>>>> +                          struct irq_domain *domain,
->>>>>                                struct irq_chip *chip,
->>>>>                                irq_flow_handler_t handler)
->>>>>      {
->>>>> +    struct irq_data *irqd;
->>>>>          union octeon_ciu_chip_data cd;
->>>>>
->>>>>          irq_set_chip_and_handler(irq, chip, handler);
->>>>> -
->>>>>          cd.l = 0;
->>>>>          cd.s.line = line;
->>>>>          cd.s.bit = bit;
->>>>>
->>>>>          irq_set_chip_data(irq, cd.p);
->>>>>          octeon_irq_ciu_to_irq[line][bit] = irq;
->>>>> +
->>>>> +    irqd = irq_get_irq_data(irq);
->>>>> +    irqd->hwirq = line<<     6 | bit;
->>>>> +    irqd->domain = domain;
->>>>>>> I think the domain code will set these.
->>>>>> It is my understanding that the domain code only does this for:
->>>>>>
->>>>>> o irq_domain_add_legacy()
->>>>>>
->>>>>> o irq_create_direct_mapping()
->>>>>>
->>>>>> o irq_create_mapping()
->>>>>>
->>>>>> We use none of those.  So I do it here.
->>>>>>
->>>>>> If there is a better way, I am open to suggestions.
->>>>> irq_create_mapping is called by irq_create_of_mapping() which is
->>>>> in turn called by irq_of_parse_and-map().  irq_domain always
->>>>> manages the hwirq and domain values.  Driver code cannot manipulate
->>>>> them manually.
->>>>>
->>>> I really must be missing something.
->>>>
->>>> Given:
->>>>
->>>> 1) I must have a mapping between hwirq and irq that I control so that
->>>> non-OF code using the OCTEON_IRQ_* constants continues to work.
->>> Those defines are what you need to work to get rid of.
->>
->> We are not starting from a blank slate here.  There is a lot of in-tree
->> code using these symbols.  We cannot make them disappear with wishful
->> thinking.
->>
->> The first step is a switch to irq_domains using the existing mappings.
->>
->> After we do that, I have patches to transition some drivers to use the
->> OF mapping via irq_domains.  After those are merged, we can work toward
->> getting rid of OCTEON_IRQ_*.  But I think it must be the last step in
->> the process, not the first.
->>>
->>>> 2) irq_create_mapping() will allocate a random irq value if none is
->>>> already assigned to the hwirq.
->>>>
->>>> Therefore: To avoid having random irq values assigned, I must manually
->>>> assign them.
->>>>
->>> So you should be using legacy domain if you need to maintain fixed hwirq
->>> to linux irq numbers. "linear" is a bit confusing as it doesn't mean
->>> linear 1:1 irq number assignment, but linear search.
->>
->> My reading of Grant's code in linux-next directly contradicts this
->> statement.  There is no code in irqdomain.c, that I can see, that allows
->> me to have an arbitrary mapping of irq<-->  hwirq values.
+On Fri, Mar 09, 2012 at 01:40:58PM -0300, Mauro Carvalho Chehab wrote:
+> Your logs show:
+> 
+> [   12.058897] EDAC MC: DCT0 chip selects:
+> [   12.063091] EDAC amd64: MC: 0:  2048MB 1:  2048MB
+> [   12.068155] EDAC amd64: MC: 2:  2048MB 3:  2048MB
+> [   12.073219] EDAC amd64: MC: 4:     0MB 5:     0MB
+> [   12.078281] EDAC amd64: MC: 6:     0MB 7:     0MB
+> [   12.093305] EDAC MC: DCT1 chip selects:
+> [   12.097499] EDAC amd64: MC: 0:  2048MB 1:  2048MB
+> [   12.102562] EDAC amd64: MC: 2:  2048MB 3:  2048MB
+> [   12.107623] EDAC amd64: MC: 4:     0MB 5:     0MB
+> [   12.112690] EDAC amd64: MC: 6:     0MB 7:     0MB
+> 
+> This memory controller has 16 ranks (8 filled/8 empty). The above
+> debug info is at edac_mc_alloc(). The EDAC core doesn't know yet how 
+> many of those were filled or not, as the driver didn't fill the rank
+> size yet.
+
+Yeah, yeah, 16 ranks total, but 8 used. So we're on the same page.
+
+[..]
+
+> > which splits the ch0 and ch1 of the csrow? dir above into ranks. All
+> > fine and dandy but that doesn't change the whole situation - we simply
+> > talk about ranks and not chip select rows anymore. Oh well...
+> 
+> Yes, it won't bring anything new there for rank-based hierarchy.
+> The only benefit in this case is that newer userspace programs/versions
+> would use the same struct as the one shown with DIMMs:
+> 
+> dimm0
+> ├── dimm_dev_type
+> ├── dimm_edac_mode
+> ├── dimm_label
+> ├── dimm_location
+> ├── dimm_mem_type
+> └── dimm_size
+> dimm4
+> ├── dimm_dev_type
+> ├── dimm_edac_mode
+> ├── dimm_label
+> ├── dimm_location
+> ├── dimm_mem_type
+> └── dimm_size
+> dimm8
+> ├── dimm_dev_type
+> ├── dimm_edac_mode
+> ├── dimm_label
+> ├── dimm_location
+> ├── dimm_mem_type
+> └── dimm_size
+
+Just to make sure I understand you correctly: are you saying the
+topnodes dimm{0,4,8} are called ranks on the CS-based hw? If so, yes, I
+agree.
+
+> 
+> 
+> > Also, the following hierarchy looks ugly:
+> > 
+> >  ce_csrow0
+> >  ce_csrow0_channel0
+> >  ce_csrow0_channel1
+> >  ce_csrow1
+> >  ce_csrow1_channel0
+> >  ce_csrow1_channel1
+> >  ce_csrow2
+> >  ce_csrow2_channel0
+> >  ce_csrow2_channel1
+> >  ce_csrow3
+> >  ce_csrow3_channel0
+> >  ce_csrow3_channel1
+> 
+> The actual error count node names depend on how the hierarchy is 
+> organized. This is how it looks like at the i5000 machine:
+> 
+> mc0
+> ├── ce_branch0
+> ├── ce_branch0_channel0
+> ├── ce_branch0_channel0_slot0
+> ├── ce_branch0_channel1
+> ├── ce_branch0_channel1_slot0
+
+Yes, but this names have subdirectories written all over them, don't you
+see that in redundant substrings in every filename?
+
+IOW, it is much nicer to have:
+
+mc0
+|-> CE
+    |-> branch0
+        |-> ch0
+	    |-> slot0
+	    |-> slot1
+	    |-> ...
+	|-> ch1
+	    |-> slot0
+	    |-> slot1
+	    ...
+    |-> branch1
+    ...
+|-> UE
+...
+
+
+On CS-based controllers we simply skip "branch".
+
+[..]
+
+> > Much better would it be if you put the ch0 and ch1 CE error count into
+> > the csrow?/ directory, i.e. something like:
+> > 
+> > csrow?/ce/ch{0,1}
+> > csrow?/ue/ch{0,1}
+> 
+> There is a strong technical reason for not doing it. Now, the rank or
+> dimm information is not stored anymore at the legacy structures.
+> The "csrow?" sysfs nodes are created from the struct csrow_info,
+> while the rank/dimm nodes, are created from struct dimm_info.
+> 
+> A csrow? node only makes sense if the hierarchy is csrow/channel.
+> As the code should work with all kinds of hierarchy, it would require
+> two different implementations, one for each case.
+> 
+> It would also mix the old representation with the new one, creating
+> a complex code for the csrow-based sysfs nodes. After having
+> the new way adopted from some kernel versions, we may think on remove
+> the old nodes,
+
+yeah, we already talked about this - we need to know that no userspace
+uses them before we do that.
+
+> as removing the csrow/ch hierarchy means to simplify
+> the EDAC code by removing the compatibility logic and data. 
+> 
+> So, keeping it on a separate hierarchy helps to have a sane implementation.
+
+Ok.
+
+> From userspace POV, creating a node tree may make it  harder to parse, as 
+> there would be, currently, at least 3 different ways for them with the 
+> current hierarchies:
+> 	csrow?/channel?/ce?
+> 	branch?/channel?/slot?/ce?
+> 	channel?/slot?/ce?
+> 
+> (and more could be added, as new memory technologies/arrangements
+> may be created).
+> 
+> I considered two other alternatives, before adopting this one on my patches:
+> 
+> 1) remove the layer name from the name. So, the nodes could be called instead:
+> 
+> 	ce_count_0:0:0
+> 	ce_count_0:0:1
+> 	ce_count_0:0
+> 	ce_count_0
+> 	ce_count_0:1:0
+> 	ce_count_0:1:1
+> 	ce_count_0:1
+> 	ce_count_1
+> 	...
+> 
+> It shouldn't be hard to change the code to use this way, but it is a little
+> more confusing for users to understand.
+> 
+> 2) Put all error counters into a single sub-directory, like:
+> 	error_counters
+> 	├── ce_branch0
+> 	├── ce_branch0_channel0
+> 	├── ce_branch0_channel0_slot0
+> 	├── ce_branch0_channel1
+> 	├── ce_branch0_channel1_slot0	
+> 	├── ce_branch1
+> 	├── ce_branch1_channel0
+> 	├── ce_branch1_channel0_slot0
+> 	├── ce_branch1_channel1
+> 	├── ce_branch1_channel1_slot0
+> 	├── ce_count
+> 	├── ce_noinfo_count
+> 	├── ue_branch0
+> 	├── ue_branch0_channel0
+> 	├── ue_branch0_channel0_slot0
+> 	├── ue_branch0_channel1
+> 	├── ue_branch0_channel1_slot0
+> 	├── ue_branch1
+> 	├── ue_branch1_channel0
+> 	├── ue_branch1_channel0_slot0
+> 	├── ue_branch1_channel1
+> 	├── ue_branch1_channel1_slot0
+> 	├── ue_count
+> 	└── ue_noinfo_count
+> 
+> In the last case, the EDAC core would need to keep the 4
+> "general" error counters also under the mc? level (ce_count & friends).
 >
-> There are 4 kinds of mappings available; legacy, linear, radix and nomap.
->
+> > 
+> > so that all is clear just from looking at the directory structure. Or
+> > put it into the rank?/ hierarchy and have all per-rank info in one
+> > concentrated, self-describing location.
+> 
+> Not sure if I understood what you're meaning here. Could you give an
+> example about what kind of tree are you imagining in this case?
 
-Yes, I had discovered that.
+Right, what I mean is that the rank?/ already contains some info:
 
-> Ignore nomap and radix; you don't want them.
->
-> legacy maps a contiguous range of hwirq numbers to a contiguous range of
-> linux irq numbers.  To preserve the exising #define mappings but still add
-> DT support, this is the one that you want.
+rank0/
+|-- dimm_dev_type
+|-- dimm_edac_mode
+|-- dimm_label
+|-- dimm_location
+|-- dimm_mem_type
+`-- dimm_size
 
-This is precisely the point that you and Rob seem to have missed in the 
-last three or four back-and-forths about this.
+Now, we do the CE/UE error counting on a per-rank granularity anyway, so
+the most natural way to have that is to add those counts to the ranks:
 
-Probably I have not explained well enough why legacy will not work.
+rank0/
+|-- dimm_dev_type
+|-- dimm_edac_mode
+|-- dimm_label
+|-- dimm_location
+|-- dimm_mem_type
+|-- CE
+|-- UE
+`-- dimm_size
 
-We have three different interrupt controllers (although only one is 
-currently in-tree).  hwirq to irq mapping for them is more or less as 
-follows:
+And this has to be _very_ easy to do without any adding additional
+sysfs nodes with ugly names to /sys/devices/system/edac etc. This is
+even better grouping than the mc?/-based hierarchy I suggested above,
+actually.
 
-irq                 hwirqCIU        hwirqCIU2      hwirqCIU3
-----------------------------------------------------------------------
-OCTEON_IRQ_USB0     56               81             934562
-OCTEON_IRQ_TWSI     45              224             100543
-OCTEON_IRQ_UART0    34              228               4572
-.
-.
-.
+Hmm...
 
-Now what we notice here is that there is no possible 1:1 linearly 
-increasing mapping possible for the irq and *all* three hwirq sets.  We 
-want a single binary that contains support for all three interrupt 
-controllers, so the OCTEON_IRQ_* values have to be the same for all 
-three interrupt controllers.  Because of this, legacy mapping is 
-*impossible*.
+-- 
+Regards/Gruss,
+Boris.
 
-Since the possible ranges of the hwirq values is very large and quite 
-sparse, probably the radix mapping will be required.
-
-Also to support non-OF drivers and architecture specific code for the 
-near future, I really think the existing IRQ values *must* be preserved.
-
-Therefore, as I said above, we need a way for my SOC/board code to 
-specify the mapping.
-
-Perhaps we need to add an optional function to struct irq_domain_ops 
-that would allow the default mapping to be overridden on a per 
-irq_domain basis.
-
-Otherwise, I think I will have to keep poking into the internal 
-irq_domain data structures to get the mappings I want.
-
-What do you think?
-
-David Daney
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
