@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758665Ab2CISxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 13:53:53 -0500
-Received: from mail-ww0-f74.google.com ([74.125.82.74]:57692 "EHLO
-	mail-ww0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab2CISxv (ORCPT
+	id S1758718Ab2CISyF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 13:54:05 -0500
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:48586 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932301Ab2CISyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 13:53:51 -0500
+	Fri, 9 Mar 2012 13:54:01 -0500
 From: Daniel Kurtz <djkurtz@chromium.org>
 To: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
         Daniel Vetter <daniel@ffwll.ch>, dri-devel@lists.freedesktop.org,
@@ -14,97 +14,62 @@ To: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
 Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Sameer Nanda <snanda@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 02/10 v2] drm/i915/intel_i2c: assign HDMI port D to pin pair 6
-Date: Sat, 10 Mar 2012 02:48:16 +0800
-Message-Id: <1331318904-20577-3-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 00/10 v2] fix gmbus writes and related issues
+Date: Sat, 10 Mar 2012 02:48:14 +0800
+Message-Id: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
-References: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to i915 documentation [1], "Port D" (DP/HDMI Port D) is
-actually gmbus pin pair 6 (gmbus0.2:0 == 110b GPIOF), not 7 (111b).
-Pin pair 7 is a reserved pair.
+This patchset addresses a couple of issues with the i915 gmbus implementation:
+ * fixes misassigned pin port pair for HDMI-D
+ * fixes write transactions when they are the only transaction requested
+   (including large >4-byte writes) by terminating every transaction with a
+   WAIT cycle.
+ * returns -ENXIO and -ETIMEDOUT as appropriate so upper layers can handled
+   i2c transaction failures
+ * optimizes the typical read transaction case by using the INDEX cycle
+ * turns on the GMBUS interrupt whenever possible to dramatically improve
+   throughput by eliminating the very slow polling loop.
 
-[1] Documentation for [DevSNB+] and [DevIBX], as found on
-http://intellinuxgraphics.org
+The patchset should apply cleanly onto linus/master.
+It is inspired by, but completely supercedes, a similar patch submitted
+recently by Benson Leung (bleung@chromium.org).
+I'd be happy to rebase on a different tree if necessary.
 
-Note: the "reserved" and "disabled" pairs do not actually map to a
-physical pair of pins, nor GPIO regs and shouldn't be initialized or used.
-Fixing this is left for a later patch.
+v2 of the patchset address review comments from Chris Wilson (thanks for the
+review, Chris!), and adds the interrupt patch.  There weren't any review
+comments for patches 5, 7, or 8 of the first set.  Hopefully they will get
+more love the second time around :).
 
-This bug has not been noticed for two reasons:
- 1) "gmbus" mode is currently disabled - all transfers are actually using
-    "bit-bang" mode which uses the GPIO port 5 (the "HDMI/DPD CTLDATA/CLK"
-    pair), at register 0x5024 (defined as GPIOF i915_reg.h).
-    Since this is the correct pair of pins for HDMI1, transfers succeed.
 
- 2) Even if gmbus mode is re-enabled, the first attempted transaction
-    will fail because it tries to use the wrong ("Reserved") pin pair.
-    However, the driver immediately falls back again to the bit-bang
-    method, which correctly uses GPIOF, so again, transfers succeed.
+Daniel Kurtz (10):
+  drm/i915/intel_i2c: cleanup
+  drm/i915/intel_i2c: assign HDMI port D to pin pair 6
+  drm/i915/intel_i2c: refactor using intel_gmbus_get_adapter
+  drm/i915/intel_i2c: cleanup gmbus/gpio pin assignments
+  drm/i915/intel_i2c: add locking around i2c algorithm accesses
+  drm/i915/intel_i2c: return -ENXIO for device NAK
+  drm/i915/intel_i2c: use WAIT cycle, not STOP
+  drm/i915/intel_i2c: use INDEX cycles for i2c read transactions
+  drm/i915/intel_i2c: reuse GMBUS2 value read in polling loop
+  drm/i915/intel_i2c: enable gmbus interrupts
 
-However, if gmbus mode is re-enabled and the GPIO fall-back mode is
-disabled, then reading an attached monitor's EDID fail.
+ drivers/gpu/drm/i915/i915_drv.h    |    7 +-
+ drivers/gpu/drm/i915/i915_irq.c    |   22 +++-
+ drivers/gpu/drm/i915/i915_reg.h    |    6 +-
+ drivers/gpu/drm/i915/intel_bios.c  |   11 +-
+ drivers/gpu/drm/i915/intel_crt.c   |   13 +-
+ drivers/gpu/drm/i915/intel_drv.h   |    9 ++-
+ drivers/gpu/drm/i915/intel_dvo.c   |    4 +-
+ drivers/gpu/drm/i915/intel_hdmi.c  |   29 ++---
+ drivers/gpu/drm/i915/intel_i2c.c   |  236 ++++++++++++++++++++++++++++--------
+ drivers/gpu/drm/i915/intel_lvds.c  |    3 +-
+ drivers/gpu/drm/i915/intel_modes.c |    6 +-
+ drivers/gpu/drm/i915/intel_sdvo.c  |   10 +-
+ 12 files changed, 257 insertions(+), 99 deletions(-)
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/gpu/drm/i915/i915_reg.h  |    6 +++---
- drivers/gpu/drm/i915/intel_i2c.c |    6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 03c53fc..56af0df 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -697,9 +697,9 @@
- #define   GMBUS_PORT_PANEL	3
- #define   GMBUS_PORT_DPC	4 /* HDMIC */
- #define   GMBUS_PORT_DPB	5 /* SDVO, HDMIB */
--				  /* 6 reserved */
--#define   GMBUS_PORT_DPD	7 /* HDMID */
--#define   GMBUS_NUM_PORTS       8
-+#define   GMBUS_PORT_DPD	6 /* HDMID */
-+#define   GMBUS_PORT_RESERVED	7 /* 7 reserved */
-+#define   GMBUS_NUM_PORTS	8
- #define GMBUS1			0x5104 /* command/status */
- #define   GMBUS_SW_CLR_INT	(1<<31)
- #define   GMBUS_SW_RDY		(1<<30)
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index 5e413c4..1135e3e 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -157,8 +157,8 @@ intel_gpio_create(struct drm_i915_private *dev_priv, u32 pin)
- 		GPIOC,
- 		GPIOD,
- 		GPIOE,
--		0,
- 		GPIOF,
-+		0,
- 	};
- 	struct intel_gpio *gpio;
- 
-@@ -175,7 +175,7 @@ intel_gpio_create(struct drm_i915_private *dev_priv, u32 pin)
- 	gpio->dev_priv = dev_priv;
- 
- 	snprintf(gpio->adapter.name, sizeof(gpio->adapter.name),
--		 "i915 GPIO%c", "?BACDE?F"[pin]);
-+		 "i915 GPIO%c", "?BACDEF?"[pin]);
- 	gpio->adapter.owner = THIS_MODULE;
- 	gpio->adapter.algo_data	= &gpio->algo;
- 	gpio->adapter.dev.parent = &dev_priv->dev->pdev->dev;
-@@ -376,8 +376,8 @@ int intel_setup_gmbus(struct drm_device *dev)
- 		"panel",
- 		"dpc",
- 		"dpb",
--		"reserved",
- 		"dpd",
-+		"reserved",
- 	};
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	int ret, i;
 -- 
 1.7.7.3
 
