@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030339Ab2CITpy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:45:54 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:58544 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030315Ab2CITpv (ORCPT
+	id S1030364Ab2CITqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:46:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030315Ab2CITp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:45:51 -0500
-Message-Id: <20120309190202.917849949@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:45:56 -0500
+Message-Id: <20120309190203.156829907@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:09 -0800
+Date: Fri, 09 Mar 2012 11:02:12 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>
-Subject: [ 07/95] ARM: LPC32xx: serial.c: Fixed loop limit
+Subject: [ 10/95] ARM: LPC32xx: Fix irq on GPI_28
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,27 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Roland Stigge <stigge@antcom.de>
 
-commit ff424aa4c89d19082e8ae5a3351006bc8a4cd91b upstream.
+commit f6737055c1c432a9628a9a731f9881ad8e0a9eee upstream.
 
-This patch fixes a wrong loop limit on UART init.
+The GPI_28 IRQ was not registered properly. The registration of
+IRQ_LPC32XX_GPI_28 was added and the (wrong) IRQ_LPC32XX_GPI_11 at
+LPC32XX_SIC1_IRQ(4) was replaced by IRQ_LPC32XX_GPI_28 (see manual of
+LPC32xx / interrupt controller).
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-lpc32xx/serial.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-lpc32xx/include/mach/irqs.h |    2 +-
+ arch/arm/mach-lpc32xx/irq.c               |    4 ++++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-lpc32xx/serial.c
-+++ b/arch/arm/mach-lpc32xx/serial.c
-@@ -187,7 +187,7 @@ void __init lpc32xx_serial_init(void)
- 
- 	/* This needs to be done after all UART clocks are setup */
- 	__raw_writel(clkmodes, LPC32XX_UARTCTL_CLKMODE);
--	for (i = 0; i < ARRAY_SIZE(uartinit_data) - 1; i++) {
-+	for (i = 0; i < ARRAY_SIZE(uartinit_data); i++) {
- 		/* Force a flush of the RX FIFOs to work around a HW bug */
- 		puart = serial_std_platform_data[i].mapbase;
- 		__raw_writel(0xC1, LPC32XX_UART_IIR_FCR(puart));
+--- a/arch/arm/mach-lpc32xx/include/mach/irqs.h
++++ b/arch/arm/mach-lpc32xx/include/mach/irqs.h
+@@ -61,7 +61,7 @@
+  */
+ #define IRQ_LPC32XX_JTAG_COMM_TX	LPC32XX_SIC1_IRQ(1)
+ #define IRQ_LPC32XX_JTAG_COMM_RX	LPC32XX_SIC1_IRQ(2)
+-#define IRQ_LPC32XX_GPI_11		LPC32XX_SIC1_IRQ(4)
++#define IRQ_LPC32XX_GPI_28		LPC32XX_SIC1_IRQ(4)
+ #define IRQ_LPC32XX_TS_P		LPC32XX_SIC1_IRQ(6)
+ #define IRQ_LPC32XX_TS_IRQ		LPC32XX_SIC1_IRQ(7)
+ #define IRQ_LPC32XX_TS_AUX		LPC32XX_SIC1_IRQ(8)
+--- a/arch/arm/mach-lpc32xx/irq.c
++++ b/arch/arm/mach-lpc32xx/irq.c
+@@ -118,6 +118,10 @@ static const struct lpc32xx_event_info l
+ 		.event_group = &lpc32xx_event_pin_regs,
+ 		.mask = LPC32XX_CLKPWR_EXTSRC_GPI_06_BIT,
+ 	},
++	[IRQ_LPC32XX_GPI_28] = {
++		.event_group = &lpc32xx_event_pin_regs,
++		.mask = LPC32XX_CLKPWR_EXTSRC_GPI_28_BIT,
++	},
+ 	[IRQ_LPC32XX_GPIO_00] = {
+ 		.event_group = &lpc32xx_event_int_regs,
+ 		.mask = LPC32XX_CLKPWR_INTSRC_GPIO_00_BIT,
 
 
