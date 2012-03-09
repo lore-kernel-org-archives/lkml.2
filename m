@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030508Ab2CITqq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:46:46 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51812 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030490Ab2CITqm (ORCPT
+	id S1030433Ab2CITrY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:47:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030544Ab2CITrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:46:42 -0500
-Message-Id: <20120309190204.196160159@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:47:16 -0500
+Message-Id: <20120309190205.000511575@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:25 -0800
+Date: Fri, 09 Mar 2012 11:02:35 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 23/95] genirq: Clear action->thread_mask if IRQ_ONESHOT is not set
+        alan@lxorguk.ukuu.org.uk, Pavel Roskin <proski@gnu.org>,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 33/95] mac80211: zero initialize count field in ieee80211_tx_rate
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,94 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
 
-commit 52abb700e16a9aa4cbc03f3d7f80206cbbc80680 upstream.
+commit 8617b093d0031837a7be9b32bc674580cfb5f6b5 upstream.
 
-Xommit ac5637611(genirq: Unmask oneshot irqs when thread was not woken)
-fails to unmask when a !IRQ_ONESHOT threaded handler is handled by
-handle_level_irq.
+rate control algorithms concludes the rate as invalid
+with rate[i].idx < -1 , while they do also check for rate[i].count is
+non-zero. it would be safer to zero initialize the 'count' field.
+recently we had a ath9k rate control crash where the ath9k rate control
+in ath_tx_status assumed to check only for rate[i].count being non-zero
+in one instance and ended up in using invalid rate index for
+'connection monitoring NULL func frames' which eventually lead to the crash.
+thanks to Pavel Roskin for fixing it and finding the root cause.
+https://bugzilla.redhat.com/show_bug.cgi?id=768639
 
-This happens because thread_mask is or'ed unconditionally in
-irq_wake_thread(), but for !IRQ_ONESHOT interrupts never cleared.  So
-the check for !desc->thread_active fails and keeps the interrupt
-disabled.
-
-Keep the thread_mask zero for !IRQ_ONESHOT interrupts.
-
-Document the thread_mask magic while at it.
-
-Reported-and-tested-by: Sven Joachim <svenjoac@gmx.de>
-Reported-and-tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Pavel Roskin <proski@gnu.org>
+Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/manage.c |   44 ++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 38 insertions(+), 6 deletions(-)
+ net/mac80211/rate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -985,6 +985,11 @@ __setup_irq(unsigned int irq, struct irq
- 
- 		/* add new interrupt at end of irq queue */
- 		do {
-+			/*
-+			 * Or all existing action->thread_mask bits,
-+			 * so we can find the next zero bit for this
-+			 * new action.
-+			 */
- 			thread_mask |= old->thread_mask;
- 			old_ptr = &old->next;
- 			old = *old_ptr;
-@@ -993,14 +998,41 @@ __setup_irq(unsigned int irq, struct irq
+--- a/net/mac80211/rate.c
++++ b/net/mac80211/rate.c
+@@ -344,7 +344,7 @@ void rate_control_get_rate(struct ieee80
+ 	for (i = 0; i < IEEE80211_TX_MAX_RATES; i++) {
+ 		info->control.rates[i].idx = -1;
+ 		info->control.rates[i].flags = 0;
+-		info->control.rates[i].count = 1;
++		info->control.rates[i].count = 0;
  	}
  
- 	/*
--	 * Setup the thread mask for this irqaction. Unlikely to have
--	 * 32 resp 64 irqs sharing one line, but who knows.
-+	 * Setup the thread mask for this irqaction for ONESHOT. For
-+	 * !ONESHOT irqs the thread mask is 0 so we can avoid a
-+	 * conditional in irq_wake_thread().
- 	 */
--	if (new->flags & IRQF_ONESHOT && thread_mask == ~0UL) {
--		ret = -EBUSY;
--		goto out_mask;
-+	if (new->flags & IRQF_ONESHOT) {
-+		/*
-+		 * Unlikely to have 32 resp 64 irqs sharing one line,
-+		 * but who knows.
-+		 */
-+		if (thread_mask == ~0UL) {
-+			ret = -EBUSY;
-+			goto out_mask;
-+		}
-+		/*
-+		 * The thread_mask for the action is or'ed to
-+		 * desc->thread_active to indicate that the
-+		 * IRQF_ONESHOT thread handler has been woken, but not
-+		 * yet finished. The bit is cleared when a thread
-+		 * completes. When all threads of a shared interrupt
-+		 * line have completed desc->threads_active becomes
-+		 * zero and the interrupt line is unmasked. See
-+		 * handle.c:irq_wake_thread() for further information.
-+		 *
-+		 * If no thread is woken by primary (hard irq context)
-+		 * interrupt handlers, then desc->threads_active is
-+		 * also checked for zero to unmask the irq line in the
-+		 * affected hard irq flow handlers
-+		 * (handle_[fasteoi|level]_irq).
-+		 *
-+		 * The new action gets the first zero bit of
-+		 * thread_mask assigned. See the loop above which or's
-+		 * all existing action->thread_mask bits.
-+		 */
-+		new->thread_mask = 1 << ffz(thread_mask);
- 	}
--	new->thread_mask = 1 << ffz(thread_mask);
- 
- 	if (!shared) {
- 		init_waitqueue_head(&desc->wait_for_threads);
+ 	if (sdata->local->hw.flags & IEEE80211_HW_HAS_RATE_CONTROL)
 
 
