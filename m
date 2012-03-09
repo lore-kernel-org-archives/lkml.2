@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759343Ab2CIBUN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 20:20:13 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:7866 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887Ab2CIBUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 20:20:11 -0500
-X-IronPort-AV: E=Sophos;i="4.73,555,1325433600"; 
-   d="scan'208";a="4493568"
-Message-ID: <4F595B31.9090301@cn.fujitsu.com>
-Date: Fri, 09 Mar 2012 09:21:53 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F58943E.1050402@redhat.com>
-In-Reply-To: <4F58943E.1050402@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-09 09:18:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-09 09:18:13,
-	Serialize complete at 2012-03-09 09:18:13
+	id S1759470Ab2CIBUc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 20:20:32 -0500
+Received: from mga09.intel.com ([134.134.136.24]:54169 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759422Ab2CIBUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 20:20:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="119253543"
+Subject: Re: [RFC patch] spindep: add cross cache lines checking
+From: Alex Shi <alex.shi@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arnd Bergmann <arnd@arndb.de>, gcc@gcc.gnu.org, tglx@linutronix.de,
+        "mingo@redhat.com" <mingo@redhat.com>, hpa@zytor.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        x86@kernel.org, andi.kleen@intel.com, gcc-help@gcc.gnu.org
+In-Reply-To: <20120308071314.GA20784@elte.hu>
+References: <1330917630.18835.44.camel@debian>
+	 <201203060932.45223.arnd@arndb.de> <1331108607.18835.343.camel@debian>
+	 <201203071154.36059.arnd@arndb.de> <4F575F09.3010107@intel.com>
+	 <20120307133937.GB12676@elte.hu> <1331173262.18835.347.camel@debian>
+	 <20120308071314.GA20784@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Mar 2012 09:20:50 +0800
+Message-ID: <1331256050.31442.9.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03/08/2012 07:13 PM, Avi Kivity Wrote:
-> On 03/08/2012 09:57 AM, Wen Congyang wrote:
->> We can know the guest is paniced when the guest runs on xen.
->> But we do not have such feature on kvm.
->>
->> Another purpose of this feature is: management app(for example:
->> libvirt) can do auto dump when the guest is crashed. If management
->> app does not do auto dump, the guest's user can do dump by hand if
->> he sees the guest is paniced.
->>
->> I touch the hypervisor instead of using virtio-serial, because
->> 1. it is simple
->> 2. the virtio-serial is an optional device, and the guest may
->>    not have such device.
->>
->> Changes from v2 to v3:
->> 1. correct spelling
->>
->> Changes from v1 to v2:
->> 1. split up host and guest-side changes
->> 2. introduce new request flag to avoid changing return values.
+On Thu, 2012-03-08 at 08:13 +0100, Ingo Molnar wrote:
+> * Alex Shi <alex.shi@intel.com> wrote:
 > 
-> I see no Documentation/ changes.
+> > On Wed, 2012-03-07 at 14:39 +0100, Ingo Molnar wrote:
+> > > * Alex Shi <alex.shi@intel.com> wrote:
+> > > 
+> > > > > I think the check should be (__alignof__(lock) < 
+> > > > > __alignof__(rwlock_t)), otherwise it will still pass when 
+> > > > > you have structure with attribute((packed,aligned(2)))
+> > > > 
+> > > > reasonable!
+> > > > 
+> > > > >> 1, it is alignof bug for default gcc on my fc15 and Ubuntu 11.10 etc?
+> > > > >>
+> > > > >> struct sub {
+> > > > >>         int  raw_lock;
+> > > > >>         char a;
+> > > > >> };
+> > > > >> struct foo {
+> > > > >>         struct sub z;
+> > > > >>         int slk;
+> > > > >>         char y;
+> > > > >> }__attribute__((packed));
+> > > > >>
+> > > > >> struct foo f1;
+> > > > >>
+> > > > >> __alignof__(f1.z.raw_lock) is 4, but its address actually can align on
+> > > > >> one byte. 
+> > > > > 
+> > > > > That looks like correct behavior, because the alignment of 
+> > > > > raw_lock inside of struct sub is still 4. But it does mean 
+> > > > > that there can be cases where the compile-time check is not 
+> > > > > sufficient, so we might want the run-time check as well, at 
+> > > > > least under some config option.
+> > > > 
+> > > > what's your opinion of this, Ingo?
+> > > 
+> > > Dunno. How many real bugs have you found via this patch?
+> > 
+> > None. Guess stupid code was shot in lkml reviewing. But if the 
+> > patch in, it is helpful to block stupid code in developing.
+> 
+> The question is, if in the last 10 years not a single such case 
+> made it through to today's 15 million lines of kernel code, why 
+> should we add the check now?
+> 
+> If it was a simple build time check then maybe, but judging by 
+> the discussion it does not seem so simple, does it?
 
-What shoude be writen into Documentation/? I read the documents under
-Documentation/virtual/kvm, not all KVM_EXIT_* are writen in api.txt.
-In this patch set, I introduce a new exit_reason: KVM_EXIT_GUEST_PANICKED,
-but I donot know where I should write.
+Oh, It is may better to have, but I don't mind it was slided. Since even
+alignof works as our expectation, it also can't cover all problems.
+Currently, we heavily depend gcc's behavior.
 
-Thanks
-Wen Congyang
+Anyway, thanks for review! 
+
+
+> 
+> Thanks,
+> 
+> 	Ingo
+
+
