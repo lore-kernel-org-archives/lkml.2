@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758252Ab2CIVST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:18:19 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:60606 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757615Ab2CIVSS (ORCPT
+	id S1758383Ab2CIVU4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:20:56 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55492 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757555Ab2CIVUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:18:18 -0500
-Date: Sat, 10 Mar 2012 01:18:13 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: mtk.manpages@gmail.com, akpm@linux-foundation.org, xemul@parallels.com,
-        linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH 2/2] Add kcmp.2 manpage
-Message-ID: <20120309211813.GO13346@moon>
-References: <1331326042-32558-1-git-send-email-gorcunov@openvz.org>
- <1331326042-32558-3-git-send-email-gorcunov@openvz.org>
- <4F5A6D09.3050704@zytor.com>
- <20120309210342.GN13346@moon>
- <4F5A72E9.5030802@zytor.com>
+	Fri, 9 Mar 2012 16:20:55 -0500
+Date: Fri, 9 Mar 2012 13:20:49 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, Alasdair G Kergon <agk@redhat.com>,
+        Will Drewry <wad@chromium.org>, Elly Jones <ellyjones@chromium.org>,
+        Milan Broz <mbroz@redhat.com>, Olof Johansson <olofj@chromium.org>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: workqueues and percpu (was: [PATCH] dm: remake of the verity
+ target)
+Message-ID: <20120309212049.GD24890@google.com>
+References: <1330648393-20692-1-git-send-email-msb@chromium.org>
+ <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
+ <20120306215947.GB27051@google.com>
+ <Pine.LNX.4.64.1203081656590.31821@file.rdu.redhat.com>
+ <20120308143909.bfc4cb4d.akpm@linux-foundation.org>
+ <20120308231521.GA2968@htj.dyndns.org>
+ <20120309211512.GL27051@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F5A72E9.5030802@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120309211512.GL27051@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 01:15:21PM -0800, H. Peter Anvin wrote:
-> No, you missed the point, which is that the comma moved to the .IR line.
-> 
-> .BR and .IR mean "alternate between bold/italic and regular", so
-> 
-> .IR foo bar
-> 
-> gives you "foobar" where only "foo" is italiziced.  It is equivalent to:
-> 
-> \fIfoo\fPbar
-> 
+Hello,
 
-Ouch, sorry. Will update shortly.
+On Fri, Mar 09, 2012 at 01:15:12PM -0800, Mandeep Singh Baines wrote:
+> In this case, I need the per-cpu data for the duration of calculating
+> a cryptographics hash on a 4K page of data. That's a long time to disable
+> pre-emption.
 
-	Cyrill
+How long are we talking about?  Tens of microsecs, tens of millisecs?
+
+> I could fix the bug temporarily by adding get/put for the per_cpu data
+> but would that be acceptable? I'm not sure what the OK limit is for how
+> long one can disable preemption. An alternative fix would be not allow
+> CONFIG_VERITY when CONFIG_HOTPLUG_CPU. Once workqueues are fixed, I could
+> remove that restriction.
+
+I think the right thing to do for now is to add cpu hotplug notifier
+and do flush_work_sync() on the work item.  We can later move that
+logic into workqueue and remove it from crypto.
+
+Thanks.
+
+-- 
+tejun
