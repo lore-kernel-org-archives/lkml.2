@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031397Ab2CITvH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:51:07 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36013 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030528Ab2CITu6 (ORCPT
+	id S1031438Ab2CITvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:51:22 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42016 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030528Ab2CITvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:50:58 -0500
-Message-Id: <20120309190215.179442456@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:51:12 -0500
+Message-Id: <20120309190215.504714676@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:16 -0800
+Date: Fri, 09 Mar 2012 11:02:20 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 02/68] Fix autofs compile without CONFIG_COMPAT
+        alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>
+Subject: [ 06/68] ARM: LPC32xx: serial.c: Fixed loop limit
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,40 +24,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Roland Stigge <stigge@antcom.de>
 
-commit 3c761ea05a8900a907f32b628611873f6bef24b2 upstream.
+commit ff424aa4c89d19082e8ae5a3351006bc8a4cd91b upstream.
 
-The autofs compat handling fix caused a compile failure when
-CONFIG_COMPAT isn't defined.
+This patch fixes a wrong loop limit on UART init.
 
-Instead of adding random #ifdef'fery in autofs, let's just make the
-compat helpers earlier to use: without CONFIG_COMPAT, is_compat_task()
-just hardcodes to zero.
-
-We could probably do something similar for a number of other cases where
-we have #ifdef's in code, but this is the low-hanging fruit.
-
-Reported-and-tested-by: Andreas Schwab <schwab@linux-m68k.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/compat.h |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/mach-lpc32xx/serial.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -561,5 +561,9 @@ extern ssize_t compat_rw_copy_check_uvec
+--- a/arch/arm/mach-lpc32xx/serial.c
++++ b/arch/arm/mach-lpc32xx/serial.c
+@@ -187,7 +187,7 @@ void __init lpc32xx_serial_init(void)
  
- extern void __user *compat_alloc_user_space(unsigned long len);
- 
-+#else
-+
-+#define is_compat_task() (0)
-+
- #endif /* CONFIG_COMPAT */
- #endif /* _LINUX_COMPAT_H */
+ 	/* This needs to be done after all UART clocks are setup */
+ 	__raw_writel(clkmodes, LPC32XX_UARTCTL_CLKMODE);
+-	for (i = 0; i < ARRAY_SIZE(uartinit_data) - 1; i++) {
++	for (i = 0; i < ARRAY_SIZE(uartinit_data); i++) {
+ 		/* Force a flush of the RX FIFOs to work around a HW bug */
+ 		puart = serial_std_platform_data[i].mapbase;
+ 		__raw_writel(0xC1, LPC32XX_UART_IIR_FCR(puart));
 
 
