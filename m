@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031136Ab2CITtu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:49:50 -0500
+	id S1031164Ab2CITt7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:49:59 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031079Ab2CITti (ORCPT
+	with ESMTP id S1031143Ab2CITtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:49:38 -0500
-Message-Id: <20120309190208.204133426@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:49:53 -0500
+Message-Id: <20120309190208.526283537@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:15 -0800
+Date: Fri, 09 Mar 2012 11:03:19 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 73/95] media: staging: lirc_serial: Fix deadlock on resume failure
+        alan@lxorguk.ukuu.org.uk, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [ 77/95] hwmon: (jc42) Add support for ST Microelectronics STTS2002 and STTS3000
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit 1ff1d88e862948ae5bfe490248c023ff8ac2855d upstream.
+commit 4de86126a712ba83fa038d277c8282f7ed466a4b upstream.
 
-A resume function cannot remove the device it is resuming!
+These are fully compatible with Jedec JC 42.4 as far as I can see.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/staging/media/lirc/lirc_serial.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ Documentation/hwmon/jc42 |    6 ++++++
+ drivers/hwmon/Kconfig    |    3 ++-
+ drivers/hwmon/jc42.c     |   10 ++++++++++
+ 3 files changed, 18 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/media/lirc/lirc_serial.c
-+++ b/drivers/staging/media/lirc/lirc_serial.c
-@@ -1127,10 +1127,8 @@ static int lirc_serial_resume(struct pla
- {
- 	unsigned long flags;
+--- a/Documentation/hwmon/jc42
++++ b/Documentation/hwmon/jc42
+@@ -48,6 +48,12 @@ Supported chips:
+     Datasheets:
+ 	http://www.st.com/stonline/products/literature/ds/13447/stts424.pdf
+ 	http://www.st.com/stonline/products/literature/ds/13448/stts424e02.pdf
++  * ST Microelectronics STTS2002, STTS3000
++    Prefix: 'stts2002', 'stts3000'
++    Addresses scanned: I2C 0x18 - 0x1f
++    Datasheets:
++	http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/DATASHEET/CD00225278.pdf
++	http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/DATA_BRIEF/CD00270920.pdf
+   * JEDEC JC 42.4 compliant temperature sensor chips
+     Prefix: 'jc42'
+     Addresses scanned: I2C 0x18 - 0x1f
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -498,7 +498,8 @@ config SENSORS_JC42
+ 	  temperature sensors, which are used on many DDR3 memory modules for
+ 	  mobile devices and servers.  Support will include, but not be limited
+ 	  to, ADT7408, CAT34TS02, CAT6095, MAX6604, MCP9805, MCP98242, MCP98243,
+-	  MCP9843, SE97, SE98, STTS424(E), TSE2002B3, and TS3000B3.
++	  MCP9843, SE97, SE98, STTS424(E), STTS2002, STTS3000, TSE2002B3, and
++	  TS3000B3.
  
--	if (hardware_init_port() < 0) {
--		lirc_serial_exit();
-+	if (hardware_init_port() < 0)
- 		return -EINVAL;
--	}
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called jc42.
+--- a/drivers/hwmon/jc42.c
++++ b/drivers/hwmon/jc42.c
+@@ -113,6 +113,12 @@ static const unsigned short normal_i2c[]
+ #define STTS424E_DEVID		0x0000
+ #define STTS424E_DEVID_MASK	0xfffe
  
- 	spin_lock_irqsave(&hardware[type].lock, flags);
- 	/* Enable Interrupt */
++#define STTS2002_DEVID		0x0300
++#define STTS2002_DEVID_MASK	0xffff
++
++#define STTS3000_DEVID		0x0200
++#define STTS3000_DEVID_MASK	0xffff
++
+ static u16 jc42_hysteresis[] = { 0, 1500, 3000, 6000 };
+ 
+ struct jc42_chips {
+@@ -133,6 +139,8 @@ static struct jc42_chips jc42_chips[] =
+ 	{ NXP_MANID, SE98_DEVID, SE98_DEVID_MASK },
+ 	{ STM_MANID, STTS424_DEVID, STTS424_DEVID_MASK },
+ 	{ STM_MANID, STTS424E_DEVID, STTS424E_DEVID_MASK },
++	{ STM_MANID, STTS2002_DEVID, STTS2002_DEVID_MASK },
++	{ STM_MANID, STTS3000_DEVID, STTS3000_DEVID_MASK },
+ };
+ 
+ /* Each client has this additional data */
+@@ -171,6 +179,8 @@ static const struct i2c_device_id jc42_i
+ 	{ "se97b", 0 },
+ 	{ "se98", 0 },
+ 	{ "stts424", 0 },
++	{ "stts2002", 0 },
++	{ "stts3000", 0 },
+ 	{ "tse2002b3", 0 },
+ 	{ "ts3000b3", 0 },
+ 	{ }
 
 
