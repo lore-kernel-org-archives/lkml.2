@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030641Ab2CIUXw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:23:52 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
+	id S1030383Ab2CITqF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:46:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030560Ab2CITrG (ORCPT
+	with ESMTP id S1030354Ab2CITqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:47:06 -0500
-Message-Id: <20120309190204.769938863@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:46:00 -0500
+Message-Id: <20120309190203.235789719@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:32 -0800
+Date: Fri, 09 Mar 2012 11:02:13 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anton Vorontsov <anton.vorontsov@linaro.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: [ 30/95] mm: memcg: Correct unregistring of events attached to the same eventfd
+        alan@lxorguk.ukuu.org.uk, Maxim Uvarov <maxim.uvarov@oracle.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [ 11/95] watchdog: hpwdt: clean up set_memory_x call for 32 bit
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,71 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
+From: Maxim Uvarov <maxim.uvarov@oracle.com>
 
-commit 371528caec553785c37f73fa3926ea0de84f986f upstream.
+commit 97d2a10d5804d585ab0b58efbd710948401b886a upstream.
 
-There is an issue when memcg unregisters events that were attached to
-the same eventfd:
+1. address has to be page aligned.
+2. set_memory_x uses page size argument, not size.
+Bug causes with following commit:
+	commit da28179b4e90dda56912ee825c7eaa62fc103797
+	Author: Mingarelli, Thomas <Thomas.Mingarelli@hp.com>
+	Date:   Mon Nov 7 10:59:00 2011 +0100
 
-- On the first call mem_cgroup_usage_unregister_event() removes all
-  events attached to a given eventfd, and if there were no events left,
-  thresholds->primary would become NULL;
+     watchdog: hpwdt: Changes to handle NX secure bit in 32bit path
 
-- Since there were several events registered, cgroups core will call
-  mem_cgroup_usage_unregister_event() again, but now kernel will oops,
-  as the function doesn't expect that threshold->primary may be NULL.
+    commit e67d668e147c3b4fec638c9e0ace04319f5ceccd upstream.
 
-That's a good question whether mem_cgroup_usage_unregister_event()
-should actually remove all events in one go, but nowadays it can't
-do any better as cftype->unregister_event callback doesn't pass
-any private event-associated cookie. So, let's fix the issue by
-simply checking for threshold->primary.
+    This patch makes use of the set_memory_x() kernel API in order
+    to make necessary BIOS calls to source NMIs.
 
-FWIW, w/o the patch the following oops may be observed:
-
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
- IP: [<ffffffff810be32c>] mem_cgroup_usage_unregister_event+0x9c/0x1f0
- Pid: 574, comm: kworker/0:2 Not tainted 3.3.0-rc4+ #9 Bochs Bochs
- RIP: 0010:[<ffffffff810be32c>]  [<ffffffff810be32c>] mem_cgroup_usage_unregister_event+0x9c/0x1f0
- RSP: 0018:ffff88001d0b9d60  EFLAGS: 00010246
- Process kworker/0:2 (pid: 574, threadinfo ffff88001d0b8000, task ffff88001de91cc0)
- Call Trace:
-  [<ffffffff8107092b>] cgroup_event_remove+0x2b/0x60
-  [<ffffffff8103db94>] process_one_work+0x174/0x450
-  [<ffffffff8103e413>] worker_thread+0x123/0x2d0
-
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Kirill A. Shutemov <kirill@shutemov.name>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/watchdog/hpwdt.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -4502,6 +4502,9 @@ static void mem_cgroup_usage_unregister_
- 	 */
- 	BUG_ON(!thresholds);
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -231,7 +231,7 @@ static int __devinit cru_detect(unsigned
  
-+	if (!thresholds->primary)
-+		goto unlock;
-+
- 	usage = mem_cgroup_usage(memcg, type == _MEMSWAP);
+ 	cmn_regs.u1.reax = CRU_BIOS_SIGNATURE_VALUE;
  
- 	/* Check if a threshold crossed before removing */
-@@ -4550,7 +4553,7 @@ swap_buffers:
+-	set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
++	set_memory_x((unsigned long)bios32_map, 2);
+ 	asminline_call(&cmn_regs, bios32_entrypoint);
  
- 	/* To be sure that nobody uses thresholds */
- 	synchronize_rcu();
--
-+unlock:
- 	mutex_unlock(&memcg->thresholds_lock);
- }
- 
+ 	if (cmn_regs.u1.ral != 0) {
+@@ -250,7 +250,8 @@ static int __devinit cru_detect(unsigned
+ 			cru_rom_addr =
+ 				ioremap(cru_physical_address, cru_length);
+ 			if (cru_rom_addr) {
+-				set_memory_x((unsigned long)cru_rom_addr, cru_length);
++				set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK,
++					(cru_length + PAGE_SIZE - 1) >> PAGE_SHIFT);
+ 				retval = 0;
+ 			}
+ 		}
 
 
