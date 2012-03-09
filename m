@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758942Ab2CIUJW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:09:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
+	id S1759228Ab2CIUNc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:13:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64616 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031431Ab2CITvV (ORCPT
+	with ESMTP id S1031143Ab2CITuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:51:21 -0500
-Message-Id: <20120309190215.722022227@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:50:13 -0500
+Message-Id: <20120309190209.060597954@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:23 -0800
+Date: Fri, 09 Mar 2012 11:03:26 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>
-Subject: [ 09/68] ARM: LPC32xx: Fix irq on GPI_28
-In-Reply-To: <20120309194409.GA2069@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Jan Beulich <jbeulich@suse.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 84/95] x86/amd: iommu_set_device_table() must not be __init
+In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Roland Stigge <stigge@antcom.de>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit f6737055c1c432a9628a9a731f9881ad8e0a9eee upstream.
+commit 6b7f000eb6a0b81d7a809833edb7a457eedf8512 upstream.
 
-The GPI_28 IRQ was not registered properly. The registration of
-IRQ_LPC32XX_GPI_28 was added and the (wrong) IRQ_LPC32XX_GPI_11 at
-LPC32XX_SIC1_IRQ(4) was replaced by IRQ_LPC32XX_GPI_28 (see manual of
-LPC32xx / interrupt controller).
+This function is called from enable_iommus(), which in turn is used
+from amd_iommu_resume().
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-lpc32xx/include/mach/irqs.h |    2 +-
- arch/arm/mach-lpc32xx/irq.c               |    4 ++++
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ drivers/iommu/amd_iommu_init.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-lpc32xx/include/mach/irqs.h
-+++ b/arch/arm/mach-lpc32xx/include/mach/irqs.h
-@@ -61,7 +61,7 @@
-  */
- #define IRQ_LPC32XX_JTAG_COMM_TX	LPC32XX_SIC1_IRQ(1)
- #define IRQ_LPC32XX_JTAG_COMM_RX	LPC32XX_SIC1_IRQ(2)
--#define IRQ_LPC32XX_GPI_11		LPC32XX_SIC1_IRQ(4)
-+#define IRQ_LPC32XX_GPI_28		LPC32XX_SIC1_IRQ(4)
- #define IRQ_LPC32XX_TS_P		LPC32XX_SIC1_IRQ(6)
- #define IRQ_LPC32XX_TS_IRQ		LPC32XX_SIC1_IRQ(7)
- #define IRQ_LPC32XX_TS_AUX		LPC32XX_SIC1_IRQ(8)
---- a/arch/arm/mach-lpc32xx/irq.c
-+++ b/arch/arm/mach-lpc32xx/irq.c
-@@ -118,6 +118,10 @@ static const struct lpc32xx_event_info l
- 		.event_group = &lpc32xx_event_pin_regs,
- 		.mask = LPC32XX_CLKPWR_EXTSRC_GPI_06_BIT,
- 	},
-+	[IRQ_LPC32XX_GPI_28] = {
-+		.event_group = &lpc32xx_event_pin_regs,
-+		.mask = LPC32XX_CLKPWR_EXTSRC_GPI_28_BIT,
-+	},
- 	[IRQ_LPC32XX_GPIO_00] = {
- 		.event_group = &lpc32xx_event_int_regs,
- 		.mask = LPC32XX_CLKPWR_INTSRC_GPIO_00_BIT,
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -268,7 +268,7 @@ static void iommu_set_exclusion_range(st
+ }
+ 
+ /* Programs the physical address of the device table into the IOMMU hardware */
+-static void __init iommu_set_device_table(struct amd_iommu *iommu)
++static void iommu_set_device_table(struct amd_iommu *iommu)
+ {
+ 	u64 entry;
+ 
 
 
