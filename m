@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758624Ab2CIVv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:51:29 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:50641 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753709Ab2CIVv1 (ORCPT
+	id S964862Ab2CIVwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:52:23 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:61600 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758505Ab2CIVwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:51:27 -0500
-Date: Fri, 09 Mar 2012 13:51:23 -0800 (PST)
-Message-Id: <20120309.135123.2098113809216101768.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: kys@microsoft.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: Re: [PATCH 1/2] net/hyperv: Fix data corruption in
- rndis_filter_receive()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1331328437-26852-1-git-send-email-haiyangz@microsoft.com>
-References: <1331328437-26852-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 09 Mar 2012 13:51:23 -0800 (PST)
+	Fri, 9 Mar 2012 16:52:21 -0500
+Date: Sat, 10 Mar 2012 01:52:17 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
+Message-ID: <20120309215217.GA725@moon>
+References: <20120308165112.GF21812@moon>
+ <20120308182623.GA17221@redhat.com>
+ <20120308190303.GG21812@moon>
+ <20120309214637.GC19584@count0.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120309214637.GC19584@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Fri,  9 Mar 2012 13:27:16 -0800
-
-> Limiting the memcpy to be the sizeof(struct rndis_message) can truncate
-> the message if there are Per-Packet-Info or Out-of-Band data.
+On Fri, Mar 09, 2012 at 01:46:37PM -0800, Matt Helsley wrote:
+> > > 
+> > > I simply do not understand what mm->num_exe_file_vmas means after
+> > > PR_SET_MM_EXE_FILE.
 > 
-> In my earlier patch (commit 45326342), the unnecessary kmap_atomic and
-> kunmap_atomic surrounding this memcpy have been removed because the memory
-> in the receive buffer is always mapped. This memcpy is not necessary
-> either. To fix the bug, I removed the memcpy.
-> 
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> I think it should fail if the num_exe_file_vmas is not 0 when
+> PR_SET_MM_EXE_FILE is used. It's simple, keeps things clear, might
+> catch userspace bugs (harder to accidentally leave a mapping of the original
+> executable), and could avoid kernel bugs too.
 
-Well, where the heck is patch 2/2?
+Yes, and in last version (whuch I just sent out) we have at the very beginning
+of the function
+
++	if (mm->num_exe_file_vmas)
++               return -EBUSY;
+
+> > 
+> > Wait, Oleg, I'm confused, in case if there *is* exitsting VM_EXECUTABLEs
+> > then we jump into first banch and simply replace old exe_file.
+> 
+> What happens if multiple prctl calls are made? We'll have a mix of N
+> executable files that've been mapped n_i times. I think we're better off
+> just returning an error in that case -- -EBUSY or something.
+> 
+> > If there is no VM_EXECUTABLEs, then we simply setup new exe_file
+> > and num_exe_file_vmas remains zero.
+> 
+> Which is fine.
+> 
+
+Matt, please check the last version, and tell me if it's fine for you.
+
+	Cyrill
