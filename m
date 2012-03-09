@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab2CIW0B (ORCPT <rfc822;w@1wt.eu>);
+	id S1030181Ab2CIW0F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 17:26:05 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52411 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932350Ab2CIW0B convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Mar 2012 17:26:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60295 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753319Ab2CIWZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 17:25:59 -0500
-Date: Fri, 9 Mar 2012 19:22:56 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: "Daniel P. Berrange" <berrange@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [RESEND][PATCH 2/2 v3] deal with guest panicked event
-Message-ID: <20120309222256.GA24975@amt.cnet>
-References: <4F58664D.1070800@cn.fujitsu.com>
- <4F5868C4.2090509@cn.fujitsu.com>
- <4F5886C4.7040100@cn.fujitsu.com>
- <4F5897F8.6090503@redhat.com>
- <20120308113607.GC25529@redhat.com>
- <4F589D8D.4030105@redhat.com>
- <20120308115656.GD25529@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120308115656.GD25529@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120309183732.512d3676599da324f4747219@canb.auug.org.au>
+References: <20120309183732.512d3676599da324f4747219@canb.auug.org.au>
+Date: Fri, 9 Mar 2012 16:26:00 -0600
+Message-ID: <CAMXH7KE5En7U-2zydT3MfJ7C7B164-zsQuBoHMUqzD-Kb_nh1w@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the cpuidle-cons tree with the
+ arm-soc tree
+From: Rob Lee <rob.lee@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 11:56:56AM +0000, Daniel P. Berrange wrote:
-> On Thu, Mar 08, 2012 at 01:52:45PM +0200, Avi Kivity wrote:
-> > On 03/08/2012 01:36 PM, Daniel P. Berrange wrote:
-> > > On Thu, Mar 08, 2012 at 01:28:56PM +0200, Avi Kivity wrote:
-> > > > On 03/08/2012 12:15 PM, Wen Congyang wrote:
-> > > > > When the host knows the guest is panicked, it will set
-> > > > > exit_reason to KVM_EXIT_GUEST_PANICKED. So if qemu receive
-> > > > > this exit_reason, we can send a event to tell management
-> > > > > application that the guest is panicked and set the guest
-> > > > > status to RUN_STATE_PANICKED.
-> > > > >
-> > > > > Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> > > > > ---
-> > > > >  kvm-all.c        |    5 +++++
-> > > > >  monitor.c        |    3 +++
-> > > > >  monitor.h        |    1 +
-> > > > >  qapi-schema.json |    2 +-
-> > > > >  qmp.c            |    3 ++-
-> > > > >  vl.c             |    1 +
-> > > > >  6 files changed, 13 insertions(+), 2 deletions(-)
-> > > > >
-> > > > > diff --git a/kvm-all.c b/kvm-all.c
-> > > > > index 77eadf6..b3c9a83 100644
-> > > > > --- a/kvm-all.c
-> > > > > +++ b/kvm-all.c
-> > > > > @@ -1290,6 +1290,11 @@ int kvm_cpu_exec(CPUState *env)
-> > > > >                      (uint64_t)run->hw.hardware_exit_reason);
-> > > > >              ret = -1;
-> > > > >              break;
-> > > > > +        case KVM_EXIT_GUEST_PANICKED:
-> > > > > +            monitor_protocol_event(QEVENT_GUEST_PANICKED, NULL);
-> > > > > +            vm_stop(RUN_STATE_PANICKED);
-> > > > > +            ret = -1;
-> > > > > +            break;
-> > > > >
-> > > > 
-> > > > If the management application is not aware of this event, then it will
-> > > > never resume the guest, so it will appear hung.
-> > >
-> > > Even if the mgmt app doesn't know about the QEVENT_GUEST_PANICKED, it should
-> > > still see a QEVENT_STOP event emitted by vm_stop() surely ? So it will
-> > > know the guest CPUs have been stopped, even if it isn't aware of the
-> > > reason why, which seems fine to me.
-> > 
-> > No.  The guest is stopped, and there's no reason to suppose that the
-> > management app will restart it.  Behaviour has changed.
-> > 
-> > Suppose the guest has reboot_on_panic set; now the behaviour change is
-> > even more visible - service will stop completely instead of being
-> > interrupted for a bit while the guest reboots.
-> 
-> Hmm, so this calls for a new command line argument to control behaviour,
-> similar to what we do for disk werror, eg something like
-> 
->   --onpanic "report|pause|stop|..."
-> 
-> where
-> 
->  report - emit QEVENT_GUEST_PANICKED only
+Hello Stephen,
 
-Should be the default.
+Yes, your resolution looks correct to me.
 
->  pause  - emit QEVENT_GUEST_PANICKED and pause VM
->  stop   - emit QEVENT_GUEST_PANICKED and quit VM
+Thanks,
+Rob Lee
 
-"quit" is a better name than "stop".
 
-> This would map fairly well into libvirt, where we already have config
-> parameters for controlling what todo with a guest when it panics.
-> 
-> Regards,
-> Daniel
+On Fri, Mar 9, 2012 at 1:37 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Rob,
+>
+> Today's linux-next merge of the cpuidle-cons tree got a conflict in
+> arch/arm/mach-at91/cpuidle.c between commit 00482a4078f4 ("ARM: at91:
+> implement the standby function for pm/cpuidle") from the arm-soc tree and
+> commit 7a1f6e72dce1 ("ARM: at91: Consolidate time keeping and irq
+> enable") from the cpuidle-cons tree.
+>
+> I fixed it up (I think - see below) and can carry the fix as necessary.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc arch/arm/mach-at91/cpuidle.c
+> index 555d956,d40b3f3..0000000
+> --- a/arch/arm/mach-at91/cpuidle.c
+> +++ b/arch/arm/mach-at91/cpuidle.c
+> @@@ -37,23 -33,15 +33,8 @@@ static int at91_enter_idle(struct cpuid
+>                        struct cpuidle_driver *drv,
+>                               int index)
+>  {
+> -       struct timeval before, after;
+> -       int idle_time;
+> -
+> -       local_irq_disable();
+> -       do_gettimeofday(&before);
+> -       if (index == 0)
+> -               /* Wait for interrupt state */
+> -               cpu_do_idle();
+> -       else if (index == 1)
+> -               at91_standby();
+>  -      u32 saved_lpr;
+>  -
+>  -      __asm__("b 1f; .align 5; 1:\n"
+>  -      "       mcr p15, 0, r0, c7, c10, 4");   /* drain write buffer */
+>  -
+>  -      saved_lpr = sdram_selfrefresh_enable();
+>  -      cpu_do_idle();
+>  -      sdram_selfrefresh_disable(saved_lpr);
+> ++      at91_standby();
+>
+> -       do_gettimeofday(&after);
+> -       local_irq_enable();
+> -       idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
+> -                       (after.tv_usec - before.tv_usec);
+> -
+> -       dev->last_residency = idle_time;
+>        return index;
+>  }
+>
