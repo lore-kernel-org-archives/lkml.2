@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759473Ab2CIEm5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 23:42:57 -0500
-Received: from ozlabs.org ([203.10.76.45]:54404 "EHLO ozlabs.org"
+	id S1759441Ab2CIEm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 23:42:56 -0500
+Received: from ozlabs.org ([203.10.76.45]:50339 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758074Ab2CIEmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758063Ab2CIEmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 8 Mar 2012 23:42:03 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
 CC: linux-kernel@vger.kernel.org
 To: Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
-Message-ID: <1331267212.16020.rusty@rustcorp.com.au>
+Message-ID: <1331267212.26948.rusty@rustcorp.com.au>
 Date: Fri, 09 Mar 2012 14:56:52 +1030
-Subject: [PATCH 6/8] ARM: KVM: table-driven coprocessor emulation.
+Subject: [PATCH 7/8] ARM: KVM: guest_didnt_mean_it()
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -20,313 +20,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rusty Russell <rusty@rustcorp.com.au>
 
-To try to avoid encroaching ad-hoc emulation, drive it from
-a single table, so it's clear exactly what we do and do not
-emulate.
+Conditional instructions may trap even if the condition isn't true, so a good
+hypervisor will check this.  The same can happen with undefined instructions,
+so the kernel should be doing this dance already (it isn't).
+
+(See p1206 of ARMv7-A ARM)
 
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 ---
- arch/arm/kvm/emulate.c |  255 ++++++++++++++++++++++++------------------------
- 1 files changed, 130 insertions(+), 125 deletions(-)
+ arch/arm/include/asm/kvm_arm.h     |    4 +++
+ arch/arm/include/asm/kvm_emulate.h |    2 +
+ arch/arm/kvm/Makefile              |    2 +
+ arch/arm/kvm/arm.c                 |    3 ++
+ arch/arm/kvm/emulate.c             |   41 +++++++++++++++++++++++++++
+ arch/arm/kvm/kvm_cond_match.S      |   54 ++++++++++++++++++++++++++++++++++++
+ 6 files changed, 105 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/kvm/kvm_cond_match.S
 
+diff --git a/arch/arm/include/asm/kvm_arm.h b/arch/arm/include/asm/kvm_arm.h
+index 1769187..156284a 100644
+--- a/arch/arm/include/asm/kvm_arm.h
++++ b/arch/arm/include/asm/kvm_arm.h
+@@ -107,6 +107,10 @@
+ #define HSR_ISS		(HSR_IL - 1)
+ #define HSR_ISV_SHIFT	(24)
+ #define HSR_ISV		(1U << HSR_ISV_SHIFT)
++#define HSR_CV_SHIFT	(24)
++#define HSR_CV		(1U << HSR_CV_SHIFT)
++#define HSR_COND_SHIFT	(20)
++#define HSR_COND	(0xfU << HSR_COND_SHIFT)
+ 
+ #define HSR_EC_UNKNOWN	(0x00)
+ #define HSR_EC_WFI	(0x01)
+diff --git a/arch/arm/include/asm/kvm_emulate.h b/arch/arm/include/asm/kvm_emulate.h
+index fa54247..fe21e86 100644
+--- a/arch/arm/include/asm/kvm_emulate.h
++++ b/arch/arm/include/asm/kvm_emulate.h
+@@ -49,6 +49,8 @@ int kvm_handle_cp15_64(struct kvm_vcpu *vcpu, struct kvm_run *run);
+ int kvm_handle_wfi(struct kvm_vcpu *vcpu, struct kvm_run *run);
+ int kvm_emulate_mmio_ls(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
+ 			unsigned long instr);
++bool kvm_should_not_have_trapped(struct kvm_vcpu *vcpu);
++bool kvm_cond_match(u32 flags, u32 cond);
+ 
+ /*
+  * Return the SPSR for the specified mode of the virtual CPU.
+diff --git a/arch/arm/kvm/Makefile b/arch/arm/kvm/Makefile
+index e69a8e1..68f05b9 100644
+--- a/arch/arm/kvm/Makefile
++++ b/arch/arm/kvm/Makefile
+@@ -12,6 +12,6 @@ obj-$(CONFIG_KVM_ARM_HOST) += init.o interrupts.o exports.o
+ 
+ kvm-arm-y += $(addprefix ../../../virt/kvm/, kvm_main.o coalesced_mmio.o)
+ 
+-kvm-arm-y += arm.o guest.o mmu.o emulate.o
++kvm-arm-y += arm.o guest.o mmu.o emulate.o kvm_cond_match.o
+ 
+ obj-$(CONFIG_KVM) += kvm-arm.o
+diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
+index a6cf02b..1724657 100644
+--- a/arch/arm/kvm/arm.c
++++ b/arch/arm/kvm/arm.c
+@@ -414,6 +414,9 @@ static inline int handle_exit(struct kvm_vcpu *vcpu, struct kvm_run *run,
+ 		BUG();
+ 	}
+ 
++	if (kvm_should_not_have_trapped(vcpu))
++		return 0;
++
+ 	return arm_exit_handlers[hsr_ec](vcpu, run);
+ }
+ 
 diff --git a/arch/arm/kvm/emulate.c b/arch/arm/kvm/emulate.c
-index d386874..bd2c3dc 100644
+index bd2c3dc..11e2dab 100644
 --- a/arch/arm/kvm/emulate.c
 +++ b/arch/arm/kvm/emulate.c
-@@ -165,25 +165,19 @@ struct coproc_params {
- 	bool is_write;
- };
- 
--static void cp15_op(struct kvm_vcpu *vcpu, const struct coproc_params *p,
--			   enum cp15_regs cp15_reg)
--{
--	if (p->is_write)
--		vcpu->arch.cp15[cp15_reg] = *vcpu_reg(vcpu, p->Rt1);
--	else
--		*vcpu_reg(vcpu, p->Rt1) = vcpu->arch.cp15[cp15_reg];
--}
--
- static void print_cp_instr(const struct coproc_params *p)
- {
-+	/* Look, we even formatted it for you to paste into the table! */
- 	if (p->is_64bit) {
--		kvm_debug("%s\tp15, %lu, r%lu, r%lu, c%lu",
--			  (p->is_write) ? "mcrr" : "mrrc",
--			  p->Op1, p->Rt1, p->Rt2, p->CRm);
-+		kvm_debug("{ .is_64bit = true, .is_write = %s, .param ="
-+			  " { .CRm = %lu, .Op1 = %lu } }",
-+			  p->is_write ? "true" : "false", p->CRm, p->Op1);
- 	} else {
--		kvm_debug("%s\tp15, %lu, r%lu, c%lu, c%lu, %lu",
--			  (p->is_write) ? "mcr" : "mrc",
--			  p->Op1, p->Rt1, p->CRn, p->CRm, p->Op2);
-+		kvm_debug("{ .is_64bit = false, .is_write = %s, .param ="
-+			  " { .CRn = %lu, .CRm = %lu,"
-+			  " .Op1 = %lu, .Op2 = %lu } }",
-+			  p->is_write ? "true" : "false",
-+			  p->CRn, p->CRm, p->Op1, p->Op2);
- 	}
+@@ -659,3 +659,44 @@ int kvm_emulate_mmio_ls(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
+ 	*vcpu_reg(vcpu, 15) += 4;
+ 	return 0;
  }
- 
-@@ -207,139 +201,150 @@ int kvm_handle_cp14_access(struct kvm_vcpu *vcpu, struct kvm_run *run)
- 	return -EINVAL;
- }
- 
--/**
-- * emulate_cp15_c9_access -- emulates cp15 accesses for CRn == 9
-- * @vcpu: The VCPU pointer
-- * @p:    The coprocessor parameters struct pointer holding trap inst. details
-- */
--static bool emulate_cp15_c9_access(struct kvm_vcpu *vcpu,
--				   const struct coproc_params *p)
-+static bool ignore_write(struct kvm_vcpu *vcpu,
-+			 const struct coproc_params *p,
-+			 unsigned long arg)
- {
--	BUG_ON(p->CRn != 9);
--	BUG_ON(p->is_64bit);
--
--	if (p->CRm == 0 && p->Op1 == 1 && p->Op2 == 2) {
--		/* Emulate L2CTLR access */
--		u32 l2ctlr, ncores;
-+	if (arg)
-+		trace_kvm_emulate_cp15_imp(p->Op1, p->Rt1, p->CRn, p->CRm,
-+					   p->Op2, p->is_write);
-+	return true;
-+}
- 
--		if (p->is_write)
--			return true;
-+static bool read_zero(struct kvm_vcpu *vcpu,
-+		      const struct coproc_params *p,
-+		      unsigned long arg)
++
++/* Some implementations may not check condition codes before trapping! */
++bool kvm_should_not_have_trapped(struct kvm_vcpu *vcpu)
 +{
-+	if (arg)
-+		trace_kvm_emulate_cp15_imp(p->Op1, p->Rt1, p->CRn, p->CRm,
-+					   p->Op2, p->is_write);
-+	*vcpu_reg(vcpu, p->Rt1) = 0;
-+	return true;
++	unsigned long spsr, cond, flags;
++
++	/*
++	 * Exception Code 0 can only happen if we set HCR.TGE to 1, to
++	 * catch undefined instructions, and then we won't get past
++	 * the arm_exit_handlers test anyway.
++	 */
++	BUG_ON(((vcpu->arch.hsr & HSR_EC) >> HSR_EC_SHIFT) == 0);
++
++	/* Top two bits non-zero?  Unconditional. */
++	if (vcpu->arch.hsr >> 30)
++		return false;
++
++	spsr = *vcpu_spsr(vcpu);
++
++	/* Is condition field valid? */
++	if ((vcpu->arch.hsr & HSR_CV) >> HSR_CV_SHIFT)
++		cond = (vcpu->arch.hsr & HSR_COND) >> HSR_COND_SHIFT;
++	else {
++		/* This can happen in Thumb mode: examine IT state. */
++		unsigned long it;
++		
++		it = ((spsr >> 8) & 0xFC)
++			| ((spsr >> 25) & 0x3);
++
++		/* it == 0 => unconditional. */
++		if (it == 0)
++			return false;
++
++		/* The cond for this insn works out as the top 4 bits. */
++		cond = (it >> 4);
++	}
++
++	flags = spsr & ~0x07FFFFFF;
++
++	return !kvm_cond_match(flags, cond);
 +}
- 
--		asm volatile("mrc p15, 1, %0, c9, c0, 2\n" : "=r" (l2ctlr));
--		l2ctlr &= ~(3 << 24);
--		ncores = atomic_read(&vcpu->kvm->online_vcpus) - 1;
--		l2ctlr |= (ncores & 3) << 24;
--		*vcpu_reg(vcpu, p->Rt1) = l2ctlr;
-+static bool read_l2ctlr(struct kvm_vcpu *vcpu,
-+			const struct coproc_params *p,
-+			unsigned long arg)
-+{
-+	u32 l2ctlr, ncores;
- 
--		return true;
--	}
-+	asm volatile("mrc p15, 1, %0, c9, c0, 2\n" : "=r" (l2ctlr));
-+	l2ctlr &= ~(3 << 24);
-+	ncores = atomic_read(&vcpu->kvm->online_vcpus) - 1;
-+	l2ctlr |= (ncores & 3) << 24;
-+	*vcpu_reg(vcpu, p->Rt1) = l2ctlr;
- 
--	/* hack alert!!! */
--	if (!p->is_write)
--		*vcpu_reg(vcpu, p->Rt1) = 0;
- 	return true;
- }
- 
--/**
-- * emulate_cp15_c10_access -- emulates cp15 accesses for CRn == 10
-- * @vcpu: The VCPU pointer
-- * @p:    The coprocessor parameters struct pointer holding trap inst. details
-- *
-- * This function may not need to exist - if we can ignore guest attempts to
-- * tamper with TLB lockdowns then it should be enough to store/restore the
-- * host/guest PRRR and NMRR memory remap registers and allow guest direct access
-- * to these registers.
-- */
--static bool emulate_cp15_c10_access(struct kvm_vcpu *vcpu,
--				    const struct coproc_params *p)
-+static bool access_cp15_reg(struct kvm_vcpu *vcpu,
-+			    const struct coproc_params *p,
-+			    unsigned long cp15_reg)
- {
--	BUG_ON(p->CRn != 10);
--	BUG_ON(p->is_64bit);
--
--	if ((p->CRm == 0 || p->CRm == 1 || p->CRm == 4 || p->CRm == 8) &&
--	    (p->Op2 <= 7)) {
--		/* TLB Lockdown operations - ignored */
--		return true;
--	}
-+	if (p->is_write)
-+		vcpu->arch.cp15[cp15_reg] = *vcpu_reg(vcpu, p->Rt1);
-+	else
-+		*vcpu_reg(vcpu, p->Rt1) = vcpu->arch.cp15[cp15_reg];
-+	return true;
-+}
- 
--	/*
--	 * The role of these registers depends on whether LPAE is defined or
--	 * not, but there shouldn't be any breakage in any case - we may
--	 * simply not respect the nomenclature here.
--	 */
- 
--	if (p->CRm == 2 && p->Op1 == 0 && p->Op2 == 0) {
--		cp15_op(vcpu, p, c10_PRRR);
--		return true;
--	}
-+/* Any field which is 0xFFFFFFFF == any. */
-+#define ANY (-1UL)
-+struct coproc_emulate {
-+	unsigned long is_64;
-+	unsigned long is_w;
-+	struct {
-+		unsigned long CRm;
-+		unsigned long CRn;
-+		unsigned long Op1;
-+		unsigned long Op2;
-+	} param;
+diff --git a/arch/arm/kvm/kvm_cond_match.S b/arch/arm/kvm/kvm_cond_match.S
+new file mode 100644
+index 0000000..cf48786
+--- /dev/null
++++ b/arch/arm/kvm/kvm_cond_match.S
+@@ -0,0 +1,54 @@
++#include <linux/linkage.h>
 +
-+	bool (*f)(struct kvm_vcpu *,
-+		  const struct coproc_params *,
-+		  unsigned long);
-+	unsigned long arg;
-+};
- 
--	if (p->CRm == 2 && p->Op1 == 0 && p->Op2 == 1) {
--		cp15_op(vcpu, p, c10_NMRR);
--		return true;
--	}
- 
--	return false;
--}
-+static const struct coproc_emulate coproc_emulate[] = {
-+	/* Ignore writes to L2CTLR access */
-+	{ .is_64 = false, .is_w = true, .f = ignore_write,
-+	  .param = { .CRn = 9, .CRm = 0, .Op1 = 1, .Op2 = 2 } },
-+	{ .is_64 = false, .is_w = false, .f = read_l2ctlr,
-+	  .param = { .CRn = 9, .CRm = 0, .Op1 = 1, .Op2 = 2 } },
-+	/* Hack alert!!! */
-+	{ .is_64 = false, .is_w = true, .f = ignore_write,
-+	  .param = { .CRn = 9, .CRm = ANY, .Op1 = ANY, .Op2 = ANY } },
-+	{ .is_64 = false, .is_w = false, .f = read_zero,
-+	  .param = { .CRn = 9, .CRm = ANY, .Op1 = ANY, .Op2 = ANY } },
++/* extern bool kvm_cond_match(u32 flags, u32 cond); */
++ENTRY(kvm_cond_match)
++.arm
++	/* First, set our condition flags to the arg. */
++	mrs	r2, cpsr
++	and	r2, r2, #0x07FFFFFF
++	orr	r2, r2, r0
++	msr	cpsr, r2
 +
-+	/* These CRn == 10 entries may not need to exist - if we can
-+	 * ignore guest attempts to tamper with TLB lockdowns then it
-+	 * should be enough to store/restore the host/guest PRRR and
-+	 * NMRR memory remap registers and allow guest direct access
-+	 * to these registers. */
-+	/* TLB Lockdown operations - ignored */
-+	{ .is_64 = false, .is_w = true, .f = ignore_write,
-+	  .param = { .CRn = 10, .CRm = 0, .Op1 = ANY, .Op2 = ANY } },
-+	{ .is_64 = false, .is_w = ANY, .f = access_cp15_reg,
-+	  .arg = c10_PRRR,
-+	  .param = { .CRn = 10, .CRm = 2, .Op1 = 0, .Op2 = 0 } },
-+	{ .is_64 = false, .is_w = ANY, .f = access_cp15_reg,
-+	  .arg = c10_NMRR,
-+	  .param = { .CRn = 10, .CRm = 2, .Op1 = 0, .Op2 = 1 } },
++	/* Now, jump to table depending on cond, return via there. */
++	mov	r0, #0
++	add	r2, r0, r1, LSL #3
++	sub	r2, #4
++	add	pc, r2
 +
-+	/* The CP15 c15 register is architecturally implementation
-+	 * defined, but some guest kernels attempt to read/write a
-+	 * diagnostics register here. We always return 0 and ignore
-+	 * writes and hope for the best. */
-+	{ .is_64 = false, .is_w = true, .f = ignore_write, .arg = 1,
-+	  .param = { .CRn = 15, .CRm = ANY, .Op1 = ANY, .Op2 = ANY } },
-+	{ .is_64 = false, .is_w = false, .f = read_zero, .arg = 1,
-+	  .param = { .CRn = 15, .CRm = ANY, .Op1 = ANY, .Op2 = ANY } },
-+};
- 
--/**
-- * emulate_cp15_c15_access -- emulates cp15 accesses for CRn == 15
-- * @vcpu: The VCPU pointer
-- * @p:    The coprocessor parameters struct pointer holding trap inst. details
-- *
-- * The CP15 c15 register is architecturally implementation defined, but some
-- * guest kernels attempt to read/write a diagnostics register here. We always
-- * return 0 and ignore writes and hope for the best.
-- *
-- * This may need to be refined.
-- */
--static bool emulate_cp15_c15_access(struct kvm_vcpu *vcpu,
--				    const struct coproc_params *p)
-+static inline bool match(unsigned long val, unsigned long param)
- {
--	trace_kvm_emulate_cp15_imp(p->Op1, p->Rt1, p->CRn, p->CRm,
--				   p->Op2, p->is_write);
--
--	if (!p->is_write)
--		*vcpu_reg(vcpu, p->Rt1) = 0;
--
--	return true;
-+	return param == ANY || val == param;
- }
- 
- static int emulate_cp15(struct kvm_vcpu *vcpu,
- 			const struct coproc_params *params)
- {
--	unsigned long instr_len;
--	bool ok;
--
--	/* So far no mrrc/mcrr accesses are emulated */
--	if (params->is_64bit)
--		goto unsupp_err_out;
--
--	switch (params->CRn) {
--	case 9:
--		ok = emulate_cp15_c9_access(vcpu, params);
--		break;
--	case 10:
--		ok = emulate_cp15_c10_access(vcpu, params);
--		break;
--	case 15:
--		ok = emulate_cp15_c15_access(vcpu, params);
--		break;
--	default:
--		ok = false;
-+	unsigned long instr_len, i;
++/* This is "mov<cond>	r0, #1" */
++#define COND_MOVEQ_R0_1(cond) .word	((cond << 28) | 0x03a00001)
 +
-+	for (i = 0; i < ARRAY_SIZE(coproc_emulate); i++) {
-+		const struct coproc_emulate *e = &coproc_emulate[i];
-+
-+		if (!match(params->is_64bit, e->is_64))
-+			continue;
-+		if (!match(params->is_write, e->is_w))
-+			continue;
-+		if (!match(params->CRn, e->param.CRn))
-+			continue;
-+		if (!match(params->CRm, e->param.CRm))
-+			continue;
-+		if (!match(params->Op1, e->param.Op1))
-+			continue;
-+		if (!match(params->Op2, e->param.Op2))
-+			continue;
-+
-+		/* If function fails, it should complain. */
-+		if (!e->f(vcpu, params, e->arg))
-+			goto fail;
-+
-+		/* Skip instruction, since it was emulated */
-+		instr_len = ((vcpu->arch.hsr >> 25) & 1) ? 4 : 2;
-+		*vcpu_reg(vcpu, 15) += instr_len;
-+		return 0;
- 	}
- 
--	if (!ok)
--		goto unsupp_err_out;
--
--	/* Skip instruction, since it was emulated */
--	instr_len = ((vcpu->arch.hsr >> 25) & 1) ? 4 : 2;
--	*vcpu_reg(vcpu, 15) += instr_len;
--
--	return 0;
--
--unsupp_err_out:	
--	kvm_err("Unsupported guest CP15 access at: %08x\n", vcpu->arch.regs.pc);
-+	kvm_err("Unsupported guest CP15 access at: %08x\n",
-+		vcpu->arch.regs.pc);
- 	print_cp_instr(params);
-+fail:
- 	return -EINVAL;
- }
- 
++cond_table:
++	COND_MOVEQ_R0_1(0)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(1)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(2)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(3)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(4)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(5)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(6)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(7)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(8)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(9)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(10)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(11)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(12)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(13)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(14)
++	mov	pc, lr
++	COND_MOVEQ_R0_1(15)
++	mov	pc, lr
++ENDPROC(kvm_cond_match)
 
