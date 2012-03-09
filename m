@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab2CIO3p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 09:29:45 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:45694 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161Ab2CIO3o (ORCPT
+	id S1754757Ab2CIOd1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 09:33:27 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37100 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208Ab2CIOdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 09:29:44 -0500
-Date: Fri, 9 Mar 2012 15:29:39 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, stable <stable@vger.kernel.org>
-Subject: Re: [PATCH 1/2] bluetooth: hci_ldisc: fix NULL-pointer dereference
- on tty_close
-Message-ID: <20120309142939.GD4497@localhost>
-References: <1331136120-27075-1-git-send-email-jhovold@gmail.com>
- <1331136120-27075-2-git-send-email-jhovold@gmail.com>
- <CANq1E4Sd45FtZN6NXs7TZ1k6VrFkbcAZug-1UQwW-XPB0e5Aag@mail.gmail.com>
+	Fri, 9 Mar 2012 09:33:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANq1E4Sd45FtZN6NXs7TZ1k6VrFkbcAZug-1UQwW-XPB0e5Aag@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CADDYkjQiMpPHLq4NTe5yo1iZfCgtwTgm+3ZDRUdMACpumsdFqw@mail.gmail.com>
+References: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com>
+	<20120308155211.GF4334@twin.jikos.cz>
+	<CADDYkjTG-q5+pFRFt9sGKq=cgL=ZgQaNZV=2ipBsSbuvxCa3jw@mail.gmail.com>
+	<4F595D6D.6080809@cn.fujitsu.com>
+	<20120309105537.GG4334@twin.jikos.cz>
+	<CADDYkjRcRbxxPErdMBOs55-gNHZA0GfxcsWNrVbAuv37b3rtvw@mail.gmail.com>
+	<20120309114010.GH4334@twin.jikos.cz>
+	<CADDYkjQiMpPHLq4NTe5yo1iZfCgtwTgm+3ZDRUdMACpumsdFqw@mail.gmail.com>
+Date: Fri, 9 Mar 2012 15:33:24 +0100
+Message-ID: <CADDYkjRK3h_e3GPDQMpVwSwn6aQ5MwA1FoF1wFV05=LytK3chg@mail.gmail.com>
+Subject: Re: kernel BUG at fs/btrfs/delayed-inode.c:1466!
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: dave@jikos.cz, Jacek Luczak <difrost.kernel@gmail.com>,
+        Liu Bo <liubo2009@cn.fujitsu.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, josef@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+2012/3/9 Jacek Luczak <difrost.kernel@gmail.com>:
+> 2012/3/9 David Sterba <dave@jikos.cz>:
+>> On Fri, Mar 09, 2012 at 12:08:12PM +0100, Jacek Luczak wrote:
+>>> For this one I've created also a report [1].
+>>> >
+>>> > so there is probably other problem in reservations and it just blew up during
+>>> > the unlink call.
+>>>
+>>> Could be as this came up after a longer time of throwing above WARN_ON.
+>>>
+>>> I'm now cloning the Linus tree. Lets see if both will pop up on there.
+>>
+>> The 3.3-rc6 should help in one case, with
+>>
+>> http://thread.gmane.org/gmane.comp.file-systems.btrfs/15268
+>>
+>> but I was able to reproduce the WARN_ON even with this patch, didn't get
+>> to debugging it again yet.
+>
+> Those two issues go inline. After a longer while of WARN_ON the BUG_ON
+> hit again.
 
-On Fri, Mar 09, 2012 at 02:44:30PM +0100, David Herrmann wrote:
-> On Wed, Mar 7, 2012 at 5:01 PM, Johan Hovold <jhovold@gmail.com> wrote:
-> > Do not close protocol driver until device has been unregistered.
-> >
-> > This fixes a race between tty_close and hci_dev_open which can result in
-> > a NULL-pointer dereference.
-> >
-> > The line discipline closes the protocol driver while we may still have
-> > hci_dev_open sleeping on the req_lock mutex resulting in a NULL-pointer
-> > dereference when lock is acquired and hci_init_req called.
+One more observation. Host is running builds from CI system. After
+BUG_ON pop up all builds take 50% more time to complete. Also I see
+that current load average stall at value of 7 even if host is
+completely idle.
 
-[...]
-
-> > diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
-> > index 0711448..6946081 100644
-> > --- a/drivers/bluetooth/hci_ldisc.c
-> > +++ b/drivers/bluetooth/hci_ldisc.c
-> > @@ -310,11 +310,11 @@ static void hci_uart_tty_close(struct tty_struct *tty)
-> >                        hci_uart_close(hdev);
-> >
-> >                if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
-> > -                       hu->proto->close(hu);
-> >                        if (hdev) {
-> >                                hci_unregister_dev(hdev);
-> >                                hci_free_dev(hdev);
-> >                        }
-> > +                       hu->proto->close(hu);
-> >                }
-> >        }
-> >  }
-> 
-> I can confirm this. hci_uart_set_proto() opens the proto before it
-> registers the hci device. Hence, we should also unregister the hci
-> device before closing the proto. I also looked whether this introduces
-> other race conditions but no proto-callback can be called here as they
-> are all protected by the tty-layer which synchronizes all
-> tty-callbacks. Therefore, I think this is the correct fix.
-> 
-> We can apply this to stable even without the "destruct"-fixes from me
-> as hu->proto->$cb$() doesn't care whether hdev is valid or not. I
-> don't think the destruct-fixes are important enough to send them to
-> stable.
-
-Unfortunately hu is is not valid once hci_unregister returns as it will
-call the destruct callback. So my patch depends on changing this
-behaviour first. (I could also store a pointer to the protocol before
-calling unregister in my patch.)
-
-Secondly, I must disagree with you regarding whether the memory leak you
-found is critical enough to be added to the stable trees. We're leaking
-kernel memory in a deterministic and easily triggered way which could be
-exploited by a malicious user.
-
-> Reviewed-by: David Herrmann <dh.herrmann@googlemail.com>
-
-Thanks,
-Johan
+-Jacek
