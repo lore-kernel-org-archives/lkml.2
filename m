@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758808Ab2CISy1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 13:54:27 -0500
-Received: from mail-bk0-f74.google.com ([209.85.214.74]:38392 "EHLO
-	mail-bk0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754659Ab2CISyY (ORCPT
+	id S1756344Ab2CISzT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 13:55:19 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50017 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab2CISzR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 13:54:24 -0500
-X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 13:54:24 EST
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel@ffwll.ch>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 09/10 v2] drm/i915/intel_i2c: reuse GMBUS2 value read in polling loop
-Date: Sat, 10 Mar 2012 02:48:23 +0800
-Message-Id: <1331318904-20577-10-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
-References: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
+	Fri, 9 Mar 2012 13:55:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo5dXP0H77Ph91HUTA+Do4q2=sL_tdikOQpTiCLQqw1x-Q@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+	<CABhMZUU_YNMXAU0Mr5zQMzxrk_XkFzk1HrwAN0SQxDf8n+F9kA@mail.gmail.com>
+	<CAE9FiQVNYWnZzfdNsW38P4vsD1ZpXeA+SwqqDK45SZAAphz_6A@mail.gmail.com>
+	<CAErSpo7W_2skcxsgFia+4caf1MgXCt3jqXCrKdX7q3EZ-KLP2Q@mail.gmail.com>
+	<CAE9FiQVxno4xGg_SSrbBVs+nifP8+=cqS8SzD5kvVr2cvJD0wA@mail.gmail.com>
+	<CAErSpo5dXP0H77Ph91HUTA+Do4q2=sL_tdikOQpTiCLQqw1x-Q@mail.gmail.com>
+Date: Fri, 9 Mar 2012 10:55:16 -0800
+X-Google-Sender-Auth: hS_dNwDasuWcrDWERcOD-zzhWFg
+Message-ID: <CAE9FiQW3_hDg7qRpAmmar3b-d8Yj1HvPZnCna_JrnxP=yxf6Tw@mail.gmail.com>
+Subject: Re: [PATCH 00/23] PCI, x86: pci root bus hotplug support
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Bjorn Helgaas <bjorn.helgaas@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save the GMBUS2 value read while polling for state changes, and then
-reuse this value when determining for which reason the loops were exited.
-This is a small optimization which saves a couple of bus accesses for
-memory mapped IO registers.
+On Fri, Mar 9, 2012 at 9:34 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Fri, Mar 9, 2012 at 1:19 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Thu, Mar 8, 2012 at 4:43 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>
+>>> The notes about "-v2, -v3, -v4, etc." are not really useful in the
+>>> commit changelogs.  They're helpful in the [00/] message, but not in
+>>> the changelogs.
+>>
+>> But Jesse may still need mark to figure out which one is latest?
+>
+> The way I do that is with "stg mail -v v3", which puts "[PATCH v3
+> 01/10]" in the subject.  IMO, that's much more useful because when you
+> post a 23-patch series, I don't want to be bothered with v1, v2, v3 on
+> a per-patch basis.
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
----
- drivers/gpu/drm/i915/intel_i2c.c |   19 ++++++++++---------
- 1 files changed, 10 insertions(+), 9 deletions(-)
+For that, I could just sed to replace PATCH to PATCH v3
 
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index 61fe317..2c372d3 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -243,6 +243,7 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 	struct drm_i915_private *dev_priv = adapter->algo_data;
- 	int i, reg_offset;
- 	int ret = 0;
-+	u32 gmbus2 = 0;
- 
- 	if (bus->force_bit)
- 		return intel_i2c_quirk_xfer(dev_priv,
-@@ -296,12 +297,12 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 			do {
- 				u32 val, loop = 0;
- 
--				if (wait_for(I915_READ(GMBUS2 + reg_offset) &
-+				if (wait_for((gmbus2 = I915_READ(GMBUS2 +
-+								 reg_offset)) &
- 					     (GMBUS_SATOER | GMBUS_HW_RDY),
- 					     50))
- 					goto timeout;
--				if (I915_READ(GMBUS2 + reg_offset) &
--				    GMBUS_SATOER)
-+				if (gmbus2 & GMBUS_SATOER)
- 					goto clear_err;
- 
- 				val = I915_READ(GMBUS3 + reg_offset);
-@@ -335,21 +336,21 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 				I915_WRITE(GMBUS3 + reg_offset, val);
- 				POSTING_READ(GMBUS2 + reg_offset);
- 
--				if (wait_for(I915_READ(GMBUS2 + reg_offset) &
-+				if (wait_for((gmbus2 = I915_READ(GMBUS2 +
-+								 reg_offset)) &
- 					     (GMBUS_SATOER | GMBUS_HW_RDY),
- 					     50))
- 					goto timeout;
--				if (I915_READ(GMBUS2 + reg_offset) &
--					      GMBUS_SATOER)
-+				if (gmbus2 & GMBUS_SATOER)
- 					goto clear_err;
- 			}
- 		}
- 
--		if (wait_for(I915_READ(GMBUS2 + reg_offset) &
-+		if (wait_for((gmbus2 = I915_READ(GMBUS2 + reg_offset)) &
- 			     (GMBUS_SATOER | GMBUS_HW_WAIT_PHASE),
- 			     50))
- 			goto timeout;
--		if (I915_READ(GMBUS2 + reg_offset) & GMBUS_SATOER)
-+		if (gmbus2 & GMBUS_SATOER)
- 			goto clear_err;
- 	}
- 
-@@ -373,7 +374,7 @@ clear_err:
- 	ret = -ENXIO;
- 
- done:
--	if (I915_READ(GMBUS2 + reg_offset) & GMBUS_HW_WAIT_PHASE) {
-+	if (gmbus2 & GMBUS_HW_WAIT_PHASE) {
- 		I915_WRITE(GMBUS1 + reg_offset,
- 			   GMBUS_CYCLE_STOP | GMBUS_SW_RDY);
- 		POSTING_READ(GMBUS2 + reg_offset);
--- 
-1.7.7.3
+>
+> It's true that when you post v2, many of those 23 patches will be
+> unchanged from v1, and you do have to describe that in the [v2 00/23]
+> mail.  But at least it's easy to identify the entire set of v2
+> patches.
 
+Version number of the entire set could be different from individual patch.
+That could be more confusing.
+
+Yinghai
