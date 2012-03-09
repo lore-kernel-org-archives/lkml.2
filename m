@@ -1,89 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab2CIAGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 19:06:30 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60006 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab2CIAG2 (ORCPT
+	id S1759451Ab2CIAFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 19:05:09 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:47122 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757948Ab2CIAET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 19:06:28 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+oEIZzUr/dL2SRd4dUMRE7
-Date: Thu, 8 Mar 2012 16:06:22 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: Russ Dill <Russ.Dill@ti.com>, balbi@ti.com, Matt Porter <mporter@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: OMAP2+: gpmc-smsc911x: add required smsc911x
- regulators
-Message-ID: <20120309000621.GA12083@atomide.com>
-References: <1330006564-13290-1-git-send-email-mporter@ti.com>
- <87wr74gis6.fsf@ti.com>
- <20120301204553.GA21841@legolas.emea.dhcp.ti.com>
- <87pqcqnc7u.fsf@ti.com>
- <CA+Bv8XaJqL1L8F-n6skY7dHn1XAdDLRKaRjw0deLeoQ5Ao0Fhg@mail.gmail.com>
- <87sjhkjj8m.fsf@ti.com>
- <20120308210825.GY12083@atomide.com>
- <87y5raaiob.fsf@ti.com>
+	Thu, 8 Mar 2012 19:04:19 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ap4EAN1HWU9bdWOb/2dsb2JhbABDhTWwe4ILAQUjDwEjIxAlAhgOAgI5AxsGARKIDqgakgWBL44RgRYElUWFZYNchleCZA
+X-IronPort-AV: E=Sophos;i="4.73,554,1325458800"; 
+   d="scan'208";a="886086950"
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
+	<vjaquez@igalia.com>
+To: Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-omap@vger.kernel.org
+Subject: [PATCH 15/17] staging: tidspbridge: remove gh_init() and gh_exit()
+Date: Fri,  9 Mar 2012 01:03:50 +0100
+Message-Id: <42a10f510859985692dfbf0a42658acd91568ac1.1331250369.git.vjaquez@igalia.com>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <cover.1331250368.git.vjaquez@igalia.com>
+References: <cover.1331250368.git.vjaquez@igalia.com>
+In-Reply-To: <cover.1331250368.git.vjaquez@igalia.com>
+References: <cover.1331250368.git.vjaquez@igalia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y5raaiob.fsf@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Kevin Hilman <khilman@ti.com> [120308 12:54]:
-> Tony Lindgren <tony@atomide.com> writes:
-> 
-> > * Kevin Hilman <khilman@ti.com> [120307 11:05]:
-> >> >
-> >> > I don't think the second smsc911x on the Overo, "smsc911x.1", would
-> >> > find it due to the dev_id.
-> >> 
-> >> It's not about finding the second regulator.  As stated in the
-> >> changelog, it's about the duplicate attempt to register the exact same
-> >> platform_device.
-> >> 
-> >> Duplicate attempts to register the exact same platform_device cause
-> >> kobject to panic and give up[1].  So, any platform that calls
-> >> gpmc_smsc911x_init() twice (Overo and T35 in mainline) will panic on
-> >> boot.
-> >> 
-> >> This patch fixes those platforms so they can boot.
-> >
-> > Yeah but I guess the second smsc911x instance still would not work,
-> > or am I missing something?
-> 
-> I don't know since my Overo expansion boards don't have a 2nd NIC, but I
-> suspect you're right.
-> 
-> However, my fix isn't addressing that.  I am fixing a problem where
-> mainline today will panic on some boards due to duplicate registration.
-> 
-> If the 2nd interface doesn't work, then the original patch that added
-> the regulators needs a rethink.  My patch to prevent the panic() is
-> needed for mainline.
+The gh module has a gh_init() and a gh_exit(), but they don't do
+anything, they are just noops.
 
-With Kevin's second version of this patch applied we avoid the panic
-on boards with more than one smsc911x.
+This patch removes these functions.
 
-After this patch, board-*.c files can add custom regulators for their
-other smsc911x instances.
+There is no functional changes.
 
-We should also add a regulator to the struct omap_smsc911x_platform_data,
-and then only initialize the fixed regulator automatically
-if (!board_data->regulator && !board_data->id).
+Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
+---
+ drivers/staging/tidspbridge/gen/gh.c               |   18 ------------------
+ drivers/staging/tidspbridge/include/dspbridge/gh.h |    2 --
+ drivers/staging/tidspbridge/pmgr/dbll.c            |   12 ++----------
+ 3 files changed, 2 insertions(+), 30 deletions(-)
 
-So I've pushed Kevin's second version of the fix to fix-smsc911x-regulator
-branch.
+diff --git a/drivers/staging/tidspbridge/gen/gh.c b/drivers/staging/tidspbridge/gen/gh.c
+index 60aa7b0..25eaef7 100644
+--- a/drivers/staging/tidspbridge/gen/gh.c
++++ b/drivers/staging/tidspbridge/gen/gh.c
+@@ -95,15 +95,6 @@ void gh_delete(struct gh_t_hash_tab *hash_tab)
+ }
+ 
+ /*
+- *  ======== gh_exit ========
+- */
+-
+-void gh_exit(void)
+-{
+-	/* Do nothing */
+-}
+-
+-/*
+  *  ======== gh_find ========
+  */
+ 
+@@ -122,15 +113,6 @@ void *gh_find(struct gh_t_hash_tab *hash_tab, void *key)
+ }
+ 
+ /*
+- *  ======== gh_init ========
+- */
+-
+-void gh_init(void)
+-{
+-	/* Do nothing */
+-}
+-
+-/*
+  *  ======== gh_insert ========
+  */
+ 
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/gh.h b/drivers/staging/tidspbridge/include/dspbridge/gh.h
+index 9de291d..da85079 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/gh.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/gh.h
+@@ -23,9 +23,7 @@ extern struct gh_t_hash_tab *gh_create(u16 max_bucket, u16 val_size,
+ 				       bool(*match) (void *, void *),
+ 				       void (*delete) (void *));
+ extern void gh_delete(struct gh_t_hash_tab *hash_tab);
+-extern void gh_exit(void);
+ extern void *gh_find(struct gh_t_hash_tab *hash_tab, void *key);
+-extern void gh_init(void);
+ extern void *gh_insert(struct gh_t_hash_tab *hash_tab, void *key, void *value);
+ #ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
+ void gh_iterate(struct gh_t_hash_tab *hash_tab,
+diff --git a/drivers/staging/tidspbridge/pmgr/dbll.c b/drivers/staging/tidspbridge/pmgr/dbll.c
+index 071ee86..9f07036 100644
+--- a/drivers/staging/tidspbridge/pmgr/dbll.c
++++ b/drivers/staging/tidspbridge/pmgr/dbll.c
+@@ -187,8 +187,6 @@ static u16 name_hash(void *key, u16 max_bucket);
+ static bool name_match(void *key, void *sp);
+ static void sym_delete(void *value);
+ 
+-static u32 refs;		/* module reference count */
+-
+ /* Symbol Redefinition */
+ static int redefined_symbol;
+ static int gbl_search = 1;
+@@ -268,10 +266,7 @@ void dbll_delete(struct dbll_tar_obj *target)
+  */
+ void dbll_exit(void)
+ {
+-	refs--;
+-
+-	if (refs == 0)
+-		gh_exit();
++	/* do nothing */
+ }
+ 
+ /*
+@@ -394,10 +389,7 @@ int dbll_get_sect(struct dbll_library_obj *lib, char *name, u32 *paddr,
+  */
+ bool dbll_init(void)
+ {
+-	if (refs == 0)
+-		gh_init();
+-
+-	refs++;
++	/* do nothing */
+ 
+ 	return true;
+ }
+-- 
+1.7.9.1
 
-Regards,
-
-Tony
