@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab2CIL5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 06:57:23 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39112 "EHLO
+	id S1753567Ab2CIMEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 07:04:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36965 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab2CIL5W convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752717Ab2CIMEg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 06:57:22 -0500
+	Fri, 9 Mar 2012 07:04:36 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120309110028.GB3852@pengutronix.de>
+In-Reply-To: <20120309105645.GA3852@pengutronix.de>
 References: <1331130825-14947-1-git-send-email-javier.martin@vista-silicon.com>
-	<1331130825-14947-2-git-send-email-javier.martin@vista-silicon.com>
-	<20120309110028.GB3852@pengutronix.de>
-Date: Fri, 9 Mar 2012 12:57:21 +0100
-Message-ID: <CACKLOr0QOhy9-GbEOeU0ExYwDrcoPKcv2=W8-4hT6vM5oCOyBQ@mail.gmail.com>
-Subject: Re: [PATCH v2 01/13] dmaengine: imx-dma: merge old dma-v1.c with imx-dma.c
+	<20120309105645.GA3852@pengutronix.de>
+Date: Fri, 9 Mar 2012 13:04:36 +0100
+Message-ID: <CACKLOr3Y9BW_pMUnr6q4eH2c+2=jQ2WHEjWprb=O5wFrS9=T=A@mail.gmail.com>
+Subject: Re: [PATCH v2 00/13] dmaengine: imx-dma: merge dma arch code into dmaengine.
 From: javier Martin <javier.martin@vista-silicon.com>
 To: Sascha Hauer <s.hauer@pengutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -26,35 +25,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 March 2012 12:00, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Wed, Mar 07, 2012 at 03:33:33PM +0100, Javier Martin wrote:
->> It is mainly a simple merge changing the prefix of some
->> functions to fit the imx-dma namings.
+Hi Sascha,
+thank you for your time.
+
+On 9 March 2012 11:56, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Wed, Mar 07, 2012 at 03:33:32PM +0100, Javier Martin wrote:
+>> The following series have to be applied on top of the following patches:
+>> [PATCH v2 1/2] dmaengine: Add support for MEMCPY for imx-dma.
+>> [PATCH v3 2/2] dmaengine: Add support for multiple descriptors for imx-dma.
 >>
->> As there are no users of the old dma-v1.c api we can safely
->> remove this file.
+>> As discussed with Vinod and Sascha, the file 'arch/arm/mach-imx/dma-v1.c'
+>> is deprecated and no new patches are accepted for it.
 >>
->> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
->> ---
->> @@ -633,11 +1127,8 @@ static int __exit imxdma_remove(struct platform_device *pdev)
+>> This series merges this code into the imx-dma.c dmaengine driver.
 >>
->>          dma_async_device_unregister(&imxdma->dma_device);
+>> Changes since v1:
+>>  - Merge patch 14 with 01.
+>>  - Add a proper changelog to each patch of the series.
 >>
->> -     for (i = 0; i < MAX_DMA_CHANNELS; i++) {
->> -             struct imxdma_channel *imxdmac = &imxdma->channel[i];
->> -
->> -              imx_dma_free(imxdmac->imxdma_channel);
->> -     }
->> +     for (i = 0; i < MAX_DMA_CHANNELS; i++)
->> +             free_irq(MX2x_INT_DMACH0 + i, NULL);
+>> [PATCH v2 01/13] dmaengine: imx-dma: merge old dma-v1.c with imx-dma.c
+>> [PATCH v2 02/13] dmaengine: imx-dma: remove data member from internal structure.
+>> [PATCH v2 03/13] dmaengine: imx-dma: remove dma_mode member of internal structure.
+>> [PATCH v2 04/13] dmaengine: imx-dma: remove 'imxdma_setup_mem2mem_hw' function.
+>> [PATCH v2 05/13] dmaengine: imx-dma: remove 'imxdma_config_channel_hw' function.
+>> [PATCH v2 06/13] dmaengine: imx-dma: remove 'imxdma_setup_sg_hw' function.
+>> [PATCH v2 07/13] dmaengine: imx-dma: remove sg member from internal structure.
+>> [PATCH v2 08/13] dmaengine: imx-dma: remove 'in_use' field of 'internal' structure.
+>> [PATCH v2 09/13] dmaengine: imx-dma: remove 'resbytes' field of 'internal' structure.
+>> [PATCH v2 10/13] dmaengine: imx-dma: remove internal structure.
+>> [PATCH v2 11/13] dmaengine: imx-dma: remove unused arg of imxdma_sg_next.
+>> [PATCH v2 12/13] dmaengine: imx-dma: remove 'imx_dmav1_baseaddr' and 'dma_clk'.
+>> [PATCH v2 13/13] dmaengine: imx-dma: use 'dev_dbg' and 'dev_warn' for messages.
 >
-> This lacks a test for i.MX1/21/27. The above is correct for i.MX21/27,
-> but on i.MX1 you have to free MX1_DMA_INT/MX1_DMA_ERR.
+> I didn't look at the individual patches but only on the end result and
+> overall it looks good. There are several things left for further cleanup:
+>
+> - use resources for irq and base address
+> - use platform device id rather than cpu_is_* to distinguish
+>  between the different device types.
+> - request_irq for i.MX21/27 in alloc_chan_resources instead in probe
+> - Use all available channels. In the time we had dmaengine users and
+>  legacy API users 8 channels were reserved for the old API and 8
+>  channels for the dmaengine API.
+>
+> I think the first three points can be done in a later series, the last
+> one should be trivial to fix now.
 
-This series has only been tested for i.MX27. So, to those reviewing
-the code, please pay special attention to i.MX1 part.
+I agree. Let me fix the last issue you mention in a v3 of the involved patch.
 
-Sascha, thank you for your comment, I will fix it for the next version.
+> Some comments follow to the individual patches.
+>
+> And, oh:
+>
+> Tested-by: Sascha Hauer <s.hauer@pengutronix.de
+
+Cool. Did you test it for any other platform than i.MX27?
 
 Regards.
 -- 
