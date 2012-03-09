@@ -1,72 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab2CID7p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 22:59:45 -0500
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:49560 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757214Ab2CID7n (ORCPT
+	id S1757809Ab2CIECK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 23:02:10 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33017 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757544Ab2CIECJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 22:59:43 -0500
-Message-ID: <4F598028.5020509@ti.com>
-Date: Fri, 09 Mar 2012 09:29:36 +0530
-From: Aneesh V <aneesh@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.21) Gecko/20110831 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 0/8] Add TI EMIF SDRAM controller driver
-References: <1331222065-3579-1-git-send-email-aneesh@ti.com> <20120308205944.GB16644@kroah.com>
-In-Reply-To: <20120308205944.GB16644@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 8 Mar 2012 23:02:09 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Mar 2012 13:00:31 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] memcg: avoid THP split in task migration
+Message-Id: <20120309130031.8740beef.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120309122448.92931dc6.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1330719189-20047-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1330719189-20047-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<20120309101658.8b36ce4f.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.LSU.2.00.1203081816170.18242@eggly.anvils>
+	<20120309122448.92931dc6.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 09 March 2012 02:29 AM, Greg KH wrote:
-> On Thu, Mar 08, 2012 at 09:24:17PM +0530, Aneesh V wrote:
->> Add a driver for the EMIF SDRAM controller used in TI SoCs
->>
->> EMIF is an SDRAM controller that supports, based on its revision,
->> one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
->> for LPDDR2.
->>
->> The driver supports the following features:
->> - Calculates the DDR AC timing parameters to be set in EMIF
->>    registers using data from the device data-sheets and based
->>    on the DDR frequency. If data from data-sheets is not available
->>    default timing values from the JEDEC spec are used. These
->>    will be safe, but not necessarily optimal
->> - API for changing timings during DVFS or at boot-up
->> - Temperature alert configuration and handling of temperature
->>    alerts, if any for LPDDR2 devices
->>    * temperature alert is based on periodic polling of MR4 mode
->>      register in DDR devices automatically performed by hardware
->>    * timings are de-rated and brought back to nominal when
->>      temperature raises and falls respectively
->> - Cache of calculated register values to avoid re-calculating
->>    them
->>
->> The driver will need some minor updates when it is eventually
->> integrated with Dynamic Voltage and Frequency Scaling (DVFS).
->> This can not be done now as DVFS support is not available in
->> the mainline yet.
->
-> What will need to be updated in it?  The userspace interface or
-> something else?
+On Fri, 9 Mar 2012 12:24:48 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-The driver will need to register notifiers with regulator framework and
-clock framework respectively for voltage and frequency notifications.
-Also a hook will be needed for initiating the hardware sequence for
-updating the AC timings. This process is under the control of Power
-Reset and Clock Management(PRCM) module of OMAP.
+> On Thu, 8 Mar 2012 18:33:14 -0800 (PST)
+> Hugh Dickins <hughd@google.com> wrote:
+> 
+> > On Fri, 9 Mar 2012, KAMEZAWA Hiroyuki wrote:
+> > > > +
+> > > > +	page = pmd_page(pmd);
+> > > > +	VM_BUG_ON(!page || !PageHead(page));
+> > > > +	if (!move_anon() || page_mapcount(page) != 1)
+> > > > +		return 0;
+> > > 
+> > > Could you add this ?
+> > > ==
+> > > static bool move_check_shared_map(struct page *page)
+> > > {
+> > >   /*
+> > >    * Handling of shared pages between processes is a big trouble in memcg.
+> > >    * Now, we never move shared-mapped pages between memcg at 'task' moving because
+> > >    * we have no hint which task the page is really belongs to. For example, 
+> > >    * When a task does "fork()-> move to the child other group -> exec()", the charges
+> > >    * should be stay in the original cgroup. 
+> > >    * So, check mapcount to determine we can move or not.
+> > >    */
+> > >    return page_mapcount(page) != 1;
+> > > }
+> > 
+> > That's a helpful elucidation, thank you.  However...
+> > 
+> > That is not how it has actually been behaving for the last 18 months
+> > (because of the "> 2" bug), so in practice you are asking for a change
+> > in behaviour there.
+> > 
+> Yes.
+> 
+> 
+> > And it's not how it has been and continues to behave with file pages.
+> > 
+> It's ok to add somethink like..
+> 
+> 	if (PageAnon(page) && !move_anon())
+> 		return false;
+> 	...
+> 
+> > Isn't getting that behaviour in fork-move-exec just a good reason not
+> > to set move_charge_at_immigrate?
+> > 
+> Hmm. Maybe.
+> 
+> > I think there are other scenarios where you do want all the pages to
+> > move if move_charge_at_immigrate: and that's certainly easier to
+> > describe and to understand and to code.
+> > 
+> > But if you do insist on not moving the shared, then it needs to involve
+> > something like mem_cgroup_count_swap_user() on PageSwapCache pages,
+> > rather than just the bare page_mapcount().
+> > 
+> 
+> This 'moving swap account' was a requirement from a user (NEC?).
+> But no user doesn't say 'I want to move shared pages between cgroups at task
+> move !' and I don't like to move shared objects.
+> 
+> > I'd rather delete than add code here!
+> > 
+> 
+> As a user, for Fujitsu, I believe it's insane to move task between cgroups.
+> So, I have no benefit from this code, at all.
+> Ok, maybe I'm not a stakeholder,here.
+> 
 
->
-> Why not wait until that code is accepted, it should be going into 3.4,
-> right?
+Considering again, in my personal opinion, 
+at fork() -> move() -> exec(), parent's RSS charge should not be moved.
 
-As Paul mentioned Core DVFS may take longer time. Besides, EMIF driver
-is a pre-requisite for correct functioning of Core DVFS.
+Thanks,
+-Kame
 
-thanks,
-Aneesh
