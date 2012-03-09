@@ -1,122 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab2CIMUW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 07:20:22 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:58597 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754337Ab2CIMUV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 07:20:21 -0500
-Date: Fri, 9 Mar 2012 13:20:08 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Vinod Koul <vinod.koul@intel.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to __dma_request_channel()
-In-Reply-To: <1331285959.4657.76.camel@vkoul-udesk3>
-Message-ID: <Pine.LNX.4.64.1203091049060.7852@axis700.grange>
-References: <1331101687.24656.319.camel@vkoul-udesk3> 
- <Pine.LNX.4.64.1203070917380.19595@axis700.grange> 
- <20120307093026.GM17370@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
-  <20120307103112.GP17370@n2100.arm.linux.org.uk> 
- <Pine.LNX.4.64.1203071149190.19595@axis700.grange> 
- <20120307124620.GT17370@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
-  <20120307142634.GA18787@n2100.arm.linux.org.uk> 
- <Pine.LNX.4.64.1203071602330.19595@axis700.grange> 
- <20120307162755.GB18787@n2100.arm.linux.org.uk>  <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
-  <1331188201.4657.51.camel@vkoul-udesk3>  <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
-  <1331204128.4657.54.camel@vkoul-udesk3>  <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
-  <1331206459.4657.59.camel@vkoul-udesk3>  <1331211513.4657.67.camel@vkoul-udesk3>
-  <Pine.LNX.4.64.1203081412550.29847@axis700.grange>  <1331284918.4657.69.camel@vkoul-udesk3>
-  <Pine.LNX.4.64.1203091022200.7852@axis700.grange> <1331285959.4657.76.camel@vkoul-udesk3>
+	id S1755344Ab2CIMV5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 07:21:57 -0500
+Received: from mga14.intel.com ([143.182.124.37]:11271 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753349Ab2CIMVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 07:21:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="75552500"
+Date: Fri, 9 Mar 2012 14:21:58 +0200
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: marcel@holtmann.org, padovan@profusion.mobi, davem@davemloft.net,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: Resend: [PATCH] Bluetooth: Fix Endian Bug.
+Message-ID: <20120309122154.GA17167@aemeltch-MOBL1>
+Mail-Followup-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>,
+	santosh nayak <santoshprasadnayak@gmail.com>, marcel@holtmann.org,
+	padovan@profusion.mobi, davem@davemloft.net,
+	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <1330622196-12967-1-git-send-email-santoshprasadnayak@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:5qnG7YMallcffQnXrOY/nXFXxPqyikcBLcqVCdIU0wf
- WNqMDovCQcwPTUWIiuC9CHMVp2tU2g2GOnc2p1RZ4GHSMakQTA
- jTfzePC6bWzS/p5iVHtCy8IW5W8E9MV4iFY/f5u/8rRsNmPsni
- 1KN7nL8SHnFMfkSsaaBemA21krBOT8Jm7s31qHKMRsK2eMRZOO
- d5mccZX89u3gz6lfZpYqAzOGc5HSlBCVIuaL1BbfAyg3GO6BsD
- KDdwl4CxuVUmoDRm61J8oz1KRu4h+VLs48b+naohyzmKYkIuSS
- fRl9JOFk+ZLtZ0wjEiFeSl+7HDwHB0CAVuJu6OdhH1jEJugZ8C
- vobqi8j8bjxaHdDCymZMtUoLVbKN9hvhztoYhaZujell5krz+l
- v0eBNw75fnu0A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330622196-12967-1-git-send-email-santoshprasadnayak@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Mar 2012, Vinod Koul wrote:
-
-> On Fri, 2012-03-09 at 10:24 +0100, Guennadi Liakhovetski wrote:
-> > On Fri, 9 Mar 2012, Vinod Koul wrote:
-> > 
-> > > On Thu, 2012-03-08 at 14:18 +0100, Guennadi Liakhovetski wrote:
-> > > > > Assuming I didn't miss...
-> > > > > 
-> > > > > The case B can be handled without sweat by platforms channel mapping
-> > > > > information.
-> > > > > 
-> > > > > Case A where we don't find that devices exist in map, thus being treated
-> > > > > as generic DMA channels and can be handled easily in sequence. So when
-> > > > > someone in Q request a channel it would get first channel in Ps
-> > > > > 
-> > > > > This way we handle both of them in a transparent manner to both clients
-> > > > > and controllers. 
-> > > > > 
-> > > > > Perhaps we can also add capability to know that if channel is to be
-> > > > > searched in map or not - would be anyway required for non slave cases.
-> > > > 
-> > > > Right, but I don't understand then what this gives us. You propose some 
-> > > > channel maps, that will not be used for your "case A." Which means, for 
-> > > > "case A" nothing changes. So, the reason for this whole thread hasn't been 
-> > > > addressed: how to pass channel configuration to the DMA controller driver.
-> > > For "Case A" there should be no filtering or any issues even now. You
-> > > have controller requesting a channel and as long as they get a channel
-> > > for respective pool, it should work.
-> > > 
-> > > Or is there anything else which is required in this case?
-> > 
-> > Yes, there is. You keep complaining about my use of .priv pointer, which I 
-> > use in the filter to pass channel configuration to the DMA controller 
-> > driver. That is the original reason for this whole discussion. If you're 
-> > fine with that, I'll just carry that .priv use over in the "simple" DMA 
-> > engine driver and stay happy forever:-)
-> Channel configuration != filtering & channel allocation
+On Thu, Mar 01, 2012 at 10:46:36PM +0530, santosh nayak wrote:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
 > 
-> The discussion is focused on getting request_channel fixed so that we
-> take care of oddities in respective platforms for channel maps which
-> exist.
-> What the heck does it have to on how you configure you channel??
+> Fix network to host endian conversion for L2CAP chan id.
 > 
-> Once you have channel allocated correctly which can work for you,
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-It can be made to work as long as there's only one DMAC group with 
-configurable channels and all other DMACs are dedicated to specific 
-peripherals, yes. I don't know whether there are already now or are 
-approaching any platforms with multiple reconfigurable groups.
+Acked-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
 
-> you
-> need to configure you channel. Since this is slave case you to tell what
-> your client FIFO depth, burst size, width etc parameters. There is
-> dma_slave_config for that purpose ONLY. Is there anything else required
-> for _configuring_ if yes, we can add those. But then again that doesn't
-> have anything to do with how you get a channel.
-
-As Russell mentioned, struct dma_slave_config isn't suitable for channel 
-configuration. Currently we use struct sh_dmae_slave_config to configure 
-channels. As you can see, apart from the client's address, it also 
-contains two fields with register values, that have to be used with this 
-client. We could use dmaengine_slave_config() and embed struct 
-dma_slave_config in our private type, but out of 7 fields of that struct 
-effectively only one would be used, which makes this approach both clumsy 
-and inefficient.
-
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+> ---
+>  net/bluetooth/l2cap_sock.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
+> index 401d942..86d5067 100644
+> --- a/net/bluetooth/l2cap_sock.c
+> +++ b/net/bluetooth/l2cap_sock.c
+> @@ -82,7 +82,7 @@ static int l2cap_sock_bind(struct socket *sock, struct sockaddr *addr, int alen)
+>  	}
+>  
+>  	if (la.l2_cid)
+> -		err = l2cap_add_scid(chan, la.l2_cid);
+> +		err = l2cap_add_scid(chan, __le16_to_cpu(la.l2_cid));
+>  	else
+>  		err = l2cap_add_psm(chan, &la.l2_bdaddr, la.l2_psm);
+>  
+> @@ -123,7 +123,8 @@ static int l2cap_sock_connect(struct socket *sock, struct sockaddr *addr, int al
+>  	if (la.l2_cid && la.l2_psm)
+>  		return -EINVAL;
+>  
+> -	err = l2cap_chan_connect(chan, la.l2_psm, la.l2_cid, &la.l2_bdaddr);
+> +	err = l2cap_chan_connect(chan, la.l2_psm, __le16_to_cpu(la.l2_cid),
+> +				&la.l2_bdaddr);
+>  	if (err)
+>  		goto done;
+>  
+> -- 
+> 1.7.4.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
