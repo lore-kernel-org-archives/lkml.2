@@ -1,54 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032019Ab2CITyu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:54:50 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54260 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031995Ab2CITyp (ORCPT
+	id S1032047Ab2CITzG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:55:06 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:46345 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032024Ab2CITy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:54:45 -0500
-Message-Id: <20120309190220.328775312@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:54:56 -0500
+Message-Id: <20120309190204.521164189@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:21 -0800
+Date: Fri, 09 Mar 2012 11:02:29 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Danny Kukawka <danny.kukawka@bisect.de>
-Subject: [ 67/68] cs5535-mfgpt: dont call __init function from __devinit
-In-Reply-To: <20120309194409.GA2069@kroah.com>
+        alan@lxorguk.ukuu.org.uk,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <cjb@laptop.org>
+Subject: [ 27/95] mmc: atmel-mci: dont use dma features when using DMA with no chan available
+In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-commit 474de3bbadd9cb75ffc32cc759c40d868343d46c upstream.
+commit ef8781989a1bcd05aa47e853917c37df44917194 upstream.
 
-Fix scan_timers() to be __devinit and not __init since
-the function get called from cs5535_mfgpt_probe which is
-__devinit.
+Some callbacks are set too early -- i.e. we can have dma capabilities but
+we can't get a dma channel. So wait to get the dma channel before setting
+callbacks and change logs consequently.
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/cs5535-mfgpt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/host/atmel-mci.c |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
---- a/drivers/misc/cs5535-mfgpt.c
-+++ b/drivers/misc/cs5535-mfgpt.c
-@@ -262,7 +262,7 @@ static void __init reset_all_timers(void
-  * In other cases (such as with VSAless OpenFirmware), the system firmware
-  * leaves timers available for us to use.
-  */
--static int __init scan_timers(struct cs5535_mfgpt_chip *mfgpt)
-+static int __devinit scan_timers(struct cs5535_mfgpt_chip *mfgpt)
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1944,12 +1944,12 @@ static bool atmci_filter(struct dma_chan
+ 	}
+ }
+ 
+-static void atmci_configure_dma(struct atmel_mci *host)
++static bool atmci_configure_dma(struct atmel_mci *host)
  {
- 	struct cs5535_mfgpt_timer timer = { .chip = mfgpt };
- 	unsigned long flags;
+ 	struct mci_platform_data	*pdata;
+ 
+ 	if (host == NULL)
+-		return;
++		return false;
+ 
+ 	pdata = host->pdev->dev.platform_data;
+ 
+@@ -1966,12 +1966,15 @@ static void atmci_configure_dma(struct a
+ 		host->dma.chan =
+ 			dma_request_channel(mask, atmci_filter, pdata->dma_slave);
+ 	}
+-	if (!host->dma.chan)
+-		dev_notice(&host->pdev->dev, "DMA not available, using PIO\n");
+-	else
++	if (!host->dma.chan) {
++		dev_warn(&host->pdev->dev, "no DMA channel available\n");
++		return false;
++	} else {
+ 		dev_info(&host->pdev->dev,
+ 					"Using %s for DMA transfers\n",
+ 					dma_chan_name(host->dma.chan));
++		return true;
++	}
+ }
+ 
+ static inline unsigned int atmci_get_version(struct atmel_mci *host)
+@@ -2081,8 +2084,7 @@ static int __init atmci_probe(struct pla
+ 
+ 	/* Get MCI capabilities and set operations according to it */
+ 	atmci_get_cap(host);
+-	if (host->caps.has_dma) {
+-		dev_info(&pdev->dev, "using DMA\n");
++	if (host->caps.has_dma && atmci_configure_dma(host)) {
+ 		host->prepare_data = &atmci_prepare_data_dma;
+ 		host->submit_data = &atmci_submit_data_dma;
+ 		host->stop_transfer = &atmci_stop_transfer_dma;
+@@ -2092,15 +2094,12 @@ static int __init atmci_probe(struct pla
+ 		host->submit_data = &atmci_submit_data_pdc;
+ 		host->stop_transfer = &atmci_stop_transfer_pdc;
+ 	} else {
+-		dev_info(&pdev->dev, "no DMA, no PDC\n");
++		dev_info(&pdev->dev, "using PIO\n");
+ 		host->prepare_data = &atmci_prepare_data;
+ 		host->submit_data = &atmci_submit_data;
+ 		host->stop_transfer = &atmci_stop_transfer;
+ 	}
+ 
+-	if (host->caps.has_dma)
+-		atmci_configure_dma(host);
+-
+ 	platform_set_drvdata(pdev, host);
+ 
+ 	/* We need at least one slot to succeed */
 
 
