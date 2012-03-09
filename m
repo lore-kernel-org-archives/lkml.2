@@ -1,59 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032006Ab2CITyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:54:47 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52821 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031951Ab2CITym (ORCPT
+	id S1032037Ab2CIT43 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:56:29 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59355 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031999Ab2CIT40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:54:42 -0500
-Message-Id: <20120309190220.247833047@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:56:26 -0500
+Message-Id: <20120309190209.314456174@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:20 -0800
+Date: Fri, 09 Mar 2012 11:03:29 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jonathan Brassow <jbrassow@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 66/68] dm raid: fix flush support
-In-Reply-To: <20120309194409.GA2069@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Mike Snitzer <snitzer@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 87/95] dm flakey: fix crash on read when corrupt_bio_byte not set
+In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jonathan E Brassow <jbrassow@redhat.com>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 0ca93de9b789e0eb05e103f0c04de72df13da73a upstream.
+commit 1212268fd9816e3b8801e57b896fceaec71969ad upstream.
 
-Fix dm-raid flush support.
+The following BUG is hit on the first read that is submitted to a dm
+flakey test device while the device is "down" if the corrupt_bio_byte
+feature wasn't requested when the device's table was loaded.
 
-Both md and dm have support for flush, but the dm-raid target
-forgot to set the flag to indicate that flushes should be
-passed on.  (Important for data integrity e.g. with writeback cache
-enabled.)
+Example DM table that will hit this BUG:
+0 2097152 flakey 8:0 2048 0 30
 
-Signed-off-by: Jonathan Brassow <jbrassow@redhat.com>
-Acked-by: Mike Snitzer <snitzer@redhat.com>
+This bug was introduced by commit a3998799fb4df0b0af8271a7d50c4269032397aa
+(dm flakey: add corrupt_bio_byte feature) in v3.1-rc1.
+
+BUG: unable to handle kernel paging request at ffff8801cfce3fff
+IP: [<ffffffffa008c233>] corrupt_bio_data+0x6e/0xae [dm_flakey]
+PGD 1606063 PUD 0
+Oops: 0002 [#1] SMP
+...
+Call Trace:
+ <IRQ>
+ [<ffffffffa008c2b5>] flakey_end_io+0x42/0x48 [dm_flakey]
+ [<ffffffffa00dca98>] clone_endio+0x54/0xb6 [dm_mod]
+ [<ffffffff81130587>] bio_endio+0x2d/0x2f
+ [<ffffffff811c819a>] req_bio_endio+0x96/0x9f
+ [<ffffffff811c94b9>] blk_update_request+0x1dc/0x3a9
+ [<ffffffff812f5ee2>] ? rcu_read_unlock+0x21/0x23
+ [<ffffffff811c96a6>] blk_update_bidi_request+0x20/0x6e
+ [<ffffffff811c9713>] blk_end_bidi_request+0x1f/0x5d
+ [<ffffffff811c978d>] blk_end_request+0x10/0x12
+ [<ffffffff8128f450>] scsi_io_completion+0x1e5/0x4b1
+ [<ffffffff812882a9>] scsi_finish_command+0xec/0xf5
+ [<ffffffff8128f830>] scsi_softirq_done+0xff/0x108
+ [<ffffffff811ce284>] blk_done_softirq+0x84/0x98
+ [<ffffffff81048d19>] __do_softirq+0xe3/0x1d5
+ [<ffffffff8138f83f>] ? _raw_spin_lock+0x62/0x69
+ [<ffffffff810997cf>] ? handle_irq_event+0x4c/0x61
+ [<ffffffff8139833c>] call_softirq+0x1c/0x30
+ [<ffffffff81003b37>] do_softirq+0x4b/0xa3
+ [<ffffffff81048a39>] irq_exit+0x53/0xca
+ [<ffffffff81398acd>] do_IRQ+0x9d/0xb4
+ [<ffffffff81390333>] common_interrupt+0x73/0x73
+...
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-raid.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/dm-flakey.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/dm-raid.c
-+++ b/drivers/md/dm-raid.c
-@@ -468,6 +468,7 @@ static int raid_ctr(struct dm_target *ti
- 	INIT_WORK(&rs->md.event_work, do_table_event);
- 	ti->split_io = rs->md.chunk_sectors;
- 	ti->private = rs;
-+	ti->num_flush_requests = 1;
- 
- 	mutex_lock(&rs->md.reconfig_mutex);
- 	ret = md_run(&rs->md);
+--- a/drivers/md/dm-flakey.c
++++ b/drivers/md/dm-flakey.c
+@@ -323,7 +323,7 @@ static int flakey_end_io(struct dm_targe
+ 	 * Corrupt successful READs while in down state.
+ 	 * If flags were specified, only corrupt those that match.
+ 	 */
+-	if (!error && bio_submitted_while_down &&
++	if (fc->corrupt_bio_byte && !error && bio_submitted_while_down &&
+ 	    (bio_data_dir(bio) == READ) && (fc->corrupt_bio_rw == READ) &&
+ 	    all_corrupt_bio_flags_match(bio, fc))
+ 		corrupt_bio_data(bio, fc);
 
 
