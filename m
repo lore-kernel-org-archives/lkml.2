@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030654Ab2CITrc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:47:32 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63959 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030544Ab2CITr1 (ORCPT
+	id S1030550Ab2CITri (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:47:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030657Ab2CITrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:47:27 -0500
-Message-Id: <20120309190205.238938677@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:47:33 -0500
+Message-Id: <20120309190205.399674335@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:38 -0800
+Date: Fri, 09 Mar 2012 11:02:40 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Jones <davej@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        David Rientjes <rientjes@google.com>, Josh Boyer <jwboyer@redhat.com>
-Subject: [ 36/95] mm: thp: fix BUG on mm->nr_ptes
+        alan@lxorguk.ukuu.org.uk, Timur Tabi <timur@freescale.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [ 38/95] tty/powerpc: early udbg consoles cant be modules
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,97 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 
-commit 1c641e84719429bbfe62a95ed3545ee7fe24408f upstream.
+commit f21c6d4a49179f91fd70a41382382f08c780d425 upstream.
 
-Dave Jones reports a few Fedora users hitting the BUG_ON(mm->nr_ptes...)
-in exit_mmap() recently.
+Fixes these build errors:
 
-Quoting Hugh's discovery and explanation of the SMP race condition:
+ERROR: ".udbg_printf" [drivers/tty/ehv_bytechan.ko] undefined!
+ERROR: ".register_early_udbg_console" [drivers/tty/ehv_bytechan.ko] undefined!
+ERROR: "udbg_putc" [drivers/tty/ehv_bytechan.ko] undefined!
 
-  "mm->nr_ptes had unusual locking: down_read mmap_sem plus
-   page_table_lock when incrementing, down_write mmap_sem (or mm_users
-   0) when decrementing; whereas THP is careful to increment and
-   decrement it under page_table_lock.
-
-   Now most of those paths in THP also hold mmap_sem for read or write
-   (with appropriate checks on mm_users), but two do not: when
-   split_huge_page() is called by hwpoison_user_mappings(), and when
-   called by add_to_swap().
-
-   It's conceivable that the latter case is responsible for the
-   exit_mmap() BUG_ON mm->nr_ptes that has been reported on Fedora."
-
-The simplest way to fix it without having to alter the locking is to make
-split_huge_page() a noop in nr_ptes terms, so by counting the preallocated
-pagetables that exists for every mapped hugepage.  It was an arbitrary
-choice not to count them and either way is not wrong or right, because
-they are not used but they're still allocated.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Timur Tabi <timur@freescale.com>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/huge_memory.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/tty/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -642,6 +642,7 @@ static int __do_huge_pmd_anonymous_page(
- 		set_pmd_at(mm, haddr, pmd, entry);
- 		prepare_pmd_huge_pte(pgtable, mm);
- 		add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
-+		mm->nr_ptes++;
- 		spin_unlock(&mm->page_table_lock);
- 	}
+--- a/drivers/tty/Kconfig
++++ b/drivers/tty/Kconfig
+@@ -365,7 +365,7 @@ config PPC_EPAPR_HV_BYTECHAN
  
-@@ -760,6 +761,7 @@ int copy_huge_pmd(struct mm_struct *dst_
- 	pmd = pmd_mkold(pmd_wrprotect(pmd));
- 	set_pmd_at(dst_mm, addr, dst_pmd, pmd);
- 	prepare_pmd_huge_pte(pgtable, dst_mm);
-+	dst_mm->nr_ptes++;
- 
- 	ret = 0;
- out_unlock:
-@@ -858,7 +860,6 @@ static int do_huge_pmd_wp_page_fallback(
- 	}
- 	kfree(pages);
- 
--	mm->nr_ptes++;
- 	smp_wmb(); /* make pte visible before pmd */
- 	pmd_populate(mm, pmd, pgtable);
- 	page_remove_rmap(page);
-@@ -1017,6 +1018,7 @@ int zap_huge_pmd(struct mmu_gather *tlb,
- 			VM_BUG_ON(page_mapcount(page) < 0);
- 			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
- 			VM_BUG_ON(!PageHead(page));
-+			tlb->mm->nr_ptes--;
- 			spin_unlock(&tlb->mm->page_table_lock);
- 			tlb_remove_page(tlb, page);
- 			pte_free(tlb->mm, pgtable);
-@@ -1356,7 +1358,6 @@ static int __split_huge_page_map(struct
- 			pte_unmap(pte);
- 		}
- 
--		mm->nr_ptes++;
- 		smp_wmb(); /* make pte visible before pmd */
- 		/*
- 		 * Up to this point the pmd is present and huge and
-@@ -1969,7 +1970,6 @@ static void collapse_huge_page(struct mm
- 	set_pmd_at(mm, address, pmd, _pmd);
- 	update_mmu_cache(vma, address, _pmd);
- 	prepare_pmd_huge_pte(pgtable, mm);
--	mm->nr_ptes--;
- 	spin_unlock(&mm->page_table_lock);
- 
- #ifndef CONFIG_NUMA
+ config PPC_EARLY_DEBUG_EHV_BC
+ 	bool "Early console (udbg) support for ePAPR hypervisors"
+-	depends on PPC_EPAPR_HV_BYTECHAN
++	depends on PPC_EPAPR_HV_BYTECHAN=y
+ 	help
+ 	  Select this option to enable early console (a.k.a. "udbg") support
+ 	  via an ePAPR byte channel.  You also need to choose the byte channel
 
 
