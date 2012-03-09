@@ -1,98 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030256Ab2CIU2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:28:13 -0500
-Received: from stats.peacock.arvixe.com ([174.122.104.67]:42311 "EHLO
-	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1030273Ab2CIU2K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 15:28:10 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=firszt.eu;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer;
-	b=sZMMTVUzl9XQPBO8e2kB9ZpeSblAwENtKh2bDB8dlPsbMbw22TY0jYpEwstMG4XKsH2fXED/2dXpqjqYZ0p5Dcb+x9d1KNcp+8/H49BxeztNGpx+4u+YcfsmEdDzKyx9;
-From: Przemo Firszt <przemo@firszt.eu>
-To: killertofu@gmail.com, pinglinux@gmail.com, jkosina@suse.cz
-Cc: linuxwacom-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH] HID: wacom: Add reporting of wheel for Intuos4 WL
-Date: Fri,  9 Mar 2012 20:27:42 +0000
-Message-Id: <1331324862-15989-1-git-send-email-przemo@firszt.eu>
-X-Mailer: git-send-email 1.7.6.4
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - peacock.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
+	id S1030224Ab2CIU3W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:29:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58962 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964781Ab2CIU3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 15:29:20 -0500
+Date: Fri, 9 Mar 2012 17:27:27 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+Subject: [PATCH v3] mm: SLAB Out-of-memory diagnostics
+Message-ID: <20120309202722.GA10323@x61.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLFQjV1c7nQZMA2voybN0AdhGrKFN5svQHC2C=oP3vOD4g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds reporting of ABS_WHEEL event. Raported walues are 0..71
-and are related to absolute location of the finger on the wheel.
+Following the example at mm/slub.c, add out-of-memory diagnostics to the
+SLAB allocator to help on debugging certain OOM conditions.
 
-Signed-off-by: Przemo Firszt <przemo@firszt.eu>
-Reviewed-by: Jason Gerecke <killertofu@gmail.com>
+An example print out looks like this:
+
+  <snip page allocator out-of-memory message>
+  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
+    cache: bio-0, object size: 192, order: 0
+    node 0: slabs: 3/3, objs: 60/60, free: 0
+
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
- drivers/hid/hid-wacom.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+v2:
+* drop the sysctl knob to override __GFP_NOWARN allocation flag (Pekka, David)
 
-diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-index 5c25036..dab7588 100644
---- a/drivers/hid/hid-wacom.c
-+++ b/drivers/hid/hid-wacom.c
-@@ -36,6 +36,7 @@
- struct wacom_data {
- 	__u16 tool;
- 	__u16 butstate;
-+	__u8 whlstate;
- 	__u8 features;
- 	__u32 id;
- 	__u32 serial;
-@@ -322,6 +323,23 @@ static void wacom_i4_parse_button_report(struct wacom_data *wdata,
- 			struct input_dev *input, unsigned char *data)
- {
- 	__u16 new_butstate;
-+	__u8 new_whlstate;
-+	__u8 sync = 0;
+v3:
+* adjust the print output to match slub's warning printout (WANG Cong)
+
+ mm/slab.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 50 insertions(+), 1 deletions(-)
+
+diff --git a/mm/slab.c b/mm/slab.c
+index f0bd785..cda1ff6 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1731,6 +1731,52 @@ static int __init cpucache_init(void)
+ }
+ __initcall(cpucache_init);
+ 
++static noinline void
++slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
++{
++	struct kmem_list3 *l3;
++	struct slab *slabp;
++	unsigned long flags;
++	int node;
 +
-+	new_whlstate = data[1];
-+	if (new_whlstate != wdata->whlstate) {
-+		wdata->whlstate = new_whlstate;
-+		if (new_whlstate & 0x80) {
-+			input_report_key(input, BTN_TOUCH, 1);
-+			input_report_abs(input, ABS_WHEEL, (new_whlstate & 0x7f));
-+			input_report_key(input, BTN_TOOL_FINGER, 1);
-+		} else {
-+			input_report_key(input, BTN_TOUCH, 0);
-+			input_report_abs(input, ABS_WHEEL, 0);
-+			input_report_key(input, BTN_TOOL_FINGER, 0);
++	printk(KERN_WARNING
++		"SLAB: Unable to allocate memory on node %d (gfp=0x%x)\n",
++		nodeid, gfpflags);
++	printk(KERN_WARNING "  cache: %s, object size: %d, order: %d\n",
++		cachep->name, cachep->buffer_size, cachep->gfporder);
++
++	for_each_online_node(node) {
++		unsigned long active_objs = 0, num_objs = 0, free_objects = 0;
++		unsigned long active_slabs = 0, num_slabs = 0;
++
++		l3 = cachep->nodelists[node];
++		if (!l3)
++			continue;
++
++		spin_lock_irqsave(&l3->list_lock, flags);
++		list_for_each_entry(slabp, &l3->slabs_full, list) {
++			active_objs += cachep->num;
++			active_slabs++;
 +		}
-+		sync = 1;
++		list_for_each_entry(slabp, &l3->slabs_partial, list) {
++			active_objs += slabp->inuse;
++			active_slabs++;
++		}
++		list_for_each_entry(slabp, &l3->slabs_free, list)
++			num_slabs++;
++
++		free_objects += l3->free_objects;
++		spin_unlock_irqrestore(&l3->list_lock, flags);
++
++		num_slabs += active_slabs;
++		num_objs = num_slabs * cachep->num;
++		printk(KERN_WARNING
++			"  node %d: slabs: %ld/%ld, objs: %ld/%ld, free: %ld\n",
++			node, active_slabs, num_slabs, active_objs, num_objs,
++			free_objects);
++	}
++}
++
+ /*
+  * Interface to system's page allocator. No need to hold the cache-lock.
+  *
+@@ -1757,8 +1803,11 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ 		flags |= __GFP_RECLAIMABLE;
+ 
+ 	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
+-	if (!page)
++	if (!page) {
++		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
++			slab_out_of_memory(cachep, flags, nodeid);
+ 		return NULL;
 +	}
  
- 	new_butstate = (data[3] << 1) | (data[2] & 0x01);
- 	if (new_butstate != wdata->butstate) {
-@@ -336,6 +354,10 @@ static void wacom_i4_parse_button_report(struct wacom_data *wdata,
- 		input_report_key(input, BTN_7, new_butstate & 0x080);
- 		input_report_key(input, BTN_8, new_butstate & 0x100);
- 		input_report_key(input, BTN_TOOL_FINGER, 1);
-+		sync = 1;
-+	}
-+
-+	if (sync) {
- 		input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
- 		input_event(input, EV_MSC, MSC_SERIAL, 0xffffffff);
- 		input_sync(input);
-@@ -512,6 +534,9 @@ static int wacom_input_mapped(struct hid_device *hdev, struct hid_input *hi,
- 		input_set_abs_params(input, ABS_DISTANCE, 0, 32, 0, 0);
- 		break;
- 	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
-+		__set_bit(ABS_WHEEL, input->absbit);
-+		input_set_abs_params(input, ABS_WHEEL, 0, 71, 0, 0);
-+		input_set_capability(input, EV_MSC, MSC_SERIAL);
- 		__set_bit(ABS_MISC, input->absbit);
- 		__set_bit(BTN_2, input->keybit);
- 		__set_bit(BTN_3, input->keybit);
+ 	nr_pages = (1 << cachep->gfporder);
+ 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
 -- 
-1.7.6.4
+1.7.7.6
 
