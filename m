@@ -1,107 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab2CIHeS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 02:34:18 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53329 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695Ab2CIHeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 02:34:17 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 9 Mar 2012 16:32:45 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] memcg: avoid THP split in task migration
-Message-Id: <20120309163245.d6241d9b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1331267128-4673-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <20120309101658.8b36ce4f.kamezawa.hiroyu@jp.fujitsu.com>
-	<1331267128-4673-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753223Ab2CIHe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 02:34:27 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53021 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753099Ab2CIHeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 02:34:25 -0500
+Date: Fri, 9 Mar 2012 08:33:48 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
+Subject: Re: [PATCH] uprobes/core: handle breakpoint and signal step
+ exception.
+Message-ID: <20120309073348.GA15570@elte.hu>
+References: <20120223110245.12459.7391.sendpatchset@srdronam.in.ibm.com>
+ <20120227091212.GA7092@elte.hu>
+ <20120308131824.GC13284@linux.vnet.ibm.com>
+ <20120308134809.GB28488@elte.hu>
+ <20120309062853.GD13284@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120309062853.GD13284@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  8 Mar 2012 23:25:28 -0500
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-> Hi KAMEZAWA-san,
-> 
-> > On Fri,  2 Mar 2012 15:13:09 -0500
-> > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-> ...
-> > > +
-> > > +	page = pmd_page(pmd);
-> > > +	VM_BUG_ON(!page || !PageHead(page));
-> > > +	if (!move_anon() || page_mapcount(page) != 1)
-> > > +		return 0;
-> >
-> > Could you add this ?
-> > ==
-> > static bool move_check_shared_map(struct page *page)
-> > {
-> >   /*
-> >    * Handling of shared pages between processes is a big trouble in memcg.
-> >    * Now, we never move shared-mapped pages between memcg at 'task' moving because
-> >    * we have no hint which task the page is really belongs to. For example,
-> >    * When a task does "fork()-> move to the child other group -> exec()", the charges
-> >    * should be stay in the original cgroup.
-> >    * So, check mapcount to determine we can move or not.
-> >    */
-> >    return page_mapcount(page) != 1;
-> > }
-> > ==
-> 
-> Thank you.
-> 
-> We check mapcount only for anonymous pages, so we had better also describe
-> that viewpoint?  And this function returns whether the target page of moving
-> charge is shared or not, so a name like is_mctgt_shared() looks better to me.
-> Moreover, this function explains why we have current implementation, rather
-> than why return value is mapcount != 1, so I put the comment above function
-> declaration like this:
-> 
->   /*
->    * Handling of shared pages between processes is a big trouble in memcg.
->    * Now, we never move shared anonymous pages between memcg at 'task'
->    * moving because we have no hint which task the page is really belongs to.
->    * For example, when a task does "fork() -> move to the child other group
->    * -> exec()", the charges should be stay in the original cgroup.
->    * So, check if a given page is shared or not to determine to move charge.
->    */
->   static bool is_mctgt_shared(struct page *page)
->   {
->      return page_mapcount(page) != 1;
->   }
-> 
-> As for the difference between anon page and filemapped page, I have no idea
-> about current charge moving policy. Is this explained anywhere? (sorry to
-> question before researching by myself ...)
-> 
-> 
+* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 
-Now, I think it's okay to move mapcount check. I posted a patch for reference. 
-Please check it.
-https://lkml.org/lkml/2012/3/9/40
-
-> > We may be able to support madvise(MOVE_MEMCG) or fadvise(MOVE_MEMCG), if necessary.
+> * Ingo Molnar <mingo@elte.hu> [2012-03-08 14:48:09]:
 > 
-> Is this mean moving charge policy can depend on users?
-> I feel that's strange because I don't think resouce management should be
-> under users' control.
+> > 
+> > * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+> > 
+> > > @@ -233,9 +233,11 @@ static inline void __user *arch_compat_alloc_user_space(long len)
+> > >  
+> > >  	if (test_thread_flag(TIF_IA32)) {
+> > >  		sp = task_pt_regs(current)->sp;
+> > > +#ifdef CONFIG_X86_64
+> > >  	} else {
+> > >  		/* -128 for the x32 ABI redzone */
+> > >  		sp = __this_cpu_read(old_rsp) - 128;
+> > > +#endif
+> > >  	}
+> > >  
+> > >  	return (void __user *)round_down(sp - len, 16);
+> > 
+> > So 'sp' is undefined if that TIF check fails?
+> > 
+> > Also, on a 32-bit kernel the TIF check probably fails all the 
+> > time, because we don't set TIF_IA32 (and don't know that flag).
 > 
-You're right. I 
+> > 
+> > It would probably be better to make the whole helper inline 
+> > #ifdef 64-bit, it does not look very useful on 32-bit.
+> > 
+> 
+> arch_compat_alloc_user_space gets called from compat_alloc_user_space
+> which is arch agnostic and exported too.
+> 
+> So I will change this to
+> 
+> void __user *arch_compat_alloc_user_space(long len)
+> {
+>   	if (is_ia32_compat_task(current))
+>   		sp = task_pt_regs(current)->sp;
+> #ifdef CONFIG_X86_64
+>   	else
+>   		/* -128 for the x32 ABI redzone */
+>   		sp = __this_cpu_read(old_rsp) - 128;
+> #endif
+>   
+>   	return (void __user *)round_down(sp - len, 16);
+> }
+> 
+> where is_ia32_compat_task() is the new macro that you 
+> suggested we put in compat.h which would return true if the 
+> task is 32 bit emulated on x86_64 or running on i386 machine.
+> 
+> Hence we can avoid the case where sp is not set.
 
-Hm. I remember some guy suggested 'how about passing prefer memcg as mount option'
-or some. Anyway, shared page handling is trouble since memory cgroup was born.
+Ok - looks good at first glance.
 
 Thanks,
--Kame
 
+	Ingo
