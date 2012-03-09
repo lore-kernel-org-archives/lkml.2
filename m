@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab2CIR4N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:56:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34848 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752918Ab2CIR4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:56:11 -0500
-Date: Fri, 9 Mar 2012 12:15:23 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        dpshah@google.com, ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 5/5] blkcg: remove blkio_group->stats_lock
-Message-ID: <20120309171523.GB7746@redhat.com>
-References: <1331232840-16044-1-git-send-email-tj@kernel.org>
- <1331232840-16044-6-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331232840-16044-6-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753875Ab2CIR5x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:57:53 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:65032 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753477Ab2CIR5v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 12:57:51 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] spi: Trivial warning fix
+To: Shubhrajyoti D <shubhrajyoti@ti.com>,
+        spi-devel-general@lists.sourceforge.net
+Cc: Vitaly Wool <vwool@ru.mvista.com>, linux-kernel@vger.kernel.org,
+        Shubhrajyoti D <shubhrajyoti@ti.com>
+In-Reply-To: <1330351145-3564-1-git-send-email-shubhrajyoti@ti.com>
+References: <1330351145-3564-1-git-send-email-shubhrajyoti@ti.com>
+Date: Fri, 09 Mar 2012 10:57:48 -0700
+Message-Id: <20120309175748.49BD13E0880@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 10:54:00AM -0800, Tejun Heo wrote:
-> With recent plug merge updates, all non-percpu stat updates happen
-> under queue_lock making stats_lock unnecessary to synchronize stat
-> updates.  The only synchronization necessary is stat reading, which
-> can be done using u64_stats_sync instead.
+On Mon, 27 Feb 2012 19:29:05 +0530, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
+> The loop count i traverses for ntrans which is unsigned
+> so make the loop count i also unsigned.
 > 
-> This patch removes blkio_group->stats_lock and adds
-> blkio_group_stats->syncp for reader synchronization.
+> Fix the below warning
+> In file included from drivers/spi/spi-omap2-mcspi.c:38:
+> include/linux/spi/spi.h: In function 'spi_message_alloc':
+> include/linux/spi/spi.h:556: warning: comparison between signed and unsigned integer expressions
 > 
+> Cc: Vitaly Wool <vwool@ru.mvista.com>
+> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+> ---
 
-Good to see stat_lock going away. That lock was confusing as we were doing
-updates under queue_lock anyway. One less lock to think about now.
+Applied, thanks.
 
-This stat code is messy though. All time related stat, maintaining flags,
-dividing stats between read/write, sync/async. I think we are maintaining
-way too much of stat. (/me wished there was a way to get rid of some of
-the stats and make code simpler).
+g.
 
-Thanks
-Vivek
+> Untested !
+> 
+>  include/linux/spi/spi.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+> index 176fce9..6ae4993 100644
+> --- a/include/linux/spi/spi.h
+> +++ b/include/linux/spi/spi.h
+> @@ -549,7 +549,7 @@ static inline struct spi_message *spi_message_alloc(unsigned ntrans, gfp_t flags
+>  			+ ntrans * sizeof(struct spi_transfer),
+>  			flags);
+>  	if (m) {
+> -		int i;
+> +		unsigned i;
+>  		struct spi_transfer *t = (struct spi_transfer *)(m + 1);
+>  
+>  		INIT_LIST_HEAD(&m->transfers);
+> -- 
+> 1.7.0.4
+> 
+> 
+> ------------------------------------------------------------------------------
+> Try before you buy = See our experts in action!
+> The most comprehensive online learning library for Microsoft developers
+> is just $99.99! Visual Studio, SharePoint, SQL - plus HTML5, CSS3, MVC3,
+> Metro Style Apps, more. Free future releases when you subscribe now!
+> http://p.sf.net/sfu/learndevnow-dev2
+> _______________________________________________
+> spi-devel-general mailing list
+> spi-devel-general@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/spi-devel-general
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
