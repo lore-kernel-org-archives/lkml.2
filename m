@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759070Ab2CJCxn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 21:53:43 -0500
-Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:58971 "EHLO
-	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756238Ab2CJCxm (ORCPT
+	id S1759218Ab2CJCyi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 21:54:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60318 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758999Ab2CJCyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 21:53:42 -0500
-Date: Sat, 10 Mar 2012 02:53:39 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 4/6] Squashfs: get rid of obsolete definitions in header
- file
-Message-ID: <4f5ac233.7DwpdFxsrdXJxSei%phillip@lougher.demon.co.uk>
-User-Agent: Heirloom mailx 12.5 6/20/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Mar 2012 21:54:37 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH RESEND] spi/imx: simplify error handling to free gpios
+To: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <s.hauer@pengutronix.de>,
+        spi-devel-general@lists.sourceforge.net
+In-Reply-To: <1326180456.4956.7.camel@phoenix>
+References: <1326180456.4956.7.camel@phoenix>
+Date: Fri, 09 Mar 2012 16:27:10 -0700
+Message-Id: <20120309232710.45C763E08B7@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 10 Jan 2012 15:27:36 +0800, Axel Lin <axel.lin@gmail.com> wrote:
+> Simplify the error handling by moving the code to free gpios in one place.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-Most of these were never used by the kernel code, but belong to
-the time when the header file was used by both the kernel code
-and the user space tools.
+Applied, thanks.
 
-Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
----
- fs/squashfs/squashfs_fs.h |   16 ----------------
- 1 files changed, 0 insertions(+), 16 deletions(-)
+g.
 
-diff --git a/fs/squashfs/squashfs_fs.h b/fs/squashfs/squashfs_fs.h
-index e8e1464..6241f96 100644
---- a/fs/squashfs/squashfs_fs.h
-+++ b/fs/squashfs/squashfs_fs.h
-@@ -30,11 +30,6 @@
- 
- /* size of metadata (inode and directory) blocks */
- #define SQUASHFS_METADATA_SIZE		8192
--#define SQUASHFS_METADATA_LOG		13
--
--/* default size of data blocks */
--#define SQUASHFS_FILE_SIZE		131072
--#define SQUASHFS_FILE_LOG		17
- 
- /* default size of block device I/O */
- #ifdef CONFIG_SQUASHFS_4K_DEVBLK_SIZE
-@@ -46,9 +41,6 @@
- #define SQUASHFS_FILE_MAX_SIZE		1048576
- #define SQUASHFS_FILE_MAX_LOG		20
- 
--/* Max number of uids and gids */
--#define SQUASHFS_IDS			65536
--
- /* Max length of filename (not 255) */
- #define SQUASHFS_NAME_LEN		256
- 
-@@ -142,9 +134,6 @@
- #define SQUASHFS_MKINODE(A, B)		((long long)(((long long) (A)\
- 					<< 16) + (B)))
- 
--/* Translate between VFS mode and squashfs mode */
--#define SQUASHFS_MODE(A)		((A) & 0xfff)
--
- /* fragment and fragment table defines */
- #define SQUASHFS_FRAGMENT_BYTES(A)	\
- 				((A) * sizeof(struct squashfs_fragment_entry))
-@@ -215,11 +204,6 @@
- /* cached data constants for filesystem */
- #define SQUASHFS_CACHED_BLKS		8
- 
--#define SQUASHFS_MAX_FILE_SIZE_LOG	64
--
--#define SQUASHFS_MAX_FILE_SIZE		(1LL << \
--					(SQUASHFS_MAX_FILE_SIZE_LOG - 2))
--
- /* meta index cache */
- #define SQUASHFS_META_INDEXES	(SQUASHFS_METADATA_SIZE / sizeof(unsigned int))
- #define SQUASHFS_META_ENTRIES	127
+> ---
+>  drivers/spi/spi-imx.c |   11 +++--------
+>  1 files changed, 3 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/spi/spi-imx.c b/drivers/spi/spi-imx.c
+> index c6e697f..31054e3 100644
+> --- a/drivers/spi/spi-imx.c
+> +++ b/drivers/spi/spi-imx.c
+> @@ -793,13 +793,8 @@ static int __devinit spi_imx_probe(struct platform_device *pdev)
+>  
+>  		ret = gpio_request(spi_imx->chipselect[i], DRIVER_NAME);
+>  		if (ret) {
+> -			while (i > 0) {
+> -				i--;
+> -				if (spi_imx->chipselect[i] >= 0)
+> -					gpio_free(spi_imx->chipselect[i]);
+> -			}
+>  			dev_err(&pdev->dev, "can't get cs gpios\n");
+> -			goto out_master_put;
+> +			goto out_gpio_free;
+>  		}
+>  	}
+>  
+> @@ -881,10 +876,10 @@ out_iounmap:
+>  out_release_mem:
+>  	release_mem_region(res->start, resource_size(res));
+>  out_gpio_free:
+> -	for (i = 0; i < master->num_chipselect; i++)
+> +	while (--i >= 0) {
+>  		if (spi_imx->chipselect[i] >= 0)
+>  			gpio_free(spi_imx->chipselect[i]);
+> -out_master_put:
+> +	}
+>  	spi_master_put(master);
+>  	kfree(master);
+>  	platform_set_drvdata(pdev, NULL);
+> -- 
+> 1.7.5.4
+> 
+> 
+> 
+
 -- 
-1.7.5.4
-
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
