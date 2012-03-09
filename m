@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759545Ab2CIUxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:53:06 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49976 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754819Ab2CIUxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 15:53:04 -0500
-Date: Fri, 9 Mar 2012 14:52:57 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@hack.frob.com>
-Subject: Re: [ 17/68] regset: Return -EFAULT, not -EIO, on host-side memory
- fault
-Message-ID: <20120309205257.GC23244@burratino>
-References: <20120309194409.GA2069@kroah.com>
- <20120309190216.344083722@linuxfoundation.org>
- <20120309203446.GB23244@burratino>
- <20120309204150.GA2125@kroah.com>
+	id S1759573Ab2CIUxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:53:23 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33541 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759497Ab2CIUxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 15:53:22 -0500
+Message-ID: <4F5A6D87.4050809@zytor.com>
+Date: Fri, 09 Mar 2012 12:52:23 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120309204150.GA2125@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: =?UTF-8?B?RmVybmFuZG8gTHVpcyBWw6F6cXVleiBDYW8=?= 
+	<fernando@oss.ntt.co.jp>,
+        Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
+        torvalds@linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        mingo@elte.hu, Yinghai Lu <yinghai@kernel.org>,
+        akpm@linux-foundation.org, vgoyal@redhat.com
+Subject: Re: [PATCH 1/2] boot: ignore early NMIs
+References: <CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com> <20120216172735.GX9751@redhat.com> <CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com> <20120216215603.GH9751@redhat.com> <m1y5s2ku36.fsf@fess.ebiederm.org> <m1fwe9bpk2.fsf@fess.ebiederm.org> <20120217195430.GO9751@redhat.com> <m1y5s07rn3.fsf@fess.ebiederm.org> <20120220151419.GU9751@redhat.com> <m1obss39a4.fsf@fess.ebiederm.org> <20120221135934.GF26998@redhat.com> <m1ipip6xe8.fsf@fess.ebiederm.org> <4F573E1C.2060909@oss.ntt.co.jp> <4F573E74.5040504@oss.ntt.co.jp> <m1eht31z8e.fsf@fess.ebiederm.org> <4F58495B.5080308@oss.ntt.co.jp> <m1r4x3yrsv.fsf@fess.ebiederm.org>
+In-Reply-To: <m1r4x3yrsv.fsf@fess.ebiederm.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
+Okay, I need to ask this...
 
-> "making things sane" is good enough for me :)
+Is there a reason to not just simply block these NMIs during the kexec
+sequence?
 
-Thanks.  That answers my question.
+	-hpa
 
-> On Fri, Mar 09, 2012 at 02:34:46PM -0600, Jonathan Nieder wrote:
 
->> Part of the reason I am asking is to figure out whether the patch
->> ought to be applied to 2.6.32.y, too.
->
-> Why do you think it should not be?
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-I think it should be.  If there were some motivation like "without
-this patch, in circumstance X, gdb produces such-and-such bad
-behavior", that would make it easier. ;-)
-
-Ciao,
-Jonathan
