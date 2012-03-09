@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031786Ab2CIUCo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:02:44 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64616 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031744Ab2CITxH (ORCPT
+	id S1031701Ab2CITxA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:53:00 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48015 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031695Ab2CITww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:53:07 -0500
-Message-Id: <20120309190218.174955032@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:52:52 -0500
+Message-Id: <20120309190217.776508510@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:54 -0800
+Date: Fri, 09 Mar 2012 11:02:49 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Kenneth Graunke <kenneth@whitecape.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 40/68] drm/i915: gen7: implement rczunit workaround
+        alan@lxorguk.ukuu.org.uk,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 35/68] ASoC: i.MX SSI: Fix DSP_A format.
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
+From: Javier Martin <javier.martin@vista-silicon.com>
 
-commit eae66b50c760233fad526edf4a0d327be17a055d upstream.
+commit 5ed80a75b248bfaf840ea6b38f941edcf6ee7dc7 upstream.
 
-This is yet another workaround related to clock gating which we need on
-Ivy Bridge.
+According to i.MX27 Reference Manual (p 1593) TXBIT0 bit selects
+whether the most significant or the less significant part of the
+data word written to the FIFO is transmitted.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=41353
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44610
-Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Kenneth Graunke <kenneth@whitecape.org>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+As DSP_A is the same as DSP_B with a data offset of 1 bit, it
+doesn't make any sense to remove TXBIT0 bit here.
+
+Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |    5 +++++
- 2 files changed, 6 insertions(+)
+ sound/soc/imx/imx-ssi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3371,6 +3371,7 @@
- #define  GT_FIFO_FREE_ENTRIES			0x120008
+--- a/sound/soc/imx/imx-ssi.c
++++ b/sound/soc/imx/imx-ssi.c
+@@ -112,7 +112,7 @@ static int imx_ssi_set_dai_fmt(struct sn
+ 		break;
+ 	case SND_SOC_DAIFMT_DSP_A:
+ 		/* data on rising edge of bclk, frame high 1clk before data */
+-		strcr |= SSI_STCR_TFSL | SSI_STCR_TEFS;
++		strcr |= SSI_STCR_TFSL | SSI_STCR_TXBIT0 | SSI_STCR_TEFS;
+ 		break;
+ 	}
  
- #define GEN6_UCGCTL2				0x9404
-+# define GEN6_RCZUNIT_CLOCK_GATE_DISABLE		(1 << 13)
- # define GEN6_RCPBUNIT_CLOCK_GATE_DISABLE		(1 << 12)
- # define GEN6_RCCUNIT_CLOCK_GATE_DISABLE		(1 << 11)
- 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7457,6 +7457,11 @@ static void ivybridge_init_clock_gating(
- 	I915_WRITE(WM2_LP_ILK, 0);
- 	I915_WRITE(WM1_LP_ILK, 0);
- 
-+	/* According to the spec, bit 13 (RCZUNIT) must be set on IVB.
-+	 * This implements the WaDisableRCZUnitClockGating workaround.
-+	 */
-+	I915_WRITE(GEN6_UCGCTL2, GEN6_RCZUNIT_CLOCK_GATE_DISABLE);
-+
- 	I915_WRITE(ILK_DSPCLK_GATE, IVB_VRHUNIT_CLK_GATE);
- 
- 	for_each_pipe(pipe)
 
 
