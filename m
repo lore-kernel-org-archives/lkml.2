@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759266Ab2CIUOF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:14:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64616 "EHLO
+	id S1030641Ab2CIUXw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:23:52 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031176Ab2CITuG (ORCPT
+	with ESMTP id S1030560Ab2CITrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:50:06 -0500
-Message-Id: <20120309190208.909574980@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:47:06 -0500
+Message-Id: <20120309190204.769938863@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:24 -0800
+Date: Fri, 09 Mar 2012 11:02:32 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Marek=20Ol=C5=A1=C3=A1k?= <maraeo@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 82/95] drm/radeon/kms: set SX_MISC in the r6xx blit code (v2)
+        alan@lxorguk.ukuu.org.uk, Anton Vorontsov <anton.vorontsov@linaro.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: [ 30/95] mm: memcg: Correct unregistring of events attached to the same eventfd
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Olšák <maraeo@gmail.com>
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-commit cf00790dea6f210ddd01a6656da58c7c9a4ea0e4 upstream.
+commit 371528caec553785c37f73fa3926ea0de84f986f upstream.
 
-Mesa may set it to 1, causing all primitives to be killed.
+There is an issue when memcg unregisters events that were attached to
+the same eventfd:
 
-v2: also update the r7xx code
+- On the first call mem_cgroup_usage_unregister_event() removes all
+  events attached to a given eventfd, and if there were no events left,
+  thresholds->primary would become NULL;
 
-Signed-off-by: Marek Olšák <maraeo@gmail.com>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+- Since there were several events registered, cgroups core will call
+  mem_cgroup_usage_unregister_event() again, but now kernel will oops,
+  as the function doesn't expect that threshold->primary may be NULL.
+
+That's a good question whether mem_cgroup_usage_unregister_event()
+should actually remove all events in one go, but nowadays it can't
+do any better as cftype->unregister_event callback doesn't pass
+any private event-associated cookie. So, let's fix the issue by
+simply checking for threshold->primary.
+
+FWIW, w/o the patch the following oops may be observed:
+
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+ IP: [<ffffffff810be32c>] mem_cgroup_usage_unregister_event+0x9c/0x1f0
+ Pid: 574, comm: kworker/0:2 Not tainted 3.3.0-rc4+ #9 Bochs Bochs
+ RIP: 0010:[<ffffffff810be32c>]  [<ffffffff810be32c>] mem_cgroup_usage_unregister_event+0x9c/0x1f0
+ RSP: 0018:ffff88001d0b9d60  EFLAGS: 00010246
+ Process kworker/0:2 (pid: 574, threadinfo ffff88001d0b8000, task ffff88001de91cc0)
+ Call Trace:
+  [<ffffffff8107092b>] cgroup_event_remove+0x2b/0x60
+  [<ffffffff8103db94>] process_one_work+0x174/0x450
+  [<ffffffff8103e413>] worker_thread+0x123/0x2d0
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/r600_blit_shaders.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ mm/memcontrol.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/r600_blit_shaders.c
-+++ b/drivers/gpu/drm/radeon/r600_blit_shaders.c
-@@ -314,6 +314,10 @@ const u32 r6xx_default_state[] =
- 	0x00000000, /* VGT_VTX_CNT_EN */
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4502,6 +4502,9 @@ static void mem_cgroup_usage_unregister_
+ 	 */
+ 	BUG_ON(!thresholds);
  
- 	0xc0016900,
-+	0x000000d4,
-+	0x00000000, /* SX_MISC */
++	if (!thresholds->primary)
++		goto unlock;
 +
-+	0xc0016900,
- 	0x000002c8,
- 	0x00000000, /* VGT_STRMOUT_BUFFER_EN */
+ 	usage = mem_cgroup_usage(memcg, type == _MEMSWAP);
  
-@@ -626,6 +630,10 @@ const u32 r7xx_default_state[] =
- 	0x00000000, /* VGT_VTX_CNT_EN */
+ 	/* Check if a threshold crossed before removing */
+@@ -4550,7 +4553,7 @@ swap_buffers:
  
- 	0xc0016900,
-+	0x000000d4,
-+	0x00000000, /* SX_MISC */
-+
-+	0xc0016900,
- 	0x000002c8,
- 	0x00000000, /* VGT_STRMOUT_BUFFER_EN */
+ 	/* To be sure that nobody uses thresholds */
+ 	synchronize_rcu();
+-
++unlock:
+ 	mutex_unlock(&memcg->thresholds_lock);
+ }
  
 
 
