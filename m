@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758718Ab2CISyF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 13:54:05 -0500
-Received: from mail-ee0-f74.google.com ([74.125.83.74]:48586 "EHLO
-	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab2CISyB (ORCPT
+	id S1758596Ab2CISyW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 13:54:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61002 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754659Ab2CISyT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 13:54:01 -0500
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel@ffwll.ch>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 00/10 v2] fix gmbus writes and related issues
-Date: Sat, 10 Mar 2012 02:48:14 +0800
-Message-Id: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Fri, 9 Mar 2012 13:54:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120309182829.GA13745@aftab>
+References: <20120309074202.GA28609@www.outflux.net>
+	<20120309092845.GA10281@elte.hu>
+	<CAGXu5j+SgWMjwNQd8w8DPSQmBVHDow=_osp57OVp4X2VU5Fe5w@mail.gmail.com>
+	<4F5A448D.70605@zytor.com>
+	<CAGXu5jKHJGmTktKNYDmpZziKRLM-bw-dTK5tboR706J_s6j7NQ@mail.gmail.com>
+	<20120309182829.GA13745@aftab>
+Date: Fri, 9 Mar 2012 10:54:19 -0800
+X-Google-Sender-Auth: KwJSmR87DGDkYkjMG2AH_EOFOj8
+Message-ID: <CAGXu5jJaO29hqMfACav9v8yEdHXt-SegozGuc+tigYCF6K57WA@mail.gmail.com>
+Subject: Re: [PATCH] x86: use enum instead of literals for trap values
+From: Kees Cook <keescook@chromium.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Andy Lutomirski <luto@mit.edu>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset addresses a couple of issues with the i915 gmbus implementation:
- * fixes misassigned pin port pair for HDMI-D
- * fixes write transactions when they are the only transaction requested
-   (including large >4-byte writes) by terminating every transaction with a
-   WAIT cycle.
- * returns -ENXIO and -ETIMEDOUT as appropriate so upper layers can handled
-   i2c transaction failures
- * optimizes the typical read transaction case by using the INDEX cycle
- * turns on the GMBUS interrupt whenever possible to dramatically improve
-   throughput by eliminating the very slow polling loop.
+On Fri, Mar 9, 2012 at 10:28 AM, Borislav Petkov <bp@amd64.org> wrote:
+> On Fri, Mar 09, 2012 at 10:21:52AM -0800, Kees Cook wrote:
+>> > I have to admit personally to prefer something like X86_XCP_XX where XX
+>> > is the two-letter code that the Intel documentation uses for that trap,
+>> > i.e. #GP, #BR, #MC and so on.
+>>
+>> We need a single person to decide on this bike shed color. :) If the
+>> list of enum names can be agreed on, I'll be happy to do the
+>> search/replace for it.
+>
+> Well,
+>
+> here are my 2¢: I agree with hpa because
+>
+> a) it maps the CPU vendor documentation
+> b) it is nicely short
 
-The patchset should apply cleanly onto linus/master.
-It is inspired by, but completely supercedes, a similar patch submitted
-recently by Benson Leung (bleung@chromium.org).
-I'd be happy to rebase on a different tree if necessary.
+How about:
 
-v2 of the patchset address review comments from Chris Wilson (thanks for the
-review, Chris!), and adds the interrupt patch.  There weren't any review
-comments for patches 5, 7, or 8 of the first set.  Hopefully they will get
-more love the second time around :).
+X86_XCP_DE = 0,         /* 0, Divide-by-zero */
+X86_XCP_DB,             /* 1, Debug */
+X86_XCP_NMI,            /* 2, Non-maskable Interrupt */
+X86_XCP_BP,             /* 3, Breakpoint */
+X86_XCP_OF,             /* 4, Overflow */
+X86_XCP_BR,             /* 5, Bound Range Exceeded */
+X86_XCP_UD,             /* 6, Invalid Opcode */
+X86_XCP_NM,             /* 7, Device Not Available */
+X86_XCP_DF,             /* 8, Double Fault */
+X86_XCP_OLD_MF,         /* 9, Coprocessor Segment Overrun */
+X86_XCP_TS,             /* 10, Invalid TSS */
+X86_XCP_NP,             /* 11, Segment Not Present */
+X86_XCP_SS,             /* 12, Stack-Segment Fault */
+X86_XCP_GP,             /* 13, General Protection Fault  */
+X86_XCP_PF,             /* 14, Page Fault */
+X86_XCP_RES,            /* 15, Reserved */
+X86_XCP_MF,             /* 16, x87 Floating-Point Exception */
+X86_XCP_AC,             /* 17, Alignment Check */
+X86_XCP_MC,             /* 18, Machine Check */
+X86_XCP_XM,             /* 19, SIMD Floating-Point Exception */
+X86_XCP_IRET = 32,      /* 32, IRET Exception */
 
+There is a name collision for "MF", there's no mnemonic for NMI, IRET,
+or the reserved "spurious" interrupt.
 
-Daniel Kurtz (10):
-  drm/i915/intel_i2c: cleanup
-  drm/i915/intel_i2c: assign HDMI port D to pin pair 6
-  drm/i915/intel_i2c: refactor using intel_gmbus_get_adapter
-  drm/i915/intel_i2c: cleanup gmbus/gpio pin assignments
-  drm/i915/intel_i2c: add locking around i2c algorithm accesses
-  drm/i915/intel_i2c: return -ENXIO for device NAK
-  drm/i915/intel_i2c: use WAIT cycle, not STOP
-  drm/i915/intel_i2c: use INDEX cycles for i2c read transactions
-  drm/i915/intel_i2c: reuse GMBUS2 value read in polling loop
-  drm/i915/intel_i2c: enable gmbus interrupts
+Can use "VEC" instead "XCP", as Steven suggests. FWIW, the table in
+the Intel manual I had handy says "Exceptions/Interrupts".
 
- drivers/gpu/drm/i915/i915_drv.h    |    7 +-
- drivers/gpu/drm/i915/i915_irq.c    |   22 +++-
- drivers/gpu/drm/i915/i915_reg.h    |    6 +-
- drivers/gpu/drm/i915/intel_bios.c  |   11 +-
- drivers/gpu/drm/i915/intel_crt.c   |   13 +-
- drivers/gpu/drm/i915/intel_drv.h   |    9 ++-
- drivers/gpu/drm/i915/intel_dvo.c   |    4 +-
- drivers/gpu/drm/i915/intel_hdmi.c  |   29 ++---
- drivers/gpu/drm/i915/intel_i2c.c   |  236 ++++++++++++++++++++++++++++--------
- drivers/gpu/drm/i915/intel_lvds.c  |    3 +-
- drivers/gpu/drm/i915/intel_modes.c |    6 +-
- drivers/gpu/drm/i915/intel_sdvo.c  |   10 +-
- 12 files changed, 257 insertions(+), 99 deletions(-)
+-Kees
 
 -- 
-1.7.7.3
-
+Kees Cook
+ChromeOS Security
