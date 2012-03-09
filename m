@@ -1,113 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757809Ab2CIECK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 23:02:10 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33017 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757544Ab2CIECJ (ORCPT
+	id S1757935Ab2CIERy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 23:17:54 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26380 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756927Ab2CIERv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 23:02:09 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 9 Mar 2012 13:00:31 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Hugh Dickins <hughd@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] memcg: avoid THP split in task migration
-Message-Id: <20120309130031.8740beef.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120309122448.92931dc6.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1330719189-20047-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1330719189-20047-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<20120309101658.8b36ce4f.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.LSU.2.00.1203081816170.18242@eggly.anvils>
-	<20120309122448.92931dc6.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 8 Mar 2012 23:17:51 -0500
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=GtLqiBI8nYrhgYroJiIA:9 a=PW_dTA3nZbSF7la6zYIA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331266668.25686.571.camel@gandalf.stny.rr.com>
+Subject: Re: [ANNOUNCE] 3.2.9-rt17
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Thu, 08 Mar 2012 23:17:48 -0500
+In-Reply-To: <1331245213.11248.446.camel@twins>
+References: <alpine.LFD.2.02.1203072225020.2742@ionos>
+	 <1331230991.25686.452.camel@gandalf.stny.rr.com>
+	 <1331231287.11248.396.camel@twins>
+	 <1331232159.25686.456.camel@gandalf.stny.rr.com>
+	 <1331235579.11248.402.camel@twins>
+	 <1331237441.25686.469.camel@gandalf.stny.rr.com>
+	 <1331238369.11248.426.camel@twins>
+	 <1331240882.25686.499.camel@gandalf.stny.rr.com>
+	 <1331241627.11248.430.camel@twins>
+	 <1331241940.25686.502.camel@gandalf.stny.rr.com>
+	 <1331242104.11248.432.camel@twins>
+	 <1331242574.25686.505.camel@gandalf.stny.rr.com>
+	 <1331242625.11248.433.camel@twins>
+	 <1331243078.25686.510.camel@gandalf.stny.rr.com>
+	 <1331243642.11248.441.camel@twins>
+	 <1331244812.25686.518.camel@gandalf.stny.rr.com>
+	 <1331245213.11248.446.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Mar 2012 12:24:48 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Thu, 2012-03-08 at 23:20 +0100, Peter Zijlstra wrote:
 
-> On Thu, 8 Mar 2012 18:33:14 -0800 (PST)
-> Hugh Dickins <hughd@google.com> wrote:
+> Right, but what guarantees that A will ever get ->d_lock when B releases
+> it before B again acquires it?
 > 
-> > On Fri, 9 Mar 2012, KAMEZAWA Hiroyuki wrote:
-> > > > +
-> > > > +	page = pmd_page(pmd);
-> > > > +	VM_BUG_ON(!page || !PageHead(page));
-> > > > +	if (!move_anon() || page_mapcount(page) != 1)
-> > > > +		return 0;
-> > > 
-> > > Could you add this ?
-> > > ==
-> > > static bool move_check_shared_map(struct page *page)
-> > > {
-> > >   /*
-> > >    * Handling of shared pages between processes is a big trouble in memcg.
-> > >    * Now, we never move shared-mapped pages between memcg at 'task' moving because
-> > >    * we have no hint which task the page is really belongs to. For example, 
-> > >    * When a task does "fork()-> move to the child other group -> exec()", the charges
-> > >    * should be stay in the original cgroup. 
-> > >    * So, check mapcount to determine we can move or not.
-> > >    */
-> > >    return page_mapcount(page) != 1;
-> > > }
-> > 
-> > That's a helpful elucidation, thank you.  However...
-> > 
-> > That is not how it has actually been behaving for the last 18 months
-> > (because of the "> 2" bug), so in practice you are asking for a change
-> > in behaviour there.
-> > 
-> Yes.
+> B is in a very tight:
 > 
+> 1:
+>  lock ->d_lock
+>  trylock ->i_lock
+>  unlock ->d_lock
+>  goto 1
 > 
-> > And it's not how it has been and continues to behave with file pages.
-> > 
-> It's ok to add somethink like..
+> loop, while A is doing:
 > 
-> 	if (PageAnon(page) && !move_anon())
-> 		return false;
-> 	...
+> 1:
+>   trylock ->d_lock
+>   goto 1
 > 
-> > Isn't getting that behaviour in fork-move-exec just a good reason not
-> > to set move_charge_at_immigrate?
-> > 
-> Hmm. Maybe.
+> and with rt-mutex having the equal priority lock stealing this reverts
+> to a plain test-and-set lock. There's only a tiny window in which A can
+> actually get the lock and that is hampered by B's cpu owning the
+> cacheline in exclusive mode.
 > 
-> > I think there are other scenarios where you do want all the pages to
-> > move if move_charge_at_immigrate: and that's certainly easier to
-> > describe and to understand and to code.
-> > 
-> > But if you do insist on not moving the shared, then it needs to involve
-> > something like mem_cgroup_count_swap_user() on PageSwapCache pages,
-> > rather than just the bare page_mapcount().
-> > 
-> 
-> This 'moving swap account' was a requirement from a user (NEC?).
-> But no user doesn't say 'I want to move shared pages between cgroups at task
-> move !' and I don't like to move shared objects.
-> 
-> > I'd rather delete than add code here!
-> > 
-> 
-> As a user, for Fujitsu, I believe it's insane to move task between cgroups.
-> So, I have no benefit from this code, at all.
-> Ok, maybe I'm not a stakeholder,here.
-> 
+> I simply cannot see guaranteed progress here.
 
-Considering again, in my personal opinion, 
-at fork() -> move() -> exec(), parent's RSS charge should not be moved.
+I'm wondering if this is really even an issue. Yes, with mainline before
+ticket locks, a tight spin could be faster and grab the lock. But those
+were real test-and-set locks. Here we really don't have a tight spin.
+d_lock has a waiter and it will force the unlock into the slow path
+which is (removing optional debug code):
 
-Thanks,
--Kame
+
+raw_spin_lock(&lock->wait_lock);
+if (!rt_mutex_has_waiters(lock)) {
+  /* false */
+}
+
+wakeup_next_waiter(lock);
+raw_spin_unlock(&lock->wait_lock);
+rt_mutex_adjust_prio(current);
+
+
+
+Now that wakeup_next_waiter(lock):
+
+raw_spin_lock_irqsave(&current->pi_lock, flags);
+waiter = rt_mutex_top_waiter(lock);
+plist_del(&waiter->pi_list_entry, &current->pi_waiters);
+rt_mutex_set_owner(lock, NULL);  <<-- here's where the race starts.
+                                  The other task can break the loop.
+raw_spin_unlock_irqrestore(&current->pi_lock, flags);
+/* the unlock acts as a write memory barrier */
+
+rt_mutex_wake_waiter(waiter);
+
+
+Now the task goes through the entire effort of waking up the spinning
+task. It needs to grab the spinlocks of the task's runqueue which is the
+runqueue of the CPU of the spinning task.
+
+And it's not done. It then does:
+
+raw_spin_unlock(&lock->wait_lock);
+rt_mutex_adjust_prio(current);
+
+Which again grabs the task->pi_lock.
+
+Now it's out of the unlock. But we said we would have it also call a
+sched_yield() which will add a bit more overhead here. But after that,
+it may grab the lock again keeping the other task from getting it.
+
+OK, lets see what the other lock is doing. Well, it's in the adaptive
+loop which is:
+
+rcu_read_lock();
+for (;;) {
+	if (owner != rt_mutex_owner(lock))
+		break;  <<-- This is where it jumps out.
+	barrier();
+	if (!owner->on_cpu) {
+		res = 1;
+		break;
+	}
+	cpu_relax();
+}
+rcu_read_unlock();
+
+Now, the worse case is we just missed the test. Then it did the barrier
+(compile barrier only), the check if the owner is on the cpu and a
+cpu_relax(), which may slow it down a little, but so is the owner doing
+this too.
+
+The the rcu_read_unlock() which does more compiler barriers and updating
+the task structure's rcu_read_lock_nesting numbers.
+
+But once this is done, it does...
+
+raw_spin_lock(&lock->wait_lock).
+
+And once we are here, the game is over. The first task had to do
+everything stated after the setting of owner to this task, and loop
+around and get to the lock -> d_lock again. The wait_lock is a ticket
+spinlock, thus once the second task gets here, the first task wont be
+able to get in. And the task will be able to get the lock.
+
+But cache is getting bigger, and CPUs are getting faster compared to
+memory. It may still be a case where forward progress is prevented, I
+don't know.
+
+My last response about not doing lateral steals on locks with priority
+is faulty, as the lock in question isn't the one with priority. But this
+could be solved by having the unlock be special. A spin_unlock_rt() or
+something that tells the lock to not let the new owner have a lateral
+steal.
+
+This is only needed if it really is a race, and the first task can do
+the wakeup and call to schedule() all before the second task can grab
+that lock.
+
+-- Steve
 
