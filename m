@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab2CIQJU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 11:09:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:36889 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754530Ab2CIQJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 11:09:19 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="119448307"
-Message-ID: <1331309451.29445.42.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Jan Kara <jack@suse.cz>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Date: Fri, 09 Mar 2012 18:10:51 +0200
-In-Reply-To: <20120309095135.GC21038@quack.suse.cz>
-References: <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
-	 <20120301123640.GA30369@localhost> <20120301163837.GA13104@quack.suse.cz>
-	 <20120302044858.GA14802@localhost> <20120302095910.GB1744@quack.suse.cz>
-	 <20120302103951.GA13378@localhost>
-	 <20120302115700.7d970497.akpm@linux-foundation.org>
-	 <20120303135558.GA9869@localhost>
-	 <1331135301.32316.29.camel@sauron.fi.intel.com>
-	 <20120309073113.GA5337@localhost> <20120309095135.GC21038@quack.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757692Ab2CIQO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 11:14:59 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52106 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756262Ab2CIQO5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 11:14:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120309151951.GA30160@redhat.com>
+References: <20120306185137.GA15881@redhat.com> <20120306210307.GC8781@quack.suse.cz>
+ <20120307072608.GA24087@localhost> <20120307104240.GB18658@quack.suse.cz>
+ <CAO_0yfNt2jgiTPZn5NkwBAjQZtk+377gG71d6QOuXQrDHjdkEg@mail.gmail.com>
+ <20120309145713.GA21543@redhat.com> <20120309151951.GA30160@redhat.com>
+From: Yang Bai <hamo.by@gmail.com>
+Date: Sat, 10 Mar 2012 00:14:37 +0800
+Message-ID: <CAO_0yfMYOOTvRg9=8_eYP09o0BpzSEk=8vqgNk_vV_u3-biAYA@mail.gmail.com>
+Subject: Re: inode->i_wb_list corruption.
+To: Dave Jones <davej@redhat.com>, Yang Bai <hamo.by@gmail.com>,
+        Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        viro@zeniv.linux.org.uk, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-09 at 10:51 +0100, Jan Kara wrote:
-> > However I cannot find any ubifs functions to form the above loop, so
-> > ubifs should be safe for now.
->   Yeah, me neither but I also failed to find a place where
-> ubifs_evict_inode() truncates inode space when deleting the inode... Artem?
+On Fri, Mar 9, 2012 at 11:19 PM, Dave Jones <davej@redhat.com> wrote:
+> And with that, this arrived..
+> https://bugzilla.redhat.com/show_bug.cgi?id=788433#c3
+>
+> I'm leaning strongly towards believing this is yet another case of i915
+> corrupting memory on resume.
+>
 
-We do call 'truncate_inode_pages()':
+Nice catch. I am wondering
+1) why all lists being affected and
+2) why all list_head's prev being set to NULL.
 
-static void ubifs_evict_inode(struct inode *inode)
-{
-	...
+Any ideas?
 
-        truncate_inode_pages(&inode->i_data, 0);
-
-        ...
-}
-
--- 
-Best Regards,
-Artem Bityutskiy
-
+Thanks,
+Yang
