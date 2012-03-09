@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab2CIMvw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 07:51:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22884 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753783Ab2CIMvv (ORCPT
+	id S932217Ab2CIMxR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 07:53:17 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42775 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755075Ab2CIMxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 07:51:51 -0500
-X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=WmHxwEufuLI9dQ6WdCUA:9 a=yNyvlxNLWj2sGE9BiQsA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1331297508.25686.573.camel@gandalf.stny.rr.com>
-Subject: Re: [ANNOUNCE] 3.2.9-rt17
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Fri, 09 Mar 2012 07:51:48 -0500
-In-Reply-To: <alpine.LFD.2.02.1203091042040.2742@ionos>
-References: <alpine.LFD.2.02.1203072225020.2742@ionos>
-	   <1331230991.25686.452.camel@gandalf.stny.rr.com>
-	   <1331231287.11248.396.camel@twins>
-	   <1331232159.25686.456.camel@gandalf.stny.rr.com>
-	   <1331235579.11248.402.camel@twins>
-	  <1331237441.25686.469.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.02.1203090111240.2742@ionos>
-	 <1331261425.25686.527.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.02.1203091042040.2742@ionos>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 9 Mar 2012 07:53:16 -0500
+Date: Fri, 9 Mar 2012 12:53:14 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Margarita Olaya Cabrera <magi@slimlogic.co.uk>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: Use array to store dcdc_range settings for
+ tps65912
+Message-ID: <20120309125310.GZ3273@opensource.wolfsonmicro.com>
+References: <1331247941.3570.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="R9baxdNnpTjJ7oIU"
+Content-Disposition: inline
+In-Reply-To: <1331247941.3570.1.camel@phoenix>
+X-Cookie: You will be successful in love.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-09 at 11:23 +0100, Thomas Gleixner wrote:
 
-> > Actually, you don't need to tell the lock owner you are waiting for it,
-> > you only need to make the lock itself have a priority, and the owner
-> > will inherit that priority as long as it holds the lock.
-> 
-> Hmm, that would actually work, though I'm not too enthusiastic about
-> sched_yield().
+--R9baxdNnpTjJ7oIU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I don't like sched_yield() either, but this is exactly what it was made
-for. To give a process with the same priority the CPU.
+On Fri, Mar 09, 2012 at 07:05:41AM +0800, Axel Lin wrote:
+> Then we can use the regulator id as array index to access the array.
+> This change makes the code simpler.
 
--- Steve
+Applied, thanks.
 
+--R9baxdNnpTjJ7oIU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPWfzvAAoJEBus8iNuMP3dcuIP/0S9N7EOOjzvZTDqmZGqN7fZ
+aPcO0mjK2LcmQC0D82JmnJbP9JNL8PzNPwaRIUANC95FBNxhxCuz1EQ8dBxoldmq
+j9eY/aa1Hniy4PYE2vxo89GbYRcFRetpBVC4iD9YfJVhs7/HGaNAgpyxhc1V2+CJ
+FdAYK7/v4tUbdBkESKAhqddetwHsZkw8aHyLEN+Wh8Z6sCNy484XKEqtbBoaEkNw
+aFQIAmv4EHvCrjAfI0w4QdQsQWIWcJpEg/Wz1sLV41pCc30lN8HmMQsA8lkhO4tQ
+TrdlmHT39ZQBLuCmgyI5I9hv9YLJ/GDeJU2AHvHmH+KY95k9ACERbeQv+wvEeXjt
+UBrxUIqpUx63mRTGXoq+eb1BikTHg4ZdK9MFeeEfob0HI4EWaRMxWbmVkIChTnMu
+p2SUFahgGr3XuBZfVj2QiX4uJFPW7uZ81jsb0VUrPj74BbPHPoiejqo4ojPKnUQY
+WFBel+/r0A6V2+FQxpikoagya09CKeUSDKYGU8dmg4Wx/59qPayWx5PhzRdReBAo
+3auHZCSO9M6XlzCfPlTZhJT2uWv2Tz5f8oZcR0KV38BGHajkzdFtnJ9HkC+YhH3B
+0l/UXcbwcVlATrjMYknCHEnI+31uK4om3Y/Xz1kWlDndDf6Imi3oBmjIa5Vvy1qy
+OW8Ux4Qm43xGwVlBEPYx
+=5TM4
+-----END PGP SIGNATURE-----
+
+--R9baxdNnpTjJ7oIU--
