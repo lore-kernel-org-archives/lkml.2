@@ -1,144 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281Ab2CIFaH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 00:30:07 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54876 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750707Ab2CIFaB (ORCPT
+	id S1751356Ab2CIFkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 00:40:37 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:48502 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab2CIFkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 00:30:01 -0500
-Message-ID: <1331270953.3022.89.camel@deadeye>
-Subject: Re: Build broken on s390 and ia64 [was: Linux 2.6.32.58]
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Jiri Slaby <jslaby@suse.cz>, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
-        Tony Luck <tony.luck@intel.com>, Jiri Slaby <jirislaby@gmail.com>,
-        raven@themaw.net
-Date: Fri, 09 Mar 2012 05:29:13 +0000
-In-Reply-To: <20120305223338.GE2930@1wt.eu>
-References: <20120304180911.GA7336@kroah.com> <4F54A46A.6000305@suse.cz>
-	 <20120305120241.GA3627@osiris.boeblingen.de.ibm.com>
-	 <4F54B618.1090301@suse.cz> <20120305223338.GE2930@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-RpAgxA6VwcZ+BUG8vH9Q"
-X-Mailer: Evolution 3.2.2-1 
+	Fri, 9 Mar 2012 00:40:36 -0500
+Date: Fri, 9 Mar 2012 16:40:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: linux-next: manual merge of the driver-core tree with the powerpc
+ tree
+Message-Id: <20120309164025.dc16cfacaa2ee35cbeea14a8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__9_Mar_2012_16_40_25_+1100_U=1YSxDOxbeLSt43"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-RpAgxA6VwcZ+BUG8vH9Q
-Content-Type: text/plain; charset="UTF-8"
+--Signature=_Fri__9_Mar_2012_16_40_25_+1100_U=1YSxDOxbeLSt43
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2012-03-05 at 23:33 +0100, Willy Tarreau wrote:
-> Hi,
->=20
-> On Mon, Mar 05, 2012 at 01:48:24PM +0100, Jiri Slaby wrote:
-> > >>> Linus Torvalds (2): Fix autofs compile without CONFIG_COMPAT
-> > >>
-> > >> But who defines is_compat_task *with* CONFIG_COMPAT on ia64?
-> > >>
-> > >> fs/autofs4/inode.c: In function 'autofs4_fill_super':
-> > >> fs/autofs4/inode.c:345: error: implicit declaration of function
-> > >> 'is_compat_task'
-> > >=20
-> > > The ia64 compat code got entirely removed, since it was broken:
-> > >=20
-> > > 32974ad4907cdde6c9de612cd1b2ee0568fb9409 "[IA64] Remove COMPAT_IA32 s=
-upport"
-> >=20
-> > Yes, but that is even in 2.6.34. So the fix for autofs is incomplete in
-> > .32 as it breaks build on configs which used to work.
->=20
-> So in the end, does anybody have an idea what is missing from this patch =
-?
-> I'm not sure that reverting the autofs fix is a right solution either :-/
+Hi Greg,
 
-Either cherry-pick commit 32974ad4907cdde6c9de612cd1b2ee0568fb9409 or
-use this reduced version.
+Today's linux-next merge of the driver-core tree got a conflict in
+drivers/base/driver.c between commit fcd6f7620202 ("driver-core: remove
+legacy iSeries hack") from the powerpc tree and commit 9875bb480cc8
+("Eliminate get_driver() and put_driver()") from the driver-core tree.
 
-Ben.
-
----
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Fri, 9 Mar 2012 04:21:03 +0000
-Subject: [PATCH] [IA64] Remove COMPAT_IA32 support
-
-commit 32974ad4907cdde6c9de612cd1b2ee0568fb9409 upstream
-
-This just changes Kconfig rather than touching all the other files the
-original commit did.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/ia64/Kconfig |   17 -----------------
- 1 files changed, 0 insertions(+), 17 deletions(-)
-
-diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
-index 1ee596c..20fc9c5 100644
---- a/arch/ia64/Kconfig
-+++ b/arch/ia64/Kconfig
-@@ -502,23 +502,6 @@ config ARCH_PROC_KCORE_TEXT
- 	def_bool y
- 	depends on PROC_KCORE
-=20
--config IA32_SUPPORT
--	bool "Support for Linux/x86 binaries"
--	help
--	  IA-64 processors can execute IA-32 (X86) instructions.  By
--	  saying Y here, the kernel will include IA-32 system call
--	  emulation support which makes it possible to transparently
--	  run IA-32 Linux binaries on an IA-64 Linux system.
--	  If in doubt, say Y.
--
--config COMPAT
--	bool
--	depends on IA32_SUPPORT
--	default y
--
--config COMPAT_FOR_U64_ALIGNMENT
--	def_bool COMPAT
--
- config IA64_MCA_RECOVERY
- 	tristate "MCA recovery from errors other than TLB."
-=20
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 --=20
-1.7.9.1
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/base/driver.c
+index db4f54c,60e4f77..0000000
+--- a/drivers/base/driver.c
++++ b/drivers/base/driver.c
+@@@ -123,34 -123,36 +123,6 @@@ void driver_remove_file(struct device_d
+  }
+  EXPORT_SYMBOL_GPL(driver_remove_file);
+ =20
+--/**
+-  * get_driver - increment driver reference count.
+-  * @drv: driver.
+-  */
+- struct device_driver *get_driver(struct device_driver *drv)
+- {
+- 	if (drv) {
+- 		struct driver_private *priv;
+- 		struct kobject *kobj;
+-=20
+- 		kobj =3D kobject_get(&drv->p->kobj);
+- 		priv =3D to_driver(kobj);
+- 		return priv->driver;
+- 	}
+- 	return NULL;
+- }
+- EXPORT_SYMBOL_GPL(get_driver);
+-=20
+- /**
+-  * put_driver - decrement driver's refcount.
+-  * @drv: driver.
+-  */
+- void put_driver(struct device_driver *drv)
+- {
+- 	kobject_put(&drv->p->kobj);
+- }
+- EXPORT_SYMBOL_GPL(put_driver);
+-=20
+ - * driver_add_kobj - add a kobject below the specified driver
+ - * @drv: requesting device driver
+ - * @kobj: kobject to add below this driver
+ - * @fmt: format string that names the kobject
+ - *
+ - * You really don't want to do this, this is only here due to one looney
+ - * iseries driver, go poke those developers if you are annoyed about
+ - * this...
+ - */
+ -int driver_add_kobj(struct device_driver *drv, struct kobject *kobj,
+ -		    const char *fmt, ...)
+ -{
+ -	va_list args;
+ -	char *name;
+ -	int ret;
+ -
+ -	va_start(args, fmt);
+ -	name =3D kvasprintf(GFP_KERNEL, fmt, args);
+ -	va_end(args);
+ -
+ -	if (!name)
+ -		return -ENOMEM;
+ -
+ -	ret =3D kobject_add(kobj, &drv->p->kobj, "%s", name);
+ -	kfree(name);
+ -	return ret;
+ -}
+ -EXPORT_SYMBOL_GPL(driver_add_kobj);
+ -
+  static int driver_add_groups(struct device_driver *drv,
+  			     const struct attribute_group **groups)
+  {
 
-
---=20
-Ben Hutchings
-Quantity is no substitute for quality, but it's the only one we've got.
-
---=-RpAgxA6VwcZ+BUG8vH9Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+--Signature=_Fri__9_Mar_2012_16_40_25_+1100_U=1YSxDOxbeLSt43
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAT1mVKee/yOyVhhEJAQrnFhAA0pfLte4UmidGLxWW9lPK6QPuvEZqtTak
-XvDMDGHBUWgUIEoA02FLTaZpZKh5M63FaClM9vPpsikTwnkfWnDlOjbvkGktiWrN
-GFUk2e7oTMdzmyShr5G+XUX5ZgTM5kVOtiDNicLHGWqX7s+EWhR+swE7mfgewo3Y
-h3YEUJOx0T9YmNMQ5BdwZYKV6sxBhTHon26scmloShQ1U+DSOh8zSg1nX404oILu
-dUdwsuG/aailFR391dABuiFxeU5Zcq3gO0mySJU8EqvJ+Oord/8wZ3NWlfSCAoha
-1b+nn7Zn0dBcPXylwoUvHFgLjQOYzsVqaNr4aXxoEL8j9yZGanyVuJZD8p/PBZRK
-x9EZNAVnVMWszSf8/5kyFRc6SiDI9MOfGB2aWRmEqeaPmUDhHyS20fLQW1TaEz6h
-Ish5STd717Vx13dhwQBHJwsdyCh72S6s14sQazlNe+a7jGjLXH3kAmnZQjIbjLSo
-GHCrO/cPC1JNcf2UQi9kEkYnCW79bXxX5u9WDjv9E+hb1wDjXRBHo5SZ2DYH7CLp
-64vBIO3O1+g3/kZTq8marZiVhhZIP/6gWWmx9uYspL6OiMyoKKLI9MUR+oj3j+eX
-wZMBjIvq0cMzKuiHU08u66zpTkuC6imLuwF1dn58i6mIROP317S43ftFq7M54hPn
-yKLaXNNz/Ok=
-=iO6G
+iQIcBAEBCAAGBQJPWZfJAAoJEECxmPOUX5FE2E8QAKURz+UgWmytKfksOiFGysqH
+aA85hYHJB/oHtqyeEEeRxVWz1whNBqp/mbl3s9jSXTg/YY5Ug8ruk/Vul0fUYgwZ
+qs2kd1uzGgBm4zNLgcXOXD+GQw50qzCA7TZ/TPB1+ZafiixoA2OnqRLwMRFACmxz
+cc7AFvEKY3GyFH6aRAEnou7ni5Ly3RxdGmEy8BA5ZN9KWLLCpkpSakYSkPDfZDKA
+Nt2bpyzFuDcrZ4xawYnqOO2asjyygqkKypEoCYYdDSV9C0NqO3kHlhxzoXmr4LkK
+Jfwm2grvj2fDof1apQEpYla1xZ79nfTtxJq9xPLceTJE9sUNnjvv/heNNwSmpgm2
+Q/4mfh23xd6jmnWOsHMtHdPMMe6Xkz3uU0G/Xm/A2xbncF72zMXzuN/DP3a+rh06
+k0WMZCZrk2Qq6Y7QLbMev/i3x6SzbYVySKQZ2KuAW6gD6gM2ykVS1ReROLJtz064
+q0Jq6ItPPa9OWlHeuXHGngCliFrDFo1dx1oPPfy4xfJK9oAvt2OKUK7Z6x00Pv4B
+5/fVINgcjjXJlDBexzscReP9wOB8BEDlG83Qc8yd8uOBIirVxYilxy4iEVEHnw4/
+MHNqELawmQ1lA/MXVDm1WUcIx0XQeZiOEp0zVF8k8T7WGZ9OwelgTeV0e0b9icsh
+PsUD7dc410TWAU9MKrSW
+=8PnO
 -----END PGP SIGNATURE-----
 
---=-RpAgxA6VwcZ+BUG8vH9Q--
+--Signature=_Fri__9_Mar_2012_16_40_25_+1100_U=1YSxDOxbeLSt43--
