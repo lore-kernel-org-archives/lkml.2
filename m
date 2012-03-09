@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875Ab2CIR5x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:57:53 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:65032 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753477Ab2CIR5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:57:51 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] spi: Trivial warning fix
-To: Shubhrajyoti D <shubhrajyoti@ti.com>,
-        spi-devel-general@lists.sourceforge.net
-Cc: Vitaly Wool <vwool@ru.mvista.com>, linux-kernel@vger.kernel.org,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-In-Reply-To: <1330351145-3564-1-git-send-email-shubhrajyoti@ti.com>
-References: <1330351145-3564-1-git-send-email-shubhrajyoti@ti.com>
-Date: Fri, 09 Mar 2012 10:57:48 -0700
-Message-Id: <20120309175748.49BD13E0880@localhost>
+	id S1754020Ab2CIR6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:58:47 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60504 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753378Ab2CIR6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 12:58:46 -0500
+Message-ID: <4F5A448D.70605@zytor.com>
+Date: Fri, 09 Mar 2012 09:57:33 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Andy Lutomirski <luto@mit.edu>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86: use enum instead of literals for trap values
+References: <20120309074202.GA28609@www.outflux.net> <20120309092845.GA10281@elte.hu> <CAGXu5j+SgWMjwNQd8w8DPSQmBVHDow=_osp57OVp4X2VU5Fe5w@mail.gmail.com>
+In-Reply-To: <CAGXu5j+SgWMjwNQd8w8DPSQmBVHDow=_osp57OVp4X2VU5Fe5w@mail.gmail.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Feb 2012 19:29:05 +0530, Shubhrajyoti D <shubhrajyoti@ti.com> wrote:
-> The loop count i traverses for ntrans which is unsigned
-> so make the loop count i also unsigned.
-> 
-> Fix the below warning
-> In file included from drivers/spi/spi-omap2-mcspi.c:38:
-> include/linux/spi/spi.h: In function 'spi_message_alloc':
-> include/linux/spi/spi.h:556: warning: comparison between signed and unsigned integer expressions
-> 
-> Cc: Vitaly Wool <vwool@ru.mvista.com>
-> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> ---
+On 03/09/2012 08:30 AM, Kees Cook wrote:
+> On Fri, Mar 9, 2012 at 1:28 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>>
+>> * Kees Cook <keescook@chromium.org> wrote:
+>>
+>>> The traps are referred to by their numbers and it can be difficult to
+>>> understand them while reading the code without context. This patch adds
+>>> enumeration of the trap numbers and replaces the numbers with the correct
+>>> enum for x86.
+>>>
 
-Applied, thanks.
+I have to admit personally to prefer something like X86_XCP_XX where XX
+is the two-letter code that the Intel documentation uses for that trap,
+i.e. #GP, #BR, #MC and so on.
 
-g.
+	-hpa
 
-> Untested !
-> 
->  include/linux/spi/spi.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-> index 176fce9..6ae4993 100644
-> --- a/include/linux/spi/spi.h
-> +++ b/include/linux/spi/spi.h
-> @@ -549,7 +549,7 @@ static inline struct spi_message *spi_message_alloc(unsigned ntrans, gfp_t flags
->  			+ ntrans * sizeof(struct spi_transfer),
->  			flags);
->  	if (m) {
-> -		int i;
-> +		unsigned i;
->  		struct spi_transfer *t = (struct spi_transfer *)(m + 1);
->  
->  		INIT_LIST_HEAD(&m->transfers);
-> -- 
-> 1.7.0.4
-> 
-> 
-> ------------------------------------------------------------------------------
-> Try before you buy = See our experts in action!
-> The most comprehensive online learning library for Microsoft developers
-> is just $99.99! Visual Studio, SharePoint, SQL - plus HTML5, CSS3, MVC3,
-> Metro Style Apps, more. Free future releases when you subscribe now!
-> http://p.sf.net/sfu/learndevnow-dev2
-> _______________________________________________
-> spi-devel-general mailing list
-> spi-devel-general@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/spi-devel-general
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
