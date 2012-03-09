@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030376Ab2CIU1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:27:55 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030273Ab2CITpr (ORCPT
+	id S1030256Ab2CIU2N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:28:13 -0500
+Received: from stats.peacock.arvixe.com ([174.122.104.67]:42311 "EHLO
+	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1030273Ab2CIU2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:45:47 -0500
-Message-Id: <20120309190202.844543140@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:08 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>
-Subject: [ 06/95] ARM: LPC32xx: serial.c: HW bug workaround
-In-Reply-To: <20120309194424.GA2134@kroah.com>
+	Fri, 9 Mar 2012 15:28:10 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=firszt.eu;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer;
+	b=sZMMTVUzl9XQPBO8e2kB9ZpeSblAwENtKh2bDB8dlPsbMbw22TY0jYpEwstMG4XKsH2fXED/2dXpqjqYZ0p5Dcb+x9d1KNcp+8/H49BxeztNGpx+4u+YcfsmEdDzKyx9;
+From: Przemo Firszt <przemo@firszt.eu>
+To: killertofu@gmail.com, pinglinux@gmail.com, jkosina@suse.cz
+Cc: linuxwacom-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Przemo Firszt <przemo@firszt.eu>
+Subject: [PATCH] HID: wacom: Add reporting of wheel for Intuos4 WL
+Date: Fri,  9 Mar 2012 20:27:42 +0000
+Message-Id: <1331324862-15989-1-git-send-email-przemo@firszt.eu>
+X-Mailer: git-send-email 1.7.6.4
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - peacock.arvixe.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+This patch adds reporting of ABS_WHEEL event. Raported walues are 0..71
+and are related to absolute location of the finger on the wheel.
 
-------------------
-
-From: Roland Stigge <stigge@antcom.de>
-
-commit 2707208ee8a80dbbd5426f5aa1a934f766825bb5 upstream.
-
-This patch fixes a HW bug by flushing RX FIFOs of the UARTs on init. It was
-ported from NXP's git.lpclinux.com tree.
-
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Przemo Firszt <przemo@firszt.eu>
+Reviewed-by: Jason Gerecke <killertofu@gmail.com>
 ---
- arch/arm/mach-lpc32xx/serial.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/hid/hid-wacom.c |   25 +++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
 
---- a/arch/arm/mach-lpc32xx/serial.c
-+++ b/arch/arm/mach-lpc32xx/serial.c
-@@ -88,6 +88,7 @@ struct uartinit {
- 	char *uart_ck_name;
- 	u32 ck_mode_mask;
- 	void __iomem *pdiv_clk_reg;
-+	resource_size_t mapbase;
- };
- 
- static struct uartinit uartinit_data[] __initdata = {
-@@ -97,6 +98,7 @@ static struct uartinit uartinit_data[] _
- 		.ck_mode_mask =
- 			LPC32XX_UART_CLKMODE_LOAD(LPC32XX_UART_CLKMODE_ON, 5),
- 		.pdiv_clk_reg = LPC32XX_CLKPWR_UART5_CLK_CTRL,
-+		.mapbase = LPC32XX_UART5_BASE,
- 	},
- #endif
- #ifdef CONFIG_ARCH_LPC32XX_UART3_SELECT
-@@ -105,6 +107,7 @@ static struct uartinit uartinit_data[] _
- 		.ck_mode_mask =
- 			LPC32XX_UART_CLKMODE_LOAD(LPC32XX_UART_CLKMODE_ON, 3),
- 		.pdiv_clk_reg = LPC32XX_CLKPWR_UART3_CLK_CTRL,
-+		.mapbase = LPC32XX_UART3_BASE,
- 	},
- #endif
- #ifdef CONFIG_ARCH_LPC32XX_UART4_SELECT
-@@ -113,6 +116,7 @@ static struct uartinit uartinit_data[] _
- 		.ck_mode_mask =
- 			LPC32XX_UART_CLKMODE_LOAD(LPC32XX_UART_CLKMODE_ON, 4),
- 		.pdiv_clk_reg = LPC32XX_CLKPWR_UART4_CLK_CTRL,
-+		.mapbase = LPC32XX_UART4_BASE,
- 	},
- #endif
- #ifdef CONFIG_ARCH_LPC32XX_UART6_SELECT
-@@ -121,6 +125,7 @@ static struct uartinit uartinit_data[] _
- 		.ck_mode_mask =
- 			LPC32XX_UART_CLKMODE_LOAD(LPC32XX_UART_CLKMODE_ON, 6),
- 		.pdiv_clk_reg = LPC32XX_CLKPWR_UART6_CLK_CTRL,
-+		.mapbase = LPC32XX_UART6_BASE,
- 	},
- #endif
- };
-@@ -165,6 +170,19 @@ void __init lpc32xx_serial_init(void)
- 
- 		/* pre-UART clock divider set to 1 */
- 		__raw_writel(0x0101, uartinit_data[i].pdiv_clk_reg);
+diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+index 5c25036..dab7588 100644
+--- a/drivers/hid/hid-wacom.c
++++ b/drivers/hid/hid-wacom.c
+@@ -36,6 +36,7 @@
+ struct wacom_data {
+ 	__u16 tool;
+ 	__u16 butstate;
++	__u8 whlstate;
+ 	__u8 features;
+ 	__u32 id;
+ 	__u32 serial;
+@@ -322,6 +323,23 @@ static void wacom_i4_parse_button_report(struct wacom_data *wdata,
+ 			struct input_dev *input, unsigned char *data)
+ {
+ 	__u16 new_butstate;
++	__u8 new_whlstate;
++	__u8 sync = 0;
 +
-+		/*
-+		 * Force a flush of the RX FIFOs to work around a
-+		 * HW bug
-+		 */
-+		puart = uartinit_data[i].mapbase;
-+		__raw_writel(0xC1, LPC32XX_UART_IIR_FCR(puart));
-+		__raw_writel(0x00, LPC32XX_UART_DLL_FIFO(puart));
-+		j = LPC32XX_SUART_FIFO_SIZE;
-+		while (j--)
-+			tmp = __raw_readl(
-+				LPC32XX_UART_DLL_FIFO(puart));
-+		__raw_writel(0, LPC32XX_UART_IIR_FCR(puart));
- 	}
++	new_whlstate = data[1];
++	if (new_whlstate != wdata->whlstate) {
++		wdata->whlstate = new_whlstate;
++		if (new_whlstate & 0x80) {
++			input_report_key(input, BTN_TOUCH, 1);
++			input_report_abs(input, ABS_WHEEL, (new_whlstate & 0x7f));
++			input_report_key(input, BTN_TOOL_FINGER, 1);
++		} else {
++			input_report_key(input, BTN_TOUCH, 0);
++			input_report_abs(input, ABS_WHEEL, 0);
++			input_report_key(input, BTN_TOOL_FINGER, 0);
++		}
++		sync = 1;
++	}
  
- 	/* This needs to be done after all UART clocks are setup */
-
+ 	new_butstate = (data[3] << 1) | (data[2] & 0x01);
+ 	if (new_butstate != wdata->butstate) {
+@@ -336,6 +354,10 @@ static void wacom_i4_parse_button_report(struct wacom_data *wdata,
+ 		input_report_key(input, BTN_7, new_butstate & 0x080);
+ 		input_report_key(input, BTN_8, new_butstate & 0x100);
+ 		input_report_key(input, BTN_TOOL_FINGER, 1);
++		sync = 1;
++	}
++
++	if (sync) {
+ 		input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
+ 		input_event(input, EV_MSC, MSC_SERIAL, 0xffffffff);
+ 		input_sync(input);
+@@ -512,6 +534,9 @@ static int wacom_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+ 		input_set_abs_params(input, ABS_DISTANCE, 0, 32, 0, 0);
+ 		break;
+ 	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
++		__set_bit(ABS_WHEEL, input->absbit);
++		input_set_abs_params(input, ABS_WHEEL, 0, 71, 0, 0);
++		input_set_capability(input, EV_MSC, MSC_SERIAL);
+ 		__set_bit(ABS_MISC, input->absbit);
+ 		__set_bit(BTN_2, input->keybit);
+ 		__set_bit(BTN_3, input->keybit);
+-- 
+1.7.6.4
 
