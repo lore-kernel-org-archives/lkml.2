@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759397Ab2CIUQg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:16:36 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
+	id S1759459Ab2CIUVR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:21:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031008Ab2CITt2 (ORCPT
+	with ESMTP id S1030711Ab2CITrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:49:28 -0500
-Message-Id: <20120309190207.900560356@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:47:51 -0500
+Message-Id: <20120309190205.795950527@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:11 -0800
+Date: Fri, 09 Mar 2012 11:02:45 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ming Lei <tom.leiming@gmail.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 69/95] ARM: 7356/1: perf: check that we have an event in the PMU IRQ handlers
+        alan@lxorguk.ukuu.org.uk, Boaz Harrosh <bharrosh@panasas.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 43/95] [SCSI] osd_uld: Bump MAX_OSD_DEVICES from 64 to 1,048,576
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,96 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit f6f5a30c834135c9f2fa10400c59ebbdd9188567 upstream.
+commit 41f8ad76362e7aefe3a03949c43e23102dae6e0b upstream.
 
-The PMU IRQ handlers in perf assume that if a counter has overflowed
-then perf must be responsible. In the paranoid world of crazy hardware,
-this could be false, so check that we do have a valid event before
-attempting to dereference NULL in the interrupt path.
+It used to be that minors where 8 bit. But now they
+are actually 20 bit. So the fix is simplicity itself.
 
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+I've tested with 300 devices and all user-mode utils
+work just fine. I have also mechanically added 10,000
+to the ida (so devices are /dev/osd10000, /dev/osd10001 ...)
+and was able to mkfs an exofs filesystem and access osds
+from user-mode.
+
+All the open-osd user-mode code uses the same library
+to access devices through their symbolic names in
+/dev/osdX so I'd say it's pretty safe. (Well tested)
+
+This patch is very important because some of the systems
+that will be deploying the 3.2 pnfs-objects code are larger
+than 64 OSDs and will stop to work properly when reaching
+that number.
+
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/perf_event_v6.c     |   20 ++------------------
- arch/arm/kernel/perf_event_v7.c     |    4 ++++
- arch/arm/kernel/perf_event_xscale.c |    6 ++++++
- 3 files changed, 12 insertions(+), 18 deletions(-)
+ drivers/scsi/osd/osd_uld.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/kernel/perf_event_v6.c
-+++ b/arch/arm/kernel/perf_event_v6.c
-@@ -463,23 +463,6 @@ armv6pmu_enable_event(struct hw_perf_eve
- 	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
- }
+--- a/drivers/scsi/osd/osd_uld.c
++++ b/drivers/scsi/osd/osd_uld.c
+@@ -69,10 +69,10 @@
+ #ifndef SCSI_OSD_MAJOR
+ #  define SCSI_OSD_MAJOR 260
+ #endif
+-#define SCSI_OSD_MAX_MINOR 64
++#define SCSI_OSD_MAX_MINOR MINORMASK
  
--static int counter_is_active(unsigned long pmcr, int idx)
--{
--	unsigned long mask = 0;
--	if (idx == ARMV6_CYCLE_COUNTER)
--		mask = ARMV6_PMCR_CCOUNT_IEN;
--	else if (idx == ARMV6_COUNTER0)
--		mask = ARMV6_PMCR_COUNT0_IEN;
--	else if (idx == ARMV6_COUNTER1)
--		mask = ARMV6_PMCR_COUNT1_IEN;
--
--	if (mask)
--		return pmcr & mask;
--
--	WARN_ONCE(1, "invalid counter number (%d)\n", idx);
--	return 0;
--}
--
- static irqreturn_t
- armv6pmu_handle_irq(int irq_num,
- 		    void *dev)
-@@ -509,7 +492,8 @@ armv6pmu_handle_irq(int irq_num,
- 		struct perf_event *event = cpuc->events[idx];
- 		struct hw_perf_event *hwc;
+ static const char osd_name[] = "osd";
+-static const char *osd_version_string = "open-osd 0.2.0";
++static const char *osd_version_string = "open-osd 0.2.1";
  
--		if (!counter_is_active(pmcr, idx))
-+		/* Ignore if we don't have an event. */
-+		if (!event)
- 			continue;
- 
- 		/*
---- a/arch/arm/kernel/perf_event_v7.c
-+++ b/arch/arm/kernel/perf_event_v7.c
-@@ -1029,6 +1029,10 @@ static irqreturn_t armv7pmu_handle_irq(i
- 		struct perf_event *event = cpuc->events[idx];
- 		struct hw_perf_event *hwc;
- 
-+		/* Ignore if we don't have an event. */
-+		if (!event)
-+			continue;
-+
- 		/*
- 		 * We have a single interrupt for all counters. Check that
- 		 * each counter has overflowed before we process it.
---- a/arch/arm/kernel/perf_event_xscale.c
-+++ b/arch/arm/kernel/perf_event_xscale.c
-@@ -253,6 +253,9 @@ xscale1pmu_handle_irq(int irq_num, void
- 		struct perf_event *event = cpuc->events[idx];
- 		struct hw_perf_event *hwc;
- 
-+		if (!event)
-+			continue;
-+
- 		if (!xscale1_pmnc_counter_has_overflowed(pmnc, idx))
- 			continue;
- 
-@@ -590,6 +593,9 @@ xscale2pmu_handle_irq(int irq_num, void
- 		struct perf_event *event = cpuc->events[idx];
- 		struct hw_perf_event *hwc;
- 
-+		if (!event)
-+			continue;
-+
- 		if (!xscale2_pmnc_counter_has_overflowed(pmnc, idx))
- 			continue;
- 
+ MODULE_AUTHOR("Boaz Harrosh <bharrosh@panasas.com>");
+ MODULE_DESCRIPTION("open-osd Upper-Layer-Driver osd.ko");
 
 
