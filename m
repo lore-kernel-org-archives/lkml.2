@@ -1,123 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030224Ab2CIU3W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:29:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58962 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964781Ab2CIU3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 15:29:20 -0500
-Date: Fri, 9 Mar 2012 17:27:27 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-Subject: [PATCH v3] mm: SLAB Out-of-memory diagnostics
-Message-ID: <20120309202722.GA10323@x61.redhat.com>
+	id S1030280Ab2CIUaH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:30:07 -0500
+Received: from mail.windriver.com ([147.11.1.11]:52977 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964781Ab2CIUaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 15:30:05 -0500
+Date: Fri, 9 Mar 2012 15:30:00 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regmap: Fix missing prototype of devres_alloc() and
+ friends
+Message-ID: <20120309203000.GA10835@windriver.com>
+References: <1331324248-1599-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CAOJsxLFQjV1c7nQZMA2voybN0AdhGrKFN5svQHC2C=oP3vOD4g@mail.gmail.com>
+In-Reply-To: <1331324248-1599-1-git-send-email-swarren@wwwdotorg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following the example at mm/slub.c, add out-of-memory diagnostics to the
-SLAB allocator to help on debugging certain OOM conditions.
+[[PATCH] regmap: Fix missing prototype of devres_alloc() and friends] On 09/03/2012 (Fri 13:17) Stephen Warren wrote:
 
-An example print out looks like this:
+> regmap.s uses devres_alloc() and others that are prototyped in device.h.
+> Include that to solve the following:
 
-  <snip page allocator out-of-memory message>
-  SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
-    cache: bio-0, object size: 192, order: 0
-    node 0: slabs: 3/3, objs: 60/60, free: 0
+Thanks, I've already taken care of this earlier today.
 
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
-Acked-by: Rik van Riel <riel@redhat.com>
----
-v2:
-* drop the sysctl knob to override __GFP_NOWARN allocation flag (Pekka, David)
+http://marc.info/?l=linux-next&m=133130596327850&w=2
 
-v3:
-* adjust the print output to match slub's warning printout (WANG Cong)
+Paul.
 
- mm/slab.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 50 insertions(+), 1 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index f0bd785..cda1ff6 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1731,6 +1731,52 @@ static int __init cpucache_init(void)
- }
- __initcall(cpucache_init);
- 
-+static noinline void
-+slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
-+{
-+	struct kmem_list3 *l3;
-+	struct slab *slabp;
-+	unsigned long flags;
-+	int node;
-+
-+	printk(KERN_WARNING
-+		"SLAB: Unable to allocate memory on node %d (gfp=0x%x)\n",
-+		nodeid, gfpflags);
-+	printk(KERN_WARNING "  cache: %s, object size: %d, order: %d\n",
-+		cachep->name, cachep->buffer_size, cachep->gfporder);
-+
-+	for_each_online_node(node) {
-+		unsigned long active_objs = 0, num_objs = 0, free_objects = 0;
-+		unsigned long active_slabs = 0, num_slabs = 0;
-+
-+		l3 = cachep->nodelists[node];
-+		if (!l3)
-+			continue;
-+
-+		spin_lock_irqsave(&l3->list_lock, flags);
-+		list_for_each_entry(slabp, &l3->slabs_full, list) {
-+			active_objs += cachep->num;
-+			active_slabs++;
-+		}
-+		list_for_each_entry(slabp, &l3->slabs_partial, list) {
-+			active_objs += slabp->inuse;
-+			active_slabs++;
-+		}
-+		list_for_each_entry(slabp, &l3->slabs_free, list)
-+			num_slabs++;
-+
-+		free_objects += l3->free_objects;
-+		spin_unlock_irqrestore(&l3->list_lock, flags);
-+
-+		num_slabs += active_slabs;
-+		num_objs = num_slabs * cachep->num;
-+		printk(KERN_WARNING
-+			"  node %d: slabs: %ld/%ld, objs: %ld/%ld, free: %ld\n",
-+			node, active_slabs, num_slabs, active_objs, num_objs,
-+			free_objects);
-+	}
-+}
-+
- /*
-  * Interface to system's page allocator. No need to hold the cache-lock.
-  *
-@@ -1757,8 +1803,11 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
- 		flags |= __GFP_RECLAIMABLE;
- 
- 	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
--	if (!page)
-+	if (!page) {
-+		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
-+			slab_out_of_memory(cachep, flags, nodeid);
- 		return NULL;
-+	}
- 
- 	nr_pages = (1 << cachep->gfporder);
- 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
--- 
-1.7.7.6
-
+> 
+> drivers/base/regmap/regmap.c: In function 'devm_regmap_init':
+> drivers/base/regmap/regmap.c:331:2: error: implicit declaration of function 'devres_alloc' [-Werror=implicit-function-declaration]
+> drivers/base/regmap/regmap.c:338:3: error: implicit declaration of function 'devres_add' [-Werror=implicit-function-declaration]
+> drivers/base/regmap/regmap.c:340:3: error: implicit declaration of function 'devres_free' [-Werror=implicit-function-declaration]
+> drivers/base/regmap/regmap.c: In function '_regmap_raw_write':
+> drivers/base/regmap/regmap.c:421:5: error: implicit declaration of function 'dev_err' [-Werror=implicit-function-declaration]
+> 
+> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+> ---
+>  drivers/base/regmap/regmap.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+> index e1a4097..7a3f535 100644
+> --- a/drivers/base/regmap/regmap.c
+> +++ b/drivers/base/regmap/regmap.c
+> @@ -10,6 +10,7 @@
+>   * published by the Free Software Foundation.
+>   */
+>  
+> +#include <linux/device.h>
+>  #include <linux/slab.h>
+>  #include <linux/export.h>
+>  #include <linux/mutex.h>
+> -- 
+> 1.7.0.4
+> 
