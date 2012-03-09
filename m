@@ -1,91 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758732Ab2CISsx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 13:48:53 -0500
-Received: from mail-qy0-f202.google.com ([209.85.216.202]:62550 "EHLO
-	mail-qy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab2CISsb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 13:48:31 -0500
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
-        Daniel Vetter <daniel@ffwll.ch>, dri-devel@lists.freedesktop.org,
+	id S1758705Ab2CIStb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 13:49:31 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:60489 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751478Ab2CISt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 13:49:29 -0500
+Message-ID: <1331318968.13055.8.camel@joe2Laptop>
+Subject: Re: [PATCH 1/4] jffs2: Convert most D1/D2 macros to jffs2_dbg
+From: Joe Perches <joe@perches.com>
+To: dedekind1@gmail.com
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Sameer Nanda <snanda@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 08/10 v2] drm/i915/intel_i2c: use INDEX cycles for i2c read transactions
-Date: Sat, 10 Mar 2012 02:48:22 +0800
-Message-Id: <1331318904-20577-9-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
-References: <1331318904-20577-1-git-send-email-djkurtz@chromium.org>
+Date: Fri, 09 Mar 2012 10:49:28 -0800
+In-Reply-To: <1331294012.29445.10.camel@sauron.fi.intel.com>
+References: <cover.1329349881.git.joe@perches.com>
+	 <2d68e76db16d42f451370714f03ef952e0839692.1329349881.git.joe@perches.com>
+	 <1330965033.7220.16.camel@golum> <1330966615.3140.6.camel@joe2Laptop>
+	 <1331294012.29445.10.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is very common for an i2c device to require a small 1 or 2 byte write
-followed by a read.  For example, when reading from an i2c EEPROM it is
-common to write and address, offset or index followed by a reading some
-values.
+On Fri, 2012-03-09 at 13:53 +0200, Artem Bityutskiy wrote:
+> OK, pushed these ones, although I think that mechanical D1->jffs2_dbg()
+> conversion is not very useful and to make your patch-set worth the
+> trouble you should do few more clean-up steps, like I suggested.
 
-The i915 gmbus controller provides a special "INDEX" cycle for performing
-such a small write followed by a read.  The INDEX can be either one or two
-bytes long.  The advantage of using such a cycle is that the CPU has
-slightly less work to do once the read with INDEX cycle is started.
+Do you want me to remove the D2/jffs2_dbg(2, ...) instances
+or just eliminate the first arg to jffs2_dbg and keep the
+current jffs2_dbg(2,...) instances?
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/gpu/drm/i915/intel_i2c.c |   32 ++++++++++++++++++++++++++++++--
- 1 files changed, 30 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_i2c.c b/drivers/gpu/drm/i915/intel_i2c.c
-index b79a181..61fe317 100644
---- a/drivers/gpu/drm/i915/intel_i2c.c
-+++ b/drivers/gpu/drm/i915/intel_i2c.c
-@@ -255,12 +255,40 @@ gmbus_xfer(struct i2c_adapter *adapter,
- 	I915_WRITE(GMBUS0 + reg_offset, bus->reg0);
- 
- 	for (i = 0; i < num; i++) {
--		u16 len = msgs[i].len;
--		u8 *buf = msgs[i].buf;
-+		u16 len;
-+		u8 *buf;
-+		u32 gmbus5 = 0;
-+		u32 gmbus1_index = 0;
-+
-+		/*
-+		 * The gmbus controller can combine a 1 or 2 byte write with a
-+		 * read that immediately follows it by using an "INDEX" cycle.
-+		 */
-+		if (i + 1 < num &&
-+		    !(msgs[i].flags & I2C_M_RD) &&
-+		    (msgs[i + 1].flags & I2C_M_RD) &&
-+		    msgs[i].len <= 2) {
-+			if (msgs[i].len == 2)
-+				gmbus5 = GMBUS_2BYTE_INDEX_EN |
-+					 msgs[i].buf[1] |
-+					 (msgs[i].buf[0] << 8);
-+			if (msgs[i].len == 1)
-+				gmbus1_index = GMBUS_CYCLE_INDEX |
-+					       (msgs[i].buf[0] <<
-+						GMBUS_SLAVE_INDEX_SHIFT);
-+			i += 1;  /* set i to the index of the read xfer */
-+		}
-+
-+		len = msgs[i].len;
-+		buf = msgs[i].buf;
-+
-+		/* GMBUS5 holds 16-bit index, but must be 0 if not used */
-+		I915_WRITE(GMBUS5 + reg_offset, gmbus5);
- 
- 		if (msgs[i].flags & I2C_M_RD) {
- 			I915_WRITE(GMBUS1 + reg_offset,
- 				   GMBUS_CYCLE_WAIT |
-+				   gmbus1_index |
- 				   (len << GMBUS_BYTE_COUNT_SHIFT) |
- 				   (msgs[i].addr << GMBUS_SLAVE_ADDR_SHIFT) |
- 				   GMBUS_SLAVE_READ | GMBUS_SW_RDY);
--- 
-1.7.7.3
 
