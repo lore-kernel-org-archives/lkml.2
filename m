@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759283Ab2CIUOJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:14:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	id S1030804Ab2CITsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:48:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031169Ab2CITuD (ORCPT
+	with ESMTP id S1030775Ab2CITsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:50:03 -0500
-Message-Id: <20120309190208.832716998@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:48:10 -0500
+Message-Id: <20120309190206.193982352@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:23 -0800
+Date: Fri, 09 Mar 2012 11:02:50 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicolas Cavallari <Nicolas.Cavallari@lri.fr>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 81/95] carl9170: fix frame delivery if sta is in powersave mode
+        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Tim Gardner <tim.gardner@canonical.com>
+Subject: [ 48/95] bsg: fix sysfs link remove warning
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,54 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 9926a67557532acb6cddb1c1add02952175b5c72 upstream.
+commit 37b40adf2d1b4a5e51323be73ccf8ddcf3f15dd3 upstream.
 
-Nicolas Cavallari discovered that carl9170 has some
-serious problems delivering data to sleeping stations.
+We create "bsg" link if q->kobj.sd is not NULL, so remove it only
+when the same condition is true.
 
-It turns out that the driver was not honoring two
-important flags (IEEE80211_TX_CTL_POLL_RESPONSE and
-IEEE80211_TX_CTL_CLEAR_PS_FILT) which are set on
-frames that should be sent although the receiving
-station is still in powersave mode.
+Fixes:
 
-Reported-by: Nicolas Cavallari <Nicolas.Cavallari@lri.fr>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+WARNING: at fs/sysfs/inode.c:323 sysfs_hash_and_remove+0x2b/0x77()
+sysfs: can not remove 'bsg', no directory
+Call Trace:
+  [<c0429683>] warn_slowpath_common+0x6a/0x7f
+  [<c0537a68>] ? sysfs_hash_and_remove+0x2b/0x77
+  [<c042970b>] warn_slowpath_fmt+0x2b/0x2f
+  [<c0537a68>] sysfs_hash_and_remove+0x2b/0x77
+  [<c053969a>] sysfs_remove_link+0x20/0x23
+  [<c05d88f1>] bsg_unregister_queue+0x40/0x6d
+  [<c0692263>] __scsi_remove_device+0x31/0x9d
+  [<c069149f>] scsi_forget_host+0x41/0x52
+  [<c0689fa9>] scsi_remove_host+0x71/0xe0
+  [<f7de5945>] quiesce_and_remove_host+0x51/0x83 [usb_storage]
+  [<f7de5a1e>] usb_stor_disconnect+0x18/0x22 [usb_storage]
+  [<c06c29de>] usb_unbind_interface+0x4e/0x109
+  [<c067a80f>] __device_release_driver+0x6b/0xa6
+  [<c067a861>] device_release_driver+0x17/0x22
+  [<c067a46a>] bus_remove_device+0xd6/0xe6
+  [<c06785e2>] device_del+0xf2/0x137
+  [<c06c101f>] usb_disable_device+0x94/0x1a0
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/carl9170/tx.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ block/bsg.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/carl9170/tx.c
-+++ b/drivers/net/wireless/ath/carl9170/tx.c
-@@ -1234,6 +1234,7 @@ static bool carl9170_tx_ps_drop(struct a
- {
- 	struct ieee80211_sta *sta;
- 	struct carl9170_sta_info *sta_info;
-+	struct ieee80211_tx_info *tx_info;
+--- a/block/bsg.c
++++ b/block/bsg.c
+@@ -985,7 +985,8 @@ void bsg_unregister_queue(struct request
  
- 	rcu_read_lock();
- 	sta = __carl9170_get_tx_sta(ar, skb);
-@@ -1241,12 +1242,13 @@ static bool carl9170_tx_ps_drop(struct a
- 		goto out_rcu;
- 
- 	sta_info = (void *) sta->drv_priv;
--	if (unlikely(sta_info->sleeping)) {
--		struct ieee80211_tx_info *tx_info;
-+	tx_info = IEEE80211_SKB_CB(skb);
- 
-+	if (unlikely(sta_info->sleeping) &&
-+	    !(tx_info->flags & (IEEE80211_TX_CTL_POLL_RESPONSE |
-+				IEEE80211_TX_CTL_CLEAR_PS_FILT))) {
- 		rcu_read_unlock();
- 
--		tx_info = IEEE80211_SKB_CB(skb);
- 		if (tx_info->flags & IEEE80211_TX_CTL_AMPDU)
- 			atomic_dec(&ar->tx_ampdu_upload);
- 
+ 	mutex_lock(&bsg_mutex);
+ 	idr_remove(&bsg_minor_idr, bcd->minor);
+-	sysfs_remove_link(&q->kobj, "bsg");
++	if (q->kobj.sd)
++		sysfs_remove_link(&q->kobj, "bsg");
+ 	device_unregister(bcd->class_dev);
+ 	bcd->class_dev = NULL;
+ 	kref_put(&bcd->ref, bsg_kref_release_function);
 
 
