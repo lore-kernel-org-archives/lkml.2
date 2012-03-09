@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759344Ab2CIUPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:15:34 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62117 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031101Ab2CITtq (ORCPT
+	id S1030715Ab2CIUYv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:24:51 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50542 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030505Ab2CITqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:49:46 -0500
-Message-Id: <20120309190208.356254146@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:46:50 -0500
+Message-Id: <20120309190203.691277302@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:17 -0800
+Date: Fri, 09 Mar 2012 11:02:19 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Akio Idehara <zbe64533@gmail.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Dmitry Torokhov <dtor@mail.ru>
-Subject: [ 75/95] Input: ALPS - fix touchpad detection when buttons are pressed
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [ 17/95] ALSA: hda - Add a fake mute feature
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +24,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Takashi Iwai <tiwai@suse.de>
 
-From: Akio Idehara <zbe64533@gmail.com>
+commit 3868137ea41866773e75d9ac4b9988dcc361ff1d upstream.
 
-commit 99c90ab31fad855b9da9dee3a5aa6c27f263e9d6 upstream.
+Some codecs don't supply the mute amp-capabilities although the lowest
+volume gives the mute.  It'd be handy if the parser provides the mute
+mixers in such a case.
 
-ALPS touchpad detection fails if some buttons of ALPS are pressed.
-The reason is that the "E6" query response byte is different from
-what is expected.
+This patch adds an extension amp-cap bit (which is used only in the
+driver) to represent the min volume = mute state.  Also modified the
+amp cache code to support the fake mute feature when this bit is set
+but the real mute bit is unset.
 
-This was tested on a Toshiba Portege R500.
+In addition, conexant cx5051 parser uses this new feature to implement
+the missing mute controls.
 
-Signed-off-by: Akio Idehara <zbe64533@gmail.com>
-Tested-by: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42825
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/alps.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ sound/pci/hda/hda_codec.c      |    8 ++++++--
+ sound/pci/hda/hda_codec.h      |    3 +++
+ sound/pci/hda/patch_conexant.c |   22 +++++++++++++++++++++-
+ 3 files changed, 30 insertions(+), 3 deletions(-)
 
---- a/drivers/input/mouse/alps.c
-+++ b/drivers/input/mouse/alps.c
-@@ -421,7 +421,9 @@ static const struct alps_model_info *alp
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -1795,7 +1795,11 @@ static void put_vol_mute(struct hda_code
+ 	parm = ch ? AC_AMP_SET_RIGHT : AC_AMP_SET_LEFT;
+ 	parm |= direction == HDA_OUTPUT ? AC_AMP_SET_OUTPUT : AC_AMP_SET_INPUT;
+ 	parm |= index << AC_AMP_SET_INDEX_SHIFT;
+-	parm |= val;
++	if ((val & HDA_AMP_MUTE) && !(info->amp_caps & AC_AMPCAP_MUTE) &&
++	    (info->amp_caps & AC_AMPCAP_MIN_MUTE))
++		; /* set the zero value as a fake mute */
++	else
++		parm |= val;
+ 	snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_AMP_GAIN_MUTE, parm);
+ 	info->vol[ch] = val;
+ }
+@@ -2062,7 +2066,7 @@ int snd_hda_mixer_amp_tlv(struct snd_kco
+ 	val1 = -((caps & AC_AMPCAP_OFFSET) >> AC_AMPCAP_OFFSET_SHIFT);
+ 	val1 += ofs;
+ 	val1 = ((int)val1) * ((int)val2);
+-	if (min_mute)
++	if (min_mute || (caps & AC_AMPCAP_MIN_MUTE))
+ 		val2 |= TLV_DB_SCALE_MUTE;
+ 	if (put_user(SNDRV_CTL_TLVT_DB_SCALE, _tlv))
+ 		return -EFAULT;
+--- a/sound/pci/hda/hda_codec.h
++++ b/sound/pci/hda/hda_codec.h
+@@ -298,6 +298,9 @@ enum {
+ #define AC_AMPCAP_MUTE			(1<<31)    /* mute capable */
+ #define AC_AMPCAP_MUTE_SHIFT		31
  
- 	/*
- 	 * First try "E6 report".
--	 * ALPS should return 0,0,10 or 0,0,100
-+	 * ALPS should return 0,0,10 or 0,0,100 if no buttons are pressed.
-+	 * The bits 0-2 of the first byte will be 1s if some buttons are
-+	 * pressed.
- 	 */
- 	param[0] = 0;
- 	if (ps2_command(ps2dev, param, PSMOUSE_CMD_SETRES) ||
-@@ -437,7 +439,8 @@ static const struct alps_model_info *alp
- 	psmouse_dbg(psmouse, "E6 report: %2.2x %2.2x %2.2x",
- 		    param[0], param[1], param[2]);
++/* driver-specific amp-caps: using bits 24-30 */
++#define AC_AMPCAP_MIN_MUTE		(1 << 30) /* min-volume = mute */
++
+ /* Connection list */
+ #define AC_CLIST_LENGTH			(0x7f<<0)
+ #define AC_CLIST_LONG			(1<<7)
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -4132,7 +4132,8 @@ static int cx_auto_add_volume_idx(struct
+ 		err = snd_hda_ctl_add(codec, nid, kctl);
+ 		if (err < 0)
+ 			return err;
+-		if (!(query_amp_caps(codec, nid, hda_dir) & AC_AMPCAP_MUTE))
++		if (!(query_amp_caps(codec, nid, hda_dir) &
++		      (AC_AMPCAP_MUTE | AC_AMPCAP_MIN_MUTE)))
+ 			break;
+ 	}
+ 	return 0;
+@@ -4425,6 +4426,22 @@ static const struct snd_pci_quirk cxt_fi
+ 	{}
+ };
  
--	if (param[0] != 0 || param[1] != 0 || (param[2] != 10 && param[2] != 100))
-+	if ((param[0] & 0xf8) != 0 || param[1] != 0 ||
-+	    (param[2] != 10 && param[2] != 100))
- 		return NULL;
++/* add "fake" mute amp-caps to DACs on cx5051 so that mixer mute switches
++ * can be created (bko#42825)
++ */
++static void add_cx5051_fake_mutes(struct hda_codec *codec)
++{
++	static hda_nid_t out_nids[] = {
++		0x10, 0x11, 0
++	};
++	hda_nid_t *p;
++
++	for (p = out_nids; *p; p++)
++		snd_hda_override_amp_caps(codec, *p, HDA_OUTPUT,
++					  AC_AMPCAP_MIN_MUTE |
++					  query_amp_caps(codec, *p, HDA_OUTPUT));
++}
++
+ static int patch_conexant_auto(struct hda_codec *codec)
+ {
+ 	struct conexant_spec *spec;
+@@ -4443,6 +4460,9 @@ static int patch_conexant_auto(struct hd
+ 	case 0x14f15045:
+ 		spec->single_adc_amp = 1;
+ 		break;
++	case 0x14f15051:
++		add_cx5051_fake_mutes(codec);
++		break;
+ 	}
  
- 	/*
+ 	apply_pin_fixup(codec, cxt_fixups, cxt_pincfg_tbl);
 
 
