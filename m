@@ -1,142 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964940Ab2CIWba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 17:31:30 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24808 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964875Ab2CIWb2 (ORCPT
+	id S1758469Ab2CIWjh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 17:39:37 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38740 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753825Ab2CIWjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 17:31:28 -0500
-X-Authority-Analysis: v=2.0 cv=Xp94yC59 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=nx-SDldAh7UA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=20KFwNOVAAAA:8 a=qAFbsPHvHkIfRpjvm-YA:9 a=dpdUgcBLHNYBLNidBSQA:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1331332286.25686.610.camel@gandalf.stny.rr.com>
-Subject: [PATCH RT][PTT] Revert "ACPI: Convert embedded controller lock to
- raw spinlock"
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@redhat.com>, Tim Blechmann <tim@klingt.org>
-Date: Fri, 09 Mar 2012 17:31:26 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 9 Mar 2012 17:39:36 -0500
+Date: Sat, 10 Mar 2012 02:39:32 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
+Message-ID: <20120309223932.GB725@moon>
+References: <20120309124811.GA610@redhat.com>
+ <20120309125735.GB13346@moon>
+ <20120309133555.GA23040@moon>
+ <20120309134732.GA3696@redhat.com>
+ <20120309141349.GC13346@moon>
+ <20120309142620.GA5334@redhat.com>
+ <20120309144239.GD13346@moon>
+ <20120309152122.GA7802@redhat.com>
+ <20120309154224.GE13346@moon>
+ <20120309220244.GD19584@count0.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120309220244.GD19584@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a call for PTT (Please Test This).
+On Fri, Mar 09, 2012 at 02:02:44PM -0800, Matt Helsley wrote:
+...
+> 
+> Sorry about the other email -- hadn't full caught up on this thread.
 
-There's been lots of complaints about acpi failing. One of the solutions
-is to revert the spin_lock to raw_spin_locks of the acpi code. This is
-the revert. Please apply this to 3.0.23-rt39 and lets see if it fixes
-the problem at hand, and make sure it doesn't cause other bugs.
+No problem.
 
-Thanks,
+> This is even better, yes.
+>
 
--- Steve
+Well, in final version I switched back to
 
++	if (mm->num_exe_file_vmas)
++		return -EBUSY;
 
+simply because it's more flexible than mm->exe_file.
 
-commit 8ba46b8b7b495a98b47dfcb316d16634c3c2c924
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Fri Mar 9 17:14:05 2012 -0500
+With mm->exe_file this prctl option become a one-shot
+only, and while at moment our user-space tool can perfectly
+live with that I thought that there is no strict need to
+limit the option this way from the very beginning.
 
-    Revert "ACPI: Convert embedded controller lock to raw spinlock"
-    
-    This reverts commit 1a39c79b4d1a6911a39083719a999fbfba7287ae.
+> Of course I'd prefer it if there was a way to keep num_exe_file_vmas
+> correct and not special-case c/r. The first approximation of a solution
 
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index db0e6c3..b72a603 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -152,10 +152,10 @@ static int ec_transaction_done(struct acpi_ec *ec)
- {
- 	unsigned long flags;
- 	int ret = 0;
--	raw_spin_lock_irqsave(&ec->curr_lock, flags);
-+	spin_lock_irqsave(&ec->curr_lock, flags);
- 	if (!ec->curr || ec->curr->done)
- 		ret = 1;
--	raw_spin_unlock_irqrestore(&ec->curr_lock, flags);
-+	spin_unlock_irqrestore(&ec->curr_lock, flags);
- 	return ret;
- }
- 
-@@ -169,7 +169,7 @@ static void start_transaction(struct acpi_ec *ec)
- static void advance_transaction(struct acpi_ec *ec, u8 status)
- {
- 	unsigned long flags;
--	raw_spin_lock_irqsave(&ec->curr_lock, flags);
-+	spin_lock_irqsave(&ec->curr_lock, flags);
- 	if (!ec->curr)
- 		goto unlock;
- 	if (ec->curr->wlen > ec->curr->wi) {
-@@ -194,7 +194,7 @@ err:
- 	if (in_interrupt())
- 		++ec->curr->irq_count;
- unlock:
--	raw_spin_unlock_irqrestore(&ec->curr_lock, flags);
-+	spin_unlock_irqrestore(&ec->curr_lock, flags);
- }
- 
- static int acpi_ec_sync_query(struct acpi_ec *ec);
-@@ -232,9 +232,9 @@ static int ec_poll(struct acpi_ec *ec)
- 		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
- 			break;
- 		pr_debug(PREFIX "controller reset, restart transaction\n");
--		raw_spin_lock_irqsave(&ec->curr_lock, flags);
-+		spin_lock_irqsave(&ec->curr_lock, flags);
- 		start_transaction(ec);
--		raw_spin_unlock_irqrestore(&ec->curr_lock, flags);
-+		spin_unlock_irqrestore(&ec->curr_lock, flags);
- 	}
- 	return -ETIME;
- }
-@@ -247,17 +247,17 @@ static int acpi_ec_transaction_unlocked(struct acpi_ec *ec,
- 	if (EC_FLAGS_MSI)
- 		udelay(ACPI_EC_MSI_UDELAY);
- 	/* start transaction */
--	raw_spin_lock_irqsave(&ec->curr_lock, tmp);
-+	spin_lock_irqsave(&ec->curr_lock, tmp);
- 	/* following two actions should be kept atomic */
- 	ec->curr = t;
- 	start_transaction(ec);
- 	if (ec->curr->command == ACPI_EC_COMMAND_QUERY)
- 		clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
--	raw_spin_unlock_irqrestore(&ec->curr_lock, tmp);
-+	spin_unlock_irqrestore(&ec->curr_lock, tmp);
- 	ret = ec_poll(ec);
--	raw_spin_lock_irqsave(&ec->curr_lock, tmp);
-+	spin_lock_irqsave(&ec->curr_lock, tmp);
- 	ec->curr = NULL;
--	raw_spin_unlock_irqrestore(&ec->curr_lock, tmp);
-+	spin_unlock_irqrestore(&ec->curr_lock, tmp);
- 	return ret;
- }
- 
-@@ -678,7 +678,7 @@ static struct acpi_ec *make_acpi_ec(void)
- 	mutex_init(&ec->lock);
- 	init_swait_head(&ec->wait);
- 	INIT_LIST_HEAD(&ec->list);
--	raw_spin_lock_init(&ec->curr_lock);
-+	spin_lock_init(&ec->curr_lock);
- 	return ec;
- }
- 
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 2519b6e..6f889ba 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -64,7 +64,7 @@ struct acpi_ec {
- 	struct swait_head wait;
- 	struct list_head list;
- 	struct transaction *curr;
--	raw_spinlock_t curr_lock;
-+	spinlock_t curr_lock;
- };
- 
- extern struct acpi_ec *first_ec;
+It remains correct actually. There is no way to map new VM_EXECUTABLE
+from user-space after we've unmapped previous ones, so num_exe_file_vmas
+will remain 0.
 
+> might be to increment the count whenever a new mmap filp == mm->exe_file
+> and decrement on unmap. I think there are a bunch of details needed to
+> make that work but my feeling is it's do-able. Have you investigated this
+> already and rejected it for some reason (did I miss that discussion
+> somehow?)?
 
+As far as I understand overall num_exe_file_vmas concept -- we track
+a number of VM_EXECUTABLE with it, so setting new exe_file should not
+change num_exe_file_vmas I think.
+
+	Cyrill
