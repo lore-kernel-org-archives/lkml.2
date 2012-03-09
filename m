@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031529Ab2CITvo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:51:44 -0500
+	id S1031564Ab2CITv7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:51:59 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031488Ab2CITvi (ORCPT
+	with ESMTP id S1031495Ab2CITvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:51:38 -0500
-Message-Id: <20120309190216.108317730@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:51:55 -0500
+Message-Id: <20120309190216.512339795@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:28 -0800
+Date: Fri, 09 Mar 2012 11:02:33 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [ 14/68] ALSA: hda - Add a fake mute feature
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 19/68] genirq: Clear action->thread_mask if IRQ_ONESHOT is not set
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,113 +24,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 3868137ea41866773e75d9ac4b9988dcc361ff1d upstream.
+commit 52abb700e16a9aa4cbc03f3d7f80206cbbc80680 upstream.
 
-Some codecs don't supply the mute amp-capabilities although the lowest
-volume gives the mute.  It'd be handy if the parser provides the mute
-mixers in such a case.
+Xommit ac5637611(genirq: Unmask oneshot irqs when thread was not woken)
+fails to unmask when a !IRQ_ONESHOT threaded handler is handled by
+handle_level_irq.
 
-This patch adds an extension amp-cap bit (which is used only in the
-driver) to represent the min volume = mute state.  Also modified the
-amp cache code to support the fake mute feature when this bit is set
-but the real mute bit is unset.
+This happens because thread_mask is or'ed unconditionally in
+irq_wake_thread(), but for !IRQ_ONESHOT interrupts never cleared.  So
+the check for !desc->thread_active fails and keeps the interrupt
+disabled.
 
-In addition, conexant cx5051 parser uses this new feature to implement
-the missing mute controls.
+Keep the thread_mask zero for !IRQ_ONESHOT interrupts.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=42825
+Document the thread_mask magic while at it.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-and-tested-by: Sven Joachim <svenjoac@gmx.de>
+Reported-and-tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_codec.c      |    8 ++++++--
- sound/pci/hda/hda_codec.h      |    3 +++
- sound/pci/hda/patch_conexant.c |   22 +++++++++++++++++++++-
- 3 files changed, 30 insertions(+), 3 deletions(-)
+ kernel/irq/manage.c |   44 ++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 38 insertions(+), 6 deletions(-)
 
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -1651,7 +1651,11 @@ static void put_vol_mute(struct hda_code
- 	parm = ch ? AC_AMP_SET_RIGHT : AC_AMP_SET_LEFT;
- 	parm |= direction == HDA_OUTPUT ? AC_AMP_SET_OUTPUT : AC_AMP_SET_INPUT;
- 	parm |= index << AC_AMP_SET_INDEX_SHIFT;
--	parm |= val;
-+	if ((val & HDA_AMP_MUTE) && !(info->amp_caps & AC_AMPCAP_MUTE) &&
-+	    (info->amp_caps & AC_AMPCAP_MIN_MUTE))
-+		; /* set the zero value as a fake mute */
-+	else
-+		parm |= val;
- 	snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_AMP_GAIN_MUTE, parm);
- 	info->vol[ch] = val;
- }
-@@ -1918,7 +1922,7 @@ int snd_hda_mixer_amp_tlv(struct snd_kco
- 	val1 = -((caps & AC_AMPCAP_OFFSET) >> AC_AMPCAP_OFFSET_SHIFT);
- 	val1 += ofs;
- 	val1 = ((int)val1) * ((int)val2);
--	if (min_mute)
-+	if (min_mute || (caps & AC_AMPCAP_MIN_MUTE))
- 		val2 |= TLV_DB_SCALE_MUTE;
- 	if (put_user(SNDRV_CTL_TLVT_DB_SCALE, _tlv))
- 		return -EFAULT;
---- a/sound/pci/hda/hda_codec.h
-+++ b/sound/pci/hda/hda_codec.h
-@@ -302,6 +302,9 @@ enum {
- #define AC_AMPCAP_MUTE			(1<<31)    /* mute capable */
- #define AC_AMPCAP_MUTE_SHIFT		31
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -976,6 +976,11 @@ __setup_irq(unsigned int irq, struct irq
  
-+/* driver-specific amp-caps: using bits 24-30 */
-+#define AC_AMPCAP_MIN_MUTE		(1 << 30) /* min-volume = mute */
-+
- /* Connection list */
- #define AC_CLIST_LENGTH			(0x7f<<0)
- #define AC_CLIST_LONG			(1<<7)
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -4127,7 +4127,8 @@ static int cx_auto_add_volume_idx(struct
- 		err = snd_hda_ctl_add(codec, nid, kctl);
- 		if (err < 0)
- 			return err;
--		if (!(query_amp_caps(codec, nid, hda_dir) & AC_AMPCAP_MUTE))
-+		if (!(query_amp_caps(codec, nid, hda_dir) &
-+		      (AC_AMPCAP_MUTE | AC_AMPCAP_MIN_MUTE)))
- 			break;
- 	}
- 	return 0;
-@@ -4372,6 +4373,22 @@ static const struct hda_codec_ops cx_aut
- 	.reboot_notify = snd_hda_shutup_pins,
- };
- 
-+/* add "fake" mute amp-caps to DACs on cx5051 so that mixer mute switches
-+ * can be created (bko#42825)
-+ */
-+static void add_cx5051_fake_mutes(struct hda_codec *codec)
-+{
-+	static hda_nid_t out_nids[] = {
-+		0x10, 0x11, 0
-+	};
-+	hda_nid_t *p;
-+
-+	for (p = out_nids; *p; p++)
-+		snd_hda_override_amp_caps(codec, *p, HDA_OUTPUT,
-+					  AC_AMPCAP_MIN_MUTE |
-+					  query_amp_caps(codec, *p, HDA_OUTPUT));
-+}
-+
- static int patch_conexant_auto(struct hda_codec *codec)
- {
- 	struct conexant_spec *spec;
-@@ -4390,6 +4407,9 @@ static int patch_conexant_auto(struct hd
- 	case 0x14f15045:
- 		spec->single_adc_amp = 1;
- 		break;
-+	case 0x14f15051:
-+		add_cx5051_fake_mutes(codec);
-+		break;
+ 		/* add new interrupt at end of irq queue */
+ 		do {
++			/*
++			 * Or all existing action->thread_mask bits,
++			 * so we can find the next zero bit for this
++			 * new action.
++			 */
+ 			thread_mask |= old->thread_mask;
+ 			old_ptr = &old->next;
+ 			old = *old_ptr;
+@@ -984,14 +989,41 @@ __setup_irq(unsigned int irq, struct irq
  	}
  
- 	err = cx_auto_search_adcs(codec);
+ 	/*
+-	 * Setup the thread mask for this irqaction. Unlikely to have
+-	 * 32 resp 64 irqs sharing one line, but who knows.
++	 * Setup the thread mask for this irqaction for ONESHOT. For
++	 * !ONESHOT irqs the thread mask is 0 so we can avoid a
++	 * conditional in irq_wake_thread().
+ 	 */
+-	if (new->flags & IRQF_ONESHOT && thread_mask == ~0UL) {
+-		ret = -EBUSY;
+-		goto out_mask;
++	if (new->flags & IRQF_ONESHOT) {
++		/*
++		 * Unlikely to have 32 resp 64 irqs sharing one line,
++		 * but who knows.
++		 */
++		if (thread_mask == ~0UL) {
++			ret = -EBUSY;
++			goto out_mask;
++		}
++		/*
++		 * The thread_mask for the action is or'ed to
++		 * desc->thread_active to indicate that the
++		 * IRQF_ONESHOT thread handler has been woken, but not
++		 * yet finished. The bit is cleared when a thread
++		 * completes. When all threads of a shared interrupt
++		 * line have completed desc->threads_active becomes
++		 * zero and the interrupt line is unmasked. See
++		 * handle.c:irq_wake_thread() for further information.
++		 *
++		 * If no thread is woken by primary (hard irq context)
++		 * interrupt handlers, then desc->threads_active is
++		 * also checked for zero to unmask the irq line in the
++		 * affected hard irq flow handlers
++		 * (handle_[fasteoi|level]_irq).
++		 *
++		 * The new action gets the first zero bit of
++		 * thread_mask assigned. See the loop above which or's
++		 * all existing action->thread_mask bits.
++		 */
++		new->thread_mask = 1 << ffz(thread_mask);
+ 	}
+-	new->thread_mask = 1 << ffz(thread_mask);
+ 
+ 	if (!shared) {
+ 		init_waitqueue_head(&desc->wait_for_threads);
 
 
