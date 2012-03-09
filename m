@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab2CIIpP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 03:45:15 -0500
-Received: from 1wt.eu ([62.212.114.60]:62989 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753585Ab2CIIpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 03:45:13 -0500
-Date: Fri, 9 Mar 2012 09:41:35 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
-        Tony Luck <tony.luck@intel.com>, Jiri Slaby <jirislaby@gmail.com>,
-        raven@themaw.net
-Subject: Re: Build broken on s390 and ia64 [was: Linux 2.6.32.58]
-Message-ID: <20120309084135.GF25153@1wt.eu>
-References: <20120304180911.GA7336@kroah.com> <4F54A46A.6000305@suse.cz> <20120305120241.GA3627@osiris.boeblingen.de.ibm.com> <4F54B618.1090301@suse.cz> <20120305223338.GE2930@1wt.eu> <1331270953.3022.89.camel@deadeye> <20120309065703.GE25153@1wt.eu> <4F59BE04.5030509@suse.cz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F59BE04.5030509@suse.cz>
-User-Agent: Mutt/1.4.2.3i
+	id S1754076Ab2CIIxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 03:53:54 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:37959 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753702Ab2CIIxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 03:53:53 -0500
+X-AuditID: cbfee61a-b7b78ae000001ceb-0f-4f59c51fc7a0
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Cc: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>, sbkim01@gmail.com
+Subject: [PATCH 1/2] mfd: Add s5m regulator operation mode
+Date: Fri, 09 Mar 2012 17:53:53 +0900
+Message-id: <06ac01ccfdd2$27701c80$76505580$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Acz90iczTjIJluDLSlajekwZeLCLmw==
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 09:23:32AM +0100, Jiri Slaby wrote:
-> On 03/09/2012 07:57 AM, Willy Tarreau wrote:
-> > Thanks but now I have a doubt, maybe Jiri and Tony can help. In the
-> > commit above, Tony says that CONFIG_COMPAT has been broken for a long
-> > time (2008) and nobody apparently uses it. Still, Jiri got a build
-> > failure because he used CONFIG_COMPAT. So either there are some valid
-> > uses and we should not remove the feature that late in a stable branch,
-> > or Jiri only encountered it upon a make allyesconfig then it might
-> > be safe to remove it.
-> 
-> It's a SLE11-SP1 that is using the kernel and has COMPAT on ia64
-> enabled. I don't know if it is broken or if we provide support for that.
+This patch add variables for opmode of s5m series.
+S5M series have 4 operation modes.
+Off mode is always regulator off mode.
+On mode is always regulator on mode.
+Lowpower mode is that regualtor operate in low-power.
+Suspend mode is that regulator operation depends on AP suspend mode.
 
-Thanks for the quick feedback Jiri.
+Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
+---
+ include/linux/mfd/s5m87xx/s5m-core.h |    1 +
+ include/linux/mfd/s5m87xx/s5m-pmic.h |   29 +++++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
-> If you are sure COMPAT is broken on ia64 even in 2.6.32, feel free to
-> ban COMPAT completely.
-
-Just checked on the net, it looks like Tony's comment is right as
-SLE11 apparently provides ia32el.
-
-So that's OK, I'll apply Ben's patch.
-
-Thanks guys,
-Willy
+diff --git a/include/linux/mfd/s5m87xx/s5m-core.h b/include/linux/mfd/s5m87xx/s5m-core.h
+index a7480b5..21603b4 100644
+--- a/include/linux/mfd/s5m87xx/s5m-core.h
++++ b/include/linux/mfd/s5m87xx/s5m-core.h
+@@ -335,6 +335,7 @@ extern int s5m_reg_update(struct s5m87xx_dev *s5m87xx, u8 reg, u8 val, u8 mask);
+ 
+ struct s5m_platform_data {
+ 	struct s5m_regulator_data	*regulators;
++	struct s5m_opmode_data		*opmode;
+ 	int				device_type;
+ 	int				num_regulators;
+ 
+diff --git a/include/linux/mfd/s5m87xx/s5m-pmic.h b/include/linux/mfd/s5m87xx/s5m-pmic.h
+index a72a5d2..a199589 100644
+--- a/include/linux/mfd/s5m87xx/s5m-pmic.h
++++ b/include/linux/mfd/s5m87xx/s5m-pmic.h
+@@ -58,6 +58,8 @@ enum s5m8767_regulators {
+ 	S5M8767_REG_MAX,
+ };
+ 
++#define S5M8767_ENCTRL_SHIFT  6
++
+ /* S5M8763 regulator ids */
+ enum s5m8763_regulators {
+ 	S5M8763_LDO1,
+@@ -97,4 +99,31 @@ struct s5m_regulator_data {
+ 	struct regulator_init_data	*initdata;
+ };
+ 
++/*
++ * s5m_opmode_data - regulator operation mode data
++ * @id: regulator id
++ * @mode: regulator operation mode
++ */
++struct s5m_opmode_data {
++	int id;
++	int mode;
++};
++
++/*
++ * s5m regulator operation mode
++ * S5M_OPMODE_OFF	Regulator always OFF
++ * S5M_OPMODE_ON	Regulator always ON
++ * S5M_OPMODE_LOWPOWER  Regulator is on in low-power mode
++ * S5M_OPMODE_SUSPEND   Regulator is changed by PWREN pin
++ *			If PWREN is high, regulator is on
++ *			If PWREN is low, regulator is off
++ */
++
++enum s5m_opmode {
++	S5M_OPMODE_OFF,
++	S5M_OPMODE_ON,
++	S5M_OPMODE_LOWPOWER,
++	S5M_OPMODE_SUSPEND,
++};
++
+ #endif /*  __LINUX_MFD_S5M_PMIC_H */
+-- 
+1.7.1
 
