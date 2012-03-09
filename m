@@ -1,53 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab2CIM6c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 07:58:32 -0500
-Received: from educacao.niteroi.urbi.com.br ([200.152.56.131]:58794 "EHLO
-	FMEmail.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750900Ab2CIM6b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 07:58:31 -0500
-Message-ID: <20120309064532.ix5k9mgzs4oskcks@webmail.educacao.niteroi.rj.gov.br>
-Date: Fri, 09 Mar 2012 06:45:32 -0500
-From: "Mr.Saeed Ahmed." <sael@as.net>
-Reply-to: saeed0k04@linuxmail.org
-To: undisclosed-recipients:;
-Subject: Will You Be Trusted
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+	id S1753813Ab2CIM7m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 07:59:42 -0500
+Received: from xyratex198.xyratex.com ([194.131.166.198]:35777 "EHLO
+	XY01EX22.xy01.xyratex.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751374Ab2CIM7k convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 07:59:40 -0500
+Subject: Re: [PATCH] [SCSI] pm8001: Use spin_lock_irqsave() for task_state.
+Mime-Version: 1.0 (Apple Message framework v1257)
+Content-Type: text/plain; charset=us-ascii
+From: Mark Salyzyn <mark_salyzyn@xyratex.com>
+In-Reply-To: <1331280818-14042-1-git-send-email-santoshprasadnayak@gmail.com>
+Date: Fri, 9 Mar 2012 07:59:33 -0500
+Cc: Mark Salyzyn <mark_salyzyn@xyratex.com>, jack_wang@usish.com,
+        lindar_liu@usish.com, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3AC0015A-DFF5-4D08-A535-1FC6F2094B31@xyratex.com>
+References: <1331280818-14042-1-git-send-email-santoshprasadnayak@gmail.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+X-Mailer: Apple Mail (2.1257)
+X-OriginalArrivalTime: 09 Mar 2012 12:59:35.0750 (UTC) FILETIME=[7A978660:01CCFDF4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ACK
 
+On Mar 9, 2012, at 3:13 AM, santosh nayak wrote:
 
-Dear Friend,
-
-As you read this, I don't want you to feel sorry for me,because, I
-believe everyone will die someday,and am contacting you because
-I really do need your help and I want you to help me with all your
-effort and time for just seven to fourteen workings days of your time.I
-want you to be honest and truthful with me that you will help me
-with my last wish as a dying man.
-
-Please i need a reliable person who will usethe Money($18 milliondollars)to
-build orphanage home or charityorganization.
-
-Please kindly reply to my most confidential email if you are really
-interested in helping me please:saeed0k04@linuxmail.org
-
-
-God be with you.
-
-Mr.Saeed Ahmed
-
-----------------------------------------------------------------
-FME Webmail
-www.educacao.niteroi.rj.gov.br
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> 
+> Use spin_lock_irqsave() for task_state.
+> 
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> ---
+> drivers/scsi/pm8001/pm8001_hwi.c |   18 ++++++++++--------
+> 1 files changed, 10 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
+> index 3619f6e..9d82ee5 100644
+> --- a/drivers/scsi/pm8001/pm8001_hwi.c
+> +++ b/drivers/scsi/pm8001/pm8001_hwi.c
+> @@ -2093,6 +2093,7 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
+> 	struct ata_task_resp *resp ;
+> 	u32 *sata_resp;
+> 	struct pm8001_device *pm8001_dev;
+> +	unsigned long flags;
+> 
+> 	psataPayload = (struct sata_completion_resp *)(piomb + 4);
+> 	status = le32_to_cpu(psataPayload->status);
+> @@ -2382,26 +2383,26 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
+> 		ts->stat = SAS_DEV_NO_RESPONSE;
+> 		break;
+> 	}
+> -	spin_lock_irq(&t->task_state_lock);
+> +	spin_lock_irqsave(&t->task_state_lock, flags);
+> 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
+> 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
+> 	t->task_state_flags |= SAS_TASK_STATE_DONE;
+> 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
+> -		spin_unlock_irq(&t->task_state_lock);
+> +		spin_unlock_irqrestore(&t->task_state_lock, flags);
+> 		PM8001_FAIL_DBG(pm8001_ha,
+> 			pm8001_printk("task 0x%p done with io_status 0x%x"
+> 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
+> 			t, status, ts->resp, ts->stat));
+> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+> 	} else if (t->uldd_task) {
+> -		spin_unlock_irq(&t->task_state_lock);
+> +		spin_unlock_irqrestore(&t->task_state_lock, flags);
+> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+> 		mb();/* ditto */
+> 		spin_unlock_irq(&pm8001_ha->lock);
+> 		t->task_done(t);
+> 		spin_lock_irq(&pm8001_ha->lock);
+> 	} else if (!t->uldd_task) {
+> -		spin_unlock_irq(&t->task_state_lock);
+> +		spin_unlock_irqrestore(&t->task_state_lock, flags);
+> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+> 		mb();/*ditto*/
+> 		spin_unlock_irq(&pm8001_ha->lock);
+> @@ -2423,6 +2424,7 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
+> 	u32 tag = le32_to_cpu(psataPayload->tag);
+> 	u32 port_id = le32_to_cpu(psataPayload->port_id);
+> 	u32 dev_id = le32_to_cpu(psataPayload->device_id);
+> +	unsigned long flags;
+> 
+> 	ccb = &pm8001_ha->ccb_info[tag];
+> 	t = ccb->task;
+> @@ -2593,26 +2595,26 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
+> 		ts->stat = SAS_OPEN_TO;
+> 		break;
+> 	}
+> -	spin_lock_irq(&t->task_state_lock);
+> +	spin_lock_irqsave(&t->task_state_lock, flags);
+> 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
+> 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
+> 	t->task_state_flags |= SAS_TASK_STATE_DONE;
+> 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
+> -		spin_unlock_irq(&t->task_state_lock);
+> +		spin_unlock_irqrestore(&t->task_state_lock, flags);
+> 		PM8001_FAIL_DBG(pm8001_ha,
+> 			pm8001_printk("task 0x%p done with io_status 0x%x"
+> 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
+> 			t, event, ts->resp, ts->stat));
+> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+> 	} else if (t->uldd_task) {
+> -		spin_unlock_irq(&t->task_state_lock);
+> +		spin_unlock_irqrestore(&t->task_state_lock, flags);
+> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+> 		mb();/* ditto */
+> 		spin_unlock_irq(&pm8001_ha->lock);
+> 		t->task_done(t);
+> 		spin_lock_irq(&pm8001_ha->lock);
+> 	} else if (!t->uldd_task) {
+> -		spin_unlock_irq(&t->task_state_lock);
+> +		spin_unlock_irqrestore(&t->task_state_lock, flags);
+> 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+> 		mb();/*ditto*/
+> 		spin_unlock_irq(&pm8001_ha->lock);
 
