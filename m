@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964780Ab2CINdz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 08:33:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58821 "EHLO
+	id S932380Ab2CINep (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 08:34:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58830 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932250Ab2CINdy (ORCPT
+	with ESMTP id S932250Ab2CINen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 08:33:54 -0500
-Date: Fri, 9 Mar 2012 05:33:19 -0800
+	Fri, 9 Mar 2012 08:34:43 -0500
+Date: Fri, 9 Mar 2012 05:34:07 -0800
 From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-a5aabdacde9caff54886ae454e0fad2f26929753@git.kernel.org>
+Message-ID: <tip-330aa675b4f92a422cb6d3acbbfd16a628017520@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
         mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1331246868-19905-2-git-send-email-eranian@google.com>
-References: <1331246868-19905-2-git-send-email-eranian@google.com>
+In-Reply-To: <1331246868-19905-3-git-send-email-eranian@google.com>
+References: <1331246868-19905-3-git-send-email-eranian@google.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/hw-branch-sampling] perf record:
-  Provide default branch stack sampling mode option
-Git-Commit-ID: a5aabdacde9caff54886ae454e0fad2f26929753
+  Add HEADER_BRANCH_STACK tag
+Git-Commit-ID: 330aa675b4f92a422cb6d3acbbfd16a628017520
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,42 +28,30 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 09 Mar 2012 05:33:41 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 09 Mar 2012 05:34:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a5aabdacde9caff54886ae454e0fad2f26929753
-Gitweb:     http://git.kernel.org/tip/a5aabdacde9caff54886ae454e0fad2f26929753
+Commit-ID:  330aa675b4f92a422cb6d3acbbfd16a628017520
+Gitweb:     http://git.kernel.org/tip/330aa675b4f92a422cb6d3acbbfd16a628017520
 Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Thu, 8 Mar 2012 23:47:45 +0100
+AuthorDate: Thu, 8 Mar 2012 23:47:46 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 9 Mar 2012 08:26:07 +0100
+CommitDate: Fri, 9 Mar 2012 08:26:08 +0100
 
-perf record: Provide default branch stack sampling mode option
+perf record: Add HEADER_BRANCH_STACK tag
 
-This patch chanegs the logic of the -b, --branch-stack options
-of perf record.
+This patch adds a new feature bit, namely,
+HEADER_BRANCH_STACK.  When present, it indicates
+that sample records may contain branch stack.
 
-Based on users' request, the patch provides a default filter
-mode with the -b (or --branch-any) option.  With the option,
-any type of taken branches is sampled.
+This could be useful to a viewer to switch to
+branch mode without having to parse all the
+samples or without a specific cmdline option.
 
-With -j (or --branch-filter), the user can specify any
-valid combination of branch types and privilege levels
-if supported by the underlying hardware.
-
-The -b (--branch any) is a shortcut for: --branch-filter any.
-
- $ perf record -b foo
-
-or:
-
- $ perf record --branch-filter any foo
-
-For more specific filtering:
-
- $ perf record --branch-filter ind_call,u foo
+This will be used in a subsequent patch to
+enhance perf report with branch stacks.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 Cc: peterz@infradead.org
@@ -73,162 +61,76 @@ Cc: ravitillo@lbl.gov
 Cc: vweaver1@eecs.utk.edu
 Cc: khandual@linux.vnet.ibm.com
 Cc: dsahern@gmail.com
-Link: http://lkml.kernel.org/r/1331246868-19905-2-git-send-email-eranian@google.com
+Link: http://lkml.kernel.org/r/1331246868-19905-3-git-send-email-eranian@google.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/Documentation/perf-record.txt |   23 ++++++----
- tools/perf/builtin-record.c              |   68 +++++++++++++++++++-----------
- 2 files changed, 57 insertions(+), 34 deletions(-)
+ tools/perf/builtin-record.c |    3 +++
+ tools/perf/util/header.c    |   13 +++++++++++++
+ tools/perf/util/header.h    |    2 +-
+ 3 files changed, 17 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 60bddaf..a1386b2 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -153,14 +153,19 @@ corresponding events, i.e., they always refer to events defined earlier on the c
- line.
- 
- -b::
----branch-stack::
-+--branch-any::
-+Enable taken branch stack sampling. Any type of taken branch may be sampled.
-+This is a shortcut for --branch-filter any. See --branch-filter for more infos.
-+
-+-j::
-+--branch-filter::
- Enable taken branch stack sampling. Each sample captures a series of consecutive
- taken branches. The number of branches captured with each sample depends on the
- underlying hardware, the type of branches of interest, and the executed code.
- It is possible to select the types of branches captured by enabling filters. The
- following filters are defined:
- 
--        -  any :  any type of branches
-+        - any:  any type of branches
-         - any_call: any function call or system call
-         - any_ret: any function return or system call return
-         - any_ind: any indirect branch
-@@ -169,13 +174,13 @@ following filters are defined:
-         - hv: only when the target is at the hypervisor level
- 
- +
--At least one of any, any_call, any_ret, any_ind must be provided. The privilege levels may
--be ommitted, in which case, the privilege levels of the associated event are applied to the
--branch filter. Both kernel (k) and hypervisor (hv) privilege levels are subject to
--permissions.  When sampling on multiple events, branch stack sampling is enabled for all
--the sampling events. The sampled branch type is the same for all events.
--Note that taken branch sampling may not be available on all processors.
--The various filters must be specified as a comma separated list: -b any_ret,u,k
-+The option requires at least one branch type among any, any_call, any_ret, ind_call.
-+The privilege levels may be ommitted, in which case, the privilege levels of the associated
-+event are applied to the branch filter. Both kernel (k) and hypervisor (hv) privilege
-+levels are subject to permissions.  When sampling on multiple events, branch stack sampling
-+is enabled for all the sampling events. The sampled branch type is the same for all events.
-+The various filters must be specified as a comma separated list: --branch-filter any_ret,u,k
-+Note that this feature may not be available on all processors.
- 
- SEE ALSO
- --------
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 1c49d4e..a7c53a9 100644
+index a7c53a9..be4e1ee 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -660,7 +660,7 @@ static const struct branch_mode branch_modes[] = {
+@@ -473,6 +473,9 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 	if (!have_tracepoints(&evsel_list->entries))
+ 		perf_header__clear_feat(&session->header, HEADER_TRACE_INFO);
+ 
++	if (!rec->opts.branch_stack)
++		perf_header__clear_feat(&session->header, HEADER_BRANCH_STACK);
++
+ 	if (!rec->file_new) {
+ 		err = perf_session__read_header(session, output);
+ 		if (err < 0)
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index c851495..0d9b6da 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1023,6 +1023,12 @@ write_it:
+ 	return do_write_string(fd, buffer);
+ }
+ 
++static int write_branch_stack(int fd __used, struct perf_header *h __used,
++		       struct perf_evlist *evlist __used)
++{
++	return 0;
++}
++
+ static void print_hostname(struct perf_header *ph, int fd, FILE *fp)
+ {
+ 	char *str = do_read_string(fd, ph);
+@@ -1315,6 +1321,12 @@ static void print_cpuid(struct perf_header *ph, int fd, FILE *fp)
+ 	free(str);
+ }
+ 
++static void print_branch_stack(struct perf_header *ph __used, int fd __used,
++			       FILE *fp)
++{
++	fprintf(fp, "# contains samples with branch stack\n");
++}
++
+ static int __event_process_build_id(struct build_id_event *bev,
+ 				    char *filename,
+ 				    struct perf_session *session)
+@@ -1519,6 +1531,7 @@ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+ 	FEAT_OPA(HEADER_CMDLINE,	cmdline),
+ 	FEAT_OPF(HEADER_CPU_TOPOLOGY,	cpu_topology),
+ 	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
++	FEAT_OPA(HEADER_BRANCH_STACK,	branch_stack),
  };
  
- static int
--parse_branch_stack(const struct option *opt, const char *str, int unset __used)
-+parse_branch_stack(const struct option *opt, const char *str, int unset)
- {
- #define ONLY_PLM \
- 	(PERF_SAMPLE_BRANCH_USER	|\
-@@ -669,40 +669,53 @@ parse_branch_stack(const struct option *opt, const char *str, int unset __used)
- 
- 	uint64_t *mode = (uint64_t *)opt->value;
- 	const struct branch_mode *br;
--	char *s, *os, *p;
-+	char *s, *os = NULL, *p;
- 	int ret = -1;
- 
--	*mode = 0;
-+	if (unset)
-+		return 0;
- 
--	/* because str is read-only */
--	s = os = strdup(str);
--	if (!s)
-+	/*
-+	 * cannot set it twice, -b + --branch-filter for instance
-+	 */
-+	if (*mode)
- 		return -1;
- 
--	for (;;) {
--		p = strchr(s, ',');
--		if (p)
--			*p = '\0';
+ struct header_print_data {
+diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
+index e68f617..21a6be0 100644
+--- a/tools/perf/util/header.h
++++ b/tools/perf/util/header.h
+@@ -27,7 +27,7 @@ enum {
+ 	HEADER_EVENT_DESC,
+ 	HEADER_CPU_TOPOLOGY,
+ 	HEADER_NUMA_TOPOLOGY,
 -
--		for (br = branch_modes; br->name; br++) {
--			if (!strcasecmp(s, br->name))
--				break;
--		}
--		if (!br->name)
--			goto error;
-+	/* str may be NULL in case no arg is passed to -b */
-+	if (str) {
-+		/* because str is read-only */
-+		s = os = strdup(str);
-+		if (!s)
-+			return -1;
-+
-+		for (;;) {
-+			p = strchr(s, ',');
-+			if (p)
-+				*p = '\0';
-+
-+			for (br = branch_modes; br->name; br++) {
-+				if (!strcasecmp(s, br->name))
-+					break;
-+			}
-+			if (!br->name) {
-+				ui__warning("unknown branch filter %s,"
-+					    " check man page\n", s);
-+				goto error;
-+			}
- 
--		*mode |= br->mode;
-+			*mode |= br->mode;
- 
--		if (!p)
--			break;
-+			if (!p)
-+				break;
- 
--		s = p + 1;
-+			s = p + 1;
-+		}
- 	}
- 	ret = 0;
- 
-+	/* default to any branch */
- 	if ((*mode & ~ONLY_PLM) == 0) {
--		error("need at least one branch type with -b\n");
--		ret = -1;
-+		*mode = PERF_SAMPLE_BRANCH_ANY;
- 	}
- error:
- 	free(os);
-@@ -798,8 +811,13 @@ const struct option record_options[] = {
- 		     "monitor event in cgroup name only",
- 		     parse_cgroups),
- 	OPT_STRING('u', "uid", &record.uid_str, "user", "user to profile"),
--	OPT_CALLBACK('b', "branch-stack", &record.opts.branch_stack,
--		     "branch mode mask", "branch stack sampling modes",
-+
-+	OPT_CALLBACK_NOOPT('b', "branch-any", &record.opts.branch_stack,
-+		     "branch any", "sample any taken branches",
-+		     parse_branch_stack),
-+
-+	OPT_CALLBACK('j', "branch-filter", &record.opts.branch_stack,
-+		     "branch filter mask", "branch stack filter modes",
- 		     parse_branch_stack),
- 	OPT_END()
++	HEADER_BRANCH_STACK,
+ 	HEADER_LAST_FEATURE,
+ 	HEADER_FEAT_BITS	= 256,
  };
