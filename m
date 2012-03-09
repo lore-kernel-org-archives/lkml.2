@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759347Ab2CIAEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 19:04:53 -0500
+	id S1759318Ab2CIAEu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 19:04:50 -0500
 Received: from smtp4.mundo-r.com ([212.51.32.151]:41263 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757417Ab2CIAEQ (ORCPT
+	with ESMTP id S1757019Ab2CIAEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 19:04:16 -0500
+	Thu, 8 Mar 2012 19:04:14 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ap4EAN1HWU9bdWOb/2dsb2JhbABDhTWwe4ILAQUjDwEjIxAlAhgOAgI5AxsGARKIDqgakgWBL44RgRYElUWFZYNchleCZIFTBA
+X-IronPort-Anti-Spam-Result: Ap4EAN1HWU9bdWOb/2dsb2JhbABDhTWwe4ILAQUjDwEUDyMQJQIYDgICOQMbBgESiA6oGoNojh2BL44RgRYElUWFZYNchleCZA
 X-IronPort-AV: E=Sophos;i="4.73,554,1325458800"; 
-   d="scan'208";a="886086923"
+   d="scan'208";a="886086920"
 From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
 	<vjaquez@igalia.com>
 To: Omar Ramirez Luna <omar.ramirez@ti.com>,
@@ -18,9 +18,9 @@ To: Omar Ramirez Luna <omar.ramirez@ti.com>,
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Felipe Contreras <felipe.contreras@nokia.com>,
         linux-omap@vger.kernel.org
-Subject: [PATCH 08/17] staging: tidspbridge: remove chnl_init() and chnl_exit()
-Date: Fri,  9 Mar 2012 01:03:43 +0100
-Message-Id: <a96eeca3f77108d6d839327f8d7521f0dd2035be.1331250369.git.vjaquez@igalia.com>
+Subject: [PATCH 04/17] staging: tidspbridge: remove node_init() and node_exit()
+Date: Fri,  9 Mar 2012 01:03:39 +0100
+Message-Id: <e37bf4c22995c807dbd9f53771766c775ce4354b.1331250369.git.vjaquez@igalia.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <cover.1331250368.git.vjaquez@igalia.com>
 References: <cover.1331250368.git.vjaquez@igalia.com>
@@ -33,7 +33,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The chnl module has a chnl_init() and a chnl_exit() whose only purpose
+The node module has a node_init() and a node_exit() whose only purpose
 is to keep a reference counting which is not used at all.
 
 This patch removes these functions and the reference count variable.
@@ -42,147 +42,280 @@ There is no functional changes.
 
 Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
 ---
- .../staging/tidspbridge/include/dspbridge/chnl.h   |   29 --------------------
- drivers/staging/tidspbridge/pmgr/chnl.c            |   28 -------------------
- drivers/staging/tidspbridge/pmgr/dspapi.c          |    9 +-----
- 3 files changed, 2 insertions(+), 64 deletions(-)
+ .../staging/tidspbridge/include/dspbridge/node.h   |   41 --------------------
+ .../tidspbridge/include/dspbridge/nodepriv.h       |    1 -
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |    7 +---
+ drivers/staging/tidspbridge/rmgr/node.c            |   24 -----------
+ 4 files changed, 1 insertions(+), 72 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/chnl.h b/drivers/staging/tidspbridge/include/dspbridge/chnl.h
-index 92f6a13..9b018b1 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/chnl.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/chnl.h
-@@ -48,7 +48,6 @@
-  *      -ECHRNG:     This manager cannot handle this many channels.
-  *      -EEXIST:       Channel manager already exists for this device.
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/node.h b/drivers/staging/tidspbridge/include/dspbridge/node.h
+index 16371d8..7397b7a 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/node.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/node.h
+@@ -47,7 +47,6 @@
+  *      -EPERM:          A failure occurred, unable to allocate node.
+  *      -EBADR:    Proccessor is not in the running state.
   *  Requires:
-- *      chnl_init(void) called.
-  *      channel_mgr != NULL.
-  *      mgr_attrts != NULL.
-  *  Ensures:
-@@ -70,7 +69,6 @@ extern int chnl_create(struct chnl_mgr **channel_mgr,
-  *      0:            Success.
-  *      -EFAULT:        hchnl_mgr was invalid.
+- *      node_init(void) called.
+  *      hprocessor != NULL.
+  *      node_uuid != NULL.
+  *      noderes != NULL.
+@@ -81,7 +80,6 @@ extern int node_allocate(struct proc_object *hprocessor,
+  *      -EPERM:      General Failure.
+  *      -EINVAL:      Invalid Size.
   *  Requires:
-- *      chnl_init(void) called.
+- *      node_init(void) called.
+  *      pbuffer != NULL.
   *  Ensures:
-  *      0:            Cancels I/O on each open channel.
-  *                          Closes each open channel.
-@@ -79,31 +77,4 @@ extern int chnl_create(struct chnl_mgr **channel_mgr,
   */
- extern int chnl_destroy(struct chnl_mgr *hchnl_mgr);
+@@ -106,7 +104,6 @@ extern int node_alloc_msg_buf(struct node_object *hnode,
+  *                          or NODE_RUNNING state.
+  *      -ETIME:       A timeout occurred before the DSP responded.
+  *  Requires:
+- *      node_init(void) called.
+  *  Ensures:
+  *      0 && (Node's current priority == prio)
+  */
+@@ -157,7 +154,6 @@ extern int node_change_priority(struct node_object *hnode, s32 prio);
+  *                              Device node to device node, or device node to
+  *                              GPP), the two nodes are on different DSPs.
+  *  Requires:
+- *      node_init(void) called.
+  *  Ensures:
+  */
+ extern int node_connect(struct node_object *node1,
+@@ -185,7 +181,6 @@ extern int node_connect(struct node_object *node1,
+  *      -ETIME:       A timeout occurred before the DSP responded.
+  *      -EPERM:          A failure occurred, unable to create node.
+  *  Requires:
+- *      node_init(void) called.
+  *  Ensures:
+  */
+ extern int node_create(struct node_object *hnode);
+@@ -206,7 +201,6 @@ extern int node_create(struct node_object *hnode);
+  *      -ENOMEM:    Insufficient memory for requested resources.
+  *      -EPERM:      General failure.
+  *  Requires:
+- *      node_init(void) called.
+  *      node_man != NULL.
+  *      hdev_obj != NULL.
+  *  Ensures:
+@@ -234,7 +228,6 @@ extern int node_create_mgr(struct node_mgr **node_man,
+  *      -EPERM:          A failure occurred in deleting the node.
+  *      -ESPIPE:        Delete function not found in the COFF file.
+  *  Requires:
+- *      node_init(void) called.
+  *  Ensures:
+  *      0:            hnode is invalid.
+  */
+@@ -250,7 +243,6 @@ extern int node_delete(struct node_res_object *noderes,
+  *  Returns:
+  *      0:        Success.
+  *  Requires:
+- *      node_init(void) called.
+  *      Valid hnode_mgr.
+  *  Ensures:
+  */
+@@ -287,20 +279,6 @@ extern int node_enum_nodes(struct node_mgr *hnode_mgr,
+ 				  u32 *pu_allocated);
  
--/*
-- *  ======== chnl_exit ========
-- *  Purpose:
-- *      Discontinue usage of the CHNL module.
-- *  Parameters:
-- *  Returns:
-- *  Requires:
-- *      chnl_init(void) previously called.
-- *  Ensures:
-- *      Resources, if any acquired in chnl_init(void), are freed when the last
-- *      client of CHNL calls chnl_exit(void).
-- */
--extern void chnl_exit(void);
--
--/*
-- *  ======== chnl_init ========
-- *  Purpose:
-- *      Initialize the CHNL module's private state.
-- *  Parameters:
-- *  Returns:
-- *      TRUE if initialized; FALSE if error occurred.
-- *  Requires:
-- *  Ensures:
-- *      A requirement for each of the other public CHNL functions.
-- */
--extern bool chnl_init(void);
--
- #endif /* CHNL_ */
-diff --git a/drivers/staging/tidspbridge/pmgr/chnl.c b/drivers/staging/tidspbridge/pmgr/chnl.c
-index 825be20..4bd8686 100644
---- a/drivers/staging/tidspbridge/pmgr/chnl.c
-+++ b/drivers/staging/tidspbridge/pmgr/chnl.c
-@@ -38,9 +38,6 @@
- /*  ----------------------------------- This */
- #include <dspbridge/chnl.h>
- 
--/*  ----------------------------------- Globals */
--static u32 refs;
--
  /*
-  *  ======== chnl_create ========
-  *  Purpose:
-@@ -116,28 +113,3 @@ int chnl_destroy(struct chnl_mgr *hchnl_mgr)
- 
- 	return status;
- }
+- *  ======== node_exit ========
+- *  Purpose:
+- *      Discontinue usage of NODE module.
+- *  Parameters:
+- *  Returns:
+- *  Requires:
+- *      node_init(void) successfully called before.
+- *  Ensures:
+- *      Any resources acquired in node_init(void) will be freed when last NODE
+- *      client calls node_exit(void).
+- */
+-extern void node_exit(void);
 -
 -/*
-- *  ======== chnl_exit ========
+  *  ======== node_free_msg_buf ========
+  *  Purpose:
+  *      Free a message buffer previously allocated with node_alloc_msg_buf.
+@@ -313,7 +291,6 @@ extern void node_exit(void);
+  *      -EFAULT:    Invalid node handle.
+  *      -EPERM:      Failure to free the buffer.
+  *  Requires:
+- *      node_init(void) called.
+  *      pbuffer != NULL.
+  *  Ensures:
+  */
+@@ -336,7 +313,6 @@ extern int node_free_msg_buf(struct node_object *hnode,
+  *      0:        Success.
+  *      -EFAULT:    Invalid hnode.
+  *  Requires:
+- *      node_init(void) called.
+  *      pattr != NULL.
+  *  Ensures:
+  *      0:        *pattrs contains the node's current attributes.
+@@ -363,7 +339,6 @@ extern int node_get_attr(struct node_object *hnode,
+  *              Error occurred while trying to retrieve a message.
+  *      -ETIME:   Timeout occurred and no message is available.
+  *  Requires:
+- *      node_init(void) called.
+  *      message != NULL.
+  *  Ensures:
+  */
+@@ -386,17 +361,6 @@ extern int node_get_nldr_obj(struct node_mgr *hnode_mgr,
+ 				    struct nldr_object **nldr_ovlyobj);
+ 
+ /*
+- *  ======== node_init ========
 - *  Purpose:
-- *      Discontinue usage of the CHNL module.
+- *      Initialize the NODE module.
+- *  Parameters:
+- *  Returns:
+- *      TRUE if initialization succeeded, FALSE otherwise.
+- *  Ensures:
 - */
--void chnl_exit(void)
+-extern bool node_init(void);
+-
+-/*
+  *  ======== node_on_exit ========
+  *  Purpose:
+  *      Gets called when RMS_EXIT is received for a node. PROC needs to pass
+@@ -425,7 +389,6 @@ void node_on_exit(struct node_object *hnode, s32 node_status);
+  *      -ETIME:       A timeout occurred before the DSP responded.
+  *      DSP_EWRONGSTSATE:   Node is not in NODE_RUNNING state.
+  *  Requires:
+- *      node_init(void) called.
+  *  Ensures:
+  */
+ extern int node_pause(struct node_object *hnode);
+@@ -449,7 +412,6 @@ extern int node_pause(struct node_object *hnode);
+  *      -ETIME:       Timeout occurred before message could be set.
+  *      -EBADR:    Node is in invalid state for sending messages.
+  *  Requires:
+- *      node_init(void) called.
+  *      pmsg != NULL.
+  *  Ensures:
+  */
+@@ -473,7 +435,6 @@ extern int node_put_message(struct node_object *hnode,
+  *      -ENOSYS:   Notification type specified by notify_type is not
+  *                      supported.
+  *  Requires:
+- *      node_init(void) called.
+  *      hnotification != NULL.
+  *  Ensures:
+  */
+@@ -500,7 +461,6 @@ extern int node_register_notify(struct node_object *hnode,
+  *      DSP_EWRONGSTSATE:   Node is not in NODE_PAUSED or NODE_CREATED state.
+  *      -ESPIPE:        Execute function not found in the COFF file.
+  *  Requires:
+- *      node_init(void) called.
+  *  Ensures:
+  */
+ extern int node_run(struct node_object *hnode);
+@@ -523,7 +483,6 @@ extern int node_run(struct node_object *hnode);
+  *              Unable to terminate the node.
+  *      -EBADR:    Operation not valid for the current node state.
+  *  Requires:
+- *      node_init(void) called.
+  *      pstatus != NULL.
+  *  Ensures:
+  */
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/nodepriv.h b/drivers/staging/tidspbridge/include/dspbridge/nodepriv.h
+index 9c1e067..d5b54bb 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/nodepriv.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/nodepriv.h
+@@ -96,7 +96,6 @@ struct node_createargs {
+  *      -EINVAL:     The node's stream corresponding to index and dir
+  *                      is not a stream to or from the host.
+  *  Requires:
+- *      node_init(void) called.
+  *      Valid dir.
+  *      chan_id != NULL.
+  *  Ensures:
+diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
+index 7c20a0f..a5f1f65 100644
+--- a/drivers/staging/tidspbridge/pmgr/dspapi.c
++++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
+@@ -273,7 +273,6 @@ void api_exit(void)
+ 		io_exit();
+ 		strm_exit();
+ 		disp_exit();
+-		node_exit();
+ 		mgr_exit();
+ 		rmm_exit();
+ 	}
+@@ -288,12 +287,11 @@ bool api_init(void)
+ {
+ 	bool ret = true;
+ 	bool fdev, fchnl, fmsg, fio;
+-	bool fmgr, fnode, fdisp, fstrm, frmm;
++	bool fmgr, fdisp, fstrm, frmm;
+ 
+ 	if (api_c_refs == 0) {
+ 		/* initialize driver and other modules */
+ 		fmgr = mgr_init();
+-		fnode = node_init();
+ 		fdisp = disp_init();
+ 		fstrm = strm_init();
+ 		frmm = rmm_init();
+@@ -311,9 +309,6 @@ bool api_init(void)
+ 			if (fstrm)
+ 				strm_exit();
+ 
+-			if (fnode)
+-				node_exit();
+-
+ 			if (fdisp)
+ 				disp_exit();
+ 
+diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
+index 1b24589..908cd1e 100644
+--- a/drivers/staging/tidspbridge/rmgr/node.c
++++ b/drivers/staging/tidspbridge/rmgr/node.c
+@@ -261,8 +261,6 @@ static u32 ovly(void *priv_ref, u32 dsp_run_addr, u32 dsp_load_addr,
+ static u32 mem_write(void *priv_ref, u32 dsp_add, void *pbuf,
+ 		     u32 ul_num_bytes, u32 mem_space);
+ 
+-static u32 refs;		/* module reference count */
+-
+ /* Dynamic loader functions. */
+ static struct node_ldr_fxns nldr_fxns = {
+ 	nldr_allocate,
+@@ -1569,16 +1567,6 @@ func_end:
+ }
+ 
+ /*
+- *  ======== node_exit ========
+- *  Purpose:
+- *      Discontinue usage of NODE module.
+- */
+-void node_exit(void)
 -{
 -	refs--;
 -}
 -
 -/*
-- *  ======== chnl_init ========
+  *  ======== node_free_msg_buf ========
+  *  Purpose:
+  *      Frees the message buffer.
+@@ -1852,18 +1840,6 @@ enum node_type node_get_type(struct node_object *hnode)
+ }
+ 
+ /*
+- *  ======== node_init ========
 - *  Purpose:
-- *      Initialize the CHNL module's private state.
+- *      Initialize the NODE module.
 - */
--bool chnl_init(void)
+-bool node_init(void)
 -{
--	bool ret = true;
+-	refs++;
 -
--	if (ret)
--		refs++;
--
--	return ret;
+-	return true;
 -}
-diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
-index 0a55465..5b9dcad 100644
---- a/drivers/staging/tidspbridge/pmgr/dspapi.c
-+++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
-@@ -268,7 +268,6 @@ void api_exit(void)
- 	if (api_c_refs == 0) {
- 		/* Release all modules initialized in api_init(). */
- 		dev_exit();
--		chnl_exit();
- 		msg_exit();
- 		io_exit();
- 		mgr_exit();
-@@ -283,26 +282,22 @@ void api_exit(void)
- bool api_init(void)
- {
- 	bool ret = true;
--	bool fdev, fchnl, fmsg, fio;
-+	bool fdev, fmsg, fio;
- 	bool fmgr;
- 
- 	if (api_c_refs == 0) {
- 		/* initialize driver and other modules */
- 		fmgr = mgr_init();
--		fchnl = chnl_init();
- 		fmsg = msg_mod_init();
- 		fio = io_init();
- 		fdev = dev_init();
--		ret = fdev && fchnl && fmsg && fio;
-+		ret = fdev && fmsg && fio;
- 		ret = ret && fmgr;
- 		if (!ret) {
- 
- 			if (fmgr)
- 				mgr_exit();
- 
--			if (fchnl)
--				chnl_exit();
 -
- 			if (fmsg)
- 				msg_exit();
- 
+-/*
+  *  ======== node_on_exit ========
+  *  Purpose:
+  *      Gets called when RMS_EXIT is received for a node.
 -- 
 1.7.9.1
 
