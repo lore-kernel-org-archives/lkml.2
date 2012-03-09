@@ -1,110 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758465Ab2CIR0E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:26:04 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:52371 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758350Ab2CIR0B convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:26:01 -0500
+	id S1758456Ab2CIR2O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:28:14 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43400 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320Ab2CIR2N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 12:28:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWPk-s5F5ofO=nU05tnRhmpav+f8Cs_mBG9A-MPuK9stw@mail.gmail.com>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
- <1331018040-30725-8-git-send-email-yinghai@kernel.org> <CAErSpo6jqr44JS4Cyfc0cR_TNbo_ETjPJUO=x2gj-Q_x4TckVA@mail.gmail.com>
- <CAE9FiQWPk-s5F5ofO=nU05tnRhmpav+f8Cs_mBG9A-MPuK9stw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 9 Mar 2012 10:25:39 -0700
-Message-ID: <CAErSpo5QGqW8OL10H_PajnWi0JT=UsfX4c6pXJ_hsqXPcd+NPw@mail.gmail.com>
-Subject: Re: [PATCH 07/23] pci, dmar: Update dmar units devices list during hotplug
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        iommu@lists.linux-foundation.org
+Reply-To: mtk.manpages@gmail.com
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Sat, 10 Mar 2012 06:27:53 +1300
+Message-ID: <CAKgNAkhiHKHSJofXNjCx-NTajzZ5L5Ak_y3YereSJn8dwE=npA@mail.gmail.com>
+Subject: man-pages-3.37 is released
+To: lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 9, 2012 at 12:06 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Thu, Mar 8, 2012 at 5:06 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> When do pci remove/rescan on system that have more iommus, got
->>>
->>> [  894.089745] Set context mapping for c4:00.0
->>> [  894.110890] mpt2sas3: Allocated physical memory: size(4293 kB)
->>> [  894.112556] mpt2sas3: Current Controller Queue Depth(1883), Max Controller Queue Depth(2144)
->>> [  894.127278] mpt2sas3: Scatter Gather Elements per IO(128)
->>> [  894.361295] DRHD: handling fault status reg 2
->>> [  894.364053] DMAR:[DMA Read] Request device [c4:00.0] fault addr fffbe000
->>> [  894.364056] DMAR:[fault reason 02] Present bit in context entry is cl
->>>
->>> it turns out when remove/rescan, pci dev will be freed and will get another new dev.
->>> but drhd units still keep old one... so dmar_find_matched_drhd_unit will
->>> return wrong drhd and iommu for the device that is not on first iommu.
->>>
->>> So need to update devices in drhd_units during pci remove/rescan.
->>>
->>> Could save domain/bus/device/function aside in the list and according that info
->>> restore new dev to drhd_units later.
->>> Then dmar_find_matched_drdh_unit and device_to_iommu could return right drhd and iommu.
->>>
->>> Add remove_dev_from_drhd/restore_dev_to_drhd functions to do the real work.
->>> call them in device ADD_DEVICE and UNBOUND_DRIVER
->>>
->>> Need to do the samething to atsr.  (expose dmar_atsr_units and add atsru->segment)
->>>
->>> After patch, will right iommu for the new dev and will not get DMAR error any more.
->>>
->>> -v2: add pci_dev_put/pci_dev_get to make refcount consistent.
->>>
->>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>> Cc: David Woodhouse <dwmw2@infradead.org>
->>> Cc: Vinod Koul <vinod.koul@intel.com>
->>> Cc: Dan Williams <dan.j.williams@intel.com>
->>> Cc: iommu@lists.linux-foundation.org
->>> ---
->>>  drivers/iommu/intel-iommu.c |  187 ++++++++++++++++++++++++++++++++++++++++---
->>>  include/linux/dmar.h        |    4 +
->>>  2 files changed, 181 insertions(+), 10 deletions(-)
->>>
->>> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
->>> index c9c6053..39ef2ce 100644
->>> --- a/drivers/iommu/intel-iommu.c
->>> +++ b/drivers/iommu/intel-iommu.c
->>> @@ -665,6 +665,159 @@ static struct intel_iommu *device_to_iommu(int segment, u8 bus, u8 devfn)
->>>        return NULL;
->>>  }
->>>
->>> +#ifdef CONFIG_HOTPLUG
->>> +struct dev_dmaru {
->>> +       struct list_head list;
->>> +       void *dmaru;
->>> +       int index;
->>> +       int segment;
->>> +       unsigned char bus;
->>> +       unsigned int devfn;
->>> +};
->>> +
->>> +static int
->>> +save_dev_dmaru(int segment, unsigned char bus, unsigned int devfn,
->>> +                void *dmaru, int index, struct list_head *lh)
->>
->> Follow the indentation style used elsewhere in the file: as much of
->> the declaration on one line as will fit (here and below).
->>
->> I think the callers would read more naturally if you passed in the
->> struct pci_dev * to save_dev_dmaru() and extracted the
->> segment/bus/devfn here rather than in the callers.
->
-> Just want to keep save_dev_dmaru more consistent to get_dev_dmaru...
+Gidday,
 
-Well, it looks like you can change both save_dev_dmaru() *and*
-get_dev_dmaru() to take a struct pci_dev *.  I assumed that would be
-obvious.
+I've released man-pages-3.37.tar.gz - man pages for Linux.
 
-Bjorn
+Now that I've sorted out kernel.org access, many of the release
+artifacts are in the traditional locations, but there are a few
+changes that are likely permanent as well. Details below.
+
+Tarball download:
+   http://www.kernel.org/pub/linux/docs/man-pages/
+Git repository:
+   http://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
+Online changelog:
+   http://man7.org/linux/man-pages/changelog.html#release_3.37
+
+A short summary of the release is blogged at:
+http://linux-man-pages.blogspot.com/2012/03/man-pages-337-is-released.html
+
+The current version of the pages is browsable at:
+http://man7.org/linux/man-pages/
+
+A few changes in this release that may be of interest to readers of
+this list are given below.
+
+Cheers,
+
+Michael
+
+==================== Changes in man-pages-3.37 ====================
+
+New and rewritten pages
+-----------------------
+
+getent.1
+    Mark R. Bannister
+        New page to document 'getent' binary provided by glibc
+
+
+Changes to individual pages
+---------------------------
+
+bdflush.2
+    Michael Kerrisk
+        Note that bdflush() is deprecated, and does nothing
+
+nfsservctl.2
+    Michael Kerrisk
+        Note that this system call was removed in Linux 3.1
+
+ptrace.2
+    Denys Vlasenko  [Oleg Nesterov, Tejun Heo]
+        add extended description of various ptrace quirks
+            Changes include:
+
+            s/parent/tracer/g, s/child/tracee/g - ptrace interface now
+            is sufficiently cleaned up to not treat tracing process
+            as parent.
+
+            Deleted several outright false statements:
+            - pid 1 can be traced
+            - tracer is not shown as parent in ps output
+            - PTRACE_ATTACH is not "the same behavior as if tracee had done
+              a PTRACE_TRACEME": PTRACE_ATTACH delivers a SIGSTOP.
+            - SIGSTOP _can_ be injected.
+            - Removed mentions of SunOS and Solaris as irrelevant.
+            - Added a few more known bugs.
+
+            Added a large block of text in DESCRIPTION which doesn't focus
+            on mechanical description of each flag and operation, but rather
+            tries to describe a bigger picture. The targeted audience is
+            a person which is reasonably knowledgeable in Unix but did not
+            spend years working with ptrace, and thus may be unaware of its
+            quirks. This text went through several iterations of review by
+            Oleg Nesterov and Tejun Heo.
+            This block of text intentionally uses as little markup as possible,
+            otherwise future modifications to it will be very hard to make.
+    Michael Kerrisk
+        Global clean-up of page
+            * Wording and formatting fixes to existing text and
+              Denys Vlasenko's new text.
+            * Various technical amendments and improvements to
+              Denys Vlasenko's new text.
+            * Added FIXME for various problems with the current text.
+    Michael Kerrisk
+        Integrated changes after further review from Denys Vlasenko
+
+syscalls.2
+    Michael Kerrisk
+        Note that nfsservctl(2) was removed in Linux 3.1
+        Note that bdflush(2) is deprecated
+
+capabilities.7
+    Michael Kerrisk
+        Add CAP_WAKE_ALARM
+    Michael Kerrisk
+        Add various operations under CAP_SYS_ADMIN
+        Add perf_event_open(2) to CAP_SYS_ADMIN
+        Add VM86_REQUEST_IRQ vm86(2) command to CAP_SYS_ADMIN
+        Update CAP_NET_ADMIN with notes from include/linux/capability.h
+        Add nfsservctl(2) to CAP_SYS_ADMIN
+    Michael Kerrisk
+        Add ioctl(FIBMAP) under CAP_SYS_RAWIO
+    Michael Kerrisk
+        Add virtual terminal ioctl()s under CAP_SYS_TTY_CONFIG
+    Michael Kerrisk
+        Update CAP_NET_RAW with notes from include/linux/capability.h
+    Michael Kerrisk
+        Add F_SETPIPE_SZ case to CAP_SYS_RESOURCE
+        Add POSIX messages queues queues_max case to CAP_SYS_RESOURCE
+        Update CAP_SYS_RESOURCE with notes from include/linux/capability.h
+    Michael Kerrisk
+        SEE ALSO: Add libcap(3)
+
+ld.so.8
+    Michael Kerrisk
+        Add --audit command-line option
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
