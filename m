@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031234Ab2CITuY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:50:24 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031194Ab2CITuU (ORCPT
+	id S1031366Ab2CITu5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:50:57 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48521 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031349Ab2CITux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:50:20 -0500
-Message-Id: <20120309190208.600624076@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:50:53 -0500
+Message-Id: <20120309190209.226686745@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:20 -0800
+Date: Fri, 09 Mar 2012 11:03:28 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 78/95] hwmon: (jc42) Add support for AT30TS00, TS3000GB2, TSE2002GB2, and MCP9804
+        alan@lxorguk.ukuu.org.uk, Milan Broz <mbroz@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 86/95] dm io: fix discard support
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,146 +25,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Milan Broz <mbroz@redhat.com>
 
-commit 1bd612a25855f4cc9345052b53d7da697dba6358 upstream.
+commit 0c535e0d6f463365c29623350dbd91642363c39b upstream.
 
-Also update IDT datasheet locations.
+This patch fixes a crash by recognising discards in dm_io.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Currently dm_mirror can send REQ_DISCARD bios if running over a
+discard-enabled device and without support in dm_io the system
+crashes badly.
+
+BUG: unable to handle kernel paging request at 00800000
+IP:  __bio_add_page.part.17+0xf5/0x1e0
+...
+ bio_add_page+0x56/0x70
+ dispatch_io+0x1cf/0x240 [dm_mod]
+ ? km_get_page+0x50/0x50 [dm_mod]
+ ? vm_next_page+0x20/0x20 [dm_mod]
+ ? mirror_flush+0x130/0x130 [dm_mirror]
+ dm_io+0xdc/0x2b0 [dm_mod]
+...
+
+Introduced in 2.6.38-rc1 by commit 5fc2ffeabb9ee0fc0e71ff16b49f34f0ed3d05b4
+(dm raid1: support discard).
+
+Signed-off-by: Milan Broz <mbroz@redhat.com>
+Acked-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/hwmon/jc42 |   20 ++++++++++++++------
- drivers/hwmon/Kconfig    |    6 +++---
- drivers/hwmon/jc42.c     |   20 ++++++++++++++++++--
- 3 files changed, 35 insertions(+), 11 deletions(-)
+ drivers/md/dm-io.c |   23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
 
---- a/Documentation/hwmon/jc42
-+++ b/Documentation/hwmon/jc42
-@@ -7,21 +7,29 @@ Supported chips:
-     Addresses scanned: I2C 0x18 - 0x1f
-     Datasheets:
- 	http://www.analog.com/static/imported-files/data_sheets/ADT7408.pdf
--  * IDT TSE2002B3, TS3000B3
--    Prefix: 'tse2002b3', 'ts3000b3'
-+  * Atmel AT30TS00
-+    Prefix: 'at30ts00'
-     Addresses scanned: I2C 0x18 - 0x1f
-     Datasheets:
--	http://www.idt.com/products/getdoc.cfm?docid=18715691
--	http://www.idt.com/products/getdoc.cfm?docid=18715692
-+	http://www.atmel.com/Images/doc8585.pdf
-+  * IDT TSE2002B3, TSE2002GB2, TS3000B3, TS3000GB2
-+    Prefix: 'tse2002', 'ts3000'
-+    Addresses scanned: I2C 0x18 - 0x1f
-+    Datasheets:
-+	http://www.idt.com/sites/default/files/documents/IDT_TSE2002B3C_DST_20100512_120303152056.pdf
-+	http://www.idt.com/sites/default/files/documents/IDT_TSE2002GB2A1_DST_20111107_120303145914.pdf
-+	http://www.idt.com/sites/default/files/documents/IDT_TS3000B3A_DST_20101129_120303152013.pdf
-+	http://www.idt.com/sites/default/files/documents/IDT_TS3000GB2A1_DST_20111104_120303151012.pdf
-   * Maxim MAX6604
-     Prefix: 'max6604'
-     Addresses scanned: I2C 0x18 - 0x1f
-     Datasheets:
- 	http://datasheets.maxim-ic.com/en/ds/MAX6604.pdf
--  * Microchip MCP9805, MCP98242, MCP98243, MCP9843
--    Prefixes: 'mcp9805', 'mcp98242', 'mcp98243', 'mcp9843'
-+  * Microchip MCP9804, MCP9805, MCP98242, MCP98243, MCP9843
-+    Prefixes: 'mcp9804', 'mcp9805', 'mcp98242', 'mcp98243', 'mcp9843'
-     Addresses scanned: I2C 0x18 - 0x1f
-     Datasheets:
-+	http://ww1.microchip.com/downloads/en/DeviceDoc/22203C.pdf
- 	http://ww1.microchip.com/downloads/en/DeviceDoc/21977b.pdf
- 	http://ww1.microchip.com/downloads/en/DeviceDoc/21996a.pdf
- 	http://ww1.microchip.com/downloads/en/DeviceDoc/22153c.pdf
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -497,9 +497,9 @@ config SENSORS_JC42
- 	  If you say yes here, you get support for JEDEC JC42.4 compliant
- 	  temperature sensors, which are used on many DDR3 memory modules for
- 	  mobile devices and servers.  Support will include, but not be limited
--	  to, ADT7408, CAT34TS02, CAT6095, MAX6604, MCP9805, MCP98242, MCP98243,
--	  MCP9843, SE97, SE98, STTS424(E), STTS2002, STTS3000, TSE2002B3, and
--	  TS3000B3.
-+	  to, ADT7408, AT30TS00, CAT34TS02, CAT6095, MAX6604, MCP9804, MCP9805,
-+	  MCP98242, MCP98243, MCP9843, SE97, SE98, STTS424(E), STTS2002,
-+	  STTS3000, TSE2002B3, TSE2002GB2, TS3000B3, and TS3000GB2.
+--- a/drivers/md/dm-io.c
++++ b/drivers/md/dm-io.c
+@@ -296,6 +296,8 @@ static void do_region(int rw, unsigned r
+ 	unsigned offset;
+ 	unsigned num_bvecs;
+ 	sector_t remaining = where->count;
++	struct request_queue *q = bdev_get_queue(where->bdev);
++	sector_t discard_sectors;
  
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called jc42.
---- a/drivers/hwmon/jc42.c
-+++ b/drivers/hwmon/jc42.c
-@@ -64,6 +64,7 @@ static const unsigned short normal_i2c[]
- 
- /* Manufacturer IDs */
- #define ADT_MANID		0x11d4  /* Analog Devices */
-+#define ATMEL_MANID		0x001f  /* Atmel */
- #define MAX_MANID		0x004d  /* Maxim */
- #define IDT_MANID		0x00b3  /* IDT */
- #define MCP_MANID		0x0054  /* Microchip */
-@@ -77,15 +78,25 @@ static const unsigned short normal_i2c[]
- #define ADT7408_DEVID		0x0801
- #define ADT7408_DEVID_MASK	0xffff
- 
-+/* Atmel */
-+#define AT30TS00_DEVID		0x8201
-+#define AT30TS00_DEVID_MASK	0xffff
+ 	/*
+ 	 * where->count may be zero if rw holds a flush and we need to
+@@ -305,9 +307,12 @@ static void do_region(int rw, unsigned r
+ 		/*
+ 		 * Allocate a suitably sized-bio.
+ 		 */
+-		num_bvecs = dm_sector_div_up(remaining,
+-					     (PAGE_SIZE >> SECTOR_SHIFT));
+-		num_bvecs = min_t(int, bio_get_nr_vecs(where->bdev), num_bvecs);
++		if (rw & REQ_DISCARD)
++			num_bvecs = 1;
++		else
++			num_bvecs = min_t(int, bio_get_nr_vecs(where->bdev),
++					  dm_sector_div_up(remaining, (PAGE_SIZE >> SECTOR_SHIFT)));
 +
- /* IDT */
- #define TS3000B3_DEVID		0x2903  /* Also matches TSE2002B3 */
- #define TS3000B3_DEVID_MASK	0xffff
+ 		bio = bio_alloc_bioset(GFP_NOIO, num_bvecs, io->client->bios);
+ 		bio->bi_sector = where->sector + (where->count - remaining);
+ 		bio->bi_bdev = where->bdev;
+@@ -315,10 +320,14 @@ static void do_region(int rw, unsigned r
+ 		bio->bi_destructor = dm_bio_destructor;
+ 		store_io_and_region_in_bio(bio, io, region);
  
-+#define TS3000GB2_DEVID		0x2912  /* Also matches TSE2002GB2 */
-+#define TS3000GB2_DEVID_MASK	0xffff
-+
- /* Maxim */
- #define MAX6604_DEVID		0x3e00
- #define MAX6604_DEVID_MASK	0xffff
- 
- /* Microchip */
-+#define MCP9804_DEVID		0x0200
-+#define MCP9804_DEVID_MASK	0xfffc
-+
- #define MCP98242_DEVID		0x2000
- #define MCP98242_DEVID_MASK	0xfffc
- 
-@@ -129,8 +140,11 @@ struct jc42_chips {
- 
- static struct jc42_chips jc42_chips[] = {
- 	{ ADT_MANID, ADT7408_DEVID, ADT7408_DEVID_MASK },
-+	{ ATMEL_MANID, AT30TS00_DEVID, AT30TS00_DEVID_MASK },
- 	{ IDT_MANID, TS3000B3_DEVID, TS3000B3_DEVID_MASK },
-+	{ IDT_MANID, TS3000GB2_DEVID, TS3000GB2_DEVID_MASK },
- 	{ MAX_MANID, MAX6604_DEVID, MAX6604_DEVID_MASK },
-+	{ MCP_MANID, MCP9804_DEVID, MCP9804_DEVID_MASK },
- 	{ MCP_MANID, MCP98242_DEVID, MCP98242_DEVID_MASK },
- 	{ MCP_MANID, MCP98243_DEVID, MCP98243_DEVID_MASK },
- 	{ MCP_MANID, MCP9843_DEVID, MCP9843_DEVID_MASK },
-@@ -167,10 +181,12 @@ static struct jc42_data *jc42_update_dev
- 
- static const struct i2c_device_id jc42_id[] = {
- 	{ "adt7408", 0 },
-+	{ "at30ts00", 0 },
- 	{ "cat94ts02", 0 },
- 	{ "cat6095", 0 },
- 	{ "jc42", 0 },
- 	{ "max6604", 0 },
-+	{ "mcp9804", 0 },
- 	{ "mcp9805", 0 },
- 	{ "mcp98242", 0 },
- 	{ "mcp98243", 0 },
-@@ -181,8 +197,8 @@ static const struct i2c_device_id jc42_i
- 	{ "stts424", 0 },
- 	{ "stts2002", 0 },
- 	{ "stts3000", 0 },
--	{ "tse2002b3", 0 },
--	{ "ts3000b3", 0 },
-+	{ "tse2002", 0 },
-+	{ "ts3000", 0 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, jc42_id);
+-		/*
+-		 * Try and add as many pages as possible.
+-		 */
+-		while (remaining) {
++		if (rw & REQ_DISCARD) {
++			discard_sectors = min_t(sector_t, q->limits.max_discard_sectors, remaining);
++			bio->bi_size = discard_sectors << SECTOR_SHIFT;
++			remaining -= discard_sectors;
++		} else while (remaining) {
++			/*
++			 * Try and add as many pages as possible.
++			 */
+ 			dp->get_page(dp, &page, &len, &offset);
+ 			len = min(len, to_bytes(remaining));
+ 			if (!bio_add_page(bio, page, len, offset))
 
 
