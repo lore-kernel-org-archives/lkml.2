@@ -1,111 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab2CIHQW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 02:16:22 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:36383 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab2CIHQV (ORCPT
+	id S1752506Ab2CIHRW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 02:17:22 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44108 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab2CIHRU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 02:16:21 -0500
-Message-ID: <4F59AE3C.5040200@openvz.org>
-Date: Fri, 09 Mar 2012 11:16:12 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Fri, 9 Mar 2012 02:17:20 -0500
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7 v2] mm: rework __isolate_lru_page() file/anon filter
-References: <20120229091547.29236.28230.stgit@zurg> <20120303091327.17599.80336.stgit@zurg> <alpine.LSU.2.00.1203061904570.18675@eggly.anvils> <20120308143034.f3521b1e.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LSU.2.00.1203081758490.18195@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1203081758490.18195@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAErSpo6VyKpBygK3vV25q+X5YisNVPwh64jaJ_KtMO1WB=ocpw@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+	<1331018040-30725-15-git-send-email-yinghai@kernel.org>
+	<CAErSpo6VyKpBygK3vV25q+X5YisNVPwh64jaJ_KtMO1WB=ocpw@mail.gmail.com>
+Date: Thu, 8 Mar 2012 23:17:20 -0800
+X-Google-Sender-Auth: ArULTSa_vhF1LSieYo9g1Lh3gaw
+Message-ID: <CAE9FiQUGCazRAJ3vaej6wndk9e-kedU7tuaw8VSRcu2RB0qQAg@mail.gmail.com>
+Subject: Re: [PATCH 14/23] PCI: add __pci_remove_bus_devices()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins wrote:
-> On Thu, 8 Mar 2012, KAMEZAWA Hiroyuki wrote:
->> On Tue, 6 Mar 2012 19:22:21 -0800 (PST)
->> Hugh Dickins<hughd@google.com>  wrote:
->>>
->>> What does the compiler say (4.5.1 here, OPTIMIZE_FOR_SIZE off)?
->>>     text	   data	    bss	    dec	    hex	filename
->>>    17723	    113	     17	  17853	   45bd	vmscan.o.0
->>>    17671	    113	     17	  17801	   4589	vmscan.o.1
->>>    17803	    113	     17	  17933	   460d	vmscan.o.2
->>>
->>> That suggests that your v2 is the worst and your v1 the best.
->>> Kame, can I persuade you to let the compiler decide on this?
->>>
+On Thu, Mar 8, 2012 at 5:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> will use it with pci_stop_and_remove_bus later.
 >>
->> Hmm. How about Costa' proposal ? as
+>> also remove __pci_remove_behind_bridge and pci_stop_behind_bridge.
 >>
->> int tmp_var = PageActive(page) ? ISOLATE_ACTIVE : ISOLATE_INACTIVE
->> if (!(mode&  tmp_var))
->>      ret;
+>> they are same except one take bridge and one take bus.
+>>
+>> and we already have pci_stop_bus_devices()
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  drivers/pci/remove.c |   28 +++++++++++-----------------
+>>  1 files changed, 11 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+>> index 243d59b..62c348c 100644
+>> --- a/drivers/pci/remove.c
+>> +++ b/drivers/pci/remove.c
+>> @@ -78,7 +78,7 @@ void pci_remove_bus(struct pci_bus *pci_bus)
+>>  }
+>>  EXPORT_SYMBOL(pci_remove_bus);
+>>
+>> -static void __pci_remove_behind_bridge(struct pci_dev *dev);
+>> +static void __pci_remove_bus_devices(struct pci_bus *bus);
+>>  /**
+>>  * pci_stop_and_remove_bus_device - remove a PCI device and any children
+>>  * @dev: the device to remove
+>> @@ -96,7 +96,7 @@ void __pci_remove_bus_device(struct pci_dev *dev)
+>>        if (dev->subordinate) {
+>>                struct pci_bus *b = dev->subordinate;
+>>
+>> -               __pci_remove_behind_bridge(dev);
+>> +               __pci_remove_bus_devices(b);
+>>                pci_remove_bus(b);
+>>                dev->subordinate = NULL;
+>>        }
+>> @@ -111,22 +111,12 @@ void pci_stop_and_remove_bus_device(struct pci_dev *dev)
+>>        __pci_remove_bus_device(dev);
+>>  }
+>>
+>> -static void __pci_remove_behind_bridge(struct pci_dev *dev)
+>> +static void __pci_remove_bus_devices(struct pci_bus *bus)
+>>  {
+>>        struct list_head *l, *n;
+>>
+>> -       if (dev->subordinate)
+>> -               list_for_each_safe(l, n, &dev->subordinate->devices)
+>> -                       __pci_remove_bus_device(pci_dev_b(l));
+>> -}
+>> -
+>> -static void pci_stop_behind_bridge(struct pci_dev *dev)
+>> -{
+>> -       struct list_head *l, *n;
+>> -
+>> -       if (dev->subordinate)
+>> -               list_for_each_safe(l, n, &dev->subordinate->devices)
+>> -                       pci_stop_bus_device(pci_dev_b(l));
+>> +       list_for_each_safe(l, n, &bus->devices)
+>> +               __pci_remove_bus_device(pci_dev_b(l));
 >
-> Yes, that would have been a good compromise (given a better name
-> than "tmp_var"!), I didn't realize that one was acceptable to you.
->
-> But I see that Konstantin has been inspired by our disagreement to a
-> more creative solution.
->
-> I like very much the look of what he's come up with, but I'm still
-> puzzling over why it barely makes any improvement to __isolate_lru_page():
-> seems significantly inferior (in code size terms) to his original (which
-> I imagine Glauber's compromise would be equivalent to).
->
-> At some point I ought to give up on niggling about this,
-> but I haven't quite got there yet.
+> Use list_for_each_entry_safe() so you don't need pci_dev_b().
 
-(with if())
-$ ./scripts/bloat-o-meter built-in.o built-in.o-v1
-add/remove: 0/0 grow/shrink: 2/1 up/down: 32/-20 (12)
-function                                     old     new   delta
-static.shrink_active_list                    837     853     +16
-shrink_inactive_list                        1259    1275     +16
-static.isolate_lru_pages                    1055    1035     -20
+just want to keep the patch to simple, and looks like just name renaming.
 
-(with switch())
-$ ./scripts/bloat-o-meter built-in.o built-in.o-v2
-add/remove: 0/0 grow/shrink: 4/2 up/down: 111/-23 (88)
-function                                     old     new   delta
-__isolate_lru_page                           301     377     +76
-static.shrink_active_list                    837     853     +16
-shrink_inactive_list                        1259    1275     +16
-page_evictable                               170     173      +3
-__remove_mapping                             322     319      -3
-static.isolate_lru_pages                    1055    1035     -20
+also use list_for_each_safe instead of list_for_each_entry_safe
 
-(without __always_inline on page_lru())
-$ ./scripts/bloat-o-meter built-in.o built-in.o-v5-noinline
-add/remove: 0/0 grow/shrink: 5/2 up/down: 93/-23 (70)
-function                                     old     new   delta
-__isolate_lru_page                           301     333     +32
-isolate_lru_page                             359     385     +26
-static.shrink_active_list                    837     853     +16
-putback_inactive_pages                       635     651     +16
-page_evictable                               170     173      +3
-__remove_mapping                             322     319      -3
-static.isolate_lru_pages                    1055    1035     -20
-
-$ ./scripts/bloat-o-meter built-in.o built-in.o-v5
-add/remove: 0/0 grow/shrink: 3/4 up/down: 35/-67 (-32)
-function                                     old     new   delta
-static.shrink_active_list                    837     853     +16
-__isolate_lru_page                           301     317     +16
-page_evictable                               170     173      +3
-__remove_mapping                             322     319      -3
-mem_cgroup_lru_del                            73      65      -8
-static.isolate_lru_pages                    1055    1035     -20
-__mem_cgroup_commit_charge                   676     640     -36
-
-Actually __isolate_lru_page() even little bit bigger
+could have less conversion.
 
 >
-> Hugh
+>>  }
+>>
+>>  static void pci_stop_bus_devices(struct pci_bus *bus)
+>> @@ -158,8 +148,12 @@ static void pci_stop_bus_devices(struct pci_bus *bus)
+>>  */
+>>  void pci_stop_and_remove_behind_bridge(struct pci_dev *dev)
+>>  {
+>> -       pci_stop_behind_bridge(dev);
+>> -       __pci_remove_behind_bridge(dev);
+>> +       struct pci_bus *bus = dev->subordinate;
+>> +
+>> +       if (bus) {
+>
+> Don't check "bus" here.  If the caller screws up and passes a
+> non-bridge pointer, I want to learn about it rather than ignore it.
 
+old code have that
+           if (dev->subordinate)
+
+checking.
+
+Yinghai
