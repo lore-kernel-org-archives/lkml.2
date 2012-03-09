@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759255Ab2CIAvZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 19:51:25 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:45860 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752115Ab2CIAvY (ORCPT
+	id S1759363Ab2CIAwE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 19:52:04 -0500
+Received: from www.linutronix.de ([62.245.132.108]:44625 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759315Ab2CIAvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 19:51:24 -0500
-Date: Thu, 8 Mar 2012 16:51:18 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, Alasdair G Kergon <agk@redhat.com>,
-        Will Drewry <wad@chromium.org>, Elly Jones <ellyjones@chromium.org>,
-        Milan Broz <mbroz@redhat.com>, Olof Johansson <olofj@chromium.org>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: workqueues and percpu (was: [PATCH] dm: remake of the verity
- target)
-Message-ID: <20120309005118.GC2968@htj.dyndns.org>
-References: <1330648393-20692-1-git-send-email-msb@chromium.org>
- <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
- <20120306215947.GB27051@google.com>
- <Pine.LNX.4.64.1203081656590.31821@file.rdu.redhat.com>
- <20120308143909.bfc4cb4d.akpm@linux-foundation.org>
- <20120308231521.GA2968@htj.dyndns.org>
- <20120308153048.4a80de34.akpm@linux-foundation.org>
- <20120309003309.GB2968@htj.dyndns.org>
+	Thu, 8 Mar 2012 19:51:49 -0500
+Date: Fri, 9 Mar 2012 01:51:36 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Turquette, Mike" <mturquette@ti.com>
+cc: Sascha Hauer <s.hauer@pengutronix.de>, Andrew Lunn <andrew@lunn.ch>,
+        Paul Walmsley <paul@pwsan.com>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
+In-Reply-To: <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1203090148270.2742@ionos>
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org> <1330763341-3437-4-git-send-email-mturquette@linaro.org> <20120303133158.GA26882@pengutronix.de> <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com> <20120304115201.GB26882@pengutronix.de>
+ <CAJOA=zP8d8wm==7=svOzh03Ft-1_LV71q0mA6Pncrh5vQSWGEA@mail.gmail.com> <20120305073836.GU3852@pengutronix.de> <CAJOA=zMs75ZQ24g5PXpSLV3AJzWEo12g86G8+4+ryQR_cTYpzA@mail.gmail.com> <20120306190039.GJ3852@pengutronix.de>
+ <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120309003309.GB2968@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding a bit..
+On Wed, 7 Mar 2012, Turquette, Mike wrote:
+> Assuming that some day OMAP code can be refactored to allow for lazy
+> (or at least initcall-based) registration of clocks then perhaps your
+> suggestion can take root.  Which leads me to this question: are there
+> any other platforms out there that require the level of expose to
+> struct clk present in this patchset?  OMAP does, for now, but if that
+> changes then I need to know if others require this as well.
 
-On Thu, Mar 08, 2012 at 04:33:09PM -0800, Tejun Heo wrote:
-> ISTR there was something already broken about having specific CPU
-> assumption w/ workqueue even before cmwq when using queue_work_on()
-> unless it was explicitly synchronizing using cpu hotplug callback.
-> Hmmm... what was it... I think it was that there was no protection
-> against queueing on workqueue on dead CPU and workqueue was flushed
-> only once during cpu shutdown meaning that queue_work_on() or
-> requeueing work items could end up queued on a workqueue of a dead
-> CPU.
+I can't see the problem, really. Other than existing code doing stuff
+before the memory allocator is up and running.
 
-I think the crux of the problem is that we didn't have the interface
-to indicate the intention of workqueue users.  Per-cpu workqueues were
-the normal ones and the per-cpuness is used both as optimization
-(local queueing is much cheaper and a work item is likely to access
-the same stuff its queuer was accessing) and pinning.  Single-threaded
-workqueues were used for both non-reentrancy and resource
-optimization.
+We allocate interrupt data structures in the early boot process today
+and I don't see a reason why you want clocks, which have not been
+configured by the boot loader, accesible before that point.
 
-For the short term, the easiest fix would be adding flush_work_sync()
-from cpu hotplug callback for the pinned ones.  For the longer term, I
-think the most natural fix would be making work items queued with
-explicit queue_work_on() handled differently and adding debug code to
-enforce it.
+Thanks,
 
-Thanks.
-
--- 
-tejun
+	tglx
