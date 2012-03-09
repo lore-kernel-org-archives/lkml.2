@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759505Ab2CIUqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:46:43 -0500
-Received: from mail-gx0-f202.google.com ([209.85.161.202]:42391 "EHLO
-	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759483Ab2CIUqj (ORCPT
+	id S1759508Ab2CIUrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:47:20 -0500
+Received: from mail-lpp01m010-f74.google.com ([209.85.215.74]:41769 "EHLO
+	mail-lpp01m010-f74.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759347Ab2CIUrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 15:46:39 -0500
+	Fri, 9 Mar 2012 15:47:18 -0500
+X-Greylist: delayed 458 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 15:47:18 EST
 From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
 To: cgroups@vger.kernel.org
 Cc: suleiman@google.com, glommer@parallels.com, kamezawa.hiroyu@jp.fujitsu.com,
@@ -16,9 +17,9 @@ Cc: suleiman@google.com, glommer@parallels.com, kamezawa.hiroyu@jp.fujitsu.com,
         James.Bottomley@HansenPartnership.com, linux-mm@kvack.org,
         devel@openvz.org, linux-kernel@vger.kernel.org,
         Suleiman Souhlal <ssouhlal@FreeBSD.org>
-Subject: [PATCH v2 09/13] memcg: Account for kmalloc in kernel memory accounting.
-Date: Fri,  9 Mar 2012 12:39:12 -0800
-Message-Id: <1331325556-16447-10-git-send-email-ssouhlal@FreeBSD.org>
+Subject: [PATCH v2 12/13] memcg: Per-memcg memory.kmem.slabinfo file.
+Date: Fri,  9 Mar 2012 12:39:15 -0800
+Message-Id: <1331325556-16447-13-git-send-email-ssouhlal@FreeBSD.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
 References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
@@ -26,149 +27,224 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to do this, we have to create a kmalloc_no_account()
-function that is used for kmalloc allocations that we do not
-want to account, because the kernel memory accounting code has
-to make some kmalloc allocations and is not allowed to recurse.
+This file shows all the kmem_caches used by a memcg.
 
 Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 ---
- include/linux/slab.h |    8 ++++++++
- mm/memcontrol.c      |    2 +-
- mm/slab.c            |   42 +++++++++++++++++++++++++++++++++++++++---
- 3 files changed, 48 insertions(+), 4 deletions(-)
+ include/linux/slab.h     |    6 +++
+ include/linux/slab_def.h |    1 +
+ mm/memcontrol.c          |   18 +++++++++
+ mm/slab.c                |   88 ++++++++++++++++++++++++++++++++++------------
+ 4 files changed, 90 insertions(+), 23 deletions(-)
 
 diff --git a/include/linux/slab.h b/include/linux/slab.h
-index bc9f87f..906a015 100644
+index fd1d2ba..0ff5ee2 100644
 --- a/include/linux/slab.h
 +++ b/include/linux/slab.h
-@@ -377,6 +377,8 @@ struct kmem_cache *kmem_cache_create_memcg(struct kmem_cache *cachep,
-     char *name);
- void kmem_cache_drop_ref(struct kmem_cache *cachep);
- 
-+void *kmalloc_no_account(size_t size, gfp_t flags);
-+
- #else /* !CONFIG_CGROUP_MEM_RES_CTLR_KMEM || !CONFIG_SLAB */
- 
- #define MAX_KMEM_CACHE_TYPES 0
-@@ -392,6 +394,12 @@ static inline void
- kmem_cache_drop_ref(struct kmem_cache *cachep)
- {
+@@ -401,6 +401,12 @@ static inline void *kmalloc_no_account(size_t size, gfp_t flags)
+ 	return kmalloc(size, flags);
  }
-+
-+static inline void *kmalloc_no_account(size_t size, gfp_t flags)
+ 
++static inline int
++mem_cgroup_slabinfo(struct mem_cgroup *mem, struct seq_file *m)
 +{
-+	return kmalloc(size, flags);
++	return 0;
 +}
 +
  #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM && CONFIG_SLAB */
  
  #endif	/* _LINUX_SLAB_H */
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index 248b8a9..fa6b272 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -227,6 +227,7 @@ found:
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+ 
+ void kmem_cache_drop_ref(struct kmem_cache *cachep);
++int mem_cgroup_slabinfo(struct mem_cgroup *mem, struct seq_file *m);
+ 
+ static inline void
+ kmem_cache_get_ref(struct kmem_cache *cachep)
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index a5593cf..72e83af 100644
+index 9f5e9d8..4a4fa48 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -5824,7 +5824,7 @@ memcg_create_cache_enqueue(struct mem_cgroup *memcg, struct kmem_cache *cachep)
- 	if (!css_tryget(&memcg->css))
- 		return;
+@@ -4672,6 +4672,20 @@ static int mem_cgroup_independent_kmem_limit_write(struct cgroup *cgrp,
+ 	return 0;
+ }
  
--	cw = kmalloc(sizeof(struct create_work), GFP_NOWAIT);
-+	cw = kmalloc_no_account(sizeof(struct create_work), GFP_NOWAIT);
- 	if (cw == NULL) {
- 		css_put(&memcg->css);
- 		return;
++static int
++mem_cgroup_slabinfo_show(struct cgroup *cgroup, struct cftype *ctf,
++    struct seq_file *m)
++{
++	struct mem_cgroup *mem;
++
++	mem  = mem_cgroup_from_cont(cgroup);
++
++	if (mem == root_mem_cgroup)
++		mem = NULL;
++
++	return mem_cgroup_slabinfo(mem, m);
++}
++
+ static struct cftype kmem_cgroup_files[] = {
+ 	{
+ 		.name = "kmem.independent_kmem_limit",
+@@ -4689,6 +4703,10 @@ static struct cftype kmem_cgroup_files[] = {
+ 		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
+ 		.read_u64 = mem_cgroup_read,
+ 	},
++	{
++		.name = "kmem.slabinfo",
++		.read_seq_string = mem_cgroup_slabinfo_show,
++	},
+ };
+ 
+ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
 diff --git a/mm/slab.c b/mm/slab.c
-index 95b024c..7af7384 100644
+index 02239ed..1b35799 100644
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -1623,8 +1623,8 @@ void __init kmem_cache_init(void)
- 			sizes->cs_cachep = kmem_cache_create(names->name,
- 					sizes->cs_size,
- 					ARCH_KMALLOC_MINALIGN,
--					ARCH_KMALLOC_FLAGS|SLAB_PANIC,
--					NULL);
-+					ARCH_KMALLOC_FLAGS | SLAB_PANIC |
-+					SLAB_MEMCG_ACCT, NULL);
- 		}
- #ifdef CONFIG_ZONE_DMA
- 		sizes->cs_dmacachep = kmem_cache_create(
-@@ -3936,11 +3936,16 @@ static __always_inline void *
- __do_kmalloc_node(size_t size, gfp_t flags, int node, void *caller)
- {
- 	struct kmem_cache *cachep;
-+	void *ret;
+@@ -4528,21 +4528,26 @@ static void s_stop(struct seq_file *m, void *p)
+ 	mutex_unlock(&cache_chain_mutex);
+ }
  
- 	cachep = kmem_find_general_cachep(size, flags);
- 	if (unlikely(ZERO_OR_NULL_PTR(cachep)))
- 		return cachep;
--	return kmem_cache_alloc_node_trace(size, cachep, flags, node);
-+	cachep = mem_cgroup_get_kmem_cache(cachep, flags);
-+	ret = kmem_cache_alloc_node_trace(size, cachep, flags, node);
-+	mem_cgroup_put_kmem_cache(cachep);
+-static int s_show(struct seq_file *m, void *p)
+-{
+-	struct kmem_cache *cachep = list_entry(p, struct kmem_cache, next);
+-	struct slab *slabp;
++struct slab_counts {
+ 	unsigned long active_objs;
++	unsigned long active_slabs;
++	unsigned long num_slabs;
++	unsigned long free_objects;
++	unsigned long shared_avail;
+ 	unsigned long num_objs;
+-	unsigned long active_slabs = 0;
+-	unsigned long num_slabs, free_objects = 0, shared_avail = 0;
+-	const char *name;
+-	char *error = NULL;
+-	int node;
++};
 +
-+	return ret;
- }
++static char *
++get_slab_counts(struct kmem_cache *cachep, struct slab_counts *c)
++{
+ 	struct kmem_list3 *l3;
++	struct slab *slabp;
++	char *error;
++	int node;
++
++	error = NULL;
++	memset(c, 0, sizeof(struct slab_counts));
  
- #if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_TRACING)
-@@ -3986,14 +3991,31 @@ static __always_inline void *__do_kmalloc(size_t size, gfp_t flags,
- 	cachep = __find_general_cachep(size, flags);
- 	if (unlikely(ZERO_OR_NULL_PTR(cachep)))
- 		return cachep;
-+	cachep = mem_cgroup_get_kmem_cache(cachep, flags);
- 	ret = __cache_alloc(cachep, flags, caller);
+-	active_objs = 0;
+-	num_slabs = 0;
+ 	for_each_online_node(node) {
+ 		l3 = cachep->nodelists[node];
+ 		if (!l3)
+@@ -4554,31 +4559,43 @@ static int s_show(struct seq_file *m, void *p)
+ 		list_for_each_entry(slabp, &l3->slabs_full, list) {
+ 			if (slabp->inuse != cachep->num && !error)
+ 				error = "slabs_full accounting error";
+-			active_objs += cachep->num;
+-			active_slabs++;
++			c->active_objs += cachep->num;
++			c->active_slabs++;
+ 		}
+ 		list_for_each_entry(slabp, &l3->slabs_partial, list) {
+ 			if (slabp->inuse == cachep->num && !error)
+ 				error = "slabs_partial inuse accounting error";
+ 			if (!slabp->inuse && !error)
+ 				error = "slabs_partial/inuse accounting error";
+-			active_objs += slabp->inuse;
+-			active_slabs++;
++			c->active_objs += slabp->inuse;
++			c->active_slabs++;
+ 		}
+ 		list_for_each_entry(slabp, &l3->slabs_free, list) {
+ 			if (slabp->inuse && !error)
+ 				error = "slabs_free/inuse accounting error";
+-			num_slabs++;
++			c->num_slabs++;
+ 		}
+-		free_objects += l3->free_objects;
++		c->free_objects += l3->free_objects;
+ 		if (l3->shared)
+-			shared_avail += l3->shared->avail;
++			c->shared_avail += l3->shared->avail;
  
- 	trace_kmalloc((unsigned long) caller, ret,
- 		      size, cachep->buffer_size, flags);
-+	mem_cgroup_put_kmem_cache(cachep);
+ 		spin_unlock_irq(&l3->list_lock);
+ 	}
+-	num_slabs += active_slabs;
+-	num_objs = num_slabs * cachep->num;
+-	if (num_objs - active_objs != free_objects && !error)
++	c->num_slabs += c->active_slabs;
++	c->num_objs = c->num_slabs * cachep->num;
++
++	return error;
++}
++
++static int s_show(struct seq_file *m, void *p)
++{
++	struct kmem_cache *cachep = list_entry(p, struct kmem_cache, next);
++	struct slab_counts c;
++	const char *name;
++	char *error;
++
++	error = get_slab_counts(cachep, &c);
++	if (c.num_objs - c.active_objs != c.free_objects && !error)
+ 		error = "free_objects accounting error";
  
- 	return ret;
- }
+ 	name = cachep->name;
+@@ -4586,12 +4603,12 @@ static int s_show(struct seq_file *m, void *p)
+ 		printk(KERN_ERR "slab: cache %s error: %s\n", name, error);
  
-+static __always_inline void *
-+__do_kmalloc_no_account(size_t size, gfp_t flags, void *caller)
+ 	seq_printf(m, "%-17s %6lu %6lu %6u %4u %4d",
+-		   name, active_objs, num_objs, cachep->buffer_size,
++		   name, c.active_objs, c.num_objs, cachep->buffer_size,
+ 		   cachep->num, (1 << cachep->gfporder));
+ 	seq_printf(m, " : tunables %4u %4u %4u",
+ 		   cachep->limit, cachep->batchcount, cachep->shared);
+ 	seq_printf(m, " : slabdata %6lu %6lu %6lu",
+-		   active_slabs, num_slabs, shared_avail);
++		   c.active_slabs, c.num_slabs, c.shared_avail);
+ #if STATS
+ 	{			/* list3 stats */
+ 		unsigned long high = cachep->high_mark;
+@@ -4726,6 +4743,31 @@ static const struct file_operations proc_slabinfo_operations = {
+ 	.release	= seq_release,
+ };
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++int
++mem_cgroup_slabinfo(struct mem_cgroup *mem, struct seq_file *m)
 +{
 +	struct kmem_cache *cachep;
-+	void *ret;
++	struct slab_counts c;
 +
-+	cachep = __find_general_cachep(size, flags);
-+	if (unlikely(ZERO_OR_NULL_PTR(cachep)))
-+		return cachep;
-+	ret = __cache_alloc(cachep, flags, caller);
-+	trace_kmalloc((unsigned long)caller, ret, size, cachep->buffer_size,
-+	    flags);
++	seq_printf(m, "# name            <active_objs> <num_objs> <objsize>\n");
 +
-+	return ret;
-+}
- 
- #if defined(CONFIG_DEBUG_SLAB) || defined(CONFIG_TRACING)
- void *__kmalloc(size_t size, gfp_t flags)
-@@ -4008,12 +4030,26 @@ void *__kmalloc_track_caller(size_t size, gfp_t flags, unsigned long caller)
- }
- EXPORT_SYMBOL(__kmalloc_track_caller);
- 
-+void *
-+kmalloc_no_account(size_t size, gfp_t flags)
-+{
-+	return __do_kmalloc_no_account(size, flags,
-+	    __builtin_return_address(0));
-+}
-+EXPORT_SYMBOL(kmalloc_no_account);
- #else
- void *__kmalloc(size_t size, gfp_t flags)
- {
- 	return __do_kmalloc(size, flags, NULL);
- }
- EXPORT_SYMBOL(__kmalloc);
++	mutex_lock(&cache_chain_mutex);
++	list_for_each_entry(cachep, &cache_chain, next) {
++		if (cachep->memcg_params.memcg != mem)
++			continue;
 +
-+void *
-+kmalloc_no_account(size_t size, gfp_t flags)
-+{
-+	return __do_kmalloc_no_account(size, flags, NULL);
++		get_slab_counts(cachep, &c);
++
++		seq_printf(m, "%-17s %6lu %6lu %6u\n", cachep->name,
++		   c.active_objs, c.num_objs, cachep->buffer_size);
++	}
++	mutex_unlock(&cache_chain_mutex);
++
++	return 0;
 +}
-+EXPORT_SYMBOL(kmalloc_no_account);
- #endif
++#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++
+ #ifdef CONFIG_DEBUG_SLAB_LEAK
  
- /**
+ static void *leaks_start(struct seq_file *m, loff_t *pos)
 -- 
 1.7.7.3
 
