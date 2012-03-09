@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758811Ab2CIV7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:59:18 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:36670 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964794Ab2CIV7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:59:16 -0500
-Message-ID: <1331330354.14442.6.camel@joe2Laptop>
-Subject: [PATCH l2-mtd] jffs2: Fix build when CONFIG_JFFS2_FS_DEBUG > 0
-From: Joe Perches <joe@perches.com>
-To: dedekind1@gmail.com
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+	id S1758901Ab2CIWCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 17:02:15 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46158 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758534Ab2CIWCJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 17:02:09 -0500
+From: Alan Ott <alan@signal11.us>
+To: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Fri, 09 Mar 2012 13:59:14 -0800
-In-Reply-To: <1331294012.29445.10.camel@sauron.fi.intel.com>
-References: <cover.1329349881.git.joe@perches.com>
-	 <2d68e76db16d42f451370714f03ef952e0839692.1329349881.git.joe@perches.com>
-	 <1330965033.7220.16.camel@golum> <1330966615.3140.6.camel@joe2Laptop>
-	 <1331294012.29445.10.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Cc: Alan Ott <alan@signal11.us>
+Subject: [PATCH 1/2] Makefile: Add INSTALL_MOD_PATH to the environment used by depmod
+Date: Fri,  9 Mar 2012 17:02:02 -0500
+Message-Id: <1331330522-15129-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c6f6dad20d71 ("jffs2: Standardize JFFS_<LEVEL> uses")
-broke the build when CONFIG_JFFS2_FS_DEBUG > 0.  Similarly,
-commit 41f75c15285c ("jffs2: Convert printks to pr_<level>")
-also broke the build.
+Add INSTALL_MOD_PATH explicitly to the environment given to depmod.  This
+way putting an INSTALL_MOD_PATH line into a GNUmakefile (along with things
+like CROSS_COMPILE) will work properly.
 
-Oops.  Insufficient compile testing...
-
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Alan Ott <alan@signal11.us>
 ---
- fs/jffs2/debug.c |    2 +-
- fs/jffs2/debug.h |    5 +++++
- 2 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/fs/jffs2/debug.c b/fs/jffs2/debug.c
-index f8a99a3..1090eb6 100644
---- a/fs/jffs2/debug.c
-+++ b/fs/jffs2/debug.c
-@@ -267,7 +267,7 @@ void __jffs2_dbg_superblock_counts(struct jffs2_sb_info *c)
- do {									\
- 	if (sz != c->sz##_size) {					\
- 		pr_warn("%s_size mismatch counted 0x%x, c->%s_size 0x%x\n", \
--			#sz, #sz, sz, c->sz##_size);			\
-+			#sz, sz, #sz, c->sz##_size);			\
- 		dump = 1;						\
- 	}								\
- } while (0)
-diff --git a/fs/jffs2/debug.h b/fs/jffs2/debug.h
-index b154797..4fd9be4 100644
---- a/fs/jffs2/debug.h
-+++ b/fs/jffs2/debug.h
-@@ -69,6 +69,11 @@ do {						\
- 		pr_debug(fmt, ##__VA_ARGS__);	\
- } while (0)
+It seems to be a common practice to put make variables into a file named
+GNUmakefile in the top level of the kernel tree (and then include the normal
+Makefile[1] from GNUmakefile).  These are typically variables needed for a
+cross-compiling environment (such as ARCH and CROSS_COMPILE).  The idea
+is that when make is invoked, GNUmakefile will be read first and thus
+able to set up the environment without the user having to type:
+	make ARCH=arm CROSS_COMPILE=arm-linux-
+every single time they want to make a build.
+
+INSTALL_MOD_PATH doesn't work when put into a GNUmakefile like this. The
+difference is that when variables go on the command line like above, they
+get put into the environment of the make process as environment variables,
+which would then get passed to processes which make spawns (such as depmod),
+since they're part of make's environment.  When they're put into the
+GNUmakefile instead, they become make variables only, and not part of the
+environment, and thus not automatically passed to spawned processes such as
+depmod.
+
+In the current implementation, if INSTALL_MOD_PATH is put into a
+GNUmakefile, then when make modules_install is called, the modules are put
+into the right place (because this operation relies on the make variable),
+but depmod then can't find the modules (because it doesn't get
+INSTALL_MOD_PATH put into its environment).
+
+This patch explicitly adds INSTALL_MOD_PATH to the environment when the
+depmod script gets started.
+
+I fully realize that there may very well be a better way to fix this which
+I'm not aware of.
+
+Alan.
+
+[1] For example, here's my GNUmakefile, which I put in the root of the
+kernel tree:
+	ARCH=arm
+	INSTALL_MOD_PATH=/home/alan/work/rootfs
+	CROSS_COMPILE=arm-linux-
+	include Makefile
+---
+ Makefile |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 5f1739b..c9c9ac0 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1525,7 +1525,8 @@ quiet_cmd_rmfiles = $(if $(wildcard $(rm-files)),CLEAN   $(wildcard $(rm-files))
  
-+/* The prefixes of JFFS2 messages */
-+#define JFFS2_DBG		KERN_DEBUG
-+#define JFFS2_DBG_PREFIX	"[JFFS2 DBG]"
-+#define JFFS2_DBG_MSG_PREFIX	JFFS2_DBG JFFS2_DBG_PREFIX
-+
- /* JFFS2 message macros */
- #define JFFS2_ERROR(fmt, ...)					\
- 	pr_err("error: (%d) %s: " fmt,				\
+ # Run depmod only if we have System.map and depmod is executable
+ quiet_cmd_depmod = DEPMOD  $(KERNELRELEASE)
+-      cmd_depmod = $(CONFIG_SHELL) $(srctree)/scripts/depmod.sh $(DEPMOD) \
++      cmd_depmod = INSTALL_MOD_PATH=$(INSTALL_MOD_PATH) $(CONFIG_SHELL) \
++                   $(srctree)/scripts/depmod.sh $(DEPMOD) \
+                    $(KERNELRELEASE)
+ 
+ # Create temporary dir for module support files
 -- 
-1.7.8.111.gad25c.dirty
-
-
+1.7.0.4
 
