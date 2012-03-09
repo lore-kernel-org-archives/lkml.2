@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030753Ab2CIUVh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:21:37 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63959 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030692Ab2CITro (ORCPT
+	id S1030397Ab2CITqJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:46:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964845Ab2CITqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:47:44 -0500
-Message-Id: <20120309190205.648252739@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:46:03 -0500
+Message-Id: <20120309190203.308535206@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:43 -0800
+Date: Fri, 09 Mar 2012 11:02:14 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        okias <d.okias@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 41/95] HID: usbhid: Add NOGET quirk for the AIREN Slim+ keyboard
+        alan@lxorguk.ukuu.org.uk, Wolfram Sang <w.sang@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Marek Vasut <marek.vasut@gmail.com>,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [ 12/95] i2c: mxs: only flag completion when queue is completely done
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-commit 37891abc8464637964a26ae4b61d307fef831f80 upstream.
+commit 844990daa2e69a4258049ba9c2bae1180657dac3 upstream.
 
-This patch (as1531) adds a NOGET quirk for the Slim+ keyboard marketed
-by AIREN.  This keyboard seems to have a lot of bugs; NOGET works
-around only one of them.
+The hardware generates an interrupt for every completed command in the
+queue while the code assumed that it will only generate one interrupt
+when the queue is empty. So, explicitly check if the queue is really
+empty. This patch fixed problems which occurred due to high traffic on
+the bus. While we are here, move the completion-initialization after the
+parameter error checking.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: okias <d.okias@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Marek Vasut <marek.vasut@gmail.com>
+Cc: Lothar Waßmann <LW@KARO-electronics.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/i2c/busses/i2c-mxs.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -59,6 +59,9 @@
- #define USB_VENDOR_ID_AIRCABLE		0x16CA
- #define USB_DEVICE_ID_AIRCABLE1		0x1502
+--- a/drivers/i2c/busses/i2c-mxs.c
++++ b/drivers/i2c/busses/i2c-mxs.c
+@@ -72,6 +72,7 @@
  
-+#define USB_VENDOR_ID_AIREN		0x1a2c
-+#define USB_DEVICE_ID_AIREN_SLIMPLUS	0x0002
+ #define MXS_I2C_QUEUESTAT	(0x70)
+ #define MXS_I2C_QUEUESTAT_RD_QUEUE_EMPTY        0x00002000
++#define MXS_I2C_QUEUESTAT_WRITE_QUEUE_CNT_MASK	0x0000001F
+ 
+ #define MXS_I2C_QUEUECMD	(0x80)
+ 
+@@ -219,14 +220,14 @@ static int mxs_i2c_xfer_msg(struct i2c_a
+ 	int ret;
+ 	int flags;
+ 
+-	init_completion(&i2c->cmd_complete);
+-
+ 	dev_dbg(i2c->dev, "addr: 0x%04x, len: %d, flags: 0x%x, stop: %d\n",
+ 		msg->addr, msg->len, msg->flags, stop);
+ 
+ 	if (msg->len == 0)
+ 		return -EINVAL;
+ 
++	init_completion(&i2c->cmd_complete);
 +
- #define USB_VENDOR_ID_ALCOR		0x058f
- #define USB_DEVICE_ID_ALCOR_USBRS232	0x9720
+ 	flags = stop ? MXS_I2C_CTRL0_POST_SEND_STOP : 0;
  
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -53,6 +53,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_PLAYDOTCOM, USB_DEVICE_ID_PLAYDOTCOM_EMS_USBII, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_TOUCHPACK, USB_DEVICE_ID_TOUCHPACK_RTS, HID_QUIRK_MULTI_INPUT },
+ 	if (msg->flags & I2C_M_RD)
+@@ -286,6 +287,7 @@ static irqreturn_t mxs_i2c_isr(int this_
+ {
+ 	struct mxs_i2c_dev *i2c = dev_id;
+ 	u32 stat = readl(i2c->regs + MXS_I2C_CTRL1) & MXS_I2C_IRQ_MASK;
++	bool is_last_cmd;
  
-+	{ USB_VENDOR_ID_AIREN, USB_DEVICE_ID_AIREN_SLIMPLUS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ATEN, USB_DEVICE_ID_ATEN_UC100KM, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ATEN, USB_DEVICE_ID_ATEN_CS124U, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ATEN, USB_DEVICE_ID_ATEN_2PORTKVM, HID_QUIRK_NOGET },
+ 	if (!stat)
+ 		return IRQ_NONE;
+@@ -300,9 +302,14 @@ static irqreturn_t mxs_i2c_isr(int this_
+ 	else
+ 		i2c->cmd_err = 0;
+ 
+-	complete(&i2c->cmd_complete);
++	is_last_cmd = (readl(i2c->regs + MXS_I2C_QUEUESTAT) &
++		MXS_I2C_QUEUESTAT_WRITE_QUEUE_CNT_MASK) == 0;
++
++	if (is_last_cmd || i2c->cmd_err)
++		complete(&i2c->cmd_complete);
+ 
+ 	writel(stat, i2c->regs + MXS_I2C_CTRL1_CLR);
++
+ 	return IRQ_HANDLED;
+ }
+ 
 
 
