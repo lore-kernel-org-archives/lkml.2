@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab2CIR7F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:59:05 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:4506 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752349Ab2CIR7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:59:03 -0500
-Message-ID: <4F5A44E5.6090300@cavium.com>
-Date: Fri, 09 Mar 2012 09:59:01 -0800
-From: David Daney <david.daney@cavium.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1753649Ab2CISA0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 13:00:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2720 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752349Ab2CISAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 13:00:24 -0500
+Date: Fri, 9 Mar 2012 13:00:15 -0500
+From: Dave Jones <davej@redhat.com>
+To: Yang Bai <hamo.by@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>, kernel@tesarici.cz
+Subject: Re: inode->i_wb_list corruption.
+Message-ID: <20120309180015.GA3862@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Yang Bai <hamo.by@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Fedora Kernel Team <kernel-team@fedoraproject.org>,
+	kernel@tesarici.cz
+References: <20120306185137.GA15881@redhat.com>
+ <20120306210307.GC8781@quack.suse.cz>
+ <20120307072608.GA24087@localhost>
+ <20120307104240.GB18658@quack.suse.cz>
+ <CAO_0yfNt2jgiTPZn5NkwBAjQZtk+377gG71d6QOuXQrDHjdkEg@mail.gmail.com>
+ <20120309145713.GA21543@redhat.com>
+ <20120309151951.GA30160@redhat.com>
+ <CAO_0yfMYOOTvRg9=8_eYP09o0BpzSEk=8vqgNk_vV_u3-biAYA@mail.gmail.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: David Daney <ddaney.cavm@gmail.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 2/2] of: Make of_find_node_by_path() traverse /aliases
- for relative paths.
-References: <1330543264-18103-1-git-send-email-ddaney.cavm@gmail.com> <1330543264-18103-3-git-send-email-ddaney.cavm@gmail.com> <20120309013324.64DF53E0901@localhost>
-In-Reply-To: <20120309013324.64DF53E0901@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Mar 2012 17:59:02.0350 (UTC) FILETIME=[4F851EE0:01CCFE1E]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAO_0yfMYOOTvRg9=8_eYP09o0BpzSEk=8vqgNk_vV_u3-biAYA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2012 05:33 PM, Grant Likely wrote:
-> On Wed, 29 Feb 2012 11:21:04 -0800, David Daney<ddaney.cavm@gmail.com>  wrote:
->> From: David Daney<david.daney@cavium.com>
->>
->> Currently all paths passed to of_find_node_by_path() must begin with a
->> '/', indicating a full path to the desired node.
->>
->> Augment the look-up code so that if a path does *not* begin with '/',
->> the path is used as the name of an /aliases property.  The value of
->> this alias is then used as the full node path to be found.
->>
->> Signed-off-by: David Daney<david.daney@cavium.com>
-[...]
->
-> All the aliases are already decoded at boot time now.  See
-> of_alias_scan().  Instead of open-coding this, you can add an
-> of_alias_lookup() function something like this (untested):
->
+(trimmed cc)
 
-After objections from davem, and a bit of thought, I already indicated 
-on a different branch of this thread that we should drop this patch.
+On Sat, Mar 10, 2012 at 12:14:37AM +0800, Yang Bai wrote:
+ > On Fri, Mar 9, 2012 at 11:19 PM, Dave Jones <davej@redhat.com> wrote:
+ > > And with that, this arrived..
+ > > https://bugzilla.redhat.com/show_bug.cgi?id=788433#c3
+ > >
+ > > I'm leaning strongly towards believing this is yet another case of i915
+ > > corrupting memory on resume.
+ > 
+ > Nice catch. I am wondering
+ > 1) why all lists being affected and
+ > 2) why all list_head's prev being set to NULL.
+ > 
+ > Any ideas?
 
-I have improved my code so that it is no longer needed.
+This is probably the same bug: https://bugzilla.kernel.org/show_bug.cgi?id=37142
+Petr noticed that the corruption is 32 bytes getting zeroed at the beginning
+of a page.
 
-Thanks,
-David Daney
+I think this may be responsible for a lot of different bugs that we've
+had reported.
+
+i915_drm_thaw is a deep nest of functions though, so this is going to be
+hard to track down where that write is coming from. Because the corruption
+seems to happen to pages that are already allocated, we probably can't
+even rely on DEBUG_PAGEALLOC, though it might be worth trying.
+
+	Dave
+
