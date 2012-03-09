@@ -1,58 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758386Ab2CIRUw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:20:52 -0500
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:11129 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758283Ab2CIRUv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:20:51 -0500
-From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: "x86@kernel.org" <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Wim Van Sebroeck <wim@iguana.be>
-Subject: RE: [PATCH 1/2] watchdog, hpwdt: Remove priority option for NMI
- callback
-Thread-Topic: [PATCH 1/2] watchdog, hpwdt: Remove priority option for NMI
- callback
-Thread-Index: AQHM/hMxk3iRaS4pqEOOCrKMt0Y51JZiKrpggAAKDICAAACMEA==
-Date: Fri, 9 Mar 2012 17:19:28 +0000
-Message-ID: <9774516974AF5F4C8A2C3C69CD34123320369E3F@G9W0755.americas.hpqcorp.net>
-References: <1331311044-1120-1-git-send-email-dzickus@redhat.com>
- <9774516974AF5F4C8A2C3C69CD34123320369D9C@G9W0755.americas.hpqcorp.net>
- <20120309171711.GI24378@redhat.com>
-In-Reply-To: <20120309171711.GI24378@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.216.12.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758424Ab2CIRWf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:22:35 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45312 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757929Ab2CIRWd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 12:22:33 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAE9FiQWjsfduRrFqgxq-_ceg8kC-Bi-g4nGUYp0t1sZk3gM95g@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+ <1331018040-30725-7-git-send-email-yinghai@kernel.org> <CAErSpo4ynKbMWUUo2QdVr6fbRYoexSXpQrgYbE+AXhXgg5yzvA@mail.gmail.com>
+ <CAE9FiQWjsfduRrFqgxq-_ceg8kC-Bi-g4nGUYp0t1sZk3gM95g@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 9 Mar 2012 10:22:11 -0700
+Message-ID: <CAErSpo59nU_GVA4i_x4m_jaxD1Aq6k62NXZVE3Xev0QP9ytnUg@mail.gmail.com>
+Subject: Re: [PATCH 06/23] PCI: rescan with bus or bridge using callback
+ method too
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok I will run some tests asap. I may not get to it today.
+On Thu, Mar 8, 2012 at 11:53 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Mar 8, 2012 at 4:56 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> Just like removal.
+>>>
+>>> Because We could add new bus under the bridges...
+>>>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>> ---
+>>>  drivers/pci/pci-sysfs.c |   43 +++++++++++++++++++++++++++++++------------
+>>>  1 files changed, 31 insertions(+), 12 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+>>> index 2049b2f..1794508 100644
+>>> --- a/drivers/pci/pci-sysfs.c
+>>> +++ b/drivers/pci/pci-sysfs.c
+>>> @@ -325,21 +325,31 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
+>>>        return count;
+>>>  }
+>>>
+>>> +static void bridge_rescan_callback(struct device *dev)
+>>> +{
+>>> +       struct pci_dev *pdev = to_pci_dev(dev);
+>>> +
+>>> +       mutex_lock(&pci_remove_rescan_mutex);
+>>> +       pci_rescan_bus_bridge_resize(pdev);
+>>> +       mutex_unlock(&pci_remove_rescan_mutex);
+>>> +}
+>>> +
+>>>  static ssize_t
+>>>  dev_bridge_rescan_store(struct device *dev, struct device_attribute *attr,
+>>>                 const char *buf, size_t count)
+>>>  {
+>>> +       int ret = 0;
+>>>        unsigned long val;
+>>> -       struct pci_dev *pdev = to_pci_dev(dev);
+>>>
+>>>        if (kstrtoul(buf, 0, &val) < 0)
+>>>                return -EINVAL;
+>>>
+>>> -       if (val) {
+>>> -               mutex_lock(&pci_remove_rescan_mutex);
+>>> -               pci_rescan_bus_bridge_resize(pdev);
+>>> -               mutex_unlock(&pci_remove_rescan_mutex);
+>>> -       }
+>>> +       if (val)
+>>> +               ret = device_schedule_callback(dev, bridge_rescan_callback);
+>>> +
+>>> +       if (ret)
+>>> +               count = ret;
+>>> +
+>>>        return count;
+>>
+>> I see that you copied this style from remove_store(), but it's ugly
+>> and hard to follow.  I think this would be more readable:
+>>
+>>    if (!val)
+>>        return count;
+>>
+>>    err = device_schedule_callback(dev, bridge_rescan_callback);
+>>    if (err)
+>>        return err;
+>>
+>>    return count;
+>>
+>
+> like
+>
+>        if (!val)
+>                return count;
+>
+>        ret = device_schedule_callback(dev, bus_rescan_callback);
+>
+>        if (ret)
+>                return ret;
+>
+>        return count;
+>
+> that will have three return instead of one.
+>
+> both should be ok.
 
-Tom
+Why did you just repeat my proposal, changing "err" to "ret"?  I
+missed the point you're trying to make.  The name "err" gives an
+important clue that device_schedule_callback() returns 0 or errno.
+That's essential to understanding the code.
 
------Original Message-----
-From: Don Zickus [mailto:dzickus@redhat.com] 
-Sent: Friday, March 09, 2012 11:17 AM
-To: Mingarelli, Thomas
-Cc: x86@kernel.org; Peter Zijlstra; LKML; Wim Van Sebroeck
-Subject: Re: [PATCH 1/2] watchdog, hpwdt: Remove priority option for NMI callback
+Your original patch has one "return."  Mine proposal has three.  All
+that means is that the reader of your patch has to manage more stuff
+in her head to understand the code.  That's not a benefit!
 
-On Fri, Mar 09, 2012 at 04:51:09PM +0000, Mingarelli, Thomas wrote:
-> Has this been tested with echo c > /proc/sysrg-trigger and the virtual NMI button via iLO?
-
-No, because I don't know how to do that.  Though I can probably ping Tony
-over here to show me how.  But for the most part the functionality hasn't
-changed (the priority is always a '0' now).  Looking in
-arch/x86/kernel/nmi.c shows that it will spit out a warning if two
-functions register against NMI_UNKNOWN.
-
-Cheers,
-Don
+Bjorn
