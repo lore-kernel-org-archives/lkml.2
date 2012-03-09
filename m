@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2CII3v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 03:29:51 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56819 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab2CII3t (ORCPT
+	id S1753599Ab2CIIfT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 03:35:19 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61663 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224Ab2CIIfS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 03:29:49 -0500
-Message-ID: <4F59BE04.5030509@suse.cz>
-Date: Fri, 09 Mar 2012 09:23:32 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120229 Thunderbird/11.0
+	Fri, 9 Mar 2012 03:35:18 -0500
 MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: Ben Hutchings <ben@decadent.org.uk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
-        Tony Luck <tony.luck@intel.com>, Jiri Slaby <jirislaby@gmail.com>,
-        raven@themaw.net
-Subject: Re: Build broken on s390 and ia64 [was: Linux 2.6.32.58]
-References: <20120304180911.GA7336@kroah.com> <4F54A46A.6000305@suse.cz> <20120305120241.GA3627@osiris.boeblingen.de.ibm.com> <4F54B618.1090301@suse.cz> <20120305223338.GE2930@1wt.eu> <1331270953.3022.89.camel@deadeye> <20120309065703.GE25153@1wt.eu>
-In-Reply-To: <20120309065703.GE25153@1wt.eu>
-X-Enigmail-Version: 1.4
+In-Reply-To: <20120307104240.GB18658@quack.suse.cz>
+References: <20120306185137.GA15881@redhat.com> <20120306210307.GC8781@quack.suse.cz>
+ <20120307072608.GA24087@localhost> <20120307104240.GB18658@quack.suse.cz>
+From: Yang Bai <hamo.by@gmail.com>
+Date: Fri, 9 Mar 2012 16:34:57 +0800
+Message-ID: <CAO_0yfNt2jgiTPZn5NkwBAjQZtk+377gG71d6QOuXQrDHjdkEg@mail.gmail.com>
+Subject: Re: inode->i_wb_list corruption.
+To: Jan Kara <jack@suse.cz>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        viro@zeniv.linux.org.uk, Christoph Hellwig <hch@infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2012 07:57 AM, Willy Tarreau wrote:
-> Thanks but now I have a doubt, maybe Jiri and Tony can help. In the
-> commit above, Tony says that CONFIG_COMPAT has been broken for a long
-> time (2008) and nobody apparently uses it. Still, Jiri got a build
-> failure because he used CONFIG_COMPAT. So either there are some valid
-> uses and we should not remove the feature that late in a stable branch,
-> or Jiri only encountered it upon a make allyesconfig then it might
-> be safe to remove it.
+On Wed, Mar 7, 2012 at 6:42 PM, Jan Kara <jack@suse.cz> wrote:
+> On Tue 06-03-12 23:26:08, Wu Fengguang wrote:
+>  Umm, it's not *that* simple I'd say. E.g. sysfs doesn't provide
+> alloc_inode() method so we use inode_cachep for allocations. And that cache
+> is configured to use inode_init_once().
+>
+> Also note that the error message is:
+> list_del corruption. prev->next should be ffff8801c2f41b18, but was (null)
+>
+> Which means that our inode had correct i_wb_list.prev but the previous
+> inode had NULL in i_wb_list.next. But that means that both inodes were
+> linked into the list at some point. So it does not seem like an
+> initialization issue to me...
+>
+>                                                                Honza
+>
+I still want to know how to reproduce this bug. I add the following
+patch to the kernel fc-16 3.2.9-1
 
-It's a SLE11-SP1 that is using the kernel and has COMPAT on ia64
-enabled. I don't know if it is broken or if we provide support for that.
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 5b4a936..568ed0a 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -192,8 +192,13 @@ void bdi_start_background_writeback(struct
+backing_dev_info *bdi)
+ void inode_wb_list_del(struct inode *inode)
+ {
+ 	struct backing_dev_info *bdi = inode_to_bdi(inode);
++	struct list_head *pos;
 
-If you are sure COMPAT is broken on ia64 even in 2.6.32, feel free to
-ban COMPAT completely.
+ 	spin_lock(&bdi->wb.list_lock);
++	list_for_each(pos, &inode->i_wb_list) {
++		printk(KERN_EMERG "list entry: %p; next: %p; prev: %p",
++		       pos, pos->next, pos->prev);
++	}
+ 	list_del_init(&inode->i_wb_list);
+ 	spin_unlock(&bdi->wb.list_lock);
+ }
 
-thanks,
--- 
-js
-suse labs
+So on every inode_wb_list_del, it will show the whole list.
+
+and Doing while true; do touch a && rm -f a; done for almost one day
+without any problem.
+
+So How to reproduce it??
+
+Thanks,
+Yang
