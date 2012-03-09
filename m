@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab2CIQRT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 11:17:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46702 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756262Ab2CIQRS (ORCPT
+	id S1757938Ab2CIQU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 11:20:26 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49817 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757433Ab2CIQUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 11:17:18 -0500
-Date: Fri, 9 Mar 2012 17:17:16 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] genirq: Get rid of unnecessary IRQTF_DIED flag
-In-Reply-To: <20120309150612.GA7353@redhat.com>
-Message-ID: <alpine.LFD.2.02.1203091716260.2742@ionos>
-References: <20120309135958.GD2114@dhcp-26-207.brq.redhat.com> <20120309150612.GA7353@redhat.com>
+	Fri, 9 Mar 2012 11:20:24 -0500
+Date: Fri, 9 Mar 2012 11:20:20 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Dave Martin <dave.martin@linaro.org>
+cc: Richard Earnshaw <Richard.Earnshaw@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH-WIP 01/13] xen/arm: use r12 to pass the hypercall number
+ to the hypervisor
+In-Reply-To: <CA+wbFdfF5c+Bw6RrxCm3YThqCRDuDYzanq+HV8a6LyXaBqWrQA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1203091112050.24151@xanadu.home>
+References: <alpine.DEB.2.00.1202231714590.23091@kaball-desktop> <1330019314-20865-1-git-send-email-stefano.stabellini@eu.citrix.com> <1330360043.8557.302.camel@zakaz.uk.xensource.com> <20120227180355.GB2023@linaro.org> <1330371219.10008.34.camel@dagon.hellion.org.uk>
+ <20120228102040.GB2063@linaro.org> <1330426133.31269.70.camel@zakaz.uk.xensource.com> <alpine.DEB.2.00.1202281149210.23091@kaball-desktop> <20120229093436.GA2077@linaro.org> <1330509362.4270.20.camel@zakaz.uk.xensource.com> <20120229125826.GC2077@linaro.org>
+ <alpine.LFD.2.02.1203021528150.31242@xanadu.home> <4F5882BF.1030104@arm.com> <alpine.LFD.2.02.1203081041340.24151@xanadu.home> <4F58FEC0.8080706@arm.com> <CA+wbFdfF5c+Bw6RrxCm3YThqCRDuDYzanq+HV8a6LyXaBqWrQA@mail.gmail.com>
 User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Mar 2012, Oleg Nesterov wrote:
+On Fri, 9 Mar 2012, Dave Martin wrote:
 
-> Of course I can't ack this, but afaics the whole series looks fine.
-> 
-> Only one minor nit,
-> 
-> On 03/09, Alexander Gordeev wrote:
-> >
-> > --- a/kernel/irq/handle.c
-> > +++ b/kernel/irq/handle.c
-> > @@ -60,8 +60,8 @@ static void irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
-> >  	 * device interrupt, so no irq storm is lurking. If the
-> >  	 * RUNTHREAD bit is already set, nothing to do.
-> >  	 */
-> > -	if (test_bit(IRQTF_DIED, &action->thread_flags) ||
-> > -	    test_and_set_bit(IRQTF_RUNTHREAD, &action->thread_flags))
-> > +	if (test_and_set_bit(IRQTF_RUNTHREAD, &action->thread_flags) ||
-> > +	    (action->thread->flags & PF_EXITING))
-> >  		return;
-> 
-> perhaps it makes sense to check PF_EXITING first, we do not want
-> to set IRQTF_RUNTHREAD in this case. I think this doesn't really
-> matter (and the check is obviously racy anyway), just looks a bit
-> confusing.
+> Register variables feel like a red herring though.  We're only using
+> those because we can't do the needful thing and actually desscribe
+> these constraints in the asm constraints (which would seem to be the
+> right place).  We specifically don't care where those values are
+> except at the boundaries of the asm block itself.
 
-It does not matter, the thread cleans it up in the exit path. So it's
-mostly cosmetic, but you are right, it reads better :)
+Absolutely.
+
+> Is there a reason why ARM gcc doesn't provide the ability to specify
+> such exact-register constraints, or is this more for historical
+> reasons?  It is possible?
+
+I don't know how much things have changed since I last looked at the gcc 
+code, but implementing this seemed to be pretty trivial at the time.  
+The problem would be to determine a good letter scheme to map to actual 
+registers.
+
+
+Nicolas
