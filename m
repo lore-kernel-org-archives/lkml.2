@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab2CINpt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 08:45:49 -0500
-Received: from sting.hengli.com.au ([178.18.18.71]:34369 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753867Ab2CINps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 08:45:48 -0500
-Date: Sat, 10 Mar 2012 00:45:42 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Paul Wouters <pwouters@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Martin Willi <martin@strongswan.org>, netdev@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] xfrm: fix hmac(sha256) truncation length
-Message-ID: <20120309134541.GA28309@gondor.apana.org.au>
-References: <1331151157-19149-1-git-send-email-jarod@redhat.com> <20120308003741.GA14995@gondor.apana.org.au> <4F5A0876.3060408@redhat.com>
+	id S964804Ab2CINvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 08:51:12 -0500
+Received: from correio5.ufc.br ([200.19.190.13]:39992 "EHLO correio5.ufc.br"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932250Ab2CINvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 08:51:10 -0500
+X-Greylist: delayed 2122 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 08:51:10 EST
+Message-ID: <8afd422bfb81d7f4ddc8ddcea8d11bef.squirrel@correio1.ufc.br>
+Date: Fri, 9 Mar 2012 09:44:36 -0300 (BRT)
+Subject: =?utf-8?B?UmVtaW5kZXIgTm90aWNlOiAgVGhlIDEzdGggR29vZ2xlIFVLIEFubml2ZXJz?= 
+ =?utf-8?B?YXJ5IEdpdmVhd2F5cyDCqTIwMTI=?=
+From: =?utf-8?B?R29vZ2xlIEFsZXJ0wq4gVUs=?= 
+	<giveawayteam.announcer2012@shqiptar.eu>
+Reply-To: googleuk.anniversarydraws@shqiptar.eu
+User-Agent: SquirrelMail/1.4.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F5A0876.3060408@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 08:41:10AM -0500, Jarod Wilson wrote:
->
-> Okay, I suspected that might be the case. No plans to ever invert that,  
-> so that userspace has to explicitly set the shorter truncbits for  
-> backwards compat?
 
-That's up to the userspace implementation.  If its configuration
-allows explicit trunc bits then just use whatever the user says.
-Otherwise it'll have to make a policy decision.  For example, a
-big warning when upgrading and changing the default to the correct
-value.
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+
+The owner of this email acct. has w o n £850,000 UK Pounds (with C.G.P.N
+:AS/MY/0010/011| T I C K E T#: 899-633/UK-11-001).
+
+As indicated in your coupon, your C.G.P.N and T I C K E T # falls under
+our Asia Zone Disbursement booklet/Payout Center.
+
+For full info, Please verify this email acct. is Still in Use.
+
+Mr Benard, Announcer
+(Inq.#: 00447 031 857 528)
+
