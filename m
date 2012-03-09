@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759017Ab2CIULW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:11:22 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:48830 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031297Ab2CITup (ORCPT
+	id S1759094Ab2CIUMY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:12:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64616 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031202Ab2CITug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:50:45 -0500
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 14:50:44 EST
-Message-Id: <20120309190209.767596433@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:50:36 -0500
+Message-Id: <20120309190209.618466718@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:35 -0800
+Date: Fri, 09 Mar 2012 11:03:33 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Danny Kukawka <danny.kukawka@bisect.de>
-Subject: [ 93/95] cs5535-mfgpt: dont call __init function from __devinit
+        alan@lxorguk.ukuu.org.uk, Jonathan Brassow <jbrassow@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 91/95] dm raid: set MD_CHANGE_DEVS when rebuilding
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
+From: Jonathan E Brassow <jbrassow@redhat.com>
 
-commit 474de3bbadd9cb75ffc32cc759c40d868343d46c upstream.
+commit 3aa3b2b2b1edb813dc5342d0108befc39541542d upstream.
 
-Fix scan_timers() to be __devinit and not __init since
-the function get called from cs5535_mfgpt_probe which is
-__devinit.
+The 'rebuild' parameter is used to rebuild individual devices in an
+array (e.g. resynchronize a RAID1 device or recalculate a parity device
+in higher RAID).  The MD_CHANGE_DEVS flag must be set when this
+parameter is given in order to write out the superblocks and make the
+change take immediate effect.  The code that handles new devices in
+super_load already sets MD_CHANGE_DEVS and 'FirstUse'.  (The 'FirstUse'
+flag was being set as a special case for rebuilds in
+super_init_validation.)
 
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Add a condition for rebuilds in super_load to take care of both flags
+without the special case in 'super_init_validation'.
+
+Signed-off-by: Jonathan Brassow <jbrassow@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/cs5535-mfgpt.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-raid.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/drivers/misc/cs5535-mfgpt.c
-+++ b/drivers/misc/cs5535-mfgpt.c
-@@ -262,7 +262,7 @@ static void __init reset_all_timers(void
-  * In other cases (such as with VSAless OpenFirmware), the system firmware
-  * leaves timers available for us to use.
-  */
--static int __init scan_timers(struct cs5535_mfgpt_chip *mfgpt)
-+static int __devinit scan_timers(struct cs5535_mfgpt_chip *mfgpt)
- {
- 	struct cs5535_mfgpt_timer timer = { .chip = mfgpt };
- 	unsigned long flags;
+--- a/drivers/md/dm-raid.c
++++ b/drivers/md/dm-raid.c
+@@ -667,7 +667,14 @@ static int super_load(struct md_rdev *rd
+ 		return ret;
+ 
+ 	sb = page_address(rdev->sb_page);
+-	if (sb->magic != cpu_to_le32(DM_RAID_MAGIC)) {
++
++	/*
++	 * Two cases that we want to write new superblocks and rebuild:
++	 * 1) New device (no matching magic number)
++	 * 2) Device specified for rebuild (!In_sync w/ offset == 0)
++	 */
++	if ((sb->magic != cpu_to_le32(DM_RAID_MAGIC)) ||
++	    (!test_bit(In_sync, &rdev->flags) && !rdev->recovery_offset)) {
+ 		super_sync(rdev->mddev, rdev);
+ 
+ 		set_bit(FirstUse, &rdev->flags);
+@@ -744,11 +751,8 @@ static int super_init_validation(struct
+ 	 */
+ 	rdev_for_each(r, t, mddev) {
+ 		if (!test_bit(In_sync, &r->flags)) {
+-			if (!test_bit(FirstUse, &r->flags))
+-				DMERR("Superblock area of "
+-				      "rebuild device %d should have been "
+-				      "cleared.", r->raid_disk);
+-			set_bit(FirstUse, &r->flags);
++			DMINFO("Device %d specified for rebuild: "
++			       "Clearing superblock", r->raid_disk);
+ 			rebuilds++;
+ 		} else if (test_bit(FirstUse, &r->flags))
+ 			new_devs++;
 
 
