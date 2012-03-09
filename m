@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030448Ab2CIU0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:26:54 -0500
+	id S1030393Ab2CIU1e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:27:34 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030386Ab2CITqG (ORCPT
+	with ESMTP id S1030317Ab2CITpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:46:06 -0500
-Message-Id: <20120309190203.379561466@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:45:53 -0500
+Message-Id: <20120309190203.073476305@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:15 -0800
+Date: Fri, 09 Mar 2012 11:02:11 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Jett.Zhou" <jtzhou@marvell.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 13/95] regulator: fix the ldo configure according to 88pm860x spec
+        alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>
+Subject: [ 09/95] ARM: LPC32xx: Fix interrupt controller init
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Jett.Zhou" <jtzhou@marvell.com>
+From: Roland Stigge <stigge@antcom.de>
 
-commit 3380643b0eaa7ecf99c4f095bdfcb6e5df471616 upstream.
+commit 35dd0a75d4a382e7f769dd0277732e7aa5235718 upstream.
 
-Signed-off-by: Jett.Zhou <jtzhou@marvell.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+This patch fixes the initialization of the interrupt controller of the LPC32xx
+by correctly setting up SIC1 and SIC2 instead of (wrongly) using the same value
+as for the Main Interrupt Controller (MIC).
+
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/88pm8607.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/arm/mach-lpc32xx/irq.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/regulator/88pm8607.c
-+++ b/drivers/regulator/88pm8607.c
-@@ -196,7 +196,7 @@ static const unsigned int LDO12_suspend_
- };
+--- a/arch/arm/mach-lpc32xx/irq.c
++++ b/arch/arm/mach-lpc32xx/irq.c
+@@ -389,13 +389,15 @@ void __init lpc32xx_init_irq(void)
  
- static const unsigned int LDO13_table[] = {
--	1300000, 1800000, 2000000, 2500000, 2800000, 3000000, 0, 0,
-+	1200000, 1300000, 1800000, 2000000, 2500000, 2800000, 3000000, 0,
- };
+ 	/* Setup SIC1 */
+ 	__raw_writel(0, LPC32XX_INTC_MASK(LPC32XX_SIC1_BASE));
+-	__raw_writel(MIC_APR_DEFAULT, LPC32XX_INTC_POLAR(LPC32XX_SIC1_BASE));
+-	__raw_writel(MIC_ATR_DEFAULT, LPC32XX_INTC_ACT_TYPE(LPC32XX_SIC1_BASE));
++	__raw_writel(SIC1_APR_DEFAULT, LPC32XX_INTC_POLAR(LPC32XX_SIC1_BASE));
++	__raw_writel(SIC1_ATR_DEFAULT,
++				LPC32XX_INTC_ACT_TYPE(LPC32XX_SIC1_BASE));
  
- static const unsigned int LDO13_suspend_table[] = {
-@@ -389,10 +389,10 @@ static struct pm8607_regulator_info pm86
- 	PM8607_LDO( 7,         LDO7, 0, 3, SUPPLIES_EN12, 1),
- 	PM8607_LDO( 8,         LDO8, 0, 3, SUPPLIES_EN12, 2),
- 	PM8607_LDO( 9,         LDO9, 0, 3, SUPPLIES_EN12, 3),
--	PM8607_LDO(10,        LDO10, 0, 3, SUPPLIES_EN12, 4),
-+	PM8607_LDO(10,        LDO10, 0, 4, SUPPLIES_EN12, 4),
- 	PM8607_LDO(12,        LDO12, 0, 4, SUPPLIES_EN12, 5),
- 	PM8607_LDO(13, VIBRATOR_SET, 1, 3,  VIBRATOR_SET, 0),
--	PM8607_LDO(14,        LDO14, 0, 4, SUPPLIES_EN12, 6),
-+	PM8607_LDO(14,        LDO14, 0, 3, SUPPLIES_EN12, 6),
- };
+ 	/* Setup SIC2 */
+ 	__raw_writel(0, LPC32XX_INTC_MASK(LPC32XX_SIC2_BASE));
+-	__raw_writel(MIC_APR_DEFAULT, LPC32XX_INTC_POLAR(LPC32XX_SIC2_BASE));
+-	__raw_writel(MIC_ATR_DEFAULT, LPC32XX_INTC_ACT_TYPE(LPC32XX_SIC2_BASE));
++	__raw_writel(SIC2_APR_DEFAULT, LPC32XX_INTC_POLAR(LPC32XX_SIC2_BASE));
++	__raw_writel(SIC2_ATR_DEFAULT,
++				LPC32XX_INTC_ACT_TYPE(LPC32XX_SIC2_BASE));
  
- static int __devinit pm8607_regulator_probe(struct platform_device *pdev)
+ 	/* Configure supported IRQ's */
+ 	for (i = 0; i < NR_IRQS; i++) {
 
 
