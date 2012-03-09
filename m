@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab2CIS3n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 13:29:43 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51378 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758549Ab2CIS3k convert rfc822-to-8bit (ORCPT
+	id S964785Ab2CISfd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 13:35:33 -0500
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:57901 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758549Ab2CISfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 13:29:40 -0500
+	Fri, 9 Mar 2012 13:35:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo55k_pJP2X_9jp+oBGAT_1y9hS8QNs0SgomwR-NpvimNA@mail.gmail.com>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
-	<1331018040-30725-8-git-send-email-yinghai@kernel.org>
-	<CAErSpo6jqr44JS4Cyfc0cR_TNbo_ETjPJUO=x2gj-Q_x4TckVA@mail.gmail.com>
-	<CAE9FiQWPk-s5F5ofO=nU05tnRhmpav+f8Cs_mBG9A-MPuK9stw@mail.gmail.com>
-	<CAErSpo5QGqW8OL10H_PajnWi0JT=UsfX4c6pXJ_hsqXPcd+NPw@mail.gmail.com>
-	<CAE9FiQXMhEkMBTjnPJkB21ob9L9jNp_-8_h+xo6mOt3fFQ7xQQ@mail.gmail.com>
-	<CAErSpo55k_pJP2X_9jp+oBGAT_1y9hS8QNs0SgomwR-NpvimNA@mail.gmail.com>
-Date: Fri, 9 Mar 2012 10:29:40 -0800
-X-Google-Sender-Auth: lCCQMiLCVGnEpr6Gj_QDsJAmsns
-Message-ID: <CAE9FiQV=G0huaJYtTEacctzwHTKCS+xK54QWLn3P3e0kz_Dg2Q@mail.gmail.com>
-Subject: Re: [PATCH 07/23] pci, dmar: Update dmar units devices list during hotplug
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        iommu@lists.linux-foundation.org
+In-Reply-To: <20120309023418.GF3261@b20223-02.ap.freescale.net>
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org> <20120309023418.GF3261@b20223-02.ap.freescale.net>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Fri, 9 Mar 2012 10:35:07 -0800
+Message-ID: <CAJOA=zOPTG-pZcQvpSPuNVduxN-3SyBGoygdALeAZFU01Bi4oQ@mail.gmail.com>
+Subject: Re: [PATCH v5 0/4] common clk framework
+To: Richard Zhao <richard.zhao@freescale.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Paul Walmsley <paul@pwsan.com>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>, Andrew Lunn <andrew@lunn.ch>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        "Cousson, Benoit" <b-cousson@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 9, 2012 at 9:37 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Mar 9, 2012 at 10:32 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Fri, Mar 9, 2012 at 9:25 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>>
->>> Well, it looks like you can change both save_dev_dmaru() *and*
->>> get_dev_dmaru() to take a struct pci_dev *.  I assumed that would be
->>> obvious.
->>
->> no.
->>
->> get_dev_dmaru() have to use bus/devfn to retrieve the dev pointer.
+On Thu, Mar 8, 2012 at 6:34 PM, Richard Zhao <richard.zhao@freescale.com> wrote:
+> Hello Mike,
 >
-> I expected something like that, but all I see in the patch is this:
->
-> +static void restore_dev_to_drhd(struct pci_dev *dev)
-> +       drhd = get_dev_dmaru(pci_domain_nr(dev->bus), dev->bus->number,
-> +                                dev->devfn, &i, &saved_dev_drhd_list);
->
-> +static void restore_dev_to_atsr(struct pci_dev *dev)
-> +       atsr = get_dev_dmaru(pci_domain_nr(dev->bus), dev->bus->number,
-> +                                dev->devfn, &i, &saved_dev_atsr_list);
->
-> In both those cases, you have the struct pci_dev *.
+> The main interface for clk implementer is to register clocks dynamically.
+> I think it highly depends on clk DT bindings. From the patch Grant sent
+> out, it looks like he doesn't like one node per clk. So how do we
+> register clocks dynamically? You have any sample code?
 
-OK, i missed that. will update that accordingly.
+I can only speak for my own platform, but after talks with Paul W. and
+Benoit C. I believe that OMAP will not push ALL of it's on-SoC clocks
+into DT.  DT is meant to solve board-level integration problems and
+the majority of OMAP clocks are SoC-level, not board level.  Some
+clocks will migrate out to DT such as the primary oscillator (which
+varies per board) as well as some leaf clocks and modules clocks that
+depend on board-specific peripherals.
 
-Thanks
+Otherwise the answer to your question is 'no'.  I don't have any
+sample code for DT bindings.  It should not be hard to map some sample
+clock bindings onto the existing registration functions... but it will
+still be one clock per node.  I'm not really a fan of making clock
+black-boxes where the details of the tree are hidden from the
+framework anyways... that's something that clkdev already achieves to
+some degree (by not exposing the entire tree to drivers, but only the
+clocks that we want exposed).
 
-Yinghai
+Regards,
+Mike
+
+>
+> Thanks
+> Richard
+>
