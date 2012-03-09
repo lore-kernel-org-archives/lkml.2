@@ -1,68 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756787Ab2CIVMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:12:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58447 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755522Ab2CIVL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:11:59 -0500
-Date: Fri, 9 Mar 2012 22:11:56 +0100
-From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
-Message-ID: <20120309211156.GA6262@quack.suse.cz>
-References: <20120301163837.GA13104@quack.suse.cz>
- <20120302044858.GA14802@localhost>
- <20120302095910.GB1744@quack.suse.cz>
- <20120302103951.GA13378@localhost>
- <20120302115700.7d970497.akpm@linux-foundation.org>
- <20120303135558.GA9869@localhost>
- <1331135301.32316.29.camel@sauron.fi.intel.com>
- <20120309073113.GA5337@localhost>
- <20120309095135.GC21038@quack.suse.cz>
- <1331309451.29445.42.camel@sauron.fi.intel.com>
+	id S1757373Ab2CIVMM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:12:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33773 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755522Ab2CIVMK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 16:12:10 -0500
+Date: Fri, 9 Mar 2012 13:11:40 -0800
+From: tip-bot for Alexander Gordeev <agordeev@redhat.com>
+Message-ID: <tip-4bcdf1d0b652bc33d52f2322b77463e4dc58abf8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, agordeev@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, oleg@redhat.com
+In-Reply-To: <20120309135925.GB2114@dhcp-26-207.brq.redhat.com>
+References: <20120309135925.GB2114@dhcp-26-207.brq.redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq:
+  Get rid of unnecessary irqaction field in task_struct
+Git-Commit-ID: 4bcdf1d0b652bc33d52f2322b77463e4dc58abf8
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1331309451.29445.42.camel@sauron.fi.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 09 Mar 2012 13:12:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 09-03-12 18:10:51, Artem Bityutskiy wrote:
-> On Fri, 2012-03-09 at 10:51 +0100, Jan Kara wrote:
-> > > However I cannot find any ubifs functions to form the above loop, so
-> > > ubifs should be safe for now.
-> >   Yeah, me neither but I also failed to find a place where
-> > ubifs_evict_inode() truncates inode space when deleting the inode... Artem?
-> 
-> We do call 'truncate_inode_pages()':
-> 
-> static void ubifs_evict_inode(struct inode *inode)
-> {
-> 	...
-> 
->         truncate_inode_pages(&inode->i_data, 0);
-> 
->         ...
-> }
-  Well, but that just removes pages from page cache. You should somewhere
-also free allocated blocks and free the inode... And I'm sure you do,
-otherwise you would pretty quickly notice that file deletion does not work
-:) Just I could not find which function does it.
+Commit-ID:  4bcdf1d0b652bc33d52f2322b77463e4dc58abf8
+Gitweb:     http://git.kernel.org/tip/4bcdf1d0b652bc33d52f2322b77463e4dc58abf8
+Author:     Alexander Gordeev <agordeev@redhat.com>
+AuthorDate: Fri, 9 Mar 2012 14:59:26 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 9 Mar 2012 17:19:08 +0100
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+genirq: Get rid of unnecessary irqaction field in task_struct
+
+When a new thread handler is created, an irqaction is passed to it as
+data. Not only that irqaction is stored in task_struct by the handler
+for later use, but also a structure associated with the kernel thread
+keeps this value as long as the thread exists.
+
+This fix kicks irqaction out off task_struct. Yes, I introduce new bit
+field. But it allows not only to eliminate the duplicate, but also
+shortens size of task_struct.
+
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Link: http://lkml.kernel.org/r/20120309135925.GB2114@dhcp-26-207.brq.redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/sched.h |   10 +++++-----
+ kernel/irq/manage.c   |   19 +++++++++++--------
+ 2 files changed, 16 insertions(+), 13 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7d379a6..07f537a 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1319,6 +1319,11 @@ struct task_struct {
+ 	unsigned sched_reset_on_fork:1;
+ 	unsigned sched_contributes_to_load:1;
+ 
++#ifdef CONFIG_GENERIC_HARDIRQS
++	/* IRQ handler threads */
++	unsigned irq_thread:1;
++#endif
++
+ 	pid_t pid;
+ 	pid_t tgid;
+ 
+@@ -1427,11 +1432,6 @@ struct task_struct {
+  * mempolicy */
+ 	spinlock_t alloc_lock;
+ 
+-#ifdef CONFIG_GENERIC_HARDIRQS
+-	/* IRQ handler threads */
+-	struct irqaction *irqaction;
+-#endif
+-
+ 	/* Protection of the PI data structures: */
+ 	raw_spinlock_t pi_lock;
+ 
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index c0730ad..0fa3ce9 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -780,7 +780,7 @@ static int irq_thread(void *data)
+ 		handler_fn = irq_thread_fn;
+ 
+ 	sched_setscheduler(current, SCHED_FIFO, &param);
+-	current->irqaction = action;
++	current->irq_thread = 1;
+ 
+ 	while (!irq_wait_for_interrupt(action)) {
+ 
+@@ -818,10 +818,10 @@ static int irq_thread(void *data)
+ 	irq_finalize_oneshot(desc, action, true);
+ 
+ 	/*
+-	 * Clear irqaction. Otherwise exit_irq_thread() would make
++	 * Clear irq_thread. Otherwise exit_irq_thread() would make
+ 	 * fuzz about an active irq thread going into nirvana.
+ 	 */
+-	current->irqaction = NULL;
++	current->irq_thread = 0;
+ 	return 0;
+ }
+ 
+@@ -832,27 +832,30 @@ void exit_irq_thread(void)
+ {
+ 	struct task_struct *tsk = current;
+ 	struct irq_desc *desc;
++	struct irqaction *action;
+ 
+-	if (!tsk->irqaction)
++	if (!tsk->irq_thread)
+ 		return;
+ 
++	action = kthread_data(tsk);
++
+ 	printk(KERN_ERR
+ 	       "exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
+-	       tsk->comm ? tsk->comm : "", tsk->pid, tsk->irqaction->irq);
++	       tsk->comm ? tsk->comm : "", tsk->pid, action->irq);
+ 
+-	desc = irq_to_desc(tsk->irqaction->irq);
++	desc = irq_to_desc(action->irq);
+ 
+ 	/*
+ 	 * Prevent a stale desc->threads_oneshot. Must be called
+ 	 * before setting the IRQTF_DIED flag.
+ 	 */
+-	irq_finalize_oneshot(desc, tsk->irqaction, true);
++	irq_finalize_oneshot(desc, action, true);
+ 
+ 	/*
+ 	 * Set the THREAD DIED flag to prevent further wakeups of the
+ 	 * soon to be gone threaded handler.
+ 	 */
+-	set_bit(IRQTF_DIED, &tsk->irqaction->flags);
++	set_bit(IRQTF_DIED, &action->flags);
+ }
+ 
+ static void irq_setup_forced_threading(struct irqaction *new)
