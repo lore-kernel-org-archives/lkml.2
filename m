@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501Ab2CIUZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:25:43 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030461Ab2CITqb (ORCPT
+	id S1030789Ab2CIUWF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:22:05 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32719 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030683Ab2CIUWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:46:31 -0500
-Message-Id: <20120309190203.938715861@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:22 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@hack.frob.com>
-Subject: [ 20/95] regset: Return -EFAULT, not -EIO, on host-side memory fault
-In-Reply-To: <20120309194424.GA2134@kroah.com>
+	Fri, 9 Mar 2012 15:22:02 -0500
+X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=LV9YWpXf9bAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=xa9Klso0PMj_4_VblnkA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331324518.25686.606.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] x86: use enum instead of literals for trap values
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@amd64.org>, Kees Cook <keescook@chromium.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Andy Lutomirski <luto@mit.edu>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri, 09 Mar 2012 15:21:58 -0500
+In-Reply-To: <4F5A644C.3080306@zytor.com>
+References: <20120309074202.GA28609@www.outflux.net>
+	 <20120309092845.GA10281@elte.hu>
+	 <CAGXu5j+SgWMjwNQd8w8DPSQmBVHDow=_osp57OVp4X2VU5Fe5w@mail.gmail.com>
+	 <4F5A448D.70605@zytor.com>
+	 <CAGXu5jKHJGmTktKNYDmpZziKRLM-bw-dTK5tboR706J_s6j7NQ@mail.gmail.com>
+	 <20120309182829.GA13745@aftab>
+	 <CAGXu5jJaO29hqMfACav9v8yEdHXt-SegozGuc+tigYCF6K57WA@mail.gmail.com>
+	 <20120309190842.GC13745@aftab> <4F5A644C.3080306@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2012-03-09 at 12:13 -0800, H. Peter Anvin wrote:
+> On 03/09/2012 11:08 AM, Borislav Petkov wrote:
+> > 
+> > So is this reserved or are we using it for Spurious IRQs? If we use it,
+> > then 'RES' is a bad name. Maybe we define our own like
+> > 
+> > X86_VEC_SP
+> > 
+> > and then do
+> > 
+> > X86_VEC_IR for IRET
+> > 
+> > in the manner we assumed for the rest?
+> > 
+> 
+> Actually I prefer if we didn't use two-letter versions for the ones that
+> aren't defined in the documentation; especially IRET which is a pure
+> Linux invention.
+> 
 
-------------------
+I agree with this. The two-letter abbreviations are good if they come
+from the official documentation. This makes it easy to reference.
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+For the Linux made up ones, a more descriptive name is better. Then
+there wont be confusion when people look at "IR" and can't find it
+online or in the document, and scratch their head thinking they are not
+smart enough to do kernel development and we lose another kernel
+developer ;-)
 
-commit 5189fa19a4b2b4c3bec37c3a019d446148827717 upstream.
-
-There is only one error code to return for a bad user-space buffer
-pointer passed to a system call in the same address space as the
-system call is executed, and that is EFAULT.  Furthermore, the
-low-level access routines, which catch most of the faults, return
-EFAULT already.
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Roland McGrath <roland@hack.frob.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- include/linux/regset.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/include/linux/regset.h
-+++ b/include/linux/regset.h
-@@ -339,7 +339,7 @@ static inline int copy_regset_to_user(st
- 		return -EOPNOTSUPP;
- 
- 	if (!access_ok(VERIFY_WRITE, data, size))
--		return -EIO;
-+		return -EFAULT;
- 
- 	return regset->get(target, regset, offset, size, NULL, data);
- }
-@@ -365,7 +365,7 @@ static inline int copy_regset_from_user(
- 		return -EOPNOTSUPP;
- 
- 	if (!access_ok(VERIFY_READ, data, size))
--		return -EIO;
-+		return -EFAULT;
- 
- 	return regset->set(target, regset, offset, size, NULL, data);
- }
+-- Steve
 
 
