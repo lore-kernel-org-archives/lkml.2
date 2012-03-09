@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032063Ab2CIT5y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:57:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
+	id S1031817Ab2CITxf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:53:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031947Ab2CITy2 (ORCPT
+	with ESMTP id S1030525Ab2CITxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:54:28 -0500
-Message-Id: <20120309190219.937912176@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:53:31 -0500
+Message-Id: <20120309190218.736405038@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:16 -0800
+Date: Fri, 09 Mar 2012 11:03:01 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicolas Cavallari <cavallar@lri.fr>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 62/68] carl9170: Fix memory accounting when sta is in power-save mode.
+        alan@lxorguk.ukuu.org.uk, Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [ 47/68] OMAP: 4430SDP/Panda: use gpio_free_array to free HDMI gpios
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Cavallari <Nicolas.Cavallari@lri.fr>
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 
-commit 992d52529d7840236d3059b51c15d5eb9e81a869 upstream.
+commit 575753e3bea3b67eef8e454fb87f719e3f7da599 upstream.
 
-On Access Point mode, when transmitting a packet, if the destination
-station is in powersave mode, we abort transmitting the packet to the
-device queue, but we do not reclaim the allocated memory.  Given enough
-packets, we can go in a state where there is no packet on the device
-queue, but we think the device has no memory left, so no packet gets
-transmitted, connections breaks and the AP stops working.
+Instead of freeing the GPIOs individually, use gpio_free_array().
 
-This undo the allocation done in the TX path when the station is in
-power-save mode.
-
-Signed-off-by: Nicolas Cavallari <cavallar@lri.fr>
-Acked-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/carl9170/tx.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-omap2/board-4430sdp.c    |    3 +--
+ arch/arm/mach-omap2/board-omap4panda.c |    3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/carl9170/tx.c
-+++ b/drivers/net/wireless/ath/carl9170/tx.c
-@@ -1245,6 +1245,7 @@ static bool carl9170_tx_ps_drop(struct a
- 			atomic_dec(&ar->tx_ampdu_upload);
+--- a/arch/arm/mach-omap2/board-4430sdp.c
++++ b/arch/arm/mach-omap2/board-4430sdp.c
+@@ -609,8 +609,7 @@ static int sdp4430_panel_enable_hdmi(str
  
- 		tx_info->flags |= IEEE80211_TX_STAT_TX_FILTERED;
-+		carl9170_release_dev_space(ar, skb);
- 		carl9170_tx_status(ar, skb, false);
- 		return true;
- 	}
+ static void sdp4430_panel_disable_hdmi(struct omap_dss_device *dssdev)
+ {
+-	gpio_free(HDMI_GPIO_LS_OE);
+-	gpio_free(HDMI_GPIO_HPD);
++	gpio_free_array(sdp4430_hdmi_gpios, ARRAY_SIZE(sdp4430_hdmi_gpios));
+ }
+ 
+ static struct omap_dss_device sdp4430_hdmi_device = {
+--- a/arch/arm/mach-omap2/board-omap4panda.c
++++ b/arch/arm/mach-omap2/board-omap4panda.c
+@@ -645,8 +645,7 @@ static int omap4_panda_panel_enable_hdmi
+ 
+ static void omap4_panda_panel_disable_hdmi(struct omap_dss_device *dssdev)
+ {
+-	gpio_free(HDMI_GPIO_LS_OE);
+-	gpio_free(HDMI_GPIO_HPD);
++	gpio_free_array(panda_hdmi_gpios, ARRAY_SIZE(panda_hdmi_gpios));
+ }
+ 
+ static struct omap_dss_device  omap4_panda_hdmi_device = {
 
 
