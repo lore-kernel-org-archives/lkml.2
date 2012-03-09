@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031811Ab2CIUCP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:02:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	id S1031535Ab2CIUIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:08:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54260 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030535Ab2CITxV (ORCPT
+	with ESMTP id S1031471Ab2CITv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:53:21 -0500
-Message-Id: <20120309190218.498532588@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:51:28 -0500
+Message-Id: <20120309190215.887753157@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:58 -0800
+Date: Fri, 09 Mar 2012 11:02:25 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ambroz Bizjak <ambrop7@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Nicolas Pitre <nico@linaro.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: [ 44/68] ARM: orion: Fix USB phy for orion5x.
+        alan@lxorguk.ukuu.org.uk, Wolfram Sang <w.sang@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>, Marek Vasut <marek.vasut@gmail.com>,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [ 11/68] i2c: mxs: only flag completion when queue is completely done
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,153 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Lunn <andrew@lunn.ch>
+From: Wolfram Sang <w.sang@pengutronix.de>
 
-commit 72053353583230952c4b187e110e9da00dfc3afb upstream.
+commit 844990daa2e69a4258049ba9c2bae1180657dac3 upstream.
 
-The patch "ARM: orion: Consolidate USB platform setup code.", commit
-4fcd3f374a928081d391cd9a570afe3b2c692fdc broke USB on TS-7800 and
-other orion5x boards, because the wrong type of PHY was being passed
-to the EHCI driver in the platform data. Orion5x needs EHCI_PHY_ORION
-and all the others want EHCI_PHY_NA.
+The hardware generates an interrupt for every completed command in the
+queue while the code assumed that it will only generate one interrupt
+when the queue is empty. So, explicitly check if the queue is really
+empty. This patch fixed problems which occurred due to high traffic on
+the bus. While we are here, move the completion-initialization after the
+parameter error checking.
 
-Allow the mach- code to tell the generic plat-orion code which USB PHY
-enum to place into the platform data.
-
-Version 2: Rebase to v3.3-rc2.
-
-Reported-by: Ambroz Bizjak <ambrop7@gmail.com>
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
-Tested-by: Ambroz Bizjak <ambrop7@gmail.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>
+Cc: Marek Vasut <marek.vasut@gmail.com>
+Cc: Lothar Waßmann <LW@KARO-electronics.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- arch/arm/mach-dove/common.c               |    3 ++-
- arch/arm/mach-kirkwood/common.c           |    3 ++-
- arch/arm/mach-mv78xx0/common.c            |    3 ++-
- arch/arm/mach-orion5x/common.c            |    4 +++-
- arch/arm/plat-orion/common.c              |    9 ++++-----
- arch/arm/plat-orion/include/plat/common.h |    3 ++-
- 6 files changed, 15 insertions(+), 10 deletions(-)
+ drivers/i2c/busses/i2c-mxs.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
---- a/arch/arm/mach-dove/common.c
-+++ b/arch/arm/mach-dove/common.c
-@@ -31,6 +31,7 @@
- #include <asm/mach/arch.h>
- #include <linux/irq.h>
- #include <plat/time.h>
-+#include <plat/ehci-orion.h>
- #include <plat/common.h>
- #include "common.h"
+--- a/drivers/i2c/busses/i2c-mxs.c
++++ b/drivers/i2c/busses/i2c-mxs.c
+@@ -72,6 +72,7 @@
  
-@@ -74,7 +75,7 @@ void __init dove_map_io(void)
- void __init dove_ehci0_init(void)
- {
- 	orion_ehci_init(&dove_mbus_dram_info,
--			DOVE_USB0_PHYS_BASE, IRQ_DOVE_USB0);
-+			DOVE_USB0_PHYS_BASE, IRQ_DOVE_USB0, EHCI_PHY_NA);
- }
+ #define MXS_I2C_QUEUESTAT	(0x70)
+ #define MXS_I2C_QUEUESTAT_RD_QUEUE_EMPTY        0x00002000
++#define MXS_I2C_QUEUESTAT_WRITE_QUEUE_CNT_MASK	0x0000001F
  
- /*****************************************************************************
---- a/arch/arm/mach-kirkwood/common.c
-+++ b/arch/arm/mach-kirkwood/common.c
-@@ -28,6 +28,7 @@
- #include <plat/cache-feroceon-l2.h>
- #include <plat/mvsdio.h>
- #include <plat/orion_nand.h>
-+#include <plat/ehci-orion.h>
- #include <plat/common.h>
- #include <plat/time.h>
- #include "common.h"
-@@ -74,7 +75,7 @@ void __init kirkwood_ehci_init(void)
- {
- 	kirkwood_clk_ctrl |= CGC_USB0;
- 	orion_ehci_init(&kirkwood_mbus_dram_info,
--			USB_PHYS_BASE, IRQ_KIRKWOOD_USB);
-+			USB_PHYS_BASE, IRQ_KIRKWOOD_USB, EHCI_PHY_NA);
- }
+ #define MXS_I2C_QUEUECMD	(0x80)
  
+@@ -219,14 +220,14 @@ static int mxs_i2c_xfer_msg(struct i2c_a
+ 	int ret;
+ 	int flags;
  
---- a/arch/arm/mach-mv78xx0/common.c
-+++ b/arch/arm/mach-mv78xx0/common.c
-@@ -20,6 +20,7 @@
- #include <mach/mv78xx0.h>
- #include <mach/bridge-regs.h>
- #include <plat/cache-feroceon-l2.h>
-+#include <plat/ehci-orion.h>
- #include <plat/orion_nand.h>
- #include <plat/time.h>
- #include <plat/common.h>
-@@ -170,7 +171,7 @@ void __init mv78xx0_map_io(void)
- void __init mv78xx0_ehci0_init(void)
- {
- 	orion_ehci_init(&mv78xx0_mbus_dram_info,
--			USB0_PHYS_BASE, IRQ_MV78XX0_USB_0);
-+			USB0_PHYS_BASE, IRQ_MV78XX0_USB_0, EHCI_PHY_NA);
- }
- 
- 
---- a/arch/arm/mach-orion5x/common.c
-+++ b/arch/arm/mach-orion5x/common.c
-@@ -29,6 +29,7 @@
- #include <mach/hardware.h>
- #include <mach/orion5x.h>
- #include <plat/orion_nand.h>
-+#include <plat/ehci-orion.h>
- #include <plat/time.h>
- #include <plat/common.h>
- #include "common.h"
-@@ -72,7 +73,8 @@ void __init orion5x_map_io(void)
- void __init orion5x_ehci0_init(void)
- {
- 	orion_ehci_init(&orion5x_mbus_dram_info,
--			ORION5X_USB0_PHYS_BASE, IRQ_ORION5X_USB0_CTRL);
-+			ORION5X_USB0_PHYS_BASE, IRQ_ORION5X_USB0_CTRL,
-+			EHCI_PHY_ORION);
- }
- 
- 
---- a/arch/arm/plat-orion/common.c
-+++ b/arch/arm/plat-orion/common.c
-@@ -806,10 +806,7 @@ void __init orion_xor1_init(unsigned lon
- /*****************************************************************************
-  * EHCI
-  ****************************************************************************/
--static struct orion_ehci_data orion_ehci_data = {
--	.phy_version	= EHCI_PHY_NA,
--};
+-	init_completion(&i2c->cmd_complete);
 -
-+static struct orion_ehci_data orion_ehci_data;
- static u64 ehci_dmamask = DMA_BIT_MASK(32);
+ 	dev_dbg(i2c->dev, "addr: 0x%04x, len: %d, flags: 0x%x, stop: %d\n",
+ 		msg->addr, msg->len, msg->flags, stop);
  
+ 	if (msg->len == 0)
+ 		return -EINVAL;
  
-@@ -830,9 +827,11 @@ static struct platform_device orion_ehci
++	init_completion(&i2c->cmd_complete);
++
+ 	flags = stop ? MXS_I2C_CTRL0_POST_SEND_STOP : 0;
  
- void __init orion_ehci_init(struct mbus_dram_target_info *mbus_dram_info,
- 			    unsigned long mapbase,
--			    unsigned long irq)
-+			    unsigned long irq,
-+			    enum orion_ehci_phy_ver phy_version)
+ 	if (msg->flags & I2C_M_RD)
+@@ -286,6 +287,7 @@ static irqreturn_t mxs_i2c_isr(int this_
  {
- 	orion_ehci_data.dram = mbus_dram_info;
-+	orion_ehci_data.phy_version = phy_version;
- 	fill_resources(&orion_ehci, orion_ehci_resources, mapbase, SZ_4K - 1,
- 		       irq);
+ 	struct mxs_i2c_dev *i2c = dev_id;
+ 	u32 stat = readl(i2c->regs + MXS_I2C_CTRL1) & MXS_I2C_IRQ_MASK;
++	bool is_last_cmd;
  
---- a/arch/arm/plat-orion/include/plat/common.h
-+++ b/arch/arm/plat-orion/include/plat/common.h
-@@ -95,7 +95,8 @@ void __init orion_xor1_init(unsigned lon
+ 	if (!stat)
+ 		return IRQ_NONE;
+@@ -300,9 +302,14 @@ static irqreturn_t mxs_i2c_isr(int this_
+ 	else
+ 		i2c->cmd_err = 0;
  
- void __init orion_ehci_init(struct mbus_dram_target_info *mbus_dram_info,
- 			    unsigned long mapbase,
--			    unsigned long irq);
-+			    unsigned long irq,
-+			    enum orion_ehci_phy_ver phy_version);
+-	complete(&i2c->cmd_complete);
++	is_last_cmd = (readl(i2c->regs + MXS_I2C_QUEUESTAT) &
++		MXS_I2C_QUEUESTAT_WRITE_QUEUE_CNT_MASK) == 0;
++
++	if (is_last_cmd || i2c->cmd_err)
++		complete(&i2c->cmd_complete);
  
- void __init orion_ehci_1_init(struct mbus_dram_target_info *mbus_dram_info,
- 			      unsigned long mapbase,
+ 	writel(stat, i2c->regs + MXS_I2C_CTRL1_CLR);
++
+ 	return IRQ_HANDLED;
+ }
+ 
 
 
