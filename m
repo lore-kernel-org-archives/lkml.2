@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab2CII1q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 03:27:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48770 "EHLO mx1.redhat.com"
+	id S1753630Ab2CII3X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 03:29:23 -0500
+Received: from mail.aixtema.de ([212.117.64.100]:36410 "EHLO mail.aixtema.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751879Ab2CII1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 03:27:45 -0500
-Date: Fri, 9 Mar 2012 16:30:09 +0800
-From: Dave Young <dyoung@redhat.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org, linux@arm.linux.org.uk,
-        vgoyal@redhat.com
-Subject: [PATCH] kdump x86: fix total mem size calculation for reservation
-Message-ID: <20120309083009.GA14067@darkstar.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752601Ab2CII3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 03:29:22 -0500
+X-Greylist: delayed 1060 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 03:29:22 EST
+Message-ID: <1331280697.5426.4.camel@mobile>
+Subject: Patch for Sitecom LN-031
+From: Joerg Neikes <j.neikes@midlandgate.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+Date: Fri, 09 Mar 2012 09:11:37 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-AntiVirus: checked by AntiVir MailGate (version: 2.0.1.16; AVE: 7.9.10.14; VDF: 7.11.24.248; host: mail.aixtema.de)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-crashkernel reservation need know the total memory size. Current get_total_mem
-simply use max_pfn - min_low_pfn. It is wrong because it will including
-memory holes in the middle.
+This patch adds support for the Sitecom LN-031 USB adapter with a AX88178 chip.
 
-Especially for kvm guest with memory > 0xe0000000, there's below in qemu code:
-qemu split memory as below:
-    if (ram_size >= 0xe0000000 ) {
-        above_4g_mem_size = ram_size - 0xe0000000;
-        below_4g_mem_size = 0xe0000000;
-    } else {
-        below_4g_mem_size = ram_size;
-    }
-So for 4G mem guest, seabios will insert a 512M usable region beyond of 4G.
-Thus in above case max_pfn - min_low_pfn will be more than original memsize.
+Added USB id to find correct driver for AX88178 1000 Ethernet adapter.
 
-Fixing this issue by using memblock_phys_mem_size() to get the total memsize.
+Signed-off-by: Joerg Neikes <j.neikes@midlandgate.de>
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- [Ther's similar code in arm, I'm not sure whether the memblock_phys_mem_size
- works with arm or not. If it works I can also update that part of code.]
- arch/x86/kernel/setup.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
 
---- linux-2.6.orig/arch/x86/kernel/setup.c	2012-03-09 11:27:30.000000000 +0800
-+++ linux-2.6/arch/x86/kernel/setup.c	2012-03-09 15:41:29.666530976 +0800
-@@ -509,16 +509,6 @@ static void __init memblock_x86_reserve_
- 
- #ifdef CONFIG_KEXEC
- 
--static inline unsigned long long get_total_mem(void)
--{
--	unsigned long long total;
--
--	total = max_pfn - min_low_pfn;
--	printk("hidave: memsize=%llu\n", memblock_phys_mem_size());
--
--	return total << PAGE_SHIFT;
--}
--
- /*
-  * Keep the crash kernel below this limit.  On 32 bits earlier kernels
-  * would limit the kernel to the low 512 MiB due to mapping restrictions.
-@@ -537,7 +527,7 @@ static void __init reserve_crashkernel(v
- 	unsigned long long crash_size, crash_base;
- 	int ret;
- 
--	total_mem = get_total_mem();
-+	total_mem = memblock_phys_mem_size();
- 
- 	ret = parse_crashkernel(boot_command_line, total_mem,
- 			&crash_size, &crash_base);
+
+--- linux-3.2.6-gentoo/drivers/net/usb/asix.c	2012-02-14 14:54:11.079152551 +0100
++++ linux-3.2.9-gentoo/drivers/net/usb/asix.c	2012-03-09 00:01:34.657806558 +0100
+@@ -1595,6 +1595,10 @@ static const struct usb_device_id	produc
+ 	USB_DEVICE (0x6189, 0x182d),
+ 	.driver_info =  (unsigned long) &ax8817x_info,
+ }, {
++	// Sitecom LN-031 "USB 2.0 10/100/1000 Ethernet adapter"
++	USB_DEVICE (0x0df6, 0x0056),
++	.driver_info =  (unsigned long) &ax88178_info,
++}, {
+ 	// corega FEther USB2-TX
+ 	USB_DEVICE (0x07aa, 0x0017),
+ 	.driver_info =  (unsigned long) &ax8817x_info,
+
+
+
+
