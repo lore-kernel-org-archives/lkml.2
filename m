@@ -1,64 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab2CIMxR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 07:53:17 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42775 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755075Ab2CIMxQ (ORCPT
+	id S932298Ab2CIMxi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 07:53:38 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33569 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932225Ab2CIMxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 07:53:16 -0500
-Date: Fri, 9 Mar 2012 12:53:14 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Margarita Olaya Cabrera <magi@slimlogic.co.uk>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Use array to store dcdc_range settings for
- tps65912
-Message-ID: <20120309125310.GZ3273@opensource.wolfsonmicro.com>
-References: <1331247941.3570.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R9baxdNnpTjJ7oIU"
-Content-Disposition: inline
-In-Reply-To: <1331247941.3570.1.camel@phoenix>
-X-Cookie: You will be successful in love.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Mar 2012 07:53:35 -0500
+From: Johan Hovold <jhovold@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>, stable <stable@vger.kernel.org>
+Subject: [PATCH 2/2 v2] bluetooth: hci_core: fix NULL-pointer dereference at unregister
+Date: Fri,  9 Mar 2012 13:53:14 +0100
+Message-Id: <1331297594-13332-1-git-send-email-jhovold@gmail.com>
+X-Mailer: git-send-email 1.7.8.4
+In-Reply-To: <1331228606.14217.5.camel@aeonflux>
+References: <1331228606.14217.5.camel@aeonflux>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Make sure hci_dev_open returns immediately if hci_dev_unregister has
+been called.
 
---R9baxdNnpTjJ7oIU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This fixes a race between hci_dev_open and hci_dev_unregister which can
+lead to a NULL-pointer dereference.
 
-On Fri, Mar 09, 2012 at 07:05:41AM +0800, Axel Lin wrote:
-> Then we can use the regulator id as array index to access the array.
-> This change makes the code simpler.
+Bug is 100% reproducible using hciattach and a disconnected serial port:
 
-Applied, thanks.
+0. # hciattach -n /dev/ttyO1 any noflow
 
---R9baxdNnpTjJ7oIU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+1. hci_dev_open called from hci_power_on grabs req lock
+2. hci_init_req executes but device fails to initialise (times out
+   eventually)
+3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
+4. hci_uart_tty_close calls hci_dev_unregister and sleeps on req lock in
+   hci_dev_do_close
+5. hci_dev_open (1) releases req lock
+6. hci_dev_do_close grabs req lock and returns as device is not up
+7. hci_dev_unregister sleeps in destroy_workqueue
+8. hci_dev_open (3) grabs req lock, calls hci_init_req and eventually sleeps
+9. hci_dev_unregister finishes, while hci_dev_open is still running...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+[   79.627136] INFO: trying to register non-static key.
+[   79.632354] the code is fine but needs lockdep annotation.
+[   79.638122] turning off the locking correctness validator.
+[   79.643920] [<c00188bc>] (unwind_backtrace+0x0/0xf8) from [<c00729c4>] (__lock_acquire+0x1590/0x1ab0)
+[   79.653594] [<c00729c4>] (__lock_acquire+0x1590/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
+[   79.663085] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0040a88>] (run_timer_softirq+0x150/0x3ac)
+[   79.672668] [<c0040a88>] (run_timer_softirq+0x150/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
+[   79.682281] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
+[   79.690856] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
+[   79.699157] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
+[   79.708648] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
+[   79.718048] Exception stack(0xcf281fb0 to 0xcf281ff8)
+[   79.723358] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
+[   79.731933] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
+[   79.740509] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
+[   79.747497] Unable to handle kernel NULL pointer dereference at virtual address 00000000
+[   79.756011] pgd = cf3b4000
+[   79.758850] [00000000] *pgd=8f0c7831, *pte=00000000, *ppte=00000000
+[   79.765502] Internal error: Oops: 80000007 [#1]
+[   79.770294] Modules linked in:
+[   79.773529] CPU: 0    Tainted: G        W     (3.3.0-rc6-00002-gb5d5c87 #421)
+[   79.781066] PC is at 0x0
+[   79.783721] LR is at run_timer_softirq+0x16c/0x3ac
+[   79.788787] pc : [<00000000>]    lr : [<c0040aa4>]    psr: 60000113
+[   79.788787] sp : cf281ee0  ip : 00000000  fp : cf280000
+[   79.800903] r10: 00000004  r9 : 00000100  r8 : b6f234d0
+[   79.806427] r7 : c0519c28  r6 : cf093488  r5 : c0561a00  r4 : 00000000
+[   79.813323] r3 : 00000000  r2 : c054eee0  r1 : 00000001  r0 : 00000000
+[   79.820190] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[   79.827728] Control: 10c5387d  Table: 8f3b4019  DAC: 00000015
+[   79.833801] Process gpsd (pid: 1265, stack limit = 0xcf2802e8)
+[   79.839965] Stack: (0xcf281ee0 to 0xcf282000)
+[   79.844573] 1ee0: 00000002 00000000 c0040a24 00000000 00000002 cf281f08 00200200 00000000
+[   79.853210] 1f00: 00000000 cf281f18 cf281f08 00000000 00000000 00000000 cf281f18 cf281f18
+[   79.861816] 1f20: 00000000 00000001 c056184c 00000000 00000001 b6f234d0 c0561848 00000004
+[   79.870452] 1f40: cf280000 c003a3b8 c051e79c 00000001 00000000 00000100 3fa9e7b8 0000000a
+[   79.879089] 1f60: 00000025 cf280000 00000025 00000000 00000000 b6f234d0 00000000 00000004
+[   79.887756] 1f80: 00000000 c003a924 c053ad38 c0013a50 fa200000 cf281fb0 ffffffff c0008530
+[   79.896362] 1fa0: 0001e6a0 0000aab8 80000010 c037499c 0001e6a0 be8dab00 0001e698 00036698
+[   79.904998] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
+[   79.913665] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff 00fbf700 04ffff00
+[   79.922302] [<c0040aa4>] (run_timer_softirq+0x16c/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
+[   79.931945] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
+[   79.940582] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
+[   79.948913] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
+[   79.958404] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
+[   79.967773] Exception stack(0xcf281fb0 to 0xcf281ff8)
+[   79.973083] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
+[   79.981658] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
+[   79.990234] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
+[   79.997161] Code: bad PC value
+[   80.000396] ---[ end trace 6f6739840475f9ee ]---
+[   80.005279] Kernel panic - not syncing: Fatal exception in interrupt
 
-iQIcBAEBAgAGBQJPWfzvAAoJEBus8iNuMP3dcuIP/0S9N7EOOjzvZTDqmZGqN7fZ
-aPcO0mjK2LcmQC0D82JmnJbP9JNL8PzNPwaRIUANC95FBNxhxCuz1EQ8dBxoldmq
-j9eY/aa1Hniy4PYE2vxo89GbYRcFRetpBVC4iD9YfJVhs7/HGaNAgpyxhc1V2+CJ
-FdAYK7/v4tUbdBkESKAhqddetwHsZkw8aHyLEN+Wh8Z6sCNy484XKEqtbBoaEkNw
-aFQIAmv4EHvCrjAfI0w4QdQsQWIWcJpEg/Wz1sLV41pCc30lN8HmMQsA8lkhO4tQ
-TrdlmHT39ZQBLuCmgyI5I9hv9YLJ/GDeJU2AHvHmH+KY95k9ACERbeQv+wvEeXjt
-UBrxUIqpUx63mRTGXoq+eb1BikTHg4ZdK9MFeeEfob0HI4EWaRMxWbmVkIChTnMu
-p2SUFahgGr3XuBZfVj2QiX4uJFPW7uZ81jsb0VUrPj74BbPHPoiejqo4ojPKnUQY
-WFBel+/r0A6V2+FQxpikoagya09CKeUSDKYGU8dmg4Wx/59qPayWx5PhzRdReBAo
-3auHZCSO9M6XlzCfPlTZhJT2uWv2Tz5f8oZcR0KV38BGHajkzdFtnJ9HkC+YhH3B
-0l/UXcbwcVlATrjMYknCHEnI+31uK4om3Y/Xz1kWlDndDf6Imi3oBmjIa5Vvy1qy
-OW8Ux4Qm43xGwVlBEPYx
-=5TM4
------END PGP SIGNATURE-----
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+---
 
---R9baxdNnpTjJ7oIU--
+v2: use hdev->dev_flags for internal unregister flag 
+
+
+ include/net/bluetooth/hci.h |    2 ++
+ net/bluetooth/hci_core.c    |    7 +++++++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/include/net/bluetooth/hci.h b/include/net/bluetooth/hci.h
+index 00596e8..e8879b9 100644
+--- a/include/net/bluetooth/hci.h
++++ b/include/net/bluetooth/hci.h
+@@ -93,6 +93,8 @@ enum {
+  * states from the controller.
+  */
+ enum {
++	HCI_UNREGISTER,
++
+ 	HCI_LE_SCAN,
+ };
+ 
+diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+index d6448f0..22b6781 100644
+--- a/net/bluetooth/hci_core.c
++++ b/net/bluetooth/hci_core.c
+@@ -525,6 +525,11 @@ int hci_dev_open(__u16 dev)
+ 
+ 	hci_req_lock(hdev);
+ 
++	if (test_bit(HCI_UNREGISTER, &hdev->dev_flags)) {
++		ret = -ENODEV;
++		goto done;
++	}
++
+ 	if (hdev->rfkill && rfkill_blocked(hdev->rfkill)) {
+ 		ret = -ERFKILL;
+ 		goto done;
+@@ -1577,6 +1582,8 @@ void hci_unregister_dev(struct hci_dev *hdev)
+ 
+ 	BT_DBG("%p name %s bus %d", hdev, hdev->name, hdev->bus);
+ 
++	set_bit(HCI_UNREGISTER, &hdev->dev_flags);
++
+ 	write_lock(&hci_dev_list_lock);
+ 	list_del(&hdev->list);
+ 	write_unlock(&hci_dev_list_lock);
+-- 
+1.7.8.4
+
