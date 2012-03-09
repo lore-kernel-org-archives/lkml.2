@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030487Ab2CITwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:52:33 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48015 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031646Ab2CITwZ (ORCPT
+	id S1031688Ab2CITwu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:52:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030535Ab2CITwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:52:25 -0500
-Message-Id: <20120309190217.147770182@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:52:39 -0500
+Message-Id: <20120309190216.895513023@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:41 -0800
+Date: Fri, 09 Mar 2012 11:02:38 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Pavel Roskin <proski@gnu.org>,
-        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 27/68] mac80211: zero initialize count field in ieee80211_tx_rate
+        alan@lxorguk.ukuu.org.uk, Anton Vorontsov <anton.vorontsov@linaro.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: [ 24/68] mm: memcg: Correct unregistring of events attached to the same eventfd
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
 
-commit 8617b093d0031837a7be9b32bc674580cfb5f6b5 upstream.
+commit 371528caec553785c37f73fa3926ea0de84f986f upstream.
 
-rate control algorithms concludes the rate as invalid
-with rate[i].idx < -1 , while they do also check for rate[i].count is
-non-zero. it would be safer to zero initialize the 'count' field.
-recently we had a ath9k rate control crash where the ath9k rate control
-in ath_tx_status assumed to check only for rate[i].count being non-zero
-in one instance and ended up in using invalid rate index for
-'connection monitoring NULL func frames' which eventually lead to the crash.
-thanks to Pavel Roskin for fixing it and finding the root cause.
-https://bugzilla.redhat.com/show_bug.cgi?id=768639
+There is an issue when memcg unregisters events that were attached to
+the same eventfd:
 
-Cc: Pavel Roskin <proski@gnu.org>
-Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+- On the first call mem_cgroup_usage_unregister_event() removes all
+  events attached to a given eventfd, and if there were no events left,
+  thresholds->primary would become NULL;
+
+- Since there were several events registered, cgroups core will call
+  mem_cgroup_usage_unregister_event() again, but now kernel will oops,
+  as the function doesn't expect that threshold->primary may be NULL.
+
+That's a good question whether mem_cgroup_usage_unregister_event()
+should actually remove all events in one go, but nowadays it can't
+do any better as cftype->unregister_event callback doesn't pass
+any private event-associated cookie. So, let's fix the issue by
+simply checking for threshold->primary.
+
+FWIW, w/o the patch the following oops may be observed:
+
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+ IP: [<ffffffff810be32c>] mem_cgroup_usage_unregister_event+0x9c/0x1f0
+ Pid: 574, comm: kworker/0:2 Not tainted 3.3.0-rc4+ #9 Bochs Bochs
+ RIP: 0010:[<ffffffff810be32c>]  [<ffffffff810be32c>] mem_cgroup_usage_unregister_event+0x9c/0x1f0
+ RSP: 0018:ffff88001d0b9d60  EFLAGS: 00010246
+ Process kworker/0:2 (pid: 574, threadinfo ffff88001d0b8000, task ffff88001de91cc0)
+ Call Trace:
+  [<ffffffff8107092b>] cgroup_event_remove+0x2b/0x60
+  [<ffffffff8103db94>] process_one_work+0x174/0x450
+  [<ffffffff8103e413>] worker_thread+0x123/0x2d0
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rate.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memcontrol.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/rate.c
-+++ b/net/mac80211/rate.c
-@@ -314,7 +314,7 @@ void rate_control_get_rate(struct ieee80
- 	for (i = 0; i < IEEE80211_TX_MAX_RATES; i++) {
- 		info->control.rates[i].idx = -1;
- 		info->control.rates[i].flags = 0;
--		info->control.rates[i].count = 1;
-+		info->control.rates[i].count = 0;
- 	}
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -4558,6 +4558,9 @@ static void mem_cgroup_usage_unregister_
+ 	 */
+ 	BUG_ON(!thresholds);
  
- 	if (sdata->local->hw.flags & IEEE80211_HW_HAS_RATE_CONTROL)
++	if (!thresholds->primary)
++		goto unlock;
++
+ 	usage = mem_cgroup_usage(memcg, type == _MEMSWAP);
+ 
+ 	/* Check if a threshold crossed before removing */
+@@ -4606,7 +4609,7 @@ swap_buffers:
+ 
+ 	/* To be sure that nobody uses thresholds */
+ 	synchronize_rcu();
+-
++unlock:
+ 	mutex_unlock(&memcg->thresholds_lock);
+ }
+ 
 
 
