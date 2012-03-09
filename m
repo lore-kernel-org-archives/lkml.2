@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab2CIGs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 01:48:26 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:54495 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab2CIGsY (ORCPT
+	id S1752168Ab2CIGxX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 01:53:23 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59267 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab2CIGxW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 01:48:24 -0500
-Date: Fri, 9 Mar 2012 17:48:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: manual merge of the irqdomain tree with the powerpc
- tree
-Message-Id: <20120309174808.88d351153355f3783d24b33e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__9_Mar_2012_17_48_08_+1100_bWlGETrHCrklAJvJ"
+	Fri, 9 Mar 2012 01:53:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo4ynKbMWUUo2QdVr6fbRYoexSXpQrgYbE+AXhXgg5yzvA@mail.gmail.com>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
+	<1331018040-30725-7-git-send-email-yinghai@kernel.org>
+	<CAErSpo4ynKbMWUUo2QdVr6fbRYoexSXpQrgYbE+AXhXgg5yzvA@mail.gmail.com>
+Date: Thu, 8 Mar 2012 22:53:21 -0800
+X-Google-Sender-Auth: yh1iH0BSbFdhlvMqXCfYjhgbwUI
+Message-ID: <CAE9FiQWjsfduRrFqgxq-_ceg8kC-Bi-g4nGUYp0t1sZk3gM95g@mail.gmail.com>
+Subject: Re: [PATCH 06/23] PCI: rescan with bus or bridge using callback
+ method too
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Mar_2012_17_48_08_+1100_bWlGETrHCrklAJvJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 8, 2012 at 4:56 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> Just like removal.
+>>
+>> Because We could add new bus under the bridges...
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  drivers/pci/pci-sysfs.c |   43 +++++++++++++++++++++++++++++++------------
+>>  1 files changed, 31 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+>> index 2049b2f..1794508 100644
+>> --- a/drivers/pci/pci-sysfs.c
+>> +++ b/drivers/pci/pci-sysfs.c
+>> @@ -325,21 +325,31 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
+>>        return count;
+>>  }
+>>
+>> +static void bridge_rescan_callback(struct device *dev)
+>> +{
+>> +       struct pci_dev *pdev = to_pci_dev(dev);
+>> +
+>> +       mutex_lock(&pci_remove_rescan_mutex);
+>> +       pci_rescan_bus_bridge_resize(pdev);
+>> +       mutex_unlock(&pci_remove_rescan_mutex);
+>> +}
+>> +
+>>  static ssize_t
+>>  dev_bridge_rescan_store(struct device *dev, struct device_attribute *attr,
+>>                 const char *buf, size_t count)
+>>  {
+>> +       int ret = 0;
+>>        unsigned long val;
+>> -       struct pci_dev *pdev = to_pci_dev(dev);
+>>
+>>        if (kstrtoul(buf, 0, &val) < 0)
+>>                return -EINVAL;
+>>
+>> -       if (val) {
+>> -               mutex_lock(&pci_remove_rescan_mutex);
+>> -               pci_rescan_bus_bridge_resize(pdev);
+>> -               mutex_unlock(&pci_remove_rescan_mutex);
+>> -       }
+>> +       if (val)
+>> +               ret = device_schedule_callback(dev, bridge_rescan_callback);
+>> +
+>> +       if (ret)
+>> +               count = ret;
+>> +
+>>        return count;
+>
+> I see that you copied this style from remove_store(), but it's ugly
+> and hard to follow.  I think this would be more readable:
+>
+>    if (!val)
+>        return count;
+>
+>    err = device_schedule_callback(dev, bridge_rescan_callback);
+>    if (err)
+>        return err;
+>
+>    return count;
+>
 
-Hi Grant,
+like
 
-Today's linux-next merge of the irqdomain tree got a conflict in
-arch/powerpc/platforms/iseries/irq.c between commit 8ee3e0d69623
-("powerpc: Remove the main legacy iSerie platform code") from the  tree
-and three commits from the irqdomain tree.
+        if (!val)
+                return count;
 
-I just removed the file.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+        ret = device_schedule_callback(dev, bus_rescan_callback);
 
---Signature=_Fri__9_Mar_2012_17_48_08_+1100_bWlGETrHCrklAJvJ
-Content-Type: application/pgp-signature
+        if (ret)
+                return ret;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+        return count;
 
-iQIcBAEBCAAGBQJPWaeoAAoJEECxmPOUX5FEfzEP/2dAFFqzzJUwQhZ2oyUiMgLX
-48INrlRmaFpkddbbgbon1PCkpVu9khmnaJVh82A5hb6TXj67K5/7Pt5+idxLqUmr
-u0Yb8WSz9VnA+/NMiturI2xLp4lg5Bi8ytCHgm6DLArezTZwR6Vga1foTVmQY4PE
-R/Kgxneu/z5dt/BzU873hiVdkivi7PxVZrMguNObg2YhPFr1S8oWCUVeoyd28ABz
-+4iP0YkYMKaVNuFAw1Fpne/Lm4d2UzaJGb1/RGWh+9rYb/MZQ//sLdZaB0WFThcW
-mC1iuamVRqKwWLRGQw3aC+Yr6ruBAnGVI25sw3OW4tP72b4m92PYRx6KCX+HBks+
-sKk9YCJQ7bNoKJyfjpskIwKjV84V0unB+6lx2GBiC9Ms9adTum8JzEuFvUHWQzWg
-9cx5hF0Ko6RreeOsirVC7W/b7M9XQP6p3wsWqiPCHFptfEbvWr52wyGMwlo52fXo
-MHxHoi0ZQxgfBTvjvp9od1sGvQ9uZnISPNHdxM8LMzrYIJZHU3pCPKUMbgkHuLsU
-+ILTsGdJcVXz/tABMuJ5BXfdPCHWAhCCGWtvYg9KzKIv4bWbqBrdlX01jgSNzZ58
-uckECGNtuMlYinZCDSXwff3cGitEo5aMJv1/TEeF+W5KNX+9NpSdXeF8ZlQIUzYw
-RBL9wd9HNEG0x9QgxSWk
-=j+ie
------END PGP SIGNATURE-----
+that will have three return instead of one.
 
---Signature=_Fri__9_Mar_2012_17_48_08_+1100_bWlGETrHCrklAJvJ--
+both should be ok.
+
+Yinghai
