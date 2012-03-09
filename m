@@ -1,29 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab2CIRRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:17:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28964 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754557Ab2CIRRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:17:31 -0500
-Date: Fri, 9 Mar 2012 12:17:11 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
-Cc: "x86@kernel.org" <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+	id S1758386Ab2CIRUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:20:52 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:11129 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758283Ab2CIRUv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 12:20:51 -0500
+From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: "x86@kernel.org" <x86@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         LKML <linux-kernel@vger.kernel.org>, Wim Van Sebroeck <wim@iguana.be>
-Subject: Re: [PATCH 1/2] watchdog, hpwdt: Remove priority option for NMI
+Subject: RE: [PATCH 1/2] watchdog, hpwdt: Remove priority option for NMI
  callback
-Message-ID: <20120309171711.GI24378@redhat.com>
+Thread-Topic: [PATCH 1/2] watchdog, hpwdt: Remove priority option for NMI
+ callback
+Thread-Index: AQHM/hMxk3iRaS4pqEOOCrKMt0Y51JZiKrpggAAKDICAAACMEA==
+Date: Fri, 9 Mar 2012 17:19:28 +0000
+Message-ID: <9774516974AF5F4C8A2C3C69CD34123320369E3F@G9W0755.americas.hpqcorp.net>
 References: <1331311044-1120-1-git-send-email-dzickus@redhat.com>
  <9774516974AF5F4C8A2C3C69CD34123320369D9C@G9W0755.americas.hpqcorp.net>
+ <20120309171711.GI24378@redhat.com>
+In-Reply-To: <20120309171711.GI24378@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.216.12.12]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9774516974AF5F4C8A2C3C69CD34123320369D9C@G9W0755.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Ok I will run some tests asap. I may not get to it today.
+
+Tom
+
+-----Original Message-----
+From: Don Zickus [mailto:dzickus@redhat.com] 
+Sent: Friday, March 09, 2012 11:17 AM
+To: Mingarelli, Thomas
+Cc: x86@kernel.org; Peter Zijlstra; LKML; Wim Van Sebroeck
+Subject: Re: [PATCH 1/2] watchdog, hpwdt: Remove priority option for NMI callback
 
 On Fri, Mar 09, 2012 at 04:51:09PM +0000, Mingarelli, Thomas wrote:
 > Has this been tested with echo c > /proc/sysrg-trigger and the virtual NMI button via iLO?
