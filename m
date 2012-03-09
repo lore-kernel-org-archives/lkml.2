@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab2CIOW7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 09:22:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38055 "EHLO mx2.suse.de"
+	id S1755279Ab2CIOYb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 09:24:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30992 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754628Ab2CIOW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 09:22:58 -0500
-Date: Fri, 9 Mar 2012 15:22:53 +0100
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
-        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH 11/19] xfs: Convert to new freezing code
-Message-ID: <20120309142253.GB14159@quack.suse.cz>
-References: <1330963277-26336-1-git-send-email-jack@suse.cz>
- <1330963277-26336-12-git-send-email-jack@suse.cz>
- <20120308232041.GU3592@dastard>
+	id S1754087Ab2CIOYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 09:24:30 -0500
+Date: Fri, 9 Mar 2012 09:24:22 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] x86,nmi: Fix page faults by nmiaction if kmemcheck is
+ enabled
+Message-ID: <20120309142422.GD24378@redhat.com>
+References: <1331240549-13120-1-git-send-email-dzickus@redhat.com>
+ <1331287938.13274.38.camel@ThinkPad-T420>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120308232041.GU3592@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1331287938.13274.38.camel@ThinkPad-T420>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 09-03-12 10:20:41, Dave Chinner wrote:
-> On Mon, Mar 05, 2012 at 05:01:09PM +0100, Jan Kara wrote:
-> > Generic code now blocks all writers from standard write paths. So we block all
-> > writers coming from ioctl and replace blocking of transactions on frozen
-> > filesystem with a debugging check. As a bonus, we get a protection of ioctl
-> > against racing remount read-only. We also convert xfs_file_aio_write() to a
-> > non-racy freeze protection.
-> ....
-> > diff --git a/fs/xfs/xfs_trans.c b/fs/xfs/xfs_trans.c
-> > index 329b06a..6468a2a 100644
-> > --- a/fs/xfs/xfs_trans.c
-> > +++ b/fs/xfs/xfs_trans.c
-> > @@ -577,7 +577,6 @@ xfs_trans_alloc(
-> >  	xfs_mount_t	*mp,
-> >  	uint		type)
-> >  {
-> > -	xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
-> >  	return _xfs_trans_alloc(mp, type, KM_SLEEP);
-> >  }
+On Fri, Mar 09, 2012 at 05:12:18AM -0500, Li Zhong wrote:
+> On Thu, 2012-03-08 at 16:02 -0500, Don Zickus wrote:
 > 
-> So what is there to stop internal XFS threads from starting
-> transactions when the filesystem is frozen? Previously this
-> SB_FREEZE_TRANS would guarantee even internal fucntions would get
-> stopped, but now there's nothing?
-  I've checked XFS now and I didn't find any work that would be done on a
-clean filesystem. I found:
-_xfs_mru_cache_reap() - doesn't seem to do any IO
-xfs_end_io(), xfs_buf_iodone_work() - shouldn't be a problem either since only
-  reads can happen on a frozen filesystem
-xfs_reclaim_worker() - everything is clean so no IO should happen
-xfs_flush_worker() - everything is clean so no IO should happen
-xfs_sync_worker() - again the same if I understand the code right
+> Thank you, Don. 
+> 
+> As flags is moved into the macro, it may cause following compile error, 
+> drivers/watchdog/hpwdt.c: In function 'hpwdt_init_nmi_decoding':
+> drivers/watchdog/hpwdt.c:737: error: initializer element is not constant
+> drivers/watchdog/hpwdt.c:737: error: (near initialization for
+> 'hpwdt_pretimeout_na.flags')
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Crap, I thought I had them all compiled.  Thanks for the heads up.
+Actually I think this could is just misusing the flag to begin with.  Let
+me figure out what is going on.
+
+Thanks,
+Don
+
+> 
+> So following fix might be needed: 
+> 
+> diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+> index 3c166d3..e1161ea 100644
+> --- a/drivers/watchdog/hpwdt.c
+> +++ b/drivers/watchdog/hpwdt.c
+> @@ -734,9 +734,12 @@ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
+>  	 * die notify list to handle a critical NMI. The default is to
+>  	 * be last so other users of the NMI signal can function.
+>  	 */
+> -	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout,
+> -					(priority) ? NMI_FLAG_FIRST : 0,
+> -					"hpwdt");
+> +	if (priority)
+> +		retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout,
+> +					NMI_FLAG_FIRST, "hpwdt");
+> +	else
+> +		retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout,
+> +					0, "hpwdt");
+>  	if (retval != 0) {
+>  		dev_warn(&dev->dev,
+>  			"Unable to register a die notifier (err=%d).\n",
+> 
+> 
