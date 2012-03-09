@@ -1,42 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab2CIJPH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 04:15:07 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59730 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab2CIJPE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 04:15:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F59A69E.1040002@csamuel.org>
-References: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com>
-	<20120308155211.GF4334@twin.jikos.cz>
-	<CADDYkjTG-q5+pFRFt9sGKq=cgL=ZgQaNZV=2ipBsSbuvxCa3jw@mail.gmail.com>
-	<4F595D6D.6080809@cn.fujitsu.com>
-	<4F59A69E.1040002@csamuel.org>
-Date: Fri, 9 Mar 2012 10:15:02 +0100
-Message-ID: <CADDYkjRW6QLk9sQdsgzQLUS6zLSFURpm=xSuhNArvqdBp=V_cg@mail.gmail.com>
-Subject: Re: kernel BUG at fs/btrfs/delayed-inode.c:1466!
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: Chris Samuel <chris@csamuel.org>
-Cc: linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751898Ab2CIJQo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 04:16:44 -0500
+Received: from mga09.intel.com ([134.134.136.24]:13515 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751141Ab2CIJQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 04:16:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="116156798"
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
+ __dma_request_channel()
+From: Vinod Koul <vinod.koul@intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <Pine.LNX.4.64.1203081412550.29847@axis700.grange>
+References: <1331101687.24656.319.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203070917380.19595@axis700.grange>
+	 <20120307093026.GM17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071041030.19595@axis700.grange>
+	 <20120307103112.GP17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071149190.19595@axis700.grange>
+	 <20120307124620.GT17370@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071416060.19595@axis700.grange>
+	 <20120307142634.GA18787@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071602330.19595@axis700.grange>
+	 <20120307162755.GB18787@n2100.arm.linux.org.uk>
+	 <Pine.LNX.4.64.1203071906040.19595@axis700.grange>
+	 <1331188201.4657.51.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203080902170.29847@axis700.grange>
+	 <1331204128.4657.54.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203081200170.29847@axis700.grange>
+	 <1331206459.4657.59.camel@vkoul-udesk3>
+	 <1331211513.4657.67.camel@vkoul-udesk3>
+	 <Pine.LNX.4.64.1203081412550.29847@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Mar 2012 14:51:58 +0530
+Message-ID: <1331284918.4657.69.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/9 Chris Samuel <chris@csamuel.org>:
-> On 09/03/12 12:31, Liu Bo wrote:
->
->> So are these warnings based on the latest upstream of btrfs?
->
-> Looks like it was 3.2.7, his oops said:
->
-> Pid: 1488, comm: mips-wrs-linux- Tainted: G        W    3.2.7 #2 HP
+On Thu, 2012-03-08 at 14:18 +0100, Guennadi Liakhovetski wrote:
+> > Assuming I didn't miss...
+> > 
+> > The case B can be handled without sweat by platforms channel mapping
+> > information.
+> > 
+> > Case A where we don't find that devices exist in map, thus being treated
+> > as generic DMA channels and can be handled easily in sequence. So when
+> > someone in Q request a channel it would get first channel in Ps
+> > 
+> > This way we handle both of them in a transparent manner to both clients
+> > and controllers. 
+> > 
+> > Perhaps we can also add capability to know that if channel is to be
+> > searched in map or not - would be anyway required for non slave cases.
+> 
+> Right, but I don't understand then what this gives us. You propose some 
+> channel maps, that will not be used for your "case A." Which means, for 
+> "case A" nothing changes. So, the reason for this whole thread hasn't been 
+> addressed: how to pass channel configuration to the DMA controller driver.
+For "Case A" there should be no filtering or any issues even now. You
+have controller requesting a channel and as long as they get a channel
+for respective pool, it should work.
 
-Yep, that's 3.2.7. Now I can't upgrade to latest upstream. As sson as
-btrfs CI tests will finish I can go to latest upstream version.
+Or is there anything else which is required in this case?
 
--Jacek
+
+-- 
+~Vinod
+
