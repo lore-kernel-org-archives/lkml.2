@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030206Ab2CITpd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:45:33 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53224 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab2CITpb (ORCPT
+	id S1030234Ab2CITpg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:45:36 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964841Ab2CITpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:45:31 -0500
-Message-Id: <20120309190202.501482798@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:45:34 -0500
+Message-Id: <20120309190202.425318888@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:04 -0800
+Date: Fri, 09 Mar 2012 11:02:03 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ian Kent <raven@themaw.net>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 02/95] autofs: work around unhappy compat problem on x86-64
+        alan@lxorguk.ukuu.org.uk, James <angweiyang@gmail.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Hiroshi Doyu <hdoyu@nvidia.com>, Joerg Roedel <Joerg.Roedel@amd.com>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Subject: [ 01/95] ARM: OMAP: make iommu subsys_initcall to fix builtin omap3isp
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,134 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Kent <raven@themaw.net>
+From: Ohad Ben-Cohen <ohad@wizery.com>
 
-commit a32744d4abae24572eff7269bc17895c41bd0085 upstream.
+commit 435792d93410f008120c4dbab148019a3cc31dbc upstream.
 
-When the autofs protocol version 5 packet type was added in commit
-5c0a32fc2cd0 ("autofs4: add new packet type for v5 communications"), it
-obvously tried quite hard to be word-size agnostic, and uses explicitly
-sized fields that are all correctly aligned.
+omap3isp depends on omap's iommu and will fail to probe if
+initialized before it (which always happen if they are builtin).
 
-However, with the final "char name[NAME_MAX+1]" array at the end, the
-actual size of the structure ends up being not very well defined:
-because the struct isn't marked 'packed', doing a "sizeof()" on it will
-align the size of the struct up to the biggest alignment of the members
-it has.
+Make omap's iommu subsys_initcall as an interim solution until
+the probe deferral mechanism is merged.
 
-And despite all the members being the same, the alignment of them is
-different: a "__u64" has 4-byte alignment on x86-32, but native 8-byte
-alignment on x86-64.  And while 'NAME_MAX+1' ends up being a nice round
-number (256), the name[] array starts out a 4-byte aligned.
-
-End result: the "packed" size of the structure is 300 bytes: 4-byte, but
-not 8-byte aligned.
-
-As a result, despite all the fields being in the same place on all
-architectures, sizeof() will round up that size to 304 bytes on
-architectures that have 8-byte alignment for u64.
-
-Note that this is *not* a problem for 32-bit compat mode on POWER, since
-there __u64 is 8-byte aligned even in 32-bit mode.  But on x86, 32-bit
-and 64-bit alignment is different for 64-bit entities, and as a result
-the structure that has exactly the same layout has different sizes.
-
-So on x86-64, but no other architecture, we will just subtract 4 from
-the size of the structure when running in a compat task.  That way we
-will write the properly sized packet that user mode expects.
-
-Not pretty.  Sadly, this very subtle, and unnecessary, size difference
-has been encoded in user space that wants to read packets of *exactly*
-the right size, and will refuse to touch anything else.
-
-Reported-and-tested-by: Thomas Meyer <thomas@m3y3r.de>
-Signed-off-by: Ian Kent <raven@themaw.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
+Reported-by: James <angweiyang@gmail.com>
+Debugged-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Hiroshi Doyu <hdoyu@nvidia.com>
+Cc: Joerg Roedel <Joerg.Roedel@amd.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/autofs4/autofs_i.h  |    1 +
- fs/autofs4/dev-ioctl.c |    1 +
- fs/autofs4/inode.c     |    2 ++
- fs/autofs4/waitq.c     |   22 +++++++++++++++++++---
- 4 files changed, 23 insertions(+), 3 deletions(-)
+ arch/arm/mach-omap2/mailbox.c |    3 ++-
+ drivers/iommu/omap-iommu.c    |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -110,6 +110,7 @@ struct autofs_sb_info {
- 	int sub_version;
- 	int min_proto;
- 	int max_proto;
-+	int compat_daemon;
- 	unsigned long exp_timeout;
- 	unsigned int type;
- 	int reghost_enabled;
---- a/fs/autofs4/dev-ioctl.c
-+++ b/fs/autofs4/dev-ioctl.c
-@@ -385,6 +385,7 @@ static int autofs_dev_ioctl_setpipefd(st
- 		sbi->pipefd = pipefd;
- 		sbi->pipe = pipe;
- 		sbi->catatonic = 0;
-+		sbi->compat_daemon = is_compat_task();
- 	}
- out:
- 	mutex_unlock(&sbi->wq_mutex);
---- a/fs/autofs4/inode.c
-+++ b/fs/autofs4/inode.c
-@@ -19,6 +19,7 @@
- #include <linux/parser.h>
- #include <linux/bitops.h>
- #include <linux/magic.h>
-+#include <linux/compat.h>
- #include "autofs_i.h"
- #include <linux/module.h>
- 
-@@ -224,6 +225,7 @@ int autofs4_fill_super(struct super_bloc
- 	set_autofs_type_indirect(&sbi->type);
- 	sbi->min_proto = 0;
- 	sbi->max_proto = 0;
-+	sbi->compat_daemon = is_compat_task();
- 	mutex_init(&sbi->wq_mutex);
- 	spin_lock_init(&sbi->fs_lock);
- 	sbi->queues = NULL;
---- a/fs/autofs4/waitq.c
-+++ b/fs/autofs4/waitq.c
-@@ -90,7 +90,24 @@ static int autofs4_write(struct file *fi
- 
- 	return (bytes > 0);
+--- a/arch/arm/mach-omap2/mailbox.c
++++ b/arch/arm/mach-omap2/mailbox.c
+@@ -412,7 +412,8 @@ static void __exit omap2_mbox_exit(void)
+ 	platform_driver_unregister(&omap2_mbox_driver);
  }
--	
-+
-+/*
-+ * The autofs_v5 packet was misdesigned.
-+ *
-+ * The packets are identical on x86-32 and x86-64, but have different
-+ * alignment. Which means that 'sizeof()' will give different results.
-+ * Fix it up for the case of running 32-bit user mode on a 64-bit kernel.
-+ */
-+static noinline size_t autofs_v5_packet_size(struct autofs_sb_info *sbi)
-+{
-+	size_t pktsz = sizeof(struct autofs_v5_packet);
-+#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
-+	if (sbi->compat_daemon > 0)
-+		pktsz -= 4;
-+#endif
-+	return pktsz;
-+}
-+
- static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
- 				 struct autofs_wait_queue *wq,
- 				 int type)
-@@ -147,8 +164,7 @@ static void autofs4_notify_daemon(struct
- 	{
- 		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
  
--		pktsz = sizeof(*packet);
--
-+		pktsz = autofs_v5_packet_size(sbi);
- 		packet->wait_queue_token = wq->wait_queue_token;
- 		packet->len = wq->name.len;
- 		memcpy(packet->name, wq->name.name, wq->name.len);
+-module_init(omap2_mbox_init);
++/* must be ready before omap3isp is probed */
++subsys_initcall(omap2_mbox_init);
+ module_exit(omap2_mbox_exit);
+ 
+ MODULE_LICENSE("GPL v2");
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -1229,7 +1229,8 @@ static int __init omap_iommu_init(void)
+ 
+ 	return platform_driver_register(&omap_iommu_driver);
+ }
+-module_init(omap_iommu_init);
++/* must be ready before omap3isp is probed */
++subsys_initcall(omap_iommu_init);
+ 
+ static void __exit omap_iommu_exit(void)
+ {
 
 
