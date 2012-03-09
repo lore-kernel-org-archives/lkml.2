@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab2CIKz5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 05:55:57 -0500
-Received: from twin.jikos.cz ([89.185.236.188]:40744 "EHLO twin.jikos.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751209Ab2CIKzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 05:55:55 -0500
-Date: Fri, 9 Mar 2012 11:55:37 +0100
-From: David Sterba <dave@jikos.cz>
-To: Liu Bo <liubo2009@cn.fujitsu.com>
-Cc: Jacek Luczak <difrost.kernel@gmail.com>, dave@jikos.cz,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, josef@redhat.com
-Subject: Re: kernel BUG at fs/btrfs/delayed-inode.c:1466!
-Message-ID: <20120309105537.GG4334@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Liu Bo <liubo2009@cn.fujitsu.com>,
-	Jacek Luczak <difrost.kernel@gmail.com>, dave@jikos.cz,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>, josef@redhat.com
-References: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com> <20120308155211.GF4334@twin.jikos.cz> <CADDYkjTG-q5+pFRFt9sGKq=cgL=ZgQaNZV=2ipBsSbuvxCa3jw@mail.gmail.com> <4F595D6D.6080809@cn.fujitsu.com>
-Mime-Version: 1.0
+	id S1752951Ab2CIK5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 05:57:30 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51222 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab2CIK52 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 05:57:28 -0500
+Date: Fri, 9 Mar 2012 11:56:45 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Javier Martin <javier.martin@vista-silicon.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, vinod.koul@intel.com, linux@arm.linux.org.uk,
+        kernel@pengutronix.de
+Subject: Re: [PATCH v2 00/13] dmaengine: imx-dma: merge dma arch code into
+ dmaengine.
+Message-ID: <20120309105645.GA3852@pengutronix.de>
+References: <1331130825-14947-1-git-send-email-javier.martin@vista-silicon.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F595D6D.6080809@cn.fujitsu.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1331130825-14947-1-git-send-email-javier.martin@vista-silicon.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:48:23 up 117 days, 18:35, 60 users,  load average: 0.00, 0.01,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 09:31:25AM +0800, Liu Bo wrote:
-> > There were quite many things happening in the system at that time.
-> > Can't really tell what could trigger this.
-> > 
-> > Complete logs: http://91.234.146.107/~difrost/logs/tampere_log.gz
-> > 
-> So are these warnings based on the latest upstream of btrfs?
+On Wed, Mar 07, 2012 at 03:33:32PM +0100, Javier Martin wrote:
+> The following series have to be applied on top of the following patches:
+> [PATCH v2 1/2] dmaengine: Add support for MEMCPY for imx-dma.
+> [PATCH v3 2/2] dmaengine: Add support for multiple descriptors for imx-dma.
+> 
+> As discussed with Vinod and Sascha, the file 'arch/arm/mach-imx/dma-v1.c'
+> is deprecated and no new patches are accepted for it.
+> 
+> This series merges this code into the imx-dma.c dmaengine driver.
+> 
+> Changes since v1:
+>  - Merge patch 14 with 01.
+>  - Add a proper changelog to each patch of the series.
+> 
+> [PATCH v2 01/13] dmaengine: imx-dma: merge old dma-v1.c with imx-dma.c
+> [PATCH v2 02/13] dmaengine: imx-dma: remove data member from internal structure.
+> [PATCH v2 03/13] dmaengine: imx-dma: remove dma_mode member of internal structure.
+> [PATCH v2 04/13] dmaengine: imx-dma: remove 'imxdma_setup_mem2mem_hw' function.
+> [PATCH v2 05/13] dmaengine: imx-dma: remove 'imxdma_config_channel_hw' function.
+> [PATCH v2 06/13] dmaengine: imx-dma: remove 'imxdma_setup_sg_hw' function.
+> [PATCH v2 07/13] dmaengine: imx-dma: remove sg member from internal structure.
+> [PATCH v2 08/13] dmaengine: imx-dma: remove 'in_use' field of 'internal' structure.
+> [PATCH v2 09/13] dmaengine: imx-dma: remove 'resbytes' field of 'internal' structure.
+> [PATCH v2 10/13] dmaengine: imx-dma: remove internal structure.
+> [PATCH v2 11/13] dmaengine: imx-dma: remove unused arg of imxdma_sg_next.
+> [PATCH v2 12/13] dmaengine: imx-dma: remove 'imx_dmav1_baseaddr' and 'dma_clk'.
+> [PATCH v2 13/13] dmaengine: imx-dma: use 'dev_dbg' and 'dev_warn' for messages.
 
-No, from the log it's 3.2.7, so it does not conain the patch
+I didn't look at the individual patches but only on the end result and
+overall it looks good. There are several things left for further cleanup:
 
-"increase the global block reserve estimates"
+- use resources for irq and base address
+- use platform device id rather than cpu_is_* to distinguish
+  between the different device types.
+- request_irq for i.MX21/27 in alloc_chan_resources instead in probe
+- Use all available channels. In the time we had dmaengine users and
+  legacy API users 8 channels were reserved for the old API and 8
+  channels for the dmaengine API.
 
-the log shows lots of messages
+I think the first three points can be done in a later series, the last
+one should be trivial to fix now.
 
-Mar  8 13:36:37 kernel: use_block_rsv: 7 callbacks suppressed
-Mar  8 13:36:37 kernel: ------------[ cut here ]------------
-Mar  8 13:36:37 kernel: WARNING: at fs/btrfs/extent-tree.c:5985 btrfs_alloc_free_block+0xc5/0x292 [btrfs]()
-...
-Mar  8 13:36:37 kernel:  [<ffffffffa031161f>] ? btrfs_alloc_free_block+0xc5/0x292 [btrfs]
-Mar  8 13:36:37 kernel:  [<ffffffff8106901d>] ? warn_slowpath_common+0x78/0x8d
-Mar  8 13:36:37 kernel:  [<ffffffffa031161f>] ? btrfs_alloc_free_block+0xc5/0x292 [btrfs]
-Mar  8 13:36:37 kernel:  [<ffffffffa032bbad>] ? btrfs_item_offset+0x2c/0x61 [btrfs]
-Mar  8 13:36:37 kernel:  [<ffffffffa03007dc>] ? leaf_space_used+0x86/0xb5 [btrfs]
-Mar  8 13:36:39 kernel:  [<ffffffffa0304a7a>] ? split_leaf+0x2d9/0x632 [btrfs]
-Mar  8 13:36:39 kernel:  [<ffffffffa0306261>] ? btrfs_search_slot+0x6c1/0x75a [btrfs]
-Mar  8 13:36:40 kernel:  [<ffffffffa0306e6e>] ? btrfs_insert_empty_items+0x61/0xab [btrfs]
-Mar  8 13:36:41 kernel:  [<ffffffffa032207c>] ? insert_inline_extent+0xea/0x2d4 [btrfs]
-Mar  8 13:36:41 kernel:  [<ffffffffa0322389>] ? cow_file_range_inline+0x123/0x163 [btrfs]
-...
+Some comments follow to the individual patches.
 
+And, oh:
 
-so there is probably other problem in reservations and it just blew up during
-the unlink call.
+Tested-by: Sascha Hauer <s.hauer@pengutronix.de
 
+Thanks for working on this topic, it has long been on my todo list.
 
-david
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
