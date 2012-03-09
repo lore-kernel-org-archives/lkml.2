@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030261Ab2CITup (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:50:45 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	id S1031452Ab2CITvY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:51:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64616 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031287Ab2CITuk (ORCPT
+	with ESMTP id S1031406Ab2CITvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:50:40 -0500
-Message-Id: <20120309190209.690711017@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:51:15 -0500
+Message-Id: <20120309190215.578572027@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:34 -0800
+Date: Fri, 09 Mar 2012 11:02:21 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jonathan Brassow <jbrassow@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 92/95] dm raid: fix flush support
-In-Reply-To: <20120309194424.GA2134@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>
+Subject: [ 07/68] ARM: LPC32xx: irq.c: Clear latched event
+In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jonathan E Brassow <jbrassow@redhat.com>
+From: Roland Stigge <stigge@antcom.de>
 
-commit 0ca93de9b789e0eb05e103f0c04de72df13da73a upstream.
+commit 94ed7830cba4dce57b18a2926b5d826bfd184bd6 upstream.
 
-Fix dm-raid flush support.
+This patch fixes the wakeup disable function by clearing latched events.
 
-Both md and dm have support for flush, but the dm-raid target
-forgot to set the flag to indicate that flushes should be
-passed on.  (Important for data integrity e.g. with writeback cache
-enabled.)
-
-Signed-off-by: Jonathan Brassow <jbrassow@redhat.com>
-Acked-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-raid.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-lpc32xx/irq.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/md/dm-raid.c
-+++ b/drivers/md/dm-raid.c
-@@ -974,6 +974,7 @@ static int raid_ctr(struct dm_target *ti
+--- a/arch/arm/mach-lpc32xx/irq.c
++++ b/arch/arm/mach-lpc32xx/irq.c
+@@ -305,9 +305,18 @@ static int lpc32xx_irq_wake(struct irq_d
  
- 	INIT_WORK(&rs->md.event_work, do_table_event);
- 	ti->private = rs;
-+	ti->num_flush_requests = 1;
+ 		if (state)
+ 			eventreg |= lpc32xx_events[d->irq].mask;
+-		else
++		else {
+ 			eventreg &= ~lpc32xx_events[d->irq].mask;
  
- 	mutex_lock(&rs->md.reconfig_mutex);
- 	ret = md_run(&rs->md);
++			/*
++			 * When disabling the wakeup, clear the latched
++			 * event
++			 */
++			__raw_writel(lpc32xx_events[d->irq].mask,
++				lpc32xx_events[d->irq].
++				event_group->rawstat_reg);
++		}
++
+ 		__raw_writel(eventreg,
+ 			lpc32xx_events[d->irq].event_group->enab_reg);
+ 
 
 
