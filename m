@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031000Ab2CIUlE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:41:04 -0500
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:55806 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab2CIUjk (ORCPT
+	id S1030880Ab2CIUlB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:41:01 -0500
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:65345 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030499Ab2CIUjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Mar 2012 15:39:40 -0500
 From: Suleiman Souhlal <ssouhlal@FreeBSD.org>
@@ -16,9 +16,9 @@ Cc: suleiman@google.com, glommer@parallels.com, kamezawa.hiroyu@jp.fujitsu.com,
         James.Bottomley@HansenPartnership.com, linux-mm@kvack.org,
         devel@openvz.org, linux-kernel@vger.kernel.org,
         Suleiman Souhlal <ssouhlal@FreeBSD.org>
-Subject: [PATCH v2 13/13] memcg: Document kernel memory accounting.
-Date: Fri,  9 Mar 2012 12:39:16 -0800
-Message-Id: <1331325556-16447-14-git-send-email-ssouhlal@FreeBSD.org>
+Subject: [PATCH v2 02/13] memcg: Kernel memory accounting infrastructure.
+Date: Fri,  9 Mar 2012 12:39:05 -0800
+Message-Id: <1331325556-16447-3-git-send-email-ssouhlal@FreeBSD.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
 References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
@@ -26,81 +26,235 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Enabled with CONFIG_CGROUP_MEM_RES_CTLR_KMEM.
+
+Adds the following files:
+    - memory.kmem.independent_kmem_limit
+    - memory.kmem.usage_in_bytes
+    - memory.kmem.limit_in_bytes
+
 Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 ---
- Documentation/cgroups/memory.txt |   44 ++++++++++++++++++++++++++++++++++---
- 1 files changed, 40 insertions(+), 4 deletions(-)
+ mm/memcontrol.c |  136 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 135 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 4c95c00..73f2e38 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -74,6 +74,11 @@ Brief summary of control files.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 37ad2cb..e6fd558 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -220,6 +220,10 @@ enum memcg_flags {
+ 				 */
+ 	MEMCG_MEMSW_IS_MINIMUM,	/* Set when res.limit == memsw.limit */
+ 	MEMCG_OOM_KILL_DISABLE,	/* OOM-Killer disable */
++	MEMCG_INDEPENDENT_KMEM_LIMIT,	/*
++					 * kernel memory is not counted in
++					 * memory.usage_in_bytes
++					 */
+ };
  
-  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
-  memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
-+ memory.kmem.usage_in_bytes	 # show current kernel memory usage
-+ memory.kmem.limit_in_bytes	 # show/set limit of kernel memory usage
-+ memory.kmem.independent_kmem_limit # show/set control of kernel memory limit
-+ 				    (See 2.7 for details)
-+ memory.kmem.slabinfo		 # show cgroup's slabinfo
+ /*
+@@ -244,6 +248,10 @@ struct mem_cgroup {
+ 	 */
+ 	struct res_counter memsw;
+ 	/*
++	 * the counter to account for kernel memory usage.
++	 */
++	struct res_counter kmem;
++	/*
+ 	 * Per cgroup active and inactive list, similar to the
+ 	 * per zone LRU lists.
+ 	 */
+@@ -355,6 +363,7 @@ enum charge_type {
+ #define _MEM			(0)
+ #define _MEMSWAP		(1)
+ #define _OOM_TYPE		(2)
++#define _KMEM			(3)
+ #define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
+ #define MEMFILE_TYPE(val)	(((val) >> 16) & 0xffff)
+ #define MEMFILE_ATTR(val)	((val) & 0xffff)
+@@ -371,6 +380,8 @@ enum charge_type {
  
- 1. History
+ static void mem_cgroup_get(struct mem_cgroup *memcg);
+ static void mem_cgroup_put(struct mem_cgroup *memcg);
++static void memcg_kmem_init(struct mem_cgroup *memcg,
++    struct mem_cgroup *parent);
  
-@@ -265,11 +270,19 @@ the amount of kernel memory used by the system. Kernel memory is fundamentally
- different than user memory, since it can't be swapped out, which makes it
- possible to DoS the system by consuming too much of this precious resource.
+ static inline bool
+ mem_cgroup_test_flag(const struct mem_cgroup *memcg, enum memcg_flags flag)
+@@ -1435,6 +1446,10 @@ done:
+ 		res_counter_read_u64(&memcg->memsw, RES_USAGE) >> 10,
+ 		res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> 10,
+ 		res_counter_read_u64(&memcg->memsw, RES_FAILCNT));
++	printk(KERN_INFO "kmem: usage %llukB, limit %llukB, failcnt %llu\n",
++		res_counter_read_u64(&memcg->kmem, RES_USAGE) >> 10,
++		res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
++		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
+ }
  
--Kernel memory limits are not imposed for the root cgroup. Usage for the root
--cgroup may or may not be accounted.
-+Kernel memory limits are not imposed for the root cgroup.
+ /*
+@@ -3868,6 +3883,9 @@ static u64 mem_cgroup_read(struct cgroup *cont, struct cftype *cft)
+ 		else
+ 			val = res_counter_read_u64(&memcg->memsw, name);
+ 		break;
++	case _KMEM:
++		val = res_counter_read_u64(&memcg->kmem, name);
++		break;
+ 	default:
+ 		BUG();
+ 		break;
+@@ -3900,8 +3918,15 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ 			break;
+ 		if (type == _MEM)
+ 			ret = mem_cgroup_resize_limit(memcg, val);
+-		else
++		else if (type == _MEMSWAP)
+ 			ret = mem_cgroup_resize_memsw_limit(memcg, val);
++		else if (type == _KMEM) {
++			if (!mem_cgroup_test_flag(memcg,
++			    MEMCG_INDEPENDENT_KMEM_LIMIT))
++				return -EINVAL;
++			ret = res_counter_set_limit(&memcg->kmem, val);
++		} else
++			return -EINVAL;
+ 		break;
+ 	case RES_SOFT_LIMIT:
+ 		ret = res_counter_memparse_write_strategy(buffer, &val);
+@@ -4606,8 +4631,56 @@ static int mem_control_numa_stat_open(struct inode *unused, struct file *file)
+ #endif /* CONFIG_NUMA */
  
--Currently no soft limit is implemented for kernel memory. It is future work
--to trigger slab reclaim when those limits are reached.
-+A cgroup's kernel memory is counted into its memory.kmem.usage_in_bytes.
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++static u64
++mem_cgroup_independent_kmem_limit_read(struct cgroup *cgrp, struct cftype *cft)
++{
++	return mem_cgroup_test_flag(mem_cgroup_from_cont(cgrp),
++	    MEMCG_INDEPENDENT_KMEM_LIMIT);
++}
 +
-+memory.kmem.independent_kmem_limit controls whether or not kernel memory
-+should also be counted into the cgroup's memory.usage_in_bytes.
-+If it is set, it is possible to specify a limit for kernel memory with
-+memory.kmem.limit_in_bytes.
++static int mem_cgroup_independent_kmem_limit_write(struct cgroup *cgrp,
++    struct cftype *cft, u64 val)
++{
++	struct mem_cgroup *memcg;
 +
-+Upon cgroup deletion, all the remaining kernel memory becomes unaccounted.
++	memcg = mem_cgroup_from_cont(cgrp);
++	if (val)
++		mem_cgroup_set_flag(memcg, MEMCG_INDEPENDENT_KMEM_LIMIT);
++	else {
++		mem_cgroup_clear_flag(memcg, MEMCG_INDEPENDENT_KMEM_LIMIT);
++		res_counter_set_limit(&memcg->kmem, RESOURCE_MAX);
++	}
 +
-+An accounted kernel memory allocation may trigger reclaim in that cgroup,
-+and may also OOM.
++	return 0;
++}
++
++static struct cftype kmem_cgroup_files[] = {
++	{
++		.name = "kmem.independent_kmem_limit",
++		.write_u64 = mem_cgroup_independent_kmem_limit_write,
++		.read_u64 = mem_cgroup_independent_kmem_limit_read,
++	},
++	{
++		.name = "kmem.limit_in_bytes",
++		.private = MEMFILE_PRIVATE(_KMEM, RES_LIMIT),
++		.write_string = mem_cgroup_write,
++		.read_u64 = mem_cgroup_read,
++	},
++	{
++		.name = "kmem.usage_in_bytes",
++		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
++		.read_u64 = mem_cgroup_read,
++	},
++};
++
+ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
+ {
++	int ret;
++
++	ret = cgroup_add_files(cont, ss, kmem_cgroup_files,
++	    ARRAY_SIZE(kmem_cgroup_files));
++	if (ret)
++		return ret;
+ 	/*
+ 	 * Part of this would be better living in a separate allocation
+ 	 * function, leaving us with just the cgroup tree population work.
+@@ -4621,6 +4694,10 @@ static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
+ static void kmem_cgroup_destroy(struct cgroup_subsys *ss,
+ 				struct cgroup *cont)
+ {
++	struct mem_cgroup *memcg;
++
++	memcg = mem_cgroup_from_cont(cont);
++	BUG_ON(res_counter_read_u64(&memcg->kmem, RES_USAGE) != 0);
+ 	mem_cgroup_sockets_destroy(cont, ss);
+ }
+ #else
+@@ -4980,6 +5057,8 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
+ 	}
+ 	memcg->last_scanned_node = MAX_NUMNODES;
+ 	INIT_LIST_HEAD(&memcg->oom_notify);
++	memcg_kmem_init(memcg, parent && mem_cgroup_test_flag(parent,
++	    MEMCG_USE_HIERARCHY) ? parent : NULL);
  
- 2.7.1 Current Kernel Memory resources accounted
+ 	if (parent)
+ 		memcg->swappiness = mem_cgroup_swappiness(parent);
+@@ -5561,3 +5640,58 @@ static int __init enable_swap_account(char *s)
+ __setup("swapaccount=", enable_swap_account);
  
-@@ -279,6 +292,29 @@ per cgroup, instead of globally.
- 
- * tcp memory pressure: sockets memory pressure for the tcp protocol.
- 
-+* slab memory.
+ #endif
 +
-+2.7.1.1 Slab memory accounting
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++int
++memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, long long delta)
++{
++	struct res_counter *fail_res;
++	struct mem_cgroup *_memcg;
++	int may_oom, ret;
 +
-+Any slab type created with the SLAB_MEMCG_ACCT kmem_cache_create() flag
-+is accounted.
++	may_oom = (gfp & __GFP_WAIT) && (gfp & __GFP_FS) &&
++	    !(gfp & __GFP_NORETRY);
 +
-+Slab gets accounted on a per-page basis, which is done by using per-cgroup
-+kmem_caches. These per-cgroup kmem_caches get created on-demand, the first
-+time a specific kmem_cache gets used by a cgroup.
++	ret = 0;
 +
-+Only slab memory that can be attributed to a cgroup gets accounted in this
-+fashion.
++	_memcg = memcg;
++	if (memcg && !mem_cgroup_test_flag(memcg,
++	    MEMCG_INDEPENDENT_KMEM_LIMIT)) {
++		ret = __mem_cgroup_try_charge(NULL, gfp, delta / PAGE_SIZE,
++		    &_memcg, may_oom);
++		if (ret == -ENOMEM)
++			return ret;
++	}
 +
-+A per-cgroup kmem_cache is named like the original, with the cgroup's name
-+in parentheses.
++	if (memcg && _memcg == memcg)
++		ret = res_counter_charge(&memcg->kmem, delta, &fail_res);
 +
-+When a cgroup is destroyed, all its kmem_caches get migrated to the root
-+cgroup, and "dead" is appended to their name, to indicate that they are not
-+going to be used for new allocations.
-+These dead caches automatically get removed once there are no more active
-+slab objects in them.
++	return ret;
++}
 +
- 3. User Interface
- 
- 0. Configuration
++void
++memcg_uncharge_kmem(struct mem_cgroup *memcg, long long delta)
++{
++	if (memcg)
++		res_counter_uncharge(&memcg->kmem, delta);
++
++	if (memcg && !mem_cgroup_test_flag(memcg, MEMCG_INDEPENDENT_KMEM_LIMIT))
++		res_counter_uncharge(&memcg->res, delta);
++}
++
++static void
++memcg_kmem_init(struct mem_cgroup *memcg, struct mem_cgroup *parent)
++{
++	struct res_counter *parent_res;
++
++	parent_res = NULL;
++	if (parent && parent != root_mem_cgroup)
++		parent_res = &parent->kmem;
++	res_counter_init(&memcg->kmem, parent_res);
++}
++#else /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++static void
++memcg_kmem_init(struct mem_cgroup *memcg, struct mem_cgroup *parent)
++{
++}
++#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
 -- 
 1.7.7.3
 
