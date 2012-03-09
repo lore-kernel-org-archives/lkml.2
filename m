@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031877Ab2CITxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:53:52 -0500
+	id S1031900Ab2CITyE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:54:04 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:64616 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031844Ab2CITxn (ORCPT
+	with ESMTP id S1031888Ab2CITyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:53:43 -0500
-Message-Id: <20120309190218.969956572@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:54:00 -0500
+Message-Id: <20120309190219.298537349@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:04 -0800
+Date: Fri, 09 Mar 2012 11:03:08 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [ 50/68] OMAP: 4430SDP/Panda: setup HDMI GPIO muxes
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 54/68] media: staging: lirc_serial: Fix init/exit order
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 78a1ad8f12db70b8b0a4548b90704de08ee216ce upstream.
+commit 9105b8b200410383d0854bbe237ee385d7d33ba6 upstream.
 
-The HDMI GPIO pins LS_OE and CT_CP_HPD are not currently configured.
-This patch configures them as output pins.
+Currently the module init function registers a platform_device and
+only then allocates its IRQ and I/O region.  This allows allocation to
+race with the device's suspend() function.  Instead, allocate
+resources in the platform driver's probe() function and free them in
+the remove() function.
 
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
+The module exit function removes the platform device before the
+character device that provides access to it.  Change it to reverse the
+order of initialisation.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- arch/arm/mach-omap2/board-4430sdp.c    |    3 +++
- arch/arm/mach-omap2/board-omap4panda.c |    3 +++
- 2 files changed, 6 insertions(+)
+ drivers/staging/lirc/lirc_serial.c |   56 +++++++++++++------------------------
+ 1 file changed, 21 insertions(+), 35 deletions(-)
 
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -631,6 +631,9 @@ void omap_4430sdp_display_init(void)
+--- a/drivers/staging/lirc/lirc_serial.c
++++ b/drivers/staging/lirc/lirc_serial.c
+@@ -836,7 +836,7 @@ static int hardware_init_port(void)
+ 	return 0;
+ }
+ 
+-static int init_port(void)
++static int __devinit lirc_serial_probe(struct platform_device *dev)
  {
- 	sdp4430_hdmi_mux_init();
- 	omap_display_init(&sdp4430_dss_data);
-+
-+	omap_mux_init_gpio(HDMI_GPIO_LS_OE, OMAP_PIN_OUTPUT);
-+	omap_mux_init_gpio(HDMI_GPIO_CT_CP_HPD, OMAP_PIN_OUTPUT);
+ 	int i, nlow, nhigh, result;
+ 
+@@ -913,6 +913,18 @@ static int init_port(void)
+ 	return 0;
  }
  
- #ifdef CONFIG_OMAP_MUX
---- a/arch/arm/mach-omap2/board-omap4panda.c
-+++ b/arch/arm/mach-omap2/board-omap4panda.c
-@@ -674,6 +674,9 @@ void omap4_panda_display_init(void)
- 
- 	omap4_panda_hdmi_mux_init();
- 	omap_display_init(&omap4_panda_dss_data);
++static int __devexit lirc_serial_remove(struct platform_device *dev)
++{
++	free_irq(irq, (void *)&hardware);
 +
-+	omap_mux_init_gpio(HDMI_GPIO_LS_OE, OMAP_PIN_OUTPUT);
-+	omap_mux_init_gpio(HDMI_GPIO_CT_CP_HPD, OMAP_PIN_OUTPUT);
++	if (iommap != 0)
++		release_mem_region(iommap, 8 << ioshift);
++	else
++		release_region(io, 8);
++
++	return 0;
++}
++
+ static int set_use_inc(void *data)
+ {
+ 	unsigned long flags;
+@@ -1076,16 +1088,6 @@ static struct lirc_driver driver = {
+ 
+ static struct platform_device *lirc_serial_dev;
+ 
+-static int __devinit lirc_serial_probe(struct platform_device *dev)
+-{
+-	return 0;
+-}
+-
+-static int __devexit lirc_serial_remove(struct platform_device *dev)
+-{
+-	return 0;
+-}
+-
+ static int lirc_serial_suspend(struct platform_device *dev,
+ 			       pm_message_t state)
+ {
+@@ -1188,10 +1190,6 @@ static int __init lirc_serial_init_modul
+ {
+ 	int result;
+ 
+-	result = lirc_serial_init();
+-	if (result)
+-		return result;
+-
+ 	switch (type) {
+ 	case LIRC_HOMEBREW:
+ 	case LIRC_IRDEO:
+@@ -1211,8 +1209,7 @@ static int __init lirc_serial_init_modul
+ 		break;
+ #endif
+ 	default:
+-		result = -EINVAL;
+-		goto exit_serial_exit;
++		return -EINVAL;
+ 	}
+ 	if (!softcarrier) {
+ 		switch (type) {
+@@ -1228,37 +1225,26 @@ static int __init lirc_serial_init_modul
+ 		}
+ 	}
+ 
+-	result = init_port();
+-	if (result < 0)
+-		goto exit_serial_exit;
++	result = lirc_serial_init();
++	if (result)
++		return result;
++
+ 	driver.features = hardware[type].features;
+ 	driver.dev = &lirc_serial_dev->dev;
+ 	driver.minor = lirc_register_driver(&driver);
+ 	if (driver.minor < 0) {
+ 		printk(KERN_ERR  LIRC_DRIVER_NAME
+ 		       ": register_chrdev failed!\n");
+-		result = -EIO;
+-		goto exit_release;
++		lirc_serial_exit();
++		return -EIO;
+ 	}
+ 	return 0;
+-exit_release:
+-	release_region(io, 8);
+-exit_serial_exit:
+-	lirc_serial_exit();
+-	return result;
  }
  
- static void __init omap4_panda_init(void)
+ static void __exit lirc_serial_exit_module(void)
+ {
+-	lirc_serial_exit();
+-
+-	free_irq(irq, (void *)&hardware);
+-
+-	if (iommap != 0)
+-		release_mem_region(iommap, 8 << ioshift);
+-	else
+-		release_region(io, 8);
+ 	lirc_unregister_driver(driver.minor);
++	lirc_serial_exit();
+ 	dprintk("cleaned up module\n");
+ }
+ 
 
 
