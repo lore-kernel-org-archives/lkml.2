@@ -1,52 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758967Ab2CITlX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:41:23 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:38637 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754819Ab2CITlW convert rfc822-to-8bit (ORCPT
+	id S1030194Ab2CIToP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:44:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48346 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819Ab2CIToN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:41:22 -0500
+	Fri, 9 Mar 2012 14:44:13 -0500
+Date: Fri, 9 Mar 2012 11:44:09 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/68] 3.0.24-stable review
+Message-ID: <20120309194409.GA2069@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20120307144643.GB2009@x61.redhat.com>
-References: <20120305181041.GA9829@x61.redhat.com>
-	<4F56ECE6.4010100@gmail.com>
-	<alpine.DEB.2.00.1203062142290.6424@chino.kir.corp.google.com>
-	<20120307144643.GB2009@x61.redhat.com>
-Date: Fri, 9 Mar 2012 21:41:21 +0200
-X-Google-Sender-Auth: iGZId69kW8CDav8zMm479GnZ0EM
-Message-ID: <CAOJsxLFQjV1c7nQZMA2voybN0AdhGrKFN5svQHC2C=oP3vOD4g@mail.gmail.com>
-Subject: Re: [PATCH -v2] mm: SLAB Out-of-memory diagnostics
-From: Pekka Enberg <penberg@kernel.org>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: David Rientjes <rientjes@google.com>, Cong Wang <xiyou.wangcong@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
-        Josef Bacik <josef@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 4:46 PM, Rafael Aquini <aquini@redhat.com> wrote:
->> > Nitpick:
->> >
->> > What about "node: 0" instead of "node0: " ?
->> >
->>
->> Good catch, that format would match the output of the slub out-of-memory
->> messages.
->>
->
-> To be honest, I really don't see a big advantage on the nitpick, however, if we
-> want to accurately copycat the slub output here, I can insert a blank space
-> between the word and the digit, like the following:
->   "node #: ..."
+This is the start of the stable review cycle for the 3.0.24 release.
+There are 68 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-So if you're interested in getting this patch to v3.4, now would be a
-good time to update the patch as per review comments and resend.
+Responses should be made by Sun Mar 11 19:00:00 UTC 2012.
+Anything received after that time might be too late.
 
-                        Pekka
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.24-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+-------------
+ Documentation/hwmon/jc42                    |   26 ++-
+ Makefile                                    |    4 +-
+ arch/alpha/include/asm/futex.h              |    2 +-
+ arch/arm/Kconfig                            |    2 +-
+ arch/arm/mach-dove/common.c                 |    3 +-
+ arch/arm/mach-kirkwood/common.c             |    3 +-
+ arch/arm/mach-kirkwood/mpp.h                |  320 +++++++++++++-------------
+ arch/arm/mach-lpc32xx/include/mach/irqs.h   |    2 +-
+ arch/arm/mach-lpc32xx/irq.c                 |   25 ++-
+ arch/arm/mach-lpc32xx/serial.c              |   20 ++-
+ arch/arm/mach-mv78xx0/common.c              |    3 +-
+ arch/arm/mach-mv78xx0/mpp.h                 |  226 ++++++++++----------
+ arch/arm/mach-omap2/board-4430sdp.c         |   31 ++--
+ arch/arm/mach-omap2/board-omap4panda.c      |   22 ++-
+ arch/arm/mach-orion5x/common.c              |    4 +-
+ arch/arm/mm/proc-v7.S                       |    4 +-
+ arch/arm/plat-orion/common.c                |    9 +-
+ arch/arm/plat-orion/include/plat/common.h   |    3 +-
+ arch/arm/plat-orion/mpp.c                   |    3 +-
+ arch/arm/plat-s3c24xx/dma.c                 |    2 +-
+ arch/avr32/Kconfig                          |    1 +
+ arch/s390/Kconfig                           |    3 +
+ arch/s390/include/asm/compat.h              |    7 -
+ arch/s390/kernel/process.c                  |    1 -
+ arch/s390/kernel/ptrace.c                   |    2 +-
+ arch/s390/kernel/setup.c                    |    2 +-
+ arch/s390/mm/fault.c                        |    1 -
+ arch/s390/mm/mmap.c                         |    2 +-
+ block/bsg.c                                 |    3 +-
+ drivers/acpi/sleep.c                        |   16 ++
+ drivers/crypto/mv_cesa.c                    |    1 +
+ drivers/gpu/drm/i915/i915_reg.h             |   15 ++
+ drivers/gpu/drm/i915/intel_display.c        |   22 ++-
+ drivers/gpu/drm/radeon/r600_blit_shaders.c  |    8 +
+ drivers/hid/hid-ids.h                       |    3 +
+ drivers/hid/usbhid/hid-quirks.c             |    1 +
+ drivers/hwmon/Kconfig                       |    5 +-
+ drivers/hwmon/jc42.c                        |   30 +++-
+ drivers/hwmon/pmbus_core.c                  |    3 +-
+ drivers/i2c/busses/i2c-mxs.c                |   13 +-
+ drivers/input/mouse/alps.c                  |    7 +-
+ drivers/md/dm-io.c                          |   23 ++-
+ drivers/md/dm-raid.c                        |    1 +
+ drivers/mfd/cs5535-mfd.c                    |    6 +-
+ drivers/mfd/mfd-core.c                      |    2 +-
+ drivers/misc/cs5535-mfgpt.c                 |    2 +-
+ drivers/mmc/host/sdhci-esdhc-imx.c          |    5 +-
+ drivers/net/usb/cdc_ether.c                 |    7 +
+ drivers/net/usb/usbnet.c                    |    2 +
+ drivers/net/usb/zaurus.c                    |    7 +
+ drivers/net/wireless/ath/ath9k/ar5008_phy.c |   25 +--
+ drivers/net/wireless/ath/ath9k/ar9002_hw.c  |   19 ++
+ drivers/net/wireless/ath/ath9k/hw.h         |    1 -
+ drivers/net/wireless/ath/carl9170/tx.c      |    1 +
+ drivers/regulator/88pm8607.c                |    6 +-
+ drivers/s390/block/dasd_eckd.c              |    2 +-
+ drivers/s390/block/dasd_ioctl.c             |    1 +
+ drivers/s390/char/fs3270.c                  |    2 +-
+ drivers/s390/char/vmcp.c                    |    1 +
+ drivers/s390/cio/chsc_sch.c                 |    1 +
+ drivers/s390/scsi/zfcp_cfdc.c               |    1 +
+ drivers/scsi/osd/osd_uld.c                  |    4 +-
+ drivers/staging/lirc/lirc_serial.c          |  100 ++++-----
+ drivers/video/omap2/dss/hdmi.c              |   86 +++++++-
+ drivers/watchdog/hpwdt.c                    |    5 +-
+ fs/autofs4/autofs_i.h                       |    1 +
+ fs/autofs4/dev-ioctl.c                      |    1 +
+ fs/autofs4/inode.c                          |    2 +
+ fs/autofs4/waitq.c                          |   22 ++-
+ fs/binfmt_elf.c                             |    2 +-
+ fs/cifs/dir.c                               |   20 ++-
+ include/linux/compat.h                      |    4 +
+ include/linux/regset.h                      |   10 +-
+ include/video/omapdss.h                     |    5 +
+ kernel/irq/manage.c                         |   44 ++++-
+ kernel/kprobes.c                            |   16 +-
+ mm/huge_memory.c                            |    6 +-
+ mm/memcontrol.c                             |    5 +-
+ mm/nommu.c                                  |    2 -
+ net/mac80211/rate.c                         |    2 +-
+ sound/pci/hda/hda_codec.c                   |    8 +-
+ sound/pci/hda/hda_codec.h                   |    3 +
+ sound/pci/hda/patch_conexant.c              |   22 ++-
+ sound/pci/hda/patch_sigmatel.c              |    2 +-
+ sound/soc/imx/imx-ssi.c                     |    2 +-
+ sound/soc/soc-dapm.c                        |   12 +-
+ 86 files changed, 863 insertions(+), 498 deletions(-)
+
