@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964862Ab2CIVwX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:52:23 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61600 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758505Ab2CIVwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:52:21 -0500
-Date: Sat, 10 Mar 2012 01:52:17 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
-Message-ID: <20120309215217.GA725@moon>
-References: <20120308165112.GF21812@moon>
- <20120308182623.GA17221@redhat.com>
- <20120308190303.GG21812@moon>
- <20120309214637.GC19584@count0.beaverton.ibm.com>
+	id S932451Ab2CIVzW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:55:22 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:30664 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755809Ab2CIVzQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 16:55:16 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz9371I542M1432Nzz1202hzz8275bh8275dhz2fh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: KY Srinivasan <kys@microsoft.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH 1/2] net/hyperv: Fix data corruption in
+ rndis_filter_receive()
+Thread-Topic: [PATCH 1/2] net/hyperv: Fix data corruption in
+ rndis_filter_receive()
+Thread-Index: AQHM/jqPUZwfx7AJlkugqnN6uP2fnJZigRSAgAAAePA=
+Date: Fri, 9 Mar 2012 21:55:09 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DCE2A20@TK5EX14MBXC223.redmond.corp.microsoft.com>
+References: <1331328437-26852-1-git-send-email-haiyangz@microsoft.com>
+ <20120309.135123.2098113809216101768.davem@davemloft.net>
+In-Reply-To: <20120309.135123.2098113809216101768.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120309214637.GC19584@count0.beaverton.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 01:46:37PM -0800, Matt Helsley wrote:
-> > > 
-> > > I simply do not understand what mm->num_exe_file_vmas means after
-> > > PR_SET_MM_EXE_FILE.
-> 
-> I think it should fail if the num_exe_file_vmas is not 0 when
-> PR_SET_MM_EXE_FILE is used. It's simple, keeps things clear, might
-> catch userspace bugs (harder to accidentally leave a mapping of the original
-> executable), and could avoid kernel bugs too.
 
-Yes, and in last version (whuch I just sent out) we have at the very beginning
-of the function
 
-+	if (mm->num_exe_file_vmas)
-+               return -EBUSY;
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Friday, March 09, 2012 4:51 PM
+> To: Haiyang Zhang
+> Cc: KY Srinivasan; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH 1/2] net/hyperv: Fix data corruption in
+> rndis_filter_receive()
+> 
+> From: Haiyang Zhang <haiyangz@microsoft.com>
+> Date: Fri,  9 Mar 2012 13:27:16 -0800
+> 
+> > Limiting the memcpy to be the sizeof(struct rndis_message) can
+> > truncate the message if there are Per-Packet-Info or Out-of-Band data.
+> >
+> > In my earlier patch (commit 45326342), the unnecessary kmap_atomic and
+> > kunmap_atomic surrounding this memcpy have been removed because the
+> > memory in the receive buffer is always mapped. This memcpy is not
+> > necessary either. To fix the bug, I removed the memcpy.
+> >
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+> 
+> Well, where the heck is patch 2/2?
 
-> > 
-> > Wait, Oleg, I'm confused, in case if there *is* exitsting VM_EXECUTABLEs
-> > then we jump into first banch and simply replace old exe_file.
-> 
-> What happens if multiple prctl calls are made? We'll have a mix of N
-> executable files that've been mapped n_i times. I think we're better off
-> just returning an error in that case -- -EBUSY or something.
-> 
-> > If there is no VM_EXECUTABLEs, then we simply setup new exe_file
-> > and num_exe_file_vmas remains zero.
-> 
-> Which is fine.
-> 
+It's still in the mail server's send queue. This happens sometimes on our mail server.
+But it should reach you in half hour or so...
 
-Matt, please check the last version, and tell me if it's fine for you.
+- Haiyang
 
-	Cyrill
