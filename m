@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab2CICqi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 21:46:38 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:34144 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526Ab2CICqg (ORCPT
+	id S1753854Ab2CICu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 21:50:29 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13946 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab2CICu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 21:46:36 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Slaby <jirislaby@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-References: <4F27C6EB.2070305@suse.cz> <m14nvc82jo.fsf@fess.ebiederm.org>
-	<CA+55aFwZNdoAA9iPMiEp8-+ndgV+CtSZO4neSh_L+gd77k7-vg@mail.gmail.com>
-	<m1wr87ywex.fsf@fess.ebiederm.org>
-	<m1ehueyz20.fsf_-_@fess.ebiederm.org>
-	<CA+55aFyNQnXrL7fWhBt4LYBuoHD_x+j=Af-N=ueFMBkymy9Rnw@mail.gmail.com>
-	<CA+55aFzZX544ZDN9vN3jWMWZ=_9ZtpZ9cR6gNEzUnx9RCqR5LQ@mail.gmail.com>
-	<4F54BFEC.6000206@suse.cz> <20120305160953.GA3870@kroah.com>
-	<m1r4x2wzdt.fsf_-_@fess.ebiederm.org>
-	<20120308222843.GB32001@kroah.com>
-Date: Thu, 08 Mar 2012 18:49:51 -0800
-In-Reply-To: <20120308222843.GB32001@kroah.com> (Greg Kroah-Hartman's message
-	of "Thu, 8 Mar 2012 14:28:43 -0800")
-Message-ID: <m1eht2trn4.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/Zdx+v8TrWMZkDmoIHhflblEfQmGq4yfs=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-X-Spam-Relay-Country: **
-Subject: Re: [PATCH 1/3] sysfs:  Compact sysfs_dirent s_flags into a byte.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Thu, 8 Mar 2012 21:50:27 -0500
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=E5NM_T23q5pZQgi2MQsA:9 a=I5VmV4hTFGJwOeiR7U8A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331261425.25686.527.camel@gandalf.stny.rr.com>
+Subject: Re: [ANNOUNCE] 3.2.9-rt17
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Thu, 08 Mar 2012 21:50:25 -0500
+In-Reply-To: <alpine.LFD.2.02.1203090111240.2742@ionos>
+References: <alpine.LFD.2.02.1203072225020.2742@ionos>
+	  <1331230991.25686.452.camel@gandalf.stny.rr.com>
+	  <1331231287.11248.396.camel@twins>
+	  <1331232159.25686.456.camel@gandalf.stny.rr.com>
+	  <1331235579.11248.402.camel@twins>
+	 <1331237441.25686.469.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.02.1203090111240.2742@ionos>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+On Fri, 2012-03-09 at 01:20 +0100, Thomas Gleixner wrote:
+> On Thu, 8 Mar 2012, Steven Rostedt wrote:
+> 
+> > On Thu, 2012-03-08 at 20:39 +0100, Peter Zijlstra wrote:
+> > 
+> > > > For example, we have:
+> > > > 
+> > > > @@ -410,7 +411,7 @@ static inline struct dentry *dentry_kill
+> > > >         if (inode && !spin_trylock(&inode->i_lock)) {
+> > > >  relock:
+> > > >                 seq_spin_unlock(&dentry->d_lock);
+> > > > -               cpu_relax();
+> > > > +               cpu_chill();
+> > > >                 return dentry; /* try again with same dentry */
+> > > >         }
+> > > > 
+> > > > By doing the test at the trylock, we can easily hit the deadlock,
+> > > > because we still hold dentry->d_lock. But by moving the block to the
+> > > > cpu_chill(), then we are less likely to hit the deadlock.
+> > > 
+> > > Actually hitting the deadlock isn't a problem, and doing it in the place
+> > > of the trylock has the distinct advantage that you can actually get the
+> > > lock and continue like you want.
+> > 
+> > By doing a spin_trydeadlock() while still holding the d_lock, if the
+> > holder of the i_lock was blocked on that d_lock then it would detect the
+> > failure, and release the lock and continue the loop. This doesn't solve
+> > anything. Just because we released the lock, we are still preempting the
+> > holder of the d_lock, and if we are higher in priority, we will never
+> > let the owner run.
+> > 
+> > That's why I recommended doing it after releasing the lock. Of course
+> > the d_put() is so screwed up because it's not just two locks involved,
+> > it's a reverse chain, where this probably wont help.
+> > 
+> > But just sleeping a tick sounds like a heuristic that may someday fail.
+> 
+> And it's the only way to deal with it sanely simply because after
+> dropping d_lock you CANNOT dereference inode->i_lock anymore. Care to
+> read the fricking locking rules of dcache and friends ?
 
-> On Thu, Mar 08, 2012 at 01:34:22PM -0800, Eric W. Biederman wrote:
->> 
->> In an effort to keep sysfs_dirent small used the smallest
->> basic type I can for sysfs s_flags.
->> 
->> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->> ---
->>  fs/sysfs/sysfs.h |   10 +++++-----
->>  1 files changed, 5 insertions(+), 5 deletions(-)
->> 
->> diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
->> index 6289a00..c76c932 100644
->> --- a/fs/sysfs/sysfs.h
->> +++ b/fs/sysfs/sysfs.h
->> @@ -76,7 +76,7 @@ struct sysfs_dirent {
->>  		struct sysfs_elem_bin_attr	s_bin_attr;
->>  	};
->>  
->> -	unsigned short		s_flags;
->> +	unsigned char		s_flags;
->>  	umode_t 		s_mode;
->>  	unsigned int		s_ino;
->>  	struct sysfs_inode_attrs *s_iattr;
->
-> Are you sure this saved you any real space here?  Have you use pahole (I
-> think that's the tool name) to determine if there are holes in the
-> structure?  Given that you moved this to a smaller variable, yet there
-> are pointers later on, odds are nothing changed at all overall.
->
-> Verification would be good to have, to see if this work was really worth
-> it, right?
+Right, and the solution I proposed does not need to.
 
-The next patch stuffs an 8bit nlink in the hole.  I was making room so
-we don't have to grow sysfs_dirent.
+> 
+> So yopu need to replace the trylock by try_deadlock() and boost the
+> lock owner w/o blocking on the lock. That means that you need some
+> other means to tell the lock owner that you are waiting for it w/o
+> actually waiting. 
 
-Eric
+Actually, you don't need to tell the lock owner you are waiting for it,
+you only need to make the lock itself have a priority, and the owner
+will inherit that priority as long as it holds the lock.
+
+
+
+> After you return from try_deadlock() you drop d_lock
+> and wait for some magic event which is associated to the unlock of
+> i_lock. There is no other way to deal with reverse lock ordering,
+> period.
+
+No magic event, the owner of the lock will inherit the priority you just
+gave it. All the task needs to do next is a sched_yield(), and if the
+other task is on the same CPU, it will have the same priority and run.
+
+The boosted priority of the lock and the owner will only last as long as
+the owner has the lock. As soon as the owner drops it, the priority is
+reset for both the lock and the owner.
+
+> 
+> Now go and imagine the mess you have to create to make this work under
+> all circumstances. My reference to the multiple reader boosting was
+> not for fun. Though I consider that try_deadlock() idea to be in the
+> same category of insanity as the original attempts of implementing
+> requeue_pi with ownerless but boosted rtmutexes ....
+
+And the solution I proposed has nothing to do with the mess needed to do
+the multi priority boost. As it had a waiter on it. This isn't waiting,
+it's simulating more what happens in non-rt. That is, the owner of the
+lock will have a chance to run.
+
+-- Steve
+
+
