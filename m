@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab2CILvS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 06:51:18 -0500
-Received: from mga09.intel.com ([134.134.136.24]:19406 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab2CILvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 06:51:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="116184499"
-Message-ID: <1331294012.29445.10.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH 1/4] jffs2: Convert most D1/D2 macros to jffs2_dbg
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joe Perches <joe@perches.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 09 Mar 2012 13:53:32 +0200
-In-Reply-To: <1330966615.3140.6.camel@joe2Laptop>
-References: <cover.1329349881.git.joe@perches.com>
-	 <2d68e76db16d42f451370714f03ef952e0839692.1329349881.git.joe@perches.com>
-	 <1330965033.7220.16.camel@golum> <1330966615.3140.6.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753506Ab2CIL5X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 06:57:23 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39112 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab2CIL5W convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 06:57:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120309110028.GB3852@pengutronix.de>
+References: <1331130825-14947-1-git-send-email-javier.martin@vista-silicon.com>
+	<1331130825-14947-2-git-send-email-javier.martin@vista-silicon.com>
+	<20120309110028.GB3852@pengutronix.de>
+Date: Fri, 9 Mar 2012 12:57:21 +0100
+Message-ID: <CACKLOr0QOhy9-GbEOeU0ExYwDrcoPKcv2=W8-4hT6vM5oCOyBQ@mail.gmail.com>
+Subject: Re: [PATCH v2 01/13] dmaengine: imx-dma: merge old dma-v1.c with imx-dma.c
+From: javier Martin <javier.martin@vista-silicon.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, vinod.koul@intel.com, linux@arm.linux.org.uk,
+        kernel@pengutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-05 at 08:56 -0800, Joe Perches wrote:
-> On Mon, 2012-03-05 at 18:30 +0200, Artem Bityutskiy wrote:
-> > On Wed, 2012-02-15 at 15:56 -0800, Joe Perches wrote:
-> []
-> > I would just kill all the levels and left only the first one - others
-> > are not useful. This FS is in the kernel for ages and it is safe to
-> > assume it is robust enough to require no level 2. And change the Kconfig
-> > correspondingly.
-> > 
-> > I would accept that to my l2 tree, although the final word is from
-> > dwmw2, of course.
-> 
-> Separate patch I think.
+On 9 March 2012 12:00, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Wed, Mar 07, 2012 at 03:33:33PM +0100, Javier Martin wrote:
+>> It is mainly a simple merge changing the prefix of some
+>> functions to fit the imx-dma namings.
+>>
+>> As there are no users of the old dma-v1.c api we can safely
+>> remove this file.
+>>
+>> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+>> ---
+>> @@ -633,11 +1127,8 @@ static int __exit imxdma_remove(struct platform_device *pdev)
+>>
+>>          dma_async_device_unregister(&imxdma->dma_device);
+>>
+>> -     for (i = 0; i < MAX_DMA_CHANNELS; i++) {
+>> -             struct imxdma_channel *imxdmac = &imxdma->channel[i];
+>> -
+>> -              imx_dma_free(imxdmac->imxdma_channel);
+>> -     }
+>> +     for (i = 0; i < MAX_DMA_CHANNELS; i++)
+>> +             free_irq(MX2x_INT_DMACH0 + i, NULL);
+>
+> This lacks a test for i.MX1/21/27. The above is correct for i.MX21/27,
+> but on i.MX1 you have to free MX1_DMA_INT/MX1_DMA_ERR.
 
-OK, pushed these ones, although I think that mechanical D1->jffs2_dbg()
-conversion is not very useful and to make your patch-set worth the
-trouble you should do few more clean-up steps, like I suggested.
+This series has only been tested for i.MX27. So, to those reviewing
+the code, please pay special attention to i.MX1 part.
 
-Let's push these patches as they are anyway to make sure the work you
-have done does not get lost.
+Sascha, thank you for your comment, I will fix it for the next version.
 
-Pushed to l2-mtd.git, thanks!
-
+Regards.
 -- 
-Best Regards,
-Artem Bityutskiy
-
+Javier Martin
+Vista Silicon S.L.
+CDTUC - FASE C - Oficina S-345
+Avda de los Castros s/n
+39005- Santander. Cantabria. Spain
++34 942 25 32 60
+www.vista-silicon.com
