@@ -1,41 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030312Ab2CIWoz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 17:44:55 -0500
-Received: from home.keithp.com ([63.227.221.253]:33358 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755803Ab2CIWoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 17:44:54 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Dave Jones <davej@redhat.com>, Yang Bai <hamo.by@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>, kernel@tesarici.cz,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: inode->i_wb_list corruption.
-In-Reply-To: <20120309201934.GN17489@zod.bos.redhat.com>
-References: <20120306185137.GA15881@redhat.com> <20120306210307.GC8781@quack.suse.cz> <20120307072608.GA24087@localhost> <20120307104240.GB18658@quack.suse.cz> <CAO_0yfNt2jgiTPZn5NkwBAjQZtk+377gG71d6QOuXQrDHjdkEg@mail.gmail.com> <20120309145713.GA21543@redhat.com> <20120309151951.GA30160@redhat.com> <CAO_0yfMYOOTvRg9=8_eYP09o0BpzSEk=8vqgNk_vV_u3-biAYA@mail.gmail.com> <20120309180015.GA3862@redhat.com> <868vj97d20.fsf@sumi.keithp.com> <20120309201934.GN17489@zod.bos.redhat.com>
-User-Agent: Notmuch/0.11.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 09 Mar 2012 14:44:49 -0800
-Message-ID: <861up175su.fsf@sumi.keithp.com>
+	id S1030365Ab2CIWpY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 17:45:24 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55518 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756909Ab2CIWpW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 17:45:22 -0500
+Message-ID: <4F5A87FF.8060606@linaro.org>
+Date: Fri, 09 Mar 2012 23:45:19 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Rob Lee <rob.lee@linaro.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: manual merge of the cpuidle-cons tree with the arm-soc
+ tree
+References: <20120309183732.512d3676599da324f4747219@canb.auug.org.au> <CAMXH7KE5En7U-2zydT3MfJ7C7B164-zsQuBoHMUqzD-Kb_nh1w@mail.gmail.com>
+In-Reply-To: <CAMXH7KE5En7U-2zydT3MfJ7C7B164-zsQuBoHMUqzD-Kb_nh1w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<#part sign=pgpmime>
-On Fri, 9 Mar 2012 15:19:34 -0500, Josh Boyer <jwboyer@redhat.com> wrote:
+On 03/09/2012 11:26 PM, Rob Lee wrote:
+> Hello Stephen,
+>
+> Yes, your resolution looks correct to me.
 
-> Is the VT-d issue something in the hardware itself, or do you mean if
-> you have it enabled in the kernel?  We've had the intel IOMMU disabled
-> by default in the Fedora kernels for a while now.  At least since before
-> 3.2 was released.
+For me too.
 
-I don't know for sure; David Woodhouse gave a scary presentation
-yesterday that makes me unsure of what happens when IOMMU is disabled in
-the kernel, given that much of the hardware is setup by the BIOS.
+Thanks
+   -- Daniel
+
+
+> On Fri, Mar 9, 2012 at 1:37 AM, Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
+>> Hi Rob,
+>>
+>> Today's linux-next merge of the cpuidle-cons tree got a conflict in
+>> arch/arm/mach-at91/cpuidle.c between commit 00482a4078f4 ("ARM: at91:
+>> implement the standby function for pm/cpuidle") from the arm-soc tree and
+>> commit 7a1f6e72dce1 ("ARM: at91: Consolidate time keeping and irq
+>> enable") from the cpuidle-cons tree.
+>>
+>> I fixed it up (I think - see below) and can carry the fix as necessary.
+>> --
+>> Cheers,
+>> Stephen Rothwell                    sfr@canb.auug.org.au
+>>
+>> diff --cc arch/arm/mach-at91/cpuidle.c
+>> index 555d956,d40b3f3..0000000
+>> --- a/arch/arm/mach-at91/cpuidle.c
+>> +++ b/arch/arm/mach-at91/cpuidle.c
+>> @@@ -37,23 -33,15 +33,8 @@@ static int at91_enter_idle(struct cpuid
+>>                         struct cpuidle_driver *drv,
+>>                                int index)
+>>   {
+>> -       struct timeval before, after;
+>> -       int idle_time;
+>> -
+>> -       local_irq_disable();
+>> -       do_gettimeofday(&before);
+>> -       if (index == 0)
+>> -               /* Wait for interrupt state */
+>> -               cpu_do_idle();
+>> -       else if (index == 1)
+>> -               at91_standby();
+>>   -      u32 saved_lpr;
+>>   -
+>>   -      __asm__("b 1f; .align 5; 1:\n"
+>>   -      "       mcr p15, 0, r0, c7, c10, 4");   /* drain write buffer */
+>>   -
+>>   -      saved_lpr = sdram_selfrefresh_enable();
+>>   -      cpu_do_idle();
+>>   -      sdram_selfrefresh_disable(saved_lpr);
+>> ++      at91_standby();
+>>
+>> -       do_gettimeofday(&after);
+>> -       local_irq_enable();
+>> -       idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
+>> -                       (after.tv_usec - before.tv_usec);
+>> -
+>> -       dev->last_residency = idle_time;
+>>         return index;
+>>   }
+>>
+
 
 -- 
-keith.packard@intel.com
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
