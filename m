@@ -1,88 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab2CIJ6d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 04:58:33 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:59692 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753516Ab2CIJ6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 04:58:32 -0500
-X-IronPort-AV: E=Sophos;i="4.73,557,1325433600"; 
-   d="scan'208";a="4499222"
-Message-ID: <4F59D568.4030604@cn.fujitsu.com>
-Date: Fri, 09 Mar 2012 18:03:20 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1754747Ab2CIKBy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 05:01:54 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:52135 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab2CIKBx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 05:01:53 -0500
+Message-ID: <4F59D510.8020400@oss.ntt.co.jp>
+Date: Fri, 09 Mar 2012 19:01:52 +0900
+From: =?UTF-8?B?RmVybmFuZG8gTHVpcyBWw6F6cXVleiBDYW8=?= 
+	<fernando@oss.ntt.co.jp>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] workqueue: use percpu allocator for cwq on UP
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-09 17:56:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-09 17:56:33,
-	Serialize complete at 2012-03-09 17:56:33
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Don Zickus <dzickus@redhat.com>, akpm@linux-foundation.org,
+        linux-tip-commits@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, hpa@zytor.com, tglx@linutronix.de,
+        torvalds@linux-foundation.org, mingo@elte.hu, vgoyal@redhat.com
+Subject: [PATCH 3/3] boot: add early NMI counter
+References: <CAE9FiQVPnO8-tuPoio0Wxv=8rjdm2tJbBk3+3ystueyYtZn9BA@mail.gmail.com> <20120216172735.GX9751@redhat.com> <CAE9FiQVhbAM9vjx-uFcuc0ndsUp0aez9_TsQHStje5G5iwYbag@mail.gmail.com> <20120216215603.GH9751@redhat.com> <m1y5s2ku36.fsf@fess.ebiederm.org> <m1fwe9bpk2.fsf@fess.ebiederm.org> <20120217195430.GO9751@redhat.com> <m1y5s07rn3.fsf@fess.ebiederm.org> <20120220151419.GU9751@redhat.com> <m1obss39a4.fsf@fess.ebiederm.org> <20120221135934.GF26998@redhat.com> <m1ipip6xe8.fsf@fess.ebiederm.org> <4F573E1C.2060909@oss.ntt.co.jp> <4F573E74.5040504@oss.ntt.co.jp> <m1eht31z8e.fsf@fess.ebiederm.org> <4F58495B.5080308@oss.ntt.co.jp> <m1r4x3yrsv.fsf@fess.ebiederm.org> <4F59CDE5.8010400@oss.ntt.co.jp> <4F59D2AE.1020509@oss.ntt.co.jp> <4F59D380.6040404@oss.ntt.co.jp>
+In-Reply-To: <4F59D380.6040404@oss.ntt.co.jp>
+Content-Type: multipart/mixed;
+ boundary="------------010706040304060904030708"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I notice that the commit bbddff makes percpu allocator can work on UP,
-So we don't need the magic way for UP.
+This is a multi-part message in MIME format.
+--------------010706040304060904030708
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+
+
+--------------010706040304060904030708
+Content-Type: text/x-patch;
+ name="add-early-nmi-counter.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="add-early-nmi-counter.patch"
+
+Subject: [PATCH 3/3] boot: add early NMI counter
+
+From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+
+We currently ignore early NMIs but it would be nice to be able to
+know whether they actually occurred.
+
+This patch adds an early NMI counter, whose count is moved over to
+the per-cpu NMI counter before the kernel frees the init sections.
+
+Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
 ---
-Just pass build test
 
- kernel/workqueue.c |   22 +++-------------------
- 1 files changed, 3 insertions(+), 19 deletions(-)
+diff -urNp linux-3.3-rc6-orig/arch/x86/include/asm/processor.h linux-3.3-rc6/arch/x86/include/asm/processor.h
+--- linux-3.3-rc6-orig/arch/x86/include/asm/processor.h	2012-03-09 17:48:04.547492663 +0900
++++ linux-3.3-rc6/arch/x86/include/asm/processor.h	2012-03-09 18:37:32.060194673 +0900
+@@ -402,6 +402,11 @@ DECLARE_PER_CPU(char *, irq_stack_ptr);
+ DECLARE_PER_CPU(unsigned int, irq_count);
+ extern unsigned long kernel_eflags;
+ extern asmlinkage void ignore_sysret(void);
++/*
++ * early_nmi_count is in the .init.text ELF section so it can only be accessed
++ * before the init sections are freed by the kernel.
++ */
++extern unsigned int early_nmi_count;
+ #else	/* X86_64 */
+ #ifdef CONFIG_CC_STACKPROTECTOR
+ /*
+diff -urNp linux-3.3-rc6-orig/arch/x86/kernel/head_64.S linux-3.3-rc6/arch/x86/kernel/head_64.S
+--- linux-3.3-rc6-orig/arch/x86/kernel/head_64.S	2012-03-09 18:36:18.051281524 +0900
++++ linux-3.3-rc6/arch/x86/kernel/head_64.S	2012-03-09 18:38:47.673129036 +0900
+@@ -340,6 +340,7 @@ early_exception_handler:
+ 	jmp 1b
+ 
+ early_nmi_handler:
++	incl early_nmi_count(%rip)
+ 	iretq
+ 
+ #ifdef CONFIG_EARLY_PRINTK
+@@ -351,6 +352,9 @@ early_idt_msg:
+ early_idt_ripmsg:
+ 	.asciz "RIP %s\n"
+ #endif /* CONFIG_EARLY_PRINTK */
++	.globl early_nmi_count
++early_nmi_count:
++	.long 0
+ 	.previous
+ 
+ #define NEXT_PAGE(name) \
+diff -urNp linux-3.3-rc6-orig/arch/x86/kernel/traps.c linux-3.3-rc6/arch/x86/kernel/traps.c
+--- linux-3.3-rc6-orig/arch/x86/kernel/traps.c	2012-03-09 17:48:04.567492912 +0900
++++ linux-3.3-rc6/arch/x86/kernel/traps.c	2012-03-09 18:39:23.665574123 +0900
+@@ -719,6 +719,7 @@ void __init trap_init(void)
+ 	x86_init.irqs.trap_init();
+ 
+ #ifdef CONFIG_X86_64
++	percpu_add(irq_stat.__nmi_count, early_nmi_count);
+ 	memcpy(&nmi_idt_table, &idt_table, IDT_ENTRIES * 16);
+ 	set_nmi_gate(1, &debug);
+ 	set_nmi_gate(3, &int3);
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index bec7b5b..5bbba09 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -474,13 +474,8 @@ static struct cpu_workqueue_struct *get_cwq(unsigned int cpu,
- 					    struct workqueue_struct *wq)
- {
- 	if (!(wq->flags & WQ_UNBOUND)) {
--		if (likely(cpu < nr_cpu_ids)) {
--#ifdef CONFIG_SMP
-+		if (likely(cpu < nr_cpu_ids))
- 			return per_cpu_ptr(wq->cpu_wq.pcpu, cpu);
--#else
--			return wq->cpu_wq.single;
--#endif
--		}
- 	} else if (likely(cpu == WORK_CPU_UNBOUND))
- 		return wq->cpu_wq.single;
- 	return NULL;
-@@ -2897,13 +2892,8 @@ static int alloc_cwqs(struct workqueue_struct *wq)
- 	const size_t size = sizeof(struct cpu_workqueue_struct);
- 	const size_t align = max_t(size_t, 1 << WORK_STRUCT_FLAG_BITS,
- 				   __alignof__(unsigned long long));
--#ifdef CONFIG_SMP
--	bool percpu = !(wq->flags & WQ_UNBOUND);
--#else
--	bool percpu = false;
--#endif
- 
--	if (percpu)
-+	if (!(wq->flags & WQ_UNBOUND))
- 		wq->cpu_wq.pcpu = __alloc_percpu(size, align);
- 	else {
- 		void *ptr;
-@@ -2927,13 +2917,7 @@ static int alloc_cwqs(struct workqueue_struct *wq)
- 
- static void free_cwqs(struct workqueue_struct *wq)
- {
--#ifdef CONFIG_SMP
--	bool percpu = !(wq->flags & WQ_UNBOUND);
--#else
--	bool percpu = false;
--#endif
--
--	if (percpu)
-+	if (!(wq->flags & WQ_UNBOUND))
- 		free_percpu(wq->cpu_wq.pcpu);
- 	else if (wq->cpu_wq.single) {
- 		/* the pointer to free is stored right after the cwq */
+--------------010706040304060904030708--
