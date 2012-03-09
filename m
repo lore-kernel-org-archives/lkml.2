@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030957Ab2CITtA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:49:00 -0500
+	id S1030994Ab2CITtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:49:12 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030906Ab2CITsy (ORCPT
+	with ESMTP id S1030906Ab2CITtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:48:54 -0500
-Message-Id: <20120309190206.525065521@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:49:08 -0500
+Message-Id: <20120309190207.584557057@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:54 -0800
+Date: Fri, 09 Mar 2012 11:03:07 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Kenneth Graunke <kenneth@whitecape.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 52/95] drm/i915: gen7: implement rczunit workaround
+        alan@lxorguk.ukuu.org.uk, Rob Clark <rob@ti.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [ 65/95] OMAPDSS: HDMI: hot plug detect fix
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
+From: Rob Clark <rob@ti.com>
 
-commit eae66b50c760233fad526edf4a0d327be17a055d upstream.
+commit ca888a7958b3d808e4efd08ceff88913f4212c69 upstream.
 
-This is yet another workaround related to clock gating which we need on
-Ivy Bridge.
+The "OMAPDSS: HDMI: PHY burnout fix" commit switched the HDMI driver
+over to using a GPIO for plug detect.  Unfortunately the ->detect()
+method was not also updated, causing HDMI to no longer work for the
+omapdrm driver (because it would actually check if a connection was
+detected before attempting to enable display).
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=41353
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44610
-Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Kenneth Graunke <kenneth@whitecape.org>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Rob Clark <rob@ti.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_reg.h      |    1 +
- drivers/gpu/drm/i915/intel_display.c |    5 +++++
- 2 files changed, 6 insertions(+)
+ drivers/video/omap2/dss/ti_hdmi_4xxx_ip.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -3476,6 +3476,7 @@
- #define    GT_FIFO_NUM_RESERVED_ENTRIES		20
+--- a/drivers/video/omap2/dss/ti_hdmi_4xxx_ip.c
++++ b/drivers/video/omap2/dss/ti_hdmi_4xxx_ip.c
+@@ -479,14 +479,7 @@ int ti_hdmi_4xxx_read_edid(struct hdmi_i
  
- #define GEN6_UCGCTL2				0x9404
-+# define GEN6_RCZUNIT_CLOCK_GATE_DISABLE		(1 << 13)
- # define GEN6_RCPBUNIT_CLOCK_GATE_DISABLE		(1 << 12)
- # define GEN6_RCCUNIT_CLOCK_GATE_DISABLE		(1 << 11)
+ bool ti_hdmi_4xxx_detect(struct hdmi_ip_data *ip_data)
+ {
+-	int r;
+-
+-	void __iomem *base = hdmi_core_sys_base(ip_data);
+-
+-	/* HPD */
+-	r = REG_GET(base, HDMI_CORE_SYS_SYS_STAT, 1, 1);
+-
+-	return r == 1;
++	return gpio_get_value(ip_data->hpd_gpio);
+ }
  
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8248,6 +8248,11 @@ static void ivybridge_init_clock_gating(
- 	I915_WRITE(WM2_LP_ILK, 0);
- 	I915_WRITE(WM1_LP_ILK, 0);
- 
-+	/* According to the spec, bit 13 (RCZUNIT) must be set on IVB.
-+	 * This implements the WaDisableRCZUnitClockGating workaround.
-+	 */
-+	I915_WRITE(GEN6_UCGCTL2, GEN6_RCZUNIT_CLOCK_GATE_DISABLE);
-+
- 	I915_WRITE(ILK_DSPCLK_GATE, IVB_VRHUNIT_CLK_GATE);
- 
- 	for_each_pipe(pipe) {
+ static void hdmi_core_init(struct hdmi_core_video_config *video_cfg,
 
 
