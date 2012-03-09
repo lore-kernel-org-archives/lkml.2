@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030364Ab2CITqA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:46:00 -0500
+	id S964904Ab2CITqN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:46:13 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030315Ab2CITp4 (ORCPT
+	with ESMTP id S964845Ab2CITqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:45:56 -0500
-Message-Id: <20120309190203.156829907@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:46:10 -0500
+Message-Id: <20120309190203.459516786@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:12 -0800
+Date: Fri, 09 Mar 2012 11:02:16 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>
-Subject: [ 10/95] ARM: LPC32xx: Fix irq on GPI_28
+        alan@lxorguk.ukuu.org.uk, David Howells <dhowells@redhat.com>,
+        Carsten Otte <cotte@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 14/95] S390: KEYS: Enable the compat keyctl wrapper on s390x
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,46 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Stigge <stigge@antcom.de>
+From: David Howells <dhowells@redhat.com>
 
-commit f6737055c1c432a9628a9a731f9881ad8e0a9eee upstream.
+commit 1d057720609ed052a6371fe1d53300e5e6328e94 upstream.
 
-The GPI_28 IRQ was not registered properly. The registration of
-IRQ_LPC32XX_GPI_28 was added and the (wrong) IRQ_LPC32XX_GPI_11 at
-LPC32XX_SIC1_IRQ(4) was replaced by IRQ_LPC32XX_GPI_28 (see manual of
-LPC32xx / interrupt controller).
+Enable the compat keyctl wrapper on s390x so that 32-bit s390 userspace can
+call the keyctl() syscall.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+There's an s390x assembly wrapper that truncates all the register values to
+32-bits and this then calls compat_sys_keyctl() - but the latter only exists if
+CONFIG_KEYS_COMPAT is enabled, and the s390 Kconfig doesn't enable it.
+
+Without this patch, 32-bit calls to the keyctl() syscall are given an ENOSYS
+error:
+
+	[root@devel4 ~]# keyctl show
+	Session Keyring
+	-3: key inaccessible (Function not implemented)
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: dan@danny.cz
+Cc: Carsten Otte <cotte@de.ibm.com>
+Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: linux-s390@vger.kernel.org
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-lpc32xx/include/mach/irqs.h |    2 +-
- arch/arm/mach-lpc32xx/irq.c               |    4 ++++
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ arch/s390/Kconfig |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/mach-lpc32xx/include/mach/irqs.h
-+++ b/arch/arm/mach-lpc32xx/include/mach/irqs.h
-@@ -61,7 +61,7 @@
-  */
- #define IRQ_LPC32XX_JTAG_COMM_TX	LPC32XX_SIC1_IRQ(1)
- #define IRQ_LPC32XX_JTAG_COMM_RX	LPC32XX_SIC1_IRQ(2)
--#define IRQ_LPC32XX_GPI_11		LPC32XX_SIC1_IRQ(4)
-+#define IRQ_LPC32XX_GPI_28		LPC32XX_SIC1_IRQ(4)
- #define IRQ_LPC32XX_TS_P		LPC32XX_SIC1_IRQ(6)
- #define IRQ_LPC32XX_TS_IRQ		LPC32XX_SIC1_IRQ(7)
- #define IRQ_LPC32XX_TS_AUX		LPC32XX_SIC1_IRQ(8)
---- a/arch/arm/mach-lpc32xx/irq.c
-+++ b/arch/arm/mach-lpc32xx/irq.c
-@@ -118,6 +118,10 @@ static const struct lpc32xx_event_info l
- 		.event_group = &lpc32xx_event_pin_regs,
- 		.mask = LPC32XX_CLKPWR_EXTSRC_GPI_06_BIT,
- 	},
-+	[IRQ_LPC32XX_GPI_28] = {
-+		.event_group = &lpc32xx_event_pin_regs,
-+		.mask = LPC32XX_CLKPWR_EXTSRC_GPI_28_BIT,
-+	},
- 	[IRQ_LPC32XX_GPIO_00] = {
- 		.event_group = &lpc32xx_event_int_regs,
- 		.mask = LPC32XX_CLKPWR_INTSRC_GPIO_00_BIT,
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -230,6 +230,9 @@ config COMPAT
+ config SYSVIPC_COMPAT
+ 	def_bool y if COMPAT && SYSVIPC
+ 
++config KEYS_COMPAT
++	def_bool y if COMPAT && KEYS
++
+ config AUDIT_ARCH
+ 	def_bool y
+ 
 
 
