@@ -1,77 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab2CIWGn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 17:06:43 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40733 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753042Ab2CIWGl (ORCPT
+	id S1755627Ab2CIWNS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 17:13:18 -0500
+Received: from new1-smtp.messagingengine.com ([66.111.4.221]:45009 "EHLO
+	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753042Ab2CIWNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 17:06:41 -0500
-Date: Fri, 9 Mar 2012 14:06:23 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mikulas Patocka <mpatocka@redhat.com>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, Alasdair G Kergon <agk@redhat.com>,
-        Will Drewry <wad@chromium.org>, Elly Jones <ellyjones@chromium.org>,
-        Milan Broz <mbroz@redhat.com>, Olof Johansson <olofj@chromium.org>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: workqueues and percpu (was: [PATCH] dm: remake of the verity
- target)
-Message-ID: <20120309220623.GM27051@google.com>
-References: <1330648393-20692-1-git-send-email-msb@chromium.org>
- <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
- <20120306215947.GB27051@google.com>
- <Pine.LNX.4.64.1203081656590.31821@file.rdu.redhat.com>
- <20120308143909.bfc4cb4d.akpm@linux-foundation.org>
- <20120308231521.GA2968@htj.dyndns.org>
- <20120309211512.GL27051@google.com>
- <20120309212049.GD24890@google.com>
+	Fri, 9 Mar 2012 17:13:16 -0500
+X-Sasl-enc: PTO/tteMCUmXnnYy5xPwglbIlrOmPI5ZfHeazacSt+Em 1331331195
+Message-ID: <4F5A8079.5090800@signal11.us>
+Date: Fri, 09 Mar 2012 17:13:13 -0500
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120309212049.GD24890@google.com>
-X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alan Ott <alan@signal11.us>
+CC: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Makefile: Add INSTALL_MOD_PATH to the environment
+ used by depmod
+References: <1331330522-15129-1-git-send-email-alan@signal11.us>
+In-Reply-To: <1331330522-15129-1-git-send-email-alan@signal11.us>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo (tj@kernel.org) wrote:
-> Hello,
-> 
-> On Fri, Mar 09, 2012 at 01:15:12PM -0800, Mandeep Singh Baines wrote:
-> > In this case, I need the per-cpu data for the duration of calculating
-> > a cryptographics hash on a 4K page of data. That's a long time to disable
-> > pre-emption.
-> 
-> How long are we talking about?  Tens of microsecs, tens of millisecs?
-> 
+On 03/09/2012 05:02 PM, Alan Ott wrote:
+> Add INSTALL_MOD_PATH explicitly to the environment given to depmod.  This
+> way putting an INSTALL_MOD_PATH line into a GNUmakefile (along with things
+> like CROSS_COMPILE) will work properly.
+>
+> Signed-off-by: Alan Ott <alan@signal11.us>
+> ---
 
-It depends on the H/W. We are running on Atom w/ PREEMPT_DESKTOP so
-we aren't pre-emptible even now. But I think there is interest from other
-folks in embedded to use the work. So it potentially be millisecs on a
-slower few hundred MHZ embedded processor.
-
-> > I could fix the bug temporarily by adding get/put for the per_cpu data
-> > but would that be acceptable? I'm not sure what the OK limit is for how
-> > long one can disable preemption. An alternative fix would be not allow
-> > CONFIG_VERITY when CONFIG_HOTPLUG_CPU. Once workqueues are fixed, I could
-> > remove that restriction.
-> 
-> I think the right thing to do for now is to add cpu hotplug notifier
-> and do flush_work_sync() on the work item.  We can later move that
-> logic into workqueue and remove it from crypto.
-> 
-
-That seems like the correct solution. I will implement that.
-
-Thanks,
-Mandeep
-
-> Thanks.
-> 
-> -- 
-> tejun
+To be clear, this was intended to be patch 1/1. Sorry for the noise.
