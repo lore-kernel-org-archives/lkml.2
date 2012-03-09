@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030234Ab2CITpg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:45:36 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	id S1030264Ab2CITpk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:45:40 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964841Ab2CITpe (ORCPT
+	with ESMTP id S964843Ab2CITph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:45:34 -0500
-Message-Id: <20120309190202.425318888@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:45:37 -0500
+Message-Id: <20120309190202.594884638@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:03 -0800
+Date: Fri, 09 Mar 2012 11:02:05 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, James <angweiyang@gmail.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Joerg Roedel <Joerg.Roedel@amd.com>,
-        Joerg Roedel <joerg.roedel@amd.com>
-Subject: [ 01/95] ARM: OMAP: make iommu subsys_initcall to fix builtin omap3isp
+        alan@lxorguk.ukuu.org.uk, Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 03/95] Fix autofs compile without CONFIG_COMPAT
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,53 +24,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ohad Ben-Cohen <ohad@wizery.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 435792d93410f008120c4dbab148019a3cc31dbc upstream.
+commit 3c761ea05a8900a907f32b628611873f6bef24b2 upstream.
 
-omap3isp depends on omap's iommu and will fail to probe if
-initialized before it (which always happen if they are builtin).
+The autofs compat handling fix caused a compile failure when
+CONFIG_COMPAT isn't defined.
 
-Make omap's iommu subsys_initcall as an interim solution until
-the probe deferral mechanism is merged.
+Instead of adding random #ifdef'fery in autofs, let's just make the
+compat helpers earlier to use: without CONFIG_COMPAT, is_compat_task()
+just hardcodes to zero.
 
-Reported-by: James <angweiyang@gmail.com>
-Debugged-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: Joerg Roedel <Joerg.Roedel@amd.com>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+We could probably do something similar for a number of other cases where
+we have #ifdef's in code, but this is the low-hanging fruit.
+
+Reported-and-tested-by: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/mailbox.c |    3 ++-
- drivers/iommu/omap-iommu.c    |    3 ++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ include/linux/compat.h |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/arm/mach-omap2/mailbox.c
-+++ b/arch/arm/mach-omap2/mailbox.c
-@@ -412,7 +412,8 @@ static void __exit omap2_mbox_exit(void)
- 	platform_driver_unregister(&omap2_mbox_driver);
- }
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -561,5 +561,9 @@ asmlinkage ssize_t compat_sys_process_vm
+ 		unsigned long liovcnt, const struct compat_iovec __user *rvec,
+ 		unsigned long riovcnt, unsigned long flags);
  
--module_init(omap2_mbox_init);
-+/* must be ready before omap3isp is probed */
-+subsys_initcall(omap2_mbox_init);
- module_exit(omap2_mbox_exit);
- 
- MODULE_LICENSE("GPL v2");
---- a/drivers/iommu/omap-iommu.c
-+++ b/drivers/iommu/omap-iommu.c
-@@ -1229,7 +1229,8 @@ static int __init omap_iommu_init(void)
- 
- 	return platform_driver_register(&omap_iommu_driver);
- }
--module_init(omap_iommu_init);
-+/* must be ready before omap3isp is probed */
-+subsys_initcall(omap_iommu_init);
- 
- static void __exit omap_iommu_exit(void)
- {
++#else
++
++#define is_compat_task() (0)
++
+ #endif /* CONFIG_COMPAT */
+ #endif /* _LINUX_COMPAT_H */
 
 
