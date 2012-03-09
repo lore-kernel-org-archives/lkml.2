@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757373Ab2CIVMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:12:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33773 "EHLO
+	id S1756945Ab2CIVNH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:13:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:33780 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755522Ab2CIVMK (ORCPT
+	with ESMTP id S1755522Ab2CIVNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:12:10 -0500
-Date: Fri, 9 Mar 2012 13:11:40 -0800
+	Fri, 9 Mar 2012 16:13:05 -0500
+Date: Fri, 9 Mar 2012 13:12:28 -0800
 From: tip-bot for Alexander Gordeev <agordeev@redhat.com>
-Message-ID: <tip-4bcdf1d0b652bc33d52f2322b77463e4dc58abf8@git.kernel.org>
+Message-ID: <tip-05d74efa3c72a5c40b0edeb15856c0230126313b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, agordeev@redhat.com, hpa@zytor.com,
         mingo@redhat.com, oleg@redhat.com, tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, agordeev@redhat.com,
         linux-kernel@vger.kernel.org, tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20120309135925.GB2114@dhcp-26-207.brq.redhat.com>
-References: <20120309135925.GB2114@dhcp-26-207.brq.redhat.com>
+In-Reply-To: <20120309135939.GC2114@dhcp-26-207.brq.redhat.com>
+References: <20120309135939.GC2114@dhcp-26-207.brq.redhat.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:irq/core] genirq:
-  Get rid of unnecessary irqaction field in task_struct
-Git-Commit-ID: 4bcdf1d0b652bc33d52f2322b77463e4dc58abf8
+  No need to check IRQTF_DIED before stopping a thread handler
+Git-Commit-ID: 05d74efa3c72a5c40b0edeb15856c0230126313b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,125 +28,53 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 09 Mar 2012 13:12:05 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 09 Mar 2012 13:13:01 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4bcdf1d0b652bc33d52f2322b77463e4dc58abf8
-Gitweb:     http://git.kernel.org/tip/4bcdf1d0b652bc33d52f2322b77463e4dc58abf8
+Commit-ID:  05d74efa3c72a5c40b0edeb15856c0230126313b
+Gitweb:     http://git.kernel.org/tip/05d74efa3c72a5c40b0edeb15856c0230126313b
 Author:     Alexander Gordeev <agordeev@redhat.com>
-AuthorDate: Fri, 9 Mar 2012 14:59:26 +0100
+AuthorDate: Fri, 9 Mar 2012 14:59:40 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Fri, 9 Mar 2012 17:19:08 +0100
 
-genirq: Get rid of unnecessary irqaction field in task_struct
+genirq: No need to check IRQTF_DIED before stopping a thread handler
 
-When a new thread handler is created, an irqaction is passed to it as
-data. Not only that irqaction is stored in task_struct by the handler
-for later use, but also a structure associated with the kernel thread
-keeps this value as long as the thread exists.
-
-This fix kicks irqaction out off task_struct. Yes, I introduce new bit
-field. But it allows not only to eliminate the duplicate, but also
-shortens size of task_struct.
+Since 63706172f332fd3f6e7458ebfb35fa6de9c21dc5 kthread_stop() is not
+afraid of dead kernel threads. So no need to check if a thread is
+alive before stopping it. These checks still were racy.
 
 Reported-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Link: http://lkml.kernel.org/r/20120309135925.GB2114@dhcp-26-207.brq.redhat.com
+Link: http://lkml.kernel.org/r/20120309135939.GC2114@dhcp-26-207.brq.redhat.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/sched.h |   10 +++++-----
- kernel/irq/manage.c   |   19 +++++++++++--------
- 2 files changed, 16 insertions(+), 13 deletions(-)
+ kernel/irq/manage.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7d379a6..07f537a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1319,6 +1319,11 @@ struct task_struct {
- 	unsigned sched_reset_on_fork:1;
- 	unsigned sched_contributes_to_load:1;
- 
-+#ifdef CONFIG_GENERIC_HARDIRQS
-+	/* IRQ handler threads */
-+	unsigned irq_thread:1;
-+#endif
-+
- 	pid_t pid;
- 	pid_t tgid;
- 
-@@ -1427,11 +1432,6 @@ struct task_struct {
-  * mempolicy */
- 	spinlock_t alloc_lock;
- 
--#ifdef CONFIG_GENERIC_HARDIRQS
--	/* IRQ handler threads */
--	struct irqaction *irqaction;
--#endif
--
- 	/* Protection of the PI data structures: */
- 	raw_spinlock_t pi_lock;
- 
 diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index c0730ad..0fa3ce9 100644
+index 0fa3ce9..3feab4a 100644
 --- a/kernel/irq/manage.c
 +++ b/kernel/irq/manage.c
-@@ -780,7 +780,7 @@ static int irq_thread(void *data)
- 		handler_fn = irq_thread_fn;
+@@ -1106,8 +1106,7 @@ out_thread:
+ 		struct task_struct *t = new->thread;
  
- 	sched_setscheduler(current, SCHED_FIFO, &param);
--	current->irqaction = action;
-+	current->irq_thread = 1;
+ 		new->thread = NULL;
+-		if (likely(!test_bit(IRQTF_DIED, &new->thread_flags)))
+-			kthread_stop(t);
++		kthread_stop(t);
+ 		put_task_struct(t);
+ 	}
+ out_mput:
+@@ -1217,8 +1216,7 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
+ #endif
  
- 	while (!irq_wait_for_interrupt(action)) {
+ 	if (action->thread) {
+-		if (!test_bit(IRQTF_DIED, &action->thread_flags))
+-			kthread_stop(action->thread);
++		kthread_stop(action->thread);
+ 		put_task_struct(action->thread);
+ 	}
  
-@@ -818,10 +818,10 @@ static int irq_thread(void *data)
- 	irq_finalize_oneshot(desc, action, true);
- 
- 	/*
--	 * Clear irqaction. Otherwise exit_irq_thread() would make
-+	 * Clear irq_thread. Otherwise exit_irq_thread() would make
- 	 * fuzz about an active irq thread going into nirvana.
- 	 */
--	current->irqaction = NULL;
-+	current->irq_thread = 0;
- 	return 0;
- }
- 
-@@ -832,27 +832,30 @@ void exit_irq_thread(void)
- {
- 	struct task_struct *tsk = current;
- 	struct irq_desc *desc;
-+	struct irqaction *action;
- 
--	if (!tsk->irqaction)
-+	if (!tsk->irq_thread)
- 		return;
- 
-+	action = kthread_data(tsk);
-+
- 	printk(KERN_ERR
- 	       "exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
--	       tsk->comm ? tsk->comm : "", tsk->pid, tsk->irqaction->irq);
-+	       tsk->comm ? tsk->comm : "", tsk->pid, action->irq);
- 
--	desc = irq_to_desc(tsk->irqaction->irq);
-+	desc = irq_to_desc(action->irq);
- 
- 	/*
- 	 * Prevent a stale desc->threads_oneshot. Must be called
- 	 * before setting the IRQTF_DIED flag.
- 	 */
--	irq_finalize_oneshot(desc, tsk->irqaction, true);
-+	irq_finalize_oneshot(desc, action, true);
- 
- 	/*
- 	 * Set the THREAD DIED flag to prevent further wakeups of the
- 	 * soon to be gone threaded handler.
- 	 */
--	set_bit(IRQTF_DIED, &tsk->irqaction->flags);
-+	set_bit(IRQTF_DIED, &action->flags);
- }
- 
- static void irq_setup_forced_threading(struct irqaction *new)
