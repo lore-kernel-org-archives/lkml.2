@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985Ab2CIRoS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:44:18 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44688 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab2CIRoR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:44:17 -0500
-Date: Fri, 9 Mar 2012 18:44:11 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Javier Martin <javier.martin@vista-silicon.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dan.j.williams@intel.com, vinod.koul@intel.com, linux@arm.linux.org.uk,
-        kernel@pengutronix.de
-Subject: Re: [PATCH v3 00/13] dmaengine: imx-dma: merge dma arch code into
- dmaengine.
-Message-ID: <20120309174411.GI3852@pengutronix.de>
-References: <1331306449-28591-1-git-send-email-javier.martin@vista-silicon.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331306449-28591-1-git-send-email-javier.martin@vista-silicon.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 18:43:32 up 118 days,  1:30, 14 users,  load average: 0.00, 0.01,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753310Ab2CIRwn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:52:43 -0500
+Received: from mga01.intel.com ([192.55.52.88]:24611 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752349Ab2CIRwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 12:52:42 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="136317449"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Feng Tang <feng.tang@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: [PATCH 5/5] pch_uart: Add module parameter descriptions
+Date: Fri,  9 Mar 2012 09:51:52 -0800
+Message-Id: <9a91979402f0c57f607d1608432caff1199be164.1331315372.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.7.6.5
+In-Reply-To: <ae0029b9e1131467232389e4dfa630f50e159de0.1331315372.git.dvhart@linux.intel.com>
+References: <ae0029b9e1131467232389e4dfa630f50e159de0.1331315372.git.dvhart@linux.intel.com>
+In-Reply-To: <cover.1331315372.git.dvhart@linux.intel.com>
+References: <cover.1331315372.git.dvhart@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 04:20:36PM +0100, Javier Martin wrote:
-> The following series have to be applied on top of the following patches:
-> [PATCH v2 1/2] dmaengine: Add support for MEMCPY for imx-dma.
-> [PATCH v3 2/2] dmaengine: Add support for multiple descriptors for imx-dma.
-> 
-> As discussed with Vinod and Sascha, the file 'arch/arm/mach-imx/dma-v1.c'
-> is deprecated and no new patches are accepted for it.
-> 
-> This series merges this code into the imx-dma.c dmaengine driver.
+Document default_baud and user_uartclk module parameters.
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+CC: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Feng Tang <feng.tang@intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Alan Cox <alan@linux.intel.com>
+CC: linux-serial@vger.kernel.org
+---
+ drivers/tty/serial/pch_uart.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index cca742b..332f2eb 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1864,4 +1864,8 @@ module_exit(pch_uart_module_exit);
+ MODULE_LICENSE("GPL v2");
+ MODULE_DESCRIPTION("Intel EG20T PCH UART PCI Driver");
+ module_param(default_baud, uint, S_IRUGO);
++MODULE_PARM_DESC(default_baud,
++                 "Default BAUD for initial driver state and console (default 9600)");
+ module_param(user_uartclk, uint, S_IRUGO);
++MODULE_PARM_DESC(user_uartclk,
++                 "Override UART default or board specific UART clock");
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.7.6.5
+
