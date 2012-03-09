@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab2CIOyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 09:54:19 -0500
-Received: from twin.jikos.cz ([89.185.236.188]:45916 "EHLO twin.jikos.cz"
+	id S1756935Ab2CIO5t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 09:57:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39890 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754464Ab2CIOyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 09:54:18 -0500
-Date: Fri, 9 Mar 2012 15:54:06 +0100
-From: David Sterba <dave@jikos.cz>
-To: Jacek Luczak <difrost.kernel@gmail.com>
-Cc: dave@jikos.cz, Liu Bo <liubo2009@cn.fujitsu.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, josef@redhat.com
-Subject: Re: kernel BUG at fs/btrfs/delayed-inode.c:1466!
-Message-ID: <20120309145406.GL4334@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Jacek Luczak <difrost.kernel@gmail.com>, dave@jikos.cz,
-	Liu Bo <liubo2009@cn.fujitsu.com>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>, josef@redhat.com
-References: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com> <20120308155211.GF4334@twin.jikos.cz> <CADDYkjTG-q5+pFRFt9sGKq=cgL=ZgQaNZV=2ipBsSbuvxCa3jw@mail.gmail.com> <4F595D6D.6080809@cn.fujitsu.com> <20120309105537.GG4334@twin.jikos.cz> <CADDYkjRcRbxxPErdMBOs55-gNHZA0GfxcsWNrVbAuv37b3rtvw@mail.gmail.com> <20120309114010.GH4334@twin.jikos.cz> <CADDYkjQiMpPHLq4NTe5yo1iZfCgtwTgm+3ZDRUdMACpumsdFqw@mail.gmail.com> <CADDYkjRK3h_e3GPDQMpVwSwn6aQ5MwA1FoF1wFV05=LytK3chg@mail.gmail.com>
-Mime-Version: 1.0
+	id S1753307Ab2CIO5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 09:57:48 -0500
+Date: Fri, 9 Mar 2012 09:57:14 -0500
+From: Dave Jones <davej@redhat.com>
+To: Yang Bai <hamo.by@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>,
+        viro@zeniv.linux.org.uk, Christoph Hellwig <hch@infradead.org>
+Subject: Re: inode->i_wb_list corruption.
+Message-ID: <20120309145713.GA21543@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Yang Bai <hamo.by@gmail.com>, Jan Kara <jack@suse.cz>,
+	Fengguang Wu <fengguang.wu@intel.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Fedora Kernel Team <kernel-team@fedoraproject.org>,
+	viro@zeniv.linux.org.uk, Christoph Hellwig <hch@infradead.org>
+References: <20120306185137.GA15881@redhat.com>
+ <20120306210307.GC8781@quack.suse.cz>
+ <20120307072608.GA24087@localhost>
+ <20120307104240.GB18658@quack.suse.cz>
+ <CAO_0yfNt2jgiTPZn5NkwBAjQZtk+377gG71d6QOuXQrDHjdkEg@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CADDYkjRK3h_e3GPDQMpVwSwn6aQ5MwA1FoF1wFV05=LytK3chg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <CAO_0yfNt2jgiTPZn5NkwBAjQZtk+377gG71d6QOuXQrDHjdkEg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 03:33:24PM +0100, Jacek Luczak wrote:
-> > Those two issues go inline. After a longer while of WARN_ON the BUG_ON
-> > hit again.
-> 
-> One more observation. Host is running builds from CI system. After
-> BUG_ON pop up all builds take 50% more time to complete.
+On Fri, Mar 09, 2012 at 04:34:57PM +0800, Yang Bai wrote:
+ 
+ > I still want to know how to reproduce this bug. I add the following
+ > patch to the kernel fc-16 3.2.9-1
+ > 
+ > So on every inode_wb_list_del, it will show the whole list.
+ > 
+ > and Doing while true; do touch a && rm -f a; done for almost one day
+ > without any problem.
+ > 
+ > So How to reproduce it??
 
-After a BUG_ON the system is in an inconsistent state and will
-misbehave.
+If it was that easy, I'd be bisecting it by now ;-)
 
-> Also I see that current load average stall at value of 7 even if host
-> is completely idle.
+This, like a bunch of other really weird bugs that we have no explanation for,
+only seems to be being hit by a small minority of users.
 
-That's probably because some process is stuck in a D-state after the
-crash.
+One common thing seems to be that they were all quad core intel
+boxes, with i915 graphics.
 
+We have some reports of i915 causing memory corruption after suspend/hibernate,
+but none of these reports mention whether they've done that (I just asked).
 
-david
+	Dave
+
