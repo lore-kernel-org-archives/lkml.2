@@ -1,165 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab2CIBd2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 20:33:28 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65416 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756910Ab2CIBd1 (ORCPT
+	id S1759456Ab2CIBeI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 20:34:08 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35247 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755635Ab2CIBeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 20:33:27 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v6 2/2] of: Make of_find_node_by_path() traverse /aliases for relative paths.
-To: David Daney <ddaney.cavm@gmail.com>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-In-Reply-To: <1330543264-18103-3-git-send-email-ddaney.cavm@gmail.com>
-References: <1330543264-18103-1-git-send-email-ddaney.cavm@gmail.com> <1330543264-18103-3-git-send-email-ddaney.cavm@gmail.com>
-Date: Thu, 08 Mar 2012 18:33:24 -0700
-Message-Id: <20120309013324.64DF53E0901@localhost>
+	Thu, 8 Mar 2012 20:34:05 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Mar 2012 10:32:31 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Johannes Weiner <jweiner@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 5/7] mm: rework reclaim_stat counters
+Message-Id: <20120309103231.03097798.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120308180419.27621.88710.stgit@zurg>
+References: <20120308175752.27621.54781.stgit@zurg>
+	<20120308180419.27621.88710.stgit@zurg>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Feb 2012 11:21:04 -0800, David Daney <ddaney.cavm@gmail.com> wrote:
-> From: David Daney <david.daney@cavium.com>
+On Thu, 08 Mar 2012 22:04:19 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
+
+> Currently there is two types of reclaim-stat counters:
+> recent_scanned (pages picked from from lru),
+> recent_rotated (pages putted back to active lru).
+> Reclaimer uses ratio recent_rotated / recent_scanned
+> for balancing pressure between file and anon pages.
 > 
-> Currently all paths passed to of_find_node_by_path() must begin with a
-> '/', indicating a full path to the desired node.
+> But if we pick page from lru we can either reclaim it or put it back to lru, thus:
+> recent_scanned == recent_rotated[inactive] + recent_rotated[active] + reclaimed
+> This can be called "The Law of Conservation of Memory" =)
 > 
-> Augment the look-up code so that if a path does *not* begin with '/',
-> the path is used as the name of an /aliases property.  The value of
-> this alias is then used as the full node path to be found.
+> Thus recent_rotated counters for each lru list is enough, reclaimed pages can be
+> counted as rotatation into inactive lru. After that reclaimer can use this ratio:
+> recent_rotated[active] / (recent_rotated[active] + recent_rotated[inactive])
 > 
-> Signed-off-by: David Daney <david.daney@cavium.com>
-> ---
->  drivers/of/base.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++++++--
->  1 files changed, 62 insertions(+), 3 deletions(-)
+> After this patch struct zone_reclaimer_stat has only one array: recent_rotated,
+> which is directly indexed by lru list index:
 > 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 5806449..0bbe47c 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -365,22 +365,81 @@ EXPORT_SYMBOL(of_get_next_child);
->  
->  /**
->   *	of_find_node_by_path - Find a node matching a full OF path
-> - *	@path:	The full path to match
-> + *	@path: Either the full path to match, or if the path does not
-> + *	       start with '/', the name of a property of the /aliases
-> + *	       node (an alias).  In the case of an alias, the node
-> + *	       matching the alias' value will be returned.
->   *
->   *	Returns a node pointer with refcount incremented, use
->   *	of_node_put() on it when done.
->   */
->  struct device_node *of_find_node_by_path(const char *path)
->  {
-> -	struct device_node *np = allnodes;
-> +	struct device_node *np = NULL;
-> +	struct device_node *aliases = NULL;
-> +	char *alias = NULL;
-> +	char *new_path = NULL;
-> +	char *ps;
->  
->  	read_lock(&devtree_lock);
-> -	for (; np; np = np->allnext) {
-> +
-> +	/*
-> +	 * The following code has three possibilities:
-> +	 * 1) '/' at start of string; path == ps; (based at root)
-> +	 * 2) '/' at offset in string; path < ps; (relative to alias)
-> +	 * 3) '/' not found; ps == NULL; (alias only)
-> +	 *
-> +	 * If ps != path, then it is either a pure alias (ps == NULL),
-> +	 * or an alias with a relative path (path < ps).  Either way,
-> +	 * look up the path pointed to by the alias.
-> +	 */
-> +	ps = strchr(path, '/');
-> +	if (path != ps) {
-> +		aliases = of_find_node_by_path("/aliases");
-> +		if (!aliases)
-> +			goto out;
-> +
-> +		/*
-> +		 * Duplicate the alias part of the string so it can be
-> +		 * NULL terminated.
-> +		 */
-> +		alias = kstrndup(path,
-> +				 ps ? (ps - path) : strlen(path), GFP_KERNEL);
-> +		if (!alias)
-> +			goto out;
-> +		path = of_get_property(aliases, alias, NULL);
-> +		if (!path || path[0] != '/')
-> +			goto out;
-
-All the aliases are already decoded at boot time now.  See
-of_alias_scan().  Instead of open-coding this, you can add an
-of_alias_lookup() function something like this (untested):
-
-const char *of_alias_lookup(const char *alias)
-{
-	struct alias_prop *app;
-	list_for_each_entry(app, &aliases_lookup, link) {
-		if (strcmp(app->alias, alias))
-			return app->np->full_name;
-	}
-	return NULL;
-}
-
-Then most of the above code disappears.  It can instead look like:
-
-	ps = strchr(path, '/');
-	if (path != ps) {
-		char alias[ps - path + 1];
-		strncpy(alias, path, ps - path);
-		alias[ps - path] = '\0';
-		path = of_alias_lookup(alias);
-		if (path && ps)
-			/* Don't forget to free this */
-			path = kasprintf(GFP_KERNEL, "%s%s", path, ps);
-		if (!path)
-			return NULL;
-	}
-
-g.
-
-> +
-> +		/* If ps is not NULL, then there is a relative path to append */
-> +		if (ps) {
-> +			new_path = kzalloc(strlen(path) + strlen(ps) + 1,
-> +					   GFP_KERNEL);
-> +			if (!new_path)
-> +				goto out;
-> +
-> +			sprintf(new_path, "%s%s", path, ps);
-> +			path = new_path;
-> +		}
-> +	}
-> +
-> +	/*
-> +	 * At this point, path now points to the full unaliased path
-> +	 * to a node, regardless of whether or not it started with an
-> +	 * alias.
-> +	 */
-> +
-> +	for (np = allnodes; np; np = np->allnext) {
->  		if (np->full_name && (of_node_cmp(np->full_name, path) == 0)
->  		    && of_node_get(np))
->  			break;
->  	}
-> +out:
-> +	if (aliases)
-> +		of_node_put(aliases);
->  	read_unlock(&devtree_lock);
-> +	kfree(alias);
-> +	kfree(new_path);
->  	return np;
->  }
->  EXPORT_SYMBOL(of_find_node_by_path);
-> -- 
-> 1.7.2.3
+> before patch:
 > 
+> LRU_ACTIVE_ANON   -> LRU_ACTIVE_ANON   : recent_scanned[ANON]++, recent_rotated[ANON]++
+> LRU_INACTIVE_ANON -> LRU_ACTIVE_ANON   : recent_scanned[ANON]++, recent_rotated[ANON]++
+> LRU_ACTIVE_ANON   -> LRU_INACTIVE_ANON : recent_scanned[ANON]++
+> LRU_INACTIVE_ANON -> LRU_INACTIVE_ANON : recent_scanned[ANON]++
+> 
+> after patch:
+> 
+> LRU_ACTIVE_ANON   -> LRU_ACTIVE_ANON   : recent_rotated[LRU_ACTIVE_ANON]++
+> LRU_INACTIVE_ANON -> LRU_ACTIVE_ANON   : recent_rotated[LRU_ACTIVE_ANON]++
+> LRU_ACTIVE_ANON   -> LRU_INACTIVE_ANON : recent_rotated[LRU_INACTIVE_ANON]++
+> LRU_INACTIVE_ANON -> LRU_INACTIVE_ANON : recent_rotated[LRU_INACTIVE_ANON]++
+> 
+> recent_scanned[ANON] === recent_rotated[LRU_ACTIVE_ANON] + recent_rotated[LRU_INACTIVE_ANON]
+> recent_rotated[ANON] === recent_rotated[LRU_ACTIVE_ANON]
+> 
+> (and the same for FILE/LRU_ACTIVE_FILE/LRU_INACTIVE_FILE)
+> 
+> v5:
+> * resolve conflict with "memcg: fix GPF when cgroup removal races with last exit"
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
--- 
-email sent from notmuch.vim plugin
+Nice description.
+
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+
