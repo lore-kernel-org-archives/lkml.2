@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab2CILlW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 06:41:22 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:38795
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751354Ab2CILlV (ORCPT
+	id S1753151Ab2CILuc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 06:50:32 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:51192 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab2CILua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 06:41:21 -0500
-X-SpamScore: -17
-X-BigFish: VPS-17(zz1432N98dK148cMzz1202hzz8275bh5eeeKz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M0M8GQ-01-1KV-02
-X-M-MSG: 
-Date: Fri, 9 Mar 2012 12:41:12 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] perf script: Add script to collect and display IBS
- samples
-Message-ID: <20120309114112.GR16322@erda.amd.com>
-References: <20111223111958.GE16765@erda.amd.com>
- <20111223135340.GB21382@elte.hu>
- <1324649698.24803.55.camel@twins>
- <20111223144040.GB2297@elte.hu>
- <20111223161701.GF16765@erda.amd.com>
- <20111223163930.GA5983@elte.hu>
- <20111223165030.GG16765@erda.amd.com>
- <20111230095521.GA12077@elte.hu>
- <20120202112133.GR16322@erda.amd.com>
- <20120308121924.GA19674@elte.hu>
+	Fri, 9 Mar 2012 06:50:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the omap_dss2 tree
+Date: Fri, 9 Mar 2012 11:50:11 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+References: <20120308170048.f1a992bca2ca2d93fa9747bf@canb.auug.org.au> <201203081616.12510.arnd@arndb.de> <1331285751.1927.20.camel@deskari>
+In-Reply-To: <1331285751.1927.20.camel@deskari>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120308121924.GA19674@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203091150.11294.arnd@arndb.de>
+X-Provags-ID: V02:K0:g8UhOGHIsZuj73AM16Ja/oHbnc5i0sqzOHs/Yt429+O
+ 9LARyv+Vl2UqgCw0tDU0+V8sS77TXNu35r+CZ3j14AuICu2E8O
+ DYtwCtTfReQwJ7eKP9lX2nJ8fbxSlBHrzG8yUVQH7FrD9kO2SD
+ oiCyVu/nIOwjc7RhnrcGmKx4UQKHwI+XuoQ+WWhD8dQo6ZpJ2Z
+ ZSNCk/Y+4figrKP/AYjTX+fE9NSYqVb2i8hI/F/T0OVcyV6UcS
+ g6tgcvDZ8ckLUiyIzI7Gv6w+VDyp5Q4QXMv2lv1NjoLi7GdPnx
+ 3EnuNXLZID7JZwSaA97A6VESwqhK/aNqReKoTh/RJY95PYbO12
+ YWkSBRWjC1E4CRDVfnAY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
-
-On 08.03.12 13:19:24, Ingo Molnar wrote:
-> I've applied the following 4 kernel patches to perf/x86-ibs:
+On Friday 09 March 2012, Tomi Valkeinen wrote:
+> On Thu, 2012-03-08 at 16:16 +0000, Arnd Bergmann wrote:
+> > On Thursday 08 March 2012, Stephen Rothwell wrote:
+> > > Hi all,
+> > > 
+> > > Today's linux-next merge of the arm-soc tree got a conflict in
+> > > arch/arm/mach-omap1/board-palmtt.c between commit ddba6c7f7ec6 ("OMAP1:
+> > > pass LCD config with omapfb_set_lcd_config()") from the omap_dss2 tree
+> > > and commit 2e3ee9f45b3c ("ARM: OMAP1: Move most of plat/io.h into local
+> > > iomap.h") from the arm-soc tree.
+> > > 
+> > > I fixed it up (see below) and can carry the fix as necessary.
+> > 
+> > Hi Stephen,
+> > 
+> > Thanks for fixing up all the conflicts between arm-soc and omap_dss2.
+> > I think we should make sure they are resolved in one of the trees before
+> > the merge window.
 > 
->  db98c5faf8cb: perf/x86: Implement 64-bit counter support for IBS
->  4db2e8e6500d: perf/x86: Implement IBS pmu control ops
->  b7074f1fbd61: perf/x86: Implement IBS interrupt handler
->  510419435c69: perf/x86: Implement IBS event configuration
+> Do we need to? The conflicts seemed to be trivial ones, like arm-soc
+> adds/removes something that just happens to be next to something else
+> that I add/remove.
 > 
-> and pushed it out.
+> My understanding is that it's better to leave those conflicts than to do
+> "trickery" to avoid them.
+
+Each of the conflicts is simple enough, but I feel it's worth resolving
+them in this case because there are a number of them. Looking at them
+again now, it's probably ok either way -- resolving them now or letting
+Linus take care of them.
+
+> > Tomi, what are your plans for the omap_dss2 branch to get merged?
 > 
-> We can apply any tooling changes to this branch as well.
+> Normally my tree goes via fbdev-tree (Florian's tree) to mainline.
+
+ok.
+
+> > Do you think you should send it to Linus first and we merge it into
+> > arm-soc to resolve the conflicts?
+> > Or do you want to merge it through the arm-soc tree?
+> > Or should we go first and you fix up the conflicts by pulling in the
+> > necessary topic branches from arm-soc into your tree?
 > 
-> I suspect being able to skid-less profile on AMD CPUs, using 
-> IBS, would be a useful feature to users. What would be required 
-> for that to work?
+> If we want to resolve the conflicts, perhaps it's simplest if the dss
+> tree is merged to arm-soc.
 
-thanks for putting this into tip. This helps a lot.
+Ok. Maybe we'll just merge them in case Florian is upstream faster and
+not merge them otherwise.
 
-I am just looking into skid-less sampling. The effort of attaching the
-rip taken from the IBS sample for events 0x76/0xc1 should be feasable.
-
-In between I started the implementation of ibs pseudo events as
-described here:
-
- Appendix F Guide to Instruction-Based Sampling
- http://support.amd.com/us/Processor_TechDocs/47414_15h_sw_opt_guide.pdf
-
-This includes kernel side filtering and ibs support for the perf tool.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+	Arnd
