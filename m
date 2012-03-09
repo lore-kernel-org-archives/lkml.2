@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031960Ab2CITyb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:54:31 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57820 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031937Ab2CITy0 (ORCPT
+	id S1031991Ab2CITyj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:54:39 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36444 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031973Ab2CITyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:54:26 -0500
-Message-Id: <20120309190219.853230559@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:54:36 -0500
+Message-Id: <20120309190220.098256869@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:15 -0800
+Date: Fri, 09 Mar 2012 11:03:18 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 61/68] hwmon: (jc42) Add support for AT30TS00, TS3000GB2, TSE2002GB2, and MCP9804
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?An=C3=83=C2=ADbal=20Almeida=20Pinto?= 
+	<anibal.pinto@efacec.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Oliver Neukum <oliver@neukum.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 64/68] net/usbnet: avoid recursive locking in usbnet_stop()
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,146 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Sebastian Siewior <bigeasy@linutronix.de>
 
-commit 1bd612a25855f4cc9345052b53d7da697dba6358 upstream.
+commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d upstream.
 
-Also update IDT datasheet locations.
+|kernel BUG at kernel/rtmutex.c:724!
+|[<c029599c>] (rt_spin_lock_slowlock+0x108/0x2bc) from [<c01c2330>] (defer_bh+0x1c/0xb4)
+|[<c01c2330>] (defer_bh+0x1c/0xb4) from [<c01c3afc>] (rx_complete+0x14c/0x194)
+|[<c01c3afc>] (rx_complete+0x14c/0x194) from [<c01cac88>] (usb_hcd_giveback_urb+0xa0/0xf0)
+|[<c01cac88>] (usb_hcd_giveback_urb+0xa0/0xf0) from [<c01e1ff4>] (musb_giveback+0x34/0x40)
+|[<c01e1ff4>] (musb_giveback+0x34/0x40) from [<c01e2b1c>] (musb_advance_schedule+0xb4/0x1c0)
+|[<c01e2b1c>] (musb_advance_schedule+0xb4/0x1c0) from [<c01e2ca8>] (musb_cleanup_urb.isra.9+0x80/0x8c)
+|[<c01e2ca8>] (musb_cleanup_urb.isra.9+0x80/0x8c) from [<c01e2ed0>] (musb_urb_dequeue+0xec/0x108)
+|[<c01e2ed0>] (musb_urb_dequeue+0xec/0x108) from [<c01cbb90>] (unlink1+0xbc/0xcc)
+|[<c01cbb90>] (unlink1+0xbc/0xcc) from [<c01cc2ec>] (usb_hcd_unlink_urb+0x54/0xa8)
+|[<c01cc2ec>] (usb_hcd_unlink_urb+0x54/0xa8) from [<c01c2a84>] (unlink_urbs.isra.17+0x2c/0x58)
+|[<c01c2a84>] (unlink_urbs.isra.17+0x2c/0x58) from [<c01c2b44>] (usbnet_terminate_urbs+0x94/0x10c)
+|[<c01c2b44>] (usbnet_terminate_urbs+0x94/0x10c) from [<c01c2d68>] (usbnet_stop+0x100/0x15c)
+|[<c01c2d68>] (usbnet_stop+0x100/0x15c) from [<c020f718>] (__dev_close_many+0x94/0xc8)
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: Jean Delvare <khali@linux-fr.org>
+defer_bh() takes the lock which is hold during unlink_urbs(). The safe
+walk suggest that the skb will be removed from the list and this is done
+by defer_bh() so it seems to be okay to drop the lock here.
+
+Reported-by: AnÃ­bal Almeida Pinto <anibal.pinto@efacec.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/hwmon/jc42 |   20 ++++++++++++++------
- drivers/hwmon/Kconfig    |    6 +++---
- drivers/hwmon/jc42.c     |   20 ++++++++++++++++++--
- 3 files changed, 35 insertions(+), 11 deletions(-)
+ drivers/net/usb/usbnet.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/Documentation/hwmon/jc42
-+++ b/Documentation/hwmon/jc42
-@@ -7,21 +7,29 @@ Supported chips:
-     Addresses scanned: I2C 0x18 - 0x1f
-     Datasheets:
- 	http://www.analog.com/static/imported-files/data_sheets/ADT7408.pdf
--  * IDT TSE2002B3, TS3000B3
--    Prefix: 'tse2002b3', 'ts3000b3'
-+  * Atmel AT30TS00
-+    Prefix: 'at30ts00'
-     Addresses scanned: I2C 0x18 - 0x1f
-     Datasheets:
--	http://www.idt.com/products/getdoc.cfm?docid=18715691
--	http://www.idt.com/products/getdoc.cfm?docid=18715692
-+	http://www.atmel.com/Images/doc8585.pdf
-+  * IDT TSE2002B3, TSE2002GB2, TS3000B3, TS3000GB2
-+    Prefix: 'tse2002', 'ts3000'
-+    Addresses scanned: I2C 0x18 - 0x1f
-+    Datasheets:
-+	http://www.idt.com/sites/default/files/documents/IDT_TSE2002B3C_DST_20100512_120303152056.pdf
-+	http://www.idt.com/sites/default/files/documents/IDT_TSE2002GB2A1_DST_20111107_120303145914.pdf
-+	http://www.idt.com/sites/default/files/documents/IDT_TS3000B3A_DST_20101129_120303152013.pdf
-+	http://www.idt.com/sites/default/files/documents/IDT_TS3000GB2A1_DST_20111104_120303151012.pdf
-   * Maxim MAX6604
-     Prefix: 'max6604'
-     Addresses scanned: I2C 0x18 - 0x1f
-     Datasheets:
- 	http://datasheets.maxim-ic.com/en/ds/MAX6604.pdf
--  * Microchip MCP9805, MCP98242, MCP98243, MCP9843
--    Prefixes: 'mcp9805', 'mcp98242', 'mcp98243', 'mcp9843'
-+  * Microchip MCP9804, MCP9805, MCP98242, MCP98243, MCP9843
-+    Prefixes: 'mcp9804', 'mcp9805', 'mcp98242', 'mcp98243', 'mcp9843'
-     Addresses scanned: I2C 0x18 - 0x1f
-     Datasheets:
-+	http://ww1.microchip.com/downloads/en/DeviceDoc/22203C.pdf
- 	http://ww1.microchip.com/downloads/en/DeviceDoc/21977b.pdf
- 	http://ww1.microchip.com/downloads/en/DeviceDoc/21996a.pdf
- 	http://ww1.microchip.com/downloads/en/DeviceDoc/22153c.pdf
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -474,9 +474,9 @@ config SENSORS_JC42
- 	  If you say yes here, you get support for JEDEC JC42.4 compliant
- 	  temperature sensors, which are used on many DDR3 memory modules for
- 	  mobile devices and servers.  Support will include, but not be limited
--	  to, ADT7408, CAT34TS02, CAT6095, MAX6604, MCP9805, MCP98242, MCP98243,
--	  MCP9843, SE97, SE98, STTS424(E), STTS2002, STTS3000, TSE2002B3, and
--	  TS3000B3.
-+	  to, ADT7408, AT30TS00, CAT34TS02, CAT6095, MAX6604, MCP9804, MCP9805,
-+	  MCP98242, MCP98243, MCP9843, SE97, SE98, STTS424(E), STTS2002,
-+	  STTS3000, TSE2002B3, TSE2002GB2, TS3000B3, and TS3000GB2.
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -585,6 +585,7 @@ static int unlink_urbs (struct usbnet *d
+ 		entry = (struct skb_data *) skb->cb;
+ 		urb = entry->urb;
  
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called jc42.
---- a/drivers/hwmon/jc42.c
-+++ b/drivers/hwmon/jc42.c
-@@ -64,6 +64,7 @@ static const unsigned short normal_i2c[]
- 
- /* Manufacturer IDs */
- #define ADT_MANID		0x11d4  /* Analog Devices */
-+#define ATMEL_MANID		0x001f  /* Atmel */
- #define MAX_MANID		0x004d  /* Maxim */
- #define IDT_MANID		0x00b3  /* IDT */
- #define MCP_MANID		0x0054  /* Microchip */
-@@ -77,15 +78,25 @@ static const unsigned short normal_i2c[]
- #define ADT7408_DEVID		0x0801
- #define ADT7408_DEVID_MASK	0xffff
- 
-+/* Atmel */
-+#define AT30TS00_DEVID		0x8201
-+#define AT30TS00_DEVID_MASK	0xffff
-+
- /* IDT */
- #define TS3000B3_DEVID		0x2903  /* Also matches TSE2002B3 */
- #define TS3000B3_DEVID_MASK	0xffff
- 
-+#define TS3000GB2_DEVID		0x2912  /* Also matches TSE2002GB2 */
-+#define TS3000GB2_DEVID_MASK	0xffff
-+
- /* Maxim */
- #define MAX6604_DEVID		0x3e00
- #define MAX6604_DEVID_MASK	0xffff
- 
- /* Microchip */
-+#define MCP9804_DEVID		0x0200
-+#define MCP9804_DEVID_MASK	0xfffc
-+
- #define MCP98242_DEVID		0x2000
- #define MCP98242_DEVID_MASK	0xfffc
- 
-@@ -129,8 +140,11 @@ struct jc42_chips {
- 
- static struct jc42_chips jc42_chips[] = {
- 	{ ADT_MANID, ADT7408_DEVID, ADT7408_DEVID_MASK },
-+	{ ATMEL_MANID, AT30TS00_DEVID, AT30TS00_DEVID_MASK },
- 	{ IDT_MANID, TS3000B3_DEVID, TS3000B3_DEVID_MASK },
-+	{ IDT_MANID, TS3000GB2_DEVID, TS3000GB2_DEVID_MASK },
- 	{ MAX_MANID, MAX6604_DEVID, MAX6604_DEVID_MASK },
-+	{ MCP_MANID, MCP9804_DEVID, MCP9804_DEVID_MASK },
- 	{ MCP_MANID, MCP98242_DEVID, MCP98242_DEVID_MASK },
- 	{ MCP_MANID, MCP98243_DEVID, MCP98243_DEVID_MASK },
- 	{ MCP_MANID, MCP9843_DEVID, MCP9843_DEVID_MASK },
-@@ -169,10 +183,12 @@ static struct jc42_data *jc42_update_dev
- 
- static const struct i2c_device_id jc42_id[] = {
- 	{ "adt7408", 0 },
-+	{ "at30ts00", 0 },
- 	{ "cat94ts02", 0 },
- 	{ "cat6095", 0 },
- 	{ "jc42", 0 },
- 	{ "max6604", 0 },
-+	{ "mcp9804", 0 },
- 	{ "mcp9805", 0 },
- 	{ "mcp98242", 0 },
- 	{ "mcp98243", 0 },
-@@ -183,8 +199,8 @@ static const struct i2c_device_id jc42_i
- 	{ "stts424", 0 },
- 	{ "stts2002", 0 },
- 	{ "stts3000", 0 },
--	{ "tse2002b3", 0 },
--	{ "ts3000b3", 0 },
-+	{ "tse2002", 0 },
-+	{ "ts3000", 0 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, jc42_id);
++		spin_unlock_irqrestore(&q->lock, flags);
+ 		// during some PM-driven resume scenarios,
+ 		// these (async) unlinks complete immediately
+ 		retval = usb_unlink_urb (urb);
+@@ -592,6 +593,7 @@ static int unlink_urbs (struct usbnet *d
+ 			netdev_dbg(dev->net, "unlink urb err, %d\n", retval);
+ 		else
+ 			count++;
++		spin_lock_irqsave(&q->lock, flags);
+ 	}
+ 	spin_unlock_irqrestore (&q->lock, flags);
+ 	return count;
 
 
