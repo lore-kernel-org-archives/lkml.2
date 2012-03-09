@@ -1,223 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964973Ab2CIXDM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 18:03:12 -0500
-Received: from mail2.seas.wustl.edu ([128.252.21.109]:56712 "EHLO
-	POSTOFFICE.seas.wustl.edu" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S964908Ab2CIXDK (ORCPT
+	id S1753569Ab2CIXJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 18:09:32 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59833 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab2CIXJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 18:03:10 -0500
-X-Greylist: delayed 909 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 18:03:10 EST
-Date: Fri, 9 Mar 2012 16:48:00 -0600
-From: Allen Rueter <allen@seas.wustl.edu>
-To: linux-kernel@vger.kernel.org
-Subject: vlan trunk problem with kernel.x86_64 0:2.6.18-308.1.1.el5
-Message-ID: <20120309224800.GC17764@seas.wustl.edu>
-Reply-To: Allen Rueter <allen@seas.wustl.edu>
-Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="HcAYCG3uE/tztfnV"
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
-X-Unix-Reply-To: allen@mail.cts.wustl.edu (Allen Rueter)
-X-OriginalArrivalTime: 09 Mar 2012 22:48:00.0280 (UTC) FILETIME=[ADBB4980:01CCFE46]
+	Fri, 9 Mar 2012 18:09:30 -0500
+Message-ID: <4F5A8DA7.5070900@wwwdotorg.org>
+Date: Fri, 09 Mar 2012 16:09:27 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pinctrl: Include <linux/bug.h> to prevent compile errors
+References: <1331324305-1649-1-git-send-email-swarren@wwwdotorg.org>	<20120309203207.GB10835@windriver.com>	<4F5A6B6B.50703@wwwdotorg.org> <CAP=VYLpZv-g5ZqONzhk51nth3Wn=zHmcfytdEBH3ZX7CJKjaZw@mail.gmail.com>
+In-Reply-To: <CAP=VYLpZv-g5ZqONzhk51nth3Wn=zHmcfytdEBH3ZX7CJKjaZw@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/09/2012 02:29 PM, Paul Gortmaker wrote:
+> On Fri, Mar 9, 2012 at 3:43 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 03/09/2012 01:32 PM, Paul Gortmaker wrote:
+>>> [[PATCH] pinctrl: Include <linux/bug.h> to prevent compile errors] On 09/03/2012 (Fri 13:18) Stephen Warren wrote:
+>>>
+>>>> Macros in <linux/pinctrl/machine.h> call ARRAY_SIZE(), the definition of
+>>>> which eventually calls BUILD_BUG_ON_ZERO(), which is defined in
+>>>> <linux/bug.h>. Include that so that every .c file using the pinctrl macros
+>>>> doesn't have to do that itself.
+>>>
+>>> Which C files are failing?  The approach was to be adding it only
+>>> for headers with static inlines which use it, and add it to C files
+>>> that are actually *deploying* the macros.
+>>
+>> For me, the files that are failing haven't been committed upstream yet;
+>> I expect them to be very soon after the 3.4 merge window completes.
+>>
+>> However, I expect you'll see this issue with arch/arm/mach-u300/core.c,
+>> since it uses the same macros defined in pinctrl/machine.h that cause
+>> the problem for me, unless one of the include files there picks up bug.h
+>> already.
+>>
+>> As a general statement though, once pinctrl becomes more widely adopted,
+>> I expect to see many files start to use macros from pinctrl/machine.h,
+>> and hence implicitly use ARRAY_SIZE(), and hence even more implicitly
+>> depend on linux/bug.h. I don't think it's at all reasonable to force the
+>> author of every one of those files to track down 3 or 4 levels of header
+>> file dependencies to find that they need linux/bug.h even though they
+>> make no direct use of its features, when it's known that almost any user
+>> of pinctrl/machine.h is going to hit this issue.
+> 
+> There was a similar discussion before, where there was concern over
+> "every one of those files" but in the end the number is a fraction of
+> a percent.   There is no harm in the author knowing they are making
+> _use_ of BUG stuff -- in fact if you happened to be trying to write some
+> fault tolerant code, you might really be glad to know, so you could take
+> steps to avoid it....
 
---HcAYCG3uE/tztfnV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The primary purpose for pinctrl/machine.h is files that define a certain
+data structure that will almost invariably be initialized using the
+macros in that header. Size those macros use ARRAY_SIZE, every one of
+those .c files will require bug.h.
 
-Hi 
- I had to roll back the auto upgrade to kernel.x86_64 0:2.6.18-308.1.1.el5
-I'm back at 2.6.18-274.18.1.el5
-
-the problem seems to be networking, I use a vlan trunk to be connected
-to several different private vlans. I can ping the local interface,
-but can not ping anything else.
-
-see attachment for cpuinfo/modules/ioports/iomem/lspci/scsi/ifconfig
-
--- 
-Allen P. Rueter           314/935-6429 Fx:314/935-4343
-Sr. Systems Spc. in EIT   allen@seas.wustl.edu
-Camp Box 1207 Lopata Rm 406 ____ ___ ___
-Washington University      |  __|_ _|_ _|
-One Brookings Dr.          | *_| |*| |*|
-St. Louis MO  63130        |____|___||_|
-Office: 406E Lopata   
-Security tip: check your browser plugins with:
-http://mozilla.com/plugincheck
-
---HcAYCG3uE/tztfnV
-Content-Type: application/x-gzip
-Content-Disposition: attachment; filename="mymachine.tar.gz"
-Content-Transfer-Encoding: base64
-
-H4sIANCHWk8AA+xd63OjuLKfr/Zfoar9kikHD+Jp+2xOHb8yyZk48bWdma27NZXCIGxuMLCA
-M87+9bdbgN/O03nMDuxOALXUanW3xE8tGSa3E8McOx779OHFDhEOXVX5GY71M7+mVJc0VZQ1
-mX4QKVVl6QNRX06kxTGNYiMk5EPo+/Fd+e6j/6THZG7/IPTNqxsWRo7v7bcONLCmKDvtL0na
-3P6SDulUoZrygYj7FWP78Yvb/8zxpjOSmp1IZa1MK4KkK3Aq0zJzVXIw8c3r4dRxrf/wvyyk
-YtlkXuxHZT8cfSQHI9Occ4CCZYlIolgRdVEhBz1mkRMjTtIFlX78SH6jpN/pksF4So7ZkFQJ
-lWqKWlMU0u4PoCiVim+tlV/nWOv/jh/4YRztt457+j/V9MX4L2s4/iuSKOf9/zUONIAANrBJ
-jVgTgxZhOMYEiUJC4JiYoGCCIkNC7ExYKEKSiknqPAlzaZikiZB0zW6HvhFamKhgorKaqGNO
-XYfEMDaLOFTAfSWVgATGiJGQjYBgIMFIJZEgwcQEK82JCTYm2JhgB9MiNAPuqY2sHYuBoJJd
-EeAPZohY6BhuUZR1SJJ1A7kaIbo75JORs8w534yMEiTYEiTYKnJ2/SC4xSQNk7Q5c9nWMUGf
-5yGt0x4mYwUrdVZQyRUR9VVvdk9Jt0ONq/bXwVXj7AtSFaSqK9Tm+ZxaQepwQb0adKCaCkWe
-dF6q2b0k8Tj049hlQJWwlGRn1M/dtpjyQ0NVuHiBFxBRrIlgPhMlNPXVVGYyUWAmz4uOUoP/
-qV2Wi4Qsk5yKSK+iyXAaFW0GfOCPvlpCAgJFApU3CRISpC0lZCTIW0qYSLDsDYKNrGx5hWBx
-cZdJ07HpXI1NC/IrmKiu5Zd4/gVpKb+GifpafsrzL0hL+SuYWF3LL/L8C9JSfgMTjbWGJfwT
-0tyz99X/18b/yIwc/mdf/PG4D/+pdIH/VMrxn6KJ+fj/Gkc9jsH+ANIsduOYLKoVT/wohpEL
-fEAkzbHhecxFdySnFj+dTT08g09+ZZ7lhzC+DOqEHx3fwrzfWk34RzVRrLeO+4JOeuymRiTK
-HX9wG7Aa5G05ITNjoW5CnRHZctTP+6ek34Q/IUiG2BKqVZekk54mXb/e6V+efyYnKOF///sp
-ke5/O3Qf0r21NR9/rPV/M5g6nu3vt457+r8K4GIx/1MkPv9T8v7/KgdaHXzcDwvgwMUb3mmu
-HAvuPjMPfIGdejFzi+AXxDYmjnsLFK04wb5UgEuqJtfEMyYM7nnug95H8gfzPTwjKlk6VDAs
-If+BiaYsfz75uxjFLAgcb8S5YiWdk7+RryRLelkFCGLi6EQi52/krohVjXxpFIPxbeSYhku4
-oGIxcoYuMImwYNH0Q4YETkGWmJCQDICRGQXwIl7csggvr9jMZEEM/ThNw45gEZfdQDuhmWLx
-RzDP7hpQVYFDTnIzYTB0kiBiJI5MMolCQJWMTExGzFmFYI2AAgMyiUOgjJBiEHPi30C2GIvJ
-GjFd251GY2LFETHMwCGTyYzYM2AVAVv4J8EfMo5JPCHRbQQNB33PiDuBpnngvl58hXUHHpT0
-PSf2Q2JF0JVdkG5GWIQFkQVUBkJRjcziICSuMbav3Elx6I/8iROghhRNVcswemYCpWrXlMQM
-V4brjLwJTP2TRMOyQhwfMRsWh6YMHWhDZp5DolSSlBsnjKcAhAP/BwvJxPAA4yOfWrG47ID0
-53RA+QkOqOUOuNMBlTdzQOnndMDdIyDd6YA0d8DtDqiUq5U3c0D553TA3SPgbgfUcwd8JyPg
-2yLQ/HjLYzH/c2xwZdsZlf3pnic698z/FE2X1tZ/FTGP/7zOweKxmDwXzhzvmjDPNIJaOx6z
-0GMxISffcITBcDCt1hrVGtVrFbEmtQgpLp4o4D2xRjAjDMgM6DUJcg+rtl2zGS8hWZ80hfRN
-P2A1rGep8GWXNHoX9Vaz3h+Q3uX5+en5Z9K5PBuc8hTSGVzWqCqCkB0Wh45Zo0uFe3/AGG5e
-sziCPFpVpDphYeiHUU0kVugHAbPgyr+BxKmHiXYID8mauMRisGChqFSW6T0cTCMMHRau8DB9
-1+VBIMwQz/6asilzmVej4N1kVdzhbcyimlyt6FRV5Co5kCtiWSIdp/GRy5LSqShLapWq5ECq
-quUqpy8xwmc8CBTENaoBkU388LZmGabNl3Msw+IdixSLaF7AM/pzzZtYF/pomWr8f3jQkIZp
-RPFyYpWClYzouibBQyz7R6vSe/MVRa1W5MpzXEXSK7i8vT9X2e4nkkZ1WZUk8BNJqZa1dT8B
-56AVpSpJQK/Qspr4SWr1amW/VlfAnNK61bmN162uVMrie7O5KmpV/Vk2pyLgtpe2uAqOqVZ0
-hRyAIjfsTUVV0URyQEUJBoUv3NiunzFZMvaZj9j8zPeDIUi/y7AA8EX4b7nX4v0u29Vq9BOV
-KqmdMBK/aqezi4tuo978MjdTYhxNwcHibutIGkxKntMf7y//fNvIVKNqBYZssVLWufZXhux1
-YhEmRfHmw/W0e6MJjifAWVkxzPlFvddNdaZU7nXoZ+nr5ZUFXgqeRIbLOpqnFYs3Q38GriXe
-M0TVcQ1U0mvJYij28qW6FuPCE8aDd6O+nSDhHg3uB/9t7P+ZsMl+OC+Oe/C/JFN9jv8VUQb8
-L2uiluP/1zhw/1W6B0issiHfz9G/jWI2Ib16pyjiJpyUDERO/upYzEcqMUJmYBYzy2IOV7Jc
-cAZ2RrVTBhl/Tua1i8LQZqKxUT0huB0pLa9UhsMqbnf5goOECx3KYjwHJ2i40UgyJVNf5LCM
-2ChyzmZahZlUwbfEnPuecOO7Ruy4jPRjPzRGjOdmaW41zR2yiIU3zCrytIzIllgNjKHLIk5P
-C9tZY+eFzdTdBXNB7DZPSWMakd9EHVqyLUeyDwQHQHgsW9U0g1XdwsIEFpywliNhYdYAMwAL
-I2NhmJsshshiMY0wV1kMEylwkNqWKR7JxWzqgXOQTfYG0FlGZ5v0KtDtjL6lhZWiNczEt7aU
-RyUucgy3K5GLvyWTd+NYjoEczIxo7uIAtc/FoFstZWXtsLa0Qyum5YHOttBpEUuZnL7uCgDa
-h4kMW7KcNk/ISYsYU8vxiyxzJ7bFG+1MAJttIdpVPSHihby+/yvZILWZxRibDpat8P1u/GK4
-WtYq60nZjSxssQlqmAq2RWoqZm2S5AV5acB46+H0pzsWz383Ckxn/8G/D/c8/6msSPJi/5ei
-4v4vgAFq/vx/jYN3TECUOJsjw9CxRixdQiJNH3fHGrgiQwBQi3+Q5tgJIoDnScAJMnhxCKiW
-heRkOiQHIbshVPpYLPSnw4j3yW2sWnyjGYERQCsWUhaQ79OFgHwFHAJhNhqzsET6ATObt6bL
-OOnb6flXgXz9XO97MK8VSNcI22EowKM7WcCCq3avVyLHULohNQTScqLT88FMAIFiI55GNdI0
-ghLRtM7J3wK5bB0Li7wZs1b7a799dmRDOvn3oD70w1ggv88vOunFv7EquO/yU1rLmRHDPOYW
-xrtDqAkXzWBuA9DC+ZvhYk0C4YuFRfCOgNikTkLodMwisU9Oe/9DRNCKERhDx3ViByA/+VMV
-v5MuX7bpzJdtFj/ZKBYKx7gcBg+QTrvpXkMb+qfwh8I/SSD16aw5DUMociRO6pjnoCWWDoF8
-COTDljz2Y7iVYXpilcB2c121REBIfd+OexE0GMoJbQ9hDvJn7pEIJ9NwGVwgbVPoynfS6Z/W
-SFaq6U9BBvpJ4sGGJE1Thk4MZQv1ZB0L40PJg4mQFoC35NGxwVszv5P2LOArXwc39CPpQecE
-FYUxOei7fix8PMS6cSNgoQD+BsVrhY4x6xq3rm9YRFK1xBiHpDs2vPh46plotNSA5EyMyNRz
-nYkDdoFkurgDhoX2LB4Y4G69Rhs86KwHTyfeCKwpdmuFHsNd5dkUEZ0fdxMmLUbQeQwtc9H3
-+OnSi6YBFmAWMin03Jl1EVoCyaqZi8iN2f0RIhfeB0qYf6ldGJxJ2wWpPWZYPfbXIjUREexb
-K6BM3N8vPTO75PKkiSgSlF3UOAgNL+oyj8t45l1zlXKN/waKg44KDiyV1c+DT1D5N8eKx2Sm
-HJJ6v9tBdS7r9i7VNl3fvO52oCtPwyB0IlYiZ2d1MwaVlkjjx7kfZ/Wjojl36OWoWutfpNds
-zLvZPBnMxOLQcDz0wMkEO0hqw/6tZ44hNauyPo1BcCgHY9A36KQ8JblK6uSa29nUQaLFQVIX
-uiHUVSItFN+5gYY0vnVGE+SaXgBT9FtsCYGiK24C90ueAnfpFXQ1kAe6FMjd6391cNmdzTmB
-TbYko9hYEBTx12mL96hDvE86OueJhsURdKOnAeAiN/Q7qVs3hmdCw9vo1CTxcCgBVVy2uV5a
-Z11odavdBxXg5XET/jQngRsPLtKL+hCHzktvxu/AMLMLGII7hmvzEu1mr5n6XuJ6TWiJ7wq8
-jk50/eJ19G/CmFdS4pWU5pWUHlBJKauktKsS7K3NRFm9GfeVhmHxKuDcOsOLHjxNMYwE7XMm
-DB4LfMCYd0zOgGvi6Qzq7R7vu8dOCI+4xJxd38FnEo62h7jpBDJAS+Gijb1mfJ3cj6/htlhE
-xAAzST5duRswkD4LwY3msAFLZMP2TEnGa2kOG8hBEPojwbFxH/ef5344MWAGz3CW//3jKlIo
-IRwo7R8plN4ZUmigJDAMTozw9ghtE4E6PIvfUbibQhXQb4HZkahyquAmnI/gyQeKIkMG2N6a
-2wn7vp1EU0QejykWUiy3lnFjflosdENms9gc4wBFJltLZbOzJAaRVTNPQy79rAUkSjWdKvlp
-+i2R35f1CyrjovAxFRg58W1m63P/tF/nTgEuktkmeXTP64bu0Q0dcAZzMEF3Yeb8Or1A91jc
-AGPsEv9EvFZ6Il5TxGH1n4PXSgu8ViLpaQmvlZ6J15ba9Yp4TcrxWo7Xcrx2L14T/hF4rZCt
-hYTg1CFxPDKN4FEdmA73CSFJn2eb+NbURVeKxoE5DhK4J+8N7sk53Hsa3NPW4J62X7i3vlzx
-TuGekMO99wb3TPpouFf6ReHe24Tn5BzuPQDuCdvgXt/lGK1Qj2OvEUMx0HUzDgHXdXpnkBOS
-T0HlmMzPJ37cdaejhXp4W7AuHiXlg8QZapOIZehE3/6VbOTFFqLTgAICN6sXFZj0zRpZrv8Y
-AQyvHkboqIXjWXNiNTmuOemehuAUuKOqOR7xyufP0VRYcmHbh6nA6TVKJSxJkgiQaDMdbBYC
-YOZMhNKi5rksK2wK+Av9EbNqKwKXuIDImuWYOsfUvyimVh6Eqf/YjqapljxOFUHPAfXTALW+
-Bqj1/QLq9X1KjwLU841g8wTbfj/x01IOqF8UUD8+fpoD6tcE1MouQE2194moSy+AqLGtT4mg
-7hNSSyuQmqr/UFBdegioFnJQnYPqXx5Uq3sLVKs5rn4arq6s4erKfnH1+u8D8kB1jqsfhqut
-xweqf9V9CW+Dq9U8UD0TnxaozuFeDvd+Qbin7Q3uaTncexrcq67Bveqe4d7az0VzuJfDvQfC
-vXwb6vuGe1oO93K4l8O9HO49GO7pe4N7+ar5E+GesQb3jD3DvbW3h+RwL4d7D4N7LI/uvW+4
-p+dwL4d7OdzL4d5D4R594Gtp1vHecb8BnjdyEKJF219K02Kum72HRqT8Fwx3vIdGeBLOEzZw
-nrCC84SXw3nbde+gsq6YZZibanfU6ytjMjxczpTagL6QDZ7xYqCf1SAPUbeUq/v11E2fNsL0
-0tfR5Tqf65yrU87VuU91qk98/jVauSZXNanlmtyTJoegyTq+XTT9Xuw2DWgynbX7jU+aLOGZ
-nDijMajFdjyH05PySy8P5JoVq4/GaM+OxW0q873F4u55VyClSrGALgpqFWvZexmNeP5yWHKg
-KcLQiQ+JBxPFYCmY9pH8iR+NOqLal+8vFktS1dcMJmnijmASXQ8mlZaDSfNY4UZQSZc26tDF
-bUElvsmczXhnGEE3wCmwZwU4Ybo7xrQUi9kZY/pdU7yIB0F+p9PoeaGln/UFhKUHvYBw6l17
-/g9vOd7Cgz/z9KXw0qZWN6JKwjyqJNwbVXrZQNKWhm0NJAl3BpJ2RG2+Jl+Gyz6njeEDI4hq
-hbNu+2sT+lqP2cD6CLJ7EenWB20Yhm8bThwdUexG4RDDBDNs+rdeT5b4CUYdPIHleTgiDlFj
-4RB6MTjiEc++6PcwynVDf4R9CnN/bYq1VASo7cK2wbuPQFbwKAxXYFOhahDr/7gPcsfgSr5X
-FDLILuAsqVrycwouXDZknLagxWuSkkHzE2gCFxIWMp+zkZ8FxMh6A+hbNUC4qwF8EHpAA9b9
-RE78ZGWk41/pwe4cmUk3PJ9Ohiw8ElWexfdg+EdRJNJ2Y/ys+lGTf10OXRuKgoWTogMjHLEY
-GaCGkrs5AyxejyLf7DV7jeQXLpwVPOc6Bn51gyd9NVwnCYrjkF4rLMZzi1ZEbPT2gMhJq56g
-ly1hKBhmxpYhOJzMkY957+LjGu75JGMH27YKuViHoHPsk69DPmodcri2Djnc8zqkmK1Dmu95
-HfJdvv1Q2YqQHr7s9hBIdO+yW+ntsZHwLrAR3flj1R3Lbr/DYyUDRsoegNFb/kb1H7rcVnnw
-POe+RfPNPZJV4H33LHw1v/Ez7jrYN/ItvR/ku0OU5yFfkb4e8n1qA14E+VYeg3zpe0O+dC/L
-sBYA38t+Az90ngbsHg1+L08A/SKPpaDfb7uwL2b+/phYYGkv3w15UmC1tI7XJsxyppNnIOJ7
-Q36aNo/4Kbz5BC0ZYdDPtsFfk6ieLH3fZfxp9qWlDasjRUBKanf6InaXcrs/xO6NNbvryh12
-1/Zqd+lF7C7ndn+I3Ztrdq9Id9hd2avd5Rexu5Lb/SF2b63ZvSreYXdpr3bXn2v3dmp3aduq
-3sLqKHX7sVbfz0rfk74K9rZP95X1vOyTieQAoPHd63kvuJwn66+6noebw1tsOB1x16+RRr0H
-kwc/m1UYOyO7bKfrsxXXZ/fGdCtSBXA9/zInz5N4tbUyllHyJ3hzHBo8pPDKQdsHuPG+g7Z3
-R2bNtcisuRqZlaVnhmbXP4H7WqHZRw8G7zI4q94T3ikmX3gVCUj01KWOs24zeWOZbQDb5+3z
-+P/2rra5bRsJ57N/BT62Y/lKvBAkb9reJKnby82lzcV9m8lkOBRJ2WxEUZUo2/n3t7sgKVIC
-ZcuRYychMp7EzO7ibbH7AFwuPs6yuV3QzAGs/1ZkIo7syWJ2PmKZf30dlnFRTwFnL344JQIa
-x9sE2iDDTgfsR+yNGUdUoFcMNOrVAMH6o2t00PbGHQz2bXY+KxZp8n1DwW+kEDdSyBsptrFg
-5DSRPL1Y8NWLF3+GoB7bGhiVUTjPsuta7QQ7e/rr0/3AoGF5iiBwp/qhpyQq/g9nf7W7h2gv
-q/M8fugdX+D3ah3e2l3Ntv+2V/MmKa+p1Nte7ZukwiJrUwMnqbTI2tLCNO7sSCoydwPC0o3h
-d4Ow3sHfM5zYAezJAQFsBACW1sa/nz1llxhtDhBWseZcnIrqW7R0nfr2gsWn1WKV7OwlYbE9
-PTRxHcIzf3A4650886HW5A0nbtzpP2pN4/QWW/AMNg/hMh/ja9Qt1y/iE/x/mEturuC+MbqE
-VxOKf3cCSn6bL8tFGuXVW3aaTP4YQkoeYHeyR0gJ72xcxMbGRR00pKS98xhCSvYNKVEbISUd
-hf/wr7j7I2ybHM1biak78SX4YnPrdpeH+NZ7M+jEfsOkcgJ9i6iTY1vUyfEHXQnuH+Bj78cT
-lnuYa4buHel8hKM6f8+wkYf7Yvz4wb8YP/nyvhjn6v6/GCcUJT8ARQHsg19P/uwc9Q44al8c
-5e6+mFyrTwtIHX9eB8BbUApU/pu22j8CNPUg0brQfYzTel0u3t8ORLlcDBjq42GovT5twtRP
-nz2GSvy3lcMyVq76JBcb1Jiyumnmq0fGpSSTdvb8B1DHM0ATZ88BfJy9hl9/XKR/Y6grELT7
-lF5+h7n30LWakOJKyIlNCMKdamtGniqKwcp9p11X0mdBoI84E7RJMk9x7RRXs/1YBiw5YMlb
-YcltkCg+9Khtra3msO2UPyac+Lg/4RIdnCg3cKL8Is/bHmUqyS2QuKn1B7t18JDftj/mo7S7
-503shYGHyJv4eGHgHVMlDjd277xcsFXz3W/svu+sG9KedeOzx/NfchbNLxDHfowsmgB3+WHh
-rhjg7t3grhpeL3/acPcQ6cIHuDvA3b3g7n6nngdHYtGAxAYkNiCxAyAxzxw8gjtjMWwaAXmh
-W26HWf/8+4sfXjztILOff1eKvfnfKkoWBfxyxoTvvjUALNoEYEZyLW4jvNoiu9Z/KdUDBlvf
-95dK+0X4t/Jnjo1NvEWwsn7ZicRey4idWkadg9PGD372ZSf8utWIeFPA7ka8uTT5TAjNgIdF
-ga9/eUmiksq2v0kqv/a2ZhW+Jdxa33e49ck9hFvr7mUyJ3v6v7rU/g//ve3//A2seMA8ny4X
-G5mX7vnFuQ03tl+cHx8sBejtXpbfHTaq3jRXeo0bYWQ/21RX+hChh0NG0PvJi7Q5zLBEcJiN
-gX22gg0wokr27b++7wMas8ssyaJtfGGeT8ajmuLIGRukcVpeIG3ZwRjPFrBEAX90UUZa/gmb
-3Txlz56/dD1XsJ+yc2hvuZbRPhIy5z+2G1VegYnJyEMozF4w5OvexhtC9OCNKJ7cztVrhe56
-y8E3Xwq2PPz2QYf/kT6iutPmjfdkAXDQIIFbAP0CtY9Lcs8gH4wxW4B/QVm3v1jOv/VemHf2
-wt72XjjZzHR5OyzQ+MJdWAD8UX9uyweCA4fLenmIY6TbpQTfkfZyGw5UY/6t/tTRwCHBwBBW
-9UUcgqzDqo43DkGOm0OQrcTg8QAX7wEu2iFgeS638R8+PHLifzoCIB/Ma/oH/LCvXpyenjIu
-A/U1QMQ0ZU/PU3h8RmBtSU/+u4rR+b/M4kVBLV0Usyxesh//kEJ8I0WVrU23j5nwq/Jfdudv
-8sFr7o/8jj+R/E1gzr+SDqlxns1GTFf/jq6//hBU6PZgwsC8l7v5DEpZTnDwpdYdsB64CHHc
-f1APP+L4gB/Mb+rzBNT3Cn5OCvrM/clQ7rnk73PQW1Dab2CVx2E1EYetAwG1VupJha03/ubK
-EfIJ557QriOl8J7AI+6KJ8w5bDPsZbUsowVjTxZFUe6iu+n/P9EymyyZCCRXLhMMA9EuU+Zc
-T6riB65AE3QEZGEUT5nU2pOMM/h9ZCPGa9SOEMIC8odpFCi1h9bBI/aj5Wq2mMdMODDxINhQ
-V7WNSJCFVyV0r8c4FdkyXmYsUByYHVv7FZ2hH2XjEOD7gmmfa95DGeER+dEiyaMwzoFS+wH0
-tOK0tSKIK9FA7gnfQfKK3UbuB0R+heRKKu3uJveSSvoyYp4KXAlDWZNTnTYmHVRMOey9PMdz
-PeAy1CTJxuPquhsFgATuqMDhTDcd79ZJza9kmWpsIuW4EhnBxpopbpRmR2eNltFshmU8Z67j
-B30zKjhN/uxaZMzzNIyjnc6hAYwB1jBfKRgJzojJUr+cYGqao1VWMCD0kBT5bJRpRFKvz8cy
-Axfvq8BevaRMdUfTbIy0oKPcDUgucdokx7yRzASHWeE7yf1xJb81atKFgZaseTKq2OtW2OR4
-cVuOgCH1YEg9Vq+uUa0Ia6lmGDdlt5tiq0jTojUUCLlxHxnWlQJWdZl/c6VbtQlbVa7qq4pJ
-1+E4D9Z22GQpmvBoVRaTpWJawvqwm0opacYvsmTOfOkK3kMmJNmZSVzkOS43sEk9KuTQiE1F
-HIFEsAAeQnCUPzLcluaKiVkd01Vagse6YJz7Hphh2eEjkTbuhNp2OS6u53EGq1AIZW+biOnG
-zK9++5qoZ2kZQbeV4/l9DONog2EyLZmL4b72cRLRuM2QLC4ZRxMqNVOsauFoXfdoLdXSMSeJ
-a2G+I/jfzAWTENTry8YQG+M+B6s4m2Fyz3chSB9nxTIEyC81QBV7R51YGM4yfH36n9PnvzLp
-+1SXjXhMhue6DDG8LgXtBBRkHw8nSjZbBEZFk5r1NHNUy7V1MHCNYwfyaTZ7B3NnbGRblo3P
-j6ruIa4PJ9kU0wlKjX7V3kXfqdpNHEvmunVFbRG2qjxuOHVrKD3RV4/W1VCCtViBMkot0IPb
-J8mNa9HdbuC02sW71bTqph9gSEw/9E0dUWSPrtec8AddbKMj65lqxmnU6veo6dVo3QBbRdL4
-8vklLBKpUcWVNK6sLW2L0Z/ENKvXk0UezqLpOfhBKWkoUJaNYUxoKV68n5dFGM0zpgSacM7W
-MqxsNIpJHuYZnT+5yu9x4P4kkjXtalpm8wismQtLyW4t/UkgG6OfXEBzXNLINrutQT4twMss
-SQvwnxx8tF26R8Z9DItimp1flEwGPoEa4rQJ1jRAy/GSqSAQfY3WtDjmuFEP8xR1UHmOazct
-/sSlLmYiDtMY1oIbYAugClv9ipxHkk6n4VUOfs9DQGEXK8myIJXigY+TWLPZBEvjYVZliW/6
-HFjNPWKFNkNWQrfeg0L1YSV/wo2PXa4Q98/R8QS8byIcWrlIBgOWXxTlfLo6x3b0c3DDQdaj
-pwkpzcTRFHyYx/tmK01JCf4q3ifpJXQo0H3SEhpR804WXDAXgRcIqN9GrGRKvukVOKflLAkv
-kiikxLCAigDsemAoLFzSbCfq/J3MBSTc0xppdBdlL9O/w2SV5+9BH5yenZAvK9Wt6IvlkmlX
-9eywAOkkbeocuhyml3japLgjUJlagiz6JF3e4me+h/jbZZ3WjtoitmuySZVRp8/meFJxF1yP
-vFm4TaKgUcncd2GUj6tNjX1EBBm5i6scI7rwo3Vw0a0lPqpk2CoxN1ZiK+ZxTkPvedLr0WzA
-ojV1nl2DeKQHa+PXo17JsFQkjL5nCALCNIHFgQa/px6RRq1WgT5rxKyKdbR1dEOFBlDNowXh
-bdjzayG53dn6YtxobJnlYBRdD/GFqieurstWT2TwSZKGMWyBpS96zJMIaAQm02I+f88CV/X5
-IWF24uU8h8bA+PpO33wISnB6hMMZ5tBBLmirsR5kW3uNB0CbjukgwW+pHmQJPTHTfQ47e91n
-S4Wi5TSPl/N3iwoD2Qml10xqdJ6G0XRagBYozlFdrVNra74wxzjpIivCRXS1yxDTsoCBPIdZ
-157umxg+US1NgSnkBImn89FaeSwt4WljRy6ukhQMuTRYsdsVC2PiVowAFh2B227P0v9NC9E1
-LR3t7yzIZvAabR41bbS1Zjyu9YHOY1wP932SGac/Mi5lVKuLTQDtm1Bdcf9GGKVSXRtx0Og2
-7hlg9nw6pYAHVmoybCaoGZSw74zG5x6d58TJosCTNI/WuVmSNrHaeJBiNUuoz4r7teOwkvMK
-Fy6iLAH0EQSe36dLyqsxZLpcgprXuwLWsNtqMIAISei9THgRLQFRak4AdzenU3FOCwAlYIvx
-PKaBu6M1b1e4TZRQddML1ExY2B5YwI6sNbLtCIa6bQKdoBmLPIzpdRWgCNrD7OqTMyHHh4mH
-YTEK6JFnG2onrQ+kAJMw4ZBk0SQYHyG/TfqYzPAyoW66WgO+D6zyI6/B9zQiMLbo6PidDo3s
-xz/V5mG0PB+ZfoxMu2zt9shqpNclWrMAAJ4dpznm/OivccLwCBgHG3lsEg2wru/tgZXf6wkc
-cwZaNKSa9xwigY2gNVtficK0lr2kVIaXbkMZylCGMpShDGUoQxnKUIYylKF8buX/A8/tJwAY
-AQA=
-
---HcAYCG3uE/tztfnV--
+There are 1 or 2 files in drivers/pinctrl that include pinctrl/machine.h
+solely for the data structure definitions or function prototypes, and
+won't use those macros, but those are the exception rather than the rule
+for this one header at least.
