@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032072Ab2CIT7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:59:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42525 "EHLO
+	id S1031786Ab2CIUCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:02:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64616 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030917Ab2CIT7K (ORCPT
+	with ESMTP id S1031744Ab2CITxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:59:10 -0500
-Date: Fri, 9 Mar 2012 11:58:34 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Tejun Heo <tj@kernel.org>, Ying Han <yinghan@google.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 3.3] memcg: free mem_cgroup by RCU to fix oops
-In-Reply-To: <alpine.LSU.2.00.1203072155140.11048@eggly.anvils>
-Message-ID: <alpine.LSU.2.00.1203091138260.19300@eggly.anvils>
-References: <alpine.LSU.2.00.1203072155140.11048@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 9 Mar 2012 14:53:07 -0500
+Message-Id: <20120309190218.174955032@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 09 Mar 2012 11:02:54 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Kenneth Graunke <kenneth@whitecape.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [ 40/68] drm/i915: gen7: implement rczunit workaround
+In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Mar 2012, Hugh Dickins wrote:
-> 
-> I'm posting this a little prematurely to get eyes on it, since it's
-> more than a two-liner, but 3.3 time is running out.  If it is what's
-> needed to fix my oopses, I won't really be sure before Friday morning.
-> What's running now on the machine affected is using kfree_rcu(), but I
-> did hack it earlier to check that the vfree_rcu() alternative works.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, please do send that patch on to Linus for 3.3.
+------------------
 
-It did not get as much as the 36 hours of testing I had hoped for, only
-25 hours so far.  12 hours while I was out yesterday got wasted by a
-wireless driver interrupt spewing approximately one million messages:
+From: Eugeni Dodonov <eugeni.dodonov@intel.com>
 
-iwl3945 0000:08:00.0: MAC is in deep sleep!. CSR_GP_CNTRL = 0xFFFFFFFF
+commit eae66b50c760233fad526edf4a0d327be17a055d upstream.
 
-which I've not suffered from before, and hope not again.  Having kdb
-in, I did take a look what was going on with the memcg load when it was
-interrupted: it appeared to be normal, and I've no reason to suppose that
-my kfree_rcu() was in any way responsible for the wireless aberration.
+This is yet another workaround related to clock gating which we need on
+Ivy Bridge.
 
-Thanks,
-Hugh
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=41353
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=44610
+Tested-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Kenneth Graunke <kenneth@whitecape.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/i915/i915_reg.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |    5 +++++
+ 2 files changed, 6 insertions(+)
+
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3371,6 +3371,7 @@
+ #define  GT_FIFO_FREE_ENTRIES			0x120008
+ 
+ #define GEN6_UCGCTL2				0x9404
++# define GEN6_RCZUNIT_CLOCK_GATE_DISABLE		(1 << 13)
+ # define GEN6_RCPBUNIT_CLOCK_GATE_DISABLE		(1 << 12)
+ # define GEN6_RCCUNIT_CLOCK_GATE_DISABLE		(1 << 11)
+ 
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7457,6 +7457,11 @@ static void ivybridge_init_clock_gating(
+ 	I915_WRITE(WM2_LP_ILK, 0);
+ 	I915_WRITE(WM1_LP_ILK, 0);
+ 
++	/* According to the spec, bit 13 (RCZUNIT) must be set on IVB.
++	 * This implements the WaDisableRCZUnitClockGating workaround.
++	 */
++	I915_WRITE(GEN6_UCGCTL2, GEN6_RCZUNIT_CLOCK_GATE_DISABLE);
++
+ 	I915_WRITE(ILK_DSPCLK_GATE, IVB_VRHUNIT_CLK_GATE);
+ 
+ 	for_each_pipe(pipe)
+
+
