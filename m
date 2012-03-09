@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758406Ab2CISRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 13:17:15 -0500
-Received: from stats.peacock.arvixe.com ([174.122.104.67]:44060 "EHLO
-	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753568Ab2CISRO (ORCPT
+	id S1758480Ab2CISVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 13:21:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44896 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629Ab2CISVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 13:17:14 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=firszt.eu;
-	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer;
-	b=UdKQ+zMphYN0Sz8AROPVmX/kGsWMJ5/bVdqkVE6fD2F22E0X+BAVxxW6v0Es9mDdPYgZBb4SW7nCp+XH4b2DA9O7lrmNIwWuC44PU9kEOcPfZrk1GLPV+4/deulQ6vbw;
-From: Przemo Firszt <przemo@firszt.eu>
-To: jkosina@suse.cz, pinglinux@gmail.com, killertofu@gmail.com
-Cc: linuxwacom-devel@lists.sourceforge.net, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Przemo Firszt <przemo@firszt.eu>
-Subject: [PATCH] HID: wacom: Add reporting of wheel for Intuos4 WL
-Date: Fri,  9 Mar 2012 18:16:40 +0000
-Message-Id: <1331317000-9036-1-git-send-email-przemo@firszt.eu>
-X-Mailer: git-send-email 1.7.6.4
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - peacock.arvixe.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - firszt.eu
+	Fri, 9 Mar 2012 13:21:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F5A448D.70605@zytor.com>
+References: <20120309074202.GA28609@www.outflux.net>
+	<20120309092845.GA10281@elte.hu>
+	<CAGXu5j+SgWMjwNQd8w8DPSQmBVHDow=_osp57OVp4X2VU5Fe5w@mail.gmail.com>
+	<4F5A448D.70605@zytor.com>
+Date: Fri, 9 Mar 2012 10:21:52 -0800
+X-Google-Sender-Auth: p0f9r35ehRQmx2O-jzLheSEZqY0
+Message-ID: <CAGXu5jKHJGmTktKNYDmpZziKRLM-bw-dTK5tboR706J_s6j7NQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: use enum instead of literals for trap values
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Andy Lutomirski <luto@mit.edu>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds reporting of ABS_WHEEL event. Raported walues are 0..71
-and are related to absolute location of the finger on the wheel.
+On Fri, Mar 9, 2012 at 9:57 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 03/09/2012 08:30 AM, Kees Cook wrote:
+>> On Fri, Mar 9, 2012 at 1:28 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>>>
+>>> * Kees Cook <keescook@chromium.org> wrote:
+>>>
+>>>> The traps are referred to by their numbers and it can be difficult to
+>>>> understand them while reading the code without context. This patch adds
+>>>> enumeration of the trap numbers and replaces the numbers with the correct
+>>>> enum for x86.
+>>>>
+>
+> I have to admit personally to prefer something like X86_XCP_XX where XX
+> is the two-letter code that the Intel documentation uses for that trap,
+> i.e. #GP, #BR, #MC and so on.
 
-Signed-off-by: Przemo Firszt <przemo@firszt.eu>
----
- drivers/hid/hid-wacom.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+We need a single person to decide on this bike shed color. :) If the
+list of enum names can be agreed on, I'll be happy to do the
+search/replace for it.
 
-diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
-index 5c25036..925d4a7 100644
---- a/drivers/hid/hid-wacom.c
-+++ b/drivers/hid/hid-wacom.c
-@@ -36,6 +36,7 @@
- struct wacom_data {
- 	__u16 tool;
- 	__u16 butstate;
-+	__u8 whlstate;
- 	__u8 features;
- 	__u32 id;
- 	__u32 serial;
-@@ -322,6 +323,23 @@ static void wacom_i4_parse_button_report(struct wacom_data *wdata,
- 			struct input_dev *input, unsigned char *data)
- {
- 	__u16 new_butstate;
-+	__u8 new_whlstate;
-+	__u8 sync = 0;
-+
-+	new_whlstate = data[1];
-+	if (new_whlstate != wdata->whlstate) {
-+		wdata->whlstate = new_whlstate;
-+		if (new_whlstate & 0x10) {
-+			input_report_key(input, BTN_TOUCH, 1);
-+			input_report_abs(input, ABS_WHEEL, (new_whlstate & 0x7f));
-+			input_report_key(input, BTN_TOOL_FINGER, 1);
-+		} else {
-+			input_report_key(input, BTN_TOUCH, 0);
-+			input_report_abs(input, ABS_WHEEL, 0);
-+			input_report_key(input, BTN_TOOL_FINGER, 0);
-+		}
-+		sync = 1;
-+	}
- 
- 	new_butstate = (data[3] << 1) | (data[2] & 0x01);
- 	if (new_butstate != wdata->butstate) {
-@@ -336,6 +354,10 @@ static void wacom_i4_parse_button_report(struct wacom_data *wdata,
- 		input_report_key(input, BTN_7, new_butstate & 0x080);
- 		input_report_key(input, BTN_8, new_butstate & 0x100);
- 		input_report_key(input, BTN_TOOL_FINGER, 1);
-+		sync = 1;
-+	}
-+
-+	if (sync) {
- 		input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
- 		input_event(input, EV_MSC, MSC_SERIAL, 0xffffffff);
- 		input_sync(input);
-@@ -512,6 +534,9 @@ static int wacom_input_mapped(struct hid_device *hdev, struct hid_input *hi,
- 		input_set_abs_params(input, ABS_DISTANCE, 0, 32, 0, 0);
- 		break;
- 	case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
-+		__set_bit(ABS_WHEEL, input->absbit);
-+		input_set_abs_params(input, ABS_WHEEL, 0, 71, 0, 0);
-+		input_set_capability(input, EV_MSC, MSC_SERIAL);
- 		__set_bit(ABS_MISC, input->absbit);
- 		__set_bit(BTN_2, input->keybit);
- 		__set_bit(BTN_3, input->keybit);
+-Kees
+
 -- 
-1.7.6.4
-
+Kees Cook
+ChromeOS Security
