@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030472Ab2CITqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:46:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030420Ab2CITq2 (ORCPT
+	id S1030532Ab2CITqx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:46:53 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63959 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030490Ab2CITqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:46:28 -0500
-Message-Id: <20120309190203.856920787@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:46:47 -0500
+Message-Id: <20120309190204.278136146@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:21 -0800
+Date: Fri, 09 Mar 2012 11:02:26 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>,
-        Oleg Nesterov <oleg@redhat.com>, Roland McGrath <roland@hack.frob.com>
-Subject: [ 19/95] regset: Prevent null pointer reference on readonly regsets
+        alan@lxorguk.ukuu.org.uk, Gusakov Andrey <dron0gus@gmail.com>,
+        Heiko Stuebner <heiko@sntech.de>, Kukjin Kim <kgene.kim@samsung.com>
+Subject: [ 24/95] ARM: S3C24XX: DMA resume regression fix
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@zytor.com>
+From: Gusakov Andrey <dron0gus@gmail.com>
 
-commit c8e252586f8d5de906385d8cf6385fee289a825e upstream.
+commit e39d40c65dfd8390b50c03482ae9e289b8a8f351 upstream.
 
-The regset common infrastructure assumed that regsets would always
-have .get and .set methods, but not necessarily .active methods.
-Unfortunately people have since written regsets without .set methods.
+s3c2410_dma_suspend suspends channels from 0 to dma_channels.
+s3c2410_dma_resume resumes channels in reverse order. So
+pointer should be decremented instead of being incremented.
 
-Rather than putting in stub functions everywhere, handle regsets with
-null .get or .set methods explicitly.
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Roland McGrath <roland@hack.frob.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Gusakov Andrey <dron0gus@gmail.com>
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/binfmt_elf.c        |    2 +-
- include/linux/regset.h |    6 ++++++
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ arch/arm/plat-s3c24xx/dma.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1421,7 +1421,7 @@ static int fill_thread_core_info(struct
- 	for (i = 1; i < view->n; ++i) {
- 		const struct user_regset *regset = &view->regsets[i];
- 		do_thread_regset_writeback(t->task, regset);
--		if (regset->core_note_type &&
-+		if (regset->core_note_type && regset->get &&
- 		    (!regset->active || regset->active(t->task, regset))) {
- 			int ret;
- 			size_t size = regset->n * regset->size;
---- a/include/linux/regset.h
-+++ b/include/linux/regset.h
-@@ -335,6 +335,9 @@ static inline int copy_regset_to_user(st
- {
- 	const struct user_regset *regset = &view->regsets[setno];
+--- a/arch/arm/plat-s3c24xx/dma.c
++++ b/arch/arm/plat-s3c24xx/dma.c
+@@ -1249,7 +1249,7 @@ static void s3c2410_dma_resume(void)
+ 	struct s3c2410_dma_chan *cp = s3c2410_chans + dma_channels - 1;
+ 	int channel;
  
-+	if (!regset->get)
-+		return -EOPNOTSUPP;
-+
- 	if (!access_ok(VERIFY_WRITE, data, size))
- 		return -EIO;
- 
-@@ -358,6 +361,9 @@ static inline int copy_regset_from_user(
- {
- 	const struct user_regset *regset = &view->regsets[setno];
- 
-+	if (!regset->set)
-+		return -EOPNOTSUPP;
-+
- 	if (!access_ok(VERIFY_READ, data, size))
- 		return -EIO;
+-	for (channel = dma_channels - 1; channel >= 0; cp++, channel--)
++	for (channel = dma_channels - 1; channel >= 0; cp--, channel--)
+ 		s3c2410_dma_resume_chan(cp);
+ }
  
 
 
