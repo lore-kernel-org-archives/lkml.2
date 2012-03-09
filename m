@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501Ab2CIF5K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 00:57:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52146 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab2CIF5I (ORCPT
+	id S1751576Ab2CIGCT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 01:02:19 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53763 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135Ab2CIGCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 00:57:08 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v6 4/5] MIPS: Octeon: Setup irq_domains for interrupts.
-To: David Daney <david.s.daney@gmail.com>, Rob Herring <robherring2@gmail.com>
-Cc: David Daney <david.daney@cavium.com>, David Daney <ddaney.cavm@gmail.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4F52F90C.5060306@gmail.com>
-References: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com> <1330563422-14078-5-git-send-email-ddaney.cavm@gmail.com> <4F50D7C2.7080204@gmail.com> <4F510B8E.3070201@cavium.com> <20120302190744.571E03E1C63@localhost> <4F511FB0.5070901@cavium.com> <4F527285.1020500@gmail.com> <4F52F90C.5060306@gmail.com>
-Date: Thu, 08 Mar 2012 22:57:04 -0700
-Message-Id: <20120309055704.465823E0901@localhost>
+	Fri, 9 Mar 2012 01:02:18 -0500
+Date: Fri, 9 Mar 2012 17:02:01 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: linux-next: manual merge of the tty tree with the net-next tree
+Message-Id: <20120309170201.93eec7e1108165c02ba2311c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__9_Mar_2012_17_02_01_+1100_qdMZ3G.=3ir6u07Z"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 03 Mar 2012 21:09:32 -0800, David Daney <david.s.daney@gmail.com> wrote:
-> On 03/03/2012 11:35 AM, Rob Herring wrote:
-> > On 03/02/2012 01:29 PM, David Daney wrote:
-> >> On 03/02/2012 11:07 AM, Grant Likely wrote:
-> >>> +static void __init octeon_irq_set_ciu_mapping(unsigned int irq,
-> >>> +                          unsigned int line,
-> >>> +                          unsigned int bit,
-> >>> +                          struct irq_domain *domain,
-> >>>                               struct irq_chip *chip,
-> >>>                               irq_flow_handler_t handler)
-> >>>     {
-> >>> +    struct irq_data *irqd;
-> >>>         union octeon_ciu_chip_data cd;
-> >>>
-> >>>         irq_set_chip_and_handler(irq, chip, handler);
-> >>> -
-> >>>         cd.l = 0;
-> >>>         cd.s.line = line;
-> >>>         cd.s.bit = bit;
-> >>>
-> >>>         irq_set_chip_data(irq, cd.p);
-> >>>         octeon_irq_ciu_to_irq[line][bit] = irq;
-> >>> +
-> >>> +    irqd = irq_get_irq_data(irq);
-> >>> +    irqd->hwirq = line<<    6 | bit;
-> >>> +    irqd->domain = domain;
-> >>>>> I think the domain code will set these.
-> >>>> It is my understanding that the domain code only does this for:
-> >>>>
-> >>>> o irq_domain_add_legacy()
-> >>>>
-> >>>> o irq_create_direct_mapping()
-> >>>>
-> >>>> o irq_create_mapping()
-> >>>>
-> >>>> We use none of those.  So I do it here.
-> >>>>
-> >>>> If there is a better way, I am open to suggestions.
-> >>> irq_create_mapping is called by irq_create_of_mapping() which is
-> >>> in turn called by irq_of_parse_and-map().  irq_domain always
-> >>> manages the hwirq and domain values.  Driver code cannot manipulate
-> >>> them manually.
-> >>>
-> >> I really must be missing something.
-> >>
-> >> Given:
-> >>
-> >> 1) I must have a mapping between hwirq and irq that I control so that
-> >> non-OF code using the OCTEON_IRQ_* constants continues to work.
-> > Those defines are what you need to work to get rid of.
-> 
-> We are not starting from a blank slate here.  There is a lot of in-tree 
-> code using these symbols.  We cannot make them disappear with wishful 
-> thinking.
-> 
-> The first step is a switch to irq_domains using the existing mappings.
-> 
-> After we do that, I have patches to transition some drivers to use the 
-> OF mapping via irq_domains.  After those are merged, we can work toward 
-> getting rid of OCTEON_IRQ_*.  But I think it must be the last step in 
-> the process, not the first.
-> >
-> >> 2) irq_create_mapping() will allocate a random irq value if none is
-> >> already assigned to the hwirq.
-> >>
-> >> Therefore: To avoid having random irq values assigned, I must manually
-> >> assign them.
-> >>
-> > So you should be using legacy domain if you need to maintain fixed hwirq
-> > to linux irq numbers. "linear" is a bit confusing as it doesn't mean
-> > linear 1:1 irq number assignment, but linear search.
-> 
-> My reading of Grant's code in linux-next directly contradicts this 
-> statement.  There is no code in irqdomain.c, that I can see, that allows 
-> me to have an arbitrary mapping of irq <--> hwirq values.
+--Signature=_Fri__9_Mar_2012_17_02_01_+1100_qdMZ3G.=3ir6u07Z
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There are 4 kinds of mappings available; legacy, linear, radix and nomap.
+Hi Greg,
 
-Ignore nomap and radix; you don't want them.
+Today's linux-next merge of the tty tree got a conflict in
+drivers/isdn/gigaset/interface.c between commit 5bd49735db39 ("gigaset:
+Use semicolons to terminate statements") from the net-next tree and
+commit 2f16669d322e ("TTY: remove re-assignments to tty_driver members")
+from the tty tree.
 
-legacy maps a contiguous range of hwirq numbers to a contiguous range of
-linux irq numbers.  To preserve the exising #define mappings but still add
-DT support, this is the one that you want.  The downside is that it requires
-all the irq_descs to be allocated ahead of time (which probably isn't a
-problem for you).
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-The linear map has a linear reverse map lookup table that allows arbitrary
-irq <--> hwirq mappings.  This mapping is preferred, but it doesn't work
-if you need to preserve #defined irq mappings.
+diff --cc drivers/isdn/gigaset/interface.c
+index b826dac,8f8814a..0000000
+--- a/drivers/isdn/gigaset/interface.c
++++ b/drivers/isdn/gigaset/interface.c
+@@@ -679,9 -593,8 +593,8 @@@ void gigaset_if_initdriver(struct gigas
+  	if (tty =3D=3D NULL)
+  		goto enomem;
+ =20
+- 	tty->magic =3D		TTY_DRIVER_MAGIC;
+ -	tty->type =3D		TTY_DRIVER_TYPE_SERIAL,
+ -	tty->subtype =3D		SERIAL_TYPE_NORMAL,
+ +	tty->type =3D		TTY_DRIVER_TYPE_SERIAL;
+ +	tty->subtype =3D		SERIAL_TYPE_NORMAL;
+  	tty->flags =3D		TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
+ =20
+  	tty->driver_name =3D	procname;
 
-g.
+--Signature=_Fri__9_Mar_2012_17_02_01_+1100_qdMZ3G.=3ir6u07Z
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPWZzZAAoJEECxmPOUX5FErNMP/3+T+1zQ7refcekItmt/nfEq
+h8MBwXsCMQxW77CkJZoNK6M18Ie3R1cYcyJ9XKaHRU12d//smZIqgkwHZhlfsNc7
+wo6b4tKCLDHlds9O658hwCDG8ijlyqEX5IFLeS5Js/v5k4LUSCcWGogCl2ucNFlD
+sJuhmOCshrmObgllNwZGNpNjrX3EeTtBYlKr7GqcmcNYScn1rN91srvhDhzJcqH5
+1pMhS7eo1RoukSpM0Kl36KYArjF8CihzbXrhN033TRxy2wyBeVnUiJzonfufey9L
+RQpHW1mWT7Y/nbgisTnnlRvYH+eaF3uVf5RuYwYOtbPlXZLIY0+k90qMlRSurcDW
+vVuR/EdZm69b/RK/KM4jLaejH2kG1ZBJaLWsxQj+6ptfILSKi+p4nhSBi4LQJusM
++iqRwHCcRnV7BEPMeWRIsJXgkrCu0WaFAWLtoBUVkmSjjH3fCvQd9cvjEhwWg08R
+fYwt5Pn0v2amZuluHdifSHFXKnSWPtrpXiRc9iLTPt2T9PJqIrrzW+Gc9OBS6/mt
+Z0ctPHnOB3NhS/lhcHpGvxHZO3XwIQPXRgh9G9K579VKoo975yN6+SG6WfBXywGQ
+QSXR38v10Gshh88u10C40SuLQk6ICsySdatHaD0e2UhZo9rpM1FsHbSzE/sE/gdz
++QHGxccNYEH07x4yEMRu
+=MTsI
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__9_Mar_2012_17_02_01_+1100_qdMZ3G.=3ir6u07Z--
