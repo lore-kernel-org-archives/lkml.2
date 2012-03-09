@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030293Ab2CIV4s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:56:48 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42901 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932544Ab2CIV4o (ORCPT
+	id S932555Ab2CIV5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:57:44 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:50749 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932365Ab2CIV5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:56:44 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] trivial: spi-pl022.c: fix a wrong kerneldoc comment
-To: Federico Vaga <federico.vaga@gmail.com>, trivial@kernel.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Cc: rubini@gnudd.com, giancarlo.asnaghi@st.com,
-        Federico Vaga <federico.vaga@gmail.com>
-In-Reply-To: <1328718213-17375-1-git-send-email-federico.vaga@gmail.com>
-References: <1328718213-17375-1-git-send-email-federico.vaga@gmail.com>
-Date: Fri, 09 Mar 2012 14:56:41 -0700
-Message-Id: <20120309215641.287F83E0880@localhost>
+	Fri, 9 Mar 2012 16:57:43 -0500
+Date: Fri, 09 Mar 2012 13:56:31 -0800 (PST)
+Message-Id: <20120309.135631.509557158330773735.davem@davemloft.net>
+To: tshimizu818@gmail.com
+Cc: jeffrey.t.kirsher@intel.com, lucas.demarchi@profusion.mobi,
+        mirq-linux@rere.qmqm.pl, paul.gortmaker@windriver.com,
+        jdmason@kudzu.us, john.stultz@linaro.org, richardcochran@gmail.com,
+        arnd@arndb.de, khc@pm.waw.pl, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH RE-SUBMIT 2/2] net/pch_gbe: supports eg20t ptp clock
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1331194587-29114-2-git-send-email-tshimizu818@gmail.com>
+References: <1331194587-29114-1-git-send-email-tshimizu818@gmail.com>
+	<1331194587-29114-2-git-send-email-tshimizu818@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 09 Mar 2012 13:56:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  8 Feb 2012 17:23:33 +0100, Federico Vaga <federico.vaga@gmail.com> wrote:
-> Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
-> ---
->  drivers/spi/spi-pl022.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+From: Takahiro Shimizu <tshimizu818@gmail.com>
+Date: Thu,  8 Mar 2012 17:16:27 +0900
+
+> From: Takahiroi Shimizu <tshimizu818@gmail.com>
 > 
-> diff --git a/drivers/spi/spi-pl022.c b/drivers/spi/spi-pl022.c
-> index 2f9cb43..286572d 100644
-> --- a/drivers/spi/spi-pl022.c
-> +++ b/drivers/spi/spi-pl022.c
-> @@ -1495,7 +1495,7 @@ out:
->  
->  /**
->   * pump_messages - Workqueue function which processes spi message queue
-> - * @data: pointer to private data of SSP driver
-> + * @work: pointer to the pump_messages work structure within pl022 structure
->   *
->   * This function checks if there is any spi message in the queue that
->   * needs processing and delegate control to appropriate function
-
-Patch obsolete after applying the core-queuing patch from Linus
-
-g.
-
-> -- 
-> 1.7.7.6
+> Supports EG20T ptp clock in the driver
 > 
+> Changes e-mail address.
+> 
+> Adds number.
+> 
+> Signed-off-by: Takahiro Shimizu <tshimizu818@gmail.com>
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
+Applied.
