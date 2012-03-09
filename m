@@ -1,109 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964823Ab2CIQHo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 11:07:44 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:64499 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932325Ab2CIQHm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 11:07:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAF1ivSaDEfDFgF0hz3myjSc0BXhig1XGRa_uMOi=gtf2HTEMHg@mail.gmail.com>
-References: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
-	<CAE5mzvgfsHD1Ku5saw+Cu7+vJAayx20=HfHfab1MrAwz3AtqJg@mail.gmail.com>
-	<CAF1ivSZcGHQ-bnGasKghJ-_beDqgyZ_ug=m-7Ykr4xUphZeLqw@mail.gmail.com>
-	<CAE5mzvgc60+_HOve+5wMsL7fo6jmM_sOB=_pTR1j23=RbP+uPw@mail.gmail.com>
-	<CAF1ivSaDEfDFgF0hz3myjSc0BXhig1XGRa_uMOi=gtf2HTEMHg@mail.gmail.com>
-Date: Fri, 9 Mar 2012 10:07:41 -0600
-X-Google-Sender-Auth: JE4G3osPsaxTgL6KBCceF9qGESw
-Message-ID: <CAE5mzviyg1L3HhSy4gYeLv673GN3M6JU68wwhzNBTKp6dtxTBg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] ahci: fix boot/resume COMRESET failures
-From: cwillu <cwillu@cwillu.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Norbert Preining <preining@logic.at>,
-        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Matt <jackdachef@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757535Ab2CIQJU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 11:09:20 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36889 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754530Ab2CIQJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 11:09:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="119448307"
+Message-ID: <1331309451.29445.42.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Jan Kara <jack@suse.cz>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Date: Fri, 09 Mar 2012 18:10:51 +0200
+In-Reply-To: <20120309095135.GC21038@quack.suse.cz>
+References: <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+	 <20120301123640.GA30369@localhost> <20120301163837.GA13104@quack.suse.cz>
+	 <20120302044858.GA14802@localhost> <20120302095910.GB1744@quack.suse.cz>
+	 <20120302103951.GA13378@localhost>
+	 <20120302115700.7d970497.akpm@linux-foundation.org>
+	 <20120303135558.GA9869@localhost>
+	 <1331135301.32316.29.camel@sauron.fi.intel.com>
+	 <20120309073113.GA5337@localhost> <20120309095135.GC21038@quack.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>> I just spent the better part of last night tracking down the specific
->>>> sources of the log entry I get when I disconnect my e-sata drive; once
->>>> it disconnects, the port is dead until I reboot; no combination of
->>>> anything I've been able to poke at in /sys or elsewhere gets it live
->>>> again.  This starts with 3.3rc1, and turns out to still work fine in
->>>> 3.2.1. Any chance it's related?
->>>>
->>>> 3.3rc5, immediately after the unplug:
->>>
->>> I tested on my machine and it's fixed by below patch.
->>> http://marc.info/?l=linux-kernel&m=132996405028746&w=2
->>>
->>> Would you please also try it?
->>
->> Building it now, and will be able to test in about 5 hours.
->
-> Hi,
->
-> How about the test result?
+On Fri, 2012-03-09 at 10:51 +0100, Jan Kara wrote:
+> > However I cannot find any ubifs functions to form the above loop, so
+> > ubifs should be safe for now.
+>   Yeah, me neither but I also failed to find a place where
+> ubifs_evict_inode() truncates inode space when deleting the inode... Artem?
 
-Sorry about the delay.
+We do call 'truncate_inode_pages()':
 
-Just verified, that patch does fix the problem:
+static void ubifs_evict_inode(struct inode *inode)
+{
+	...
 
-*disconnect drive*
-[   80.474026] ata5: exception Emask 0x50 SAct 0x0 SErr 0x4090800
-action 0xe frozen
-[   80.474041] ata5: irq_stat 0x00400040, connection status changed
-[   80.474057] ata5: SError: { HostInt PHYRdyChg 10B8B DevExch }
-[   80.474064] ata5: hard resetting link
-[   81.197080] ata5: SATA link down (SStatus 0 SControl 300)
-[   86.197028] ata5: hard resetting link
-[   86.502021] ata5: SATA link down (SStatus 0 SControl 300)
-[   86.502039] ata5: limiting SATA link speed to 1.5 Gbps
-[   91.502018] ata5: hard resetting link
-[   91.807032] ata5: SATA link down (SStatus 0 SControl 310)
-[   91.807050] ata5.00: disabled
-[   91.807069] ata5: EH complete
-[   91.807095] ata5.00: detaching (SCSI 4:0:0:0)
-[   91.808988] sd 4:0:0:0: [sde] Synchronizing SCSI cache
-[   91.810288] sd 4:0:0:0: [sde]  Result: hostbyte=DID_BAD_TARGET
-driverbyte=DRIVER_OK
-[   91.810305] sd 4:0:0:0: [sde] Stopping disk
-[   91.810318] sd 4:0:0:0: [sde] START_STOP FAILED
-[   91.810333] sd 4:0:0:0: [sde]  Result: hostbyte=DID_BAD_TARGET
-driverbyte=DRIVER_OK
-[  106.507666] ata5: exception Emask 0x10 SAct 0x0 SErr 0x4040000
-action 0xe frozen
-[  106.507683] ata5: irq_stat 0x00000040, connection status changed
-[  106.507703] ata5: SError: { CommWake DevExch }
-[  106.507710] ata5: limiting SATA link speed to 1.5 Gbps
-[  106.507715] ata5: hard resetting link
-*reconnect drive*
-[  107.386022] ata5: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-[  107.387979] ata5.00: ATA-8: WDC WD10EARS-00Y5B1, 80.00A80, max UDMA/133
-[  107.387985] ata5.00: 1953525168 sectors, multi 16: LBA48 NCQ (depth
-31/32), AA
-[  107.389253] ata5.00: configured for UDMA/133
-[  107.389264] ata5: EH complete
-[  107.389375] scsi 4:0:0:0: Direct-Access     ATA      WDC
-WD10EARS-00Y 80.0 PQ: 0 ANSI: 5
-[  107.389551] sd 4:0:0:0: [sde] 1953525168 512-byte logical blocks:
-(1.00 TB/931 GiB)
-[  107.389613] sd 4:0:0:0: [sde] Write Protect is off
-[  107.389619] sd 4:0:0:0: [sde] Mode Sense: 00 3a 00 00
-[  107.389651] sd 4:0:0:0: [sde] Write cache: enabled, read cache:
-enabled, doesn't support DPO or FUA
-[  107.389667] sd 4:0:0:0: Attached scsi generic sg4 type 0
-[  107.803230]  sde: unknown partition table
-[  107.803550] sd 4:0:0:0: [sde] Attached SCSI disk
-*rejoicing*
+        truncate_inode_pages(&inode->i_data, 0);
 
-Thanks.
+        ...
+}
 
---Carey
+-- 
+Best Regards,
+Artem Bityutskiy
+
