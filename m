@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab2CIDpi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 22:45:38 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:35319 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754845Ab2CIDph convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 22:45:37 -0500
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <1331200744-5986-1-git-send-email-paul.liu@linaro.org>
-References: <1331200744-5986-1-git-send-email-paul.liu@linaro.org>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Fri, 9 Mar 2012 11:45:15 +0800
-Message-ID: <CAF+7xWm4R02eK0a-q-yTF16fm4tGQUf7XUQK8+KtPNhjnzff5A@mail.gmail.com>
-Subject: Re: [PATCH v10] Regulator: Add Anatop regulator driver
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        Nancy Chen <Nancy.Chen@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756846Ab2CIDqv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 22:46:51 -0500
+Received: from ozlabs.org ([203.10.76.45]:53336 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755120Ab2CIDqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 22:46:50 -0500
+Date: Fri, 9 Mar 2012 14:46:45 +1100
+From: Anton Blanchard <anton@samba.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: sfr@ozlabs.org, yinghai@kernel.org, jbarnes@virtuousgeek.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.3.0-rc6-next-20120308 boot failure on POWER7 blade
+Message-ID: <20120309144645.5b5997d2@kryten>
+In-Reply-To: <1331263785.3105.52.camel@pasglop>
+References: <20120309142555.7ec5e0ac@kryten>
+	<1331263785.3105.52.camel@pasglop>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> --- a/drivers/regulator/Kconfig
-> +++ b/drivers/regulator/Kconfig
-> @@ -213,6 +213,14 @@ config REGULATOR_PCAP
->         This driver provides support for the voltage regulators of the
->         PCAP2 PMIC.
->
-> +config REGULATOR_ANATOP
-> +       tristate "Freescale i.MX on-chip ANATOP LDO regulators"
-> +       depends on MFD_ANATOP
-> +       help
-> +         Say y here to support Freescale i.MX on-chip ANATOP LDOs
-> +         regulators. It is recommended that this option be
-> +         enabled on i.MX6 platform.
-> +
->  config REGULATOR_MC13XXX_CORE
->        tristate
->
-> diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-> index 503bac8..8440871 100644
-> --- a/drivers/regulator/Makefile
-> +++ b/drivers/regulator/Makefile
-> @@ -48,5 +48,6 @@ obj-$(CONFIG_REGULATOR_AB8500)        += ab8500.o
->  obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
->  obj-$(CONFIG_REGULATOR_TPS65910) += tps65910-regulator.o
->  obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
-> +obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
->
->  ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
 
-Looks like your patch is against Linus' tree.
-Currently, we have sorted the Kconfig entries and Makefile entries in
-Mark's tree.
-The Kconfig entries are sorted by vender name first, then driver name.
-The Makefile entries are sorted by by alphabetical order.
+Hi Ben,
 
-Regards,
-Axel
+> Looks like something that got fixed but the new patches from Bjorn
+> aren't in next yet. I'll fwd you the patch separately to apply on top
+> of what you have see if that helps (to confirm that's indeed the
+> issue).
+
+Thanks, confirmed that it fixes it. Patch below in case anyone else is
+hitting it.
+
+Anton
+
+--
+
+On Sat, 2012-03-03 at 08:52 +1100, Benjamin Herrenschmidt wrote:
+
+> Or give me a chance to dig :-) I'll have a look next week.
+
+This is indeed what bjorn suspected on irc, this patch fixes it:
+
+(Bjorn, please fold it in the original offending patch)
+
+Cheers,
+Ben.
+
+diff --git a/arch/powerpc/kernel/pci_of_scan.c b/arch/powerpc/kernel/pci_of_scan.c
+index b37d0b5..5dd63f1 100644
+--- a/arch/powerpc/kernel/pci_of_scan.c
++++ b/arch/powerpc/kernel/pci_of_scan.c
+@@ -75,6 +75,7 @@ static void of_pci_parse_addrs(struct device_node *node, struct pci_dev *dev)
+ {
+ 	u64 base, size;
+ 	unsigned int flags;
++	struct pci_bus_region region;
+ 	struct resource *res;
+ 	const u32 *addrs;
+ 	u32 i;
+@@ -106,10 +107,12 @@ static void of_pci_parse_addrs(struct device_node *node, struct pci_dev *dev)
+ 			printk(KERN_ERR "PCI: bad cfg reg num 0x%x\n", i);
+ 			continue;
+ 		}
+-		res->start = base;
+-		res->end = base + size - 1;
++
+ 		res->flags = flags;
+ 		res->name = pci_name(dev);
++		region.start = base;
++		region.end = base + size - 1;
++		pcibios_bus_to_resource(dev, res, &region);
+ 	}
+ }
+ 
+@@ -209,6 +212,7 @@ void __devinit of_scan_pci_bridge(struct pci_dev *dev)
+ 	struct pci_bus *bus;
+ 	const u32 *busrange, *ranges;
+ 	int len, i, mode;
++	struct pci_bus_region region;
+ 	struct resource *res;
+ 	unsigned int flags;
+ 	u64 size;
+@@ -270,9 +274,10 @@ void __devinit of_scan_pci_bridge(struct pci_dev *dev)
+ 			res = bus->resource[i];
+ 			++i;
+ 		}
+-		res->start = of_read_number(&ranges[1], 2);
+-		res->end = res->start + size - 1;
+ 		res->flags = flags;
++		region.start = of_read_number(&ranges[1], 2);
++		region.end = region.start + size - 1;		
++		pcibios_bus_to_resource(dev, res, &region);
+ 	}
+ 	sprintf(bus->name, "PCI Bus %04x:%02x", pci_domain_nr(bus),
+ 		bus->number);
+
+
+--=-aDzdhtAsqTK5gqnOark/--
+
