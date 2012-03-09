@@ -1,196 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab2CIINQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 03:13:16 -0500
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:34639
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751700Ab2CIINP (ORCPT
+	id S1752985Ab2CIIPA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 03:15:00 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64880 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab2CIIO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 03:13:15 -0500
-X-SpamScore: 3
-X-BigFish: VS3(zz853kzz1202hzz8275bhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Liu Gang <Gang.Liu@freescale.com>
-To: <linuxppc-dev@lists.ozlabs.org>, <Alexandre.Bounine@idt.com>
-CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <r58472@freescale.com>, <r61911@freescale.com>,
-        <galak@kernel.crashing.org>, <paul.gortmaker@windriver.com>,
-        Liu Gang <Gang.Liu@freescale.com>,
-        Shaohui Xie <Shaohui.Xie@freescale.com>
-Subject: [PATCH v3] powerpc/srio: Fix the compile errors when building with 64bit
-Date: Fri, 9 Mar 2012 16:10:38 +0800
-Message-ID: <1331280638-23525-1-git-send-email-Gang.Liu@freescale.com>
-X-Mailer: git-send-email 1.7.3.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.net
+	Fri, 9 Mar 2012 03:14:58 -0500
+From: santosh nayak <santoshprasadnayak@gmail.com>
+To: jack_wang@usish.com
+Cc: mark_salyzyn@xyratex.com, lindar_liu@usish.com, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH] [SCSI] pm8001: Use spin_lock_irqsave() for task_state.
+Date: Fri,  9 Mar 2012 13:43:38 +0530
+Message-Id: <1331280818-14042-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the file "arch/powerpc/sysdev/fsl_rmu.c", there will be some compile
-errors while using the corenet64_smp_defconfig:
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-.../fsl_rmu.c:315: error: cast from pointer to integer of different size
-.../fsl_rmu.c:320: error: cast to pointer from integer of different size
-.../fsl_rmu.c:320: error: cast to pointer from integer of different size
-.../fsl_rmu.c:320: error: cast to pointer from integer of different size
-.../fsl_rmu.c:330: error: cast to pointer from integer of different size
-.../fsl_rmu.c:332: error: cast to pointer from integer of different size
-.../fsl_rmu.c:339: error: cast to pointer from integer of different size
-.../fsl_rmu.c:340: error: cast to pointer from integer of different size
-.../fsl_rmu.c:341: error: cast to pointer from integer of different size
-.../fsl_rmu.c:348: error: cast to pointer from integer of different size
-.../fsl_rmu.c:348: error: cast to pointer from integer of different size
-.../fsl_rmu.c:348: error: cast to pointer from integer of different size
-.../fsl_rmu.c:659: error: cast from pointer to integer of different size
-.../fsl_rmu.c:659: error: format '%8.8x' expects type 'unsigned int',
-                   but argument 5 has type 'size_t'
-.../fsl_rmu.c:985: error: cast from pointer to integer of different size
-.../fsl_rmu.c:997: error: cast to pointer from integer of different size
+Use spin_lock_irqsave() for task_state.
 
-Rewrote the corresponding code with the support of 64bit building.
-
-Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
-Signed-off-by: Shaohui Xie <Shaohui.Xie@freescale.com>
-Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
 ---
-Changes in v2:
- - Add the struct "rio_dbell_msg" to instead of some DBELL_* macros.
- - Change the "virt_buf" to be "void *" type.
- - Change "Signed-off-by" to "Reported-by" for Paul.
+ drivers/scsi/pm8001/pm8001_hwi.c |   18 ++++++++++--------
+ 1 files changed, 10 insertions(+), 8 deletions(-)
 
-Changes in v3:
- - Change the "%8.8lx" to be "%p" and remove the cast of the "buffer"
-
- arch/powerpc/sysdev/fsl_rmu.c |   42 +++++++++++++++++++++-------------------
- 1 files changed, 22 insertions(+), 20 deletions(-)
-
-diff --git a/arch/powerpc/sysdev/fsl_rmu.c b/arch/powerpc/sysdev/fsl_rmu.c
-index 1548578..14bd522 100644
---- a/arch/powerpc/sysdev/fsl_rmu.c
-+++ b/arch/powerpc/sysdev/fsl_rmu.c
-@@ -100,14 +100,8 @@
- #define DOORBELL_DSR_TE		0x00000080
- #define DOORBELL_DSR_QFI	0x00000010
- #define DOORBELL_DSR_DIQI	0x00000001
--#define DOORBELL_TID_OFFSET	0x02
--#define DOORBELL_SID_OFFSET	0x04
--#define DOORBELL_INFO_OFFSET	0x06
+diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
+index 3619f6e..9d82ee5 100644
+--- a/drivers/scsi/pm8001/pm8001_hwi.c
++++ b/drivers/scsi/pm8001/pm8001_hwi.c
+@@ -2093,6 +2093,7 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
+ 	struct ata_task_resp *resp ;
+ 	u32 *sata_resp;
+ 	struct pm8001_device *pm8001_dev;
++	unsigned long flags;
  
- #define DOORBELL_MESSAGE_SIZE	0x08
--#define DBELL_SID(x)		(*(u16 *)(x + DOORBELL_SID_OFFSET))
--#define DBELL_TID(x)		(*(u16 *)(x + DOORBELL_TID_OFFSET))
--#define DBELL_INF(x)		(*(u16 *)(x + DOORBELL_INFO_OFFSET))
- 
- struct rio_msg_regs {
- 	u32 omr;
-@@ -193,6 +187,13 @@ struct fsl_rmu {
- 	int rxirq;
- };
- 
-+struct rio_dbell_msg {
-+	u16 pad1;
-+	u16 tid;
-+	u16 sid;
-+	u16 info;
-+};
-+
- /**
-  * fsl_rio_tx_handler - MPC85xx outbound message interrupt handler
-  * @irq: Linux interrupt number
-@@ -311,8 +312,8 @@ fsl_rio_dbell_handler(int irq, void *dev_instance)
- 
- 	/* XXX Need to check/dispatch until queue empty */
- 	if (dsr & DOORBELL_DSR_DIQI) {
--		u32 dmsg =
--			(u32) fsl_dbell->dbell_ring.virt +
-+		struct rio_dbell_msg *dmsg =
-+			fsl_dbell->dbell_ring.virt +
- 			(in_be32(&fsl_dbell->dbell_regs->dqdpar) & 0xfff);
- 		struct rio_dbell *dbell;
- 		int found = 0;
-@@ -320,25 +321,25 @@ fsl_rio_dbell_handler(int irq, void *dev_instance)
- 		pr_debug
- 			("RIO: processing doorbell,"
- 			" sid %2.2x tid %2.2x info %4.4x\n",
--			DBELL_SID(dmsg), DBELL_TID(dmsg), DBELL_INF(dmsg));
-+			dmsg->sid, dmsg->tid, dmsg->info);
- 
- 		for (i = 0; i < MAX_PORT_NUM; i++) {
- 			if (fsl_dbell->mport[i]) {
- 				list_for_each_entry(dbell,
- 					&fsl_dbell->mport[i]->dbells, node) {
- 					if ((dbell->res->start
--						<= DBELL_INF(dmsg))
-+						<= dmsg->info)
- 						&& (dbell->res->end
--						>= DBELL_INF(dmsg))) {
-+						>= dmsg->info)) {
- 						found = 1;
- 						break;
- 					}
- 				}
- 				if (found && dbell->dinb) {
- 					dbell->dinb(fsl_dbell->mport[i],
--						dbell->dev_id, DBELL_SID(dmsg),
--						DBELL_TID(dmsg),
--						DBELL_INF(dmsg));
-+						dbell->dev_id, dmsg->sid,
-+						dmsg->tid,
-+						dmsg->info);
- 					break;
- 				}
- 			}
-@@ -348,8 +349,8 @@ fsl_rio_dbell_handler(int irq, void *dev_instance)
- 			pr_debug
- 				("RIO: spurious doorbell,"
- 				" sid %2.2x tid %2.2x info %4.4x\n",
--				DBELL_SID(dmsg), DBELL_TID(dmsg),
--				DBELL_INF(dmsg));
-+				dmsg->sid, dmsg->tid,
-+				dmsg->info);
- 		}
- 		setbits32(&fsl_dbell->dbell_regs->dmr, DOORBELL_DMR_DI);
- 		out_be32(&fsl_dbell->dbell_regs->dsr, DOORBELL_DSR_DIQI);
-@@ -657,7 +658,7 @@ fsl_add_outb_message(struct rio_mport *mport, struct rio_dev *rdev, int mbox,
- 	int ret = 0;
- 
- 	pr_debug("RIO: fsl_add_outb_message(): destid %4.4x mbox %d buffer " \
--		 "%8.8x len %8.8x\n", rdev->destid, mbox, (int)buffer, len);
-+		 "%p len %8.8zx\n", rdev->destid, mbox, buffer, len);
- 	if ((len < 8) || (len > RIO_MAX_MSG_SIZE)) {
- 		ret = -EINVAL;
- 		goto out;
-@@ -972,7 +973,8 @@ out:
- void *fsl_get_inb_message(struct rio_mport *mport, int mbox)
- {
- 	struct fsl_rmu *rmu = GET_RMM_HANDLE(mport);
--	u32 phys_buf, virt_buf;
-+	u32 phys_buf;
-+	void *virt_buf;
- 	void *buf = NULL;
- 	int buf_idx;
- 
-@@ -982,7 +984,7 @@ void *fsl_get_inb_message(struct rio_mport *mport, int mbox)
- 	if (phys_buf == in_be32(&rmu->msg_regs->ifqepar))
- 		goto out2;
- 
--	virt_buf = (u32) rmu->msg_rx_ring.virt + (phys_buf
-+	virt_buf = rmu->msg_rx_ring.virt + (phys_buf
- 						- rmu->msg_rx_ring.phys);
- 	buf_idx = (phys_buf - rmu->msg_rx_ring.phys) / RIO_MAX_MSG_SIZE;
- 	buf = rmu->msg_rx_ring.virt_buffer[buf_idx];
-@@ -994,7 +996,7 @@ void *fsl_get_inb_message(struct rio_mport *mport, int mbox)
+ 	psataPayload = (struct sata_completion_resp *)(piomb + 4);
+ 	status = le32_to_cpu(psataPayload->status);
+@@ -2382,26 +2383,26 @@ mpi_sata_completion(struct pm8001_hba_info *pm8001_ha, void *piomb)
+ 		ts->stat = SAS_DEV_NO_RESPONSE;
+ 		break;
  	}
+-	spin_lock_irq(&t->task_state_lock);
++	spin_lock_irqsave(&t->task_state_lock, flags);
+ 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
+ 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
+ 	t->task_state_flags |= SAS_TASK_STATE_DONE;
+ 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
+-		spin_unlock_irq(&t->task_state_lock);
++		spin_unlock_irqrestore(&t->task_state_lock, flags);
+ 		PM8001_FAIL_DBG(pm8001_ha,
+ 			pm8001_printk("task 0x%p done with io_status 0x%x"
+ 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
+ 			t, status, ts->resp, ts->stat));
+ 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+ 	} else if (t->uldd_task) {
+-		spin_unlock_irq(&t->task_state_lock);
++		spin_unlock_irqrestore(&t->task_state_lock, flags);
+ 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+ 		mb();/* ditto */
+ 		spin_unlock_irq(&pm8001_ha->lock);
+ 		t->task_done(t);
+ 		spin_lock_irq(&pm8001_ha->lock);
+ 	} else if (!t->uldd_task) {
+-		spin_unlock_irq(&t->task_state_lock);
++		spin_unlock_irqrestore(&t->task_state_lock, flags);
+ 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+ 		mb();/*ditto*/
+ 		spin_unlock_irq(&pm8001_ha->lock);
+@@ -2423,6 +2424,7 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
+ 	u32 tag = le32_to_cpu(psataPayload->tag);
+ 	u32 port_id = le32_to_cpu(psataPayload->port_id);
+ 	u32 dev_id = le32_to_cpu(psataPayload->device_id);
++	unsigned long flags;
  
- 	/* Copy max message size, caller is expected to allocate that big */
--	memcpy(buf, (void *)virt_buf, RIO_MAX_MSG_SIZE);
-+	memcpy(buf, virt_buf, RIO_MAX_MSG_SIZE);
- 
- 	/* Clear the available buffer */
- 	rmu->msg_rx_ring.virt_buffer[buf_idx] = NULL;
+ 	ccb = &pm8001_ha->ccb_info[tag];
+ 	t = ccb->task;
+@@ -2593,26 +2595,26 @@ static void mpi_sata_event(struct pm8001_hba_info *pm8001_ha , void *piomb)
+ 		ts->stat = SAS_OPEN_TO;
+ 		break;
+ 	}
+-	spin_lock_irq(&t->task_state_lock);
++	spin_lock_irqsave(&t->task_state_lock, flags);
+ 	t->task_state_flags &= ~SAS_TASK_STATE_PENDING;
+ 	t->task_state_flags &= ~SAS_TASK_AT_INITIATOR;
+ 	t->task_state_flags |= SAS_TASK_STATE_DONE;
+ 	if (unlikely((t->task_state_flags & SAS_TASK_STATE_ABORTED))) {
+-		spin_unlock_irq(&t->task_state_lock);
++		spin_unlock_irqrestore(&t->task_state_lock, flags);
+ 		PM8001_FAIL_DBG(pm8001_ha,
+ 			pm8001_printk("task 0x%p done with io_status 0x%x"
+ 			" resp 0x%x stat 0x%x but aborted by upper layer!\n",
+ 			t, event, ts->resp, ts->stat));
+ 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+ 	} else if (t->uldd_task) {
+-		spin_unlock_irq(&t->task_state_lock);
++		spin_unlock_irqrestore(&t->task_state_lock, flags);
+ 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+ 		mb();/* ditto */
+ 		spin_unlock_irq(&pm8001_ha->lock);
+ 		t->task_done(t);
+ 		spin_lock_irq(&pm8001_ha->lock);
+ 	} else if (!t->uldd_task) {
+-		spin_unlock_irq(&t->task_state_lock);
++		spin_unlock_irqrestore(&t->task_state_lock, flags);
+ 		pm8001_ccb_task_free(pm8001_ha, t, ccb, tag);
+ 		mb();/*ditto*/
+ 		spin_unlock_irq(&pm8001_ha->lock);
 -- 
-1.7.0.4
-
+1.7.4.4
 
