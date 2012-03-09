@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758871Ab2CITPD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:15:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7636 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758305Ab2CITPB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:15:01 -0500
-X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=LV9YWpXf9bAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=85a8RABxtJgHmxOi6i8A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1331320498.25686.597.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] x86: use enum instead of literals for trap values
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Andy Lutomirski <luto@mit.edu>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri, 09 Mar 2012 14:14:58 -0500
-In-Reply-To: <20120309190842.GC13745@aftab>
-References: <20120309074202.GA28609@www.outflux.net>
-	 <20120309092845.GA10281@elte.hu>
-	 <CAGXu5j+SgWMjwNQd8w8DPSQmBVHDow=_osp57OVp4X2VU5Fe5w@mail.gmail.com>
-	 <4F5A448D.70605@zytor.com>
-	 <CAGXu5jKHJGmTktKNYDmpZziKRLM-bw-dTK5tboR706J_s6j7NQ@mail.gmail.com>
-	 <20120309182829.GA13745@aftab>
-	 <CAGXu5jJaO29hqMfACav9v8yEdHXt-SegozGuc+tigYCF6K57WA@mail.gmail.com>
-	 <20120309190842.GC13745@aftab>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	id S1758899Ab2CITXL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:23:11 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:43624 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754662Ab2CITXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 14:23:09 -0500
+Message-ID: <1331320982.26253.114.camel@work-vm>
+Subject: Re: [PATCH] sched, x86: fix overflow in cyc2ns_offset
+From: john stultz <johnstul@us.ibm.com>
+To: Salman Qazi <sqazi@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>
+Date: Fri, 09 Mar 2012 11:23:02 -0800
+In-Reply-To: <20120308232303.11660.48285.stgit@dungbeetle.mtv.corp.google.com>
+References: <20120308232303.11660.48285.stgit@dungbeetle.mtv.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12030919-9360-0000-0000-00000466575F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-09 at 20:08 +0100, Borislav Petkov wrote:
-
-> > Can use "VEC" instead "XCP", as Steven suggests.
+On Thu, 2012-03-08 at 15:23 -0800, Salman Qazi wrote:
+> When a machine boots up, the TSC generally gets reset.  However, when
+> kexec is used to boot into a kernel, the TSC value would be carried
+> over from the previous kernel.  The computation of cycns_offset in
+> set_cyc2ns_scale is prone to an overflow, if the machine has been up
+> more than 208 days prior to the kexec.  The overflow happens when
+> we multiply *scale, even though there is enough room to store the
+> final answer.  We fix this issue by decomposing tsc_now into the
+> quotient and remainder of division by CYC2NS_SCALE_FACTOR and then
+> performing the multiplication separately on the two components.
 > 
-> Yeah, because those actually are fixed interrupt vectors, as they're
-> called in the AMD docs. Makes sense.
+> Signed-off-by: Salman Qazi <sqazi@google.com>
+> ---
+>  arch/x86/kernel/tsc.c |   12 +++++++++++-
+>  1 files changed, 11 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index a62c201..ef1dc8e 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -608,6 +608,8 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+>  {
+>  	unsigned long long tsc_now, ns_now, *offset;
+>  	unsigned long flags, *scale;
+> +	unsigned long long quot;
+> +	unsigned long long rem;
+> 
+>  	local_irq_save(flags);
+>  	sched_clock_idle_sleep_event();
+> @@ -620,7 +622,15 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+> 
+>  	if (cpu_khz) {
+>  		*scale = (NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR)/cpu_khz;
+> -		*offset = ns_now - (tsc_now * *scale >> CYC2NS_SCALE_FACTOR);
+> +
+> +		/*
+> +		 * Avoid premature overflow by splitting into quotient
+> +		 * and remainder.  See the comment above __cycles_2_ns
+> +		 */
+> +		quot = (tsc_now >> CYC2NS_SCALE_FACTOR);
+> +		rem = tsc_now & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
+> +		*offset = ns_now - (quot * *scale +
+> +				    ((rem * *scale) >> CYC2NS_SCALE_FACTOR));
+>  	}
 
-I have to admit my bias may lean towards AMD's documentation as that's
-the only x86_64 documentation I have/use. I don't know what Intel's
-description is.
+This clearly is a needed fix. Thanks for finding it and sending it in.
 
--- Steve
+Although I'm curious if it might be good to encapsulate this code into a
+macro that can be reused in both set_cyc2ns_scale and __cycles_2_ns()
+(as well as others, I suspect this issue is going to crop up on other
+arches at some point too)?
+
+thanks
+-john
+
 
 
