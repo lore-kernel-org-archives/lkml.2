@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab2CIN0m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 08:26:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58710 "EHLO
+	id S1756458Ab2CIN1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 08:27:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58720 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932237Ab2CIN0k (ORCPT
+	with ESMTP id S1753867Ab2CIN1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 08:26:40 -0500
-Date: Fri, 9 Mar 2012 05:26:00 -0800
+	Fri, 9 Mar 2012 08:27:23 -0500
+Date: Fri, 9 Mar 2012 05:26:49 -0800
 From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-2481c5fa6db0237e4f0168f88913178b2b495b7c@git.kernel.org>
+Message-ID: <tip-d010b3326cf06b3406cdd88af16dcf4e4b6fec2e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
         mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1328826068-11713-10-git-send-email-eranian@google.com>
-References: <1328826068-11713-10-git-send-email-eranian@google.com>
+In-Reply-To: <1328826068-11713-11-git-send-email-eranian@google.com>
+References: <1328826068-11713-11-git-send-email-eranian@google.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/hw-branch-sampling] perf:
-  Disable PERF_SAMPLE_BRANCH_* when not supported
-Git-Commit-ID: 2481c5fa6db0237e4f0168f88913178b2b495b7c
+  Add callback to flush branch_stack on context switch
+Git-Commit-ID: d010b3326cf06b3406cdd88af16dcf4e4b6fec2e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,217 +30,308 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 09 Mar 2012 05:26:22 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 09 Mar 2012 05:27:11 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2481c5fa6db0237e4f0168f88913178b2b495b7c
-Gitweb:     http://git.kernel.org/tip/2481c5fa6db0237e4f0168f88913178b2b495b7c
+Commit-ID:  d010b3326cf06b3406cdd88af16dcf4e4b6fec2e
+Gitweb:     http://git.kernel.org/tip/d010b3326cf06b3406cdd88af16dcf4e4b6fec2e
 Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Thu, 9 Feb 2012 23:20:59 +0100
+AuthorDate: Thu, 9 Feb 2012 23:21:00 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Mon, 5 Mar 2012 14:55:42 +0100
 
-perf: Disable PERF_SAMPLE_BRANCH_* when not supported
+perf: Add callback to flush branch_stack on context switch
 
-PERF_SAMPLE_BRANCH_* is disabled for:
+With branch stack sampling, it is possible to filter by priv levels.
 
- - SW events (sw counters, tracepoints)
- - HW breakpoints
- - ALL but Intel x86 architecture
- - AMD64 processors
+In system-wide mode, that means it is possible to capture only user
+level branches. The builtin SW LBR filter needs to disassemble code
+based on LBR captured addresses. For that, it needs to know the task
+the addresses are associated with. Because of context switches, the
+content of the branch stack buffer may contain addresses from
+different tasks.
+
+We need a callback on context switch to either flush the branch stack
+or save it. This patch adds a new callback in struct pmu which is called
+during context switches. The callback is called only when necessary.
+That is when a system-wide context has, at least, one event which
+uses PERF_SAMPLE_BRANCH_STACK. The callback is never called for
+per-thread context.
+
+In this version, the Intel x86 code simply flushes (resets) the LBR
+on context switches (fills it with zeroes). Those zeroed branches are
+then filtered out by the SW filter.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1328826068-11713-10-git-send-email-eranian@google.com
+Link: http://lkml.kernel.org/r/1328826068-11713-11-git-send-email-eranian@google.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/alpha/kernel/perf_event.c       |    4 ++++
- arch/arm/kernel/perf_event.c         |    4 ++++
- arch/mips/kernel/perf_event_mipsxx.c |    4 ++++
- arch/powerpc/kernel/perf_event.c     |    4 ++++
- arch/sh/kernel/perf_event.c          |    4 ++++
- arch/sparc/kernel/perf_event.c       |    4 ++++
- arch/x86/kernel/cpu/perf_event_amd.c |    3 +++
- kernel/events/core.c                 |   24 ++++++++++++++++++++++++
- kernel/events/hw_breakpoint.c        |    6 ++++++
- 9 files changed, 57 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c       |   21 +++++---
+ arch/x86/kernel/cpu/perf_event.h       |    1 +
+ arch/x86/kernel/cpu/perf_event_intel.c |   13 +++++
+ include/linux/perf_event.h             |    9 +++-
+ kernel/events/core.c                   |   85 ++++++++++++++++++++++++++++++++
+ 5 files changed, 121 insertions(+), 8 deletions(-)
 
-diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
-index 8143cd7..0dae252 100644
---- a/arch/alpha/kernel/perf_event.c
-+++ b/arch/alpha/kernel/perf_event.c
-@@ -685,6 +685,10 @@ static int alpha_pmu_event_init(struct perf_event *event)
- {
- 	int err;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index cea5674..0a18d16 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1671,25 +1671,32 @@ static const struct attribute_group *x86_pmu_attr_groups[] = {
+ 	NULL,
+ };
  
-+	/* does not support taken branch sampling */
-+	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
++static void x86_pmu_flush_branch_stack(void)
++{
++	if (x86_pmu.flush_branch_stack)
++		x86_pmu.flush_branch_stack();
++}
 +
- 	switch (event->attr.type) {
- 	case PERF_TYPE_RAW:
- 	case PERF_TYPE_HARDWARE:
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 5bb91bf..a23c42a 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -539,6 +539,10 @@ static int armpmu_event_init(struct perf_event *event)
- 	int err = 0;
- 	atomic_t *active_events = &armpmu->active_events;
+ static struct pmu pmu = {
+-	.pmu_enable	= x86_pmu_enable,
+-	.pmu_disable	= x86_pmu_disable,
++	.pmu_enable		= x86_pmu_enable,
++	.pmu_disable		= x86_pmu_disable,
  
-+	/* does not support taken branch sampling */
-+	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
+ 	.attr_groups	= x86_pmu_attr_groups,
+ 
+ 	.event_init	= x86_pmu_event_init,
+ 
+-	.add		= x86_pmu_add,
+-	.del		= x86_pmu_del,
+-	.start		= x86_pmu_start,
+-	.stop		= x86_pmu_stop,
+-	.read		= x86_pmu_read,
++	.add			= x86_pmu_add,
++	.del			= x86_pmu_del,
++	.start			= x86_pmu_start,
++	.stop			= x86_pmu_stop,
++	.read			= x86_pmu_read,
+ 
+ 	.start_txn	= x86_pmu_start_txn,
+ 	.cancel_txn	= x86_pmu_cancel_txn,
+ 	.commit_txn	= x86_pmu_commit_txn,
+ 
+ 	.event_idx	= x86_pmu_event_idx,
++	.flush_branch_stack	= x86_pmu_flush_branch_stack,
+ };
+ 
+ void perf_update_user_clock(struct perf_event_mmap_page *userpg, u64 now)
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index f104c05..74387c1 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -324,6 +324,7 @@ struct x86_pmu {
+ 	void		(*cpu_starting)(int cpu);
+ 	void		(*cpu_dying)(int cpu);
+ 	void		(*cpu_dead)(int cpu);
++	void		(*flush_branch_stack)(void);
+ 
+ 	/*
+ 	 * Intel Arch Perfmon v2+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 7cc1e2d..6627089 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1539,6 +1539,18 @@ static void intel_pmu_cpu_dying(int cpu)
+ 	fini_debug_store_on_cpu(cpu);
+ }
+ 
++static void intel_pmu_flush_branch_stack(void)
++{
++	/*
++	 * Intel LBR does not tag entries with the
++	 * PID of the current task, then we need to
++	 * flush it on ctxsw
++	 * For now, we simply reset it
++	 */
++	if (x86_pmu.lbr_nr)
++		intel_pmu_lbr_reset();
++}
 +
- 	if (armpmu->map_event(event) == -ENOENT)
- 		return -ENOENT;
+ static __initconst const struct x86_pmu intel_pmu = {
+ 	.name			= "Intel",
+ 	.handle_irq		= intel_pmu_handle_irq,
+@@ -1566,6 +1578,7 @@ static __initconst const struct x86_pmu intel_pmu = {
+ 	.cpu_starting		= intel_pmu_cpu_starting,
+ 	.cpu_dying		= intel_pmu_cpu_dying,
+ 	.guest_get_msrs		= intel_guest_get_msrs,
++	.flush_branch_stack	= intel_pmu_flush_branch_stack,
+ };
  
-diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
-index e3b897a..811084f 100644
---- a/arch/mips/kernel/perf_event_mipsxx.c
-+++ b/arch/mips/kernel/perf_event_mipsxx.c
-@@ -606,6 +606,10 @@ static int mipspmu_event_init(struct perf_event *event)
- {
- 	int err = 0;
- 
-+	/* does not support taken branch sampling */
-+	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
+ static __init void intel_clovertown_quirk(void)
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 5fc494f..fbbf5e5 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -746,6 +746,11 @@ struct pmu {
+ 	 * if no implementation is provided it will default to: event->hw.idx + 1.
+ 	 */
+ 	int (*event_idx)		(struct perf_event *event); /*optional */
 +
- 	switch (event->attr.type) {
- 	case PERF_TYPE_RAW:
- 	case PERF_TYPE_HARDWARE:
-diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
-index f04c230..c2e27ed 100644
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -1084,6 +1084,10 @@ static int power_pmu_event_init(struct perf_event *event)
- 	if (!ppmu)
- 		return -ENOENT;
++	/*
++	 * flush branch stack on context-switches (needed in cpu-wide mode)
++	 */
++	void (*flush_branch_stack)	(void);
+ };
  
-+	/* does not support taken branch sampling */
-+	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
-+
- 	switch (event->attr.type) {
- 	case PERF_TYPE_HARDWARE:
- 		ev = event->attr.config;
-diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
-index 10b14e3..068b8a2 100644
---- a/arch/sh/kernel/perf_event.c
-+++ b/arch/sh/kernel/perf_event.c
-@@ -310,6 +310,10 @@ static int sh_pmu_event_init(struct perf_event *event)
- {
- 	int err;
+ /**
+@@ -979,7 +984,8 @@ struct perf_event_context {
+ 	u64				parent_gen;
+ 	u64				generation;
+ 	int				pin_count;
+-	int				nr_cgroups; /* cgroup events present */
++	int				nr_cgroups;	 /* cgroup evts */
++	int				nr_branch_stack; /* branch_stack evt */
+ 	struct rcu_head			rcu_head;
+ };
  
-+	/* does not support taken branch sampling */
-+	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
-+
- 	switch (event->attr.type) {
- 	case PERF_TYPE_RAW:
- 	case PERF_TYPE_HW_CACHE:
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index 614da62..8e16a4a 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1105,6 +1105,10 @@ static int sparc_pmu_event_init(struct perf_event *event)
- 	if (atomic_read(&nmi_active) < 0)
- 		return -ENODEV;
+@@ -1044,6 +1050,7 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr,
+ extern u64 perf_event_read_value(struct perf_event *event,
+ 				 u64 *enabled, u64 *running);
  
-+	/* does not support taken branch sampling */
-+	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
 +
- 	switch (attr->type) {
- 	case PERF_TYPE_HARDWARE:
- 		if (attr->config >= sparc_pmu->max_events)
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 67250a5..dd002fa 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -139,6 +139,9 @@ static int amd_pmu_hw_config(struct perf_event *event)
- 	if (ret)
- 		return ret;
+ struct perf_sample_data {
+ 	u64				type;
  
-+	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
-+
- 	if (event->attr.exclude_host && event->attr.exclude_guest)
- 		/*
- 		 * When HO == GO == 1 the hardware treats that as GO == HO == 0
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 5820efd..242bb51 100644
+index 242bb51..c61234b 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -5044,6 +5044,12 @@ static int perf_swevent_init(struct perf_event *event)
- 	if (event->attr.type != PERF_TYPE_SOFTWARE)
- 		return -ENOENT;
+@@ -137,6 +137,7 @@ enum event_type_t {
+  */
+ struct static_key_deferred perf_sched_events __read_mostly;
+ static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
++static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
  
-+	/*
-+	 * no branch sampling for software events
-+	 */
+ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+@@ -888,6 +889,9 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ 	if (is_cgroup_event(event))
+ 		ctx->nr_cgroups++;
+ 
 +	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
++		ctx->nr_branch_stack++;
 +
- 	switch (event_id) {
- 	case PERF_COUNT_SW_CPU_CLOCK:
- 	case PERF_COUNT_SW_TASK_CLOCK:
-@@ -5154,6 +5160,12 @@ static int perf_tp_event_init(struct perf_event *event)
- 	if (event->attr.type != PERF_TYPE_TRACEPOINT)
- 		return -ENOENT;
+ 	list_add_rcu(&event->event_entry, &ctx->event_list);
+ 	if (!ctx->nr_events)
+ 		perf_pmu_rotate_start(ctx->pmu);
+@@ -1027,6 +1031,9 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+ 			cpuctx->cgrp = NULL;
+ 	}
  
-+	/*
-+	 * no branch sampling for tracepoint events
-+	 */
 +	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
++		ctx->nr_branch_stack--;
 +
- 	err = perf_trace_init(event);
- 	if (err)
- 		return err;
-@@ -5379,6 +5391,12 @@ static int cpu_clock_event_init(struct perf_event *event)
- 	if (event->attr.config != PERF_COUNT_SW_CPU_CLOCK)
- 		return -ENOENT;
+ 	ctx->nr_events--;
+ 	if (event->attr.inherit_stat)
+ 		ctx->nr_stat--;
+@@ -2202,6 +2209,66 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
+ }
  
-+	/*
-+	 * no branch sampling for software events
-+	 */
-+	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
+ /*
++ * When sampling the branck stack in system-wide, it may be necessary
++ * to flush the stack on context switch. This happens when the branch
++ * stack does not tag its entries with the pid of the current task.
++ * Otherwise it becomes impossible to associate a branch entry with a
++ * task. This ambiguity is more likely to appear when the branch stack
++ * supports priv level filtering and the user sets it to monitor only
++ * at the user level (which could be a useful measurement in system-wide
++ * mode). In that case, the risk is high of having a branch stack with
++ * branch from multiple tasks. Flushing may mean dropping the existing
++ * entries or stashing them somewhere in the PMU specific code layer.
++ *
++ * This function provides the context switch callback to the lower code
++ * layer. It is invoked ONLY when there is at least one system-wide context
++ * with at least one active event using taken branch sampling.
++ */
++static void perf_branch_stack_sched_in(struct task_struct *prev,
++				       struct task_struct *task)
++{
++	struct perf_cpu_context *cpuctx;
++	struct pmu *pmu;
++	unsigned long flags;
 +
- 	perf_swevent_init_hrtimer(event);
- 
- 	return 0;
-@@ -5453,6 +5471,12 @@ static int task_clock_event_init(struct perf_event *event)
- 	if (event->attr.config != PERF_COUNT_SW_TASK_CLOCK)
- 		return -ENOENT;
- 
-+	/*
-+	 * no branch sampling for software events
-+	 */
-+	if (has_branch_stack(event))
-+		return -EOPNOTSUPP;
++	/* no need to flush branch stack if not changing task */
++	if (prev == task)
++		return;
 +
- 	perf_swevent_init_hrtimer(event);
- 
- 	return 0;
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index 3330022..bb38c4d 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -581,6 +581,12 @@ static int hw_breakpoint_event_init(struct perf_event *bp)
- 	if (bp->attr.type != PERF_TYPE_BREAKPOINT)
- 		return -ENOENT;
- 
-+	/*
-+	 * no branch sampling for breakpoint events
-+	 */
-+	if (has_branch_stack(bp))
-+		return -EOPNOTSUPP;
++	local_irq_save(flags);
 +
- 	err = register_perf_hw_breakpoint(bp);
- 	if (err)
- 		return err;
++	rcu_read_lock();
++
++	list_for_each_entry_rcu(pmu, &pmus, entry) {
++		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++
++		/*
++		 * check if the context has at least one
++		 * event using PERF_SAMPLE_BRANCH_STACK
++		 */
++		if (cpuctx->ctx.nr_branch_stack > 0
++		    && pmu->flush_branch_stack) {
++
++			pmu = cpuctx->ctx.pmu;
++
++			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
++
++			perf_pmu_disable(pmu);
++
++			pmu->flush_branch_stack();
++
++			perf_pmu_enable(pmu);
++
++			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
++		}
++	}
++
++	rcu_read_unlock();
++
++	local_irq_restore(flags);
++}
++
++/*
+  * Called from scheduler to add the events of the current task
+  * with interrupts disabled.
+  *
+@@ -2232,6 +2299,10 @@ void __perf_event_task_sched_in(struct task_struct *prev,
+ 	 */
+ 	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
+ 		perf_cgroup_sched_in(prev, task);
++
++	/* check for system-wide branch_stack events */
++	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
++		perf_branch_stack_sched_in(prev, task);
+ }
+ 
+ static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
+@@ -2798,6 +2869,14 @@ static void free_event(struct perf_event *event)
+ 			atomic_dec(&per_cpu(perf_cgroup_events, event->cpu));
+ 			static_key_slow_dec_deferred(&perf_sched_events);
+ 		}
++
++		if (has_branch_stack(event)) {
++			static_key_slow_dec_deferred(&perf_sched_events);
++			/* is system-wide event */
++			if (!(event->attach_state & PERF_ATTACH_TASK))
++				atomic_dec(&per_cpu(perf_branch_stack_events,
++						    event->cpu));
++		}
+ 	}
+ 
+ 	if (event->rb) {
+@@ -5924,6 +6003,12 @@ done:
+ 				return ERR_PTR(err);
+ 			}
+ 		}
++		if (has_branch_stack(event)) {
++			static_key_slow_inc(&perf_sched_events.key);
++			if (!(event->attach_state & PERF_ATTACH_TASK))
++				atomic_inc(&per_cpu(perf_branch_stack_events,
++						    event->cpu));
++		}
+ 	}
+ 
+ 	return event;
