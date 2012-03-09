@@ -1,124 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab2CIVq4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:46:56 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:38600 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758547Ab2CIVqx (ORCPT
+	id S1758734Ab2CIVrP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:47:15 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49512 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745Ab2CIVq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:46:53 -0500
-Date: Fri, 9 Mar 2012 13:46:37 -0800
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Matt Helsley <matthltc@us.ibm.com>,
+	Fri, 9 Mar 2012 16:46:28 -0500
+Message-Id: <20120309214623.901670268@openvz.org>
+User-Agent: quilt/0.48-1
+Date: Sat, 10 Mar 2012 01:41:03 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Matt Helsley <matthltc@us.ibm.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
-Message-ID: <20120309214637.GC19584@count0.beaverton.ibm.com>
-References: <20120308165112.GF21812@moon>
- <20120308182623.GA17221@redhat.com>
- <20120308190303.GG21812@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120308190303.GG21812@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030921-5518-0000-0000-000002DA2F2D
+        Oleg Nesterov <oleg@redhat.com>, Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [patch 1/2] c/r: prctl: Add ability to set new mm_struct::exe_file v6
+References: <20120309214102.240208363@openvz.org>
+Content-Disposition: inline; filename=c-r-prctl-add-SET_MM-new-4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 08, 2012 at 11:03:03PM +0400, Cyrill Gorcunov wrote:
-> On Thu, Mar 08, 2012 at 07:26:23PM +0100, Oleg Nesterov wrote:
-> > On 03/08, Cyrill Gorcunov wrote:
-> > >
-> > > Hi Oleg, could you please take a look once you get a minute (no urgency).
-> > 
-> > Add Matt. I won't touch the text below to keep the patch intact.
-> 
-> Thanks for CC'ing Matt, Oleg (I forgot, sorry).
-> 
-> > 
-> > With this change
-> > 
-> > 	down_write(&mm->mmap_sem);
-> > 	if (mm->num_exe_file_vmas) {
-> > 		fput(mm->exe_file);
-> > 		mm->exe_file = exe_file;
-> > 		exe_file = NULL;
-> > 	} else
-> > 		set_mm_exe_file(mm, exe_file);
-> > 	up_write(&mm->mmap_sem);
-> > 
-> > I simply do not understand what mm->num_exe_file_vmas means after
-> > PR_SET_MM_EXE_FILE.
+When we do restore we would like to have a way to setup
+a former mm_struct::exe_file so that /proc/pid/exe would
+point to the original executable file a process had at
+checkpoint time.
 
-I think it should fail if the num_exe_file_vmas is not 0 when
-PR_SET_MM_EXE_FILE is used. It's simple, keeps things clear, might
-catch userspace bugs (harder to accidentally leave a mapping of the original
-executable), and could avoid kernel bugs too.
+For this the PR_SET_MM_EXE_FILE code is introduced.
+This option takes a file descriptor which will be
+set as a source for new /proc/$pid/exe symlink.
 
-> > 
-> > I think that you should do
-> > 
-> > 	down_write(&mm->mmap_sem);
-> > 	if (mm->num_exe_file_vmas) {
-> > 		fput(mm->exe_file);
-> > 		mm->exe_file = exe_file;
-> > 		exe_file = NULL;
-> > 	}
-> > 	up_write(&mm->mmap_sem);
-> > 
-> > to keep the current "mm->exe_file goes away after the final
-> > unmap(MAP_EXECUTABLE)" logic.
-> > 
-> > OK, may be this doesn't work in c/r case because you are actually
-> > going to remove the old mappings? But in this case the new exe_file
-> > will go away anyway, afaics PR_SET_MM_EXE_FILE is called when you
-> > still have the old mappings.
-> 
-> Yes, exactly, I need to remove old mappings first (because VMAs
-> we're about to restore may intersect with current map the host
-> program has). And yes, once they all are removed I don't have
-> /proc/pid/exe anymore. That's why I need num_exe_file_vmas == 0
-> case.
-> 
-> When I setup new exe_file with num_exe_file_vmas = 0, this reference
-> to a file brings /proc/pid/exe back to live (and when process exiting
-> it'll call set_mm_exe_file(mm, NULL) and the new exe_file will be dropped,
-> so no leak here).
+Note it allows to change /proc/$pid/exe iif there
+are no VM_EXECUTABLE vmas present for current process,
+simply because this feature is a special to C/R
+and mm::num_exe_file_vmas become meaningless after
+that.
 
-Makes sense, I think.
+This feature is available iif CONFIG_CHECKPOINT_RESTORE is set.
 
-> > And I don't think the unconditional
-> > 
-> > 	down_write(&mm->mmap_sem);
-> > 	set_mm_exe_file(mm, exe_file);
-> > 	up_write(&mm->mmap_sem);
-> > 
-> > is 100% right, this clears ->num_exe_file_vmas. This means that
-> > (if you still have the old mapping) the new exe_file can go away
-> > after added_exe_file_vma() + removed_exe_file_vma(). Normally this
-> > should happen, but afaics this is possible. Note that even, say,
-> > mprotect() can trigger added_exe_file_vma().
-> > 
-> 
-> Wait, Oleg, I'm confused, in case if there *is* exitsting VM_EXECUTABLEs
-> then we jump into first banch and simply replace old exe_file.
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Pavel Emelyanov <xemul@parallels.com>
+CC: Kees Cook <keescook@chromium.org>
+CC: Tejun Heo <tj@kernel.org>
+CC: Matt Helsley <matthltc@us.ibm.com>
+---
+ include/linux/prctl.h |    1 
+ kernel/sys.c          |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+)
 
-What happens if multiple prctl calls are made? We'll have a mix of N
-executable files that've been mapped n_i times. I think we're better off
-just returning an error in that case -- -EBUSY or something.
-
-> If there is no VM_EXECUTABLEs, then we simply setup new exe_file
-> and num_exe_file_vmas remains zero.
-
-Which is fine.
-
-Cheers,
-	-Matt
+Index: linux-2.6.git/include/linux/prctl.h
+===================================================================
+--- linux-2.6.git.orig/include/linux/prctl.h
++++ linux-2.6.git/include/linux/prctl.h
+@@ -118,5 +118,6 @@
+ # define PR_SET_MM_ENV_START		10
+ # define PR_SET_MM_ENV_END		11
+ # define PR_SET_MM_AUXV			12
++# define PR_SET_MM_EXE_FILE		13
+ 
+ #endif /* _LINUX_PRCTL_H */
+Index: linux-2.6.git/kernel/sys.c
+===================================================================
+--- linux-2.6.git.orig/kernel/sys.c
++++ linux-2.6.git/kernel/sys.c
+@@ -36,6 +36,8 @@
+ #include <linux/personality.h>
+ #include <linux/ptrace.h>
+ #include <linux/fs_struct.h>
++#include <linux/file.h>
++#include <linux/mount.h>
+ #include <linux/gfp.h>
+ #include <linux/syscore_ops.h>
+ #include <linux/version.h>
+@@ -1701,6 +1703,53 @@ static bool vma_flags_mismatch(struct vm
+ 		(vma->vm_flags & banned);
+ }
+ 
++static int prctl_set_mm_exe_file(struct mm_struct *mm, unsigned int fd)
++{
++	struct file *exe_file;
++	struct dentry *dentry;
++	int err;
++
++	/*
++	 * Setting new mm::exe_file is only allowed
++	 * when no VM_EXECUTABLE vma's left. This is
++	 * a special C/R case when a restored program
++	 * need to change own /proc/$pid/exe symlink.
++	 * After this call mm::num_exe_file_vmas become
++	 * meaningless.
++	 */
++	if (mm->num_exe_file_vmas)
++		return -EBUSY;
++
++	exe_file = fget(fd);
++	if (!exe_file)
++		return -EBADF;
++
++	dentry = exe_file->f_path.dentry;
++
++	/*
++	 * Because the original mm->exe_file
++	 * points to executable file, make sure
++	 * this one is executable as well to not
++	 * break an overall picture.
++	 */
++	err = -EACCES;
++	if (!S_ISREG(dentry->d_inode->i_mode)	||
++	    exe_file->f_path.mnt->mnt_flags & MNT_NOEXEC)
++		goto exit;
++
++	err = inode_permission(dentry->d_inode, MAY_EXEC);
++	if (err)
++		goto exit;
++
++	down_write(&mm->mmap_sem);
++	set_mm_exe_file(mm, exe_file);
++	up_write(&mm->mmap_sem);
++
++exit:
++	fput(exe_file);
++	return err;
++}
++
+ static int prctl_set_mm(int opt, unsigned long addr,
+ 			unsigned long arg4, unsigned long arg5)
+ {
+@@ -1715,6 +1764,9 @@ static int prctl_set_mm(int opt, unsigne
+ 	if (!capable(CAP_SYS_RESOURCE))
+ 		return -EPERM;
+ 
++	if (opt == PR_SET_MM_EXE_FILE)
++		return prctl_set_mm_exe_file(mm, (unsigned int)addr);
++
+ 	if (addr >= TASK_SIZE)
+ 		return -EINVAL;
+ 
 
