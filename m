@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031216Ab2CITuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:50:17 -0500
+	id S1031262Ab2CITub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:50:31 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031194Ab2CITuK (ORCPT
+	with ESMTP id S1031240Ab2CITu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:50:10 -0500
-Message-Id: <20120309190208.984547820@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:50:26 -0500
+Message-Id: <20120309190209.389491452@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:25 -0800
+Date: Fri, 09 Mar 2012 11:03:30 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?An=C3=83=C2=ADbal=20Almeida=20Pinto?= 
-	<anibal.pinto@efacec.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Oliver Neukum <oliver@neukum.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 83/95] net/usbnet: avoid recursive locking in usbnet_stop()
+        alan@lxorguk.ukuu.org.uk, Mike Snitzer <snitzer@redhat.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [ 88/95] dm thin metadata: remove incorrect close_device on creation error paths
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,56 +25,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Siewior <bigeasy@linutronix.de>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d upstream.
+commit 1f3db25d8be4ac50b897b39609802183ea68a514 upstream.
 
-|kernel BUG at kernel/rtmutex.c:724!
-|[<c029599c>] (rt_spin_lock_slowlock+0x108/0x2bc) from [<c01c2330>] (defer_bh+0x1c/0xb4)
-|[<c01c2330>] (defer_bh+0x1c/0xb4) from [<c01c3afc>] (rx_complete+0x14c/0x194)
-|[<c01c3afc>] (rx_complete+0x14c/0x194) from [<c01cac88>] (usb_hcd_giveback_urb+0xa0/0xf0)
-|[<c01cac88>] (usb_hcd_giveback_urb+0xa0/0xf0) from [<c01e1ff4>] (musb_giveback+0x34/0x40)
-|[<c01e1ff4>] (musb_giveback+0x34/0x40) from [<c01e2b1c>] (musb_advance_schedule+0xb4/0x1c0)
-|[<c01e2b1c>] (musb_advance_schedule+0xb4/0x1c0) from [<c01e2ca8>] (musb_cleanup_urb.isra.9+0x80/0x8c)
-|[<c01e2ca8>] (musb_cleanup_urb.isra.9+0x80/0x8c) from [<c01e2ed0>] (musb_urb_dequeue+0xec/0x108)
-|[<c01e2ed0>] (musb_urb_dequeue+0xec/0x108) from [<c01cbb90>] (unlink1+0xbc/0xcc)
-|[<c01cbb90>] (unlink1+0xbc/0xcc) from [<c01cc2ec>] (usb_hcd_unlink_urb+0x54/0xa8)
-|[<c01cc2ec>] (usb_hcd_unlink_urb+0x54/0xa8) from [<c01c2a84>] (unlink_urbs.isra.17+0x2c/0x58)
-|[<c01c2a84>] (unlink_urbs.isra.17+0x2c/0x58) from [<c01c2b44>] (usbnet_terminate_urbs+0x94/0x10c)
-|[<c01c2b44>] (usbnet_terminate_urbs+0x94/0x10c) from [<c01c2d68>] (usbnet_stop+0x100/0x15c)
-|[<c01c2d68>] (usbnet_stop+0x100/0x15c) from [<c020f718>] (__dev_close_many+0x94/0xc8)
+The __open_device() error paths in __create_thin() and __create_snap()
+incorrectly call __close_device() even if td was not initialized by
+__open_device().  Remove this.
 
-defer_bh() takes the lock which is hold during unlink_urbs(). The safe
-walk suggest that the skb will be removed from the list and this is done
-by defer_bh() so it seems to be okay to drop the lock here.
+Also document __open_device() return values, remove a redundant
+td->changed = 1 in __create_thin(), and insert an additional
+safeguard against creating an already-existing device.
 
-Reported-by: AnÃ­bal Almeida Pinto <anibal.pinto@efacec.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Acked-by: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Alasdair G Kergon <agk@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/usbnet.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/md/dm-thin-metadata.c |   22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -589,6 +589,7 @@ static int unlink_urbs (struct usbnet *d
- 		entry = (struct skb_data *) skb->cb;
- 		urb = entry->urb;
+--- a/drivers/md/dm-thin-metadata.c
++++ b/drivers/md/dm-thin-metadata.c
+@@ -789,6 +789,11 @@ int dm_pool_metadata_close(struct dm_poo
+ 	return 0;
+ }
  
-+		spin_unlock_irqrestore(&q->lock, flags);
- 		// during some PM-driven resume scenarios,
- 		// these (async) unlinks complete immediately
- 		retval = usb_unlink_urb (urb);
-@@ -596,6 +597,7 @@ static int unlink_urbs (struct usbnet *d
- 			netdev_dbg(dev->net, "unlink urb err, %d\n", retval);
- 		else
- 			count++;
-+		spin_lock_irqsave(&q->lock, flags);
++/*
++ * __open_device: Returns @td corresponding to device with id @dev,
++ * creating it if @create is set and incrementing @td->open_count.
++ * On failure, @td is undefined.
++ */
+ static int __open_device(struct dm_pool_metadata *pmd,
+ 			 dm_thin_id dev, int create,
+ 			 struct dm_thin_device **td)
+@@ -799,10 +804,16 @@ static int __open_device(struct dm_pool_
+ 	struct disk_device_details details_le;
+ 
+ 	/*
+-	 * Check the device isn't already open.
++	 * If the device is already open, return it.
+ 	 */
+ 	list_for_each_entry(td2, &pmd->thin_devices, list)
+ 		if (td2->id == dev) {
++			/*
++			 * May not create an already-open device.
++			 */
++			if (create)
++				return -EEXIST;
++
+ 			td2->open_count++;
+ 			*td = td2;
+ 			return 0;
+@@ -817,6 +828,9 @@ static int __open_device(struct dm_pool_
+ 		if (r != -ENODATA || !create)
+ 			return r;
+ 
++		/*
++		 * Create new device.
++		 */
+ 		changed = 1;
+ 		details_le.mapped_blocks = 0;
+ 		details_le.transaction_id = cpu_to_le64(pmd->trans_id);
+@@ -882,12 +896,10 @@ static int __create_thin(struct dm_pool_
+ 
+ 	r = __open_device(pmd, dev, 1, &td);
+ 	if (r) {
+-		__close_device(td);
+ 		dm_btree_remove(&pmd->tl_info, pmd->root, &key, &pmd->root);
+ 		dm_btree_del(&pmd->bl_info, dev_root);
+ 		return r;
  	}
- 	spin_unlock_irqrestore (&q->lock, flags);
- 	return count;
+-	td->changed = 1;
+ 	__close_device(td);
+ 
+ 	return r;
+@@ -967,14 +979,14 @@ static int __create_snap(struct dm_pool_
+ 		goto bad;
+ 
+ 	r = __set_snapshot_details(pmd, td, origin, pmd->time);
++	__close_device(td);
++
+ 	if (r)
+ 		goto bad;
+ 
+-	__close_device(td);
+ 	return 0;
+ 
+ bad:
+-	__close_device(td);
+ 	dm_btree_remove(&pmd->tl_info, pmd->root, &key, &pmd->root);
+ 	dm_btree_remove(&pmd->details_info, pmd->details_root,
+ 			&key, &pmd->details_root);
 
 
