@@ -1,198 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab2CIQfH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 11:35:07 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:10836 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757566Ab2CIQfE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 11:35:04 -0500
-X-SpamScore: -12
-X-BigFish: VPS-12(zz9371Ifb6I542M1432Nzz1202hzz8275bhz2ei2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:198.70.193.64;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub2.qlogic.com;EFVD:NLI
-From: Rajesh Borundia <rajesh.borundia@qlogic.com>
-To: santosh nayak <santoshprasadnayak@gmail.com>,
-        Sony Chacko <sony.chacko@qlogic.com>
-CC: netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Date: Fri, 9 Mar 2012 10:34:49 -0600
-Subject: RE: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-Thread-Topic: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-Thread-Index: Acz5VSHJmvk0oJ1XRgSEUi8uNyxIcgEuo/cA
-Message-ID: <13A253B3F9BEFE43B93C09CF75F63CAA81A8AB3B75@MNEXMB1.qlogic.org>
-References: <1330789663-30481-1-git-send-email-santoshprasadnayak@gmail.com>
-In-Reply-To: <1330789663-30481-1-git-send-email-santoshprasadnayak@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758127Ab2CIQhq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 11:37:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35016 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754557Ab2CIQhp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 11:37:45 -0500
+Date: Fri, 9 Mar 2012 08:37:39 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Chanho Min <chanho0207@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Alan Cox <alan@linux.intel.com>,
+        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
+        "Kim, Jong-Sung" <neidhard.kim@lge.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
+Message-ID: <20120309163739.GA9545@kroah.com>
+References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
+ <20120308184954.GA1275@kroah.com>
+ <CACRpkdY3A_k_ywWgnFYG_3Jp+EssfULO0R59=GWUG2a0VS3--g@mail.gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: qlogic.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdY3A_k_ywWgnFYG_3Jp+EssfULO0R59=GWUG2a0VS3--g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> -----Original Message-----
-> From: santosh nayak [mailto:santoshprasadnayak@gmail.com]
-> Sent: Saturday, March 03, 2012 9:18 PM
-> To: Sony Chacko
-> Cc: Rajesh Borundia; netdev; linux-kernel; kernel-
-> janitors@vger.kernel.org; Santosh Nayak
-> Subject: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
+On Fri, Mar 09, 2012 at 05:34:03PM +0100, Linus Walleij wrote:
+> On Thu, Mar 8, 2012 at 7:49 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+> > On Mon, Feb 27, 2012 at 06:30:20PM +0900, Chanho Min wrote:
+> >> This is another workaroud of  'https://lkml.org/lkml/2012/1/17/104'
+> >> with additional analysis.Bootloader can transfer control to kernel and
+> >> there are some pending interrupts. In this case, RXFE of the flag
+> >> register is set by clearing FEN(LCRH) even if rx data remains in the
+> >> fifo. It seems that the fifo's status is initiailized. Interrupt
+> >> handler can not get any data from data register because of the below
+> >> break condtion.
+> >>
+> >> pl011_fifo_to_tty
+> >>  while (max_count--) {
+> >>    if (status & UART01x_FR_RXFE)
+> >>       break;
+> >
+> > This patch never seemed to be agreed on, so I'm not taking it.
+> >
+> > Can someone, if this is still needed, and everyone agrees on how to
+> > solve it, please send me the needed fix?
 > 
-> From: Santosh Nayak <santoshprasadnayak@gmail.com>
-> 
-> Fix endian bug.
-> 
-> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
-> ---
->  drivers/net/ethernet/qlogic/netxen/netxen_nic.h    |    4 ++--
->  drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |   12 +++++++-----
->  .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    2 +-
->  3 files changed, 10 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-> b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-> index 2eeac32..b5de8a7 100644
-> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-> @@ -954,7 +954,7 @@ typedef struct nx_mac_list_s {
-> 
->  struct nx_vlan_ip_list {
->  	struct list_head list;
-> -	u32 ip_addr;
-> +	__be32 ip_addr;
->  };
-> 
->  /*
-> @@ -1780,7 +1780,7 @@ int netxen_process_rcv_ring(struct
-> nx_host_sds_ring *sds_ring, int max);
->  void netxen_p3_free_mac_list(struct netxen_adapter *adapter);
->  int netxen_config_intr_coalesce(struct netxen_adapter *adapter);
->  int netxen_config_rss(struct netxen_adapter *adapter, int enable);
-> -int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int
-> cmd);
-> +int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip,
-> int cmd);
->  int netxen_linkevent_request(struct netxen_adapter *adapter, int
-> enable);
->  void netxen_advert_link_change(struct netxen_adapter *adapter, int
-> linkup);
->  void netxen_pci_camqm_read_2M(struct netxen_adapter *, u64, u64 *);
-> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-> b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-> index 6f37470..0f81287 100644
-> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-> @@ -909,10 +909,11 @@ int netxen_config_rss(struct netxen_adapter
-> *adapter, int enable)
->  	return rv;
->  }
-> 
-> -int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int
-> cmd)
-> +int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip,
-> int cmd)
->  {
->  	nx_nic_req_t req;
->  	u64 word;
-> +	u64 ip_addr;
->  	int rv;
-> 
->  	memset(&req, 0, sizeof(nx_nic_req_t));
-> @@ -922,7 +923,8 @@ int netxen_config_ipaddr(struct netxen_adapter
-> *adapter, u32 ip, int cmd)
->  	req.req_hdr = cpu_to_le64(word);
-> 
->  	req.words[0] = cpu_to_le64(cmd);
-> -	req.words[1] = cpu_to_le64(ip);
-> +	ip_addr = be32_to_cpu(ip);
-> +	*(__be64 *)&req.words[1] = cpu_to_be64(ip_addr);
+> To me it seems Russell's patch solves part of the problem,
+> and Jong-Sung Kim's patch on top of that solves the entire
+> problem, but Chanho need to come back and tell whether
+> this is the case in practice.
 
-Adapter requires ip value in big endian stored at lower 32 bit address.
-The cpu_to_be64 will swap the lower 32 bit with higher 32 bit and adapter
-Will get incorrect ip addr. Instead u can do.
+Ok, then, once it is tested, can someone resend them to me?
 
-       U32 *ip_addr;
-       ip_addr = (u32 *)&req.words[1];
-       *ip_addr = ip;
+thanks,
 
-     
-> 
->  	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0
-> *)&req, 1);
->  	if (rv != 0) {
-> @@ -1050,7 +1052,7 @@ int netxen_get_flash_mac_addr(struct
-> netxen_adapter *adapter, u64 *mac)
->  	if (netxen_get_flash_block(adapter, offset, sizeof(u64), pmac) ==
-> -1)
->  		return -1;
-> 
-> -	if (*mac == cpu_to_le64(~0ULL)) {
-> +	if (*mac == ~0ULL) {
-
-*mac is in little endian format so compare it with cpu_to_le64.
-
-> 
->  		offset = NX_OLD_MAC_ADDR_OFFSET +
->  			(adapter->portnum * sizeof(u64));
-> @@ -1059,7 +1061,7 @@ int netxen_get_flash_mac_addr(struct
-> netxen_adapter *adapter, u64 *mac)
->  					offset, sizeof(u64), pmac) == -1)
->  			return -1;
-> 
-> -		if (*mac == cpu_to_le64(~0ULL))
-> +		if (*mac == ~0ULL)
-
-*mac here is in little endian format so compare it with cpu_to_le64.
-
->  			return -1;
->  	}
->  	return 0;
-> @@ -2178,7 +2180,7 @@ lock_try:
->  		NX_WR_DUMP_REG(FLASH_ROM_WINDOW, adapter->ahw.pci_base0,
-> waddr);
->  		raddr = FLASH_ROM_DATA + (fl_addr & 0x0000FFFF);
->  		NX_RD_DUMP_REG(raddr, adapter->ahw.pci_base0, &val);
-> -		*data_buff++ = cpu_to_le32(val);
-> +		*data_buff++ = val;
-
-It should be cpu_to_le32 as it is returned to tool which requires
-output in little endian.
-
->  		fl_addr += sizeof(val);
->  	}
->  	readl((void __iomem *)(adapter->ahw.pci_base0 +
-> NX_FLASH_SEM2_ULK));
-> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-> b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-> index 8dc4a134..70783b4 100644
-> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-> @@ -818,7 +818,7 @@ netxen_check_options(struct netxen_adapter
-> *adapter)
->  			adapter->driver_mismatch = 1;
->  			return;
->  		}
-> -		ptr32[i] = cpu_to_le32(val);
-> +		ptr32[i] = val;
-
-Here val should be in little endian (cpu_to_le32) as it will be referenced by byte array to print serial number.
-
->  		offset += sizeof(u32);
->  	}
-> 
-> --
-> 1.7.4.4
-> 
-
-
-Sorry for Late reply.
-
-Rajesh
-
+greg k-h
