@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758383Ab2CIVU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 16:20:56 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55492 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757555Ab2CIVUz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 16:20:55 -0500
-Date: Fri, 9 Mar 2012 13:20:49 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mikulas Patocka <mpatocka@redhat.com>, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, Alasdair G Kergon <agk@redhat.com>,
-        Will Drewry <wad@chromium.org>, Elly Jones <ellyjones@chromium.org>,
-        Milan Broz <mbroz@redhat.com>, Olof Johansson <olofj@chromium.org>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: workqueues and percpu (was: [PATCH] dm: remake of the verity
- target)
-Message-ID: <20120309212049.GD24890@google.com>
-References: <1330648393-20692-1-git-send-email-msb@chromium.org>
- <Pine.LNX.4.64.1203031340340.10937@file.rdu.redhat.com>
- <20120306215947.GB27051@google.com>
- <Pine.LNX.4.64.1203081656590.31821@file.rdu.redhat.com>
- <20120308143909.bfc4cb4d.akpm@linux-foundation.org>
- <20120308231521.GA2968@htj.dyndns.org>
- <20120309211512.GL27051@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120309211512.GL27051@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758656Ab2CIVVL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 16:21:11 -0500
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:44256
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1758142Ab2CIVVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 16:21:07 -0500
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, kys@microsoft.com, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: [PATCH 1/2] net/hyperv: Fix data corruption in rndis_filter_receive()
+Date: Fri,  9 Mar 2012 13:27:16 -0800
+Message-Id: <1331328437-26852-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Limiting the memcpy to be the sizeof(struct rndis_message) can truncate
+the message if there are Per-Packet-Info or Out-of-Band data.
 
-On Fri, Mar 09, 2012 at 01:15:12PM -0800, Mandeep Singh Baines wrote:
-> In this case, I need the per-cpu data for the duration of calculating
-> a cryptographics hash on a 4K page of data. That's a long time to disable
-> pre-emption.
+In my earlier patch (commit 45326342), the unnecessary kmap_atomic and
+kunmap_atomic surrounding this memcpy have been removed because the memory
+in the receive buffer is always mapped. This memcpy is not necessary
+either. To fix the bug, I removed the memcpy.
 
-How long are we talking about?  Tens of microsecs, tens of millisecs?
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/net/hyperv/rndis_filter.c |   33 +++++++++------------------------
+ 1 files changed, 9 insertions(+), 24 deletions(-)
 
-> I could fix the bug temporarily by adding get/put for the per_cpu data
-> but would that be acceptable? I'm not sure what the OK limit is for how
-> long one can disable preemption. An alternative fix would be not allow
-> CONFIG_VERITY when CONFIG_HOTPLUG_CPU. Once workqueues are fixed, I could
-> remove that restriction.
-
-I think the right thing to do for now is to add cpu hotplug notifier
-and do flush_work_sync() on the work item.  We can later move that
-logic into workqueue and remove it from crypto.
-
-Thanks.
-
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index 136efd8..0c3d7d9 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -352,8 +352,7 @@ int rndis_filter_receive(struct hv_device *dev,
+ {
+ 	struct netvsc_device *net_dev = hv_get_drvdata(dev);
+ 	struct rndis_device *rndis_dev;
+-	struct rndis_message rndis_msg;
+-	struct rndis_message *rndis_hdr;
++	struct rndis_message *rndis_msg;
+ 	struct net_device *ndev;
+ 
+ 	if (!net_dev)
+@@ -375,46 +374,32 @@ int rndis_filter_receive(struct hv_device *dev,
+ 		return -ENODEV;
+ 	}
+ 
+-	rndis_hdr = pkt->data;
+-
+-	/* Make sure we got a valid rndis message */
+-	if ((rndis_hdr->ndis_msg_type != REMOTE_NDIS_PACKET_MSG) &&
+-	    (rndis_hdr->msg_len > sizeof(struct rndis_message))) {
+-		netdev_err(ndev, "incoming rndis message buffer overflow "
+-			   "detected (got %u, max %zu)..marking it an error!\n",
+-			   rndis_hdr->msg_len,
+-			   sizeof(struct rndis_message));
+-	}
++	rndis_msg = pkt->data;
+ 
+-	memcpy(&rndis_msg, rndis_hdr,
+-		(rndis_hdr->msg_len > sizeof(struct rndis_message)) ?
+-			sizeof(struct rndis_message) :
+-			rndis_hdr->msg_len);
++	dump_rndis_message(dev, rndis_msg);
+ 
+-	dump_rndis_message(dev, &rndis_msg);
+-
+-	switch (rndis_msg.ndis_msg_type) {
++	switch (rndis_msg->ndis_msg_type) {
+ 	case REMOTE_NDIS_PACKET_MSG:
+ 		/* data msg */
+-		rndis_filter_receive_data(rndis_dev, &rndis_msg, pkt);
++		rndis_filter_receive_data(rndis_dev, rndis_msg, pkt);
+ 		break;
+ 
+ 	case REMOTE_NDIS_INITIALIZE_CMPLT:
+ 	case REMOTE_NDIS_QUERY_CMPLT:
+ 	case REMOTE_NDIS_SET_CMPLT:
+ 		/* completion msgs */
+-		rndis_filter_receive_response(rndis_dev, &rndis_msg);
++		rndis_filter_receive_response(rndis_dev, rndis_msg);
+ 		break;
+ 
+ 	case REMOTE_NDIS_INDICATE_STATUS_MSG:
+ 		/* notification msgs */
+-		rndis_filter_receive_indicate_status(rndis_dev, &rndis_msg);
++		rndis_filter_receive_indicate_status(rndis_dev, rndis_msg);
+ 		break;
+ 	default:
+ 		netdev_err(ndev,
+ 			"unhandled rndis message (type %u len %u)\n",
+-			   rndis_msg.ndis_msg_type,
+-			   rndis_msg.msg_len);
++			   rndis_msg->ndis_msg_type,
++			   rndis_msg->msg_len);
+ 		break;
+ 	}
+ 
 -- 
-tejun
+1.7.4.1
+
