@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030554Ab2CITrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:47:00 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030526Ab2CITqw (ORCPT
+	id S1030579Ab2CITrJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:47:09 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51812 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030517Ab2CITrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:46:52 -0500
-Message-Id: <20120309190204.447488691@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:47:02 -0500
+Message-Id: <20120309190204.695213036@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:28 -0800
+Date: Fri, 09 Mar 2012 11:02:31 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Cree <mcree@orcon.net.nz>,
-        Phil Carmody <ext-phil.2.carmody@nokia.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Michel Lespinasse <walken@google.com>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: [ 26/95] alpha: fix 32/64-bit bug in futex support
+        alan@lxorguk.ukuu.org.uk, Jeff Moyer <jmoyer@redhat.com>,
+        Bart Van Assche <bvanassche@acm.org>
+Subject: [ 29/95] aio: wake up waiters when freeing unused kiocbs
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,84 +25,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Morton <akpm@linux-foundation.org>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-commit 62aca403657fe30e5235c5331e9871e676d9ea0a upstream.
+commit 880641bb9da2473e9ecf6c708d993b29928c1b3c upstream.
 
-Michael Cree said:
+Bart Van Assche reported a hung fio process when either hot-removing
+storage or when interrupting the fio process itself.  The (pruned) call
+trace for the latter looks like so:
 
-: : I have noticed some user space problems (pulseaudio crashes in pthread
-: : code, glibc/nptl test suite failures, java compiler freezes on SMP alpha
-: : systems) that arise when using a 2.6.39 or later kernel on Alpha.
-: : Bisecting between 2.6.38 and 2.6.39 (using glibc/nptl test suite as
-: : criterion for good/bad kernel) eventually leads to:
-: :
-: : 8d7718aa082aaf30a0b4989e1f04858952f941bc is the first bad commit
-: : commit 8d7718aa082aaf30a0b4989e1f04858952f941bc
-: : Author: Michel Lespinasse <walken@google.com>
-: : Date:   Thu Mar 10 18:50:58 2011 -0800
-: :
-: :     futex: Sanitize futex ops argument types
-: :
-: :     Change futex_atomic_op_inuser and futex_atomic_cmpxchg_inatomic
-: :     prototypes to use u32 types for the futex as this is the data type the
-: :     futex core code uses all over the place.
-: :
-: : Looking at the commit I see there is a change of the uaddr argument in
-: : the Alpha architecture specific code for futexes from int to u32, but I
-: : don't see why this should cause a problem.
+  fio             D 0000000000000001     0  6849   6848 0x00000004
+   ffff880092541b88 0000000000000046 ffff880000000000 ffff88012fa11dc0
+   ffff88012404be70 ffff880092541fd8 ffff880092541fd8 ffff880092541fd8
+   ffff880128b894d0 ffff88012404be70 ffff880092541b88 000000018106f24d
+  Call Trace:
+    schedule+0x3f/0x60
+    io_schedule+0x8f/0xd0
+    wait_for_all_aios+0xc0/0x100
+    exit_aio+0x55/0xc0
+    mmput+0x2d/0x110
+    exit_mm+0x10d/0x130
+    do_exit+0x671/0x860
+    do_group_exit+0x44/0xb0
+    get_signal_to_deliver+0x218/0x5a0
+    do_signal+0x65/0x700
+    do_notify_resume+0x65/0x80
+    int_signal+0x12/0x17
 
-Richard Henderson said:
+The problem lies with the allocation batching code.  It will
+opportunistically allocate kiocbs, and then trim back the list of iocbs
+when there is not enough room in the completion ring to hold all of the
+events.
 
-: futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
-:                               u32 oldval, u32 newval)
-: ...
-:         :       "r"(uaddr), "r"((long)oldval), "r"(newval)
-:
-:
-: There is no 32-bit compare instruction.  These are implemented by
-: consistently extending the values to a 64-bit type.  Since the
-: load instruction sign-extends, we want to sign-extend the other
-: quantity as well (despite the fact it's logically unsigned).
-:
-: So:
-:
-: -        :       "r"(uaddr), "r"((long)oldval), "r"(newval)
-: +        :       "r"(uaddr), "r"((long)(int)oldval), "r"(newval)
-:
-: should do the trick.
+In the case above, what happens is that the pruning back of events ends
+up freeing up the last active request and the context is marked as dead,
+so it is thus responsible for waking up waiters.  Unfortunately, the
+code does not check for this condition, so we end up with a hung task.
 
-Michael said:
-
-: This fixes the glibc test suite failures and the pulseaudio related
-: crashes, but it does not fix the java compiiler lockups that I was (and
-: are still) observing.  That is some other problem.
-
-Reported-by: Michael Cree <mcree@orcon.net.nz>
-Tested-by: Michael Cree <mcree@orcon.net.nz>
-Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Reviewed-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Reported-by: Bart Van Assche <bvanassche@acm.org>
+Tested-by: Bart Van Assche <bvanassche@acm.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/alpha/include/asm/futex.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/aio.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/alpha/include/asm/futex.h
-+++ b/arch/alpha/include/asm/futex.h
-@@ -108,7 +108,7 @@ futex_atomic_cmpxchg_inatomic(u32 *uval,
- 	"	lda	$31,3b-2b(%0)\n"
- 	"	.previous\n"
- 	:	"+r"(ret), "=&r"(prev), "=&r"(cmp)
--	:	"r"(uaddr), "r"((long)oldval), "r"(newval)
-+	:	"r"(uaddr), "r"((long)(int)oldval), "r"(newval)
- 	:	"memory");
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -490,6 +490,8 @@ static void kiocb_batch_free(struct kioc
+ 		kmem_cache_free(kiocb_cachep, req);
+ 		ctx->reqs_active--;
+ 	}
++	if (unlikely(!ctx->reqs_active && ctx->dead))
++		wake_up_all(&ctx->wait);
+ 	spin_unlock_irq(&ctx->ctx_lock);
+ }
  
- 	*uval = prev;
 
 
