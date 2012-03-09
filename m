@@ -1,159 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030240Ab2CIToc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:44:32 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43849 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373Ab2CIToa (ORCPT
+	id S1030206Ab2CITpd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:45:33 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53224 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932301Ab2CITpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:44:30 -0500
-Date: Fri, 9 Mar 2012 11:44:24 -0800
+	Fri, 9 Mar 2012 14:45:31 -0500
+Message-Id: <20120309190202.501482798@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 09 Mar 2012 11:02:04 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/95] 3.2.10-stable review
-Message-ID: <20120309194424.GA2134@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        alan@lxorguk.ukuu.org.uk, Ian Kent <raven@themaw.net>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 02/95] autofs: work around unhappy compat problem on x86-64
+In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.2.10 release.
-There are 95 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Mar 11 19:00:00 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.2.10-rc1.gz
-and the diffstat can be found below.
+From: Ian Kent <raven@themaw.net>
 
-thanks,
+commit a32744d4abae24572eff7269bc17895c41bd0085 upstream.
 
-greg k-h
+When the autofs protocol version 5 packet type was added in commit
+5c0a32fc2cd0 ("autofs4: add new packet type for v5 communications"), it
+obvously tried quite hard to be word-size agnostic, and uses explicitly
+sized fields that are all correctly aligned.
 
--------------
- Documentation/hwmon/jc42                    |   26 ++-
- Makefile                                    |    4 +-
- arch/alpha/include/asm/futex.h              |    2 +-
- arch/arm/Kconfig                            |    2 +-
- arch/arm/include/asm/pmu.h                  |    2 +-
- arch/arm/kernel/perf_event.c                |   22 +-
- arch/arm/kernel/perf_event_v6.c             |   22 +--
- arch/arm/kernel/perf_event_v7.c             |   11 +-
- arch/arm/kernel/perf_event_xscale.c         |   20 ++-
- arch/arm/mach-dove/common.c                 |    3 +-
- arch/arm/mach-kirkwood/common.c             |    3 +-
- arch/arm/mach-kirkwood/mpp.h                |  320 +++++++++++++-------------
- arch/arm/mach-lpc32xx/include/mach/irqs.h   |    2 +-
- arch/arm/mach-lpc32xx/irq.c                 |   25 ++-
- arch/arm/mach-lpc32xx/serial.c              |   20 ++-
- arch/arm/mach-mv78xx0/common.c              |    3 +-
- arch/arm/mach-mv78xx0/mpp.h                 |  226 ++++++++++----------
- arch/arm/mach-omap2/board-4430sdp.c         |   22 ++-
- arch/arm/mach-omap2/board-omap4panda.c      |   22 ++-
- arch/arm/mach-omap2/mailbox.c               |    3 +-
- arch/arm/mach-orion5x/common.c              |    4 +-
- arch/arm/mm/proc-v7.S                       |    4 +-
- arch/arm/plat-orion/common.c                |    9 +-
- arch/arm/plat-orion/include/plat/common.h   |    3 +-
- arch/arm/plat-orion/mpp.c                   |    3 +-
- arch/arm/plat-s3c24xx/dma.c                 |    2 +-
- arch/avr32/Kconfig                          |    1 +
- arch/s390/Kconfig                           |    3 +
- arch/s390/include/asm/compat.h              |    7 -
- arch/s390/kernel/process.c                  |    1 -
- arch/s390/kernel/ptrace.c                   |    2 +-
- arch/s390/kernel/setup.c                    |    2 +-
- arch/s390/kernel/signal.c                   |    1 -
- arch/s390/mm/fault.c                        |    1 -
- arch/s390/mm/mmap.c                         |    2 +-
- arch/x86/include/asm/perf_event.h           |    8 +
- arch/x86/kernel/cpu/perf_event.h            |    8 +-
- arch/x86/kernel/cpu/perf_event_amd.c        |   37 +++-
- arch/x86/kvm/svm.c                          |    5 +
- block/bsg.c                                 |    3 +-
- drivers/acpi/sleep.c                        |   16 ++
- drivers/crypto/mv_cesa.c                    |    1 +
- drivers/gpu/drm/i915/i915_reg.h             |   15 ++
- drivers/gpu/drm/i915/intel_display.c        |   32 +++-
- drivers/gpu/drm/radeon/r600_blit_shaders.c  |    8 +
- drivers/hid/hid-ids.h                       |    3 +
- drivers/hid/usbhid/hid-quirks.c             |    1 +
- drivers/hwmon/Kconfig                       |    5 +-
- drivers/hwmon/jc42.c                        |   30 +++-
- drivers/hwmon/pmbus/pmbus_core.c            |    3 +-
- drivers/hwmon/pmbus/zl6100.c                |   10 +-
- drivers/i2c/busses/i2c-mxs.c                |   13 +-
- drivers/input/mouse/alps.c                  |    7 +-
- drivers/iommu/amd_iommu_init.c              |    2 +-
- drivers/iommu/omap-iommu.c                  |    3 +-
- drivers/md/dm-flakey.c                      |    2 +-
- drivers/md/dm-io.c                          |   23 ++-
- drivers/md/dm-ioctl.c                       |    2 +-
- drivers/md/dm-raid.c                        |   17 +-
- drivers/md/dm-thin-metadata.c               |   25 ++-
- drivers/mfd/cs5535-mfd.c                    |    6 +-
- drivers/mfd/mfd-core.c                      |    2 +-
- drivers/mfd/wm8994-core.c                   |   14 ++
- drivers/misc/cs5535-mfgpt.c                 |    2 +-
- drivers/mmc/host/atmel-mci.c                |   21 +-
- drivers/mmc/host/sdhci-esdhc-imx.c          |    5 +-
- drivers/net/usb/cdc_ether.c                 |    7 +
- drivers/net/usb/usbnet.c                    |    2 +
- drivers/net/usb/zaurus.c                    |    7 +
- drivers/net/wireless/ath/ath9k/ar5008_phy.c |   25 +--
- drivers/net/wireless/ath/ath9k/ar9002_hw.c  |   19 ++
- drivers/net/wireless/ath/ath9k/hw.h         |    1 -
- drivers/net/wireless/ath/carl9170/tx.c      |    9 +-
- drivers/net/wireless/iwlwifi/iwl-agn-sta.c  |   10 +-
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |   36 +++-
- drivers/rapidio/devices/tsi721.c            |    5 +-
- drivers/regulator/88pm8607.c                |    6 +-
- drivers/s390/block/dasd_eckd.c              |    2 +-
- drivers/s390/block/dasd_ioctl.c             |    1 +
- drivers/s390/char/fs3270.c                  |    1 +
- drivers/s390/char/vmcp.c                    |    1 +
- drivers/s390/cio/chsc_sch.c                 |    1 +
- drivers/s390/cio/qdio_main.c                |    4 +-
- drivers/s390/scsi/zfcp_cfdc.c               |    1 +
- drivers/scsi/osd/osd_uld.c                  |    4 +-
- drivers/spi/spi-topcliff-pch.c              |    6 +-
- drivers/staging/media/lirc/lirc_serial.c    |  100 ++++-----
- drivers/tty/Kconfig                         |    2 +-
- drivers/video/omap2/dss/hdmi.c              |    3 +
- drivers/video/omap2/dss/ti_hdmi.h           |    4 +
- drivers/video/omap2/dss/ti_hdmi_4xxx_ip.c   |   77 ++++++-
- drivers/video/via/hw.c                      |    4 +
- drivers/watchdog/hpwdt.c                    |    5 +-
- fs/aio.c                                    |    2 +
- fs/autofs4/autofs_i.h                       |    1 +
- fs/autofs4/dev-ioctl.c                      |    1 +
- fs/autofs4/inode.c                          |    2 +
- fs/autofs4/waitq.c                          |   22 ++-
- fs/binfmt_elf.c                             |    2 +-
- fs/cifs/dir.c                               |   20 ++-
- include/linux/compat.h                      |    4 +
- include/linux/regset.h                      |   10 +-
- include/video/omapdss.h                     |    5 +
- kernel/irq/manage.c                         |   44 ++++-
- kernel/kprobes.c                            |   12 +-
- mm/huge_memory.c                            |    6 +-
- mm/memcontrol.c                             |    5 +-
- mm/nommu.c                                  |    2 -
- net/mac80211/rate.c                         |    2 +-
- sound/pci/hda/hda_codec.c                   |    8 +-
- sound/pci/hda/hda_codec.h                   |    3 +
- sound/pci/hda/patch_conexant.c              |   22 ++-
- sound/pci/hda/patch_realtek.c               |    2 +-
- sound/pci/hda/patch_sigmatel.c              |    2 +-
- sound/soc/imx/imx-ssi.c                     |    2 +-
- sound/soc/soc-dapm.c                        |   12 +-
- 116 files changed, 1082 insertions(+), 586 deletions(-)
+However, with the final "char name[NAME_MAX+1]" array at the end, the
+actual size of the structure ends up being not very well defined:
+because the struct isn't marked 'packed', doing a "sizeof()" on it will
+align the size of the struct up to the biggest alignment of the members
+it has.
+
+And despite all the members being the same, the alignment of them is
+different: a "__u64" has 4-byte alignment on x86-32, but native 8-byte
+alignment on x86-64.  And while 'NAME_MAX+1' ends up being a nice round
+number (256), the name[] array starts out a 4-byte aligned.
+
+End result: the "packed" size of the structure is 300 bytes: 4-byte, but
+not 8-byte aligned.
+
+As a result, despite all the fields being in the same place on all
+architectures, sizeof() will round up that size to 304 bytes on
+architectures that have 8-byte alignment for u64.
+
+Note that this is *not* a problem for 32-bit compat mode on POWER, since
+there __u64 is 8-byte aligned even in 32-bit mode.  But on x86, 32-bit
+and 64-bit alignment is different for 64-bit entities, and as a result
+the structure that has exactly the same layout has different sizes.
+
+So on x86-64, but no other architecture, we will just subtract 4 from
+the size of the structure when running in a compat task.  That way we
+will write the properly sized packet that user mode expects.
+
+Not pretty.  Sadly, this very subtle, and unnecessary, size difference
+has been encoded in user space that wants to read packets of *exactly*
+the right size, and will refuse to touch anything else.
+
+Reported-and-tested-by: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Ian Kent <raven@themaw.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/autofs4/autofs_i.h  |    1 +
+ fs/autofs4/dev-ioctl.c |    1 +
+ fs/autofs4/inode.c     |    2 ++
+ fs/autofs4/waitq.c     |   22 +++++++++++++++++++---
+ 4 files changed, 23 insertions(+), 3 deletions(-)
+
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -110,6 +110,7 @@ struct autofs_sb_info {
+ 	int sub_version;
+ 	int min_proto;
+ 	int max_proto;
++	int compat_daemon;
+ 	unsigned long exp_timeout;
+ 	unsigned int type;
+ 	int reghost_enabled;
+--- a/fs/autofs4/dev-ioctl.c
++++ b/fs/autofs4/dev-ioctl.c
+@@ -385,6 +385,7 @@ static int autofs_dev_ioctl_setpipefd(st
+ 		sbi->pipefd = pipefd;
+ 		sbi->pipe = pipe;
+ 		sbi->catatonic = 0;
++		sbi->compat_daemon = is_compat_task();
+ 	}
+ out:
+ 	mutex_unlock(&sbi->wq_mutex);
+--- a/fs/autofs4/inode.c
++++ b/fs/autofs4/inode.c
+@@ -19,6 +19,7 @@
+ #include <linux/parser.h>
+ #include <linux/bitops.h>
+ #include <linux/magic.h>
++#include <linux/compat.h>
+ #include "autofs_i.h"
+ #include <linux/module.h>
+ 
+@@ -224,6 +225,7 @@ int autofs4_fill_super(struct super_bloc
+ 	set_autofs_type_indirect(&sbi->type);
+ 	sbi->min_proto = 0;
+ 	sbi->max_proto = 0;
++	sbi->compat_daemon = is_compat_task();
+ 	mutex_init(&sbi->wq_mutex);
+ 	spin_lock_init(&sbi->fs_lock);
+ 	sbi->queues = NULL;
+--- a/fs/autofs4/waitq.c
++++ b/fs/autofs4/waitq.c
+@@ -90,7 +90,24 @@ static int autofs4_write(struct file *fi
+ 
+ 	return (bytes > 0);
+ }
+-	
++
++/*
++ * The autofs_v5 packet was misdesigned.
++ *
++ * The packets are identical on x86-32 and x86-64, but have different
++ * alignment. Which means that 'sizeof()' will give different results.
++ * Fix it up for the case of running 32-bit user mode on a 64-bit kernel.
++ */
++static noinline size_t autofs_v5_packet_size(struct autofs_sb_info *sbi)
++{
++	size_t pktsz = sizeof(struct autofs_v5_packet);
++#if defined(CONFIG_X86_64) && defined(CONFIG_COMPAT)
++	if (sbi->compat_daemon > 0)
++		pktsz -= 4;
++#endif
++	return pktsz;
++}
++
+ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
+ 				 struct autofs_wait_queue *wq,
+ 				 int type)
+@@ -147,8 +164,7 @@ static void autofs4_notify_daemon(struct
+ 	{
+ 		struct autofs_v5_packet *packet = &pkt.v5_pkt.v5_packet;
+ 
+-		pktsz = sizeof(*packet);
+-
++		pktsz = autofs_v5_packet_size(sbi);
+ 		packet->wait_queue_token = wq->wait_queue_token;
+ 		packet->len = wq->name.len;
+ 		memcpy(packet->name, wq->name.name, wq->name.len);
+
 
