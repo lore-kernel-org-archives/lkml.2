@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab2CIOYb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 09:24:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30992 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754087Ab2CIOYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 09:24:30 -0500
-Date: Fri, 9 Mar 2012 09:24:22 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: x86@kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] x86,nmi: Fix page faults by nmiaction if kmemcheck is
- enabled
-Message-ID: <20120309142422.GD24378@redhat.com>
-References: <1331240549-13120-1-git-send-email-dzickus@redhat.com>
- <1331287938.13274.38.camel@ThinkPad-T420>
+	id S1755474Ab2CIO3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 09:29:45 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:45694 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab2CIO3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 09:29:44 -0500
+Date: Fri, 9 Mar 2012 15:29:39 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, stable <stable@vger.kernel.org>
+Subject: Re: [PATCH 1/2] bluetooth: hci_ldisc: fix NULL-pointer dereference
+ on tty_close
+Message-ID: <20120309142939.GD4497@localhost>
+References: <1331136120-27075-1-git-send-email-jhovold@gmail.com>
+ <1331136120-27075-2-git-send-email-jhovold@gmail.com>
+ <CANq1E4Sd45FtZN6NXs7TZ1k6VrFkbcAZug-1UQwW-XPB0e5Aag@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1331287938.13274.38.camel@ThinkPad-T420>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANq1E4Sd45FtZN6NXs7TZ1k6VrFkbcAZug-1UQwW-XPB0e5Aag@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 05:12:18AM -0500, Li Zhong wrote:
-> On Thu, 2012-03-08 at 16:02 -0500, Don Zickus wrote:
-> 
-> Thank you, Don. 
-> 
-> As flags is moved into the macro, it may cause following compile error, 
-> drivers/watchdog/hpwdt.c: In function 'hpwdt_init_nmi_decoding':
-> drivers/watchdog/hpwdt.c:737: error: initializer element is not constant
-> drivers/watchdog/hpwdt.c:737: error: (near initialization for
-> 'hpwdt_pretimeout_na.flags')
+Hi David,
 
-Crap, I thought I had them all compiled.  Thanks for the heads up.
-Actually I think this could is just misusing the flag to begin with.  Let
-me figure out what is going on.
+On Fri, Mar 09, 2012 at 02:44:30PM +0100, David Herrmann wrote:
+> On Wed, Mar 7, 2012 at 5:01 PM, Johan Hovold <jhovold@gmail.com> wrote:
+> > Do not close protocol driver until device has been unregistered.
+> >
+> > This fixes a race between tty_close and hci_dev_open which can result in
+> > a NULL-pointer dereference.
+> >
+> > The line discipline closes the protocol driver while we may still have
+> > hci_dev_open sleeping on the req_lock mutex resulting in a NULL-pointer
+> > dereference when lock is acquired and hci_init_req called.
+
+[...]
+
+> > diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
+> > index 0711448..6946081 100644
+> > --- a/drivers/bluetooth/hci_ldisc.c
+> > +++ b/drivers/bluetooth/hci_ldisc.c
+> > @@ -310,11 +310,11 @@ static void hci_uart_tty_close(struct tty_struct *tty)
+> >                        hci_uart_close(hdev);
+> >
+> >                if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
+> > -                       hu->proto->close(hu);
+> >                        if (hdev) {
+> >                                hci_unregister_dev(hdev);
+> >                                hci_free_dev(hdev);
+> >                        }
+> > +                       hu->proto->close(hu);
+> >                }
+> >        }
+> >  }
+> 
+> I can confirm this. hci_uart_set_proto() opens the proto before it
+> registers the hci device. Hence, we should also unregister the hci
+> device before closing the proto. I also looked whether this introduces
+> other race conditions but no proto-callback can be called here as they
+> are all protected by the tty-layer which synchronizes all
+> tty-callbacks. Therefore, I think this is the correct fix.
+> 
+> We can apply this to stable even without the "destruct"-fixes from me
+> as hu->proto->$cb$() doesn't care whether hdev is valid or not. I
+> don't think the destruct-fixes are important enough to send them to
+> stable.
+
+Unfortunately hu is is not valid once hci_unregister returns as it will
+call the destruct callback. So my patch depends on changing this
+behaviour first. (I could also store a pointer to the protocol before
+calling unregister in my patch.)
+
+Secondly, I must disagree with you regarding whether the memory leak you
+found is critical enough to be added to the stable trees. We're leaking
+kernel memory in a deterministic and easily triggered way which could be
+exploited by a malicious user.
+
+> Reviewed-by: David Herrmann <dh.herrmann@googlemail.com>
 
 Thanks,
-Don
-
-> 
-> So following fix might be needed: 
-> 
-> diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-> index 3c166d3..e1161ea 100644
-> --- a/drivers/watchdog/hpwdt.c
-> +++ b/drivers/watchdog/hpwdt.c
-> @@ -734,9 +734,12 @@ static int __devinit hpwdt_init_nmi_decoding(struct pci_dev *dev)
->  	 * die notify list to handle a critical NMI. The default is to
->  	 * be last so other users of the NMI signal can function.
->  	 */
-> -	retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout,
-> -					(priority) ? NMI_FLAG_FIRST : 0,
-> -					"hpwdt");
-> +	if (priority)
-> +		retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout,
-> +					NMI_FLAG_FIRST, "hpwdt");
-> +	else
-> +		retval = register_nmi_handler(NMI_UNKNOWN, hpwdt_pretimeout,
-> +					0, "hpwdt");
->  	if (retval != 0) {
->  		dev_warn(&dev->dev,
->  			"Unable to register a die notifier (err=%d).\n",
-> 
-> 
+Johan
