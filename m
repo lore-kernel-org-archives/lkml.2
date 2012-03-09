@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab2CIKJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 05:09:56 -0500
-Received: from smtp9.mail.ru ([94.100.176.54]:49793 "EHLO smtp9.mail.ru"
+	id S1754639Ab2CIKPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 05:15:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53020 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752260Ab2CIKJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 05:09:54 -0500
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: linux-tegra@vger.kernel.org
-Cc: Andi <andi.shyti@gmail.com>, Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        Colin Cross <ccross@android.com>, Mike Rapoport <mike@compulab.co.il>,
-        linux-arm-kernel@lists.infradead.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: [PATCH v2 2/2] arm/tegra: add timeout to PCIe PLL lock detection loop
-Date: Fri,  9 Mar 2012 14:09:20 +0400
-Message-Id: <1331287760-10546-1-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.5.1.300.gc565c
-In-Reply-To: <20120306201538.GA14350@rainbow>
-References: <20120306201538.GA14350@rainbow>
-X-Spam: Not detected
-X-Mras: Ok
+	id S1752064Ab2CIKPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 05:15:48 -0500
+Date: Fri, 9 Mar 2012 11:15:46 +0100
+From: Jan Kara <jack@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Adrian Hunter <ext-adrian.hunter@nokia.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
+Message-ID: <20120309101546.GA14159@quack.suse.cz>
+References: <20120228140022.614718843@intel.com>
+ <20120228144747.198713792@intel.com>
+ <20120228160403.9c9fa4dc.akpm@linux-foundation.org>
+ <20120301123640.GA30369@localhost>
+ <20120301163837.GA13104@quack.suse.cz>
+ <20120302044858.GA14802@localhost>
+ <20120302095910.GB1744@quack.suse.cz>
+ <20120302103951.GA13378@localhost>
+ <20120302115700.7d970497.akpm@linux-foundation.org>
+ <20120303135558.GA9869@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120303135558.GA9869@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra PCIe driver waits for PLL to lock using busy loop.
-If PLL fails to lock for some reason, this leads to silent lockup
-while booting (PCIe code is not modular).
+On Sat 03-03-12 21:55:58, Wu Fengguang wrote:
+> On Fri, Mar 02, 2012 at 11:57:00AM -0800, Andrew Morton wrote:
+> > On Fri, 2 Mar 2012 18:39:51 +0800
+> > Fengguang Wu <fengguang.wu@intel.com> wrote:
+> > 
+> > > > And I agree it's unlikely but given enough time and people, I
+> > > > believe someone finds a way to (inadvertedly) trigger this.
+> > > 
+> > > Right. The pageout works could add lots more iput() to the flusher
+> > > and turn some hidden statistical impossible bugs into real ones.
+> > > 
+> > > Fortunately the "flusher deadlocks itself" case is easy to detect and
+> > > prevent as illustrated in another email.
+> > 
+> > It would be a heck of a lot safer and saner to avoid the iput().  We
+> > know how to do this, so why not do it?
+> 
+> My concern about the page lock is, it costs more code and sounds like
+> hacking around something. It seems we (including me) have been trying
+> to shun away from the iput() problem. Since it's unlikely we are to
+> get rid of the already existing iput() calls from the flusher context,
+> why not face the problem, sort it out and use it with confident in new
+> code?
+  We can get rid of it in the current code - see my patch set. And also we
+don't have to introduce new iput() with your patch set... I don't think
+using ->writepage() directly on a locked page would be a good thing because
+filesystems tend to ignore it completely (e.g. ext4 if it needs to do an
+allocation, or btrfs) or are much less efficient than when ->writepages()
+is used.  So I'd prefer going through writeback_single_inode() as the rest
+of flusher thread.
 
-Fix by adding timeout, so if PLL doesn't lock in a couple
-of seconds, just PCIe driver fails and machine continues to boot.
+> Let me try it now. The only scheme iput() can deadlock the flusher is
+> for the iput() path to come back to queue some work and wait for it.
+  Let me stop you right here. You severely underestimate the complexity of
+filesystems :). Take for example ext4. To do truncate you need to start a
+transaction, to start a transaction, you have to have a space in journal.
+To have a space in journal, you may have to wait for any other process to
+finish writing. If that process needs to wait for flusher thread to be able
+to finish writing, you have a deadlock. And there are other implicit
+dependencies like this. And it's similar for other filesystems as well. So
+you really want to make flusher thread as light as possible with the
+dependencies.
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
----
-Changes v1 -> v2:
-* msleep is changed to usleep_range
-* function now returns 0 on success instead of undefined value
-
- arch/arm/mach-tegra/pcie.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-tegra/pcie.c b/arch/arm/mach-tegra/pcie.c
-index 14b29ab..90f85eb 100644
---- a/arch/arm/mach-tegra/pcie.c
-+++ b/arch/arm/mach-tegra/pcie.c
-@@ -585,10 +585,10 @@ static void tegra_pcie_setup_translations(void)
- 	afi_writel(0, AFI_MSI_BAR_SZ);
- }
- 
--static void tegra_pcie_enable_controller(void)
-+static int tegra_pcie_enable_controller(void)
- {
- 	u32 val, reg;
--	int i;
-+	int i, timeout;
- 
- 	/* Enable slot clock and pulse the reset signals */
- 	for (i = 0, reg = AFI_PEX0_CTRL; i < 2; i++, reg += 0x8) {
-@@ -639,8 +639,14 @@ static void tegra_pcie_enable_controller(void)
- 	pads_writel(0xfa5cfa5c, 0xc8);
- 
- 	/* Wait for the PLL to lock */
-+	timeout = 2000;
- 	do {
- 		val = pads_readl(PADS_PLL_CTL);
-+		usleep_range(1000, 1000);
-+		if (--timeout == 0) {
-+			pr_err("Tegra PCIe error: timeout waiting for PLL\n");
-+			return -EBUSY;
-+		}
- 	} while (!(val & PADS_PLL_CTL_LOCKDET));
- 
- 	/* turn off IDDQ override */
-@@ -671,7 +677,7 @@ static void tegra_pcie_enable_controller(void)
- 	/* Disable all execptions */
- 	afi_writel(0, AFI_FPCI_ERROR_MASKS);
- 
--	return;
-+	return 0;
- }
- 
- static void tegra_pcie_xclk_clamp(bool clamp)
-@@ -921,7 +927,9 @@ int __init tegra_pcie_init(bool init_port0, bool init_port1)
- 	if (err)
- 		return err;
- 
--	tegra_pcie_enable_controller();
-+	err = tegra_pcie_enable_controller();
-+	if (err)
-+		return err;
- 
- 	/* setup the AFI address translations */
- 	tegra_pcie_setup_translations();
+								Honza
 -- 
-1.7.5.1.300.gc565c
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
