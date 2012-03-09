@@ -1,180 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab2CIIzg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 03:55:36 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:33666 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898Ab2CIIzf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 03:55:35 -0500
-X-AuditID: cbfee61a-b7b78ae000001ceb-76-4f59c5852a79
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>, lrg@ti.com,
-        linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, sbkim01@gmail.com
-Subject: [PATCH 2/2] regulator: Add support s5m8767 opmode operation
-Date: Fri, 09 Mar 2012 17:55:34 +0900
-Message-id: <06ad01ccfdd2$63ee8fc0$2bcbaf40$@com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Acz90mN3Ut70BHHgTGibZTc0YugscA==
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	id S932138Ab2CIJCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 04:02:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48446 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754456Ab2CIJCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 04:02:37 -0500
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 2/4] writeback: Remove outdated comment
+Date: Fri,  9 Mar 2012 10:02:26 +0100
+Message-Id: <1331283748-12959-3-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1331283748-12959-1-git-send-email-jack@suse.cz>
+References: <1331283748-12959-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-S5M8767A has 4 operation mode for BUCK/LDOs.
-This patch can handle opmode for s5m8767a.
+The comment is hopelessly outdated and misplaced. We no longer have 'bdi'
+part of writeback work, the comment about blockdev super is outdated,
+comment about throttling as well. Information about list handling is in
+more detail at queue_io(). So just move the bit about older_than_this to
+close to move_expired_inodes() and remove the rest.
 
-Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- drivers/regulator/s5m8767.c |   71 +++++++++++++++++++++++++++++++++++++------
- 1 files changed, 61 insertions(+), 10 deletions(-)
+ fs/fs-writeback.c |   20 ++------------------
+ 1 files changed, 2 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index 3592ccb..ff69f50 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -28,6 +28,7 @@ struct s5m8767_info {
- 	struct s5m87xx_dev *iodev;
- 	int num_regulators;
- 	struct regulator_dev **rdev;
-+	struct s5m_opmode_data *opmode;
- 
- 	int ramp_delay;
- 	bool buck2_ramp;
-@@ -141,9 +142,56 @@ static int s5m8767_list_voltage(struct regulator_dev *rdev,
- 	return val;
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index f60297b..be84e28 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -256,7 +256,8 @@ static bool inode_dirtied_after(struct inode *inode, unsigned long t)
  }
  
--static int s5m8767_get_register(struct regulator_dev *rdev, int *reg)
-+unsigned int s5m8767_opmode_reg[][4] = {
-+	/* {OFF, ON, LOWPOWER, SUSPEND} */
-+	/* LDO1 ... LDO28 */
-+	{0x0, 0x3, 0x2, 0x1}, /* LDO1 */
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x0, 0x0, 0x0},
-+	{0x0, 0x3, 0x2, 0x1}, /* LDO5 */
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1}, /* LDO10 */
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1}, /* LDO15 */
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x0, 0x0, 0x0},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1}, /* LDO20 */
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x0, 0x0, 0x0},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1}, /* LDO25 */
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1},
-+	{0x0, 0x3, 0x2, 0x1}, /* LDO28 */
-+
-+	/* BUCK1 ... BUCK9 */
-+	{0x0, 0x3, 0x1, 0x1}, /* BUCK1 */
-+	{0x0, 0x3, 0x1, 0x1},
-+	{0x0, 0x3, 0x1, 0x1},
-+	{0x0, 0x3, 0x1, 0x1},
-+	{0x0, 0x3, 0x2, 0x1}, /* BUCK5 */
-+	{0x0, 0x3, 0x1, 0x1},
-+	{0x0, 0x3, 0x1, 0x1},
-+	{0x0, 0x3, 0x1, 0x1},
-+	{0x0, 0x3, 0x1, 0x1}, /* BUCK9 */
-+};
-+
-+static int s5m8767_get_register(struct regulator_dev *rdev, int *reg,
-+				int *enable_ctrl)
+ /*
+- * Move expired dirty inodes from @delaying_queue to @dispatch_queue.
++ * Move expired (dirtied after work->older_than_this) dirty inodes from
++ * @delaying_queue to @dispatch_queue.
+  */
+ static int move_expired_inodes(struct list_head *delaying_queue,
+ 			       struct list_head *dispatch_queue,
+@@ -1148,23 +1149,6 @@ out_unlock_inode:
+ }
+ EXPORT_SYMBOL(__mark_inode_dirty);
+ 
+-/*
+- * Write out a superblock's list of dirty inodes.  A wait will be performed
+- * upon no inodes, all inodes or the final one, depending upon sync_mode.
+- *
+- * If older_than_this is non-NULL, then only write out inodes which
+- * had their first dirtying at a time earlier than *older_than_this.
+- *
+- * If `bdi' is non-zero then we're being asked to writeback a specific queue.
+- * This function assumes that the blockdev superblock's inodes are backed by
+- * a variety of queues, so all inodes are searched.  For other superblocks,
+- * assume that all inodes are backed by the same queue.
+- *
+- * The inodes to be written are parked on bdi->b_io.  They are moved back onto
+- * bdi->b_dirty as they are selected for writing.  This way, none can be missed
+- * on the writer throttling path, and we get decent balancing between many
+- * throttled threads: we don't want them all piling up on inode_sync_wait.
+- */
+ static void wait_sb_inodes(struct super_block *sb)
  {
- 	int reg_id = rdev_get_id(rdev);
-+	unsigned int mode;
-+	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
- 
- 	switch (reg_id) {
- 	case S5M8767_LDO1 ... S5M8767_LDO2:
-@@ -168,6 +216,8 @@ static int s5m8767_get_register(struct regulator_dev *rdev, int *reg)
- 		return -EINVAL;
- 	}
- 
-+	mode = s5m8767->opmode[reg_id].mode;
-+	*enable_ctrl = s5m8767_opmode_reg[reg_id][mode] << S5M8767_ENCTRL_SHIFT;
- 	return 0;
- }
- 
-@@ -175,10 +225,10 @@ static int s5m8767_reg_is_enabled(struct regulator_dev *rdev)
- {
- 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
- 	int ret, reg;
--	int mask = 0xc0, pattern = 0xc0;
-+	int mask = 0xc0, enable_ctrl;
- 	u8 val;
- 
--	ret = s5m8767_get_register(rdev, &reg);
-+	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
- 	if (ret == -EINVAL)
- 		return 1;
- 	else if (ret)
-@@ -188,33 +238,33 @@ static int s5m8767_reg_is_enabled(struct regulator_dev *rdev)
- 	if (ret)
- 		return ret;
- 
--	return (val & mask) == pattern;
-+	return (val & mask) == enable_ctrl;
- }
- 
- static int s5m8767_reg_enable(struct regulator_dev *rdev)
- {
- 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
- 	int ret, reg;
--	int mask = 0xc0, pattern = 0xc0;
-+	int mask = 0xc0, enable_ctrl;
- 
--	ret = s5m8767_get_register(rdev, &reg);
-+	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
- 	if (ret)
- 		return ret;
- 
--	return s5m_reg_update(s5m8767->iodev, reg, pattern, mask);
-+	return s5m_reg_update(s5m8767->iodev, reg, enable_ctrl, mask);
- }
- 
- static int s5m8767_reg_disable(struct regulator_dev *rdev)
- {
- 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
- 	int ret, reg;
--	int  mask = 0xc0, pattern = 0xc0;
-+	int  mask = 0xc0, enable_ctrl;
- 
--	ret = s5m8767_get_register(rdev, &reg);
-+	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
- 	if (ret)
- 		return ret;
- 
--	return s5m_reg_update(s5m8767->iodev, reg, ~pattern, mask);
-+	return s5m_reg_update(s5m8767->iodev, reg, ~mask, mask);
- }
- 
- static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
-@@ -576,6 +626,7 @@ static __devinit int s5m8767_pmic_probe(struct platform_device *pdev)
- 	s5m8767->buck2_ramp = pdata->buck2_ramp_enable;
- 	s5m8767->buck3_ramp = pdata->buck3_ramp_enable;
- 	s5m8767->buck4_ramp = pdata->buck4_ramp_enable;
-+	s5m8767->opmode = pdata->opmode;
- 
- 	for (i = 0; i < 8; i++) {
- 		if (s5m8767->buck2_gpiodvs) {
+ 	struct inode *inode, *old_inode = NULL;
 -- 
 1.7.1
 
