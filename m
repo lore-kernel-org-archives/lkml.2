@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031683Ab2CIUEw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:04:52 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48530 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030312Ab2CITwb (ORCPT
+	id S1758942Ab2CIUJW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:09:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031431Ab2CITvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:52:31 -0500
-Message-Id: <20120309190217.319548473@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:51:21 -0500
+Message-Id: <20120309190215.722022227@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:43 -0800
+Date: Fri, 09 Mar 2012 11:02:23 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Prashanth K Nageshappa <prashanth@linux.vnet.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jason Baron <jbaron@redhat.com>
-Subject: [ 29/68] kprobes: return proper error code from register_kprobe()
+        alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>
+Subject: [ 09/68] ARM: LPC32xx: Fix irq on GPI_28
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,76 +24,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+From: Roland Stigge <stigge@antcom.de>
 
-commit f986a499ef6f317d906e6f6f281be966e1237a10 upstream.
+commit f6737055c1c432a9628a9a731f9881ad8e0a9eee upstream.
 
-register_kprobe() aborts if the address of the new request falls in a
-prohibited area (such as ftrace pouch, __kprobes annotated functions,
-non-kernel text addresses, jump label text).  We however don't return the
-right error on this abort, resulting in a silent failure - incorrect
-adding/reporting of kprobes ('perf probe do_fork+18' or 'perf probe
-mcount' for instance).
+The GPI_28 IRQ was not registered properly. The registration of
+IRQ_LPC32XX_GPI_28 was added and the (wrong) IRQ_LPC32XX_GPI_11 at
+LPC32XX_SIC1_IRQ(4) was replaced by IRQ_LPC32XX_GPI_28 (see manual of
+LPC32xx / interrupt controller).
 
-In V2 we are incorporating Masami Hiramatsu's  feedback.
-
-This patch fixes it by returning -EINVAL upon failure.
-
-While we are here, rename the label used for exit to be more appropriate.
-
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Signed-off-by: Prashanth K Nageshappa <prashanth@linux.vnet.ibm.com>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jason Baron <jbaron@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/kprobes.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ arch/arm/mach-lpc32xx/include/mach/irqs.h |    2 +-
+ arch/arm/mach-lpc32xx/irq.c               |    4 ++++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1324,8 +1324,10 @@ int __kprobes register_kprobe(struct kpr
- 	if (!kernel_text_address((unsigned long) p->addr) ||
- 	    in_kprobes_functions((unsigned long) p->addr) ||
- 	    ftrace_text_reserved(p->addr, p->addr) ||
--	    jump_label_text_reserved(p->addr, p->addr))
--		goto fail_with_jump_label;
-+	    jump_label_text_reserved(p->addr, p->addr)) {
-+		ret = -EINVAL;
-+		goto cannot_probe;
-+	}
- 
- 	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
- 	p->flags &= KPROBE_FLAG_DISABLED;
-@@ -1340,7 +1342,7 @@ int __kprobes register_kprobe(struct kpr
- 		 * its code to prohibit unexpected unloading.
- 		 */
- 		if (unlikely(!try_module_get(probed_mod)))
--			goto fail_with_jump_label;
-+			goto cannot_probe;
- 
- 		/*
- 		 * If the module freed .init.text, we couldn't insert
-@@ -1349,7 +1351,7 @@ int __kprobes register_kprobe(struct kpr
- 		if (within_module_init((unsigned long)p->addr, probed_mod) &&
- 		    probed_mod->state != MODULE_STATE_COMING) {
- 			module_put(probed_mod);
--			goto fail_with_jump_label;
-+			goto cannot_probe;
- 		}
- 	}
- 	preempt_enable();
-@@ -1396,7 +1398,7 @@ out:
- 
- 	return ret;
- 
--fail_with_jump_label:
-+cannot_probe:
- 	preempt_enable();
- 	jump_label_unlock();
- 	return -EINVAL;
+--- a/arch/arm/mach-lpc32xx/include/mach/irqs.h
++++ b/arch/arm/mach-lpc32xx/include/mach/irqs.h
+@@ -61,7 +61,7 @@
+  */
+ #define IRQ_LPC32XX_JTAG_COMM_TX	LPC32XX_SIC1_IRQ(1)
+ #define IRQ_LPC32XX_JTAG_COMM_RX	LPC32XX_SIC1_IRQ(2)
+-#define IRQ_LPC32XX_GPI_11		LPC32XX_SIC1_IRQ(4)
++#define IRQ_LPC32XX_GPI_28		LPC32XX_SIC1_IRQ(4)
+ #define IRQ_LPC32XX_TS_P		LPC32XX_SIC1_IRQ(6)
+ #define IRQ_LPC32XX_TS_IRQ		LPC32XX_SIC1_IRQ(7)
+ #define IRQ_LPC32XX_TS_AUX		LPC32XX_SIC1_IRQ(8)
+--- a/arch/arm/mach-lpc32xx/irq.c
++++ b/arch/arm/mach-lpc32xx/irq.c
+@@ -118,6 +118,10 @@ static const struct lpc32xx_event_info l
+ 		.event_group = &lpc32xx_event_pin_regs,
+ 		.mask = LPC32XX_CLKPWR_EXTSRC_GPI_06_BIT,
+ 	},
++	[IRQ_LPC32XX_GPI_28] = {
++		.event_group = &lpc32xx_event_pin_regs,
++		.mask = LPC32XX_CLKPWR_EXTSRC_GPI_28_BIT,
++	},
+ 	[IRQ_LPC32XX_GPIO_00] = {
+ 		.event_group = &lpc32xx_event_int_regs,
+ 		.mask = LPC32XX_CLKPWR_INTSRC_GPIO_00_BIT,
 
 
