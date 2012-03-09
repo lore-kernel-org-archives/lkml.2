@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932454Ab2CIQA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 11:00:57 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:36433 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932365Ab2CIP7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 10:59:10 -0500
-Date: Thu, 8 Mar 2012 11:58:25 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lai Jiangshan <eag0628@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        patches@linaro.org, tj@kernel.org
-Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine
- call_srcu()
-Message-ID: <20120308195825.GC2412@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
- <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
- <1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
- <1331032571.11248.277.camel@twins>
- <CACvQF52tYmG4Bx+L+cTjVRbvQxj=sKiKrxhuv35H=fAFVvQJ2Q@mail.gmail.com>
- <1331048093.11248.317.camel@twins>
+	id S964823Ab2CIQHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 11:07:44 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64499 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932325Ab2CIQHm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 11:07:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331048093.11248.317.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030915-9360-0000-0000-000004642CA0
+In-Reply-To: <CAF1ivSaDEfDFgF0hz3myjSc0BXhig1XGRa_uMOi=gtf2HTEMHg@mail.gmail.com>
+References: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
+	<CAE5mzvgfsHD1Ku5saw+Cu7+vJAayx20=HfHfab1MrAwz3AtqJg@mail.gmail.com>
+	<CAF1ivSZcGHQ-bnGasKghJ-_beDqgyZ_ug=m-7Ykr4xUphZeLqw@mail.gmail.com>
+	<CAE5mzvgc60+_HOve+5wMsL7fo6jmM_sOB=_pTR1j23=RbP+uPw@mail.gmail.com>
+	<CAF1ivSaDEfDFgF0hz3myjSc0BXhig1XGRa_uMOi=gtf2HTEMHg@mail.gmail.com>
+Date: Fri, 9 Mar 2012 10:07:41 -0600
+X-Google-Sender-Auth: JE4G3osPsaxTgL6KBCceF9qGESw
+Message-ID: <CAE5mzviyg1L3HhSy4gYeLv673GN3M6JU68wwhzNBTKp6dtxTBg@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] ahci: fix boot/resume COMRESET failures
+From: cwillu <cwillu@cwillu.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Norbert Preining <preining@logic.at>,
+        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Matt <jackdachef@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 04:34:53PM +0100, Peter Zijlstra wrote:
-> On Tue, 2012-03-06 at 23:12 +0800, Lai Jiangshan wrote:
-> > On Tue, Mar 6, 2012 at 7:16 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > On Tue, 2012-03-06 at 17:57 +0800, Lai Jiangshan wrote:
-> > >>         srcu_head is bigger, it is worth, it provides more ability and simplify
-> > >>         the srcu code.
-> > >
-> > > Dubious claim.. memory footprint of various data structures is deemed
-> > > important. rcu_head is 16 bytes, srcu_head is 32 bytes. I think it would
-> > > be real nice not to have two different callback structures and not grow
-> > > them as large.
-> > 
-> > CC: tj@kernel.org
-> > It could be better if workqueue also supports 2*sizeof(long) work callbacks.
-> 
-> That's going to be very painful if at all possible.
-> 
-> > I prefer ability/functionality a little more, it eases the caller's pain.
-> > preemptible callbacks also eases the pressure of the whole system.
-> > But I'm also ok if we limit the srcu-callbacks in softirq.
-> 
-> You don't have to use softirq, you could run a complete list from a
-> single worklet. Just keep the single linked rcu_head list and enqueue a
-> static (per-cpu) worker to process the entire list.
+>>>> I just spent the better part of last night tracking down the specific
+>>>> sources of the log entry I get when I disconnect my e-sata drive; once
+>>>> it disconnects, the port is dead until I reboot; no combination of
+>>>> anything I've been able to poke at in /sys or elsewhere gets it live
+>>>> again.  This starts with 3.3rc1, and turns out to still work fine in
+>>>> 3.2.1. Any chance it's related?
+>>>>
+>>>> 3.3rc5, immediately after the unplug:
+>>>
+>>> I tested on my machine and it's fixed by below patch.
+>>> http://marc.info/?l=linux-kernel&m=132996405028746&w=2
+>>>
+>>> Would you please also try it?
+>>
+>> Building it now, and will be able to test in about 5 hours.
+>
+> Hi,
+>
+> How about the test result?
 
-I like the idea of SRCU using rcu_head.  I am a little concerned about
-what happens when there are lots of SRCU callbacks, but am willing to
-wait to solve those problems until the situation arises.
+Sorry about the delay.
 
-But I guess I should ask...  Peter, what do you expect the maximum
-call_srcu() rate to be in your use cases?  If tens of thousands are
-possible, some adjustments will be needed.
+Just verified, that patch does fix the problem:
 
-							Thanx, Paul
+*disconnect drive*
+[   80.474026] ata5: exception Emask 0x50 SAct 0x0 SErr 0x4090800
+action 0xe frozen
+[   80.474041] ata5: irq_stat 0x00400040, connection status changed
+[   80.474057] ata5: SError: { HostInt PHYRdyChg 10B8B DevExch }
+[   80.474064] ata5: hard resetting link
+[   81.197080] ata5: SATA link down (SStatus 0 SControl 300)
+[   86.197028] ata5: hard resetting link
+[   86.502021] ata5: SATA link down (SStatus 0 SControl 300)
+[   86.502039] ata5: limiting SATA link speed to 1.5 Gbps
+[   91.502018] ata5: hard resetting link
+[   91.807032] ata5: SATA link down (SStatus 0 SControl 310)
+[   91.807050] ata5.00: disabled
+[   91.807069] ata5: EH complete
+[   91.807095] ata5.00: detaching (SCSI 4:0:0:0)
+[   91.808988] sd 4:0:0:0: [sde] Synchronizing SCSI cache
+[   91.810288] sd 4:0:0:0: [sde]  Result: hostbyte=DID_BAD_TARGET
+driverbyte=DRIVER_OK
+[   91.810305] sd 4:0:0:0: [sde] Stopping disk
+[   91.810318] sd 4:0:0:0: [sde] START_STOP FAILED
+[   91.810333] sd 4:0:0:0: [sde]  Result: hostbyte=DID_BAD_TARGET
+driverbyte=DRIVER_OK
+[  106.507666] ata5: exception Emask 0x10 SAct 0x0 SErr 0x4040000
+action 0xe frozen
+[  106.507683] ata5: irq_stat 0x00000040, connection status changed
+[  106.507703] ata5: SError: { CommWake DevExch }
+[  106.507710] ata5: limiting SATA link speed to 1.5 Gbps
+[  106.507715] ata5: hard resetting link
+*reconnect drive*
+[  107.386022] ata5: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+[  107.387979] ata5.00: ATA-8: WDC WD10EARS-00Y5B1, 80.00A80, max UDMA/133
+[  107.387985] ata5.00: 1953525168 sectors, multi 16: LBA48 NCQ (depth
+31/32), AA
+[  107.389253] ata5.00: configured for UDMA/133
+[  107.389264] ata5: EH complete
+[  107.389375] scsi 4:0:0:0: Direct-Access     ATA      WDC
+WD10EARS-00Y 80.0 PQ: 0 ANSI: 5
+[  107.389551] sd 4:0:0:0: [sde] 1953525168 512-byte logical blocks:
+(1.00 TB/931 GiB)
+[  107.389613] sd 4:0:0:0: [sde] Write Protect is off
+[  107.389619] sd 4:0:0:0: [sde] Mode Sense: 00 3a 00 00
+[  107.389651] sd 4:0:0:0: [sde] Write cache: enabled, read cache:
+enabled, doesn't support DPO or FUA
+[  107.389667] sd 4:0:0:0: Attached scsi generic sg4 type 0
+[  107.803230]  sde: unknown partition table
+[  107.803550] sd 4:0:0:0: [sde] Attached SCSI disk
+*rejoicing*
 
+Thanks.
+
+--Carey
