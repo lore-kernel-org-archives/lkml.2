@@ -1,149 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759101Ab2CIAHh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 19:07:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35015 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab2CIAHd (ORCPT
+	id S1759396Ab2CIAE7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 19:04:59 -0500
+Received: from smtp4.mundo-r.com ([212.51.32.151]:47122 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757684Ab2CIAER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 19:07:33 -0500
-Date: Thu, 8 Mar 2012 16:07:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Diwakar Tundlam <dtundlam@nvidia.com>
-Cc: "'Phil Carmody'" <ext-phil.2.carmody@nokia.com>,
-        "'Russell King'" <rmk+kernel@arm.linux.org.uk>,
-        "'Greg Kroah-Hartman'" <gregkh@suse.de>,
-        "'Sameer Nanda'" <snanda@chromium.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'Linus Torvalds'" <torvalds@linux-foundation.org>,
-        Mike Travis <travis@sgi.com>
-Subject: Re: [PATCH] init: check printed flag to skip printing message
-Message-Id: <20120308160731.90cc9985.akpm@linux-foundation.org>
-In-Reply-To: <1DD7BFEDD3147247B1355BEFEFE4665237994F30F4@HQMAIL04.nvidia.com>
-References: <1327927463-4165-1-git-send-email-pdeschrijver@nvidia.com>
-	<1328024684.2446.234.camel@twins>
-	<1DD7BFEDD3147247B1355BEFEFE466523791832BE9@HQMAIL04.nvidia.com>
-	<1328040137.2446.242.camel@twins>
-	<1DD7BFEDD3147247B1355BEFEFE4665237994F30EF@HQMAIL04.nvidia.com>
-	<1DD7BFEDD3147247B1355BEFEFE4665237994F30F4@HQMAIL04.nvidia.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 19:04:17 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ap4EAN1HWU9bdWOb/2dsb2JhbABDhTWwe4ILAQUjDwEUDyMQJQIYDgICOQMKEQYBEogOqBqDaI4dgS+OEYEWBJVFhWWDXIZXgmQ
+X-IronPort-AV: E=Sophos;i="4.73,554,1325458800"; 
+   d="scan'208";a="886086924"
+From: =?UTF-8?q?V=C3=ADctor=20Manuel=20J=C3=A1quez=20Leal?= 
+	<vjaquez@igalia.com>
+To: Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        linux-omap@vger.kernel.org
+Subject: [PATCH 06/17] staging: tidspbridge: remove strm_init() and strm_exit()
+Date: Fri,  9 Mar 2012 01:03:41 +0100
+Message-Id: <138b2320c575412209b10dd098dce7107e4a945c.1331250369.git.vjaquez@igalia.com>
+X-Mailer: git-send-email 1.7.9.1
+In-Reply-To: <cover.1331250368.git.vjaquez@igalia.com>
+References: <cover.1331250368.git.vjaquez@igalia.com>
+In-Reply-To: <cover.1331250368.git.vjaquez@igalia.com>
+References: <cover.1331250368.git.vjaquez@igalia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Mar 2012 15:44:16 -0800
-Diwakar Tundlam <dtundlam@nvidia.com> wrote:
+The strm module has a strm_init() and a strm_exit() whose only purpose
+is to keep a reference counting which is not used at all.
 
-> Otherwise the 'Calibration skipped' message gets printed everytime a CPU is
-> hotplugged in, cluttering console for systems that frequently hotplug CPUs.
-> 
-> Signed-off-by: Diwakar Tundlam <dtundlam@nvidia.com>
-> ---
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/init/calibrate.c b/init/calibrate.c
-> index 5f117ca..fda0a7b 100644
-> --- a/init/calibrate.c
-> +++ b/init/calibrate.c
-> @@ -267,7 +267,8 @@ void __cpuinit calibrate_delay(void)
->  
-> 	if (per_cpu(cpu_loops_per_jiffy, this_cpu)) {
-> 		lpj = per_cpu(cpu_loops_per_jiffy, this_cpu);
-> -		pr_info("Calibrating delay loop (skipped) "
-> +		if (!printed)
-> +			pr_info("Calibrating delay loop (skipped) "
->  			"already calibrated this CPU");
-> 	} else if (preset_lpj) {
-> 		lpj = preset_lpj;
+This patch removes these functions and the reference count variable.
 
-oops, yes.
+There is no functional changes.
 
+Signed-off-by: Víctor Manuel Jáquez Leal <vjaquez@igalia.com>
+---
+ .../staging/tidspbridge/include/dspbridge/strm.h   |   38 +-------------------
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |    7 +---
+ drivers/staging/tidspbridge/rmgr/strm.c            |   28 --------------
+ 3 files changed, 2 insertions(+), 71 deletions(-)
 
-
-Looking at that code, I think Mike broke it in 2009 with feae3203d71
-("timers, init: Limit the number of per cpu calibration bootup
-messages"):
-
-
-: diff --git a/init/calibrate.c b/init/calibrate.c
-: index a379c90..6eb48e5 100644
-: --- a/init/calibrate.c
-: +++ b/init/calibrate.c
-: @@ -123,23 +123,26 @@ void __cpuinit calibrate_delay(void)
-:  {
-:  	unsigned long ticks, loopbit;
-:  	int lps_precision = LPS_PREC;
-: +	static bool printed;
-:  
-:  	if (preset_lpj) {
-:  		loops_per_jiffy = preset_lpj;
-: -		printk(KERN_INFO
-: -			"Calibrating delay loop (skipped) preset value.. ");
-: -	} else if ((smp_processor_id() == 0) && lpj_fine) {
-: +		if (!printed)
-: +			pr_info("Calibrating delay loop (skipped) "
-: +				"preset value.. ");
-: +	} else if ((!printed) && lpj_fine) {
-:  		loops_per_jiffy = lpj_fine;
-
-What's going on here?  Why should the value of `printed' affect the
-value of loops_per_jiffy?
-
-(lpj_fine is set only in x86 tsc code, under late_time_init(), and
-late_time_init() is called before calibrate_delay(), so we got that
-part right).
-
-:  		loops_per_jiffy = lpj_fine;
-: -		printk(KERN_INFO
-: -			"Calibrating delay loop (skipped), "
-: +		pr_info("Calibrating delay loop (skipped), "
-:  			"value calculated using timer frequency.. ");
-:  	} else if ((loops_per_jiffy = calibrate_delay_direct()) != 0) {
-: -		printk(KERN_INFO
-: -			"Calibrating delay using timer specific routine.. ");
-: +		if (!printed)
-: +			pr_info("Calibrating delay using timer "
-: +				"specific routine.. ");
-:  	} else {
-:  		loops_per_jiffy = (1<<12);
-:  
-: -		printk(KERN_INFO "Calibrating delay loop... ");
-: +		if (!printed)
-: +			pr_info("Calibrating delay loop... ");
-:  		while ((loops_per_jiffy <<= 1) != 0) {
-:  			/* wait for "start of" clock tick */
-:  			ticks = jiffies;
-: @@ -170,7 +173,10 @@ void __cpuinit calibrate_delay(void)
-:  				loops_per_jiffy &= ~loopbit;
-:  		}
-:  	}
-: -	printk(KERN_CONT "%lu.%02lu BogoMIPS (lpj=%lu)\n",
-: +	if (!printed)
-: +		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
-:  			loops_per_jiffy/(500000/HZ),
-:  			(loops_per_jiffy/(5000/HZ)) % 100, loops_per_jiffy);
-: +
-: +	printed = true;
-:  }
-: diff --git a/kernel/cpu.c b/kernel/cpu.c
-: index 6ba0f1e..7c4e271 100644
-: --- a/kernel/cpu.c
-: +++ b/kernel/cpu.c
-: @@ -392,10 +392,9 @@ int disable_nonboot_cpus(void)
-:  		if (cpu == first_cpu)
-:  			continue;
-:  		error = _cpu_down(cpu, 1);
-: -		if (!error) {
-: +		if (!error)
-:  			cpumask_set_cpu(cpu, frozen_cpus);
-: -			printk("CPU%d is down\n", cpu);
-: -		} else {
-: +		else {
-:  			printk(KERN_ERR "Error taking CPU%d down: %d\n",
-:  				cpu, error);
-:  			break;
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/strm.h b/drivers/staging/tidspbridge/include/dspbridge/strm.h
+index 613fe53..dacf0c23 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/strm.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/strm.h
+@@ -40,7 +40,6 @@
+  *      -EPERM:      Failure occurred, unable to allocate buffers.
+  *      -EINVAL:      usize must be > 0 bytes.
+  *  Requires:
+- *      strm_init(void) called.
+  *      ap_buffer != NULL.
+  *  Ensures:
+  */
+@@ -63,7 +62,6 @@ extern int strm_allocate_buffer(struct strm_res_object *strmres,
+  *                      been reclaimed.
+  *      -EPERM:      Failure to close stream.
+  *  Requires:
+- *      strm_init(void) called.
+  *  Ensures:
+  */
+ extern int strm_close(struct strm_res_object *strmres,
+@@ -83,7 +81,6 @@ extern int strm_close(struct strm_res_object *strmres,
+  *      -ENOMEM:    Insufficient memory for requested resources.
+  *      -EPERM:      General failure.
+  *  Requires:
+- *      strm_init(void) called.
+  *      strm_man != NULL.
+  *      dev_obj != NULL.
+  *  Ensures:
+@@ -101,7 +98,6 @@ extern int strm_create(struct strm_mgr **strm_man,
+  *      strm_mgr_obj:       Handle to STRM manager object from strm_create.
+  *  Returns:
+  *  Requires:
+- *      strm_init(void) called.
+  *      Valid strm_mgr_obj.
+  *  Ensures:
+  *      strm_mgr_obj is not valid.
+@@ -109,18 +105,6 @@ extern int strm_create(struct strm_mgr **strm_man,
+ extern void strm_delete(struct strm_mgr *strm_mgr_obj);
+ 
+ /*
+- *  ======== strm_exit ========
+- *  Purpose:
+- *      Discontinue usage of STRM module.
+- *  Parameters:
+- *  Returns:
+- *  Requires:
+- *      strm_init(void) successfully called before.
+- *  Ensures:
+- */
+-extern void strm_exit(void);
+-
+-/*
+  *  ======== strm_free_buffer ========
+  *  Purpose:
+  *      Free buffer(s) allocated with strm_allocate_buffer.
+@@ -133,7 +117,6 @@ extern void strm_exit(void);
+  *      -EFAULT:    Invalid stream handle.
+  *      -EPERM:      Failure occurred, unable to free buffers.
+  *  Requires:
+- *      strm_init(void) called.
+  *      ap_buffer != NULL.
+  *  Ensures:
+  */
+@@ -156,7 +139,6 @@ extern int strm_free_buffer(struct strm_res_object *strmres,
+  *      -EINVAL:          stream_info_size < sizeof(dsp_streaminfo).
+  *      -EPERM:          Unable to get stream info.
+  *  Requires:
+- *      strm_init(void) called.
+  *      stream_info != NULL.
+  *  Ensures:
+  */
+@@ -184,24 +166,11 @@ extern int strm_get_info(struct strm_object *stream_obj,
+  *      -ETIME:   A timeout occurred before the stream could be idled.
+  *      -EPERM:      Unable to idle stream.
+  *  Requires:
+- *      strm_init(void) called.
+  *  Ensures:
+  */
+ extern int strm_idle(struct strm_object *stream_obj, bool flush_data);
+ 
+ /*
+- *  ======== strm_init ========
+- *  Purpose:
+- *      Initialize the STRM module.
+- *  Parameters:
+- *  Returns:
+- *      TRUE if initialization succeeded, FALSE otherwise.
+- *  Requires:
+- *  Ensures:
+- */
+-extern bool strm_init(void);
+-
+-/*
+  *  ======== strm_issue ========
+  *  Purpose:
+  *      Send a buffer of data to a stream.
+@@ -217,8 +186,7 @@ extern bool strm_init(void);
+  *      -ENOSR:    The stream is full.
+  *      -EPERM:          Failure occurred, unable to issue buffer.
+  *  Requires:
+- *      strm_init(void) called.
+- *      pbuf != NULL.
++*      pbuf != NULL.
+  *  Ensures:
+  */
+ extern int strm_issue(struct strm_object *stream_obj, u8 * pbuf,
+@@ -244,7 +212,6 @@ extern int strm_issue(struct strm_object *stream_obj, u8 * pbuf,
+  *              Unable to open stream.
+  *      -EINVAL:     Invalid index.
+  *  Requires:
+- *      strm_init(void) called.
+  *      strmres != NULL.
+  *      pattr != NULL.
+  *  Ensures:
+@@ -275,7 +242,6 @@ extern int strm_open(struct node_object *hnode, u32 dir,
+  *                      retrieved.
+  *      -EPERM:      Failure occurred, unable to reclaim buffer.
+  *  Requires:
+- *      strm_init(void) called.
+  *      buf_ptr != NULL.
+  *      nbytes != NULL.
+  *      pdw_arg != NULL.
+@@ -302,7 +268,6 @@ extern int strm_reclaim(struct strm_object *stream_obj,
+  *      -ENOSYS:   Notification type specified by notify_type is not
+  *                      supported.
+  *  Requires:
+- *      strm_init(void) called.
+  *      hnotification != NULL.
+  *  Ensures:
+  */
+@@ -328,7 +293,6 @@ extern int strm_register_notify(struct strm_object *stream_obj,
+  *      -ETIME:   A timeout occurred before a stream became ready.
+  *      -EPERM:      Failure occurred, unable to select a stream.
+  *  Requires:
+- *      strm_init(void) called.
+  *      strm_tab != NULL.
+  *      strms > 0.
+  *      pmask != NULL.
+diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
+index b1a99f7..06e3b24 100644
+--- a/drivers/staging/tidspbridge/pmgr/dspapi.c
++++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
+@@ -271,7 +271,6 @@ void api_exit(void)
+ 		chnl_exit();
+ 		msg_exit();
+ 		io_exit();
+-		strm_exit();
+ 		mgr_exit();
+ 		rmm_exit();
+ 	}
+@@ -286,12 +285,11 @@ bool api_init(void)
+ {
+ 	bool ret = true;
+ 	bool fdev, fchnl, fmsg, fio;
+-	bool fmgr, fstrm, frmm;
++	bool fmgr, frmm;
+ 
+ 	if (api_c_refs == 0) {
+ 		/* initialize driver and other modules */
+ 		fmgr = mgr_init();
+-		fstrm = strm_init();
+ 		frmm = rmm_init();
+ 		fchnl = chnl_init();
+ 		fmsg = msg_mod_init();
+@@ -304,9 +302,6 @@ bool api_init(void)
+ 			if (fmgr)
+ 				mgr_exit();
+ 
+-			if (fstrm)
+-				strm_exit();
+-
+ 			if (fchnl)
+ 				chnl_exit();
+ 
+diff --git a/drivers/staging/tidspbridge/rmgr/strm.c b/drivers/staging/tidspbridge/rmgr/strm.c
+index bd684f1..34cc934 100644
+--- a/drivers/staging/tidspbridge/rmgr/strm.c
++++ b/drivers/staging/tidspbridge/rmgr/strm.c
+@@ -81,9 +81,6 @@ struct strm_object {
+ 	struct cmm_xlatorobject *xlator;
+ };
+ 
+-/*  ----------------------------------- Globals */
+-static u32 refs;		/* module reference count */
+-
+ /*  ----------------------------------- Function Prototypes */
+ static int delete_strm(struct strm_object *stream_obj);
+ 
+@@ -222,16 +219,6 @@ void strm_delete(struct strm_mgr *strm_mgr_obj)
+ }
+ 
+ /*
+- *  ======== strm_exit ========
+- *  Purpose:
+- *      Discontinue usage of STRM module.
+- */
+-void strm_exit(void)
+-{
+-	refs--;
+-}
+-
+-/*
+  *  ======== strm_free_buffer ========
+  *  Purpose:
+  *      Frees the buffers allocated for a stream.
+@@ -350,21 +337,6 @@ int strm_idle(struct strm_object *stream_obj, bool flush_data)
+ }
+ 
+ /*
+- *  ======== strm_init ========
+- *  Purpose:
+- *      Initialize the STRM module.
+- */
+-bool strm_init(void)
+-{
+-	bool ret = true;
+-
+-	if (ret)
+-		refs++;
+-
+-	return ret;
+-}
+-
+-/*
+  *  ======== strm_issue ========
+  *  Purpose:
+  *      Issues a buffer on a stream
+-- 
+1.7.9.1
 
