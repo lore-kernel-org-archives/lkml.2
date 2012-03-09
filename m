@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031164Ab2CITt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:49:59 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
+	id S1031216Ab2CITuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:50:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031143Ab2CITtx (ORCPT
+	with ESMTP id S1031194Ab2CITuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:49:53 -0500
-Message-Id: <20120309190208.526283537@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:50:10 -0500
+Message-Id: <20120309190208.984547820@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:19 -0800
+Date: Fri, 09 Mar 2012 11:03:25 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [ 77/95] hwmon: (jc42) Add support for ST Microelectronics STTS2002 and STTS3000
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?An=C3=83=C2=ADbal=20Almeida=20Pinto?= 
+	<anibal.pinto@efacec.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Oliver Neukum <oliver@neukum.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 83/95] net/usbnet: avoid recursive locking in usbnet_stop()
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,82 +29,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Sebastian Siewior <bigeasy@linutronix.de>
 
-commit 4de86126a712ba83fa038d277c8282f7ed466a4b upstream.
+commit 4231d47e6fe69f061f96c98c30eaf9fb4c14b96d upstream.
 
-These are fully compatible with Jedec JC 42.4 as far as I can see.
+|kernel BUG at kernel/rtmutex.c:724!
+|[<c029599c>] (rt_spin_lock_slowlock+0x108/0x2bc) from [<c01c2330>] (defer_bh+0x1c/0xb4)
+|[<c01c2330>] (defer_bh+0x1c/0xb4) from [<c01c3afc>] (rx_complete+0x14c/0x194)
+|[<c01c3afc>] (rx_complete+0x14c/0x194) from [<c01cac88>] (usb_hcd_giveback_urb+0xa0/0xf0)
+|[<c01cac88>] (usb_hcd_giveback_urb+0xa0/0xf0) from [<c01e1ff4>] (musb_giveback+0x34/0x40)
+|[<c01e1ff4>] (musb_giveback+0x34/0x40) from [<c01e2b1c>] (musb_advance_schedule+0xb4/0x1c0)
+|[<c01e2b1c>] (musb_advance_schedule+0xb4/0x1c0) from [<c01e2ca8>] (musb_cleanup_urb.isra.9+0x80/0x8c)
+|[<c01e2ca8>] (musb_cleanup_urb.isra.9+0x80/0x8c) from [<c01e2ed0>] (musb_urb_dequeue+0xec/0x108)
+|[<c01e2ed0>] (musb_urb_dequeue+0xec/0x108) from [<c01cbb90>] (unlink1+0xbc/0xcc)
+|[<c01cbb90>] (unlink1+0xbc/0xcc) from [<c01cc2ec>] (usb_hcd_unlink_urb+0x54/0xa8)
+|[<c01cc2ec>] (usb_hcd_unlink_urb+0x54/0xa8) from [<c01c2a84>] (unlink_urbs.isra.17+0x2c/0x58)
+|[<c01c2a84>] (unlink_urbs.isra.17+0x2c/0x58) from [<c01c2b44>] (usbnet_terminate_urbs+0x94/0x10c)
+|[<c01c2b44>] (usbnet_terminate_urbs+0x94/0x10c) from [<c01c2d68>] (usbnet_stop+0x100/0x15c)
+|[<c01c2d68>] (usbnet_stop+0x100/0x15c) from [<c020f718>] (__dev_close_many+0x94/0xc8)
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+defer_bh() takes the lock which is hold during unlink_urbs(). The safe
+walk suggest that the skb will be removed from the list and this is done
+by defer_bh() so it seems to be okay to drop the lock here.
+
+Reported-by: AnÃ­bal Almeida Pinto <anibal.pinto@efacec.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Acked-by: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/hwmon/jc42 |    6 ++++++
- drivers/hwmon/Kconfig    |    3 ++-
- drivers/hwmon/jc42.c     |   10 ++++++++++
- 3 files changed, 18 insertions(+), 1 deletion(-)
+ drivers/net/usb/usbnet.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/Documentation/hwmon/jc42
-+++ b/Documentation/hwmon/jc42
-@@ -48,6 +48,12 @@ Supported chips:
-     Datasheets:
- 	http://www.st.com/stonline/products/literature/ds/13447/stts424.pdf
- 	http://www.st.com/stonline/products/literature/ds/13448/stts424e02.pdf
-+  * ST Microelectronics STTS2002, STTS3000
-+    Prefix: 'stts2002', 'stts3000'
-+    Addresses scanned: I2C 0x18 - 0x1f
-+    Datasheets:
-+	http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/DATASHEET/CD00225278.pdf
-+	http://www.st.com/internet/com/TECHNICAL_RESOURCES/TECHNICAL_LITERATURE/DATA_BRIEF/CD00270920.pdf
-   * JEDEC JC 42.4 compliant temperature sensor chips
-     Prefix: 'jc42'
-     Addresses scanned: I2C 0x18 - 0x1f
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -498,7 +498,8 @@ config SENSORS_JC42
- 	  temperature sensors, which are used on many DDR3 memory modules for
- 	  mobile devices and servers.  Support will include, but not be limited
- 	  to, ADT7408, CAT34TS02, CAT6095, MAX6604, MCP9805, MCP98242, MCP98243,
--	  MCP9843, SE97, SE98, STTS424(E), TSE2002B3, and TS3000B3.
-+	  MCP9843, SE97, SE98, STTS424(E), STTS2002, STTS3000, TSE2002B3, and
-+	  TS3000B3.
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -589,6 +589,7 @@ static int unlink_urbs (struct usbnet *d
+ 		entry = (struct skb_data *) skb->cb;
+ 		urb = entry->urb;
  
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called jc42.
---- a/drivers/hwmon/jc42.c
-+++ b/drivers/hwmon/jc42.c
-@@ -113,6 +113,12 @@ static const unsigned short normal_i2c[]
- #define STTS424E_DEVID		0x0000
- #define STTS424E_DEVID_MASK	0xfffe
- 
-+#define STTS2002_DEVID		0x0300
-+#define STTS2002_DEVID_MASK	0xffff
-+
-+#define STTS3000_DEVID		0x0200
-+#define STTS3000_DEVID_MASK	0xffff
-+
- static u16 jc42_hysteresis[] = { 0, 1500, 3000, 6000 };
- 
- struct jc42_chips {
-@@ -133,6 +139,8 @@ static struct jc42_chips jc42_chips[] =
- 	{ NXP_MANID, SE98_DEVID, SE98_DEVID_MASK },
- 	{ STM_MANID, STTS424_DEVID, STTS424_DEVID_MASK },
- 	{ STM_MANID, STTS424E_DEVID, STTS424E_DEVID_MASK },
-+	{ STM_MANID, STTS2002_DEVID, STTS2002_DEVID_MASK },
-+	{ STM_MANID, STTS3000_DEVID, STTS3000_DEVID_MASK },
- };
- 
- /* Each client has this additional data */
-@@ -171,6 +179,8 @@ static const struct i2c_device_id jc42_i
- 	{ "se97b", 0 },
- 	{ "se98", 0 },
- 	{ "stts424", 0 },
-+	{ "stts2002", 0 },
-+	{ "stts3000", 0 },
- 	{ "tse2002b3", 0 },
- 	{ "ts3000b3", 0 },
- 	{ }
++		spin_unlock_irqrestore(&q->lock, flags);
+ 		// during some PM-driven resume scenarios,
+ 		// these (async) unlinks complete immediately
+ 		retval = usb_unlink_urb (urb);
+@@ -596,6 +597,7 @@ static int unlink_urbs (struct usbnet *d
+ 			netdev_dbg(dev->net, "unlink urb err, %d\n", retval);
+ 		else
+ 			count++;
++		spin_lock_irqsave(&q->lock, flags);
+ 	}
+ 	spin_unlock_irqrestore (&q->lock, flags);
+ 	return count;
 
 
