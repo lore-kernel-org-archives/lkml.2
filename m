@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758497Ab2CIR3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 12:29:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932258Ab2CIR3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 12:29:39 -0500
-Date: Fri, 9 Mar 2012 18:29:34 +0100
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Roland McGrath <mcgrathr@google.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: Extending coredump note section to contain filenames
-Message-ID: <20120309172934.GA18173@host2.jankratochvil.net>
-References: <4F5A3A4D.1020008@redhat.com>
+	id S1758360Ab2CIRak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 12:30:40 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38848 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754544Ab2CIRaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 12:30:39 -0500
+Date: Fri, 9 Mar 2012 18:30:32 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: tshimizu818@gmail.com, jeffrey.t.kirsher@intel.com,
+        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
+        paul.gortmaker@windriver.com, jdmason@kudzu.us, john.stultz@linaro.org,
+        arnd@arndb.de, khc@pm.waw.pl, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH RE-SUBMIT] net/pch_gbe: supports eg20t ptp clock
+Message-ID: <20120309173032.GA5730@netboy.at.omicron.at>
+References: <1331079669-22446-1-git-send-email-tshimizu818@gmail.com>
+ <20120306.213453.700930266749202538.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F5A3A4D.1020008@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120306.213453.700930266749202538.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Denys,
+On Tue, Mar 06, 2012 at 09:34:53PM -0500, David Miller wrote:
+> 
+> You still haven't submitted this properly.
+> 
+> First, you submitted the PCH_GBE driver changes before the EG20T
+> PTP clock driver which it depends upon.
 
-On Fri, 09 Mar 2012 18:13:49 +0100, Denys Vlasenko wrote:
-> gdb retrieves loaded library names by examining dynamic loader's
-> data stored in the coredump's data segments. It uses intimate
-> knowledge how and where dynamic loader keeps the list of loaded
-> libraries.
+David, both this pair of patches and the second pair apply cleanly to
+both Torvalds mainline and to net-next. So, what are you complaining
+about here? I am still confused.
 
-this is the backward compatible way and it is no longer the right one with
-build-ids.
+Thanks,
 
-GDB should scan the address space for mapped build-ids and map symbol files
-accordingly.  The shared library list may be even corrupted in crashes with
-memory overruns.  But it has not been implemented yet, I plan it for years.
+Richard
 
-(It can use the shared library list as a hint as in some cases the symbol
-files could overlap if you load the first page of an ELF file etc., this is
-very improbable possibility.)
-
-
-> Another question is detection of deleted files.
-> If /usr/lib/xulrunner-2/libmozjs.so was updated while program ran
-> and now file mapped into process address space does not correspond
-> to the same-named file on disk, can we help users to detect this? How?
-> By saving maj/min/inode? Hash thereof?
-> File size?
-> File's md5sum (probably not, way too expensive. But nicely robust...)?
-
-build-id is already being saved.  This is all that matters.  Filename does not
-say anything - as you noticed it can be even already deleted, it can have
-unknown content etc.  I do not see what problems you target here.
-
-
-Regards,
-Jan
