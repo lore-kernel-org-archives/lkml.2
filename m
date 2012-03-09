@@ -1,217 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848Ab2CIEZy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 23:25:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59665 "EHLO mx1.redhat.com"
+	id S1758090Ab2CIE1s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 23:27:48 -0500
+Received: from void.printf.net ([89.145.121.20]:55570 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757062Ab2CIEZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 23:25:43 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] memcg: avoid THP split in task migration
-Date: Thu,  8 Mar 2012 23:25:28 -0500
-Message-Id: <1331267128-4673-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20120309101658.8b36ce4f.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1757437Ab2CIE1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 23:27:47 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: Ben Dooks <ben-linux@fluff.org>, kernel-janitors@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/mmc/host/sdhci-s3c.c: use devm_ functions
+References: <1329596019-19822-1-git-send-email-Julia.Lawall@lip6.fr>
+Date: Thu, 08 Mar 2012 23:27:41 -0500
+In-Reply-To: <1329596019-19822-1-git-send-email-Julia.Lawall@lip6.fr> (Julia
+	Lawall's message of "Sat, 18 Feb 2012 21:13:39 +0100")
+Message-ID: <m2k42uqtz6.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/24.0.94 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi KAMEZAWA-san,
+Hi Julia,
 
-> On Fri,  2 Mar 2012 15:13:09 -0500
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-...
-> > +
-> > +	page = pmd_page(pmd);
-> > +	VM_BUG_ON(!page || !PageHead(page));
-> > +	if (!move_anon() || page_mapcount(page) != 1)
-> > +		return 0;
+On Sat, Feb 18 2012, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 >
-> Could you add this ?
-> ==
-> static bool move_check_shared_map(struct page *page)
-> {
->   /*
->    * Handling of shared pages between processes is a big trouble in memcg.
->    * Now, we never move shared-mapped pages between memcg at 'task' moving because
->    * we have no hint which task the page is really belongs to. For example,
->    * When a task does "fork()-> move to the child other group -> exec()", the charges
->    * should be stay in the original cgroup.
->    * So, check mapcount to determine we can move or not.
->    */
->    return page_mapcount(page) != 1;
-> }
-> ==
-
-Thank you.
-
-We check mapcount only for anonymous pages, so we had better also describe
-that viewpoint?  And this function returns whether the target page of moving
-charge is shared or not, so a name like is_mctgt_shared() looks better to me.
-Moreover, this function explains why we have current implementation, rather
-than why return value is mapcount != 1, so I put the comment above function
-declaration like this:
-
-  /*
-   * Handling of shared pages between processes is a big trouble in memcg.
-   * Now, we never move shared anonymous pages between memcg at 'task'
-   * moving because we have no hint which task the page is really belongs to.
-   * For example, when a task does "fork() -> move to the child other group
-   * -> exec()", the charges should be stay in the original cgroup.
-   * So, check if a given page is shared or not to determine to move charge.
-   */
-  static bool is_mctgt_shared(struct page *page)
-  {
-     return page_mapcount(page) != 1;
-  }
-
-As for the difference between anon page and filemapped page, I have no idea
-about current charge moving policy. Is this explained anywhere? (sorry to
-question before researching by myself ...)
-
-
-> We may be able to support madvise(MOVE_MEMCG) or fadvise(MOVE_MEMCG), if necessary.
-
-Is this mean moving charge policy can depend on users?
-I feel that's strange because I don't think resouce management should be
-under users' control.
-
+> The various devm_ functions allocate memory that is released when a driver
+> detaches.  This patch uses these functions for data that is allocated in
+> the probe function of a platform device and is only freed in the remove
+> function.
 >
-> > +	pc = lookup_page_cgroup(page);
-> > +	if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
-> > +		ret = MC_TARGET_PAGE;
-> > +		if (target) {
-> > +			get_page(page);
-> > +			target->page = page;
+> By using devm_ioremap, it also removes a potential memory leak, because
+> there was no call to iounmap in the probe function.
 >
-> Here, get_page() is used rather than get_page_unless_zero() because of
-> __pmd_trans_huge_lock() is held ?
+> The call to platform_get_resource was moved just to make it closer to the
+> place where its result it used.
+>
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Yes, and page should be thp head page, so never have 0 refcount.
-So I thought get_page() which has VM_BUG_ON(count<=0) is preferable.
+Thanks very much, pushed to mmc-next for 3.4.
 
->
-> > +		}
-> > +	}
-> > +	return ret;
-> > +}
-> > +#else
-> > +static inline int is_target_thp_for_mc(struct vm_area_struct *vma,
-> > +		unsigned long addr, pmd_t pmd, union mc_target *target)
-> > +{
-> > +	return 0;
-> > +}
-> > +#endif
-> > +
-> >  static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
-> >  					unsigned long addr, unsigned long end,
-> >  					struct mm_walk *walk)
-> > @@ -5219,7 +5254,14 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
-> >  	pte_t *pte;
-> >  	spinlock_t *ptl;
-> >
-> > -	split_huge_page_pmd(walk->mm, pmd);
-> > +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-> > +		if (is_target_thp_for_mc(vma, addr, *pmd, NULL)
-> > +		    == MC_TARGET_PAGE)
-> > +			mc.precharge += HPAGE_PMD_NR;
-> > +		spin_unlock(&vma->vm_mm->page_table_lock);
-> > +		cond_resched();
-> > +		return 0;
-> > +	}
->
-> Maybe hard to read ;) I think is_target_thp_for_mc includes too much '_'
-> and short words...
->
-> Hmm, how about renaming "is_target_thp_for_mc"  as "pmd_move_target()" or some.
-> (Ah yes, other handler's name should be fixed, too.)
-
-As I wrote in the reply to Andrew, I want to go with get_mctgt_type[_thp]
-if possible.
-
-> >
-> >  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
-> >  	for (; addr != end; pte++, addr += PAGE_SIZE)
-> > @@ -5378,16 +5420,51 @@ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
-> >  	struct vm_area_struct *vma = walk->private;
-> >  	pte_t *pte;
-> >  	spinlock_t *ptl;
-> > +	int type;
-> > +	union mc_target target;
-> > +	struct page *page;
-> > +	struct page_cgroup *pc;
-> > +
-> > +	/*
-> > +	 * We don't take compound_lock() here but no race with splitting thp
-> > +	 * happens because:
-> > +	 *  - if pmd_trans_huge_lock() returns 1, the relevant thp is not
-> > +	 *    under splitting, which means there's no concurrent thp split,
-> > +	 *  - if another thread runs into split_huge_page() just after we
-> > +	 *    entered this if-block, the thread must wait for page table lock
-> > +	 *    to be unlocked in __split_huge_page_splitting(), where the main
-> > +	 *    part of thp split is not executed yet.
-> > +	 */
->
-> ok.
->
->
-> > +	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-> > +		if (!mc.precharge) {
-> > +			spin_unlock(&vma->vm_mm->page_table_lock);
-> > +			cond_resched();
->
-> Hm. Original code calls cond_resched() after 'scanning' the full pmd, 1024 entries.
-> With THP, it just handles 1 entry. cond_resched() will not be required.
-
-I agree.
-
-> > +			return 0;
-> > +		}
-> > +		type = is_target_thp_for_mc(vma, addr, *pmd, &target);
-> > +		if (type == MC_TARGET_PAGE) {
-> > +			page = target.page;
-> > +			if (!isolate_lru_page(page)) {
-> > +				pc = lookup_page_cgroup(page);
-> > +				if (!mem_cgroup_move_account(page, HPAGE_PMD_NR,
-> > +							     pc, mc.from, mc.to,
-> > +							     false)) {
-> > +					mc.precharge -= HPAGE_PMD_NR;
-> > +					mc.moved_charge += HPAGE_PMD_NR;
-> > +				}
-> > +				putback_lru_page(page);
-> > +			}
-> > +			put_page(page);
-> > +		}
-> > +		spin_unlock(&vma->vm_mm->page_table_lock);
-> > +		cond_resched();
->
-> ditto.
->
->
-> > +		return 0;
-> > +	}
-> >
-> > -	split_huge_page_pmd(walk->mm, pmd);
-> >  retry:
-> >  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
-> >  	for (; addr != end; addr += PAGE_SIZE) {
-> >  		pte_t ptent = *(pte++);
-> > -		union mc_target target;
-> > -		int type;
-> > -		struct page *page;
-> > -		struct page_cgroup *pc;
-> >  		swp_entry_t ent;
-> >
-> >  		if (!mc.precharge)
->
->
-> Thank you for your efforts!
-
-Thanks for taking time for the review.
-
-Naoya
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
