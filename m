@@ -1,124 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758591Ab2CISZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 13:25:28 -0500
-Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:58924 "EHLO
-	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754664Ab2CISZ0 convert rfc822-to-8bit (ORCPT
+	id S1758654Ab2CIS2z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 13:28:55 -0500
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42320 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758549Ab2CIS2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 13:25:26 -0500
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 13:25:26 EST
+	Fri, 9 Mar 2012 13:28:53 -0500
+Date: Fri, 9 Mar 2012 19:28:29 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Andy Lutomirski <luto@mit.edu>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86: use enum instead of literals for trap values
+Message-ID: <20120309182829.GA13745@aftab>
+References: <20120309074202.GA28609@www.outflux.net>
+ <20120309092845.GA10281@elte.hu>
+ <CAGXu5j+SgWMjwNQd8w8DPSQmBVHDow=_osp57OVp4X2VU5Fe5w@mail.gmail.com>
+ <4F5A448D.70605@zytor.com>
+ <CAGXu5jKHJGmTktKNYDmpZziKRLM-bw-dTK5tboR706J_s6j7NQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120309075720.GC16608@lunn.ch>
-References: <20120303133158.GA26882@pengutronix.de> <CAJOA=zNFNEHxBDhRDdvm7DYR83R0LJjsp_AT3BoG+nL+iN5_tw@mail.gmail.com>
- <20120304115201.GB26882@pengutronix.de> <CAJOA=zP8d8wm==7=svOzh03Ft-1_LV71q0mA6Pncrh5vQSWGEA@mail.gmail.com>
- <20120305073836.GU3852@pengutronix.de> <CAJOA=zMs75ZQ24g5PXpSLV3AJzWEo12g86G8+4+ryQR_cTYpzA@mail.gmail.com>
- <20120306190039.GJ3852@pengutronix.de> <CAJOA=zOG_6eSWPEfFL6VKWeTpGKD9y11xeHoOwdS3b59tAZ45A@mail.gmail.com>
- <20120308062739.GE18513@lunn.ch> <20120308232549.GU3852@pengutronix.de> <20120309075720.GC16608@lunn.ch>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Fri, 9 Mar 2012 10:25:00 -0800
-Message-ID: <CAJOA=zPztBfTY_WDwZ5iFEa94eCtHyrzN422RTACMQXs625gRA@mail.gmail.com>
-Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
-To: Sascha Hauer <s.hauer@pengutronix.de>,
-        "Turquette, Mike" <mturquette@ti.com>, Andrew Lunn <andrew@lunn.ch>,
-        Paul Walmsley <paul@pwsan.com>, linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGXu5jKHJGmTktKNYDmpZziKRLM-bw-dTK5tboR706J_s6j7NQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 8, 2012 at 11:57 PM, Andrew Lunn <andrew@lunn.ch> wrote:
->> I'd say use the nonstatic ones. I think using the static initializers
->> will cause us much pain in the future. I've been through several rebases
->> on the i.MX clock rework and everytime I wish my sed foo would be
->> better. Now imagine what happens when it turns out that the internal
->> struct clk layout or the structs for the muxes/dividers/gates have to
->> be changed.
->
-> /*****************************************************************************
->  * CLK tree
->  ****************************************************************************/
-> static DEFINE_SPINLOCK(gating_lock);
->
-> #define DEFINE_KIRKWOOD_CLK_GATE(_name, _bit)                           \
->        DEFINE_CLK_GATE(_name, "tclk", NULL, 0,                         \
->                        (void __iomem *)CLOCK_GATING_CTRL,              \
->                        _bit, 0, &gating_lock)
->
-> DEFINE_KIRKWOOD_CLK_GATE(clk_ge0,    CGC_BIT_GE0);
-> DEFINE_KIRKWOOD_CLK_GATE(clk_pex0,   CGC_BIT_PEX0);
-> DEFINE_KIRKWOOD_CLK_GATE(clk_usb0,   CGC_BIT_USB0);
-> DEFINE_KIRKWOOD_CLK_GATE(clk_sdio,   CGC_BIT_SDIO);
-> DEFINE_KIRKWOOD_CLK_GATE(clk_tsu,    CGC_BIT_TSU);
-> DEFINE_KIRKWOOD_CLK_GATE(clk_dunit,  CGC_BIT_DUNIT);
-> DEFINE_KIRKWOOD_CLK_GATE(clk_runit,  CGC_BIT_RUNIT);
->
-> I've so far not had any problems, and not needed an sed foo.  I do
-> only have a dozen or so clocks, which helps. But even so, all the real
-> pain is hidden inside DEFINE_CLK_GATE() which Mike maintains.
+On Fri, Mar 09, 2012 at 10:21:52AM -0800, Kees Cook wrote:
+> > I have to admit personally to prefer something like X86_XCP_XX where XX
+> > is the two-letter code that the Intel documentation uses for that trap,
+> > i.e. #GP, #BR, #MC and so on.
+> 
+> We need a single person to decide on this bike shed color. :) If the
+> list of enum names can be agreed on, I'll be happy to do the
+> search/replace for it.
 
-It's true that if the argument list for the macros doesn't change then
-the pain of static initialization is hidden from the platform data.
+Well,
 
-However if you have the ability to use the clk_foo_register functions
-please do use them in place of static initialization.  The static init
-stuff is only for folks backed into a corner and forced to use it...
-for now.  I'm looking at ways to allow for kmalloc'ing in early boot,
-as well as reducing the number of clocks that my platform registers
-during early boot drastically.
+here are my 2¢: I agree with hpa because
 
->
-> I guess the problem comes when you are not using the basic clk
-> providers, but your own provider. What might help is if
-> linux/clk-provider.h could provide some macros to do most of the
-> generic definitions. Something like:
+a) it maps the CPU vendor documentation
+b) it is nicely short
 
-I'd rather people just used the registration functions instead.
+Thanks.
 
-Thanks,
-Mike
+-- 
+Regards/Gruss,
+Boris.
 
->
-> #define DEFINE_CLK_GENERIC(_name, _flags, _ops)                 \
->        static struct clk _name;                                \
->        static char *_name##_parent_names[] = {};               \
->        static struct clk _name = {                             \
->                .name = #_name,                                 \
->                .ops = &_ops,                                   \
->                .hw = &_name##_hw.hw,                           \
->                .parent_names = _name##_parent_names,           \
->                .num_parents =                                  \
->                        ARRAY_SIZE(_name##_parent_names),       \
->                .flags = _flags,                                \
->        };
->
-> and then you have something like
->
-> #define DEFINE_CLK_IMX(_name, _flags, _foo, _bar)               \
->        static struct clk_imx _name##_hw = {                    \
->                .hw = {                                         \
->                        .clk = &_name,                          \
->                },                                              \
->                .foo = _foo,                                    \
->                .bar = _bar,                                    \
->        };                                                      \
->        DEFINE_CLK_GENERIC(_name, _flags, clk_imx_ops)
->
->        Andrew
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
