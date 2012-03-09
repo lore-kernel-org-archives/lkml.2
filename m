@@ -1,146 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab2CICWa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 21:22:30 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46455 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2CICW2 (ORCPT
+	id S1755735Ab2CIC0I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 21:26:08 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:39484 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab2CIC0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 21:22:28 -0500
-Message-ID: <1331259740.6239.4.camel@phoenix>
-Subject: [PATCH] regulator: Rename set_voltage_sel callback function name to
- *_sel
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Margarita Olaya Cabrera <magi@slimlogic.co.uk>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Date: Fri, 09 Mar 2012 10:22:20 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Mar 2012 21:26:05 -0500
+Date: Fri, 9 Mar 2012 13:25:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Javi Merino <javi.merino@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Boojin Kim <boojin.kim@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: linux-next: manual merge of the slave-dma tree with Linus' tree
+Message-Id: <20120309132554.a82c72a8f2dab11c9104a596@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__9_Mar_2012_13_25_54_+1100_jPa9Yi.b48IL2NwT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change improves readability.
+--Signature=_Fri__9_Mar_2012_13_25_54_+1100_jPa9Yi.b48IL2NwT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Hi Vinod,
+
+Today's linux-next merge of the slave-dma tree got conflicts in
+arch/arm/include/asm/hardware/pl330.h and arch/arm/common/pl330.c between
+commits 4272f98a1ae8 ("ARM: 7164/3: PL330: Fix the size of the
+dst_cache_ctrl field") and 46e33c606af8 ("ARM: 7326/2: PL330: fix null
+pointer dereference in pl330_chan_ctrl()") from Linus' tree and commit
+b7d861d93945 ("DMA: PL330: Merge PL330 driver into drivers/dma/") from
+the slave-dma tree.
+
+I removed the files and then applied changes from the patchs in Linus'
+tree to drivers/dma/pl330.c.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 9 Mar 2012 13:21:55 +1100
+Subject: [PATCH] DMA: PL330: update for code movement
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/regulator/tps65910-regulator.c |   16 +++++++++-------
- drivers/regulator/tps65912-regulator.c |   12 ++++++------
- 2 files changed, 15 insertions(+), 13 deletions(-)
+ drivers/dma/pl330.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index 8de2835..b6edcf6 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -684,8 +684,8 @@ static int tps65911_get_voltage(struct regulator_dev *dev)
- 	return (LDO_MIN_VOLT + value * step_mv) * 1000;
- }
- 
--static int tps65910_set_voltage_dcdc(struct regulator_dev *dev,
--				unsigned selector)
-+static int tps65910_set_voltage_dcdc_sel(struct regulator_dev *dev,
-+					 unsigned selector)
- {
- 	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
- 	int id = rdev_get_id(dev), vsel;
-@@ -722,7 +722,8 @@ static int tps65910_set_voltage_dcdc(struct regulator_dev *dev,
- 	return 0;
- }
- 
--static int tps65910_set_voltage(struct regulator_dev *dev, unsigned selector)
-+static int tps65910_set_voltage_sel(struct regulator_dev *dev,
-+				    unsigned selector)
- {
- 	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
- 	int reg, id = rdev_get_id(dev);
-@@ -748,7 +749,8 @@ static int tps65910_set_voltage(struct regulator_dev *dev, unsigned selector)
- 	return -EINVAL;
- }
- 
--static int tps65911_set_voltage(struct regulator_dev *dev, unsigned selector)
-+static int tps65911_set_voltage_sel(struct regulator_dev *dev,
-+				    unsigned selector)
- {
- 	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
- 	int reg, id = rdev_get_id(dev);
-@@ -866,7 +868,7 @@ static struct regulator_ops tps65910_ops_dcdc = {
- 	.set_mode		= tps65910_set_mode,
- 	.get_mode		= tps65910_get_mode,
- 	.get_voltage		= tps65910_get_voltage_dcdc,
--	.set_voltage_sel	= tps65910_set_voltage_dcdc,
-+	.set_voltage_sel	= tps65910_set_voltage_dcdc_sel,
- 	.list_voltage		= tps65910_list_voltage_dcdc,
- };
- 
-@@ -887,7 +889,7 @@ static struct regulator_ops tps65910_ops = {
- 	.set_mode		= tps65910_set_mode,
- 	.get_mode		= tps65910_get_mode,
- 	.get_voltage		= tps65910_get_voltage,
--	.set_voltage_sel	= tps65910_set_voltage,
-+	.set_voltage_sel	= tps65910_set_voltage_sel,
- 	.list_voltage		= tps65910_list_voltage,
- };
- 
-@@ -898,7 +900,7 @@ static struct regulator_ops tps65911_ops = {
- 	.set_mode		= tps65910_set_mode,
- 	.get_mode		= tps65910_get_mode,
- 	.get_voltage		= tps65911_get_voltage,
--	.set_voltage_sel	= tps65911_set_voltage,
-+	.set_voltage_sel	= tps65911_set_voltage_sel,
- 	.list_voltage		= tps65911_list_voltage,
- };
- 
-diff --git a/drivers/regulator/tps65912-regulator.c b/drivers/regulator/tps65912-regulator.c
-index a654602..3ab1722 100644
---- a/drivers/regulator/tps65912-regulator.c
-+++ b/drivers/regulator/tps65912-regulator.c
-@@ -558,8 +558,8 @@ static int tps65912_get_voltage_dcdc(struct regulator_dev *dev)
- 	return tps65912_list_voltage_dcdc(dev, vsel);
- }
- 
--static int tps65912_set_voltage_dcdc(struct regulator_dev *dev,
--						unsigned selector)
-+static int tps65912_set_voltage_dcdc_sel(struct regulator_dev *dev,
-+					 unsigned selector)
- {
- 	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
- 	struct tps65912 *mfd = pmic->mfd;
-@@ -588,8 +588,8 @@ static int tps65912_get_voltage_ldo(struct regulator_dev *dev)
- 	return tps65912_vsel_to_uv_ldo(vsel);
- }
- 
--static int tps65912_set_voltage_ldo(struct regulator_dev *dev,
--						unsigned selector)
-+static int tps65912_set_voltage_ldo_sel(struct regulator_dev *dev,
-+					unsigned selector)
- {
- 	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
- 	struct tps65912 *mfd = pmic->mfd;
-@@ -620,7 +620,7 @@ static struct regulator_ops tps65912_ops_dcdc = {
- 	.set_mode = tps65912_set_mode,
- 	.get_mode = tps65912_get_mode,
- 	.get_voltage = tps65912_get_voltage_dcdc,
--	.set_voltage_sel = tps65912_set_voltage_dcdc,
-+	.set_voltage_sel = tps65912_set_voltage_dcdc_sel,
- 	.list_voltage = tps65912_list_voltage_dcdc,
- };
- 
-@@ -630,7 +630,7 @@ static struct regulator_ops tps65912_ops_ldo = {
- 	.enable = tps65912_reg_enable,
- 	.disable = tps65912_reg_disable,
- 	.get_voltage = tps65912_get_voltage_ldo,
--	.set_voltage_sel = tps65912_set_voltage_ldo,
-+	.set_voltage_sel = tps65912_set_voltage_ldo_sel,
- 	.list_voltage = tps65912_list_voltage_ldo,
- };
- 
--- 
-1.7.5.4
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 7253d17..41ec06d 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -48,7 +48,7 @@ enum pl330_dstcachectrl {
+ 	DCCTRL1,	/* Bufferable only */
+ 	DCCTRL2,	/* Cacheable, but do not allocate */
+ 	DCCTRL3,	/* Cacheable and bufferable, but do not allocate */
+-	DINVALID1 =3D 8,
++	DINVALID1,		/* AWCACHE =3D 0x1000 */
+ 	DINVALID2,
+ 	DCCTRL6,	/* Cacheable write-through, allocate on writes only */
+ 	DCCTRL7,	/* Cacheable write-back, allocate on writes only */
+@@ -1799,12 +1799,13 @@ static int pl330_chan_ctrl(void *ch_id, enum pl330_=
+chan_op op)
+ 	struct pl330_thread *thrd =3D ch_id;
+ 	struct pl330_dmac *pl330;
+ 	unsigned long flags;
+-	int ret =3D 0, active =3D thrd->req_running;
++	int ret =3D 0, active;
+=20
+ 	if (!thrd || thrd->free || thrd->dmac->state =3D=3D DYING)
+ 		return -EINVAL;
+=20
+ 	pl330 =3D thrd->dmac;
++	active =3D thrd->req_running;
+=20
+ 	spin_lock_irqsave(&pl330->lock, flags);
+=20
+--=20
+1.7.9.1
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Fri__9_Mar_2012_13_25_54_+1100_jPa9Yi.b48IL2NwT
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPWWoyAAoJEECxmPOUX5FEf8kQAKJpe2KmYr58YwfSTqgQZzuF
+hotWJ5FPKGxM70ecUtwQYT+uJ+E/AaFWIuVmIHz4sf+JxeSjeDZCZiUlyCNvbNgD
+C8vFYx72oG6YhWKnhF4SAWPGuC7iHrAGNn+LIOOmiMTjxDq5OKCyAZob73V+/Dpv
+ifeGhKOXkyTpLB1P3Lbv9jnWtRiRXN4VTv5uq0RY9wtjtqG6RV1R59T4dO2+CBAd
+sJCj1R59+rob9DFNxqqTCezWBMFrhTcCwFY3LSWXjvaNx77BwcHrb4n1neWrlGbW
+JM7SdMCjbN2BqzYuhhRj2agWTFbPNFsQmMJpjRsSamN7j1lUzx0PaJuAyzbpCjLN
+OjKa2jVhM9OTbfc9nkCCvP/98OOlCX2F3IuCR4mY3CHVpz/zJg9gD8G+7pbWKPwW
+Nh5ocSRBBf6j2aECmZ05do066r5y9ep0Gi3Cgqj7Tfi0dB9/IoFI9UWB5t6CiO7l
+XFWUXs13FDtg7fqsvXcZBxYOfQX7AOhq9z2yWqEylJOl4aMvZwZROpeAAafYixmT
+JMOoyBJZa3WV5gLaRe1MRN7qvsgPkRomzgjXwoATOxcEO8wtJ6d2wsJBGybKn7NM
+J7DwmDgXXWqOL5WE0BBFJN/vY0476DK+MmB6QYTFpUgLRL59uO+Xnu2NpliAQY2n
+QWlAzRa/2kE23+Ysc04q
+=Q2sN
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__9_Mar_2012_13_25_54_+1100_jPa9Yi.b48IL2NwT--
