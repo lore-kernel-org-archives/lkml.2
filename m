@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031570Ab2CIUHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:07:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64616 "EHLO
+	id S1031695Ab2CIUFV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:05:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54260 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031513Ab2CITvl (ORCPT
+	with ESMTP id S1031627Ab2CITw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:51:41 -0500
-Message-Id: <20120309190215.430092805@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:52:26 -0500
+Message-Id: <20120309190217.226160089@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:19 -0800
+Date: Fri, 09 Mar 2012 11:02:42 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Stigge <stigge@antcom.de>
-Subject: [ 05/68] ARM: LPC32xx: serial.c: HW bug workaround
+        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
+        =?UTF-8?q?Magnus=20M=C3=A4=C3=A4tt=C3=A4?= 
+	<magnus.maatta@logica.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 28/68] ath9k_hw: prevent writes to const data on AR9160
 In-Reply-To: <20120309194409.GA2069@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,81 +27,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Stigge <stigge@antcom.de>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 2707208ee8a80dbbd5426f5aa1a934f766825bb5 upstream.
+commit 9bbb8168ed3d8b946f9c1901a63a675012de88f2 upstream.
 
-This patch fixes a HW bug by flushing RX FIFOs of the UARTs on init. It was
-ported from NXP's git.lpclinux.com tree.
+Duplicate the data for iniAddac early on, to avoid having to do redundant
+memcpy calls later. While we're at it, make AR5416 < v2.2 use the same
+codepath. Fixes a reported crash on x86.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Reported-by: Magnus Määttä <magnus.maatta@logica.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-lpc32xx/serial.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/net/wireless/ath/ath9k/ar5008_phy.c |   25 +------------------------
+ drivers/net/wireless/ath/ath9k/ar9002_hw.c  |   19 +++++++++++++++++++
+ drivers/net/wireless/ath/ath9k/hw.h         |    1 -
+ 3 files changed, 20 insertions(+), 25 deletions(-)
 
---- a/arch/arm/mach-lpc32xx/serial.c
-+++ b/arch/arm/mach-lpc32xx/serial.c
-@@ -88,6 +88,7 @@ struct uartinit {
- 	char *uart_ck_name;
- 	u32 ck_mode_mask;
- 	void __iomem *pdiv_clk_reg;
-+	resource_size_t mapbase;
- };
+--- a/drivers/net/wireless/ath/ath9k/ar5008_phy.c
++++ b/drivers/net/wireless/ath/ath9k/ar5008_phy.c
+@@ -489,8 +489,6 @@ static int ar5008_hw_rf_alloc_ext_banks(
+ 	ATH_ALLOC_BANK(ah->analogBank6Data, ah->iniBank6.ia_rows);
+ 	ATH_ALLOC_BANK(ah->analogBank6TPCData, ah->iniBank6TPC.ia_rows);
+ 	ATH_ALLOC_BANK(ah->analogBank7Data, ah->iniBank7.ia_rows);
+-	ATH_ALLOC_BANK(ah->addac5416_21,
+-		       ah->iniAddac.ia_rows * ah->iniAddac.ia_columns);
+ 	ATH_ALLOC_BANK(ah->bank6Temp, ah->iniBank6.ia_rows);
  
- static struct uartinit uartinit_data[] __initdata = {
-@@ -97,6 +98,7 @@ static struct uartinit uartinit_data[] _
- 		.ck_mode_mask =
- 			LPC32XX_UART_CLKMODE_LOAD(LPC32XX_UART_CLKMODE_ON, 5),
- 		.pdiv_clk_reg = LPC32XX_CLKPWR_UART5_CLK_CTRL,
-+		.mapbase = LPC32XX_UART5_BASE,
- 	},
- #endif
- #ifdef CONFIG_ARCH_LPC32XX_UART3_SELECT
-@@ -105,6 +107,7 @@ static struct uartinit uartinit_data[] _
- 		.ck_mode_mask =
- 			LPC32XX_UART_CLKMODE_LOAD(LPC32XX_UART_CLKMODE_ON, 3),
- 		.pdiv_clk_reg = LPC32XX_CLKPWR_UART3_CLK_CTRL,
-+		.mapbase = LPC32XX_UART3_BASE,
- 	},
- #endif
- #ifdef CONFIG_ARCH_LPC32XX_UART4_SELECT
-@@ -113,6 +116,7 @@ static struct uartinit uartinit_data[] _
- 		.ck_mode_mask =
- 			LPC32XX_UART_CLKMODE_LOAD(LPC32XX_UART_CLKMODE_ON, 4),
- 		.pdiv_clk_reg = LPC32XX_CLKPWR_UART4_CLK_CTRL,
-+		.mapbase = LPC32XX_UART4_BASE,
- 	},
- #endif
- #ifdef CONFIG_ARCH_LPC32XX_UART6_SELECT
-@@ -121,6 +125,7 @@ static struct uartinit uartinit_data[] _
- 		.ck_mode_mask =
- 			LPC32XX_UART_CLKMODE_LOAD(LPC32XX_UART_CLKMODE_ON, 6),
- 		.pdiv_clk_reg = LPC32XX_CLKPWR_UART6_CLK_CTRL,
-+		.mapbase = LPC32XX_UART6_BASE,
- 	},
- #endif
- };
-@@ -165,6 +170,19 @@ void __init lpc32xx_serial_init(void)
+ 	return 0;
+@@ -519,7 +517,6 @@ static void ar5008_hw_rf_free_ext_banks(
+ 	ATH_FREE_BANK(ah->analogBank6Data);
+ 	ATH_FREE_BANK(ah->analogBank6TPCData);
+ 	ATH_FREE_BANK(ah->analogBank7Data);
+-	ATH_FREE_BANK(ah->addac5416_21);
+ 	ATH_FREE_BANK(ah->bank6Temp);
  
- 		/* pre-UART clock divider set to 1 */
- 		__raw_writel(0x0101, uartinit_data[i].pdiv_clk_reg);
-+
-+		/*
-+		 * Force a flush of the RX FIFOs to work around a
-+		 * HW bug
-+		 */
-+		puart = uartinit_data[i].mapbase;
-+		__raw_writel(0xC1, LPC32XX_UART_IIR_FCR(puart));
-+		__raw_writel(0x00, LPC32XX_UART_DLL_FIFO(puart));
-+		j = LPC32XX_SUART_FIFO_SIZE;
-+		while (j--)
-+			tmp = __raw_readl(
-+				LPC32XX_UART_DLL_FIFO(puart));
-+		__raw_writel(0, LPC32XX_UART_IIR_FCR(puart));
+ #undef ATH_FREE_BANK
+@@ -799,27 +796,7 @@ static int ar5008_hw_process_ini(struct
+ 	REG_WRITE(ah, AR_PHY_ADC_SERIAL_CTL, AR_PHY_SEL_EXTERNAL_RADIO);
+ 	ah->eep_ops->set_addac(ah, chan);
+ 
+-	if (AR_SREV_5416_22_OR_LATER(ah)) {
+-		REG_WRITE_ARRAY(&ah->iniAddac, 1, regWrites);
+-	} else {
+-		struct ar5416IniArray temp;
+-		u32 addacSize =
+-			sizeof(u32) * ah->iniAddac.ia_rows *
+-			ah->iniAddac.ia_columns;
+-
+-		/* For AR5416 2.0/2.1 */
+-		memcpy(ah->addac5416_21,
+-		       ah->iniAddac.ia_array, addacSize);
+-
+-		/* override CLKDRV value at [row, column] = [31, 1] */
+-		(ah->addac5416_21)[31 * ah->iniAddac.ia_columns + 1] = 0;
+-
+-		temp.ia_array = ah->addac5416_21;
+-		temp.ia_columns = ah->iniAddac.ia_columns;
+-		temp.ia_rows = ah->iniAddac.ia_rows;
+-		REG_WRITE_ARRAY(&temp, 1, regWrites);
+-	}
+-
++	REG_WRITE_ARRAY(&ah->iniAddac, 1, regWrites);
+ 	REG_WRITE(ah, AR_PHY_ADC_SERIAL_CTL, AR_PHY_SEL_INTERNAL_ADDAC);
+ 
+ 	ENABLE_REGWRITE_BUFFER(ah);
+--- a/drivers/net/wireless/ath/ath9k/ar9002_hw.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_hw.c
+@@ -179,6 +179,25 @@ static void ar9002_hw_init_mode_regs(str
+ 		INIT_INI_ARRAY(&ah->iniAddac, ar5416Addac,
+ 			       ARRAY_SIZE(ar5416Addac), 2);
  	}
++
++	/* iniAddac needs to be modified for these chips */
++	if (AR_SREV_9160(ah) || !AR_SREV_5416_22_OR_LATER(ah)) {
++		struct ar5416IniArray *addac = &ah->iniAddac;
++		u32 size = sizeof(u32) * addac->ia_rows * addac->ia_columns;
++		u32 *data;
++
++		data = kmalloc(size, GFP_KERNEL);
++		if (!data)
++			return;
++
++		memcpy(data, addac->ia_array, size);
++		addac->ia_array = data;
++
++		if (!AR_SREV_5416_22_OR_LATER(ah)) {
++			/* override CLKDRV value */
++			INI_RA(addac, 31,1) = 0;
++		}
++	}
+ }
  
- 	/* This needs to be done after all UART clocks are setup */
+ /* Support for Japan ch.14 (2484) spread */
+--- a/drivers/net/wireless/ath/ath9k/hw.h
++++ b/drivers/net/wireless/ath/ath9k/hw.h
+@@ -763,7 +763,6 @@ struct ath_hw {
+ 	u32 *analogBank6Data;
+ 	u32 *analogBank6TPCData;
+ 	u32 *analogBank7Data;
+-	u32 *addac5416_21;
+ 	u32 *bank6Temp;
+ 
+ 	u8 txpower_limit;
 
 
