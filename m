@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759445Ab2CIURh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 15:17:37 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54823 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759238Ab2CIURf (ORCPT
+	id S1030779Ab2CIUWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 15:22:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030622Ab2CITrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 15:17:35 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH] regmap: Fix missing prototype of devres_alloc() and friends
-Date: Fri,  9 Mar 2012 13:17:28 -0700
-Message-Id: <1331324248-1599-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.0.4
-X-NVConfidentiality: public
+	Fri, 9 Mar 2012 14:47:23 -0500
+Message-Id: <20120309190204.367391950@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Fri, 09 Mar 2012 11:02:27 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Scott Talbert <talbert@techie.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 25/95] Move Logitech Harmony 900 from cdc_ether to zaurus
+In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regmap.s uses devres_alloc() and others that are prototyped in device.h.
-Include that to solve the following:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-drivers/base/regmap/regmap.c: In function 'devm_regmap_init':
-drivers/base/regmap/regmap.c:331:2: error: implicit declaration of function 'devres_alloc' [-Werror=implicit-function-declaration]
-drivers/base/regmap/regmap.c:338:3: error: implicit declaration of function 'devres_add' [-Werror=implicit-function-declaration]
-drivers/base/regmap/regmap.c:340:3: error: implicit declaration of function 'devres_free' [-Werror=implicit-function-declaration]
-drivers/base/regmap/regmap.c: In function '_regmap_raw_write':
-drivers/base/regmap/regmap.c:421:5: error: implicit declaration of function 'dev_err' [-Werror=implicit-function-declaration]
+------------------
 
-Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+From: Scott Talbert <talbert@techie.net>
+
+commit ee932bf9acb2e2c6a309e808000f24856330e3f9 upstream.
+
+In the current kernel implementation, the Logitech Harmony 900 remote
+control is matched to the cdc_ether driver through the generic
+USB_CDC_SUBCLASS_MDLM entry.  However, this device appears to be of the
+pseudo-MDLM (Belcarra) type, rather than the standard one.  This patch
+blacklists the Harmony 900 from the cdc_ether driver and whitelists it for
+the pseudo-MDLM driver in zaurus.
+
+Signed-off-by: Scott Talbert <talbert@techie.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/base/regmap/regmap.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/net/usb/cdc_ether.c |    7 +++++++
+ drivers/net/usb/zaurus.c    |    7 +++++++
+ 2 files changed, 14 insertions(+)
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index e1a4097..7a3f535 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -10,6 +10,7 @@
-  * published by the Free Software Foundation.
-  */
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -570,6 +570,13 @@ static const struct usb_device_id	produc
+ 	.driver_info = 0,
+ },
  
-+#include <linux/device.h>
- #include <linux/slab.h>
- #include <linux/export.h>
- #include <linux/mutex.h>
--- 
-1.7.0.4
++/* Logitech Harmony 900 - uses the pseudo-MDLM (BLAN) driver */
++{
++	USB_DEVICE_AND_INTERFACE_INFO(0x046d, 0xc11f, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
++	.driver_info		= 0,
++},
++
+ /*
+  * WHITELIST!!!
+  *
+--- a/drivers/net/usb/zaurus.c
++++ b/drivers/net/usb/zaurus.c
+@@ -349,6 +349,13 @@ static const struct usb_device_id	produc
+ 	ZAURUS_MASTER_INTERFACE,
+ 	.driver_info = OLYMPUS_MXL_INFO,
+ },
++
++/* Logitech Harmony 900 - uses the pseudo-MDLM (BLAN) driver */
++{
++	USB_DEVICE_AND_INTERFACE_INFO(0x046d, 0xc11f, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_MDLM, USB_CDC_PROTO_NONE),
++	.driver_info = (unsigned long) &bogus_mdlm_info,
++},
+ 	{ },		// END
+ };
+ MODULE_DEVICE_TABLE(usb, products);
+
 
