@@ -1,107 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab2CIHGN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 02:06:13 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38497 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab2CIHGL convert rfc822-to-8bit (ORCPT
+	id S1752522Ab2CIHHM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 02:07:12 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58533 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878Ab2CIHHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 02:06:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6jqr44JS4Cyfc0cR_TNbo_ETjPJUO=x2gj-Q_x4TckVA@mail.gmail.com>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org>
-	<1331018040-30725-8-git-send-email-yinghai@kernel.org>
-	<CAErSpo6jqr44JS4Cyfc0cR_TNbo_ETjPJUO=x2gj-Q_x4TckVA@mail.gmail.com>
-Date: Thu, 8 Mar 2012 23:06:10 -0800
-X-Google-Sender-Auth: Dl4m-l0WlDTUOfiv2f4Sw1FwGH4
-Message-ID: <CAE9FiQWPk-s5F5ofO=nU05tnRhmpav+f8Cs_mBG9A-MPuK9stw@mail.gmail.com>
-Subject: Re: [PATCH 07/23] pci, dmar: Update dmar units devices list during hotplug
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        iommu@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 9 Mar 2012 02:07:10 -0500
+Date: Fri, 9 Mar 2012 18:06:47 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Takashi Iwai <tiwai@suse.de>, Fabio Estevam <festevam@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: linux-next: manual merge of the arm-soc tree with the sound tree
+Message-Id: <20120309180647.a27cc03a8997f9b38eb8ad0e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__9_Mar_2012_18_06_47_+1100_Uj+.7.L.zLAd5e+p"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 8, 2012 at 5:06 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> When do pci remove/rescan on system that have more iommus, got
->>
->> [  894.089745] Set context mapping for c4:00.0
->> [  894.110890] mpt2sas3: Allocated physical memory: size(4293 kB)
->> [  894.112556] mpt2sas3: Current Controller Queue Depth(1883), Max Controller Queue Depth(2144)
->> [  894.127278] mpt2sas3: Scatter Gather Elements per IO(128)
->> [  894.361295] DRHD: handling fault status reg 2
->> [  894.364053] DMAR:[DMA Read] Request device [c4:00.0] fault addr fffbe000
->> [  894.364056] DMAR:[fault reason 02] Present bit in context entry is cl
->>
->> it turns out when remove/rescan, pci dev will be freed and will get another new dev.
->> but drhd units still keep old one... so dmar_find_matched_drhd_unit will
->> return wrong drhd and iommu for the device that is not on first iommu.
->>
->> So need to update devices in drhd_units during pci remove/rescan.
->>
->> Could save domain/bus/device/function aside in the list and according that info
->> restore new dev to drhd_units later.
->> Then dmar_find_matched_drdh_unit and device_to_iommu could return right drhd and iommu.
->>
->> Add remove_dev_from_drhd/restore_dev_to_drhd functions to do the real work.
->> call them in device ADD_DEVICE and UNBOUND_DRIVER
->>
->> Need to do the samething to atsr.  (expose dmar_atsr_units and add atsru->segment)
->>
->> After patch, will right iommu for the new dev and will not get DMAR error any more.
->>
->> -v2: add pci_dev_put/pci_dev_get to make refcount consistent.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Cc: David Woodhouse <dwmw2@infradead.org>
->> Cc: Vinod Koul <vinod.koul@intel.com>
->> Cc: Dan Williams <dan.j.williams@intel.com>
->> Cc: iommu@lists.linux-foundation.org
->> ---
->>  drivers/iommu/intel-iommu.c |  187 ++++++++++++++++++++++++++++++++++++++++---
->>  include/linux/dmar.h        |    4 +
->>  2 files changed, 181 insertions(+), 10 deletions(-)
->>
->> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
->> index c9c6053..39ef2ce 100644
->> --- a/drivers/iommu/intel-iommu.c
->> +++ b/drivers/iommu/intel-iommu.c
->> @@ -665,6 +665,159 @@ static struct intel_iommu *device_to_iommu(int segment, u8 bus, u8 devfn)
->>        return NULL;
->>  }
->>
->> +#ifdef CONFIG_HOTPLUG
->> +struct dev_dmaru {
->> +       struct list_head list;
->> +       void *dmaru;
->> +       int index;
->> +       int segment;
->> +       unsigned char bus;
->> +       unsigned int devfn;
->> +};
->> +
->> +static int
->> +save_dev_dmaru(int segment, unsigned char bus, unsigned int devfn,
->> +                void *dmaru, int index, struct list_head *lh)
->
-> Follow the indentation style used elsewhere in the file: as much of
-> the declaration on one line as will fit (here and below).
->
-> I think the callers would read more naturally if you passed in the
-> struct pci_dev * to save_dev_dmaru() and extracted the
-> segment/bus/devfn here rather than in the callers.
+--Signature=_Fri__9_Mar_2012_18_06_47_+1100_Uj+.7.L.zLAd5e+p
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Just want to keep save_dev_dmaru more consistent to get_dev_dmaru...
+Hi all,
 
-Anyway, will change to pass struct pci_dev *dev instead.
+Today's linux-next merge of the arm-soc tree got conflicts in
+arch/arm/mach-imx/mm-imx3.c and arch/arm/mach-imx/mm-imx5.c between
+commit 3bc34a614335 ("ARM: imx: convert audmux to a platform driver")
+from the sound tree and commits 38bb3630bcba ("ARM: mx35: Setup the AIPS
+registers") and aa6a9fa1f274 ("ARM: mx5: Use common function for
+configuring AIPS") from the arm-soc tree.
 
-Yinghai
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-imx/mm-imx3.c
+index 9c9b7f9,1646991..0000000
+--- a/arch/arm/mach-imx/mm-imx3.c
++++ b/arch/arm/mach-imx/mm-imx3.c
+@@@ -177,8 -175,9 +179,12 @@@ void __init imx31_soc_init(void
+  	}
+ =20
+  	imx_add_imx_sdma("imx31-sdma", MX31_SDMA_BASE_ADDR, MX31_INT_SDMA, &imx3=
+1_sdma_pdata);
++=20
++ 	imx_set_aips(MX31_IO_ADDRESS(MX31_AIPS1_BASE_ADDR));
++ 	imx_set_aips(MX31_IO_ADDRESS(MX31_AIPS2_BASE_ADDR));
+++
+ +	platform_device_register_simple("imx31-audmux", 0, imx31_audmux_res,
+ +					ARRAY_SIZE(imx31_audmux_res));
+  }
+  #endif /* ifdef CONFIG_SOC_IMX31 */
+ =20
+@@@ -267,8 -262,9 +273,13 @@@ void __init imx35_soc_init(void
+  	}
+ =20
+  	imx_add_imx_sdma("imx35-sdma", MX35_SDMA_BASE_ADDR, MX35_INT_SDMA, &imx3=
+5_sdma_pdata);
++=20
++ 	/* Setup AIPS registers */
++ 	imx_set_aips(MX35_IO_ADDRESS(MX35_AIPS1_BASE_ADDR));
++ 	imx_set_aips(MX35_IO_ADDRESS(MX35_AIPS2_BASE_ADDR));
+++
+ +	/* i.mx35 has the i.mx31 type audmux */
+ +	platform_device_register_simple("imx31-audmux", 0, imx35_audmux_res,
+ +					ARRAY_SIZE(imx35_audmux_res));
+  }
+  #endif /* ifdef CONFIG_SOC_IMX35 */
+diff --cc arch/arm/mach-imx/mm-imx5.c
+index dc7c4ed,92efece..0000000
+--- a/arch/arm/mach-imx/mm-imx5.c
++++ b/arch/arm/mach-imx/mm-imx5.c
+@@@ -201,9 -185,10 +201,14 @@@ void __init imx51_soc_init(void
+ =20
+  	/* i.mx51 has the i.mx35 type sdma */
+  	imx_add_imx_sdma("imx35-sdma", MX51_SDMA_BASE_ADDR, MX51_INT_SDMA, &imx5=
+1_sdma_pdata);
++=20
++ 	/* Setup AIPS registers */
++ 	imx_set_aips(MX51_IO_ADDRESS(MX51_AIPS1_BASE_ADDR));
++ 	imx_set_aips(MX51_IO_ADDRESS(MX51_AIPS2_BASE_ADDR));
+++
+ +	/* i.mx51 has the i.mx31 type audmux */
+ +	platform_device_register_simple("imx31-audmux", 0, imx51_audmux_res,
+ +					ARRAY_SIZE(imx51_audmux_res));
+  }
+ =20
+  void __init imx53_soc_init(void)
+@@@ -219,7 -204,8 +224,12 @@@
+ =20
+  	/* i.mx53 has the i.mx35 type sdma */
+  	imx_add_imx_sdma("imx35-sdma", MX53_SDMA_BASE_ADDR, MX53_INT_SDMA, &imx5=
+3_sdma_pdata);
++=20
++ 	/* Setup AIPS registers */
++ 	imx_set_aips(MX53_IO_ADDRESS(MX53_AIPS1_BASE_ADDR));
++ 	imx_set_aips(MX53_IO_ADDRESS(MX53_AIPS2_BASE_ADDR));
+++
+ +	/* i.mx53 has the i.mx31 type audmux */
+ +	platform_device_register_simple("imx31-audmux", 0, imx53_audmux_res,
+ +					ARRAY_SIZE(imx53_audmux_res));
+  }
+
+--Signature=_Fri__9_Mar_2012_18_06_47_+1100_Uj+.7.L.zLAd5e+p
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPWawHAAoJEECxmPOUX5FE9JMP/0r5ied+a0KS99lpjMcKJWLE
+gmBA2+t7yoT3G20o9/ySRJvOyvz2sVtk3DcU59iEdHlzGz5kIQJ+5XW9wzuEMUcP
+izapBPqZD3IIrhUbh1LJfQYgVszoqsAkoflfpPQ5kZiRz/2Aob37oPQbD41vbKqA
+9TmX5Je10Sjrq6oNUS+5ET+derY/yis5CLl2lbfzvbYppQ0K40BV1pUAmMqDmiuT
+312kMi5W2wmlA6tKbm0l74A+Sb8j3vOnlWqBxEltCMJcNFvez9XdPurDH/xqz8QJ
+f7+FXGRIjQPYv2e8/vRV3S9baL1erILkyNyidadR7nu7gRpxB0/L+k/rQrH+deK3
+ASlQvQQ68pF/Qq5gbnTJqmny3XGCioAQiMYahnQOAEVOLS42HP6UNNpSNYi6/Xe1
+l0PkXiHnvvxCVWNEW7OaijVyNCT2ndWgWTVLpxHyJVdEipoO+q0bFcpMm82KvKmz
+PjaAQ3K/DOsTffX6qRHnQyvoFN2aOkOHVqMbae9Xpp3RlLKf2Vde9Bj1OYIYRjGh
+9vvQ0p+AoZwXOLKN+oSA8SwGoaRm0FJu5fHi5n9mKJ4id+jiwhlXhAAnDpT5LzQ4
+t2NAFI4mb7RowEe5rdDl0vPKnVNsYmSCt1cRB97MfmkYSRV7tMv2uf0SFNIST+go
+tRFmLP68kkHgGU1qWlHL
+=6THz
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__9_Mar_2012_18_06_47_+1100_Uj+.7.L.zLAd5e+p--
