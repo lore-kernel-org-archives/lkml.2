@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030433Ab2CITrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:47:24 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53292 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030544Ab2CITrQ (ORCPT
+	id S1030654Ab2CITrc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:47:32 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:63959 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030544Ab2CITr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:47:16 -0500
-Message-Id: <20120309190205.000511575@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:47:27 -0500
+Message-Id: <20120309190205.238938677@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:02:35 -0800
+Date: Fri, 09 Mar 2012 11:02:38 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Pavel Roskin <proski@gnu.org>,
-        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 33/95] mac80211: zero initialize count field in ieee80211_tx_rate
+        alan@lxorguk.ukuu.org.uk, Dave Jones <davej@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        David Rientjes <rientjes@google.com>, Josh Boyer <jwboyer@redhat.com>
+Subject: [ 36/95] mm: thp: fix BUG on mm->nr_ptes
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +27,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 8617b093d0031837a7be9b32bc674580cfb5f6b5 upstream.
+commit 1c641e84719429bbfe62a95ed3545ee7fe24408f upstream.
 
-rate control algorithms concludes the rate as invalid
-with rate[i].idx < -1 , while they do also check for rate[i].count is
-non-zero. it would be safer to zero initialize the 'count' field.
-recently we had a ath9k rate control crash where the ath9k rate control
-in ath_tx_status assumed to check only for rate[i].count being non-zero
-in one instance and ended up in using invalid rate index for
-'connection monitoring NULL func frames' which eventually lead to the crash.
-thanks to Pavel Roskin for fixing it and finding the root cause.
-https://bugzilla.redhat.com/show_bug.cgi?id=768639
+Dave Jones reports a few Fedora users hitting the BUG_ON(mm->nr_ptes...)
+in exit_mmap() recently.
 
-Cc: Pavel Roskin <proski@gnu.org>
-Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Quoting Hugh's discovery and explanation of the SMP race condition:
+
+  "mm->nr_ptes had unusual locking: down_read mmap_sem plus
+   page_table_lock when incrementing, down_write mmap_sem (or mm_users
+   0) when decrementing; whereas THP is careful to increment and
+   decrement it under page_table_lock.
+
+   Now most of those paths in THP also hold mmap_sem for read or write
+   (with appropriate checks on mm_users), but two do not: when
+   split_huge_page() is called by hwpoison_user_mappings(), and when
+   called by add_to_swap().
+
+   It's conceivable that the latter case is responsible for the
+   exit_mmap() BUG_ON mm->nr_ptes that has been reported on Fedora."
+
+The simplest way to fix it without having to alter the locking is to make
+split_huge_page() a noop in nr_ptes terms, so by counting the preallocated
+pagetables that exists for every mapped hugepage.  It was an arbitrary
+choice not to count them and either way is not wrong or right, because
+they are not used but they're still allocated.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Reported-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/rate.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/huge_memory.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/mac80211/rate.c
-+++ b/net/mac80211/rate.c
-@@ -344,7 +344,7 @@ void rate_control_get_rate(struct ieee80
- 	for (i = 0; i < IEEE80211_TX_MAX_RATES; i++) {
- 		info->control.rates[i].idx = -1;
- 		info->control.rates[i].flags = 0;
--		info->control.rates[i].count = 1;
-+		info->control.rates[i].count = 0;
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -642,6 +642,7 @@ static int __do_huge_pmd_anonymous_page(
+ 		set_pmd_at(mm, haddr, pmd, entry);
+ 		prepare_pmd_huge_pte(pgtable, mm);
+ 		add_mm_counter(mm, MM_ANONPAGES, HPAGE_PMD_NR);
++		mm->nr_ptes++;
+ 		spin_unlock(&mm->page_table_lock);
  	}
  
- 	if (sdata->local->hw.flags & IEEE80211_HW_HAS_RATE_CONTROL)
+@@ -760,6 +761,7 @@ int copy_huge_pmd(struct mm_struct *dst_
+ 	pmd = pmd_mkold(pmd_wrprotect(pmd));
+ 	set_pmd_at(dst_mm, addr, dst_pmd, pmd);
+ 	prepare_pmd_huge_pte(pgtable, dst_mm);
++	dst_mm->nr_ptes++;
+ 
+ 	ret = 0;
+ out_unlock:
+@@ -858,7 +860,6 @@ static int do_huge_pmd_wp_page_fallback(
+ 	}
+ 	kfree(pages);
+ 
+-	mm->nr_ptes++;
+ 	smp_wmb(); /* make pte visible before pmd */
+ 	pmd_populate(mm, pmd, pgtable);
+ 	page_remove_rmap(page);
+@@ -1017,6 +1018,7 @@ int zap_huge_pmd(struct mmu_gather *tlb,
+ 			VM_BUG_ON(page_mapcount(page) < 0);
+ 			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
+ 			VM_BUG_ON(!PageHead(page));
++			tlb->mm->nr_ptes--;
+ 			spin_unlock(&tlb->mm->page_table_lock);
+ 			tlb_remove_page(tlb, page);
+ 			pte_free(tlb->mm, pgtable);
+@@ -1356,7 +1358,6 @@ static int __split_huge_page_map(struct
+ 			pte_unmap(pte);
+ 		}
+ 
+-		mm->nr_ptes++;
+ 		smp_wmb(); /* make pte visible before pmd */
+ 		/*
+ 		 * Up to this point the pmd is present and huge and
+@@ -1969,7 +1970,6 @@ static void collapse_huge_page(struct mm
+ 	set_pmd_at(mm, address, pmd, _pmd);
+ 	update_mmu_cache(vma, address, _pmd);
+ 	prepare_pmd_huge_pte(pgtable, mm);
+-	mm->nr_ptes--;
+ 	spin_unlock(&mm->page_table_lock);
+ 
+ #ifndef CONFIG_NUMA
 
 
