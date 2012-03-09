@@ -1,178 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab2CIOEQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 09:04:16 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34216 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756164Ab2CIOEO convert rfc822-to-8bit (ORCPT
+	id S1752454Ab2CIOHX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 09:07:23 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47816 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab2CIOHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 09:04:14 -0500
-X-Greylist: delayed 732 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 09:04:13 EST
+	Fri, 9 Mar 2012 09:07:22 -0500
+Date: Fri, 9 Mar 2012 14:07:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        "'Jassi Brar'" <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH/RFC] dmaengine: add a slave parameter to
+	__dma_request_channel()
+Message-ID: <20120309140705.GV17370@n2100.arm.linux.org.uk>
+References: <Pine.LNX.4.64.1203080902170.29847@axis700.grange> <1331204128.4657.54.camel@vkoul-udesk3> <Pine.LNX.4.64.1203081200170.29847@axis700.grange> <1331206459.4657.59.camel@vkoul-udesk3> <1331211513.4657.67.camel@vkoul-udesk3> <Pine.LNX.4.64.1203081412550.29847@axis700.grange> <1331284918.4657.69.camel@vkoul-udesk3> <Pine.LNX.4.64.1203091022200.7852@axis700.grange> <1331285959.4657.76.camel@vkoul-udesk3> <Pine.LNX.4.64.1203091049060.7852@axis700.grange>
 MIME-Version: 1.0
-In-Reply-To: <1331297594-13332-1-git-send-email-jhovold@gmail.com>
-References: <1331228606.14217.5.camel@aeonflux>
-	<1331297594-13332-1-git-send-email-jhovold@gmail.com>
-Date: Fri, 9 Mar 2012 15:04:11 +0100
-Message-ID: <CANq1E4Rt0ctZ5cpXipJE--YmkR4OjKBXLBQkeTKWP3+Q-q37Yw@mail.gmail.com>
-Subject: Re: [PATCH 2/2 v2] bluetooth: hci_core: fix NULL-pointer dereference
- at unregister
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1203091049060.7852@axis700.grange>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johan
+On Fri, Mar 09, 2012 at 01:20:08PM +0100, Guennadi Liakhovetski wrote:
+> As Russell mentioned, struct dma_slave_config isn't suitable for channel 
+> configuration.
 
-On Fri, Mar 9, 2012 at 1:53 PM, Johan Hovold <jhovold@gmail.com> wrote:
-> Make sure hci_dev_open returns immediately if hci_dev_unregister has
-> been called.
->
-> This fixes a race between hci_dev_open and hci_dev_unregister which can
-> lead to a NULL-pointer dereference.
->
-> Bug is 100% reproducible using hciattach and a disconnected serial port:
->
-> 0. # hciattach -n /dev/ttyO1 any noflow
->
-> 1. hci_dev_open called from hci_power_on grabs req lock
-> 2. hci_init_req executes but device fails to initialise (times out
->   eventually)
-> 3. hci_dev_open is called from hci_sock_ioctl and sleeps on req lock
-> 4. hci_uart_tty_close calls hci_dev_unregister and sleeps on req lock in
->   hci_dev_do_close
-> 5. hci_dev_open (1) releases req lock
-> 6. hci_dev_do_close grabs req lock and returns as device is not up
-> 7. hci_dev_unregister sleeps in destroy_workqueue
-> 8. hci_dev_open (3) grabs req lock, calls hci_init_req and eventually sleeps
-> 9. hci_dev_unregister finishes, while hci_dev_open is still running...
->
-> [   79.627136] INFO: trying to register non-static key.
-> [   79.632354] the code is fine but needs lockdep annotation.
-> [   79.638122] turning off the locking correctness validator.
-> [   79.643920] [<c00188bc>] (unwind_backtrace+0x0/0xf8) from [<c00729c4>] (__lock_acquire+0x1590/0x1ab0)
-> [   79.653594] [<c00729c4>] (__lock_acquire+0x1590/0x1ab0) from [<c00733f8>] (lock_acquire+0x9c/0x128)
-> [   79.663085] [<c00733f8>] (lock_acquire+0x9c/0x128) from [<c0040a88>] (run_timer_softirq+0x150/0x3ac)
-> [   79.672668] [<c0040a88>] (run_timer_softirq+0x150/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
-> [   79.682281] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
-> [   79.690856] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
-> [   79.699157] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
-> [   79.708648] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
-> [   79.718048] Exception stack(0xcf281fb0 to 0xcf281ff8)
-> [   79.723358] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
-> [   79.731933] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-> [   79.740509] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
-> [   79.747497] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> [   79.756011] pgd = cf3b4000
-> [   79.758850] [00000000] *pgd=8f0c7831, *pte=00000000, *ppte=00000000
-> [   79.765502] Internal error: Oops: 80000007 [#1]
-> [   79.770294] Modules linked in:
-> [   79.773529] CPU: 0    Tainted: G        W     (3.3.0-rc6-00002-gb5d5c87 #421)
-> [   79.781066] PC is at 0x0
-> [   79.783721] LR is at run_timer_softirq+0x16c/0x3ac
-> [   79.788787] pc : [<00000000>]    lr : [<c0040aa4>]    psr: 60000113
-> [   79.788787] sp : cf281ee0  ip : 00000000  fp : cf280000
-> [   79.800903] r10: 00000004  r9 : 00000100  r8 : b6f234d0
-> [   79.806427] r7 : c0519c28  r6 : cf093488  r5 : c0561a00  r4 : 00000000
-> [   79.813323] r3 : 00000000  r2 : c054eee0  r1 : 00000001  r0 : 00000000
-> [   79.820190] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> [   79.827728] Control: 10c5387d  Table: 8f3b4019  DAC: 00000015
-> [   79.833801] Process gpsd (pid: 1265, stack limit = 0xcf2802e8)
-> [   79.839965] Stack: (0xcf281ee0 to 0xcf282000)
-> [   79.844573] 1ee0: 00000002 00000000 c0040a24 00000000 00000002 cf281f08 00200200 00000000
-> [   79.853210] 1f00: 00000000 cf281f18 cf281f08 00000000 00000000 00000000 cf281f18 cf281f18
-> [   79.861816] 1f20: 00000000 00000001 c056184c 00000000 00000001 b6f234d0 c0561848 00000004
-> [   79.870452] 1f40: cf280000 c003a3b8 c051e79c 00000001 00000000 00000100 3fa9e7b8 0000000a
-> [   79.879089] 1f60: 00000025 cf280000 00000025 00000000 00000000 b6f234d0 00000000 00000004
-> [   79.887756] 1f80: 00000000 c003a924 c053ad38 c0013a50 fa200000 cf281fb0 ffffffff c0008530
-> [   79.896362] 1fa0: 0001e6a0 0000aab8 80000010 c037499c 0001e6a0 be8dab00 0001e698 00036698
-> [   79.904998] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-> [   79.913665] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff 00fbf700 04ffff00
-> [   79.922302] [<c0040aa4>] (run_timer_softirq+0x16c/0x3ac) from [<c003a3b8>] (__do_softirq+0xd4/0x22c)
-> [   79.931945] [<c003a3b8>] (__do_softirq+0xd4/0x22c) from [<c003a924>] (irq_exit+0x8c/0x94)
-> [   79.940582] [<c003a924>] (irq_exit+0x8c/0x94) from [<c0013a50>] (handle_IRQ+0x34/0x84)
-> [   79.948913] [<c0013a50>] (handle_IRQ+0x34/0x84) from [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c)
-> [   79.958404] [<c0008530>] (omap3_intc_handle_irq+0x48/0x4c) from [<c037499c>] (__irq_usr+0x3c/0x60)
-> [   79.967773] Exception stack(0xcf281fb0 to 0xcf281ff8)
-> [   79.973083] 1fa0:                                     0001e6a0 be8dab00 0001e698 00036698
-> [   79.981658] 1fc0: 0002df98 0002df38 0000001f 00000000 b6f234d0 00000000 00000004 00000000
-> [   79.990234] 1fe0: 0001e6f8 be8d6aa0 be8dac50 0000aab8 80000010 ffffffff
-> [   79.997161] Code: bad PC value
-> [   80.000396] ---[ end trace 6f6739840475f9ee ]---
-> [   80.005279] Kernel panic - not syncing: Fatal exception in interrupt
->
-> Cc: stable <stable@vger.kernel.org>
-> Signed-off-by: Johan Hovold <jhovold@gmail.com>
-> ---
->
-> v2: use hdev->dev_flags for internal unregister flag
->
->
->  include/net/bluetooth/hci.h |    2 ++
->  net/bluetooth/hci_core.c    |    7 +++++++
->  2 files changed, 9 insertions(+), 0 deletions(-)
->
-> diff --git a/include/net/bluetooth/hci.h b/include/net/bluetooth/hci.h
-> index 00596e8..e8879b9 100644
-> --- a/include/net/bluetooth/hci.h
-> +++ b/include/net/bluetooth/hci.h
-> @@ -93,6 +93,8 @@ enum {
->  * states from the controller.
->  */
->  enum {
-> +       HCI_UNREGISTER,
-> +
->        HCI_LE_SCAN,
->  };
->
-> diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
-> index d6448f0..22b6781 100644
-> --- a/net/bluetooth/hci_core.c
-> +++ b/net/bluetooth/hci_core.c
-> @@ -525,6 +525,11 @@ int hci_dev_open(__u16 dev)
->
->        hci_req_lock(hdev);
->
-> +       if (test_bit(HCI_UNREGISTER, &hdev->dev_flags)) {
-> +               ret = -ENODEV;
-> +               goto done;
-> +       }
-> +
+Actually, I said the exact reverse of what you've just stated.
 
-Isn't it enough to check for HCI_RUNNING here? We obviously have a
-race here as we take the device with hci_dev_get(), then sleep and
-then we do not check whether the device is still alive. However,
-drivers are required to reset HCI_RUNNING before calling
-hci_unregister_dev() (which is bogus anyway, but its the way we
-handled it in the past) therefore it should be enough for us to check
-for HCI_RUNNING.
-
-Regards
-David
-
->        if (hdev->rfkill && rfkill_blocked(hdev->rfkill)) {
->                ret = -ERFKILL;
->                goto done;
-> @@ -1577,6 +1582,8 @@ void hci_unregister_dev(struct hci_dev *hdev)
->
->        BT_DBG("%p name %s bus %d", hdev, hdev->name, hdev->bus);
->
-> +       set_bit(HCI_UNREGISTER, &hdev->dev_flags);
-> +
->        write_lock(&hci_dev_list_lock);
->        list_del(&hdev->list);
->        write_unlock(&hci_dev_list_lock);
-> --
-> 1.7.8.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I also stated (on more than one occasion) that dma_slave_config contains
+nothing relevant to channel selection.
