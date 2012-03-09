@@ -1,140 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759369Ab2CIAw1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 19:52:27 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38124 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753016Ab2CIAwZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 19:52:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <1331018040-30725-3-git-send-email-yinghai@kernel.org>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org> <1331018040-30725-3-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 8 Mar 2012 17:52:03 -0700
-Message-ID: <CAErSpo72gJAPvyvo6EpcuEwqFaZQ_viUrgLAuA0CHttuxXkCXw@mail.gmail.com>
-Subject: Re: [PATCH 02/23] PCI, sysfs: create rescan_bridge under
- /sys/.../pci/devices/... for pci bridges
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1759330Ab2CIAzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 19:55:52 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:45018 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754094Ab2CIAzu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 19:55:50 -0500
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Arun Easi <arun.easi@qlogic.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Christoph Hellwig <hch@lst.de>, Roland Dreier <roland@purestorage.com>,
+        Joern Engel <joern@logfs.org>,
+        Madhuranath Iyengar <mni@risingtidesystems.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [RFC-v5 0/3] qla22xxx: target mode LLD changes + tcm_qla2xxx fabric module
+Date: Fri,  9 Mar 2012 00:46:56 +0000
+Message-Id: <1331254019-31877-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> Current code will create rescan for every pci device under parent bus.
-> that is not right. the device is already there, there is no reason to rescan it.
->
-> We could have rescan for pci bridges. less confusing.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Yes, but now we have *three* rescan attributes for a single bridge/bus:
+Greetings all,
 
-    /sys/devices/pci0000:00/0000:00:01.0/pci_bus/0000:01/rescan
-    /sys/devices/pci0000:00/0000:00:01.0/rescan_bridge
-    /sys/devices/pci0000:00/0000:00:01.0/rescan
+The following is the fifth RFC series for adding qla2xxx LLD target mode support
+into mainline with 8.03.07.13-k @ v3.3-rc6 code.  This along with accompanying
+tcm_qla2xxx.ko fabric module using target-core v4.1 infrastructure allows Qlogic
+>= 24xx series PCI-Express adapters to function in hardware Fibre Channel
+target mode operation.
 
-and this for an endpoint:
+Along with a number of bugfixes from different folks, the biggest changes during
+RFC-v5 is the removal of pre 24xx series (PCI-X) HW support from qla_target +
+qla2xxx LLD changes (1K less LOC than RFC-v4), and enabling of ABORT_TASK usabe
+in tcm_qla2xxx with the current set of v3.4 target-pending/for-next patches in
+the queue for v3.4-rc1.  This series is available directly here:
 
-    /sys/devices/pci0000:00/0000:00:05.0/rescan
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git qla_tgt-rfc-v5
 
-I think endpoints should not have a "rescan" attribute at all, and
-bridges should have only a "rescan" attribute (not "rescan" and
-"rescan_bridge").
+As before, this series has been broken up into reviewable sections and should
+considered a 'for-3.4' -> 'for-3.5' item following the TODO items below.
 
-I'm not sure about "pci_bus/.../rescan".  I know you didn't add that,
-but I'm not sure it makes sense to have both that and a "rescan" on
-the bridge device.  If we have both, what's the difference between
-them?
+The changes since RFC-v4 in mid December include:
 
-> Need to move rescan attr to pci dev bridge attribute group.
-> And We should rescan bridge's secondary bus instead of primary bus.
->
-> -v3: Use device_type for pci dev.
-> -v4: Seperate pci device type change out
-> -v5: add rescan_bridge for bridge type, and still keep the old rescan.
->        may remove the old rescan later.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  Documentation/ABI/testing/sysfs-bus-pci |   10 ++++++++++
->  drivers/pci/pci-sysfs.c                 |   24 ++++++++++++++++++++++++
->  2 files changed, 34 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
-> index 34f5110..95f0f37 100644
-> --- a/Documentation/ABI/testing/sysfs-bus-pci
-> +++ b/Documentation/ABI/testing/sysfs-bus-pci
-> @@ -111,6 +111,16 @@ Description:
->                from this part of the device tree.
->                Depends on CONFIG_HOTPLUG.
->
-> +What:          /sys/bus/pci/devices/.../rescan_bridge
-> +Date:          February 2012
-> +Contact:       Linux PCI developers <linux-pci@vger.kernel.org>
-> +Description:
-> +               Writing a non-zero value to this attribute will
-> +               force a rescan of the bridge and all child buses, and
-> +               re-discover devices removed earlier from this part of
-> +               the device tree.
-> +               Depends on CONFIG_HOTPLUG.
-> +
->  What:          /sys/bus/pci/devices/.../reset
->  Date:          July 2009
->  Contact:       Michael S. Tsirkin <mst@redhat.com>
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index 39d15e6..d5c8ffb 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -325,6 +325,27 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
->        return count;
->  }
->
-> +static ssize_t
-> +dev_bridge_rescan_store(struct device *dev, struct device_attribute *attr,
-> +                const char *buf, size_t count)
-> +{
-> +       unsigned long val;
-> +       struct pci_dev *pdev = to_pci_dev(dev);
-> +
-> +       if (kstrtoul(buf, 0, &val) < 0)
-> +               return -EINVAL;
-> +
-> +       if (val) {
-> +               mutex_lock(&pci_remove_rescan_mutex);
-> +               pci_rescan_bus(pdev->subordinate);
-> +               mutex_unlock(&pci_remove_rescan_mutex);
-> +       }
-> +       return count;
-> +}
-> +
-> +static struct device_attribute pci_dev_bridge_rescan_attr =
-> +       __ATTR(rescan_bridge, (S_IWUSR|S_IWGRP), NULL, dev_bridge_rescan_store);
-> +
->  static void remove_callback(struct device *dev)
->  {
->        struct pci_dev *pdev = to_pci_dev(dev);
-> @@ -1337,6 +1358,9 @@ static int __init pci_sysfs_init(void)
->  late_initcall(pci_sysfs_init);
->
->  static struct attribute *pci_dev_bridge_attrs[] = {
-> +#ifdef CONFIG_HOTPLUG
-> +       &pci_dev_bridge_rescan_attr.attr,
-> +#endif
->        NULL,
->  };
->
-> --
-> 1.7.7
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+*) Fix cmd_kref leak on target shutdown in qla_tgt_do_work() (roland)
+*) Drop pre 24xx series support for target-mode (hch + nab)
+*) Fix tcm_qla2xxx_do_rsp check condition cmd_kref leak (nab)
+*) Hookup ABORT_TASK into qla_target/tcm_qla2xxx code (nab)
+*) Convert to target_submit_tmr() usage in tcm_qla2xxx (andy + nab)
+*) Fix sign of FCP_RESID field for status with RESID_OVER (roland)
+*) Fix NULL pointer dereference for qla_tgt_do_work() w/ new session (joern)
+*) Set disable_target_scan=1 when initiator-mode is disabled (nab)
+*) Set correct nport_handle in __qla_tgt_send_term_exchange() (roland)
+*) Seperate out per qla_tgt session management from qla_hw_data->hardware_lock
+   to use se_session->sess_kref (nab)
+*) Convert qla_target.c to use qla2x00_start_iocbs() (nab)
+
+Unfortuately little much progress has been made since RFC-v4 to address
+the TODO item wrt to mixed target/initiator mode operation on a HW per port
+(struct qla_hw_data) context basis between target-core and scsi-core subsystems.
+
+Note to testers that patch #1 by default sets the following qla2xxx module
+parameter at the head of qla_target.c to enforce qla2xxx LLD module wide
+target-mode and disable initiator mode:
+
+static char *qlini_mode = QLA2XXX_INI_MODE_STR_DISABLED;
+module_param(qlini_mode, charp, S_IRUGO);
+MODULE_PARM_DESC(qlini_mode,
+        "Determines when initiator mode will be enabled. Possible values: "
+        "\"exclusive\" - initiator mode will be enabled on load, "
+        "disabled on enabling target mode and then on disabling target mode "
+        "enabled back; "
+        "\"disabled\" (default) - initiator mode will never be enabled; "
+        "\"enabled\" - initiator mode will always stay enabled.");
+
+
+For an initial mainline merge, we still expect to use initiator-mode by default
+(QLA2XXX_INI_MODE_STR_EXCLUSIVE) and disable target mode by default.  The qla2xxx
+module parameter should be used to enable target mode for qla2xxx until scsi-core +
+target-core interaction can be addressed.
+
+(PING for feedback from hch, jejb, andrew, other folks on scsi-core + target-core
+ interaction here..?)
+
+So along with resolving this issue wrt mixed T/I mode between subsystems, other
+remaining items include:
+
+*) Fix HW session level and ConfigFS ACL level shutdown race in target core (nab)
+*) Move write-pending abort checks into process-context in target core (nab)
+*) Finish up NPIV support for /sys/kernel/config/target/qla2xxx_npiv/ and determine
+   remaining NPIV I/O path items. (nab + madhu)
+*) FC jammer testing to verify bugfix for SRRs with non zero relative offsets before
+   re-enabling them. (qlogic linux team)
+*) Multi-queue support with qla_hw_data->mqenable=1 (arun + qlogic team) 
+*) Global event handling for active sessions in qla_tgt_reset() (nab)
+*) Support for target mode on 16 Gb/sec hw (qlogic team)
+
+Thanks again to everyone who has been testing lio-core code in their respective
+setups, and to the Qlogic + Pure teams for their feedback and patches.
+
+--nab
+
+Nicholas Bellinger (3):
+  qla2xxx: Add LLD target-mode infrastructure for >= 24xx series
+  qla2xxx: Enable >= 24xx target-mode support in SCSI LLD
+  tcm_qla2xxx: Add >= 24xx series fabric module for target-core
+
+ drivers/scsi/qla2xxx/Kconfig       |    8 +
+ drivers/scsi/qla2xxx/Makefile      |    3 +-
+ drivers/scsi/qla2xxx/qla_attr.c    |    5 +-
+ drivers/scsi/qla2xxx/qla_dbg.c     |    5 +
+ drivers/scsi/qla2xxx/qla_dbg.h     |    5 +
+ drivers/scsi/qla2xxx/qla_def.h     |   69 +-
+ drivers/scsi/qla2xxx/qla_gbl.h     |    7 +
+ drivers/scsi/qla2xxx/qla_gs.c      |    4 +-
+ drivers/scsi/qla2xxx/qla_init.c    |   92 +-
+ drivers/scsi/qla2xxx/qla_iocb.c    |  102 +-
+ drivers/scsi/qla2xxx/qla_isr.c     |   87 +-
+ drivers/scsi/qla2xxx/qla_mbx.c     |  116 +-
+ drivers/scsi/qla2xxx/qla_mid.c     |   17 +-
+ drivers/scsi/qla2xxx/qla_os.c      |  133 +-
+ drivers/scsi/qla2xxx/qla_target.c  | 4730 ++++++++++++++++++++++++++++++++++++
+ drivers/scsi/qla2xxx/qla_target.h  |  984 ++++++++
+ drivers/scsi/qla2xxx/tcm_qla2xxx.c | 1961 +++++++++++++++
+ drivers/scsi/qla2xxx/tcm_qla2xxx.h |  149 ++
+ 18 files changed, 8431 insertions(+), 46 deletions(-)
+ create mode 100644 drivers/scsi/qla2xxx/qla_target.c
+ create mode 100644 drivers/scsi/qla2xxx/qla_target.h
+ create mode 100644 drivers/scsi/qla2xxx/tcm_qla2xxx.c
+ create mode 100644 drivers/scsi/qla2xxx/tcm_qla2xxx.h
+
+-- 
+1.7.2.5
+
