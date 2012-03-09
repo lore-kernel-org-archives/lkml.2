@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031366Ab2CITu5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 14:50:57 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48521 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031349Ab2CITux (ORCPT
+	id S1031328Ab2CITut (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 14:50:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48917 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031314Ab2CITuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 14:50:53 -0500
-Message-Id: <20120309190209.226686745@linuxfoundation.org>
+	Fri, 9 Mar 2012 14:50:46 -0500
+Message-Id: <20120309190209.846261608@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Fri, 09 Mar 2012 11:03:28 -0800
+Date: Fri, 09 Mar 2012 11:03:36 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Milan Broz <mbroz@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>, Alasdair G Kergon <agk@redhat.com>
-Subject: [ 86/95] dm io: fix discard support
+        alan@lxorguk.ukuu.org.uk,
+        Christian Gmeiner <christian.gmeiner@gmail.com>,
+        Andres Salomon <dilinger@queued.net>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [ 94/95] mfd: Fix cs5535 section mismatch
 In-Reply-To: <20120309194424.GA2134@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,84 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Milan Broz <mbroz@redhat.com>
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
 
-commit 0c535e0d6f463365c29623350dbd91642363c39b upstream.
+commit 97e43c983c721a47546e6db3b7711dcd912a6481 upstream.
 
-This patch fixes a crash by recognising discards in dm_io.
+Silence following warnings:
+WARNING: drivers/mfd/cs5535-mfd.o(.data+0x20): Section mismatch in
+reference from the variable cs5535_mfd_drv to the function
+.devinit.text:cs5535_mfd_probe()
+The variable cs5535_mfd_drv references
+the function __devinit cs5535_mfd_probe()
+If the reference is valid then annotate the
+variable with __init* or __refdata (see linux/init.h) or name the variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
-Currently dm_mirror can send REQ_DISCARD bios if running over a
-discard-enabled device and without support in dm_io the system
-crashes badly.
+WARNING: drivers/mfd/cs5535-mfd.o(.data+0x28): Section mismatch in
+reference from the variable cs5535_mfd_drv to the function
+.devexit.text:cs5535_mfd_remove()
+The variable cs5535_mfd_drv references
+the function __devexit cs5535_mfd_remove()
+If the reference is valid then annotate the
+variable with __exit* (see linux/init.h) or name the variable:
+*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
-BUG: unable to handle kernel paging request at 00800000
-IP:  __bio_add_page.part.17+0xf5/0x1e0
-...
- bio_add_page+0x56/0x70
- dispatch_io+0x1cf/0x240 [dm_mod]
- ? km_get_page+0x50/0x50 [dm_mod]
- ? vm_next_page+0x20/0x20 [dm_mod]
- ? mirror_flush+0x130/0x130 [dm_mirror]
- dm_io+0xdc/0x2b0 [dm_mod]
-...
+Rename the variable from *_drv to *_driver so
+modpost ignore the OK references to __devinit/__devexit
+functions.
 
-Introduced in 2.6.38-rc1 by commit 5fc2ffeabb9ee0fc0e71ff16b49f34f0ed3d05b4
-(dm raid1: support discard).
-
-Signed-off-by: Milan Broz <mbroz@redhat.com>
-Acked-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+Acked-by: Andres Salomon <dilinger@queued.net>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-io.c |   23 ++++++++++++++++-------
- 1 file changed, 16 insertions(+), 7 deletions(-)
+ drivers/mfd/cs5535-mfd.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/md/dm-io.c
-+++ b/drivers/md/dm-io.c
-@@ -296,6 +296,8 @@ static void do_region(int rw, unsigned r
- 	unsigned offset;
- 	unsigned num_bvecs;
- 	sector_t remaining = where->count;
-+	struct request_queue *q = bdev_get_queue(where->bdev);
-+	sector_t discard_sectors;
+--- a/drivers/mfd/cs5535-mfd.c
++++ b/drivers/mfd/cs5535-mfd.c
+@@ -179,7 +179,7 @@ static struct pci_device_id cs5535_mfd_p
+ };
+ MODULE_DEVICE_TABLE(pci, cs5535_mfd_pci_tbl);
  
- 	/*
- 	 * where->count may be zero if rw holds a flush and we need to
-@@ -305,9 +307,12 @@ static void do_region(int rw, unsigned r
- 		/*
- 		 * Allocate a suitably sized-bio.
- 		 */
--		num_bvecs = dm_sector_div_up(remaining,
--					     (PAGE_SIZE >> SECTOR_SHIFT));
--		num_bvecs = min_t(int, bio_get_nr_vecs(where->bdev), num_bvecs);
-+		if (rw & REQ_DISCARD)
-+			num_bvecs = 1;
-+		else
-+			num_bvecs = min_t(int, bio_get_nr_vecs(where->bdev),
-+					  dm_sector_div_up(remaining, (PAGE_SIZE >> SECTOR_SHIFT)));
-+
- 		bio = bio_alloc_bioset(GFP_NOIO, num_bvecs, io->client->bios);
- 		bio->bi_sector = where->sector + (where->count - remaining);
- 		bio->bi_bdev = where->bdev;
-@@ -315,10 +320,14 @@ static void do_region(int rw, unsigned r
- 		bio->bi_destructor = dm_bio_destructor;
- 		store_io_and_region_in_bio(bio, io, region);
+-static struct pci_driver cs5535_mfd_drv = {
++static struct pci_driver cs5535_mfd_driver = {
+ 	.name = DRV_NAME,
+ 	.id_table = cs5535_mfd_pci_tbl,
+ 	.probe = cs5535_mfd_probe,
+@@ -188,12 +188,12 @@ static struct pci_driver cs5535_mfd_drv
  
--		/*
--		 * Try and add as many pages as possible.
--		 */
--		while (remaining) {
-+		if (rw & REQ_DISCARD) {
-+			discard_sectors = min_t(sector_t, q->limits.max_discard_sectors, remaining);
-+			bio->bi_size = discard_sectors << SECTOR_SHIFT;
-+			remaining -= discard_sectors;
-+		} else while (remaining) {
-+			/*
-+			 * Try and add as many pages as possible.
-+			 */
- 			dp->get_page(dp, &page, &len, &offset);
- 			len = min(len, to_bytes(remaining));
- 			if (!bio_add_page(bio, page, len, offset))
+ static int __init cs5535_mfd_init(void)
+ {
+-	return pci_register_driver(&cs5535_mfd_drv);
++	return pci_register_driver(&cs5535_mfd_driver);
+ }
+ 
+ static void __exit cs5535_mfd_exit(void)
+ {
+-	pci_unregister_driver(&cs5535_mfd_drv);
++	pci_unregister_driver(&cs5535_mfd_driver);
+ }
+ 
+ module_init(cs5535_mfd_init);
 
 
