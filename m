@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab2CIBI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Mar 2012 20:08:28 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54782 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759339Ab2CIBI1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Mar 2012 20:08:27 -0500
+	id S1759392Ab2CIBL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Mar 2012 20:11:58 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:48435 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750887Ab2CIBL5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Mar 2012 20:11:57 -0500
 MIME-Version: 1.0
-In-Reply-To: <1331018040-30725-12-git-send-email-yinghai@kernel.org>
-References: <1331018040-30725-1-git-send-email-yinghai@kernel.org> <1331018040-30725-12-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1331018040-30725-15-git-send-email-yinghai@kernel.org>
+References: <1331018040-30725-1-git-send-email-yinghai@kernel.org> <1331018040-30725-15-git-send-email-yinghai@kernel.org>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 8 Mar 2012 18:08:05 -0700
-Message-ID: <CAErSpo4-KBHA9fqzO0XELtAkvMvmE1WdavJ_dxsjTN46wjSjhA@mail.gmail.com>
-Subject: Re: [PATCH 11/23] PCI: separate out pci_assign_unassigned_bus_resources()
+Date: Thu, 8 Mar 2012 18:11:35 -0700
+Message-ID: <CAErSpo6VyKpBygK3vV25q+X5YisNVPwh64jaJ_KtMO1WB=ocpw@mail.gmail.com>
+Subject: Re: [PATCH 14/23] PCI: add __pci_remove_bus_devices()
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
@@ -25,88 +25,89 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Mar 6, 2012 at 12:13 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> it is main portion of pci_rescan_bus().
+> will use it with pci_stop_and_remove_bus later.
 >
-> Separate it out and will use it later for pci root bus rescan.
+> also remove __pci_remove_behind_bridge and pci_stop_behind_bridge.
+>
+> they are same except one take bridge and one take bus.
+>
+> and we already have pci_stop_bus_devices()
 >
 > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > ---
->  drivers/pci/setup-bus.c |   34 ++++++++++++++++++++--------------
->  include/linux/pci.h     |    1 +
->  2 files changed, 21 insertions(+), 14 deletions(-)
+>  drivers/pci/remove.c |   28 +++++++++++-----------------
+>  1 files changed, 11 insertions(+), 17 deletions(-)
 >
-> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-> index 8fa2d4b..6a66139 100644
-> --- a/drivers/pci/setup-bus.c
-> +++ b/drivers/pci/setup-bus.c
-> @@ -1488,25 +1488,12 @@ enable_all:
+> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+> index 243d59b..62c348c 100644
+> --- a/drivers/pci/remove.c
+> +++ b/drivers/pci/remove.c
+> @@ -78,7 +78,7 @@ void pci_remove_bus(struct pci_bus *pci_bus)
 >  }
->  EXPORT_SYMBOL_GPL(pci_assign_unassigned_bridge_resources);
+>  EXPORT_SYMBOL(pci_remove_bus);
 >
-> -#ifdef CONFIG_HOTPLUG
-> -/**
-> - * pci_rescan_bus - scan a PCI bus for devices.
-> - * @bus: PCI bus to scan
-> - *
-> - * Scan a PCI bus and child buses for new devices, adds them,
-> - * and enables them.
-> - *
-> - * Returns the max number of subordinate bus discovered.
-> - */
-> -unsigned int __ref pci_rescan_bus(struct pci_bus *bus)
-> +void pci_assign_unassigned_bus_resources(struct pci_bus *bus)
+> -static void __pci_remove_behind_bridge(struct pci_dev *dev);
+> +static void __pci_remove_bus_devices(struct pci_bus *bus);
+>  /**
+>  * pci_stop_and_remove_bus_device - remove a PCI device and any children
+>  * @dev: the device to remove
+> @@ -96,7 +96,7 @@ void __pci_remove_bus_device(struct pci_dev *dev)
+>        if (dev->subordinate) {
+>                struct pci_bus *b = dev->subordinate;
+>
+> -               __pci_remove_behind_bridge(dev);
+> +               __pci_remove_bus_devices(b);
+>                pci_remove_bus(b);
+>                dev->subordinate = NULL;
+>        }
+> @@ -111,22 +111,12 @@ void pci_stop_and_remove_bus_device(struct pci_dev *dev)
+>        __pci_remove_bus_device(dev);
+>  }
+>
+> -static void __pci_remove_behind_bridge(struct pci_dev *dev)
+> +static void __pci_remove_bus_devices(struct pci_bus *bus)
 >  {
-> -       unsigned int max;
->        struct pci_dev *dev;
->        LIST_HEAD(add_list); /* list of resources that
->                                        want additional resources */
+>        struct list_head *l, *n;
 >
-> -       max = pci_scan_child_bus(bus);
+> -       if (dev->subordinate)
+> -               list_for_each_safe(l, n, &dev->subordinate->devices)
+> -                       __pci_remove_bus_device(pci_dev_b(l));
+> -}
 > -
->        down_read(&pci_bus_sem);
->        list_for_each_entry(dev, &bus->devices, bus_list)
->                if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
-> @@ -1519,6 +1506,25 @@ unsigned int __ref pci_rescan_bus(struct pci_bus *bus)
->        BUG_ON(!list_empty(&add_list));
->
->        pci_enable_bridges(bus);
-> +}
-> +#ifdef CONFIG_HOTPLUG
-> +/**
-> + * pci_rescan_bus - scan a PCI bus for devices.
-> + * @bus: PCI bus to scan
-> + *
-> + * Scan a PCI bus and child buses for new devices, adds them,
-> + * and enables them.
-> + *
-> + * Returns the max number of subordinate bus discovered.
-> + */
-> +unsigned int __ref pci_rescan_bus(struct pci_bus *bus)
-> +{
-> +       unsigned int max;
-> +
-> +       max = pci_scan_child_bus(bus);
-> +
-> +       pci_assign_unassigned_bus_resources(bus);
-> +
->        pci_bus_add_devices(bus);
->
->        return max;
+> -static void pci_stop_behind_bridge(struct pci_dev *dev)
+> -{
+> -       struct list_head *l, *n;
+> -
+> -       if (dev->subordinate)
+> -               list_for_each_safe(l, n, &dev->subordinate->devices)
+> -                       pci_stop_bus_device(pci_dev_b(l));
+> +       list_for_each_safe(l, n, &bus->devices)
+> +               __pci_remove_bus_device(pci_dev_b(l));
 
-We don't need all the blank lines here.
+Use list_for_each_entry_safe() so you don't need pci_dev_b().
 
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 28556cb..4f30cd1 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -910,6 +910,7 @@ void pci_bus_size_bridges(struct pci_bus *bus);
->  int pci_claim_resource(struct pci_dev *, int);
->  void pci_assign_unassigned_resources(void);
->  void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge);
-> +void pci_assign_unassigned_bus_resources(struct pci_bus *bus);
->  void pdev_enable_device(struct pci_dev *);
->  int pci_enable_resources(struct pci_dev *, int mask);
->  void pci_fixup_irqs(u8 (*)(struct pci_dev *, u8 *),
+>  }
+>
+>  static void pci_stop_bus_devices(struct pci_bus *bus)
+> @@ -158,8 +148,12 @@ static void pci_stop_bus_devices(struct pci_bus *bus)
+>  */
+>  void pci_stop_and_remove_behind_bridge(struct pci_dev *dev)
+>  {
+> -       pci_stop_behind_bridge(dev);
+> -       __pci_remove_behind_bridge(dev);
+> +       struct pci_bus *bus = dev->subordinate;
+> +
+> +       if (bus) {
+
+Don't check "bus" here.  If the caller screws up and passes a
+non-bridge pointer, I want to learn about it rather than ignore it.
+
+> +               pci_stop_bus_devices(bus);
+> +               __pci_remove_bus_devices(bus);
+> +       }
+>  }
+>
+>  /**
 > --
 > 1.7.7
 >
