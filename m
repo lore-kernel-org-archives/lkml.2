@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab2CIM3N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 07:29:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59439 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755075Ab2CIM3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 07:29:11 -0500
-Date: Fri, 9 Mar 2012 13:29:10 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "benjamin.tissoires" <benjamin.tissoires@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] HID: multitouch: add support for eGalax 0x722a
-In-Reply-To: <1331053026-21272-2-git-send-email-benjamin.tissoires@gmail.com>
-Message-ID: <alpine.LNX.2.00.1203091329030.18356@pobox.suse.cz>
-References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-2-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755406Ab2CIMbf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 07:31:35 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36427 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753074Ab2CIMbe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 07:31:34 -0500
+Date: Fri, 9 Mar 2012 12:31:30 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        Nancy Chen <Nancy.Chen@freescale.com>, Liam Girdwood <lrg@ti.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Axel Lin <axel.lin@gmail.com>
+Subject: Re: [PATCH v10] Regulator: Add Anatop regulator driver
+Message-ID: <20120309123130.GO3273@opensource.wolfsonmicro.com>
+References: <1331200744-5986-1-git-send-email-paul.liu@linaro.org>
+ <20120308141847.GG27213@game.jcrosoft.org>
+ <4F59B899.2080704@linaro.org>
+ <20120309095834.GM27213@game.jcrosoft.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="keoAwTxaagou87Dg"
+Content-Disposition: inline
+In-Reply-To: <20120309095834.GM27213@game.jcrosoft.org>
+X-Cookie: You will be successful in love.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Mar 2012, benjamin.tissoires wrote:
 
-> From: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@enac.fr>
-> ---
->  drivers/hid/hid-ids.h        |    1 +
->  drivers/hid/hid-multitouch.c |    3 +++
->  2 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 6656516..e1fada2 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -240,6 +240,7 @@
->  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7207	0x7207
->  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C	0x720c
->  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7224	0x7224
-> +#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_722A	0x722A
->  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_725E	0x725e
->  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7262	0x7262
->  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B	0x726b
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 0eda37f..019de83 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -797,6 +797,9 @@ static const struct hid_device_id mt_devices[] = {
->  	{ .driver_data = MT_CLS_EGALAX_SERIAL,
->  		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
->  			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7224) },
-> +	{ .driver_data = MT_CLS_EGALAX_SERIAL,
-> +		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
-> +			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_722A) },
->  	{ .driver_data = MT_CLS_EGALAX,
->  		HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
->  			USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B) },
+--keoAwTxaagou87Dg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Applied.
+On Fri, Mar 09, 2012 at 10:58:34AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
 
--- 
-Jiri Kosina
-SUSE Labs
+> > I've modify the patch based on your review. However, the last one cannot
+> > be made because regulator_unregister is void return.
+
+> so we have a issue here regulator_unregister MUST return an error conde
+
+The error handling on remove is totally irrelevant to merging this
+driver.  If you want to work on changing this in the core you're more
+than welcome to spend your time on it, I'm really not sure it's really
+worth the time or effort for the systems we currently have, if someone
+actually has a system where it becomes relevant then they can work on
+it.
+
+--keoAwTxaagou87Dg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPWfgbAAoJEBus8iNuMP3dw2YQAIVU2qc7SFq2FyYXmMVgN9+m
+b7n8RC53gIRqXeXhbZ1f/i0dAo6mLPeyG5uBAy8e+cEqEg+ih03x0jCAnBxLv0DA
+VjKT5UtQVPLGTgZOVPpjvru2HN5IDm5kbSu7ZcyZlPjVTyYDB6p2TNJGGabD5ggp
+n7jTr7EiOBnoe/n/SG2QH1NuhsCdV3qYeCpzz7IWCS3re9E4HrZ/XiBSj5i5/KU4
+HF5PY9kPM6Ku5LTL4fMmj+F3pj1G6eMY54biM0DzYiVyXd8VYdxoYCaRBLj21tte
+OOgbV6vT8nFCgBjznBWTp3SYTVMIEv9CH0cP+/mhiZbBWRVgKufEKfJYeuZa8bws
+2E+lSHfsQcp4fe8pGd5EiGXdEjiu1lNfo/YPMaiNecBcWkAcdtkJP+daYBYX7GDy
+Zg9ZdefyhqLsKzjilRcEzbye8bLK1AcGIylE0nd32S+qdXx5YSnfrEte13z3edqR
+SvmKAJnRBYnsZIZvqZIwTWils5PEEaRwJlLXF8gBAj3p6zPKlrN2D+cpGg/0tQNO
+Gl/wsaPoNR5DgJ53VQtEevvr9SUvIsvLLDxBheuUhDINA+VdLnH5PSNoRKctzpNw
+S8kbRB7D4q3PeOI9hSlHlhUS3gldnbWU2h9IOR0gSmiau0a4TH6PZCqNaQPXMJb7
+Z8afANs+eN54ssYlVkW5
+=u39J
+-----END PGP SIGNATURE-----
+
+--keoAwTxaagou87Dg--
