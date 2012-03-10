@@ -1,176 +1,513 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab2CJWVy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 17:21:54 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37545 "EHLO ogre.sisk.pl"
+	id S1752113Ab2CJW0r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 17:26:47 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619Ab2CJWVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 17:21:51 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: markgross@thegnar.org, MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH v3] PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
-Date: Sat, 10 Mar 2012 23:25:57 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <mavej@redhat.com>,
-        linux-pm@vger.kernel.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
-        kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
-        linux-kernel@vger.kernel.org
-References: <13197479.540821330911965933.JavaMail.weblogic@epv6ml06> <1331096521-26026-1-git-send-email-myungjoo.ham@samsung.com> <20120308034722.GA10286@envy17>
-In-Reply-To: <20120308034722.GA10286@envy17>
+	id S1751580Ab2CJW0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 17:26:45 -0500
+Message-ID: <4F5BD51B.7030907@nod.at>
+Date: Sat, 10 Mar 2012 23:26:35 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203102325.57743.rjw@sisk.pl>
+To: linux-kernel@vger.kernel.org
+CC: Jiri Slaby <jslaby@suse.cz>, alan@lxorguk.ukuu.org.uk,
+        gregkh@linuxfoundation.org
+Subject: TTY: tty_port questions
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigADD6A60A30AC0288B708A962"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 08, 2012, mark gross wrote:
-> On Wed, Mar 07, 2012 at 02:02:01PM +0900, MyungJoo Ham wrote:
-> > 1. CPU_DMA_THROUGHPUT
-> > 
-> > This might look simliar to CPU_DMA_LATENCY. However, there are H/W
-> > blocks that creates QoS requirement based on DMA throughput, not
-> > latency, while their (those QoS requester H/W blocks) services are
-> > short-term bursts that cannot be effectively responsed by DVFS
-> > mechanisms (CPUFreq and Devfreq).
-> > 
-> > In the Exynos4412 systems that are being tested, such H/W blocks include
-> > MFC (multi-function codec)'s decoding and enconding features, TV-out
-> > (including HDMI), and Cameras. When the display is operated at 60Hz,
-> > each chunk of task should be done within 16ms and the workload on DMA is
-> > not well spread and fluctuates between frames; some frame requires more
-> > and some do not and within a frame, the workload also fluctuates
-> > heavily and the tasks within a frame are usually not parallelized; they
-> > are processed through specific H/W blocks, not CPU cores. They often
-> > have PPMU capabilities; however, they need to be polled very frequently
-> > in order to let DVFS mechanisms react properly. (less than 5ms).
-> > 
-> > For such specific tasks, allowing them to request QoS requirements seems
-> > adequete because DVFS mechanisms (as long as the polling rate is 5ms or
-> > longer) cannot follow up with them. Besides, the device drivers know
-> > when to request and cancel QoS exactly.
-> > 
-> > 2. DVFS_LATENCY
-> > 
-> > Both CPUFreq and Devfreq have response latency to a sudden workload
-> > increase. With near-100% (e.g., 95%) up-threshold, the average response
-> > latency is approximately 1.5 x polling-rate.
-> > 
-> > A specific polling rate (e.g., 100ms) may generally fit for its system;
-> > however, there could be exceptions for that. For example,
-> > - When a user input suddenly starts: typing, clicking, moving cursors, and
-> >   such, the user might need the full performance immediately. However,
-> >   we do not know whether the full performance is actually needed or not
-> >   until we calculate the utilization; thus, we need to calculate it
-> >   faster with user inputs or any similar events. Specifying QoS on CPU
-> >   processing power or Memory bandwidth at every user input is an
-> >   overkill because there are many cases where such speed-up isn't
-> >   necessary.
-> > - When a device driver needs a faster performance response from DVFS
-> >   mechanism. This could be addressed by simply putting QoS requests.
-> >   However, such QoS requests may keep the system running fast
-> >   unnecessary in some cases, especially if a) the device's resource
-> >   usage bursts with some duration (e.g., 100ms-long bursts) and
-> >   b) the driver doesn't know when such burst come. MMC/WiFi often had
-> >   such behaviors although there are possibilities that part (b) might
-> >   be addressed with further efforts.
-> > 
-> > The cases shown above can be tackled with putting QoS requests on the
-> > response time or latency of DVFS mechanism, which is directly related to
-> > its polling interval (if the DVFS mechanism is polling based).
-> > 
-> > Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > 
-> > --
-> > Changes from v2
-> > - Rebased on the recent PM QoS patches, resolving the merge conflict.
-> > 
-> > Changes from RFC(v1)
-> > - Added omitted part (registering new classes)
-> > ---
-> >  include/linux/pm_qos.h |    4 ++++
-> >  kernel/power/qos.c     |   31 ++++++++++++++++++++++++++++++-
-> >  2 files changed, 34 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/include/linux/pm_qos.h b/include/linux/pm_qos.h
-> > index c8a541e..0ee7caa 100644
-> > --- a/include/linux/pm_qos.h
-> > +++ b/include/linux/pm_qos.h
-> > @@ -14,6 +14,8 @@ enum {
-> >  	PM_QOS_CPU_DMA_LATENCY,
-> >  	PM_QOS_NETWORK_LATENCY,
-> >  	PM_QOS_NETWORK_THROUGHPUT,
-> > +	PM_QOS_CPU_DMA_THROUGHPUT,
-> > +	PM_QOS_DVFS_RESPONSE_LATENCY,
-> >  
-> >  	/* insert new class ID */
-> >  	PM_QOS_NUM_CLASSES,
-> > @@ -24,6 +26,8 @@ enum {
-> >  #define PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-> >  #define PM_QOS_NETWORK_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-> >  #define PM_QOS_NETWORK_THROUGHPUT_DEFAULT_VALUE	0
-> > +#define PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE	0
-> > +#define PM_QOS_DVFS_LAT_DEFAULT_VALUE	(2000 * USEC_PER_SEC)
-> >  #define PM_QOS_DEV_LAT_DEFAULT_VALUE		0
-> >  
-> >  struct pm_qos_request {
-> > diff --git a/kernel/power/qos.c b/kernel/power/qos.c
-> > index d6d6dbd..3e122db 100644
-> > --- a/kernel/power/qos.c
-> > +++ b/kernel/power/qos.c
-> > @@ -101,11 +101,40 @@ static struct pm_qos_object network_throughput_pm_qos = {
-> >  };
-> >  
-> >  
-> > +static BLOCKING_NOTIFIER_HEAD(cpu_dma_throughput_notifier);
-> > +static struct pm_qos_constraints cpu_dma_tput_constraints = {
-> > +	.list = PLIST_HEAD_INIT(cpu_dma_tput_constraints.list),
-> > +	.target_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
-> > +	.default_value = PM_QOS_CPU_DMA_THROUGHPUT_DEFAULT_VALUE,
-> > +	.type = PM_QOS_MAX,
-> > +	.notifiers = &cpu_dma_throughput_notifier,
-> > +};
-> > +static struct pm_qos_object cpu_dma_throughput_pm_qos = {
-> > +	.constraints = &cpu_dma_tput_constraints,
-> > +	.name = "cpu_dma_throughput",
-> > +};
-> > +
-> > +
-> > +static BLOCKING_NOTIFIER_HEAD(dvfs_lat_notifier);
-> > +static struct pm_qos_constraints dvfs_lat_constraints = {
-> > +	.list = PLIST_HEAD_INIT(dvfs_lat_constraints.list),
-> > +	.target_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
-> > +	.default_value = PM_QOS_DVFS_LAT_DEFAULT_VALUE,
-> > +	.type = PM_QOS_MIN,
-> > +	.notifiers = &dvfs_lat_notifier,
-> > +};
-> > +static struct pm_qos_object dvfs_lat_pm_qos = {
-> > +	.constraints = &dvfs_lat_constraints,
-> > +	.name = "dvfs_latency",
-> > +};
-> > +
-> >  static struct pm_qos_object *pm_qos_array[] = {
-> >  	&null_pm_qos,
-> >  	&cpu_dma_pm_qos,
-> >  	&network_lat_pm_qos,
-> > -	&network_throughput_pm_qos
-> > +	&network_throughput_pm_qos,
-> > +	&cpu_dma_throughput_pm_qos,
-> > +	&dvfs_lat_pm_qos,
-> >  };
-> >  
-> >  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
-> >
-> 
-> The cpu_dma_throughput looks ok to me.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigADD6A60A30AC0288B708A962
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-I agree with Mark, but I'm not sure about the name.  Specifically, I'm not sure
-what the CPU has to do with that?
+Hi!
 
-Rafael
+While moving UML's console driver to tty_port some strange things happene=
+d.
+So, I have a few questions. :-)
+
+The original driver did not implement tty_operations->hangup().
+If I implement it and call tty_port_hangup(), as Alan suggested,
+the login fails on all TTYs except tty0.
+It fails because the opened TTY returns EIO upon read()/write() after /bi=
+n/login
+called vhangup().
+
+The call chain is:
+vhangup() -> tty_vhangup_self() -> tty_vhangup() -> __tty_hangup()
+
+Within __tty_hangup() something happens that I don't fully understand:
+
+if (cons_filp) {
+        if (tty->ops->close)
+                for (n =3D 0; n < closecount; n++)
+                        tty->ops->close(tty, cons_filp);
+} else if (tty->ops->hangup)
+        (tty->ops->hangup)(tty);
+
+Login on tty0 works because cons_filp is not NULL and tty->ops->close() i=
+s called.
+On the other hand login fails on every other TTY because cons_filp remain=
+s NULL
+and the TTY hangs up.
+
+Is there something missing in my hangup function?
+
+If I omit tty_operations->hangup() and leave it, like the old driver, NUL=
+L non-tty0 TTYs cannot
+be opened. (getty terminates immediately because it cannot open any TTY.)=
+
+open() retuns -EIO because the TTY_CLOSING is set in tty->flags.
+
+How can this be?
+
+Another fun fact is that the above noted problems do not happen on Debian=
+=2E
+Because Debian's /bin/login does not call vhangup().
+
+Thanks,
+//richard
+
+--
+diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
+index c1cf220..24de04c 100644
+--- a/arch/um/drivers/line.c
++++ b/arch/um/drivers/line.c
+@@ -19,19 +19,29 @@ static irqreturn_t line_interrupt(int irq, void *data=
+)
+ {
+ 	struct chan *chan =3D data;
+ 	struct line *line =3D chan->line;
++	struct tty_struct *tty;
++
++	if (line) {
++		tty =3D tty_port_tty_get(&line->port);
++		chan_interrupt(&line->chan_list, &line->task, tty, irq);
++		tty_kref_put(tty);
++	}
+
+-	if (line)
+-		chan_interrupt(&line->chan_list, &line->task, line->tty, irq);
+ 	return IRQ_HANDLED;
+ }
+
+ static void line_timer_cb(struct work_struct *work)
+ {
+ 	struct line *line =3D container_of(work, struct line, task.work);
++	struct tty_struct *tty;
+
+-	if (!line->throttled)
+-		chan_interrupt(&line->chan_list, &line->task, line->tty,
++	if (!line->throttled) {
++		tty =3D tty_port_tty_get(&line->port);
++		chan_interrupt(&line->chan_list, &line->task, tty,
+ 			       line->driver->read_irq);
++
++		tty_kref_put(tty);
++	}
+ }
+
+ /*
+@@ -343,7 +353,7 @@ static irqreturn_t line_write_interrupt(int irq, void=
+ *data)
+ {
+ 	struct chan *chan =3D data;
+ 	struct line *line =3D chan->line;
+-	struct tty_struct *tty =3D line->tty;
++	struct tty_struct *tty =3D tty_port_tty_get(&line->port);
+ 	int err;
+
+ 	/*
+@@ -354,6 +364,7 @@ static irqreturn_t line_write_interrupt(int irq, void=
+ *data)
+ 	spin_lock(&line->lock);
+ 	err =3D flush_buffer(line);
+ 	if (err =3D=3D 0) {
++		tty_kref_put(tty);
+ 		return IRQ_NONE;
+ 	} else if (err < 0) {
+ 		line->head =3D line->buffer;
+@@ -365,9 +376,36 @@ static irqreturn_t line_write_interrupt(int irq, voi=
+d *data)
+ 		return IRQ_NONE;
+
+ 	tty_wakeup(tty);
++	tty_kref_put(tty);
+ 	return IRQ_HANDLED;
+ }
+
++static int line_activate(struct tty_port *port, struct tty_struct *tty)
++{
++	int ret;
++	struct line *line =3D tty->driver_data;
++
++	ret =3D enable_chan(line);
++	if (ret)
++		return ret;
++
++	INIT_DELAYED_WORK(&line->task, line_timer_cb);
++
++	if (!line->sigio) {
++		chan_enable_winch(&line->chan_list, tty);
++		line->sigio =3D 1;
++	}
++
++	chan_window_size(&line->chan_list, &tty->winsize.ws_row,
++			 &tty->winsize.ws_col);
++
++	return 0;
++}
++
++static const struct tty_port_operations line_port_ops =3D {
++	.activate =3D line_activate,
++};
++
+ int line_setup_irq(int fd, int input, int output, struct line *line, voi=
+d *data)
+ {
+ 	const struct line_driver *driver =3D line->driver;
+@@ -404,81 +442,49 @@ int line_setup_irq(int fd, int input, int output, s=
+truct line *line, void *data)
+  * first open or last close.  Otherwise, open and close just return.
+  */
+
+-int line_open(struct line *lines, struct tty_struct *tty)
++int line_open(struct tty_struct *tty, struct file *filp)
+ {
+-	struct line *line =3D &lines[tty->index];
+-	int err =3D -ENODEV;
++	struct line *line =3D tty->driver_data;
++	return tty_port_open(&line->port, tty, filp);
++}
+
+-	spin_lock(&line->count_lock);
+-	if (!line->valid)
+-		goto out_unlock;
++int line_install(struct tty_driver *driver, struct tty_struct *tty, stru=
+ct line *line)
++{
++	int ret =3D tty_init_termios(tty);
++	if (ret)
++		return ret;
+
+-	err =3D 0;
+-	if (line->count++)
+-		goto out_unlock;
++	tty_driver_kref_get(driver);
++	tty->count++;
++	driver->ttys[tty->index] =3D tty;
+
+-	BUG_ON(tty->driver_data);
+ 	tty->driver_data =3D line;
+-	line->tty =3D tty;
+-
+-	spin_unlock(&line->count_lock);
+-	err =3D enable_chan(line);
+-	if (err) /* line_close() will be called by our caller */
+-		return err;
+-
+-	INIT_DELAYED_WORK(&line->task, line_timer_cb);
+-
+-	if (!line->sigio) {
+-		chan_enable_winch(&line->chan_list, tty);
+-		line->sigio =3D 1;
+-	}
+-
+-	chan_window_size(&line->chan_list, &tty->winsize.ws_row,
+-			 &tty->winsize.ws_col);
+
+ 	return 0;
+-
+-out_unlock:
+-	spin_unlock(&line->count_lock);
+-	return err;
+ }
+
+ static void unregister_winch(struct tty_struct *tty);
+
+-void line_close(struct tty_struct *tty, struct file * filp)
++void line_cleanup(struct tty_struct *tty)
+ {
+ 	struct line *line =3D tty->driver_data;
+
+-	/*
+-	 * If line_open fails (and tty->driver_data is never set),
+-	 * tty_open will call line_close.  So just return in this case.
+-	 */
+-	if (line =3D=3D NULL)
+-		return;
+-
+-	/* We ignore the error anyway! */
+-	flush_buffer(line);
+-
+-	spin_lock(&line->count_lock);
+-	BUG_ON(!line->valid);
+-
+-	if (--line->count)
+-		goto out_unlock;
+-
+-	line->tty =3D NULL;
+-	tty->driver_data =3D NULL;
+-
+-	spin_unlock(&line->count_lock);
+-
+ 	if (line->sigio) {
+ 		unregister_winch(tty);
+ 		line->sigio =3D 0;
+ 	}
++}
+
+-	return;
++void line_close(struct tty_struct *tty, struct file * filp)
++{
++	struct line *line =3D tty->driver_data;
++	tty_port_close(&line->port, tty, filp);
++}
+
+-out_unlock:
+-	spin_unlock(&line->count_lock);
++void line_hangup(struct tty_struct *tty)
++{
++	struct line *line =3D tty->driver_data;
++	tty_port_hangup(&line->port);
+ }
+
+ void close_lines(struct line *lines, int nlines)
+@@ -495,13 +501,6 @@ static int setup_one_line(struct line *lines, int n,=
+ char *init, int init_prio,
+ 	struct line *line =3D &lines[n];
+ 	int err =3D -EINVAL;
+
+-	spin_lock(&line->count_lock);
+-
+-	if (line->count) {
+-		*error_out =3D "Device is already open";
+-		goto out;
+-	}
+-
+ 	if (line->init_pri <=3D init_prio) {
+ 		line->init_pri =3D init_prio;
+ 		if (!strcmp(init, "none"))
+@@ -512,8 +511,7 @@ static int setup_one_line(struct line *lines, int n, =
+char *init, int init_prio,
+ 		}
+ 	}
+ 	err =3D 0;
+-out:
+-	spin_unlock(&line->count_lock);
++
+ 	return err;
+ }
+
+@@ -598,6 +596,7 @@ int line_get_config(char *name, struct line *lines, u=
+nsigned int num, char *str,
+ 	struct line *line;
+ 	char *end;
+ 	int dev, n =3D 0;
++	struct tty_struct *tty;
+
+ 	dev =3D simple_strtoul(name, &end, 0);
+ 	if ((*end !=3D '\0') || (end =3D=3D name)) {
+@@ -612,13 +611,15 @@ int line_get_config(char *name, struct line *lines,=
+ unsigned int num, char *str,
+
+ 	line =3D &lines[dev];
+
+-	spin_lock(&line->count_lock);
++	tty =3D tty_port_tty_get(&line->port);
++
+ 	if (!line->valid)
+ 		CONFIG_CHUNK(str, size, n, "none", 1);
+-	else if (line->tty =3D=3D NULL)
++	else if (tty =3D=3D NULL)
+ 		CONFIG_CHUNK(str, size, n, line->init_str, 1);
+ 	else n =3D chan_config_string(&line->chan_list, str, size, error_out);
+-	spin_unlock(&line->count_lock);
++
++	tty_kref_put(tty);
+
+ 	return n;
+ }
+@@ -678,8 +679,8 @@ struct tty_driver *register_lines(struct line_driver =
+*line_driver,
+ 	}
+
+ 	for(i =3D 0; i < nlines; i++) {
+-		if (!lines[i].valid)
+-			tty_unregister_device(driver, i);
++		tty_port_init(&lines[i].port);
++		lines[i].port.ops =3D &line_port_ops;
+ 	}
+
+ 	mconsole_register_dev(&line_driver->mc);
+@@ -805,7 +806,6 @@ void register_winch_irq(int fd, int tty_fd, int pid, =
+struct tty_struct *tty,
+ 				   .pid  	=3D pid,
+ 				   .tty 	=3D tty,
+ 				   .stack	=3D stack });
+-
+ 	if (um_request_irq(WINCH_IRQ, fd, IRQ_READ, winch_interrupt,
+ 			   IRQF_DISABLED | IRQF_SHARED | IRQF_SAMPLE_RANDOM,
+ 			   "winch", winch) < 0) {
+diff --git a/arch/um/drivers/line.h b/arch/um/drivers/line.h
+index 63df3ca..54adfc6 100644
+--- a/arch/um/drivers/line.h
++++ b/arch/um/drivers/line.h
+@@ -31,9 +31,8 @@ struct line_driver {
+ };
+
+ struct line {
+-	struct tty_struct *tty;
+-	spinlock_t count_lock;
+-	unsigned long count;
++	struct tty_port port;
++
+ 	int valid;
+
+ 	char *init_str;
+@@ -59,15 +58,17 @@ struct line {
+ };
+
+ #define LINE_INIT(str, d) \
+-	{ .count_lock =3D	__SPIN_LOCK_UNLOCKED((str).count_lock), \
+-	  .init_str =3D	str,	\
++	{ .init_str =3D	str,	\
+ 	  .init_pri =3D	INIT_STATIC, \
+ 	  .valid =3D	1, \
+ 	  .lock =3D	__SPIN_LOCK_UNLOCKED((str).lock), \
+ 	  .driver =3D	d }
+
+ extern void line_close(struct tty_struct *tty, struct file * filp);
+-extern int line_open(struct line *lines, struct tty_struct *tty);
++extern int line_open(struct tty_struct *tty, struct file *filp);
++extern int line_install(struct tty_driver *driver, struct tty_struct *tt=
+y, struct line *line);
++extern void line_cleanup(struct tty_struct *tty);
++extern void line_hangup(struct tty_struct *tty);
+ extern int line_setup(struct line *lines, unsigned int sizeof_lines,
+ 		      char *init, char **error_out);
+ extern int line_write(struct tty_struct *tty, const unsigned char *buf,
+diff --git a/arch/um/drivers/ssl.c b/arch/um/drivers/ssl.c
+index 9d8c20a..89fdecb 100644
+--- a/arch/um/drivers/ssl.c
++++ b/arch/um/drivers/ssl.c
+@@ -92,17 +92,6 @@ static int ssl_remove(int n, char **error_out)
+ 			   error_out);
+ }
+
+-static int ssl_open(struct tty_struct *tty, struct file *filp)
+-{
+-	int err =3D line_open(serial_lines, tty);
+-
+-	if (err)
+-		printk(KERN_ERR "Failed to open serial line %d, err =3D %d\n",
+-		       tty->index, err);
+-
+-	return err;
+-}
+-
+ #if 0
+ static void ssl_flush_buffer(struct tty_struct *tty)
+ {
+@@ -124,8 +113,13 @@ void ssl_hangup(struct tty_struct *tty)
+ }
+ #endif
+
++static int ssl_install(struct tty_driver *driver, struct tty_struct *tty=
+)
++{
++	return line_install(driver, tty, &serial_lines[tty->index]);
++}
++
+ static const struct tty_operations ssl_ops =3D {
+-	.open 	 		=3D ssl_open,
++	.open 	 		=3D line_open,
+ 	.close 	 		=3D line_close,
+ 	.write 	 		=3D line_write,
+ 	.put_char 		=3D line_put_char,
+@@ -134,9 +128,12 @@ static const struct tty_operations ssl_ops =3D {
+ 	.flush_buffer 		=3D line_flush_buffer,
+ 	.flush_chars 		=3D line_flush_chars,
+ 	.set_termios 		=3D line_set_termios,
+-	.ioctl 	 		=3D line_ioctl,
++	.ioctl			=3D line_ioctl,
+ 	.throttle 		=3D line_throttle,
+ 	.unthrottle 		=3D line_unthrottle,
++	.install		=3D ssl_install,
++	.cleanup		=3D line_cleanup,
++	.hangup			=3D line_hangup,
+ #if 0
+ 	.stop 	 		=3D ssl_stop,
+ 	.start 	 		=3D ssl_start,
+diff --git a/arch/um/drivers/stdio_console.c b/arch/um/drivers/stdio_cons=
+ole.c
+index 088776f..4c78c78 100644
+--- a/arch/um/drivers/stdio_console.c
++++ b/arch/um/drivers/stdio_console.c
+@@ -97,7 +97,7 @@ static int con_remove(int n, char **error_out)
+
+ static int con_open(struct tty_struct *tty, struct file *filp)
+ {
+-	int err =3D line_open(vts, tty);
++	int err =3D line_open(tty, filp);
+ 	if (err)
+ 		printk(KERN_ERR "Failed to open console %d, err =3D %d\n",
+ 		       tty->index, err);
+@@ -105,11 +105,17 @@ static int con_open(struct tty_struct *tty, struct =
+file *filp)
+ 	return err;
+ }
+
++static int con_install(struct tty_driver *driver, struct tty_struct *tty=
+)
++{
++	return line_install(driver, tty, &vts[tty->index]);
++}
++
+ /* Set in an initcall, checked in an exitcall */
+ static int con_init_done =3D 0;
+
+ static const struct tty_operations console_ops =3D {
+ 	.open 	 		=3D con_open,
++	.install		=3D con_install,
+ 	.close 	 		=3D line_close,
+ 	.write 	 		=3D line_write,
+ 	.put_char 		=3D line_put_char,
+@@ -121,6 +127,8 @@ static const struct tty_operations console_ops =3D {
+ 	.ioctl 	 		=3D line_ioctl,
+ 	.throttle 		=3D line_throttle,
+ 	.unthrottle 		=3D line_unthrottle,
++	.cleanup		=3D line_cleanup,
++	.hangup			=3D line_hangup,
+ };
+
+ static void uml_console_write(struct console *console, const char *strin=
+g,
+
+
+--------------enigADD6A60A30AC0288B708A962
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPW9UbAAoJEN9758yqZn9e7oQH/1hXZlrHwPX8QtFOxEicLuEI
+2KAzPGsm7IH3CCOGQC24yJq7KOGbInxDkvNFj9FtkWWRtDOk9fM1sP+Jz3K3DTza
+AqzIZ4BujyrF1NMp8lFXbcRAtjNbfbuKLuZcah5oTWuSWa2G/AmDSaiBWWU5+vhp
+jtHiIJGxXBaeKRX80QRILXXB6qAVnpgaW3kZdKWBgqxvcewPDUZmOFlW1KQngGgV
+OIAE6jJFVTzS2CyfnVWnPTSpxjL/GK7CuMXh1PeacsJN++XCXda5HNAUqNLT8bqv
+5eCqkxjuIqxTOwRxRGLzFl23EpCGckv/KWJzTuJhYgQ431FFtu3DeVeS3pyEQM0=
+=9nF5
+-----END PGP SIGNATURE-----
+
+--------------enigADD6A60A30AC0288B708A962--
