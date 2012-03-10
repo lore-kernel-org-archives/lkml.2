@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753321Ab2CJX15 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 18:27:57 -0500
-Received: from numidia.opendz.org ([98.142.220.152]:38779 "EHLO
+	id S1753347Ab2CJX27 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 18:28:59 -0500
+Received: from numidia.opendz.org ([98.142.220.152]:57483 "EHLO
 	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010Ab2CJX1z (ORCPT
+	with ESMTP id S1753010Ab2CJX2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 18:27:55 -0500
+	Sat, 10 Mar 2012 18:28:55 -0500
 From: Djalal Harouni <tixxdz@opendz.org>
 To: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -23,12 +23,10 @@ To: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
 Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@linuxfoundation.org>,
         Ingo Molnar <mingo@elte.hu>, Stephen Wilson <wilsons@start.ca>,
         "Jason A. Donenfeld" <Jason@zx2c4.com>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Solar Designer <solar@openwall.com>
-Subject: [PATCH 2/9] proc: add proc_file_private struct to store private information
-Date: Sun, 11 Mar 2012 00:25:12 +0100
-Message-Id: <1331421919-15499-3-git-send-email-tixxdz@opendz.org>
+        Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH 3/9] proc: new proc_exec_id_ok() helper function
+Date: Sun, 11 Mar 2012 00:25:13 +0100
+Message-Id: <1331421919-15499-4-git-send-email-tixxdz@opendz.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
 References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
@@ -36,53 +34,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to store and to track the private information specific to each
-procfs opened file we convert the 'proc_maps_private' struct which is used
-by the /proc/$pid/{maps,smaps,numa_maps} files to 'proc_file_private'
-which can now be used by all the /proc/<pid>/* and even other /proc/* files
-to store private information that must be kept across syscalls.
+proc_exec_id_ok() will be used for /proc/<pid>/* files checks to see if the
+task's exec_id equals the exec_id of the proc_file_private struct.
 
-The proc_file_private struct includes an exec_id member which can be used
-to track and to protect special and sensitive procfs files. In general it
-will be set at open time to the task's exec_id to bind the file to this
-task.
-
-The proc_file_private struct offers the way to make the checks and to
-bind special procfs files to the appropriate task in a consistent and
-unified way.
-
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Solar Designer <solar@openwall.com>
 Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
 ---
- fs/proc/internal.h |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+ fs/proc/internal.h |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
 diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 2925775..a8968f6 100644
+index a8968f6..bed27a8 100644
 --- a/fs/proc/internal.h
 +++ b/fs/proc/internal.h
-@@ -61,10 +61,19 @@ extern const struct file_operations proc_pagemap_operations;
- extern const struct file_operations proc_net_operations;
- extern const struct inode_operations proc_net_inode_operations;
+@@ -10,6 +10,7 @@
+  */
  
--struct proc_maps_private {
-+/*
-+ * Internal proc_file_private is used to track procfs files being
-+ * processed especially the ones that varies during runtime.
+ #include <linux/proc_fs.h>
++#include <linux/sched.h>
+ 
+ extern struct proc_dir_entry proc_root;
+ #ifdef CONFIG_PROC_SYSCTL
+@@ -95,6 +96,25 @@ static inline int proc_fd(struct inode *inode)
+ 	return PROC_I(inode)->fd;
+ }
+ 
++/**
++ * proc_exec_id_ok - check if the task's exec_id equals the exec_id of
++ * the proc_file_private.
++ * @task: Task struct to check against.
++ * @proc_private: The proc_file_private struct.
++ *
++ * Check if the exec_id of the two structs are equal. Use it to protect
++ * special procfs files when the fd is passed to a new execve (i.e. suid)
++ *
++ * It will be more effective if the check is delayed as mush as possible
++ * to avoid any new execve surprises especially if we are checking against
++ * target task's exec_id.
 + */
-+struct proc_file_private {
-+	/* The Execve ID of the task, use this to protect special procfs
-+	 * files. Must be set at open time. */
-+	u64 exec_id;
- 	struct pid *pid;
-+	struct inode *inode;
- 	struct task_struct *task;
- #ifdef CONFIG_MMU
-+	/* For /proc/pid/{maps,smaps...} */
- 	struct vm_area_struct *tail_vma;
- #endif
- };
++static inline int proc_exec_id_ok(struct task_struct *task,
++				  struct proc_file_private *proc_priv)
++{
++	return task_exec_id_ok(task, proc_priv->exec_id);
++}
++
+ struct dentry *proc_lookup_de(struct proc_dir_entry *de, struct inode *ino,
+ 		struct dentry *dentry);
+ int proc_readdir_de(struct proc_dir_entry *de, struct file *filp, void *dirent,
 -- 
 1.7.1
 
