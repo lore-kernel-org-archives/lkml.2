@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab2CJRsM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 12:48:12 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:48760 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab2CJRsL (ORCPT
+	id S1751560Ab2CJRs0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 12:48:26 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:56332 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab2CJRsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 12:48:11 -0500
+	Sat, 10 Mar 2012 12:48:19 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -20,136 +20,102 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Date: Sat, 10 Mar 2012 23:15:01 +0530
-Message-Id: <20120310174501.19949.50137.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH 1/7] uprobes/core: make macro names consistent.
-x-cbid: 12031007-0260-0000-0000-000000AC9299
+Date: Sat, 10 Mar 2012 23:15:31 +0530
+Message-Id: <20120310174531.19949.53392.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20120310174501.19949.50137.sendpatchset@srdronam.in.ibm.com>
+References: <20120310174501.19949.50137.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH 3/7] uprobes/core: rename bkpt to swbp
+x-cbid: 12031007-7014-0000-0000-000000B4B6D1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-Rename macros that refer to individual uprobe to start with UPROBE_ instead
-of UPROBES_.
+bkpt doesnt seem to be a correct abbrevation for breakpoint.  Choice was
+between bp and breakpoint. Since bp can refer to things other than
+breakpoint, use swbp to refer to breakpoints.
 
 This is pure cleanup, no functional change intended.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/uprobes.h |    6 +++---
- arch/x86/kernel/uprobes.c      |   18 +++++++++---------
+ arch/x86/include/asm/uprobes.h |    4 ++--
  include/linux/uprobes.h        |    4 ++--
- kernel/events/uprobes.c        |   18 +++++++++---------
- 4 files changed, 23 insertions(+), 23 deletions(-)
+ kernel/events/uprobes.c        |   34 +++++++++++++++++-----------------
+ 3 files changed, 21 insertions(+), 21 deletions(-)
 
 diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index f7ce310..5c399e4 100644
+index 384f1be..0500391 100644
 --- a/arch/x86/include/asm/uprobes.h
 +++ b/arch/x86/include/asm/uprobes.h
-@@ -26,10 +26,10 @@
- typedef u8 uprobe_opcode_t;
- 
+@@ -28,8 +28,8 @@ typedef u8 uprobe_opcode_t;
  #define MAX_UINSN_BYTES			  16
--#define UPROBES_XOL_SLOT_BYTES		 128	/* to keep it cache aligned */
-+#define UPROBE_XOL_SLOT_BYTES		 128	/* to keep it cache aligned */
+ #define UPROBE_XOL_SLOT_BYTES		 128	/* to keep it cache aligned */
  
--#define UPROBES_BKPT_INSN		0xcc
--#define UPROBES_BKPT_INSN_SIZE		   1
-+#define UPROBE_BKPT_INSN		0xcc
-+#define UPROBE_BKPT_INSN_SIZE		   1
+-#define UPROBE_BKPT_INSN		0xcc
+-#define UPROBE_BKPT_INSN_SIZE		   1
++#define UPROBE_SWBP_INSN		0xcc
++#define UPROBE_SWBP_INSN_SIZE		   1
  
  struct arch_uprobe {
  	u16				fixups;
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 04dfcef..6dfa89e 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -31,14 +31,14 @@
- /* Post-execution fixups. */
- 
- /* No fixup needed */
--#define UPROBES_FIX_NONE	0x0
-+#define UPROBE_FIX_NONE	0x0
- /* Adjust IP back to vicinity of actual insn */
--#define UPROBES_FIX_IP		0x1
-+#define UPROBE_FIX_IP		0x1
- /* Adjust the return address of a call insn */
--#define UPROBES_FIX_CALL	0x2
-+#define UPROBE_FIX_CALL	0x2
- 
--#define UPROBES_FIX_RIP_AX	0x8000
--#define UPROBES_FIX_RIP_CX	0x4000
-+#define UPROBE_FIX_RIP_AX	0x8000
-+#define UPROBE_FIX_RIP_CX	0x4000
- 
- /* Adaptations for mhiramat x86 decoder v14. */
- #define OPCODE1(insn)		((insn)->opcode.bytes[0])
-@@ -269,9 +269,9 @@ static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
- 		break;
- 	}
- 	if (fix_ip)
--		auprobe->fixups |= UPROBES_FIX_IP;
-+		auprobe->fixups |= UPROBE_FIX_IP;
- 	if (fix_call)
--		auprobe->fixups |= UPROBES_FIX_CALL;
-+		auprobe->fixups |= UPROBE_FIX_CALL;
- }
- 
- #ifdef CONFIG_X86_64
-@@ -341,12 +341,12 @@ static void handle_riprel_insn(struct mm_struct *mm, struct arch_uprobe *auprobe
- 		 * is NOT the register operand, so we use %rcx (register
- 		 * #1) for the scratch register.
- 		 */
--		auprobe->fixups = UPROBES_FIX_RIP_CX;
-+		auprobe->fixups = UPROBE_FIX_RIP_CX;
- 		/* Change modrm from 00 000 101 to 00 000 001. */
- 		*cursor = 0x1;
- 	} else {
- 		/* Use %rax (register #0) for the scratch register. */
--		auprobe->fixups = UPROBES_FIX_RIP_AX;
-+		auprobe->fixups = UPROBE_FIX_RIP_AX;
- 		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
- 		*cursor = (reg << 3);
- 	}
 diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index f85797e..838fb31 100644
+index 5869918..eac525f 100644
 --- a/include/linux/uprobes.h
 +++ b/include/linux/uprobes.h
-@@ -35,10 +35,10 @@ struct vm_area_struct;
- /* flags that denote/change uprobes behaviour */
+@@ -52,9 +52,9 @@ struct uprobe_consumer {
+ };
  
- /* Have a copy of original instruction */
--#define UPROBES_COPY_INSN	0x1
-+#define UPROBE_COPY_INSN	0x1
- 
- /* Dont run handlers when first register/ last unregister in progress*/
--#define UPROBES_RUN_HANDLER	0x2
-+#define UPROBE_RUN_HANDLER	0x2
- 
- struct uprobe_consumer {
- 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
+ #ifdef CONFIG_UPROBES
+-extern int __weak set_bkpt(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
++extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
+ extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
+-extern bool __weak is_bkpt_insn(uprobe_opcode_t *insn);
++extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
+ extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern int uprobe_mmap(struct vm_area_struct *vma);
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 5ce32e3..0d36bf3 100644
+index 9c5ddff..e56e56a 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -177,7 +177,7 @@ static int __replace_page(struct vm_area_struct *vma, struct page *page, struct 
+@@ -170,14 +170,14 @@ static int __replace_page(struct vm_area_struct *vma, struct page *page, struct 
+ }
+ 
+ /**
+- * is_bkpt_insn - check if instruction is breakpoint instruction.
++ * is_swbp_insn - check if instruction is breakpoint instruction.
+  * @insn: instruction to be checked.
+- * Default implementation of is_bkpt_insn
++ * Default implementation of is_swbp_insn
+  * Returns true if @insn is a breakpoint instruction.
   */
- bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
+-bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
++bool __weak is_swbp_insn(uprobe_opcode_t *insn)
  {
--	return *insn == UPROBES_BKPT_INSN;
-+	return *insn == UPROBE_BKPT_INSN;
+-	return *insn == UPROBE_BKPT_INSN;
++	return *insn == UPROBE_SWBP_INSN;
  }
  
  /*
-@@ -259,8 +259,8 @@ static int write_opcode(struct mm_struct *mm, struct arch_uprobe *auprobe,
+@@ -227,7 +227,7 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	 * adding probes in write mapped pages since the breakpoints
+ 	 * might end up in the file copy.
+ 	 */
+-	if (!valid_vma(vma, is_bkpt_insn(&opcode)))
++	if (!valid_vma(vma, is_swbp_insn(&opcode)))
+ 		goto put_out;
+ 
+ 	uprobe = container_of(auprobe, struct uprobe, arch);
+@@ -259,8 +259,8 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
  
  	/* poke the new insn in, ASSUMES we don't cross page boundary */
  	vaddr &= ~PAGE_MASK;
--	BUG_ON(vaddr + UPROBES_BKPT_INSN_SIZE > PAGE_SIZE);
--	memcpy(vaddr_new + vaddr, &opcode, UPROBES_BKPT_INSN_SIZE);
-+	BUG_ON(vaddr + UPROBE_BKPT_INSN_SIZE > PAGE_SIZE);
-+	memcpy(vaddr_new + vaddr, &opcode, UPROBE_BKPT_INSN_SIZE);
+-	BUG_ON(vaddr + UPROBE_BKPT_INSN_SIZE > PAGE_SIZE);
+-	memcpy(vaddr_new + vaddr, &opcode, UPROBE_BKPT_INSN_SIZE);
++	BUG_ON(vaddr + UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
++	memcpy(vaddr_new + vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
  
  	kunmap_atomic(vaddr_new);
  	kunmap_atomic(vaddr_old);
@@ -157,55 +123,85 @@ index 5ce32e3..0d36bf3 100644
  	lock_page(page);
  	vaddr_new = kmap_atomic(page);
  	vaddr &= ~PAGE_MASK;
--	memcpy(opcode, vaddr_new + vaddr, UPROBES_BKPT_INSN_SIZE);
-+	memcpy(opcode, vaddr_new + vaddr, UPROBE_BKPT_INSN_SIZE);
+-	memcpy(opcode, vaddr_new + vaddr, UPROBE_BKPT_INSN_SIZE);
++	memcpy(opcode, vaddr_new + vaddr, UPROBE_SWBP_INSN_SIZE);
  	kunmap_atomic(vaddr_new);
  	unlock_page(page);
  
-@@ -352,7 +352,7 @@ int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned 
+@@ -317,7 +317,7 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
+ 	return 0;
+ }
+ 
+-static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
++static int is_swbp_at_addr(struct mm_struct *mm, unsigned long vaddr)
+ {
+ 	uprobe_opcode_t opcode;
+ 	int result;
+@@ -326,14 +326,14 @@ static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
  	if (result)
  		return result;
  
--	return write_opcode(mm, auprobe, vaddr, UPROBES_BKPT_INSN);
-+	return write_opcode(mm, auprobe, vaddr, UPROBE_BKPT_INSN);
+-	if (is_bkpt_insn(&opcode))
++	if (is_swbp_insn(&opcode))
+ 		return 1;
+ 
+ 	return 0;
  }
  
  /**
-@@ -635,7 +635,7 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+- * set_bkpt - store breakpoint at a given address.
++ * set_swbp - store breakpoint at a given address.
+  * @auprobe: arch specific probepoint information.
+  * @mm: the probed process address space.
+  * @vaddr: the virtual address to insert the opcode.
+@@ -341,18 +341,18 @@ static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
+  * For mm @mm, store the breakpoint instruction at @vaddr.
+  * Return 0 (success) or a negative errno.
+  */
+-int __weak set_bkpt(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr)
++int __weak set_swbp(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr)
+ {
+ 	int result;
  
- 	addr = (unsigned long)vaddr;
+-	result = is_bkpt_at_addr(mm, vaddr);
++	result = is_swbp_at_addr(mm, vaddr);
+ 	if (result == 1)
+ 		return -EEXIST;
  
--	if (!(uprobe->flags & UPROBES_COPY_INSN)) {
-+	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
- 		ret = copy_insn(uprobe, vma, addr);
+ 	if (result)
+ 		return result;
+ 
+-	return write_opcode(auprobe, mm, vaddr, UPROBE_BKPT_INSN);
++	return write_opcode(auprobe, mm, vaddr, UPROBE_SWBP_INSN);
+ }
+ 
+ /**
+@@ -371,7 +371,7 @@ set_orig_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long v
+ 	if (verify) {
+ 		int result;
+ 
+-		result = is_bkpt_at_addr(mm, vaddr);
++		result = is_swbp_at_addr(mm, vaddr);
+ 		if (!result)
+ 			return -EINVAL;
+ 
+@@ -642,7 +642,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
  		if (ret)
  			return ret;
-@@ -647,7 +647,7 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- 		if (ret)
- 			return ret;
  
--		uprobe->flags |= UPROBES_COPY_INSN;
-+		uprobe->flags |= UPROBE_COPY_INSN;
+-		if (is_bkpt_insn((uprobe_opcode_t *)uprobe->arch.insn))
++		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
+ 			return -EEXIST;
+ 
+ 		ret = arch_uprobes_analyze_insn(&uprobe->arch, mm);
+@@ -651,7 +651,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 
+ 		uprobe->flags |= UPROBE_COPY_INSN;
  	}
- 	ret = set_bkpt(mm, &uprobe->arch, addr);
+-	ret = set_bkpt(&uprobe->arch, mm, addr);
++	ret = set_swbp(&uprobe->arch, mm, addr);
  
-@@ -857,7 +857,7 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
- 			uprobe->consumers = NULL;
- 			__uprobe_unregister(uprobe);
- 		} else {
--			uprobe->flags |= UPROBES_RUN_HANDLER;
-+			uprobe->flags |= UPROBE_RUN_HANDLER;
- 		}
- 	}
- 
-@@ -889,7 +889,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
- 	if (consumer_del(uprobe, consumer)) {
- 		if (!uprobe->consumers) {
- 			__uprobe_unregister(uprobe);
--			uprobe->flags &= ~UPROBES_RUN_HANDLER;
-+			uprobe->flags &= ~UPROBE_RUN_HANDLER;
- 		}
- 	}
- 
+ 	return ret;
+ }
 
 
