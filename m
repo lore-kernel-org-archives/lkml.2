@@ -1,71 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465Ab2CJSNa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 13:13:30 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48806 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab2CJSN2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 13:13:28 -0500
-Date: Sat, 10 Mar 2012 19:13:15 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
+	id S1751481Ab2CJSco (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 13:32:44 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:15992 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115Ab2CJScW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 13:32:22 -0500
+Message-ID: <4F5B9E32.9080809@bfs.de>
+Date: Sat, 10 Mar 2012 19:32:18 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
+MIME-Version: 1.0
 To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: Jeff Garzik <jgarzik@pobox.com>, kernel-janitors@vger.kernel.org,
+CC: Jeff Garzik <jgarzik@pobox.com>, kernel-janitors@vger.kernel.org,
         Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>, linux-ide@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
 Subject: Re: [PATCH] drivers/ata/pata_mpc52xx.c: add missing kfree
-Message-ID: <20120310181315.GA4139@pengutronix.de>
 References: <1331402199-8000-1-git-send-email-Julia.Lawall@lip6.fr>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mP3DRpeJDSE+ciuQ"
-Content-Disposition: inline
 In-Reply-To: <1331402199-8000-1-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---mP3DRpeJDSE+ciuQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Sat, Mar 10, 2012 at 06:56:39PM +0100, Julia Lawall wrote:
+Am 10.03.2012 18:56, schrieb Julia Lawall:
 > From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
+> 
 > There is no need to call the devm cleanup functions on failure of a probe
 > or remove function.
->=20
+> 
 > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  drivers/ata/pata_mpc52xx.c |   11 -----------
+>  1 file changed, 11 deletions(-)
+> 
+> diff --git a/drivers/ata/pata_mpc52xx.c b/drivers/ata/pata_mpc52xx.c
+> index 00748ae..1f02008 100644
+> --- a/drivers/ata/pata_mpc52xx.c
+> +++ b/drivers/ata/pata_mpc52xx.c
+> @@ -806,17 +806,12 @@ mpc52xx_ata_probe(struct platform_device *op)
+>  	return 0;
+>  
+>   err:
+> -	devm_release_mem_region(&op->dev, res_mem.start, sizeof(*ata_regs));
+>  	if (ata_irq)
+>  		irq_dispose_mapping(ata_irq);
+>  	if (task_irq)
+>  		irq_dispose_mapping(task_irq);
 
-Right. Only the subject is bogus and the maintainer for MPC5xxx is Anatolij
-meanwhile :)
+hi julia,
+i did a quick look at lxr and it showed that irq_dispose_mapping()
+is only used with powerpc, and here is it checking for
+	if (virq == NO_IRQ)
+            return;
 
-Other than that:
+I do not know how current the lxt on free-electrons.com is but perhaps
+it is possible to dump the if (ata_irq) stuff.
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+can you double check it ?
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+re,
+ wh
 
---mP3DRpeJDSE+ciuQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk9bmbsACgkQD27XaX1/VRufugCfUO9je0DnU1nSAfF+PY5LsvwG
-4R0An2Aqo4Kuj3RH0it4yKh6syKdlDn9
-=B1sM
------END PGP SIGNATURE-----
-
---mP3DRpeJDSE+ciuQ--
+>  	if (dmatsk)
+>  		bcom_ata_release(dmatsk);
+> -	if (ata_regs)
+> -		devm_iounmap(&op->dev, ata_regs);
+> -	if (priv)
+> -		devm_kfree(&op->dev, priv);
+>  	return rv;
+>  }
+>  
+> @@ -835,12 +830,6 @@ mpc52xx_ata_remove(struct platform_device *op)
+>  	bcom_ata_release(priv->dmatsk);
+>  	irq_dispose_mapping(priv->ata_irq);
+>  
+> -	/* Clear up IO allocations */
+> -	devm_iounmap(&op->dev, priv->ata_regs);
+> -	devm_release_mem_region(&op->dev, priv->ata_regs_pa,
+> -				sizeof(*priv->ata_regs));
+> -	devm_kfree(&op->dev, priv);
+> -
+>  	return 0;
+>  }
+>  
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
