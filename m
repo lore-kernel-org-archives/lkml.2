@@ -1,119 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab2CJWtS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 17:49:18 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37570 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752031Ab2CJWtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 17:49:16 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: myungjoo.ham@gmail.com
-Subject: Re: [PATCH v3] PM / QoS: Introduce new classes: DMA-Throughput and DVFS-Latency
-Date: Sat, 10 Mar 2012 23:53:23 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: markgross@thegnar.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Dave Jones <mavej@redhat.com>, linux-pm@vger.kernel.org,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Kevin Hilman <khilman@ti.com>, Jean Pihet <j-pihet@ti.com>,
-        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
-References: <13197479.540821330911965933.JavaMail.weblogic@epv6ml06> <20120308034722.GA10286@envy17> <CAJ0PZbTfw1U8raiwiNX14x+jnaWa7ptAgpaaTJgCCZKZU24TDg@mail.gmail.com>
-In-Reply-To: <CAJ0PZbTfw1U8raiwiNX14x+jnaWa7ptAgpaaTJgCCZKZU24TDg@mail.gmail.com>
+	id S1752582Ab2CJWv6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 17:51:58 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57508 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137Ab2CJWv5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 17:51:57 -0500
+Message-ID: <4F5BDB09.3020407@suse.cz>
+Date: Sat, 10 Mar 2012 23:51:53 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120229 Thunderbird/11.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Richard Weinberger <richard@nod.at>
+CC: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        gregkh@linuxfoundation.org, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: TTY: tty_port questions
+References: <4F5BD51B.7030907@nod.at>
+In-Reply-To: <4F5BD51B.7030907@nod.at>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203102353.24218.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 09, 2012, MyungJoo Ham wrote:
-> On Thu, Mar 8, 2012 at 12:47 PM, mark gross <markgross@thegnar.org> wrote:
-> > On Wed, Mar 07, 2012 at 02:02:01PM +0900, MyungJoo Ham wrote:
-> >> 1. CPU_DMA_THROUGHPUT
-> ...
-> >> 2. DVFS_LATENCY
-> >
-> > The cpu_dma_throughput looks ok to me.  I do however; wonder about the
-> > dvfs_lat_pm_qos.  Should that knob be exposed to user mode?  Does that
-> > matter so much?  why can't dvfs_lat use the cpu_dma_lat?
-> >
-> > BTW I'll be out of town for the next 10 days and probably will not get
-> > to this email account until I get home.
-> >
-> > --mark
-> >
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 03/10/2012 11:26 PM, Richard Weinberger wrote:
+> Hi!
 > 
-> 1. Should DVFS Latency be exposed to user mode?
+> While moving UML's console driver to tty_port some strange things
+> happened. So, I have a few questions. :-)
 > 
-> It would depend on the policy of the given system; however, yes, there
-> are systems that require a user interface for DVFS Latency.
-> With the example of user input response (response to user click,
-> typing, touching, and etc), a user program (probably platform s/w or
-> middleware) may input QoS requests. Besides, when a new "application"
-> is starting, such "middleware" may want faster responses from DVFS
-> mechanisms.
-
-But this is a global knob, isn't it?  And it seems that a per-device one
-is needed rather than that?
-
-It also applies to your CPU_DMA_THROUGHPUT thing, doesn't it?
-
-> 2. Does DVFS Latency matter?
+> The original driver did not implement tty_operations->hangup(). If
+> I implement it and call tty_port_hangup(), as Alan suggested, the
+> login fails on all TTYs except tty0. It fails because the opened
+> TTY returns EIO upon read()/write() after /bin/login called
+> vhangup().
 > 
-> Yes, in our experimental sets w/ Exynos4210 (those slapped in Galaxy
-> S2 equivalent; not exactly as I'm not conducted in Android systems,
-> but Tizen), we could see noticable difference w/ bare eyes for
-> user-input responses. When we shortened DVFS polling interval with
-> touches, the touch responses were greatly improved; e.g., losing 10
-> frames into losing 0 or 1 frame for a sudden input rush.
-
-Well, this basically means PM QoS matters, which is kind of obvious.
-It doesn't mean that it can't be implemented in a better way, though.
-
-> 3. Why not replace DVFS Latency w/ CPU-DMA-Latency/Throughput?
+> The call chain is: vhangup() -> tty_vhangup_self() -> tty_vhangup()
+> -> __tty_hangup()
 > 
-> When we implement the user-input response enhancement with CPU-DMA QoS
-> requests, the PM-QoS will unconditionally increase CPU and BUS
-> frequencies/voltages with user inputs. However, with many cases it is
-> unnecessary; i.e., a user input means that there will be unexpected
-> changes soon; however, the change does not mean that the load will
-> increase. Thus, allowing DVFS mechanism to evolve faster was enough to
-> shorten the response time and not to increase frequencies and voltages
-> when not needed. There were significant difference in power
-> consumption with this changes if the user inputs were not involving
-> drastic graphics jobs; e.g., typing a text message.
+> Within __tty_hangup() something happens that I don't fully
+> understand:
+> 
+> if (cons_filp) { if (tty->ops->close) for (n = 0; n < closecount;
+> n++) tty->ops->close(tty, cons_filp); } else if (tty->ops->hangup) 
+> (tty->ops->hangup)(tty);
+> 
+> Login on tty0 works because cons_filp is not NULL and
+> tty->ops->close() is called. On the other hand login fails on every
+> other TTY because cons_filp remains NULL and the TTY hangs up.
+> 
+> Is there something missing in my hangup function?
+> 
+> If I omit tty_operations->hangup() and leave it, like the old
+> driver, NULL non-tty0 TTYs cannot be opened. (getty terminates
+> immediately because it cannot open any TTY.) open() retuns -EIO
+> because the TTY_CLOSING is set in tty->flags.
+> 
+> How can this be?
 
-Again, you're arguing for having PM QoS rather than not having it.  You don't
-have to do that. :-)
+Hmm, it looks like some process is sitting on a TTY which was hung.
+And the system offers this hung TTY to others on further opens. Could
+you check that there is no process with open TTY after the vhangup?
 
-Generally speaking, I don't think we should add any more PM QoS "classes"
-as defined in pm_qos.h, since they are global and there's only one
-list of requests per class.  While that may be good for CPU power
-management (in an SMP system all CPUs are identical, so the same list of
-requests may be applied to all of them), it generally isn't for I/O
-devices (some of them work in different time scales, for example).
+regards,
+- -- 
+js
+suse labs
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-So, for example, most likely, a list of PM QoS requests for storage devices
-shouldn't be applied to input devices (keyboards and mice to be precise) and
-vice versa.
-
-On the other hand, I don't think that applications should access PM QoS
-interfaces associated with individual devices directly, because they may
-not have enough information about the relationships between devices in the
-system.  So, perhaps, there needs to be an interface allowing applications
-to specify their PM QoS expectations in a general way (e.g. "I want <number>
-disk I/O throughput") and a code layer between that interface and device
-drivers translating those expecataions into PM QoS requests for specific
-devices.  However, that would require support from subsystems throughout
-the kernel (e.g. if an application wants specific disk I/O throughput,
-we need to figure out what disks are used by that application and apply
-appropriate PM QoS requests to them on behalf of it and that may require
-support from the VFS and the block layer).
-
-I don't really think we have sufficiently understood the problem area yet.
-
-Thanks,
-Rafael
-
+iQIcBAEBAgAGBQJPW9sIAAoJEL0lsQQGtHBJlgMP/1Raic2yKfoGxQto7i4wcs6q
+B++AgVPfYktAdODL5hem4n6Unf5n2QoLqs7ITGaH9UkN6dWWo9el0RO8zIUl3wpg
+OFkyD2CwBpa3HZ2VmIDTtEatL64Xh+lE3PZyJv+ACLN8qJYCOy+9JpuqPltYg64j
+fihMX9bvOkwhnRHS/G78S3M4RnqjGcR8V7vIdm8/FfnbHlIzRFUERk9sa0d1V7my
+782nTTPVFsczLHL3wWIA1txKnF98LU6Dab0/EqTzen23Z1bD30hhPsahdGIj04YW
+IoM1v5ps3aie1QTyAHbi3dR/ncFI3G6ux4YIJJEAnNprnjxy4FGSqfen5sgmtiZm
+ugengHeajJlqBYWPzjc7XNENC9rJUCBAMyPWGA3LEc/jfWp3wdkL1/kQ6znYKD5V
+hAEWs8KABCdFhOK2OPx47QMs4kEENVTMZniYL/U7PCiwYjmCXI7PUUHwi/qrtk+F
+rU9e0bYpSFYOvDqQQiemZHpNCtPz8TQieEV/LvMJ4f/bKrxZQdVadoFf0yv7iDE5
+9v3SnrRMm/BxjSJhim8UOgjNj+oX8LYh7vCqbbq+dxxlNV1zIzNPoCVnMHJpazio
+Z6xJAu2w4GsIB99IzrUl8/q2EmHtPktRWL1JNqlr8R5+g2SeIMz8ha4o2ymDE6CE
+NGGVl9p5SE7r0kkttiNi
+=Mhvv
+-----END PGP SIGNATURE-----
