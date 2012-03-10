@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab2CJIsW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 03:48:22 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44909 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab2CJIsU (ORCPT
+	id S1753868Ab2CJI5u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 03:57:50 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:16997 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab2CJI5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 03:48:20 -0500
-Date: Sat, 10 Mar 2012 10:48:12 +0200 (EET)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: David Rientjes <rientjes@google.com>
-cc: Rafael Aquini <aquini@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, Rik van Riel <riel@redhat.com>,
-        Josef Bacik <josef@redhat.com>, Cong Wang <xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH v3] mm: SLAB Out-of-memory diagnostics
-In-Reply-To: <alpine.DEB.2.00.1203091546360.2419@chino.kir.corp.google.com>
-Message-ID: <alpine.LFD.2.02.1203101046510.1718@tux.localdomain>
-References: <20120309202722.GA10323@x61.redhat.com> <alpine.DEB.2.00.1203091546360.2419@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Sat, 10 Mar 2012 03:57:46 -0500
+Date: Sat, 10 Mar 2012 11:57:29 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] spi: release lock on error path in spi_pump_messages()
+Message-ID: <20120310085729.GB4647@elgon.mountain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090208.4F5B1783.005D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We should release the lock here and enable IRQs before returning.
 
-> On Fri, 9 Mar 2012, Rafael Aquini wrote:
-> 
-> > Following the example at mm/slub.c, add out-of-memory diagnostics to the
-> > SLAB allocator to help on debugging certain OOM conditions.
-> > 
-> > An example print out looks like this:
-> > 
-> >   <snip page allocator out-of-memory message>
-> >   SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
-> >     cache: bio-0, object size: 192, order: 0
-> >     node 0: slabs: 3/3, objs: 60/60, free: 0
-> > 
-> > Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> > Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-On Fri, 9 Mar 2012, David Rientjes wrote:
-> Acked-by: David Rientjes <rientjes@google.com>
-> 
-> Thanks for following through with this!
-
-Applied, thanks guys!
-
-			Pekka
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 5ae1e84..ab1bdce 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -535,6 +535,7 @@ static void spi_pump_messages(struct kthread_work *work)
+ 			if (ret) {
+ 				dev_err(&master->dev,
+ 					"failed to unprepare transfer hardware\n");
++				spin_unlock_irqrestore(&master->queue_lock, flags);
+ 				return;
+ 			}
+ 		}
