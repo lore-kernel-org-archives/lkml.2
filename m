@@ -1,185 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758275Ab2CJAZn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 19:25:43 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46464 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755785Ab2CJAZk convert rfc822-to-8bit (ORCPT
+	id S964790Ab2CJAZu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 19:25:50 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:37902 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758486Ab2CJAZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 19:25:40 -0500
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com> <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
-In-Reply-To: <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
-Mime-Version: 1.0 (1.0)
-Content-Type: text/plain; charset=us-ascii
-Message-Id: <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
-Content-Transfer-Encoding: 8BIT
-Cc: Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-From: Andreas Dilger <adilger@whamcloud.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-Date: Fri, 9 Mar 2012 16:09:43 -0800
-To: Lukas Czerner <lczerner@redhat.com>
-X-Mailer: iPhone Mail (9A405)
+	Fri, 9 Mar 2012 19:25:48 -0500
+Message-ID: <1331339140.26253.134.camel@work-vm>
+Subject: Re: [PATCH] sched, x86: fix overflow in cyc2ns_offset
+From: john stultz <johnstul@us.ibm.com>
+To: Salman Qazi <sqazi@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 09 Mar 2012 16:25:40 -0800
+In-Reply-To: <20120309235944.12863.28602.stgit@dungbeetle.mtv.corp.google.com>
+References: <20120309235944.12863.28602.stgit@dungbeetle.mtv.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031000-3352-0000-0000-000003393231
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-09, at 3:29, Lukas Czerner <lczerner@redhat.com> wrote:
+On Fri, 2012-03-09 at 16:00 -0800, Salman Qazi wrote:
+> When a machine boots up, the TSC generally gets reset.  However, when
+> kexec is used to boot into a kernel, the TSC value would be carried
+> over from the previous kernel.  The computation of cycns_offset in
+> set_cyc2ns_scale is prone to an overflow, if the machine has been up
+> more than 208 days prior to the kexec.  The overflow happens when
+> we multiply *scale, even though there is enough room to store the
+> final answer.  We fix this issue by decomposing tsc_now into the
+> quotient and remainder of division by CYC2NS_SCALE_FACTOR and then
+> performing the multiplication separately on the two components.
 > 
-> I have created a simple script which creates a bunch of files with
-> random names in the directory and then performs operation like list,
-> tar, find, copy and remove. I have run it for ext4, xfs and btrfs with
-> the 4k size files. And the result is that ext4 pretty much dominates the
-> create times, tar times and find times. However copy times is a whole
-> different story unfortunately - is sucks badly.
-> 
-> Once we cross the mark of 320000 files in the directory (on my system) the
-> ext4 is becoming significantly worse in copy times. And that is where
-> the hash tree order in the directory entry really hit in.
-> 
-> Here is a simple graph:
-> 
-> http://people.redhat.com/lczerner/files/copy_benchmark.pdf
-> 
-> Here is a data where you can play with it:
-> 
-> https://www.google.com/fusiontables/DataSource?snapid=S425803zyTE
-> 
-> and here is the txt file for convenience:
-> 
-> http://people.redhat.com/lczerner/files/copy_data.txt
-> 
-> I have also run the correlation.py from Phillip Susi on directory with
-> 100000 4k files and indeed the name to block correlation in ext4 is pretty
-> much random :)
+> Refactor code to share the calculation with the previous
+> fix in __cycles_2_ns.
 
-Just reading this on the plane, so I can't find the exact reference that I want, but a solution to this problem with htree was discussed a few years ago between myself and Coly Li.
+Thanks so much for making it more generic and reusable! But one question
+below.
 
-The basic idea is that for large directories the inode allocator starts by selecting a range of (relatively) free inodes based on the current directory size, and then piecewise maps the hash value for the filename into this inode range and uses that as the goal inode.
+> Signed-off-by: Salman Qazi <sqazi@google.com>
+> ---
+>  arch/x86/include/asm/timer.h |    8 ++------
+>  arch/x86/kernel/tsc.c        |    3 ++-
+>  include/linux/kernel.h       |   13 +++++++++++++
+>  3 files changed, 17 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
+> index 431793e..34baa0e 100644
+> --- a/arch/x86/include/asm/timer.h
+> +++ b/arch/x86/include/asm/timer.h
+> @@ -57,14 +57,10 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
+> 
+>  static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+>  {
+> -	unsigned long long quot;
+> -	unsigned long long rem;
+>  	int cpu = smp_processor_id();
+>  	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
+> -	quot = (cyc >> CYC2NS_SCALE_FACTOR);
+> -	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
+> -	ns += quot * per_cpu(cyc2ns, cpu) +
+> -		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
+> +	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
+> +			(1UL << CYC2NS_SCALE_FACTOR));
+>  	return ns;
+>  }
+> 
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index a62c201..183c592 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -620,7 +620,8 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+> 
+>  	if (cpu_khz) {
+>  		*scale = (NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR)/cpu_khz;
+> -		*offset = ns_now - (tsc_now * *scale >> CYC2NS_SCALE_FACTOR);
+> +		*offset = ns_now - mult_frac(tsc_now, *scale,
+> +					     (1UL << CYC2NS_SCALE_FACTOR));
+>  	}
+> 
+>  	sched_clock_idle_wakeup_event(0);
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index e834342..d801acb 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -85,6 +85,19 @@
+>  }							\
+>  )
+> 
+> +/*
+> + * Multiplies an integer by a fraction, while avoiding unnecessary
+> + * overflow or loss of precision.
+> + */
+> +#define mult_frac(x, numer, denom)(			\
+> +{							\
+> +	typeof(x) quot = (x) / (denom);			\
+> +	typeof(x) rem  = (x) % (denom);			\
+> +	(quot * (numer)) + ((rem * (numer)) / (denom));	\
+> +}							\
+> +)
+> +
+> +
 
-When the inode range is (relatively) filled up (as determined by average distance between goal and allocated inode), a new (larger) inode range is selected based on the new (larger) directory size and usage continues as described.
+So... Sorry, why did you change it from the shifted logic?
 
-This change is only in-memory allocation policy and does not affect the on disk format, though it is expected to improve the hash->inode mapping coherency significantly.
+I was thinking more like:
+mult_shifted_fract(x, mult, shift)
+{
+	quot = x >> shift;
+	rem = x & ((1ULL << shift)-1);
+	return quot * mult + (rem * mult) >> shift;
+}
 
-When the directory is small (below a thousand or so) the allocations will be close to the parent and the ordering doesn't matter significantly because the inode table blocks will all be quickly read or prefetched from disk.  It wouldn't be harmful to use the mapping algorithm in this case, but it likely won't show much improvement. 
+Is the compiler really smart enough to avoid the divides?
 
-As the directory gets larger, the range of inodes will also get larger. The number of inodes in the smaller range becomes less significant as the range continues to grow.
+thanks
+-john
 
-Once the inode range is hundreds of thousands or larger the mapping of the hash to the inodes will avoid a lot of random IO.
 
-When restarting from a new mount, the inode ranges can be found when doing the initial name lookup in the leaf block by checking the allocated inodes for existing dirents. 
-
-Unfortunately, the prototype that was developed diverged from this idea and didn't really achieve the results I wanted. 
-
-Cheers, Andreas
-
-> _ext4_
-> Name to inode correlation: 0.50002499975
-> Name to block correlation: 0.50002499975
-> Inode to block correlation: 0.9999900001
-> 
-> _xfs_
-> Name to inode correlation: 0.969660303397
-> Name to block correlation: 0.969660303397
-> Inode to block correlation: 1.0
-> 
-> 
-> So there definitely is a huge space for improvements in ext4.
-> 
-> Thanks!
-> -Lukas
-> 
-> Here is a script I have used to get the numbers above, just to see that
-> are the operation I have performed.
-> 
-> 
-> #!/bin/bash
-> 
-> dev=$1
-> mnt=$2
-> fs=$3
-> count=$4
-> size=$5
-> 
-> if [ -z $dev ]; then
->    echo "Device was not specified!"
->    exit 1
-> fi
-> 
-> if [ -z $mnt ]; then
->    echo "Mount point was not specified!"
->    exit 1
-> fi
-> 
-> if [ -z $fs ]; then
->    echo "File system was not specified!"
->    exit 1
-> fi
-> 
-> if [ -z $count ]; then
->    count=10000
-> fi
-> 
-> if [ -z $size ]; then
->    size=0
-> fi
-> 
-> export TIMEFORMAT="%3R"
-> 
-> umount $dev &> /dev/null
-> umount $mnt &> /dev/null
-> 
-> case $fs in
->    "xfs") mkfs.xfs -f $dev &> /dev/null; mount $dev $mnt;;
->    "ext3") mkfs.ext3 -F -E lazy_itable_init $dev &> /dev/null; mount $dev $mnt;;
->    "ext4") mkfs.ext4 -F -E lazy_itable_init $dev &> /dev/null; mount -o noinit_itable $dev $mnt;;
->    "btrfs") mkfs.btrfs $dev &> /dev/null; mount $dev $mnt;;
->    *) echo "Unsupported file system";
->       exit 1;;
-> esac
-> 
-> 
-> testdir=${mnt}/$$
-> mkdir $testdir
-> 
-> _remount()
-> {
->    sync
->    #umount $mnt
->    #mount $dev $mnt
->    echo 3 > /proc/sys/vm/drop_caches
-> }
-> 
-> 
-> #echo "[+] Creating $count files"
-> _remount
-> create=$((time ./dirtest $testdir $count $size) 2>&1)
-> 
-> #echo "[+] Listing files"
-> _remount
-> list=$((time ls $testdir > /dev/null) 2>&1)
-> 
-> #echo "[+] tar the files"
-> _remount
-> tar=$((time $(tar -cf - $testdir &> /dev/null)) 2>&1)
-> 
-> #echo "[+] find the files"
-> _remount
-> find=$((time $(find $testdir -type f &> /dev/null)) 2>&1)
-> 
-> #echo "[+] Copying files"
-> _remount
-> copy=$((time $(cp -a ${testdir} ${mnt}/copy)) 2>&1)
-> 
-> #echo "[+] Removing files"
-> _remount
-> remove=$((time $(rm -rf $testdir)) 2>&1)
-> 
-> echo "$fs $count $create $list $tar $find $copy $remove"
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
