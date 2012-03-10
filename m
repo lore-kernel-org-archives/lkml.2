@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab2CJRsq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 12:48:46 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47826 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab2CJRsn (ORCPT
+	id S1751896Ab2CJRsy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 12:48:54 -0500
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:46543 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab2CJRss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 12:48:43 -0500
+	Sat, 10 Mar 2012 12:48:48 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -20,431 +20,59 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Date: Sat, 10 Mar 2012 23:15:16 +0530
-Message-Id: <20120310174516.19949.21898.sendpatchset@srdronam.in.ibm.com>
+Date: Sat, 10 Mar 2012 23:16:00 +0530
+Message-Id: <20120310174600.19949.43260.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20120310174501.19949.50137.sendpatchset@srdronam.in.ibm.com>
 References: <20120310174501.19949.50137.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH 2/7] uprobes/core: make order of function parameters consistent across functions.
-x-cbid: 12031007-1618-0000-0000-00000109DBDE
+Subject: [PATCH 5/7] x86/trivial: fix 'old_rsp' undefined build failure when including asm/compat.h
+x-cbid: 12031007-9264-0000-0000-00000107AB08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-If a function takes struct uprobe or struct arch_uprobe, then it is
-passed as the first parameter.
+Including asm/compat.h in arch/x86/kernel/signal.c and compiling on a i386
+machine results in old_rsp undefined build errors.
+
+old_rsp is defined under CONFIG_X86_64. Hence add a i386 specific
+arch_compat_alloc_user_space that doesnt depend on old_rsp. Will be further
+cleaned up when is_ia32_compat_task is introduced.
 
 This is pure cleanup, no functional change intended.
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/uprobes.h |    2 -
- arch/x86/kernel/uprobes.c      |   15 +++---
- include/linux/uprobes.h        |   12 +++--
- kernel/events/uprobes.c        |   93 +++++++++++++++++++++-------------------
- 4 files changed, 63 insertions(+), 59 deletions(-)
+ arch/x86/include/asm/compat.h |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index 5c399e4..384f1be 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -39,5 +39,5 @@ struct arch_uprobe {
- #endif
- };
- 
--extern int arch_uprobes_analyze_insn(struct mm_struct *mm, struct arch_uprobe *arch_uprobe);
-+extern int arch_uprobes_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm);
- #endif	/* _ASM_UPROBES_H */
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 6dfa89e..851a11b 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -297,7 +297,8 @@ static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
-  *  - There's never a SIB byte.
-  *  - The displacement is always 4 bytes.
-  */
--static void handle_riprel_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
-+static void
-+handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
- {
- 	u8 *cursor;
- 	u8 reg;
-@@ -381,19 +382,19 @@ static int validate_insn_64bits(struct arch_uprobe *auprobe, struct insn *insn)
- 	return -ENOTSUPP;
+diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
+index 355edc0..ba9e9dc 100644
+--- a/arch/x86/include/asm/compat.h
++++ b/arch/x86/include/asm/compat.h
+@@ -221,6 +221,7 @@ static inline compat_uptr_t ptr_to_compat(void __user *uptr)
+ 	return (u32)(unsigned long)uptr;
  }
  
--static int validate_insn_bits(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
-+static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
++#ifdef CONFIG_x86_64
+ static inline void __user *arch_compat_alloc_user_space(long len)
  {
- 	if (mm->context.ia32_compat)
- 		return validate_insn_32bits(auprobe, insn);
- 	return validate_insn_64bits(auprobe, insn);
+ 	compat_uptr_t sp;
+@@ -234,6 +235,15 @@ static inline void __user *arch_compat_alloc_user_space(long len)
+ 
+ 	return (void __user *)round_down(sp - len, 16);
  }
- #else /* 32-bit: */
--static void handle_riprel_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
-+static void handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
++#else
++
++static inline void __user *arch_compat_alloc_user_space(long len)
++{
++	struct pt_regs *regs = task_pt_regs(current);
++		return (void __user *)regs->sp - len;
++}
++
++#endif
+ 
+ static inline bool is_ia32_task(void)
  {
- 	/* No RIP-relative addressing on 32-bit */
- }
- 
--static int validate_insn_bits(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
-+static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,  struct insn *insn)
- {
- 	return validate_insn_32bits(auprobe, insn);
- }
-@@ -405,17 +406,17 @@ static int validate_insn_bits(struct mm_struct *mm, struct arch_uprobe *auprobe,
-  * @arch_uprobe: the probepoint information.
-  * Return 0 on success or a -ve number on error.
-  */
--int arch_uprobes_analyze_insn(struct mm_struct *mm, struct arch_uprobe *auprobe)
-+int arch_uprobes_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm)
- {
- 	int ret;
- 	struct insn insn;
- 
- 	auprobe->fixups = 0;
--	ret = validate_insn_bits(mm, auprobe, &insn);
-+	ret = validate_insn_bits(auprobe, mm, &insn);
- 	if (ret != 0)
- 		return ret;
- 
--	handle_riprel_insn(mm, auprobe, &insn);
-+	handle_riprel_insn(auprobe, mm, &insn);
- 	prepare_fixups(auprobe, &insn);
- 
- 	return 0;
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 838fb31..5869918 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -52,20 +52,20 @@ struct uprobe_consumer {
- };
- 
- #ifdef CONFIG_UPROBES
--extern int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr);
--extern int __weak set_orig_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr, bool verify);
-+extern int __weak set_bkpt(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
-+extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
- extern bool __weak is_bkpt_insn(uprobe_opcode_t *insn);
--extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer);
--extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer);
-+extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
-+extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
- extern int uprobe_mmap(struct vm_area_struct *vma);
- #else /* CONFIG_UPROBES is not defined */
- static inline int
--uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer)
-+uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
- {
- 	return -ENOSYS;
- }
- static inline void
--uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer)
-+uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
- {
- }
- static inline int uprobe_mmap(struct vm_area_struct *vma)
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 0d36bf3..9c5ddff 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -192,8 +192,8 @@ bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
- 
- /*
-  * write_opcode - write the opcode at a given virtual address.
-+ * @auprobe: arch breakpointing information.
-  * @mm: the probed process address space.
-- * @arch_uprobe: the breakpointing information.
-  * @vaddr: the virtual address to store the opcode.
-  * @opcode: opcode to be written at @vaddr.
-  *
-@@ -203,7 +203,7 @@ bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
-  * For mm @mm, write the opcode at @vaddr.
-  * Return 0 (success) or a negative errno.
-  */
--static int write_opcode(struct mm_struct *mm, struct arch_uprobe *auprobe,
-+static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 			unsigned long vaddr, uprobe_opcode_t opcode)
- {
- 	struct page *old_page, *new_page;
-@@ -334,14 +334,14 @@ static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
- 
- /**
-  * set_bkpt - store breakpoint at a given address.
-+ * @auprobe: arch specific probepoint information.
-  * @mm: the probed process address space.
-- * @uprobe: the probepoint information.
-  * @vaddr: the virtual address to insert the opcode.
-  *
-  * For mm @mm, store the breakpoint instruction at @vaddr.
-  * Return 0 (success) or a negative errno.
-  */
--int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr)
-+int __weak set_bkpt(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr)
- {
- 	int result;
- 
-@@ -352,13 +352,13 @@ int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned 
- 	if (result)
- 		return result;
- 
--	return write_opcode(mm, auprobe, vaddr, UPROBE_BKPT_INSN);
-+	return write_opcode(auprobe, mm, vaddr, UPROBE_BKPT_INSN);
- }
- 
- /**
-  * set_orig_insn - Restore the original instruction.
-  * @mm: the probed process address space.
-- * @uprobe: the probepoint information.
-+ * @auprobe: arch specific probepoint information.
-  * @vaddr: the virtual address to insert the opcode.
-  * @verify: if true, verify existance of breakpoint instruction.
-  *
-@@ -366,7 +366,7 @@ int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned 
-  * Return 0 (success) or a negative errno.
-  */
- int __weak
--set_orig_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr, bool verify)
-+set_orig_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr, bool verify)
- {
- 	if (verify) {
- 		int result;
-@@ -378,7 +378,7 @@ set_orig_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long v
- 		if (result != 1)
- 			return result;
- 	}
--	return write_opcode(mm, auprobe, vaddr, *(uprobe_opcode_t *)auprobe->insn);
-+	return write_opcode(auprobe, mm, vaddr, *(uprobe_opcode_t *)auprobe->insn);
- }
- 
- static int match_uprobe(struct uprobe *l, struct uprobe *r)
-@@ -525,30 +525,30 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
- 
- /* Returns the previous consumer */
- static struct uprobe_consumer *
--consumer_add(struct uprobe *uprobe, struct uprobe_consumer *consumer)
-+consumer_add(struct uprobe *uprobe, struct uprobe_consumer *uc)
- {
- 	down_write(&uprobe->consumer_rwsem);
--	consumer->next = uprobe->consumers;
--	uprobe->consumers = consumer;
-+	uc->next = uprobe->consumers;
-+	uprobe->consumers = uc;
- 	up_write(&uprobe->consumer_rwsem);
- 
--	return consumer->next;
-+	return uc->next;
- }
- 
- /*
-- * For uprobe @uprobe, delete the consumer @consumer.
-- * Return true if the @consumer is deleted successfully
-+ * For uprobe @uprobe, delete the consumer @uc.
-+ * Return true if the @uc is deleted successfully
-  * or return false.
-  */
--static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *consumer)
-+static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *uc)
- {
- 	struct uprobe_consumer **con;
- 	bool ret = false;
- 
- 	down_write(&uprobe->consumer_rwsem);
- 	for (con = &uprobe->consumers; *con; con = &(*con)->next) {
--		if (*con == consumer) {
--			*con = consumer->next;
-+		if (*con == uc) {
-+			*con = uc->next;
- 			ret = true;
- 			break;
- 		}
-@@ -558,8 +558,8 @@ static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *consumer
- 	return ret;
- }
- 
--static int __copy_insn(struct address_space *mapping,
--			struct vm_area_struct *vma, char *insn,
-+static int
-+__copy_insn(struct address_space *mapping, struct vm_area_struct *vma, char *insn,
- 			unsigned long nbytes, unsigned long offset)
- {
- 	struct file *filp = vma->vm_file;
-@@ -590,7 +590,8 @@ static int __copy_insn(struct address_space *mapping,
- 	return 0;
- }
- 
--static int copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned long addr)
-+static int
-+copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned long addr)
- {
- 	struct address_space *mapping;
- 	unsigned long nbytes;
-@@ -617,8 +618,9 @@ static int copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned
- 	return __copy_insn(mapping, vma, uprobe->arch.insn, bytes, uprobe->offset);
- }
- 
--static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
--				struct vm_area_struct *vma, loff_t vaddr)
-+static int
-+install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
-+			struct vm_area_struct *vma, loff_t vaddr)
- {
- 	unsigned long addr;
- 	int ret;
-@@ -643,20 +645,21 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
- 		if (is_bkpt_insn((uprobe_opcode_t *)uprobe->arch.insn))
- 			return -EEXIST;
- 
--		ret = arch_uprobes_analyze_insn(mm, &uprobe->arch);
-+		ret = arch_uprobes_analyze_insn(&uprobe->arch, mm);
- 		if (ret)
- 			return ret;
- 
- 		uprobe->flags |= UPROBE_COPY_INSN;
- 	}
--	ret = set_bkpt(mm, &uprobe->arch, addr);
-+	ret = set_bkpt(&uprobe->arch, mm, addr);
- 
- 	return ret;
- }
- 
--static void remove_breakpoint(struct mm_struct *mm, struct uprobe *uprobe, loff_t vaddr)
-+static void
-+remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, loff_t vaddr)
- {
--	set_orig_insn(mm, &uprobe->arch, (unsigned long)vaddr, true);
-+	set_orig_insn(&uprobe->arch, mm, (unsigned long)vaddr, true);
- }
- 
- static void delete_uprobe(struct uprobe *uprobe)
-@@ -671,9 +674,9 @@ static void delete_uprobe(struct uprobe *uprobe)
- 	atomic_dec(&uprobe_events);
- }
- 
--static struct vma_info *__find_next_vma_info(struct list_head *head,
--			loff_t offset, struct address_space *mapping,
--			struct vma_info *vi, bool is_register)
-+static struct vma_info *
-+__find_next_vma_info(struct address_space *mapping, struct list_head *head,
-+			struct vma_info *vi, loff_t offset, bool is_register)
- {
- 	struct prio_tree_iter iter;
- 	struct vm_area_struct *vma;
-@@ -719,8 +722,8 @@ static struct vma_info *__find_next_vma_info(struct list_head *head,
-  * yet been inserted.
-  */
- static struct vma_info *
--find_next_vma_info(struct list_head *head, loff_t offset, struct address_space *mapping,
--		   bool is_register)
-+find_next_vma_info(struct address_space *mapping, struct list_head *head,
-+		loff_t offset, bool is_register)
- {
- 	struct vma_info *vi, *retvi;
- 
-@@ -729,7 +732,7 @@ find_next_vma_info(struct list_head *head, loff_t offset, struct address_space *
- 		return ERR_PTR(-ENOMEM);
- 
- 	mutex_lock(&mapping->i_mmap_mutex);
--	retvi = __find_next_vma_info(head, offset, mapping, vi, is_register);
-+	retvi = __find_next_vma_info(mapping, head, vi, offset, is_register);
- 	mutex_unlock(&mapping->i_mmap_mutex);
- 
- 	if (!retvi)
-@@ -754,7 +757,7 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 	ret = 0;
- 
- 	for (;;) {
--		vi = find_next_vma_info(&try_list, uprobe->offset, mapping, is_register);
-+		vi = find_next_vma_info(mapping, &try_list, uprobe->offset, is_register);
- 		if (!vi)
- 			break;
- 
-@@ -784,9 +787,9 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 		}
- 
- 		if (is_register)
--			ret = install_breakpoint(mm, uprobe, vma, vi->vaddr);
-+			ret = install_breakpoint(uprobe, mm, vma, vi->vaddr);
- 		else
--			remove_breakpoint(mm, uprobe, vi->vaddr);
-+			remove_breakpoint(uprobe, mm, vi->vaddr);
- 
- 		up_read(&mm->mmap_sem);
- 		mmput(mm);
-@@ -823,25 +826,25 @@ static void __uprobe_unregister(struct uprobe *uprobe)
-  * uprobe_register - register a probe
-  * @inode: the file in which the probe has to be placed.
-  * @offset: offset from the start of the file.
-- * @consumer: information on howto handle the probe..
-+ * @uc: information on howto handle the probe..
-  *
-  * Apart from the access refcount, uprobe_register() takes a creation
-  * refcount (thro alloc_uprobe) if and only if this @uprobe is getting
-  * inserted into the rbtree (i.e first consumer for a @inode:@offset
-  * tuple).  Creation refcount stops uprobe_unregister from freeing the
-  * @uprobe even before the register operation is complete. Creation
-- * refcount is released when the last @consumer for the @uprobe
-+ * refcount is released when the last @uc for the @uprobe
-  * unregisters.
-  *
-  * Return errno if it cannot successully install probes
-  * else return 0 (success)
-  */
--int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer)
-+int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
- {
- 	struct uprobe *uprobe;
- 	int ret;
- 
--	if (!inode || !consumer || consumer->next)
-+	if (!inode || !uc || uc->next)
- 		return -EINVAL;
- 
- 	if (offset > i_size_read(inode))
-@@ -851,7 +854,7 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
- 	mutex_lock(uprobes_hash(inode));
- 	uprobe = alloc_uprobe(inode, offset);
- 
--	if (uprobe && !consumer_add(uprobe, consumer)) {
-+	if (uprobe && !consumer_add(uprobe, uc)) {
- 		ret = __uprobe_register(uprobe);
- 		if (ret) {
- 			uprobe->consumers = NULL;
-@@ -871,13 +874,13 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
-  * uprobe_unregister - unregister a already registered probe.
-  * @inode: the file in which the probe has to be removed.
-  * @offset: offset from the start of the file.
-- * @consumer: identify which probe if multiple probes are colocated.
-+ * @uc: identify which probe if multiple probes are colocated.
-  */
--void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer)
-+void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
- {
- 	struct uprobe *uprobe;
- 
--	if (!inode || !consumer)
-+	if (!inode || !uc)
- 		return;
- 
- 	uprobe = find_uprobe(inode, offset);
-@@ -886,7 +889,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
- 
- 	mutex_lock(uprobes_hash(inode));
- 
--	if (consumer_del(uprobe, consumer)) {
-+	if (consumer_del(uprobe, uc)) {
- 		if (!uprobe->consumers) {
- 			__uprobe_unregister(uprobe);
- 			uprobe->flags &= ~UPROBE_RUN_HANDLER;
-@@ -993,7 +996,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 		if (!ret) {
- 			vaddr = vma_address(vma, uprobe->offset);
- 			if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
--				ret = install_breakpoint(vma->vm_mm, uprobe, vma, vaddr);
-+				ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
- 				/* Ignore double add: */
- 				if (ret == -EEXIST)
- 					ret = 0;
 
 
