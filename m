@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab2CJXPK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 18:15:10 -0500
-Received: from plane.gmane.org ([80.91.229.3]:33306 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752899Ab2CJXPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 18:15:06 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: finkler <finkler@officinamentis.org>
-Subject: Questions about the console keyboard driver / translation tables
-Date: Sun, 11 Mar 2012 00:14:11 +0100
-Message-ID: <jjgn8b$evc$1@dough.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: wrzb-5f75be63.pool.mediaways.net
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1753028Ab2CJXP1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 18:15:27 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60490 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009Ab2CJXPX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 18:15:23 -0500
+From: Alan Ott <alan@signal11.us>
+To: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Alan Ott <alan@signal11.us>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Ott <alan@signal11.us>
+Subject: [PATCH v2 1/1] ARM: at91: Use proper __iomem annotations
+Date: Sat, 10 Mar 2012 18:15:20 -0500
+Message-Id: <1331421320-11639-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1331421281-11570-1-git-send-email-alan@signal11.us>
+References: <1331421281-11570-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+From: Arnd Bergmann <arnd@arndb.de>
 
-I am trying to understand the logic of the Linux keyboard driver, I am 
-not sure if this is the right place to ask, but I don't know where else 
-I could.
+MMIO addresses should be of type 'void __iomem *', not integer,
+in order to make the build-time type system of the kernel work.
 
-Btw. I am talking about an unicode console here.
+This changes some of the locations in the at91 platform that
+I noticed, but there may be more, since I have not yet built
+every configuration.
 
-1.) The Linux kernel (currently) can take 256 translation tables 
-(keymaps), I figured that if I have 8 Mod-Keys and I can press two at 
-the same time, then this makes 256 possible modifications.
-E.g. the value of my keycode of the button 'a' is 0x0b61 (small letter 
-a) in table 0 and 0x0b41 (capital letter A) in table 1, so is it true 
-that table 1 is for shift pressed keycodes?
-If so, then why is shift (KG_SHIFT in linux/keyboard.h [1]) set to 0, 
-and how do I compute the modifications, meaning how do I know what e.g. 
-index 231 represents?
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ arch/arm/mach-at91/at91rm9200.c            |    2 +-
+ arch/arm/mach-at91/include/mach/hardware.h |    4 ++++
+ arch/arm/mach-at91/setup.c                 |    4 ++--
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-2.) As seen above, the value for 'a' is actually 0x0b61 instead of 
-0x0061, if b indicates a type (here KT_LOCK) why isn't it 0xfb61, 
-because I thought that only values above 0xf000 represent typed values, 
-and the values below are simply unicode values.
-The values above are read via the KDGKBENT ioctl [2], are these values 
-read differently then written?
-E.g. would I only type 0xfb61 when using the KDSKBENT ioctl?
-
-3.) If I wanted to assign "Return" to a keycode, what is the difference 
-between using a simple 0x000d (13) and the KT_SPEC type with the 
-function fn_enter (which is supposedly 0xf201)?
-
-I hope anyone can help me out a little,
-thank you very much in advance,
-regards,
-Finkler
-
-1: http://tomoyo.sourceforge.jp/cgi-bin...nux/keyboard.h
-2: http://www.kernel.org/doc/man-pages/...e_ioctl.4.html
+diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+index 99c3174..239b657 100644
+--- a/arch/arm/mach-at91/at91rm9200.c
++++ b/arch/arm/mach-at91/at91rm9200.c
+@@ -27,7 +27,7 @@
+ 
+ static struct map_desc at91rm9200_io_desc[] __initdata = {
+ 	{
+-		.virtual	= AT91_VA_BASE_EMAC,
++		.virtual	= (unsigned long)AT91_VA_BASE_EMAC,
+ 		.pfn		= __phys_to_pfn(AT91RM9200_BASE_EMAC),
+ 		.length		= SZ_16K,
+ 		.type		= MT_DEVICE,
+diff --git a/arch/arm/mach-at91/include/mach/hardware.h b/arch/arm/mach-at91/include/mach/hardware.h
+index 2d0e4e9..91375e2 100644
+--- a/arch/arm/mach-at91/include/mach/hardware.h
++++ b/arch/arm/mach-at91/include/mach/hardware.h
+@@ -75,8 +75,12 @@
+  * to 0xFEF78000 .. 0xFF000000.  (544Kb)
+  */
+ #define AT91_IO_PHYS_BASE	0xFFF78000
++#ifdef __ASSEMBLER__
+ #define AT91_IO_VIRT_BASE	(0xFF000000 - AT91_IO_SIZE)
+ #else
++#define AT91_IO_VIRT_BASE	(void __iomem *)(0xFF000000 - AT91_IO_SIZE)
++#endif
++#else
+ /*
+  * Identity mapping for the non MMU case.
+  */
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index 69d3fc4..809da35 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -57,7 +57,7 @@ void __init at91_init_sram(int bank, unsigned long base, unsigned int length)
+ {
+ 	struct map_desc *desc = &sram_desc[bank];
+ 
+-	desc->virtual = AT91_IO_VIRT_BASE - length;
++	desc->virtual = (unsigned long)AT91_IO_VIRT_BASE - length;
+ 	if (bank > 0)
+ 		desc->virtual -= sram_desc[bank - 1].length;
+ 
+@@ -72,7 +72,7 @@ void __init at91_init_sram(int bank, unsigned long base, unsigned int length)
+ }
+ 
+ static struct map_desc at91_io_desc __initdata = {
+-	.virtual	= AT91_VA_BASE_SYS,
++	.virtual	= (unsigned long)AT91_VA_BASE_SYS,
+ 	.pfn		= __phys_to_pfn(AT91_BASE_SYS),
+ 	.length		= SZ_16K,
+ 	.type		= MT_DEVICE,
+-- 
+1.7.0.4
 
