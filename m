@@ -1,136 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758542Ab2CJAXz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 19:23:55 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33655 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756744Ab2CJAXy (ORCPT
+	id S1758275Ab2CJAZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 19:25:43 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46464 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755785Ab2CJAZk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 19:23:54 -0500
-Subject: Re: [PATCH v3] mm: SLAB Out-of-memory diagnostics
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>
-In-Reply-To: <20120309202722.GA10323@x61.redhat.com>
-References: <20120309202722.GA10323@x61.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Mar 2012 16:23:39 -0800
-Message-ID: <1331339019.4063.365.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Mar 2012 19:25:40 -0500
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com> <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
+In-Reply-To: <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
+Mime-Version: 1.0 (1.0)
+Content-Type: text/plain; charset=us-ascii
+Message-Id: <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
+Content-Transfer-Encoding: 8BIT
+Cc: Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+From: Andreas Dilger <adilger@whamcloud.com>
+Subject: Re: getdents - ext4 vs btrfs performance
+Date: Fri, 9 Mar 2012 16:09:43 -0800
+To: Lukas Czerner <lczerner@redhat.com>
+X-Mailer: iPhone Mail (9A405)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-03-09 at 17:27 -0300, Rafael Aquini wrote:
-> Following the example at mm/slub.c, add out-of-memory diagnostics to the
-> SLAB allocator to help on debugging certain OOM conditions.
+On 2012-03-09, at 3:29, Lukas Czerner <lczerner@redhat.com> wrote:
 > 
-> An example print out looks like this:
+> I have created a simple script which creates a bunch of files with
+> random names in the directory and then performs operation like list,
+> tar, find, copy and remove. I have run it for ext4, xfs and btrfs with
+> the 4k size files. And the result is that ext4 pretty much dominates the
+> create times, tar times and find times. However copy times is a whole
+> different story unfortunately - is sucks badly.
 > 
->   <snip page allocator out-of-memory message>
->   SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
->     cache: bio-0, object size: 192, order: 0
->     node 0: slabs: 3/3, objs: 60/60, free: 0
-
-Should probably be :
-
-   node: 0 slabs: 3/3, objs: 60/60, free: 0
-
-
+> Once we cross the mark of 320000 files in the directory (on my system) the
+> ext4 is becoming significantly worse in copy times. And that is where
+> the hash tree order in the directory entry really hit in.
 > 
-> Signed-off-by: Rafael Aquini <aquini@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
-> v2:
-> * drop the sysctl knob to override __GFP_NOWARN allocation flag (Pekka, David)
+> Here is a simple graph:
 > 
-> v3:
-> * adjust the print output to match slub's warning printout (WANG Cong)
+> http://people.redhat.com/lczerner/files/copy_benchmark.pdf
 > 
->  mm/slab.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 50 insertions(+), 1 deletions(-)
+> Here is a data where you can play with it:
 > 
-> diff --git a/mm/slab.c b/mm/slab.c
-> index f0bd785..cda1ff6 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -1731,6 +1731,52 @@ static int __init cpucache_init(void)
->  }
->  __initcall(cpucache_init);
->  
-> +static noinline void
-> +slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
-> +{
-> +	struct kmem_list3 *l3;
-> +	struct slab *slabp;
-> +	unsigned long flags;
-> +	int node;
-> +
-> +	printk(KERN_WARNING
-> +		"SLAB: Unable to allocate memory on node %d (gfp=0x%x)\n",
-> +		nodeid, gfpflags);
-> +	printk(KERN_WARNING "  cache: %s, object size: %d, order: %d\n",
-> +		cachep->name, cachep->buffer_size, cachep->gfporder);
-> +
-> +	for_each_online_node(node) {
-> +		unsigned long active_objs = 0, num_objs = 0, free_objects = 0;
-> +		unsigned long active_slabs = 0, num_slabs = 0;
-> +
-> +		l3 = cachep->nodelists[node];
-> +		if (!l3)
-> +			continue;
-> +
-> +		spin_lock_irqsave(&l3->list_lock, flags);
-> +		list_for_each_entry(slabp, &l3->slabs_full, list) {
-> +			active_objs += cachep->num;
-> +			active_slabs++;
-> +		}
-> +		list_for_each_entry(slabp, &l3->slabs_partial, list) {
-> +			active_objs += slabp->inuse;
-> +			active_slabs++;
-> +		}
-> +		list_for_each_entry(slabp, &l3->slabs_free, list)
-> +			num_slabs++;
-> +
-> +		free_objects += l3->free_objects;
-> +		spin_unlock_irqrestore(&l3->list_lock, flags);
-> +
-> +		num_slabs += active_slabs;
-> +		num_objs = num_slabs * cachep->num;
-> +		printk(KERN_WARNING
-> +			"  node %d: slabs: %ld/%ld, objs: %ld/%ld, free: %ld\n",
+> https://www.google.com/fusiontables/DataSource?snapid=S425803zyTE
+> 
+> and here is the txt file for convenience:
+> 
+> http://people.redhat.com/lczerner/files/copy_data.txt
+> 
+> I have also run the correlation.py from Phillip Susi on directory with
+> 100000 4k files and indeed the name to block correlation in ext4 is pretty
+> much random :)
 
-Probably should be :
-		"  node: %d slabs: %ld/%ld, objs: %ld/%ld, free: %ld\n",
+Just reading this on the plane, so I can't find the exact reference that I want, but a solution to this problem with htree was discussed a few years ago between myself and Coly Li.
 
-> +			node, active_slabs, num_slabs, active_objs, num_objs,
-> +			free_objects);
-> +	}
-> +}
-> +
->  /*
->   * Interface to system's page allocator. No need to hold the cache-lock.
->   *
-> @@ -1757,8 +1803,11 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
->  		flags |= __GFP_RECLAIMABLE;
->  
->  	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
-> -	if (!page)
-> +	if (!page) {
-> +		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
-> +			slab_out_of_memory(cachep, flags, nodeid);
->  		return NULL;
-> +	}
->  
->  	nr_pages = (1 << cachep->gfporder);
->  	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+The basic idea is that for large directories the inode allocator starts by selecting a range of (relatively) free inodes based on the current directory size, and then piecewise maps the hash value for the filename into this inode range and uses that as the goal inode.
 
+When the inode range is (relatively) filled up (as determined by average distance between goal and allocated inode), a new (larger) inode range is selected based on the new (larger) directory size and usage continues as described.
 
+This change is only in-memory allocation policy and does not affect the on disk format, though it is expected to improve the hash->inode mapping coherency significantly.
+
+When the directory is small (below a thousand or so) the allocations will be close to the parent and the ordering doesn't matter significantly because the inode table blocks will all be quickly read or prefetched from disk.  It wouldn't be harmful to use the mapping algorithm in this case, but it likely won't show much improvement. 
+
+As the directory gets larger, the range of inodes will also get larger. The number of inodes in the smaller range becomes less significant as the range continues to grow.
+
+Once the inode range is hundreds of thousands or larger the mapping of the hash to the inodes will avoid a lot of random IO.
+
+When restarting from a new mount, the inode ranges can be found when doing the initial name lookup in the leaf block by checking the allocated inodes for existing dirents. 
+
+Unfortunately, the prototype that was developed diverged from this idea and didn't really achieve the results I wanted. 
+
+Cheers, Andreas
+
+> _ext4_
+> Name to inode correlation: 0.50002499975
+> Name to block correlation: 0.50002499975
+> Inode to block correlation: 0.9999900001
+> 
+> _xfs_
+> Name to inode correlation: 0.969660303397
+> Name to block correlation: 0.969660303397
+> Inode to block correlation: 1.0
+> 
+> 
+> So there definitely is a huge space for improvements in ext4.
+> 
+> Thanks!
+> -Lukas
+> 
+> Here is a script I have used to get the numbers above, just to see that
+> are the operation I have performed.
+> 
+> 
+> #!/bin/bash
+> 
+> dev=$1
+> mnt=$2
+> fs=$3
+> count=$4
+> size=$5
+> 
+> if [ -z $dev ]; then
+>    echo "Device was not specified!"
+>    exit 1
+> fi
+> 
+> if [ -z $mnt ]; then
+>    echo "Mount point was not specified!"
+>    exit 1
+> fi
+> 
+> if [ -z $fs ]; then
+>    echo "File system was not specified!"
+>    exit 1
+> fi
+> 
+> if [ -z $count ]; then
+>    count=10000
+> fi
+> 
+> if [ -z $size ]; then
+>    size=0
+> fi
+> 
+> export TIMEFORMAT="%3R"
+> 
+> umount $dev &> /dev/null
+> umount $mnt &> /dev/null
+> 
+> case $fs in
+>    "xfs") mkfs.xfs -f $dev &> /dev/null; mount $dev $mnt;;
+>    "ext3") mkfs.ext3 -F -E lazy_itable_init $dev &> /dev/null; mount $dev $mnt;;
+>    "ext4") mkfs.ext4 -F -E lazy_itable_init $dev &> /dev/null; mount -o noinit_itable $dev $mnt;;
+>    "btrfs") mkfs.btrfs $dev &> /dev/null; mount $dev $mnt;;
+>    *) echo "Unsupported file system";
+>       exit 1;;
+> esac
+> 
+> 
+> testdir=${mnt}/$$
+> mkdir $testdir
+> 
+> _remount()
+> {
+>    sync
+>    #umount $mnt
+>    #mount $dev $mnt
+>    echo 3 > /proc/sys/vm/drop_caches
+> }
+> 
+> 
+> #echo "[+] Creating $count files"
+> _remount
+> create=$((time ./dirtest $testdir $count $size) 2>&1)
+> 
+> #echo "[+] Listing files"
+> _remount
+> list=$((time ls $testdir > /dev/null) 2>&1)
+> 
+> #echo "[+] tar the files"
+> _remount
+> tar=$((time $(tar -cf - $testdir &> /dev/null)) 2>&1)
+> 
+> #echo "[+] find the files"
+> _remount
+> find=$((time $(find $testdir -type f &> /dev/null)) 2>&1)
+> 
+> #echo "[+] Copying files"
+> _remount
+> copy=$((time $(cp -a ${testdir} ${mnt}/copy)) 2>&1)
+> 
+> #echo "[+] Removing files"
+> _remount
+> remove=$((time $(rm -rf $testdir)) 2>&1)
+> 
+> echo "$fs $count $create $list $tar $find $copy $remove"
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
