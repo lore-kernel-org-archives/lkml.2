@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab2CJHDG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 02:03:06 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:39391 "EHLO
+	id S1754047Ab2CJHDP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 02:03:15 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:39439 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932423Ab2CJHDB (ORCPT
+	with ESMTP id S932423Ab2CJHDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 02:03:01 -0500
+	Sat, 10 Mar 2012 02:03:11 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
@@ -16,55 +16,71 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>,
         linux-acpi@vger.kernel.org
-Subject: [PATCH v2 28/37] PCI, ACPI: Make kacpi_hotplug_wq static
-Date: Fri,  9 Mar 2012 23:00:28 -0800
-Message-Id: <1331362837-10740-29-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v2 29/37] PCI, ACPI: Add acpi_pci_root_rescan()
+Date: Fri,  9 Mar 2012 23:00:29 -0800
+Message-Id: <1331362837-10740-30-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
 References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090202.4F5AFCA3.0003,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090203.4F5AFCAC.004D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No external user anymore.
+It will rescan all acpi pci root if related pci root bus get removed before.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Yinghai <yinghai@kernel.org>
 Cc: Len Brown <lenb@kernel.org>
 Cc: linux-acpi@vger.kernel.org
 ---
- drivers/acpi/osl.c      |    3 +--
- include/acpi/acpiosxf.h |    2 --
- 2 files changed, 1 insertions(+), 4 deletions(-)
+ drivers/acpi/pci_root_hp.c |   17 +++++++++++++++++
+ include/linux/pci-acpi.h   |    7 +++++++
+ 2 files changed, 24 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index fdcf4a5..09be602 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -81,8 +81,7 @@ static acpi_osd_handler acpi_irq_handler;
- static void *acpi_irq_context;
- static struct workqueue_struct *kacpid_wq;
- static struct workqueue_struct *kacpi_notify_wq;
--struct workqueue_struct *kacpi_hotplug_wq;
--EXPORT_SYMBOL(kacpi_hotplug_wq);
-+static struct workqueue_struct *kacpi_hotplug_wq;
+diff --git a/drivers/acpi/pci_root_hp.c b/drivers/acpi/pci_root_hp.c
+index b453181..ca73d51 100644
+--- a/drivers/acpi/pci_root_hp.c
++++ b/drivers/acpi/pci_root_hp.c
+@@ -268,3 +268,20 @@ static int __init acpi_pci_root_hp_init(void)
+ }
  
- /*
-  * This list of permanent mappings is for memory that may be accessed from
-diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
-index 62326ae..2326622 100644
---- a/include/acpi/acpiosxf.h
-+++ b/include/acpi/acpiosxf.h
-@@ -189,8 +189,6 @@ void acpi_os_fixed_event_count(u32 fixed_event_number);
- /*
-  * Threads and Scheduling
-  */
--extern struct workqueue_struct *kacpi_hotplug_wq;
--
- struct acpi_hp_work {
- 	struct work_struct work;
- 	acpi_handle handle;
+ subsys_initcall(acpi_pci_root_hp_init);
++
++static acpi_status
++rescan_root_bridge(acpi_handle handle, u32 lvl, void *context, void **rv)
++{
++	if (!acpi_is_root_bridge(handle))
++		return AE_OK;
++
++	handle_root_bridge_insertion(handle);
++
++	return AE_OK;
++}
++
++void acpi_pci_root_rescan(void)
++{
++	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
++		ACPI_UINT32_MAX, rescan_root_bridge, NULL, NULL, NULL);
++}
+diff --git a/include/linux/pci-acpi.h b/include/linux/pci-acpi.h
+index 4462350..ac93634 100644
+--- a/include/linux/pci-acpi.h
++++ b/include/linux/pci-acpi.h
+@@ -35,6 +35,13 @@ static inline acpi_handle acpi_pci_get_bridge_handle(struct pci_bus *pbus)
+ 	return acpi_get_pci_rootbridge_handle(pci_domain_nr(pbus),
+ 					      pbus->number);
+ }
++
++void acpi_pci_root_rescan(void);
++
++#else
++
++static inline void acpi_pci_root_rescan(void) { }
++
+ #endif
+ 
+ #ifdef CONFIG_ACPI_APEI
 -- 
 1.7.7
 
