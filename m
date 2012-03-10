@@ -1,120 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758725Ab2CJEsP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 23:48:15 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:40038 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756101Ab2CJEsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 23:48:09 -0500
-Date: Fri, 9 Mar 2012 23:48:04 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Andreas Dilger <adilger@whamcloud.com>
-Cc: Lukas Czerner <lczerner@redhat.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: getdents - ext4 vs btrfs performance
-Message-ID: <20120310044804.GB5652@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Andreas Dilger <adilger@whamcloud.com>,
-	Lukas Czerner <lczerner@redhat.com>,
-	Jacek Luczak <difrost.kernel@gmail.com>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
- <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
- <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
+	id S1758904Ab2CJE6o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 23:58:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24838 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758539Ab2CJE6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 23:58:42 -0500
+Date: Sat, 10 Mar 2012 12:56:33 +0800
+From: Dave Young <dyoung@redhat.com>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux@arm.linux.org.uk,
+        vgoyal@redhat.com
+Subject: [PATCH v2] kdump x86: fix total mem size calculation for
+ reservation
+Message-ID: <20120310045632.GA4214@darkstar.redhat.com>
+References: <20120309083009.GA14067@darkstar.nay.redhat.com>
+ <4F5ACA2D.5000000@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
+In-Reply-To: <4F5ACA2D.5000000@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 04:09:43PM -0800, Andreas Dilger wrote:
-> > I have also run the correlation.py from Phillip Susi on directory with
-> > 100000 4k files and indeed the name to block correlation in ext4 is pretty
-> > much random :)
-> 
-> Just reading this on the plane, so I can't find the exact reference
-> that I want, but a solution to this problem with htree was discussed
-> a few years ago between myself and Coly Li.
-> 
-> The basic idea is that for large directories the inode allocator
-> starts by selecting a range of (relatively) free inodes based on the
-> current directory size, and then piecewise maps the hash value for
-> the filename into this inode range and uses that as the goal inode.
+crashkernel reservation need know the total memory size. Current get_total_mem
+simply use max_pfn - min_low_pfn. It is wrong because it will including
+memory holes in the middle.
 
-I've heard you sketch out this idea before, but it's not been clean to
-me how well it would work in practice.  The potential downside is that
-it fragments the inode table, such that a single inode table block
-might not have as many inodes stored in it as we might otherwise
-would.  (Ideally, with 256 byte inodes, there would 16 of them in each
-4k block.)  This is something I'd definitely recommend modelling in
-simulation to see how well it works first.
+Especially for kvm guest with memory > 0xe0000000, there's below in qemu code:
+qemu split memory as below:
+    if (ram_size >= 0xe0000000 ) {
+        above_4g_mem_size = ram_size - 0xe0000000;
+        below_4g_mem_size = 0xe0000000;
+    } else {
+        below_4g_mem_size = ram_size;
+    }
+So for 4G mem guest, seabios will insert a 512M usable region beyond of 4G.
+Thus in above case max_pfn - min_low_pfn will be more than original memsize.
 
-I'd observe that if we knew in advance how many files would be in a
-particular directory (i.e., via a hint from userspace at mkdir time),
-then it would be possible to optimize this case much more easily.  In
-fact, if we had perfect knowledge --- if the userspace process could
-feed us the exact set of filenames that will be used in the directory,
-plus the exact file sizes for each of the file names --- then it would
-be possible to allocate inode numbers and starting block numbers such
-that when the files are read in readdir() order, the inode numbers and
-block numbers would line up perfectly into sequential writes.  
+Fixing this issue by using memblock_phys_mem_size() to get the total memsize.
 
-Of course, the trade off is that by optimizing for read order, the
-write order will tend to get painful as well!  So there's a tension
-here; making the read part of the benchmark faster will make the
-process of writing the directory hierarchy require more seeks --- and
-this assuming that you know file names and sizes ahead of time.
+[v1 -> v2]: refresh the patch based on latest linus tree
 
-(Unless, of course, you play the same game that Hans Reiser did when
-he cooked his "tar" benchmark by constructing a kernel source tarball
-where the file order in the tarball was perfectly ordered to guarantee
-the desired result given Reiser4's hash!  :-)
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ [Ther's similar code in arm, I'm not sure whether the memblock_phys_mem_size
+ works with arm or not. If it works I can also update that part of code.]
+ arch/x86/kernel/setup.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
-
-I suspect the best optimization for now is probably something like
-this:
-
-1) Since the vast majority of directories are less than (say) 256k
-(this would be a tunable value), for directories which are less than
-this threshold size, the entire directory is sucked in after the first
-readdir() after an opendir() or rewinddir().  The directory contents
-are then sorted by inode number (or loaded into an rbtree ordered by
-inode number), and returned back to userspace in the inode order via
-readdir().  The directory contents will be released on a closedir() or
-rewinddir().
-
-2) For files larger than this size, we don't want to hold that much
-kernel memory during an opendir(), so fall back to ext4's current
-scheme.   
-
-3) If we want do to better than that, we could create new flag
-O_NOTELLDIR, which can be set via fcntl.  (This way programs can use
-do something like "dir = opendir(..); fd = dirfd(dir); fcntl(fd,
-SETFL, O_NOTELLDIR);").  For files who know they don't need to use
-telldir/seekdir, they can set this flag, which will allow the above
-optimization to be used on large files.
-
-
-The other thing we could potentially do, if we really cared about this
-issue in ext3/4, would be to define whole new (incompatible) storing
-the directory indexing format which avoided this problem.  It would be
-an INCOMPAT feature, so it would be a while before it could get used
-in practice, which is why I'm not entirely convinced it's worth it ---
-especially since I suspect just doing (1) would solve the problem for
-the vast majority of ext4's users.
-
-
-						- Ted
+--- linux-2.6.orig/arch/x86/kernel/setup.c	2012-03-04 03:46:35.000000000 +0800
++++ linux-2.6/arch/x86/kernel/setup.c	2012-03-10 12:44:58.133300788 +0800
+@@ -509,15 +509,6 @@ static void __init memblock_x86_reserve_
+ 
+ #ifdef CONFIG_KEXEC
+ 
+-static inline unsigned long long get_total_mem(void)
+-{
+-	unsigned long long total;
+-
+-	total = max_pfn - min_low_pfn;
+-
+-	return total << PAGE_SHIFT;
+-}
+-
+ /*
+  * Keep the crash kernel below this limit.  On 32 bits earlier kernels
+  * would limit the kernel to the low 512 MiB due to mapping restrictions.
+@@ -536,7 +527,7 @@ static void __init reserve_crashkernel(v
+ 	unsigned long long crash_size, crash_base;
+ 	int ret;
+ 
+-	total_mem = get_total_mem();
++	total_mem = memblock_phys_mem_size();
+ 
+ 	ret = parse_crashkernel(boot_command_line, total_mem,
+ 			&crash_size, &crash_base);
