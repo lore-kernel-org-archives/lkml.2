@@ -1,272 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885Ab2CJTCN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 14:02:13 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:4965 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751266Ab2CJTCJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 14:02:09 -0500
-X-SpamScore: -16
-X-BigFish: VPS-16(zz9371Ifb6I542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
-From: Rajesh Borundia <rajesh.borundia@qlogic.com>
-To: santosh prasad nayak <santoshprasadnayak@gmail.com>
-CC: Sony Chacko <sony.chacko@qlogic.com>, netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Date: Sat, 10 Mar 2012 13:01:52 -0600
-Subject: RE: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-Thread-Topic: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-Thread-Index: Acz+JXuSzj8tshmVTQuB+OzGJQXfJQAx/Hcg
-Message-ID: <13A253B3F9BEFE43B93C09CF75F63CAA81A8AB3C07@MNEXMB1.qlogic.org>
-References: <1330789663-30481-1-git-send-email-santoshprasadnayak@gmail.com>
-	<13A253B3F9BEFE43B93C09CF75F63CAA81A8AB3B75@MNEXMB1.qlogic.org>
- <CAOD=uF7=28Bx4eSpGfP-uTND42k1xKE3tvQ6+exSJha9Yjf-_w@mail.gmail.com>
-In-Reply-To: <CAOD=uF7=28Bx4eSpGfP-uTND42k1xKE3tvQ6+exSJha9Yjf-_w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: qlogic.com
+	id S1752046Ab2CJTWo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 14:22:44 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:43566 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751840Ab2CJTWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 14:22:41 -0500
+Message-ID: <1331407360.1762.8.camel@joe2Laptop>
+Subject: Re: [PATCH] drivers/ata/pata_mpc52xx.c: add missing kfree
+From: Joe Perches <joe@perches.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Anatolij Gustschin <agust@denx.de>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Jeff Garzik <jgarzik@pobox.com>, kernel-janitors@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Date: Sat, 10 Mar 2012 11:22:40 -0800
+In-Reply-To: <20120310184407.GB4139@pengutronix.de>
+References: <1331402199-8000-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <20120310181315.GA4139@pengutronix.de>
+	 <1331404377.14442.19.camel@joe2Laptop>
+	 <20120310184407.GB4139@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2012-03-10 at 19:44 +0100, Wolfram Sang wrote:
+> > Anatolij is not listed as a maintainer for this file
+> > nor has he ever written or signed a patch for it.
+> I noticed that Grant was in CC, assumed that it was because of his previous MPC
+> maintainership and mentioned that Anatolij took over. Nothing more, just wanted
+> to help.
 
+Actually, it's because there's a K: of_get_property
+line in OPEN FIRMWARE and the file has one.
 
-> -----Original Message-----
-> From: santosh prasad nayak [mailto:santoshprasadnayak@gmail.com]
-> Sent: Saturday, March 10, 2012 12:20 AM
-> To: Rajesh Borundia
-> Cc: Sony Chacko; netdev; linux-kernel; kernel-janitors@vger.kernel.org
-> Subject: Re: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-> 
-> On Fri, Mar 9, 2012 at 10:04 PM, Rajesh Borundia
-> <rajesh.borundia@qlogic.com> wrote:
-> >
-> >> -----Original Message-----
-> >> From: santosh nayak [mailto:santoshprasadnayak@gmail.com]
-> >> Sent: Saturday, March 03, 2012 9:18 PM
-> >> To: Sony Chacko
-> >> Cc: Rajesh Borundia; netdev; linux-kernel; kernel-
-> >> janitors@vger.kernel.org; Santosh Nayak
-> >> Subject: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-> >>
-> >> From: Santosh Nayak <santoshprasadnayak@gmail.com>
-> >>
-> >> Fix endian bug.
-> >>
-> >> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
-> >> ---
-> >>  drivers/net/ethernet/qlogic/netxen/netxen_nic.h    |    4 ++--
-> >>  drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |   12 +++++++--
-> ---
-> >>  .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    2 +-
-> >>  3 files changed, 10 insertions(+), 8 deletions(-)
-> >>
-> >> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-> >> b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-> >> index 2eeac32..b5de8a7 100644
-> >> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-> >> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
-> >> @@ -954,7 +954,7 @@ typedef struct nx_mac_list_s {
-> >>
-> >>  struct nx_vlan_ip_list {
-> >>       struct list_head list;
-> >> -     u32 ip_addr;
-> >> +     __be32 ip_addr;
-> >>  };
-> >>
-> >>  /*
-> >> @@ -1780,7 +1780,7 @@ int netxen_process_rcv_ring(struct
-> >> nx_host_sds_ring *sds_ring, int max);
-> >>  void netxen_p3_free_mac_list(struct netxen_adapter *adapter);
-> >>  int netxen_config_intr_coalesce(struct netxen_adapter *adapter);
-> >>  int netxen_config_rss(struct netxen_adapter *adapter, int enable);
-> >> -int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip,
-> int
-> >> cmd);
-> >> +int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip,
-> >> int cmd);
-> >>  int netxen_linkevent_request(struct netxen_adapter *adapter, int
-> >> enable);
-> >>  void netxen_advert_link_change(struct netxen_adapter *adapter, int
-> >> linkup);
-> >>  void netxen_pci_camqm_read_2M(struct netxen_adapter *, u64, u64 *);
-> >> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-> >> b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-> >> index 6f37470..0f81287 100644
-> >> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-> >> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-> >> @@ -909,10 +909,11 @@ int netxen_config_rss(struct netxen_adapter
-> >> *adapter, int enable)
-> >>       return rv;
-> >>  }
-> >>
-> >> -int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip,
-> int
-> >> cmd)
-> >> +int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip,
-> >> int cmd)
-> >>  {
-> >>       nx_nic_req_t req;
-> >>       u64 word;
-> >> +     u64 ip_addr;
-> >>       int rv;
-> >>
-> >>       memset(&req, 0, sizeof(nx_nic_req_t));
-> >> @@ -922,7 +923,8 @@ int netxen_config_ipaddr(struct netxen_adapter
-> >> *adapter, u32 ip, int cmd)
-> >>       req.req_hdr = cpu_to_le64(word);
-> >>
-> >>       req.words[0] = cpu_to_le64(cmd);
-> >> -     req.words[1] = cpu_to_le64(ip);
-> >> +     ip_addr = be32_to_cpu(ip);
-> >> +     *(__be64 *)&req.words[1] = cpu_to_be64(ip_addr);
-> >
-> 
-> 
-> > Adapter requires ip value in big endian stored at lower 32 bit
-> address.
-> > The cpu_to_be64 will swap the lower 32 bit with higher 32 bit and
-> adapter
-> > Will get incorrect ip addr. Instead u can do.
-> >
-> >       U32 *ip_addr;
-> >       ip_addr = (u32 *)&req.words[1];
-> >       *ip_addr = ip;
-> 
-> 
-> 1.  It looks incomplete.
->     In the function call "netxen_send_cmd_descs" we have to pass "&req"
-> as
->    2nd argument  not  "ipaddr".
+I suppose that get_maintainers could be told to
+ignore K: entries when using -f <file>.
 
- I should have sent a patch. This piece of code was just to show how to
-copy ip addr in  req.words[1].
+> > It'd be possible to add patterns to MAINTAINERS
+> > if Anatolij really wants to see changes to drivers.
+> It seems a bit too much for my taste (hardly readable? false positives?),
 
-> 
-> 2. Your above suggestion is with assumption that the data type of 2nd
-> argument "ip"
->      in "netxen_config_ipaddr()" is still "u32".  This is not true.
-> 
->      Some days back you suggested to change the data type to "__be32".
->  In the present patch
->      the "ip"  is in "__be32" format i.e already in Big endian format
-> as per requirement.
->      We need to only convert this 32 bit to 64 bit.  There are two
-> ways:
-> 
- No I did not assume that ip is u32, ip is still __be32(ip value is in form of big endian)
- though I should have mentioned it explicitly. But the ip value should be copied to lower 32 bit of req.words[1].
- 
-    
->      a.   *(__be64 *)&req.words[1] = ip;   // auto conversion
-In big endian machine MSB is copied into MSB first. So ip will get copied into higher 32 bit of
-req.words[1] but adapter requires it in lower 32 bit. 
-> 
->      b.   *(__be64 *)&req.words[1] = cpu_to_be64(be32_to_cpu(ip));
->             // explicit conversion.
-> 
-If you follow second cpu_to_be64 it will swap lower 32 bit of ip with higher 32 bit in little endian machine.
-But adapter requires it in lower 32 bit.
-
-Simple solution to copy ip in req.words[1] could be memcpy(&req.words[1], &ip, sizeof(u32));
-
- 
-> 
->  Please correct me if I am wrong.
-> 
-> 
-> regards
-> Santosh
-> 
-> 
-> 
-> 
-> >
-> >
-> >>
-> >>       rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0
-> >> *)&req, 1);
-> >>       if (rv != 0) {
-> >> @@ -1050,7 +1052,7 @@ int netxen_get_flash_mac_addr(struct
-> >> netxen_adapter *adapter, u64 *mac)
-> >>       if (netxen_get_flash_block(adapter, offset, sizeof(u64), pmac)
-> ==
-> >> -1)
-> >>               return -1;
-> >>
-> >> -     if (*mac == cpu_to_le64(~0ULL)) {
-> >> +     if (*mac == ~0ULL) {
-> >
-> > *mac is in little endian format so compare it with cpu_to_le64.
-> >
-> >>
-> >>               offset = NX_OLD_MAC_ADDR_OFFSET +
-> >>                       (adapter->portnum * sizeof(u64));
-> >> @@ -1059,7 +1061,7 @@ int netxen_get_flash_mac_addr(struct
-> >> netxen_adapter *adapter, u64 *mac)
-> >>                                       offset, sizeof(u64), pmac) ==
-> -1)
-> >>                       return -1;
-> >>
-> >> -             if (*mac == cpu_to_le64(~0ULL))
-> >> +             if (*mac == ~0ULL)
-> >
-> > *mac here is in little endian format so compare it with cpu_to_le64.
-> >
-> >>                       return -1;
-> >>       }
-> >>       return 0;
-> >> @@ -2178,7 +2180,7 @@ lock_try:
-> >>               NX_WR_DUMP_REG(FLASH_ROM_WINDOW, adapter-
-> >ahw.pci_base0,
-> >> waddr);
-> >>               raddr = FLASH_ROM_DATA + (fl_addr & 0x0000FFFF);
-> >>               NX_RD_DUMP_REG(raddr, adapter->ahw.pci_base0, &val);
-> >> -             *data_buff++ = cpu_to_le32(val);
-> >> +             *data_buff++ = val;
-> >
-> > It should be cpu_to_le32 as it is returned to tool which requires
-> > output in little endian.
-> >
-> >>               fl_addr += sizeof(val);
-> >>       }
-> >>       readl((void __iomem *)(adapter->ahw.pci_base0 +
-> >> NX_FLASH_SEM2_ULK));
-> >> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-> >> b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-> >> index 8dc4a134..70783b4 100644
-> >> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-> >> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
-> >> @@ -818,7 +818,7 @@ netxen_check_options(struct netxen_adapter
-> >> *adapter)
-> >>                       adapter->driver_mismatch = 1;
-> >>                       return;
-> >>               }
-> >> -             ptr32[i] = cpu_to_le32(val);
-> >> +             ptr32[i] = val;
-> >
-> > Here val should be in little endian (cpu_to_le32) as it will be
-> referenced by byte array to print serial number.
-> >
-> >>               offset += sizeof(u32);
-> >>       }
-> >>
-> >> --
-> >> 1.7.4.4
-> >>
-> >
-> >
-> > Sorry for Late reply.
-> >
-> > Rajesh
-> >
+There are no false positives as far as I can tell.
+Just using *mpc5* doesn't give any either today.
+It's perlish so the whole thing is gibberish anyway.
 
 
