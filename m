@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab2CJE2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 23:28:50 -0500
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:40740 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756229Ab2CJE2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 23:28:48 -0500
-X-Sasl-enc: 6DBQFGnYIo0bfnVK1XL7i6R32O4Qo+oB61kIfZGEl+R/ 1331353727
-Date: Sat, 10 Mar 2012 01:28:44 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Manoj Iyer <manoj.iyer@canonical.com>
-Cc: linux-kernel@vger.kernel.org, ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [ibm-acpi-devel] [PATCH] thinkpad-acpi: recognize Lenovo as
- version string in newer V-series BIOS
-Message-ID: <20120310042844.GA14972@khazad-dum.debian.net>
-References: <1331335944-4662-1-git-send-email-manoj.iyer@canonical.com>
- <1331335944-4662-2-git-send-email-manoj.iyer@canonical.com>
+	id S1758362Ab2CJEec (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 23:34:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64336 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757235Ab2CJEeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 23:34:31 -0500
+Message-ID: <4F5AD95C.5020209@redhat.com>
+Date: Sat, 10 Mar 2012 12:32:28 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331335944-4662-2-git-send-email-manoj.iyer@canonical.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Cong Wang <xiyou.wangcong@gmail.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, linux@arm.linux.org.uk,
+        vgoyal@redhat.com
+Subject: Re: [PATCH] kdump x86: fix total mem size calculation for reservation
+References: <20120309083009.GA14067@darkstar.nay.redhat.com> <4F5ACA2D.5000000@gmail.com>
+In-Reply-To: <4F5ACA2D.5000000@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Mar 2012, Manoj Iyer wrote:
-> The newer V series bios reports product version as 'Lenovo'
-> instead of 'ThinkPad'. Recoginze this new string so that
-> the module can load.
-> 
-> Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
-> ---
->  drivers/platform/x86/thinkpad_acpi.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-> index ea0c607..d68c000 100644
-> --- a/drivers/platform/x86/thinkpad_acpi.c
-> +++ b/drivers/platform/x86/thinkpad_acpi.c
-> @@ -8658,7 +8658,7 @@ static int __must_check __init get_thinkpad_model_data(
->  	}
->  
->  	s = dmi_get_system_info(DMI_PRODUCT_VERSION);
-> -	if (s && !strnicmp(s, "ThinkPad", 8)) {
-> +	if (s && !(strnicmp(s, "ThinkPad", 8) && strnicmp(s, "Lenovo", 6))) {
->  		tp->model_str = kstrdup(s, GFP_KERNEL);
->  		if (!tp->model_str)
->  			return -ENOMEM;
+On 03/10/2012 11:27 AM, Cong Wang wrote:
 
-So far so good, but what driver functionality works well in these new
-lenovo boxes?
+> On 03/09/2012 04:30 PM, Dave Young wrote:
+>> crashkernel reservation need know the total memory size. Current
+>> get_total_mem
+>> simply use max_pfn - min_low_pfn. It is wrong because it will including
+>> memory holes in the middle.
+>>
+>> Especially for kvm guest with memory>  0xe0000000, there's below in
+>> qemu code:
+>> qemu split memory as below:
+>>      if (ram_size>= 0xe0000000 ) {
+>>          above_4g_mem_size = ram_size - 0xe0000000;
+>>          below_4g_mem_size = 0xe0000000;
+>>      } else {
+>>          below_4g_mem_size = ram_size;
+>>      }
+>> So for 4G mem guest, seabios will insert a 512M usable region beyond
+>> of 4G.
+>> Thus in above case max_pfn - min_low_pfn will be more than original
+>> memsize.
+>>
+>> Fixing this issue by using memblock_phys_mem_size() to get the total
+>> memsize.
+>>
+> 
+> Makes sense for me!
+> 
+>> -static inline unsigned long long get_total_mem(void)
+>> -{
+>> -    unsigned long long total;
+>> -
+>> -    total = max_pfn - min_low_pfn;
+>> -    printk("hidave: memsize=%llu\n", memblock_phys_mem_size());
+> 
+> This debugging line does not exist... so this patch can't be applied.
+
+
+Yes, good catch, will remove the line and resend.
+
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Thanks
+Dave
