@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456Ab2CJHCm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 02:02:42 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:25649 "EHLO
+	id S932350Ab2CJHCi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 02:02:38 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:25643 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab2CJHCe (ORCPT
+	with ESMTP id S1753725Ab2CJHCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 02:02:34 -0500
+	Sat, 10 Mar 2012 02:02:32 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
@@ -15,95 +15,73 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2 17/37] PCI: Add __pci_remove_bus_devices()
-Date: Fri,  9 Mar 2012 23:00:17 -0800
-Message-Id: <1331362837-10740-18-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v2 16/37] PCI: Move pci_stop_and_remove_behind_bridge() down
+Date: Fri,  9 Mar 2012 23:00:16 -0800
+Message-Id: <1331362837-10740-17-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
 References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A020203.4F5AFC87.001C,ss=1,re=0.000,fgs=0
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A020203.4F5AFC85.006C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will use it with pci_stop_and_remove_bus later.
-
-Also remove __pci_remove_behind_bridge and pci_stop_behind_bridge.
-
-They are same except one take bridge and one take bus.
-
-We already have pci_stop_bus_devices().
+Later it will use pci_stop_bus_devices instead of pci_stop_behind_bridge.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/remove.c |   28 +++++++++++-----------------
- 1 files changed, 11 insertions(+), 17 deletions(-)
+ drivers/pci/remove.c |   30 +++++++++++++++---------------
+ 1 files changed, 15 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 243d59b..62c348c 100644
+index 04a4861..243d59b 100644
 --- a/drivers/pci/remove.c
 +++ b/drivers/pci/remove.c
-@@ -78,7 +78,7 @@ void pci_remove_bus(struct pci_bus *pci_bus)
- }
- EXPORT_SYMBOL(pci_remove_bus);
- 
--static void __pci_remove_behind_bridge(struct pci_dev *dev);
-+static void __pci_remove_bus_devices(struct pci_bus *bus);
- /**
-  * pci_stop_and_remove_bus_device - remove a PCI device and any children
-  * @dev: the device to remove
-@@ -96,7 +96,7 @@ void __pci_remove_bus_device(struct pci_dev *dev)
- 	if (dev->subordinate) {
- 		struct pci_bus *b = dev->subordinate;
- 
--		__pci_remove_behind_bridge(dev);
-+		__pci_remove_bus_devices(b);
- 		pci_remove_bus(b);
- 		dev->subordinate = NULL;
- 	}
-@@ -111,22 +111,12 @@ void pci_stop_and_remove_bus_device(struct pci_dev *dev)
- 	__pci_remove_bus_device(dev);
+@@ -129,21 +129,6 @@ static void pci_stop_behind_bridge(struct pci_dev *dev)
+ 			pci_stop_bus_device(pci_dev_b(l));
  }
  
--static void __pci_remove_behind_bridge(struct pci_dev *dev)
-+static void __pci_remove_bus_devices(struct pci_bus *bus)
- {
- 	struct list_head *l, *n;
- 
--	if (dev->subordinate)
--		list_for_each_safe(l, n, &dev->subordinate->devices)
--			__pci_remove_bus_device(pci_dev_b(l));
--}
--
--static void pci_stop_behind_bridge(struct pci_dev *dev)
+-/**
+- * pci_stop_and_remove_behind_bridge - stop and remove all devices behind
+- *					 a PCI bridge
+- * @dev: PCI bridge device
+- *
+- * Remove all devices on the bus, except for the parent bridge.
+- * This also removes any child buses, and any devices they may
+- * contain in a depth-first manner.
+- */
+-void pci_stop_and_remove_behind_bridge(struct pci_dev *dev)
 -{
--	struct list_head *l, *n;
--
--	if (dev->subordinate)
--		list_for_each_safe(l, n, &dev->subordinate->devices)
--			pci_stop_bus_device(pci_dev_b(l));
-+	list_for_each_safe(l, n, &bus->devices)
-+		__pci_remove_bus_device(pci_dev_b(l));
- }
- 
- static void pci_stop_bus_devices(struct pci_bus *bus)
-@@ -158,8 +148,12 @@ static void pci_stop_bus_devices(struct pci_bus *bus)
-  */
- void pci_stop_and_remove_behind_bridge(struct pci_dev *dev)
- {
 -	pci_stop_behind_bridge(dev);
 -	__pci_remove_behind_bridge(dev);
-+	struct pci_bus *bus = dev->subordinate;
-+
-+	if (bus) {
-+		pci_stop_bus_devices(bus);
-+		__pci_remove_bus_devices(bus);
-+	}
+-}
+-
+ static void pci_stop_bus_devices(struct pci_bus *bus)
+ {
+ 	struct list_head *l, *n;
+@@ -163,6 +148,21 @@ static void pci_stop_bus_devices(struct pci_bus *bus)
  }
  
  /**
++ * pci_stop_and_remove_behind_bridge - stop and remove all devices behind
++ *					 a PCI bridge
++ * @dev: PCI bridge device
++ *
++ * Remove all devices on the bus, except for the parent bridge.
++ * This also removes any child buses, and any devices they may
++ * contain in a depth-first manner.
++ */
++void pci_stop_and_remove_behind_bridge(struct pci_dev *dev)
++{
++	pci_stop_behind_bridge(dev);
++	__pci_remove_behind_bridge(dev);
++}
++
++/**
+  * pci_stop_bus_device - stop a PCI device and any children
+  * @dev: the device to stop
+  *
 -- 
 1.7.7
 
