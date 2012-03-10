@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232Ab2CJUGM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 15:06:12 -0500
-Received: from new1-smtp.messagingengine.com ([66.111.4.221]:54005 "EHLO
-	new1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751987Ab2CJUGI (ORCPT
+	id S1751779Ab2CJUUP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 15:20:15 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55407 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356Ab2CJUUM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 15:06:08 -0500
-X-Sasl-enc: qZjZ9HiQs74UOFN/9SGZ7WXcloRtZUQfE8XeoTCZGfg3 1331409966
-Message-ID: <4F5BB42E.3090201@signal11.us>
-Date: Sat, 10 Mar 2012 15:06:06 -0500
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110223 Lightning/1.0b2 Thunderbird/3.1.8
+	Sat, 10 Mar 2012 15:20:12 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH 1/2] ARM: at91: only RM9200 has ISA-style PIO
-References: <1331405049-3186-1-git-send-email-alan@signal11.us> <1331405075-3231-1-git-send-email-alan@signal11.us> <201203101924.31710.arnd@arndb.de>
-In-Reply-To: <201203101924.31710.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120310195105.6d301bd5@pyramind.ukuu.org.uk>
+References: <CAPweEDz+seEGbAtE48NfPon66jqvb0sNSMcnC-LnXvmVbF+sbA@mail.gmail.com>
+	<CAPweEDysGTCNp+6SCCpzBorwn5ZczNNgV0E+mBLe0FwfE=3Wqw@mail.gmail.com>
+	<20120310130055.5bd5263a@pyramind.ukuu.org.uk>
+	<CAPweEDx3ktAgz9vdM+E-c5YZGrbBMbX4TOy+QUHV3mRM28oWRw@mail.gmail.com>
+	<20120310195105.6d301bd5@pyramind.ukuu.org.uk>
+Date: Sat, 10 Mar 2012 20:20:11 +0000
+Message-ID: <CAPweEDyk+hshsUfUpSPq9ToNkquwDD0OjYUJknaZGLfKf0U1zw@mail.gmail.com>
+Subject: Re: [advice sought] EOMA68 kernel support
+From: lkcl luke <luke.leighton@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux on small ARM machines 
+	<arm-netbook@lists.phcomp.co.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2012 02:24 PM, Arnd Bergmann wrote:
-> On Saturday 10 March 2012, Alan Ott wrote:
->> From: Arnd Bergmann <arnd@arndb.de>
->>
->> Most at91 systems have no support for PCMCIA or other
->> PC-style buses, so we can select NO_IOPORT in order to
->> disable compilationf or all drivers that need these.
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->> Signed-off-by: Alan Ott <alan@signal11.us>
-> You forgot to Cc the at91 maintainers on this patch (and on patch 0).
-> Also, this patch relies on the another series I did to redefine
-> the meaning of CONFIG_NO_IOPORT while renaming the existing one to
-> CONFIG_NO_IOPORT_MAP. This patch will have to wait for the other
-> series.
+On Sat, Mar 10, 2012 at 7:51 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-Hi Arnd,
+>>  of particular concern is that a CPU card could be running on (small!)
+>> backup battery / supercapacitor whilst being hot-swapped, and thus
+>> that means that the LCD module (drivers/eoma68/lcd.ko?) would need to
+>> be loaded and unloaded from userspace (udev).  that's not going to be
+>> a problem, is it?  i may just be imagining skeletons in the closet,
+>> here.
+>
+> Your device tree describes devices. Your bus creates them when you
+> hotplug and it removes them when you hot unplug. The rest is the drivers
+> problem to behave properly, and refcount right.
 
-I'm going to assume you mean randconfig/ioport in
-git://git.linaro.org/people/arnd/linux.git .
-I'll take this patch out for v2 and make a note that it needs to go with
-the patches in randconfig/ioport.
 
-I used scripts/get_maintainers.pl for the recipient list, but I now see
-how that failed, since this patch modifies the AT91 section of a file
-not in arc/arm/mach-at91.
+>>  * it's the purposes to which the 16 GPIOs can be put that will be
+>> radically different from one I/O board to the next.  GPIO 0 could be
+>> "powerup for WIFI" on one I/O board, but "lid open/shut switch" on
+>> another.
+>
+> It's "GPIO 0 of card X" and providing you remember that, watch your
+> refcounting and don't remap a new device over the address space of an old
+> one during a hotplug you should be fine.
 
-Alan.
+ allright.  thanks alan.  that's clear.
 
+honest opinion sought: is this something that would keep a (good) gsoc
+student occupied full-time?  you or i could complete it in a week, 2
+weeks, whatever, but i'm concerned that a gsoc student would go "um is
+that it??"
+
+yes we'll have by then one or two reference platforms, but that's not
+going to be rocket science to get the device drivers for them
+up-and-running [non-eoma-compliant].
+
+i guess i'm talking myself out of the proposal, am looking for advocates :)
+
+l.
