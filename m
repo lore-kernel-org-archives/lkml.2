@@ -1,119 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab2CJA3R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 19:29:17 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40318 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938Ab2CJA3P convert rfc822-to-8bit (ORCPT
+	id S1758675Ab2CJAbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 19:31:06 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58871 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757170Ab2CJAbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 19:29:15 -0500
+	Fri, 9 Mar 2012 19:31:04 -0500
+Date: Fri, 9 Mar 2012 16:30:58 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] USB: create module_usb_serial_driver macro
+Message-ID: <20120310003058.GB22064@kroah.com>
+References: <20120224233814.GA16588@kroah.com>
+ <4F48CBCF.7060004@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <CAPM31RJpyemsq8jrxya-MQxJvgbEOX1pDEk8LE9gEh-bCmsP+Q@mail.gmail.com>
-References: <20120309235630.12496.3056.stgit@dungbeetle.mtv.corp.google.com>
-	<20120309235944.12863.28602.stgit@dungbeetle.mtv.corp.google.com>
-	<CAPM31RJpyemsq8jrxya-MQxJvgbEOX1pDEk8LE9gEh-bCmsP+Q@mail.gmail.com>
-Date: Fri, 9 Mar 2012 16:29:15 -0800
-Message-ID: <CAKUOC8W--JcA1YfWgSuK3f=dexiJS=-N6ro_3b1W=FnhdYxOrw@mail.gmail.com>
-Subject: Re: [PATCH] sched, x86: fix overflow in cyc2ns_offset
-From: Salman Qazi <sqazi@google.com>
-To: Paul Turner <pjt@google.com>
-Cc: john stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F48CBCF.7060004@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 9, 2012 at 4:22 PM, Paul Turner <pjt@google.com> wrote:
-> On Fri, Mar 9, 2012 at 4:00 PM, Salman Qazi <sqazi@google.com> wrote:
->> When a machine boots up, the TSC generally gets reset.  However, when
->> kexec is used to boot into a kernel, the TSC value would be carried
->> over from the previous kernel.  The computation of cycns_offset in
->> set_cyc2ns_scale is prone to an overflow, if the machine has been up
->> more than 208 days prior to the kexec.  The overflow happens when
->> we multiply *scale, even though there is enough room to store the
->> final answer.  We fix this issue by decomposing tsc_now into the
->> quotient and remainder of division by CYC2NS_SCALE_FACTOR and then
->> performing the multiplication separately on the two components.
->>
->> Refactor code to share the calculation with the previous
->> fix in __cycles_2_ns.
->>
->> Signed-off-by: Salman Qazi <sqazi@google.com>
->> ---
->>  arch/x86/include/asm/timer.h |    8 ++------
->>  arch/x86/kernel/tsc.c        |    3 ++-
->>  include/linux/kernel.h       |   13 +++++++++++++
->>  3 files changed, 17 insertions(+), 7 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
->> index 431793e..34baa0e 100644
->> --- a/arch/x86/include/asm/timer.h
->> +++ b/arch/x86/include/asm/timer.h
->> @@ -57,14 +57,10 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
->>
->>  static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
->>  {
->> -       unsigned long long quot;
->> -       unsigned long long rem;
->>        int cpu = smp_processor_id();
->>        unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
->> -       quot = (cyc >> CYC2NS_SCALE_FACTOR);
->> -       rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
->> -       ns += quot * per_cpu(cyc2ns, cpu) +
->> -               ((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
->> +       ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
->> +                       (1UL << CYC2NS_SCALE_FACTOR));
->>        return ns;
->>  }
->>
->> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
->> index a62c201..183c592 100644
->> --- a/arch/x86/kernel/tsc.c
->> +++ b/arch/x86/kernel/tsc.c
->> @@ -620,7 +620,8 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
->>
->>        if (cpu_khz) {
->>                *scale = (NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR)/cpu_khz;
->> -               *offset = ns_now - (tsc_now * *scale >> CYC2NS_SCALE_FACTOR);
->> +               *offset = ns_now - mult_frac(tsc_now, *scale,
->> +                                            (1UL << CYC2NS_SCALE_FACTOR));
->>        }
->>
->>        sched_clock_idle_wakeup_event(0);
->> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
->> index e834342..d801acb 100644
->> --- a/include/linux/kernel.h
->> +++ b/include/linux/kernel.h
->> @@ -85,6 +85,19 @@
->>  }                                                      \
->>  )
->>
->> +/*
->> + * Multiplies an integer by a fraction, while avoiding unnecessary
->> + * overflow or loss of precision.
->> + */
->> +#define mult_frac(x, numer, denom)(                    \
->> +{                                                      \
->> +       typeof(x) quot = (x) / (denom);                 \
->> +       typeof(x) rem  = (x) % (denom);                 \
->> +       (quot * (numer)) + ((rem * (numer)) / (denom)); \
->> +}                                                      \
->> +)
->
-> Any reason not to make this a static inline so that we get saner typing?
+On Sat, Feb 25, 2012 at 12:53:51PM +0100, Lars-Peter Clausen wrote:
+> On 02/25/2012 12:38 AM, Greg KH wrote:
+> > Now that Alan Stern has cleaned up the usb serial driver registration,
+> > we have the ability to create a module_usb_serial_driver macro to make
+> > things a bit simpler, like the other *_driver macros created.
+> > 
+> > But, as we need two functions here, we can't reuse the existing
+> > module_driver() macro, so we need to roll our own.
+> > 
+> > Lars-Peter, or anyone else, am I missing something here and we can use
+> > module_driver() somehow, or even modify it, to work for subsystems that
+> > need 2 parameters for their function calls to register/deregister?
+> > 
+> 
+> I suppose we can make module_driver a variadic macro and pass any additional
+> parameters to the register and unregister functions. Patch attached.
+> 
+> - Lars
+> 
+> 8<-------------------------------------------------------------------->8
+> >From 0d731970249b787748eccd6e81890c012a44e5a6 Mon Sep 17 00:00:00 2001
+> From: Lars-Peter Clausen <lars@metafoo.de>
+> Date: Sat, 25 Feb 2012 11:25:58 +0100
+> Subject: [PATCH] driver-core: Allow additional parameters for module_driver
+> 
+> Allow module_driver take additional parameters which will be passed to the
+> register and unregister function calls. This allows it to be used in cases
+> where additional parameters are required (e.g. usb_serial_register_drivers).
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> ---
+>  include/linux/device.h |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index b63fb39..bccccef 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -1007,19 +1007,20 @@ extern long sysfs_deprecated;
+>   * @__driver: driver name
+>   * @__register: register function for this driver type
+>   * @__unregister: unregister function for this driver type
+> + * @...: Additional arguments to be passed to __register and __unregister.
+>   *
+>   * Use this macro to construct bus specific macros for registering
+>   * drivers, and do not use it on its own.
+>   */
+> -#define module_driver(__driver, __register, __unregister) \
+> +#define module_driver(__driver, __register, __unregister, ...) \
+>  static int __init __driver##_init(void) \
+>  { \
+> -	return __register(&(__driver)); \
+> +	return __register(&(__driver) , ##__VA_ARGS__); \
+>  } \
+>  module_init(__driver##_init); \
+>  static void __exit __driver##_exit(void) \
+>  { \
+> -	__unregister(&(__driver)); \
+> +	__unregister(&(__driver) , ##__VA_ARGS__); \
+>  } \
+>  module_exit(__driver##_exit);
 
-Only re-usability.  I put it in include/linux/kernel.h with a lot of
-other #defines like min , max, clamp, that are generally
-applicable.
+Nice, let me play with this and see how it works out, thanks.
 
->
->> +
->> +
->>  #define _RET_IP_               (unsigned long)__builtin_return_address(0)
->>  #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
->>
->>
+greg k-h
