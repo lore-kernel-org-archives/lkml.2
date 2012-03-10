@@ -1,103 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759240Ab2CJC77 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 21:59:59 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56643 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756214Ab2CJC76 (ORCPT
+	id S1755216Ab2CJDJr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 22:09:47 -0500
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:47273 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753779Ab2CJDJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 21:59:58 -0500
-Message-ID: <1331348383.3654.1.camel@phoenix>
-Subject: [PATCH] regulator: Make s5m8767_get_voltage_register always return
- correct register
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Sat, 10 Mar 2012 10:59:43 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Fri, 9 Mar 2012 22:09:45 -0500
+X-Greylist: delayed 1119 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Mar 2012 22:09:45 EST
+Date: Sat, 10 Mar 2012 02:51:03 +0000
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH 1/6] Squashfs: update comment removing reference to zlib
+ only
+Message-ID: <4f5ac197.crucH6qQdXvMD3Aa%phillip@lougher.demon.co.uk>
+User-Agent: Heirloom mailx 12.5 6/20/10
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check s5m8767->buck[2|3|4]_gpiodvs status in s5m8767_get_voltage_register
-and return correct register accordingly.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Comment was written when Squashfs only supported zlib compression.
+This comment is now misleading given Squashfs supports other
+compression algorithms.
+
+Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
 ---
- drivers/regulator/s5m8767.c |   27 +++++++++------------------
- 1 files changed, 9 insertions(+), 18 deletions(-)
+ fs/squashfs/block.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index 611d02d..58447db 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -219,6 +219,7 @@ static int s5m8767_reg_disable(struct regulator_dev *rdev)
- 
- static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
- {
-+	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
- 	int reg_id = rdev_get_id(rdev);
- 	int reg;
- 
-@@ -234,12 +235,18 @@ static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
- 		break;
- 	case S5M8767_BUCK2:
- 		reg = S5M8767_REG_BUCK2DVS1;
-+		if (s5m8767->buck2_gpiodvs)
-+			reg += s5m8767->buck_gpioindex;
- 		break;
- 	case S5M8767_BUCK3:
- 		reg = S5M8767_REG_BUCK3DVS1;
-+		if (s5m8767->buck3_gpiodvs)
-+			reg += s5m8767->buck_gpioindex;
- 		break;
- 	case S5M8767_BUCK4:
- 		reg = S5M8767_REG_BUCK4DVS1;
-+		if (s5m8767->buck4_gpiodvs)
-+			reg += s5m8767->buck_gpioindex;
- 		break;
- 	case S5M8767_BUCK5:
- 		reg = S5M8767_REG_BUCK5CTRL2;
-@@ -259,7 +266,7 @@ static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
- static int s5m8767_get_voltage_sel(struct regulator_dev *rdev)
- {
- 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
--	int reg, mask = 0xff, ret;
-+	int reg, mask, ret;
- 	int reg_id = rdev_get_id(rdev);
- 	u8 val;
- 
-@@ -267,23 +274,7 @@ static int s5m8767_get_voltage_sel(struct regulator_dev *rdev)
- 	if (ret)
- 		return ret;
- 
--	switch (reg_id) {
--	case S5M8767_LDO1 ... S5M8767_LDO28:
--		mask = 0x3f;
--		break;
--	case S5M8767_BUCK2:
--		if (s5m8767->buck2_gpiodvs)
--			reg += s5m8767->buck_gpioindex;
--		break;
--	case S5M8767_BUCK3:
--		if (s5m8767->buck3_gpiodvs)
--			reg += s5m8767->buck_gpioindex;
--		break;
--	case S5M8767_BUCK4:
--		if (s5m8767->buck4_gpiodvs)
--			reg += s5m8767->buck_gpioindex;
--		break;
--	}
-+	mask = (reg_id < S5M8767_BUCK1) ? 0x3f : 0xff;
- 
- 	ret = s5m_reg_read(s5m8767->iodev, reg, &val);
- 	if (ret)
+diff --git a/fs/squashfs/block.c b/fs/squashfs/block.c
+index ed0eb2a..fb50652 100644
+--- a/fs/squashfs/block.c
++++ b/fs/squashfs/block.c
+@@ -83,7 +83,8 @@ static struct buffer_head *get_block_length(struct super_block *sb,
+  * filesystem), otherwise the length is obtained from the first two bytes of
+  * the metadata block.  A bit in the length field indicates if the block
+  * is stored uncompressed in the filesystem (usually because compression
+- * generated a larger block - this does occasionally happen with zlib).
++ * generated a larger block - this does occasionally happen with compression
++ * algorithms).
+  */
+ int squashfs_read_data(struct super_block *sb, void **buffer, u64 index,
+ 			int length, u64 *next_index, int srclength, int pages)
 -- 
 1.7.5.4
-
-
 
