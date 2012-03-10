@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932703Ab2CJHD3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 02:03:29 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:39467 "EHLO
+	id S932730Ab2CJHEB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 02:04:01 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:39520 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab2CJHDT (ORCPT
+	with ESMTP id S932704Ab2CJHDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 02:03:19 -0500
+	Sat, 10 Mar 2012 02:03:30 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>,
@@ -15,68 +15,62 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2 32/37] x86, PCI: add __pcibios_scan_specific_bus that can skip bus_add
-Date: Fri,  9 Mar 2012 23:00:32 -0800
-Message-Id: <1331362837-10740-33-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v2 37/37] PCI, sysfs: Prepare to kill pci device rescan
+Date: Fri,  9 Mar 2012 23:00:37 -0800
+Message-Id: <1331362837-10740-38-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
 References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090203.4F5AFCB4.005A,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090209.4F5AFCBF.0041,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So could insert pci_assign_unassigned_bus_resources() before do bus_add.
+Hope we can kill it after one year.
+
+Print warning to catch real users for that feature.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/pci/legacy.c |   19 +++++++++++++------
- 1 files changed, 13 insertions(+), 6 deletions(-)
+ Documentation/feature-removal-schedule.txt |    9 +++++++++
+ drivers/pci/pci-sysfs.c                    |    3 +++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/pci/legacy.c b/arch/x86/pci/legacy.c
-index a1df191..aab0e41 100644
---- a/arch/x86/pci/legacy.c
-+++ b/arch/x86/pci/legacy.c
-@@ -34,25 +34,32 @@ int __init pci_legacy_init(void)
- 	return 0;
- }
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index a0ffac0..1b984a1 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -299,6 +299,15 @@ Why:	In 2.6.27, the semantics of /sys/bus/pci/slots was redefined to
+ 	fakephp interface.
+ Who:	Alex Chiang <achiang@hp.com>
  
--void __devinit pcibios_scan_specific_bus(int busn)
-+static __devinit struct pci_bus *__pcibios_scan_specific_bus(int busn,
-+					 bool bus_add)
- {
- 	int devfn;
- 	long node;
- 	u32 l;
- 
--	if (pci_find_bus(0, busn))
--		return;
--
- 	node = get_mp_bus_to_node(busn);
- 	for (devfn = 0; devfn < 256; devfn += 8) {
- 		if (!raw_pci_read(0, busn, devfn, PCI_VENDOR_ID, 2, &l) &&
- 		    l != 0x0000 && l != 0xffff) {
- 			DBG("Found device at %02x:%02x [%04x]\n", busn, devfn, l);
- 			printk(KERN_INFO "PCI: Discovered peer bus %02x\n", busn);
--			pci_scan_bus_on_node(busn, &pci_root_ops, node);
--			return;
-+			return __pci_scan_bus_on_node(busn, &pci_root_ops, node,
-+					 bus_add);
- 		}
- 	}
++-----------------------------
 +
-+	return NULL;
-+}
-+void __devinit pcibios_scan_specific_bus(int busn)
-+{
-+	if (pci_find_bus(0, busn))
-+		return;
++What:	/sys/bus/pci/devices/.../rescan
++When:	April 2013
++Why:	That rescan will rescan pci parent's bus. It is confusing.
++	Now we have bridge rescan_bridge and bus rescan, and they could
++	be used on exact device and bus that need to be rescaned.
++Who:	Yinghai Lu <yinghai@kernel.org>
 +
-+	__pcibios_scan_specific_bus(busn, true);
- }
- EXPORT_SYMBOL_GPL(pcibios_scan_specific_bus);
+ ---------------------------
  
+ What:	CONFIG_RFKILL_INPUT
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index fc0a7de..c180455 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -320,6 +320,9 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
+ 		return -EINVAL;
+ 
+ 	if (val) {
++		printk(KERN_WARNING "rescan with pci device will be removed "
++			 "shortly, please use bridge rescan_bridge\n"
++			 "or bus/rescan instead\n");
+ 		mutex_lock(&pci_remove_rescan_mutex);
+ 		pci_rescan_bus(pdev->bus);
+ 		mutex_unlock(&pci_remove_rescan_mutex);
 -- 
 1.7.7
 
