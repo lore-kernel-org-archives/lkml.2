@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab2CJM65 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 07:58:57 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47390 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab2CJM64 (ORCPT
+	id S1753846Ab2CJNKn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 08:10:43 -0500
+Received: from vps1.hno.se ([195.20.207.177]:33031 "EHLO
+	vps1.henriknordstrom.net" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753445Ab2CJNKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 07:58:56 -0500
-Date: Sat, 10 Mar 2012 13:00:55 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: lkcl luke <luke.leighton@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux on small ARM machines 
-	<arm-netbook@lists.phcomp.co.uk>
-Subject: Re: [advice sought] EOMA68 kernel support
-Message-ID: <20120310130055.5bd5263a@pyramind.ukuu.org.uk>
+	Sat, 10 Mar 2012 08:10:42 -0500
+X-Greylist: delayed 1806 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Mar 2012 08:10:42 EST
+Message-ID: <1331383208.29393.18.camel@home.hno.se>
+Subject: Re: [Arm-netbook] [advice sought] EOMA68 kernel support
+From: Henrik =?ISO-8859-1?Q?Nordstr=F6m?= <henrik@henriknordstrom.net>
+To: Linux on small ARM machines <arm-netbook@lists.phcomp.co.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sat, 10 Mar 2012 13:40:08 +0100
 In-Reply-To: <CAPweEDysGTCNp+6SCCpzBorwn5ZczNNgV0E+mBLe0FwfE=3Wqw@mail.gmail.com>
 References: <CAPweEDz+seEGbAtE48NfPon66jqvb0sNSMcnC-LnXvmVbF+sbA@mail.gmail.com>
-	<CAPweEDysGTCNp+6SCCpzBorwn5ZczNNgV0E+mBLe0FwfE=3Wqw@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	 <CAPweEDysGTCNp+6SCCpzBorwn5ZczNNgV0E+mBLe0FwfE=3Wqw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (vps1.henriknordstrom.net [IPv6:2a02:750:7::d0a]); Sat, 10 Mar 2012 12:40:11 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Mar 2012 06:45:15 +0000
-lkcl luke <luke.leighton@gmail.com> wrote:
+lör 2012-03-10 klockan 06:45 +0000 skrev lkcl luke:
 
-> On Fri, Mar 9, 2012 at 10:41 PM, lkcl luke <luke.leighton@gmail.com> wrote:
-> 
-> > the implications of that split, for the linux kernel source code, are
-> > a bit... scarey :)
-> 
 >  ... so, real simple very basic, concrete and necessary question:
 > where the hell in the linux kernel tree should support for eoma68 be
 > added??
 
-It sounds to me like a bus.
+Good question.
 
->  * driver support can't be added to drivers/ because although a device
-> with an EOMA68 CPU card *requires* drivers, it's not *actual* drivers
-> being added, it's driver *grouping* code that's required, and that
-> concept simply does... not... exist.
+There is two parts of eoma68 relevant to this
 
-Actually we stick busses in drivers too (see pci...)
+First, there is the capabilitities of the CPU card itself.
 
->  * architecture support can't be added to arch/ because that contains
-> code for CPUs not code that is about helping to support multiple CPUs.
->  eoma isn't a CPU.
+Second, there is the I/O board it gets connected to.
 
-See above.. it's a bus
+These two parts need to be matched, resulting in a device tree or
+similar for the actual system in it's current form, and is something
+that may even change dynamically at suspend/resume. The I/O board may
+cause different I/O profiles to be selected bu the CPU card. A
+theoretical example would be one configuraiton having LCD, the other
+doing 10 UARTs on the same lines. This requires the CPU card to adopt in
+which hardware devices it activates, something ARM SoCs is quite good at
+and A10 in particular.
 
-> very basic question.  where the hell should EOMA support source code go?
-> 
-> bearing in mind that the first CPU card is an Allwinner A10, the next
-> one is likely to be an AMD Fusion, the one after that could be from
-> icubecorp, the one after that a multi-core SMP xtensa, etc.
+We do not know yet which I/O profiles of EOMA will be available or used
+for. The current profile is based on the expected initial target
+systems.
 
-Off the top of my head I suspect you want
+The EOMA connector in itself is a kind of I/O bus.
 
-drivers/eoma68/
+Regards
+Henrik
 
-which is the bus interface and glue including reading the device tree
-data for the current board you are plugged into and building a device
-tree from that.
-
-lib/eoma68
-
-or some similar name, which is the library routines everything using
-eoma68 needs
-
-arch/[x86.arm,..]/platform/eoma68/..
-
-probably the platform code for each system.
-
-
-I don't btw see the problem with your device trees and display. If you've
-got a device tree on *both* the CPU card and the I/O boards then you've
-got all the data in the right places.
-
-Alan
