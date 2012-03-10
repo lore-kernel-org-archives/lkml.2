@@ -1,99 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab2CJVh5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 16:37:57 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:37460 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788Ab2CJVhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 16:37:53 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jan Kara <jack@suse.cz>
-Subject: Re: [linux-pm] [Patch] JBD and JBD2 missing set_freezable()
-Date: Sat, 10 Mar 2012 22:42:00 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc6+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, Nigel Cunningham <nigel@tuxonice.net>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-References: <4F2BA1FD.3030302@tuxonice.net> <201203042351.07405.rjw@sisk.pl> <20120305102800.GB6643@quack.suse.cz>
-In-Reply-To: <20120305102800.GB6643@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203102242.00557.rjw@sisk.pl>
+	id S1752604Ab2CJVjB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 16:39:01 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49958 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab2CJVi7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 16:38:59 -0500
+From: Alan Ott <alan@signal11.us>
+To: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Alan Ott <alan@signal11.us>, Arnd Bergmann <arnd@arndb.de>,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: [PATCH v2 1/2] ARM: AT91: Add parameter for AT91_HAS_PATA
+Date: Sat, 10 Mar 2012 16:38:51 -0500
+Message-Id: <1331415531-10961-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1331415380-10928-1-git-send-email-alan@signal11.us>
+References: <1331415380-10928-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Not all at91 chips have PATA, this parameter will identify which
+chips do. The determining of which chips support PATA was done
+by Arnd Bergmann.
 
-Sorry for the delay.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Alan Ott <alan@signal11.us>
+CC: Ben Dooks <ben-linux@fluff.org>
+---
+ arch/arm/mach-at91/Kconfig |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-On Monday, March 05, 2012, Jan Kara wrote:
-> On Sun 04-03-12 23:51:07, Rafael J. Wysocki wrote:
-> > On Friday, February 03, 2012, Nigel Cunningham wrote:
-> > > Hi all.
-> > > 
-> > > With the latest and greatest changes to the freezer, I started seeing
-> > > panics that were caused by jbd2 running post-process freezing and
-> > > hitting the canary BUG_ON for non-TuxOnIce I/O submission. I've traced
-> > > this back to a lack of set_freezable calls in both jbd and jbd2. Since
-> > > they're clearly meant to be frozen (there are tests for freezing()), I
-> > > submit the following patch to add the missing calls.
-> > > 
-> > > Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
-> > 
-> > Well, I wonder what the filesystems people think about that.
->   Nigel is right that threads are meant to be freezable. If below patch
-> is needed for that, you have my ack.
-
-Yes, it is, thanks!  I'm going to push it for v3.4 along with PM updates.
-
->   Just two notes:
-> 1) Freezing the journal thread will effectively block filesystem activity
-> (not immediately but once transaction fills up) so you should better make
-> sure you don't need to do anything with the filesystem after freezing the
-> thread.
-
-Sure, no worries. :-)
-
-> 2) Is freezing journal thread still needed when we freeze filesystem in
-> suspend code? Because no IO should happen once filesystem is frozen...
-
-It won't be strictly necessary, but it won't hurt either.  However, until
-we start freezing filesystems in suspend code, it is needed.
-
-Thanks,
-Rafael
-
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index 71feb00..9eeeabe 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -24,6 +24,9 @@ config AT91_SAM9_ALT_RESET
+ config AT91_SAM9G45_RESET
+ 	bool
  
-> > > diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-> > > index 59c09f9..89cd985 100644
-> > > --- a/fs/jbd/journal.c
-> > > +++ b/fs/jbd/journal.c
-> > > @@ -129,6 +129,8 @@ static int kjournald(void *arg)
-> > >  	setup_timer(&journal->j_commit_timer, commit_timeout,
-> > >  			(unsigned long)current);
-> > > 
-> > > +	set_freezable();
-> > > +
-> > >  	/* Record that the journal thread is running */
-> > >  	journal->j_task = current;
-> > >  	wake_up(&journal->j_wait_done_commit);
-> > > diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-> > > index c0a5f9f..663e47c 100644
-> > > --- a/fs/jbd2/journal.c
-> > > +++ b/fs/jbd2/journal.c
-> > > @@ -139,6 +139,8 @@ static int kjournald2(void *arg)
-> > >  	setup_timer(&journal->j_commit_timer, commit_timeout,
-> > >  			(unsigned long)current);
-> > > 
-> > > +	set_freezable();
-> > > +
-> > >  	/* Record that the journal thread is running */
-> > >  	journal->j_task = current;
-> > >  	wake_up(&journal->j_wait_done_commit);
-> > > 
-> > 
-> 
++config AT91_HAS_PATA
++	bool
++
+ menu "Atmel AT91 System-on-Chip"
+ 
+ choice
+@@ -46,6 +49,7 @@ config ARCH_AT91SAM9260
+ 	select HAVE_AT91_USART5
+ 	select HAVE_NET_MACB
+ 	select AT91_SAM9_ALT_RESET
++	select AT91_HAS_PATA
+ 
+ config ARCH_AT91SAM9261
+ 	bool "AT91SAM9261"
+@@ -54,6 +58,7 @@ config ARCH_AT91SAM9261
+ 	select HAVE_FB_ATMEL
+ 	select HAVE_AT91_DBGU0
+ 	select AT91_SAM9_ALT_RESET
++	select AT91_HAS_PATA
+ 
+ config ARCH_AT91SAM9G10
+ 	bool "AT91SAM9G10"
+@@ -62,6 +67,7 @@ config ARCH_AT91SAM9G10
+ 	select HAVE_AT91_DBGU0
+ 	select HAVE_FB_ATMEL
+ 	select AT91_SAM9_ALT_RESET
++	select AT91_HAS_PATA
+ 
+ config ARCH_AT91SAM9263
+ 	bool "AT91SAM9263"
+@@ -71,6 +77,7 @@ config ARCH_AT91SAM9263
+ 	select HAVE_NET_MACB
+ 	select HAVE_AT91_DBGU1
+ 	select AT91_SAM9_ALT_RESET
++	select AT91_HAS_PATA
+ 
+ config ARCH_AT91SAM9RL
+ 	bool "AT91SAM9RL"
+@@ -80,6 +87,7 @@ config ARCH_AT91SAM9RL
+ 	select HAVE_FB_ATMEL
+ 	select HAVE_AT91_DBGU0
+ 	select AT91_SAM9_ALT_RESET
++	select AT91_HAS_PATA
+ 
+ config ARCH_AT91SAM9G20
+ 	bool "AT91SAM9G20"
+@@ -91,6 +99,7 @@ config ARCH_AT91SAM9G20
+ 	select HAVE_AT91_USART5
+ 	select HAVE_NET_MACB
+ 	select AT91_SAM9_ALT_RESET
++	select AT91_HAS_PATA
+ 
+ config ARCH_AT91SAM9G45
+ 	bool "AT91SAM9G45"
+@@ -101,6 +110,7 @@ config ARCH_AT91SAM9G45
+ 	select HAVE_NET_MACB
+ 	select HAVE_AT91_DBGU1
+ 	select AT91_SAM9G45_RESET
++	select AT91_HAS_PATA
+ 
+ config ARCH_AT91CAP9
+ 	bool "AT91CAP9"
+@@ -110,6 +120,7 @@ config ARCH_AT91CAP9
+ 	select HAVE_NET_MACB
+ 	select HAVE_AT91_DBGU1
+ 	select AT91_SAM9G45_RESET
++	select AT91_HAS_PATA
+ 
+ config ARCH_AT91X40
+ 	bool "AT91x40"
+-- 
+1.7.0.4
 
