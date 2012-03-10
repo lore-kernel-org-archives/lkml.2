@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566Ab2CJSoh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 13:44:37 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44413 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab2CJSoT (ORCPT
+	id S1751961Ab2CJSpM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 13:45:12 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55438 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab2CJSpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 13:44:19 -0500
-Date: Sat, 10 Mar 2012 19:44:07 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Joe Perches <joe@perches.com>
-Cc: Anatolij Gustschin <agust@denx.de>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Jeff Garzik <jgarzik@pobox.com>, kernel-janitors@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] drivers/ata/pata_mpc52xx.c: add missing kfree
-Message-ID: <20120310184407.GB4139@pengutronix.de>
-References: <1331402199-8000-1-git-send-email-Julia.Lawall@lip6.fr>
- <20120310181315.GA4139@pengutronix.de>
- <1331404377.14442.19.camel@joe2Laptop>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cvVnyQ+4j833TQvp"
-Content-Disposition: inline
-In-Reply-To: <1331404377.14442.19.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Sat, 10 Mar 2012 13:45:00 -0500
+From: Alan Ott <alan@signal11.us>
+To: Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Alan Ott <alan@signal11.us>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Ott <alan@signal11.us>
+Subject: [PATCH 2/2] ARM: at91: Use proper __iomem annotations
+Date: Sat, 10 Mar 2012 13:44:55 -0500
+Message-Id: <1331405095-3299-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1331405049-3186-1-git-send-email-alan@signal11.us>
+References: <1331405049-3186-1-git-send-email-alan@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Arnd Bergmann <arnd@arndb.de>
 
---cvVnyQ+4j833TQvp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+MMIO addresses should be of type 'void __iomem *', not integer,
+in order to make the build-time type system of the kernel work.
 
+This changes some of the locations in the at91 platform that
+I noticed, but there may be more, since I have not yet built
+every configuration.
 
-> Anatolij is not listed as a maintainer for this file
-> nor has he ever written or signed a patch for it.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ arch/arm/mach-at91/at91rm9200.c            |    2 +-
+ arch/arm/mach-at91/include/mach/hardware.h |    4 ++++
+ arch/arm/mach-at91/setup.c                 |    4 ++--
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-I noticed that Grant was in CC, assumed that it was because of his previous=
- MPC
-maintainership and mentioned that Anatolij took over. Nothing more, just wa=
-nted
-to help.
+diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+index 99c3174..239b657 100644
+--- a/arch/arm/mach-at91/at91rm9200.c
++++ b/arch/arm/mach-at91/at91rm9200.c
+@@ -27,7 +27,7 @@
+ 
+ static struct map_desc at91rm9200_io_desc[] __initdata = {
+ 	{
+-		.virtual	= AT91_VA_BASE_EMAC,
++		.virtual	= (unsigned long)AT91_VA_BASE_EMAC,
+ 		.pfn		= __phys_to_pfn(AT91RM9200_BASE_EMAC),
+ 		.length		= SZ_16K,
+ 		.type		= MT_DEVICE,
+diff --git a/arch/arm/mach-at91/include/mach/hardware.h b/arch/arm/mach-at91/include/mach/hardware.h
+index 2d0e4e9..91375e2 100644
+--- a/arch/arm/mach-at91/include/mach/hardware.h
++++ b/arch/arm/mach-at91/include/mach/hardware.h
+@@ -75,8 +75,12 @@
+  * to 0xFEF78000 .. 0xFF000000.  (544Kb)
+  */
+ #define AT91_IO_PHYS_BASE	0xFFF78000
++#ifdef __ASSEMBLER__
+ #define AT91_IO_VIRT_BASE	(0xFF000000 - AT91_IO_SIZE)
+ #else
++#define AT91_IO_VIRT_BASE	(void __iomem *)(0xFF000000 - AT91_IO_SIZE)
++#endif
++#else
+ /*
+  * Identity mapping for the non MMU case.
+  */
+diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
+index 69d3fc4..809da35 100644
+--- a/arch/arm/mach-at91/setup.c
++++ b/arch/arm/mach-at91/setup.c
+@@ -57,7 +57,7 @@ void __init at91_init_sram(int bank, unsigned long base, unsigned int length)
+ {
+ 	struct map_desc *desc = &sram_desc[bank];
+ 
+-	desc->virtual = AT91_IO_VIRT_BASE - length;
++	desc->virtual = (unsigned long)AT91_IO_VIRT_BASE - length;
+ 	if (bank > 0)
+ 		desc->virtual -= sram_desc[bank - 1].length;
+ 
+@@ -72,7 +72,7 @@ void __init at91_init_sram(int bank, unsigned long base, unsigned int length)
+ }
+ 
+ static struct map_desc at91_io_desc __initdata = {
+-	.virtual	= AT91_VA_BASE_SYS,
++	.virtual	= (unsigned long)AT91_VA_BASE_SYS,
+ 	.pfn		= __phys_to_pfn(AT91_BASE_SYS),
+ 	.length		= SZ_16K,
+ 	.type		= MT_DEVICE,
+-- 
+1.7.0.4
 
-> It'd be possible to add patterns to MAINTAINERS
-> if Anatolij really wants to see changes to drivers.
-
-It seems a bit too much for my taste (hardly readable? false positives?), b=
-ut
-then again, it is not my decision, but Anatolij's :)
-
-Thanks!
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---cvVnyQ+4j833TQvp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk9boPcACgkQD27XaX1/VRulfACaA9SJ+mYmDAahULtYCkpEy3fw
-2PcAoMrBrav7Iq+Ay12VktLVxc4jHRYV
-=14t0
------END PGP SIGNATURE-----
-
---cvVnyQ+4j833TQvp--
