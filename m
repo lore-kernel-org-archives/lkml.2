@@ -1,78 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757615Ab2CJDcT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 22:32:19 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35957 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab2CJDcR convert rfc822-to-8bit (ORCPT
+	id S1755354Ab2CJDlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 22:41:05 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47058 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265Ab2CJDlA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 22:32:17 -0500
+	Fri, 9 Mar 2012 22:41:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120308195825.GC2412@linux.vnet.ibm.com>
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
-	<1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
-	<1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
-	<1331032571.11248.277.camel@twins>
-	<CACvQF52tYmG4Bx+L+cTjVRbvQxj=sKiKrxhuv35H=fAFVvQJ2Q@mail.gmail.com>
-	<1331048093.11248.317.camel@twins>
-	<20120308195825.GC2412@linux.vnet.ibm.com>
-Date: Sat, 10 Mar 2012 11:32:16 +0800
-Message-ID: <CACvQF51u8G=3sREvAV4Gf9Y9-+tKXWfzRzXGLcXgdh=hXZ_JxQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine call_srcu()
+In-Reply-To: <20120301131957.GA2412@linux.vnet.ibm.com>
+References: <4F44B580.6040003@cn.fujitsu.com>
+	<4F4744E9.1060109@cn.fujitsu.com>
+	<20120224200109.GH2399@linux.vnet.ibm.com>
+	<4F4B3840.6000504@cn.fujitsu.com>
+	<20120227183035.GE2463@linux.vnet.ibm.com>
+	<4F4C331A.7090007@cn.fujitsu.com>
+	<20120228134718.GF2465@linux.vnet.ibm.com>
+	<4F4DF8E4.1070100@cn.fujitsu.com>
+	<20120229135508.GB2385@linux.vnet.ibm.com>
+	<4F4EDF7A.6060607@cn.fujitsu.com>
+	<20120301131957.GA2412@linux.vnet.ibm.com>
+Date: Sat, 10 Mar 2012 11:41:00 +0800
+Message-ID: <CACvQF53uoJ4r=hbgv3wFQWB-9=btDiOJZV3YyNNHHSPjpeGp0A@mail.gmail.com>
+Subject: Re: [PATCH 2/2 RFC] srcu: implement Peter's checking algorithm
 From: Lai Jiangshan <eag0628@gmail.com>
 To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
         mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
         mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        fweisbec@gmail.com, patches@linaro.org, tj@kernel.org
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 9, 2012 at 3:58 AM, Paul E. McKenney
+On Thu, Mar 1, 2012 at 9:20 PM, Paul E. McKenney
 <paulmck@linux.vnet.ibm.com> wrote:
-> On Tue, Mar 06, 2012 at 04:34:53PM +0100, Peter Zijlstra wrote:
->> On Tue, 2012-03-06 at 23:12 +0800, Lai Jiangshan wrote:
->> > On Tue, Mar 6, 2012 at 7:16 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > > On Tue, 2012-03-06 at 17:57 +0800, Lai Jiangshan wrote:
->> > >>         srcu_head is bigger, it is worth, it provides more ability and simplify
->> > >>         the srcu code.
->> > >
->> > > Dubious claim.. memory footprint of various data structures is deemed
->> > > important. rcu_head is 16 bytes, srcu_head is 32 bytes. I think it would
->> > > be real nice not to have two different callback structures and not grow
->> > > them as large.
+> On Thu, Mar 01, 2012 at 10:31:22AM +0800, Lai Jiangshan wrote:
+>> On 02/29/2012 09:55 PM, Paul E. McKenney wrote:
+>> > On Wed, Feb 29, 2012 at 06:07:32PM +0800, Lai Jiangshan wrote:
+>> >> On 02/28/2012 09:47 PM, Paul E. McKenney wrote:
+>> >>> On Tue, Feb 28, 2012 at 09:51:22AM +0800, Lai Jiangshan wrote:
+>> >>>> On 02/28/2012 02:30 AM, Paul E. McKenney wrote:
+>> >>>>> On Mon, Feb 27, 2012 at 04:01:04PM +0800, Lai Jiangshan wrote:
+>> >>>>>> >From 40724998e2d121c2b5a5bd75114625cfd9d4f9a9 Mon Sep 17 00:00:00 2001
+>> >>>>>> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> >>>>>> Date: Mon, 27 Feb 2012 14:22:47 +0800
+>> >>>>>> Subject: [PATCH 2/2] srcu: implement Peter's checking algorithm
+>> >>>>>>
+>> >>>>>> This patch implement the algorithm as Peter's:
+>> >>>>>> https://lkml.org/lkml/2012/2/1/119
+>> >>>>>>
+>> >>>>>> o      Make the checking lock-free and we can perform parallel checking,
+>> >>>>>>        Although almost parallel checking makes no sense, but we need it
+>> >>>>>>        when 1) the original checking task is preempted for long, 2)
+>> >>>>>>        sychronize_srcu_expedited(), 3) avoid lock(see next)
+>> >>>>>>
+>> >>>>>> o      Since it is lock-free, we save a mutex in state machine for
+>> >>>>>>        call_srcu().
+>> >>>>>>
+>> >>>>>> o      Remove the SRCU_REF_MASK and remove the coupling with the flipping.
+>> >>>>>>        (so we can remove the preempt_disable() in future, but use
+>> >>>>>>         __this_cpu_inc() instead.)
+>> >>>>>>
+>> >>>>>> o      reduce a smp_mb(), simplify the comments and make the smp_mb() pairs
+>> >>>>>>        more intuitive.
+>> >>>>>
+>> >>>>> Hello, Lai,
+>> >>>>>
+>> >>>>> Interesting approach!
+>> >>>>>
+>> >>>>> What happens given the following sequence of events?
+>> >>>>>
+>> >>>>> o       CPU 0 in srcu_readers_active_idx_check() invokes
+>> >>>>>         srcu_readers_seq_idx(), getting some number back.
+>> >>>>>
+>> >>>>> o       CPU 0 invokes srcu_readers_active_idx(), summing the
+>> >>>>>         ->c[] array up through CPU 3.
+>> >>>>>
+>> >>>>> o       CPU 1 invokes __srcu_read_lock(), and increments its counter
+>> >>>>>         but not yet its ->seq[] element.
+>> >>>>
+>> >>>>
+>> >>>> Any __srcu_read_lock() whose increment of active counter is not seen
+>> >>>> by srcu_readers_active_idx() is considerred as
+>> >>>> "reader-started-after-this-srcu_readers_active_idx_check()",
+>> >>>> We don't need to wait.
+>> >>>>
+>> >>>> As you said, this srcu C.S 's increment seq is not seen by above
+>> >>>> srcu_readers_seq_idx().
+>> >>>>
+>> >>>>>
+>> >>>>> o       CPU 0 completes its summing of the ->c[] array, incorrectly
+>> >>>>>         obtaining zero.
+>> >>>>>
+>> >>>>> o       CPU 0 invokes srcu_readers_seq_idx(), getting the same
+>> >>>>>         number back that it got last time.
+>> >>>>
+>> >>>> If it incorrectly get zero, it means __srcu_read_unlock() is seen
+>> >>>> in srcu_readers_active_idx(), and it means the increment of
+>> >>>> seq is seen in this srcu_readers_seq_idx(), it is different
+>> >>>> from the above seq that it got last time.
+>> >>>>
+>> >>>> increment of seq is not seen by above srcu_readers_seq_idx(),
+>> >>>> but is seen by later one, so the two returned seq is different,
+>> >>>> this is the core of Peter's algorithm, and this was written
+>> >>>> in the comments(Sorry for my bad English). Or maybe I miss
+>> >>>> your means in this mail.
+>> >>>
+>> >>> OK, good, this analysis agrees with what I was thinking.
+>> >>>
+>> >>> So my next question is about the lock freedom.  This lock freedom has to
+>> >>> be limited in nature and carefully implemented.  The reasons for this are:
+>> >>>
+>> >>> 1.        Readers can block in any case, which can of course block both
+>> >>>   synchronize_srcu_expedited() and synchronize_srcu().
+>> >>>
+>> >>> 2.        Because only one CPU at a time can be incrementing ->completed,
+>> >>>   some sort of lock with preemption disabling will of course be
+>> >>>   needed.  Alternatively, an rt_mutex could be used for its
+>> >>>   priority-inheritance properties.
+>> >>>
+>> >>> 3.        Once some CPU has incremented ->completed, all CPUs that might
+>> >>>   still be summing up the old indexes must stop.  If they don't,
+>> >>>   they might incorrectly call a too-short grace period in case of
+>> >>>   ->seq[]-sum overflow on 32-bit systems.
+>> >>>
+>> >>> Or did you have something else in mind?
+>> >>
+>> >> When flip happens when check_zero, this check_zero will no be
+>> >> committed even it is success.
 >> >
->> > CC: tj@kernel.org
->> > It could be better if workqueue also supports 2*sizeof(long) work callbacks.
+>> > But if the CPU in check_zero isn't blocking the grace period, then
+>> > ->completed could overflow while that CPU was preempted.  Then how
+>> > would this CPU know that the flip had happened?
 >>
->> That's going to be very painful if at all possible.
+>> as you said, check the ->completed.
+>> but disable the overflow for ->completed.
 >>
->> > I prefer ability/functionality a little more, it eases the caller's pain.
->> > preemptible callbacks also eases the pressure of the whole system.
->> > But I'm also ok if we limit the srcu-callbacks in softirq.
+>> there is a spinlock for srcu_struct(including locking for flipping)
 >>
->> You don't have to use softirq, you could run a complete list from a
->> single worklet. Just keep the single linked rcu_head list and enqueue a
->> static (per-cpu) worker to process the entire list.
+>> 1) assume we need to wait on widx
+>> 2) use srcu_read_lock() to hold a reference of the 1-widx active counter
+>> 3) release the spinlock
+>> 4) do_check_zero
+>> 5) gain the spinlock
+>> 6) srcu_read_unlock()
+>> 7) if ->completed is not changed, and there is no other later check_zero which
+>>    is committed earlier than us, we will commit our check_zero if we success.
+>>
+>> too complicated.
 >
-> I like the idea of SRCU using rcu_head.  I am a little concerned about
-> what happens when there are lots of SRCU callbacks, but am willing to
-> wait to solve those problems until the situation arises.
+> Plus I don't see how it disables overflow for ->completed.
+
+ srcu_read_lock() gets a reader reference, then the other state machine
+can do flip at most once, and then the ->completed can't wrap.
+
+Thanks,
+Lai
+
 >
-> But I guess I should ask...  Peter, what do you expect the maximum
-> call_srcu() rate to be in your use cases?  If tens of thousands are
-> possible, some adjustments will be needed.
-
-Different from RCU(global domain), SRCU is separated
-by domains, I think the rate is not high for a given domain,
-but the real answer depends on the practice.
-
+> As you said earlier, abandoning the goal of lock freedom sounds like the
+> best approach.  Then you can indeed just hold the srcu_struct's mutex
+> across the whole thing.
 >
 >                                                        Thanx, Paul
 >
+>> Thanks,
+>> Lai
+>>
+>> >
+>> >> I play too much with lock-free for call_srcu(), the code becomes complicated,
+>> >> I just give up lock-free for call_srcu(), the main aim of call_srcu() is simple.
+>> >
+>> > Makes sense to me!
+>> >
+>> >> (But I still like Peter's approach, it has some other good thing
+>> >> besides lock-free-checking, if you don't like it, I will send
+>> >> another patch to fix srcu_readers_active())
+>> >
+>> > Try them both and check their performance &c.  If within espilon of
+>> > each other, pick whichever one you prefer.
+>> >
+>> >                                                     Thanx, Paul
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
