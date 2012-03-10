@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778Ab2CJRvV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 12:51:21 -0500
-Received: from londo.lunn.ch ([80.238.139.98]:59299 "EHLO londo.lunn.ch"
+	id S1751710Ab2CJR4s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 12:56:48 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:59829 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751377Ab2CJRvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 12:51:20 -0500
-Date: Sat, 10 Mar 2012 18:51:13 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Mike Turquette <mturquette@ti.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH v6 2/3] clk: introduce the common clock framework
-Message-ID: <20120310175113.GK16608@lunn.ch>
-Mail-Followup-To: Mike Turquette <mturquette@linaro.org>,
-	Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-	patches@linaro.org, Mike Turquette <mturquette@ti.com>,
-	Jeremy Kerr <jeremy.kerr@canonical.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Arnd Bergman <arnd.bergmann@linaro.org>,
-	Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-	Sascha Hauer <s.hauer@pengutronix.de>,
-	Richard Zhao <richard.zhao@linaro.org>,
-	Saravana Kannan <skannan@codeaurora.org>,
-	Magnus Damm <magnus.damm@gmail.com>,
-	Rob Herring <rob.herring@calxeda.com>,
-	Mark Brown <broonie@opensource.wolfsonmicro.com>,
-	Linus Walleij <linus.walleij@stericsson.com>,
-	Stephen Boyd <sboyd@codeaurora.org>,
-	Amit Kucheria <amit.kucheria@linaro.org>,
-	Deepak Saxena <dsaxena@linaro.org>,
-	Grant Likely <grant.likely@secretlab.ca>,
-	Andrew Lunn <andrew@lunn.ch>
-References: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
- <1331366064-1273-3-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331366064-1273-3-git-send-email-mturquette@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751172Ab2CJR4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 12:56:46 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: kernel-janitors@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] drivers/ata/pata_mpc52xx.c: add missing kfree
+Date: Sat, 10 Mar 2012 18:56:39 +0100
+Message-Id: <1331402199-8000-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 11:54:23PM -0800, Mike Turquette wrote:
-> The common clock framework defines a common struct clk useful across
-> most platforms as well as an implementation of the clk api that drivers
-> can use safely for managing clocks.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Hi Mike
+There is no need to call the devm cleanup functions on failure of a probe
+or remove function.
 
-Please feel free to add:
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Tested-by: Andrew Lunn <andrew@lunn.ch>
+---
+ drivers/ata/pata_mpc52xx.c |   11 -----------
+ 1 file changed, 11 deletions(-)
 
-	   Andrew
+diff --git a/drivers/ata/pata_mpc52xx.c b/drivers/ata/pata_mpc52xx.c
+index 00748ae..1f02008 100644
+--- a/drivers/ata/pata_mpc52xx.c
++++ b/drivers/ata/pata_mpc52xx.c
+@@ -806,17 +806,12 @@ mpc52xx_ata_probe(struct platform_device *op)
+ 	return 0;
+ 
+  err:
+-	devm_release_mem_region(&op->dev, res_mem.start, sizeof(*ata_regs));
+ 	if (ata_irq)
+ 		irq_dispose_mapping(ata_irq);
+ 	if (task_irq)
+ 		irq_dispose_mapping(task_irq);
+ 	if (dmatsk)
+ 		bcom_ata_release(dmatsk);
+-	if (ata_regs)
+-		devm_iounmap(&op->dev, ata_regs);
+-	if (priv)
+-		devm_kfree(&op->dev, priv);
+ 	return rv;
+ }
+ 
+@@ -835,12 +830,6 @@ mpc52xx_ata_remove(struct platform_device *op)
+ 	bcom_ata_release(priv->dmatsk);
+ 	irq_dispose_mapping(priv->ata_irq);
+ 
+-	/* Clear up IO allocations */
+-	devm_iounmap(&op->dev, priv->ata_regs);
+-	devm_release_mem_region(&op->dev, priv->ata_regs_pa,
+-				sizeof(*priv->ata_regs));
+-	devm_kfree(&op->dev, priv);
+-
+ 	return 0;
+ }
+ 
+
