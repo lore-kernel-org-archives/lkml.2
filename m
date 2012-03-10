@@ -1,50 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab2CJDwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 22:52:09 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:34479 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753630Ab2CJDwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 22:52:06 -0500
-Date: Fri, 9 Mar 2012 22:52:02 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jacek Luczak <difrost.kernel@gmail.com>
-Cc: linux-ext4@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-Subject: Re: getdents - ext4 vs btrfs performance
-Message-ID: <20120310035202.GA5652@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Jacek Luczak <difrost.kernel@gmail.com>, linux-ext4@vger.kernel.org,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>, linux-btrfs@vger.kernel.org
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1756158Ab2CJD4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 22:56:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41570 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755458Ab2CJD4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Mar 2012 22:56:23 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/4] spi-topcliff-pch: Fix issue for transmitting over 4KByte
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Wolfram Sang <w.sang@pengutronix.de>,
+        Tomoya MORINAGA <tomoya.rohm@gmail.com>
+In-Reply-To: <1323404009-3476-1-git-send-email-tomoya.rohm@gmail.com>
+References: <1323404009-3476-1-git-send-email-tomoya.rohm@gmail.com>
+Date: Fri, 09 Mar 2012 20:56:20 -0700
+Message-Id: <20120310035620.8A8DC3E06B6@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Jacek,
+On Fri,  9 Dec 2011 13:13:27 +0900, Tomoya MORINAGA <tomoya.rohm@gmail.com> wrote:
+> Currently, when spi-topcliff-pch receives transmit request over 4KByte,
+> this driver can't process correctly. This driver needs to divide the data
+> into 4Kbyte unit.
+> This patch fixes the issue.
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-I'm curious parameters of the set of directories on your production
-server.  On an ext4 file system, assuming you've copied the
-directories over, what are the result of this command pipeline when
-you are cd'ed into the top of the directory hierarchy of interest
-(your svn tree, as I recall)?
+Applied, thanks.
 
-find . -type d -ls | awk '{print $7}' | sort -n | uniq -c
-
-I'm just curious what the distribution of directories sizes are in
-practice for your use case...
-
-Thanks,
-
-						- Ted
-
+g.
 
