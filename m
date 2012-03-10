@@ -1,111 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758385Ab2CJAX2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 19:23:28 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:55038 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758001Ab2CJAX1 convert rfc822-to-8bit (ORCPT
+	id S1758542Ab2CJAXz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 19:23:55 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33655 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756744Ab2CJAXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 19:23:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120309235944.12863.28602.stgit@dungbeetle.mtv.corp.google.com>
-References: <20120309235630.12496.3056.stgit@dungbeetle.mtv.corp.google.com> <20120309235944.12863.28602.stgit@dungbeetle.mtv.corp.google.com>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 9 Mar 2012 16:22:56 -0800
-Message-ID: <CAPM31RJpyemsq8jrxya-MQxJvgbEOX1pDEk8LE9gEh-bCmsP+Q@mail.gmail.com>
-Subject: Re: [PATCH] sched, x86: fix overflow in cyc2ns_offset
-To: Salman Qazi <sqazi@google.com>
-Cc: john stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 9 Mar 2012 19:23:54 -0500
+Subject: Re: [PATCH v3] mm: SLAB Out-of-memory diagnostics
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Rafael Aquini <aquini@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Josef Bacik <josef@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>
+In-Reply-To: <20120309202722.GA10323@x61.redhat.com>
+References: <20120309202722.GA10323@x61.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Mar 2012 16:23:39 -0800
+Message-ID: <1331339019.4063.365.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 9, 2012 at 4:00 PM, Salman Qazi <sqazi@google.com> wrote:
-> When a machine boots up, the TSC generally gets reset.  However, when
-> kexec is used to boot into a kernel, the TSC value would be carried
-> over from the previous kernel.  The computation of cycns_offset in
-> set_cyc2ns_scale is prone to an overflow, if the machine has been up
-> more than 208 days prior to the kexec.  The overflow happens when
-> we multiply *scale, even though there is enough room to store the
-> final answer.  We fix this issue by decomposing tsc_now into the
-> quotient and remainder of division by CYC2NS_SCALE_FACTOR and then
-> performing the multiplication separately on the two components.
->
-> Refactor code to share the calculation with the previous
-> fix in __cycles_2_ns.
->
-> Signed-off-by: Salman Qazi <sqazi@google.com>
+On Fri, 2012-03-09 at 17:27 -0300, Rafael Aquini wrote:
+> Following the example at mm/slub.c, add out-of-memory diagnostics to the
+> SLAB allocator to help on debugging certain OOM conditions.
+> 
+> An example print out looks like this:
+> 
+>   <snip page allocator out-of-memory message>
+>   SLAB: Unable to allocate memory on node 0 (gfp=0x11200)
+>     cache: bio-0, object size: 192, order: 0
+>     node 0: slabs: 3/3, objs: 60/60, free: 0
+
+Should probably be :
+
+   node: 0 slabs: 3/3, objs: 60/60, free: 0
+
+
+> 
+> Signed-off-by: Rafael Aquini <aquini@redhat.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
 > ---
->  arch/x86/include/asm/timer.h |    8 ++------
->  arch/x86/kernel/tsc.c        |    3 ++-
->  include/linux/kernel.h       |   13 +++++++++++++
->  3 files changed, 17 insertions(+), 7 deletions(-)
->
-> diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
-> index 431793e..34baa0e 100644
-> --- a/arch/x86/include/asm/timer.h
-> +++ b/arch/x86/include/asm/timer.h
-> @@ -57,14 +57,10 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
->
->  static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
->  {
-> -       unsigned long long quot;
-> -       unsigned long long rem;
->        int cpu = smp_processor_id();
->        unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
-> -       quot = (cyc >> CYC2NS_SCALE_FACTOR);
-> -       rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
-> -       ns += quot * per_cpu(cyc2ns, cpu) +
-> -               ((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
-> +       ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
-> +                       (1UL << CYC2NS_SCALE_FACTOR));
->        return ns;
->  }
->
-> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-> index a62c201..183c592 100644
-> --- a/arch/x86/kernel/tsc.c
-> +++ b/arch/x86/kernel/tsc.c
-> @@ -620,7 +620,8 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
->
->        if (cpu_khz) {
->                *scale = (NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR)/cpu_khz;
-> -               *offset = ns_now - (tsc_now * *scale >> CYC2NS_SCALE_FACTOR);
-> +               *offset = ns_now - mult_frac(tsc_now, *scale,
-> +                                            (1UL << CYC2NS_SCALE_FACTOR));
->        }
->
->        sched_clock_idle_wakeup_event(0);
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index e834342..d801acb 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -85,6 +85,19 @@
->  }                                                      \
->  )
->
-> +/*
-> + * Multiplies an integer by a fraction, while avoiding unnecessary
-> + * overflow or loss of precision.
-> + */
-> +#define mult_frac(x, numer, denom)(                    \
-> +{                                                      \
-> +       typeof(x) quot = (x) / (denom);                 \
-> +       typeof(x) rem  = (x) % (denom);                 \
-> +       (quot * (numer)) + ((rem * (numer)) / (denom)); \
-> +}                                                      \
-> +)
-
-Any reason not to make this a static inline so that we get saner typing?
-
+> v2:
+> * drop the sysctl knob to override __GFP_NOWARN allocation flag (Pekka, David)
+> 
+> v3:
+> * adjust the print output to match slub's warning printout (WANG Cong)
+> 
+>  mm/slab.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 50 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index f0bd785..cda1ff6 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -1731,6 +1731,52 @@ static int __init cpucache_init(void)
+>  }
+>  __initcall(cpucache_init);
+>  
+> +static noinline void
+> +slab_out_of_memory(struct kmem_cache *cachep, gfp_t gfpflags, int nodeid)
+> +{
+> +	struct kmem_list3 *l3;
+> +	struct slab *slabp;
+> +	unsigned long flags;
+> +	int node;
 > +
+> +	printk(KERN_WARNING
+> +		"SLAB: Unable to allocate memory on node %d (gfp=0x%x)\n",
+> +		nodeid, gfpflags);
+> +	printk(KERN_WARNING "  cache: %s, object size: %d, order: %d\n",
+> +		cachep->name, cachep->buffer_size, cachep->gfporder);
 > +
->  #define _RET_IP_               (unsigned long)__builtin_return_address(0)
->  #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
->
->
+> +	for_each_online_node(node) {
+> +		unsigned long active_objs = 0, num_objs = 0, free_objects = 0;
+> +		unsigned long active_slabs = 0, num_slabs = 0;
+> +
+> +		l3 = cachep->nodelists[node];
+> +		if (!l3)
+> +			continue;
+> +
+> +		spin_lock_irqsave(&l3->list_lock, flags);
+> +		list_for_each_entry(slabp, &l3->slabs_full, list) {
+> +			active_objs += cachep->num;
+> +			active_slabs++;
+> +		}
+> +		list_for_each_entry(slabp, &l3->slabs_partial, list) {
+> +			active_objs += slabp->inuse;
+> +			active_slabs++;
+> +		}
+> +		list_for_each_entry(slabp, &l3->slabs_free, list)
+> +			num_slabs++;
+> +
+> +		free_objects += l3->free_objects;
+> +		spin_unlock_irqrestore(&l3->list_lock, flags);
+> +
+> +		num_slabs += active_slabs;
+> +		num_objs = num_slabs * cachep->num;
+> +		printk(KERN_WARNING
+> +			"  node %d: slabs: %ld/%ld, objs: %ld/%ld, free: %ld\n",
+
+Probably should be :
+		"  node: %d slabs: %ld/%ld, objs: %ld/%ld, free: %ld\n",
+
+> +			node, active_slabs, num_slabs, active_objs, num_objs,
+> +			free_objects);
+> +	}
+> +}
+> +
+>  /*
+>   * Interface to system's page allocator. No need to hold the cache-lock.
+>   *
+> @@ -1757,8 +1803,11 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+>  		flags |= __GFP_RECLAIMABLE;
+>  
+>  	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
+> -	if (!page)
+> +	if (!page) {
+> +		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
+> +			slab_out_of_memory(cachep, flags, nodeid);
+>  		return NULL;
+> +	}
+>  
+>  	nr_pages = (1 << cachep->gfporder);
+>  	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+
+
