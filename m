@@ -1,115 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2CJLPk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 06:15:40 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40955 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab2CJLPi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 06:15:38 -0500
+	id S1754627Ab2CJLWD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 06:22:03 -0500
+Received: from mail.us.es ([193.147.175.20]:42275 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751797Ab2CJLWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 06:22:00 -0500
+Date: Sat, 10 Mar 2012 12:21:54 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: linux-next: Tree for Mar 9 (netfilter)
+Message-ID: <20120310112154.GA22478@1984>
+References: <20120309191101.8634973f7d9988c602143f7c@canb.auug.org.au>
+ <4F5A6872.3050502@xenotime.net>
 MIME-Version: 1.0
-In-Reply-To: <20120308092913.GF14173@pengutronix.de>
-References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
- <1331197863-25564-2-git-send-email-bryan.wu@canonical.com> <20120308092913.GF14173@pengutronix.de>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Sat, 10 Mar 2012 19:15:18 +0800
-X-Google-Sender-Auth: sN5eJb9AZl_6u6S_YlLBNezpfbA
-Message-ID: <CAK5ve-+L9gVBOp4RVe2pTUbBnrb-PEn7ERbWWkb=7A=4qOrdTQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] led-triggers: use atomic kzalloc during led trigger registering
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Ming Lei <ming.lei@canonical.com>
-Cc: rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
-        linux@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/mixed; boundary="DocE+STaALJfprDB"
+Content-Disposition: inline
+In-Reply-To: <4F5A6872.3050502@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/8 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
-> On Thu, Mar 08, 2012 at 05:11:02PM +0800, Bryan Wu wrote:
->> kzalloc might cause sleep and will generate some warning detected by lockdep,
->> when call led_trigger_register_simple on each cpu cores in SMP. This patch fix
->> this.
-> The obvious (and IMHO better) alternative is to call
-> led_trigger_register_simple from non-atomic context.
->
-> For registering this should be OK, shouldn't it?
->
-Thanks Uwe, it's my bad. I think I should not use on_each_cpu() API to
-run led_trigger_register_simple. on_each_cpu() will disable interrupt.
 
-Let's ignore this patch and I will update my ledtrig-cpu patch to use
-for_each_cpu().
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-And thanks Ming for your advice.
+On Fri, Mar 09, 2012 at 12:30:42PM -0800, Randy Dunlap wrote:
+> On 03/09/2012 12:11 AM, Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > There will be no linux-next release on March 12 due to a public holiday.
+> > 
+> > Changes since 20120308:
+> 
+> 
+> xt_LOG.c:(.text+0x789b1): undefined reference to `ip6t_ext_hdr'
+> 
+> Full randconfig file is attached.
 
-Best Regards,
--Bryan
+The patch attached fixes this problem, thanks!
 
->
->>
->> [    1.999938] ------------[ cut here ]------------
->> [    2.004791] WARNING: at kernel/lockdep.c:2664 lockdep_trace_alloc+0xd8/0xf0()
->> [    2.012298] Modules linked in:
->> [    2.015563] [<c001b0cc>] (unwind_backtrace+0x0/0xf0) from [<c0052408>] (warn_slowpath_common+0x4c/0x64)
->> [    2.025451] [<c0052408>] (warn_slowpath_common+0x4c/0x64) from [<c005243c>] (warn_slowpath_null+0x1c/0x24)
->> [    2.035583] [<c005243c>] (warn_slowpath_null+0x1c/0x24) from [<c008be28>] (lockdep_trace_alloc+0xd8/0xf0)
->> [    2.045684] [<c008be28>] (lockdep_trace_alloc+0xd8/0xf0) from [<c00feeb4>] (kmem_cache_alloc_trace+0x2c/0x148)
->> [    2.056213] [<c00feeb4>] (kmem_cache_alloc_trace+0x2c/0x148) from [<c03770a0>] (led_trigger_register_simple+0x20/0x74)
->> [    2.067474] [<c03770a0>] (led_trigger_register_simple+0x20/0x74) from [<c0627a30>] (ledtrig_cpu_register+0x4c/0x8c)
->> [    2.078460] [<c0627a30>] (ledtrig_cpu_register+0x4c/0x8c) from [<c0094ca4>] (generic_smp_call_function_single_interrupt+0xcc/0x138)
->> [    2.090911] [<c0094ca4>] (generic_smp_call_function_single_interrupt+0xcc/0x138) from [<c0008408>] (do_IPI+0xb0/0x128)
->> [    2.102172] [<c0008408>] (do_IPI+0xb0/0x128) from [<c045921c>] (__irq_svc+0x3c/0x100)
->> [    2.110412] Exception stack(0xc07adf70 to 0xc07adfb8)
->> [    2.115722] df60:                                     c07c80f8 0000fb45 00000000 c07c80f8
->> [    2.124328] df80: c07ac000 c0837be4 c0464b64 c07c9d8c 00000000 411fc092 00000000 00000000
->> [    2.132934] dfa0: c0649760 c07adfb8 c07c5c58 c0014d50 20000013 ffffffff
->> [    2.139892] [<c045921c>] (__irq_svc+0x3c/0x100) from [<c0014d50>] (default_idle+0x30/0x38)
->> [    2.148590] [<c0014d50>] (default_idle+0x30/0x38) from [<c0014f74>] (cpu_idle+0xb4/0xf4)
->> [    2.157135] [<c0014f74>] (cpu_idle+0xb4/0xf4) from [<c0602778>] (start_kernel+0x2a8/0x2fc)
->> [    2.165832] [<c0602778>] (start_kernel+0x2a8/0x2fc) from [<80008040>] (0x80008040)
->> [    2.173797] ---[ end trace 97549d21d8dad3f5 ]---
->>
->> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
->> ---
->>  drivers/leds/led-triggers.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
->> index 46b4c76..74d0ba7 100644
->> --- a/drivers/leds/led-triggers.c
->> +++ b/drivers/leds/led-triggers.c
->> @@ -255,7 +255,7 @@ void led_trigger_register_simple(const char *name, struct led_trigger **tp)
->>       struct led_trigger *trigger;
->>       int err;
->>
->> -     trigger = kzalloc(sizeof(struct led_trigger), GFP_KERNEL);
->> +     trigger = kzalloc(sizeof(struct led_trigger), GFP_ATOMIC);
->>
->>       if (trigger) {
->>               trigger->name = name;
->> --
->> 1.7.9
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>
->
-> --
-> Pengutronix e.K.                           | Uwe Kleine-König            |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+--DocE+STaALJfprDB
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0001-netfilter-xt_LOG-use-CONFIG_IP6_NF_IPTABLES-instead-.patch"
 
+>From 56467b18daa0dcf92a680ea0bc5389108b83228a Mon Sep 17 00:00:00 2001
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+Date: Sat, 10 Mar 2012 12:15:15 +0100
+Subject: [PATCH] netfilter: xt_LOG: use CONFIG_IP6_NF_IPTABLES instead of
+ CONFIG_IPV6
 
+This fixes the following linking error:
 
+xt_LOG.c:(.text+0x789b1): undefined reference to `ip6t_ext_hdr'
+
+ifdefs have to use CONFIG_IP6_NF_IPTABLES instead of CONFIG_IPV6.
+
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ net/netfilter/xt_LOG.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
+index f99f8de..ff5f75f 100644
+--- a/net/netfilter/xt_LOG.c
++++ b/net/netfilter/xt_LOG.c
+@@ -480,7 +480,7 @@ ipt_log_packet(u_int8_t pf,
+ 	sb_close(m);
+ }
+ 
+-#if IS_ENABLED(CONFIG_IPV6)
++#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
+ /* One level of recursion won't kill us */
+ static void dump_ipv6_packet(struct sbuff *m,
+ 			const struct nf_loginfo *info,
+@@ -824,7 +824,7 @@ log_tg(struct sk_buff *skb, const struct xt_action_param *par)
+ 	if (par->family == NFPROTO_IPV4)
+ 		ipt_log_packet(NFPROTO_IPV4, par->hooknum, skb, par->in,
+ 			       par->out, &li, loginfo->prefix);
+-#if IS_ENABLED(CONFIG_IPV6)
++#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
+ 	else if (par->family == NFPROTO_IPV6)
+ 		ip6t_log_packet(NFPROTO_IPV6, par->hooknum, skb, par->in,
+ 				par->out, &li, loginfo->prefix);
+@@ -864,7 +864,7 @@ static struct xt_target log_tg_regs[] __read_mostly = {
+ 		.checkentry	= log_tg_check,
+ 		.me		= THIS_MODULE,
+ 	},
+-#if IS_ENABLED(CONFIG_IPV6)
++#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
+ 	{
+ 		.name		= "LOG",
+ 		.family		= NFPROTO_IPV6,
+@@ -882,7 +882,7 @@ static struct nf_logger ipt_log_logger __read_mostly = {
+ 	.me		= THIS_MODULE,
+ };
+ 
+-#if IS_ENABLED(CONFIG_IPV6)
++#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
+ static struct nf_logger ip6t_log_logger __read_mostly = {
+ 	.name		= "ip6t_LOG",
+ 	.logfn		= &ip6t_log_packet,
+@@ -899,7 +899,7 @@ static int __init log_tg_init(void)
+ 		return ret;
+ 
+ 	nf_log_register(NFPROTO_IPV4, &ipt_log_logger);
+-#if IS_ENABLED(CONFIG_IPV6)
++#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
+ 	nf_log_register(NFPROTO_IPV6, &ip6t_log_logger);
+ #endif
+ 	return 0;
+@@ -908,7 +908,7 @@ static int __init log_tg_init(void)
+ static void __exit log_tg_exit(void)
+ {
+ 	nf_log_unregister(&ipt_log_logger);
+-#if IS_ENABLED(CONFIG_IPV6)
++#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
+ 	nf_log_unregister(&ip6t_log_logger);
+ #endif
+ 	xt_unregister_targets(log_tg_regs, ARRAY_SIZE(log_tg_regs));
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.138-1617-6545 Mobile
-Ubuntu ARM Team
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+1.7.7.3
+
+
+--DocE+STaALJfprDB--
