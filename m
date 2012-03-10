@@ -1,43 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab2CJVto (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 16:49:44 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62046 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752486Ab2CJVtm convert rfc822-to-8bit (ORCPT
+	id S1752668Ab2CJVus (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 16:50:48 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:14777 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752377Ab2CJVuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 16:49:42 -0500
+	Sat, 10 Mar 2012 16:50:46 -0500
+X-IronPort-AV: E=Sophos;i="4.73,563,1325458800"; 
+   d="scan'208";a="148635081"
+Date: Sat, 10 Mar 2012 22:50:42 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: walter harms <wharms@bfs.de>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>, Jeff Garzik <jgarzik@pobox.com>,
+        kernel-janitors@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] drivers/ata/pata_mpc52xx.c: add missing kfree
+In-Reply-To: <4F5B9E32.9080809@bfs.de>
+Message-ID: <alpine.DEB.2.02.1203102243070.1971@localhost6.localdomain6>
+References: <1331402199-8000-1-git-send-email-Julia.Lawall@lip6.fr> <4F5B9E32.9080809@bfs.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120310213050.GD23916@ZenIV.linux.org.uk>
-References: <20120310213050.GD23916@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 10 Mar 2012 13:49:21 -0800
-X-Google-Sender-Auth: XFApWjzlTK1eqw9KzZPChkWMZQM
-Message-ID: <CA+55aFwDsoJHGv03tcPgLb7DeFvdcDhmX0rfft8htMTd3aMPXQ@mail.gmail.com>
-Subject: Re: [git pull] vfs fixes
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 1:30 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+
+
+On Sat, 10 Mar 2012, walter harms wrote:
+
 >
-> Jan Kara (2):
->      vfs: Fix missed wakeup in I_NEW handling
+>
+> Am 10.03.2012 18:56, schrieb Julia Lawall:
+>> From: Julia Lawall <Julia.Lawall@lip6.fr>
+>>
+>> There is no need to call the devm cleanup functions on failure of a probe
+>> or remove function.
+>>
+>> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>>
+>> ---
+>>  drivers/ata/pata_mpc52xx.c |   11 -----------
+>>  1 file changed, 11 deletions(-)
+>>
+>> diff --git a/drivers/ata/pata_mpc52xx.c b/drivers/ata/pata_mpc52xx.c
+>> index 00748ae..1f02008 100644
+>> --- a/drivers/ata/pata_mpc52xx.c
+>> +++ b/drivers/ata/pata_mpc52xx.c
+>> @@ -806,17 +806,12 @@ mpc52xx_ata_probe(struct platform_device *op)
+>>  	return 0;
+>>
+>>   err:
+>> -	devm_release_mem_region(&op->dev, res_mem.start, sizeof(*ata_regs));
+>>  	if (ata_irq)
+>>  		irq_dispose_mapping(ata_irq);
+>>  	if (task_irq)
+>>  		irq_dispose_mapping(task_irq);
+>
+> hi julia,
+> i did a quick look at lxr and it showed that irq_dispose_mapping()
+> is only used with powerpc, and here is it checking for
+> 	if (virq == NO_IRQ)
+>            return;
+>
+> I do not know how current the lxt on free-electrons.com is but perhaps
+> it is possible to dump the if (ata_irq) stuff.
+>
+> can you double check it ?
 
-Christ. This one is too ugly to live.
+The definition in v3.2.9/kernel/irq/irqdomain.c does nothing but says:
 
-I'm not pulling crap like this. It's f*^&ing stupid to take a lock,
-calculate a bitqueue, and just generally be an absolute ass-hat about
-things for waiting for a bit that is already set 99.999% of the time.
+nothing yet; will be filled when support for dynamic allocation of
+irq_descs is added to irq_domain
 
-May I suggest just reverting that commit 250df6ed instead. It added
-all these insane things for no good reason. The comment said they are
-going away, but if they are just multiplying in ways like this, I
-really think the damn thing needs to be reverted. Any change that
-causes code like this is by definition not a good change.
+So it would seem better to keep the call.  On the other hand, the error 
+handling code of this function seems to be a mess.  When the 
+initialization of ata_irq fails, it just returns instead of cleaning up. 
+Prior code goes to err.  On ther other hand, now that the devm cleanups 
+are gone, it is the goto err, which is unnecessary.  I'll look at the code 
+some more.
 
-                    Linus
+julia
+
+>
+> re,
+> wh
+>
+>
+>>  	if (dmatsk)
+>>  		bcom_ata_release(dmatsk);
+>> -	if (ata_regs)
+>> -		devm_iounmap(&op->dev, ata_regs);
+>> -	if (priv)
+>> -		devm_kfree(&op->dev, priv);
+>>  	return rv;
+>>  }
+>>
+>> @@ -835,12 +830,6 @@ mpc52xx_ata_remove(struct platform_device *op)
+>>  	bcom_ata_release(priv->dmatsk);
+>>  	irq_dispose_mapping(priv->ata_irq);
+>>
+>> -	/* Clear up IO allocations */
+>> -	devm_iounmap(&op->dev, priv->ata_regs);
+>> -	devm_release_mem_region(&op->dev, priv->ata_regs_pa,
+>> -				sizeof(*priv->ata_regs));
+>> -	devm_kfree(&op->dev, priv);
+>> -
+>>  	return 0;
+>>  }
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
