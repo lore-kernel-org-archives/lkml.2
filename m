@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282Ab2CJC5F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 21:57:05 -0500
-Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:38089 "EHLO
-	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756221Ab2CJC5B (ORCPT
+	id S1759240Ab2CJC77 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 21:59:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56643 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756214Ab2CJC76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 21:57:01 -0500
-Date: Sat, 10 Mar 2012 02:56:58 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 6/6] Squashfs: add mount time sanity check for block_size
- and block_log match
-Message-ID: <4f5ac2fa.BVNsfM2JUUe4UE6G%phillip@lougher.demon.co.uk>
-User-Agent: Heirloom mailx 12.5 6/20/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 9 Mar 2012 21:59:58 -0500
+Message-ID: <1331348383.3654.1.camel@phoenix>
+Subject: [PATCH] regulator: Make s5m8767_get_voltage_register always return
+ correct register
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Sat, 10 Mar 2012 10:59:43 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Check s5m8767->buck[2|3|4]_gpiodvs status in s5m8767_get_voltage_register
+and return correct register accordingly.
 
-Squashfs currently has a sanity check for block_size less than or
-equal to the maximum block_size (1 Mbyte).  This catches some
-superblock corruption, but obviously with a block_size maximum
-of 1 Mbyte there's 7 correct values (4K, 8K, 16K, 32K, ... etc) and
-a lot of incorrect values which are not caught by this check.
-
-The Squashfs superblock, however, has both a block_size and
-a block_log (2^block_log == block_size).  Checking that the block_size
-matches the block_log is a much more robust check.  Corruption of the
-superblock is unlikely to produce values which match, and it also
-ensures the block_size is an exact power of two.
-
-Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- fs/squashfs/super.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/regulator/s5m8767.c |   27 +++++++++------------------
+ 1 files changed, 9 insertions(+), 18 deletions(-)
 
-diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
-index ecaa2f7..a55a9c5 100644
---- a/fs/squashfs/super.c
-+++ b/fs/squashfs/super.c
-@@ -158,10 +158,15 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
- 		goto failed_mount;
- 	}
+diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+index 611d02d..58447db 100644
+--- a/drivers/regulator/s5m8767.c
++++ b/drivers/regulator/s5m8767.c
+@@ -219,6 +219,7 @@ static int s5m8767_reg_disable(struct regulator_dev *rdev)
  
-+	/* Check block log for sanity */
- 	msblk->block_log = le16_to_cpu(sblk->block_log);
- 	if (msblk->block_log > SQUASHFS_FILE_MAX_LOG)
- 		goto failed_mount;
+ static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
+ {
++	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+ 	int reg_id = rdev_get_id(rdev);
+ 	int reg;
  
-+	/* Check that block_size and block_log match */
-+	if (msblk->block_size != (1 << msblk->block_log))
-+		goto failed_mount;
-+
- 	/* Check the root inode for sanity */
- 	root_inode = le64_to_cpu(sblk->root_inode);
- 	if (SQUASHFS_INODE_OFFSET(root_inode) > SQUASHFS_METADATA_SIZE)
+@@ -234,12 +235,18 @@ static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
+ 		break;
+ 	case S5M8767_BUCK2:
+ 		reg = S5M8767_REG_BUCK2DVS1;
++		if (s5m8767->buck2_gpiodvs)
++			reg += s5m8767->buck_gpioindex;
+ 		break;
+ 	case S5M8767_BUCK3:
+ 		reg = S5M8767_REG_BUCK3DVS1;
++		if (s5m8767->buck3_gpiodvs)
++			reg += s5m8767->buck_gpioindex;
+ 		break;
+ 	case S5M8767_BUCK4:
+ 		reg = S5M8767_REG_BUCK4DVS1;
++		if (s5m8767->buck4_gpiodvs)
++			reg += s5m8767->buck_gpioindex;
+ 		break;
+ 	case S5M8767_BUCK5:
+ 		reg = S5M8767_REG_BUCK5CTRL2;
+@@ -259,7 +266,7 @@ static int s5m8767_get_voltage_register(struct regulator_dev *rdev, int *_reg)
+ static int s5m8767_get_voltage_sel(struct regulator_dev *rdev)
+ {
+ 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+-	int reg, mask = 0xff, ret;
++	int reg, mask, ret;
+ 	int reg_id = rdev_get_id(rdev);
+ 	u8 val;
+ 
+@@ -267,23 +274,7 @@ static int s5m8767_get_voltage_sel(struct regulator_dev *rdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	switch (reg_id) {
+-	case S5M8767_LDO1 ... S5M8767_LDO28:
+-		mask = 0x3f;
+-		break;
+-	case S5M8767_BUCK2:
+-		if (s5m8767->buck2_gpiodvs)
+-			reg += s5m8767->buck_gpioindex;
+-		break;
+-	case S5M8767_BUCK3:
+-		if (s5m8767->buck3_gpiodvs)
+-			reg += s5m8767->buck_gpioindex;
+-		break;
+-	case S5M8767_BUCK4:
+-		if (s5m8767->buck4_gpiodvs)
+-			reg += s5m8767->buck_gpioindex;
+-		break;
+-	}
++	mask = (reg_id < S5M8767_BUCK1) ? 0x3f : 0xff;
+ 
+ 	ret = s5m_reg_read(s5m8767->iodev, reg, &val);
+ 	if (ret)
 -- 
 1.7.5.4
+
+
 
