@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab2CJKmu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 05:42:50 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:63691 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232Ab2CJKmr (ORCPT
+	id S1754858Ab2CJKvr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 05:51:47 -0500
+Received: from www.linutronix.de ([62.245.132.108]:48660 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754572Ab2CJKvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 05:42:47 -0500
-Date: Sat, 10 Mar 2012 11:42:38 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: tshimizu818@gmail.com, jeffrey.t.kirsher@intel.com,
-        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
-        paul.gortmaker@windriver.com, jdmason@kudzu.us, john.stultz@linaro.org,
-        arnd@arndb.de, khc@pm.waw.pl, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH RE-SUBMIT] net/pch_gbe: supports eg20t ptp clock
-Message-ID: <20120310104238.GA3489@netboy.at.omicron.at>
-References: <1331079669-22446-1-git-send-email-tshimizu818@gmail.com>
- <20120306.213453.700930266749202538.davem@davemloft.net>
- <20120309173032.GA5730@netboy.at.omicron.at>
- <20120309.130006.1423350346805366510.davem@davemloft.net>
+	Sat, 10 Mar 2012 05:51:46 -0500
+Date: Sat, 10 Mar 2012 11:51:36 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mike Turquette <mturquette@linaro.org>
+cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Mike Turquette <mturquette@ti.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
+Subject: Re: [PATCH v6 2/3] clk: introduce the common clock framework
+In-Reply-To: <1331366064-1273-3-git-send-email-mturquette@linaro.org>
+Message-ID: <alpine.LFD.2.02.1203101128100.2742@ionos>
+References: <1331366064-1273-1-git-send-email-mturquette@linaro.org> <1331366064-1273-3-git-send-email-mturquette@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120309.130006.1423350346805366510.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 01:00:06PM -0800, David Miller wrote:
-> From: Richard Cochran <richardcochran@gmail.com>
-> Date: Fri, 9 Mar 2012 18:30:32 +0100
-> 
-> > On Tue, Mar 06, 2012 at 09:34:53PM -0500, David Miller wrote:
-> >> 
-> >> You still haven't submitted this properly.
-> >> 
-> >> First, you submitted the PCH_GBE driver changes before the EG20T
-> >> PTP clock driver which it depends upon.
-> > 
-> > David, both this pair of patches and the second pair apply cleanly to
-> > both Torvalds mainline and to net-next. So, what are you complaining
-> > about here? I am still confused.
-> 
-> I'm complaining submitting changes properly, and that has nothing
-> to do with where or how cleanly the patches apply.
+On Fri, 9 Mar 2012, Mike Turquette wrote:
+> +inline unsigned long __clk_get_enable_count(struct clk *clk)
+> +{
+> +	return !clk ? -EINVAL : clk->enable_count;
 
-After reviewing the patches, now I see the dependencies.
+Returning negative error codes in a function with a return value
+unsigned long is a bit strange at least. Shouldn't that be long ?
 
-Sorry for the noise,
+> +#ifndef __LINUX_CLK_PRIVATE_H
+> +#define __LINUX_CLK_PRIVATE_H
+> +
+> +#include <linux/clk-provider.h>
+> +#include <linux/list.h>
+> +
+> +/*
+> + * WARNING: Do not include clk-private.h from any file that implements struct
+> + * clk_ops.  Doing so is a layering violation!
+> + *
+> + * This header exists only to allow for statically initialized clock data.  Any
+> + * static clock data must be defined in a separate file from the logic that
+> + * implements the clock operations for that same data.
 
-Richard
+Now the question is whether you should provide a data structure which
+is explicitely used for static initialization and instead of having
+struct clk static you register the static initializer structure, which
+would be initdata. I don't think that anything needs clocks before the
+memory allocators are up and running. The clocks which are necessary
+to get that far have to be enabled in the boot loader anyway.
+
+The static initialization question should not hold off this set from
+being merged, though settling it before growing users would be nice.
+
+Otherwise this is a very well done infrastructure implementation!
+Thanks a lot Mike!
+
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
