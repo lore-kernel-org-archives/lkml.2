@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675Ab2CJAbG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 19:31:06 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58871 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757170Ab2CJAbE (ORCPT
+	id S1758726Ab2CJAfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 19:35:34 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:38077 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756821Ab2CJAfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 19:31:04 -0500
-Date: Fri, 9 Mar 2012 16:30:58 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] USB: create module_usb_serial_driver macro
-Message-ID: <20120310003058.GB22064@kroah.com>
-References: <20120224233814.GA16588@kroah.com>
- <4F48CBCF.7060004@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F48CBCF.7060004@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 9 Mar 2012 19:35:33 -0500
+Message-ID: <1331339714.26253.139.camel@work-vm>
+Subject: Re: [PATCH] sched, x86: fix overflow in cyc2ns_offset
+From: john stultz <johnstul@us.ibm.com>
+To: Salman Qazi <sqazi@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 09 Mar 2012 16:35:14 -0800
+In-Reply-To: <CAKUOC8Wo6-YgrX7POQ2fukNcVre7K_f4n1+gXNk5s3gsbF-s+Q@mail.gmail.com>
+References: <20120309235944.12863.28602.stgit@dungbeetle.mtv.corp.google.com>
+	 <1331339140.26253.134.camel@work-vm>
+	 <CAKUOC8Wo6-YgrX7POQ2fukNcVre7K_f4n1+gXNk5s3gsbF-s+Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031000-7408-0000-0000-0000035766BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Feb 25, 2012 at 12:53:51PM +0100, Lars-Peter Clausen wrote:
-> On 02/25/2012 12:38 AM, Greg KH wrote:
-> > Now that Alan Stern has cleaned up the usb serial driver registration,
-> > we have the ability to create a module_usb_serial_driver macro to make
-> > things a bit simpler, like the other *_driver macros created.
-> > 
-> > But, as we need two functions here, we can't reuse the existing
-> > module_driver() macro, so we need to roll our own.
-> > 
-> > Lars-Peter, or anyone else, am I missing something here and we can use
-> > module_driver() somehow, or even modify it, to work for subsystems that
-> > need 2 parameters for their function calls to register/deregister?
-> > 
+On Fri, 2012-03-09 at 16:28 -0800, Salman Qazi wrote:
+> On Fri, Mar 9, 2012 at 4:25 PM, john stultz <johnstul@us.ibm.com> wrote:
+> > So... Sorry, why did you change it from the shifted logic?
+> >
 > 
-> I suppose we can make module_driver a variadic macro and pass any additional
-> parameters to the register and unregister functions. Patch attached.
+> It's more generally applicable.  The compiler is smart enough to do
+> the right thing in the power-of-two
+> constant case.
+>
+> >
+> > Is the compiler really smart enough to avoid the divides?
 > 
-> - Lars
-> 
-> 8<-------------------------------------------------------------------->8
-> >From 0d731970249b787748eccd6e81890c012a44e5a6 Mon Sep 17 00:00:00 2001
-> From: Lars-Peter Clausen <lars@metafoo.de>
-> Date: Sat, 25 Feb 2012 11:25:58 +0100
-> Subject: [PATCH] driver-core: Allow additional parameters for module_driver
-> 
-> Allow module_driver take additional parameters which will be passed to the
-> register and unregister function calls. This allows it to be used in cases
-> where additional parameters are required (e.g. usb_serial_register_drivers).
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  include/linux/device.h |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> index b63fb39..bccccef 100644
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -1007,19 +1007,20 @@ extern long sysfs_deprecated;
->   * @__driver: driver name
->   * @__register: register function for this driver type
->   * @__unregister: unregister function for this driver type
-> + * @...: Additional arguments to be passed to __register and __unregister.
->   *
->   * Use this macro to construct bus specific macros for registering
->   * drivers, and do not use it on its own.
->   */
-> -#define module_driver(__driver, __register, __unregister) \
-> +#define module_driver(__driver, __register, __unregister, ...) \
->  static int __init __driver##_init(void) \
->  { \
-> -	return __register(&(__driver)); \
-> +	return __register(&(__driver) , ##__VA_ARGS__); \
->  } \
->  module_init(__driver##_init); \
->  static void __exit __driver##_exit(void) \
->  { \
-> -	__unregister(&(__driver)); \
-> +	__unregister(&(__driver) , ##__VA_ARGS__); \
->  } \
->  module_exit(__driver##_exit);
+> Yes, it is.  I verified that.
 
-Nice, let me play with this and see how it works out, thanks.
+Ok, great! Thanks again! (Although I probably need to put rewriting the
+the big x86/include/asm/timer.h comment on my TODO, since its not as
+relevant anymore)
 
-greg k-h
+Acked-by: John Stultz <john.stultz@linaro.org>
+
+Ingo/Thomas, this should probably go tip/timers/urgent & be marked for
+stable. I can queue it and send you a pull request, but it might be just
+easier to just pick up the patch.
+
+thanks
+-john
+
