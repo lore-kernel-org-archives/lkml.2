@@ -1,121 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756502Ab2CJAHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 19:07:21 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59037 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753246Ab2CJAHS convert rfc822-to-8bit (ORCPT
+	id S1756938Ab2CJAI0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 19:08:26 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45894 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab2CJAIY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 19:07:18 -0500
+	Fri, 9 Mar 2012 19:08:24 -0500
+Message-ID: <4F5A9B75.8090301@gmail.com>
+Date: Fri, 09 Mar 2012 16:08:21 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <CAF1ivSaDEfDFgF0hz3myjSc0BXhig1XGRa_uMOi=gtf2HTEMHg@mail.gmail.com>
-References: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
-	<CAE5mzvgfsHD1Ku5saw+Cu7+vJAayx20=HfHfab1MrAwz3AtqJg@mail.gmail.com>
-	<CAF1ivSZcGHQ-bnGasKghJ-_beDqgyZ_ug=m-7Ykr4xUphZeLqw@mail.gmail.com>
-	<CAE5mzvgc60+_HOve+5wMsL7fo6jmM_sOB=_pTR1j23=RbP+uPw@mail.gmail.com>
-	<CAF1ivSaDEfDFgF0hz3myjSc0BXhig1XGRa_uMOi=gtf2HTEMHg@mail.gmail.com>
-Date: Sat, 10 Mar 2012 01:07:07 +0100
-Message-ID: <CAG-aW04JJ=v4odC0TVoARijx-9eTCfwYAfUNwtAeLaODYcf06g@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] ahci: fix boot/resume COMRESET failures
-From: Matt <jackdachef@gmail.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, viro@zeniv.linux.org.uk,
-        jeff@garzik.org, Brian Norris <computersforpeace@gmail.com>,
-        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Norbert Preining <preining@logic.at>,
-        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Rob Herring <robherring2@gmail.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        David Daney <david.s.daney@gmail.com>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 4/5] MIPS: Octeon: Setup irq_domains for interrupts.
+References: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com> <1330563422-14078-5-git-send-email-ddaney.cavm@gmail.com> <4F50D7C2.7080204@gmail.com> <4F510B8E.3070201@cavium.com> <20120302190744.571E03E1C63@localhost> <4F511FB0.5070901@cavium.com> <4F527285.1020500@gmail.com> <4F52F90C.5060306@gmail.com> <20120309055704.465823E0901@localhost> <4F5A4FDE.1030305@gmail.com> <4F5A710A.1000408@gmail.com>
+In-Reply-To: <4F5A710A.1000408@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 6:28 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> On Mon, Mar 5, 2012 at 1:12 PM, cwillu <cwillu@cwillu.com> wrote:
->> On Sun, Mar 4, 2012 at 6:58 PM, Lin Ming <ming.m.lin@intel.com> wrote:
->>> On Fri, Mar 2, 2012 at 9:16 PM, cwillu <cwillu@cwillu.com> wrote:
->>>> On Tue, Feb 21, 2012 at 12:38 PM, Brian Norris
->>>> <computersforpeace@gmail.com> wrote:
->>>>> This series addresses regression problems with
->>>>>
->>>>>    commit 7faa33da9b7add01db9f1ad92c6a5d9145e940a7
->>>>>    ahci: start engine only during soft/hard resets
->>>>
->>>> I just spent the better part of last night tracking down the specific
->>>> sources of the log entry I get when I disconnect my e-sata drive; once
->>>> it disconnects, the port is dead until I reboot; no combination of
->>>> anything I've been able to poke at in /sys or elsewhere gets it live
->>>> again.  This starts with 3.3rc1, and turns out to still work fine in
->>>> 3.2.1. Any chance it's related?
->>>>
->>>> 3.3rc5, immediately after the unplug:
->>>
->>> Hi,
->>>
->>> I tested on my machine and it's fixed by below patch.
->>> http://marc.info/?l=linux-kernel&m=132996405028746&w=2
->>>
->>> Would you please also try it?
+On 03/09/2012 01:07 PM, Rob Herring wrote:
+> On 03/09/2012 12:45 PM, David Daney wrote:
+[...]
 >>
->> Building it now, and will be able to test in about 5 hours.
+>> Probably I have not explained well enough why legacy will not work.
+>>
+>> We have three different interrupt controllers (although only one is
+>> currently in-tree).  hwirq to irq mapping for them is more or less as
+>> follows:
 >
-> Hi,
+> I'll just repeat what others have said: if it's not upstream it doesn't
+> exist.
 >
-> How about the test result?
+> We have no knowledge about out of tree h/w to understand what you need
 >
-> Regards,
-> Lin Ming
+>> irq                 hwirqCIU        hwirqCIU2      hwirqCIU3
+>> ----------------------------------------------------------------------
+>> OCTEON_IRQ_USB0     56               81             934562
+>> OCTEON_IRQ_TWSI     45              224             100543
+>> OCTEON_IRQ_UART0    34              228               4572
+>> .
+>> .
+>> .
+>
+> How many actual hwirqs in each case and what is the range?
+>
+> So for CIU3, it seems you would need to use a radix tree. CIU2 is
+> probably borderline depending on what is the max number. But because you
+> don't yet have code in tree for either yet, you can use a linear domain
+> for now. It shouldn't be hard to switch from linear to radix later.
+>
+>> Now what we notice here is that there is no possible 1:1 linearly
+>> increasing mapping possible for the irq and *all* three hwirq sets.  We
+>> want a single binary that contains support for all three interrupt
+>> controllers, so the OCTEON_IRQ_* values have to be the same for all
+>> three interrupt controllers.  Because of this, legacy mapping is
+>> *impossible*.
+>
+> OCTEON_IRQ_* values need to go. You may not have to do that now, but
+> certainly before doing support for CIU2 and CIU3 you do. Those platforms
+> should be DT only.
 >
 >>
->> After looking at the thread, I spent another couple hours on poking
->> /sys, and did get the port to come back up and find the drive with the
->> following:
+>> Since the possible ranges of the hwirq values is very large and quite
+>> sparse, probably the radix mapping will be required.
 >>
->> echo on > /sys/devices/pci0000:00/0000:00:1f.2/ata5/power/control
->> echo on > /sys/devices/pci0000:00/0000:00:1f.2/ata5/host4/power/control
->> echo '- - -' > /sys/devices/pci0000:00/0000:00:1f.2/ata5/host4/scsi_host/host4/scan
->> --
+>
+> Yes. You're not the only one with this issue.
+>
+>> Also to support non-OF drivers and architecture specific code for the
+>> near future, I really think the existing IRQ values *must* be preserved.
+>>
+>
+> For a legacy boot yes. But when you boot with DT, you should not need
+> them.
 
-@Carey:
+It is not a matter of how the system is booted, rather what all the 
+drivers are expecting...
 
-thanks for the commands !
+> This is certainly possible as several ARM platforms do this. You
+> need to start with minimal set of drivers enabled for DT and add them
+> back in 1 by 1.
+>
 
+What I don't understand about this is what happens during the transition?
 
-@Lin Ming:
+What if a shared interrupt were referred from one non-OF driver by its 
+symbolic OCTEON_IRQ_? value, and from a second driver by its hwirq value 
+extracted from the DT?  In that case you would be referring to the same 
+interrupt line by two different irq values, clearly that should be 
+prevented.
 
-I also have to apologize for the delay, I had much stuff to
-repartition, reformat and re-sync during the week and finally
-yesterday & today - after finishing that - I could do some testing
+At a minimum, the change made for each converted driver would have to 
+include: removing the OCTEON_IRQ_? values,  Maintain a list of hwirqs 
+that are outside of the domain and report this by the.map() function, 
+and then update this list.
 
-that patch works wonderfully - thanks a lot !
+David Daney
 
+> Rob
+>
+>> Therefore, as I said above, we need a way for my SOC/board code to
+>> specify the mapping.
+>>
+>> Perhaps we need to add an optional function to struct irq_domain_ops
+>> that would allow the default mapping to be overridden on a per
+>> irq_domain basis.
+>>
+>> Otherwise, I think I will have to keep poking into the internal
+>> irq_domain data structures to get the mappings I want.
+>>
+>> What do you think?
+>>
+>> David Daney
+>
+>
 
-the system with 3.3 is significantly more responsive :)
-
-so if there are no reservations against the patch please include it
-for final and/or .1 kernel-release of 3.3
-
-
-
-on a related note: I had one observation though (non-related to the
-mentioned issue)
-
-with or without the patch my computer doesn't turn itself off anymore,
-if I remember correctly that didn't happen with rc3 (I could be wrong
-though)
-
-anyone else had the same issue ?
-
-to not further delay the final release by this "minor" issue - I'll
-test again once final is out and see whether there it's the same
-
-and if that's the case I'll write again & provide you with further
-information that you'll need
-
-
-Awesome work as always, thanks !
-
-Kind Regards
-
-Matt
