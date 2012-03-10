@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab2CJBZW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 20:25:22 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37926 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256Ab2CJBZU (ORCPT
+	id S1758836Ab2CJBwP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 20:52:15 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:30130
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755868Ab2CJBwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 20:25:20 -0500
-Message-ID: <4F5AAD71.6040708@gmail.com>
-Date: Fri, 09 Mar 2012 17:25:05 -0800
-From: "l.a.y.3.r.2" <l.a.y.3.r.2@gmail.com>
-Reply-To: l.a.y.3.r.2@gmail.com
-Organization: None
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Fri, 9 Mar 2012 20:52:12 -0500
+X-SpamScore: -6
+X-BigFish: VPS-6(z21eNzzz1202hzzz2fh668h839h)
+X-Forefront-Antispam-Report: CIP:160.33.98.74;KIP:(null);UIP:(null);IPV:NLI;H:mail7.fw-bc.sony.com;RD:mail7.fw-bc.sony.com;EFVD:NLI
+Message-ID: <4F5AB3B6.2040705@am.sony.com>
+Date: Fri, 9 Mar 2012 17:51:50 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, Pablo Neira Ayuso <pablo@netfilter.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: potential kernel bug
-References: <4F56CA3E.1040405@gmail.com> <1331097450.2474.52.camel@edumazet-laptop>
-In-Reply-To: <1331097450.2474.52.camel@edumazet-laptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: <tglx@linutronix.de>, <rostedt@goodmis.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-rt-users@vger.kernel.org>
+Subject: 3.0.23-rt39 BUG: scheduling while atomic, _cpu_down()
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I apologize for the delay in getting you all the details of my findings.
-I plan to complete a writeup on this Sunday and email it to you by
-Sunday eve at the latest.
+Hi Thomas,
+(and Steve, since you've been mucking about in the hotplug code,)
 
-Thanks again for taking the time to respond to my initial email.
+Yet another bit of fallout related to hotplug.
 
-L2
+This appears to affect 3.0-rt1, 3.0.23-rt29, and 3.2.9-rt17.
+(Thus probably all 3.x versions, but I haven't been masochistic
+enough to check.)
 
-On 03/06/2012 09:17 PM, Eric Dumazet wrote:
-> Le mardi 06 mars 2012 à 18:38 -0800, l.a.y.3.r.2 a écrit :
->> Hello,
->>
->> I think I may have found a bug in the functionality of the kernel and
->> iptables. I am concerned that it may be too sensitive to publicly
->> disclose the exact details.
->>
->> Can you please provide me with some guidance on how to provide
->> additional details in a secure manner?
->>
-> 
-> Submit a mail to developers, and if you really believe a _high_ security
-> issue exists, to security@kernel.org
-> 
-> But you know, we fix such bugs every day...
-> 
-> List of involved people (if you want to stay private) : 
-> 
-> Pablo Neira Ayuso <pablo@netfilter.org>
-> David Miller <davem@davemloft.net>
-> 
-> You can add me too.
-> 
-> 
+If not defined CONFIG_PREEMPT_RT_FULL then
+
+  - hotplug_lock() is a mutex_lock()
+  - cpu_hotplug_begin() calls hotplug_lock()
+  - _cpu_down() calls cpu_hotplug_begin() with preemption
+    disabled (disabled by the migrate_disable())
+
+The call to cpu_hotplug_begin() is not in a preempt disabled
+region until hotplug-use-migrate-disable.patch.  This patch
+moves the preempt_enable() (aka migrate_enable()) from just
+before calling cpu_hotplug_begin() to after "out_cancel:".
+
+The BUG can be triggered by:
+
+   echo 0 > /sys/devices/system/cpu/cpu1/online 
+
+
+-Frank
+
