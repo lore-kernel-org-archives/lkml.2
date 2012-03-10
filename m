@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab2CJRsj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 12:48:39 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:37007 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751595Ab2CJRsd (ORCPT
+	id S1751691Ab2CJRsq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 12:48:46 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47826 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab2CJRsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 12:48:33 -0500
+	Sat, 10 Mar 2012 12:48:43 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -20,275 +20,431 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Date: Sat, 10 Mar 2012 23:15:45 +0530
-Message-Id: <20120310174545.19949.62868.sendpatchset@srdronam.in.ibm.com>
+Date: Sat, 10 Mar 2012 23:15:16 +0530
+Message-Id: <20120310174516.19949.21898.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20120310174501.19949.50137.sendpatchset@srdronam.in.ibm.com>
 References: <20120310174501.19949.50137.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH 4/7] x86/trivial: rename trap_no to trap_nr in thread struct.
-x-cbid: 12031007-5490-0000-0000-000000EAFF28
+Subject: [PATCH 2/7] uprobes/core: make order of function parameters consistent across functions.
+x-cbid: 12031007-1618-0000-0000-00000109DBDE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-There are precedences of trap number being referred to as trap_nr.
-However thread struct refers trap number as trap_no. Change it to trap_nr.
+If a function takes struct uprobe or struct arch_uprobe, then it is
+passed as the first parameter.
 
 This is pure cleanup, no functional change intended.
 
-Suggested-by: Ingo Molnar <mingo@eltu.hu>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/ia32/ia32_signal.c      |    2 +-
- arch/x86/include/asm/processor.h |    2 +-
- arch/x86/kernel/dumpstack.c      |    2 +-
- arch/x86/kernel/ptrace.c         |    2 +-
- arch/x86/kernel/signal.c         |    2 +-
- arch/x86/kernel/traps.c          |   16 ++++++++--------
- arch/x86/kernel/vm86_32.c        |    2 +-
- arch/x86/kernel/vsyscall_64.c    |    2 +-
- arch/x86/math-emu/fpu_entry.c    |    4 ++--
- arch/x86/mm/fault.c              |   10 +++++-----
- 10 files changed, 22 insertions(+), 22 deletions(-)
+ arch/x86/include/asm/uprobes.h |    2 -
+ arch/x86/kernel/uprobes.c      |   15 +++---
+ include/linux/uprobes.h        |   12 +++--
+ kernel/events/uprobes.c        |   93 +++++++++++++++++++++-------------------
+ 4 files changed, 63 insertions(+), 59 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
-index 7d4dba9..135cd12 100644
---- a/arch/x86/ia32/ia32_signal.c
-+++ b/arch/x86/ia32/ia32_signal.c
-@@ -346,7 +346,7 @@ static int ia32_setup_sigcontext(struct sigcontext_ia32 __user *sc,
- 		put_user_ex(regs->dx, &sc->dx);
- 		put_user_ex(regs->cx, &sc->cx);
- 		put_user_ex(regs->ax, &sc->ax);
--		put_user_ex(current->thread.trap_no, &sc->trapno);
-+		put_user_ex(current->thread.trap_nr, &sc->trapno);
- 		put_user_ex(current->thread.error_code, &sc->err);
- 		put_user_ex(regs->ip, &sc->ip);
- 		put_user_ex(regs->cs, (unsigned int __user *)&sc->cs);
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index c59ff02..09ffc86 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -454,7 +454,7 @@ struct thread_struct {
- 	unsigned long           ptrace_dr7;
- 	/* Fault info: */
- 	unsigned long		cr2;
--	unsigned long		trap_no;
-+	unsigned long		trap_nr;
- 	unsigned long		error_code;
- 	/* floating point and extended processor state */
- 	struct fpu		fpu;
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index 4025fe4..28f9870 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -265,7 +265,7 @@ int __kprobes __die(const char *str, struct pt_regs *regs, long err)
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index 5c399e4..384f1be 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -39,5 +39,5 @@ struct arch_uprobe {
  #endif
- 	printk("\n");
- 	if (notify_die(DIE_OOPS, str, regs, err,
--			current->thread.trap_no, SIGSEGV) == NOTIFY_STOP)
-+			current->thread.trap_nr, SIGSEGV) == NOTIFY_STOP)
- 		return 1;
+ };
  
- 	show_registers(regs);
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index d14b3cd..f6f4c5d 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1426,7 +1426,7 @@ static void fill_sigtrap_info(struct task_struct *tsk,
- 				int error_code, int si_code,
- 				struct siginfo *info)
+-extern int arch_uprobes_analyze_insn(struct mm_struct *mm, struct arch_uprobe *arch_uprobe);
++extern int arch_uprobes_analyze_insn(struct arch_uprobe *aup, struct mm_struct *mm);
+ #endif	/* _ASM_UPROBES_H */
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 6dfa89e..851a11b 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -297,7 +297,8 @@ static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
+  *  - There's never a SIB byte.
+  *  - The displacement is always 4 bytes.
+  */
+-static void handle_riprel_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
++static void
++handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
  {
--	tsk->thread.trap_no = 1;
-+	tsk->thread.trap_nr = 1;
- 	tsk->thread.error_code = error_code;
+ 	u8 *cursor;
+ 	u8 reg;
+@@ -381,19 +382,19 @@ static int validate_insn_64bits(struct arch_uprobe *auprobe, struct insn *insn)
+ 	return -ENOTSUPP;
+ }
  
- 	memset(info, 0, sizeof(*info));
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 5134e17..115eac4 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -151,7 +151,7 @@ int setup_sigcontext(struct sigcontext __user *sc, void __user *fpstate,
- 		put_user_ex(regs->r15, &sc->r15);
- #endif /* CONFIG_X86_64 */
+-static int validate_insn_bits(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
++static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
+ {
+ 	if (mm->context.ia32_compat)
+ 		return validate_insn_32bits(auprobe, insn);
+ 	return validate_insn_64bits(auprobe, insn);
+ }
+ #else /* 32-bit: */
+-static void handle_riprel_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
++static void handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
+ {
+ 	/* No RIP-relative addressing on 32-bit */
+ }
  
--		put_user_ex(current->thread.trap_no, &sc->trapno);
-+		put_user_ex(current->thread.trap_nr, &sc->trapno);
- 		put_user_ex(current->thread.error_code, &sc->err);
- 		put_user_ex(regs->ip, &sc->ip);
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index ec61d4c..d47ed32 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -133,7 +133,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
- trap_signal:
- #endif
- 	/*
--	 * We want error_code and trap_no set for userspace faults and
-+	 * We want error_code and trap_nr set for userspace faults and
- 	 * kernelspace faults which result in die(), but not
- 	 * kernelspace faults which are fixed up.  die() gives the
- 	 * process no chance to handle the signal and notice the
-@@ -142,7 +142,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
- 	 * delivered, faults.  See also do_general_protection below.
- 	 */
- 	tsk->thread.error_code = error_code;
--	tsk->thread.trap_no = trapnr;
-+	tsk->thread.trap_nr = trapnr;
+-static int validate_insn_bits(struct mm_struct *mm, struct arch_uprobe *auprobe, struct insn *insn)
++static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,  struct insn *insn)
+ {
+ 	return validate_insn_32bits(auprobe, insn);
+ }
+@@ -405,17 +406,17 @@ static int validate_insn_bits(struct mm_struct *mm, struct arch_uprobe *auprobe,
+  * @arch_uprobe: the probepoint information.
+  * Return 0 on success or a -ve number on error.
+  */
+-int arch_uprobes_analyze_insn(struct mm_struct *mm, struct arch_uprobe *auprobe)
++int arch_uprobes_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm)
+ {
+ 	int ret;
+ 	struct insn insn;
  
- #ifdef CONFIG_X86_64
- 	if (show_unhandled_signals && unhandled_signal(tsk, signr) &&
-@@ -165,7 +165,7 @@ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
- kernel_trap:
- 	if (!fixup_exception(regs)) {
- 		tsk->thread.error_code = error_code;
--		tsk->thread.trap_no = trapnr;
-+		tsk->thread.trap_nr = trapnr;
- 		die(str, regs, error_code);
- 	}
- 	return;
-@@ -237,7 +237,7 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- 	notify_die(DIE_TRAP, str, regs, error_code, 8, SIGSEGV);
+ 	auprobe->fixups = 0;
+-	ret = validate_insn_bits(mm, auprobe, &insn);
++	ret = validate_insn_bits(auprobe, mm, &insn);
+ 	if (ret != 0)
+ 		return ret;
  
- 	tsk->thread.error_code = error_code;
--	tsk->thread.trap_no = 8;
-+	tsk->thread.trap_nr = 8;
+-	handle_riprel_insn(mm, auprobe, &insn);
++	handle_riprel_insn(auprobe, mm, &insn);
+ 	prepare_fixups(auprobe, &insn);
  
- 	/*
- 	 * This is always a kernel trap and never fixable (and thus must
-@@ -265,7 +265,7 @@ do_general_protection(struct pt_regs *regs, long error_code)
- 		goto gp_in_kernel;
- 
- 	tsk->thread.error_code = error_code;
--	tsk->thread.trap_no = 13;
-+	tsk->thread.trap_nr = 13;
- 
- 	if (show_unhandled_signals && unhandled_signal(tsk, SIGSEGV) &&
- 			printk_ratelimit()) {
-@@ -292,7 +292,7 @@ do_general_protection(struct pt_regs *regs, long error_code)
- 		return;
- 
- 	tsk->thread.error_code = error_code;
--	tsk->thread.trap_no = 13;
-+	tsk->thread.trap_nr = 13;
- 	if (notify_die(DIE_GPF, "general protection fault", regs,
- 				error_code, 13, SIGSEGV) == NOTIFY_STOP)
- 		return;
-@@ -471,7 +471,7 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
- 	{
- 		if (!fixup_exception(regs)) {
- 			task->thread.error_code = error_code;
--			task->thread.trap_no = trapnr;
-+			task->thread.trap_nr = trapnr;
- 			die(str, regs, error_code);
- 		}
- 		return;
-@@ -481,7 +481,7 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
- 	 * Save the info for the exception handler and clear the error.
- 	 */
- 	save_init_fpu(task);
--	task->thread.trap_no = trapnr;
-+	task->thread.trap_nr = trapnr;
- 	task->thread.error_code = error_code;
- 	info.si_signo = SIGFPE;
- 	info.si_errno = 0;
-diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
-index b466cab..a1315ab 100644
---- a/arch/x86/kernel/vm86_32.c
-+++ b/arch/x86/kernel/vm86_32.c
-@@ -567,7 +567,7 @@ int handle_vm86_trap(struct kernel_vm86_regs *regs, long error_code, int trapno)
- 	}
- 	if (trapno != 1)
- 		return 1; /* we let this handle by the calling routine */
--	current->thread.trap_no = trapno;
-+	current->thread.trap_nr = trapno;
- 	current->thread.error_code = error_code;
- 	force_sig(SIGTRAP, current);
  	return 0;
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index b07ba93..db9b6db 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -153,7 +153,7 @@ static bool write_ok_or_segv(unsigned long ptr, size_t size)
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 838fb31..5869918 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -52,20 +52,20 @@ struct uprobe_consumer {
+ };
  
- 		thread->error_code	= 6;  /* user fault, no page, write */
- 		thread->cr2		= ptr;
--		thread->trap_no		= 14;
-+		thread->trap_nr		= 14;
- 
- 		memset(&info, 0, sizeof(info));
- 		info.si_signo		= SIGSEGV;
-diff --git a/arch/x86/math-emu/fpu_entry.c b/arch/x86/math-emu/fpu_entry.c
-index 7718541..f600d8b 100644
---- a/arch/x86/math-emu/fpu_entry.c
-+++ b/arch/x86/math-emu/fpu_entry.c
-@@ -269,7 +269,7 @@ void math_emulate(struct math_emu_info *info)
- 			FPU_EIP = FPU_ORIG_EIP;	/* Point to current FPU instruction. */
- 
- 			RE_ENTRANT_CHECK_OFF;
--			current->thread.trap_no = 16;
-+			current->thread.trap_nr = 16;
- 			current->thread.error_code = 0;
- 			send_sig(SIGFPE, current, 1);
- 			return;
-@@ -662,7 +662,7 @@ static int valid_prefix(u_char *Byte, u_char __user **fpu_eip,
- void math_abort(struct math_emu_info *info, unsigned int signal)
+ #ifdef CONFIG_UPROBES
+-extern int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr);
+-extern int __weak set_orig_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr, bool verify);
++extern int __weak set_bkpt(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
++extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
+ extern bool __weak is_bkpt_insn(uprobe_opcode_t *insn);
+-extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer);
+-extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer);
++extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
++extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern int uprobe_mmap(struct vm_area_struct *vma);
+ #else /* CONFIG_UPROBES is not defined */
+ static inline int
+-uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer)
++uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
  {
- 	FPU_EIP = FPU_ORIG_EIP;
--	current->thread.trap_no = 16;
-+	current->thread.trap_nr = 16;
- 	current->thread.error_code = 0;
- 	send_sig(signal, current, 1);
- 	RE_ENTRANT_CHECK_OFF;
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index f0b4caf..c0e3391 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -615,7 +615,7 @@ pgtable_bad(struct pt_regs *regs, unsigned long error_code,
- 	dump_pagetable(address);
+ 	return -ENOSYS;
+ }
+ static inline void
+-uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer)
++uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
+ {
+ }
+ static inline int uprobe_mmap(struct vm_area_struct *vma)
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 0d36bf3..9c5ddff 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -192,8 +192,8 @@ bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
  
- 	tsk->thread.cr2		= address;
--	tsk->thread.trap_no	= 14;
-+	tsk->thread.trap_nr	= 14;
- 	tsk->thread.error_code	= error_code;
+ /*
+  * write_opcode - write the opcode at a given virtual address.
++ * @auprobe: arch breakpointing information.
+  * @mm: the probed process address space.
+- * @arch_uprobe: the breakpointing information.
+  * @vaddr: the virtual address to store the opcode.
+  * @opcode: opcode to be written at @vaddr.
+  *
+@@ -203,7 +203,7 @@ bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
+  * For mm @mm, write the opcode at @vaddr.
+  * Return 0 (success) or a negative errno.
+  */
+-static int write_opcode(struct mm_struct *mm, struct arch_uprobe *auprobe,
++static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 			unsigned long vaddr, uprobe_opcode_t opcode)
+ {
+ 	struct page *old_page, *new_page;
+@@ -334,14 +334,14 @@ static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
  
- 	if (__die("Bad pagetable", regs, error_code))
-@@ -636,7 +636,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
- 	/* Are we prepared to handle this kernel fault? */
- 	if (fixup_exception(regs)) {
- 		if (current_thread_info()->sig_on_uaccess_error && signal) {
--			tsk->thread.trap_no = 14;
-+			tsk->thread.trap_nr = 14;
- 			tsk->thread.error_code = error_code | PF_USER;
- 			tsk->thread.cr2 = address;
+ /**
+  * set_bkpt - store breakpoint at a given address.
++ * @auprobe: arch specific probepoint information.
+  * @mm: the probed process address space.
+- * @uprobe: the probepoint information.
+  * @vaddr: the virtual address to insert the opcode.
+  *
+  * For mm @mm, store the breakpoint instruction at @vaddr.
+  * Return 0 (success) or a negative errno.
+  */
+-int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr)
++int __weak set_bkpt(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr)
+ {
+ 	int result;
  
-@@ -676,7 +676,7 @@ no_context(struct pt_regs *regs, unsigned long error_code,
- 		printk(KERN_EMERG "Thread overran stack, or stack corrupted\n");
+@@ -352,13 +352,13 @@ int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned 
+ 	if (result)
+ 		return result;
  
- 	tsk->thread.cr2		= address;
--	tsk->thread.trap_no	= 14;
-+	tsk->thread.trap_nr	= 14;
- 	tsk->thread.error_code	= error_code;
+-	return write_opcode(mm, auprobe, vaddr, UPROBE_BKPT_INSN);
++	return write_opcode(auprobe, mm, vaddr, UPROBE_BKPT_INSN);
+ }
  
- 	sig = SIGKILL;
-@@ -754,7 +754,7 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
- 		/* Kernel addresses are always protection faults: */
- 		tsk->thread.cr2		= address;
- 		tsk->thread.error_code	= error_code | (address >= TASK_SIZE);
--		tsk->thread.trap_no	= 14;
-+		tsk->thread.trap_nr	= 14;
+ /**
+  * set_orig_insn - Restore the original instruction.
+  * @mm: the probed process address space.
+- * @uprobe: the probepoint information.
++ * @auprobe: arch specific probepoint information.
+  * @vaddr: the virtual address to insert the opcode.
+  * @verify: if true, verify existance of breakpoint instruction.
+  *
+@@ -366,7 +366,7 @@ int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned 
+  * Return 0 (success) or a negative errno.
+  */
+ int __weak
+-set_orig_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long vaddr, bool verify)
++set_orig_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr, bool verify)
+ {
+ 	if (verify) {
+ 		int result;
+@@ -378,7 +378,7 @@ set_orig_insn(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned long v
+ 		if (result != 1)
+ 			return result;
+ 	}
+-	return write_opcode(mm, auprobe, vaddr, *(uprobe_opcode_t *)auprobe->insn);
++	return write_opcode(auprobe, mm, vaddr, *(uprobe_opcode_t *)auprobe->insn);
+ }
  
- 		force_sig_info_fault(SIGSEGV, si_code, address, tsk, 0);
+ static int match_uprobe(struct uprobe *l, struct uprobe *r)
+@@ -525,30 +525,30 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
  
-@@ -838,7 +838,7 @@ do_sigbus(struct pt_regs *regs, unsigned long error_code, unsigned long address,
+ /* Returns the previous consumer */
+ static struct uprobe_consumer *
+-consumer_add(struct uprobe *uprobe, struct uprobe_consumer *consumer)
++consumer_add(struct uprobe *uprobe, struct uprobe_consumer *uc)
+ {
+ 	down_write(&uprobe->consumer_rwsem);
+-	consumer->next = uprobe->consumers;
+-	uprobe->consumers = consumer;
++	uc->next = uprobe->consumers;
++	uprobe->consumers = uc;
+ 	up_write(&uprobe->consumer_rwsem);
  
- 	tsk->thread.cr2		= address;
- 	tsk->thread.error_code	= error_code;
--	tsk->thread.trap_no	= 14;
-+	tsk->thread.trap_nr	= 14;
+-	return consumer->next;
++	return uc->next;
+ }
  
- #ifdef CONFIG_MEMORY_FAILURE
- 	if (fault & (VM_FAULT_HWPOISON|VM_FAULT_HWPOISON_LARGE)) {
+ /*
+- * For uprobe @uprobe, delete the consumer @consumer.
+- * Return true if the @consumer is deleted successfully
++ * For uprobe @uprobe, delete the consumer @uc.
++ * Return true if the @uc is deleted successfully
+  * or return false.
+  */
+-static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *consumer)
++static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *uc)
+ {
+ 	struct uprobe_consumer **con;
+ 	bool ret = false;
+ 
+ 	down_write(&uprobe->consumer_rwsem);
+ 	for (con = &uprobe->consumers; *con; con = &(*con)->next) {
+-		if (*con == consumer) {
+-			*con = consumer->next;
++		if (*con == uc) {
++			*con = uc->next;
+ 			ret = true;
+ 			break;
+ 		}
+@@ -558,8 +558,8 @@ static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *consumer
+ 	return ret;
+ }
+ 
+-static int __copy_insn(struct address_space *mapping,
+-			struct vm_area_struct *vma, char *insn,
++static int
++__copy_insn(struct address_space *mapping, struct vm_area_struct *vma, char *insn,
+ 			unsigned long nbytes, unsigned long offset)
+ {
+ 	struct file *filp = vma->vm_file;
+@@ -590,7 +590,8 @@ static int __copy_insn(struct address_space *mapping,
+ 	return 0;
+ }
+ 
+-static int copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned long addr)
++static int
++copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned long addr)
+ {
+ 	struct address_space *mapping;
+ 	unsigned long nbytes;
+@@ -617,8 +618,9 @@ static int copy_insn(struct uprobe *uprobe, struct vm_area_struct *vma, unsigned
+ 	return __copy_insn(mapping, vma, uprobe->arch.insn, bytes, uprobe->offset);
+ }
+ 
+-static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+-				struct vm_area_struct *vma, loff_t vaddr)
++static int
++install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
++			struct vm_area_struct *vma, loff_t vaddr)
+ {
+ 	unsigned long addr;
+ 	int ret;
+@@ -643,20 +645,21 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+ 		if (is_bkpt_insn((uprobe_opcode_t *)uprobe->arch.insn))
+ 			return -EEXIST;
+ 
+-		ret = arch_uprobes_analyze_insn(mm, &uprobe->arch);
++		ret = arch_uprobes_analyze_insn(&uprobe->arch, mm);
+ 		if (ret)
+ 			return ret;
+ 
+ 		uprobe->flags |= UPROBE_COPY_INSN;
+ 	}
+-	ret = set_bkpt(mm, &uprobe->arch, addr);
++	ret = set_bkpt(&uprobe->arch, mm, addr);
+ 
+ 	return ret;
+ }
+ 
+-static void remove_breakpoint(struct mm_struct *mm, struct uprobe *uprobe, loff_t vaddr)
++static void
++remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, loff_t vaddr)
+ {
+-	set_orig_insn(mm, &uprobe->arch, (unsigned long)vaddr, true);
++	set_orig_insn(&uprobe->arch, mm, (unsigned long)vaddr, true);
+ }
+ 
+ static void delete_uprobe(struct uprobe *uprobe)
+@@ -671,9 +674,9 @@ static void delete_uprobe(struct uprobe *uprobe)
+ 	atomic_dec(&uprobe_events);
+ }
+ 
+-static struct vma_info *__find_next_vma_info(struct list_head *head,
+-			loff_t offset, struct address_space *mapping,
+-			struct vma_info *vi, bool is_register)
++static struct vma_info *
++__find_next_vma_info(struct address_space *mapping, struct list_head *head,
++			struct vma_info *vi, loff_t offset, bool is_register)
+ {
+ 	struct prio_tree_iter iter;
+ 	struct vm_area_struct *vma;
+@@ -719,8 +722,8 @@ static struct vma_info *__find_next_vma_info(struct list_head *head,
+  * yet been inserted.
+  */
+ static struct vma_info *
+-find_next_vma_info(struct list_head *head, loff_t offset, struct address_space *mapping,
+-		   bool is_register)
++find_next_vma_info(struct address_space *mapping, struct list_head *head,
++		loff_t offset, bool is_register)
+ {
+ 	struct vma_info *vi, *retvi;
+ 
+@@ -729,7 +732,7 @@ find_next_vma_info(struct list_head *head, loff_t offset, struct address_space *
+ 		return ERR_PTR(-ENOMEM);
+ 
+ 	mutex_lock(&mapping->i_mmap_mutex);
+-	retvi = __find_next_vma_info(head, offset, mapping, vi, is_register);
++	retvi = __find_next_vma_info(mapping, head, vi, offset, is_register);
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+ 
+ 	if (!retvi)
+@@ -754,7 +757,7 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 	ret = 0;
+ 
+ 	for (;;) {
+-		vi = find_next_vma_info(&try_list, uprobe->offset, mapping, is_register);
++		vi = find_next_vma_info(mapping, &try_list, uprobe->offset, is_register);
+ 		if (!vi)
+ 			break;
+ 
+@@ -784,9 +787,9 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 		}
+ 
+ 		if (is_register)
+-			ret = install_breakpoint(mm, uprobe, vma, vi->vaddr);
++			ret = install_breakpoint(uprobe, mm, vma, vi->vaddr);
+ 		else
+-			remove_breakpoint(mm, uprobe, vi->vaddr);
++			remove_breakpoint(uprobe, mm, vi->vaddr);
+ 
+ 		up_read(&mm->mmap_sem);
+ 		mmput(mm);
+@@ -823,25 +826,25 @@ static void __uprobe_unregister(struct uprobe *uprobe)
+  * uprobe_register - register a probe
+  * @inode: the file in which the probe has to be placed.
+  * @offset: offset from the start of the file.
+- * @consumer: information on howto handle the probe..
++ * @uc: information on howto handle the probe..
+  *
+  * Apart from the access refcount, uprobe_register() takes a creation
+  * refcount (thro alloc_uprobe) if and only if this @uprobe is getting
+  * inserted into the rbtree (i.e first consumer for a @inode:@offset
+  * tuple).  Creation refcount stops uprobe_unregister from freeing the
+  * @uprobe even before the register operation is complete. Creation
+- * refcount is released when the last @consumer for the @uprobe
++ * refcount is released when the last @uc for the @uprobe
+  * unregisters.
+  *
+  * Return errno if it cannot successully install probes
+  * else return 0 (success)
+  */
+-int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer)
++int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
+ {
+ 	struct uprobe *uprobe;
+ 	int ret;
+ 
+-	if (!inode || !consumer || consumer->next)
++	if (!inode || !uc || uc->next)
+ 		return -EINVAL;
+ 
+ 	if (offset > i_size_read(inode))
+@@ -851,7 +854,7 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+ 	mutex_lock(uprobes_hash(inode));
+ 	uprobe = alloc_uprobe(inode, offset);
+ 
+-	if (uprobe && !consumer_add(uprobe, consumer)) {
++	if (uprobe && !consumer_add(uprobe, uc)) {
+ 		ret = __uprobe_register(uprobe);
+ 		if (ret) {
+ 			uprobe->consumers = NULL;
+@@ -871,13 +874,13 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+  * uprobe_unregister - unregister a already registered probe.
+  * @inode: the file in which the probe has to be removed.
+  * @offset: offset from the start of the file.
+- * @consumer: identify which probe if multiple probes are colocated.
++ * @uc: identify which probe if multiple probes are colocated.
+  */
+-void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *consumer)
++void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
+ {
+ 	struct uprobe *uprobe;
+ 
+-	if (!inode || !consumer)
++	if (!inode || !uc)
+ 		return;
+ 
+ 	uprobe = find_uprobe(inode, offset);
+@@ -886,7 +889,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
+ 
+ 	mutex_lock(uprobes_hash(inode));
+ 
+-	if (consumer_del(uprobe, consumer)) {
++	if (consumer_del(uprobe, uc)) {
+ 		if (!uprobe->consumers) {
+ 			__uprobe_unregister(uprobe);
+ 			uprobe->flags &= ~UPROBE_RUN_HANDLER;
+@@ -993,7 +996,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 		if (!ret) {
+ 			vaddr = vma_address(vma, uprobe->offset);
+ 			if (vaddr >= vma->vm_start && vaddr < vma->vm_end) {
+-				ret = install_breakpoint(vma->vm_mm, uprobe, vma, vaddr);
++				ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
+ 				/* Ignore double add: */
+ 				if (ret == -EEXIST)
+ 					ret = 0;
 
 
