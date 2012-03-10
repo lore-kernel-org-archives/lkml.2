@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab2CJX0d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 18:26:33 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:39393
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752653Ab2CJXZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753151Ab2CJXZq (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 10 Mar 2012 18:25:46 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:39314
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752653Ab2CJXZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 18:25:43 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, virtualization@lists.osdl.org,
         ohering@suse.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 4/4] Tools: hv: Support enumeration from all the pools
-Date: Sat, 10 Mar 2012 15:32:11 -0800
-Message-Id: <1331422331-4381-4-git-send-email-kys@microsoft.com>
+Subject: [PATCH 3/4] Tools: hv: Fully support the new KVP verbs in the user level daemon
+Date: Sat, 10 Mar 2012 15:32:10 -0800
+Message-Id: <1331422331-4381-3-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1331422331-4381-1-git-send-email-kys@microsoft.com>
 References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
@@ -23,232 +23,333 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have supported enumeration only from the AUTO pool. Now support
-enumeration from all the available pools.
+Now fully support the new KVP messages in the user level daemon. Hyper-V defines
+multiple persistent pools to which the host can write/read/modify KVP tuples.
+In this patch we implement a file for each specified pool, where the KVP tuples
+will stored in the guest.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/hv/hv_kvp.c      |    7 ++-
- include/linux/hyperv.h   |    1 +
- tools/hv/hv_kvp_daemon.c |  124 +++++++++++++++++++++++++++++++++++++++++++---
- 3 files changed, 122 insertions(+), 10 deletions(-)
+ tools/hv/hv_kvp_daemon.c |  281 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 280 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
-index 3b2eeaa..1a70b10 100644
---- a/drivers/hv/hv_kvp.c
-+++ b/drivers/hv/hv_kvp.c
-@@ -286,14 +286,15 @@ kvp_respond_to_host(char *key, char *value, int error)
- 
- 
- 	/*
--	 * If the error parameter is set, terminate the host's enumeration.
-+	 * If the error parameter is set, terminate the host's enumeration
-+	 * on this pool.
- 	 */
- 	if (error) {
- 		/*
- 		 * Something failed or the we have timedout;
--		 * terminate the host-side iteration by returning an error.
-+		 * terminate the current  host-side iteration.
- 		 */
--		icmsghdrp->status = HV_E_FAIL;
-+		icmsghdrp->status = HV_S_CONT;
- 		goto response_done;
- 	}
- 
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index e88a979..5852545 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -952,6 +952,7 @@ void vmbus_driver_unregister(struct hv_driver *hv_driver);
- 
- #define HV_S_OK				0x00000000
- #define HV_E_FAIL			0x80004005
-+#define HV_S_CONT			0x80070103
- #define HV_ERROR_NOT_SUPPORTED		0x80070032
- #define HV_ERROR_MACHINE_LOCKED		0x800704F7
- 
 diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 2fb9c3d..146fd61 100644
+index a98878c..2fb9c3d 100644
 --- a/tools/hv/hv_kvp_daemon.c
 +++ b/tools/hv/hv_kvp_daemon.c
-@@ -148,6 +148,51 @@ static void kvp_update_file(int pool)
- 	kvp_release_lock(pool);
- }
+@@ -39,7 +39,8 @@
+ #include <ifaddrs.h>
+ #include <netdb.h>
+ #include <syslog.h>
+-
++#include <sys/stat.h>
++#include <fcntl.h>
  
-+static void kvp_update_mem_state(int pool)
+ /*
+  * KVP protocol: The user mode component first registers with the
+@@ -79,6 +80,250 @@ static char *os_build;
+ static char *lic_version;
+ static struct utsname uts_buf;
+ 
++
++#define MAX_FILE_NAME 100
++#define ENTRIES_PER_BLOCK 50
++
++struct kvp_record {
++	__u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
++	__u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
++};
++
++struct kvp_file_state {
++	int fd;
++	int num_blocks;
++	struct kvp_record *records;
++	int num_records;
++	__u8 fname[MAX_FILE_NAME];
++};
++
++static struct kvp_file_state kvp_file_info[KVP_POOL_COUNT];
++
++static void kvp_acquire_lock(int pool)
++{
++	struct flock fl = {F_WRLCK, SEEK_SET, 0, 0, 0};
++	fl.l_pid = getpid();
++
++	if (fcntl(kvp_file_info[pool].fd, F_SETLKW, &fl) == -1) {
++		syslog(LOG_ERR, "Failed to acquire the lock pool: %d", pool);
++		exit(-1);
++	}
++}
++
++static void kvp_release_lock(int pool)
++{
++	struct flock fl = {F_UNLCK, SEEK_SET, 0, 0, 0};
++	fl.l_pid = getpid();
++
++	if (fcntl(kvp_file_info[pool].fd, F_SETLK, &fl) == -1) {
++		perror("fcntl");
++		syslog(LOG_ERR, "Failed to release the lock pool: %d", pool);
++		exit(-1);
++	}
++}
++
++static void kvp_update_file(int pool)
 +{
 +	FILE *filep;
-+	size_t records_read = 0;
-+	struct kvp_record *record = kvp_file_info[pool].records;
-+	struct kvp_record *readp;
-+	int num_blocks = kvp_file_info[pool].num_blocks;
-+	int alloc_unit = sizeof(struct kvp_record) * ENTRIES_PER_BLOCK;
++	size_t bytes_written;
 +
++	/*
++	 * We are going to write our in-memory registry out to
++	 * disk; acquire the lock first.
++	 */
 +	kvp_acquire_lock(pool);
 +
-+	filep = fopen(kvp_file_info[pool].fname, "r");
++	filep = fopen(kvp_file_info[pool].fname, "w");
 +	if (!filep) {
 +		kvp_release_lock(pool);
 +		syslog(LOG_ERR, "Failed to open file, pool: %d", pool);
 +		exit(-1);
 +	}
-+	while (!feof(filep)) {
-+		readp = &record[records_read];
-+		records_read += fread(readp, sizeof(struct kvp_record),
-+					ENTRIES_PER_BLOCK * num_blocks,
-+					filep);
 +
-+		if (!feof(filep)) {
-+			/*
-+			 * We have more data to read.
-+			 */
-+			num_blocks++;
-+			record = realloc(record, alloc_unit * num_blocks);
++	bytes_written = fwrite(kvp_file_info[pool].records,
++				sizeof(struct kvp_record),
++				kvp_file_info[pool].num_records, filep);
 +
-+			if (record == NULL) {
-+				syslog(LOG_ERR, "malloc failed");
-+				exit(-1);
-+			}
-+			continue;
-+		}
-+		break;
-+	}
-+
-+	kvp_file_info[pool].num_blocks = num_blocks;
-+	kvp_file_info[pool].records = record;
-+	kvp_file_info[pool].num_records = records_read;
-+
++	fflush(filep);
 +	kvp_release_lock(pool);
 +}
- static int kvp_file_init(void)
- {
- 	int ret, fd;
-@@ -223,8 +268,16 @@ static int kvp_key_delete(int pool, __u8 *key, int key_size)
- {
- 	int i;
- 	int j, k;
--	int num_records = kvp_file_info[pool].num_records;
--	struct kvp_record *record = kvp_file_info[pool].records;
-+	int num_records;
-+	struct kvp_record *record;
 +
-+	/*
-+	 * First update the in-memory state.
-+	 */
-+	kvp_update_mem_state(pool);
-+
-+	num_records = kvp_file_info[pool].num_records;
-+	record = kvp_file_info[pool].records;
- 
- 	for (i = 0; i < num_records; i++) {
- 		if (memcmp(key, record[i].key, key_size))
-@@ -259,14 +312,23 @@ static int kvp_key_add_or_modify(int pool, __u8 *key, int key_size, __u8 *value,
- {
- 	int i;
- 	int j, k;
--	int num_records = kvp_file_info[pool].num_records;
--	struct kvp_record *record = kvp_file_info[pool].records;
--	int num_blocks = kvp_file_info[pool].num_blocks;
-+	int num_records;
-+	struct kvp_record *record;
-+	int num_blocks;
- 
- 	if ((key_size > HV_KVP_EXCHANGE_MAX_KEY_SIZE) ||
- 		(value_size > HV_KVP_EXCHANGE_MAX_VALUE_SIZE))
- 		return 1;
- 
-+	/*
-+	 * First update the in-memory state.
-+	 */
-+	kvp_update_mem_state(pool);
-+
-+	num_records = kvp_file_info[pool].num_records;
-+	record = kvp_file_info[pool].records;
-+	num_blocks = kvp_file_info[pool].num_blocks;
-+
- 	for (i = 0; i < num_records; i++) {
- 		if (memcmp(key, record[i].key, key_size))
- 			continue;
-@@ -304,13 +366,21 @@ static int kvp_get_value(int pool, __u8 *key, int key_size, __u8 *value,
- 			int value_size)
- {
- 	int i;
--	int num_records = kvp_file_info[pool].num_records;
--	struct kvp_record *record = kvp_file_info[pool].records;
-+	int num_records;
-+	struct kvp_record *record;
- 
- 	if ((key_size > HV_KVP_EXCHANGE_MAX_KEY_SIZE) ||
- 		(value_size > HV_KVP_EXCHANGE_MAX_VALUE_SIZE))
- 		return 1;
- 
-+	/*
-+	 * First update the in-memory state.
-+	 */
-+	kvp_update_mem_state(pool);
-+
-+	num_records = kvp_file_info[pool].num_records;
-+	record = kvp_file_info[pool].records;
-+
- 	for (i = 0; i < num_records; i++) {
- 		if (memcmp(key, record[i].key, key_size))
- 			continue;
-@@ -324,6 +394,31 @@ static int kvp_get_value(int pool, __u8 *key, int key_size, __u8 *value,
- 	return 1;
- }
- 
-+static void kvp_pool_enumerate(int pool, int index, __u8 *key, int key_size,
-+				__u8 *value, int value_size)
++static int kvp_file_init(void)
 +{
++	int ret, fd;
++	FILE *filep;
++	size_t records_read;
++	__u8 *fname;
 +	struct kvp_record *record;
++	struct kvp_record *readp;
++	int num_blocks;
++	int i;
++	int alloc_unit = sizeof(struct kvp_record) * ENTRIES_PER_BLOCK;
 +
-+	/*
-+	 * First update our in-memory database.
-+	 */
-+	kvp_update_mem_state(pool);
-+	record = kvp_file_info[pool].records;
-+
-+	if (index >= kvp_file_info[pool].num_records) {
-+		/*
-+		 * This is an invalid index; terminate enumeration;
-+		 * - a NULL value will do the trick.
-+		 */
-+		strcpy(value, "");
-+		return;
++	if (access("/var/opt/hyperv", F_OK)) {
++		if (mkdir("/var/opt/hyperv", S_IRUSR | S_IWUSR | S_IROTH)) {
++			syslog(LOG_ERR, " Failed to create /var/opt/hyperv");
++			exit(-1);
++		}
 +	}
 +
-+	memcpy(key, record[index].key, key_size);
-+	memcpy(value, record[index].value, value_size);
++	for (i = 0; i < KVP_POOL_COUNT; i++) {
++		fname = kvp_file_info[i].fname;
++		records_read = 0;
++		num_blocks = 1;
++		sprintf(fname, "/var/opt/hyperv/.kvp_pool_%d", i);
++		fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH);
++
++		if (fd == -1)
++			return 1;
++
++
++		filep = fopen(fname, "r");
++		if (!filep)
++			return 1;
++
++		record = malloc(alloc_unit * num_blocks);
++		if (record == NULL) {
++			fclose(filep);
++			return 1;
++		}
++		while (!feof(filep)) {
++			readp = &record[records_read];
++			records_read += fread(readp, sizeof(struct kvp_record),
++					ENTRIES_PER_BLOCK,
++					filep);
++
++			if (!feof(filep)) {
++				/*
++				 * We have more data to read.
++				 */
++				num_blocks++;
++				record = realloc(record, alloc_unit *
++						num_blocks);
++				if (record == NULL) {
++					fclose(filep);
++					return 1;
++				}
++				continue;
++			}
++			break;
++		}
++		kvp_file_info[i].fd = fd;
++		kvp_file_info[i].num_blocks = num_blocks;
++		kvp_file_info[i].records = record;
++		kvp_file_info[i].num_records = records_read;
++		fclose(filep);
++
++	}
++
++	return 0;
 +}
 +
++static int kvp_key_delete(int pool, __u8 *key, int key_size)
++{
++	int i;
++	int j, k;
++	int num_records = kvp_file_info[pool].num_records;
++	struct kvp_record *record = kvp_file_info[pool].records;
++
++	for (i = 0; i < num_records; i++) {
++		if (memcmp(key, record[i].key, key_size))
++			continue;
++		/*
++		 * Found a match; just move the remaining
++		 * entries up.
++		 */
++		if (i == num_records) {
++			kvp_file_info[pool].num_records--;
++			kvp_update_file(pool);
++			return 0;
++		}
++
++		j = i;
++		k = j + 1;
++		for (; k < num_records; k++) {
++			strcpy(record[j].key, record[k].key);
++			strcpy(record[j].value, record[k].value);
++			j++;
++		}
++
++		kvp_file_info[pool].num_records--;
++		kvp_update_file(pool);
++		return 0;
++	}
++	return 1;
++}
++
++static int kvp_key_add_or_modify(int pool, __u8 *key, int key_size, __u8 *value,
++			int value_size)
++{
++	int i;
++	int j, k;
++	int num_records = kvp_file_info[pool].num_records;
++	struct kvp_record *record = kvp_file_info[pool].records;
++	int num_blocks = kvp_file_info[pool].num_blocks;
++
++	if ((key_size > HV_KVP_EXCHANGE_MAX_KEY_SIZE) ||
++		(value_size > HV_KVP_EXCHANGE_MAX_VALUE_SIZE))
++		return 1;
++
++	for (i = 0; i < num_records; i++) {
++		if (memcmp(key, record[i].key, key_size))
++			continue;
++		/*
++		 * Found a match; just update the value -
++		 * this is the modify case.
++		 */
++		memcpy(record[i].value, value, value_size);
++		kvp_update_file(pool);
++		return 0;
++	}
++
++	/*
++	 * Need to add a new entry;
++	 */
++	if (num_records == (ENTRIES_PER_BLOCK * num_blocks)) {
++		/* Need to allocate a larger array for reg entries. */
++		record = realloc(record, sizeof(struct kvp_record) *
++			 ENTRIES_PER_BLOCK * (num_blocks + 1));
++
++		if (record == NULL)
++			return 1;
++		kvp_file_info[pool].num_blocks++;
++
++	}
++	memcpy(record[i].value, value, value_size);
++	memcpy(record[i].key, key, key_size);
++	kvp_file_info[pool].records = record;
++	kvp_file_info[pool].num_records++;
++	kvp_update_file(pool);
++	return 0;
++}
++
++static int kvp_get_value(int pool, __u8 *key, int key_size, __u8 *value,
++			int value_size)
++{
++	int i;
++	int num_records = kvp_file_info[pool].num_records;
++	struct kvp_record *record = kvp_file_info[pool].records;
++
++	if ((key_size > HV_KVP_EXCHANGE_MAX_KEY_SIZE) ||
++		(value_size > HV_KVP_EXCHANGE_MAX_VALUE_SIZE))
++		return 1;
++
++	for (i = 0; i < num_records; i++) {
++		if (memcmp(key, record[i].key, key_size))
++			continue;
++		/*
++		 * Found a match; just copy the value out.
++		 */
++		memcpy(value, record[i].value, value_size);
++		return 0;
++	}
++
++	return 1;
++}
 +
  void kvp_get_os_info(void)
  {
  	FILE	*file;
-@@ -678,6 +773,21 @@ int main(void)
- 		if (hv_msg->kvp_hdr.operation != KVP_OP_ENUMERATE)
- 			goto kvp_done;
+@@ -315,6 +560,11 @@ int main(void)
+ 	 */
+ 	kvp_get_os_info();
+ 
++	if (kvp_file_init()) {
++		syslog(LOG_ERR, "Failed to initialize the pools");
++		exit(-1);
++	}
++
+ 	fd = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
+ 	if (fd < 0) {
+ 		syslog(LOG_ERR, "netlink socket creation failed; error:%d", fd);
+@@ -389,9 +639,38 @@ int main(void)
+ 			}
+ 			continue;
  
 +		/*
-+		 * If the pool is KVP_POOL_AUTO, dynamically generate
-+		 * both the key and the value; if not read from the
-+		 * appropriate pool.
++		 * The current protocol with the kernel component uses a
++		 * NULL key name to pass an error condition.
++		 * For the SET, GET and DELETE operations,
++		 * use the existing protocol to pass back error.
 +		 */
-+		if (hv_msg->kvp_hdr.pool != KVP_POOL_AUTO) {
-+			kvp_pool_enumerate(hv_msg->kvp_hdr.pool,
-+					hv_msg->body.kvp_enum_data.index,
-+					hv_msg->body.kvp_enum_data.data.key,
-+					HV_KVP_EXCHANGE_MAX_KEY_SIZE,
-+					hv_msg->body.kvp_enum_data.data.value,
-+					HV_KVP_EXCHANGE_MAX_VALUE_SIZE);
-+			goto kvp_done;
-+		}
 +
- 		hv_msg = (struct hv_kvp_msg *)incoming_cn_msg->data;
- 		key_name = (char *)hv_msg->body.kvp_enum_data.data.key;
- 		key_value = (char *)hv_msg->body.kvp_enum_data.data.value;
+ 		case KVP_OP_SET:
++			if (kvp_key_add_or_modify(hv_msg->kvp_hdr.pool,
++					hv_msg->body.kvp_set.data.key,
++					hv_msg->body.kvp_set.data.key_size,
++					hv_msg->body.kvp_set.data.value,
++					hv_msg->body.kvp_set.data.value_size))
++				strcpy(hv_msg->body.kvp_set.data.key, "");
++			break;
++
+ 		case KVP_OP_GET:
++			if (kvp_get_value(hv_msg->kvp_hdr.pool,
++					hv_msg->body.kvp_set.data.key,
++					hv_msg->body.kvp_set.data.key_size,
++					hv_msg->body.kvp_set.data.value,
++					hv_msg->body.kvp_set.data.value_size))
++				strcpy(hv_msg->body.kvp_set.data.key, "");
++			break;
++
+ 		case KVP_OP_DELETE:
++			if (kvp_key_delete(hv_msg->kvp_hdr.pool,
++					hv_msg->body.kvp_delete.key,
++					hv_msg->body.kvp_delete.key_size))
++				strcpy(hv_msg->body.kvp_delete.key, "");
++			break;
++
+ 		default:
+ 			break;
+ 		}
 -- 
 1.7.4.1
 
