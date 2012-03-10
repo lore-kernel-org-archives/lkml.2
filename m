@@ -1,107 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756116Ab2CJAEy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 19:04:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58141 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511Ab2CJAEw (ORCPT
+	id S1756502Ab2CJAHV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 19:07:21 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59037 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246Ab2CJAHS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 19:04:52 -0500
-Date: Fri, 9 Mar 2012 16:04:18 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <jweiner@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/7 v2] mm: rework __isolate_lru_page() file/anon
- filter
-In-Reply-To: <4F59AE3C.5040200@openvz.org>
-Message-ID: <alpine.LSU.2.00.1203091559260.23317@eggly.anvils>
-References: <20120229091547.29236.28230.stgit@zurg> <20120303091327.17599.80336.stgit@zurg> <alpine.LSU.2.00.1203061904570.18675@eggly.anvils> <20120308143034.f3521b1e.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LSU.2.00.1203081758490.18195@eggly.anvils>
- <4F59AE3C.5040200@openvz.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 9 Mar 2012 19:07:18 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAF1ivSaDEfDFgF0hz3myjSc0BXhig1XGRa_uMOi=gtf2HTEMHg@mail.gmail.com>
+References: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
+	<CAE5mzvgfsHD1Ku5saw+Cu7+vJAayx20=HfHfab1MrAwz3AtqJg@mail.gmail.com>
+	<CAF1ivSZcGHQ-bnGasKghJ-_beDqgyZ_ug=m-7Ykr4xUphZeLqw@mail.gmail.com>
+	<CAE5mzvgc60+_HOve+5wMsL7fo6jmM_sOB=_pTR1j23=RbP+uPw@mail.gmail.com>
+	<CAF1ivSaDEfDFgF0hz3myjSc0BXhig1XGRa_uMOi=gtf2HTEMHg@mail.gmail.com>
+Date: Sat, 10 Mar 2012 01:07:07 +0100
+Message-ID: <CAG-aW04JJ=v4odC0TVoARijx-9eTCfwYAfUNwtAeLaODYcf06g@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] ahci: fix boot/resume COMRESET failures
+From: Matt <jackdachef@gmail.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, viro@zeniv.linux.org.uk,
+        jeff@garzik.org, Brian Norris <computersforpeace@gmail.com>,
+        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Norbert Preining <preining@logic.at>,
+        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Mar 2012, Konstantin Khlebnikov wrote:
-> Hugh Dickins wrote:
-> > 
-> > I like very much the look of what he's come up with, but I'm still
-> > puzzling over why it barely makes any improvement to __isolate_lru_page():
-> > seems significantly inferior (in code size terms) to his original (which
-> > I imagine Glauber's compromise would be equivalent to).
-> > 
-> > At some point I ought to give up on niggling about this,
-> > but I haven't quite got there yet.
-> 
-> (with if())
-> $ ./scripts/bloat-o-meter built-in.o built-in.o-v1
-> add/remove: 0/0 grow/shrink: 2/1 up/down: 32/-20 (12)
-> function                                     old     new   delta
-> static.shrink_active_list                    837     853     +16
-> shrink_inactive_list                        1259    1275     +16
-> static.isolate_lru_pages                    1055    1035     -20
-> 
-> (with switch())
-> $ ./scripts/bloat-o-meter built-in.o built-in.o-v2
-> add/remove: 0/0 grow/shrink: 4/2 up/down: 111/-23 (88)
-> function                                     old     new   delta
-> __isolate_lru_page                           301     377     +76
-> static.shrink_active_list                    837     853     +16
-> shrink_inactive_list                        1259    1275     +16
-> page_evictable                               170     173      +3
-> __remove_mapping                             322     319      -3
-> static.isolate_lru_pages                    1055    1035     -20
-> 
-> (without __always_inline on page_lru())
-> $ ./scripts/bloat-o-meter built-in.o built-in.o-v5-noinline
-> add/remove: 0/0 grow/shrink: 5/2 up/down: 93/-23 (70)
-> function                                     old     new   delta
-> __isolate_lru_page                           301     333     +32
-> isolate_lru_page                             359     385     +26
-> static.shrink_active_list                    837     853     +16
-> putback_inactive_pages                       635     651     +16
-> page_evictable                               170     173      +3
-> __remove_mapping                             322     319      -3
-> static.isolate_lru_pages                    1055    1035     -20
-> 
-> $ ./scripts/bloat-o-meter built-in.o built-in.o-v5
-> add/remove: 0/0 grow/shrink: 3/4 up/down: 35/-67 (-32)
-> function                                     old     new   delta
-> static.shrink_active_list                    837     853     +16
-> __isolate_lru_page                           301     317     +16
-> page_evictable                               170     173      +3
-> __remove_mapping                             322     319      -3
-> mem_cgroup_lru_del                            73      65      -8
-> static.isolate_lru_pages                    1055    1035     -20
-> __mem_cgroup_commit_charge                   676     640     -36
-> 
-> Actually __isolate_lru_page() even little bit bigger
+On Wed, Mar 7, 2012 at 6:28 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Mon, Mar 5, 2012 at 1:12 PM, cwillu <cwillu@cwillu.com> wrote:
+>> On Sun, Mar 4, 2012 at 6:58 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+>>> On Fri, Mar 2, 2012 at 9:16 PM, cwillu <cwillu@cwillu.com> wrote:
+>>>> On Tue, Feb 21, 2012 at 12:38 PM, Brian Norris
+>>>> <computersforpeace@gmail.com> wrote:
+>>>>> This series addresses regression problems with
+>>>>>
+>>>>>    commit 7faa33da9b7add01db9f1ad92c6a5d9145e940a7
+>>>>>    ahci: start engine only during soft/hard resets
+>>>>
+>>>> I just spent the better part of last night tracking down the specific
+>>>> sources of the log entry I get when I disconnect my e-sata drive; once
+>>>> it disconnects, the port is dead until I reboot; no combination of
+>>>> anything I've been able to poke at in /sys or elsewhere gets it live
+>>>> again.  This starts with 3.3rc1, and turns out to still work fine in
+>>>> 3.2.1. Any chance it's related?
+>>>>
+>>>> 3.3rc5, immediately after the unplug:
+>>>
+>>> Hi,
+>>>
+>>> I tested on my machine and it's fixed by below patch.
+>>> http://marc.info/?l=linux-kernel&m=132996405028746&w=2
+>>>
+>>> Would you please also try it?
+>>
+>> Building it now, and will be able to test in about 5 hours.
+>
+> Hi,
+>
+> How about the test result?
+>
+> Regards,
+> Lin Ming
+>
+>>
+>> After looking at the thread, I spent another couple hours on poking
+>> /sys, and did get the port to come back up and find the drive with the
+>> following:
+>>
+>> echo on > /sys/devices/pci0000:00/0000:00:1f.2/ata5/power/control
+>> echo on > /sys/devices/pci0000:00/0000:00:1f.2/ata5/host4/power/control
+>> echo '- - -' > /sys/devices/pci0000:00/0000:00:1f.2/ata5/host4/scsi_host/host4/scan
+>> --
 
-I was coming to realize that it must be your page_lru()ing:
-although it's dressed up in one line, there's several branches there.
+@Carey:
 
-I think you'll find you have a clear winner at last, if you just pass
-lru on down as third arg to __isolate_lru_page(), where file used to
-be passed, instead of re-evaluating it inside.
+thanks for the commands !
 
-shrink callers already have the lru, and compaction works it out
-immediately afterwards.
 
-Though we do need to be careful: the lumpy case would then have to
-pass page_lru(cursor_page).  Oh, actually no (though it would deserve
-a comment): since the lumpy case selects LRU_ALL_EVICTABLE, it's
-irrelevant what it passes for lru, so might as well stick with
-the one passed down.  Though you may decide I'm being too tricky
-there, and prefer to calculate page_lru(cursor_page) anyway, it
-not being the hottest path.
+@Lin Ming:
 
-Whether you'd still want page_lru(page) __always_inline, I don't know.
+I also have to apologize for the delay, I had much stuff to
+repartition, reformat and re-sync during the week and finally
+yesterday & today - after finishing that - I could do some testing
 
-Hugh
+that patch works wonderfully - thanks a lot !
+
+
+the system with 3.3 is significantly more responsive :)
+
+so if there are no reservations against the patch please include it
+for final and/or .1 kernel-release of 3.3
+
+
+
+on a related note: I had one observation though (non-related to the
+mentioned issue)
+
+with or without the patch my computer doesn't turn itself off anymore,
+if I remember correctly that didn't happen with rc3 (I could be wrong
+though)
+
+anyone else had the same issue ?
+
+to not further delay the final release by this "minor" issue - I'll
+test again once final is out and see whether there it's the same
+
+and if that's the case I'll write again & provide you with further
+information that you'll need
+
+
+Awesome work as always, thanks !
+
+Kind Regards
+
+Matt
