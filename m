@@ -1,90 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905Ab2CJS5S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 13:57:18 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:33051 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab2CJS5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 13:57:16 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, linux-acpi@vger.kernel.org,
-        lenb@kernel.org
-Cc: rjw@sisk.pl, joseph.cihula@intel.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/2] tboot: Add return values for tboot_sleep
-Date: Sat, 10 Mar 2012 13:52:06 -0500
-Message-Id: <1331405526-25952-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.5
-In-Reply-To: <1331405526-25952-1-git-send-email-konrad.wilk@oracle.com>
-References: <1331405526-25952-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4F5BA3C3.006E,ss=1,re=0.000,fgs=0
+	id S1751885Ab2CJTCN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 14:02:13 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:4965 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751266Ab2CJTCJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 14:02:09 -0500
+X-SpamScore: -16
+X-BigFish: VPS-16(zz9371Ifb6I542M1432N98dKzz1202hzz8275bh8275dhz2fh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
+From: Rajesh Borundia <rajesh.borundia@qlogic.com>
+To: santosh prasad nayak <santoshprasadnayak@gmail.com>
+CC: Sony Chacko <sony.chacko@qlogic.com>, netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Date: Sat, 10 Mar 2012 13:01:52 -0600
+Subject: RE: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
+Thread-Topic: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
+Thread-Index: Acz+JXuSzj8tshmVTQuB+OzGJQXfJQAx/Hcg
+Message-ID: <13A253B3F9BEFE43B93C09CF75F63CAA81A8AB3C07@MNEXMB1.qlogic.org>
+References: <1330789663-30481-1-git-send-email-santoshprasadnayak@gmail.com>
+	<13A253B3F9BEFE43B93C09CF75F63CAA81A8AB3B75@MNEXMB1.qlogic.org>
+ <CAOD=uF7=28Bx4eSpGfP-uTND42k1xKE3tvQ6+exSJha9Yjf-_w@mail.gmail.com>
+In-Reply-To: <CAOD=uF7=28Bx4eSpGfP-uTND42k1xKE3tvQ6+exSJha9Yjf-_w@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. as appropiately. As tboot_sleep now returns values.
-remove tboot_sleep_wrapper.
 
-Suggested-by: "Rafael J. Wysocki" <rjw@sisk.pl>
-Acked-by: Joseph Cihula <joseph.cihula@intel.com>
-[v1: Return -1/0/+1 instead of ACPI_xx values]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/kernel/tboot.c |   13 ++++---------
- 1 files changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index 1a4ab7d..6410744 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -272,7 +272,7 @@ static void tboot_copy_fadt(const struct acpi_table_fadt *fadt)
- 		offsetof(struct acpi_table_facs, firmware_waking_vector);
- }
+> -----Original Message-----
+> From: santosh prasad nayak [mailto:santoshprasadnayak@gmail.com]
+> Sent: Saturday, March 10, 2012 12:20 AM
+> To: Rajesh Borundia
+> Cc: Sony Chacko; netdev; linux-kernel; kernel-janitors@vger.kernel.org
+> Subject: Re: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
+> 
+> On Fri, Mar 9, 2012 at 10:04 PM, Rajesh Borundia
+> <rajesh.borundia@qlogic.com> wrote:
+> >
+> >> -----Original Message-----
+> >> From: santosh nayak [mailto:santoshprasadnayak@gmail.com]
+> >> Sent: Saturday, March 03, 2012 9:18 PM
+> >> To: Sony Chacko
+> >> Cc: Rajesh Borundia; netdev; linux-kernel; kernel-
+> >> janitors@vger.kernel.org; Santosh Nayak
+> >> Subject: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
+> >>
+> >> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> >>
+> >> Fix endian bug.
+> >>
+> >> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+> >> ---
+> >>  drivers/net/ethernet/qlogic/netxen/netxen_nic.h    |    4 ++--
+> >>  drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |   12 +++++++--
+> ---
+> >>  .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    2 +-
+> >>  3 files changed, 10 insertions(+), 8 deletions(-)
+> >>
+> >> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
+> >> b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
+> >> index 2eeac32..b5de8a7 100644
+> >> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
+> >> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
+> >> @@ -954,7 +954,7 @@ typedef struct nx_mac_list_s {
+> >>
+> >>  struct nx_vlan_ip_list {
+> >>       struct list_head list;
+> >> -     u32 ip_addr;
+> >> +     __be32 ip_addr;
+> >>  };
+> >>
+> >>  /*
+> >> @@ -1780,7 +1780,7 @@ int netxen_process_rcv_ring(struct
+> >> nx_host_sds_ring *sds_ring, int max);
+> >>  void netxen_p3_free_mac_list(struct netxen_adapter *adapter);
+> >>  int netxen_config_intr_coalesce(struct netxen_adapter *adapter);
+> >>  int netxen_config_rss(struct netxen_adapter *adapter, int enable);
+> >> -int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip,
+> int
+> >> cmd);
+> >> +int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip,
+> >> int cmd);
+> >>  int netxen_linkevent_request(struct netxen_adapter *adapter, int
+> >> enable);
+> >>  void netxen_advert_link_change(struct netxen_adapter *adapter, int
+> >> linkup);
+> >>  void netxen_pci_camqm_read_2M(struct netxen_adapter *, u64, u64 *);
+> >> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+> >> b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+> >> index 6f37470..0f81287 100644
+> >> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+> >> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+> >> @@ -909,10 +909,11 @@ int netxen_config_rss(struct netxen_adapter
+> >> *adapter, int enable)
+> >>       return rv;
+> >>  }
+> >>
+> >> -int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip,
+> int
+> >> cmd)
+> >> +int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip,
+> >> int cmd)
+> >>  {
+> >>       nx_nic_req_t req;
+> >>       u64 word;
+> >> +     u64 ip_addr;
+> >>       int rv;
+> >>
+> >>       memset(&req, 0, sizeof(nx_nic_req_t));
+> >> @@ -922,7 +923,8 @@ int netxen_config_ipaddr(struct netxen_adapter
+> >> *adapter, u32 ip, int cmd)
+> >>       req.req_hdr = cpu_to_le64(word);
+> >>
+> >>       req.words[0] = cpu_to_le64(cmd);
+> >> -     req.words[1] = cpu_to_le64(ip);
+> >> +     ip_addr = be32_to_cpu(ip);
+> >> +     *(__be64 *)&req.words[1] = cpu_to_be64(ip_addr);
+> >
+> 
+> 
+> > Adapter requires ip value in big endian stored at lower 32 bit
+> address.
+> > The cpu_to_be64 will swap the lower 32 bit with higher 32 bit and
+> adapter
+> > Will get incorrect ip addr. Instead u can do.
+> >
+> >       U32 *ip_addr;
+> >       ip_addr = (u32 *)&req.words[1];
+> >       *ip_addr = ip;
+> 
+> 
+> 1.  It looks incomplete.
+>     In the function call "netxen_send_cmd_descs" we have to pass "&req"
+> as
+>    2nd argument  not  "ipaddr".
+
+ I should have sent a patch. This piece of code was just to show how to
+copy ip addr in  req.words[1].
+
+> 
+> 2. Your above suggestion is with assumption that the data type of 2nd
+> argument "ip"
+>      in "netxen_config_ipaddr()" is still "u32".  This is not true.
+> 
+>      Some days back you suggested to change the data type to "__be32".
+>  In the present patch
+>      the "ip"  is in "__be32" format i.e already in Big endian format
+> as per requirement.
+>      We need to only convert this 32 bit to 64 bit.  There are two
+> ways:
+> 
+ No I did not assume that ip is u32, ip is still __be32(ip value is in form of big endian)
+ though I should have mentioned it explicitly. But the ip value should be copied to lower 32 bit of req.words[1].
  
--void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
-+static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
- {
- 	static u32 acpi_shutdown_map[ACPI_S_STATE_COUNT] = {
- 		/* S0,1,2: */ -1, -1, -1,
-@@ -281,7 +281,7 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
- 		/* S5: */ TB_SHUTDOWN_S5 };
+    
+>      a.   *(__be64 *)&req.words[1] = ip;   // auto conversion
+In big endian machine MSB is copied into MSB first. So ip will get copied into higher 32 bit of
+req.words[1] but adapter requires it in lower 32 bit. 
+> 
+>      b.   *(__be64 *)&req.words[1] = cpu_to_be64(be32_to_cpu(ip));
+>             // explicit conversion.
+> 
+If you follow second cpu_to_be64 it will swap lower 32 bit of ip with higher 32 bit in little endian machine.
+But adapter requires it in lower 32 bit.
+
+Simple solution to copy ip in req.words[1] could be memcpy(&req.words[1], &ip, sizeof(u32));
+
  
- 	if (!tboot_enabled())
--		return;
-+		return 0;
- 
- 	tboot_copy_fadt(&acpi_gbl_FADT);
- 	tboot->acpi_sinfo.pm1a_cnt_val = pm1a_control;
-@@ -292,15 +292,10 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
- 	if (sleep_state >= ACPI_S_STATE_COUNT ||
- 	    acpi_shutdown_map[sleep_state] == -1) {
- 		pr_warning("unsupported sleep state 0x%x\n", sleep_state);
--		return;
-+		return -1;
- 	}
- 
- 	tboot_shutdown(acpi_shutdown_map[sleep_state]);
--}
--static int tboot_sleep_wrapper(u8 sleep_state, u32 pm1a_control,
--			       u32 pm1b_control)
--{
--	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
- 	return 0;
- }
- 
-@@ -352,7 +347,7 @@ static __init int tboot_late_init(void)
- 	atomic_set(&ap_wfs_count, 0);
- 	register_hotcpu_notifier(&tboot_cpu_notifier);
- 
--	acpi_os_set_prepare_sleep(&tboot_sleep_wrapper);
-+	acpi_os_set_prepare_sleep(&tboot_sleep);
- 	return 0;
- }
- 
--- 
-1.7.7.5
+> 
+>  Please correct me if I am wrong.
+> 
+> 
+> regards
+> Santosh
+> 
+> 
+> 
+> 
+> >
+> >
+> >>
+> >>       rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0
+> >> *)&req, 1);
+> >>       if (rv != 0) {
+> >> @@ -1050,7 +1052,7 @@ int netxen_get_flash_mac_addr(struct
+> >> netxen_adapter *adapter, u64 *mac)
+> >>       if (netxen_get_flash_block(adapter, offset, sizeof(u64), pmac)
+> ==
+> >> -1)
+> >>               return -1;
+> >>
+> >> -     if (*mac == cpu_to_le64(~0ULL)) {
+> >> +     if (*mac == ~0ULL) {
+> >
+> > *mac is in little endian format so compare it with cpu_to_le64.
+> >
+> >>
+> >>               offset = NX_OLD_MAC_ADDR_OFFSET +
+> >>                       (adapter->portnum * sizeof(u64));
+> >> @@ -1059,7 +1061,7 @@ int netxen_get_flash_mac_addr(struct
+> >> netxen_adapter *adapter, u64 *mac)
+> >>                                       offset, sizeof(u64), pmac) ==
+> -1)
+> >>                       return -1;
+> >>
+> >> -             if (*mac == cpu_to_le64(~0ULL))
+> >> +             if (*mac == ~0ULL)
+> >
+> > *mac here is in little endian format so compare it with cpu_to_le64.
+> >
+> >>                       return -1;
+> >>       }
+> >>       return 0;
+> >> @@ -2178,7 +2180,7 @@ lock_try:
+> >>               NX_WR_DUMP_REG(FLASH_ROM_WINDOW, adapter-
+> >ahw.pci_base0,
+> >> waddr);
+> >>               raddr = FLASH_ROM_DATA + (fl_addr & 0x0000FFFF);
+> >>               NX_RD_DUMP_REG(raddr, adapter->ahw.pci_base0, &val);
+> >> -             *data_buff++ = cpu_to_le32(val);
+> >> +             *data_buff++ = val;
+> >
+> > It should be cpu_to_le32 as it is returned to tool which requires
+> > output in little endian.
+> >
+> >>               fl_addr += sizeof(val);
+> >>       }
+> >>       readl((void __iomem *)(adapter->ahw.pci_base0 +
+> >> NX_FLASH_SEM2_ULK));
+> >> diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+> >> b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+> >> index 8dc4a134..70783b4 100644
+> >> --- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+> >> +++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+> >> @@ -818,7 +818,7 @@ netxen_check_options(struct netxen_adapter
+> >> *adapter)
+> >>                       adapter->driver_mismatch = 1;
+> >>                       return;
+> >>               }
+> >> -             ptr32[i] = cpu_to_le32(val);
+> >> +             ptr32[i] = val;
+> >
+> > Here val should be in little endian (cpu_to_le32) as it will be
+> referenced by byte array to print serial number.
+> >
+> >>               offset += sizeof(u32);
+> >>       }
+> >>
+> >> --
+> >> 1.7.4.4
+> >>
+> >
+> >
+> > Sorry for Late reply.
+> >
+> > Rajesh
+> >
+
 
