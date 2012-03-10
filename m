@@ -1,355 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151Ab2CJXZq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 18:25:46 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:39314
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752653Ab2CJXZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 18:25:43 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3/4] Tools: hv: Fully support the new KVP verbs in the user level daemon
-Date: Sat, 10 Mar 2012 15:32:10 -0800
-Message-Id: <1331422331-4381-3-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1331422331-4381-1-git-send-email-kys@microsoft.com>
-References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
- <1331422331-4381-1-git-send-email-kys@microsoft.com>
+	id S1753242Ab2CJX05 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 18:26:57 -0500
+Received: from numidia.opendz.org ([98.142.220.152]:45050 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752931Ab2CJX0y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 18:26:54 -0500
+From: Djalal Harouni <tixxdz@opendz.org>
+To: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>,
+        Djalal Harouni <tixxdz@opendz.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Solar Designer <solar@openwall.com>
+Subject: [PATCH 1/9] exec: add a global execve counter
+Date: Sun, 11 Mar 2012 00:25:11 +0100
+Message-Id: <1331421919-15499-2-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now fully support the new KVP messages in the user level daemon. Hyper-V defines
-multiple persistent pools to which the host can write/read/modify KVP tuples.
-In this patch we implement a file for each specified pool, where the KVP tuples
-will stored in the guest.
+Procfs files and other important objects may contain sensitive information
+which must not be seen, inherited or processed across execve.
+The commit e268337dfe26dfc7efd422a804dbb27977a3cccc tries to fix the same
+problem.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+Given that consideration this patch introduces two counters:
+A global atomic execve counter that will be incremented on every
+do_execve_common() call, and an atomic exec_id member for the task_struct.
+
+The task's exec_id can be used as a security check to see and to test if
+some special objects belong to the appropriate process image since it will
+be a uniq id on each execve operation.
+
+There is also new helper functions:
+get_task_exec_id() to get the task's exec_id and task_exec_id_ok() to
+check if the provided exec_id equals the task's exec_id.
+
+The exec_id idea is taken from the recent grsecurity patches.
+
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Solar Designer <solar@openwall.com>
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
 ---
- tools/hv/hv_kvp_daemon.c |  281 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 280 insertions(+), 1 deletions(-)
+ fs/exec.c             |   11 +++++++++++
+ include/linux/sched.h |   32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+), 0 deletions(-)
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index a98878c..2fb9c3d 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -39,7 +39,8 @@
- #include <ifaddrs.h>
- #include <netdb.h>
- #include <syslog.h>
--
-+#include <sys/stat.h>
-+#include <fcntl.h>
+diff --git a/fs/exec.c b/fs/exec.c
+index 153dee1..fb8ccae 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1448,6 +1448,14 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ EXPORT_SYMBOL(search_binary_handler);
  
  /*
-  * KVP protocol: The user mode component first registers with the
-@@ -79,6 +80,250 @@ static char *os_build;
- static char *lic_version;
- static struct utsname uts_buf;
++ * A global execve counter that we need to set atomically.
++ * It will be incremented on every do_execve_common() this way we can use
++ * it to check if some special objects belong to the appropriate process
++ * image.
++ */
++static atomic64_t exec_counter = ATOMIC_INIT(0);
++
++/*
+  * sys_execve() executes a new program.
+  */
+ static int do_execve_common(const char *filename,
+@@ -1460,6 +1468,7 @@ static int do_execve_common(const char *filename,
+ 	struct files_struct *displaced;
+ 	bool clear_in_exec;
+ 	int retval;
++	u64 exec_id;
+ 	const struct cred *cred = current_cred();
  
-+
-+#define MAX_FILE_NAME 100
-+#define ENTRIES_PER_BLOCK 50
-+
-+struct kvp_record {
-+	__u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
-+	__u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
-+};
-+
-+struct kvp_file_state {
-+	int fd;
-+	int num_blocks;
-+	struct kvp_record *records;
-+	int num_records;
-+	__u8 fname[MAX_FILE_NAME];
-+};
-+
-+static struct kvp_file_state kvp_file_info[KVP_POOL_COUNT];
-+
-+static void kvp_acquire_lock(int pool)
-+{
-+	struct flock fl = {F_WRLCK, SEEK_SET, 0, 0, 0};
-+	fl.l_pid = getpid();
-+
-+	if (fcntl(kvp_file_info[pool].fd, F_SETLKW, &fl) == -1) {
-+		syslog(LOG_ERR, "Failed to acquire the lock pool: %d", pool);
-+		exit(-1);
-+	}
-+}
-+
-+static void kvp_release_lock(int pool)
-+{
-+	struct flock fl = {F_UNLCK, SEEK_SET, 0, 0, 0};
-+	fl.l_pid = getpid();
-+
-+	if (fcntl(kvp_file_info[pool].fd, F_SETLK, &fl) == -1) {
-+		perror("fcntl");
-+		syslog(LOG_ERR, "Failed to release the lock pool: %d", pool);
-+		exit(-1);
-+	}
-+}
-+
-+static void kvp_update_file(int pool)
-+{
-+	FILE *filep;
-+	size_t bytes_written;
-+
-+	/*
-+	 * We are going to write our in-memory registry out to
-+	 * disk; acquire the lock first.
-+	 */
-+	kvp_acquire_lock(pool);
-+
-+	filep = fopen(kvp_file_info[pool].fname, "w");
-+	if (!filep) {
-+		kvp_release_lock(pool);
-+		syslog(LOG_ERR, "Failed to open file, pool: %d", pool);
-+		exit(-1);
-+	}
-+
-+	bytes_written = fwrite(kvp_file_info[pool].records,
-+				sizeof(struct kvp_record),
-+				kvp_file_info[pool].num_records, filep);
-+
-+	fflush(filep);
-+	kvp_release_lock(pool);
-+}
-+
-+static int kvp_file_init(void)
-+{
-+	int ret, fd;
-+	FILE *filep;
-+	size_t records_read;
-+	__u8 *fname;
-+	struct kvp_record *record;
-+	struct kvp_record *readp;
-+	int num_blocks;
-+	int i;
-+	int alloc_unit = sizeof(struct kvp_record) * ENTRIES_PER_BLOCK;
-+
-+	if (access("/var/opt/hyperv", F_OK)) {
-+		if (mkdir("/var/opt/hyperv", S_IRUSR | S_IWUSR | S_IROTH)) {
-+			syslog(LOG_ERR, " Failed to create /var/opt/hyperv");
-+			exit(-1);
-+		}
-+	}
-+
-+	for (i = 0; i < KVP_POOL_COUNT; i++) {
-+		fname = kvp_file_info[i].fname;
-+		records_read = 0;
-+		num_blocks = 1;
-+		sprintf(fname, "/var/opt/hyperv/.kvp_pool_%d", i);
-+		fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH);
-+
-+		if (fd == -1)
-+			return 1;
-+
-+
-+		filep = fopen(fname, "r");
-+		if (!filep)
-+			return 1;
-+
-+		record = malloc(alloc_unit * num_blocks);
-+		if (record == NULL) {
-+			fclose(filep);
-+			return 1;
-+		}
-+		while (!feof(filep)) {
-+			readp = &record[records_read];
-+			records_read += fread(readp, sizeof(struct kvp_record),
-+					ENTRIES_PER_BLOCK,
-+					filep);
-+
-+			if (!feof(filep)) {
-+				/*
-+				 * We have more data to read.
-+				 */
-+				num_blocks++;
-+				record = realloc(record, alloc_unit *
-+						num_blocks);
-+				if (record == NULL) {
-+					fclose(filep);
-+					return 1;
-+				}
-+				continue;
-+			}
-+			break;
-+		}
-+		kvp_file_info[i].fd = fd;
-+		kvp_file_info[i].num_blocks = num_blocks;
-+		kvp_file_info[i].records = record;
-+		kvp_file_info[i].num_records = records_read;
-+		fclose(filep);
-+
-+	}
-+
-+	return 0;
-+}
-+
-+static int kvp_key_delete(int pool, __u8 *key, int key_size)
-+{
-+	int i;
-+	int j, k;
-+	int num_records = kvp_file_info[pool].num_records;
-+	struct kvp_record *record = kvp_file_info[pool].records;
-+
-+	for (i = 0; i < num_records; i++) {
-+		if (memcmp(key, record[i].key, key_size))
-+			continue;
-+		/*
-+		 * Found a match; just move the remaining
-+		 * entries up.
-+		 */
-+		if (i == num_records) {
-+			kvp_file_info[pool].num_records--;
-+			kvp_update_file(pool);
-+			return 0;
-+		}
-+
-+		j = i;
-+		k = j + 1;
-+		for (; k < num_records; k++) {
-+			strcpy(record[j].key, record[k].key);
-+			strcpy(record[j].value, record[k].value);
-+			j++;
-+		}
-+
-+		kvp_file_info[pool].num_records--;
-+		kvp_update_file(pool);
-+		return 0;
-+	}
-+	return 1;
-+}
-+
-+static int kvp_key_add_or_modify(int pool, __u8 *key, int key_size, __u8 *value,
-+			int value_size)
-+{
-+	int i;
-+	int j, k;
-+	int num_records = kvp_file_info[pool].num_records;
-+	struct kvp_record *record = kvp_file_info[pool].records;
-+	int num_blocks = kvp_file_info[pool].num_blocks;
-+
-+	if ((key_size > HV_KVP_EXCHANGE_MAX_KEY_SIZE) ||
-+		(value_size > HV_KVP_EXCHANGE_MAX_VALUE_SIZE))
-+		return 1;
-+
-+	for (i = 0; i < num_records; i++) {
-+		if (memcmp(key, record[i].key, key_size))
-+			continue;
-+		/*
-+		 * Found a match; just update the value -
-+		 * this is the modify case.
-+		 */
-+		memcpy(record[i].value, value, value_size);
-+		kvp_update_file(pool);
-+		return 0;
-+	}
-+
-+	/*
-+	 * Need to add a new entry;
-+	 */
-+	if (num_records == (ENTRIES_PER_BLOCK * num_blocks)) {
-+		/* Need to allocate a larger array for reg entries. */
-+		record = realloc(record, sizeof(struct kvp_record) *
-+			 ENTRIES_PER_BLOCK * (num_blocks + 1));
-+
-+		if (record == NULL)
-+			return 1;
-+		kvp_file_info[pool].num_blocks++;
-+
-+	}
-+	memcpy(record[i].value, value, value_size);
-+	memcpy(record[i].key, key, key_size);
-+	kvp_file_info[pool].records = record;
-+	kvp_file_info[pool].num_records++;
-+	kvp_update_file(pool);
-+	return 0;
-+}
-+
-+static int kvp_get_value(int pool, __u8 *key, int key_size, __u8 *value,
-+			int value_size)
-+{
-+	int i;
-+	int num_records = kvp_file_info[pool].num_records;
-+	struct kvp_record *record = kvp_file_info[pool].records;
-+
-+	if ((key_size > HV_KVP_EXCHANGE_MAX_KEY_SIZE) ||
-+		(value_size > HV_KVP_EXCHANGE_MAX_VALUE_SIZE))
-+		return 1;
-+
-+	for (i = 0; i < num_records; i++) {
-+		if (memcmp(key, record[i].key, key_size))
-+			continue;
-+		/*
-+		 * Found a match; just copy the value out.
-+		 */
-+		memcpy(value, record[i].value, value_size);
-+		return 0;
-+	}
-+
-+	return 1;
-+}
-+
- void kvp_get_os_info(void)
- {
- 	FILE	*file;
-@@ -315,6 +560,11 @@ int main(void)
- 	 */
- 	kvp_get_os_info();
+ 	/*
+@@ -1542,6 +1551,8 @@ static int do_execve_common(const char *filename,
+ 		goto out;
  
-+	if (kvp_file_init()) {
-+		syslog(LOG_ERR, "Failed to initialize the pools");
-+		exit(-1);
-+	}
-+
- 	fd = socket(AF_NETLINK, SOCK_DGRAM, NETLINK_CONNECTOR);
- 	if (fd < 0) {
- 		syslog(LOG_ERR, "netlink socket creation failed; error:%d", fd);
-@@ -389,9 +639,38 @@ int main(void)
- 			}
- 			continue;
+ 	/* execve succeeded */
++	exec_id = atomic64_inc_return(&exec_counter);
++	atomic64_set(&current->exec_id, exec_id);
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
+ 	acct_update_integrals(current);
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 0657368..762f206 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1420,6 +1420,9 @@ struct task_struct {
+ #endif
+ 	seccomp_t seccomp;
  
-+		/*
-+		 * The current protocol with the kernel component uses a
-+		 * NULL key name to pass an error condition.
-+		 * For the SET, GET and DELETE operations,
-+		 * use the existing protocol to pass back error.
-+		 */
++/* Execve counter: will be used to check if objects belong to the appropriate
++ * process image */
++	atomic64_t exec_id;
+ /* Thread group tracking */
+    	u32 parent_exec_id;
+    	u32 self_exec_id;
+@@ -1752,6 +1755,35 @@ static inline int is_global_init(struct task_struct *tsk)
+ 	return tsk->pid == 1;
+ }
+ 
++/**
++ * task_get_exec_id - get the task's exec_id
++ * @task: Task struct to operate on.
++ *
++ * Get the task's exec_id.
++ */
++static inline u64 get_task_exec_id(struct task_struct *task)
++{
++	return atomic64_read(&task->exec_id);
++}
 +
- 		case KVP_OP_SET:
-+			if (kvp_key_add_or_modify(hv_msg->kvp_hdr.pool,
-+					hv_msg->body.kvp_set.data.key,
-+					hv_msg->body.kvp_set.data.key_size,
-+					hv_msg->body.kvp_set.data.value,
-+					hv_msg->body.kvp_set.data.value_size))
-+				strcpy(hv_msg->body.kvp_set.data.key, "");
-+			break;
++/**
++ * task_exec_id_ok - check if the task's exec_id equals the provided
++ * exec_id.
++ * @task: Task struct to check against.
++ * @exec_id: Execve ID.
++ *
++ * Check if the task's exec_id equals the provided exec_id. Use it to
++ * protect special objects.
++ *
++ * It will be more effective if the check is delayed as mush as possible
++ * to avoid any new execve surprises especially if we are checking against
++ * target task's exec_id.
++ */
++static inline int task_exec_id_ok(struct task_struct *task, u64 exec_id)
++{
++	return atomic64_read(&task->exec_id) == exec_id;
++}
 +
- 		case KVP_OP_GET:
-+			if (kvp_get_value(hv_msg->kvp_hdr.pool,
-+					hv_msg->body.kvp_set.data.key,
-+					hv_msg->body.kvp_set.data.key_size,
-+					hv_msg->body.kvp_set.data.value,
-+					hv_msg->body.kvp_set.data.value_size))
-+				strcpy(hv_msg->body.kvp_set.data.key, "");
-+			break;
-+
- 		case KVP_OP_DELETE:
-+			if (kvp_key_delete(hv_msg->kvp_hdr.pool,
-+					hv_msg->body.kvp_delete.key,
-+					hv_msg->body.kvp_delete.key_size))
-+				strcpy(hv_msg->body.kvp_delete.key, "");
-+			break;
-+
- 		default:
- 			break;
- 		}
+ /*
+  * is_container_init:
+  * check whether in the task is init in its own pid namespace.
 -- 
-1.7.4.1
+1.7.1
 
