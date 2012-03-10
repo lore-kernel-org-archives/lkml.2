@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943Ab2CJUY2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 15:24:28 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61406 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab2CJUY0 (ORCPT
+	id S1752146Ab2CJUuH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 15:50:07 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44671 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836Ab2CJUuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 15:24:26 -0500
+	Sat, 10 Mar 2012 15:50:04 -0500
+Date: Sat, 10 Mar 2012 21:49:55 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
+Subject: Re: [PATCH v5 3/3] USB: ohci-nxp: Support for LPC32xx
+Message-ID: <20120310204955.GA14564@pengutronix.de>
+References: <1331408166-11607-1-git-send-email-stigge@antcom.de>
+ <1331408166-11607-4-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-Date: Sat, 10 Mar 2012 20:24:25 +0000
-Message-ID: <CALyZvKxQ1-5RY_7a4NiqDLuUf4cBaLTASAybUd67Z0AuJedsJw@mail.gmail.com>
-Subject: after resume from suspend to disk, x86_64 CPU frequency throttling
- stops working - a known issue ?
-From: Jason Vas Dias <jason.vas.dias@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
+Content-Disposition: inline
+In-Reply-To: <1331408166-11607-4-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi - since many kernel versions ago (I believe 2.6.38+), now running
-3.1.1 (built from 'stable' GIT tree),
-CPU frequency throttling once the maximum fans have been enabled does
-not work after I resume
-my HP 6715b x86_64 2.2GHz TL64 dual-core laptop from disk . The trip
-point temperatures are :
-$ cat /sys/class/thermal/thermal_zone0/trip_point_*temp | tr '\n' ' '
-105000 95000 75000 65000 50000 15900
 
-When the 95-degree thermal_zone0 trip point is exceeded, the CPU is
-meant to be throttled back from 2.2Ghz to 800Khz, until the
-temperature
-falls below the trip point when the normal frequency is restored (with
-some hystereisis delay factor) .
+--Nq2Wo0NMKNjxTN9z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On boot-up from a 'pm-hibernate' suspend-to-disk on my laptop ,
-however,  the 95-degree trip point is triggered,  but no CPU frequency
-throttling occurs, and no  below-95-degree
-trip-point is triggerred, so the CPU eventually reaches the 105 degree
-trip-point and does an emergency power-off if it is heavily loaded.
-Also, the system
-in this state generates only one 95 degree trip-point event ;  after
-the temperature falls below 95-degrees for some time (over 10mins) ,
-and then I load
-the machine again, so the temperature again exceeds 95-degrees, no
-ACPI thermal event is raised .
 
-This occurs with ANY available "governor" - I use "ondemand" by
-default, with a 'scaling_max_freq' set to 2.0Ghz (because when I run
-the CPU at 2.2Ghz , and load the machine
-(with for instance  a large package 'make -j2' build) I get hardware
-'system hang' issues - I've tried every available means to get the
-kernel to trace / log something or boot a crash
-kernel when this occurs, with no luck, so have concluded this is a
-hardware issue - it did not occur when the laptop was new (it is now
-nearly 4 years old) - since the machine  goes
-into a state that is totally unresponsive to anything (mouse,
-keyboard, networking, video,  serial, parport, USB devices all hang),
-only a PCI bus analyzer will help solve this).
-But I've reproduced the no-throttling-
-above-95-degrees-after-suspend-from-disk problem with EVERY governor:
-performance, userspace, etc.  I have the powernow-k8 CPU
- frequency scaling module built-in to the kernel.
+> -static void isp1301_configure(void)
+> +static u16 i2c_read16(u8 subaddr)
+> +{
+> +	u16 data;
+> +
+> +	i2c_master_send(isp1301_i2c_client, &subaddr, 1);
+> +	i2c_master_recv(isp1301_i2c_client, (u8 *) &data, 2);
+> +
+> +	return data;
+> +}
 
-I've resorted to hacking together an acpid driven thermal.sh shell
-script that, on receipt of a 95 degree event, spawns a daemon process
-that periodically monitors
-the thermal_zone0 temperature and if the temp is above 95 and the freq
-is above 800Khz, sets the frequency down a notch, and back to where it
-was
-when the temperature falls below 95 degrees.
+Won't i2c_smbus_read_word_data(isp1301_i2c_client, reg) do?
 
-Is this a known kernel issue ? Should I raise a bug about this ? I can
-post detailed logs showing the events occurring and CPU frequency
-throttling when booted up from cold,
-and no frequency scaling and only one 95-degree event when booted from
-suspend to disk - I wanted to check if this was a known issue first (a
-bugzilla search for
-'no ACPI thermal event after resume from disk' returned zarro boogs).
+And while we are at it: Could you also try replacing i2c_write() with
+i2c_smbus_write_byte_data(isp1301_i2c_client, reg, val)?
 
-Comments and advice would be much appreciated,
+No need to recode it (and in general, those solutions will also work with S=
+MBus
+for free)
 
-Thanks & Regards,
-Jason Vas Dias <jason.vas.dias@gmail.com>
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--Nq2Wo0NMKNjxTN9z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk9bvnMACgkQD27XaX1/VRuwwACgi6YhDbPMPOJM1VEW/HDQqDS8
+slAAoMA61/vwqL+EtgOo/H61fVaA0b03
+=rN2h
+-----END PGP SIGNATURE-----
+
+--Nq2Wo0NMKNjxTN9z--
