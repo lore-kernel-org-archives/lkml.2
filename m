@@ -1,83 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab2CJRF5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 12:05:57 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:59193 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009Ab2CJRFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 12:05:53 -0500
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Len Brown <lenb@kernel.org>
-Cc: kernel-janitors@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
-Subject: [PATCH] drivers/acpi/processor_driver.c: add missing kfree
-Date: Sat, 10 Mar 2012 18:05:45 +0100
-Message-Id: <1331399145-6508-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1751475Ab2CJRsM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 12:48:12 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:48760 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab2CJRsL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 12:48:11 -0500
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 10 Mar 2012 23:15:01 +0530
+Message-Id: <20120310174501.19949.50137.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH 1/7] uprobes/core: make macro names consistent.
+x-cbid: 12031007-0260-0000-0000-000000AC9299
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-The function acpi_processor_add is stored in the ops.add field of a
-acpi_driver structure.  This function is then called in
-acpi_bus_driver_init.  On failure, this function clears the field
-device->driver_data, but does not free its contents.  Thus the free has to
-be done by the add function.  In acpi_processor_add, the corresponding
-value is pr.  This value is currently freed on failure before storing it in
-device->driver_data, but not after.  This free is added in the error
-handling code at the end of the function.  The static global variable
-processors is also cleared so that it does not refer to a dangling pointer.
-processor_device_array is cleared as well.
+Rename macros that refer to individual uprobe to start with UPROBE_ instead
+of UPROBES_.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+This is pure cleanup, no functional change intended.
 
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
-This is only compile tested.  In particular, I don't know if it is correct
-to add per_cpu(processor_device_array, pr->id) = NULL;.  It has nothing to
-do with pr, but it looks like stale information in the case of a failure.
+ arch/x86/include/asm/uprobes.h |    6 +++---
+ arch/x86/kernel/uprobes.c      |   18 +++++++++---------
+ include/linux/uprobes.h        |    4 ++--
+ kernel/events/uprobes.c        |   18 +++++++++---------
+ 4 files changed, 23 insertions(+), 23 deletions(-)
 
- drivers/acpi/processor_driver.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index 2801b41..9bb0017 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -536,8 +536,8 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
- 		return -ENOMEM;
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index f7ce310..5c399e4 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -26,10 +26,10 @@
+ typedef u8 uprobe_opcode_t;
  
- 	if (!zalloc_cpumask_var(&pr->throttling.shared_cpu_map, GFP_KERNEL)) {
--		kfree(pr);
--		return -ENOMEM;
-+		result = -ENOMEM;
-+		goto err_free_pr;
+ #define MAX_UINSN_BYTES			  16
+-#define UPROBES_XOL_SLOT_BYTES		 128	/* to keep it cache aligned */
++#define UPROBE_XOL_SLOT_BYTES		 128	/* to keep it cache aligned */
+ 
+-#define UPROBES_BKPT_INSN		0xcc
+-#define UPROBES_BKPT_INSN_SIZE		   1
++#define UPROBE_BKPT_INSN		0xcc
++#define UPROBE_BKPT_INSN_SIZE		   1
+ 
+ struct arch_uprobe {
+ 	u16				fixups;
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 04dfcef..6dfa89e 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -31,14 +31,14 @@
+ /* Post-execution fixups. */
+ 
+ /* No fixup needed */
+-#define UPROBES_FIX_NONE	0x0
++#define UPROBE_FIX_NONE	0x0
+ /* Adjust IP back to vicinity of actual insn */
+-#define UPROBES_FIX_IP		0x1
++#define UPROBE_FIX_IP		0x1
+ /* Adjust the return address of a call insn */
+-#define UPROBES_FIX_CALL	0x2
++#define UPROBE_FIX_CALL	0x2
+ 
+-#define UPROBES_FIX_RIP_AX	0x8000
+-#define UPROBES_FIX_RIP_CX	0x4000
++#define UPROBE_FIX_RIP_AX	0x8000
++#define UPROBE_FIX_RIP_CX	0x4000
+ 
+ /* Adaptations for mhiramat x86 decoder v14. */
+ #define OPCODE1(insn)		((insn)->opcode.bytes[0])
+@@ -269,9 +269,9 @@ static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
+ 		break;
  	}
- 
- 	pr->handle = device->handle;
-@@ -577,7 +577,7 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
- 	dev = get_cpu_device(pr->id);
- 	if (sysfs_create_link(&device->dev.kobj, &dev->kobj, "sysdev")) {
- 		result = -EFAULT;
--		goto err_free_cpumask;
-+		goto err_clear_processors;
- 	}
- 
- 	/*
-@@ -595,9 +595,13 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
- 
- err_remove_sysfs:
- 	sysfs_remove_link(&device->dev.kobj, "sysdev");
-+err_clear_processors:
-+	per_cpu(processors, pr->id) = NULL;
-+	per_cpu(processor_device_array, pr->id) = NULL;
- err_free_cpumask:
- 	free_cpumask_var(pr->throttling.shared_cpu_map);
--
-+err_free_pr:
-+	kfree(pr);
- 	return result;
+ 	if (fix_ip)
+-		auprobe->fixups |= UPROBES_FIX_IP;
++		auprobe->fixups |= UPROBE_FIX_IP;
+ 	if (fix_call)
+-		auprobe->fixups |= UPROBES_FIX_CALL;
++		auprobe->fixups |= UPROBE_FIX_CALL;
  }
  
+ #ifdef CONFIG_X86_64
+@@ -341,12 +341,12 @@ static void handle_riprel_insn(struct mm_struct *mm, struct arch_uprobe *auprobe
+ 		 * is NOT the register operand, so we use %rcx (register
+ 		 * #1) for the scratch register.
+ 		 */
+-		auprobe->fixups = UPROBES_FIX_RIP_CX;
++		auprobe->fixups = UPROBE_FIX_RIP_CX;
+ 		/* Change modrm from 00 000 101 to 00 000 001. */
+ 		*cursor = 0x1;
+ 	} else {
+ 		/* Use %rax (register #0) for the scratch register. */
+-		auprobe->fixups = UPROBES_FIX_RIP_AX;
++		auprobe->fixups = UPROBE_FIX_RIP_AX;
+ 		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
+ 		*cursor = (reg << 3);
+ 	}
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index f85797e..838fb31 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -35,10 +35,10 @@ struct vm_area_struct;
+ /* flags that denote/change uprobes behaviour */
+ 
+ /* Have a copy of original instruction */
+-#define UPROBES_COPY_INSN	0x1
++#define UPROBE_COPY_INSN	0x1
+ 
+ /* Dont run handlers when first register/ last unregister in progress*/
+-#define UPROBES_RUN_HANDLER	0x2
++#define UPROBE_RUN_HANDLER	0x2
+ 
+ struct uprobe_consumer {
+ 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 5ce32e3..0d36bf3 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -177,7 +177,7 @@ static int __replace_page(struct vm_area_struct *vma, struct page *page, struct 
+  */
+ bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
+ {
+-	return *insn == UPROBES_BKPT_INSN;
++	return *insn == UPROBE_BKPT_INSN;
+ }
+ 
+ /*
+@@ -259,8 +259,8 @@ static int write_opcode(struct mm_struct *mm, struct arch_uprobe *auprobe,
+ 
+ 	/* poke the new insn in, ASSUMES we don't cross page boundary */
+ 	vaddr &= ~PAGE_MASK;
+-	BUG_ON(vaddr + UPROBES_BKPT_INSN_SIZE > PAGE_SIZE);
+-	memcpy(vaddr_new + vaddr, &opcode, UPROBES_BKPT_INSN_SIZE);
++	BUG_ON(vaddr + UPROBE_BKPT_INSN_SIZE > PAGE_SIZE);
++	memcpy(vaddr_new + vaddr, &opcode, UPROBE_BKPT_INSN_SIZE);
+ 
+ 	kunmap_atomic(vaddr_new);
+ 	kunmap_atomic(vaddr_old);
+@@ -308,7 +308,7 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
+ 	lock_page(page);
+ 	vaddr_new = kmap_atomic(page);
+ 	vaddr &= ~PAGE_MASK;
+-	memcpy(opcode, vaddr_new + vaddr, UPROBES_BKPT_INSN_SIZE);
++	memcpy(opcode, vaddr_new + vaddr, UPROBE_BKPT_INSN_SIZE);
+ 	kunmap_atomic(vaddr_new);
+ 	unlock_page(page);
+ 
+@@ -352,7 +352,7 @@ int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned 
+ 	if (result)
+ 		return result;
+ 
+-	return write_opcode(mm, auprobe, vaddr, UPROBES_BKPT_INSN);
++	return write_opcode(mm, auprobe, vaddr, UPROBE_BKPT_INSN);
+ }
+ 
+ /**
+@@ -635,7 +635,7 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+ 
+ 	addr = (unsigned long)vaddr;
+ 
+-	if (!(uprobe->flags & UPROBES_COPY_INSN)) {
++	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
+ 		ret = copy_insn(uprobe, vma, addr);
+ 		if (ret)
+ 			return ret;
+@@ -647,7 +647,7 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+ 		if (ret)
+ 			return ret;
+ 
+-		uprobe->flags |= UPROBES_COPY_INSN;
++		uprobe->flags |= UPROBE_COPY_INSN;
+ 	}
+ 	ret = set_bkpt(mm, &uprobe->arch, addr);
+ 
+@@ -857,7 +857,7 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+ 			uprobe->consumers = NULL;
+ 			__uprobe_unregister(uprobe);
+ 		} else {
+-			uprobe->flags |= UPROBES_RUN_HANDLER;
++			uprobe->flags |= UPROBE_RUN_HANDLER;
+ 		}
+ 	}
+ 
+@@ -889,7 +889,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
+ 	if (consumer_del(uprobe, consumer)) {
+ 		if (!uprobe->consumers) {
+ 			__uprobe_unregister(uprobe);
+-			uprobe->flags &= ~UPROBES_RUN_HANDLER;
++			uprobe->flags &= ~UPROBE_RUN_HANDLER;
+ 		}
+ 	}
+ 
+
 
