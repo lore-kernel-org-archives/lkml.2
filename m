@@ -1,31 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab2CJD5p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 22:57:45 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41944 "EHLO
+	id S1756849Ab2CJD6z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 22:58:55 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57548 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753554Ab2CJD5o (ORCPT
+	with ESMTP id S1753960Ab2CJD6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 22:57:44 -0500
+	Fri, 9 Mar 2012 22:58:53 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 3/4][RESEND] spi-topcliff-pch: supports a spi mode setup and bit order setup by IO control
+Subject: Re: [PATCH 4/4] spi-topcliff-pch: add recovery processing in case wait-event timeout
 To: Tomoya MORINAGA <tomoya.rohm@gmail.com>,
         spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com, Wolfram Sang <w.sang@pengutronix.de>,
         Tomoya MORINAGA <tomoya.rohm@gmail.com>
-In-Reply-To: <1323404009-3476-2-git-send-email-tomoya.rohm@gmail.com>
-References: <1323404009-3476-1-git-send-email-tomoya.rohm@gmail.com> <1323404009-3476-2-git-send-email-tomoya.rohm@gmail.com>
-Date: Fri, 09 Mar 2012 20:57:41 -0700
-Message-Id: <20120310035741.F39203E06B6@localhost>
+In-Reply-To: <1323404009-3476-3-git-send-email-tomoya.rohm@gmail.com>
+References: <1323404009-3476-1-git-send-email-tomoya.rohm@gmail.com> <1323404009-3476-3-git-send-email-tomoya.rohm@gmail.com>
+Date: Fri, 09 Mar 2012 20:58:50 -0700
+Message-Id: <20120310035850.843723E06B6@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Dec 2011 13:13:28 +0900, Tomoya MORINAGA <tomoya.rohm@gmail.com> wrote:
-> This patch supports a spi mode setup and bit order setup by IO control.
->     spi mode:     mode 0 to mode 3
->     bit order:    LSB first, MSB first
+On Fri,  9 Dec 2011 13:13:29 +0900, Tomoya MORINAGA <tomoya.rohm@gmail.com> wrote:
+> Currently, pch_spi_start_transfer failure is not anticipated.
+> This patch adds the processing.
 > 
 > Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
@@ -34,21 +33,31 @@ Applied, thanks.
 g.
 
 > ---
->  drivers/spi/spi-topcliff-pch.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+>  drivers/spi/spi-topcliff-pch.c |   10 +++++++++-
+>  1 files changed, 9 insertions(+), 1 deletions(-)
 > 
 > diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-> index 7339765..1864555 100644
+> index 1864555..10b684c 100644
 > --- a/drivers/spi/spi-topcliff-pch.c
 > +++ b/drivers/spi/spi-topcliff-pch.c
-> @@ -1430,6 +1430,7 @@ static int __devinit pch_spi_pd_probe(struct platform_device *plat_dev)
->  	master->num_chipselect = PCH_MAX_CS;
->  	master->setup = pch_spi_setup;
->  	master->transfer = pch_spi_transfer;
-> +	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_LSB_FIRST;
->  
->  	data->board_dat = board_dat;
->  	data->plat_dev = plat_dev;
+> @@ -1262,8 +1262,16 @@ static void pch_spi_process_messages(struct work_struct *pwork)
+>  			char *save_rx_buf = data->cur_trans->rx_buf;
+>  			for (i = 0; i < cnt; i ++) {
+>  				pch_spi_handle_dma(data, &bpw);
+> -				if (!pch_spi_start_transfer(data))
+> +				if (!pch_spi_start_transfer(data)) {
+> +					data->transfer_complete = true;
+> +					data->current_msg->status = -EIO;
+> +					data->current_msg->complete
+> +						   (data->current_msg->context);
+> +					data->bcurrent_msg_processing = false;
+> +					data->current_msg = NULL;
+> +					data->cur_trans = NULL;
+>  					goto out;
+> +				}
+>  				pch_spi_copy_rx_data_for_dma(data, bpw);
+>  			}
+>  			data->cur_trans->rx_buf = save_rx_buf;
 > -- 
 > 1.7.4.4
 > 
