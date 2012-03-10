@@ -1,421 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab2CJLMI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 06:12:08 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:63610 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044Ab2CJLME (ORCPT
+	id S1753487Ab2CJLPk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 06:15:40 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40955 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab2CJLPi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 06:12:04 -0500
-Date: Sat, 10 Mar 2012 12:11:50 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Takahiro Shimizu <tshimizu818@gmail.com>
-Cc: jeffrey.t.kirsher@intel.com, davem@davemloft.net,
-        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
-        paul.gortmaker@windriver.com, jdmason@kudzu.us, john.stultz@linaro.org,
-        arnd@arndb.de, khc@pm.waw.pl, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH RE-SUBMIT 2/2] net/pch_gbe: supports eg20t ptp clock
-Message-ID: <20120310111149.GC3489@netboy.at.omicron.at>
-References: <1331194587-29114-1-git-send-email-tshimizu818@gmail.com>
- <1331194587-29114-2-git-send-email-tshimizu818@gmail.com>
+	Sat, 10 Mar 2012 06:15:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331194587-29114-2-git-send-email-tshimizu818@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120308092913.GF14173@pengutronix.de>
+References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
+ <1331197863-25564-2-git-send-email-bryan.wu@canonical.com> <20120308092913.GF14173@pengutronix.de>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Sat, 10 Mar 2012 19:15:18 +0800
+X-Google-Sender-Auth: sN5eJb9AZl_6u6S_YlLBNezpfbA
+Message-ID: <CAK5ve-+L9gVBOp4RVe2pTUbBnrb-PEn7ERbWWkb=7A=4qOrdTQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] led-triggers: use atomic kzalloc during led trigger registering
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Ming Lei <ming.lei@canonical.com>
+Cc: rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        linux@arm.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a few issues, below.
+2012/3/8 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+> On Thu, Mar 08, 2012 at 05:11:02PM +0800, Bryan Wu wrote:
+>> kzalloc might cause sleep and will generate some warning detected by lockdep,
+>> when call led_trigger_register_simple on each cpu cores in SMP. This patch fix
+>> this.
+> The obvious (and IMHO better) alternative is to call
+> led_trigger_register_simple from non-atomic context.
+>
+> For registering this should be OK, shouldn't it?
+>
+Thanks Uwe, it's my bad. I think I should not use on_each_cpu() API to
+run led_trigger_register_simple. on_each_cpu() will disable interrupt.
 
-Thanks,
-Richard
+Let's ignore this patch and I will update my ledtrig-cpu patch to use
+for_each_cpu().
+
+And thanks Ming for your advice.
+
+Best Regards,
+-Bryan
+
+>
+>>
+>> [    1.999938] ------------[ cut here ]------------
+>> [    2.004791] WARNING: at kernel/lockdep.c:2664 lockdep_trace_alloc+0xd8/0xf0()
+>> [    2.012298] Modules linked in:
+>> [    2.015563] [<c001b0cc>] (unwind_backtrace+0x0/0xf0) from [<c0052408>] (warn_slowpath_common+0x4c/0x64)
+>> [    2.025451] [<c0052408>] (warn_slowpath_common+0x4c/0x64) from [<c005243c>] (warn_slowpath_null+0x1c/0x24)
+>> [    2.035583] [<c005243c>] (warn_slowpath_null+0x1c/0x24) from [<c008be28>] (lockdep_trace_alloc+0xd8/0xf0)
+>> [    2.045684] [<c008be28>] (lockdep_trace_alloc+0xd8/0xf0) from [<c00feeb4>] (kmem_cache_alloc_trace+0x2c/0x148)
+>> [    2.056213] [<c00feeb4>] (kmem_cache_alloc_trace+0x2c/0x148) from [<c03770a0>] (led_trigger_register_simple+0x20/0x74)
+>> [    2.067474] [<c03770a0>] (led_trigger_register_simple+0x20/0x74) from [<c0627a30>] (ledtrig_cpu_register+0x4c/0x8c)
+>> [    2.078460] [<c0627a30>] (ledtrig_cpu_register+0x4c/0x8c) from [<c0094ca4>] (generic_smp_call_function_single_interrupt+0xcc/0x138)
+>> [    2.090911] [<c0094ca4>] (generic_smp_call_function_single_interrupt+0xcc/0x138) from [<c0008408>] (do_IPI+0xb0/0x128)
+>> [    2.102172] [<c0008408>] (do_IPI+0xb0/0x128) from [<c045921c>] (__irq_svc+0x3c/0x100)
+>> [    2.110412] Exception stack(0xc07adf70 to 0xc07adfb8)
+>> [    2.115722] df60:                                     c07c80f8 0000fb45 00000000 c07c80f8
+>> [    2.124328] df80: c07ac000 c0837be4 c0464b64 c07c9d8c 00000000 411fc092 00000000 00000000
+>> [    2.132934] dfa0: c0649760 c07adfb8 c07c5c58 c0014d50 20000013 ffffffff
+>> [    2.139892] [<c045921c>] (__irq_svc+0x3c/0x100) from [<c0014d50>] (default_idle+0x30/0x38)
+>> [    2.148590] [<c0014d50>] (default_idle+0x30/0x38) from [<c0014f74>] (cpu_idle+0xb4/0xf4)
+>> [    2.157135] [<c0014f74>] (cpu_idle+0xb4/0xf4) from [<c0602778>] (start_kernel+0x2a8/0x2fc)
+>> [    2.165832] [<c0602778>] (start_kernel+0x2a8/0x2fc) from [<80008040>] (0x80008040)
+>> [    2.173797] ---[ end trace 97549d21d8dad3f5 ]---
+>>
+>> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+>> ---
+>>  drivers/leds/led-triggers.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
+>> index 46b4c76..74d0ba7 100644
+>> --- a/drivers/leds/led-triggers.c
+>> +++ b/drivers/leds/led-triggers.c
+>> @@ -255,7 +255,7 @@ void led_trigger_register_simple(const char *name, struct led_trigger **tp)
+>>       struct led_trigger *trigger;
+>>       int err;
+>>
+>> -     trigger = kzalloc(sizeof(struct led_trigger), GFP_KERNEL);
+>> +     trigger = kzalloc(sizeof(struct led_trigger), GFP_ATOMIC);
+>>
+>>       if (trigger) {
+>>               trigger->name = name;
+>> --
+>> 1.7.9
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>
+>
+> --
+> Pengutronix e.K.                           | Uwe Kleine-König            |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
 
-On Thu, Mar 08, 2012 at 05:16:27PM +0900, Takahiro Shimizu wrote:
-> From: Takahiroi Shimizu <tshimizu818@gmail.com>
-> 
-> Supports EG20T ptp clock in the driver
-> 
-> Changes e-mail address.
-> 
-> Adds number.
-> 
-> Signed-off-by: Takahiro Shimizu <tshimizu818@gmail.com>
-> ---
->  drivers/net/ethernet/oki-semi/pch_gbe/Kconfig      |   13 ++
->  drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h    |   13 ++
->  .../net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c   |  217 +++++++++++++++++++-
->  3 files changed, 240 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig b/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
-> index 00bc4fc..bce0164 100644
-> --- a/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
-> +++ b/drivers/net/ethernet/oki-semi/pch_gbe/Kconfig
-> @@ -20,3 +20,16 @@ config PCH_GBE
->  	  purpose use.
->  	  ML7223/ML7831 is companion chip for Intel Atom E6xx series.
->  	  ML7223/ML7831 is completely compatible for Intel EG20T PCH.
-> +
-> +if PCH_GBE
-> +
-> +config PCH_PTP
-> +	bool "PCH PTP clock support"
-> +	default n
-> +	depends on PTP_1588_CLOCK_PCH
-> +	---help---
-> +	  Say Y here if you want to use Precision Time Protocol (PTP) in the
-> +	  driver. PTP is a method to precisely synchronize distributed clocks
-> +	  over Ethernet networks.
-> +
-> +endif # PCH_GBE
-> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
-> index a09a071..dd14915 100644
-> --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
-> +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h
-> @@ -630,6 +630,9 @@ struct pch_gbe_adapter {
->  	unsigned long tx_queue_len;
->  	bool have_msi;
->  	bool rx_stop_flag;
-> +	int hwts_tx_en;
-> +	int hwts_rx_en;
-> +	struct pci_dev *ptp_pdev;
->  };
->  
->  extern const char pch_driver_version[];
-> @@ -648,6 +651,16 @@ extern void pch_gbe_free_tx_resources(struct pch_gbe_adapter *adapter,
->  extern void pch_gbe_free_rx_resources(struct pch_gbe_adapter *adapter,
->  				       struct pch_gbe_rx_ring *rx_ring);
->  extern void pch_gbe_update_stats(struct pch_gbe_adapter *adapter);
-> +#ifdef CONFIG_PCH_PTP
-> +extern u32 pch_ch_control_read(struct pci_dev *pdev);
-> +extern void pch_ch_control_write(struct pci_dev *pdev, u32 val);
-> +extern u32 pch_ch_event_read(struct pci_dev *pdev);
-> +extern void pch_ch_event_write(struct pci_dev *pdev, u32 val);
-> +extern u32 pch_src_uuid_lo_read(struct pci_dev *pdev);
-> +extern u32 pch_src_uuid_hi_read(struct pci_dev *pdev);
-> +extern u64 pch_rx_snap_read(struct pci_dev *pdev);
-> +extern u64 pch_tx_snap_read(struct pci_dev *pdev);
-> +#endif
->  
->  /* pch_gbe_param.c */
->  extern void pch_gbe_check_options(struct pch_gbe_adapter *adapter);
-> diff --git a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> index 3ead111..aa54ede 100644
-> --- a/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> +++ b/drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe_main.c
-> @@ -1,6 +1,6 @@
->  /*
->   * Copyright (C) 1999 - 2010 Intel Corporation.
-> - * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
-> + * Copyright (C) 2010 - 2012 LAPIS SEMICONDUCTOR CO., LTD.
->   *
->   * This code was derived from the Intel e1000e Linux driver.
->   *
-> @@ -21,6 +21,10 @@
->  #include "pch_gbe.h"
->  #include "pch_gbe_api.h"
->  #include <linux/module.h>
-> +#ifdef CONFIG_PCH_PTP
-> +#include <linux/net_tstamp.h>
-> +#include <linux/ptp_classify.h>
-> +#endif
->  
->  #define DRV_VERSION     "1.00"
->  const char pch_driver_version[] = DRV_VERSION;
-> @@ -95,12 +99,195 @@ const char pch_driver_version[] = DRV_VERSION;
->  
->  #define PCH_GBE_INT_DISABLE_ALL		0
->  
-> +#ifdef CONFIG_PCH_PTP
-> +/* Macros for ieee1588 */
-> +#define TICKS_NS_SHIFT  5
 
-Remove this macro and keep it internal to ptp_pch.c.
-
-> +
-> +/* 0x40 Time Synchronization Channel Control Register Bits */
-> +#define MASTER_MODE   (1<<0)
-> +#define SLAVE_MODE    (0<<0)
-> +#define V2_MODE       (1<<31)
-> +#define CAP_MODE0     (0<<16)
-> +#define CAP_MODE2     (1<<17)
-> +
-> +/* 0x44 Time Synchronization Channel Event Register Bits */
-> +#define TX_SNAPSHOT_LOCKED (1<<0)
-> +#define RX_SNAPSHOT_LOCKED (1<<1)
-> +#endif
-> +
->  static unsigned int copybreak __read_mostly = PCH_GBE_COPYBREAK_DEFAULT;
->  
->  static int pch_gbe_mdio_read(struct net_device *netdev, int addr, int reg);
->  static void pch_gbe_mdio_write(struct net_device *netdev, int addr, int reg,
->  			       int data);
->  
-> +#ifdef CONFIG_PCH_PTP
-> +static struct sock_filter ptp_filter[] = {
-> +	PTP_FILTER
-> +};
-> +
-> +static int pch_ptp_match(struct sk_buff *skb, u16 uid_hi, u32 uid_lo, u16 seqid)
-> +{
-> +	u8 *data = skb->data;
-> +	unsigned int offset;
-> +	u16 *hi, *id;
-> +	u32 lo;
-> +
-> +	if ((sk_run_filter(skb, ptp_filter) != PTP_CLASS_V2_IPV4) &&
-> +		(sk_run_filter(skb, ptp_filter) != PTP_CLASS_V1_IPV4)) {
-
-No, just run the filter once and test the result twice.
-
-Also, doesn't the timestamping unit work with IPv6 and L2?  If so,
-don't restrict the driver to IPv4.
-
-> +		return 0;
-> +	}
-> +
-> +	offset = ETH_HLEN + IPV4_HLEN(data) + UDP_HLEN;
-> +
-> +	if (skb->len < offset + OFF_PTP_SEQUENCE_ID + sizeof(seqid))
-> +		return 0;
-> +
-> +	hi = (u16 *)(data + offset + OFF_PTP_SOURCE_UUID);
-> +	id = (u16 *)(data + offset + OFF_PTP_SEQUENCE_ID);
-> +
-> +	memcpy(&lo, &hi[1], sizeof(lo));
-> +
-> +	return (uid_hi == *hi &&
-> +		uid_lo == lo &&
-> +		seqid  == *id);
-> +}
-> +
-> +static void pch_rx_timestamp(
-> +			struct pch_gbe_adapter *adapter, struct sk_buff *skb)
-
-Ugly line break. If you are worrried about the 80 character limit,
-then how about something like this instead?
-
-static void pch_rx_timestamp(struct pch_gbe_adapter *pga, struct sk_buff *skb)
-
-> +{
-> +	struct skb_shared_hwtstamps *shhwtstamps;
-> +	struct pci_dev *pdev;
-> +	u64 ns;
-> +	u32 hi, lo, val;
-> +	u16 uid, seq;
-> +
-> +	if (!adapter->hwts_rx_en)
-> +		return;
-> +
-> +	/* Get ieee1588's dev information */
-> +	pdev = adapter->ptp_pdev;
-> +
-> +	val = pch_ch_event_read(pdev);
-> +
-> +	if (!(val & RX_SNAPSHOT_LOCKED))
-> +		return;
-> +
-> +	lo = pch_src_uuid_lo_read(pdev);
-> +	hi = pch_src_uuid_hi_read(pdev);
-> +
-> +	uid = hi & 0xffff;
-> +	seq = (hi >> 16) & 0xffff;
-> +
-> +	if (!pch_ptp_match(skb, htons(uid), htonl(lo), htons(seq)))
-> +		goto out;
-> +
-> +	ns = pch_rx_snap_read(pdev);
-> +	ns <<= TICKS_NS_SHIFT;
-
-Do this shift in pch_rx_snap_read() instead.
-
-> +
-> +	shhwtstamps = skb_hwtstamps(skb);
-> +	memset(shhwtstamps, 0, sizeof(*shhwtstamps));
-> +	shhwtstamps->hwtstamp = ns_to_ktime(ns);
-> +out:
-> +	pch_ch_event_write(pdev, RX_SNAPSHOT_LOCKED);
-> +}
-> +
-> +static void pch_tx_timestamp(
-> +			struct pch_gbe_adapter *adapter, struct sk_buff *skb)
-
-Another ugly line break.
-
-> +{
-> +	struct skb_shared_hwtstamps shhwtstamps;
-> +	struct pci_dev *pdev;
-> +	struct skb_shared_info *shtx;
-> +	u64 ns;
-> +	u32 cnt, val;
-> +
-> +	shtx = skb_shinfo(skb);
-> +	if (unlikely(shtx->tx_flags & SKBTX_HW_TSTAMP && adapter->hwts_tx_en))
-> +		shtx->tx_flags |= SKBTX_IN_PROGRESS;
-> +	else
-> +		return;
-> +
-> +	/* Get ieee1588's dev information */
-> +	pdev = adapter->ptp_pdev;
-> +
-> +	/*
-> +	 * This really stinks, but we have to poll for the Tx time stamp.
-> +	 * Usually, the time stamp is ready after 4 to 6 microseconds.
-> +	 */
-> +	for (cnt = 0; cnt < 100; cnt++) {
-> +		val = pch_ch_event_read(pdev);
-> +		if (val & TX_SNAPSHOT_LOCKED)
-> +			break;
-> +		udelay(1);
-> +	}
-> +	if (!(val & TX_SNAPSHOT_LOCKED)) {
-> +		shtx->tx_flags &= ~SKBTX_IN_PROGRESS;
-> +		return;
-> +	}
-> +
-> +	ns = pch_tx_snap_read(pdev);
-> +	ns <<= TICKS_NS_SHIFT;
-
-Do the shift in pch_tx_snap_read().
-
-> +
-> +	memset(&shhwtstamps, 0, sizeof(shhwtstamps));
-> +	shhwtstamps.hwtstamp = ns_to_ktime(ns);
-> +	skb_tstamp_tx(skb, &shhwtstamps);
-> +
-> +	pch_ch_event_write(pdev, TX_SNAPSHOT_LOCKED);
-> +}
-> +
-> +static int hwtstamp_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
-> +{
-> +	struct hwtstamp_config cfg;
-> +	struct pch_gbe_adapter *adapter = netdev_priv(netdev);
-> +	struct pci_dev *pdev;
-> +
-> +	if (copy_from_user(&cfg, ifr->ifr_data, sizeof(cfg)))
-> +		return -EFAULT;
-> +
-> +	if (cfg.flags) /* reserved for future extensions */
-> +		return -EINVAL;
-> +
-> +	/* Get ieee1588's dev information */
-> +	pdev = adapter->ptp_pdev;
-> +
-> +	switch (cfg.tx_type) {
-> +	case HWTSTAMP_TX_OFF:
-> +		adapter->hwts_tx_en = 0;
-> +		break;
-> +	case HWTSTAMP_TX_ON:
-> +		adapter->hwts_tx_en = 1;
-> +		break;
-> +	default:
-> +		return -ERANGE;
-> +	}
-> +
-> +	switch (cfg.rx_filter) {
-> +	case HWTSTAMP_FILTER_NONE:
-> +		adapter->hwts_rx_en = 0;
-> +		break;
-> +	case HWTSTAMP_FILTER_PTP_V1_L4_SYNC:
-> +		adapter->hwts_rx_en = 0;
-> +		pch_ch_control_write(pdev, (SLAVE_MODE | CAP_MODE0));
-> +		break;
-> +	case HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ:
-> +		adapter->hwts_rx_en = 1;
-> +		pch_ch_control_write(pdev, (MASTER_MODE | CAP_MODE0));
-> +		break;
-> +	case HWTSTAMP_FILTER_PTP_V2_EVENT:
-> +		adapter->hwts_rx_en = 1;
-> +		pch_ch_control_write(pdev, (V2_MODE | CAP_MODE2));
-> +		break;
-> +	default:
-> +		return -ERANGE;
-> +	}
-> +
-> +	/* Clear out any old time stamps. */
-> +	pch_ch_event_write(pdev, TX_SNAPSHOT_LOCKED | RX_SNAPSHOT_LOCKED);
-> +
-> +	return copy_to_user(ifr->ifr_data, &cfg, sizeof(cfg)) ? -EFAULT : 0;
-> +}
-> +#endif
-> +
->  inline void pch_gbe_mac_load_mac_addr(struct pch_gbe_hw *hw)
->  {
->  	iowrite32(0x01, &hw->reg->MAC_ADDR_LOAD);
-> @@ -1072,6 +1259,11 @@ static void pch_gbe_tx_queue(struct pch_gbe_adapter *adapter,
->  	iowrite32(tx_ring->dma +
->  		  (int)sizeof(struct pch_gbe_tx_desc) * ring_num,
->  		  &hw->reg->TX_DSC_SW_P);
-> +
-> +#ifdef CONFIG_PCH_PTP
-> +	pch_tx_timestamp(adapter, skb);
-> +#endif
-> +
->  	dev_kfree_skb_any(skb);
->  }
->  
-> @@ -1543,6 +1735,11 @@ pch_gbe_clean_rx(struct pch_gbe_adapter *adapter,
->  				adapter->stats.multicast++;
->  			/* Write meta date of skb */
->  			skb_put(skb, length);
-> +
-> +#ifdef CONFIG_PCH_PTP
-> +			pch_rx_timestamp(adapter, skb);
-> +#endif
-> +
->  			skb->protocol = eth_type_trans(skb, netdev);
->  			if (tcp_ip_status & PCH_GBE_RXD_ACC_STAT_TCPIPOK)
->  				skb->ip_summed = CHECKSUM_NONE;
-> @@ -2147,6 +2344,11 @@ static int pch_gbe_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd)
->  
->  	pr_debug("cmd : 0x%04x\n", cmd);
->  
-> +#ifdef CONFIG_PCH_PTP
-> +	if (cmd == SIOCSHWTSTAMP)
-> +		return hwtstamp_ioctl(netdev, ifr, cmd);
-> +#endif
-> +
->  	return generic_mii_ioctl(&adapter->mii, if_mii(ifr), cmd, NULL);
->  }
->  
-> @@ -2440,6 +2642,15 @@ static int pch_gbe_probe(struct pci_dev *pdev,
->  		goto err_free_netdev;
->  	}
->  
-> +#ifdef CONFIG_PCH_PTP
-> +	adapter->ptp_pdev = pci_get_bus_and_slot(adapter->pdev->bus->number,
-> +					       PCI_DEVFN(12, 4));
-> +	if (ptp_filter_init(ptp_filter, ARRAY_SIZE(ptp_filter))) {
-> +		pr_err("Bad ptp filter\n");
-> +		return -EINVAL;
-> +	}
-> +#endif
-> +
->  	netdev->netdev_ops = &pch_gbe_netdev_ops;
->  	netdev->watchdog_timeo = PCH_GBE_WATCHDOG_PERIOD;
->  	netif_napi_add(netdev, &adapter->napi,
-> @@ -2504,7 +2715,7 @@ static int pch_gbe_probe(struct pci_dev *pdev,
->  	netif_carrier_off(netdev);
->  	netif_stop_queue(netdev);
->  
-> -	dev_dbg(&pdev->dev, "OKIsemi(R) PCH Network Connection\n");
-> +	dev_dbg(&pdev->dev, "PCH Network Connection\n");
->  
->  	device_set_wakeup_enable(&pdev->dev, 1);
->  	return 0;
-> @@ -2605,7 +2816,7 @@ module_init(pch_gbe_init_module);
->  module_exit(pch_gbe_exit_module);
->  
->  MODULE_DESCRIPTION("EG20T PCH Gigabit ethernet Driver");
-> -MODULE_AUTHOR("OKI SEMICONDUCTOR, <toshiharu-linux@dsn.okisemi.com>");
-> +MODULE_AUTHOR("LAPIS SEMICONDUCTOR, <tshimizu818@gmail.com>");
->  MODULE_LICENSE("GPL");
->  MODULE_VERSION(DRV_VERSION);
->  MODULE_DEVICE_TABLE(pci, pch_gbe_pcidev_id);
-> -- 
-> 1.7.4.4
-> 
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.138-1617-6545 Mobile
+Ubuntu ARM Team
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
