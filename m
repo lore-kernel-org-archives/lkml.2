@@ -1,386 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2CJXZt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 18:25:49 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:59908
-	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752824Ab2CJXZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 18:25:44 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP messages in the driver
-Date: Sat, 10 Mar 2012 15:32:09 -0800
-Message-Id: <1331422331-4381-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1331422331-4381-1-git-send-email-kys@microsoft.com>
-References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
- <1331422331-4381-1-git-send-email-kys@microsoft.com>
+	id S1753332Ab2CJXZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 18:25:57 -0500
+Received: from numidia.opendz.org ([98.142.220.152]:49640 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752824Ab2CJXZw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 18:25:52 -0500
+From: Djalal Harouni <tixxdz@opendz.org>
+To: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>,
+        Djalal Harouni <tixxdz@opendz.org>
+Subject: [PATCH 0/9] proc: protect /proc/<pid>/* files across execve
+Date: Sun, 11 Mar 2012 00:25:10 +0100
+Message-Id: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now support the newly defined KVP message types. It turns out that the host
-pushes a set of stand key value pairs as soon as the guest opens the KVP channel.
-Since we cannot handle these tuples until the user level daemon loads up, defer
-reading the KVP channel until the user level daemon is launched.
+Procfs files and other important objects may contain sensitive information
+which must not be seen, inherited or processed across execve.
+The commit e268337dfe26dfc7efd422a804dbb27977a3cccc tries to fix the same
+problem, but that leaves all the other sensitive /proc/<pid>/* files which
+includes the {maps,smaps,numa_maps} files that can be used to bypass ASLR
+(there is a PoC to demonstrate it). We should also note that currently the
+/proc/<pid>/mem fix will pin mm_structs.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/hv/hv_kvp.c      |  184 ++++++++++++++++++++++++++++++++++++----------
- include/linux/hyperv.h   |    2 +
- tools/hv/hv_kvp_daemon.c |    7 ++
- 3 files changed, 153 insertions(+), 40 deletions(-)
+The following series tries to take another path to solve the same problem
+by using a global execve counter and each task will have its own exec ID,
+this way we can know if the processed files are attached to the reader or
+the target tasks. With this solution we do not pin mm_structs of dead
+processes and we can track special objects at each syscall.
 
-diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
-index 779109b..3b2eeaa 100644
---- a/drivers/hv/hv_kvp.c
-+++ b/drivers/hv/hv_kvp.c
-@@ -42,9 +42,10 @@
- static struct {
- 	bool active; /* transaction status - active or not */
- 	int recv_len; /* number of bytes received. */
--	int index; /* current index */
-+	struct hv_kvp_msg  *kvp_msg; /* current message */
- 	struct vmbus_channel *recv_channel; /* chn we got the request */
- 	u64 recv_req_id; /* request ID. */
-+	void *kvp_context; /* for the channel callback */
- } kvp_transaction;
- 
- static void kvp_send_key(struct work_struct *dummy);
-@@ -110,12 +111,15 @@ kvp_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- 	struct hv_kvp_msg_enumerate *data;
- 
- 	message = (struct hv_kvp_msg *)msg->data;
--	if (message->kvp_hdr.operation == KVP_OP_REGISTER) {
-+	switch (message->kvp_hdr.operation) {
-+	case KVP_OP_REGISTER:
- 		pr_info("KVP: user-mode registering done.\n");
- 		kvp_register();
--	}
-+		kvp_transaction.active = false;
-+		hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
-+		break;
- 
--	if (message->kvp_hdr.operation == KVP_OP_ENUMERATE) {
-+	default:
- 		data = &message->body.kvp_enum_data;
- 		/*
- 		 * Complete the transaction by forwarding the key value
-@@ -133,7 +137,11 @@ kvp_send_key(struct work_struct *dummy)
- {
- 	struct cn_msg *msg;
- 	struct hv_kvp_msg *message;
--	int index = kvp_transaction.index;
-+	struct hv_kvp_msg *in_msg;
-+	__u8 operation = kvp_transaction.kvp_msg->kvp_hdr.operation;
-+	__u8 pool = kvp_transaction.kvp_msg->kvp_hdr.pool;
-+	__u32 val32;
-+	__u64 val64;
- 
- 	msg = kzalloc(sizeof(*msg) + sizeof(struct hv_kvp_msg) , GFP_ATOMIC);
- 
-@@ -142,8 +150,85 @@ kvp_send_key(struct work_struct *dummy)
- 		msg->id.val = CN_KVP_VAL;
- 
- 		message = (struct hv_kvp_msg *)msg->data;
--		message->kvp_hdr.operation = KVP_OP_ENUMERATE;
--		message->body.kvp_enum_data.index = index;
-+		message->kvp_hdr.operation = operation;
-+		message->kvp_hdr.pool = pool;
-+		in_msg = kvp_transaction.kvp_msg;
-+
-+		/*
-+		 * The key/value strings sent from the host are encoded in
-+		 * in utf16; convert it to utf8 strings.
-+		 */
-+
-+		switch (message->kvp_hdr.operation) {
-+		case KVP_OP_SET:
-+			switch (in_msg->body.kvp_set.data.value_type) {
-+			case REG_SZ:
-+				/*
-+				 * The value is a string - utf16 encoding.
-+				 */
-+				message->body.kvp_set.data.value_size =
-+				utf16s_to_utf8s(
-+				(wchar_t *)
-+				in_msg->body.kvp_set.data.value,
-+				in_msg->body.kvp_set.data.value_size,
-+				UTF16_LITTLE_ENDIAN,
-+				message->body.kvp_set.data.value,
-+				HV_KVP_EXCHANGE_MAX_VALUE_SIZE) + 1;
-+				break;
-+
-+			case REG_U32:
-+				/*
-+				 * The value is a 32 bit scalar.
-+				 * We save this as a utf8 string.
-+				 */
-+				val32 =
-+				in_msg->body.kvp_set.data.value_u32;
-+				message->body.kvp_set.data.value_size =
-+				sprintf(message->body.kvp_set.data.value,
-+					"%d", val32) + 1;
-+				break;
-+
-+			case REG_U64:
-+				/*
-+				 * The value is a 64 bit scalar.
-+				 * We save this as a utf8 string.
-+				 */
-+				val64 =
-+				in_msg->body.kvp_set.data.value_u64;
-+				message->body.kvp_set.data.value_size =
-+				sprintf(message->body.kvp_set.data.value,
-+					"%llu", val64) + 1;
-+				break;
-+
-+			}
-+		case KVP_OP_GET:
-+			message->body.kvp_set.data.key_size =
-+				utf16s_to_utf8s(
-+				(wchar_t *)in_msg->body.kvp_set.data.key,
-+				in_msg->body.kvp_set.data.key_size,
-+				UTF16_LITTLE_ENDIAN,
-+				message->body.kvp_set.data.key,
-+				HV_KVP_EXCHANGE_MAX_KEY_SIZE) + 1;
-+
-+			break;
-+
-+		case KVP_OP_DELETE:
-+			message->body.kvp_delete.key_size =
-+				utf16s_to_utf8s(
-+				(wchar_t *)in_msg->body.kvp_delete.key,
-+				in_msg->body.kvp_delete.key_size,
-+				UTF16_LITTLE_ENDIAN,
-+				message->body.kvp_delete.key,
-+				HV_KVP_EXCHANGE_MAX_KEY_SIZE) + 1;
-+
-+			break;
-+
-+		case KVP_OP_ENUMERATE:
-+			message->body.kvp_enum_data.index =
-+				in_msg->body.kvp_enum_data.index;
-+			break;
-+		}
-+
- 		msg->len = sizeof(struct hv_kvp_msg);
- 		cn_netlink_send(msg, 0, GFP_ATOMIC);
- 		kfree(msg);
-@@ -159,7 +244,7 @@ static void
- kvp_respond_to_host(char *key, char *value, int error)
- {
- 	struct hv_kvp_msg  *kvp_msg;
--	struct hv_kvp_msg_enumerate  *kvp_data;
-+	struct hv_kvp_exchg_msg_value  *kvp_data;
- 	char	*key_name;
- 	struct icmsg_hdr *icmsghdrp;
- 	int	keylen, valuelen;
-@@ -189,6 +274,9 @@ kvp_respond_to_host(char *key, char *value, int error)
- 
- 	kvp_transaction.active = false;
- 
-+	icmsghdrp = (struct icmsg_hdr *)
-+			&recv_buffer[sizeof(struct vmbuspipe_hdr)];
-+
- 	if (channel->onchannel_callback == NULL)
- 		/*
- 		 * We have raced with util driver being unloaded;
-@@ -196,41 +284,57 @@ kvp_respond_to_host(char *key, char *value, int error)
- 		 */
- 		return;
- 
--	icmsghdrp = (struct icmsg_hdr *)
--			&recv_buffer[sizeof(struct vmbuspipe_hdr)];
--	kvp_msg = (struct hv_kvp_msg *)
--			&recv_buffer[sizeof(struct vmbuspipe_hdr) +
--			sizeof(struct icmsg_hdr)];
--	kvp_data = &kvp_msg->body.kvp_enum_data;
--	key_name = key;
- 
- 	/*
- 	 * If the error parameter is set, terminate the host's enumeration.
- 	 */
- 	if (error) {
- 		/*
--		 * We don't support this index or the we have timedout;
-+		 * Something failed or the we have timedout;
- 		 * terminate the host-side iteration by returning an error.
- 		 */
- 		icmsghdrp->status = HV_E_FAIL;
- 		goto response_done;
- 	}
- 
-+	icmsghdrp->status = HV_S_OK;
-+
-+	kvp_msg = (struct hv_kvp_msg *)
-+			&recv_buffer[sizeof(struct vmbuspipe_hdr) +
-+			sizeof(struct icmsg_hdr)];
-+
-+	switch (kvp_transaction.kvp_msg->kvp_hdr.operation) {
-+	case KVP_OP_GET:
-+		kvp_data = &kvp_msg->body.kvp_get.data;
-+		goto copy_value;
-+
-+	case KVP_OP_SET:
-+	case KVP_OP_DELETE:
-+		goto response_done;
-+
-+	default:
-+		break;
-+	}
-+
-+	kvp_data = &kvp_msg->body.kvp_enum_data.data;
-+	key_name = key;
-+
- 	/*
- 	 * The windows host expects the key/value pair to be encoded
- 	 * in utf16.
- 	 */
- 	keylen = utf8s_to_utf16s(key_name, strlen(key_name), UTF16_HOST_ENDIAN,
--				(wchar_t *) kvp_data->data.key,
-+				(wchar_t *) kvp_data->key,
- 				HV_KVP_EXCHANGE_MAX_KEY_SIZE / 2);
--	kvp_data->data.key_size = 2*(keylen + 1); /* utf16 encoding */
-+	kvp_data->key_size = 2*(keylen + 1); /* utf16 encoding */
-+
-+copy_value:
- 	valuelen = utf8s_to_utf16s(value, strlen(value), UTF16_HOST_ENDIAN,
--				(wchar_t *) kvp_data->data.value,
-+				(wchar_t *) kvp_data->value,
- 				HV_KVP_EXCHANGE_MAX_VALUE_SIZE / 2);
--	kvp_data->data.value_size = 2*(valuelen + 1); /* utf16 encoding */
-+	kvp_data->value_size = 2*(valuelen + 1); /* utf16 encoding */
- 
--	kvp_data->data.value_type = REG_SZ; /* all our values are strings */
--	icmsghdrp->status = HV_S_OK;
-+	kvp_data->value_type = REG_SZ; /* all our values are strings */
- 
- response_done:
- 	icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION | ICMSGHDRFLAG_RESPONSE;
-@@ -257,11 +361,18 @@ void hv_kvp_onchannelcallback(void *context)
- 	u64 requestid;
- 
- 	struct hv_kvp_msg *kvp_msg;
--	struct hv_kvp_msg_enumerate *kvp_data;
- 
- 	struct icmsg_hdr *icmsghdrp;
- 	struct icmsg_negotiate *negop = NULL;
- 
-+	if (kvp_transaction.active) {
-+		/*
-+		 * We will defer processing this callback once
-+		 * the current transaction is complete.
-+		 */
-+		kvp_transaction.kvp_context = context;
-+		return;
-+	}
- 
- 	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE, &recvlen, &requestid);
- 
-@@ -276,29 +387,16 @@ void hv_kvp_onchannelcallback(void *context)
- 				sizeof(struct vmbuspipe_hdr) +
- 				sizeof(struct icmsg_hdr)];
- 
--			kvp_data = &kvp_msg->body.kvp_enum_data;
--
--			/*
--			 * We only support the "get" operation on
--			 * "KVP_POOL_AUTO" pool.
--			 */
--
--			if ((kvp_msg->kvp_hdr.pool != KVP_POOL_AUTO) ||
--				(kvp_msg->kvp_hdr.operation !=
--				KVP_OP_ENUMERATE)) {
--				icmsghdrp->status = HV_E_FAIL;
--				goto callback_done;
--			}
--
- 			/*
- 			 * Stash away this global state for completing the
- 			 * transaction; note transactions are serialized.
- 			 */
-+
- 			kvp_transaction.recv_len = recvlen;
- 			kvp_transaction.recv_channel = channel;
- 			kvp_transaction.recv_req_id = requestid;
- 			kvp_transaction.active = true;
--			kvp_transaction.index = kvp_data->index;
-+			kvp_transaction.kvp_msg = kvp_msg;
- 
- 			/*
- 			 * Get the information from the
-@@ -316,8 +414,6 @@ void hv_kvp_onchannelcallback(void *context)
- 
- 		}
- 
--callback_done:
--
- 		icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
- 			| ICMSGHDRFLAG_RESPONSE;
- 
-@@ -338,6 +434,14 @@ hv_kvp_init(struct hv_util_service *srv)
- 		return err;
- 	recv_buffer = srv->recv_buffer;
- 
-+	/*
-+	 * When this driver loads, the user level daemon that
-+	 * processes the host requests may not yet be running.
-+	 * Defer processing channel callbacks until the daemon
-+	 * has registered.
-+	 */
-+	kvp_transaction.active = true;
-+
- 	return 0;
- }
- 
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index a2d8c54..e88a979 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -119,6 +119,8 @@
-  */
- 
- #define REG_SZ 1
-+#define REG_U32 4
-+#define REG_U64 8
- 
- enum hv_kvp_exchg_op {
- 	KVP_OP_GET = 0,
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 00d3f7c..a98878c 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -389,10 +389,16 @@ int main(void)
- 			}
- 			continue;
- 
-+		case KVP_OP_SET:
-+		case KVP_OP_GET:
-+		case KVP_OP_DELETE:
- 		default:
- 			break;
- 		}
- 
-+		if (hv_msg->kvp_hdr.operation != KVP_OP_ENUMERATE)
-+			goto kvp_done;
-+
- 		hv_msg = (struct hv_kvp_msg *)incoming_cn_msg->data;
- 		key_name = (char *)hv_msg->body.kvp_enum_data.data.key;
- 		key_value = (char *)hv_msg->body.kvp_enum_data.data.value;
-@@ -454,6 +460,7 @@ int main(void)
- 		 * already in the receive buffer. Update the cn_msg header to
- 		 * reflect the key value that has been added to the message
- 		 */
-+kvp_done:
- 
- 		incoming_cn_msg->id.idx = CN_KVP_IDX;
- 		incoming_cn_msg->id.val = CN_KVP_VAL;
--- 
-1.7.4.1
 
+There is a new proc_file_private struct which can be used to hold internal
+data related to opened /proc/<pid>/* files, we also use it to store the
+exec_id of the reader or the target tasks, it depends on the files being
+processed. This struct offers a consistent and unified way to protect
+all these sensitive files even the other /proc/* files.
+There are also some new helper functions.
+
+
+Currently we perform the protection in two different ways:
+
+1) Use the target exec_id to bind files to their exec_id task:
+
+For the REG files /proc/<pid>/{environ,pagemap,mem} we set the exec_id
+of the proc_file_private to the target task, and we continue with
+permission checks at open time, later on each read/write call the
+permission checks are done + check the target exec_id if it equals the
+exec_id of the proc_file_private that was set at open time, in other words
+we bind the file to its task's exec_id, this way new exec programs can not
+operate on the passed fd.
+
+
+2) Use the reader exec_id to track reader behaviour (aggressive checks):
+
+For the /proc/<pid>/{maps,smaps,numa_maps} we set the exec_id of the
+proc_file_private to the current (reader) exec_id, and the permission
+checks are only performed at read time + the exec_id check against reader,
+this way we are sure that we are still dealing with the same reader. We do
+this since currently it is not clear if the permission checks at open time
+will work with glibc FORTIFY_SOURCE protection and without permission
+checks at each syscall using the target exec_id will not work.
+
+Hopefully it seems that perhaps we can work-around this, if the exec_id
+design is accepted then I will split /proc/<pid>/{maps,smaps,numa_maps}
+internal functions and implement proper permission checks so we can bind
+all these files to their task's exec_id (track target instead of reader).
+
+
+For the ONE and INF files /proc/<pid>/{stack,syscall,io,auxv,...} we also
+use the reader exec_id since these sensitive files share their internal
+logic with the other less important files, and performing permission
+checks at open time will just break things.
+
+
+Notes:
+The exec_id idea was taken from the recent grsecurity patches, but I have
+made some design changes so if there are bugs they are mine.
+
+
+This was also discussed in this kernel-hardening thread:
+http://www.openwall.com/lists/kernel-hardening/2012/02/10/1
+
+This thread also includes other procfs files problems which currently I am
+working on, I will try to continue with an other patch series as soon as
+possible. Thanks to Vasiliy Kulikov and Solar Designer for their comments.
+
+
+Finally I will just add Alan's thread that also explain the problem with
+some historical discussions:
+http://lkml.org/lkml/2012/1/29/35
+
+
+Hope to get feedback to avoid new problems. Thanks.
+
+
+Djalal Harouni (9):
+  exec: add a global execve counter
+  proc: add proc_file_private struct to store private information
+  proc: new proc_exec_id_ok() helper function
+  proc: protect /proc/<pid>/* INF files from reader across execve
+  proc: add protection support for /proc/<pid>/* ONE files
+  proc: protect /proc/<pid>/* ONE files from reader across execve
+  proc: protect /proc/<pid>/{maps,smaps,numa_maps}
+  proc: protect /proc/<pid>/{environ,pagemap} across execve
+  proc: improve and clean up /proc/<pid>/mem protection
+ 
+ fs/exec.c             |   11 ++
+ fs/proc/array.c       |    4 +
+ fs/proc/base.c        |  303 ++++++++++++++++++++++++++++++++++++++++++-------
+ fs/proc/internal.h    |   31 +++++-
+ fs/proc/task_mmu.c    |  106 +++++++++++++++--
+ include/linux/sched.h |   32 +++++
+ 6 files changed, 431 insertions(+), 56 deletions(-)
