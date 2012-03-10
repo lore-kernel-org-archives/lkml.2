@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab2CJUx5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 15:53:57 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51763 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074Ab2CJUxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 15:53:54 -0500
-Date: Sat, 10 Mar 2012 21:53:51 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
-Subject: Re: [PATCH v5 3/3] USB: ohci-nxp: Support for LPC32xx
-Message-ID: <20120310205351.GB14564@pengutronix.de>
-References: <1331408166-11607-1-git-send-email-stigge@antcom.de>
- <1331408166-11607-4-git-send-email-stigge@antcom.de>
- <20120310204955.GA14564@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DKU6Jbt7q3WqK7+M"
-Content-Disposition: inline
-In-Reply-To: <20120310204955.GA14564@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752168Ab2CJVFd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 16:05:33 -0500
+Received: from toro.web-alm.net ([62.245.132.31]:54317 "EHLO toro.web-alm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751608Ab2CJVFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 16:05:32 -0500
+X-Greylist: delayed 858 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Mar 2012 16:05:31 EST
+Message-Id: <20120310202014.828058552@osadl.org>
+User-Agent: quilt/0.48-1
+Date: Sat, 10 Mar 2012 21:20:14 +0100
+From: Carsten Emde <C.Emde@osadl.org>
+To: David Airlie <airlied@linux.ie>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/3] Provide workarounds to use DRM/KMS with broken graphics hardware
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In the good old days when graphics parameters were configured explicitly
+in a file called xorg.conf, even broken hardware could be managed.
 
---DKU6Jbt7q3WqK7+M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Today, with the advent of Kernel Mode Setting, a graphics board is
+either correctly working because all components follow the standards -
+or the computer is unusable, because the screen remains dark after
+booting or displays the wrong area. Cases when this happens are:
+- The BIOS assumes that an LVDS is always connected, even if it isn't.
+- The graphics board does not recognize the monitor.
+- The graphics board is unable to detect any EDID data.
+- The graphics board incorrectly forwards EDID data to the driver.
+- The monitor sends bogus EDID data.
+- A KVM sends its own EDID data instead of querying the connected monitor.
+- The brightness setting of the panel backlight does not work.
+- Any combination of the above.
+Adding the kernel parameter "nomodeset" helps in most cases, but causes
+restrictions later on.
 
-On Sat, Mar 10, 2012 at 09:49:55PM +0100, Wolfram Sang wrote:
->=20
-> > -static void isp1301_configure(void)
-> > +static u16 i2c_read16(u8 subaddr)
-> > +{
-> > +	u16 data;
-> > +
-> > +	i2c_master_send(isp1301_i2c_client, &subaddr, 1);
-> > +	i2c_master_recv(isp1301_i2c_client, (u8 *) &data, 2);
-> > +
-> > +	return data;
-> > +}
->=20
-> Won't i2c_smbus_read_word_data(isp1301_i2c_client, reg) do?
->=20
-> And while we are at it: Could you also try replacing i2c_write() with
-> i2c_smbus_write_byte_data(isp1301_i2c_client, reg, val)?
->=20
-> No need to recode it (and in general, those solutions will also work with=
- SMBus
-> for free)
+The three patches of this series add module parameters to the
+drm_kms_helper module that
+1. allow to load an EDID data set via the firmware interface,
+2. provide a module parameter to selectively enable or disable a
+graphics port,
+3. provide a module parameter to select inverted brightness.
 
-"no need to recode it" means "no need to recode these already existing func=
-tions"
+EDID data sets along with source files are provided for commonly used
+screen resolutions (1024x768, 1280x1024, 1680x1050, 1920x1080).
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Please note that these patches neither fix a kernel bug nor provide any
+extra functionality. They simply work around broken hardware that
+otherwise would be either unusable or usable in a very restricted way.
+The patches do not modify the current functionality of the related
+components in any way, unless the kernel is configured accordingly
+and/or the newly provided module parameters are set.
 
---DKU6Jbt7q3WqK7+M
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	-Carsten. 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAk9bv18ACgkQD27XaX1/VRu83gCgpXYXarsKIanacmL4SWRwFLiH
-E0IAnRaNXqi0f8eALkavuWC1/CF13Mo8
-=p770
------END PGP SIGNATURE-----
-
---DKU6Jbt7q3WqK7+M--
