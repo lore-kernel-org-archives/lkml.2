@@ -1,132 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab2CJLWD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 06:22:03 -0500
-Received: from mail.us.es ([193.147.175.20]:42275 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797Ab2CJLWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 06:22:00 -0500
-Date: Sat, 10 Mar 2012 12:21:54 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: linux-next: Tree for Mar 9 (netfilter)
-Message-ID: <20120310112154.GA22478@1984>
-References: <20120309191101.8634973f7d9988c602143f7c@canb.auug.org.au>
- <4F5A6872.3050502@xenotime.net>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="DocE+STaALJfprDB"
-Content-Disposition: inline
-In-Reply-To: <4F5A6872.3050502@xenotime.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753453Ab2CJMnp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 07:43:45 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51694 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753090Ab2CJMnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 07:43:43 -0500
+Date: Sat, 10 Mar 2012 12:45:22 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, Jovi Zhang <bookjovi@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] vt: NULL dereference in vt_do_kdsk_ioctl()
+Message-ID: <20120310124522.64fc5851@pyramind.ukuu.org.uk>
+In-Reply-To: <20120310085923.GD4647@elgon.mountain>
+References: <20120310085923.GD4647@elgon.mountain>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 10 Mar 2012 11:59:23 +0300
+Dan Carpenter <dan.carpenter@oracle.com> wrote:
 
---DocE+STaALJfprDB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Fri, Mar 09, 2012 at 12:30:42PM -0800, Randy Dunlap wrote:
-> On 03/09/2012 12:11 AM, Stephen Rothwell wrote:
+> We forgot to set the "key_map" variable here, so it's still NULL.  This
+> was introduced recently in 079c9534a9 "vt:tackle kbd_table".
 > 
-> > Hi all,
-> > 
-> > There will be no linux-next release on March 12 due to a public holiday.
-> > 
-> > Changes since 20120308:
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 > 
-> 
-> xt_LOG.c:(.text+0x789b1): undefined reference to `ip6t_ext_hdr'
-> 
-> Full randconfig file is attached.
+> diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+> index 70d0593..86dd1e3 100644
+> --- a/drivers/tty/vt/keyboard.c
+> +++ b/drivers/tty/vt/keyboard.c
+> @@ -1863,6 +1863,7 @@ int vt_do_kdsk_ioctl(int cmd, struct kbentry __user *user_kbe, int perm,
+>  				return -EPERM;
+>  			}
+>  			key_maps[s] = new_map;
+> +			key_map = new_map;
+>  			key_map[0] = U(K_ALLOCATED);
+>  			for (j = 1; j < NR_KEYS; j++)
+>  				key_map[j] = U(K_HOLE);
 
-The patch attached fixes this problem, thanks!
+Eep I thought I got all of those. Well noted
 
---DocE+STaALJfprDB
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0001-netfilter-xt_LOG-use-CONFIG_IP6_NF_IPTABLES-instead-.patch"
-
->From 56467b18daa0dcf92a680ea0bc5389108b83228a Mon Sep 17 00:00:00 2001
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-Date: Sat, 10 Mar 2012 12:15:15 +0100
-Subject: [PATCH] netfilter: xt_LOG: use CONFIG_IP6_NF_IPTABLES instead of
- CONFIG_IPV6
-
-This fixes the following linking error:
-
-xt_LOG.c:(.text+0x789b1): undefined reference to `ip6t_ext_hdr'
-
-ifdefs have to use CONFIG_IP6_NF_IPTABLES instead of CONFIG_IPV6.
-
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
----
- net/netfilter/xt_LOG.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
-index f99f8de..ff5f75f 100644
---- a/net/netfilter/xt_LOG.c
-+++ b/net/netfilter/xt_LOG.c
-@@ -480,7 +480,7 @@ ipt_log_packet(u_int8_t pf,
- 	sb_close(m);
- }
- 
--#if IS_ENABLED(CONFIG_IPV6)
-+#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
- /* One level of recursion won't kill us */
- static void dump_ipv6_packet(struct sbuff *m,
- 			const struct nf_loginfo *info,
-@@ -824,7 +824,7 @@ log_tg(struct sk_buff *skb, const struct xt_action_param *par)
- 	if (par->family == NFPROTO_IPV4)
- 		ipt_log_packet(NFPROTO_IPV4, par->hooknum, skb, par->in,
- 			       par->out, &li, loginfo->prefix);
--#if IS_ENABLED(CONFIG_IPV6)
-+#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
- 	else if (par->family == NFPROTO_IPV6)
- 		ip6t_log_packet(NFPROTO_IPV6, par->hooknum, skb, par->in,
- 				par->out, &li, loginfo->prefix);
-@@ -864,7 +864,7 @@ static struct xt_target log_tg_regs[] __read_mostly = {
- 		.checkentry	= log_tg_check,
- 		.me		= THIS_MODULE,
- 	},
--#if IS_ENABLED(CONFIG_IPV6)
-+#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
- 	{
- 		.name		= "LOG",
- 		.family		= NFPROTO_IPV6,
-@@ -882,7 +882,7 @@ static struct nf_logger ipt_log_logger __read_mostly = {
- 	.me		= THIS_MODULE,
- };
- 
--#if IS_ENABLED(CONFIG_IPV6)
-+#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
- static struct nf_logger ip6t_log_logger __read_mostly = {
- 	.name		= "ip6t_LOG",
- 	.logfn		= &ip6t_log_packet,
-@@ -899,7 +899,7 @@ static int __init log_tg_init(void)
- 		return ret;
- 
- 	nf_log_register(NFPROTO_IPV4, &ipt_log_logger);
--#if IS_ENABLED(CONFIG_IPV6)
-+#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
- 	nf_log_register(NFPROTO_IPV6, &ip6t_log_logger);
- #endif
- 	return 0;
-@@ -908,7 +908,7 @@ static int __init log_tg_init(void)
- static void __exit log_tg_exit(void)
- {
- 	nf_log_unregister(&ipt_log_logger);
--#if IS_ENABLED(CONFIG_IPV6)
-+#if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
- 	nf_log_unregister(&ip6t_log_logger);
- #endif
- 	xt_unregister_targets(log_tg_regs, ARRAY_SIZE(log_tg_regs));
--- 
-1.7.7.3
-
-
---DocE+STaALJfprDB--
+Acked-by: Alan Cox <alan@linux.intel.com>
