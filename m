@@ -1,170 +1,962 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332Ab2CJTiO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 14:38:14 -0500
-Received: from oz.csail.mit.edu ([128.30.30.239]:52460 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751943Ab2CJThc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 14:37:32 -0500
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
-        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4 V16] Avoid soft lockup message when KVM is stopped by host
-Date: Sat, 10 Mar 2012 14:37:24 -0500
-Message-Id: <1331408248-6781-1-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.5.4
+	id S1752257Ab2CJTiM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 14:38:12 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:42085 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751135Ab2CJThO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 14:37:14 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
+        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v5 1/3] USB: OHCI-HCD: Rename ohci-pnx4008 to ohci-nxp
+Date: Sat, 10 Mar 2012 20:36:04 +0100
+Message-Id: <1331408166-11607-2-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1331408166-11607-1-git-send-email-stigge@antcom.de>
+References: <1331408166-11607-1-git-send-email-stigge@antcom.de>
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes from V15:
-Add arch/*/include/asm/kvm_para.h that includes the asm-generic version
+Since this driver is compatible with several NXP devices, the driver is renamed
+accordingly. Please combine with the following patch which also changes the
+respective symbol names.
 
-Changes from V14:
-Update documentation for the pvclock api
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Changes from V13:
-Expand on KVM_KVMCLOCK_CTRL ioctl documentation
+---
+ drivers/usb/host/ohci-hcd.c     |    2 
+ drivers/usb/host/ohci-nxp.c     |  453 ++++++++++++++++++++++++++++++++++++++++
+ drivers/usb/host/ohci-pnx4008.c |  453 ----------------------------------------
+ 3 files changed, 454 insertions(+), 454 deletions(-)
 
-Changes from V12:
-Re-add missing kvm.c code after rebase
-Rename CAP to KVM_CAP_KVMCLOCK_CTRL
-Rename ioctl to KVM_KVMCLOCK_CTRL
-
-Changes from V11:
-Re-add asm-generic stub
-Correct api.txt typo
-add kvm_make_request() call after setting PVCLOCK_GUEST_STOPPED
-
-Changes from V10:
-Return ioctl to per vcpu instead of per vm
-
-Changes from V9:
-Use kvm_for_each_vcpu to iterate online vcpu's
-
-Changes from V8:
-Make KVM_GUEST_PAUSED a per vm ioctl instead of per vcpu
-
-Changes from V7:
-Define KVM_CAP_GUEST_PAUSED and support check
-Call mark_page_dirty () after setting PVCLOCK_GUEST_STOPPED
-
-Changes from V6:
-Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
-
-Changes from V5:
-Collapse generic check_and_clear_guest_stopped into patch 2
-Include check_and_clear_guest_stopped defintion to ia64, s390, and powerpc
-Change check_and_clear_guest_stopped to use __get_cpu_var instead of taking the
- cpuid arg.
-Protect check_and_clear_guest_stopped declaration with CONFIG_KVM_CLOCK check
-
-Changes from V4:
-Rename KVM_GUEST_PAUSED to KVMCLOCK_GUEST_PAUSED
-Add description of KVMCLOCK_GUEST_PAUSED ioctl to api.txt
-
-Changes from V3:
-Include CC's on patch 3
-Drop clear flag ioctl and have the watchdog clear the flag when it is reset
-
-Changes from V2:
-A new kvm functions defined in kvm_para.h, the only change to pvclock is the
-initial flag definition
-
-Changes from V1:
-(Thanks Marcelo)
-Host code has all been moved to arch/x86/kvm/x86.c
-KVM_PAUSE_GUEST was renamed to KVM_GUEST_PAUSED
-
-When a guest kernel is stopped by the host hypervisor it can look like a soft
-lockup to the guest kernel.  This false warning can mask later soft lockup
-warnings which may be real.  This patch series adds a method for a host
-hypervisor to communicate to a guest kernel that it is being stopped.  The
-final patch in the series has the watchdog check this flag when it goes to
-issue a soft lockup warning and skip the warning if the guest knows it was
-stopped.
-
-It was attempted to solve this in Qemu, but the side effects of saving and
-restoring the clock and tsc for each vcpu put the wall clock of the guest behind
-by the amount of time of the pause.  This forces a guest to have ntp running
-in order to keep the wall clock accurate.
-
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: ryanh@linux.vnet.ibm.com
-Cc: aliguori@us.ibm.com
-Cc: mtosatti@redhat.com
-Cc: kvm@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-
-Eric B Munson (4):
-  Add flag to indicate that a vm was stopped by the host
-  Add functions to check if the host has stopped the vm
-  Add ioctl for KVM_KVMCLOCK_CTRL
-  Add check for suspended vm in softlockup detector
-
- Documentation/virtual/kvm/api.txt      |   20 ++++++++++++++++++++
- Documentation/virtual/kvm/msr.txt      |    4 ++++
- arch/alpha/include/asm/kvm_para.h      |    1 +
- arch/arm/include/asm/kvm_para.h        |    1 +
- arch/avr32/include/asm/kvm_para.h      |    1 +
- arch/blackfin/include/asm/kvm_para.h   |    1 +
- arch/c6x/include/asm/kvm_para.h        |    1 +
- arch/frv/include/asm/kvm_para.h        |    1 +
- arch/h8300/include/asm/kvm_para.h      |    1 +
- arch/hexagon/include/asm/kvm_para.h    |    1 +
- arch/ia64/include/asm/kvm_para.h       |    5 +++++
- arch/m68k/include/asm/kvm_para.h       |    1 +
- arch/microblaze/include/asm/kvm_para.h |    1 +
- arch/mips/include/asm/kvm_para.h       |    1 +
- arch/mn10300/include/asm/kvm_para.h    |    1 +
- arch/openrisc/include/asm/kvm_para.h   |    1 +
- arch/parisc/include/asm/kvm_para.h     |    1 +
- arch/powerpc/include/asm/kvm_para.h    |    5 +++++
- arch/s390/include/asm/kvm_para.h       |    5 +++++
- arch/score/include/asm/kvm_para.h      |    1 +
- arch/sh/include/asm/kvm_para.h         |    1 +
- arch/sparc/include/asm/kvm_para.h      |    1 +
- arch/tile/include/asm/kvm_para.h       |    1 +
- arch/um/include/asm/kvm_para.h         |    1 +
- arch/unicore32/include/asm/kvm_para.h  |    1 +
- arch/x86/include/asm/kvm_para.h        |    8 ++++++++
- arch/x86/include/asm/pvclock-abi.h     |    1 +
- arch/x86/kernel/kvmclock.c             |   21 +++++++++++++++++++++
- arch/x86/kvm/x86.c                     |   22 ++++++++++++++++++++++
- arch/xtensa/include/asm/kvm_para.h     |    1 +
- include/asm-generic/kvm_para.h         |   14 ++++++++++++++
- include/linux/kvm.h                    |    3 +++
- kernel/watchdog.c                      |   12 ++++++++++++
- 33 files changed, 141 insertions(+), 0 deletions(-)
- create mode 100644 arch/alpha/include/asm/kvm_para.h
- create mode 100644 arch/arm/include/asm/kvm_para.h
- create mode 100644 arch/avr32/include/asm/kvm_para.h
- create mode 100644 arch/blackfin/include/asm/kvm_para.h
- create mode 100644 arch/c6x/include/asm/kvm_para.h
- create mode 100644 arch/frv/include/asm/kvm_para.h
- create mode 100644 arch/h8300/include/asm/kvm_para.h
- create mode 100644 arch/hexagon/include/asm/kvm_para.h
- create mode 100644 arch/m68k/include/asm/kvm_para.h
- create mode 100644 arch/microblaze/include/asm/kvm_para.h
- create mode 100644 arch/mips/include/asm/kvm_para.h
- create mode 100644 arch/mn10300/include/asm/kvm_para.h
- create mode 100644 arch/openrisc/include/asm/kvm_para.h
- create mode 100644 arch/parisc/include/asm/kvm_para.h
- create mode 100644 arch/score/include/asm/kvm_para.h
- create mode 100644 arch/sh/include/asm/kvm_para.h
- create mode 100644 arch/sparc/include/asm/kvm_para.h
- create mode 100644 arch/tile/include/asm/kvm_para.h
- create mode 100644 arch/um/include/asm/kvm_para.h
- create mode 100644 arch/unicore32/include/asm/kvm_para.h
- create mode 100644 arch/xtensa/include/asm/kvm_para.h
- create mode 100644 include/asm-generic/kvm_para.h
-
--- 
-1.7.5.4
-
+--- linux-2.6.orig/drivers/usb/host/ohci-hcd.c
++++ linux-2.6/drivers/usb/host/ohci-hcd.c
+@@ -1051,7 +1051,7 @@ MODULE_LICENSE ("GPL");
+ #endif
+ 
+ #ifdef CONFIG_ARCH_PNX4008
+-#include "ohci-pnx4008.c"
++#include "ohci-nxp.c"
+ #define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
+ #endif
+ 
+--- /dev/null
++++ linux-2.6/drivers/usb/host/ohci-nxp.c
+@@ -0,0 +1,453 @@
++/*
++ * drivers/usb/host/ohci-pnx4008.c
++ *
++ * driver for Philips PNX4008 USB Host
++ *
++ * Authors: Dmitry Chigirev <source@mvista.com>
++ *	    Vitaly Wool <vitalywool@gmail.com>
++ *
++ * register initialization is based on code examples provided by Philips
++ * Copyright (c) 2005 Koninklijke Philips Electronics N.V.
++ *
++ * NOTE: This driver does not have suspend/resume functionality
++ * This driver is intended for engineering development purposes only
++ *
++ * 2005-2006 (c) MontaVista Software, Inc. This file is licensed under
++ * the terms of the GNU General Public License version 2. This program
++ * is licensed "as is" without any warranty of any kind, whether express
++ * or implied.
++ */
++#include <linux/clk.h>
++#include <linux/platform_device.h>
++#include <linux/i2c.h>
++
++#include <mach/hardware.h>
++#include <asm/io.h>
++
++#include <mach/platform.h>
++#include <mach/irqs.h>
++#include <asm/gpio.h>
++
++#define USB_CTRL	IO_ADDRESS(PNX4008_PWRMAN_BASE + 0x64)
++
++/* USB_CTRL bit defines */
++#define USB_SLAVE_HCLK_EN	(1 << 24)
++#define USB_HOST_NEED_CLK_EN	(1 << 21)
++
++#define USB_OTG_CLK_CTRL	IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0xFF4)
++#define USB_OTG_CLK_STAT	IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0xFF8)
++
++/* USB_OTG_CLK_CTRL bit defines */
++#define AHB_M_CLOCK_ON		(1 << 4)
++#define OTG_CLOCK_ON		(1 << 3)
++#define I2C_CLOCK_ON		(1 << 2)
++#define DEV_CLOCK_ON		(1 << 1)
++#define HOST_CLOCK_ON		(1 << 0)
++
++#define USB_OTG_STAT_CONTROL	IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0x110)
++
++/* USB_OTG_STAT_CONTROL bit defines */
++#define TRANSPARENT_I2C_EN	(1 << 7)
++#define HOST_EN			(1 << 0)
++
++/* ISP1301 USB transceiver I2C registers */
++#define	ISP1301_MODE_CONTROL_1		0x04	/* u8 read, set, +1 clear */
++
++#define	MC1_SPEED_REG		(1 << 0)
++#define	MC1_SUSPEND_REG		(1 << 1)
++#define	MC1_DAT_SE0		(1 << 2)
++#define	MC1_TRANSPARENT		(1 << 3)
++#define	MC1_BDIS_ACON_EN	(1 << 4)
++#define	MC1_OE_INT_EN		(1 << 5)
++#define	MC1_UART_EN		(1 << 6)
++#define	MC1_MASK		0x7f
++
++#define	ISP1301_MODE_CONTROL_2		0x12	/* u8 read, set, +1 clear */
++
++#define	MC2_GLOBAL_PWR_DN	(1 << 0)
++#define	MC2_SPD_SUSP_CTRL	(1 << 1)
++#define	MC2_BI_DI		(1 << 2)
++#define	MC2_TRANSP_BDIR0	(1 << 3)
++#define	MC2_TRANSP_BDIR1	(1 << 4)
++#define	MC2_AUDIO_EN		(1 << 5)
++#define	MC2_PSW_EN		(1 << 6)
++#define	MC2_EN2V7		(1 << 7)
++
++#define	ISP1301_OTG_CONTROL_1		0x06	/* u8 read, set, +1 clear */
++#	define	OTG1_DP_PULLUP		(1 << 0)
++#	define	OTG1_DM_PULLUP		(1 << 1)
++#	define	OTG1_DP_PULLDOWN	(1 << 2)
++#	define	OTG1_DM_PULLDOWN	(1 << 3)
++#	define	OTG1_ID_PULLDOWN	(1 << 4)
++#	define	OTG1_VBUS_DRV		(1 << 5)
++#	define	OTG1_VBUS_DISCHRG	(1 << 6)
++#	define	OTG1_VBUS_CHRG		(1 << 7)
++#define	ISP1301_OTG_STATUS		0x10	/* u8 readonly */
++#	define	OTG_B_SESS_END		(1 << 6)
++#	define	OTG_B_SESS_VLD		(1 << 7)
++
++#define ISP1301_I2C_ADDR 0x2C
++
++#define ISP1301_I2C_MODE_CONTROL_1 0x4
++#define ISP1301_I2C_MODE_CONTROL_2 0x12
++#define ISP1301_I2C_OTG_CONTROL_1 0x6
++#define ISP1301_I2C_OTG_CONTROL_2 0x10
++#define ISP1301_I2C_INTERRUPT_SOURCE 0x8
++#define ISP1301_I2C_INTERRUPT_LATCH 0xA
++#define ISP1301_I2C_INTERRUPT_FALLING 0xC
++#define ISP1301_I2C_INTERRUPT_RISING 0xE
++#define ISP1301_I2C_REG_CLEAR_ADDR 1
++
++static struct i2c_driver isp1301_driver;
++static struct i2c_client *isp1301_i2c_client;
++
++extern int usb_disabled(void);
++extern int ocpi_enable(void);
++
++static struct clk *usb_clk;
++
++static const unsigned short normal_i2c[] =
++    { ISP1301_I2C_ADDR, ISP1301_I2C_ADDR + 1, I2C_CLIENT_END };
++
++static int isp1301_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	return 0;
++}
++
++static int isp1301_remove(struct i2c_client *client)
++{
++	return 0;
++}
++
++static const struct i2c_device_id isp1301_id[] = {
++	{ "isp1301_pnx", 0 },
++	{ }
++};
++
++static struct i2c_driver isp1301_driver = {
++	.driver = {
++		.name = "isp1301_pnx",
++	},
++	.probe = isp1301_probe,
++	.remove = isp1301_remove,
++	.id_table = isp1301_id,
++};
++
++static void i2c_write(u8 buf, u8 subaddr)
++{
++	char tmpbuf[2];
++
++	tmpbuf[0] = subaddr;	/*register number */
++	tmpbuf[1] = buf;	/*register data */
++	i2c_master_send(isp1301_i2c_client, &tmpbuf[0], 2);
++}
++
++static void isp1301_configure(void)
++{
++	/* PNX4008 only supports DAT_SE0 USB mode */
++	/* PNX4008 R2A requires setting the MAX603 to output 3.6V */
++	/* Power up externel charge-pump */
++
++	i2c_write(MC1_DAT_SE0 | MC1_SPEED_REG, ISP1301_I2C_MODE_CONTROL_1);
++	i2c_write(~(MC1_DAT_SE0 | MC1_SPEED_REG),
++		  ISP1301_I2C_MODE_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR);
++	i2c_write(MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL,
++		  ISP1301_I2C_MODE_CONTROL_2);
++	i2c_write(~(MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL),
++		  ISP1301_I2C_MODE_CONTROL_2 | ISP1301_I2C_REG_CLEAR_ADDR);
++	i2c_write(OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN,
++		  ISP1301_I2C_OTG_CONTROL_1);
++	i2c_write(~(OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN),
++		  ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR);
++	i2c_write(0xFF,
++		  ISP1301_I2C_INTERRUPT_LATCH | ISP1301_I2C_REG_CLEAR_ADDR);
++	i2c_write(0xFF,
++		  ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
++	i2c_write(0xFF,
++		  ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
++
++}
++
++static inline void isp1301_vbus_on(void)
++{
++	i2c_write(OTG1_VBUS_DRV, ISP1301_I2C_OTG_CONTROL_1);
++}
++
++static inline void isp1301_vbus_off(void)
++{
++	i2c_write(OTG1_VBUS_DRV,
++		  ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR);
++}
++
++static void pnx4008_start_hc(void)
++{
++	unsigned long tmp = __raw_readl(USB_OTG_STAT_CONTROL) | HOST_EN;
++	__raw_writel(tmp, USB_OTG_STAT_CONTROL);
++	isp1301_vbus_on();
++}
++
++static void pnx4008_stop_hc(void)
++{
++	unsigned long tmp;
++	isp1301_vbus_off();
++	tmp = __raw_readl(USB_OTG_STAT_CONTROL) & ~HOST_EN;
++	__raw_writel(tmp, USB_OTG_STAT_CONTROL);
++}
++
++static int __devinit ohci_pnx4008_start(struct usb_hcd *hcd)
++{
++	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
++	int ret;
++
++	if ((ret = ohci_init(ohci)) < 0)
++		return ret;
++
++	if ((ret = ohci_run(ohci)) < 0) {
++		dev_err(hcd->self.controller, "can't start\n");
++		ohci_stop(hcd);
++		return ret;
++	}
++	return 0;
++}
++
++static const struct hc_driver ohci_pnx4008_hc_driver = {
++	.description = hcd_name,
++	.product_desc =		"pnx4008 OHCI",
++
++	/*
++	 * generic hardware linkage
++	 */
++	.irq = ohci_irq,
++	.flags = HCD_USB11 | HCD_MEMORY,
++
++	.hcd_priv_size =	sizeof(struct ohci_hcd),
++	/*
++	 * basic lifecycle operations
++	 */
++	.start = ohci_pnx4008_start,
++	.stop = ohci_stop,
++	.shutdown = ohci_shutdown,
++
++	/*
++	 * managing i/o requests and associated device resources
++	 */
++	.urb_enqueue = ohci_urb_enqueue,
++	.urb_dequeue = ohci_urb_dequeue,
++	.endpoint_disable = ohci_endpoint_disable,
++
++	/*
++	 * scheduling support
++	 */
++	.get_frame_number = ohci_get_frame,
++
++	/*
++	 * root hub support
++	 */
++	.hub_status_data = ohci_hub_status_data,
++	.hub_control = ohci_hub_control,
++#ifdef	CONFIG_PM
++	.bus_suspend = ohci_bus_suspend,
++	.bus_resume = ohci_bus_resume,
++#endif
++	.start_port_reset = ohci_start_port_reset,
++};
++
++#define USB_CLOCK_MASK (AHB_M_CLOCK_ON| OTG_CLOCK_ON | HOST_CLOCK_ON | I2C_CLOCK_ON)
++
++static void pnx4008_set_usb_bits(void)
++{
++	start_int_set_falling_edge(SE_USB_OTG_ATX_INT_N);
++	start_int_ack(SE_USB_OTG_ATX_INT_N);
++	start_int_umask(SE_USB_OTG_ATX_INT_N);
++
++	start_int_set_rising_edge(SE_USB_OTG_TIMER_INT);
++	start_int_ack(SE_USB_OTG_TIMER_INT);
++	start_int_umask(SE_USB_OTG_TIMER_INT);
++
++	start_int_set_rising_edge(SE_USB_I2C_INT);
++	start_int_ack(SE_USB_I2C_INT);
++	start_int_umask(SE_USB_I2C_INT);
++
++	start_int_set_rising_edge(SE_USB_INT);
++	start_int_ack(SE_USB_INT);
++	start_int_umask(SE_USB_INT);
++
++	start_int_set_rising_edge(SE_USB_NEED_CLK_INT);
++	start_int_ack(SE_USB_NEED_CLK_INT);
++	start_int_umask(SE_USB_NEED_CLK_INT);
++
++	start_int_set_rising_edge(SE_USB_AHB_NEED_CLK_INT);
++	start_int_ack(SE_USB_AHB_NEED_CLK_INT);
++	start_int_umask(SE_USB_AHB_NEED_CLK_INT);
++}
++
++static void pnx4008_unset_usb_bits(void)
++{
++	start_int_mask(SE_USB_OTG_ATX_INT_N);
++	start_int_mask(SE_USB_OTG_TIMER_INT);
++	start_int_mask(SE_USB_I2C_INT);
++	start_int_mask(SE_USB_INT);
++	start_int_mask(SE_USB_NEED_CLK_INT);
++	start_int_mask(SE_USB_AHB_NEED_CLK_INT);
++}
++
++static int __devinit usb_hcd_pnx4008_probe(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd = 0;
++	struct ohci_hcd *ohci;
++	const struct hc_driver *driver = &ohci_pnx4008_hc_driver;
++	struct i2c_adapter *i2c_adap;
++	struct i2c_board_info i2c_info;
++
++	int ret = 0, irq;
++
++	dev_dbg(&pdev->dev, "%s: " DRIVER_DESC " (pnx4008)\n", hcd_name);
++	if (usb_disabled()) {
++		err("USB is disabled");
++		ret = -ENODEV;
++		goto out;
++	}
++
++	if (pdev->num_resources != 2
++	    || pdev->resource[0].flags != IORESOURCE_MEM
++	    || pdev->resource[1].flags != IORESOURCE_IRQ) {
++		err("Invalid resource configuration");
++		ret = -ENODEV;
++		goto out;
++	}
++
++	/* Enable AHB slave USB clock, needed for further USB clock control */
++	__raw_writel(USB_SLAVE_HCLK_EN | (1 << 19), USB_CTRL);
++
++	ret = i2c_add_driver(&isp1301_driver);
++	if (ret < 0) {
++		err("failed to add ISP1301 driver");
++		goto out;
++	}
++	i2c_adap = i2c_get_adapter(2);
++	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
++	strlcpy(i2c_info.type, "isp1301_pnx", I2C_NAME_SIZE);
++	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
++						   normal_i2c, NULL);
++	i2c_put_adapter(i2c_adap);
++	if (!isp1301_i2c_client) {
++		err("failed to connect I2C to ISP1301 USB Transceiver");
++		ret = -ENODEV;
++		goto out_i2c_driver;
++	}
++
++	isp1301_configure();
++
++	/* Enable USB PLL */
++	usb_clk = clk_get(&pdev->dev, "ck_pll5");
++	if (IS_ERR(usb_clk)) {
++		err("failed to acquire USB PLL");
++		ret = PTR_ERR(usb_clk);
++		goto out1;
++	}
++
++	ret = clk_enable(usb_clk);
++	if (ret < 0) {
++		err("failed to start USB PLL");
++		goto out2;
++	}
++
++	ret = clk_set_rate(usb_clk, 48000);
++	if (ret < 0) {
++		err("failed to set USB clock rate");
++		goto out3;
++	}
++
++	__raw_writel(__raw_readl(USB_CTRL) | USB_HOST_NEED_CLK_EN, USB_CTRL);
++
++	/* Set to enable all needed USB clocks */
++	__raw_writel(USB_CLOCK_MASK, USB_OTG_CLK_CTRL);
++
++	while ((__raw_readl(USB_OTG_CLK_STAT) & USB_CLOCK_MASK) !=
++	       USB_CLOCK_MASK) ;
++
++	hcd = usb_create_hcd (driver, &pdev->dev, dev_name(&pdev->dev));
++	if (!hcd) {
++		err("Failed to allocate HC buffer");
++		ret = -ENOMEM;
++		goto out3;
++	}
++
++	/* Set all USB bits in the Start Enable register */
++	pnx4008_set_usb_bits();
++
++	hcd->rsrc_start = pdev->resource[0].start;
++	hcd->rsrc_len = pdev->resource[0].end - pdev->resource[0].start + 1;
++	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
++		dev_dbg(&pdev->dev, "request_mem_region failed\n");
++		ret =  -ENOMEM;
++		goto out4;
++	}
++	hcd->regs = (void __iomem *)pdev->resource[0].start;
++
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
++		ret = -ENXIO;
++		goto out4;
++	}
++
++	pnx4008_start_hc();
++	platform_set_drvdata(pdev, hcd);
++	ohci = hcd_to_ohci(hcd);
++	ohci_hcd_init(ohci);
++
++	dev_info(&pdev->dev, "at 0x%p, irq %d\n", hcd->regs, hcd->irq);
++	ret = usb_add_hcd(hcd, irq, 0);
++	if (ret == 0)
++		return ret;
++
++	pnx4008_stop_hc();
++out4:
++	pnx4008_unset_usb_bits();
++	usb_put_hcd(hcd);
++out3:
++	clk_disable(usb_clk);
++out2:
++	clk_put(usb_clk);
++out1:
++	i2c_unregister_device(isp1301_i2c_client);
++	isp1301_i2c_client = NULL;
++out_i2c_driver:
++	i2c_del_driver(&isp1301_driver);
++out:
++	return ret;
++}
++
++static int usb_hcd_pnx4008_remove(struct platform_device *pdev)
++{
++	struct usb_hcd *hcd = platform_get_drvdata(pdev);
++
++	usb_remove_hcd(hcd);
++	pnx4008_stop_hc();
++	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
++	usb_put_hcd(hcd);
++	pnx4008_unset_usb_bits();
++	clk_disable(usb_clk);
++	clk_put(usb_clk);
++	i2c_unregister_device(isp1301_i2c_client);
++	isp1301_i2c_client = NULL;
++	i2c_del_driver(&isp1301_driver);
++
++	platform_set_drvdata(pdev, NULL);
++
++	return 0;
++}
++
++/* work with hotplug and coldplug */
++MODULE_ALIAS("platform:usb-ohci");
++
++static struct platform_driver usb_hcd_pnx4008_driver = {
++	.driver = {
++		.name = "usb-ohci",
++		.owner	= THIS_MODULE,
++	},
++	.probe = usb_hcd_pnx4008_probe,
++	.remove = usb_hcd_pnx4008_remove,
++};
++
+--- linux-2.6.orig/drivers/usb/host/ohci-pnx4008.c
++++ /dev/null
+@@ -1,453 +0,0 @@
+-/*
+- * drivers/usb/host/ohci-pnx4008.c
+- *
+- * driver for Philips PNX4008 USB Host
+- *
+- * Authors: Dmitry Chigirev <source@mvista.com>
+- *	    Vitaly Wool <vitalywool@gmail.com>
+- *
+- * register initialization is based on code examples provided by Philips
+- * Copyright (c) 2005 Koninklijke Philips Electronics N.V.
+- *
+- * NOTE: This driver does not have suspend/resume functionality
+- * This driver is intended for engineering development purposes only
+- *
+- * 2005-2006 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-#include <linux/clk.h>
+-#include <linux/platform_device.h>
+-#include <linux/i2c.h>
+-
+-#include <mach/hardware.h>
+-#include <asm/io.h>
+-
+-#include <mach/platform.h>
+-#include <mach/irqs.h>
+-#include <asm/gpio.h>
+-
+-#define USB_CTRL	IO_ADDRESS(PNX4008_PWRMAN_BASE + 0x64)
+-
+-/* USB_CTRL bit defines */
+-#define USB_SLAVE_HCLK_EN	(1 << 24)
+-#define USB_HOST_NEED_CLK_EN	(1 << 21)
+-
+-#define USB_OTG_CLK_CTRL	IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0xFF4)
+-#define USB_OTG_CLK_STAT	IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0xFF8)
+-
+-/* USB_OTG_CLK_CTRL bit defines */
+-#define AHB_M_CLOCK_ON		(1 << 4)
+-#define OTG_CLOCK_ON		(1 << 3)
+-#define I2C_CLOCK_ON		(1 << 2)
+-#define DEV_CLOCK_ON		(1 << 1)
+-#define HOST_CLOCK_ON		(1 << 0)
+-
+-#define USB_OTG_STAT_CONTROL	IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0x110)
+-
+-/* USB_OTG_STAT_CONTROL bit defines */
+-#define TRANSPARENT_I2C_EN	(1 << 7)
+-#define HOST_EN			(1 << 0)
+-
+-/* ISP1301 USB transceiver I2C registers */
+-#define	ISP1301_MODE_CONTROL_1		0x04	/* u8 read, set, +1 clear */
+-
+-#define	MC1_SPEED_REG		(1 << 0)
+-#define	MC1_SUSPEND_REG		(1 << 1)
+-#define	MC1_DAT_SE0		(1 << 2)
+-#define	MC1_TRANSPARENT		(1 << 3)
+-#define	MC1_BDIS_ACON_EN	(1 << 4)
+-#define	MC1_OE_INT_EN		(1 << 5)
+-#define	MC1_UART_EN		(1 << 6)
+-#define	MC1_MASK		0x7f
+-
+-#define	ISP1301_MODE_CONTROL_2		0x12	/* u8 read, set, +1 clear */
+-
+-#define	MC2_GLOBAL_PWR_DN	(1 << 0)
+-#define	MC2_SPD_SUSP_CTRL	(1 << 1)
+-#define	MC2_BI_DI		(1 << 2)
+-#define	MC2_TRANSP_BDIR0	(1 << 3)
+-#define	MC2_TRANSP_BDIR1	(1 << 4)
+-#define	MC2_AUDIO_EN		(1 << 5)
+-#define	MC2_PSW_EN		(1 << 6)
+-#define	MC2_EN2V7		(1 << 7)
+-
+-#define	ISP1301_OTG_CONTROL_1		0x06	/* u8 read, set, +1 clear */
+-#	define	OTG1_DP_PULLUP		(1 << 0)
+-#	define	OTG1_DM_PULLUP		(1 << 1)
+-#	define	OTG1_DP_PULLDOWN	(1 << 2)
+-#	define	OTG1_DM_PULLDOWN	(1 << 3)
+-#	define	OTG1_ID_PULLDOWN	(1 << 4)
+-#	define	OTG1_VBUS_DRV		(1 << 5)
+-#	define	OTG1_VBUS_DISCHRG	(1 << 6)
+-#	define	OTG1_VBUS_CHRG		(1 << 7)
+-#define	ISP1301_OTG_STATUS		0x10	/* u8 readonly */
+-#	define	OTG_B_SESS_END		(1 << 6)
+-#	define	OTG_B_SESS_VLD		(1 << 7)
+-
+-#define ISP1301_I2C_ADDR 0x2C
+-
+-#define ISP1301_I2C_MODE_CONTROL_1 0x4
+-#define ISP1301_I2C_MODE_CONTROL_2 0x12
+-#define ISP1301_I2C_OTG_CONTROL_1 0x6
+-#define ISP1301_I2C_OTG_CONTROL_2 0x10
+-#define ISP1301_I2C_INTERRUPT_SOURCE 0x8
+-#define ISP1301_I2C_INTERRUPT_LATCH 0xA
+-#define ISP1301_I2C_INTERRUPT_FALLING 0xC
+-#define ISP1301_I2C_INTERRUPT_RISING 0xE
+-#define ISP1301_I2C_REG_CLEAR_ADDR 1
+-
+-static struct i2c_driver isp1301_driver;
+-static struct i2c_client *isp1301_i2c_client;
+-
+-extern int usb_disabled(void);
+-extern int ocpi_enable(void);
+-
+-static struct clk *usb_clk;
+-
+-static const unsigned short normal_i2c[] =
+-    { ISP1301_I2C_ADDR, ISP1301_I2C_ADDR + 1, I2C_CLIENT_END };
+-
+-static int isp1301_probe(struct i2c_client *client,
+-			 const struct i2c_device_id *id)
+-{
+-	return 0;
+-}
+-
+-static int isp1301_remove(struct i2c_client *client)
+-{
+-	return 0;
+-}
+-
+-static const struct i2c_device_id isp1301_id[] = {
+-	{ "isp1301_pnx", 0 },
+-	{ }
+-};
+-
+-static struct i2c_driver isp1301_driver = {
+-	.driver = {
+-		.name = "isp1301_pnx",
+-	},
+-	.probe = isp1301_probe,
+-	.remove = isp1301_remove,
+-	.id_table = isp1301_id,
+-};
+-
+-static void i2c_write(u8 buf, u8 subaddr)
+-{
+-	char tmpbuf[2];
+-
+-	tmpbuf[0] = subaddr;	/*register number */
+-	tmpbuf[1] = buf;	/*register data */
+-	i2c_master_send(isp1301_i2c_client, &tmpbuf[0], 2);
+-}
+-
+-static void isp1301_configure(void)
+-{
+-	/* PNX4008 only supports DAT_SE0 USB mode */
+-	/* PNX4008 R2A requires setting the MAX603 to output 3.6V */
+-	/* Power up externel charge-pump */
+-
+-	i2c_write(MC1_DAT_SE0 | MC1_SPEED_REG, ISP1301_I2C_MODE_CONTROL_1);
+-	i2c_write(~(MC1_DAT_SE0 | MC1_SPEED_REG),
+-		  ISP1301_I2C_MODE_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR);
+-	i2c_write(MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL,
+-		  ISP1301_I2C_MODE_CONTROL_2);
+-	i2c_write(~(MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL),
+-		  ISP1301_I2C_MODE_CONTROL_2 | ISP1301_I2C_REG_CLEAR_ADDR);
+-	i2c_write(OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN,
+-		  ISP1301_I2C_OTG_CONTROL_1);
+-	i2c_write(~(OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN),
+-		  ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR);
+-	i2c_write(0xFF,
+-		  ISP1301_I2C_INTERRUPT_LATCH | ISP1301_I2C_REG_CLEAR_ADDR);
+-	i2c_write(0xFF,
+-		  ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
+-	i2c_write(0xFF,
+-		  ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
+-
+-}
+-
+-static inline void isp1301_vbus_on(void)
+-{
+-	i2c_write(OTG1_VBUS_DRV, ISP1301_I2C_OTG_CONTROL_1);
+-}
+-
+-static inline void isp1301_vbus_off(void)
+-{
+-	i2c_write(OTG1_VBUS_DRV,
+-		  ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR);
+-}
+-
+-static void pnx4008_start_hc(void)
+-{
+-	unsigned long tmp = __raw_readl(USB_OTG_STAT_CONTROL) | HOST_EN;
+-	__raw_writel(tmp, USB_OTG_STAT_CONTROL);
+-	isp1301_vbus_on();
+-}
+-
+-static void pnx4008_stop_hc(void)
+-{
+-	unsigned long tmp;
+-	isp1301_vbus_off();
+-	tmp = __raw_readl(USB_OTG_STAT_CONTROL) & ~HOST_EN;
+-	__raw_writel(tmp, USB_OTG_STAT_CONTROL);
+-}
+-
+-static int __devinit ohci_pnx4008_start(struct usb_hcd *hcd)
+-{
+-	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
+-	int ret;
+-
+-	if ((ret = ohci_init(ohci)) < 0)
+-		return ret;
+-
+-	if ((ret = ohci_run(ohci)) < 0) {
+-		dev_err(hcd->self.controller, "can't start\n");
+-		ohci_stop(hcd);
+-		return ret;
+-	}
+-	return 0;
+-}
+-
+-static const struct hc_driver ohci_pnx4008_hc_driver = {
+-	.description = hcd_name,
+-	.product_desc =		"pnx4008 OHCI",
+-
+-	/*
+-	 * generic hardware linkage
+-	 */
+-	.irq = ohci_irq,
+-	.flags = HCD_USB11 | HCD_MEMORY,
+-
+-	.hcd_priv_size =	sizeof(struct ohci_hcd),
+-	/*
+-	 * basic lifecycle operations
+-	 */
+-	.start = ohci_pnx4008_start,
+-	.stop = ohci_stop,
+-	.shutdown = ohci_shutdown,
+-
+-	/*
+-	 * managing i/o requests and associated device resources
+-	 */
+-	.urb_enqueue = ohci_urb_enqueue,
+-	.urb_dequeue = ohci_urb_dequeue,
+-	.endpoint_disable = ohci_endpoint_disable,
+-
+-	/*
+-	 * scheduling support
+-	 */
+-	.get_frame_number = ohci_get_frame,
+-
+-	/*
+-	 * root hub support
+-	 */
+-	.hub_status_data = ohci_hub_status_data,
+-	.hub_control = ohci_hub_control,
+-#ifdef	CONFIG_PM
+-	.bus_suspend = ohci_bus_suspend,
+-	.bus_resume = ohci_bus_resume,
+-#endif
+-	.start_port_reset = ohci_start_port_reset,
+-};
+-
+-#define USB_CLOCK_MASK (AHB_M_CLOCK_ON| OTG_CLOCK_ON | HOST_CLOCK_ON | I2C_CLOCK_ON)
+-
+-static void pnx4008_set_usb_bits(void)
+-{
+-	start_int_set_falling_edge(SE_USB_OTG_ATX_INT_N);
+-	start_int_ack(SE_USB_OTG_ATX_INT_N);
+-	start_int_umask(SE_USB_OTG_ATX_INT_N);
+-
+-	start_int_set_rising_edge(SE_USB_OTG_TIMER_INT);
+-	start_int_ack(SE_USB_OTG_TIMER_INT);
+-	start_int_umask(SE_USB_OTG_TIMER_INT);
+-
+-	start_int_set_rising_edge(SE_USB_I2C_INT);
+-	start_int_ack(SE_USB_I2C_INT);
+-	start_int_umask(SE_USB_I2C_INT);
+-
+-	start_int_set_rising_edge(SE_USB_INT);
+-	start_int_ack(SE_USB_INT);
+-	start_int_umask(SE_USB_INT);
+-
+-	start_int_set_rising_edge(SE_USB_NEED_CLK_INT);
+-	start_int_ack(SE_USB_NEED_CLK_INT);
+-	start_int_umask(SE_USB_NEED_CLK_INT);
+-
+-	start_int_set_rising_edge(SE_USB_AHB_NEED_CLK_INT);
+-	start_int_ack(SE_USB_AHB_NEED_CLK_INT);
+-	start_int_umask(SE_USB_AHB_NEED_CLK_INT);
+-}
+-
+-static void pnx4008_unset_usb_bits(void)
+-{
+-	start_int_mask(SE_USB_OTG_ATX_INT_N);
+-	start_int_mask(SE_USB_OTG_TIMER_INT);
+-	start_int_mask(SE_USB_I2C_INT);
+-	start_int_mask(SE_USB_INT);
+-	start_int_mask(SE_USB_NEED_CLK_INT);
+-	start_int_mask(SE_USB_AHB_NEED_CLK_INT);
+-}
+-
+-static int __devinit usb_hcd_pnx4008_probe(struct platform_device *pdev)
+-{
+-	struct usb_hcd *hcd = 0;
+-	struct ohci_hcd *ohci;
+-	const struct hc_driver *driver = &ohci_pnx4008_hc_driver;
+-	struct i2c_adapter *i2c_adap;
+-	struct i2c_board_info i2c_info;
+-
+-	int ret = 0, irq;
+-
+-	dev_dbg(&pdev->dev, "%s: " DRIVER_DESC " (pnx4008)\n", hcd_name);
+-	if (usb_disabled()) {
+-		err("USB is disabled");
+-		ret = -ENODEV;
+-		goto out;
+-	}
+-
+-	if (pdev->num_resources != 2
+-	    || pdev->resource[0].flags != IORESOURCE_MEM
+-	    || pdev->resource[1].flags != IORESOURCE_IRQ) {
+-		err("Invalid resource configuration");
+-		ret = -ENODEV;
+-		goto out;
+-	}
+-
+-	/* Enable AHB slave USB clock, needed for further USB clock control */
+-	__raw_writel(USB_SLAVE_HCLK_EN | (1 << 19), USB_CTRL);
+-
+-	ret = i2c_add_driver(&isp1301_driver);
+-	if (ret < 0) {
+-		err("failed to add ISP1301 driver");
+-		goto out;
+-	}
+-	i2c_adap = i2c_get_adapter(2);
+-	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
+-	strlcpy(i2c_info.type, "isp1301_pnx", I2C_NAME_SIZE);
+-	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
+-						   normal_i2c, NULL);
+-	i2c_put_adapter(i2c_adap);
+-	if (!isp1301_i2c_client) {
+-		err("failed to connect I2C to ISP1301 USB Transceiver");
+-		ret = -ENODEV;
+-		goto out_i2c_driver;
+-	}
+-
+-	isp1301_configure();
+-
+-	/* Enable USB PLL */
+-	usb_clk = clk_get(&pdev->dev, "ck_pll5");
+-	if (IS_ERR(usb_clk)) {
+-		err("failed to acquire USB PLL");
+-		ret = PTR_ERR(usb_clk);
+-		goto out1;
+-	}
+-
+-	ret = clk_enable(usb_clk);
+-	if (ret < 0) {
+-		err("failed to start USB PLL");
+-		goto out2;
+-	}
+-
+-	ret = clk_set_rate(usb_clk, 48000);
+-	if (ret < 0) {
+-		err("failed to set USB clock rate");
+-		goto out3;
+-	}
+-
+-	__raw_writel(__raw_readl(USB_CTRL) | USB_HOST_NEED_CLK_EN, USB_CTRL);
+-
+-	/* Set to enable all needed USB clocks */
+-	__raw_writel(USB_CLOCK_MASK, USB_OTG_CLK_CTRL);
+-
+-	while ((__raw_readl(USB_OTG_CLK_STAT) & USB_CLOCK_MASK) !=
+-	       USB_CLOCK_MASK) ;
+-
+-	hcd = usb_create_hcd (driver, &pdev->dev, dev_name(&pdev->dev));
+-	if (!hcd) {
+-		err("Failed to allocate HC buffer");
+-		ret = -ENOMEM;
+-		goto out3;
+-	}
+-
+-	/* Set all USB bits in the Start Enable register */
+-	pnx4008_set_usb_bits();
+-
+-	hcd->rsrc_start = pdev->resource[0].start;
+-	hcd->rsrc_len = pdev->resource[0].end - pdev->resource[0].start + 1;
+-	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
+-		dev_dbg(&pdev->dev, "request_mem_region failed\n");
+-		ret =  -ENOMEM;
+-		goto out4;
+-	}
+-	hcd->regs = (void __iomem *)pdev->resource[0].start;
+-
+-	irq = platform_get_irq(pdev, 0);
+-	if (irq < 0) {
+-		ret = -ENXIO;
+-		goto out4;
+-	}
+-
+-	pnx4008_start_hc();
+-	platform_set_drvdata(pdev, hcd);
+-	ohci = hcd_to_ohci(hcd);
+-	ohci_hcd_init(ohci);
+-
+-	dev_info(&pdev->dev, "at 0x%p, irq %d\n", hcd->regs, hcd->irq);
+-	ret = usb_add_hcd(hcd, irq, 0);
+-	if (ret == 0)
+-		return ret;
+-
+-	pnx4008_stop_hc();
+-out4:
+-	pnx4008_unset_usb_bits();
+-	usb_put_hcd(hcd);
+-out3:
+-	clk_disable(usb_clk);
+-out2:
+-	clk_put(usb_clk);
+-out1:
+-	i2c_unregister_device(isp1301_i2c_client);
+-	isp1301_i2c_client = NULL;
+-out_i2c_driver:
+-	i2c_del_driver(&isp1301_driver);
+-out:
+-	return ret;
+-}
+-
+-static int usb_hcd_pnx4008_remove(struct platform_device *pdev)
+-{
+-	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+-
+-	usb_remove_hcd(hcd);
+-	pnx4008_stop_hc();
+-	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
+-	usb_put_hcd(hcd);
+-	pnx4008_unset_usb_bits();
+-	clk_disable(usb_clk);
+-	clk_put(usb_clk);
+-	i2c_unregister_device(isp1301_i2c_client);
+-	isp1301_i2c_client = NULL;
+-	i2c_del_driver(&isp1301_driver);
+-
+-	platform_set_drvdata(pdev, NULL);
+-
+-	return 0;
+-}
+-
+-/* work with hotplug and coldplug */
+-MODULE_ALIAS("platform:usb-ohci");
+-
+-static struct platform_driver usb_hcd_pnx4008_driver = {
+-	.driver = {
+-		.name = "usb-ohci",
+-		.owner	= THIS_MODULE,
+-	},
+-	.probe = usb_hcd_pnx4008_probe,
+-	.remove = usb_hcd_pnx4008_remove,
+-};
+-
