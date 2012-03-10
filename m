@@ -1,131 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab2CJXZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 18:25:57 -0500
-Received: from numidia.opendz.org ([98.142.220.152]:49640 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752824Ab2CJXZw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 18:25:52 -0500
-From: Djalal Harouni <tixxdz@opendz.org>
-To: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Stephen Wilson <wilsons@start.ca>,
-        "Jason A. Donenfeld" <Jason@zx2c4.com>,
-        Djalal Harouni <tixxdz@opendz.org>
-Subject: [PATCH 0/9] proc: protect /proc/<pid>/* files across execve
-Date: Sun, 11 Mar 2012 00:25:10 +0100
-Message-Id: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1753213Ab2CJXZs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 18:25:48 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:39321
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752814Ab2CJXZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 18:25:44 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        ohering@suse.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/4] Drivers: hv: Add new message types to enhance KVP
+Date: Sat, 10 Mar 2012 15:32:08 -0800
+Message-Id: <1331422331-4381-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1331422300-4330-1-git-send-email-kys@microsoft.com>
+References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Procfs files and other important objects may contain sensitive information
-which must not be seen, inherited or processed across execve.
-The commit e268337dfe26dfc7efd422a804dbb27977a3cccc tries to fix the same
-problem, but that leaves all the other sensitive /proc/<pid>/* files which
-includes the {maps,smaps,numa_maps} files that can be used to bypass ASLR
-(there is a PoC to demonstrate it). We should also note that currently the
-/proc/<pid>/mem fix will pin mm_structs.
+Add additional KVP (Key Value Pair) protocol  messages to
+enhance KVP functionality for Linux guests on Hyper-V. As part of this,
+patch define an explicit version negoitiation message.
 
-The following series tries to take another path to solve the same problem
-by using a global execve counter and each task will have its own exec ID,
-this way we can know if the processed files are attached to the reader or
-the target tasks. With this solution we do not pin mm_structs of dead
-processes and we can track special objects at each syscall.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/hv/hv_kvp.c      |    5 +++--
+ include/linux/hyperv.h   |   30 +++++++++++++++++++++++++++---
+ tools/hv/hv_kvp_daemon.c |    2 +-
+ 3 files changed, 31 insertions(+), 6 deletions(-)
 
-
-There is a new proc_file_private struct which can be used to hold internal
-data related to opened /proc/<pid>/* files, we also use it to store the
-exec_id of the reader or the target tasks, it depends on the files being
-processed. This struct offers a consistent and unified way to protect
-all these sensitive files even the other /proc/* files.
-There are also some new helper functions.
-
-
-Currently we perform the protection in two different ways:
-
-1) Use the target exec_id to bind files to their exec_id task:
-
-For the REG files /proc/<pid>/{environ,pagemap,mem} we set the exec_id
-of the proc_file_private to the target task, and we continue with
-permission checks at open time, later on each read/write call the
-permission checks are done + check the target exec_id if it equals the
-exec_id of the proc_file_private that was set at open time, in other words
-we bind the file to its task's exec_id, this way new exec programs can not
-operate on the passed fd.
-
-
-2) Use the reader exec_id to track reader behaviour (aggressive checks):
-
-For the /proc/<pid>/{maps,smaps,numa_maps} we set the exec_id of the
-proc_file_private to the current (reader) exec_id, and the permission
-checks are only performed at read time + the exec_id check against reader,
-this way we are sure that we are still dealing with the same reader. We do
-this since currently it is not clear if the permission checks at open time
-will work with glibc FORTIFY_SOURCE protection and without permission
-checks at each syscall using the target exec_id will not work.
-
-Hopefully it seems that perhaps we can work-around this, if the exec_id
-design is accepted then I will split /proc/<pid>/{maps,smaps,numa_maps}
-internal functions and implement proper permission checks so we can bind
-all these files to their task's exec_id (track target instead of reader).
-
-
-For the ONE and INF files /proc/<pid>/{stack,syscall,io,auxv,...} we also
-use the reader exec_id since these sensitive files share their internal
-logic with the other less important files, and performing permission
-checks at open time will just break things.
-
-
-Notes:
-The exec_id idea was taken from the recent grsecurity patches, but I have
-made some design changes so if there are bugs they are mine.
-
-
-This was also discussed in this kernel-hardening thread:
-http://www.openwall.com/lists/kernel-hardening/2012/02/10/1
-
-This thread also includes other procfs files problems which currently I am
-working on, I will try to continue with an other patch series as soon as
-possible. Thanks to Vasiliy Kulikov and Solar Designer for their comments.
-
-
-Finally I will just add Alan's thread that also explain the problem with
-some historical discussions:
-http://lkml.org/lkml/2012/1/29/35
-
-
-Hope to get feedback to avoid new problems. Thanks.
-
-
-Djalal Harouni (9):
-  exec: add a global execve counter
-  proc: add proc_file_private struct to store private information
-  proc: new proc_exec_id_ok() helper function
-  proc: protect /proc/<pid>/* INF files from reader across execve
-  proc: add protection support for /proc/<pid>/* ONE files
-  proc: protect /proc/<pid>/* ONE files from reader across execve
-  proc: protect /proc/<pid>/{maps,smaps,numa_maps}
-  proc: protect /proc/<pid>/{environ,pagemap} across execve
-  proc: improve and clean up /proc/<pid>/mem protection
+diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+index 0ef4c1f..779109b 100644
+--- a/drivers/hv/hv_kvp.c
++++ b/drivers/hv/hv_kvp.c
+@@ -78,7 +78,7 @@ kvp_register(void)
  
- fs/exec.c             |   11 ++
- fs/proc/array.c       |    4 +
- fs/proc/base.c        |  303 ++++++++++++++++++++++++++++++++++++++++++-------
- fs/proc/internal.h    |   31 +++++-
- fs/proc/task_mmu.c    |  106 +++++++++++++++--
- include/linux/sched.h |   32 +++++
- 6 files changed, 431 insertions(+), 56 deletions(-)
+ 	if (msg) {
+ 		kvp_msg = (struct hv_kvp_msg *)msg->data;
+-		version = kvp_msg->body.kvp_version;
++		version = kvp_msg->body.kvp_register.version;
+ 		msg->id.idx =  CN_KVP_IDX;
+ 		msg->id.val = CN_KVP_VAL;
+ 
+@@ -122,7 +122,8 @@ kvp_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
+ 		 * to the host. But first, cancel the timeout.
+ 		 */
+ 		if (cancel_delayed_work_sync(&kvp_work))
+-			kvp_respond_to_host(data->data.key, data->data.value,
++			kvp_respond_to_host(data->data.key,
++					 data->data.value,
+ 					!strlen(data->data.key));
+ 	}
+ }
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index e57a6c6..a2d8c54 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -149,7 +149,11 @@ struct hv_kvp_exchg_msg_value {
+ 	__u32 key_size;
+ 	__u32 value_size;
+ 	__u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
+-	__u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
++	union {
++		__u8 value[HV_KVP_EXCHANGE_MAX_VALUE_SIZE];
++		__u32 value_u32;
++		__u64 value_u64;
++	};
+ } __attribute__((packed));
+ 
+ struct hv_kvp_msg_enumerate {
+@@ -157,11 +161,31 @@ struct hv_kvp_msg_enumerate {
+ 	struct hv_kvp_exchg_msg_value data;
+ } __attribute__((packed));
+ 
++struct hv_kvp_msg_get {
++	struct hv_kvp_exchg_msg_value data;
++};
++
++struct hv_kvp_msg_set {
++	struct hv_kvp_exchg_msg_value data;
++};
++
++struct hv_kvp_msg_delete {
++	__u32 key_size;
++	__u8 key[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
++};
++
++struct hv_kvp_register {
++	__u8 version[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
++};
++
+ struct hv_kvp_msg {
+ 	struct hv_kvp_hdr	kvp_hdr;
+ 	union {
+-		struct hv_kvp_msg_enumerate     kvp_enum_data;
+-		char    kvp_version[HV_KVP_EXCHANGE_MAX_KEY_SIZE];
++		struct hv_kvp_msg_get		kvp_get;
++		struct hv_kvp_msg_set		kvp_set;
++		struct hv_kvp_msg_delete	kvp_delete;
++		struct hv_kvp_msg_enumerate	kvp_enum_data;
++		struct hv_kvp_register		kvp_register;
+ 	} body;
+ } __attribute__((packed));
+ 
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 4ebf703..00d3f7c 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -378,7 +378,7 @@ int main(void)
+ 			 * Driver is registering with us; stash away the version
+ 			 * information.
+ 			 */
+-			p = (char *)hv_msg->body.kvp_version;
++			p = (char *)hv_msg->body.kvp_register.version;
+ 			lic_version = malloc(strlen(p) + 1);
+ 			if (lic_version) {
+ 				strcpy(lic_version, p);
+-- 
+1.7.4.1
+
