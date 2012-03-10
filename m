@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab2CJKSU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 05:18:20 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:55946 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753176Ab2CJKSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 05:18:18 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the omap_dss2 tree
-Date: Sat, 10 Mar 2012 10:55:04 +0100
-Message-ID: <1678557.FviZqEVemH@vclass>
-Organization: Tele-Info-System, Poznan, PL
-User-Agent: KMail/4.7.4 (Linux/3.1.10-gentoo-r1; KDE/4.7.4; i686; ; )
-In-Reply-To: <20120308165116.d400947f35e40a923e9c6ad0@canb.auug.org.au>
-References: <20120308165116.d400947f35e40a923e9c6ad0@canb.auug.org.au>
+	id S1754790Ab2CJKmu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 05:42:50 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:63691 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754232Ab2CJKmr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 05:42:47 -0500
+Date: Sat, 10 Mar 2012 11:42:38 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: tshimizu818@gmail.com, jeffrey.t.kirsher@intel.com,
+        lucas.demarchi@profusion.mobi, mirq-linux@rere.qmqm.pl,
+        paul.gortmaker@windriver.com, jdmason@kudzu.us, john.stultz@linaro.org,
+        arnd@arndb.de, khc@pm.waw.pl, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH RE-SUBMIT] net/pch_gbe: supports eg20t ptp clock
+Message-ID: <20120310104238.GA3489@netboy.at.omicron.at>
+References: <1331079669-22446-1-git-send-email-tshimizu818@gmail.com>
+ <20120306.213453.700930266749202538.davem@davemloft.net>
+ <20120309173032.GA5730@netboy.at.omicron.at>
+ <20120309.130006.1423350346805366510.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120309.130006.1423350346805366510.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 of March 2012 16:51:16 Stephen Rothwell wrote:
-> Hi all,
+On Fri, Mar 09, 2012 at 01:00:06PM -0800, David Miller wrote:
+> From: Richard Cochran <richardcochran@gmail.com>
+> Date: Fri, 9 Mar 2012 18:30:32 +0100
 > 
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/mach-omap1/board-ams-delta.c between commit ddba6c7f7ec6
-> ("OMAP1: pass LCD config with omapfb_set_lcd_config()") from the
-> omap_dss2 tree and commits 5ca6180fa6d7 ("ARM: OMAP1: ams-delta:
-> supersede custom led device by leds-gpio") and 2e3ee9f45b3c ("ARM: OMAP1:
-> Move most of plat/io.h into local iomap.h") from the arm-soc tree.
+> > On Tue, Mar 06, 2012 at 09:34:53PM -0500, David Miller wrote:
+> >> 
+> >> You still haven't submitted this properly.
+> >> 
+> >> First, you submitted the PCH_GBE driver changes before the EG20T
+> >> PTP clock driver which it depends upon.
+> > 
+> > David, both this pair of patches and the second pair apply cleanly to
+> > both Torvalds mainline and to net-next. So, what are you complaining
+> > about here? I am still confused.
 > 
-> I fixed it up (see below) and can carry the fix as necessary.
+> I'm complaining submitting changes properly, and that has nothing
+> to do with where or how cleanly the patches apply.
 
-Hi,
-Your resolution looks good to me, thanks!
-Janusz
+After reviewing the patches, now I see the dependencies.
+
+Sorry for the noise,
+
+Richard
