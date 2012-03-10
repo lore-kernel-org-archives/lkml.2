@@ -1,129 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab2CJAI0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 19:08:26 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:45894 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755530Ab2CJAIY (ORCPT
+	id S1757486Ab2CJASa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 19:18:30 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47457 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151Ab2CJAS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 19:08:24 -0500
-Message-ID: <4F5A9B75.8090301@gmail.com>
-Date: Fri, 09 Mar 2012 16:08:21 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        David Daney <david.s.daney@gmail.com>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 4/5] MIPS: Octeon: Setup irq_domains for interrupts.
-References: <1330563422-14078-1-git-send-email-ddaney.cavm@gmail.com> <1330563422-14078-5-git-send-email-ddaney.cavm@gmail.com> <4F50D7C2.7080204@gmail.com> <4F510B8E.3070201@cavium.com> <20120302190744.571E03E1C63@localhost> <4F511FB0.5070901@cavium.com> <4F527285.1020500@gmail.com> <4F52F90C.5060306@gmail.com> <20120309055704.465823E0901@localhost> <4F5A4FDE.1030305@gmail.com> <4F5A710A.1000408@gmail.com>
-In-Reply-To: <4F5A710A.1000408@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 9 Mar 2012 19:18:28 -0500
+Message-ID: <1331338687.18199.1.camel@phoenix>
+Subject: [PATCH] regmap: Include linux/device.h to fix build error
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Sat, 10 Mar 2012 08:18:07 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2012 01:07 PM, Rob Herring wrote:
-> On 03/09/2012 12:45 PM, David Daney wrote:
-[...]
->>
->> Probably I have not explained well enough why legacy will not work.
->>
->> We have three different interrupt controllers (although only one is
->> currently in-tree).  hwirq to irq mapping for them is more or less as
->> follows:
->
-> I'll just repeat what others have said: if it's not upstream it doesn't
-> exist.
->
-> We have no knowledge about out of tree h/w to understand what you need
->
->> irq                 hwirqCIU        hwirqCIU2      hwirqCIU3
->> ----------------------------------------------------------------------
->> OCTEON_IRQ_USB0     56               81             934562
->> OCTEON_IRQ_TWSI     45              224             100543
->> OCTEON_IRQ_UART0    34              228               4572
->> .
->> .
->> .
->
-> How many actual hwirqs in each case and what is the range?
->
-> So for CIU3, it seems you would need to use a radix tree. CIU2 is
-> probably borderline depending on what is the max number. But because you
-> don't yet have code in tree for either yet, you can use a linear domain
-> for now. It shouldn't be hard to switch from linear to radix later.
->
->> Now what we notice here is that there is no possible 1:1 linearly
->> increasing mapping possible for the irq and *all* three hwirq sets.  We
->> want a single binary that contains support for all three interrupt
->> controllers, so the OCTEON_IRQ_* values have to be the same for all
->> three interrupt controllers.  Because of this, legacy mapping is
->> *impossible*.
->
-> OCTEON_IRQ_* values need to go. You may not have to do that now, but
-> certainly before doing support for CIU2 and CIU3 you do. Those platforms
-> should be DT only.
->
->>
->> Since the possible ranges of the hwirq values is very large and quite
->> sparse, probably the radix mapping will be required.
->>
->
-> Yes. You're not the only one with this issue.
->
->> Also to support non-OF drivers and architecture specific code for the
->> near future, I really think the existing IRQ values *must* be preserved.
->>
->
-> For a legacy boot yes. But when you boot with DT, you should not need
-> them.
+Fix below build error:
 
-It is not a matter of how the system is booted, rather what all the 
-drivers are expecting...
+  CC      drivers/base/regmap/regmap.o
+drivers/base/regmap/regmap.c: In function 'devm_regmap_init':
+drivers/base/regmap/regmap.c:331: error: implicit declaration of function 'devres_alloc'
+drivers/base/regmap/regmap.c:331: warning: assignment makes pointer from integer without a cast
+drivers/base/regmap/regmap.c:338: error: implicit declaration of function 'devres_add'
+drivers/base/regmap/regmap.c:340: error: implicit declaration of function 'devres_free'
+drivers/base/regmap/regmap.c: In function '_regmap_raw_write':
+drivers/base/regmap/regmap.c:421: error: implicit declaration of function 'dev_err'
+make[3]: *** [drivers/base/regmap/regmap.o] Error 1
+make[2]: *** [drivers/base/regmap] Error 2
+make[1]: *** [drivers/base] Error 2
+make: *** [drivers] Error 2
 
-> This is certainly possible as several ARM platforms do this. You
-> need to start with minimal set of drivers enabled for DT and add them
-> back in 1 by 1.
->
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This patch is against linux-next 20120309.
 
-What I don't understand about this is what happens during the transition?
+ drivers/base/regmap/regmap.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-What if a shared interrupt were referred from one non-OF driver by its 
-symbolic OCTEON_IRQ_? value, and from a second driver by its hwirq value 
-extracted from the DT?  In that case you would be referring to the same 
-interrupt line by two different irq values, clearly that should be 
-prevented.
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index e1a4097..3b09587 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/slab.h>
++#include <linux/device.h>
+ #include <linux/export.h>
+ #include <linux/mutex.h>
+ #include <linux/err.h>
+-- 
+1.7.5.4
 
-At a minimum, the change made for each converted driver would have to 
-include: removing the OCTEON_IRQ_? values,  Maintain a list of hwirqs 
-that are outside of the domain and report this by the.map() function, 
-and then update this list.
 
-David Daney
-
-> Rob
->
->> Therefore, as I said above, we need a way for my SOC/board code to
->> specify the mapping.
->>
->> Perhaps we need to add an optional function to struct irq_domain_ops
->> that would allow the default mapping to be overridden on a per
->> irq_domain basis.
->>
->> Otherwise, I think I will have to keep poking into the internal
->> irq_domain data structures to get the mappings I want.
->>
->> What do you think?
->>
->> David Daney
->
->
 
