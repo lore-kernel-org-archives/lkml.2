@@ -1,99 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab2CJHyM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 02:54:12 -0500
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:46050 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751642Ab2CJHyL (ORCPT
+	id S1752789Ab2CJHy3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 02:54:29 -0500
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:58730 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751559Ab2CJHy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 02:54:11 -0500
+	Sat, 10 Mar 2012 02:54:27 -0500
 From: Mike Turquette <mturquette@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linaro-dev@lists.linaro.org, patches@linaro.org,
-        Mike Turquette <mturquette@linaro.org>
-Subject: [PATCH v6 0/3] common clk framework
-Date: Fri,  9 Mar 2012 23:54:21 -0800
-Message-Id: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
+        Mike Turquette <mturquette@linaro.org>,
+        Mike Turquette <mturquette@ti.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
+Subject: [PATCH v6 1/3] Documentation: common clk API
+Date: Fri,  9 Mar 2012 23:54:22 -0800
+Message-Id: <1331366064-1273-2-git-send-email-mturquette@linaro.org>
 X-Mailer: git-send-email 1.7.9.3
+In-Reply-To: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
+References: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The common clock framework defines a common struct clk as well as an
-implementation of the clk api that unifies clock operations on various
-platforms and devices.
+Provide documentation for the common clk structures and APIs.  This code
+can be found in drivers/clk/ and include/linux/clk*.h.
 
-The net result is consolidation of many different struct clk definitions
-and platform-specific clock framework implementations.
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+Signed-off-by: Mike Turquette <mturquette@ti.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Arnd Bergman <arnd.bergmann@linaro.org>
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Shawn Guo <shawn.guo@freescale.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Richard Zhao <richard.zhao@linaro.org>
+Cc: Saravana Kannan <skannan@codeaurora.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>
+Cc: Deepak Saxena <dsaxena@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Andrew Lunn <andrew@lunn.ch>
+---
+Changes since v5:
+ * __clk_init must be called for statically initialized clocks
+ * added "clk_ops matrix" to better clarify which ops are mandatory
 
-Thanks to Sascha Hauer and Andrew Lunn for their great review and
-feedback on the previous v5 series.
-
-Major changes since v5:
- * removed redundant HAVE_CLK_PREPARE in Kconfig
- * new CONFIG_COMMON_CLK_DISABLE_UNUSED feature
-  * results in a new clk_op callback, .is_enabled
- * standardized the hw-specific locking in the basic clock types
- * export the individual ops for each basic clock type
- * improve registration for single-parent basic clocks (thanks Sascha)
- * fixed bugs in gate clock's static initializers (thanks Andrew)
- * overall improvements to Documentation/clk.txt
- * rebased onto Linus' v3.3-rc6 tag
-
-Major changes since v4:
- * rolled in TGLX's comments on overall design.  We now have,
-   * proper handling of root clocks and orphan clocks
-   * multi-parent clocks are handled in the core
-   * struct clk is shielded from struct clk_foo and vice versa
-     * this is a return to the previous struct clk_hw design
- * split basic clock types out into separate files
- * split headers up by purpose
-   * clk.h remains the driver-level interface
-     * declarations for rate change notifiers are the only additions
-   * clk-provider.h is primary header for implementing clock operations
-   * clk-private.h allows for static initialization of clock data
- * validation and bug fixes
- * rebased onto Linus' v3.3-rc5 tag
-
-Patches can be pulled from:
-git://git.linaro.org/people/mturquette/linux.git v3.3-rc6-clkv6
-
-v5 can be found at,
-http://article.gmane.org/gmane.linux.kernel/1261472
-
-v4 can be found at,
-http://article.gmane.org/gmane.linux.linaro.devel/8896/
-
-v3 can be found at,
-http://article.gmane.org/gmane.linux.kernel/1218622
-
-Mike Turquette (3):
-  Documentation: common clk API
-  clk: introduce the common clock framework
-  clk: basic clock hardware types
-
- Documentation/clk.txt        |  233 +++++++
- drivers/clk/Kconfig          |   39 ++
- drivers/clk/Makefile         |    2 +
- drivers/clk/clk-divider.c    |  204 ++++++
- drivers/clk/clk-fixed-rate.c |   82 +++
- drivers/clk/clk-gate.c       |  157 +++++
- drivers/clk/clk-mux.c        |  123 ++++
- drivers/clk/clk.c            | 1424 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk-private.h  |  192 ++++++
- include/linux/clk-provider.h |  298 +++++++++
- include/linux/clk.h          |   68 ++-
- 11 files changed, 2817 insertions(+), 5 deletions(-)
+ Documentation/clk.txt |  233 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 233 insertions(+), 0 deletions(-)
  create mode 100644 Documentation/clk.txt
- create mode 100644 drivers/clk/clk-divider.c
- create mode 100644 drivers/clk/clk-fixed-rate.c
- create mode 100644 drivers/clk/clk-gate.c
- create mode 100644 drivers/clk/clk-mux.c
- create mode 100644 drivers/clk/clk.c
- create mode 100644 include/linux/clk-private.h
- create mode 100644 include/linux/clk-provider.h
 
+diff --git a/Documentation/clk.txt b/Documentation/clk.txt
+new file mode 100644
+index 0000000..1943fae
+--- /dev/null
++++ b/Documentation/clk.txt
+@@ -0,0 +1,233 @@
++		The Common Clk Framework
++		Mike Turquette <mturquette@ti.com>
++
++This document endeavours to explain the common clk framework details,
++and how to port a platform over to this framework.  It is not yet a
++detailed explanation of the clock api in include/linux/clk.h, but
++perhaps someday it will include that information.
++
++	Part 1 - introduction and interface split
++
++The common clk framework is an interface to control the clock nodes
++available on various devices today.  This may come in the form of clock
++gating, rate adjustment, muxing or other operations.  This framework is
++enabled with the CONFIG_COMMON_CLK option.
++
++The interface itself is divided into two halves, each shielded from the
++details of its counterpart.  First is the common definition of struct
++clk which unifies the framework-level accounting and infrastructure that
++has traditionally been duplicated across a variety of platforms.  Second
++is a common implementation of the clk.h api, defined in
++drivers/clk/clk.c.  Finally there is struct clk_ops, whose operations
++are invoked by the clk api implementation.
++
++The second half of the interface is comprised of the hardware-specific
++callbacks registered with struct clk_ops and the corresponding
++hardware-specific structures needed to model a particular clock.  For
++the remainder of this document any reference to a callback in struct
++clk_ops, such as .enable or .set_rate, implies the hardware-specific
++implementation of that code.  Likewise, references to struct clk_foo
++serve as a convenient shorthand for the implementation of the
++hardware-specific bits for the hypothetical "foo" hardware.
++
++Tying the two halves of this interface together is struct clk_hw, which
++is defined in struct clk_foo and pointed to within struct clk.  This
++allows easy for navigation between the two discrete halves of the common
++clock interface.
++
++	Part 2 - common data structures and api
++
++Below is the common struct clk definition from
++include/linux/clk-private.h, modified for brevity:
++
++	struct clk {
++		const char		*name;
++		const struct clk_ops	*ops;
++		struct clk_hw		*hw;
++		char			**parent_names;
++		struct clk		**parents;
++		struct clk		*parent;
++		struct hlist_head	children;
++		struct hlist_node	child_node;
++		...
++	};
++
++The members above make up the core of the clk tree topology.  The clk
++api itself defines several driver-facing functions which operate on
++struct clk.  That api is documented in include/linux/clk.h.
++
++Platforms and devices utilizing the common struct clk use the struct
++clk_ops pointer in struct clk to perform the hardware-specific parts of
++the operations defined in clk.h:
++
++	struct clk_ops {
++		int		(*prepare)(struct clk_hw *hw);
++		void		(*unprepare)(struct clk_hw *hw);
++		int		(*enable)(struct clk_hw *hw);
++		void		(*disable)(struct clk_hw *hw);
++		int		(*is_enabled)(struct clk_hw *hw);
++		unsigned long	(*recalc_rate)(struct clk_hw *hw,
++						unsigned long parent_rate);
++		long		(*round_rate)(struct clk_hw *hw, unsigned long,
++						unsigned long *);
++		int		(*set_parent)(struct clk_hw *hw, u8 index);
++		u8		(*get_parent)(struct clk_hw *hw);
++		int		(*set_rate)(struct clk_hw *hw, unsigned long);
++		void		(*init)(struct clk_hw *hw);
++	};
++
++	Part 3 - hardware clk implementations
++
++The strength of the common struct clk comes from its .ops and .hw pointers
++which abstract the details of struct clk from the hardware-specific bits, and
++vice versa.  To illustrate consider the simple gateable clk implementation in
++drivers/clk/clk-gate.c:
++
++struct clk_gate {
++	struct clk_hw	hw;
++	void __iomem    *reg;
++	u8              bit_idx;
++	...
++};
++
++struct clk_gate contains struct clk_hw hw as well as hardware-specific
++knowledge about which register and bit controls this clk's gating.
++Nothing about clock topology or accounting, such as enable_count or
++notifier_count, is needed here.  That is all handled by the common
++framework code and struct clk.
++
++Let's walk through enabling this clk from driver code:
++
++	struct clk *clk;
++	clk = clk_get(NULL, "my_gateable_clk");
++
++	clk_prepare(clk);
++	clk_enable(clk);
++
++The call graph for clk_enable is very simple:
++
++clk_enable(clk);
++	clk->ops->enable(clk->hw);
++	[resolves to...]
++		clk_gate_enable(hw);
++		[resolves struct clk gate with to_clk_gate(hw)]
++			clk_gate_set_bit(gate);
++
++And the definition of clk_gate_set_bit:
++
++static void clk_gate_set_bit(struct clk_gate *gate)
++{
++	u32 reg;
++
++	reg = __raw_readl(gate->reg);
++	reg |= BIT(gate->bit_idx);
++	writel(reg, gate->reg);
++}
++
++Note that to_clk_gate is defined as:
++
++#define to_clk_gate(_hw) container_of(_hw, struct clk_gate, clk)
++
++This pattern of abstraction is used for every clock hardware
++representation.
++
++	Part 4 - supporting your own clk hardware
++
++When implementing support for a new type of clock it only necessary to
++include the following header:
++
++#include <linux/clk-provider.h>
++
++include/linux/clk.h is included within that header and clk-private.h
++must never be included from the code which implements the operations for
++a clock.  More on that below in Part 5.
++
++To construct a clk hardware structure for your platform you must define
++the following:
++
++struct clk_foo {
++	struct clk_hw hw;
++	... hardware specific data goes here ...
++};
++
++To take advantage of your data you'll need to support valid operations
++for your clk:
++
++struct clk_ops clk_foo_ops {
++	.enable		= &clk_foo_enable;
++	.disable	= &clk_foo_disable;
++};
++
++Implement the above functions using container_of:
++
++#define to_clk_foo(_hw) container_of(_hw, struct clk_foo, hw)
++
++int clk_foo_enable(struct clk_hw *hw)
++{
++	struct clk_foo *foo;
++
++	foo = to_clk_foo(hw);
++
++	... perform magic on foo ...
++
++	return 0;
++};
++
++Below is a matrix detailing which clk_ops are mandatory based upon the
++hardware capbilities of that clock.  A cell marked as "y" means
++mandatory, a cell marked as "n" implies that either including that
++callback is invalid or otherwise uneccesary.  Empty cells are either
++optional or must be evaluated on a case-by-case basis.
++
++                           clock hardware characteristics
++	     -----------------------------------------------------------
++             | gate | change rate | single parent | multiplexer | root |
++             |------|-------------|---------------|-------------|------|
++.prepare     |      |             |               |             |      |
++.unprepare   |      |             |               |             |      |
++             |      |             |               |             |      |
++.enable      | y    |             |               |             |      |
++.disable     | y    |             |               |             |      |
++.is_enabled  | y    |             |               |             |      |
++             |      |             |               |             |      |
++.recalc_rate |      | y           |               |             |      |
++.round_rate  |      | y           |               |             |      |
++.set_rate    |      | y           |               |             |      |
++             |      |             |               |             |      |
++.set_parent  |      |             | n             | y           | n    |
++.get_parent  |      |             | n             | y           | n    |
++             |      |             |               |             |      |
++.init        |      |             |               |             |      |
++	     -----------------------------------------------------------
++
++Finally, register your clock at run-time with a hardware-specific
++registration function.  This function simply populates struct clk_foo's
++data and then passes the common struct clk parameters to the framework
++with a call to:
++
++clk_register(...)
++
++See the basic clock types in drivers/clk/clk-*.c for examples.
++
++	Part 5 - static initialization of clock data
++
++For platforms with many clocks (often numbering into the hundreds) it
++may be desirable to statically initialize some clock data.  This
++presents a problem since the definition of struct clk should be hidden
++from everyone except for the clock core in drivers/clk/clk.c.
++
++To get around this problem struct clk's definition is exposed in
++include/linux/clk-private.h along with some macros for more easily
++initializing instances of the basic clock types.  These clocks must
++still be initialized with the common clock framework via a call to
++__clk_init.
++
++clk-private.h must NEVER be included by code which implements struct
++clk_ops callbacks, nor must it be included by any logic which pokes
++around inside of struct clk at run-time.  To do so is a layering
++violation.
++
++To better enforce this policy, always follow this simple rule: any
++statically initialized clock data MUST be defined in a separate file
++from the logic that implements its ops.  Basically separate the logic
++from the data and all is well.
 -- 
 1.7.5.4
 
