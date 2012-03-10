@@ -1,32 +1,386 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab2CJXZQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 18:25:16 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:52944
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1753284Ab2CJXZt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 18:25:49 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:59908
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752423Ab2CJXZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 18:25:14 -0500
+	id S1752824Ab2CJXZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 18:25:44 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, virtualization@lists.osdl.org,
         ohering@suse.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 0000/0004] drivers: hv
-Date: Sat, 10 Mar 2012 15:31:40 -0800
-Message-Id: <1331422300-4330-1-git-send-email-kys@microsoft.com>
+Subject: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP messages in the driver
+Date: Sat, 10 Mar 2012 15:32:09 -0800
+Message-Id: <1331422331-4381-2-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1331422331-4381-1-git-send-email-kys@microsoft.com>
+References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
+ <1331422331-4381-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now support the newly defined KVP message types. It turns out that the host
+pushes a set of stand key value pairs as soon as the guest opens the KVP channel.
+Since we cannot handle these tuples until the user level daemon loads up, defer
+reading the KVP channel until the user level daemon is launched.
 
-This patch-set further enhances the KVP functionality for Linux
-guests:
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
+---
+ drivers/hv/hv_kvp.c      |  184 ++++++++++++++++++++++++++++++++++++----------
+ include/linux/hyperv.h   |    2 +
+ tools/hv/hv_kvp_daemon.c |    7 ++
+ 3 files changed, 153 insertions(+), 40 deletions(-)
 
-	1. Supports most of the Win8 KVP protocol.
-	2. Supports operations on all the pools.
+diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+index 779109b..3b2eeaa 100644
+--- a/drivers/hv/hv_kvp.c
++++ b/drivers/hv/hv_kvp.c
+@@ -42,9 +42,10 @@
+ static struct {
+ 	bool active; /* transaction status - active or not */
+ 	int recv_len; /* number of bytes received. */
+-	int index; /* current index */
++	struct hv_kvp_msg  *kvp_msg; /* current message */
+ 	struct vmbus_channel *recv_channel; /* chn we got the request */
+ 	u64 recv_req_id; /* request ID. */
++	void *kvp_context; /* for the channel callback */
+ } kvp_transaction;
+ 
+ static void kvp_send_key(struct work_struct *dummy);
+@@ -110,12 +111,15 @@ kvp_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
+ 	struct hv_kvp_msg_enumerate *data;
+ 
+ 	message = (struct hv_kvp_msg *)msg->data;
+-	if (message->kvp_hdr.operation == KVP_OP_REGISTER) {
++	switch (message->kvp_hdr.operation) {
++	case KVP_OP_REGISTER:
+ 		pr_info("KVP: user-mode registering done.\n");
+ 		kvp_register();
+-	}
++		kvp_transaction.active = false;
++		hv_kvp_onchannelcallback(kvp_transaction.kvp_context);
++		break;
+ 
+-	if (message->kvp_hdr.operation == KVP_OP_ENUMERATE) {
++	default:
+ 		data = &message->body.kvp_enum_data;
+ 		/*
+ 		 * Complete the transaction by forwarding the key value
+@@ -133,7 +137,11 @@ kvp_send_key(struct work_struct *dummy)
+ {
+ 	struct cn_msg *msg;
+ 	struct hv_kvp_msg *message;
+-	int index = kvp_transaction.index;
++	struct hv_kvp_msg *in_msg;
++	__u8 operation = kvp_transaction.kvp_msg->kvp_hdr.operation;
++	__u8 pool = kvp_transaction.kvp_msg->kvp_hdr.pool;
++	__u32 val32;
++	__u64 val64;
+ 
+ 	msg = kzalloc(sizeof(*msg) + sizeof(struct hv_kvp_msg) , GFP_ATOMIC);
+ 
+@@ -142,8 +150,85 @@ kvp_send_key(struct work_struct *dummy)
+ 		msg->id.val = CN_KVP_VAL;
+ 
+ 		message = (struct hv_kvp_msg *)msg->data;
+-		message->kvp_hdr.operation = KVP_OP_ENUMERATE;
+-		message->body.kvp_enum_data.index = index;
++		message->kvp_hdr.operation = operation;
++		message->kvp_hdr.pool = pool;
++		in_msg = kvp_transaction.kvp_msg;
++
++		/*
++		 * The key/value strings sent from the host are encoded in
++		 * in utf16; convert it to utf8 strings.
++		 */
++
++		switch (message->kvp_hdr.operation) {
++		case KVP_OP_SET:
++			switch (in_msg->body.kvp_set.data.value_type) {
++			case REG_SZ:
++				/*
++				 * The value is a string - utf16 encoding.
++				 */
++				message->body.kvp_set.data.value_size =
++				utf16s_to_utf8s(
++				(wchar_t *)
++				in_msg->body.kvp_set.data.value,
++				in_msg->body.kvp_set.data.value_size,
++				UTF16_LITTLE_ENDIAN,
++				message->body.kvp_set.data.value,
++				HV_KVP_EXCHANGE_MAX_VALUE_SIZE) + 1;
++				break;
++
++			case REG_U32:
++				/*
++				 * The value is a 32 bit scalar.
++				 * We save this as a utf8 string.
++				 */
++				val32 =
++				in_msg->body.kvp_set.data.value_u32;
++				message->body.kvp_set.data.value_size =
++				sprintf(message->body.kvp_set.data.value,
++					"%d", val32) + 1;
++				break;
++
++			case REG_U64:
++				/*
++				 * The value is a 64 bit scalar.
++				 * We save this as a utf8 string.
++				 */
++				val64 =
++				in_msg->body.kvp_set.data.value_u64;
++				message->body.kvp_set.data.value_size =
++				sprintf(message->body.kvp_set.data.value,
++					"%llu", val64) + 1;
++				break;
++
++			}
++		case KVP_OP_GET:
++			message->body.kvp_set.data.key_size =
++				utf16s_to_utf8s(
++				(wchar_t *)in_msg->body.kvp_set.data.key,
++				in_msg->body.kvp_set.data.key_size,
++				UTF16_LITTLE_ENDIAN,
++				message->body.kvp_set.data.key,
++				HV_KVP_EXCHANGE_MAX_KEY_SIZE) + 1;
++
++			break;
++
++		case KVP_OP_DELETE:
++			message->body.kvp_delete.key_size =
++				utf16s_to_utf8s(
++				(wchar_t *)in_msg->body.kvp_delete.key,
++				in_msg->body.kvp_delete.key_size,
++				UTF16_LITTLE_ENDIAN,
++				message->body.kvp_delete.key,
++				HV_KVP_EXCHANGE_MAX_KEY_SIZE) + 1;
++
++			break;
++
++		case KVP_OP_ENUMERATE:
++			message->body.kvp_enum_data.index =
++				in_msg->body.kvp_enum_data.index;
++			break;
++		}
++
+ 		msg->len = sizeof(struct hv_kvp_msg);
+ 		cn_netlink_send(msg, 0, GFP_ATOMIC);
+ 		kfree(msg);
+@@ -159,7 +244,7 @@ static void
+ kvp_respond_to_host(char *key, char *value, int error)
+ {
+ 	struct hv_kvp_msg  *kvp_msg;
+-	struct hv_kvp_msg_enumerate  *kvp_data;
++	struct hv_kvp_exchg_msg_value  *kvp_data;
+ 	char	*key_name;
+ 	struct icmsg_hdr *icmsghdrp;
+ 	int	keylen, valuelen;
+@@ -189,6 +274,9 @@ kvp_respond_to_host(char *key, char *value, int error)
+ 
+ 	kvp_transaction.active = false;
+ 
++	icmsghdrp = (struct icmsg_hdr *)
++			&recv_buffer[sizeof(struct vmbuspipe_hdr)];
++
+ 	if (channel->onchannel_callback == NULL)
+ 		/*
+ 		 * We have raced with util driver being unloaded;
+@@ -196,41 +284,57 @@ kvp_respond_to_host(char *key, char *value, int error)
+ 		 */
+ 		return;
+ 
+-	icmsghdrp = (struct icmsg_hdr *)
+-			&recv_buffer[sizeof(struct vmbuspipe_hdr)];
+-	kvp_msg = (struct hv_kvp_msg *)
+-			&recv_buffer[sizeof(struct vmbuspipe_hdr) +
+-			sizeof(struct icmsg_hdr)];
+-	kvp_data = &kvp_msg->body.kvp_enum_data;
+-	key_name = key;
+ 
+ 	/*
+ 	 * If the error parameter is set, terminate the host's enumeration.
+ 	 */
+ 	if (error) {
+ 		/*
+-		 * We don't support this index or the we have timedout;
++		 * Something failed or the we have timedout;
+ 		 * terminate the host-side iteration by returning an error.
+ 		 */
+ 		icmsghdrp->status = HV_E_FAIL;
+ 		goto response_done;
+ 	}
+ 
++	icmsghdrp->status = HV_S_OK;
++
++	kvp_msg = (struct hv_kvp_msg *)
++			&recv_buffer[sizeof(struct vmbuspipe_hdr) +
++			sizeof(struct icmsg_hdr)];
++
++	switch (kvp_transaction.kvp_msg->kvp_hdr.operation) {
++	case KVP_OP_GET:
++		kvp_data = &kvp_msg->body.kvp_get.data;
++		goto copy_value;
++
++	case KVP_OP_SET:
++	case KVP_OP_DELETE:
++		goto response_done;
++
++	default:
++		break;
++	}
++
++	kvp_data = &kvp_msg->body.kvp_enum_data.data;
++	key_name = key;
++
+ 	/*
+ 	 * The windows host expects the key/value pair to be encoded
+ 	 * in utf16.
+ 	 */
+ 	keylen = utf8s_to_utf16s(key_name, strlen(key_name), UTF16_HOST_ENDIAN,
+-				(wchar_t *) kvp_data->data.key,
++				(wchar_t *) kvp_data->key,
+ 				HV_KVP_EXCHANGE_MAX_KEY_SIZE / 2);
+-	kvp_data->data.key_size = 2*(keylen + 1); /* utf16 encoding */
++	kvp_data->key_size = 2*(keylen + 1); /* utf16 encoding */
++
++copy_value:
+ 	valuelen = utf8s_to_utf16s(value, strlen(value), UTF16_HOST_ENDIAN,
+-				(wchar_t *) kvp_data->data.value,
++				(wchar_t *) kvp_data->value,
+ 				HV_KVP_EXCHANGE_MAX_VALUE_SIZE / 2);
+-	kvp_data->data.value_size = 2*(valuelen + 1); /* utf16 encoding */
++	kvp_data->value_size = 2*(valuelen + 1); /* utf16 encoding */
+ 
+-	kvp_data->data.value_type = REG_SZ; /* all our values are strings */
+-	icmsghdrp->status = HV_S_OK;
++	kvp_data->value_type = REG_SZ; /* all our values are strings */
+ 
+ response_done:
+ 	icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION | ICMSGHDRFLAG_RESPONSE;
+@@ -257,11 +361,18 @@ void hv_kvp_onchannelcallback(void *context)
+ 	u64 requestid;
+ 
+ 	struct hv_kvp_msg *kvp_msg;
+-	struct hv_kvp_msg_enumerate *kvp_data;
+ 
+ 	struct icmsg_hdr *icmsghdrp;
+ 	struct icmsg_negotiate *negop = NULL;
+ 
++	if (kvp_transaction.active) {
++		/*
++		 * We will defer processing this callback once
++		 * the current transaction is complete.
++		 */
++		kvp_transaction.kvp_context = context;
++		return;
++	}
+ 
+ 	vmbus_recvpacket(channel, recv_buffer, PAGE_SIZE, &recvlen, &requestid);
+ 
+@@ -276,29 +387,16 @@ void hv_kvp_onchannelcallback(void *context)
+ 				sizeof(struct vmbuspipe_hdr) +
+ 				sizeof(struct icmsg_hdr)];
+ 
+-			kvp_data = &kvp_msg->body.kvp_enum_data;
+-
+-			/*
+-			 * We only support the "get" operation on
+-			 * "KVP_POOL_AUTO" pool.
+-			 */
+-
+-			if ((kvp_msg->kvp_hdr.pool != KVP_POOL_AUTO) ||
+-				(kvp_msg->kvp_hdr.operation !=
+-				KVP_OP_ENUMERATE)) {
+-				icmsghdrp->status = HV_E_FAIL;
+-				goto callback_done;
+-			}
+-
+ 			/*
+ 			 * Stash away this global state for completing the
+ 			 * transaction; note transactions are serialized.
+ 			 */
++
+ 			kvp_transaction.recv_len = recvlen;
+ 			kvp_transaction.recv_channel = channel;
+ 			kvp_transaction.recv_req_id = requestid;
+ 			kvp_transaction.active = true;
+-			kvp_transaction.index = kvp_data->index;
++			kvp_transaction.kvp_msg = kvp_msg;
+ 
+ 			/*
+ 			 * Get the information from the
+@@ -316,8 +414,6 @@ void hv_kvp_onchannelcallback(void *context)
+ 
+ 		}
+ 
+-callback_done:
+-
+ 		icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
+ 			| ICMSGHDRFLAG_RESPONSE;
+ 
+@@ -338,6 +434,14 @@ hv_kvp_init(struct hv_util_service *srv)
+ 		return err;
+ 	recv_buffer = srv->recv_buffer;
+ 
++	/*
++	 * When this driver loads, the user level daemon that
++	 * processes the host requests may not yet be running.
++	 * Defer processing channel callbacks until the daemon
++	 * has registered.
++	 */
++	kvp_transaction.active = true;
++
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index a2d8c54..e88a979 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -119,6 +119,8 @@
+  */
+ 
+ #define REG_SZ 1
++#define REG_U32 4
++#define REG_U64 8
+ 
+ enum hv_kvp_exchg_op {
+ 	KVP_OP_GET = 0,
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index 00d3f7c..a98878c 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -389,10 +389,16 @@ int main(void)
+ 			}
+ 			continue;
+ 
++		case KVP_OP_SET:
++		case KVP_OP_GET:
++		case KVP_OP_DELETE:
+ 		default:
+ 			break;
+ 		}
+ 
++		if (hv_msg->kvp_hdr.operation != KVP_OP_ENUMERATE)
++			goto kvp_done;
++
+ 		hv_msg = (struct hv_kvp_msg *)incoming_cn_msg->data;
+ 		key_name = (char *)hv_msg->body.kvp_enum_data.data.key;
+ 		key_value = (char *)hv_msg->body.kvp_enum_data.data.value;
+@@ -454,6 +460,7 @@ int main(void)
+ 		 * already in the receive buffer. Update the cn_msg header to
+ 		 * reflect the key value that has been added to the message
+ 		 */
++kvp_done:
+ 
+ 		incoming_cn_msg->id.idx = CN_KVP_IDX;
+ 		incoming_cn_msg->id.val = CN_KVP_VAL;
+-- 
+1.7.4.1
 
-Regards,
-
-K. Y
