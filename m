@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab2CJWBS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 17:01:18 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:18030 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab2CJWBP (ORCPT
+	id S1752657Ab2CJWGv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 17:06:51 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:34113 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab2CJWGt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 17:01:15 -0500
-Date: Sat, 10 Mar 2012 22:59:56 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-cc: Felipe Balbi <balbi@ti.com>, trivial@kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: gadget: Kconfig: fix typo for 'different'
-In-Reply-To: <1331415859-23291-1-git-send-email-fabio.baltieri@gmail.com>
-Message-ID: <alpine.LNX.2.00.1203102259210.1370@swampdragon.chaosbits.net>
-References: <1331415859-23291-1-git-send-email-fabio.baltieri@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 10 Mar 2012 17:06:49 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201203102226.00687.rjw@sisk.pl>
+References: <201203092155.04731.rjw@sisk.pl>
+	<201203092327.00228.rjw@sisk.pl>
+	<201203101053.42926.arnd@arndb.de>
+	<201203102226.00687.rjw@sisk.pl>
+Date: Sat, 10 Mar 2012 23:06:48 +0100
+X-Google-Sender-Auth: OJqx2bbHMQmSp4YBdf9brR1T3qg
+Message-ID: <CAMuHMdU5Ka2DK+AxpmcsMZtzt5gw2sjMhHp=bdNB3uCjsiOpWA@mail.gmail.com>
+Subject: Re: [GIT PULL] Renesas SoC updates for v3.4
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Arnd Bergmann <arnd@arndb.de>, Paul Mundt <lethal@linux-sh.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Rob Herring <robherring2@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 10 Mar 2012, Fabio Baltieri wrote:
+On Sat, Mar 10, 2012 at 22:26, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> The point is that there might not be an -rc7 any more.
+>
+> Yes, I'm aware of that. :-)
 
-> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+It seems there is.
 
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+Gr{oetje,eeting}s,
 
+                        Geert
 
-> ---
->  drivers/usb/gadget/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-> index 7ecb68a..b5972e0 100644
-> --- a/drivers/usb/gadget/Kconfig
-> +++ b/drivers/usb/gadget/Kconfig
-> @@ -685,7 +685,7 @@ config USB_G_NCM
->  	help
->  	  This driver implements USB CDC NCM subclass standard. NCM is
->  	  an advanced protocol for Ethernet encapsulation, allows grouping
-> -	  of several ethernet frames into one USB transfer and diffferent
-> +	  of several ethernet frames into one USB transfer and different
->  	  alignment possibilities.
->  
->  	  Say "y" to link the driver statically, or "m" to build a
-> 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
