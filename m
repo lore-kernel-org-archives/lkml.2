@@ -1,195 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab2CJDlF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 22:41:05 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47058 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab2CJDlA convert rfc822-to-8bit (ORCPT
+	id S1755724Ab2CJDmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 22:42:13 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37508 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265Ab2CJDmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 22:41:00 -0500
+	Fri, 9 Mar 2012 22:42:09 -0500
+Message-ID: <4F5ACD8A.4000706@gmail.com>
+Date: Sat, 10 Mar 2012 11:42:02 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120301131957.GA2412@linux.vnet.ibm.com>
-References: <4F44B580.6040003@cn.fujitsu.com>
-	<4F4744E9.1060109@cn.fujitsu.com>
-	<20120224200109.GH2399@linux.vnet.ibm.com>
-	<4F4B3840.6000504@cn.fujitsu.com>
-	<20120227183035.GE2463@linux.vnet.ibm.com>
-	<4F4C331A.7090007@cn.fujitsu.com>
-	<20120228134718.GF2465@linux.vnet.ibm.com>
-	<4F4DF8E4.1070100@cn.fujitsu.com>
-	<20120229135508.GB2385@linux.vnet.ibm.com>
-	<4F4EDF7A.6060607@cn.fujitsu.com>
-	<20120301131957.GA2412@linux.vnet.ibm.com>
-Date: Sat, 10 Mar 2012 11:41:00 +0800
-Message-ID: <CACvQF53uoJ4r=hbgv3wFQWB-9=btDiOJZV3YyNNHHSPjpeGp0A@mail.gmail.com>
-Subject: Re: [PATCH 2/2 RFC] srcu: implement Peter's checking algorithm
-From: Lai Jiangshan <eag0628@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Chen, Dennis (SRDC SW)" <Dennis1.Chen@amd.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] Refine mutex and rcu method in module.c, kernel<3.2.9>
+References: <491D6B4EAD0A714894D8AD22F4BDE04303289D@SCYBEXDAG04.amd.com> <4F5780A2.2040402@gmail.com> <491D6B4EAD0A714894D8AD22F4BDE0430328E3@SCYBEXDAG04.amd.com>
+In-Reply-To: <491D6B4EAD0A714894D8AD22F4BDE0430328E3@SCYBEXDAG04.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 1, 2012 at 9:20 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Thu, Mar 01, 2012 at 10:31:22AM +0800, Lai Jiangshan wrote:
->> On 02/29/2012 09:55 PM, Paul E. McKenney wrote:
->> > On Wed, Feb 29, 2012 at 06:07:32PM +0800, Lai Jiangshan wrote:
->> >> On 02/28/2012 09:47 PM, Paul E. McKenney wrote:
->> >>> On Tue, Feb 28, 2012 at 09:51:22AM +0800, Lai Jiangshan wrote:
->> >>>> On 02/28/2012 02:30 AM, Paul E. McKenney wrote:
->> >>>>> On Mon, Feb 27, 2012 at 04:01:04PM +0800, Lai Jiangshan wrote:
->> >>>>>> >From 40724998e2d121c2b5a5bd75114625cfd9d4f9a9 Mon Sep 17 00:00:00 2001
->> >>>>>> From: Lai Jiangshan <laijs@cn.fujitsu.com>
->> >>>>>> Date: Mon, 27 Feb 2012 14:22:47 +0800
->> >>>>>> Subject: [PATCH 2/2] srcu: implement Peter's checking algorithm
->> >>>>>>
->> >>>>>> This patch implement the algorithm as Peter's:
->> >>>>>> https://lkml.org/lkml/2012/2/1/119
->> >>>>>>
->> >>>>>> o      Make the checking lock-free and we can perform parallel checking,
->> >>>>>>        Although almost parallel checking makes no sense, but we need it
->> >>>>>>        when 1) the original checking task is preempted for long, 2)
->> >>>>>>        sychronize_srcu_expedited(), 3) avoid lock(see next)
->> >>>>>>
->> >>>>>> o      Since it is lock-free, we save a mutex in state machine for
->> >>>>>>        call_srcu().
->> >>>>>>
->> >>>>>> o      Remove the SRCU_REF_MASK and remove the coupling with the flipping.
->> >>>>>>        (so we can remove the preempt_disable() in future, but use
->> >>>>>>         __this_cpu_inc() instead.)
->> >>>>>>
->> >>>>>> o      reduce a smp_mb(), simplify the comments and make the smp_mb() pairs
->> >>>>>>        more intuitive.
->> >>>>>
->> >>>>> Hello, Lai,
->> >>>>>
->> >>>>> Interesting approach!
->> >>>>>
->> >>>>> What happens given the following sequence of events?
->> >>>>>
->> >>>>> o       CPU 0 in srcu_readers_active_idx_check() invokes
->> >>>>>         srcu_readers_seq_idx(), getting some number back.
->> >>>>>
->> >>>>> o       CPU 0 invokes srcu_readers_active_idx(), summing the
->> >>>>>         ->c[] array up through CPU 3.
->> >>>>>
->> >>>>> o       CPU 1 invokes __srcu_read_lock(), and increments its counter
->> >>>>>         but not yet its ->seq[] element.
->> >>>>
->> >>>>
->> >>>> Any __srcu_read_lock() whose increment of active counter is not seen
->> >>>> by srcu_readers_active_idx() is considerred as
->> >>>> "reader-started-after-this-srcu_readers_active_idx_check()",
->> >>>> We don't need to wait.
->> >>>>
->> >>>> As you said, this srcu C.S 's increment seq is not seen by above
->> >>>> srcu_readers_seq_idx().
->> >>>>
->> >>>>>
->> >>>>> o       CPU 0 completes its summing of the ->c[] array, incorrectly
->> >>>>>         obtaining zero.
->> >>>>>
->> >>>>> o       CPU 0 invokes srcu_readers_seq_idx(), getting the same
->> >>>>>         number back that it got last time.
->> >>>>
->> >>>> If it incorrectly get zero, it means __srcu_read_unlock() is seen
->> >>>> in srcu_readers_active_idx(), and it means the increment of
->> >>>> seq is seen in this srcu_readers_seq_idx(), it is different
->> >>>> from the above seq that it got last time.
->> >>>>
->> >>>> increment of seq is not seen by above srcu_readers_seq_idx(),
->> >>>> but is seen by later one, so the two returned seq is different,
->> >>>> this is the core of Peter's algorithm, and this was written
->> >>>> in the comments(Sorry for my bad English). Or maybe I miss
->> >>>> your means in this mail.
->> >>>
->> >>> OK, good, this analysis agrees with what I was thinking.
->> >>>
->> >>> So my next question is about the lock freedom.  This lock freedom has to
->> >>> be limited in nature and carefully implemented.  The reasons for this are:
->> >>>
->> >>> 1.        Readers can block in any case, which can of course block both
->> >>>   synchronize_srcu_expedited() and synchronize_srcu().
->> >>>
->> >>> 2.        Because only one CPU at a time can be incrementing ->completed,
->> >>>   some sort of lock with preemption disabling will of course be
->> >>>   needed.  Alternatively, an rt_mutex could be used for its
->> >>>   priority-inheritance properties.
->> >>>
->> >>> 3.        Once some CPU has incremented ->completed, all CPUs that might
->> >>>   still be summing up the old indexes must stop.  If they don't,
->> >>>   they might incorrectly call a too-short grace period in case of
->> >>>   ->seq[]-sum overflow on 32-bit systems.
->> >>>
->> >>> Or did you have something else in mind?
->> >>
->> >> When flip happens when check_zero, this check_zero will no be
->> >> committed even it is success.
->> >
->> > But if the CPU in check_zero isn't blocking the grace period, then
->> > ->completed could overflow while that CPU was preempted.  Then how
->> > would this CPU know that the flip had happened?
->>
->> as you said, check the ->completed.
->> but disable the overflow for ->completed.
->>
->> there is a spinlock for srcu_struct(including locking for flipping)
->>
->> 1) assume we need to wait on widx
->> 2) use srcu_read_lock() to hold a reference of the 1-widx active counter
->> 3) release the spinlock
->> 4) do_check_zero
->> 5) gain the spinlock
->> 6) srcu_read_unlock()
->> 7) if ->completed is not changed, and there is no other later check_zero which
->>    is committed earlier than us, we will commit our check_zero if we success.
->>
->> too complicated.
+On 03/07/2012 11:52 PM, Chen, Dennis (SRDC SW) wrote:
 >
-> Plus I don't see how it disables overflow for ->completed.
+> diff -u module.ori.c module.c>  module.patch
+>
+> give more details please?
 
- srcu_read_lock() gets a reader reference, then the other state machine
-can do flip at most once, and then the ->completed can't wrap.
+Let me copy-and-paste it for you as you still don't read it. :)
 
-Thanks,
-Lai
+Documentation/SubmittingPatches
 
->
-> As you said earlier, abandoning the goal of lock freedom sounds like the
-> best approach.  Then you can indeed just hold the srcu_struct's mutex
-> across the whole thing.
->
->                                                        Thanx, Paul
->
->> Thanks,
->> Lai
->>
->> >
->> >> I play too much with lock-free for call_srcu(), the code becomes complicated,
->> >> I just give up lock-free for call_srcu(), the main aim of call_srcu() is simple.
->> >
->> > Makes sense to me!
->> >
->> >> (But I still like Peter's approach, it has some other good thing
->> >> besides lock-free-checking, if you don't like it, I will send
->> >> another patch to fix srcu_readers_active())
->> >
->> > Try them both and check their performance &c.  If within espilon of
->> > each other, pick whichever one you prefer.
->> >
->> >                                                     Thanx, Paul
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Use "diff -up" or "diff -uprN" to create patches.
+
+All changes to the Linux kernel occur in the form of patches, as
+generated by diff(1).  When creating your patch, make sure to create it
+in "unified diff" format, as supplied by the '-u' argument to diff(1).
+Also, please use the '-p' argument which shows which C function each
+change is in - that makes the resultant diff a lot easier to read.
+Patches should be based in the root kernel source directory,
+not in any lower subdirectory.
+
+To create a patch for a single file, it is often sufficient to do:
+
+         SRCTREE= linux-2.6
+         MYFILE=  drivers/net/mydriver.c
+
+         cd $SRCTREE
+         cp $MYFILE $MYFILE.orig
+         vi $MYFILE      # make your change
+         cd ..
+         diff -up $SRCTREE/$MYFILE{.orig,} > /tmp/patch
+
+To create a patch for multiple files, you should unpack a "vanilla",
+or unmodified kernel source tree, and generate a diff against your
+own source tree.  For example:
+
+         MYSRC= /devel/linux-2.6
+
+         tar xvfz linux-2.6.12.tar.gz
+         mv linux-2.6.12 linux-2.6.12-vanilla
+         diff -uprN -X linux-2.6.12-vanilla/Documentation/dontdiff \
+                 linux-2.6.12-vanilla $MYSRC > /tmp/patch
+
