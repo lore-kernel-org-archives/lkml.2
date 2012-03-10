@@ -1,98 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab2CIX7f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Mar 2012 18:59:35 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:44343 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab2CIX7e (ORCPT
+	id S1756042Ab2CJAAn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Mar 2012 19:00:43 -0500
+Received: from mail-vx0-f202.google.com ([209.85.220.202]:42687 "EHLO
+	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580Ab2CJAAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Mar 2012 18:59:34 -0500
-Date: Fri, 9 Mar 2012 15:59:01 -0800
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Fri, 9 Mar 2012 19:00:42 -0500
+Subject: [PATCH] sched, x86: fix overflow in cyc2ns_offset
+In-Reply-To: <20120309235630.12496.3056.stgit@dungbeetle.mtv.corp.google.com>
+To: john stultz <johnstul@us.ibm.com>
+From: Salman Qazi <sqazi@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
-Message-ID: <20120309235901.GE19584@count0.beaverton.ibm.com>
-References: <20120309125735.GB13346@moon>
- <20120309133555.GA23040@moon>
- <20120309134732.GA3696@redhat.com>
- <20120309141349.GC13346@moon>
- <20120309142620.GA5334@redhat.com>
- <20120309144239.GD13346@moon>
- <20120309152122.GA7802@redhat.com>
- <20120309154224.GE13346@moon>
- <20120309220244.GD19584@count0.beaverton.ibm.com>
- <20120309223932.GB725@moon>
+Date: Fri, 09 Mar 2012 16:00:40 -0800
+Message-ID: <20120309235944.12863.28602.stgit@dungbeetle.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120309223932.GB725@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12030923-4242-0000-0000-0000010246A8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 02:39:32AM +0400, Cyrill Gorcunov wrote:
-> On Fri, Mar 09, 2012 at 02:02:44PM -0800, Matt Helsley wrote:
-> ...
-> > 
-> > Sorry about the other email -- hadn't full caught up on this thread.
-> 
-> No problem.
-> 
-> > This is even better, yes.
-> >
-> 
-> Well, in final version I switched back to
-> 
-> +	if (mm->num_exe_file_vmas)
-> +		return -EBUSY;
-> 
-> simply because it's more flexible than mm->exe_file.
-> 
-> With mm->exe_file this prctl option become a one-shot
-> only, and while at moment our user-space tool can perfectly
-> live with that I thought that there is no strict need to
-> limit the option this way from the very beginning.
+When a machine boots up, the TSC generally gets reset.  However, when
+kexec is used to boot into a kernel, the TSC value would be carried
+over from the previous kernel.  The computation of cycns_offset in
+set_cyc2ns_scale is prone to an overflow, if the machine has been up
+more than 208 days prior to the kexec.  The overflow happens when
+we multiply *scale, even though there is enough room to store the
+final answer.  We fix this issue by decomposing tsc_now into the
+quotient and remainder of division by CYC2NS_SCALE_FACTOR and then
+performing the multiplication separately on the two components.
 
-As far as backward compatibility, isn't it better to lift that restriction
-later rather than add it? I think the latter would very likely "break"
-things whereas the former would not.
+Refactor code to share the calculation with the previous
+fix in __cycles_2_ns.
 
-I also prefer that restriction because it establishes a bound on how
-frequently the symlink can change. Keeping it a one-shot deal makes the
-values that show up in tools like top more reliable for admins.
+Signed-off-by: Salman Qazi <sqazi@google.com>
+---
+ arch/x86/include/asm/timer.h |    8 ++------
+ arch/x86/kernel/tsc.c        |    3 ++-
+ include/linux/kernel.h       |   13 +++++++++++++
+ 3 files changed, 17 insertions(+), 7 deletions(-)
 
-> 
-> > Of course I'd prefer it if there was a way to keep num_exe_file_vmas
-> > correct and not special-case c/r. The first approximation of a solution
-> 
-> It remains correct actually. There is no way to map new VM_EXECUTABLE
-> from user-space after we've unmapped previous ones, so num_exe_file_vmas
-> will remain 0.
-> 
-> > might be to increment the count whenever a new mmap filp == mm->exe_file
-> > and decrement on unmap. I think there are a bunch of details needed to
-> > make that work but my feeling is it's do-able. Have you investigated this
-> > already and rejected it for some reason (did I miss that discussion
-> > somehow?)?
-> 
-> As far as I understand overall num_exe_file_vmas concept -- we track
-> a number of VM_EXECUTABLE with it, so setting new exe_file should not
-> change num_exe_file_vmas I think.
-
-True, it's literally correct. However the whole reason for having it
-is to turn the mm->exe_file reference into a sort of weak reference
-which happens to coincide with counting the number of VM_EXECUTABLE vmas
-until you do c/r (really just the restart side of c/r).
-
-Cheers,
-	-Matt
+diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
+index 431793e..34baa0e 100644
+--- a/arch/x86/include/asm/timer.h
++++ b/arch/x86/include/asm/timer.h
+@@ -57,14 +57,10 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
+ 
+ static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+ {
+-	unsigned long long quot;
+-	unsigned long long rem;
+ 	int cpu = smp_processor_id();
+ 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
+-	quot = (cyc >> CYC2NS_SCALE_FACTOR);
+-	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
+-	ns += quot * per_cpu(cyc2ns, cpu) +
+-		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
++	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
++			(1UL << CYC2NS_SCALE_FACTOR));
+ 	return ns;
+ }
+ 
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index a62c201..183c592 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -620,7 +620,8 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+ 
+ 	if (cpu_khz) {
+ 		*scale = (NSEC_PER_MSEC << CYC2NS_SCALE_FACTOR)/cpu_khz;
+-		*offset = ns_now - (tsc_now * *scale >> CYC2NS_SCALE_FACTOR);
++		*offset = ns_now - mult_frac(tsc_now, *scale,
++					     (1UL << CYC2NS_SCALE_FACTOR));
+ 	}
+ 
+ 	sched_clock_idle_wakeup_event(0);
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index e834342..d801acb 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -85,6 +85,19 @@
+ }							\
+ )
+ 
++/*
++ * Multiplies an integer by a fraction, while avoiding unnecessary
++ * overflow or loss of precision.
++ */
++#define mult_frac(x, numer, denom)(			\
++{							\
++	typeof(x) quot = (x) / (denom);			\
++	typeof(x) rem  = (x) % (denom);			\
++	(quot * (numer)) + ((rem * (numer)) / (denom));	\
++}							\
++)
++
++
+ #define _RET_IP_		(unsigned long)__builtin_return_address(0)
+ #define _THIS_IP_  ({ __label__ __here; __here: (unsigned long)&&__here; })
+ 
 
