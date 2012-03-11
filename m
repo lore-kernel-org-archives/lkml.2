@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab2CKPwr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 11:52:47 -0400
-Received: from mail.us.es ([193.147.175.20]:42073 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753360Ab2CKPwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 11:52:45 -0400
-Date: Sun, 11 Mar 2012 16:52:41 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Hans Schillstrom <hans@schillstrom.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: linux-next: Tree for Mar 9 (netfilter)
-Message-ID: <20120311155241.GA27058@1984>
-References: <giupeu1.ee21a87813f836d9f587ea0b0e19a695@obelix.schillstrom.com>
+	id S1753495Ab2CKPw6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 11:52:58 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:51620 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753453Ab2CKPwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 11:52:55 -0400
+Message-ID: <4F5CCA59.3060905@xenotime.net>
+Date: Sun, 11 Mar 2012 08:52:57 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <giupeu1.ee21a87813f836d9f587ea0b0e19a695@obelix.schillstrom.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] regmap: Rejig struct declarations for stubbed API
+References: <1331467010-5608-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1331467010-5608-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On 03/11/2012 04:56 AM, Mark Brown wrote:
 
-On Sun, Mar 11, 2012 at 01:37:25PM +0100, Hans Schillstrom wrote:
-> Hello
-> >On Fri, Mar 09, 2012 at 12:30:42PM -0800, Randy Dunlap wrote:
-> >> On 03/09/2012 12:11 AM, Stephen Rothwell wrote:
-> >>
-> >> > Hi all,
-> >> >
-> >> > There will be no linux-next release on March 12 due to a public holiday.
-> >> >
-> >> > Changes since 20120308:
-> >>
-> >>
-> >> xt_LOG.c:(.text+0x789b1): undefined reference to `ip6t_ext_hdr'
-> >>
-> >> Full randconfig file is attached.
-> >
-> >The patch attached fixes this problem, thanks!
+> Ensure we have a forward declaration of struct regmap that isn't just
+> the return value of regmap_init() and make the definition of the
+> register defaults available.
 > 
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+Thanks.
+
+> ---
+>  include/linux/regmap.h |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
 > 
-> This one is needed as well,
-> 
-> To force xt_LOG  to be configured as a module if ipv6 is a module,
-> otherwise you end up in the same linking problem
+> diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+> index 33d5f1d..14b8252 100644
+> --- a/include/linux/regmap.h
+> +++ b/include/linux/regmap.h
+> @@ -16,11 +16,10 @@
+>  #include <linux/device.h>
+>  #include <linux/list.h>
+>  
+> -#ifdef CONFIG_REGMAP
+> -
+>  struct module;
+>  struct i2c_client;
+>  struct spi_device;
+> +struct regmap;
+>  
+>  /* An enum of all the supported cache types */
+>  enum regcache_type {
+> @@ -42,6 +41,8 @@ struct reg_default {
+>  	unsigned int def;
+>  };
+>  
+> +#ifdef CONFIG_REGMAP
+> +
+>  /**
+>   * Configuration for the register map of a device.
+>   *
 
-Perhaps I'm missing anything but either way (IPv6 as module or
-built-in) the symbol is still defined. With my patch applied, xt_LOG
-now depends on IP6_NF_IPTABLES, which depends on IPV6.
 
-Moreover we've got other xt_ target and matches that contain both IPv4
-and IPv6 support that don't require this.
 
-Let me know.
+-- 
+~Randy
