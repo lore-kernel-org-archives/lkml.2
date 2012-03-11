@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab2CKQ5z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 12:57:55 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:47639 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753233Ab2CKQ5u (ORCPT
+	id S1753523Ab2CKRGN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 13:06:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46770 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753197Ab2CKRGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 12:57:50 -0400
-Date: Sun, 11 Mar 2012 18:01:25 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephen Wilson <wilsons@start.ca>,
-        "Jason A. Donenfeld" <Jason@zx2c4.com>
-Subject: Re: [PATCH 8/9] proc: protect /proc/<pid>/{environ,pagemap} across
- execve
-Message-ID: <20120311170125.GA10787@dztty>
-References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
- <1331421919-15499-9-git-send-email-tixxdz@opendz.org>
- <20120311080523.GB3794@p183.telecom.by>
+	Sun, 11 Mar 2012 13:06:05 -0400
+Date: Sun, 11 Mar 2012 17:05:51 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: santosh prasad nayak <santoshprasadnayak@gmail.com>
+Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
+Message-ID: <20120311170551.GF13336@n2100.arm.linux.org.uk>
+References: <20120311132746.GA13336@n2100.arm.linux.org.uk> <CAOD=uF7kQHABCmxUL3-J-hZ1E2mXrb7dgsYq7msHhiPJ4Gm-Ew@mail.gmail.com> <20120311143615.GB13336@n2100.arm.linux.org.uk> <CAOD=uF5GbsyHS5iXjJ1YcqJyGLHwT8Wjhiie1daJAVqu527Umg@mail.gmail.com> <20120311150311.GC13336@n2100.arm.linux.org.uk> <CAOD=uF5F4tOG0Y2tZdDeMgqs4-46HXYzA3RR-t8KuNuYRarJbg@mail.gmail.com> <20120311154846.GD13336@n2100.arm.linux.org.uk> <CAOD=uF6OtpX-1eoJB3X5ZywNUeU2_-tsE+Ksu33ZFXqoxVK_aQ@mail.gmail.com> <20120311164243.GE13336@n2100.arm.linux.org.uk> <CAOD=uF6sckygJf+76jY65N1-0BSD4E6VYf0KcZAQpyNmtxi_+A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120311080523.GB3794@p183.telecom.by>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOD=uF6sckygJf+76jY65N1-0BSD4E6VYf0KcZAQpyNmtxi_+A@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 11, 2012 at 11:05:23AM +0300, Alexey Dobriyan wrote:
-> On Sun, Mar 11, 2012 at 12:25:18AM +0100, Djalal Harouni wrote:
-> > The /proc/<pid>/{environ,pagemap} are sensitive files which must be
-> > protected across execve to avoid information leaks.
-> > 
-> > These files are protected by attaching them to their task at open time by
-> > saving the exec_id of the target task, this way in read we just compare
-> > the target task's exec_id and the previously saved exec_id of the
-> > proc_file_private struct, in other words we just bind these files to their
-> > appropriate process image at open time. We do this since we are able to do
-> > proper permission checks (ptrace) at each syscall, so we do not care about
-> > the reader.
-> > 
-> > Another important rule is to set the exec_id of the target task before the
-> > permission checks at open, this way we do not race against target task
-> > execve, and it will be more effective if the exec_id check at read/write
-> > times are delayed as much as possible to be sure that the target task do
-> > not change during execve.
-> > 
-> > This patch adds the open file_operation to the
-> > /proc/<pid>/{environ,pagemap} so we are able to set the exec_id of the
-> > target task and to do the appropriate permission checks. The exec_id check
-> > is done in the related read file_operation.
+On Sun, Mar 11, 2012 at 10:27:12PM +0530, santosh prasad nayak wrote:
+> Russel,
 > 
-> ->open is duplicated.
-Right, I'll unify the code in a generic open function that does:
-* alloc and setup proc_file_private (which includes the exec_id)
-* ptrace check using mm_for_maps()
-  unify only those who check PTRACE_MODE_READ
-* save priv_file_proc.
+> Is this what you want ?
+> 
+>  static inline void clcdfb_sleep(unsigned int ms)
+>  {
+> -       if (in_atomic()) {
+>                 mdelay(ms);
+> -       } else {
+> -               msleep(ms);
+> -       }
+>  }
 
-This applies also to the release functions, I'll re-submit it.
+"want" is a strong word - I would not say "want" because I don't want the
+system busy-spinning for 20ms at a time during normal blank and unblank
+events preventing any other thread in the system from running.
 
-Thanks Alexey.
+Looking at do_unblank_screen() in drivers/tty/vt/vt.c:
 
--- 
-tixxdz
-http://opendz.org
+/*
+ * Called by timer as well as from vt_console_driver
+ */
+void do_unblank_screen(int leaving_gfx)
+{
+        struct vc_data *vc;
+
+        /* This should now always be called from a "sane" (read: can schedule)
+         * context for the sake of the low level drivers, except in the special
+         * case of oops_in_progress
+         */
+        if (!oops_in_progress)
+                might_sleep();
+
+There may be another option of changing in_atomic() to be oops_in_progress()
+if that comment is to be believed.  However, that comment conflicts with
+the comment immediately above the function.  That said, the code is more
+authorative than the comment above it because if that comment were true,
+we'd see might_sleep() warnings.
+
+So, I suspect:
+
+ static inline void clcdfb_sleep(unsigned int ms)
+ {
+-       if (in_atomic()) {
++       if (oops_in_progress) {
+                mdelay(ms);
+        } else {
+                msleep(ms);
+
+is about the best that can be hoped for.
+
+However, I think framebuffer people need to comment about what contexts
+a framebuffer driver's fb_blank method would be called from (including
+when oops-dumping.)
