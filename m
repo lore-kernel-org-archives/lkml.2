@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab2CKJly (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 05:41:54 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35761 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab2CKJlv convert rfc822-to-8bit (ORCPT
+	id S1752340Ab2CKJzf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 05:55:35 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:46077 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab2CKJzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 05:41:51 -0400
+	Sun, 11 Mar 2012 05:55:32 -0400
+Date: Sun, 11 Mar 2012 10:55:28 +0100 (CET)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+cc: linux-security-module@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        zohar@linux.vnet.ibm.com, dhowells@redhat.com,
+        herbert@gondor.hengli.com.au, Linux/m68k <linux-m68k@vger.kernel.org>
+Subject: Re: [PATCH v2.2 2/7] crypto: GnuPG based MPI lib - header files
+ (part 2)
+In-Reply-To: <af9b876508ebc83431312aef67b3ae920780bd5c.1319025009.git.dmitry.kasatkin@intel.com>
+Message-ID: <alpine.DEB.2.00.1203111046110.4778@ayla.of.borg>
+References: <cover.1319025009.git.dmitry.kasatkin@intel.com> <af9b876508ebc83431312aef67b3ae920780bd5c.1319025009.git.dmitry.kasatkin@intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CADDYkjTsDf0J0v7B-78SiYPsjPsn1VOCbiqAMq8TJxgPc_MiBg@mail.gmail.com>
-References: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com>
-	<20120308155211.GF4334@twin.jikos.cz>
-	<CADDYkjTG-q5+pFRFt9sGKq=cgL=ZgQaNZV=2ipBsSbuvxCa3jw@mail.gmail.com>
-	<4F595D6D.6080809@cn.fujitsu.com>
-	<20120309105537.GG4334@twin.jikos.cz>
-	<CADDYkjRcRbxxPErdMBOs55-gNHZA0GfxcsWNrVbAuv37b3rtvw@mail.gmail.com>
-	<20120309114010.GH4334@twin.jikos.cz>
-	<CADDYkjTsDf0J0v7B-78SiYPsjPsn1VOCbiqAMq8TJxgPc_MiBg@mail.gmail.com>
-Date: Sun, 11 Mar 2012 10:41:50 +0100
-Message-ID: <CADDYkjRZZ7H_UnbU9y8GNmA8oMd23ZOwSsbPW5CHOFFz6Vv6Mg@mail.gmail.com>
-Subject: Re: kernel BUG at fs/btrfs/delayed-inode.c:1466!
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: dave@jikos.cz, Jacek Luczak <difrost.kernel@gmail.com>,
-        Liu Bo <liubo2009@cn.fujitsu.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, josef@redhat.com,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Chris Mason <chris.mason@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/10 Jacek Luczak <difrost.kernel@gmail.com>:
-> 2) A *regression* in 3.3.0-rc6-00197-g9f8050c
-> - completely unusable as reports ENOSPC
-> - to reproduce, mount volume and issue:
-> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
-> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
-> On my host this shows:
-> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
-> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
-> touch: cannot touch `/btrfs/dd': No space left on device
-> 423
-> - remount to reset:
-> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
-> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
-> touch: cannot touch `/btrfs/dd': No space left on device
-> 1
-> # umount /btrfs/
-> # mount -t btrfs /dev/vg00/btrfs /btrfs/ -o noatime,nodatacow,defaults
-> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
-> /vdd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
-> touch: cannot touch `/btrfs/dd': No space left on device
-> 423
-> - bisected down to 5500cdb (Btrfs: increase the global block reserve
-> estimates). After reverting this one Linus master works for me again.
+On Wed, 19 Oct 2011, Dmitry Kasatkin wrote:
+> Adds the multi-precision-integer maths library which was originally taken
+> from GnuPG and ported to the kernel by (among others) David Howells.
+> This version is taken from Fedora kernel 2.6.32-71.14.1.el6.
+> The difference is that checkpatch reported errors and warnings have been fixed.
+> 
+> This library is used to implemenet RSA digital signature verification
+> used in IMA/EVM integrity protection subsystem.
 
-This patch is included in 3.3-rc7. Do you plan to keep it or revert?
+> --- /dev/null
+> +++ b/lib/mpi/longlong.h
 
--jacek
+> +	/* If udiv_qrnnd was not defined for this processor, use __udiv_qrnnd_c.  */
+> +#if !defined(udiv_qrnnd)
+> +#define UDIV_NEEDS_NORMALIZATION 1
+> +#define udiv_qrnnd __udiv_qrnnd_c
+> +#endif
+> +
+> +#undef count_leading_zeros
+
+Why is this #undef here? It's not present in mpi/longlong.h from Ubuntu's
+gnupg-1.4.10, and causing ...
+
+> +#if !defined(count_leading_zeros)
+> +	extern
+> +#ifdef __STDC__
+> +			const
+> +#endif
+> +			unsigned char __clz_tab[];
+> +#define count_leading_zeros(count, x) \
+> +do { \
+> +	UWtype __xr = (x); \
+> +	UWtype __a; \
+> +	\
+> +	if (W_TYPE_SIZE <= 32) { \
+> +		__a = __xr < ((UWtype) 1 << 2*__BITS4) \
+> +		? (__xr < ((UWtype) 1 << __BITS4) ? 0 : __BITS4) \
+> +		: (__xr < ((UWtype) 1 << 3*__BITS4) ?  2*__BITS4 : 3*__BITS4); \
+> +	} \
+> +	else { \
+> +		for (__a = W_TYPE_SIZE - 8; __a > 0; __a -= 8) \
+> +			if (((__xr >> __a) & 0xff) != 0) \
+> +				break; \
+> +	} \
+> +	\
+> +	(count) = W_TYPE_SIZE - (__clz_tab[__xr >> __a] + __a); \
+> +} while (0)
+> +	/* This version gives a well-defined value for zero. */
+> +#define COUNT_LEADING_ZEROS_0 W_TYPE_SIZE
+
+lib/mpi/longlong.h:1483:1: warning: "COUNT_LEADING_ZEROS_0" redefined
+lib/mpi/longlong.h:610:1: warning: this is the location of the previous definition
+
+on m68k/allmodconfig.
+
+I'm also wondering why this warning is not seen on other arches, e.g. PPC
+#defines COUNT_LEADING_ZEROS_0 to 32, just like m68k.
+
+> +#endif
+
+I suppose the plan is to clean up this header file, as lots of its
+functionality is already present in the kernel sources in some other way
+(e.g. arch/m68k/lib/muldi3.c)?
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
