@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab2CKQi7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 12:38:59 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:43736 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753176Ab2CKQi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 12:38:58 -0400
-Date: Sun, 11 Mar 2012 09:38:53 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Len Brown <len.brown@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] floppy: revert floppy disable halt warning
-Message-ID: <20120311093853.04f049c2@s6510.linuxnetplumber.net>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753470Ab2CKQm4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 12:42:56 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52602 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753248Ab2CKQmz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 12:42:55 -0400
+Date: Sun, 11 Mar 2012 16:42:43 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: santosh prasad nayak <santoshprasadnayak@gmail.com>
+Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
+Message-ID: <20120311164243.GE13336@n2100.arm.linux.org.uk>
+References: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com> <20120311132746.GA13336@n2100.arm.linux.org.uk> <CAOD=uF7kQHABCmxUL3-J-hZ1E2mXrb7dgsYq7msHhiPJ4Gm-Ew@mail.gmail.com> <20120311143615.GB13336@n2100.arm.linux.org.uk> <CAOD=uF5GbsyHS5iXjJ1YcqJyGLHwT8Wjhiie1daJAVqu527Umg@mail.gmail.com> <20120311150311.GC13336@n2100.arm.linux.org.uk> <CAOD=uF5F4tOG0Y2tZdDeMgqs4-46HXYzA3RR-t8KuNuYRarJbg@mail.gmail.com> <20120311154846.GD13336@n2100.arm.linux.org.uk> <CAOD=uF6OtpX-1eoJB3X5ZywNUeU2_-tsE+Ksu33ZFXqoxVK_aQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOD=uF6OtpX-1eoJB3X5ZywNUeU2_-tsE+Ksu33ZFXqoxVK_aQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the stupid floppy disable halt warning. It is meaningless since
-the API is local to floppy driver.  Our boot scripts check for the
-floppy drive, and this causes the warning to trigger every time. This
-confuses support, breaks automated tests that look for backtraces on
-boot,  and adds no value.  
+On Sun, Mar 11, 2012 at 10:07:18PM +0530, santosh prasad nayak wrote:
+> On Sun, Mar 11, 2012 at 9:18 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Sun, Mar 11, 2012 at 08:49:27PM +0530, santosh prasad nayak wrote:
+> >> On Sun, Mar 11, 2012 at 8:33 PM, Russell King - ARM Linux
+> >> <linux@arm.linux.org.uk> wrote:
+> >> > in_interrupt() won't tell us if we're being called with spinlocks held,
+> >> > which _is_ a possibility because this can be called from printk(), for
+> >> > oops dumps and the like.
+> >> >
+> >> > in_interrupt() just means that we're inside a hard or soft interrupt,
+> >> > or nmi.  It says nothing about whether msleep() is possible.
+> >>
+> >>
+> >> in_atomic() is also not  error free.  I found following comment in
+> >> include/linux/hardirq.h.  How do you handle it in non-preemptible
+> >> kernel ?
+> >>
+> >> /*
+> >>  * Are we running in atomic context?  WARNING: this macro cannot
+> >>  * always detect atomic context; in particular, it cannot know about
+> >>  * held spinlocks in non-preemptible kernels.  Thus it should not be
+> >>  * used in the general case to determine whether sleeping is possible.
+> >>  * Do not use in_atomic() in driver code.
+> >>  */
+> >> #define in_atomic()     ((preempt_count() & ~PREEMPT_ACTIVE) != 0)
+> >
+> > That may be, but the fact of the matter is that no one has *ever*
+> > reported an incident where this has failed at this point - and when
+> > it does people will end up with a might_sleep() warning from msleep().
+> >
+> > Maybe those who are saying people should not use this should instead
+> > be analysing why people use this, and suggest an alternative solution
+> > to the problem instead of a basic and uninformative "you shouldn't use
+> > this" statement.
+> 
+> The reason is given in the article.
 
-The message is being displayed to the wrong audience, it looks like it
-was intended as a compromise of a long discussion on LKML about
-supporting older x86 hardware; but users don't know or understand what
-it is saying.
+At this point I'm just going to restate what I said above and below, so
+I'm not even going to bother doing that, and instead just say that.  I'm
+not arguing whether it's right or wrong.  I'm just stating that the only
+solution I see is to get rid of msleep() in there entirely.
 
-If you want to change halt handling then just fix
-the floppy driver, don't whine about it.
-
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-
---- a/drivers/block/floppy.c	2012-03-11 09:27:52.866459327 -0700
-+++ b/drivers/block/floppy.c	2012-03-11 09:28:29.286579201 -0700
-@@ -1037,7 +1037,6 @@ static void floppy_disable_hlt(void)
- {
- 	unsigned long flags;
- 
--	WARN_ONCE(1, "floppy_disable_hlt() scheduled for removal in 2012");
- 	spin_lock_irqsave(&floppy_hlt_lock, flags);
- 	if (!hlt_disabled) {
- 		hlt_disabled = 1;
+> http://lwn.net/Articles/274695/
+> 
+> "The in_atomic() macro works by checking whether preemption is
+> disabled, which seems like the right thing to do. Handlers for events
+> like hardware interrupts will disable preemption, but so will the
+> acquisition of a spinlock. So this test appears to catch all of the
+> cases where sleeping would be a bad idea. Certainly a number of people
+> who have looked at this macro have come to that conclusion.
+> 
+> But if preemption has not been configured into the kernel in the first
+> place, the kernel does not raise the "preemption count" when spinlocks
+> are acquired. So, in this situation (which is common - many
+> distributors still do not enable preemption in their kernels),
+> in_atomic() has no way to know if the calling code holds any spinlocks
+> or not. So it will return zero (indicating process context) even when
+> spinlocks are held. And that could lead to kernel code thinking that
+> it is running in process context (and acting accordingly) when, in
+> fact, it is not."
+> 
+> 
+> 
+> 
+> regards
+> Santosh
+> >
+> > As I've said, if we aren't going to use this, then the only solution is
+> > to completely omit the msleep() there and just say "sod you to running
+> > anything else for 20ms while this driver busy-spins."  That's
+> > ultimately the safe thing to do, and at the moment I see no other
+> > alternative there.
