@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811Ab2CKTgs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 15:36:48 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50204 "EHLO mgw2.diku.dk"
+	id S1752019Ab2CKTg7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 15:36:59 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:50199 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520Ab2CKTgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751511Ab2CKTgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 11 Mar 2012 15:36:36 -0400
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: kernel-janitors@vger.kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org,
+To: Samuel Ortiz <samuel@sortiz.org>
+Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] drivers/scsi/arm/{cumana_2,eesox,powertec}.c: ensure arguments to request_irq and free_irq are compatible
-Date: Sun, 11 Mar 2012 20:36:22 +0100
-Message-Id: <1331494587-12196-3-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 3/7] drivers/net/irda/{ali-ircc,via-ircc,w83977af-ir}.c: ensure arguments to request_irq and free_irq are compatible
+Date: Sun, 11 Mar 2012 20:36:23 +0100
+Message-Id: <1331494587-12196-4-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -28,56 +26,85 @@ Convert calls to free_irq so that the second argument is the same as the
 last argument of the corresponding call to request_irq.  Without this
 property, free_irq does nothing.
 
-In each case, the problem is only in the probe function.  The corresponding
-call in the remove function already has the correct second argument.
+In each case, there is one call to free_irq with self as the second
+argument and one with dev as the second argument.  Even though dev was also
+the last argument of request_irq, I have changed all of the calls to use
+self, as it fits better with the first argument to each function.
 
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-Not tested.
+Not tested.  I don't know if I have made the right choice.
 
- drivers/scsi/arm/cumana_2.c |    2 +-
- drivers/scsi/arm/eesox.c    |    2 +-
- drivers/scsi/arm/powertec.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/irda/ali-ircc.c    |    4 ++--
+ drivers/net/irda/via-ircc.c    |    4 ++--
+ drivers/net/irda/w83977af_ir.c |    4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/arm/cumana_2.c b/drivers/scsi/arm/cumana_2.c
-index 547987b..693d383 100644
---- a/drivers/scsi/arm/cumana_2.c
-+++ b/drivers/scsi/arm/cumana_2.c
-@@ -480,7 +480,7 @@ cumanascsi2_probe(struct expansion_card *ec, const struct ecard_id *id)
+diff --git a/drivers/net/irda/ali-ircc.c b/drivers/net/irda/ali-ircc.c
+index 963067d..7e732d7 100644
+--- a/drivers/net/irda/ali-ircc.c
++++ b/drivers/net/irda/ali-ircc.c
+@@ -1352,7 +1352,7 @@ static int ali_ircc_net_open(struct net_device *dev)
+ 	iobase = self->io.fir_base;
+ 	
+ 	/* Request IRQ and install Interrupt Handler */
+-	if (request_irq(self->io.irq, ali_ircc_interrupt, 0, dev->name, dev)) 
++	if (request_irq(self->io.irq, ali_ircc_interrupt, 0, dev->name, self))
+ 	{
+ 		IRDA_WARNING("%s, unable to allocate irq=%d\n",
+ 			     ALI_IRCC_DRIVER_NAME,
+@@ -1424,7 +1424,7 @@ static int ali_ircc_net_close(struct net_device *dev)
+ 	/* Disable interrupts */
+ 	SetCOMInterrupts(self, FALSE);
+ 	       
+-	free_irq(self->io.irq, dev);
++	free_irq(self->io.irq, self);
+ 	free_dma(self->io.dma);
  
- 	if (info->info.scsi.dma != NO_DMA)
- 		free_dma(info->info.scsi.dma);
--	free_irq(ec->irq, host);
-+	free_irq(ec->irq, info);
+ 	IRDA_DEBUG(2, "%s(), ----------------- End ------------------\n", __func__ );
+diff --git a/drivers/net/irda/via-ircc.c b/drivers/net/irda/via-ircc.c
+index 2d456dd..c0678be 100644
+--- a/drivers/net/irda/via-ircc.c
++++ b/drivers/net/irda/via-ircc.c
+@@ -1483,7 +1483,7 @@ static int via_ircc_net_open(struct net_device *dev)
+ 	dev->stats.rx_packets = 0;
+ 	IRDA_ASSERT(self != NULL, return 0;);
+ 	iobase = self->io.fir_base;
+-	if (request_irq(self->io.irq, via_ircc_interrupt, 0, dev->name, dev)) {
++	if (request_irq(self->io.irq, via_ircc_interrupt, 0, dev->name, self)) {
+ 		IRDA_WARNING("%s, unable to allocate irq=%d\n", driver_name,
+ 			     self->io.irq);
+ 		return -EAGAIN;
+@@ -1562,7 +1562,7 @@ static int via_ircc_net_close(struct net_device *dev)
  
-  out_release:
- 	fas216_release(host);
-diff --git a/drivers/scsi/arm/eesox.c b/drivers/scsi/arm/eesox.c
-index edfd12b..48c1a14 100644
---- a/drivers/scsi/arm/eesox.c
-+++ b/drivers/scsi/arm/eesox.c
-@@ -601,7 +601,7 @@ eesoxscsi_probe(struct expansion_card *ec, const struct ecard_id *id)
+ 	/* Disable interrupts */
+ 	EnAllInt(iobase, OFF);
+-	free_irq(self->io.irq, dev);
++	free_irq(self->io.irq, self);
+ 	free_dma(self->io.dma);
+ 	if (self->io.dma2 != self->io.dma)
+ 		free_dma(self->io.dma2);
+diff --git a/drivers/net/irda/w83977af_ir.c b/drivers/net/irda/w83977af_ir.c
+index 7d43506..c0c430c 100644
+--- a/drivers/net/irda/w83977af_ir.c
++++ b/drivers/net/irda/w83977af_ir.c
+@@ -1164,7 +1164,7 @@ static int w83977af_net_open(struct net_device *dev)
+ 	iobase = self->io.fir_base;
  
- 	if (info->info.scsi.dma != NO_DMA)
- 		free_dma(info->info.scsi.dma);
--	free_irq(ec->irq, host);
-+	free_irq(ec->irq, info);
+ 	if (request_irq(self->io.irq, w83977af_interrupt, 0, dev->name, 
+-			(void *) dev)) {
++			self)) {
+ 		return -EAGAIN;
+ 	}
+ 	/*
+@@ -1244,7 +1244,7 @@ static int w83977af_net_close(struct net_device *dev)
+ 	switch_bank(iobase, SET0);
+ 	outb(0, iobase+ICR); 
  
-  out_remove:
- 	fas216_remove(host);
-diff --git a/drivers/scsi/arm/powertec.c b/drivers/scsi/arm/powertec.c
-index 9274c06..c9d6e8b 100644
---- a/drivers/scsi/arm/powertec.c
-+++ b/drivers/scsi/arm/powertec.c
-@@ -393,7 +393,7 @@ powertecscsi_probe(struct expansion_card *ec, const struct ecard_id *id)
+-	free_irq(self->io.irq, dev);
++	free_irq(self->io.irq, self);
+ 	free_dma(self->io.dma);
  
- 	if (info->info.scsi.dma != NO_DMA)
- 		free_dma(info->info.scsi.dma);
--	free_irq(ec->irq, host);
-+	free_irq(ec->irq, info);
- 
-  out_release:
- 	fas216_release(host);
+ 	/* Restore bank register */
 
