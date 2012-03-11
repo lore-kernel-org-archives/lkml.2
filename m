@@ -1,134 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab2CKLeY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 07:34:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:59328 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751764Ab2CKLeW (ORCPT
+	id S1752614Ab2CKLfC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 07:35:02 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:48097 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab2CKLeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 07:34:22 -0400
-Date: Sun, 11 Mar 2012 12:34:14 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Mike Turquette <mturquette@ti.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH v6 2/3] clk: introduce the common clock framework
-Message-ID: <20120311113414.GM3852@pengutronix.de>
-References: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
- <1331366064-1273-3-git-send-email-mturquette@linaro.org>
+	Sun, 11 Mar 2012 07:34:37 -0400
+Date: Sun, 11 Mar 2012 12:34:11 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Add a per-dimm structure
+Message-ID: <20120311113411.GB29175@aftab>
+References: <1331120438-27523-1-git-send-email-mchehab@redhat.com>
+ <20120308215716.GA5925@aftab>
+ <4F59DC38.5080104@redhat.com>
+ <20120309143806.GA11962@aftab>
+ <4F5A329A.70702@redhat.com>
+ <20120309184733.GB13745@aftab>
+ <4F5A5E2D.4090408@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331366064-1273-3-git-send-email-mturquette@linaro.org>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:25:29 up 119 days, 19:12, 16 users,  load average: 0.00, 0.01,
- 0.05
+In-Reply-To: <4F5A5E2D.4090408@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+On Fri, Mar 09, 2012 at 04:46:53PM -0300, Mauro Carvalho Chehab wrote:
 
-I was about to give my tested-by when I decided to test the set_rate
-function. Unfortunately this is broken for several reasons. I'll try
-to come up with a fixup series later the day.
+[..]
 
-On Fri, Mar 09, 2012 at 11:54:23PM -0800, Mike Turquette wrote:
-> +
-> +/**
-> + * DOC: Using the CLK_SET_RATE_PARENT flag
-> + *
-> + * __clk_set_rate changes the child's rate before the parent's to more
-> + * easily handle failure conditions.
-> + *
-> + * This means clk might run out of spec for a short time if its rate is
-> + * increased before the parent's rate is updated.
-> + *
-> + * To prevent this consider setting the CLK_SET_RATE_GATE flag on any
-> + * clk where you also set the CLK_SET_RATE_PARENT flag
-> + *
-> + * PRE_RATE_CHANGE notifications are supposed to stack as a rate change
-> + * request propagates up the clk tree.  This reflects the different
-> + * rates that a downstream clk might experience if left enabled while
-> + * upstream parents change their rates.
-> + */
-> +static struct clk *__clk_set_rate(struct clk *clk, unsigned long rate)
-> +{
-> +	struct clk *fail_clk = NULL;
-> +	int ret = NOTIFY_DONE;
-> +	unsigned long old_rate = clk->rate;
-> +	unsigned long new_rate;
-> +	unsigned long parent_old_rate;
-> +	unsigned long parent_new_rate = 0;
-> +	struct clk *child;
-> +	struct hlist_node *tmp;
-> +
-> +	/* bail early if we can't change rate while clk is enabled */
-> +	if ((clk->flags & CLK_SET_RATE_GATE) && clk->enable_count)
-> +		return clk;
-> +
-> +	/* find the new rate and see if parent rate should change too */
-> +	WARN_ON(!clk->ops->round_rate);
-> +
-> +	new_rate = clk->ops->round_rate(clk->hw, rate, &parent_new_rate);
+> > Right, what I mean is that the rank?/ already contains some info:
+> > 
+> > rank0/
+> > |-- dimm_dev_type
+> > |-- dimm_edac_mode
+> > |-- dimm_label
+> > |-- dimm_location
+> > |-- dimm_mem_type
+> > `-- dimm_size
+> > 
+> > Now, we do the CE/UE error counting on a per-rank granularity anyway, so
+> > the most natural way to have that is to add those counts to the ranks:
+> > 
+> > rank0/
+> > |-- dimm_dev_type
+> > |-- dimm_edac_mode
+> > |-- dimm_label
+> > |-- dimm_location
+> > |-- dimm_mem_type
+> > |-- CE
+> > |-- UE
+> > `-- dimm_size
+> > 
+> > And this has to be _very_ easy to do without any adding additional
+> > sysfs nodes with ugly names to /sys/devices/system/edac etc. This is
+> > even better grouping than the mc?/-based hierarchy I suggested above,
+> > actually.
+> 
+> Agreed. Yeah, it is easy to add CE/UE there. I actually implemented it
+> on one of my internal patches, but there's an issue:
+> 
+> The typical case for UE is to report errors by cacheline (128 bits), and
+> not by DIMM. This happens on all FB-DIMM memory controllers, and also on
+> several CS-based ones.
+> 
+> For example, this is how (currently) the amd64_handle_ue() handles an
+> Uncorrected Error:
+> 
+> 		error_address_to_page_and_offset(sys_addr, &page, &offset);
+> 		edac_mc_handle_ue(log_mci, page, offset, csrow, EDAC_MOD_STR);
+> 
+> There's no channel info there.
 
-You don't need a WARN_ON when you derefence clk->ops->round_rate anyway.
-Also, even when the current clock does not have a set_rate function it
-can still change its rate when the CLK_SET_RATE_PARENT is set.
+Right, this looks like a largely untested path which has been that way
+since forever. But, since UEs generally cause the machine to syncflood
+and warm reset (now, at least), I don't think it makes a whole lot of
+sense to even have such a counter - if we did, it would either say 0 or
+1 :).
 
-> +
-> +	/* NOTE: pre-rate change notifications will stack */
-> +	if (clk->notifier_count)
-> +		ret = __clk_notify(clk, PRE_RATE_CHANGE, clk->rate, new_rate);
-> +
-> +	if (ret == NOTIFY_BAD)
-> +		return clk;
-> +
-> +	/* speculate rate changes down the tree */
-> +	hlist_for_each_entry(child, tmp, &clk->children, child_node) {
-> +		ret = __clk_speculate_rates(child, new_rate);
-> +		if (ret == NOTIFY_BAD)
-> +			return clk;
-> +	}
-> +
-> +	/* change the rate of this clk */
-> +	if (clk->ops->set_rate)
-> +		ret = clk->ops->set_rate(clk->hw, new_rate);
+So, I'd suggest the UE counter to be optional and to let the driver
+decide whether it wants it or not.
 
-I don't know the reason why you change the child clock before the parent
-clock, but it cannot work since this clock will change its rate based on
-the old parent rate and not the new one.
+[..]
 
-There are more things, as said I'll try to come up with a fixup series.
+> One alternative would simply to remove all those intermediate
+> counters, letting userspace to count the errors via perf (provided
+> that we have a proper location field).
 
-Sascha
+Yes, that would be where we want to go eventually because I too don't
+see any reason for those counters. Besides, they don't decay over time,
+for example, say you have a DIMM which experiences a temporary failure
+and generates k CEs. Then, the source of that error disappears and the
+DIMM works fine for months.
+
+Now, when you look at the counters, you'll still see k CEs in one of its
+ranks which doesn't tell you when those errors happened and what their
+rate was, etc.
+
+So, I'm fine with dropping those counters since they don't give you the
+flexibility of a userspace tool and they don't work properly anyway.
+
+HOWEVER, I don't know who uses them still so probably a deprecation
+warning is in order here...
+
+
+> 
+> Regards,
+> Mauro
+> 
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
