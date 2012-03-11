@@ -1,94 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab2CKJ53 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 05:57:29 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34921 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752107Ab2CKJ51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 05:57:27 -0400
-Date: Sun, 11 Mar 2012 10:56:58 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Solar Designer <solar@openwall.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Djalal Harouni <tixxdz@opendz.org>, linux-kernel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Stephen Wilson <wilsons@start.ca>,
-        "Jason A. Donenfeld" <Jason@zx2c4.com>
-Subject: Re: [PATCH 1/9] exec: add a global execve counter
-Message-ID: <20120311095658.GA15121@elte.hu>
-References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
- <1331421919-15499-2-git-send-email-tixxdz@opendz.org>
- <CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
- <CA+55aFy-ktC3NG5Wc+vhWB+18aqj9a0VLUSKQg+KR=FsVqfoJQ@mail.gmail.com>
- <CA+55aFz6Ben=b_jKXTneUm7-ULP_Z8J5uua+=CA+kXjVpSSVjg@mail.gmail.com>
- <20120311082431.GA26640@openwall.com>
+	id S1752499Ab2CKKGW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 06:06:22 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35414 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195Ab2CKKGT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 06:06:19 -0400
+Message-ID: <4F5C78C3.1070208@mvista.com>
+Date: Sun, 11 Mar 2012 14:04:51 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120311082431.GA26640@openwall.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Jeff Garzik <jgarzik@pobox.com>, kernel-janitors@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] drivers/ata/pata_mpc52xx.c: add missing kfree
+References: <1331402199-8000-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1331402199-8000-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
-* Solar Designer <solar@openwall.com> wrote:
+On 10-03-2012 21:56, Julia Lawall wrote:
 
-> > Actually, using a pure counter is horrible, because even if 
-> > it takes four days to wrap, it *will* wrap, and the attacker 
-> > can just count his own execve's.
-> 
-> Four days (for a 32-bit counter) is just not enough, so the 
-> counter needs to be e.g. 64-bit as proposed.  A 64-bit counter 
-> won't wrap during lifetime of a system.
+> From: Julia Lawall<Julia.Lawall@lip6.fr>
 
-A 64-bit counter is OK on 32-bit platforms as well as long as 
-it's not *atomic*.
+> There is no need to call the devm cleanup functions on failure of a probe
+> or remove function.
 
-Linus's scheme of using the CPU ID for the high bits would solve 
-that particular problem IMO. Each CPU would have its own count 
-set apart in a percpu area, accessible via __this_cpu_inc() or 
-so.
+    This doesn't correlate with the subject.
 
-16 bits for the CPU ID and 48 bits for the actual count should 
-be enough for everyone! ;-) It wraps in about 700 years, with 
-current CPU speeds and assuming that exec() will be relatively 
-slow in the future as well.
+> Signed-off-by: Julia Lawall<Julia.Lawall@lip6.fr>
 
-Some other kernel code might make use of such a fast, global 
-generation count as well, so if this is reasonably abstracted 
-out and named properly it would not just be a single-purpose 
-security facility. DEFINE_GENCOUNT() or so? [the count itself 
-would not be reused, of course.]
-
-> The CPUs' timestamp counters were not designed for security.  
-> I would not be too surprised if some implementation of a CPU 
-> architecture (maybe emulated, maybe under a hypervisor) has 
-> such timestamp counter granularity that we may see the same 
-> value across a second execve().
-
-Not using the TSC would certainly make this logic simpler and 
-faster - which is a big plus for any security measure.
-
-Thanks,
-
-	Ingo
+WBR, Sergei
