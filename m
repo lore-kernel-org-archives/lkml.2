@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab2CKNbO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 09:31:14 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:58615 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab2CKNbN (ORCPT
+	id S1752847Ab2CKNmP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 09:42:15 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40734 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab2CKNmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 09:31:13 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: linux-usb@vger.kernel.org
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH] usb gadget: fix a section mismatch when compiling g_ffs with CONFIG_USB_FUNCTIONFS_ETH
-Date: Sun, 11 Mar 2012 14:31:10 +0100
-Message-Id: <1331472670-28589-1-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.2.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 11 Mar 2012 09:42:14 -0400
+Date: Sun, 11 Mar 2012 13:44:05 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Carsten Emde <C.Emde@osadl.org>
+Cc: David Airlie <airlied@linux.ie>, Thomas Gleixner <tglx@linutronix.de>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] drivers-gpu-drm-allow-to-load-edid-firmware.patch
+Message-ID: <20120311134405.05942964@pyramind.ukuu.org.uk>
+In-Reply-To: <20120310202241.764367925@osadl.org>
+References: <20120310202014.828058552@osadl.org>
+	<20120310202241.764367925@osadl.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 28824b18ac4705e876a282a15ea0de8fc957551f:
-|Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
-|Date:   Wed May 5 12:53:13 2010 +0200
-|
-|    USB: gadget: __init and __exit tags removed
-|
-|    __init, __initdata and __exit tags have have been removed from
-|    various files to make it possible for gadgets that do not use
-|    the __init/__exit tags to use those.
-obviously missed (at least) this case leading to a section mismatch in
-g_ffs.c when compiling with CONFIG_USB_FUNCTIONFS_ETH enabled.
+> This patch allows to load an EDID data set via the firmware interface.
+> It contains data sets of frequently used screen resolutions (1024x768,
+> 1280x1024, 1680x1050 and 1920x1080). The requested EDID data are
+> specified as a module parameter of the drm_kms_helper module, e.g.
+> options drm_kms_helper edid_firmware=edid/1280x1024.bin or as kernel
+> command line parameter.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/usb/gadget/f_subset.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+What if the DRM layer and driver are compiled in. They'll come up as
+console before the file system so the firmware request will hang ?
 
-diff --git a/drivers/usb/gadget/f_subset.c b/drivers/usb/gadget/f_subset.c
-index c154064..3974bc9 100644
---- a/drivers/usb/gadget/f_subset.c
-+++ b/drivers/usb/gadget/f_subset.c
-@@ -404,7 +404,7 @@ geth_unbind(struct usb_configuration *c, struct usb_function *f)
-  * Caller must have called @gether_setup().  Caller is also responsible
-  * for calling @gether_cleanup() before module unload.
-  */
--int __init geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
-+int geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
- {
- 	struct f_gether	*geth;
- 	int		status;
--- 
-1.7.2.5
 
+Given the EDID is tiny and is data not code wouldn't it be simpler (and
+smaller) if this option compiled in a few generic EDIDs to use ?
+
+Alan
