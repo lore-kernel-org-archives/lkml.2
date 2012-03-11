@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab2CKXAp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 19:00:45 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:42004 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602Ab2CKXAi (ORCPT
+	id S1754419Ab2CKXCH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 19:02:07 -0400
+Received: from nctlincom01.orcon.net.nz ([60.234.4.74]:42474 "EHLO
+	nctlincom01.orcon.net.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab2CKXCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 19:00:38 -0400
-Date: Sun, 11 Mar 2012 15:56:21 -0700 (PDT)
-Message-Id: <20120311.155621.699600599796181447.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        paulus@samba.org, linuxppc-dev@lists.ozlabs.org, joe@perches.com
-Subject: Re: linux-next: manual merge of the net-next tree with the powerpc
- tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120309174416.2b936c5a4a116d56f9a25502@canb.auug.org.au>
-References: <20120309133646.fb8cc30d8c2fd0ef7784d72c@canb.auug.org.au>
-	<20120308.221534.712157352097242982.davem@davemloft.net>
-	<20120309174416.2b936c5a4a116d56f9a25502@canb.auug.org.au>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 11 Mar 2012 19:02:03 -0400
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Michel Lespinasse" <walken@google.com>
+Message-Id: <679A8D73-6496-46D4-B7AC-E83C404F63DA@orcon.net.nz>
+From: Michael Cree <mcree@orcon.net.nz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <C6gS2DkSgiG.A.AyB.6tRXPB@chimera>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 11 Mar 2012 15:56:24 -0700 (PDT)
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: [Bug #42821] alpha: futex regression bisected
+Date: Mon, 12 Mar 2012 11:49:48 +1300
+References: <WuYv90FoNpB.A.O8.ktRXPB@chimera> <C6gS2DkSgiG.A.AyB.6tRXPB@chimera>
+X-Mailer: Apple Mail (2.936)
+X-DSPAM-Check: by mx3.orcon.net.nz on Mon, 12 Mar 2012 12:02:00 +1300
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Mon Mar 12 12:02:00 2012
+X-DSPAM-Confidence: 0.6511
+X-DSPAM-Probability: 0.0000
+X-Bayes-Prob: 0.0001 (Score 0, tokens from: @@RPTN, default)
+X-Spam-Score: 0.00 () [Hold at 5.00] 
+X-CanIt-Geo: ip=130.217.188.11; country=NZ; latitude=-41.0000; longitude=174.0000; http://maps.google.com/maps?q=-41.0000,174.0000&z=6
+X-CanItPRO-Stream: base:default
+X-Canit-Stats-ID: 06GIn1wf0 - da5c57a761fa - 20120312
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 9 Mar 2012 17:44:16 +1100
+On 12/03/2012, at 10:31 AM, Rafael J. Wysocki wrote:
+> Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42821
+> Subject		: alpha: futex regression bisected
+> Submitter	: Michael Cree <mcree@orcon.net.nz>
+> Date		: 2012-02-20 8:20 (21 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/8d7718aa082aaf30a0b4989e1f04858952f941bc
+> Message-ID	: <4F420256.2090600@orcon.net.nz>
+> References	: http://marc.info/?l=linux-kernel&m=132972606917069&w=2
 
-> On Thu, 08 Mar 2012 22:15:34 -0800 (PST) David Miller <davem@davemloft.net> wrote:
->>
->> From: Stephen Rothwell <sfr@canb.auug.org.au>
->> Date: Fri, 9 Mar 2012 13:36:46 +1100
->> 
->> > Today's linux-next merge of the net-next tree got a conflict in
->> > drivers/net/ethernet/ibm/iseries_veth.c between commit e92a665949f6
->> > ("net: powerpc: remove the legacy iSeries ethernet driver") from the
->> > powerpc tree and commit 41de8d4cff21 ("drivers/net: Remove alloc_etherdev
->> > error messages") from the net-next tree.
->> > 
->> > I just removed the file.
->> 
->> If it makes life easier for anyone I can put the driver removal patch
->> into net-next.
-> 
-> In this case, I think it will actually help, thanks.  Note that it won;t
-> apply cleanly to your tree, but the fixup is easy :-)
-> 
-> And I discovered that "git am" doesn't like the style of patch I did
-> (without the body of the deleted file).  If you just delete
-> drivers/net/ethernet/ibm/iseries_veth.c before trying to apply the patch
-> it will probably work.
+Fixed in 3.3-rc7 by commit 62aca403657fe30e5235c5331e9871e676d9ea0a.
 
-I took care of this the other night.
+Cheers
+Michael.
+
