@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab2CKSXI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 14:23:08 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40279 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab2CKSXG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 14:23:06 -0400
-Date: Sun, 11 Mar 2012 18:24:57 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: santosh prasad nayak <santoshprasadnayak@gmail.com>,
-        FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
-Message-ID: <20120311182457.29d3e42c@pyramind.ukuu.org.uk>
-In-Reply-To: <20120311154846.GD13336@n2100.arm.linux.org.uk>
-References: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com>
-	<20120311132746.GA13336@n2100.arm.linux.org.uk>
-	<CAOD=uF7kQHABCmxUL3-J-hZ1E2mXrb7dgsYq7msHhiPJ4Gm-Ew@mail.gmail.com>
-	<20120311143615.GB13336@n2100.arm.linux.org.uk>
-	<CAOD=uF5GbsyHS5iXjJ1YcqJyGLHwT8Wjhiie1daJAVqu527Umg@mail.gmail.com>
-	<20120311150311.GC13336@n2100.arm.linux.org.uk>
-	<CAOD=uF5F4tOG0Y2tZdDeMgqs4-46HXYzA3RR-t8KuNuYRarJbg@mail.gmail.com>
-	<20120311154846.GD13336@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753811Ab2CKS2O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 14:28:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58088 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753519Ab2CKS2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 14:28:11 -0400
+Date: Sun, 11 Mar 2012 19:20:07 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Solar Designer <solar@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Djalal Harouni <tixxdz@opendz.org>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>
+Subject: Re: exec_id protection from bad child exit signals (was: Re:
+	[PATCH 0/9] proc: protect /proc/<pid>/* files across execve)
+Message-ID: <20120311182007.GA5601@redhat.com>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org> <CA+55aFwdOgt=C52APPyvnAitcWNbzu-uXRi43m4bLS85oDgtqA@mail.gmail.com> <20120311103532.GA26980@openwall.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120311103532.GA26980@openwall.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> As I've said, if we aren't going to use this, then the only solution is
-> to completely omit the msleep() there and just say "sod you to running
-> anything else for 20ms while this driver busy-spins."  That's
-> ultimately the safe thing to do, and at the moment I see no other
-> alternative there.
+On 03/11, Solar Designer wrote:
+>
+> Actually, the original/historical purpose of the exec_id stuff was to
+> protect privileged parent processes (those having done a SUID/SGID exec)
+> from non-standard child exit signals, which could be set with clone().
+> I think we may want to audit the current implementation and see if it
+> still fully achieves the goal or maybe not (and fix it if not).
 
-Anyone having this argument is also right now peeing into the wind. Quite
-a few console drivers do this including some the big name x86 ones. We
-don't seem to be getting any resulting problem reports.
+Funny that, I noticed this message only after I sent the question about
+the current exec_id stuff.
 
-Architecturally we really need a way to help console drivers separate the
-civilised acceleration friendly, lock friendly output paths from printk.
-That's the real fix, but a whole different matter to solve cleanly.
+> I include below pieces of the prototype implementation from
+> linux-2.2.12-ow6.tar.gz released in 1999.
 
-Alan
+Perhaps I missed something, but ignoring the "cap_raised" issues, this
+all is very simple. de_thread() should simply do:
+
+	current->exit_signal = SIGCHLD;
+
+	read_lock(&tasklist_lock);
+	list_for_each_entry(p, &current->children, sibling)
+		p->exit_signal = SIGCHILD;
+	read_unlock(&tasklist_lock);
+
+The only problem is CLONE_PARENT.
+
+Oleg.
+
