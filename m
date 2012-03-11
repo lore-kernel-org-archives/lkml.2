@@ -1,44 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab2CKNmP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 09:42:15 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40734 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab2CKNmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 09:42:14 -0400
-Date: Sun, 11 Mar 2012 13:44:05 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Carsten Emde <C.Emde@osadl.org>
-Cc: David Airlie <airlied@linux.ie>, Thomas Gleixner <tglx@linutronix.de>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] drivers-gpu-drm-allow-to-load-edid-firmware.patch
-Message-ID: <20120311134405.05942964@pyramind.ukuu.org.uk>
-In-Reply-To: <20120310202241.764367925@osadl.org>
-References: <20120310202014.828058552@osadl.org>
-	<20120310202241.764367925@osadl.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752691Ab2CKNm2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 09:42:28 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:50128 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751611Ab2CKNmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 09:42:16 -0400
+X-Greylist: delayed 1663 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 Mar 2012 09:42:16 EDT
+Message-ID: <1331471632.14746.3.camel@ted>
+Subject: Re: [PATCH 1/3] led-class: change back LEDS_CLASS to tristate
+ instead of bool
+From: Richard Purdie <richard.purdie@linuxfoundation.org>
+To: Bryan Wu <bryan.wu@canonical.com>, akpm <akpm@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@linaro.org, linux@arm.linux.org.uk
+Date: Sun, 11 Mar 2012 13:13:52 +0000
+In-Reply-To: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
+References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch allows to load an EDID data set via the firmware interface.
-> It contains data sets of frequently used screen resolutions (1024x768,
-> 1280x1024, 1680x1050 and 1920x1080). The requested EDID data are
-> specified as a module parameter of the drm_kms_helper module, e.g.
-> options drm_kms_helper edid_firmware=edid/1280x1024.bin or as kernel
-> command line parameter.
+On Thu, 2012-03-08 at 17:11 +0800, Bryan Wu wrote:
+> After moving some core functions to led-core.c, led-class.c can be built as
+> module again.
+> 
+> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
 
-What if the DRM layer and driver are compiled in. They'll come up as
-console before the file system so the firmware request will hang ?
+I'd prefer to have less code being required in led-core.c but this is
+better than many of the alternatives. I'm happy to see it becoming
+modular again, thanks!
+
+Acked-by: Richard Purdie <richard.purdie@linuxfoundation.org>
+
+> ---
+>  drivers/leds/Kconfig     |    2 +-
+>  drivers/leds/led-class.c |   70 ----------------------------------------------
+>  drivers/leds/led-core.c  |   70 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 71 insertions(+), 71 deletions(-)
+> 
+> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> index 9ca28fc..3f17f0d 100644
+> --- a/drivers/leds/Kconfig
+> +++ b/drivers/leds/Kconfig
+> @@ -17,7 +17,7 @@ menuconfig NEW_LEDS
+>  if NEW_LEDS
+>  
+>  config LEDS_CLASS
+> -	bool "LED Class Support"
+> +	tristate "LED Class Support"
+>  	help
+>  	  This option enables the led sysfs class in /sys/class/leds.  You'll
+>  	  need this to do anything useful with LEDs.  If unsure, say N.
+> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+> index 0c8739c..5bff843 100644
+> --- a/drivers/leds/led-class.c
+> +++ b/drivers/leds/led-class.c
+> @@ -110,50 +110,6 @@ static void led_timer_function(unsigned long data)
+>  	mod_timer(&led_cdev->blink_timer, jiffies + msecs_to_jiffies(delay));
+>  }
+>  
+> -static void led_stop_software_blink(struct led_classdev *led_cdev)
+> -{
+> -	/* deactivate previous settings */
+> -	del_timer_sync(&led_cdev->blink_timer);
+> -	led_cdev->blink_delay_on = 0;
+> -	led_cdev->blink_delay_off = 0;
+> -}
+> -
+> -static void led_set_software_blink(struct led_classdev *led_cdev,
+> -				   unsigned long delay_on,
+> -				   unsigned long delay_off)
+> -{
+> -	int current_brightness;
+> -
+> -	current_brightness = led_get_brightness(led_cdev);
+> -	if (current_brightness)
+> -		led_cdev->blink_brightness = current_brightness;
+> -	if (!led_cdev->blink_brightness)
+> -		led_cdev->blink_brightness = led_cdev->max_brightness;
+> -
+> -	if (led_get_trigger_data(led_cdev) &&
+> -	    delay_on == led_cdev->blink_delay_on &&
+> -	    delay_off == led_cdev->blink_delay_off)
+> -		return;
+> -
+> -	led_stop_software_blink(led_cdev);
+> -
+> -	led_cdev->blink_delay_on = delay_on;
+> -	led_cdev->blink_delay_off = delay_off;
+> -
+> -	/* never on - don't blink */
+> -	if (!delay_on)
+> -		return;
+> -
+> -	/* never off - just set to brightness */
+> -	if (!delay_off) {
+> -		led_set_brightness(led_cdev, led_cdev->blink_brightness);
+> -		return;
+> -	}
+> -
+> -	mod_timer(&led_cdev->blink_timer, jiffies + 1);
+> -}
+> -
+> -
+>  /**
+>   * led_classdev_suspend - suspend an led_classdev.
+>   * @led_cdev: the led_classdev to suspend.
+> @@ -262,32 +218,6 @@ void led_classdev_unregister(struct led_classdev *led_cdev)
+>  }
+>  EXPORT_SYMBOL_GPL(led_classdev_unregister);
+>  
+> -void led_blink_set(struct led_classdev *led_cdev,
+> -		   unsigned long *delay_on,
+> -		   unsigned long *delay_off)
+> -{
+> -	del_timer_sync(&led_cdev->blink_timer);
+> -
+> -	if (led_cdev->blink_set &&
+> -	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
+> -		return;
+> -
+> -	/* blink with 1 Hz as default if nothing specified */
+> -	if (!*delay_on && !*delay_off)
+> -		*delay_on = *delay_off = 500;
+> -
+> -	led_set_software_blink(led_cdev, *delay_on, *delay_off);
+> -}
+> -EXPORT_SYMBOL(led_blink_set);
+> -
+> -void led_brightness_set(struct led_classdev *led_cdev,
+> -			enum led_brightness brightness)
+> -{
+> -	led_stop_software_blink(led_cdev);
+> -	led_cdev->brightness_set(led_cdev, brightness);
+> -}
+> -EXPORT_SYMBOL(led_brightness_set);
+> -
+>  static int __init leds_init(void)
+>  {
+>  	leds_class = class_create(THIS_MODULE, "leds");
+> diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+> index 016d19f..d686004 100644
+> --- a/drivers/leds/led-core.c
+> +++ b/drivers/leds/led-core.c
+> @@ -23,3 +23,73 @@ EXPORT_SYMBOL_GPL(leds_list_lock);
+>  
+>  LIST_HEAD(leds_list);
+>  EXPORT_SYMBOL_GPL(leds_list);
+> +
+> +static void led_stop_software_blink(struct led_classdev *led_cdev)
+> +{
+> +	/* deactivate previous settings */
+> +	del_timer_sync(&led_cdev->blink_timer);
+> +	led_cdev->blink_delay_on = 0;
+> +	led_cdev->blink_delay_off = 0;
+> +}
+> +
+> +static void led_set_software_blink(struct led_classdev *led_cdev,
+> +				   unsigned long delay_on,
+> +				   unsigned long delay_off)
+> +{
+> +	int current_brightness;
+> +
+> +	current_brightness = led_get_brightness(led_cdev);
+> +	if (current_brightness)
+> +		led_cdev->blink_brightness = current_brightness;
+> +	if (!led_cdev->blink_brightness)
+> +		led_cdev->blink_brightness = led_cdev->max_brightness;
+> +
+> +	if (led_get_trigger_data(led_cdev) &&
+> +	    delay_on == led_cdev->blink_delay_on &&
+> +	    delay_off == led_cdev->blink_delay_off)
+> +		return;
+> +
+> +	led_stop_software_blink(led_cdev);
+> +
+> +	led_cdev->blink_delay_on = delay_on;
+> +	led_cdev->blink_delay_off = delay_off;
+> +
+> +	/* never on - don't blink */
+> +	if (!delay_on)
+> +		return;
+> +
+> +	/* never off - just set to brightness */
+> +	if (!delay_off) {
+> +		led_set_brightness(led_cdev, led_cdev->blink_brightness);
+> +		return;
+> +	}
+> +
+> +	mod_timer(&led_cdev->blink_timer, jiffies + 1);
+> +}
+> +
+> +
+> +void led_blink_set(struct led_classdev *led_cdev,
+> +		   unsigned long *delay_on,
+> +		   unsigned long *delay_off)
+> +{
+> +	del_timer_sync(&led_cdev->blink_timer);
+> +
+> +	if (led_cdev->blink_set &&
+> +	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
+> +		return;
+> +
+> +	/* blink with 1 Hz as default if nothing specified */
+> +	if (!*delay_on && !*delay_off)
+> +		*delay_on = *delay_off = 500;
+> +
+> +	led_set_software_blink(led_cdev, *delay_on, *delay_off);
+> +}
+> +EXPORT_SYMBOL(led_blink_set);
+> +
+> +void led_brightness_set(struct led_classdev *led_cdev,
+> +			enum led_brightness brightness)
+> +{
+> +	led_stop_software_blink(led_cdev);
+> +	led_cdev->brightness_set(led_cdev, brightness);
+> +}
+> +EXPORT_SYMBOL(led_brightness_set);
 
 
-Given the EDID is tiny and is data not code wouldn't it be simpler (and
-smaller) if this option compiled in a few generic EDIDs to use ?
-
-Alan
