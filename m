@@ -1,96 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab2CKKkW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 06:40:22 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:42751 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab2CKKkU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 06:40:20 -0400
-Date: Sun, 11 Mar 2012 13:42:31 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
-        ohering@suse.com, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP
- messages in the driver
-Message-ID: <20120311104230.GC3337@mwanda>
-References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
- <1331422331-4381-1-git-send-email-kys@microsoft.com>
- <1331422331-4381-2-git-send-email-kys@microsoft.com>
+	id S1752261Ab2CKKn2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 06:43:28 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:57040 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751535Ab2CKKnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 06:43:24 -0400
+Message-ID: <4F5C8178.7000601@parallels.com>
+Date: Sun, 11 Mar 2012 14:42:00 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s9fJI615cBHmzTOP"
-Content-Disposition: inline
-In-Reply-To: <1331422331-4381-2-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090204.4F5C8105.005A,ss=1,re=0.000,fgs=0
+To: Suleiman Souhlal <ssouhlal@FreeBSD.org>
+CC: <cgroups@vger.kernel.org>, <suleiman@google.com>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <penberg@kernel.org>, <cl@linux.com>,
+        <yinghan@google.com>, <hughd@google.com>, <gthelen@google.com>,
+        <peterz@infradead.org>, <dan.magenheimer@oracle.com>,
+        <hannes@cmpxchg.org>, <mgorman@suse.de>,
+        <James.Bottomley@HansenPartnership.com>, <linux-mm@kvack.org>,
+        <devel@openvz.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 13/13] memcg: Document kernel memory accounting.
+References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org> <1331325556-16447-14-git-send-email-ssouhlal@FreeBSD.org>
+In-Reply-To: <1331325556-16447-14-git-send-email-ssouhlal@FreeBSD.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---s9fJI615cBHmzTOP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Sat, Mar 10, 2012 at 03:32:09PM -0800, K. Y. Srinivasan wrote:
-> +		switch (message->kvp_hdr.operation) {
-> +		case KVP_OP_SET:
-> +			switch (in_msg->body.kvp_set.data.value_type) {
-> +			case REG_SZ:
-> +				/*
-> +				 * The value is a string - utf16 encoding.
-> +				 */
-> +				message->body.kvp_set.data.value_size =
-> +				utf16s_to_utf8s(
-> +				(wchar_t *)
-> +				in_msg->body.kvp_set.data.value,
-> +				in_msg->body.kvp_set.data.value_size,
-> +				UTF16_LITTLE_ENDIAN,
-> +				message->body.kvp_set.data.value,
-> +				HV_KVP_EXCHANGE_MAX_VALUE_SIZE) + 1;
-> +				break;
+On 03/10/2012 12:39 AM, Suleiman Souhlal wrote:
+> Signed-off-by: Suleiman Souhlal<suleiman@google.com>
+> ---
+>   Documentation/cgroups/memory.txt |   44 ++++++++++++++++++++++++++++++++++---
+>   1 files changed, 40 insertions(+), 4 deletions(-)
+>
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 4c95c00..73f2e38 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -74,6 +74,11 @@ Brief summary of control files.
+>
+>    memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
+>    memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
+> + memory.kmem.usage_in_bytes	 # show current kernel memory usage
+> + memory.kmem.limit_in_bytes	 # show/set limit of kernel memory usage
+> + memory.kmem.independent_kmem_limit # show/set control of kernel memory limit
+> + 				    (See 2.7 for details)
+> + memory.kmem.slabinfo		 # show cgroup's slabinfo
+>
+>   1. History
+>
+> @@ -265,11 +270,19 @@ the amount of kernel memory used by the system. Kernel memory is fundamentally
+>   different than user memory, since it can't be swapped out, which makes it
+>   possible to DoS the system by consuming too much of this precious resource.
+>
+> -Kernel memory limits are not imposed for the root cgroup. Usage for the root
+> -cgroup may or may not be accounted.
+> +Kernel memory limits are not imposed for the root cgroup.
+>
+> -Currently no soft limit is implemented for kernel memory. It is future work
+> -to trigger slab reclaim when those limits are reached.
+> +A cgroup's kernel memory is counted into its memory.kmem.usage_in_bytes.
 > +
+> +memory.kmem.independent_kmem_limit controls whether or not kernel memory
+> +should also be counted into the cgroup's memory.usage_in_bytes.
+> +If it is set, it is possible to specify a limit for kernel memory with
+> +memory.kmem.limit_in_bytes.
+> +
+> +Upon cgroup deletion, all the remaining kernel memory becomes unaccounted.
+> +
+> +An accounted kernel memory allocation may trigger reclaim in that cgroup,
+> +and may also OOM.
+Why delete the softlimit bit? Since we're not shrinking, at least for 
+the independent kmem case, we effectively don't do softlimits here. The 
+file for it does not even exist...
 
-This block of unreadable text is so nasty.
+>
+>   2.7.1 Current Kernel Memory resources accounted
+>
+> @@ -279,6 +292,29 @@ per cgroup, instead of globally.
+>
+>   * tcp memory pressure: sockets memory pressure for the tcp protocol.
+>
+> +* slab memory.
+> +
+> +2.7.1.1 Slab memory accounting
+> +
+> +Any slab type created with the SLAB_MEMCG_ACCT kmem_cache_create() flag
+> +is accounted.
+> +
+> +Slab gets accounted on a per-page basis, which is done by using per-cgroup
+> +kmem_caches. These per-cgroup kmem_caches get created on-demand, the first
+> +time a specific kmem_cache gets used by a cgroup.
+> +
+> +Only slab memory that can be attributed to a cgroup gets accounted in this
+> +fashion.
+> +
+> +A per-cgroup kmem_cache is named like the original, with the cgroup's name
+> +in parentheses.
+> +
+> +When a cgroup is destroyed, all its kmem_caches get migrated to the root
+> +cgroup, and "dead" is appended to their name, to indicate that they are not
+> +going to be used for new allocations.
+> +These dead caches automatically get removed once there are no more active
+> +slab objects in them.
+> +
+>   3. User Interface
+>
+>   0. Configuration
 
-You could return directly if the msg = kmalloc() fails and pull
-everything in one indent level.  It's normally more readable to
-handle errors as soon as possible anyway.
-
-Probably that's not enough to make a difference and we'd need to
-introduce a new function.
-
-Btw I don't know if utf16s_to_utf8s() counts the NUL char or not.
-It feels like maybe we could end up with ->value_size equal to
-HV_KVP_EXCHANGE_MAX_VALUE_SIZE + 1.
-
-regards,
-dan carpenter
-
---s9fJI615cBHmzTOP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPXIGWAAoJEOnZkXI/YHqRewIP/2FCLwjqyq4tApTNDfAmUqD1
-G6EvsQpOjUuYcev8ZWbQ/6Dw6572vMy+DIiOXyFWG9HATGcSUaPl1KP2cCemOAHk
-ycccaUP2xX5NM8rNREHxKHmCucRC+roZ1Ml1DcyQ/ftsyIJ8Se8trT55+u4DlwOD
-Pm7rNZnQedtkr5OqWd0+LwbJFYeso3tqQHplPg2XAycx4uqSqsJK8HCbyMSBU+tR
-Wfzd9f8Ml4SeHIFevVa1cEuWnHRipn9/ItGIgZ3yrcL7/Kv2LeKjCt8oiN8F7Yxg
-Pi+kaSKKzU/XA50JsmIG9f5eY0gfTUNJ2wyQp62V6dMtqWp6PlupLBhDtgET1jMI
-OciMuqxfmqhCgatqiZM3w1FHgnL7gYYST66Myoj5f2hBJ8aqZGhk2ok5aDrXHs55
-wuIJ2MXyaDL8dhqY8C2Hj6FgJE3A9OnKBoD0p92Y+xwimfv8Bvh6XDdWnvUw1nSw
-mApJBc1qCqo8LBbpCSSNVA5NvUIL/Fp62K2CCd8Kr0aGpP7plGmj/HV2yYG7lWPP
-KwL2fOc3zysYO74g6z+xkD/bnWfZQ7awPSn3K5fmHG4J0qwYj0GnyKa0MEytOO8K
-jtc+p7uO3YPvrxkskd7qtTYhYqLEi4Hc0pZEjuyVhMcioEXP6/QPVPp4pn/2XEHQ
-tKK99ecllA4/qoSaU0HT
-=Q0vO
------END PGP SIGNATURE-----
-
---s9fJI615cBHmzTOP--
