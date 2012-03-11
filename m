@@ -1,195 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab2CKOgX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 10:36:23 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59015 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914Ab2CKOgU (ORCPT
+	id S1753293Ab2CKOgf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 10:36:35 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32989 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753224Ab2CKOg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 10:36:20 -0400
-Subject: [PATCH v5 4.5/7] mm: optimize isolate_lru_pages()
-To: Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Sun, 11 Mar 2012 18:36:16 +0400
-Message-ID: <20120311141334.29756.79407.stgit@zurg>
-In-Reply-To: <20120308175752.27621.54781.stgit@zurg>
-References: <20120308175752.27621.54781.stgit@zurg>
-User-Agent: StGit/0.15
+	Sun, 11 Mar 2012 10:36:27 -0400
+Date: Sun, 11 Mar 2012 14:36:15 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: santosh prasad nayak <santoshprasadnayak@gmail.com>
+Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
+Message-ID: <20120311143615.GB13336@n2100.arm.linux.org.uk>
+References: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com> <20120311132746.GA13336@n2100.arm.linux.org.uk> <CAOD=uF7kQHABCmxUL3-J-hZ1E2mXrb7dgsYq7msHhiPJ4Gm-Ew@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOD=uF7kQHABCmxUL3-J-hZ1E2mXrb7dgsYq7msHhiPJ4Gm-Ew@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves lru checks from __isolate_lru_page() to its callers.
+On Sun, Mar 11, 2012 at 07:47:27PM +0530, santosh prasad nayak wrote:
+> Not to use in_atomic()  in driver code.
+> 
+>  Following article  inspired me to do the change.
+> http://lwn.net/Articles/274695/
+> 
+> "in_atomic() is for core kernel use only. Because in special
+> circumstances (ie: kmap_atomic()) we run inc_preempt_count() even on
+> non-preemptible kernels to tell the per-arch fault handler that it was
+> invoked by copy_*_user() inside kmap_atomic(), and it must fail.
+> In other words, in_atomic() works in a specific low-level situation,
+> but it was never meant to be used in a wider context. Its placement in
+> hardirq.h next to macros which can be used elsewhere was, thus, almost
+> certainly a mistake. As Alan Stern pointed out, the fact that Linux
+> Device Drivers recommends the use of in_atomic() will not have helped
+> the situation. Your editor recommends that the authors of that book be
+> immediately sacked. "
+> 
+> In the present case, we just check whether its an IRQ context or user
+> context. So for that
+> we can use "in_interrupt()".
+> 
+> Greg also mentions the same in the following mail.
+> http://www.spinics.net/lists/newbies/msg43402.html
 
-They aren't required on non-lumpy reclaim: all pages are came from right lru.
-Pages isolation on memory compaction should skip only unevictable pages.
-Thus we need to check page lru only on pages isolation for lumpy-reclaim.
-
-Plus this patch kills mem_cgroup_lru_del() and uses mem_cgroup_lru_del_list()
-instead, because now we already have lru list index.
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-
-add/remove: 0/1 grow/shrink: 2/1 up/down: 101/-164 (-63)
-function                                     old     new   delta
-static.isolate_lru_pages                    1018    1103     +85
-compact_zone                                2230    2246     +16
-mem_cgroup_lru_del                            65       -     -65
-__isolate_lru_page                           287     188     -99
----
- include/linux/memcontrol.h |    5 -----
- mm/compaction.c            |    3 ++-
- mm/memcontrol.c            |    5 -----
- mm/vmscan.c                |   38 +++++++++++++++++---------------------
- 4 files changed, 19 insertions(+), 32 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 4c4b968..8af2a61 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -66,7 +66,6 @@ struct lruvec *mem_cgroup_zone_lruvec(struct zone *, struct mem_cgroup *);
- struct lruvec *mem_cgroup_lru_add_list(struct zone *, struct page *,
- 				       enum lru_list);
- void mem_cgroup_lru_del_list(struct page *, enum lru_list);
--void mem_cgroup_lru_del(struct page *);
- struct lruvec *mem_cgroup_lru_move_lists(struct zone *, struct page *,
- 					 enum lru_list, enum lru_list);
- 
-@@ -259,10 +258,6 @@ static inline void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
- {
- }
- 
--static inline void mem_cgroup_lru_del(struct page *page)
--{
--}
--
- static inline struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
- 						       struct page *page,
- 						       enum lru_list from,
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 5b02dbd..c2e783d 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -358,7 +358,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
- 			continue;
- 		}
- 
--		if (!PageLRU(page))
-+		/* Isolate only evictable pages */
-+		if (!PageLRU(page) || PageUnevictable(page))
- 			continue;
- 
- 		/*
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 6864f57..6f62621 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1095,11 +1095,6 @@ void mem_cgroup_lru_del_list(struct page *page, enum lru_list lru)
- 	mz->lru_size[lru] -= 1 << compound_order(page);
- }
- 
--void mem_cgroup_lru_del(struct page *page)
--{
--	mem_cgroup_lru_del_list(page, page_lru(page));
--}
--
- /**
-  * mem_cgroup_lru_move_lists - account for moving a page between lrus
-  * @zone: zone of the page
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0966f11..6a13a05 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1030,21 +1030,11 @@ keep_lumpy:
-  */
- int __isolate_lru_page(struct page *page, isolate_mode_t mode)
- {
--	int ret = -EINVAL;
--
--	/* Only take pages on the LRU. */
--	if (!PageLRU(page))
--		return ret;
--
--	/* Isolate pages only from allowed LRU lists */
--	if (!(mode & BIT(page_lru(page))))
--		return ret;
-+	int ret = -EBUSY;
- 
- 	/* All possible LRU lists must fit into isolation mask area */
- 	BUILD_BUG_ON(LRU_ALL & ~ISOLATE_LRU_MASK);
- 
--	ret = -EBUSY;
--
- 	/*
- 	 * To minimise LRU disruption, the caller can indicate that it only
- 	 * wants to isolate pages it will be able to operate on without
-@@ -1143,21 +1133,16 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 		prefetchw_prev_lru_page(page, src, flags);
- 
- 		VM_BUG_ON(!PageLRU(page));
-+		VM_BUG_ON(page_lru(page) != lru);
- 
--		switch (__isolate_lru_page(page, mode)) {
--		case 0:
--			mem_cgroup_lru_del(page);
-+		if (__isolate_lru_page(page, mode) == 0) {
-+			mem_cgroup_lru_del_list(page, lru);
- 			list_move(&page->lru, dst);
- 			nr_taken += hpage_nr_pages(page);
--			break;
--
--		case -EBUSY:
-+		} else {
- 			/* else it is being freed elsewhere */
- 			list_move(&page->lru, src);
- 			continue;
--
--		default:
--			BUG();
- 		}
- 
- 		if (!sc->order || !(sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM))
-@@ -1178,6 +1163,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 		end_pfn = pfn + (1 << sc->order);
- 		for (; pfn < end_pfn; pfn++) {
- 			struct page *cursor_page;
-+			enum lru_list cursor_lru;
- 
- 			/* The target page is in the block, ignore it. */
- 			if (unlikely(pfn == page_pfn))
-@@ -1202,10 +1188,19 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 			    !PageSwapCache(cursor_page))
- 				break;
- 
-+			if (!PageLRU(cursor_page))
-+				goto skip_free;
-+
-+			/* Isolate pages only from allowed LRU lists */
-+			cursor_lru = page_lru(cursor_page);
-+			if (!(mode & BIT(cursor_lru)))
-+				goto skip_free;
-+
- 			if (__isolate_lru_page(cursor_page, mode) == 0) {
- 				unsigned int isolated_pages;
- 
--				mem_cgroup_lru_del(cursor_page);
-+				mem_cgroup_lru_del_list(cursor_page,
-+							cursor_lru);
- 				list_move(&cursor_page->lru, dst);
- 				isolated_pages = hpage_nr_pages(cursor_page);
- 				nr_taken += isolated_pages;
-@@ -1227,6 +1222,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
- 				 * track the head status without a
- 				 * page pin.
- 				 */
-+skip_free:
- 				if (!PageTail(cursor_page) &&
- 				    !atomic_read(&cursor_page->_count))
- 					continue;
-
+In which case, we'll just have to do mdelay() and forget about allowing
+anything else to run for the 20ms that we need to sleep.  Sucky but
+that's the way things are.
