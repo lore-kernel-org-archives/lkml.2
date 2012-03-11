@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab2CKQX0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 12:23:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33224 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752914Ab2CKQXX (ORCPT
+	id S1753418Ab2CKQhX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 12:37:23 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50665 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214Ab2CKQhS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 12:23:23 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RT] staging/pohmelfs: convert struct fs->lock usage to seq_spin_{,un}lock
-Date: Sun, 11 Mar 2012 17:23:19 +0100
-Message-Id: <1331482999-32252-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.9.1
+	Sun, 11 Mar 2012 12:37:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20120311154846.GD13336@n2100.arm.linux.org.uk>
+References: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com>
+	<20120311132746.GA13336@n2100.arm.linux.org.uk>
+	<CAOD=uF7kQHABCmxUL3-J-hZ1E2mXrb7dgsYq7msHhiPJ4Gm-Ew@mail.gmail.com>
+	<20120311143615.GB13336@n2100.arm.linux.org.uk>
+	<CAOD=uF5GbsyHS5iXjJ1YcqJyGLHwT8Wjhiie1daJAVqu527Umg@mail.gmail.com>
+	<20120311150311.GC13336@n2100.arm.linux.org.uk>
+	<CAOD=uF5F4tOG0Y2tZdDeMgqs4-46HXYzA3RR-t8KuNuYRarJbg@mail.gmail.com>
+	<20120311154846.GD13336@n2100.arm.linux.org.uk>
+Date: Sun, 11 Mar 2012 22:07:18 +0530
+Message-ID: <CAOD=uF6OtpX-1eoJB3X5ZywNUeU2_-tsE+Ksu33ZFXqoxVK_aQ@mail.gmail.com>
+Subject: Re: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes:
+On Sun, Mar 11, 2012 at 9:18 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sun, Mar 11, 2012 at 08:49:27PM +0530, santosh prasad nayak wrote:
+>> On Sun, Mar 11, 2012 at 8:33 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > in_interrupt() won't tell us if we're being called with spinlocks held,
+>> > which _is_ a possibility because this can be called from printk(), for
+>> > oops dumps and the like.
+>> >
+>> > in_interrupt() just means that we're inside a hard or soft interrupt,
+>> > or nmi.  It says nothing about whether msleep() is possible.
+>>
+>>
+>> in_atomic() is also not  error free.  I found following comment in
+>> include/linux/hardirq.h.  How do you handle it in non-preemptible
+>> kernel ?
+>>
+>> /*
+>>  * Are we running in atomic context?  WARNING: this macro cannot
+>>  * always detect atomic context; in particular, it cannot know about
+>>  * held spinlocks in non-preemptible kernels.  Thus it should not be
+>>  * used in the general case to determine whether sleeping is possible.
+>>  * Do not use in_atomic() in driver code.
+>>  */
+>> #define in_atomic()     ((preempt_count() & ~PREEMPT_ACTIVE) != 0)
+>
+> That may be, but the fact of the matter is that no one has *ever*
+> reported an incident where this has failed at this point - and when
+> it does people will end up with a might_sleep() warning from msleep().
+>
+> Maybe those who are saying people should not use this should instead
+> be analysing why people use this, and suggest an alternative solution
+> to the problem instead of a basic and uninformative "you shouldn't use
+> this" statement.
 
-	drivers/staging/pohmelfs/path_entry.c:47:2: warning: passing argument 1 of â€˜rt_spin_lockâ€™ from incompatible pointer type [enabled by default]
-	include/linux/spinlock_rt.h:19:56: note: expected â€˜struct spinlock_t *â€™ but argument is of type â€˜struct seqlock_t *â€™
-	drivers/staging/pohmelfs/path_entry.c:49:2: warning: passing argument 1 of â€˜rt_spin_unlockâ€™ from incompatible pointer type [enabled by default]
-	include/linux/spinlock_rt.h:22:56: note: expected â€˜struct spinlock_t *â€™ but argument is of type â€˜struct seqlock_t *â€™
-	drivers/staging/pohmelfs/path_entry.c:95:2: warning: passing argument 1 of â€˜rt_spin_lockâ€™ from incompatible pointer type [enabled by default]
-	include/linux/spinlock_rt.h:19:56: note: expected â€˜struct spinlock_t *â€™ but argument is of type â€˜struct seqlock_t *â€™
-	drivers/staging/pohmelfs/path_entry.c:97:2: warning: passing argument 1 of â€˜rt_spin_unlockâ€™ from incompatible pointer type [enabled by default]
-	include/linux/spinlock_rt.h:22:56: note: expected â€˜struct spinlock_t *â€™ but argument is of type â€˜struct seqlock_t *â€™
+The reason is given in the article.
 
-Signed-off-by: Uwe Kleine-KÃ¶nig <u.kleine-koenig@pengutronix.de>
----
-Hello Thomas,
+http://lwn.net/Articles/274695/
 
-you probably want to squash that into fs-struct-use-seqlock.patch
-It's only compile tested.
+"The in_atomic() macro works by checking whether preemption is
+disabled, which seems like the right thing to do. Handlers for events
+like hardware interrupts will disable preemption, but so will the
+acquisition of a spinlock. So this test appears to catch all of the
+cases where sleeping would be a bad idea. Certainly a number of people
+who have looked at this macro have come to that conclusion.
 
-Best regards
-Uwe
+But if preemption has not been configured into the kernel in the first
+place, the kernel does not raise the "preemption count" when spinlocks
+are acquired. So, in this situation (which is common - many
+distributors still do not enable preemption in their kernels),
+in_atomic() has no way to know if the calling code holds any spinlocks
+or not. So it will return zero (indicating process context) even when
+spinlocks are held. And that could lead to kernel code thinking that
+it is running in process context (and acting accordingly) when, in
+fact, it is not."
 
- drivers/staging/pohmelfs/path_entry.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/pohmelfs/path_entry.c b/drivers/staging/pohmelfs/path_entry.c
-index 400a9fc..fc0c3fe 100644
---- a/drivers/staging/pohmelfs/path_entry.c
-+++ b/drivers/staging/pohmelfs/path_entry.c
-@@ -44,9 +44,9 @@ int pohmelfs_construct_path_string(struct pohmelfs_inode *pi, void *data, int le
- 		return -ENOENT;
- 	}
- 
--	spin_lock(&current->fs->lock);
-+	seq_spin_lock(&current->fs->lock);
- 	path.mnt = mntget(current->fs->root.mnt);
--	spin_unlock(&current->fs->lock);
-+	seq_spin_unlock(&current->fs->lock);
- 
- 	path.dentry = d;
- 
-@@ -92,9 +92,9 @@ int pohmelfs_path_length(struct pohmelfs_inode *pi)
- 		return -ENOENT;
- 	}
- 
--	spin_lock(&current->fs->lock);
-+	seq_spin_lock(&current->fs->lock);
- 	root = dget(current->fs->root.dentry);
--	spin_unlock(&current->fs->lock);
-+	seq_spin_unlock(&current->fs->lock);
- 
- rename_retry:
- 	len = 1; /* Root slash */
--- 
-1.7.9.1
 
+
+regards
+Santosh
+>
+> As I've said, if we aren't going to use this, then the only solution is
+> to completely omit the msleep() there and just say "sod you to running
+> anything else for 20ms while this driver busy-spins."  That's
+> ultimately the safe thing to do, and at the moment I see no other
+> alternative there.
