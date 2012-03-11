@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab2CKRi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 13:38:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59229 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474Ab2CKRiY (ORCPT
+	id S1753616Ab2CKRn3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 13:43:29 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48006 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753519Ab2CKRn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 13:38:24 -0400
-Message-ID: <1331487502.2449.20.camel@edumazet-laptop>
-Subject: Re: [V2 PATCH 1/3] module: use rcu to protect module list read
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Date: Sun, 11 Mar 2012 10:38:22 -0700
-In-Reply-To: <1331463255-31019-1-git-send-email-xiyou.wangcong@gmail.com>
-References: <1331463255-31019-1-git-send-email-xiyou.wangcong@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Sun, 11 Mar 2012 13:43:28 -0400
+MIME-Version: 1.0
+Date: Sun, 11 Mar 2012 17:43:26 +0000
+Message-ID: <CANHD2=rF6dBkLLkWAj8uS3nq0B1wCt7Uvu=HzO84UNz2kuiaFg@mail.gmail.com>
+Subject: Initializing iwl3945 error
+From: Kamil Grzebien <ciptok@gmail.com>
+To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Cc: sgruszka@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 11 mars 2012 à 18:54 +0800, Cong Wang a écrit :
-> V2:
-...
->  
-> @@ -1639,7 +1639,7 @@ static void mod_sysfs_teardown(struct module *mod)
->  static int __unlink_module(void *_mod)
->  {
->  	struct module *mod = _mod;
-> -	list_del(&mod->list);
-> +	list_del_rcu(&mod->list);
->  	module_bug_cleanup(mod);
->  	return 0;
->  }
-> @@
+Hello,
 
-You mix too many different things in a single patch. 
+I've initialisation problem with my iwl3945 network card in Dell XPS
+M1530 laptop. The issue is known and described in couple of bug
+reports (eg. http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2143).
+There are workarounds but I'd like to solve the problem permanently.
+Basically when initializing I get:
 
-For example, lets review this __unlink_module() change...
+iwl3945 0000:0b:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ
+iwl3945 0000:0b:00.0: setting latency timer to 64
+iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+....
+iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+iwl3945 0000:0b:00.0: bad EEPROM signature,EEPROM_GP=0x00000007
+iwl3945 0000:0b:00.0: EEPROM not found, EEPROM_GP=0xffffffff
 
-If this was really needed, it should be a single patch so that it can be
-a stable submission.
+Currently I'm working on Fedora 16 with 3.1.5-6.fc16.i686 kernel. I
+did some investigation/debugging on iwlegacy driver and found out few
+things.
 
-As it is not needed (since its called from stop_machine()), this makes
-your whole patch looking suspicious.
+1. Driver can't initialize card as all ioread32/iowrite32 seems to not
+do their job. All reads finalize with 0xffffffff.
 
-I suggest you make a 100% cleanup patch, changing the title as well,
-because module code _already_ uses RCU.
+However I can see that:
+- pci_iomap(pdev, 0, 0) doesn't return error,
+- pci_resource_start(pdev, 0) seems gives correct address (I can
+compare it with the one I can see in /proc/iomem).
 
-"module: use rcu to protect module list read" makes no sense at all.
+If I access the memory directly, not by mapping, I can write and read
+pci memory but driver load fails anyway. I don't understand why can't
+access using mapped memory.
 
-To meet current RCU API best pratices, you change preempt_enable() by
-rcu_read_unlock_sched() and preempt_disable() by rcu_read_lock_sched()
+2. If I check BASE_ADDRESS with setpci it doesn't give correct values:
 
-Then, if you believe other changes are needed, submit them with an
-explicit changelog explaining the change, not hiding them in a big
-cleanup patch.
+# setpci -v -s 0b:00.0 BASE_ADDRESS_0 BASE_ADDRESS_1
+0000:0b:00.0 @10 = 00000000
+0000:0b:00.0 @14 = 00000000
 
-Ref: Documentation/SubmittingPatches section 3)
+Not sure if it's done by driver itself or it should point correct
+values even if the driver wasn't fully loaded.
 
+Have you got any idea of:
+- why IO memory isn't accessible? what could cause that?
+- how APIC could change the load process in this particular case? (if
+I boot with noapic kernel option it usually works fine)
+- is there a way to check the status or rescan the device from driver itself?
 
+This issue is reproducible in 100% on my system when I turn on the
+machine. It doesn't occur after some work on it. I'd be very happy to
+get rid of the issue.
 
+Could you point some ideas that might be worth checking in driver or
+kernel please? I've tried couple of ideas but none worked for me.
+
+Regards,
+Kamil Grzebien
