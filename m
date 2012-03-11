@@ -1,40 +1,554 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab2CKC1N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 21:27:13 -0500
+	id S1752836Ab2CKC17 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 21:27:59 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:43271 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab2CKC1L (ORCPT
+	with ESMTP id S1752549Ab2CKC1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 21:27:11 -0500
+	Sat, 10 Mar 2012 21:27:24 -0500
 From: Marc Reilly <marc@cpdesign.com.au>
 To: sameo@linux.intel.com
 Cc: linux-arm-kernel@lists.infradead.org,
         spi-devel-general@lists.sourceforge.net, linux-i2c@vger.kernel.org,
         u.kleine-koenig@pengutronix.de, oskar@scara.com,
-        linux-kernel@vger.kernel.org
-Subject: mfd: mc13xxx: add I2C support, V2
-Date: Sun, 11 Mar 2012 12:29:59 +1100
-Message-Id: <1331429402-9639-1-git-send-email-marc@cpdesign.com.au>
+        linux-kernel@vger.kernel.org, Marc Reilly <marc@cpdesign.com.au>
+Subject: [PATCH v2 2/3] mfd: mc13xxx-core: Move spi specific code into separate module.
+Date: Sun, 11 Mar 2012 12:30:01 +1100
+Message-Id: <1331429402-9639-3-git-send-email-marc@cpdesign.com.au>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1331429402-9639-1-git-send-email-marc@cpdesign.com.au>
+References: <1331429402-9639-1-git-send-email-marc@cpdesign.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,                                                                                                                            
+All spi specific code is moved into a new module. The mc13xxx
+struct moves to a new local include file by necessity.
 
-This series (based on Samuel's mfd-2.6/for-next) adds I2C support for the
-mc13xxx family PMICs. Thanks to Oscar for adding dt support for the I2C driver.                       
+A new config choice selects the SPI bus type support and by default is
+value of SPI_MASTER to remain compatible with existing configs.
 
-V2 lets both I2C and SPI support be enabled at the same time and limits the 
-scope of common definitions by using a private include header rather than global
-one.
-The only issue from V1 [0] not addressed is the use of regmap - mainly, I don't
-have the time. I accept that this is a lame excuse but hope that use of regmap 
-can come later if it is required.
+Signed-off-by: Marc Reilly <marc@cpdesign.com.au>
+---
+ drivers/mfd/Kconfig        |   15 +++-
+ drivers/mfd/Makefile       |    1 +
+ drivers/mfd/mc13xxx-core.c |  189 +-------------------------------------------
+ drivers/mfd/mc13xxx-spi.c  |  187 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/mc13xxx.h      |   42 ++++++++++
+ 5 files changed, 245 insertions(+), 189 deletions(-)
+ create mode 100644 drivers/mfd/mc13xxx-spi.c
+ create mode 100644 drivers/mfd/mc13xxx.h
 
-Cheers,
-Marc                        
-
-[0] http://www.spinics.net/lists/linux-i2c/msg06992.html
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index cd13e9f..501fee5 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -577,12 +577,21 @@ config MFD_MC13XXX
+ 	select MFD_CORE
+ 	select MFD_MC13783
+ 	help
+-	  Support for the Freescale (Atlas) PMIC and audio CODECs
+-	  MC13783 and MC13892.
+-	  This driver provides common support for accessing  the device,
++	  Enable support for the Freescale MC13783 and MC13892 PMICs.
++	  This driver provides common support for accessing the device,
+ 	  additional drivers must be enabled in order to use the
+ 	  functionality of the device.
+ 
++if MFD_MC13XXX
++
++config MFD_MC13XXX_SPI
++	tristate "MC13xxx SPI interface" if SPI_MASTER
++	default SPI_MASTER
++	help
++	  Select this if your MC13xxx is connected via an SPI bus.
++
++endif
++
+ config ABX500_CORE
+ 	bool "ST-Ericsson ABX500 Mixed Signal Circuit register functions"
+ 	default y if ARCH_U300 || ARCH_U8500
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index b953bab..2dc66ed 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -53,6 +53,7 @@ obj-$(CONFIG_TWL6030_PWM)	+= twl6030-pwm.o
+ obj-$(CONFIG_TWL6040_CORE)	+= twl6040-core.o twl6040-irq.o
+ 
+ obj-$(CONFIG_MFD_MC13XXX)	+= mc13xxx-core.o
++obj-$(CONFIG_MFD_MC13XXX_SPI)	+= mc13xxx-spi.o
+ 
+ obj-$(CONFIG_MFD_CORE)		+= mfd-core.o
+ 
+diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+index 19d94a1..4dca8bb 100644
+--- a/drivers/mfd/mc13xxx-core.c
++++ b/drivers/mfd/mc13xxx-core.c
+@@ -15,36 +15,13 @@
+ #include <linux/platform_device.h>
+ #include <linux/mutex.h>
+ #include <linux/interrupt.h>
+-#include <linux/spi/spi.h>
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/mc13xxx.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/of_gpio.h>
+ 
+-enum mc13xxx_id {
+-	MC13XXX_ID_MC13783,
+-	MC13XXX_ID_MC13892,
+-	MC13XXX_ID_INVALID,
+-};
+-
+-struct mc13xxx {
+-	struct spi_device *spidev;
+-
+-	struct device *dev;
+-	enum mc13xxx_id ictype;
+-
+-	struct mutex lock;
+-	int flags;
+-
+-	int (*read_dev)(struct mc13xxx *, unsigned int, u32 *);
+-	int (*write_dev)(struct mc13xxx *, unsigned int, u32);
+-
+-	irq_handler_t irqhandler[MC13XXX_NUM_IRQ];
+-	void *irqdata[MC13XXX_NUM_IRQ];
+-
+-	int adcflags;
+-};
++#include "mc13xxx.h"
+ 
+ #define MC13XXX_IRQSTAT0	0
+ #define MC13XXX_IRQSTAT0_ADCDONEI	(1 << 0)
+@@ -174,67 +151,6 @@ void mc13xxx_unlock(struct mc13xxx *mc13xxx)
+ }
+ EXPORT_SYMBOL(mc13xxx_unlock);
+ 
+-#define MC13XXX_REGOFFSET_SHIFT 25
+-static int mc13xxx_spi_reg_read(struct mc13xxx *mc13xxx,
+-				unsigned int offset, u32 *val)
+-{
+-	struct spi_transfer t;
+-	struct spi_message m;
+-	int ret;
+-
+-	*val = offset << MC13XXX_REGOFFSET_SHIFT;
+-
+-	memset(&t, 0, sizeof(t));
+-
+-	t.tx_buf = val;
+-	t.rx_buf = val;
+-	t.len = sizeof(u32);
+-
+-	spi_message_init(&m);
+-	spi_message_add_tail(&t, &m);
+-
+-	ret = spi_sync(mc13xxx->spidev, &m);
+-
+-	/* error in message.status implies error return from spi_sync */
+-	BUG_ON(!ret && m.status);
+-
+-	if (ret)
+-		return ret;
+-
+-	*val &= 0xffffff;
+-
+-	return 0;
+-}
+-
+-static int mc13xxx_spi_reg_write(struct mc13xxx *mc13xxx, unsigned int offset,
+-		u32 val)
+-{
+-	u32 buf;
+-	struct spi_transfer t;
+-	struct spi_message m;
+-	int ret;
+-
+-	buf = 1 << 31 | offset << MC13XXX_REGOFFSET_SHIFT | val;
+-
+-	memset(&t, 0, sizeof(t));
+-
+-	t.tx_buf = &buf;
+-	t.rx_buf = &buf;
+-	t.len = sizeof(u32);
+-
+-	spi_message_init(&m);
+-	spi_message_add_tail(&t, &m);
+-
+-	ret = spi_sync(mc13xxx->spidev, &m);
+-
+-	BUG_ON(!ret && m.status);
+-
+-	if (ret)
+-		return ret;
+-
+-	return 0;
+-}
+-
+ int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
+ {
+ 	int ret;
+@@ -734,71 +650,7 @@ static inline int mc13xxx_probe_flags_dt(struct mc13xxx *mc13xxx)
+ }
+ #endif
+ 
+-static const struct spi_device_id mc13xxx_device_id[] = {
+-	{
+-		.name = "mc13783",
+-		.driver_data = MC13XXX_ID_MC13783,
+-	}, {
+-		.name = "mc13892",
+-		.driver_data = MC13XXX_ID_MC13892,
+-	}, {
+-		/* sentinel */
+-	}
+-};
+-MODULE_DEVICE_TABLE(spi, mc13xxx_device_id);
+-
+-static const struct of_device_id mc13xxx_dt_ids[] = {
+-	{ .compatible = "fsl,mc13783", .data = (void *) MC13XXX_ID_MC13783, },
+-	{ .compatible = "fsl,mc13892", .data = (void *) MC13XXX_ID_MC13892, },
+-	{ /* sentinel */ }
+-};
+-MODULE_DEVICE_TABLE(of, mc13xxx_dt_ids);
+-
+-static int mc13xxx_common_init(struct mc13xxx *mc13xxx,
+-		struct mc13xxx_platform_data *pdata, int irq);
+-
+-static int mc13xxx_probe(struct spi_device *spi)
+-{
+-	const struct of_device_id *of_id;
+-	struct spi_driver *sdrv = to_spi_driver(spi->dev.driver);
+-	struct mc13xxx *mc13xxx;
+-	struct mc13xxx_platform_data *pdata = dev_get_platdata(&spi->dev);
+-	int ret;
+-
+-	of_id = of_match_device(mc13xxx_dt_ids, &spi->dev);
+-	if (of_id)
+-		sdrv->id_table = &mc13xxx_device_id[(enum mc13xxx_id) of_id->data];
+-
+-	mc13xxx = kzalloc(sizeof(*mc13xxx), GFP_KERNEL);
+-	if (!mc13xxx)
+-		return -ENOMEM;
+-
+-	dev_set_drvdata(&spi->dev, mc13xxx);
+-	spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
+-	spi->bits_per_word = 32;
+-	spi_setup(spi);
+-
+-	mc13xxx->dev = &spi->dev;
+-	mc13xxx->spidev = spi;
+-	mc13xxx->read_dev = mc13xxx_spi_reg_read;
+-	mc13xxx->write_dev = mc13xxx_spi_reg_write;
+-
+-	ret = mc13xxx_common_init(mc13xxx, pdata, spi->irq);
+-
+-	if (ret) {
+-		dev_set_drvdata(&spi->dev, NULL);
+-	} else {
+-		const struct spi_device_id *devid =
+-			spi_get_device_id(mc13xxx->spidev);
+-		if (!devid || devid->driver_data != mc13xxx->ictype)
+-			dev_warn(mc13xxx->dev,
+-				"device id doesn't match auto detection!\n");
+-	}
+-
+-	return ret;
+-}
+-
+-static int mc13xxx_common_init(struct mc13xxx *mc13xxx,
++int mc13xxx_common_init(struct mc13xxx *mc13xxx,
+ 		struct mc13xxx_platform_data *pdata, int irq)
+ {
+ 	int ret;
+@@ -862,42 +714,7 @@ err_revision:
+ 
+ 	return 0;
+ }
+-
+-static int __devexit mc13xxx_remove(struct spi_device *spi)
+-{
+-	struct mc13xxx *mc13xxx = dev_get_drvdata(&spi->dev);
+-
+-	free_irq(mc13xxx->spidev->irq, mc13xxx);
+-
+-	mfd_remove_devices(&spi->dev);
+-
+-	kfree(mc13xxx);
+-
+-	return 0;
+-}
+-
+-static struct spi_driver mc13xxx_driver = {
+-	.id_table = mc13xxx_device_id,
+-	.driver = {
+-		.name = "mc13xxx",
+-		.owner = THIS_MODULE,
+-		.of_match_table = mc13xxx_dt_ids,
+-	},
+-	.probe = mc13xxx_probe,
+-	.remove = __devexit_p(mc13xxx_remove),
+-};
+-
+-static int __init mc13xxx_init(void)
+-{
+-	return spi_register_driver(&mc13xxx_driver);
+-}
+-subsys_initcall(mc13xxx_init);
+-
+-static void __exit mc13xxx_exit(void)
+-{
+-	spi_unregister_driver(&mc13xxx_driver);
+-}
+-module_exit(mc13xxx_exit);
++EXPORT_SYMBOL_GPL(mc13xxx_common_init);
+ 
+ MODULE_DESCRIPTION("Core driver for Freescale MC13XXX PMIC");
+ MODULE_AUTHOR("Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>");
+diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
+new file mode 100644
+index 0000000..70d352b
+--- /dev/null
++++ b/drivers/mfd/mc13xxx-spi.c
+@@ -0,0 +1,187 @@
++/*
++ * Copyright 2009-2010 Pengutronix
++ * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
++ *
++ * loosely based on an earlier driver that has
++ * Copyright 2009 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
++ */
++
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/mutex.h>
++#include <linux/interrupt.h>
++#include <linux/spi/spi.h>
++#include <linux/mfd/core.h>
++#include <linux/mfd/mc13xxx.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
++
++#include "mc13xxx.h"
++
++#define MC13XXX_REGOFFSET_SHIFT 25
++static int mc13xxx_spi_reg_read(struct mc13xxx *mc13xxx,
++				unsigned int offset, u32 *val)
++{
++	struct spi_transfer t;
++	struct spi_message m;
++	int ret;
++
++	*val = offset << MC13XXX_REGOFFSET_SHIFT;
++
++	memset(&t, 0, sizeof(t));
++
++	t.tx_buf = val;
++	t.rx_buf = val;
++	t.len = sizeof(u32);
++
++	spi_message_init(&m);
++	spi_message_add_tail(&t, &m);
++
++	ret = spi_sync(mc13xxx->spidev, &m);
++
++	/* error in message.status implies error return from spi_sync */
++	BUG_ON(!ret && m.status);
++
++	if (ret)
++		return ret;
++
++	*val &= 0xffffff;
++
++	return 0;
++}
++
++static int mc13xxx_spi_reg_write(struct mc13xxx *mc13xxx, unsigned int offset,
++		u32 val)
++{
++	u32 buf;
++	struct spi_transfer t;
++	struct spi_message m;
++	int ret;
++
++	buf = 1 << 31 | offset << MC13XXX_REGOFFSET_SHIFT | val;
++
++	memset(&t, 0, sizeof(t));
++
++	t.tx_buf = &buf;
++	t.rx_buf = &buf;
++	t.len = sizeof(u32);
++
++	spi_message_init(&m);
++	spi_message_add_tail(&t, &m);
++
++	ret = spi_sync(mc13xxx->spidev, &m);
++
++	BUG_ON(!ret && m.status);
++
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static const struct spi_device_id mc13xxx_device_id[] = {
++	{
++		.name = "mc13783",
++		.driver_data = MC13XXX_ID_MC13783,
++	}, {
++		.name = "mc13892",
++		.driver_data = MC13XXX_ID_MC13892,
++	}, {
++		/* sentinel */
++	}
++};
++MODULE_DEVICE_TABLE(spi, mc13xxx_device_id);
++
++static const struct of_device_id mc13xxx_dt_ids[] = {
++	{ .compatible = "fsl,mc13783", .data = (void *) MC13XXX_ID_MC13783, },
++	{ .compatible = "fsl,mc13892", .data = (void *) MC13XXX_ID_MC13892, },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, mc13xxx_dt_ids);
++
++static int mc13xxx_spi_probe(struct spi_device *spi)
++{
++	const struct of_device_id *of_id;
++	struct spi_driver *sdrv = to_spi_driver(spi->dev.driver);
++	struct mc13xxx *mc13xxx;
++	struct mc13xxx_platform_data *pdata = dev_get_platdata(&spi->dev);
++	int ret;
++
++	of_id = of_match_device(mc13xxx_dt_ids, &spi->dev);
++	if (of_id)
++		sdrv->id_table = &mc13xxx_device_id[(enum mc13xxx_id) of_id->data];
++
++	mc13xxx = kzalloc(sizeof(*mc13xxx), GFP_KERNEL);
++	if (!mc13xxx)
++		return -ENOMEM;
++
++	dev_set_drvdata(&spi->dev, mc13xxx);
++	spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
++	spi->bits_per_word = 32;
++	spi_setup(spi);
++
++	mc13xxx->dev = &spi->dev;
++	mc13xxx->spidev = spi;
++	mc13xxx->read_dev = mc13xxx_spi_reg_read;
++	mc13xxx->write_dev = mc13xxx_spi_reg_write;
++
++	ret = mc13xxx_common_init(mc13xxx, pdata, spi->irq);
++
++	if (ret) {
++		dev_set_drvdata(&spi->dev, NULL);
++	} else {
++		const struct spi_device_id *devid =
++			spi_get_device_id(mc13xxx->spidev);
++		if (!devid || devid->driver_data != mc13xxx->ictype)
++			dev_warn(mc13xxx->dev,
++				"device id doesn't match auto detection!\n");
++	}
++
++	return ret;
++}
++
++static int __devexit mc13xxx_spi_remove(struct spi_device *spi)
++{
++	struct mc13xxx *mc13xxx = dev_get_drvdata(&spi->dev);
++
++	free_irq(mc13xxx->spidev->irq, mc13xxx);
++
++	mfd_remove_devices(&spi->dev);
++
++	kfree(mc13xxx);
++
++	return 0;
++}
++
++static struct spi_driver mc13xxx_spi_driver = {
++	.id_table = mc13xxx_device_id,
++	.driver = {
++		.name = "mc13xxx",
++		.bus = &spi_bus_type,
++		.owner = THIS_MODULE,
++	},
++	.probe = mc13xxx_spi_probe,
++	.remove = __devexit_p(mc13xxx_spi_remove),
++};
++
++static int __init mc13xxx_spi_init(void)
++{
++	return spi_register_driver(&mc13xxx_spi_driver);
++}
++subsys_initcall(mc13xxx_spi_init);
++
++static void __exit mc13xxx_spi_exit(void)
++{
++	spi_unregister_driver(&mc13xxx_spi_driver);
++}
++module_exit(mc13xxx_spi_exit);
++
++MODULE_DESCRIPTION("SPI driver for Freescale MC13XXX PMIC");
++MODULE_AUTHOR("Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/mfd/mc13xxx.h b/drivers/mfd/mc13xxx.h
+new file mode 100644
+index 0000000..fbec2d1
+--- /dev/null
++++ b/drivers/mfd/mc13xxx.h
+@@ -0,0 +1,42 @@
++/*
++ * Copyright 2012 Creative Product Design
++ * Marc Reilly <marc@cpdesign.com.au>
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
++ */
++#ifndef __DRIVERS_MFD_MC13XXX_H
++#define __DRIVERS_MFD_MC13XXX_H
++
++#include <linux/mutex.h>
++#include <linux/mfd/mc13xxx.h>
++
++enum mc13xxx_id {
++	MC13XXX_ID_MC13783,
++	MC13XXX_ID_MC13892,
++	MC13XXX_ID_INVALID,
++};
++
++struct mc13xxx {
++	struct spi_device *spidev;
++
++	struct device *dev;
++	enum mc13xxx_id ictype;
++
++	struct mutex lock;
++	int flags;
++
++	int (*read_dev)(struct mc13xxx *, unsigned int, u32 *);
++	int (*write_dev)(struct mc13xxx *, unsigned int, u32);
++
++	irq_handler_t irqhandler[MC13XXX_NUM_IRQ];
++	void *irqdata[MC13XXX_NUM_IRQ];
++
++	int adcflags;
++};
++
++int mc13xxx_common_init(struct mc13xxx *mc13xxx,
++		struct mc13xxx_platform_data *pdata, int irq);
++
++#endif /* __DRIVERS_MFD_MC13XXX_H */
+-- 
+1.7.3.4
 
