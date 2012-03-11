@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab2CKTg7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 15:36:59 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50199 "EHLO mgw2.diku.dk"
+	id S1752253Ab2CKThM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 15:37:12 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:50201 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751511Ab2CKTgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 15:36:36 -0400
+	id S1751515Ab2CKTgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 15:36:35 -0400
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Samuel Ortiz <samuel@sortiz.org>
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] drivers/net/irda/{ali-ircc,via-ircc,w83977af-ir}.c: ensure arguments to request_irq and free_irq are compatible
-Date: Sun, 11 Mar 2012 20:36:23 +0100
-Message-Id: <1331494587-12196-4-git-send-email-Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 0/7] ensure arguments to request_irq and free_irq are compatible
+Date: Sun, 11 Mar 2012 20:36:20 +0100
+Message-Id: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+As far as I can see, free_irq does nothing if its second argument is not
+the same as the last argument of the corresponding call to request_irq.
+These were found using the semantic match below (http://coccinelle.lip6.fr/).
+This semantic match finds a number of other cases, but they are mostly in
+platform driver probe functions, so the functions should be just converted
+to use devm functions, eliminating the need to call free_irq at all.
 
-Convert calls to free_irq so that the second argument is the same as the
-last argument of the corresponding call to request_irq.  Without this
-property, free_irq does nothing.
+// <smpl>
+@r exists@
+expression e,e1,e2,e3,e4,e5;
+type T;
+position p1,p2;
+@@
 
-In each case, there is one call to free_irq with self as the second
-argument and one with dev as the second argument.  Even though dev was also
-the last argument of request_irq, I have changed all of the calls to use
-self, as it fits better with the first argument to each function.
+request_irq@p1(e1,e2,e3,e4,e5)
+...
+(
+ free_irq(e1,(T)e5);
+|
+free_irq@p2(e1,e);
+)
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+@bad1 exists@
+position r.p1,r.p2;
+expression e1,e2,e3,e4,e5;
+@@
 
----
-Not tested.  I don't know if I have made the right choice.
+request_irq@p1(e1,e2,e3,e4,(void *)e5)
+...
+free_irq@p2(e1,e5);
 
- drivers/net/irda/ali-ircc.c    |    4 ++--
- drivers/net/irda/via-ircc.c    |    4 ++--
- drivers/net/irda/w83977af_ir.c |    4 ++--
- 3 files changed, 6 insertions(+), 6 deletions(-)
+@bad2 exists@
+position r.p1,r.p2;
+statement S;
+@@
 
-diff --git a/drivers/net/irda/ali-ircc.c b/drivers/net/irda/ali-ircc.c
-index 963067d..7e732d7 100644
---- a/drivers/net/irda/ali-ircc.c
-+++ b/drivers/net/irda/ali-ircc.c
-@@ -1352,7 +1352,7 @@ static int ali_ircc_net_open(struct net_device *dev)
- 	iobase = self->io.fir_base;
- 	
- 	/* Request IRQ and install Interrupt Handler */
--	if (request_irq(self->io.irq, ali_ircc_interrupt, 0, dev->name, dev)) 
-+	if (request_irq(self->io.irq, ali_ircc_interrupt, 0, dev->name, self))
- 	{
- 		IRDA_WARNING("%s, unable to allocate irq=%d\n",
- 			     ALI_IRCC_DRIVER_NAME,
-@@ -1424,7 +1424,7 @@ static int ali_ircc_net_close(struct net_device *dev)
- 	/* Disable interrupts */
- 	SetCOMInterrupts(self, FALSE);
- 	       
--	free_irq(self->io.irq, dev);
-+	free_irq(self->io.irq, self);
- 	free_dma(self->io.dma);
- 
- 	IRDA_DEBUG(2, "%s(), ----------------- End ------------------\n", __func__ );
-diff --git a/drivers/net/irda/via-ircc.c b/drivers/net/irda/via-ircc.c
-index 2d456dd..c0678be 100644
---- a/drivers/net/irda/via-ircc.c
-+++ b/drivers/net/irda/via-ircc.c
-@@ -1483,7 +1483,7 @@ static int via_ircc_net_open(struct net_device *dev)
- 	dev->stats.rx_packets = 0;
- 	IRDA_ASSERT(self != NULL, return 0;);
- 	iobase = self->io.fir_base;
--	if (request_irq(self->io.irq, via_ircc_interrupt, 0, dev->name, dev)) {
-+	if (request_irq(self->io.irq, via_ircc_interrupt, 0, dev->name, self)) {
- 		IRDA_WARNING("%s, unable to allocate irq=%d\n", driver_name,
- 			     self->io.irq);
- 		return -EAGAIN;
-@@ -1562,7 +1562,7 @@ static int via_ircc_net_close(struct net_device *dev)
- 
- 	/* Disable interrupts */
- 	EnAllInt(iobase, OFF);
--	free_irq(self->io.irq, dev);
-+	free_irq(self->io.irq, self);
- 	free_dma(self->io.dma);
- 	if (self->io.dma2 != self->io.dma)
- 		free_dma(self->io.dma2);
-diff --git a/drivers/net/irda/w83977af_ir.c b/drivers/net/irda/w83977af_ir.c
-index 7d43506..c0c430c 100644
---- a/drivers/net/irda/w83977af_ir.c
-+++ b/drivers/net/irda/w83977af_ir.c
-@@ -1164,7 +1164,7 @@ static int w83977af_net_open(struct net_device *dev)
- 	iobase = self->io.fir_base;
- 
- 	if (request_irq(self->io.irq, w83977af_interrupt, 0, dev->name, 
--			(void *) dev)) {
-+			self)) {
- 		return -EAGAIN;
- 	}
- 	/*
-@@ -1244,7 +1244,7 @@ static int w83977af_net_close(struct net_device *dev)
- 	switch_bank(iobase, SET0);
- 	outb(0, iobase+ICR); 
- 
--	free_irq(self->io.irq, dev);
-+	free_irq(self->io.irq, self);
- 	free_dma(self->io.dma);
- 
- 	/* Restore bank register */
+if (request_irq@p1(...)) S else { <+... free_irq@p2(...); ...+> }
+
+@script:python depends on !bad1 && !bad2@
+p1 << r.p1;
+p2 << r.p2;
+@@
+
+cocci.print_main("",p1)
+cocci.print_secs("",p2)
+// </smpl>
 
