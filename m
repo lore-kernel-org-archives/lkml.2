@@ -1,210 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab2CKOIw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 10:08:52 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:58678 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab2CKOIu (ORCPT
+	id S1753067Ab2CKORc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 10:17:32 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62325 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab2CKOR2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 10:08:50 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: linux-usb@vger.kernel.org
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH] usb gadget: fix a section mismatch when compiling g_ffs with CONFIG_USB_FUNCTIONFS_ETH
-Date: Sun, 11 Mar 2012 15:08:46 +0100
-Message-Id: <1331474926-9237-1-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.2.5
+	Sun, 11 Mar 2012 10:17:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1331472670-28589-1-git-send-email-LW@KARO-electronics.de>
-References: <1331472670-28589-1-git-send-email-LW@KARO-electronics.de>
+In-Reply-To: <20120311132746.GA13336@n2100.arm.linux.org.uk>
+References: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com>
+	<20120311132746.GA13336@n2100.arm.linux.org.uk>
+Date: Sun, 11 Mar 2012 19:47:27 +0530
+Message-ID: <CAOD=uF7kQHABCmxUL3-J-hZ1E2mXrb7dgsYq7msHhiPJ4Gm-Ew@mail.gmail.com>
+Subject: Re: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Not to use in_atomic()  in driver code.
 
-please ignore the previous message. I sent the patch out too early.
-Here is a revised version.
+ Following article  inspired me to do the change.
+http://lwn.net/Articles/274695/
 
- commit 28824b18ac4705e876a282a15ea0de8fc957551f:
- |Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
- |Date:   Wed May 5 12:53:13 2010 +0200
- |
- |    USB: gadget: __init and __exit tags removed
- |
- |    __init, __initdata and __exit tags have have been removed from
- |    various files to make it possible for gadgets that do not use
- |    the __init/__exit tags to use those.
- obviously missed (at least) this case leading to a section mismatch in
- g_ffs.c when compiling with CONFIG_USB_FUNCTIONFS_ETH enabled.
+"in_atomic() is for core kernel use only. Because in special
+circumstances (ie: kmap_atomic()) we run inc_preempt_count() even on
+non-preemptible kernels to tell the per-arch fault handler that it was
+invoked by copy_*_user() inside kmap_atomic(), and it must fail.
+In other words, in_atomic() works in a specific low-level situation,
+but it was never meant to be used in a wider context. Its placement in
+hardirq.h next to macros which can be used elsewhere was, thus, almost
+certainly a mistake. As Alan Stern pointed out, the fact that Linux
+Device Drivers recommends the use of in_atomic() will not have helped
+the situation. Your editor recommends that the authors of that book be
+immediately sacked. "
 
-Signed-off-by: Lothar Wa√ümann <LW@KARO-electronics.de>
----
- drivers/usb/gadget/f_subset.c |   34 +++++++++++++++++-----------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+In the present case, we just check whether its an IRQ context or user
+context. So for that
+we can use "in_interrupt()".
 
-diff --git a/drivers/usb/gadget/f_subset.c b/drivers/usb/gadget/f_subset.c
-index c154064..21ab474 100644
---- a/drivers/usb/gadget/f_subset.c
-+++ b/drivers/usb/gadget/f_subset.c
-@@ -74,7 +74,7 @@ static inline struct f_gether *func_to_geth(struct usb_function *f)
- 
- /* interface descriptor: */
- 
--static struct usb_interface_descriptor subset_data_intf __initdata = {
-+static struct usb_interface_descriptor subset_data_intf = {
- 	.bLength =		sizeof subset_data_intf,
- 	.bDescriptorType =	USB_DT_INTERFACE,
- 
-@@ -87,7 +87,7 @@ static struct usb_interface_descriptor subset_data_intf __initdata = {
- 	/* .iInterface = DYNAMIC */
- };
- 
--static struct usb_cdc_header_desc mdlm_header_desc __initdata = {
-+static struct usb_cdc_header_desc mdlm_header_desc = {
- 	.bLength =		sizeof mdlm_header_desc,
- 	.bDescriptorType =	USB_DT_CS_INTERFACE,
- 	.bDescriptorSubType =	USB_CDC_HEADER_TYPE,
-@@ -95,7 +95,7 @@ static struct usb_cdc_header_desc mdlm_header_desc __initdata = {
- 	.bcdCDC =		cpu_to_le16(0x0110),
- };
- 
--static struct usb_cdc_mdlm_desc mdlm_desc __initdata = {
-+static struct usb_cdc_mdlm_desc mdlm_desc = {
- 	.bLength =		sizeof mdlm_desc,
- 	.bDescriptorType =	USB_DT_CS_INTERFACE,
- 	.bDescriptorSubType =	USB_CDC_MDLM_TYPE,
-@@ -111,7 +111,7 @@ static struct usb_cdc_mdlm_desc mdlm_desc __initdata = {
-  * can't really use its struct.  All we do here is say that we're using
-  * the submode of "SAFE" which directly matches the CDC Subset.
-  */
--static u8 mdlm_detail_desc[] __initdata = {
-+static u8 mdlm_detail_desc[] = {
- 	6,
- 	USB_DT_CS_INTERFACE,
- 	USB_CDC_MDLM_DETAIL_TYPE,
-@@ -121,7 +121,7 @@ static u8 mdlm_detail_desc[] __initdata = {
- 	0,	/* network data capabilities ("raw" encapsulation) */
- };
- 
--static struct usb_cdc_ether_desc ether_desc __initdata = {
-+static struct usb_cdc_ether_desc ether_desc = {
- 	.bLength =		sizeof ether_desc,
- 	.bDescriptorType =	USB_DT_CS_INTERFACE,
- 	.bDescriptorSubType =	USB_CDC_ETHERNET_TYPE,
-@@ -136,7 +136,7 @@ static struct usb_cdc_ether_desc ether_desc __initdata = {
- 
- /* full speed support: */
- 
--static struct usb_endpoint_descriptor fs_subset_in_desc __initdata = {
-+static struct usb_endpoint_descriptor fs_subset_in_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -144,7 +144,7 @@ static struct usb_endpoint_descriptor fs_subset_in_desc __initdata = {
- 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
- };
- 
--static struct usb_endpoint_descriptor fs_subset_out_desc __initdata = {
-+static struct usb_endpoint_descriptor fs_subset_out_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -152,7 +152,7 @@ static struct usb_endpoint_descriptor fs_subset_out_desc __initdata = {
- 	.bmAttributes =		USB_ENDPOINT_XFER_BULK,
- };
- 
--static struct usb_descriptor_header *fs_eth_function[] __initdata = {
-+static struct usb_descriptor_header *fs_eth_function[] = {
- 	(struct usb_descriptor_header *) &subset_data_intf,
- 	(struct usb_descriptor_header *) &mdlm_header_desc,
- 	(struct usb_descriptor_header *) &mdlm_desc,
-@@ -165,7 +165,7 @@ static struct usb_descriptor_header *fs_eth_function[] __initdata = {
- 
- /* high speed support: */
- 
--static struct usb_endpoint_descriptor hs_subset_in_desc __initdata = {
-+static struct usb_endpoint_descriptor hs_subset_in_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -173,7 +173,7 @@ static struct usb_endpoint_descriptor hs_subset_in_desc __initdata = {
- 	.wMaxPacketSize =	cpu_to_le16(512),
- };
- 
--static struct usb_endpoint_descriptor hs_subset_out_desc __initdata = {
-+static struct usb_endpoint_descriptor hs_subset_out_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -181,7 +181,7 @@ static struct usb_endpoint_descriptor hs_subset_out_desc __initdata = {
- 	.wMaxPacketSize =	cpu_to_le16(512),
- };
- 
--static struct usb_descriptor_header *hs_eth_function[] __initdata = {
-+static struct usb_descriptor_header *hs_eth_function[] = {
- 	(struct usb_descriptor_header *) &subset_data_intf,
- 	(struct usb_descriptor_header *) &mdlm_header_desc,
- 	(struct usb_descriptor_header *) &mdlm_desc,
-@@ -194,7 +194,7 @@ static struct usb_descriptor_header *hs_eth_function[] __initdata = {
- 
- /* super speed support: */
- 
--static struct usb_endpoint_descriptor ss_subset_in_desc __initdata = {
-+static struct usb_endpoint_descriptor ss_subset_in_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -202,7 +202,7 @@ static struct usb_endpoint_descriptor ss_subset_in_desc __initdata = {
- 	.wMaxPacketSize =	cpu_to_le16(1024),
- };
- 
--static struct usb_endpoint_descriptor ss_subset_out_desc __initdata = {
-+static struct usb_endpoint_descriptor ss_subset_out_desc = {
- 	.bLength =		USB_DT_ENDPOINT_SIZE,
- 	.bDescriptorType =	USB_DT_ENDPOINT,
- 
-@@ -210,7 +210,7 @@ static struct usb_endpoint_descriptor ss_subset_out_desc __initdata = {
- 	.wMaxPacketSize =	cpu_to_le16(1024),
- };
- 
--static struct usb_ss_ep_comp_descriptor ss_subset_bulk_comp_desc __initdata = {
-+static struct usb_ss_ep_comp_descriptor ss_subset_bulk_comp_desc = {
- 	.bLength =		sizeof ss_subset_bulk_comp_desc,
- 	.bDescriptorType =	USB_DT_SS_ENDPOINT_COMP,
- 
-@@ -219,7 +219,7 @@ static struct usb_ss_ep_comp_descriptor ss_subset_bulk_comp_desc __initdata = {
- 	/* .bmAttributes =	0, */
- };
- 
--static struct usb_descriptor_header *ss_eth_function[] __initdata = {
-+static struct usb_descriptor_header *ss_eth_function[] = {
- 	(struct usb_descriptor_header *) &subset_data_intf,
- 	(struct usb_descriptor_header *) &mdlm_header_desc,
- 	(struct usb_descriptor_header *) &mdlm_desc,
-@@ -290,7 +290,7 @@ static void geth_disable(struct usb_function *f)
- 
- /* serial function driver setup/binding */
- 
--static int __init
-+static int
- geth_bind(struct usb_configuration *c, struct usb_function *f)
- {
- 	struct usb_composite_dev *cdev = c->cdev;
-@@ -404,7 +404,7 @@ geth_unbind(struct usb_configuration *c, struct usb_function *f)
-  * Caller must have called @gether_setup().  Caller is also responsible
-  * for calling @gether_cleanup() before module unload.
-  */
--int __init geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
-+int geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
- {
- 	struct f_gether	*geth;
- 	int		status;
--- 
-1.7.2.5
+Greg also mentions the same in the following mail.
+http://www.spinics.net/lists/newbies/msg43402.html
 
+Regards
+Santosh
+
+On Sun, Mar 11, 2012 at 6:57 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sun, Mar 11, 2012 at 06:44:25PM +0530, santosh nayak wrote:
+>> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>>
+>> Instead of "in_atomic()", we can use in_interrupt() to check whether
+>> its an interrupt context.
+>
+> What are you trying to fix?
+>
+> Your description is an example of a bad commit comment. †It merely
+> describes the change, which anyone can see by looking at the diff.
+> What it totally and utterly fails to do is to describe _why_ the
+> change is necessary or what the problem is.
+>
+> So, until it does, this patch gets a definite NAK.
