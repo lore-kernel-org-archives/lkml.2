@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab2CKIff (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 04:35:35 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:41404 "EHLO
+	id S1752064Ab2CKImW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 04:42:22 -0400
+Received: from numidia.opendz.org ([98.142.220.152]:48209 "EHLO
 	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab2CKIfb (ORCPT
+	with ESMTP id S1751615Ab2CKImU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 04:35:31 -0400
-Date: Sun, 11 Mar 2012 09:39:15 +0100
+	Sun, 11 Mar 2012 04:42:20 -0400
+Date: Sun, 11 Mar 2012 09:46:02 +0100
 From: Djalal Harouni <tixxdz@opendz.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
@@ -24,54 +24,35 @@ Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
         Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
         Stephen Wilson <wilsons@start.ca>,
         "Jason A. Donenfeld" <Jason@zx2c4.com>
-Subject: Re: [PATCH 1/9] exec: add a global execve counter
-Message-ID: <20120311083915.GB4310@dztty>
+Subject: Re: [PATCH 0/9] proc: protect /proc/<pid>/* files across execve
+Message-ID: <20120311084602.GC4310@dztty>
 References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
- <1331421919-15499-2-git-send-email-tixxdz@opendz.org>
- <CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
+ <CA+55aFwdOgt=C52APPyvnAitcWNbzu-uXRi43m4bLS85oDgtqA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
+In-Reply-To: <CA+55aFwdOgt=C52APPyvnAitcWNbzu-uXRi43m4bLS85oDgtqA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 04:12:20PM -0800, Linus Torvalds wrote:
-> On Sat, Mar 10, 2012 at 3:25 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >
-> > Given that consideration this patch introduces two counters:
-> > A global atomic execve counter that will be incremented on every
-> > do_execve_common() call, and an atomic exec_id member for the task_struct.
-> 
-> This seems horribly expensive on most 32-bit architectures, including
-> very much x86-32. That atomic64_inc_return() is not cheap.  It's
-> possible that it's basically an impossible operation to do atomically
-> on certain platforms, causing it to use some random spinlock instead.
-Yes it will use spinlocks, and before that we also hold the
-current->signal->cred_guard_mutex during all the do_execve_common(), not
-to mention the search_binary_handler() logic which will test binary
-format... it can even call request_module()
+On Sat, Mar 10, 2012 at 04:01:09PM -0800, Linus Torvalds wrote:
+> I would in general suggest strongly against using exec_id for anything
+> that involves files. It isn't designed for that, it's designed for the
+> whole "check the parent exec_id" thing for ptrace, where that whole
+> "pass things around to another process" approach doesn't work.
+Yes exec_id for files can seem strange, but here we are speaking about
+virtual files that are related to the image of the process being run,
+these files are in reality just some portion of the process memory.
 
-There is the first:
-exec_id = atomic64_inc_return(&exec_counter); /* increment global */
 
-and the second one:
-atomic64_set(&current->exec_id, exec_id); /* set task exec_id */
+Linus please check the patch:
+[PATCH 9/9] proc: improve and clean up /proc/<pid>/mem protection
 
-I've added this since when we track the target task we do not want to race
-against it when it does its execve call or when we set the exec_id at
-open time of the /proc/<pid>/* files.
-
-I can remove this second one but in this situation we must track only
-reader (current), which is an aggressive behaviour, actually it may be
-safer to do so. I've made the target track change to fit the desired
-behaviour of "bind files to their process image".
-
-And when we are at it, we should only allow reading of /proc/<pid>/mem, at
-least it's only info leak in case there are future changes that can affect
-the current protections.
+I have explained why the current protection is not the best solution. The
+oom killer will kill other processes including getty,klogd,... even root
+owned ssh.
 
 -- 
 tixxdz
