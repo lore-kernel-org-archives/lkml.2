@@ -1,83 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab2CKVtQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 17:49:16 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:38906 "EHLO mgw2.diku.dk"
+	id S1753774Ab2CKVyB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 17:54:01 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38330 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752472Ab2CKVtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 17:49:10 -0400
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Samuel Ortiz <samuel@sortiz.org>
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] drivers/net/irda/{ali-ircc,via-ircc,w83977af-ir}.c: ensure arguments to request_irq and free_irq are compatible
-Date: Sun, 11 Mar 2012 22:49:02 +0100
-Message-Id: <1331502542-18094-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1752842Ab2CKVxx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 17:53:53 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "Norbert Preining" <preining@logic.at>
+References: <WuYv90FoNpB.A.O8.ktRXPB@chimera>
+In-Reply-To: <WuYv90FoNpB.A.O8.ktRXPB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <C6gS2DkSgiG.A.6YC.RuRXPB@chimera>
+Subject: [Bug #42686] iwlagn is getting even worse with 3.3-rc1
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 11 Mar 2012 22:31:15 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-Convert calls to free_irq so that the second argument is the same as the
-last argument of the corresponding call to request_irq.  Without this
-property, free_irq does nothing.
+The following bug entry is on the current list of known regressions
+from 3.2.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
----
-Version 2, avoids changing request_irq.
+Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42686
+Subject		: iwlagn is getting even worse with 3.3-rc1
+Submitter	: Norbert Preining <preining@logic.at>
+Date		: 2012-01-24 1:36 (48 days old)
+Message-ID	: <20120124013625.GB18436@gamma.logic.tuwien.ac.at>
+References	: http://marc.info/?l=linux-kernel&m=132736918325378&w=2
 
- drivers/net/irda/ali-ircc.c    |    2 +-
- drivers/net/irda/via-ircc.c    |    4 ++--
- drivers/net/irda/w83977af_ir.c |    2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/irda/ali-ircc.c b/drivers/net/irda/ali-ircc.c
-index 963067d..dcc80d6 100644
---- a/drivers/net/irda/ali-ircc.c
-+++ b/drivers/net/irda/ali-ircc.c
-@@ -1368,7 +1368,7 @@ static int ali_ircc_net_open(struct net_device *dev)
- 		IRDA_WARNING("%s, unable to allocate dma=%d\n",
- 			     ALI_IRCC_DRIVER_NAME,
- 			     self->io.dma);
--		free_irq(self->io.irq, self);
-+		free_irq(self->io.irq, dev);
- 		return -EAGAIN;
- 	}
- 	
-diff --git a/drivers/net/irda/via-ircc.c b/drivers/net/irda/via-ircc.c
-index 2d456dd..1a89fd4 100644
---- a/drivers/net/irda/via-ircc.c
-+++ b/drivers/net/irda/via-ircc.c
-@@ -1495,14 +1495,14 @@ static int via_ircc_net_open(struct net_device *dev)
- 	if (request_dma(self->io.dma, dev->name)) {
- 		IRDA_WARNING("%s, unable to allocate dma=%d\n", driver_name,
- 			     self->io.dma);
--		free_irq(self->io.irq, self);
-+		free_irq(self->io.irq, dev);
- 		return -EAGAIN;
- 	}
- 	if (self->io.dma2 != self->io.dma) {
- 		if (request_dma(self->io.dma2, dev->name)) {
- 			IRDA_WARNING("%s, unable to allocate dma2=%d\n",
- 				     driver_name, self->io.dma2);
--			free_irq(self->io.irq, self);
-+			free_irq(self->io.irq, dev);
- 			free_dma(self->io.dma);
- 			return -EAGAIN;
- 		}
-diff --git a/drivers/net/irda/w83977af_ir.c b/drivers/net/irda/w83977af_ir.c
-index 7d43506..f5bb92f 100644
---- a/drivers/net/irda/w83977af_ir.c
-+++ b/drivers/net/irda/w83977af_ir.c
-@@ -1172,7 +1172,7 @@ static int w83977af_net_open(struct net_device *dev)
- 	 * and clean up on failure.
- 	 */
- 	if (request_dma(self->io.dma, dev->name)) {
--		free_irq(self->io.irq, self);
-+		free_irq(self->io.irq, dev);
- 		return -EAGAIN;
- 	}
- 		
