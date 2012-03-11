@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780Ab2CKABd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 19:01:33 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35053 "EHLO
+	id S1751968Ab2CKAMq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 19:12:46 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43271 "EHLO
 	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab2CKABb (ORCPT
+	with ESMTP id S1751595Ab2CKAMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 19:01:31 -0500
+	Sat, 10 Mar 2012 19:12:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
-References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
+In-Reply-To: <1331421919-15499-2-git-send-email-tixxdz@opendz.org>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org> <1331421919-15499-2-git-send-email-tixxdz@opendz.org>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 10 Mar 2012 16:01:09 -0800
-X-Google-Sender-Auth: Qy3QFgN0hakRwi2v9nmz4lC4VeM
-Message-ID: <CA+55aFwdOgt=C52APPyvnAitcWNbzu-uXRi43m4bLS85oDgtqA@mail.gmail.com>
-Subject: Re: [PATCH 0/9] proc: protect /proc/<pid>/* files across execve
+Date: Sat, 10 Mar 2012 16:12:20 -0800
+X-Google-Sender-Auth: gP41pmZJyOqDWIBVUlxpCngpjLY
+Message-ID: <CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
+Subject: Re: [PATCH 1/9] exec: add a global execve counter
 To: Djalal Harouni <tixxdz@opendz.org>
 Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -37,27 +37,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sat, Mar 10, 2012 at 3:25 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
 >
-> 1) Use the target exec_id to bind files to their exec_id task:
->
-> For the REG files /proc/<pid>/{environ,pagemap,mem} we set the exec_id
-> of the proc_file_private to the target task, and we continue with
-> permission checks at open time, later on each read/write call the
-> permission checks are done + check the target exec_id if it equals the
-> exec_id of the proc_file_private that was set at open time, in other words
-> we bind the file to its task's exec_id, this way new exec programs can not
-> operate on the passed fd.
+> Given that consideration this patch introduces two counters:
+> A global atomic execve counter that will be incremented on every
+> do_execve_common() call, and an atomic exec_id member for the task_struct.
 
-So the exec_id approach was totally broken when it was used for
-/proc/<pid>/mem, is there any reason to believe it's a good idea now?
+This seems horribly expensive on most 32-bit architectures, including
+very much x86-32. That atomic64_inc_return() is not cheap.  It's
+possible that it's basically an impossible operation to do atomically
+on certain platforms, causing it to use some random spinlock instead.
 
-It's entirely predictable, and you can make the exec_id match by
-simply forking elsewhere and then passing the fd around using unix
-domain sockets, since the exec_id is just updated by incrementing a
-counter.
+I wonder if we couldn't make something much cheaper, since we don't
+actually care about it being globally incrementing, we just care about
+it being globally unique. IOW, it could easily be a 56-bit per-cpu
+counter along with the CPU number in the high bits or something like
+that. Avoiding the whole atomicity issue, and thus avoiding the main
+reason those things are really expensive.
 
-I would in general suggest strongly against using exec_id for anything
-that involves files. It isn't designed for that, it's designed for the
-whole "check the parent exec_id" thing for ptrace, where that whole
-"pass things around to another process" approach doesn't work.
+IOW, something like
 
-                Linus
+   cpu = get_cpu();
+   .. increment percpu 64-bit counter ..
+   id = counter * MAX_CPUS + cpu;
+   put_cpu(cpu);
+
+or equivalent would seem to be a potentially much cheaper approach.
+
+              Linus
