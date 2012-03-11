@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab2CKA6Z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 19:58:25 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36470 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab2CKA6X (ORCPT
+	id S1752229Ab2CKBqz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 20:46:55 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:44656 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752010Ab2CKBqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 19:58:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFy-ktC3NG5Wc+vhWB+18aqj9a0VLUSKQg+KR=FsVqfoJQ@mail.gmail.com>
-References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
- <1331421919-15499-2-git-send-email-tixxdz@opendz.org> <CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
- <CA+55aFy-ktC3NG5Wc+vhWB+18aqj9a0VLUSKQg+KR=FsVqfoJQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 10 Mar 2012 16:58:01 -0800
-X-Google-Sender-Auth: mmrFGlG536lmGWumDgZVQZeOja8
-Message-ID: <CA+55aFz6Ben=b_jKXTneUm7-ULP_Z8J5uua+=CA+kXjVpSSVjg@mail.gmail.com>
-Subject: Re: [PATCH 1/9] exec: add a global execve counter
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephen Wilson <wilsons@start.ca>,
-        "Jason A. Donenfeld" <Jason@zx2c4.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 10 Mar 2012 20:46:52 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
+        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v6 0/3] USB: OHCI-HCD: Support for LPC32xx
+Date: Sun, 11 Mar 2012 02:46:12 +0100
+Message-Id: <1331430375-31227-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 4:36 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I wonder if the number part of exec_id would even have to be 64-bit. I
-> think I can do about 10000 execves per second if I make the program a
-> small static one - and that's on a fast CPU. And it's a per-thread
-> counter, so you can't scale it with lots of CPU's. So it would take
-> something like four days to wrap. Hmm..
+This patch adds support for the LPC32xx to the ohci-pnx4008 driver.
 
-Actually, using a pure counter is horrible, because even if it takes
-four days to wrap, it *will* wrap, and the attacker can just count his
-own execve's.
+As discussed with Greg-KH on the USB mailing list, the ohci-pnx4008 driver is
+first renamed to reflect its multi-platform support. The second patch also
+renames the respective pnx4008_* symbols accordingly. The third and final patch
+adds the actual lpc32xx support.
 
-If, instead, you were to use a counter that counts *independently* of
-execve's, you're much better off.
+Applies to v3.3-rc6
 
-And if you use one that is free - because the CPU implements it
-natively - you're even better off.
+Since v5, i2c_read16() has been removed in favour of i2c_smbus_read_word_data()
 
-IOW, why is the exec-id just the time stamp counter (on any random cpu
-- we really don't care)? That should be safe even in just 32 bits
-exactly because it's not under the control of the user.
+Thanks to Wolfram Sang for reviewing!
 
-And it's zero cost for us to update.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-                   Linus
+---
+
+Roland Stigge (3):
+ USB: OHCI-HCD: Rename ohci-pnx4008 to ohci-nxp
+ USB: ohci-nxp: Rename symbols from pnx4008 to nxp
+ USB: ohci-nxp: Support for LPC32xx
+
+ Documentation/i2c/instantiating-devices |    6 
+ drivers/usb/host/ohci-hcd.c             |    6 
+ drivers/usb/host/ohci-nxp.c             |  652 ++++++++++++++++++++++++++++----
+ drivers/usb/host/ohci-pnx4008.c         |  453 ----------------------
+ 4 files changed, 596 insertions(+), 521 deletions(-)
