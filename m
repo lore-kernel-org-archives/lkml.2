@@ -1,252 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab2CKKhY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 06:37:24 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:37896 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206Ab2CKKhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 06:37:14 -0400
-Message-ID: <4F5C8004.7010103@parallels.com>
-Date: Sun, 11 Mar 2012 14:35:48 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1751932Ab2CKKkW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 06:40:22 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:42751 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab2CKKkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 06:40:20 -0400
+Date: Sun, 11 Mar 2012 13:42:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, virtualization@lists.osdl.org,
+        ohering@suse.com, Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP
+ messages in the driver
+Message-ID: <20120311104230.GC3337@mwanda>
+References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
+ <1331422331-4381-1-git-send-email-kys@microsoft.com>
+ <1331422331-4381-2-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-To: Suleiman Souhlal <ssouhlal@FreeBSD.org>
-CC: <cgroups@vger.kernel.org>, <suleiman@google.com>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <penberg@kernel.org>, <cl@linux.com>,
-        <yinghan@google.com>, <hughd@google.com>, <gthelen@google.com>,
-        <peterz@infradead.org>, <dan.magenheimer@oracle.com>,
-        <hannes@cmpxchg.org>, <mgorman@suse.de>,
-        <James.Bottomley@HansenPartnership.com>, <linux-mm@kvack.org>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 12/13] memcg: Per-memcg memory.kmem.slabinfo file.
-References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org> <1331325556-16447-13-git-send-email-ssouhlal@FreeBSD.org>
-In-Reply-To: <1331325556-16447-13-git-send-email-ssouhlal@FreeBSD.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s9fJI615cBHmzTOP"
+Content-Disposition: inline
+In-Reply-To: <1331422331-4381-2-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090204.4F5C8105.005A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2012 12:39 AM, Suleiman Souhlal wrote:
-> This file shows all the kmem_caches used by a memcg.
->
-> Signed-off-by: Suleiman Souhlal<suleiman@google.com>
-Reviewed-by: Glauber Costa <glommer@parallels.com>
 
-> ---
->   include/linux/slab.h     |    6 +++
->   include/linux/slab_def.h |    1 +
->   mm/memcontrol.c          |   18 +++++++++
->   mm/slab.c                |   88 ++++++++++++++++++++++++++++++++++------------
->   4 files changed, 90 insertions(+), 23 deletions(-)
->
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index fd1d2ba..0ff5ee2 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -401,6 +401,12 @@ static inline void *kmalloc_no_account(size_t size, gfp_t flags)
->   	return kmalloc(size, flags);
->   }
->
-> +static inline int
-> +mem_cgroup_slabinfo(struct mem_cgroup *mem, struct seq_file *m)
-> +{
-> +	return 0;
-> +}
-> +
->   #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM&&  CONFIG_SLAB */
->
->   #endif	/* _LINUX_SLAB_H */
-> diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-> index 248b8a9..fa6b272 100644
-> --- a/include/linux/slab_def.h
-> +++ b/include/linux/slab_def.h
-> @@ -227,6 +227,7 @@ found:
->   #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->
->   void kmem_cache_drop_ref(struct kmem_cache *cachep);
-> +int mem_cgroup_slabinfo(struct mem_cgroup *mem, struct seq_file *m);
->
->   static inline void
->   kmem_cache_get_ref(struct kmem_cache *cachep)
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9f5e9d8..4a4fa48 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -4672,6 +4672,20 @@ static int mem_cgroup_independent_kmem_limit_write(struct cgroup *cgrp,
->   	return 0;
->   }
->
-> +static int
-> +mem_cgroup_slabinfo_show(struct cgroup *cgroup, struct cftype *ctf,
-> +    struct seq_file *m)
-> +{
-> +	struct mem_cgroup *mem;
-> +
-> +	mem  = mem_cgroup_from_cont(cgroup);
-> +
-> +	if (mem == root_mem_cgroup)
-> +		mem = NULL;
-> +
-> +	return mem_cgroup_slabinfo(mem, m);
-> +}
-> +
->   static struct cftype kmem_cgroup_files[] = {
->   	{
->   		.name = "kmem.independent_kmem_limit",
-> @@ -4689,6 +4703,10 @@ static struct cftype kmem_cgroup_files[] = {
->   		.private = MEMFILE_PRIVATE(_KMEM, RES_USAGE),
->   		.read_u64 = mem_cgroup_read,
->   	},
-> +	{
-> +		.name = "kmem.slabinfo",
-> +		.read_seq_string = mem_cgroup_slabinfo_show,
-> +	},
->   };
->
->   static int register_kmem_files(struct cgroup *cont, struct cgroup_subsys *ss)
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 02239ed..1b35799 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -4528,21 +4528,26 @@ static void s_stop(struct seq_file *m, void *p)
->   	mutex_unlock(&cache_chain_mutex);
->   }
->
-> -static int s_show(struct seq_file *m, void *p)
-> -{
-> -	struct kmem_cache *cachep = list_entry(p, struct kmem_cache, next);
-> -	struct slab *slabp;
-> +struct slab_counts {
->   	unsigned long active_objs;
-> +	unsigned long active_slabs;
-> +	unsigned long num_slabs;
-> +	unsigned long free_objects;
-> +	unsigned long shared_avail;
->   	unsigned long num_objs;
-> -	unsigned long active_slabs = 0;
-> -	unsigned long num_slabs, free_objects = 0, shared_avail = 0;
-> -	const char *name;
-> -	char *error = NULL;
-> -	int node;
-> +};
-> +
-> +static char *
-> +get_slab_counts(struct kmem_cache *cachep, struct slab_counts *c)
-> +{
->   	struct kmem_list3 *l3;
-> +	struct slab *slabp;
-> +	char *error;
-> +	int node;
-> +
-> +	error = NULL;
-> +	memset(c, 0, sizeof(struct slab_counts));
->
-> -	active_objs = 0;
-> -	num_slabs = 0;
->   	for_each_online_node(node) {
->   		l3 = cachep->nodelists[node];
->   		if (!l3)
-> @@ -4554,31 +4559,43 @@ static int s_show(struct seq_file *m, void *p)
->   		list_for_each_entry(slabp,&l3->slabs_full, list) {
->   			if (slabp->inuse != cachep->num&&  !error)
->   				error = "slabs_full accounting error";
-> -			active_objs += cachep->num;
-> -			active_slabs++;
-> +			c->active_objs += cachep->num;
-> +			c->active_slabs++;
->   		}
->   		list_for_each_entry(slabp,&l3->slabs_partial, list) {
->   			if (slabp->inuse == cachep->num&&  !error)
->   				error = "slabs_partial inuse accounting error";
->   			if (!slabp->inuse&&  !error)
->   				error = "slabs_partial/inuse accounting error";
-> -			active_objs += slabp->inuse;
-> -			active_slabs++;
-> +			c->active_objs += slabp->inuse;
-> +			c->active_slabs++;
->   		}
->   		list_for_each_entry(slabp,&l3->slabs_free, list) {
->   			if (slabp->inuse&&  !error)
->   				error = "slabs_free/inuse accounting error";
-> -			num_slabs++;
-> +			c->num_slabs++;
->   		}
-> -		free_objects += l3->free_objects;
-> +		c->free_objects += l3->free_objects;
->   		if (l3->shared)
-> -			shared_avail += l3->shared->avail;
-> +			c->shared_avail += l3->shared->avail;
->
->   		spin_unlock_irq(&l3->list_lock);
->   	}
-> -	num_slabs += active_slabs;
-> -	num_objs = num_slabs * cachep->num;
-> -	if (num_objs - active_objs != free_objects&&  !error)
-> +	c->num_slabs += c->active_slabs;
-> +	c->num_objs = c->num_slabs * cachep->num;
-> +
-> +	return error;
-> +}
-> +
-> +static int s_show(struct seq_file *m, void *p)
-> +{
-> +	struct kmem_cache *cachep = list_entry(p, struct kmem_cache, next);
-> +	struct slab_counts c;
-> +	const char *name;
-> +	char *error;
-> +
-> +	error = get_slab_counts(cachep,&c);
-> +	if (c.num_objs - c.active_objs != c.free_objects&&  !error)
->   		error = "free_objects accounting error";
->
->   	name = cachep->name;
-> @@ -4586,12 +4603,12 @@ static int s_show(struct seq_file *m, void *p)
->   		printk(KERN_ERR "slab: cache %s error: %s\n", name, error);
->
->   	seq_printf(m, "%-17s %6lu %6lu %6u %4u %4d",
-> -		   name, active_objs, num_objs, cachep->buffer_size,
-> +		   name, c.active_objs, c.num_objs, cachep->buffer_size,
->   		   cachep->num, (1<<  cachep->gfporder));
->   	seq_printf(m, " : tunables %4u %4u %4u",
->   		   cachep->limit, cachep->batchcount, cachep->shared);
->   	seq_printf(m, " : slabdata %6lu %6lu %6lu",
-> -		   active_slabs, num_slabs, shared_avail);
-> +		   c.active_slabs, c.num_slabs, c.shared_avail);
->   #if STATS
->   	{			/* list3 stats */
->   		unsigned long high = cachep->high_mark;
-> @@ -4726,6 +4743,31 @@ static const struct file_operations proc_slabinfo_operations = {
->   	.release	= seq_release,
->   };
->
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +int
-> +mem_cgroup_slabinfo(struct mem_cgroup *mem, struct seq_file *m)
-> +{
-> +	struct kmem_cache *cachep;
-> +	struct slab_counts c;
-> +
-> +	seq_printf(m, "# name<active_objs>  <num_objs>  <objsize>\n");
-> +
-> +	mutex_lock(&cache_chain_mutex);
-> +	list_for_each_entry(cachep,&cache_chain, next) {
-> +		if (cachep->memcg_params.memcg != mem)
-> +			continue;
-> +
-> +		get_slab_counts(cachep,&c);
-> +
-> +		seq_printf(m, "%-17s %6lu %6lu %6u\n", cachep->name,
-> +		   c.active_objs, c.num_objs, cachep->buffer_size);
-> +	}
-> +	mutex_unlock(&cache_chain_mutex);
-> +
-> +	return 0;
-> +}
-> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-> +
->   #ifdef CONFIG_DEBUG_SLAB_LEAK
->
->   static void *leaks_start(struct seq_file *m, loff_t *pos)
+--s9fJI615cBHmzTOP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Sat, Mar 10, 2012 at 03:32:09PM -0800, K. Y. Srinivasan wrote:
+> +		switch (message->kvp_hdr.operation) {
+> +		case KVP_OP_SET:
+> +			switch (in_msg->body.kvp_set.data.value_type) {
+> +			case REG_SZ:
+> +				/*
+> +				 * The value is a string - utf16 encoding.
+> +				 */
+> +				message->body.kvp_set.data.value_size =
+> +				utf16s_to_utf8s(
+> +				(wchar_t *)
+> +				in_msg->body.kvp_set.data.value,
+> +				in_msg->body.kvp_set.data.value_size,
+> +				UTF16_LITTLE_ENDIAN,
+> +				message->body.kvp_set.data.value,
+> +				HV_KVP_EXCHANGE_MAX_VALUE_SIZE) + 1;
+> +				break;
+> +
+
+This block of unreadable text is so nasty.
+
+You could return directly if the msg = kmalloc() fails and pull
+everything in one indent level.  It's normally more readable to
+handle errors as soon as possible anyway.
+
+Probably that's not enough to make a difference and we'd need to
+introduce a new function.
+
+Btw I don't know if utf16s_to_utf8s() counts the NUL char or not.
+It feels like maybe we could end up with ->value_size equal to
+HV_KVP_EXCHANGE_MAX_VALUE_SIZE + 1.
+
+regards,
+dan carpenter
+
+--s9fJI615cBHmzTOP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPXIGWAAoJEOnZkXI/YHqRewIP/2FCLwjqyq4tApTNDfAmUqD1
+G6EvsQpOjUuYcev8ZWbQ/6Dw6572vMy+DIiOXyFWG9HATGcSUaPl1KP2cCemOAHk
+ycccaUP2xX5NM8rNREHxKHmCucRC+roZ1Ml1DcyQ/ftsyIJ8Se8trT55+u4DlwOD
+Pm7rNZnQedtkr5OqWd0+LwbJFYeso3tqQHplPg2XAycx4uqSqsJK8HCbyMSBU+tR
+Wfzd9f8Ml4SeHIFevVa1cEuWnHRipn9/ItGIgZ3yrcL7/Kv2LeKjCt8oiN8F7Yxg
+Pi+kaSKKzU/XA50JsmIG9f5eY0gfTUNJ2wyQp62V6dMtqWp6PlupLBhDtgET1jMI
+OciMuqxfmqhCgatqiZM3w1FHgnL7gYYST66Myoj5f2hBJ8aqZGhk2ok5aDrXHs55
+wuIJ2MXyaDL8dhqY8C2Hj6FgJE3A9OnKBoD0p92Y+xwimfv8Bvh6XDdWnvUw1nSw
+mApJBc1qCqo8LBbpCSSNVA5NvUIL/Fp62K2CCd8Kr0aGpP7plGmj/HV2yYG7lWPP
+KwL2fOc3zysYO74g6z+xkD/bnWfZQ7awPSn3K5fmHG4J0qwYj0GnyKa0MEytOO8K
+jtc+p7uO3YPvrxkskd7qtTYhYqLEi4Hc0pZEjuyVhMcioEXP6/QPVPp4pn/2XEHQ
+tKK99ecllA4/qoSaU0HT
+=Q0vO
+-----END PGP SIGNATURE-----
+
+--s9fJI615cBHmzTOP--
