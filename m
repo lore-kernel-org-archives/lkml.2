@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab2CJXpt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 18:45:49 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45060 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752749Ab2CJXps convert rfc822-to-8bit (ORCPT
+	id S1751780Ab2CKABd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 19:01:33 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35053 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab2CKABb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 18:45:48 -0500
+	Sat, 10 Mar 2012 19:01:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAKaWdxa8yJJhnPj1th6GdYvn9+Lu7GUV1e=960gMQOdc8W47dQ@mail.gmail.com>
-References: <CAKaWdxZGg-Xpw2E85bAr8BVgWtXxEitwsir=yXp5qS0FMUk1uQ@mail.gmail.com>
-	<m1ehtd8qez.fsf@fess.ebiederm.org>
-	<CAKaWdxbuwV6yQnX=4zcBZncL8f+7cXPFwx8ejw=6d=dX8NoZsw@mail.gmail.com>
-	<87obshxt4w.fsf@xmission.com>
-	<CAKaWdxa326eP47=nENh8_1NmRCadTB=o8jyWO2dAzZcn9yCwiA@mail.gmail.com>
-	<87zkc1w6wp.fsf@xmission.com>
-	<CAKaWdxa8yJJhnPj1th6GdYvn9+Lu7GUV1e=960gMQOdc8W47dQ@mail.gmail.com>
-Date: Sun, 11 Mar 2012 12:45:48 +1300
-Message-ID: <CAKaWdxaaKMiwnhP7R786mqHTPs+o=izerZDbUgPBaxyU+XL-2g@mail.gmail.com>
-Subject: Re: Hang on "echo b > /proc/sysrq-trigger"
-From: Keith Chew <keith.chew@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 10 Mar 2012 16:01:09 -0800
+X-Google-Sender-Auth: Qy3QFgN0hakRwi2v9nmz4lC4VeM
+Message-ID: <CA+55aFwdOgt=C52APPyvnAitcWNbzu-uXRi43m4bLS85oDgtqA@mail.gmail.com>
+Subject: Re: [PATCH 0/9] proc: protect /proc/<pid>/* files across execve
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric
+On Sat, Mar 10, 2012 at 3:25 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+>
+> 1) Use the target exec_id to bind files to their exec_id task:
+>
+> For the REG files /proc/<pid>/{environ,pagemap,mem} we set the exec_id
+> of the proc_file_private to the target task, and we continue with
+> permission checks at open time, later on each read/write call the
+> permission checks are done + check the target exec_id if it equals the
+> exec_id of the proc_file_private that was set at open time, in other words
+> we bind the file to its task's exec_id, this way new exec programs can not
+> operate on the passed fd.
 
-Keep a quick update...
+So the exec_id approach was totally broken when it was used for
+/proc/<pid>/mem, is there any reason to believe it's a good idea now?
 
->> I would check with your BIOS folks and perhaps play with the kernel
->> option.  The most reliable way to peform a reset is to trigger a board
->> reset by writing to 0xcf9 or a similar register.  I expect your BIOS
->> does that and you can probably get the kernel to do that.  I would
->> definitely test to see if you can write to the mostly standard
->> 0xcf9 register directly from the kernel and trigger a reset directly.
->>
+It's entirely predictable, and you can make the exec_id match by
+simply forking elsewhere and then passing the fd around using unix
+domain sockets, since the exec_id is just updated by incrementing a
+counter.
 
-Thank you very much for this. We have tried with reboot=p, which is
-writing to the 0xCF9 register directly, and the test has been running
-good for the past 9 days. Will keep monitoring it.
+I would in general suggest strongly against using exec_id for anything
+that involves files. It isn't designed for that, it's designed for the
+whole "check the parent exec_id" thing for ptrace, where that whole
+"pass things around to another process" approach doesn't work.
 
-Also, I have also added a delay in the KBD reboot, which appears to
-have made the reboot reliable (running good for past 8 days, before it
-would hang after 2 days):
------------------------
-kb_wait();
-udelay(150); <------ Increased from 50
-outb(0xfe, 0x64); /* pulse reset low */
-udelay(50);
------------------------
-
-Looks like the code may be issuing the reboot a bit too early after
-returning from kb_wait().
-
-Regards
-Keith
+                Linus
