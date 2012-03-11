@@ -1,256 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab2CKKyl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 06:54:41 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:50966 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752723Ab2CKKyh (ORCPT
+	id S1752968Ab2CKKyu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 06:54:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42138 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab2CKKyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 06:54:37 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
-        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v7 3/4] USB: ohci-nxp: Support for LPC32xx
-Date: Sun, 11 Mar 2012 11:53:38 +0100
-Message-Id: <1331463219-23293-4-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1331463219-23293-1-git-send-email-stigge@antcom.de>
-References: <1331463219-23293-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Sun, 11 Mar 2012 06:54:41 -0400
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, David Airlie <airlied@linux.ie>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        dri-devel@lists.freedesktop.org
+Subject: [V2 PATCH 2/3] module: avoid exporting module_mutex
+Date: Sun, 11 Mar 2012 18:54:14 +0800
+Message-Id: <1331463255-31019-2-git-send-email-xiyou.wangcong@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1331463255-31019-1-git-send-email-xiyou.wangcong@gmail.com>
+References: <1331463255-31019-1-git-send-email-xiyou.wangcong@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the LPC32xx to ohci-nxp
+Avoid exporting internal locks to modules, export two
+functions lock_modules()/unlock_modules() for them instead.
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
 ---
- drivers/usb/host/ohci-hcd.c |    2 
- drivers/usb/host/ohci-nxp.c |  142 +++++++++++++++++++++++++++++++++-----------
- 2 files changed, 109 insertions(+), 35 deletions(-)
+ drivers/gpu/drm/drm_fb_helper.c |    4 ++--
+ include/linux/module.h          |    3 ++-
+ kernel/kprobes.c                |    4 ++--
+ kernel/module.c                 |   24 ++++++++++++++++++------
+ 4 files changed, 24 insertions(+), 11 deletions(-)
 
---- linux-2.6.orig/drivers/usb/host/ohci-hcd.c
-+++ linux-2.6/drivers/usb/host/ohci-hcd.c
-@@ -1050,7 +1050,7 @@ MODULE_LICENSE ("GPL");
- #define PLATFORM_DRIVER		ohci_hcd_at91_driver
+diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+index aada26f..c184759 100644
+--- a/drivers/gpu/drm/drm_fb_helper.c
++++ b/drivers/gpu/drm/drm_fb_helper.c
+@@ -1451,9 +1451,9 @@ static int __init drm_fb_helper_modinit(void)
+ 	const char *name = "fbcon";
+ 	struct module *fbcon;
+ 
+-	mutex_lock(&module_mutex);
++	lock_modules();
+ 	fbcon = find_module(name);
+-	mutex_unlock(&module_mutex);
++	unlock_modules();
+ 
+ 	if (!fbcon)
+ 		request_module_nowait(name);
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 4598bf0..5cf6428 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -374,7 +374,8 @@ struct module
+ #define MODULE_ARCH_INIT {}
  #endif
  
--#ifdef CONFIG_ARCH_PNX4008
-+#if defined(CONFIG_ARCH_PNX4008) || defined(CONFIG_ARCH_LPC32XX)
- #include "ohci-nxp.c"
- #define PLATFORM_DRIVER		usb_hcd_nxp_driver
- #endif
---- linux-2.6.orig/drivers/usb/host/ohci-nxp.c
-+++ linux-2.6/drivers/usb/host/ohci-nxp.c
-@@ -5,6 +5,7 @@
-  *
-  * Currently supported OHCI host devices:
-  * - Philips PNX4008
-+ * - NXP LPC32xx
-  *
-  * Authors: Dmitry Chigirev <source@mvista.com>
-  *	    Vitaly Wool <vitalywool@gmail.com>
-@@ -25,20 +26,24 @@
- #include <linux/i2c.h>
+-extern struct mutex module_mutex;
++extern void lock_modules(void);
++extern void unlock_modules(void);
  
- #include <mach/hardware.h>
-+#include <asm/mach-types.h>
- #include <asm/io.h>
+ /* FIXME: It'd be nice to isolate modules during init, too, so they
+    aren't used before they (may) fail.  But presently too much code
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index c62b854..0670fb1 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -562,7 +562,7 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
+ 	LIST_HEAD(free_list);
  
- #include <mach/platform.h>
- #include <mach/irqs.h>
- #include <asm/gpio.h>
+ 	/* Lock modules while optimizing kprobes */
+-	mutex_lock(&module_mutex);
++	lock_modules();
+ 	mutex_lock(&kprobe_mutex);
  
--#define USB_CTRL	IO_ADDRESS(PNX4008_PWRMAN_BASE + 0x64)
-+#define USB_CONFIG_BASE		0x31020000
-+#define PWRMAN_BASE		0x40004000
+ 	/*
+@@ -587,7 +587,7 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
+ 	do_free_cleaned_kprobes(&free_list);
+ 
+ 	mutex_unlock(&kprobe_mutex);
+-	mutex_unlock(&module_mutex);
++	unlock_modules();
+ 
+ 	/* Step 5: Kick optimizer again if needed */
+ 	if (!list_empty(&optimizing_list) || !list_empty(&unoptimizing_list))
+diff --git a/kernel/module.c b/kernel/module.c
+index f0f8d4a..db402a8 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -95,8 +95,20 @@
+  * 2) module_use links,
+  * 3) module_addr_min/module_addr_max.
+  * (delete uses stop_machine/add uses RCU list operations). */
+-DEFINE_MUTEX(module_mutex);
+-EXPORT_SYMBOL_GPL(module_mutex);
++static DEFINE_MUTEX(module_mutex);
 +
-+#define USB_CTRL		IO_ADDRESS(PWRMAN_BASE + 0x64)
- 
- /* USB_CTRL bit defines */
- #define USB_SLAVE_HCLK_EN	(1 << 24)
- #define USB_HOST_NEED_CLK_EN	(1 << 21)
- 
--#define USB_OTG_CLK_CTRL	IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0xFF4)
--#define USB_OTG_CLK_STAT	IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0xFF8)
-+#define USB_OTG_CLK_CTRL	IO_ADDRESS(USB_CONFIG_BASE + 0xFF4)
-+#define USB_OTG_CLK_STAT	IO_ADDRESS(USB_CONFIG_BASE + 0xFF8)
- 
- /* USB_OTG_CLK_CTRL bit defines */
- #define AHB_M_CLOCK_ON		(1 << 4)
-@@ -47,7 +52,7 @@
- #define DEV_CLOCK_ON		(1 << 1)
- #define HOST_CLOCK_ON		(1 << 0)
- 
--#define USB_OTG_STAT_CONTROL	IO_ADDRESS(PNX4008_USB_CONFIG_BASE + 0x110)
-+#define USB_OTG_STAT_CONTROL	IO_ADDRESS(USB_CONFIG_BASE + 0x110)
- 
- /* USB_OTG_STAT_CONTROL bit defines */
- #define TRANSPARENT_I2C_EN	(1 << 7)
-@@ -101,6 +106,15 @@
- #define ISP1301_I2C_INTERRUPT_RISING 0xE
- #define ISP1301_I2C_REG_CLEAR_ADDR 1
- 
-+/* On LPC32xx, those are undefined */
-+#ifndef start_int_set_falling_edge
-+#define start_int_set_falling_edge(irq)
-+#define start_int_set_rising_edge(irq)
-+#define start_int_ack(irq)
-+#define start_int_mask(irq)
-+#define start_int_umask(irq)
-+#endif
-+
- static struct i2c_driver isp1301_driver;
- static struct i2c_client *isp1301_i2c_client;
- 
-@@ -146,7 +160,7 @@ static void i2c_write(u8 buf, u8 subaddr
- 	i2c_master_send(isp1301_i2c_client, &tmpbuf[0], 2);
- }
- 
--static void isp1301_configure(void)
-+static void isp1301_configure_pnx4008(void)
- {
- 	/* PNX4008 only supports DAT_SE0 USB mode */
- 	/* PNX4008 R2A requires setting the MAX603 to output 3.6V */
-@@ -169,7 +183,63 @@ static void isp1301_configure(void)
- 		  ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR);
- 	i2c_write(0xFF,
- 		  ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR);
-+}
-+
-+static void isp1301_configure_lpc32xx(void)
++void lock_modules(void)
 +{
-+	/* LPC32XX only supports DAT_SE0 USB mode */
-+	/* This sequence is important */
- 
-+	/* Disable transparent UART mode first */
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		(ISP1301_I2C_MODE_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR),
-+		MC1_UART_EN);
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		(ISP1301_I2C_MODE_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR),
-+		~MC1_SPEED_REG);
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+				  ISP1301_I2C_MODE_CONTROL_1, MC1_SPEED_REG);
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		  (ISP1301_I2C_MODE_CONTROL_2 | ISP1301_I2C_REG_CLEAR_ADDR),
-+		  ~0);
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		ISP1301_I2C_MODE_CONTROL_2,
-+		(MC2_BI_DI | MC2_PSW_EN | MC2_SPD_SUSP_CTRL));
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		(ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR), ~0);
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		ISP1301_I2C_MODE_CONTROL_1, MC1_DAT_SE0);
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		ISP1301_I2C_OTG_CONTROL_1,
-+		(OTG1_DM_PULLDOWN | OTG1_DP_PULLDOWN));
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		(ISP1301_I2C_OTG_CONTROL_1 | ISP1301_I2C_REG_CLEAR_ADDR),
-+		(OTG1_DM_PULLUP | OTG1_DP_PULLUP));
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		ISP1301_I2C_INTERRUPT_LATCH | ISP1301_I2C_REG_CLEAR_ADDR, ~0);
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		ISP1301_I2C_INTERRUPT_FALLING | ISP1301_I2C_REG_CLEAR_ADDR,
-+		~0);
-+	i2c_smbus_write_byte_data(isp1301_i2c_client,
-+		ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR, ~0);
-+
-+	/* Enable usb_need_clk clock after transceiver is initialized */
-+	__raw_writel((__raw_readl(USB_CTRL) | (1 << 22)), USB_CTRL);
-+
-+	printk(KERN_INFO "ISP1301 Vendor ID  : 0x%04x\n",
-+	      i2c_smbus_read_word_data(isp1301_i2c_client, 0x00));
-+	printk(KERN_INFO "ISP1301 Product ID : 0x%04x\n",
-+	      i2c_smbus_read_word_data(isp1301_i2c_client, 0x02));
-+	printk(KERN_INFO "ISP1301 Version ID : 0x%04x\n",
-+	      i2c_smbus_read_word_data(isp1301_i2c_client, 0x14));
++	mutex_lock(&module_mutex);
 +}
++EXPORT_SYMBOL(lock_modules);
 +
-+static void isp1301_configure(void)
++void unlock_modules(void)
 +{
-+	if (machine_is_pnx4008())
-+		isp1301_configure_pnx4008();
-+	else
-+		isp1301_configure_lpc32xx();
- }
- 
- static inline void isp1301_vbus_on(void)
-@@ -260,39 +330,43 @@ static const struct hc_driver ohci_nxp_h
- 
- static void nxp_set_usb_bits(void)
++	mutex_unlock(&module_mutex);
++}
++EXPORT_SYMBOL(unlock_modules);
++
+ static LIST_HEAD(modules);
+ #ifdef CONFIG_KGDB_KDB
+ struct list_head *kdb_modules = &modules; /* kdb needs the list of modules */
+@@ -1713,7 +1725,7 @@ void set_all_modules_text_rw(void)
  {
--	start_int_set_falling_edge(SE_USB_OTG_ATX_INT_N);
--	start_int_ack(SE_USB_OTG_ATX_INT_N);
--	start_int_umask(SE_USB_OTG_ATX_INT_N);
--
--	start_int_set_rising_edge(SE_USB_OTG_TIMER_INT);
--	start_int_ack(SE_USB_OTG_TIMER_INT);
--	start_int_umask(SE_USB_OTG_TIMER_INT);
--
--	start_int_set_rising_edge(SE_USB_I2C_INT);
--	start_int_ack(SE_USB_I2C_INT);
--	start_int_umask(SE_USB_I2C_INT);
--
--	start_int_set_rising_edge(SE_USB_INT);
--	start_int_ack(SE_USB_INT);
--	start_int_umask(SE_USB_INT);
--
--	start_int_set_rising_edge(SE_USB_NEED_CLK_INT);
--	start_int_ack(SE_USB_NEED_CLK_INT);
--	start_int_umask(SE_USB_NEED_CLK_INT);
--
--	start_int_set_rising_edge(SE_USB_AHB_NEED_CLK_INT);
--	start_int_ack(SE_USB_AHB_NEED_CLK_INT);
--	start_int_umask(SE_USB_AHB_NEED_CLK_INT);
-+	if (machine_is_pnx4008()) {
-+		start_int_set_falling_edge(SE_USB_OTG_ATX_INT_N);
-+		start_int_ack(SE_USB_OTG_ATX_INT_N);
-+		start_int_umask(SE_USB_OTG_ATX_INT_N);
-+
-+		start_int_set_rising_edge(SE_USB_OTG_TIMER_INT);
-+		start_int_ack(SE_USB_OTG_TIMER_INT);
-+		start_int_umask(SE_USB_OTG_TIMER_INT);
-+
-+		start_int_set_rising_edge(SE_USB_I2C_INT);
-+		start_int_ack(SE_USB_I2C_INT);
-+		start_int_umask(SE_USB_I2C_INT);
-+
-+		start_int_set_rising_edge(SE_USB_INT);
-+		start_int_ack(SE_USB_INT);
-+		start_int_umask(SE_USB_INT);
-+
-+		start_int_set_rising_edge(SE_USB_NEED_CLK_INT);
-+		start_int_ack(SE_USB_NEED_CLK_INT);
-+		start_int_umask(SE_USB_NEED_CLK_INT);
-+
-+		start_int_set_rising_edge(SE_USB_AHB_NEED_CLK_INT);
-+		start_int_ack(SE_USB_AHB_NEED_CLK_INT);
-+		start_int_umask(SE_USB_AHB_NEED_CLK_INT);
-+	}
+ 	struct module *mod;
+ 
+-	mutex_lock(&module_mutex);
++	lock_modules();
+ 	list_for_each_entry(mod, &modules, list) {
+ 		if ((mod->module_core) && (mod->core_text_size)) {
+ 			set_page_attributes(mod->module_core,
+@@ -1726,7 +1738,7 @@ void set_all_modules_text_rw(void)
+ 						set_memory_rw);
+ 		}
+ 	}
+-	mutex_unlock(&module_mutex);
++	unlock_modules();
  }
  
- static void nxp_unset_usb_bits(void)
+ /* Iterate through all modules and set each module's text as RO */
+@@ -1734,7 +1746,7 @@ void set_all_modules_text_ro(void)
  {
--	start_int_mask(SE_USB_OTG_ATX_INT_N);
--	start_int_mask(SE_USB_OTG_TIMER_INT);
--	start_int_mask(SE_USB_I2C_INT);
--	start_int_mask(SE_USB_INT);
--	start_int_mask(SE_USB_NEED_CLK_INT);
--	start_int_mask(SE_USB_AHB_NEED_CLK_INT);
-+	if (machine_is_pnx4008()) {
-+		start_int_mask(SE_USB_OTG_ATX_INT_N);
-+		start_int_mask(SE_USB_OTG_TIMER_INT);
-+		start_int_mask(SE_USB_I2C_INT);
-+		start_int_mask(SE_USB_INT);
-+		start_int_mask(SE_USB_NEED_CLK_INT);
-+		start_int_mask(SE_USB_AHB_NEED_CLK_INT);
-+	}
- }
+ 	struct module *mod;
  
- static int __devinit usb_hcd_nxp_probe(struct platform_device *pdev)
+-	mutex_lock(&module_mutex);
++	lock_modules();
+ 	list_for_each_entry(mod, &modules, list) {
+ 		if ((mod->module_core) && (mod->core_text_size)) {
+ 			set_page_attributes(mod->module_core,
+@@ -1747,7 +1759,7 @@ void set_all_modules_text_ro(void)
+ 						set_memory_ro);
+ 		}
+ 	}
+-	mutex_unlock(&module_mutex);
++	unlock_modules();
+ }
+ #else
+ static inline void set_section_ro_nx(void *base, unsigned long text_size, unsigned long ro_size, unsigned long total_size) { }
+-- 
+1.7.7.6
+
