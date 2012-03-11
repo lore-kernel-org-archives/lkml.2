@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab2CKR3e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 13:29:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60512 "EHLO
+	id S1753587Ab2CKRi0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 13:38:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59229 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310Ab2CKR3c (ORCPT
+	with ESMTP id S1753474Ab2CKRiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 13:29:32 -0400
-Message-ID: <1331486969.2449.15.camel@edumazet-laptop>
-Subject: Re: [PATCH] tun: don't hold network namespace by tun sockets
+	Sun, 11 Mar 2012 13:38:24 -0400
+Message-ID: <1331487502.2449.20.camel@edumazet-laptop>
+Subject: Re: [V2 PATCH 1/3] module: use rcu to protect module list read
 From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: davem@davemloft.net, ebiederm@aristanetworks.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xemul@parallel.com,
-        shemminger@vyatta.com, devel@openvz.org
-Date: Sun, 11 Mar 2012 10:29:29 -0700
-In-Reply-To: <20120311152053.30481.29572.stgit@localhost6.localdomain6>
-References: <20120311152053.30481.29572.stgit@localhost6.localdomain6>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Date: Sun, 11 Mar 2012 10:38:22 -0700
+In-Reply-To: <1331463255-31019-1-git-send-email-xiyou.wangcong@gmail.com>
+References: <1331463255-31019-1-git-send-email-xiyou.wangcong@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 8bit
@@ -25,40 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 11 mars 2012 à 19:21 +0400, Stanislav Kinsbursky a écrit :
-> TUN was designed to destroy it's socket on network namesapce shutdown. But this
-> will never happen for persistent device, because it's socket holds network
-> namespace.
-> This patch removes of holding network namespace by TUN socket and replaces it
-> by creating socket in init_net and then changing it's net it to desired one. On
-> shutdown socket is moved back to init_net prior to final put.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> 
-> ---
->  drivers/net/tun.c |   10 +++++++---
->  1 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index 2c5d349..92ef539 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -358,8 +358,11 @@ static void tun_net_uninit(struct net_device *dev)
->  static void tun_free_netdev(struct net_device *dev)
->  {
->  	struct tun_struct *tun = netdev_priv(dev);
-> +	struct sock *sk = tun->socket.sk;
+Le dimanche 11 mars 2012 à 18:54 +0800, Cong Wang a écrit :
+> V2:
+...
 >  
-> -	sock_put(tun->socket.sk);
-> +	release_net(sock_net(sk));
-> +	sock_net_set(sk, get_net(&init_net));
-> +	sock_put(sk);
+> @@ -1639,7 +1639,7 @@ static void mod_sysfs_teardown(struct module *mod)
+>  static int __unlink_module(void *_mod)
+>  {
+>  	struct module *mod = _mod;
+> -	list_del(&mod->list);
+> +	list_del_rcu(&mod->list);
+>  	module_bug_cleanup(mod);
+>  	return 0;
+>  }
+> @@
 
+You mix too many different things in a single patch. 
 
-Hmm, maybe use sk_release_kernel(), as its should be the thing
-associated with sk_change_net().
+For example, lets review this __unlink_module() change...
 
-Or at least make intent clear, since its not obvious.
+If this was really needed, it should be a single patch so that it can be
+a stable submission.
+
+As it is not needed (since its called from stop_machine()), this makes
+your whole patch looking suspicious.
+
+I suggest you make a 100% cleanup patch, changing the title as well,
+because module code _already_ uses RCU.
+
+"module: use rcu to protect module list read" makes no sense at all.
+
+To meet current RCU API best pratices, you change preempt_enable() by
+rcu_read_unlock_sched() and preempt_disable() by rcu_read_lock_sched()
+
+Then, if you believe other changes are needed, submit them with an
+explicit changelog explaining the change, not hiding them in a big
+cleanup patch.
+
+Ref: Documentation/SubmittingPatches section 3)
 
 
 
