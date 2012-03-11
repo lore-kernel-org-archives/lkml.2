@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab2CKNPq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 09:15:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36792 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2CKNPm (ORCPT
+	id S1752774Ab2CKNXA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 09:23:00 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59386 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752583Ab2CKNW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 09:15:42 -0400
-From: santosh nayak <santoshprasadnayak@gmail.com>
-To: linux@arm.linux.org.uk
-Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Santosh Nayak <santoshprasadnayak@gmail.com>
-Subject: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
-Date: Sun, 11 Mar 2012 18:44:25 +0530
-Message-Id: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Sun, 11 Mar 2012 09:22:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com>
+References: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com>
+Date: Sun, 11 Mar 2012 14:22:57 +0100
+Message-ID: <CAFLxGvygW=DeSQbRq8Wbcdy5E3e4vYcN666_9oWgnuwzT1WKqw@mail.gmail.com>
+Subject: Re: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: santosh nayak <santoshprasadnayak@gmail.com>
+Cc: linux@arm.linux.org.uk, FlorianSchandinat@gmx.de,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Santosh Nayak <santoshprasadnayak@gmail.com>
+On Sun, Mar 11, 2012 at 2:14 PM, santosh nayak
+<santoshprasadnayak@gmail.com> wrote:
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>
+> Instead of "in_atomic()", we can use in_interrupt() to check whether
+> its an interrupt context.
 
-Instead of "in_atomic()", we can use in_interrupt() to check whether
-its an interrupt context.
+What is the benefit?
 
-Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
----
- drivers/video/amba-clcd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Your change turns clcdfb_sleep() into a ticking bomb.
+If clcdfb_sleep() is called from an atomic section (e.g. under a
+spinlock) it will call msleep()
+and the whole thing explodes...
 
-diff --git a/drivers/video/amba-clcd.c b/drivers/video/amba-clcd.c
-index 0a2cce7..63c25da 100644
---- a/drivers/video/amba-clcd.c
-+++ b/drivers/video/amba-clcd.c
-@@ -39,7 +39,7 @@ static const char *clcd_name = "CLCD FB";
-  */
- static inline void clcdfb_sleep(unsigned int ms)
- {
--	if (in_atomic()) {
-+	if (in_interrupt()) {
- 		mdelay(ms);
- 	} else {
- 		msleep(ms);
 -- 
-1.7.4.4
-
+Thanks,
+//richard
