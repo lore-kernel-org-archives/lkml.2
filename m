@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab2CKThU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 15:37:20 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50195 "EHLO mgw2.diku.dk"
+	id S1752690Ab2CKThb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 15:37:31 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:50211 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510Ab2CKTgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 15:36:35 -0400
+	id S1751534Ab2CKTgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 15:36:39 -0400
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: kernel-janitors@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] drivers/video/pvr2fb.c: ensure arguments to request_irq and free_irq are compatible
-Date: Sun, 11 Mar 2012 20:36:21 +0100
-Message-Id: <1331494587-12196-2-git-send-email-Julia.Lawall@lip6.fr>
+To: Chas Williams <chas@cmf.nrl.navy.mil>
+Cc: kernel-janitors@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/7] drivers/atm/eni.c: ensure arguments to request_irq and free_irq are compatible
+Date: Sun, 11 Mar 2012 20:36:25 +0100
+Message-Id: <1331494587-12196-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -22,38 +22,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Convert calls to free_irq so that the second argument is the same as the
-last argument of the corresponding call to request_irq.  Without this
+Convert call to request_irq so that the last argument is the same as the
+second argument of the subsequent call to free_irq.  Without this
 property, free_irq does nothing.
+
+I have chosen to keep the call to free_irq as is, because its second
+argument is more like its first argument.
 
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-Not tested.
+Not tested.  I don't know if I have made the right choice.
 
- drivers/video/pvr2fb.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/atm/eni.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/video/pvr2fb.c b/drivers/video/pvr2fb.c
-index 3a3fdc6..bcd44c3 100644
---- a/drivers/video/pvr2fb.c
-+++ b/drivers/video/pvr2fb.c
-@@ -895,7 +895,7 @@ static int __init pvr2fb_dc_init(void)
+diff --git a/drivers/atm/eni.c b/drivers/atm/eni.c
+index 956e9ac..89e7223 100644
+--- a/drivers/atm/eni.c
++++ b/drivers/atm/eni.c
+@@ -1800,7 +1800,8 @@ static int __devinit eni_start(struct atm_dev *dev)
  
- #ifdef CONFIG_PVR2_DMA
- 	if (request_dma(pvr2dma, "pvr2") != 0) {
--		free_irq(HW_EVENT_VSYNC, 0);
-+		free_irq(HW_EVENT_VSYNC, fb_info);
- 		return -EBUSY;
- 	}
- #endif
-@@ -914,7 +914,7 @@ static void __exit pvr2fb_dc_exit(void)
- 		currentpar->mmio_base = 0;
- 	}
- 
--	free_irq(HW_EVENT_VSYNC, 0);
-+	free_irq(HW_EVENT_VSYNC, fb_info);
- #ifdef CONFIG_PVR2_DMA
- 	free_dma(pvr2dma);
- #endif
+ 	DPRINTK(">eni_start\n");
+ 	eni_dev = ENI_DEV(dev);
+-	if (request_irq(eni_dev->irq,&eni_int,IRQF_SHARED,DEV_LABEL,dev)) {
++	if (request_irq(eni_dev->irq, &eni_int, IRQF_SHARED, DEV_LABEL,
++			eni_dev)) {
+ 		printk(KERN_ERR DEV_LABEL "(itf %d): IRQ%d is already in use\n",
+ 		    dev->number,eni_dev->irq);
+ 		error = -EAGAIN;
 
