@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2CKSrG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 14:47:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64201 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753884Ab2CKSrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 14:47:02 -0400
-Date: Sun, 11 Mar 2012 19:39:00 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Djalal Harouni <tixxdz@opendz.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephen Wilson <wilsons@start.ca>,
-        "Jason A. Donenfeld" <Jason@zx2c4.com>
-Subject: Re: self_exec_id/parent_exec_id && CLONE_PARENT
-Message-ID: <20120311183900.GA7031@redhat.com>
-References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org> <1331421919-15499-2-git-send-email-tixxdz@opendz.org> <20120311172512.GA2729@redhat.com> <20120311174953.GB2729@redhat.com> <CA+55aFx43nZmhRg5Qv5x-4BdgcM-y80ECrgC8mCWc0RqU+_8rQ@mail.gmail.com> <CAFLxGvx2zc-qOYCzHEEzU6XY1JHqCqzU2+Kiq=e0YKfqqJWLnQ@mail.gmail.com>
+	id S1753956Ab2CKSrL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 14:47:11 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:18077 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753899Ab2CKSrF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 14:47:05 -0400
+Date: Sun, 11 Mar 2012 21:49:16 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP
+ messages in the driver
+Message-ID: <20120311184916.GD3337@mwanda>
+References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
+ <1331422331-4381-1-git-send-email-kys@microsoft.com>
+ <1331422331-4381-2-git-send-email-kys@microsoft.com>
+ <20120311104230.GC3337@mwanda>
+ <6E21E5352C11B742B20C142EB499E0481B75B403@TK5EX14MBXC122.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MAH+hnPXVZWQ5cD/"
 Content-Disposition: inline
-In-Reply-To: <CAFLxGvx2zc-qOYCzHEEzU6XY1JHqCqzU2+Kiq=e0YKfqqJWLnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481B75B403@TK5EX14MBXC122.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090203.4F5CF318.0015,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11, richard -rw- weinberger wrote:
+
+--MAH+hnPXVZWQ5cD/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Sun, Mar 11, 2012 at 04:56:06PM +0000, KY Srinivasan wrote:
+> > Probably that's not enough to make a difference and we'd need to
+> > introduce a new function.
+> >=20
+> > Btw I don't know if utf16s_to_utf8s() counts the NUL char or not.
+> > It feels like maybe we could end up with ->value_size equal to
+> > HV_KVP_EXCHANGE_MAX_VALUE_SIZE + 1.
+>=20
+> The MAX value is set to accommodate the maximum string that will ever
+> be handled including the string terminator. The function utf16s_to_utf8s()
+> returns the converted string length but the returned length does not=20
+> include the string terminator (like strlen), hence the "+1".
 >
-> On Sun, Mar 11, 2012 at 7:02 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On Sun, Mar 11, 2012 at 10:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >>
-> >> I am also asking because the change above looks like the fix to me.
-> >> The child must not control its ->exit_signal, it is the parent who
-> >> decides which signal the child should use for notification.
-> >>
-> >> And to me, clone(CLONE_PARENT | SIGXXX) looks like a violation of
-> >> rule above.
-> >
-> > SIGXXX is for doing things like AIO with threads, but it would never
-> > be used together with CLONE_PARENT, that would be odd and wrong.
-> >
-> > So I think we could disallow that - or at least try. See if anybody
-> > notices, and if it breaks anything.
-> >
->
-> UserModeLinux is using CLONE_PARENT | CLONE_FILES | SIGCHLD.
-> Is this a problem?
 
-This depends on how the forking process was created, and what its
-parent expects.
+sprintf() and friends copy the NUL terminator but utf16s_to_utf8s()
+doesn't so the code isn't right and it does seem like maybe we could
+end up with a ->value_size equal to HV_KVP_EXCHANGE_MAX_VALUE_SIZE +
+1.
 
-If it was forked with SIGCHLD as well, then no problems. Otherwise
-the parent can notice the difference.
+regards,
+dan carpenter
 
-Oleg.
+--MAH+hnPXVZWQ5cD/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPXPOrAAoJEOnZkXI/YHqRDjcP/iEOJI2GimnGoVNHq4rgmEAq
+r7IgrcP7ZpzE1PFkUHo0jKBJAb0E3LMxALZpbqZhx0uCXlrIhJEnkpG6j1xp9xG8
+J4s+H7YDrMhaVxaOxZMyqSvXxz6dnafi5nQ/jn/t+arUhJHEqhGfWXfqzaLoF/Sm
+2DVRhYYi9Hy4Eb18jZt4oQhlrlv6nsRrd53WFEQip8a792IBFtFYrlo/j+5lQaof
+XpZKMtbUObYQHPlNPMQ33rsR22fP8gtBGc8MUSh67GwpIcyAU1VZozVxqiLg76RR
+iik1k7V7An36tqJMGRwVewYs7kh7q0hhPAZt8hGq56UaYRVWAwGdU62M+nWNuyBk
+sfXkdlvsIz7cFWIboiI6o1u4XFwx2pOyEQh5NVop1c5cNcNCrwRNBNFcrSua7teU
+H8uDQlf9v3N5jIletrnWxd8XmLNdt2nTC1nxHvAIOdtbLbmEQQgAES41hs1WteuC
+PPZlR/0q3wUJ66/X4d4LooUEh/r6mKC3T+O32wKAbc31lh95RgsST1RS3lVjoORq
+ztxUMM3OwixdZ/fsKjx/niDgQpc78K03WdycbhWwbXXRXQLy32TL3w+5hPdGIgoN
+Pz50GTk+ahQcuGBAj7aUuQ6XDTq16tUL/NcgUWvqPdjT9B+IZa315M2KW3Xu4SEE
+JuckEG/hJTwt66GLVs/Y
+=sMqU
+-----END PGP SIGNATURE-----
+
+--MAH+hnPXVZWQ5cD/--
