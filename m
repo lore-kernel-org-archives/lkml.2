@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab2CKPT3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 11:19:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48719 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155Ab2CKPT2 convert rfc822-to-8bit (ORCPT
+	id S1753375Ab2CKPUT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 11:20:19 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:36327 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753124Ab2CKPT2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 11 Mar 2012 11:19:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120311150311.GC13336@n2100.arm.linux.org.uk>
-References: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com>
-	<20120311132746.GA13336@n2100.arm.linux.org.uk>
-	<CAOD=uF7kQHABCmxUL3-J-hZ1E2mXrb7dgsYq7msHhiPJ4Gm-Ew@mail.gmail.com>
-	<20120311143615.GB13336@n2100.arm.linux.org.uk>
-	<CAOD=uF5GbsyHS5iXjJ1YcqJyGLHwT8Wjhiie1daJAVqu527Umg@mail.gmail.com>
-	<20120311150311.GC13336@n2100.arm.linux.org.uk>
-Date: Sun, 11 Mar 2012 20:49:27 +0530
-Message-ID: <CAOD=uF5F4tOG0Y2tZdDeMgqs4-46HXYzA3RR-t8KuNuYRarJbg@mail.gmail.com>
-Subject: Re: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
-From: santosh prasad nayak <santoshprasadnayak@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-Authenticated: #5086196
+X-Provags-ID: V01U2FsdGVkX192Bfx2QHZ2WbUBMIqQFmPXPUqX0RdCKu/TDTdMbc
+	+CcFLPE/0ieLuA
+Subject: Re: bug in thread_group_times (+possible patch)
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=us-ascii
+From: Fawzi Mohamed <fawzi@gmx.ch>
+In-Reply-To: <CAJd=RBBnxKa+roD+G-G_bnVLBKCmw-wtW+pO8BtQRVmPkRoJpw@mail.gmail.com>
+Date: Sun, 11 Mar 2012 16:19:24 +0100
+Cc: linux-kernel@vger.kernel.org, Thomas Dargel <td@chemie.hu-berlin.de>
 Content-Transfer-Encoding: 8BIT
+Message-Id: <4EAF753B-6FBF-4EB8-A200-C7BCE7FDEEA0@gmx.ch>
+References: <2C80D678-F219-4B4E-A7FB-D0F890ECC7DD@gmx.ch> <CAJd=RBBnxKa+roD+G-G_bnVLBKCmw-wtW+pO8BtQRVmPkRoJpw@mail.gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+X-Mailer: Apple Mail (2.1251.1)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 11, 2012 at 8:33 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sun, Mar 11, 2012 at 08:18:32PM +0530, santosh prasad nayak wrote:
->> On Sun, Mar 11, 2012 at 8:06 PM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->> > On Sun, Mar 11, 2012 at 07:47:27PM +0530, santosh prasad nayak wrote:
->> >> Not to use in_atomic()  in driver code.
->> >>
->> >>  Following article  inspired me to do the change.
->> >> http://lwn.net/Articles/274695/
->> >>
->> >> "in_atomic() is for core kernel use only. Because in special
->> >> circumstances (ie: kmap_atomic()) we run inc_preempt_count() even on
->> >> non-preemptible kernels to tell the per-arch fault handler that it was
->> >> invoked by copy_*_user() inside kmap_atomic(), and it must fail.
->> >> In other words, in_atomic() works in a specific low-level situation,
->> >> but it was never meant to be used in a wider context. Its placement in
->> >> hardirq.h next to macros which can be used elsewhere was, thus, almost
->> >> certainly a mistake. As Alan Stern pointed out, the fact that Linux
->> >> Device Drivers recommends the use of in_atomic() will not have helped
->> >> the situation. Your editor recommends that the authors of that book be
->> >> immediately sacked. "
->> >>
->> >> In the present case, we just check whether its an IRQ context or user
->> >> context. So for that
->> >> we can use "in_interrupt()".
->> >>
->> >> Greg also mentions the same in the following mail.
->> >> http://www.spinics.net/lists/newbies/msg43402.html
->> >
->> > In which case, we'll just have to do mdelay() and forget about allowing
->> > anything else to run for the 20ms that we need to sleep.  Sucky but
->> > that's the way things are.
->>
->>  mdelay() or msleep() are there before. I did not change that.
->>
->>
->> my point is :  in_atomic()  vs "in_interrupt()".
->> We should avoid to use "in_atomic()" in driver code.
->>
->> In the present case to check IRQ context "in_interrupt()" should be preferred.
->
-> in_interrupt() won't tell us if we're being called with spinlocks held,
-> which _is_ a possibility because this can be called from printk(), for
-> oops dumps and the like.
->
-> in_interrupt() just means that we're inside a hard or soft interrupt,
-> or nmi.  It says nothing about whether msleep() is possible.
 
+On Mar 11, 2012, at 5:09 AM, Hillf Danton wrote:
 
-in_atomic() is also not  error free.  I found following comment in
-include/linux/hardirq.h.  How do you handle it in non-preemptible
-kernel ?
+> Hello Fawzi,
+> 
+> On Sun, Mar 11, 2012 at 7:11 AM, Fawzi Mohamed <fawzi@gmx.ch> wrote:
+>> Hi,
+>> 
+>> a friend of mine asked me about a kernel crash that he was having on a linux cluster (always after long compute intensive task).
+>> I found the bug causing it, and patched it (in an imperfect way), and as I have seen that in the current git the bug is still there, I am writing it here.
+>> I am not into kernel development, so I did not subscribe to the list, please CC me if you want me to answer.
+>> Sorry if this is not the correct way, but I hope this might help to squash just another little bug.
+>> 
+>> Now the bug is in kernel/sched/core.c in thread_group_times which if CONFIG_VIRT_CPU_ACCOUNTING is not defined looks like this
+>> 
+>> void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+>> {
+>>        struct signal_struct *sig = p->signal;
+>>        struct task_cputime cputime;
+>>        cputime_t rtime, utime, total;
+>> 
+>>        thread_group_cputime(p, &cputime);
+>> 
+>>        total = cputime.utime + cputime.stime;
+>>        rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
+>> 
+>>        if (total) {
+>>                u64 temp = (__force u64) rtime;
+>> 
+>>                temp *= (__force u64) cputime.utime;
+> 
+> Would you please try the tiny change?
+> 
+> -                do_div(temp, (__force u32) total);
+> +                temp = div64_u64(temp, (__force u64) total);
 
-/*
- * Are we running in atomic context?  WARNING: this macro cannot
- * always detect atomic context; in particular, it cannot know about
- * held spinlocks in non-preemptible kernels.  Thus it should not be
- * used in the general case to determine whether sleeping is possible.
- * Do not use in_atomic() in driver code.
- */
-#define in_atomic()     ((preempt_count() & ~PREEMPT_ACTIVE) != 0)
+that should also work, and be better than my solution (keeps the precision by shifting just as much as  needed).
+I guess it can be tested on the kernel 2.6.32 (where the error did happen, and that cannot really be upgraded, as it is a production system, and has hardware that requires special drivers).
+I just tested and div64_u64 was already available.
+The case is not required in this case (because an up cast if required will be implicit), and it does not make sense to cast one argument but not the other, as they require the same conversion.
+So
+> +                temp = div64_u64(temp, total);
+should work.
+Now it is up to Thomas (the one administering the machines, and that found the crash), but while this should fix the problem we saw, don't hold your breath for a quick confirmation, it did require ~19 days of computation to happen.
+ 
+ciao
+Fawzi
+> 
+>>                utime = (__force cputime_t) temp;
+>>        } else
+>>                utime = rtime;
+>> 
 
-
-
-regards
-Santosh
