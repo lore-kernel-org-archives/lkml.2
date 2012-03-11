@@ -1,104 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab2CKJdm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 05:33:42 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50789 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036Ab2CKJdj (ORCPT
+	id S1752211Ab2CKJku (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 05:40:50 -0400
+Received: from mother.openwall.net ([195.42.179.200]:64507 "HELO
+	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752079Ab2CKJkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 05:33:39 -0400
-Date: Sun, 11 Mar 2012 10:33:21 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Marc Reilly <marc@cpdesign.com.au>
-Cc: sameo@linux.intel.com, linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-i2c@vger.kernel.org,
-        oskar@scara.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] mfd: mc13xxx-core: Prepare for separate spi and
- i2c backends.
-Message-ID: <20120311093321.GK14173@pengutronix.de>
-References: <1331429402-9639-1-git-send-email-marc@cpdesign.com.au>
- <1331429402-9639-2-git-send-email-marc@cpdesign.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	Sun, 11 Mar 2012 05:40:47 -0400
+Date: Sun, 11 Mar 2012 13:40:39 +0400
+From: Solar Designer <solar@openwall.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Djalal Harouni <tixxdz@opendz.org>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>
+Subject: Re: [PATCH 1/9] exec: add a global execve counter
+Message-ID: <20120311094039.GB26640@openwall.com>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org> <1331421919-15499-2-git-send-email-tixxdz@opendz.org> <CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1331429402-9639-2-git-send-email-marc@cpdesign.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 11, 2012 at 12:30:00PM +1100, Marc Reilly wrote:
-> This patch abstracts the bus specific operations from the driver core.
-> Read and write handlers are introduced and generic initialization is
-> consolidated into mc13xxx_comon_init. The irq member is removed because
-s/_comon_/_common_/
-
-one minor nitpick below.
-
-> it is unused.
+On Sat, Mar 10, 2012 at 04:12:20PM -0800, Linus Torvalds wrote:
+> On Sat, Mar 10, 2012 at 3:25 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> >
+> > Given that consideration this patch introduces two counters:
+> > A global atomic execve counter that will be incremented on every
+> > do_execve_common() call, and an atomic exec_id member for the task_struct.
 > 
-> Signed-off-by: Marc Reilly <marc@cpdesign.com.au>
-> ---
->  drivers/mfd/mc13xxx-core.c |  162 ++++++++++++++++++++++++++------------------
->  1 files changed, 97 insertions(+), 65 deletions(-)
+> This seems horribly expensive on most 32-bit architectures, including
+> very much x86-32. That atomic64_inc_return() is not cheap.  It's
+> possible that it's basically an impossible operation to do atomically
+> on certain platforms, causing it to use some random spinlock instead.
+
+I think these are _relatively_ cheap considering that it's execve().
+If we can do e.g. 10 million of atomic64_inc_return()'s per second (and
+I think we can do a lot more, although I did not benchmark this), but
+only 10000 of execve()'s per second, then the performance impact is 0.1%.
+I admit that 0.1% is significant, but I used worst-case guesstimates
+here; the actual number might be more like 0.01% (50 million vs. 5 thousand)
+or even 0.002% (200 million vs. 4 thousand).  (200 million is 15 CPU
+cycles at 3 GHz, which may be a reasonable optimistic estimate.
+4 thousand is a realistic execve() speed for dynamically-linked programs.)
+
+> I wonder if we couldn't make something much cheaper, since we don't
+> actually care about it being globally incrementing, we just care about
+> it being globally unique. IOW, it could easily be a 56-bit per-cpu
+> counter along with the CPU number in the high bits or something like
+> that. Avoiding the whole atomicity issue, and thus avoiding the main
+> reason those things are really expensive.
 > 
-> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-> index 7122386..19d94a1 100644
-> --- a/drivers/mfd/mc13xxx-core.c
-> +++ b/drivers/mfd/mc13xxx-core.c
-> @@ -235,6 +234,34 @@ int mc13xxx_reg_write(struct mc13xxx *mc13xxx, unsigned int offset, u32 val)
->  
->  	return 0;
->  }
-> +
-> +int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
-> +{
-> +	int ret;
-> +
-> +	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
-> +
-> +	if (offset > MC13XXX_NUMREGS)
-> +		return -EINVAL;
-> +
-> +	ret = mc13xxx->read_dev(mc13xxx, offset, val);
-> +	dev_vdbg(mc13xxx->dev, "[0x%02x] -> 0x%06x\n", offset, *val);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(mc13xxx_reg_read);
-> +
-> +int mc13xxx_reg_write(struct mc13xxx *mc13xxx, unsigned int offset, u32 val)
-> +{
-> +	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
-> +
-> +	dev_vdbg(mc13xxx->dev, "[0x%02x] <- 0x%06x\n", offset, val);
-> +
-> +	if (offset > MC13XXX_NUMREGS || val > 0xffffff)
-> +		return -EINVAL;
-> +
-> +	return mc13xxx->write_dev(mc13xxx, offset, val);
-> +}
->  EXPORT_SYMBOL(mc13xxx_reg_write);
->  
->  int mc13xxx_reg_rmw(struct mc13xxx *mc13xxx, unsigned int offset,
-> @@ -439,7 +466,7 @@ static int mc13xxx_irq_handle(struct mc13xxx *mc13xxx,
->  			if (handled == IRQ_HANDLED)
->  				num_handled++;
->  		} else {
-> -			dev_err(&mc13xxx->spidev->dev,
-> +			dev_err(mc13xxx->dev,
->  					"BUG: irq %u but no handler\n",
-Without having counted I think you can join these two lines.
+> IOW, something like
+> 
+>    cpu = get_cpu();
+>    .. increment percpu 64-bit counter ..
+>    id = counter * MAX_CPUS + cpu;
+>    put_cpu(cpu);
+> 
+> or equivalent would seem to be a potentially much cheaper approach.
 
-Best regards
-Uwe
+This makes sense to me.  We just need to ensure that the per-CPU counter
+is still large enough that it won't wrap.  56 bits is enough
+(considering that the attack has to run on a single CPU of the target
+system, unlike e.g. an attack on a cipher with a 56-bit key could be),
+but there's little room for reducing this further (such as to support
+many more than 256 CPUs in a system).  So if we use this approach, maybe
+we should simply keep a 64-bit per-CPU counter and a 32-bit CPU number,
+for a 96-bit id.  This may even be faster on execve() (no need to
+combine the two values into one).
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+I don't know which one of these approaches has lower overhead on current
+systems.  My _guess_ is that atomic64_inc_return() may well be faster in
+many cases.
+
+Alexander
