@@ -1,110 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498Ab2CKQ45 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 12:56:57 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:23275
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753388Ab2CKQ4z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 12:56:55 -0400
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzzz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: RE: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP
- messages in the driver
-Thread-Topic: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP
- messages in the driver
-Thread-Index: AQHM/xUgjodDttIBOEu6jGmJDxmA4pZk6SeAgABFvZA=
-Date: Sun, 11 Mar 2012 16:56:06 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B75B403@TK5EX14MBXC122.redmond.corp.microsoft.com>
-References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
- <1331422331-4381-1-git-send-email-kys@microsoft.com>
- <1331422331-4381-2-git-send-email-kys@microsoft.com>
- <20120311104230.GC3337@mwanda>
-In-Reply-To: <20120311104230.GC3337@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.35]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753535Ab2CKQ5q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 12:57:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46880 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab2CKQ5N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 12:57:13 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <20120311164243.GE13336@n2100.arm.linux.org.uk>
+References: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com>
+	<20120311132746.GA13336@n2100.arm.linux.org.uk>
+	<CAOD=uF7kQHABCmxUL3-J-hZ1E2mXrb7dgsYq7msHhiPJ4Gm-Ew@mail.gmail.com>
+	<20120311143615.GB13336@n2100.arm.linux.org.uk>
+	<CAOD=uF5GbsyHS5iXjJ1YcqJyGLHwT8Wjhiie1daJAVqu527Umg@mail.gmail.com>
+	<20120311150311.GC13336@n2100.arm.linux.org.uk>
+	<CAOD=uF5F4tOG0Y2tZdDeMgqs4-46HXYzA3RR-t8KuNuYRarJbg@mail.gmail.com>
+	<20120311154846.GD13336@n2100.arm.linux.org.uk>
+	<CAOD=uF6OtpX-1eoJB3X5ZywNUeU2_-tsE+Ksu33ZFXqoxVK_aQ@mail.gmail.com>
+	<20120311164243.GE13336@n2100.arm.linux.org.uk>
+Date: Sun, 11 Mar 2012 22:27:12 +0530
+Message-ID: <CAOD=uF6sckygJf+76jY65N1-0BSD4E6VYf0KcZAQpyNmtxi_+A@mail.gmail.com>
+Subject: Re: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Russel,
+
+Is this what you want ?
+
+ static inline void clcdfb_sleep(unsigned int ms)
+ {
+-       if (in_atomic()) {
+                mdelay(ms);
+-       } else {
+-               msleep(ms);
+-       }
+ }
 
 
-> -----Original Message-----
-> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
-> Sent: Sunday, March 11, 2012 6:43 AM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> Alan Stern
-> Subject: Re: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP
-> messages in the driver
-> 
-> On Sat, Mar 10, 2012 at 03:32:09PM -0800, K. Y. Srinivasan wrote:
-> > +		switch (message->kvp_hdr.operation) {
-> > +		case KVP_OP_SET:
-> > +			switch (in_msg->body.kvp_set.data.value_type) {
-> > +			case REG_SZ:
-> > +				/*
-> > +				 * The value is a string - utf16 encoding.
-> > +				 */
-> > +				message->body.kvp_set.data.value_size =
-> > +				utf16s_to_utf8s(
-> > +				(wchar_t *)
-> > +				in_msg->body.kvp_set.data.value,
-> > +				in_msg->body.kvp_set.data.value_size,
-> > +				UTF16_LITTLE_ENDIAN,
-> > +				message->body.kvp_set.data.value,
-> > +				HV_KVP_EXCHANGE_MAX_VALUE_SIZE) + 1;
-> > +				break;
-> > +
-> 
-> This block of unreadable text is so nasty.
-> 
-> You could return directly if the msg = kmalloc() fails and pull
-> everything in one indent level.  It's normally more readable to
-> handle errors as soon as possible anyway.
 
-True.
+Regards
+Santosh
 
-> 
-> Probably that's not enough to make a difference and we'd need to
-> introduce a new function.
-> 
-> Btw I don't know if utf16s_to_utf8s() counts the NUL char or not.
-> It feels like maybe we could end up with ->value_size equal to
-> HV_KVP_EXCHANGE_MAX_VALUE_SIZE + 1.
-
-The MAX value is set to accommodate the maximum string that will ever
-be handled including the string terminator. The function utf16s_to_utf8s()
-returns the converted string length but the returned length does not 
-include the string terminator (like strlen), hence the "+1".
-
-Dan, I will see if there are other comments on these patches and will
-accommodate your suggestion then. If there are no other comments,
-would you mind if I addressed your comments here in a separate patch.  
-
-
-Regards,
-
-K. Y
-
-> 
-> regards,
-> dan carpenter
-
+On Sun, Mar 11, 2012 at 10:12 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Sun, Mar 11, 2012 at 10:07:18PM +0530, santosh prasad nayak wrote:
+>> On Sun, Mar 11, 2012 at 9:18 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > On Sun, Mar 11, 2012 at 08:49:27PM +0530, santosh prasad nayak wrote:
+>> >> On Sun, Mar 11, 2012 at 8:33 PM, Russell King - ARM Linux
+>> >> <linux@arm.linux.org.uk> wrote:
+>> >> > in_interrupt() won't tell us if we're being called with spinlocks held,
+>> >> > which _is_ a possibility because this can be called from printk(), for
+>> >> > oops dumps and the like.
+>> >> >
+>> >> > in_interrupt() just means that we're inside a hard or soft interrupt,
+>> >> > or nmi.  It says nothing about whether msleep() is possible.
+>> >>
+>> >>
+>> >> in_atomic() is also not  error free.  I found following comment in
+>> >> include/linux/hardirq.h.  How do you handle it in non-preemptible
+>> >> kernel ?
+>> >>
+>> >> /*
+>> >>  * Are we running in atomic context?  WARNING: this macro cannot
+>> >>  * always detect atomic context; in particular, it cannot know about
+>> >>  * held spinlocks in non-preemptible kernels.  Thus it should not be
+>> >>  * used in the general case to determine whether sleeping is possible.
+>> >>  * Do not use in_atomic() in driver code.
+>> >>  */
+>> >> #define in_atomic()     ((preempt_count() & ~PREEMPT_ACTIVE) != 0)
+>> >
+>> > That may be, but the fact of the matter is that no one has *ever*
+>> > reported an incident where this has failed at this point - and when
+>> > it does people will end up with a might_sleep() warning from msleep().
+>> >
+>> > Maybe those who are saying people should not use this should instead
+>> > be analysing why people use this, and suggest an alternative solution
+>> > to the problem instead of a basic and uninformative "you shouldn't use
+>> > this" statement.
+>>
+>> The reason is given in the article.
+>
+> At this point I'm just going to restate what I said above and below, so
+> I'm not even going to bother doing that, and instead just say that.  I'm
+> not arguing whether it's right or wrong.  I'm just stating that the only
+> solution I see is to get rid of msleep() in there entirely.
+>
+>> http://lwn.net/Articles/274695/
+>>
+>> "The in_atomic() macro works by checking whether preemption is
+>> disabled, which seems like the right thing to do. Handlers for events
+>> like hardware interrupts will disable preemption, but so will the
+>> acquisition of a spinlock. So this test appears to catch all of the
+>> cases where sleeping would be a bad idea. Certainly a number of people
+>> who have looked at this macro have come to that conclusion.
+>>
+>> But if preemption has not been configured into the kernel in the first
+>> place, the kernel does not raise the "preemption count" when spinlocks
+>> are acquired. So, in this situation (which is common - many
+>> distributors still do not enable preemption in their kernels),
+>> in_atomic() has no way to know if the calling code holds any spinlocks
+>> or not. So it will return zero (indicating process context) even when
+>> spinlocks are held. And that could lead to kernel code thinking that
+>> it is running in process context (and acting accordingly) when, in
+>> fact, it is not."
+>>
+>>
+>>
+>>
+>> regards
+>> Santosh
+>> >
+>> > As I've said, if we aren't going to use this, then the only solution is
+>> > to completely omit the msleep() there and just say "sod you to running
+>> > anything else for 20ms while this driver busy-spins."  That's
+>> > ultimately the safe thing to do, and at the moment I see no other
+>> > alternative there.
