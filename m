@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab2CKORc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 10:17:32 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62325 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743Ab2CKOR2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 10:17:28 -0400
+	id S1753081Ab2CKOUV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 10:20:21 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:49091 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752743Ab2CKOUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 10:20:21 -0400
+Subject: [PATCH 0/2] NFS: blocklayout PipeFS conteinerization fixes 
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Sun, 11 Mar 2012 18:20:13 +0400
+Message-ID: <20120311141528.17962.83828.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <20120311132746.GA13336@n2100.arm.linux.org.uk>
-References: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com>
-	<20120311132746.GA13336@n2100.arm.linux.org.uk>
-Date: Sun, 11 Mar 2012 19:47:27 +0530
-Message-ID: <CAOD=uF7kQHABCmxUL3-J-hZ1E2mXrb7dgsYq7msHhiPJ4Gm-Ew@mail.gmail.com>
-Subject: Re: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
-From: santosh prasad nayak <santoshprasadnayak@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not to use in_atomic()  in driver code.
+This patch set moves global wait queue and message to per-net data structure.
 
- Following article  inspired me to do the change.
-http://lwn.net/Articles/274695/
+---
 
-"in_atomic() is for core kernel use only. Because in special
-circumstances (ie: kmap_atomic()) we run inc_preempt_count() even on
-non-preemptible kernels to tell the per-arch fault handler that it was
-invoked by copy_*_user() inside kmap_atomic(), and it must fail.
-In other words, in_atomic() works in a specific low-level situation,
-but it was never meant to be used in a wider context. Its placement in
-hardirq.h next to macros which can be used elsewhere was, thus, almost
-certainly a mistake. As Alan Stern pointed out, the fact that Linux
-Device Drivers recommends the use of in_atomic() will not have helped
-the situation. Your editor recommends that the authors of that book be
-immediately sacked. "
+Stanislav Kinsbursky (2):
+      NFS: replace global bl_mount_reply with per-net one
+      NFS: replace global bl_wq with per-net one
 
-In the present case, we just check whether its an IRQ context or user
-context. So for that
-we can use "in_interrupt()".
 
-Greg also mentions the same in the following mail.
-http://www.spinics.net/lists/newbies/msg43402.html
+ fs/nfs/blocklayout/blocklayout.c    |    4 +--
+ fs/nfs/blocklayout/blocklayout.h    |    8 +++----
+ fs/nfs/blocklayout/blocklayoutdev.c |   41 ++++++++++++++++++++---------------
+ fs/nfs/blocklayout/blocklayoutdm.c  |   26 ++++++++++++----------
+ fs/nfs/netns.h                      |    7 ++++++
+ 5 files changed, 48 insertions(+), 38 deletions(-)
 
-Regards
-Santosh
-
-On Sun, Mar 11, 2012 at 6:57 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sun, Mar 11, 2012 at 06:44:25PM +0530, santosh nayak wrote:
->> From: Santosh Nayak <santoshprasadnayak@gmail.com>
->>
->> Instead of "in_atomic()", we can use in_interrupt() to check whether
->> its an interrupt context.
->
-> What are you trying to fix?
->
-> Your description is an example of a bad commit comment.  It merely
-> describes the change, which anyone can see by looking at the diff.
-> What it totally and utterly fails to do is to describe _why_ the
-> change is necessary or what the problem is.
->
-> So, until it does, this patch gets a definite NAK.
