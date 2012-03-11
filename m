@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab2CKVhH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 17:37:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:59334 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab2CKVg7 (ORCPT
+	id S1753642Ab2CKVqE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 17:46:04 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38305 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752043Ab2CKVpz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 17:36:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH v2 1/2] ARM: AT91: Add parameter for AT91_HAS_PATA
-Date: Sun, 11 Mar 2012 21:36:47 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Alan Ott <alan@signal11.us>, Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-References: <1331415380-10928-1-git-send-email-alan@signal11.us> <1331415531-10961-1-git-send-email-alan@signal11.us> <20120311183856.GA13869@game.jcrosoft.org>
-In-Reply-To: <20120311183856.GA13869@game.jcrosoft.org>
+	Sun, 11 Mar 2012 17:45:55 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        "=?utf-8?q?J=C3=A9r=C3=B4me=20Glisse?=" <glisse@freedesktop.org>,
+        "Torsten Kaiser" <just.for.lkml@googlemail.com>
+References: <WuYv90FoNpB.A.O8.ktRXPB@chimera>
+In-Reply-To: <WuYv90FoNpB.A.O8.ktRXPB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203112136.47694.arnd@arndb.de>
-X-Provags-ID: V02:K0:H4lP8zfTbyvV9aEMrnfOeq/dCvyR3UHQlBJJxbp1QBH
- gfoIHl4edHuR9DMhqHx34tjH4rh7QGjJDF71Mq3TJ3shjzjtl1
- O+Jc15WZ+D/qZMRYEgDzhoMmd4Oo3mhlA5xWjB+MJGkeKIPHxp
- pzed0UVgcCFDPjvycjG9aWBYhvTnCwvsZcE2GwAsSAViQRMEai
- hwU3CZS8QVGuIUuNJzuuARVFFSzZkodIHGtMgL/fzTn39K6asP
- W3LnGD37YVb4Cl/v8Z3h0ps8e3fTSOxxtAUlVMCwbbCiokvvcI
- I7BWBIeStQr7/LzZKQboJJXtFe7yCWY/Op5haKYHq0sSKmVG5h
- 8EOwSyp5pPt3BBx3ECHk=
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <C6gS2DkSgiG.A.UgC.VuRXPB@chimera>
+Subject: [Bug #42678] [3.3-rc1] radeon stuck in kernel after lockup
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 11 Mar 2012 22:23:32 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 11 March 2012, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > 
-> > diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> > index 71feb00..9eeeabe 100644
-> > --- a/arch/arm/mach-at91/Kconfig
-> > +++ b/arch/arm/mach-at91/Kconfig
-> > @@ -24,6 +24,9 @@ config AT91_SAM9_ALT_RESET
-> >  config AT91_SAM9G45_RESET
-> >       bool
-> >  
-> > +config AT91_HAS_PATA
-> > +     bool
-> what is the need for this?
-> 
-> As we switch to DT, I don't want to track the soc list in the Kconfig anymore
-> if the soc support the PATA will be describe in the DT
-> 
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-When I originally wrote the patch, I was hitting build errors when trying
-to enable the at91 pata driver on socs that don't have the right declarations
-in their headers. If that has been resolved in a better way already, this
-patch can be dropped.
+The following bug entry is on the current list of known regressions
+from 3.2.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
-	Arnd
+
+Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42678
+Subject		: [3.3-rc1] radeon stuck in kernel after lockup
+Submitter	: Torsten Kaiser <just.for.lkml@googlemail.com>
+Date		: 2012-01-21 19:03 (51 days old)
+Message-ID	: <CAPVoSvSXMvRb=1itu9DjF+s=6zfAChvUxS-x=b8EV9kOZinNpA@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=132717279606670&w=2
+Handled-By	: Jérôme Glisse <glisse@freedesktop.org>
+
+
