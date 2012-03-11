@@ -1,157 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab2CKKae (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 06:30:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44049 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001Ab2CKKab (ORCPT
+	id S1752106Ab2CKKgm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 06:36:42 -0400
+Received: from mother.openwall.net ([195.42.179.200]:61579 "HELO
+	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751022Ab2CKKgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 06:30:31 -0400
-Subject: Re: getdents - ext4 vs btrfs performance
-Mime-Version: 1.0 (Apple Message framework v1084)
+	Sun, 11 Mar 2012 06:36:37 -0400
+Date: Sun, 11 Mar 2012 14:35:32 +0400
+From: Solar Designer <solar@openwall.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Djalal Harouni <tixxdz@opendz.org>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>
+Subject: exec_id protection from bad child exit signals (was: Re: [PATCH 0/9] proc: protect /proc/<pid>/* files across execve)
+Message-ID: <20120311103532.GA26980@openwall.com>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org> <CA+55aFwdOgt=C52APPyvnAitcWNbzu-uXRi43m4bLS85oDgtqA@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@whamcloud.com>
-In-Reply-To: <20120310044804.GB5652@thunk.org>
-Date: Sun, 11 Mar 2012 04:30:37 -0600
-Cc: Lukas Czerner <lczerner@redhat.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <9709DE62-CE25-41C4-A33C-63336B51DC5E@whamcloud.com>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com> <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com> <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com> <20120310044804.GB5652@thunk.org>
-To: "Ted Ts'o" <tytso@mit.edu>
-X-Mailer: Apple Mail (2.1084)
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwdOgt=C52APPyvnAitcWNbzu-uXRi43m4bLS85oDgtqA@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-09, at 9:48 PM, Ted Ts'o wrote:
-> On Fri, Mar 09, 2012 at 04:09:43PM -0800, Andreas Dilger wrote:
->> 
->> Just reading this on the plane, so I can't find the exact reference
->> that I want, but a solution to this problem with htree was discussed
->> a few years ago between myself and Coly Li.
->> 
->> The basic idea is that for large directories the inode allocator
->> starts by selecting a range of (relatively) free inodes based on the
->> current directory size, and then piecewise maps the hash value for
->> the filename into this inode range and uses that as the goal inode.
-> 
-> I've heard you sketch out this idea before, but it's not been clean to
-> me how well it would work in practice.  The potential downside is that
-> it fragments the inode table, such that a single inode table block
-> might not have as many inodes stored in it as we might otherwise
-> would.  (Ideally, with 256 byte inodes, there would 16 of them in each
-> 4k block.)  This is something I'd definitely recommend modelling in
-> simulation to see how well it works first.
+On Sat, Mar 10, 2012 at 04:01:09PM -0800, Linus Torvalds wrote:
+> I would in general suggest strongly against using exec_id for anything
+> that involves files. It isn't designed for that, it's designed for the
+> whole "check the parent exec_id" thing for ptrace, where that whole
+> "pass things around to another process" approach doesn't work.
 
-Very true, I was thinking this as I wrote the email.
+Actually, the original/historical purpose of the exec_id stuff was to
+protect privileged parent processes (those having done a SUID/SGID exec)
+from non-standard child exit signals, which could be set with clone().
+I think we may want to audit the current implementation and see if it
+still fully achieves the goal or maybe not (and fix it if not).
 
-> I'd observe that if we knew in advance how many files would be in a
-> particular directory (i.e., via a hint from userspace at mkdir time),
-> then it would be possible to optimize this case much more easily.  In
-> fact, if we had perfect knowledge --- if the userspace process could
-> feed us the exact set of filenames that will be used in the directory,
-> plus the exact file sizes for each of the file names --- then it would
-> be possible to allocate inode numbers and starting block numbers such
-> that when the files are read in readdir() order, the inode numbers and
-> block numbers would line up perfectly into sequential writes.  
+IIRC, 32 bits was considered enough because it was only the trusted
+privileged parent process itself that could potentially cause a
+wraparound.  (I did not verify this conclusion now.  It might be wrong.)
 
-Except POSIX doesn't allow anything close to this at all.  Something like
-fallocate() for directories would at least give the kernel a hint about
-how large the directory is, but fewer userspace tools have this information
-than the file size (e.g. tar doesn't really store a "directory", just a
-bunch of pathnames that happen to have largely the same components).
+I include below pieces of the prototype implementation from
+linux-2.2.12-ow6.tar.gz released in 1999.  One notable difference from
+the code that went into mainline kernels was that I only incremented the
+counter on privileged execve(), and I additionally handled counter
+wraparound.  I am a bit concerned that a wraparound attack might be
+possible on the code currently in mainline kernels, thereby allowing for
+a bad exit signal to be sent to a privileged new parent program.  Does
+anything prevent the wraparound attack currently?  (I did not check for
+this yet, sorry.)
 
-In the cases where size IS known in advance, or at least if the directory
-is going to be large, an allocation policy like mine would essentially
-"predict" where a uniformly distributed hash function will allocate the
-inodes for better reading order.
+On exec:
 
-> Of course, the trade off is that by optimizing for read order, the
-> write order will tend to get painful as well!  So there's a tension
-> here; making the read part of the benchmark faster will make the
-> process of writing the directory hierarchy require more seeks --- and
-> this assuming that you know file names and sizes ahead of time.
-> 
-> (Unless, of course, you play the same game that Hans Reiser did when
-> he cooked his "tar" benchmark by constructing a kernel source tarball
-> where the file order in the tarball was perfectly ordered to guarantee
-> the desired result given Reiser4's hash!  :-)
++       bprm->priv_change = id_change || cap_raised;
++       if (bprm->priv_change) {
+...
++               /*
++                * Increment the privileged execution counter, so that our
++                * old children know not to send bad exit_signal's to us.
++                * Also, wait on the lock if there's an exit_signal being
++                * sent to us now, to make sure it doesn't get sent to the
++                * new privileged program.
++                */
++               spin_lock_irqsave(&current->priv_lock, flags);
++               if (!++current->priv) {
++                       struct task_struct *p;
++
++                       /*
++                        * The counter can't really overflow with real-world
++                        * programs (and it has to be the privileged program
++                        * itself that causes the overflow), but we handle
++                        * this case anyway, just for correctness.
++                        */
++                       read_lock(&tasklist_lock);
++                       for_each_task(p) {
++                               if (p->p_pptr == current) {
++                                       p->ppriv = 0;
++                                       current->priv = 1;
++                               }
++                       }
++                       read_unlock(&tasklist_lock);
++               }
++               spin_unlock_irqrestore(&current->priv_lock, flags);
 
-No, I definitely don't want to go down that path...  Optimization for the
-sake of benchmarks is broken.
+In task_struct:
 
-> I suspect the best optimization for now is probably something like
-> this:
-> 
-> 1) Since the vast majority of directories are less than (say) 256k
-> (this would be a tunable value),
++/* Privileged execution counters, for exit_signal permission checking */
++       spinlock_t priv_lock;
++       int priv, ppriv;
 
-Yes, this would be reasonable, and I suspect could be a lot larger than
-256kB.  Probably variable based on the amount of RAM is reasonable.
-Looking at http://www.pdsi-scidac.org/fsstats/ (which is listed as HPC,
-but is a bit old and the filesystems aren't much larger than large SATA
-drives today :-) having a 1MB cache would handle virtually every directory
-in that survey (99.999%).
+On fork() and clone():
 
-The unfortunate part is that this will help small directories, where the
-problem is already largely hidden by readahead and the page cache, but it
-doesn't help at all for huge directories that do not fit into cache.  That
-is where my approach would do well, but the difficulty is in knowing at
-create time how large the directory will be.
++       spin_lock_init(&p->priv_lock);
++       p->priv = 0;
++       p->ppriv = current->priv;
 
-> for directories which are less than
-> this threshold size, the entire directory is sucked in after the first
-> readdir() after an opendir() or rewinddir().  The directory contents
-> are then sorted by inode number (or loaded into an rbtree ordered by
-> inode number), and returned back to userspace in the inode order via
-> readdir().  The directory contents will be released on a closedir() or
-> rewinddir().
+Exit signal:
 
-What would the telldir() cookie be in this case?  The inode number, or
-the file descriptor?  What happens if the directory size crosses the
-threshold while the cache is in use?  I guess in that case the cache
-could still be used (according to POSIX) because readdir() doesn't need
-to report entries added after it started.
++       unsigned long flags = 0;
++       int locked = 0;
++
++       if (sig && sig != SIGCHLD) {
++               /*
++                * Make sure our parent hasn't executed a privileged program
++                * (such as, SUID) since we were born.
++                *
++                * We do some locking here to ensure that there's no race
++                * between the check and actually sending the signal.
++                * Currently, this is probably redundant as notify_parent()
++                * is only used either with the big lock obtained, or with
++                * the signal set to SIGCHLD.
++                */
++               locked = 1;
++               spin_lock_irqsave(&tsk->p_pptr->priv_lock, flags);
++               if (tsk->p_pptr->priv != tsk->ppriv) {
++                       spin_unlock_irqrestore(&tsk->p_pptr->priv_lock, flags);
++                       locked = 0;
++                       sig = 0;
++               }
++       }
 
-> 2) For files larger than this size, we don't want to hold that much
-> kernel memory during an opendir(), so fall back to ext4's current
-> scheme.   
-> 
-> 3) If we want do to better than that, we could create new flag
-> O_NOTELLDIR, which can be set via fcntl.  (This way programs can use
-> do something like "dir = opendir(..); fd = dirfd(dir); fcntl(fd,
-> SETFL, O_NOTELLDIR);").  For files who know they don't need to use
-> telldir/seekdir, they can set this flag, which will allow the above
-> optimization to be used on large files.
+...
 
-Probably a bit messy.  Since telldir() is rarely used outside NFS (AFAIK,
-though I recall something dumb happening in GNU libc at one point that
-was doing a telldir() and seekdir() for every entry) we could assume no
-telldir() users until it actually was used on the filesystem, and that
-could set a hint in the superblock EXT2_FLAGS section.  The only userspace
-programs I could find that call telldir() are smbd and nmbd (and related
-tools) and perl (not sure when or why).
++       if (locked) spin_unlock_irqrestore(&tsk->p_pptr->priv_lock, flags);
 
-> The other thing we could potentially do, if we really cared about this
-> issue in ext3/4, would be to define whole new (incompatible) storing
-> the directory indexing format which avoided this problem.  It would be
-> an INCOMPAT feature, so it would be a while before it could get used
-> in practice, which is why I'm not entirely convinced it's worth it ---
-> especially since I suspect just doing (1) would solve the problem for
-> the vast majority of ext4's users.
+IIRC, an equivalent of the above went upstream (with simplifications
+and a variables rename by Alan) in 2.2.13, so that may be another
+"reference implementation" to check against.
 
-Agreed.  I don't know that we need to go to these extremes.
-
-Cheers, Andreas
---
-Andreas Dilger                       Whamcloud, Inc.
-Principal Lustre Engineer            http://www.whamcloud.com/
-
-
-
-
+Alexander
