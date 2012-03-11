@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab2CKNCq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 09:02:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38844 "EHLO
+	id S1752750Ab2CKNPq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 09:15:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36792 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026Ab2CKNCn (ORCPT
+	with ESMTP id S1752348Ab2CKNPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 09:02:43 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [patch] spi: release lock on error path in spi_pump_messages()
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: wharms@bfs.de, spi-devel-general@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-In-Reply-To: <20120311062059.GB3337@mwanda>
-References: <20120310085729.GB4647@elgon.mountain> <4F5B2113.3060103@bfs.de> <20120311024307.AA5E33E0950@localhost> <20120311062059.GB3337@mwanda>
-Date: Sun, 11 Mar 2012 07:02:40 -0600
-Message-Id: <20120311130240.2DB083E0892@localhost>
+	Sun, 11 Mar 2012 09:15:42 -0400
+From: santosh nayak <santoshprasadnayak@gmail.com>
+To: linux@arm.linux.org.uk
+Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH] Video : Amba: Use in_interrupt() in clcdfb_sleep().
+Date: Sun, 11 Mar 2012 18:44:25 +0530
+Message-Id: <1331471665-22226-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Mar 2012 09:20:59 +0300, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> On Sat, Mar 10, 2012 at 07:43:07PM -0700, Grant Likely wrote:
-> > On Sat, 10 Mar 2012 10:38:27 +0100, walter harms <wharms@bfs.de> wrote:
-> > > hi Dan,
-> > > do you want to protect dev_err() by a spn_lock ?
-> > 
-> > Applied, after moving unlock above the dev_err.
-> > 
-> 
-> Thanks.
-> 
-> I was going to resend this with Walter's change btw.  I wasn't going
-> to ignore his review comments.
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-I assumed you would.  It was just simpler for me to pick it up with the
-trivial change.
+Instead of "in_atomic()", we can use in_interrupt() to check whether
+its an interrupt context.
 
-g.
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+---
+ drivers/video/amba-clcd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/video/amba-clcd.c b/drivers/video/amba-clcd.c
+index 0a2cce7..63c25da 100644
+--- a/drivers/video/amba-clcd.c
++++ b/drivers/video/amba-clcd.c
+@@ -39,7 +39,7 @@ static const char *clcd_name = "CLCD FB";
+  */
+ static inline void clcdfb_sleep(unsigned int ms)
+ {
+-	if (in_atomic()) {
++	if (in_interrupt()) {
+ 		mdelay(ms);
+ 	} else {
+ 		msleep(ms);
+-- 
+1.7.4.4
 
