@@ -1,16 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750855Ab2CKFKB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 00:10:01 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45604 "EHLO
+	id S1750943Ab2CKFV0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 00:21:26 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33146 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab2CKFKA (ORCPT
+	with ESMTP id S1750769Ab2CKFVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 00:10:00 -0500
+	Sun, 11 Mar 2012 00:21:25 -0500
 MIME-Version: 1.0
-Date: Sun, 11 Mar 2012 13:09:59 +0800
-Message-ID: <CAJd=RBBK4tx91ZQu0WKzBGx8E-Na6oUwmpBUQVB0yPkR=ySPjg@mail.gmail.com>
-Subject: [PATCH] hugetlbfs: add err code in initializing module
+In-Reply-To: <CAJd=RBBK4tx91ZQu0WKzBGx8E-Na6oUwmpBUQVB0yPkR=ySPjg@mail.gmail.com>
+References: <CAJd=RBBK4tx91ZQu0WKzBGx8E-Na6oUwmpBUQVB0yPkR=ySPjg@mail.gmail.com>
+Date: Sun, 11 Mar 2012 13:21:24 +0800
+Message-ID: <CAJd=RBB3202WV4zJratpp8c8VjkipNEbB_p9bGjLKrxr7qL-RA@mail.gmail.com>
+Subject: Re: [PATCH] hugetlbfs: add err code in initializing module
 From: Hillf Danton <dhillf@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Al Viro <viro@zeniv.linux.org.uk>,
@@ -23,6 +25,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Error code is added if fail to create inode kmem cache, and newly registered
 hugetlb FS is unregistered if fail to mount, both for unlikely corner cases.
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
 --- a/fs/hugetlbfs/inode.c	Sun Mar 11 12:46:38 2012
 +++ b/fs/hugetlbfs/inode.c	Sun Mar 11 12:49:28 2012
