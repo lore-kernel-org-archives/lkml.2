@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616Ab2CKRn3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 13:43:29 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48006 "EHLO
+	id S1753648Ab2CKRxF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 13:53:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55385 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab2CKRn2 (ORCPT
+	with ESMTP id S1752619Ab2CKRxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 13:43:28 -0400
-MIME-Version: 1.0
-Date: Sun, 11 Mar 2012 17:43:26 +0000
-Message-ID: <CANHD2=rF6dBkLLkWAj8uS3nq0B1wCt7Uvu=HzO84UNz2kuiaFg@mail.gmail.com>
-Subject: Initializing iwl3945 error
-From: Kamil Grzebien <ciptok@gmail.com>
-To: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Cc: sgruszka@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 11 Mar 2012 13:53:01 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Ashok Raj <ashok.raj@intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Youquan Song <youquan.song@intel.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, chenkeping@huawei.com
+Subject: [RFC PATCH 0/5] PCI: introduce hotplug safe bus searching interfaces
+Date: Mon, 12 Mar 2012 01:48:24 +0800
+Message-Id: <1331488109-13466-1-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patchset is based on Yinghai's pci root bus hotplug v2, please refer to:
+http://www.spinics.net/lists/linux-pci/msg14194.html.
+The first three patches are minor bug fixes against the pci root bus hotplug
+code. The forth/fifth is a proposal to introduce a series of pci hotplug safe
+interfaces to search pci buses. This is aimed to solve possible race
+conditions when doing pci root bus/pci bus hotplug. The proposal is here to
+show the idea, and hasn't been fully tested yet. If it's on the right way,
+I will refine it and do thorough tests.
 
-I've initialisation problem with my iwl3945 network card in Dell XPS
-M1530 laptop. The issue is known and described in couple of bug
-reports (eg. http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2143).
-There are workarounds but I'd like to solve the problem permanently.
-Basically when initializing I get:
+Jiang Liu (5):
+  Fix device reference count leakage in pci_dev_present()
+  Correctly clean up pci root buses in function pci_remove_bus()
+  Fix an access-after-free issue in function pci_stop_and_remove_bus()
+  Introduce hotplug-safe pci bus searching interfaces
+  Replace old pci bus searching function calls with hotplug safe ones
 
-iwl3945 0000:0b:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ
-iwl3945 0000:0b:00.0: setting latency timer to 64
-iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-....
-iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-iwl3945 0000:0b:00.0: bad EEPROM signature,EEPROM_GP=0x00000007
-iwl3945 0000:0b:00.0: EEPROM not found, EEPROM_GP=0xffffffff
+ arch/frv/mb93090-mb00/pci-vdk.c        |    2 +-
+ arch/x86/pci/common.c                  |    9 +-
+ arch/x86/pci/irq.c                     |    2 +-
+ arch/x86/pci/legacy.c                  |    2 +-
+ drivers/acpi/pci_root.c                |    2 +-
+ drivers/acpi/pci_root_hp.c             |    2 +-
+ drivers/acpi/pci_slot.c                |    6 +-
+ drivers/acpi/reboot.c                  |    3 +-
+ drivers/edac/i7core_edac.c             |    2 +-
+ drivers/gpu/vga/vgaarb.c               |    3 +-
+ drivers/iommu/dmar.c                   |    6 +-
+ drivers/pci/bus.c                      |   20 ++++-
+ drivers/pci/hotplug/cpci_hotplug_pci.c |    4 +-
+ drivers/pci/hotplug/ibmphp_core.c      |    8 +-
+ drivers/pci/hotplug/sgi_hotplug.c      |    3 +-
+ drivers/pci/hotplug/shpchp_pci.c       |    4 +-
+ drivers/pci/hotplug/shpchp_sysfs.c     |    2 +-
+ drivers/pci/iov.c                      |    6 +-
+ drivers/pci/pci-sysfs.c                |    2 +-
+ drivers/pci/pci.c                      |    2 +-
+ drivers/pci/pcie/pme.c                 |   16 +---
+ drivers/pci/probe.c                    |   11 ++-
+ drivers/pci/remove.c                   |   15 ++--
+ drivers/pci/search.c                   |  168 ++++++++++++++++++++++++++-----
+ drivers/pci/xen-pcifront.c             |    6 +-
+ include/linux/pci.h                    |    8 ++
+ 26 files changed, 230 insertions(+), 84 deletions(-)
 
-Currently I'm working on Fedora 16 with 3.1.5-6.fc16.i686 kernel. I
-did some investigation/debugging on iwlegacy driver and found out few
-things.
+-- 
+1.7.5.4
 
-1. Driver can't initialize card as all ioread32/iowrite32 seems to not
-do their job. All reads finalize with 0xffffffff.
-
-However I can see that:
-- pci_iomap(pdev, 0, 0) doesn't return error,
-- pci_resource_start(pdev, 0) seems gives correct address (I can
-compare it with the one I can see in /proc/iomem).
-
-If I access the memory directly, not by mapping, I can write and read
-pci memory but driver load fails anyway. I don't understand why can't
-access using mapped memory.
-
-2. If I check BASE_ADDRESS with setpci it doesn't give correct values:
-
-# setpci -v -s 0b:00.0 BASE_ADDRESS_0 BASE_ADDRESS_1
-0000:0b:00.0 @10 = 00000000
-0000:0b:00.0 @14 = 00000000
-
-Not sure if it's done by driver itself or it should point correct
-values even if the driver wasn't fully loaded.
-
-Have you got any idea of:
-- why IO memory isn't accessible? what could cause that?
-- how APIC could change the load process in this particular case? (if
-I boot with noapic kernel option it usually works fine)
-- is there a way to check the status or rescan the device from driver itself?
-
-This issue is reproducible in 100% on my system when I turn on the
-machine. It doesn't occur after some work on it. I'd be very happy to
-get rid of the issue.
-
-Could you point some ideas that might be worth checking in driver or
-kernel please? I've tried couple of ideas but none worked for me.
-
-Regards,
-Kamil Grzebien
