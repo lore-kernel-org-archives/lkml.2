@@ -1,115 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411Ab2CKEBG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 23:01:06 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:50816 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045Ab2CKEBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 23:01:04 -0500
-X-IronPort-AV: E=Sophos;i="4.73,565,1325433600"; 
-   d="scan'208";a="4502767"
-Date: Sat, 10 Mar 2012 16:48:07 +0800
-From: Hu Tao <hutao@cn.fujitsu.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: [PATCH v3 2/2] virtio-scsi: add error handling
-Message-ID: <20120310084806.GB24958@localhost.localdomain>
-References: <1324296188-3426-1-git-send-email-pbonzini@redhat.com>
- <1324296188-3426-3-git-send-email-pbonzini@redhat.com>
+	id S1752431Ab2CKEJt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 23:09:49 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:42828 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab2CKEJr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Mar 2012 23:09:47 -0500
 MIME-Version: 1.0
-In-Reply-To: <1324296188-3426-3-git-send-email-pbonzini@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-10 16:45:23,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-10 16:49:28,
-	Serialize complete at 2012-03-10 16:49:28
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+In-Reply-To: <2C80D678-F219-4B4E-A7FB-D0F890ECC7DD@gmx.ch>
+References: <2C80D678-F219-4B4E-A7FB-D0F890ECC7DD@gmx.ch>
+Date: Sun, 11 Mar 2012 12:09:46 +0800
+Message-ID: <CAJd=RBBnxKa+roD+G-G_bnVLBKCmw-wtW+pO8BtQRVmPkRoJpw@mail.gmail.com>
+Subject: Re: bug in thread_group_times (+possible patch)
+From: Hillf Danton <dhillf@gmail.com>
+To: Fawzi Mohamed <fawzi@gmx.ch>
+Cc: linux-kernel@vger.kernel.org, Thomas Dargel <td@chemie.hu-berlin.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 01:03:08PM +0100, Paolo Bonzini wrote:
+Hello Fawzi,
 
-> -/* These are still stubs.  */
->  static void virtscsi_complete_free(void *buf)
->  {
->  	struct virtio_scsi_cmd *cmd = buf;
->  
-> +	if (cmd->comp)
-> +		complete_all(cmd->comp);
->  	mempool_free(cmd, virtscsi_cmd_pool);
->  }
->  
-> @@ -306,12 +308,79 @@ out:
->  	return ret;
->  }
->  
-> +static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
-> +{
-> +	DECLARE_COMPLETION_ONSTACK(comp);
-> +	int ret;
-> +
-> +	cmd->comp = &comp;
-> +	ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd);
-> +	if (ret < 0)
-> +		return FAILED;
-> +
-> +	wait_for_completion(&comp);
-> +	if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
-> +	    cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
-> +		return FAILED;
+On Sun, Mar 11, 2012 at 7:11 AM, Fawzi Mohamed <fawzi@gmx.ch> wrote:
+> Hi,
+>
+> a friend of mine asked me about a kernel crash that he was having on a linux cluster (always after long compute intensive task).
+> I found the bug causing it, and patched it (in an imperfect way), and as I have seen that in the current git the bug is still there, I am writing it here.
+> I am not into kernel development, so I did not subscribe to the list, please CC me if you want me to answer.
+> Sorry if this is not the correct way, but I hope this might help to squash just another little bug.
+>
+> Now the bug is in kernel/sched/core.c in thread_group_times which if CONFIG_VIRT_CPU_ACCOUNTING is not defined looks like this
+>
+> void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+> {
+>        struct signal_struct *sig = p->signal;
+>        struct task_cputime cputime;
+>        cputime_t rtime, utime, total;
+>
+>        thread_group_cputime(p, &cputime);
+>
+>        total = cputime.utime + cputime.stime;
+>        rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
+>
+>        if (total) {
+>                u64 temp = (__force u64) rtime;
+>
+>                temp *= (__force u64) cputime.utime;
 
-Is there a race here that the cmd may have been already freed (by
-virtscsi_complete_free) after waking up from the completion?
+Would you please try the tiny change?
 
-diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-index 3f20678..7cba05d 100644
---- a/drivers/scsi/virtio_scsi.c
-+++ b/drivers/scsi/virtio_scsi.c
-@@ -175,7 +175,8 @@ static void virtscsi_complete_free(void *buf)
- 
-        if (cmd->comp)
-                complete_all(cmd->comp);
--       mempool_free(cmd, virtscsi_cmd_pool);
-+       else
-+               mempool_free(cmd, virtscsi_cmd_pool);
- }
- 
- static void virtscsi_ctrl_done(struct virtqueue *vq)
-@@ -305,7 +306,7 @@ out:
- static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
- {
-        DECLARE_COMPLETION_ONSTACK(comp);
--       int ret;
-+       int ret = SUCCESS;
- 
-        cmd->comp = &comp;
-        ret = virtscsi_kick_cmd(vscsi, vscsi->ctrl_vq, cmd);
-@@ -315,9 +316,10 @@ static int virtscsi_tmf(struct virtio_scsi *vscsi, struct virtio_scsi_cmd *cmd)
-        wait_for_completion(&comp);
-        if (cmd->resp.tmf.response != VIRTIO_SCSI_S_OK &&
-            cmd->resp.tmf.response != VIRTIO_SCSI_S_FUNCTION_SUCCEEDED)
--               return FAILED;
-+               ret = FAILED;
- 
--       return SUCCESS;
-+       mempool_free(cmd, virtscsi_cmd_pool);
-+       return ret;
- }
- 
- static int virtscsi_device_reset(struct scsi_cmnd *sc)
+-                do_div(temp, (__force u32) total);
++                temp = div64_u64(temp, (__force u64) total);
 
-
-> +
-> +	return SUCCESS;
-> +}
-
--- 
-Thanks,
-Hu Tao
+>                utime = (__force cputime_t) temp;
+>        } else
+>                utime = rtime;
+>
