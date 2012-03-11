@@ -1,33 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397Ab2CKWz2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 18:55:28 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:41934 "EHLO
+	id S1754413Ab2CKXAp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 19:00:45 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:42004 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab2CKWzV (ORCPT
+	with ESMTP id S1753602Ab2CKXAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 18:55:21 -0400
-Date: Sun, 11 Mar 2012 15:55:10 -0700 (PDT)
-Message-Id: <20120311.155510.628408751193653028.davem@davemloft.net>
-To: deller@gmx.de
-Cc: opurdila@ixiacom.com, amwang@redhat.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, ebiederm@xmission.com, fdanapfe@redhat.com,
-        lersek@redhat.com, torvalds@linux-foundation.org
-Subject: Re: [PATCH] enhance usability of
- /proc/sys/net/ipv4/ip_local_reserved_ports
+	Sun, 11 Mar 2012 19:00:38 -0400
+Date: Sun, 11 Mar 2012 15:56:21 -0700 (PDT)
+Message-Id: <20120311.155621.699600599796181447.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        paulus@samba.org, linuxppc-dev@lists.ozlabs.org, joe@perches.com
+Subject: Re: linux-next: manual merge of the net-next tree with the powerpc
+ tree
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <4F5BE563.9050506@gmx.de>
-References: <4F5BE563.9050506@gmx.de>
+In-Reply-To: <20120309174416.2b936c5a4a116d56f9a25502@canb.auug.org.au>
+References: <20120309133646.fb8cc30d8c2fd0ef7784d72c@canb.auug.org.au>
+	<20120308.221534.712157352097242982.davem@davemloft.net>
+	<20120309174416.2b936c5a4a116d56f9a25502@canb.auug.org.au>
 X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 11 Mar 2012 15:55:12 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 11 Mar 2012 15:56:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 9 Mar 2012 17:44:16 +1100
 
-Networking patches should be submitted to netdev@vger.kernel.org, most
-of the networking developers don't even read linux-kernel
+> On Thu, 08 Mar 2012 22:15:34 -0800 (PST) David Miller <davem@davemloft.net> wrote:
+>>
+>> From: Stephen Rothwell <sfr@canb.auug.org.au>
+>> Date: Fri, 9 Mar 2012 13:36:46 +1100
+>> 
+>> > Today's linux-next merge of the net-next tree got a conflict in
+>> > drivers/net/ethernet/ibm/iseries_veth.c between commit e92a665949f6
+>> > ("net: powerpc: remove the legacy iSeries ethernet driver") from the
+>> > powerpc tree and commit 41de8d4cff21 ("drivers/net: Remove alloc_etherdev
+>> > error messages") from the net-next tree.
+>> > 
+>> > I just removed the file.
+>> 
+>> If it makes life easier for anyone I can put the driver removal patch
+>> into net-next.
+> 
+> In this case, I think it will actually help, thanks.  Note that it won;t
+> apply cleanly to your tree, but the fixup is easy :-)
+> 
+> And I discovered that "git am" doesn't like the style of patch I did
+> (without the body of the deleted file).  If you just delete
+> drivers/net/ethernet/ibm/iseries_veth.c before trying to apply the patch
+> it will probably work.
 
+I took care of this the other night.
