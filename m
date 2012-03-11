@@ -1,61 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab2CKEJt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Mar 2012 23:09:49 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42828 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab2CKEJr convert rfc822-to-8bit (ORCPT
+	id S1752591Ab2CKELI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Mar 2012 23:11:08 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:64467 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab2CKELF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Mar 2012 23:09:47 -0500
+	Sat, 10 Mar 2012 23:11:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <2C80D678-F219-4B4E-A7FB-D0F890ECC7DD@gmx.ch>
-References: <2C80D678-F219-4B4E-A7FB-D0F890ECC7DD@gmx.ch>
-Date: Sun, 11 Mar 2012 12:09:46 +0800
-Message-ID: <CAJd=RBBnxKa+roD+G-G_bnVLBKCmw-wtW+pO8BtQRVmPkRoJpw@mail.gmail.com>
-Subject: Re: bug in thread_group_times (+possible patch)
-From: Hillf Danton <dhillf@gmail.com>
-To: Fawzi Mohamed <fawzi@gmx.ch>
-Cc: linux-kernel@vger.kernel.org, Thomas Dargel <td@chemie.hu-berlin.de>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1329905650-30161-3-git-send-email-amit.kachhap@linaro.org>
+References: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
+	<1329905650-30161-3-git-send-email-amit.kachhap@linaro.org>
+Date: Sun, 11 Mar 2012 09:41:03 +0530
+Message-ID: <CAMHCuPUOnftKYaGjEpA9rZFc1yjH3U-EkEEUWqcFapSKROTopQ@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 2/4] thermal: Add generic cpufreq cooling implementation
+From: Sundar <sunder.svit@gmail.com>
+To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
+Cc: len.brown@intel.com, linux-pm@lists.linux-foundation.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        rob.lee@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Fawzi,
+Hi Amit,
 
-On Sun, Mar 11, 2012 at 7:11 AM, Fawzi Mohamed <fawzi@gmx.ch> wrote:
-> Hi,
->
-> a friend of mine asked me about a kernel crash that he was having on a linux cluster (always after long compute intensive task).
-> I found the bug causing it, and patched it (in an imperfect way), and as I have seen that in the current git the bug is still there, I am writing it here.
-> I am not into kernel development, so I did not subscribe to the list, please CC me if you want me to answer.
-> Sorry if this is not the correct way, but I hope this might help to squash just another little bug.
->
-> Now the bug is in kernel/sched/core.c in thread_group_times which if CONFIG_VIRT_CPU_ACCOUNTING is not defined looks like this
->
-> void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
-> {
->        struct signal_struct *sig = p->signal;
->        struct task_cputime cputime;
->        cputime_t rtime, utime, total;
->
->        thread_group_cputime(p, &cputime);
->
->        total = cputime.utime + cputime.stime;
->        rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
->
->        if (total) {
->                u64 temp = (__force u64) rtime;
->
->                temp *= (__force u64) cputime.utime;
+I am new here; so please bear with my questions/doubts :)
 
-Would you please try the tiny change?
+On Wed, Feb 22, 2012 at 3:44 PM, Amit Daniel Kachhap
+<amit.kachhap@linaro.org> wrote:
+> This patch adds support for generic cpu thermal cooling low level
+> implementations using frequency scaling up/down based on the request
+> from user. Different cpu related cooling devices can be registered by the
+> user and the binding of these cooling devices to the corresponding
 
--                do_div(temp, (__force u32) total);
-+                temp = div64_u64(temp, (__force u64) total);
+"Different cpu related cooling devices": Do you mean cooling devices
+for different CPUs (num_cpus) or are you referring to different
+customers aka consumer drivers who could use this framework and impose
+the cooling.
 
->                utime = (__force cputime_t) temp;
->        } else
->                utime = rtime;
->
+> trip points can be easily done as the registration API's return the
+> cooling device pointer. The user of these api's are responsible for
+> passing clipping frequency in percentages.
+
+Why do you want to pass the clipping frequency in percentages? Wouldnt
+it be simpler for any platform sensor driver to just pass the
+frequency it wants to throttle the CPU?
+
+> +
+> + � �This interface function registers the cpufreq cooling device with the name
+> + � �"thermal-cpufreq-%x". This api can support multiple instance of cpufreq cooling
+> + � �devices.
+
+When you refer to cooling devices, is it the number of instances
+per-CPU that is supported? Sorry I am unable to follow.
+
+> + � � � .polling_interval: polling interval for this cooling state.
+> + � �tab_size: the total number of cooling state.
+
+By cooling_state, I assume you are referring to the thermal state for
+the platform? or only for the CPU?
+
+> + � �mask_val: all the allowed cpu's where frequency clipping can happen.
+
+Why should this be a new variable? The policy->affected_cpus should be
+the same as this IMO?
+
+> + � � � help
+> + � � � � This implements the generic cpu cooling mechanism through frequency
+> + � � � � reduction, cpu hotplug and any other ways of reducing temperature. An
+
+Apart from reducing the CPU frequency, (probably) CPU hotplug, what
+other means of reducing CPU temperature? Or are you referring to any
+platform temperature controls?
+
+It isnt very clear from the documentation (at least to me) if this is
+only for CPU cooling or generic platform cooling.
+
+Cheers!
+-- 
+---------
+The views expressed in this email are personal and do not necessarily
+echo my employers'.
