@@ -1,92 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab2CKJku (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 05:40:50 -0400
-Received: from mother.openwall.net ([195.42.179.200]:64507 "HELO
-	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752079Ab2CKJkr (ORCPT
+	id S1752281Ab2CKJly (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 05:41:54 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35761 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab2CKJlv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 05:40:47 -0400
-Date: Sun, 11 Mar 2012 13:40:39 +0400
-From: Solar Designer <solar@openwall.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Djalal Harouni <tixxdz@opendz.org>, linux-kernel@vger.kernel.org,
-        kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephen Wilson <wilsons@start.ca>,
-        "Jason A. Donenfeld" <Jason@zx2c4.com>
-Subject: Re: [PATCH 1/9] exec: add a global execve counter
-Message-ID: <20120311094039.GB26640@openwall.com>
-References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org> <1331421919-15499-2-git-send-email-tixxdz@opendz.org> <CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+	Sun, 11 Mar 2012 05:41:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <CADDYkjTsDf0J0v7B-78SiYPsjPsn1VOCbiqAMq8TJxgPc_MiBg@mail.gmail.com>
+References: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com>
+	<20120308155211.GF4334@twin.jikos.cz>
+	<CADDYkjTG-q5+pFRFt9sGKq=cgL=ZgQaNZV=2ipBsSbuvxCa3jw@mail.gmail.com>
+	<4F595D6D.6080809@cn.fujitsu.com>
+	<20120309105537.GG4334@twin.jikos.cz>
+	<CADDYkjRcRbxxPErdMBOs55-gNHZA0GfxcsWNrVbAuv37b3rtvw@mail.gmail.com>
+	<20120309114010.GH4334@twin.jikos.cz>
+	<CADDYkjTsDf0J0v7B-78SiYPsjPsn1VOCbiqAMq8TJxgPc_MiBg@mail.gmail.com>
+Date: Sun, 11 Mar 2012 10:41:50 +0100
+Message-ID: <CADDYkjRZZ7H_UnbU9y8GNmA8oMd23ZOwSsbPW5CHOFFz6Vv6Mg@mail.gmail.com>
+Subject: Re: kernel BUG at fs/btrfs/delayed-inode.c:1466!
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: dave@jikos.cz, Jacek Luczak <difrost.kernel@gmail.com>,
+        Liu Bo <liubo2009@cn.fujitsu.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, josef@redhat.com,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Chris Mason <chris.mason@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 04:12:20PM -0800, Linus Torvalds wrote:
-> On Sat, Mar 10, 2012 at 3:25 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
-> >
-> > Given that consideration this patch introduces two counters:
-> > A global atomic execve counter that will be incremented on every
-> > do_execve_common() call, and an atomic exec_id member for the task_struct.
-> 
-> This seems horribly expensive on most 32-bit architectures, including
-> very much x86-32. That atomic64_inc_return() is not cheap.  It's
-> possible that it's basically an impossible operation to do atomically
-> on certain platforms, causing it to use some random spinlock instead.
+2012/3/10 Jacek Luczak <difrost.kernel@gmail.com>:
+> 2) A *regression* in 3.3.0-rc6-00197-g9f8050c
+> - completely unusable as reports ENOSPC
+> - to reproduce, mount volume and issue:
+> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> On my host this shows:
+> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> touch: cannot touch `/btrfs/dd': No space left on device
+> 423
+> - remount to reset:
+> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> touch: cannot touch `/btrfs/dd': No space left on device
+> 1
+> # umount /btrfs/
+> # mount -t btrfs /dev/vg00/btrfs /btrfs/ -o noatime,nodatacow,defaults
+> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> /vdd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> touch: cannot touch `/btrfs/dd': No space left on device
+> 423
+> - bisected down to 5500cdb (Btrfs: increase the global block reserve
+> estimates). After reverting this one Linus master works for me again.
 
-I think these are _relatively_ cheap considering that it's execve().
-If we can do e.g. 10 million of atomic64_inc_return()'s per second (and
-I think we can do a lot more, although I did not benchmark this), but
-only 10000 of execve()'s per second, then the performance impact is 0.1%.
-I admit that 0.1% is significant, but I used worst-case guesstimates
-here; the actual number might be more like 0.01% (50 million vs. 5 thousand)
-or even 0.002% (200 million vs. 4 thousand).  (200 million is 15 CPU
-cycles at 3 GHz, which may be a reasonable optimistic estimate.
-4 thousand is a realistic execve() speed for dynamically-linked programs.)
+This patch is included in 3.3-rc7. Do you plan to keep it or revert?
 
-> I wonder if we couldn't make something much cheaper, since we don't
-> actually care about it being globally incrementing, we just care about
-> it being globally unique. IOW, it could easily be a 56-bit per-cpu
-> counter along with the CPU number in the high bits or something like
-> that. Avoiding the whole atomicity issue, and thus avoiding the main
-> reason those things are really expensive.
-> 
-> IOW, something like
-> 
->    cpu = get_cpu();
->    .. increment percpu 64-bit counter ..
->    id = counter * MAX_CPUS + cpu;
->    put_cpu(cpu);
-> 
-> or equivalent would seem to be a potentially much cheaper approach.
-
-This makes sense to me.  We just need to ensure that the per-CPU counter
-is still large enough that it won't wrap.  56 bits is enough
-(considering that the attack has to run on a single CPU of the target
-system, unlike e.g. an attack on a cipher with a 56-bit key could be),
-but there's little room for reducing this further (such as to support
-many more than 256 CPUs in a system).  So if we use this approach, maybe
-we should simply keep a 64-bit per-CPU counter and a 32-bit CPU number,
-for a 96-bit id.  This may even be faster on execve() (no need to
-combine the two values into one).
-
-I don't know which one of these approaches has lower overhead on current
-systems.  My _guess_ is that atomic64_inc_return() may well be faster in
-many cases.
-
-Alexander
+-jacek
