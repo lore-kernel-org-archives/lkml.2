@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab2CKNvw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 09:51:52 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:39874 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752662Ab2CKNvt convert rfc822-to-8bit (ORCPT
+	id S1752948Ab2CKOBo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 10:01:44 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46265 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740Ab2CKOBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 09:51:49 -0400
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: linux-usb@vger.kernel.org,
-        =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@karo-electronics.de>
-Cc: "Felipe Balbi" <balbi@ti.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb gadget: fix a section mismatch when compiling g_ffs
- with CONFIG_USB_FUNCTIONFS_ETH
-References: <1331472670-28589-1-git-send-email-LW@KARO-electronics.de>
-Date: Sun, 11 Mar 2012 14:51:46 +0100
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.wa0d4ki73l0zgt@mpn-glaptop>
-In-Reply-To: <1331472670-28589-1-git-send-email-LW@KARO-electronics.de>
-User-Agent: Opera Mail/11.61 (Linux)
+	Sun, 11 Mar 2012 10:01:42 -0400
+Date: Sun, 11 Mar 2012 14:03:10 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Djalal Harouni <tixxdz@opendz.org>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>
+Subject: Re: [PATCH 1/9] exec: add a global execve counter
+Message-ID: <20120311140310.1c7c735f@pyramind.ukuu.org.uk>
+In-Reply-To: <CA+55aFy-ktC3NG5Wc+vhWB+18aqj9a0VLUSKQg+KR=FsVqfoJQ@mail.gmail.com>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
+	<1331421919-15499-2-git-send-email-tixxdz@opendz.org>
+	<CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
+	<CA+55aFy-ktC3NG5Wc+vhWB+18aqj9a0VLUSKQg+KR=FsVqfoJQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Mar 2012 14:31:10 +0100, Lothar Waßmann <LW@karo-electronics.de> wrote:
+> I wonder if the number part of exec_id would even have to be 64-bit. I
+> think I can do about 10000 execves per second if I make the program a
+> small static one - and that's on a fast CPU. And it's a per-thread
+> counter, so you can't scale it with lots of CPU's. So it would take
+> something like four days to wrap. Hmm..
 
-> commit 28824b18ac4705e876a282a15ea0de8fc957551f:
-> |Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> |Date:   Wed May 5 12:53:13 2010 +0200
-> |
-> |    USB: gadget: __init and __exit tags removed
-> |
-> |    __init, __initdata and __exit tags have have been removed from
-> |    various files to make it possible for gadgets that do not use
-> |    the __init/__exit tags to use those.
-> obviously missed (at least) this case leading to a section mismatch in
-> g_ffs.c when compiling with CONFIG_USB_FUNCTIONFS_ETH enabled.
->
-> Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+I don't think an exec id trick works that well here. It needs to bind to
+the actual *object* being used and refcount it in the cases that matter,
+then have a proper way of ensuring we clean up references such as a list
+of objects to zap hooked to each task struct
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-
-> ---
->  drivers/usb/gadget/f_subset.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/usb/gadget/f_subset.c b/drivers/usb/gadget/f_subset.c
-> index c154064..3974bc9 100644
-> --- a/drivers/usb/gadget/f_subset.c
-> +++ b/drivers/usb/gadget/f_subset.c
-> @@ -404,7 +404,7 @@ geth_unbind(struct usb_configuration *c, struct usb_function *f)
->   * Caller must have called @gether_setup().  Caller is also responsible
->   * for calling @gether_cleanup() before module unload.
->   */
-> -int __init geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
-> +int geth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
->  {
->  	struct f_gether	*geth;
->  	int		status;
+So something like
 
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+	struct foo_node {
+		struct list_node node;
+		struct proc_object *ref;
+	};
+		
+	ref = NULL;
+	if (foo->ptr != NULL
+		ref = kref_get(foo->ptr);
+
+And in the task exit paths walk the node list doing a kref_put/NULL
+
+Add a suitable lock and it ought to be able to generically do that for
+anything you need to clobber.
+
+You've still got a sort of race however, just as the proposed execid base
+code.  You can pass the fd and access the proc function *as* the exec
+occurs. Assuming your ref counting is valid and you use new objects after
+the exec that ought to just mean you get the data for the old mm struct,
+which seems fine to me. It's logically equivalent to having asked a
+microsecond before the exec rather than during it.
+
+Alan
