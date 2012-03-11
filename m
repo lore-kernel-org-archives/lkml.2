@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab2CKHUt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 03:20:49 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37436 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab2CKHUs (ORCPT
+	id S1751504Ab2CKHgG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 03:36:06 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54220 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110Ab2CKHgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 03:20:48 -0400
+	Sun, 11 Mar 2012 03:36:04 -0400
+Date: Sat, 10 Mar 2012 23:35:56 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 3.3-rc6
+Message-ID: <20120311073556.GA15408@core.coreip.homeip.net>
+References: <20120307091816.GA28160@core.coreip.homeip.net>
+ <CAMuHMdUyCEVr+fFmUnUABSG33juYTWdyy6-6a1uNW0+oePJR6g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120310202242.384865299@osadl.org>
-References: <20120310202014.828058552@osadl.org>
-	<20120310202242.384865299@osadl.org>
-Date: Sun, 11 Mar 2012 07:20:47 +0000
-Message-ID: <CAPM=9tywM0_sroYKJxnZxXEZhcz3VfmG8eqSLUqpNHEdSwy_Qg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] drivers-gpu-drm-add-disable-enable-connector.patch
-From: Dave Airlie <airlied@gmail.com>
-To: Carsten Emde <C.Emde@osadl.org>
-Cc: David Airlie <airlied@linux.ie>, Thomas Gleixner <tglx@linutronix.de>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMuHMdUyCEVr+fFmUnUABSG33juYTWdyy6-6a1uNW0+oePJR6g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 8:20 PM, Carsten Emde <C.Emde@osadl.org> wrote:
-> Some recent integrated graphics chipset, notably Intel's "Pineview", also
-> provide on-chip LVDS support. As an extra service, the LVDS interface supplies
-> EDID data - irrespective of whether an LVDS panel is connected or not. The
-> drm_mode_getresources() function, therefore, causes Xorg to always include
-> the LVDS panel into the display and initialize a separate screen for it. e.g.
-> (II) intel(0): Output LVDS1 connected
-> (II) intel(0): Output VGA1 connected
-> (II) intel(0): Using spanning desktop for initial modes
-> (II) intel(0): Output LVDS1 using initial mode 1024x768 +0+0
-> (II) intel(0): Output VGA1 using initial mode 1280x1024 +1024+0
-> which is not what you want, if the only connected screen is a VGA monitor.
-> One would assume that the BIOS settings of such systems would allow to
-> separately enable or disable LVDS support; unfortunately, systems have been
-> found in the wild that do not provide this feature.
+On Sat, Mar 10, 2012 at 11:11:17PM +0100, Geert Uytterhoeven wrote:
+> On Wed, Mar 7, 2012 at 10:18, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> > Dmitry Torokhov (1):
+> >      Input: twl4030-vibra - use proper guard for PM methods
+> 
+> That's commit f3761c0779b62276b5bf84532a81d5dc49bd721f?
+> 
+> | drivers/input/misc/twl4030-vibra.c:175:5: warning: "CONFIG_PM" is not
+> | defined
+> |
+> | We should use #ifdef instead of #if and also check CONFIG_PM_SLEEP
+> | instead of CONFIG_PM.
+> 
+> It still uses "#if CONFIG_PM_SLEEP", i.e. no #ifdef.
+> 
 
-So video=LVDS-1:d doesn't work for you?
+Doh! I'll fix it up...
 
-Dave.
+-- 
+Dmitry
