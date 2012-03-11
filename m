@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab2CKV4d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 17:56:33 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38375 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753949Ab2CKVyc convert rfc822-to-8bit (ORCPT
+	id S1753824Ab2CKWHG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 18:07:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63986 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab2CKWG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 17:54:32 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Chris Mason" <chris.mason@oracle.com>,
-        "David Henningsson" <david.henningsson@canonical.com>,
-        "Takashi Iwai" <tiwai@suse.de>
-References: <WuYv90FoNpB.A.O8.ktRXPB@chimera>
-In-Reply-To: <WuYv90FoNpB.A.O8.ktRXPB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Sun, 11 Mar 2012 18:06:58 -0400
+Date: Sun, 11 Mar 2012 17:06:48 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Thomas Goirand <zigo@debian.org>, xen-devel@lists.xensource.com,
+        Dave Jiang <dave.jiang@intel.com>,
+        pkg-xen-devel@lists.alioth.debian.org,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        linux-kernel@vger.kernel.org, William Dauchy <wdauchy@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>
+Subject: Re: ioatdma: Boot process hangs then reboots when using Xen + Linux
+ 3.2
+Message-ID: <20120311220648.GA8120@burratino>
+References: <20120302055715.GA692@burratino>
+ <CABE8wwt8Lngy=-iL7QGCofy0nW5-q4VJDS_ovEr96fGdYm72ew@mail.gmail.com>
+ <20120302162159.GB31683@wavehammer.waldi.eu.org>
+ <CABE8wwtrMEAMw3sJgb8XWQWn_N=YOPzhNbLL0kzMKLhv7xt5=A@mail.gmail.com>
+ <20120302175719.GA1468@wavehammer.waldi.eu.org>
+ <CABE8wwvd-R1VkyFL-eZYDB9O05zyWkVQ8pXuMb8GcdAW=5qT3A@mail.gmail.com>
+ <4F54DB1F.3080000@debian.org>
+ <CABE8wwtOwgiYwb-_g-3Fg_QH6ph7LEPdkcOff94inDFvs9kwxA@mail.gmail.com>
+ <4F55D6F6.2040906@debian.org>
+ <CABE8wwsPA2PUx45EbY3w3BAHaHbUMWo7+giK=uU8gx9mbBkRpQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <C6gS2DkSgiG.A.hMB.rtRXPB@chimera>
-Subject: [Bug #42905] sound regression in 3.2-rc3 (lenovo laptops)
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 11 Mar 2012 22:31:18 +0100 (CET)
+In-Reply-To: <CABE8wwsPA2PUx45EbY3w3BAHaHbUMWo7+giK=uU8gx9mbBkRpQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+Hi Dan,
 
-The following bug entry is on the current list of known regressions
-from 3.2.  Please verify if it still should be listed and let the tracking team
-know (either way).
+Dan Williams wrote:
 
+> Before you had mentioned that non-xen 32-bit builds don't fail.  Can
+> you send me the .config from those two cases (offlist if they are too
+> large)?
 
-Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42905
-Subject		: sound regression in 3.2-rc3 (lenovo laptops)
-Submitter	: Chris Mason <chris.mason@oracle.com>
-Date		: 2012-03-05 21:11 (7 days old)
-First-Bad-Commit: http://git.kernel.org/linus/29c5fbbcfefba5225a6783683c46c39e10877703
-Message-ID	: <20120305211112.GA4191@shiny>
-References	: http://marc.info/?l=linux-kernel&m=133098194106519&w=2
+The failing and non-failing kernels are identical.  It is the
+environment in which they are run that is different.
 
+Running the kernel on bare metal works fine, while booting as a dom0
+from the xen hypervisor triggers the assertion failure.[1]
 
+.config: [2]
+
+Hope that helps,
+Jonathan
+
+[1] http://thread.gmane.org/gmane.comp.emulators.xen.devel/121604/focus=121615
+[2] http://alioth.debian.org/~jrnieder-guest/temp/config-3.2.0-2-686-pae
