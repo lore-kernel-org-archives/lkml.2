@@ -1,116 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab2CKWqJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 18:46:09 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:31338 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753699Ab2CKWpm (ORCPT
+	id S1754318Ab2CKWqj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 18:46:39 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41850 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab2CKWqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 18:45:42 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAEIqXU95LFyt/2dsb2JhbABBtVGBCIIJAQEEATocIwULCAMOCi4UJQMhE4gFBLV3E5BuBJVLkCSCdw
-Date: Mon, 12 Mar 2012 09:45:37 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
-        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH 11/19] xfs: Convert to new freezing code
-Message-ID: <20120311224537.GV5091@dastard>
-References: <1330963277-26336-1-git-send-email-jack@suse.cz>
- <1330963277-26336-12-git-send-email-jack@suse.cz>
- <20120308232041.GU3592@dastard>
- <20120309142253.GB14159@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120309142253.GB14159@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 11 Mar 2012 18:46:31 -0400
+Date: Sun, 11 Mar 2012 15:42:19 -0700 (PDT)
+Message-Id: <20120311.154219.270150852508281564.davem@davemloft.net>
+To: julia.lawall@lip6.fr
+Cc: chas@cmf.nrl.navy.mil, kernel-janitors@vger.kernel.org,
+        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7] drivers/atm/eni.c: ensure arguments to request_irq
+ and free_irq are compatible
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.02.1203112215250.1958@localhost6.localdomain6>
+References: <201203112058.q2BKwBCS024617@cmf.nrl.navy.mil>
+	<alpine.DEB.2.02.1203112215250.1958@localhost6.localdomain6>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 11 Mar 2012 15:42:21 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 03:22:53PM +0100, Jan Kara wrote:
-> On Fri 09-03-12 10:20:41, Dave Chinner wrote:
-> > On Mon, Mar 05, 2012 at 05:01:09PM +0100, Jan Kara wrote:
-> > > Generic code now blocks all writers from standard write paths. So we block all
-> > > writers coming from ioctl and replace blocking of transactions on frozen
-> > > filesystem with a debugging check. As a bonus, we get a protection of ioctl
-> > > against racing remount read-only. We also convert xfs_file_aio_write() to a
-> > > non-racy freeze protection.
-> > ....
-> > > diff --git a/fs/xfs/xfs_trans.c b/fs/xfs/xfs_trans.c
-> > > index 329b06a..6468a2a 100644
-> > > --- a/fs/xfs/xfs_trans.c
-> > > +++ b/fs/xfs/xfs_trans.c
-> > > @@ -577,7 +577,6 @@ xfs_trans_alloc(
-> > >  	xfs_mount_t	*mp,
-> > >  	uint		type)
-> > >  {
-> > > -	xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
-> > >  	return _xfs_trans_alloc(mp, type, KM_SLEEP);
-> > >  }
-> > 
-> > So what is there to stop internal XFS threads from starting
-> > transactions when the filesystem is frozen? Previously this
-> > SB_FREEZE_TRANS would guarantee even internal fucntions would get
-> > stopped, but now there's nothing?
->   I've checked XFS now and I didn't find any work that would be done on a
-> clean filesystem. I found:
-> _xfs_mru_cache_reap() - doesn't seem to do any IO
+From: Julia Lawall <julia.lawall@lip6.fr>
+Date: Sun, 11 Mar 2012 22:16:25 +0100 (CET)
 
-Causes iput() on inodes, which if dropping the last reference to the
-inode can cause them to enter reclaim and hence have transactions
-run on them to either truncate blocks beyonds EOF or to do the
-second phase of an unlink(). So it will definitely break the freeze
-model.
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> Convert calls to free_irq so that the second argument is the same as
+> the
+> last argument of the corresponding call to request_irq.  Without this
+> property, free_irq does nothing.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> xfs_end_io(), xfs_buf_iodone_work() - shouldn't be a problem either since only
->   reads can happen on a frozen filesystem
-> xfs_reclaim_worker() - everything is clean so no IO should happen
-
-It will do work as other things push inodes into reclaim. e.g.
-filestreams inode expiry. And it will still run to reclaim clean
-inodes...
-
-> xfs_flush_worker() - everything is clean so no IO should happen
-> xfs_sync_worker() - again the same if I understand the code right
-
-xfs_sync_worker() will always trigger a log force, so if there is
-anything that has dirtied the journal, it will trigger IO. We have
-no protection against the journal being dirtied anymore, so no
-guarantees can be given here.
-
-Basically, your patchset creates a "shell" around the outside of the
-filesystem that catches all the external modifications that can
-occur through the VFS and ioctls. The "shell" is now the only layer
-of defense because the patchset removes the layer of protection that
-prevents internal modifications from occurring.
-
-For example, the XFS patch added a bunch of protection to ioctls on
-XFS that only modify file metadata and so never were protected
-against data freezes - they were all implicitly protected by the inner
-transaction subsystem freeze. All of the above cases were protected
-by the inner layer of defense, which is now gone.
-
-Not to mention the shrinkers. The inode cache shrinkers can
-cause inodes to enter reclaim which can trigger EOF truncation just
-like _xfs_mru_cache_reap(). The dquot cache shrinker can also issue
-IO, and dquots will be dirtied by EOF truncation. Same with buffers,
-and the buffer cache shrinker.
-
-I'm sure other filesystems have just as complex or even more complex
-internal paths that trigger dirtying and IO that the "freeze shell"
-model does not prevent. I don't think auditing is good enough - the
-shell model is, IMO, too easy to break and too hard to test for
-breakage...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Applied, but this driver also has a larger problem, it doesn't
+free the IRQ (nor do any other kind of chip shutdown and cleanups)
+when the driver is unloaded.  The unload function is just one empty
+function with a comment.
