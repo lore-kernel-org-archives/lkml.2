@@ -1,61 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab2CKWHG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 18:07:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:63986 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab2CKWG6 (ORCPT
+	id S1753936Ab2CKWIt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 18:08:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38447 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751517Ab2CKWIm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 18:06:58 -0400
-Date: Sun, 11 Mar 2012 17:06:48 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Thomas Goirand <zigo@debian.org>, xen-devel@lists.xensource.com,
-        Dave Jiang <dave.jiang@intel.com>,
-        pkg-xen-devel@lists.alioth.debian.org,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        linux-kernel@vger.kernel.org, William Dauchy <wdauchy@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>
-Subject: Re: ioatdma: Boot process hangs then reboots when using Xen + Linux
- 3.2
-Message-ID: <20120311220648.GA8120@burratino>
-References: <20120302055715.GA692@burratino>
- <CABE8wwt8Lngy=-iL7QGCofy0nW5-q4VJDS_ovEr96fGdYm72ew@mail.gmail.com>
- <20120302162159.GB31683@wavehammer.waldi.eu.org>
- <CABE8wwtrMEAMw3sJgb8XWQWn_N=YOPzhNbLL0kzMKLhv7xt5=A@mail.gmail.com>
- <20120302175719.GA1468@wavehammer.waldi.eu.org>
- <CABE8wwvd-R1VkyFL-eZYDB9O05zyWkVQ8pXuMb8GcdAW=5qT3A@mail.gmail.com>
- <4F54DB1F.3080000@debian.org>
- <CABE8wwtOwgiYwb-_g-3Fg_QH6ph7LEPdkcOff94inDFvs9kwxA@mail.gmail.com>
- <4F55D6F6.2040906@debian.org>
- <CABE8wwsPA2PUx45EbY3w3BAHaHbUMWo7+giK=uU8gx9mbBkRpQ@mail.gmail.com>
+	Sun, 11 Mar 2012 18:08:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 3.3-rc7: Reported regressions 3.1 -> 3.2
+Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABE8wwsPA2PUx45EbY3w3BAHaHbUMWo7+giK=uU8gx9mbBkRpQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <5lvJI01hLEP.A.LnC.3_RXPB@chimera>
+Date: Sun, 11 Mar 2012 22:46:18 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+This message contains a list of some post-3.1 regressions introduced before
+3.2, for which there are no fixes in the mainline known to the tracking team.
+If any of them have been fixed already, please let us know.
 
-Dan Williams wrote:
+If you know of any other unresolved post-3.1 regressions, please let us know
+either and we'll add them to the list.  Also, please let us know if any
+of the entries below are invalid.
 
-> Before you had mentioned that non-xen 32-bit builds don't fail.  Can
-> you send me the .config from those two cases (offlist if they are too
-> large)?
+Each entry from the list will be sent additionally in an automatic reply to
+this message with CCs to the people involved in reporting and handling the
+issue.
 
-The failing and non-failing kernels are identical.  It is the
-environment in which they are run that is different.
 
-Running the kernel on bare metal works fine, while booting as a dom0
-from the xen hypervisor triggers the assertion failure.[1]
+Listed regressions statistics:
 
-.config: [2]
+  Date          Total  Pending  Unresolved
+  ----------------------------------------
+  2012-03-11        9        6           5
+  2012-03-04        9        8           7
+  2012-02-24        9        8           7
 
-Hope that helps,
-Jonathan
 
-[1] http://thread.gmane.org/gmane.comp.emulators.xen.devel/121604/focus=121615
-[2] http://alioth.debian.org/~jrnieder-guest/temp/config-3.2.0-2-686-pae
+Unresolved regressions
+----------------------
+
+Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42684
+Subject		: FYIO: usb/video 3.2 breaks logitech 9000pro webcam focus control
+Submitter	: M G Berberich <berberic@fmi.uni-passau.de>
+Date		: 2012-01-23 21:49 (49 days old)
+Message-ID	: <20120123214934.GA4240@invalid>
+References	: http://marc.info/?l=linux-kernel&m=132735609521443&w=2
+
+
+Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42631
+Subject		: Sound broken in 3.2.0 and 3.2.1
+Submitter	: Joseph Parmelee <jparmele@wildbear.com>
+Date		: 2012-01-13 19:44 (59 days old)
+Message-ID	: <alpine.LNX.2.00.1201131241090.1239@bruno>
+References	: http://marc.info/?l=linux-kernel&m=132648462806235&w=2
+
+
+Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42629
+Subject		: recvmsg sleeping from invalid context
+Submitter	: Dave Jones <davej@redhat.com>
+Date		: 2012-01-13 18:24 (59 days old)
+Message-ID	: <20120113182401.GA25885@redhat.com>
+References	: http://marc.info/?l=linux-kernel&m=132647921304184&w=2
+
+
+Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42611
+Subject		: kernel 3.2 crashes too early on HP dc7700 and HP t5000 series
+Submitter	: Dmitry D. Khlebnikov <galaxy@openwall.com>
+Date		: 2012-01-10 11:49 (62 days old)
+Message-ID	: <20120110114905.GC13535@openwall.com>
+References	: http://marc.info/?l=linux-kernel&m=132619793012702&w=2
+
+
+Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42610
+Subject		: 3.2.0 reboot powers off machine
+Submitter	: Tom Weber <l_linux-kernel@mail2news.4t2.com>
+Date		: 2012-01-11 11:03 (61 days old)
+Message-ID	: <1326279818.24835.12.camel@utumno>
+References	: http://marc.info/?l=linux-kernel&m=132628059308023&w=2
+
+
+Regressions with patches
+------------------------
+
+Bug-Entry	: https://bugzilla.kernel.org/show_bug.cgi?id=42571
+Subject		: BUG in ofcs2_change_file_space
+Submitter	: Bret Towe <magnade@gmail.com>
+Date		: 2012-01-05 22:23 (67 days old)
+Message-ID	: <CALjC5haTNDMOTDPL1m1uBTc2a-Qb8cvR44SCaVDFMzGc+Gw3+w@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=132580236211209&w=2
+Patch		: http://oss.oracle.com/pipermail/ocfs2-devel/2012-January/008464.html
+
+
+For details, please visit the bug entries and follow the links given in
+references.
+
+As you can see, there is a Bugzilla entry for each of the listed regressions.
+There also is a Bugzilla entry used for tracking the regressions introduced
+between 3.1 and 3.2, unresolved as well as resolved, at:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=42566
+
+Please let the tracking team know if there are any Bugzilla entries that
+should be added to the list in there.
+
+Thanks!
+
