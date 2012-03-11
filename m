@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab2CKKyA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 06:54:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61864 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597Ab2CKKx6 (ORCPT
+	id S1752634Ab2CKKyR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 06:54:17 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:59152 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751597Ab2CKKyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 06:53:58 -0400
-Message-ID: <4F5C8440.7000907@gmail.com>
-Date: Sun, 11 Mar 2012 18:53:52 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 1/2] module: use rcu to protect module list read
-References: <1331389203-3309-1-git-send-email-xiyou.wangcong@gmail.com> <1331393157.2453.15.camel@edumazet-laptop>
-In-Reply-To: <1331393157.2453.15.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Sun, 11 Mar 2012 06:54:15 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
+        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH v7 0/4] USB: OHCI-HCD: Support for LPC32xx
+Date: Sun, 11 Mar 2012 11:53:35 +0100
+Message-Id: <1331463219-23293-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.9
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2012 11:25 PM, Eric Dumazet wrote:
-> Le samedi 10 mars 2012 à 22:20 +0800, Cong Wang a écrit :
->> Now the read of module list is protected by preempt disable + *_rcu
->> list operations, this is odd, as RCU read lock should be able to
->> protect it directly. This patch makes the read of module list
->> protected by RCU read lock and the write still protected by
->> module_mutex.
->>
->
-> Problem is that your patch does more than that.
->
-> In set_all_modules_text_rw() and set_all_modules_text_ro() you removed
-> the mutex in favor of rcu_read_lock()
+These patches add support for the LPC32xx to the ohci-pnx4008 driver and make
+the driver use smbus functions.
 
-Yeah, I was wrong, set_all_modules_text_rw() and 
-set_all_modules_text_ro() mean to block module add/del, it is correct to 
-use module_mutex.
+As discussed with Greg-KH on the USB mailing list, the ohci-pnx4008 driver is
+first renamed to reflect its multi-platform support. The second patch also
+renames the respective pnx4008_* symbols accordingly.
 
->
-> Also, module code uses synchronize_sched(), not synchronize_rcu()
+The third patch adds the actual lpc32xx support.
 
-Stupid me, I totally missed this, should use rcu_read_lock_sched()...
+The fourth patch removes the re-coded i2c_write() by using an existing smbus
+function. You can leave out this very single patch to still have the desired
+LPC32xx support. It just fixes existing kernel code to only use smbus calls in
+this driver.
 
->
-> Take a look at Documentation/RCU/whatisRCU.txt and see that
-> preempt_disable() / preempt_enable() are documented as a right protect
-> code, in line 333.
->
-> You added races in /proc/modules as well.
+Applies to v3.3-rc6
 
-Yeah, that list iteration is not protected by rcu yet.
+Since v6, i2c_write() has been removed in favour of i2c_smbus_write_byte_data()
 
->
-> So I would say your patch is not needed at all : module code already
-> uses RCU.
->
-> What particular problem do you have with current code ?
+Thanks to Wolfram Sang for reviewing!
 
-preempt_disable() + list_*_rcu() looks a little weird for me, 
-rcu_read_lock_sched() + list_*_rcu() is better, although they are 
-functionally equal.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-I will send out a new version.
+---
 
-Thanks for review!
+Roland Stigge (4):
+ USB: OHCI-HCD: Rename ohci-pnx4008 to ohci-nxp
+ USB: ohci-nxp: Rename symbols from pnx4008 to nxp
+ USB: ohci-nxp: Support for LPC32xx
+ USB: ohci-nxp: Remove i2c_write(), use smbus
+
+ Documentation/i2c/instantiating-devices |    6 
+ drivers/usb/host/ohci-hcd.c             |    6 
+ drivers/usb/host/ohci-nxp.c             |  652 ++++++++++++++++++++++++++++----
+ drivers/usb/host/ohci-pnx4008.c         |  453 ----------------------
+ 4 files changed, 596 insertions(+), 521 deletions(-)
