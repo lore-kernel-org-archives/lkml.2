@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614Ab2CKLfC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 07:35:02 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:48097 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548Ab2CKLeh (ORCPT
+	id S1752062Ab2CKLua (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 07:50:30 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40889 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710Ab2CKLu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 07:34:37 -0400
-Date: Sun, 11 Mar 2012 12:34:11 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Add a per-dimm structure
-Message-ID: <20120311113411.GB29175@aftab>
-References: <1331120438-27523-1-git-send-email-mchehab@redhat.com>
- <20120308215716.GA5925@aftab>
- <4F59DC38.5080104@redhat.com>
- <20120309143806.GA11962@aftab>
- <4F5A329A.70702@redhat.com>
- <20120309184733.GB13745@aftab>
- <4F5A5E2D.4090408@redhat.com>
+	Sun, 11 Mar 2012 07:50:27 -0400
+Date: Sun, 11 Mar 2012 12:50:18 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Marc Reilly <marc@cpdesign.com.au>
+Cc: sameo@linux.intel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        u.kleine-koenig@pengutronix.de,
+        spi-devel-general@lists.sourceforge.net, oskar@scara.com
+Subject: Re: mfd: mc13xxx: add I2C support, V2
+Message-ID: <20120311115018.GA16825@pengutronix.de>
+References: <1331429402-9639-1-git-send-email-marc@cpdesign.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Nq2Wo0NMKNjxTN9z"
 Content-Disposition: inline
-In-Reply-To: <4F5A5E2D.4090408@redhat.com>
+In-Reply-To: <1331429402-9639-1-git-send-email-marc@cpdesign.com.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 04:46:53PM -0300, Mauro Carvalho Chehab wrote:
 
-[..]
-
-> > Right, what I mean is that the rank?/ already contains some info:
-> > 
-> > rank0/
-> > |-- dimm_dev_type
-> > |-- dimm_edac_mode
-> > |-- dimm_label
-> > |-- dimm_location
-> > |-- dimm_mem_type
-> > `-- dimm_size
-> > 
-> > Now, we do the CE/UE error counting on a per-rank granularity anyway, so
-> > the most natural way to have that is to add those counts to the ranks:
-> > 
-> > rank0/
-> > |-- dimm_dev_type
-> > |-- dimm_edac_mode
-> > |-- dimm_label
-> > |-- dimm_location
-> > |-- dimm_mem_type
-> > |-- CE
-> > |-- UE
-> > `-- dimm_size
-> > 
-> > And this has to be _very_ easy to do without any adding additional
-> > sysfs nodes with ugly names to /sys/devices/system/edac etc. This is
-> > even better grouping than the mc?/-based hierarchy I suggested above,
-> > actually.
-> 
-> Agreed. Yeah, it is easy to add CE/UE there. I actually implemented it
-> on one of my internal patches, but there's an issue:
-> 
-> The typical case for UE is to report errors by cacheline (128 bits), and
-> not by DIMM. This happens on all FB-DIMM memory controllers, and also on
-> several CS-based ones.
-> 
-> For example, this is how (currently) the amd64_handle_ue() handles an
-> Uncorrected Error:
-> 
-> 		error_address_to_page_and_offset(sys_addr, &page, &offset);
-> 		edac_mc_handle_ue(log_mci, page, offset, csrow, EDAC_MOD_STR);
-> 
-> There's no channel info there.
-
-Right, this looks like a largely untested path which has been that way
-since forever. But, since UEs generally cause the machine to syncflood
-and warm reset (now, at least), I don't think it makes a whole lot of
-sense to even have such a counter - if we did, it would either say 0 or
-1 :).
-
-So, I'd suggest the UE counter to be optional and to let the driver
-decide whether it wants it or not.
-
-[..]
-
-> One alternative would simply to remove all those intermediate
-> counters, letting userspace to count the errors via perf (provided
-> that we have a proper location field).
-
-Yes, that would be where we want to go eventually because I too don't
-see any reason for those counters. Besides, they don't decay over time,
-for example, say you have a DIMM which experiences a temporary failure
-and generates k CEs. Then, the source of that error disappears and the
-DIMM works fine for months.
-
-Now, when you look at the counters, you'll still see k CEs in one of its
-ranks which doesn't tell you when those errors happened and what their
-rate was, etc.
-
-So, I'm fine with dropping those counters since they don't give you the
-flexibility of a userspace tool and they don't work properly anyway.
-
-HOWEVER, I don't know who uses them still so probably a deprecation
-warning is in order here...
+--Nq2Wo0NMKNjxTN9z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
-> 
-> Regards,
-> Mauro
-> 
+> The only issue from V1 [0] not addressed is the use of regmap - mainly, I=
+ don't
+> have the time. I accept that this is a lame excuse but hope that use of r=
+egmap=20
+> can come later if it is required.
 
--- 
-Regards/Gruss,
-Boris.
+I really appreciate the effort, yet I fear that this is a show stopper. It =
+gets
+open coded what regmap is trying to abstract, adding complexity to the driv=
+er
+instead of (probably) reducing it. We could also get caching basically for
+free, if this is desired. I think the regmap approach should have been tried
+before we go custom. sound/soc/codecs/ad193x.c might give an impression how
+regmap spi/i2c in one driver could look like.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Thanks,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--Nq2Wo0NMKNjxTN9z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk9ckXoACgkQD27XaX1/VRu1TQCguTRzuYmuyD51yNY2sSrpVImy
+UakAn07LT38X0rmZado25bkDMc1mMGCe
+=uJOg
+-----END PGP SIGNATURE-----
+
+--Nq2Wo0NMKNjxTN9z--
