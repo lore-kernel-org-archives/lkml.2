@@ -1,108 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2CKRMG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 13:12:06 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:55433 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab2CKRMD (ORCPT
+	id S1753567Ab2CKR3e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 13:29:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60512 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753310Ab2CKR3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 13:12:03 -0400
-Date: Sun, 11 Mar 2012 18:15:32 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Stephen Wilson <wilsons@start.ca>,
-        "Jason A. Donenfeld" <Jason@zx2c4.com>
-Subject: Re: [PATCH 1/9] exec: add a global execve counter
-Message-ID: <20120311171532.GB10787@dztty>
-References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
- <1331421919-15499-2-git-send-email-tixxdz@opendz.org>
- <CA+55aFzTXuvpqjDUtjN48cc3RWADryddVXxc2RQhj6sCK=V9ag@mail.gmail.com>
- <CA+55aFy-ktC3NG5Wc+vhWB+18aqj9a0VLUSKQg+KR=FsVqfoJQ@mail.gmail.com>
- <20120311140310.1c7c735f@pyramind.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120311140310.1c7c735f@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 11 Mar 2012 13:29:32 -0400
+Message-ID: <1331486969.2449.15.camel@edumazet-laptop>
+Subject: Re: [PATCH] tun: don't hold network namespace by tun sockets
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: davem@davemloft.net, ebiederm@aristanetworks.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xemul@parallel.com,
+        shemminger@vyatta.com, devel@openvz.org
+Date: Sun, 11 Mar 2012 10:29:29 -0700
+In-Reply-To: <20120311152053.30481.29572.stgit@localhost6.localdomain6>
+References: <20120311152053.30481.29572.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 11, 2012 at 02:03:10PM +0000, Alan Cox wrote:
-> > I wonder if the number part of exec_id would even have to be 64-bit. I
-> > think I can do about 10000 execves per second if I make the program a
-> > small static one - and that's on a fast CPU. And it's a per-thread
-> > counter, so you can't scale it with lots of CPU's. So it would take
-> > something like four days to wrap. Hmm..
+Le dimanche 11 mars 2012 à 19:21 +0400, Stanislav Kinsbursky a écrit :
+> TUN was designed to destroy it's socket on network namesapce shutdown. But this
+> will never happen for persistent device, because it's socket holds network
+> namespace.
+> This patch removes of holding network namespace by TUN socket and replaces it
+> by creating socket in init_net and then changing it's net it to desired one. On
+> shutdown socket is moved back to init_net prior to final put.
 > 
-> I don't think an exec id trick works that well here. It needs to bind to
-> the actual *object* being used and refcount it in the cases that matter,
-> then have a proper way of ensuring we clean up references such as a list
-> of objects to zap hooked to each task struct
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 > 
-> So something like
+> ---
+>  drivers/net/tun.c |   10 +++++++---
+>  1 files changed, 7 insertions(+), 3 deletions(-)
 > 
-> 
-> 	struct foo_node {
-> 		struct list_node node;
-> 		struct proc_object *ref;
-> 	};
-> 		
-> 	ref = NULL;
-> 	if (foo->ptr != NULL
-> 		ref = kref_get(foo->ptr);
-> 
-> And in the task exit paths walk the node list doing a kref_put/NULL
-Here I assume that you are talking about the target task.
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 2c5d349..92ef539 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -358,8 +358,11 @@ static void tun_net_uninit(struct net_device *dev)
+>  static void tun_free_netdev(struct net_device *dev)
+>  {
+>  	struct tun_struct *tun = netdev_priv(dev);
+> +	struct sock *sk = tun->socket.sk;
+>  
+> -	sock_put(tun->socket.sk);
+> +	release_net(sock_net(sk));
+> +	sock_net_set(sk, get_net(&init_net));
+> +	sock_put(sk);
 
-Yes but proc inode which are created on the fly can also be released by
-the reader before the target exits, so do we want to walk the node list
-each time release is called by the reader ?
 
-The current implementation tries to track target, but as noted in the
-other thread we can just track the reader and in this case we do not need
-atomic for task_struct nor for the proc_file_private, a simple u64
-comparison will do the job
+Hmm, maybe use sk_release_kernel(), as its should be the thing
+associated with sk_change_net().
 
-But perhaps what you propose is better, I'll try to think more about it.
+Or at least make intent clear, since its not obvious.
 
-> Add a suitable lock and it ought to be able to generically do that for
-> anything you need to clobber.
-> 
-> You've still got a sort of race however, just as the proposed execid base
-> code.  You can pass the fd and access the proc function *as* the exec
-IMO the proposed patch do not suffer from this race if we do the propre
-permission checks just after setting the exec_id at open, or do permission
-checks and then check exec_id at read. And here I'm talking about target
-tracking. If we just check reader (current) then I assume that there are no
-room for races.
 
-> occurs. Assuming your ref counting is valid and you use new objects after
-> the exec that ought to just mean you get the data for the old mm struct,
-> which seems fine to me. It's logically equivalent to having asked a
-> microsecond before the exec rather than during it.
-> 
-> Alan
-Thanks.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-tixxdz
-http://opendz.org
