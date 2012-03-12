@@ -1,707 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755142Ab2CLSDr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:03:47 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44695 "EHLO e9.ny.us.ibm.com"
+	id S1755803Ab2CLSD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:03:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33675 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754076Ab2CLSDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:03:45 -0400
-Date: Mon, 12 Mar 2012 11:03:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <eag0628@gmail.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
-Subject: Re: [RFC PATCH 5/5 single-thread-version] implement per-domain
- single-thread state machine call_srcu()
-Message-ID: <20120312180321.GG2471@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
- <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
- <1331027858-7648-4-git-send-email-laijs@cn.fujitsu.com>
- <4F56DBDA.1020608@cn.fujitsu.com>
- <20120308203533.GN2348@linux.vnet.ibm.com>
- <CACvQF534RJcu8-yKcByqthifUHCLsggGXuRPAKqf7mZMXT3taA@mail.gmail.com>
+	id S1754734Ab2CLSD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 14:03:57 -0400
+Date: Mon, 12 Mar 2012 14:03:51 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 5/7] x86/jump labels: Use etiher 5 byte or 2 byte jumps
+Message-ID: <20120312180350.GC2607@redhat.com>
+References: <20120308221730.807074710@goodmis.org>
+ <20120308222202.525768259@goodmis.org>
+ <20120312161743.GB2607@redhat.com>
+ <1331573227.25686.650.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/mixed; boundary="oyUTqETQ0mS9luUI"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACvQF534RJcu8-yKcByqthifUHCLsggGXuRPAKqf7mZMXT3taA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031218-7182-0000-0000-000001046389
+In-Reply-To: <1331573227.25686.650.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 11:16:48AM +0800, Lai Jiangshan wrote:
-> On Fri, Mar 9, 2012 at 4:35 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Wed, Mar 07, 2012 at 11:54:02AM +0800, Lai Jiangshan wrote:
-> >> This patch is on the top of the 4 previous patches(1/6, 2/6, 3/6, 4/6).
-> >>
-> >> o     state machine is light way and single-threaded, it is preemptible when checking.
-> >>
-> >> o     state machine is a work_struct. So, there is no thread occupied
-> >>       by SRCU when the srcu is not actived(no callback). And it does
-> >>       not sleep(avoid to occupy a thread when sleep).
-> >>
-> >> o     state machine is the only thread can flip/check/write(*) the srcu_struct,
-> >>       so we don't need any mutex.
-> >>       (write(*): except ->per_cpu_ref, ->running, ->batch_queue)
-> >>
-> >> o     synchronize_srcu() is always call call_srcu().
-> >>       synchronize_srcu_expedited() is also.
-> >>       It is OK for mb()-based srcu are extremely fast.
-> >>
-> >> o     In current kernel, we can expect that there are only 1 callback per gp.
-> >>       so callback is probably called in the same CPU when it is queued.
-> >>
-> >> The trip of a callback:
-> >>       1) ->batch_queue when call_srcu()
-> >>
-> >>       2) ->batch_check0 when try to do check_zero
-> >>
-> >>       3) ->batch_check1 after finish its first check_zero and the flip
-> >>
-> >>       4) ->batch_done after finish its second check_zero
-> >>
-> >> The current requirement of the callbacks:
-> >>       The callback will be called inside process context.
-> >>       The callback should be fast without any sleeping path.
-> >>
-> >> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> >> ---
-> >>  include/linux/rcupdate.h |    2 +-
-> >>  include/linux/srcu.h     |   28 +++++-
-> >>  kernel/rcupdate.c        |   24 ++++-
-> >>  kernel/rcutorture.c      |   44 ++++++++-
-> >>  kernel/srcu.c            |  238 ++++++++++++++++++++++++++++++++-------------
-> >>  5 files changed, 259 insertions(+), 77 deletions(-)
-> >> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> >> index 9372174..d98eab2 100644
-> >> --- a/include/linux/rcupdate.h
-> >> +++ b/include/linux/rcupdate.h
-> >> @@ -222,7 +222,7 @@ extern void rcu_irq_exit(void);
-> >>   * TREE_RCU and rcu_barrier_() primitives in TINY_RCU.
-> >>   */
-> >>
-> >> -typedef void call_rcu_func_t(struct rcu_head *head,
-> >> +typedef void (*call_rcu_func_t)(struct rcu_head *head,
-> >
-> > I don't see what this applies against.  The old patch 5/6 created
-> > a "(*call_rcu_func_t)(struct rcu_head *head," and I don't see what
-> > created the "call_rcu_func_t(struct rcu_head *head,".
+
+--oyUTqETQ0mS9luUI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Mon, Mar 12, 2012 at 01:27:07PM -0400, Steven Rostedt wrote:
+> Here's my numbers from the latest changes. They are not as big, perhaps
+> I had debug enabled too. I took a debian 3.0 config, enabled jump labels
+> and some tracing, did a make localyesconfig (something broke it as the
+> config still had modules that I had to manual convert to =y). Here's the
+> results:
 > 
-> typedef void call_rcu_func_t(...) declares a function type, not a
-> function pointer
-> type. I use a line of code as following:
 > 
-> call_rcu_func_t crf = func;
+> gcc 4.6.0
 > 
-> if call_rcu_func_t is a function type, the above code can't be complied,
-> I need to covert it to function pointer type.
-
-Got it, thank you!
-
-> >>                            void (*func)(struct rcu_head *head));
-> >>  void wait_rcu_gp(call_rcu_func_t crf);
-> >>
-> >> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-> >> index df8f5f7..56cb774 100644
-> >> --- a/include/linux/srcu.h
-> >> +++ b/include/linux/srcu.h
-> >> @@ -29,6 +29,7 @@
-> >>
-> >>  #include <linux/mutex.h>
-> >>  #include <linux/rcupdate.h>
-> >> +#include <linux/workqueue.h>
-> >>
-> >>  struct srcu_struct_array {
-> >>       unsigned long c[2];
-> >> @@ -39,10 +40,23 @@ struct srcu_struct_array {
-> >>  #define SRCU_REF_MASK                (ULONG_MAX >> SRCU_USAGE_BITS)
-> >>  #define SRCU_USAGE_COUNT     (SRCU_REF_MASK + 1)
-> >>
-> >> +struct rcu_batch {
-> >> +     struct rcu_head *head, **tail;
-> >> +};
-> >> +
-> >>  struct srcu_struct {
-> >>       unsigned completed;
-> >>       struct srcu_struct_array __percpu *per_cpu_ref;
-> >> -     struct mutex mutex;
-> >> +     spinlock_t queue_lock; /* protect ->batch_queue, ->running */
-> >> +     bool running;
-> >> +     /* callbacks just queued */
-> >> +     struct rcu_batch batch_queue;
-> >> +     /* callbacks try to do the first check_zero */
-> >> +     struct rcu_batch batch_check0;
-> >> +     /* callbacks done with the first check_zero and the flip */
-> >> +     struct rcu_batch batch_check1;
-> >> +     struct rcu_batch batch_done;
-> >> +     struct delayed_work work;
-> >
-> > Why not use your multiple-tail-pointer trick here?  (The one that is
-> > used in treercu.)
+>    text	   data	    bss	    dec	    hex	filename
+> 14355064	1810272	5722112	21887448	14df9d8	vmlinux
+> 14354490	1810400	5722112	21887002	14df81a	vmlinux-patched
 > 
-> 1) Make the code of the advance of batches simpler.
-> 2) batch_queue is protected by lock, so it will be hard to use
-> multiple-tail-pointer trick.
-> 3) rcu_batch API do add a little more runtime overhead, but this
-> overhead is just
-> several cpu-instructions, I think it is OK. It is good tradeoff when
-> compare to the readability.
-
-OK, let's see how it goes.
-
-> I think we can also use rcu_batch for rcutree/rcutiny.
-
-Hmmm...  Readability and speed both improved when moving from something
-resembing rcu_batch to the current multi-tailed lists.  ;-)
-
-> >>       unsigned long snap[NR_CPUS];
-> >>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> >>       struct lockdep_map dep_map;
-> >> @@ -67,12 +81,24 @@ int init_srcu_struct(struct srcu_struct *sp);
-> >>
-> >>  #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-> >>
-> >> +/* draft
-> >> + * queue callbacks which will be invoked after grace period.
-> >> + * The callback will be called inside process context.
-> >> + * The callback should be fast without any sleeping path.
-> >> + */
-> >> +void call_srcu(struct srcu_struct *sp, struct rcu_head *head,
-> >> +             void (*func)(struct rcu_head *head));
-> >> +
-> >> +typedef void (*call_srcu_func_t)(struct srcu_struct *sp, struct rcu_head *head,
-> >> +             void (*func)(struct rcu_head *head));
-> >> +void __wait_srcu_gp(struct srcu_struct *sp, call_srcu_func_t crf);
-> >>  void cleanup_srcu_struct(struct srcu_struct *sp);
-> >>  int __srcu_read_lock(struct srcu_struct *sp) __acquires(sp);
-> >>  void __srcu_read_unlock(struct srcu_struct *sp, int idx) __releases(sp);
-> >>  void synchronize_srcu(struct srcu_struct *sp);
-> >>  void synchronize_srcu_expedited(struct srcu_struct *sp);
-> >>  long srcu_batches_completed(struct srcu_struct *sp);
-> >> +void srcu_barrier(struct srcu_struct *sp);
-> >>
-> >>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> >>
-> >> diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-> >> index a86f174..f9b551f 100644
-> >> --- a/kernel/rcupdate.c
-> >> +++ b/kernel/rcupdate.c
-> >> @@ -45,6 +45,7 @@
-> >>  #include <linux/mutex.h>
-> >>  #include <linux/export.h>
-> >>  #include <linux/hardirq.h>
-> >> +#include <linux/srcu.h>
-> >>
-> >>  #define CREATE_TRACE_POINTS
-> >>  #include <trace/events/rcu.h>
-> >> @@ -123,20 +124,39 @@ static void wakeme_after_rcu(struct rcu_head  *head)
-> >>       complete(&rcu->completion);
-> >>  }
-> >>
-> >> -void wait_rcu_gp(call_rcu_func_t crf)
-> >> +static void __wait_rcu_gp(void *domain, void *func)
-> >>  {
-> >>       struct rcu_synchronize rcu;
-> >>
-> >>       init_rcu_head_on_stack(&rcu.head);
-> >>       init_completion(&rcu.completion);
-> >> +
-> >>       /* Will wake me after RCU finished. */
-> >> -     crf(&rcu.head, wakeme_after_rcu);
-> >> +     if (!domain) {
-> >> +             call_rcu_func_t crf = func;
-> >> +             crf(&rcu.head, wakeme_after_rcu);
-> >> +     } else {
-> >> +             call_srcu_func_t crf = func;
-> >> +             crf(domain, &rcu.head, wakeme_after_rcu);
-> >> +     }
-> >> +
-> >>       /* Wait for it. */
-> >>       wait_for_completion(&rcu.completion);
-> >>       destroy_rcu_head_on_stack(&rcu.head);
-> >>  }
-> >
-> > Mightn't it be simpler and faster to just have a separate wait_srcu_gp()
-> > that doesn't share code with wait_rcu_gp()?  I am all for sharing code,
-> > but this might be hrting more than helping.
-> >
-> >> +
-> >> +void wait_rcu_gp(call_rcu_func_t crf)
-> >> +{
-> >> +     __wait_rcu_gp(NULL, crf);
-> >> +}
-> >>  EXPORT_SYMBOL_GPL(wait_rcu_gp);
-> >>
-> >> +/* srcu.c internel */
-> >> +void __wait_srcu_gp(struct srcu_struct *sp, call_srcu_func_t crf)
-> >> +{
-> >> +     __wait_rcu_gp(sp, crf);
-> >> +}
-> >> +
-> >>  #ifdef CONFIG_PROVE_RCU
-> >>  /*
-> >>   * wrapper function to avoid #include problems.
-> >> diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-> >> index 54e5724..40d24d0 100644
-> >
-> > OK, so your original patch #6 is folded into this?  I don't have a strong
-> > view either way, just need to know.
-> >
-> >> --- a/kernel/rcutorture.c
-> >> +++ b/kernel/rcutorture.c
-> >> @@ -623,6 +623,11 @@ static int srcu_torture_completed(void)
-> >>       return srcu_batches_completed(&srcu_ctl);
-> >>  }
-> >>
-> >> +static void srcu_torture_deferred_free(struct rcu_torture *rp)
-> >> +{
-> >> +     call_srcu(&srcu_ctl, &rp->rtort_rcu, rcu_torture_cb);
-> >> +}
-> >> +
-> >>  static void srcu_torture_synchronize(void)
-> >>  {
-> >>       synchronize_srcu(&srcu_ctl);
-> >> @@ -652,7 +657,7 @@ static struct rcu_torture_ops srcu_ops = {
-> >>       .read_delay     = srcu_read_delay,
-> >>       .readunlock     = srcu_torture_read_unlock,
-> >>       .completed      = srcu_torture_completed,
-> >> -     .deferred_free  = rcu_sync_torture_deferred_free,
-> >> +     .deferred_free  = srcu_torture_deferred_free,
-> >>       .sync           = srcu_torture_synchronize,
-> >>       .call           = NULL,
-> >>       .cb_barrier     = NULL,
-> >> @@ -660,6 +665,21 @@ static struct rcu_torture_ops srcu_ops = {
-> >>       .name           = "srcu"
-> >>  };
-> >>
-> >> +static struct rcu_torture_ops srcu_sync_ops = {
-> >> +     .init           = srcu_torture_init,
-> >> +     .cleanup        = srcu_torture_cleanup,
-> >> +     .readlock       = srcu_torture_read_lock,
-> >> +     .read_delay     = srcu_read_delay,
-> >> +     .readunlock     = srcu_torture_read_unlock,
-> >> +     .completed      = srcu_torture_completed,
-> >> +     .deferred_free  = rcu_sync_torture_deferred_free,
-> >> +     .sync           = srcu_torture_synchronize,
-> >> +     .call           = NULL,
-> >> +     .cb_barrier     = NULL,
-> >> +     .stats          = srcu_torture_stats,
-> >> +     .name           = "srcu_sync"
-> >> +};
-> >> +
-> >>  static int srcu_torture_read_lock_raw(void) __acquires(&srcu_ctl)
-> >>  {
-> >>       return srcu_read_lock_raw(&srcu_ctl);
-> >> @@ -677,7 +697,7 @@ static struct rcu_torture_ops srcu_raw_ops = {
-> >>       .read_delay     = srcu_read_delay,
-> >>       .readunlock     = srcu_torture_read_unlock_raw,
-> >>       .completed      = srcu_torture_completed,
-> >> -     .deferred_free  = rcu_sync_torture_deferred_free,
-> >> +     .deferred_free  = srcu_torture_deferred_free,
-> >>       .sync           = srcu_torture_synchronize,
-> >>       .call           = NULL,
-> >>       .cb_barrier     = NULL,
-> >> @@ -685,6 +705,21 @@ static struct rcu_torture_ops srcu_raw_ops = {
-> >>       .name           = "srcu_raw"
-> >>  };
-> >>
-> >> +static struct rcu_torture_ops srcu_raw_sync_ops = {
-> >> +     .init           = srcu_torture_init,
-> >> +     .cleanup        = srcu_torture_cleanup,
-> >> +     .readlock       = srcu_torture_read_lock_raw,
-> >> +     .read_delay     = srcu_read_delay,
-> >> +     .readunlock     = srcu_torture_read_unlock_raw,
-> >> +     .completed      = srcu_torture_completed,
-> >> +     .deferred_free  = rcu_sync_torture_deferred_free,
-> >> +     .sync           = srcu_torture_synchronize,
-> >> +     .call           = NULL,
-> >> +     .cb_barrier     = NULL,
-> >> +     .stats          = srcu_torture_stats,
-> >> +     .name           = "srcu_raw_sync"
-> >> +};
-> >> +
-> >>  static void srcu_torture_synchronize_expedited(void)
-> >>  {
-> >>       synchronize_srcu_expedited(&srcu_ctl);
-> >> @@ -1673,7 +1708,7 @@ static int rcu_torture_barrier_init(void)
-> >>       for (i = 0; i < n_barrier_cbs; i++) {
-> >>               init_waitqueue_head(&barrier_cbs_wq[i]);
-> >>               barrier_cbs_tasks[i] = kthread_run(rcu_torture_barrier_cbs,
-> >> -                                                (void *)i,
-> >> +                                                (void *)(long)i,
-> >>                                                  "rcu_torture_barrier_cbs");
-> >>               if (IS_ERR(barrier_cbs_tasks[i])) {
-> >>                       ret = PTR_ERR(barrier_cbs_tasks[i]);
-> >> @@ -1857,7 +1892,8 @@ rcu_torture_init(void)
-> >>       static struct rcu_torture_ops *torture_ops[] =
-> >>               { &rcu_ops, &rcu_sync_ops, &rcu_expedited_ops,
-> >>                 &rcu_bh_ops, &rcu_bh_sync_ops, &rcu_bh_expedited_ops,
-> >> -               &srcu_ops, &srcu_raw_ops, &srcu_expedited_ops,
-> >> +               &srcu_ops, &srcu_sync_ops, &srcu_raw_ops,
-> >> +               &srcu_raw_sync_ops, &srcu_expedited_ops,
-> >>                 &sched_ops, &sched_sync_ops, &sched_expedited_ops, };
-> >>
-> >>       mutex_lock(&fullstop_mutex);
-> >> diff --git a/kernel/srcu.c b/kernel/srcu.c
-> >> index d101ed5..532f890 100644
-> >> --- a/kernel/srcu.c
-> >> +++ b/kernel/srcu.c
-> >> @@ -34,10 +34,60 @@
-> >>  #include <linux/delay.h>
-> >>  #include <linux/srcu.h>
-> >>
-> >> +static inline void rcu_batch_init(struct rcu_batch *b)
-> >> +{
-> >> +     b->head = NULL;
-> >> +     b->tail = &b->head;
-> >> +}
-> >> +
-> >> +static inline void rcu_batch_queue(struct rcu_batch *b, struct rcu_head *head)
-> >> +{
-> >> +     *b->tail = head;
-> >> +     b->tail = &head->next;
-> >> +}
-> >> +
-> >> +static inline bool rcu_batch_empty(struct rcu_batch *b)
-> >> +{
-> >> +     return b->tail == &b->head;
-> >> +}
-> >> +
-> >> +static inline struct rcu_head *rcu_batch_dequeue(struct rcu_batch *b)
-> >> +{
-> >> +     struct rcu_head *head;
-> >> +
-> >> +     if (rcu_batch_empty(b))
-> >> +             return NULL;
-> >> +
-> >> +     head = b->head;
-> >> +     b->head = head->next;
-> >> +     if (b->tail == &head->next)
-> >> +             rcu_batch_init(b);
-> >> +
-> >> +     return head;
-> >> +}
-> >> +
-> >> +static inline void rcu_batch_move(struct rcu_batch *to, struct rcu_batch *from)
-> >> +{
-> >> +     if (!rcu_batch_empty(from)) {
-> >> +             *to->tail = from->head;
-> >> +             to->tail = from->tail;
-> >> +             rcu_batch_init(from);
-> >> +     }
-> >> +}
-> >
-> > And perhaps this is why you don't want the multi-tailed queue?
-> >
-> >> +
-> >> +/* single-thread state-machine */
-> >> +static void process_srcu(struct work_struct *work);
-> >> +
-> >>  static int init_srcu_struct_fields(struct srcu_struct *sp)
-> >>  {
-> >>       sp->completed = 0;
-> >> -     mutex_init(&sp->mutex);
-> >> +     spin_lock_init(&sp->queue_lock);
-> >> +     sp->running = false;
-> >> +     rcu_batch_init(&sp->batch_queue);
-> >> +     rcu_batch_init(&sp->batch_check0);
-> >> +     rcu_batch_init(&sp->batch_check1);
-> >> +     rcu_batch_init(&sp->batch_done);
-> >> +     INIT_DELAYED_WORK(&sp->work, process_srcu);
-> >>       sp->per_cpu_ref = alloc_percpu(struct srcu_struct_array);
-> >>       return sp->per_cpu_ref ? 0 : -ENOMEM;
-> >>  }
-> >> @@ -254,11 +304,9 @@ EXPORT_SYMBOL_GPL(__srcu_read_unlock);
-> >>   * we repeatedly block for 1-millisecond time periods.  This approach
-> >>   * has done well in testing, so there is no need for a config parameter.
-> >>   */
-> >> -#define SYNCHRONIZE_SRCU_READER_DELAY        5
-> >> -#define SYNCHRONIZE_SRCU_TRYCOUNT    2
-> >> -#define SYNCHRONIZE_SRCU_EXP_TRYCOUNT        12
-> >> +#define SRCU_RETRY_CHECK_DELAY       5
-> >>
-> >> -static void wait_idx(struct srcu_struct *sp, int idx, int trycount)
-> >> +static bool try_check_zero(struct srcu_struct *sp, int idx, int trycount)
-> >>  {
-> >>       /*
-> >>        * If a reader fetches the index before the ->completed increment,
-> >> @@ -271,19 +319,12 @@ static void wait_idx(struct srcu_struct *sp, int idx, int trycount)
-> >>        */
-> >>       smp_mb(); /* D */
-> >>
-> >> -     /*
-> >> -      * SRCU read-side critical sections are normally short, so wait
-> >> -      * a small amount of time before possibly blocking.
-> >> -      */
-> >> -     if (!srcu_readers_active_idx_check(sp, idx)) {
-> >> -             udelay(SYNCHRONIZE_SRCU_READER_DELAY);
-> >> -             while (!srcu_readers_active_idx_check(sp, idx)) {
-> >> -                     if (trycount > 0) {
-> >> -                             trycount--;
-> >> -                             udelay(SYNCHRONIZE_SRCU_READER_DELAY);
-> >> -                     } else
-> >> -                             schedule_timeout_interruptible(1);
-> >> -             }
-> >> +     for (;;) {
-> >> +             if (srcu_readers_active_idx_check(sp, idx))
-> >> +                     break;
-> >> +             if (--trycount <= 0)
-> >> +                     return false;
-> >> +             udelay(SRCU_RETRY_CHECK_DELAY);
-> >>       }
-> >>
-> >>       /*
-> >> @@ -297,6 +338,8 @@ static void wait_idx(struct srcu_struct *sp, int idx, int trycount)
-> >>        * the next flipping.
-> >>        */
-> >>       smp_mb(); /* E */
-> >> +
-> >> +     return true;
-> >>  }
-> >>
-> >>  /*
-> >> @@ -308,10 +351,27 @@ static void srcu_flip(struct srcu_struct *sp)
-> >>       ACCESS_ONCE(sp->completed)++;
-> >>  }
-> >>
-> >> +void call_srcu(struct srcu_struct *sp, struct rcu_head *head,
-> >> +             void (*func)(struct rcu_head *head))
-> >> +{
-> >> +     unsigned long flags;
-> >> +
-> >> +     head->next = NULL;
-> >> +     head->func = func;
-> >> +     spin_lock_irqsave(&sp->queue_lock, flags);
-> >> +     rcu_batch_queue(&sp->batch_queue, head);
-> >> +     if (!sp->running) {
-> >> +             sp->running = true;
-> >> +             queue_delayed_work(system_nrt_wq, &sp->work, 0);
-> >> +     }
-> >> +     spin_unlock_irqrestore(&sp->queue_lock, flags);
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(call_srcu);
-> >> +
-> >>  /*
-> >>   * Helper function for synchronize_srcu() and synchronize_srcu_expedited().
-> >>   */
-> >> -static void __synchronize_srcu(struct srcu_struct *sp, int trycount)
-> >> +static void __synchronize_srcu(struct srcu_struct *sp)
-> >>  {
-> >>       rcu_lockdep_assert(!lock_is_held(&sp->dep_map) &&
-> >>                          !lock_is_held(&rcu_bh_lock_map) &&
-> >> @@ -319,54 +379,7 @@ static void __synchronize_srcu(struct srcu_struct *sp, int trycount)
-> >>                          !lock_is_held(&rcu_sched_lock_map),
-> >>                          "Illegal synchronize_srcu() in same-type SRCU (or RCU) read-side critical section");
-> >>
-> >> -     mutex_lock(&sp->mutex);
-> >> -
-> >> -     /*
-> >> -      * Suppose that during the previous grace period, a reader
-> >> -      * picked up the old value of the index, but did not increment
-> >> -      * its counter until after the previous instance of
-> >> -      * __synchronize_srcu() did the counter summation and recheck.
-> >> -      * That previous grace period was OK because the reader did
-> >> -      * not start until after the grace period started, so the grace
-> >> -      * period was not obligated to wait for that reader.
-> >> -      *
-> >> -      * However, the current SRCU grace period does have to wait for
-> >> -      * that reader.  This is handled by invoking wait_idx() on the
-> >> -      * non-active set of counters (hence sp->completed - 1).  Once
-> >> -      * wait_idx() returns, we know that all readers that picked up
-> >> -      * the old value of ->completed and that already incremented their
-> >> -      * counter will have completed.
-> >> -      *
-> >> -      * But what about readers that picked up the old value of
-> >> -      * ->completed, but -still- have not managed to increment their
-> >> -      * counter?  We do not need to wait for those readers, because
-> >> -      * they will have started their SRCU read-side critical section
-> >> -      * after the current grace period starts.
-> >> -      *
-> >> -      * Because it is unlikely that readers will be preempted between
-> >> -      * fetching ->completed and incrementing their counter, wait_idx()
-> >> -      * will normally not need to wait.
-> >> -      */
-> >> -     wait_idx(sp, (sp->completed - 1) & 0x1, trycount);
-> >> -
-> >> -     /*
-> >> -      * Now that wait_idx() has waited for the really old readers,
-> >> -      *
-> >> -      * Flip the readers' index by incrementing ->completed, then wait
-> >> -      * until there are no more readers using the counters referenced by
-> >> -      * the old index value.  (Recall that the index is the bottom bit
-> >> -      * of ->completed.)
-> >> -      *
-> >> -      * Of course, it is possible that a reader might be delayed for the
-> >> -      * full duration of flip_idx_and_wait() between fetching the
-> >> -      * index and incrementing its counter.  This possibility is handled
-> >> -      * by the next __synchronize_srcu() invoking wait_idx() for such
-> >> -      * readers before starting a new grace period.
-> >> -      */
-> >> -     srcu_flip(sp);
-> >> -     wait_idx(sp, (sp->completed - 1) & 0x1, trycount);
-> >> -
-> >> -     mutex_unlock(&sp->mutex);
-> >> +     __wait_srcu_gp(sp, call_srcu);
-> >>  }
-> >>
-> >>  /**
-> >> @@ -385,7 +398,7 @@ static void __synchronize_srcu(struct srcu_struct *sp, int trycount)
-> >>   */
-> >>  void synchronize_srcu(struct srcu_struct *sp)
-> >>  {
-> >> -     __synchronize_srcu(sp, SYNCHRONIZE_SRCU_TRYCOUNT);
-> >> +     __synchronize_srcu(sp);
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(synchronize_srcu);
-> >>
-> >> @@ -406,10 +419,16 @@ EXPORT_SYMBOL_GPL(synchronize_srcu);
-> >>   */
-> >>  void synchronize_srcu_expedited(struct srcu_struct *sp)
-> >>  {
-> >> -     __synchronize_srcu(sp, SYNCHRONIZE_SRCU_EXP_TRYCOUNT);
-> >> +     __synchronize_srcu(sp);
-> >>  }
-> >
-> > OK, I'll bite...  Why aren't synchronize_srcu_expedited() and
-> > synchronize_srcu() different?
+> It's only a 574 byte savings. That's not much. I wish I had the config I
+> used the first time. I may have had debug on that gave it a bigger
+> impact.
 > 
-> In mb()-based srcu, synchronize_srcu() is very fast,
-> synchronize_srcu_expedited() makes less sense than before.
-
-I am worried about expedited callbacks getting backed up behind
-non-expedited callbacks (especially given Peter's point about per-VMA
-SRCU callbacks) and behind other workqueue uses.
-
-> But when wait_srcu_gp() is move back here, I will use
-> a bigger "trycount" for synchronize_srcu_expedited().
+> Attached is the config:
 > 
-> And any problem for srcu_advance_batches()?
-
-I prefer the use of "return" that you and Peter discussed later.
-
-What sort of testing are you doing?
-
-							Thanx, Paul
-
-> Thanks.
-> Lai
-> 
-> >
-> >                                                        Thanx, Paul
-> >
-> >>  EXPORT_SYMBOL_GPL(synchronize_srcu_expedited);
-> >>
-> >> +void srcu_barrier(struct srcu_struct *sp)
-> >> +{
-> >> +     __synchronize_srcu(sp);
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(srcu_barrier);
-> >> +
-> >>  /**
-> >>   * srcu_batches_completed - return batches completed.
-> >>   * @sp: srcu_struct on which to report batch completion.
-> >> @@ -423,3 +442,84 @@ long srcu_batches_completed(struct srcu_struct *sp)
-> >>       return sp->completed;
-> >>  }
-> >>  EXPORT_SYMBOL_GPL(srcu_batches_completed);
-> >> +
-> >> +#define SRCU_CALLBACK_BATCH  10
-> >> +#define SRCU_INTERVAL                1
-> >> +
-> >> +static void srcu_collect_new(struct srcu_struct *sp)
-> >> +{
-> >> +     if (!rcu_batch_empty(&sp->batch_queue)) {
-> >> +             spin_lock_irq(&sp->queue_lock);
-> >> +             rcu_batch_move(&sp->batch_check0, &sp->batch_queue);
-> >> +             spin_unlock_irq(&sp->queue_lock);
-> >> +     }
-> >> +}
-> >> +
-> >> +static void srcu_advance_batches(struct srcu_struct *sp)
-> >> +{
-> >> +     int idx = 1 - (sp->completed & 0x1UL);
-> >> +
-> >> +     /*
-> >> +      * SRCU read-side critical sections are normally short, so check
-> >> +      * twice after a flip.
-> >> +      */
-> >> +     if (!rcu_batch_empty(&sp->batch_check1) ||
-> >> +         !rcu_batch_empty(&sp->batch_check0)) {
-> >> +             if (try_check_zero(sp, idx, 1)) {
-> >> +                     rcu_batch_move(&sp->batch_done, &sp->batch_check1);
-> >> +                     rcu_batch_move(&sp->batch_check1, &sp->batch_check0);
-> >> +                     if (!rcu_batch_empty(&sp->batch_check1)) {
-> >> +                             srcu_flip(sp);
-> >> +                             if (try_check_zero(sp, 1 - idx, 2)) {
-> >> +                                     rcu_batch_move(&sp->batch_done,
-> >> +                                             &sp->batch_check1);
-> >> +                             }
-> >> +                     }
-> >> +             }
-> >> +     }
-> >> +}
-> >> +
-> >> +static void srcu_invoke_callbacks(struct srcu_struct *sp)
-> >> +{
-> >> +     int i;
-> >> +     struct rcu_head *head;
-> >> +
-> >> +     for (i = 0; i < SRCU_CALLBACK_BATCH; i++) {
-> >> +             head = rcu_batch_dequeue(&sp->batch_done);
-> >> +             if (!head)
-> >> +                     break;
-> >> +             head->func(head);
-> >> +     }
-> >> +}
-> >> +
-> >> +static void srcu_reschedule(struct srcu_struct *sp)
-> >> +{
-> >> +     bool running = true;
-> >> +
-> >> +     if (rcu_batch_empty(&sp->batch_done) &&
-> >> +         rcu_batch_empty(&sp->batch_check1) &&
-> >> +         rcu_batch_empty(&sp->batch_check0) &&
-> >> +         rcu_batch_empty(&sp->batch_queue)) {
-> >> +             spin_lock_irq(&sp->queue_lock);
-> >> +             if (rcu_batch_empty(&sp->batch_queue)) {
-> >> +                     sp->running = false;
-> >> +                     running = false;
-> >> +             }
-> >> +             spin_unlock_irq(&sp->queue_lock);
-> >> +     }
-> >> +
-> >> +     if (running)
-> >> +             queue_delayed_work(system_nrt_wq, &sp->work, SRCU_INTERVAL);
-> >> +}
-> >> +
-> >> +static void process_srcu(struct work_struct *work)
-> >> +{
-> >> +     struct srcu_struct *sp;
-> >> +
-> >> +     sp = container_of(work, struct srcu_struct, work.work);
-> >> +
-> >> +     srcu_collect_new(sp);
-> >> +     srcu_advance_batches(sp);
-> >> +     srcu_invoke_callbacks(sp);
-> >> +     srcu_reschedule(sp);
-> >> +}
-> >>
-> >>
-> >>
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> -- Steve
 > 
 
+At least you got a decrease! Using your .config I got the same 574 byte
+savings:
+
+14310698        1810160 5722112 21842970        14d4c1a vmlinux-orig
+14310124        1810288 5722112 21842524        14d4a5c vmlinux-new
+
+I'm attaching my .config which is basically a defconfig with a few extra
+configs for my h/w + kvm + ext4.
+
+Thanks,
+
+-Jason
+
+--oyUTqETQ0mS9luUI
+Content-Type: application/x-bzip2
+Content-Disposition: attachment; filename="jasons-config.bz2"
+Content-Transfer-Encoding: base64
+
+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
+8GHWSIO7tmdKD/xdyRThQkPY7wOo
+
+--oyUTqETQ0mS9luUI--
