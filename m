@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab2CLMkB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 08:40:01 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:49270 "EHLO mx2.parallels.com"
+	id S1755232Ab2CLMkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 08:40:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58969 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754152Ab2CLMj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 08:39:59 -0400
-Message-ID: <4F5DEE42.6050607@parallels.com>
-Date: Mon, 12 Mar 2012 16:38:26 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1754152Ab2CLMkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 08:40:49 -0400
+Date: Mon, 12 Mar 2012 13:40:46 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] HID: multitouch: add support for eGalax 0x722a
+In-Reply-To: <CAN+gG=F0w88T-iDxVJNEjgyud8FwC5vTGT8+2KTva8FXgFjTog@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1203121339550.18356@pobox.suse.cz>
+References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-2-git-send-email-benjamin.tissoires@gmail.com> <alpine.LNX.2.00.1203091329030.18356@pobox.suse.cz>
+ <CAN+gG=F0w88T-iDxVJNEjgyud8FwC5vTGT8+2KTva8FXgFjTog@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Suleiman Souhlal <ssouhlal@FreeBSD.org>
-CC: <cgroups@vger.kernel.org>, <suleiman@google.com>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <penberg@kernel.org>, <cl@linux.com>,
-        <yinghan@google.com>, <hughd@google.com>, <gthelen@google.com>,
-        <peterz@infradead.org>, <dan.magenheimer@oracle.com>,
-        <hannes@cmpxchg.org>, <mgorman@suse.de>,
-        <James.Bottomley@HansenPartnership.com>, <linux-mm@kvack.org>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 02/13] memcg: Kernel memory accounting infrastructure.
-References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org> <1331325556-16447-3-git-send-email-ssouhlal@FreeBSD.org>
-In-Reply-To: <1331325556-16447-3-git-send-email-ssouhlal@FreeBSD.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/10/2012 12:39 AM, Suleiman Souhlal wrote:
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +int
-> +memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, long long delta)
-> +{
-> +	struct res_counter *fail_res;
-> +	struct mem_cgroup *_memcg;
-> +	int may_oom, ret;
-> +
-> +	may_oom = (gfp&  __GFP_WAIT)&&  (gfp&  __GFP_FS)&&
-> +	    !(gfp&  __GFP_NORETRY);
-> +
-> +	ret = 0;
-> +
-> +	_memcg = memcg;
-> +	if (memcg&&  !mem_cgroup_test_flag(memcg,
-> +	    MEMCG_INDEPENDENT_KMEM_LIMIT)) {
-> +		ret = __mem_cgroup_try_charge(NULL, gfp, delta / PAGE_SIZE,
-> +		&_memcg, may_oom);
-> +		if (ret == -ENOMEM)
-> +			return ret;
-> +	}
-> +
-> +	if (memcg&&  _memcg == memcg)
-> +		ret = res_counter_charge(&memcg->kmem, delta,&fail_res);
-> +
-> +	return ret;
-> +}
-> +
-> +void
-Ok.
+On Sat, 10 Mar 2012, Benjamin Tissoires wrote:
 
-So I've spent most of the day today trying to come up with a way not to 
-kill the whole performance we gain from consume_stock() by this 
-res_counter_charge() to kmem afterwards...
+> >>  drivers/hid/hid-ids.h        |    1 +
+> >>  drivers/hid/hid-multitouch.c |    3 +++
+> >>  2 files changed, 4 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> >> index 6656516..e1fada2 100644
+> >> --- a/drivers/hid/hid-ids.h
+> >> +++ b/drivers/hid/hid-ids.h
+> >> @@ -240,6 +240,7 @@
+> >>  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7207    0x7207
+> >>  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_720C    0x720c
+> >>  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7224    0x7224
+> >> +#define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_722A    0x722A
+> >>  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_725E    0x725e
+> >>  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7262    0x7262
+> >>  #define USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B    0x726b
+> >> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> >> index 0eda37f..019de83 100644
+> >> --- a/drivers/hid/hid-multitouch.c
+> >> +++ b/drivers/hid/hid-multitouch.c
+> >> @@ -797,6 +797,9 @@ static const struct hid_device_id mt_devices[] = {
+> >>       { .driver_data = MT_CLS_EGALAX_SERIAL,
+> >>               HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+> >>                       USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_7224) },
+> >> +     { .driver_data = MT_CLS_EGALAX_SERIAL,
+> >> +             HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+> >> +                     USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_722A) },
+> >>       { .driver_data = MT_CLS_EGALAX,
+> >>               HID_USB_DEVICE(USB_VENDOR_ID_DWAV,
+> >>                       USB_DEVICE_ID_DWAV_EGALAX_MULTITOUCH_726B) },
+> >
+> > Applied.
+> >
+> 
+> Thanks Jiri.
+> How about patches 2,3 and 5?
 
-You mentioned you want to still be able to bill to memcg->kmem mostly 
-for debugging/display purposes. So we're surely not using all of the 
-res_counter infrastructure (limiting, soft limits, etc)
+I just needed some more time to review those. They are now in my tree as 
+well.
 
-I was thinking: Can't we have a percpu_counter that we use for this 
-purpose when !kmem_independent ?
+Patch #4 is still under discussion, and thus on hold.
 
-we may not even need to bloat the struct, since we can fold it into a 
-union with struct res_counter kmem (which is bigger than a percpu 
-counter anyway).
+Thanks,
 
-We just need to be a bit more careful not to allow kmem_independent to 
-change when we already have charges to any of them (but we need to do it 
-anyway)
-
+-- 
+Jiri Kosina
+SUSE Labs
 
