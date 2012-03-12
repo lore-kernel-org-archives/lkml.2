@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2CLPju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 11:39:50 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:33089
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756042Ab2CLPjq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 11:39:46 -0400
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I1447M542M1432N4015I5591kzz1202hzz8275dhz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: David Miller <davem@davemloft.net>
-CC: KY Srinivasan <kys@microsoft.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH 1/2] net/hyperv: Fix data corruption in
- rndis_filter_receive()
-Thread-Topic: [PATCH 1/2] net/hyperv: Fix data corruption in
- rndis_filter_receive()
-Thread-Index: AQHM/jqPUZwfx7AJlkugqnN6uP2fnJZltnOAgAEVsrA=
-Date: Mon, 12 Mar 2012 15:39:02 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DCE4044@TK5EX14MBXC223.redmond.corp.microsoft.com>
-References: <1331328437-26852-1-git-send-email-haiyangz@microsoft.com>
- <20120311.155111.1595145426893784653.davem@davemloft.net>
-In-Reply-To: <20120311.155111.1595145426893784653.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.35]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756046Ab2CLPkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 11:40:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38219 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755706Ab2CLPkH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 11:40:07 -0400
+Date: Mon, 12 Mar 2012 10:40:00 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] platform/x86: Add driver for Apple gmux device
+Message-ID: <20120312154000.GC12322@ubuntu-macmini>
+Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
+	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1329424465-1211-1-git-send-email-seth.forshee@canonical.com>
+ <1329921457-26887-1-git-send-email-seth.forshee@canonical.com>
+ <20120312142126.GA11969@srcf.ucam.org>
+ <20120312145701.GA12322@ubuntu-macmini>
+ <20120312150717.GA13211@srcf.ucam.org>
+ <20120312151852.GB12322@ubuntu-macmini>
+ <20120312152224.GA13916@srcf.ucam.org>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120312152224.GA13916@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Sunday, March 11, 2012 6:51 PM
-> To: Haiyang Zhang
-> Cc: KY Srinivasan; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH 1/2] net/hyperv: Fix data corruption in
-> rndis_filter_receive()
+On Mon, Mar 12, 2012 at 03:22:24PM +0000, Matthew Garrett wrote:
+> On Mon, Mar 12, 2012 at 10:18:52AM -0500, Seth Forshee wrote:
 > 
+> > Why do you presume it works under Windows? Boot camp installs a pile of
+> > drivers for Windows, one of those could be a driver for the backlight. I
+> > don't know either way. But it's pretty clear that MacOS is using the
+> > gmux for the backlight when it is present from the reverse engineering
+> > work done by others.
 > 
-> It is very tiring explaining how to submit patches properly, and here you've
-> made a poor submission once again.
-> 
-> You haven't indicated what tree you want these changes applied to.
-> 
-> You also mixed bug fixes and feature patches into the same patch set.
-> 
-> So the patch set isn't appropriate for the 'net' tree, because only the most
-> critical bug fixes can go there now.
-> 
-> And this patch set is also not appropriate for the 'net-next' tree because I can
-> only presume you want the important bug fix propagated upstream as fast as
-> possible but it cannot go in with the feature patch since the feature patch is
-> absolutely not appropriate for the 'net' tree right now.
-> 
-> I really don't see why it's such a hard thing to simply say where you want
-> patches applied when you submit them.  Do you want me to simply guess?
-> How else am I supposed to figure out what you want?
+> The only reason to provide it at all is for Windows - it's never going 
+> to be used under OS X.
 
-I want both patches go to the 'net-next' tree. The patch [1/2] is required by the 
-vlan trunking feature [2/2]. So they should go together.
+I'm not so sure. The MacBook Pro 8,1 and 8,2 seem to use the same BIOS
+implementation -- the version numbers and DSDTs are identical.  The 8,1
+has only Intel graphics, no gmux, and a working acpi_video0 backlight
+under Linux. The 8,2 has hybrid ATI/Intel, a gmux w/ working backlight
+control, and acpi_video0 does not work.
 
-The bug in rndis_filter_receive() does NOT happen until we start to use 
-'per-packet-data' by the vlan trunking feature, so the bug fix [1/2] isn't urgent 
-to be applied into 'net' tree.
+So while I'm not sure, I can't rule out that the acpi_video backlight
+might be provided specifically for the 8,1 and that OS X is using it.
+Unfortunately I don't have an 8,1 that I can play with to try and work
+it out.
 
-And, thanks for the reminder, I will specify the target tree in future submissions.
-
-Thanks,
-- Haiyang
-
+Seth
 
