@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab2CLV4I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 17:56:08 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:29598 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757582Ab2CLV4D (ORCPT
+	id S932072Ab2CLV4W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 17:56:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47420 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757654Ab2CLV4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 17:56:03 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
-        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH v8 0/4] USB: OHCI-HCD: Support for LPC32xx
-Date: Mon, 12 Mar 2012 22:54:48 +0100
-Message-Id: <1331589292-18986-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.9
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Mon, 12 Mar 2012 17:56:18 -0400
+Date: Mon, 12 Mar 2012 16:56:07 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Thomas Rast <trast@inf.ethz.ch>
+Cc: Junio C Hamano <gitster@pobox.com>, Willy Tarreau <w@1wt.eu>,
+        Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        git@vger.kernel.org
+Subject: Re: [PATCH] git-am: error out when seeing -b/--binary
+Message-ID: <20120312215607.GB11362@burratino>
+References: <20120312024948.GB4650@kroah.com>
+ <20120312063027.GB8971@1wt.eu>
+ <20120312064855.GB16820@burratino>
+ <20120312085820.GA11569@1wt.eu>
+ <20120312152004.GB9380@kroah.com>
+ <20120312152453.GB12405@1wt.eu>
+ <87aa3l4vqq.fsf@thomas.inf.ethz.ch>
+ <20120312165703.GB18791@burratino>
+ <7vvcm9snko.fsf@alter.siamese.dyndns.org>
+ <87399dpk48.fsf@thomas.inf.ethz.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87399dpk48.fsf@thomas.inf.ethz.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches add support for the LPC32xx to the ohci-pnx4008 driver and make
-the driver use smbus functions.
+Thomas Rast wrote:
 
-As discussed with Greg-KH on the USB mailing list, the ohci-pnx4008 driver is
-first renamed to reflect its multi-platform support. The second patch also
-renames the respective pnx4008_* symbols accordingly.
+> Ok, but if I don't get to say anything about repurposing, can I at least
+> make it an error message instead of just spewing out the "invalid
+> option" help?
 
-The third patch adds the actual lpc32xx support.
+I don't mind either way.
 
-The fourth patch removes the re-coded i2c_write() by using an existing smbus
-function. You can leave out this very single patch to still have the desired
-LPC32xx support. It just fixes existing kernel code to only use smbus calls in
-this driver.
+[...]
+> --- a/git-am.sh
+> +++ b/git-am.sh
+> @@ -380,7 +380,9 @@ do
+>  	-i|--interactive)
+>  		interactive=t ;;
+>  	-b|--binary)
+> -		: ;;
+> +		echo >&2 "The -b/--binary option was deprecated in 1.6.0 and removed in 1.7.10."
+> +		die "Please adjust your scripts."
+> +		;;
 
-Applies to v3.3-rc7
+Hm, on second thought, if people are seeing this message, I would
+prefer if they write to the mailing list so we can find out about it.
+So I really would rather see this say
 
-Changes since v7:
+	--binary)
+		: ;;
 
-* Removed pnx4008 filename reference
-* Rename via git format-patch -M
+and have "-b" completely unrecognized, without any words in our
+defense except for a note in the release notes mentioning the option's
+removal and that it has been an unadvertised backward-compatibility
+no-op since 1.6.0.
 
-Thanks to Arnd Bergmann and Wolfram Sang for reviewing!
-
-Signed-off-by: Roland Stigge <stigge@antcom.de>
-
----
-
-Roland Stigge (4):
-  USB: OHCI-HCD: Rename ohci-pnx4008 to ohci-nxp
-  USB: ohci-nxp: Rename symbols from pnx4008 to nxp
-  USB: ohci-nxp: Support for LPC32xx
-  USB: ohci-nxp: Remove i2c_write(), use smbus
-
- Documentation/i2c/instantiating-devices         |    6 +-
- drivers/usb/host/ohci-hcd.c                     |    6 +-
- drivers/usb/host/{ohci-pnx4008.c => ohci-nxp.c} |  253 +++++++++++++++--------
- 3 files changed, 170 insertions(+), 95 deletions(-)
- rename drivers/usb/host/{ohci-pnx4008.c => ohci-nxp.c} (57%)
-
--- 
-1.7.9
-
+Jonathan
