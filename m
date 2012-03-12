@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab2CLAt0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 20:49:26 -0400
-Received: from 1wt.eu ([62.212.114.60]:63044 "EHLO 1wt.eu"
+	id S1754698Ab2CLAxD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 20:53:03 -0400
+Received: from 1wt.eu ([62.212.114.60]:63126 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754568Ab2CLAsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 20:48:18 -0400
-Message-Id: <20120312002046.242691731@1wt.eu>
+	id S1754692Ab2CLAtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 20:49:15 -0400
+Message-Id: <20120312004411.724609398@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 Mar 2012 01:20:52 +0100
+Date: Mon, 12 Mar 2012 01:44:21 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [ 07/12] cifs: fix dentry refcount leak when opening a FIFO on lookup
-In-Reply-To: <feb44625a10a45049eddf27890e95d54@local>
+Cc: Hubert Feurstein <h.feurstein@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 10/13] atmel_lcdfb: fix usage of CONTRAST_CTR in suspend/resume
+In-Reply-To: <fec4dd6c17083169f2e217caca7375ef@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+2.6.27-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Hubert Feurstein <h.feurstein@gmail.com>
 
-commit 5bccda0ebc7c0331b81ac47d39e4b920b198b2cd upstream.
+commit 9f1065032ceb7e86c7c9f16bb86518857e88a172 upstream.
 
-The cifs code will attempt to open files on lookup under certain
-circumstances. What happens though if we find that the file we opened
-was actually a FIFO or other special file?
+An error was existing in the saving of CONTRAST_CTR register
+across suspend/resume.
 
-Currently, the open filehandle just ends up being leaked leading to
-a dentry refcount mismatch and oops on umount. Fix this by having the
-code close the filehandle on the server if it turns out not to be a
-regular file. While we're at it, change this spaghetti if statement
-into a switch too.
+Signed-off-by: Hubert Feurstein <h.feurstein@gmail.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/video/atmel_lcdfb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Cc: stable@vger.kernel.org
-Reported-by: CAI Qian <caiqian@redhat.com>
-Tested-by: CAI Qian <caiqian@redhat.com>
-Reviewed-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
+index d5e8010..8c5e432 100644
+--- a/drivers/video/atmel_lcdfb.c
++++ b/drivers/video/atmel_lcdfb.c
+@@ -1052,7 +1052,7 @@ static int atmel_lcdfb_suspend(struct platform_device *pdev, pm_message_t mesg)
+ 	 */
+ 	lcdc_writel(sinfo, ATMEL_LCDC_IDR, ~0UL);
+ 
+-	sinfo->saved_lcdcon = lcdc_readl(sinfo, ATMEL_LCDC_CONTRAST_VAL);
++	sinfo->saved_lcdcon = lcdc_readl(sinfo, ATMEL_LCDC_CONTRAST_CTR);
+ 	lcdc_writel(sinfo, ATMEL_LCDC_CONTRAST_CTR, 0);
+ 	if (sinfo->atmel_lcdfb_power_control)
+ 		sinfo->atmel_lcdfb_power_control(0);
+-- 
+1.7.2.1.45.g54fbc
 
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index 63a196b..bc7e244 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -584,10 +584,26 @@ cifs_lookup(struct inode *parent_dir_inode, struct dentry *direntry,
- 			 * If either that or op not supported returned, follow
- 			 * the normal lookup.
- 			 */
--			if ((rc == 0) || (rc == -ENOENT))
-+			switch (rc) {
-+			case 0:
-+				/*
-+				 * The server may allow us to open things like
-+				 * FIFOs, but the client isn't set up to deal
-+				 * with that. If it's not a regular file, just
-+				 * close it and proceed as if it were a normal
-+				 * lookup.
-+				 */
-+				if (newInode && !S_ISREG(newInode->i_mode)) {
-+					CIFSSMBClose(xid, pTcon, fileHandle);
-+					break;
-+				}
-+			case -ENOENT:
- 				posix_open = true;
--			else if ((rc == -EINVAL) || (rc != -EOPNOTSUPP))
-+			case -EOPNOTSUPP:
-+				break;
-+			default:
- 				pTcon->broken_posix_open = true;
-+			}
- 		}
- 		if (!posix_open)
- 			rc = cifs_get_inode_info_unix(&newInode, full_path,
 
 
