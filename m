@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757814Ab2CLXTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:19:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54654 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942Ab2CLXTI convert rfc822-to-8bit (ORCPT
+	id S1758058Ab2CLXTw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:19:52 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57799 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756789Ab2CLXTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:19:08 -0400
-Message-ID: <1331594319.18960.68.camel@twins>
-Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine
- call_srcu()
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Lai Jiangshan <eag0628@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        patches@linaro.org, tj@kernel.org
-Date: Tue, 13 Mar 2012 00:18:39 +0100
-In-Reply-To: <20120312231532.GI2471@linux.vnet.ibm.com>
-References: <1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
-	 <1331032571.11248.277.camel@twins>
-	 <CACvQF52tYmG4Bx+L+cTjVRbvQxj=sKiKrxhuv35H=fAFVvQJ2Q@mail.gmail.com>
-	 <1331048093.11248.317.camel@twins>
-	 <20120308195825.GC2412@linux.vnet.ibm.com>
-	 <1331374193.18960.13.camel@twins>
-	 <20120312175432.GF2471@linux.vnet.ibm.com>
-	 <1331575097.18960.40.camel@twins>
-	 <20120312183203.GH2471@linux.vnet.ibm.com>
-	 <1331583916.18960.56.camel@twins>
-	 <20120312231532.GI2471@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 12 Mar 2012 19:19:51 -0400
+Message-ID: <4F5E8491.70403@gmail.com>
+Date: Tue, 13 Mar 2012 10:19:45 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+MIME-Version: 1.0
+To: shuahkhan@gmail.com
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: simple_strtoull() - FIXME?
+References: <1331569011.4386.15.camel@lorien2>
+In-Reply-To: <1331569011.4386.15.camel@lorien2>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 16:15 -0700, Paul E. McKenney wrote:
-> We need rcu_barrier() in order to be able to safely unload modules
-> that
-> use call_rcu(). 
+On 13/03/12 03:16, Shuah Khan wrote:
 
-Oh, right.. I always forget about modules. 
+> What's this FIXME in simple_strtoull() for? Something to be terribly
+> concerned about and need fixing (assuming there is something that still
+> needs fixing)
+> 
+> unsigned long long simple_strtoull(const char *cp, char **endp, unsigned
+> int base)
+> {
+>         unsigned long long result;
+>         unsigned int rv;
+> 
+>         cp = _parse_integer_fixup_radix(cp, &base);
+>         rv = _parse_integer(cp, base, &result);
+>         /* FIXME */
+
+
+git blame/show answers your question. From the commit message of
+1dff46d6: lib/kstrtox: common code between kstrto*() and simple_strto*()
+functions:
+
+ simple_strtoull() (and scanf(), BTW) ignores integer overflow, that's a
+ bug we currently don't have guts to fix, making KSTRTOX_OVERFLOW hack
+ necessary.
+
+Note that simple_strtoull and friends are now deprecated (see
+include/linux/kernel.h) and you should now be using the kstrto*
+functions instead.
+
+~Ryan
+
