@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab2CLV3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 17:29:50 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45620 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752534Ab2CLV3r (ORCPT
+	id S1757440Ab2CLV37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 17:29:59 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40806 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757423Ab2CLV34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 17:29:47 -0400
+	Mon, 12 Mar 2012 17:29:56 -0400
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
@@ -19,63 +19,63 @@ Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
         pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
         eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
         keescook@chromium.org, Will Drewry <wad@chromium.org>
-Subject: [PATCH v14 01/13] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
-Date: Mon, 12 Mar 2012 16:28:23 -0500
-Message-Id: <1331587715-26069-1-git-send-email-wad@chromium.org>
+Subject: [PATCH v14 05/13] asm/syscall.h: add syscall_get_arch
+Date: Mon, 12 Mar 2012 16:28:27 -0500
+Message-Id: <1331587715-26069-5-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1331587715-26069-1-git-send-email-wad@chromium.org>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduces a new BPF ancillary instruction that all LD calls will be
-mapped through when skb_run_filter() is being used for seccomp BPF.  The
-rewriting will be done using a secondary chk_filter function that is run
-after skb_chk_filter.
+Adds a stub for a function that will return the AUDIT_ARCH_*
+value appropriate to the supplied task based on the system
+call convention.
 
-The code change is guarded by CONFIG_SECCOMP_FILTER which is added,
-along with the seccomp_bpf_load() function later in this series.
+For audit's use, the value can generally be hard-coded at the
+audit-site.  However, for other functionality not inlined into
+syscall entry/exit, this makes that information available.
+seccomp_filter is the first planned consumer and, as such,
+the comment indicates a tie to HAVE_ARCH_SECCOMP_FILTER.  That
+is probably an unneeded detail.
 
-This is based on http://lkml.org/lkml/2012/3/2/141
-
-v14: First cut using a single additional instruction
-... v13: made bpf functions generic.
-
-
-Suggested-by: Indan Zupancic <indan@nul.nu>
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Suggested-by: Roland McGrath <mcgrathr@chromium.org>
 Signed-off-by: Will Drewry <wad@chromium.org>
----
- include/linux/filter.h |    1 +
- net/core/filter.c      |    5 +++++
- 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index 8eeb205..aaa2e80 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -228,6 +228,7 @@ enum {
- 	BPF_S_ANC_HATYPE,
- 	BPF_S_ANC_RXHASH,
- 	BPF_S_ANC_CPU,
-+	BPF_S_ANC_SECCOMP_LD_W,
- };
+v14: rebase/nochanges
+v13: rebase on to 88ebdda6159ffc15699f204c33feb3e431bf9bdc
+v12: rebase on to linux-next
+v11: fixed improper return type
+v10: introduced
+---
+ include/asm-generic/syscall.h |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/include/asm-generic/syscall.h b/include/asm-generic/syscall.h
+index 5c122ae..a2c13dc 100644
+--- a/include/asm-generic/syscall.h
++++ b/include/asm-generic/syscall.h
+@@ -142,4 +142,18 @@ void syscall_set_arguments(struct task_struct *task, struct pt_regs *regs,
+ 			   unsigned int i, unsigned int n,
+ 			   const unsigned long *args);
  
- #endif /* __KERNEL__ */
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 5dea452..3000931 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -350,6 +350,11 @@ load_b:
- 				A = 0;
- 			continue;
- 		}
-+#ifdef CONFIG_SECCOMP_FILTER
-+		case BPF_S_ANC_SECCOMP_LD_W:
-+			A = seccomp_bpf_load(fentry->k);
-+			continue;
-+#endif
- 		default:
- 			WARN_RATELIMIT(1, "Unknown code:%u jt:%u tf:%u k:%u\n",
- 				       fentry->code, fentry->jt,
++/**
++ * syscall_get_arch - return the AUDIT_ARCH for the current system call
++ * @task:	task of interest, must be in system call entry tracing
++ * @regs:	task_pt_regs() of @task
++ *
++ * Returns the AUDIT_ARCH_* based on the system call convention in use.
++ *
++ * It's only valid to call this when @task is stopped on entry to a system
++ * call, due to %TIF_SYSCALL_TRACE, %TIF_SYSCALL_AUDIT, or %TIF_SECCOMP.
++ *
++ * Note, at present this function is only required with
++ * CONFIG_HAVE_ARCH_SECCOMP_FILTER.
++ */
++int syscall_get_arch(struct task_struct *task, struct pt_regs *regs);
+ #endif	/* _ASM_SYSCALL_H */
 -- 
 1.7.5.4
 
