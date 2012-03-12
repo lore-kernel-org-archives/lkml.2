@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab2CLUqi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 16:46:38 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:49135 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756747Ab2CLUqh (ORCPT
+	id S1757293Ab2CLUrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 16:47:23 -0400
+Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:50717 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756881Ab2CLUrW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 16:46:37 -0400
-Date: Mon, 12 Mar 2012 20:46:30 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: ShuoX Liu <shuox.liu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "Brown, Len" <len.brown@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        "Kleen, Andi" <andi.kleen@intel.com>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>
-Subject: Re: [PATCH 2/3] cpuidle: Add a debugfs entry to disable specific C
- state for debug purpose.
-Message-ID: <20120312204629.GA22929@srcf.ucam.org>
-References: <20120305101827.GA19408@khazad-dum.debian.net>
- <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com>
- <1330998885.1916.89.camel@ymzhang>
- <20120306052236.GA19416@kroah.com>
- <1331013078.1916.103.camel@ymzhang>
- <20120306143935.GA23346@kroah.com>
- <1331082051.1916.124.camel@ymzhang>
- <20120308180106.GD26516@kroah.com>
- <4F5DBFA8.3080300@intel.com>
- <4F5DC01D.7040006@intel.com>
-MIME-Version: 1.0
+	Mon, 12 Mar 2012 16:47:22 -0400
+Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F5DC01D.7040006@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+In-Reply-To: <1331574151.14217.86.camel@aeonflux>
+Date: Mon, 12 Mar 2012 21:47:19 +0100
+Cc: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
+        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        linux-bluetooth@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4B25AD62-B1C9-4C57-AE64-34EB7F47DC9B@enac.fr>
+References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>   <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz>  <20120308105737.GA11201@polaris.bitmath.org>  <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr>  <alpine.LNX.2.00.1203121650500.18356@pobox.suse.cz> <1331574151.14217.86.camel@aeonflux>
+To: Marcel Holtmann <marcel@holtmann.org>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 05:21:33PM +0800, ShuoX Liu wrote:
 
-> In addition, C state might have much impact on performance tuning,
-> as it takes
-> much time to enter/exit C states, which might delay interrupt
-> processing. With
-> the new debug option, developers could check if a deep C state could impact
-> performance and how much impact it could cause.
+Hi Marcel and Jiri
 
-Would anyone doing performance tuning not be using the cpu_dma_latency 
-interface?
+> Hi Jiri,
+> 
+>>>> What if we were to change the definition of a HID device on the
+>>>> modalias level?
+>>>> 
+>>>> In practise, a HID device can be either an usb device, a hid device,
+>>> 
+>>> Just to be sure: do you mean "bluetooth device"? or is there such a 
+>>> thing as a hid device per se? I'm asking because I've always been 
+>>> surprised at seeing usbhid/ in hid/, which kind of breaks the potential 
+>>> symmetry between USB and Bluetooth wrt hid.
+>> 
+>> Please don't get confused by the directory layout ... this has mostly 
+>> non-technical reasons -- Marcel wanted to keep bluetooth/hidp under his 
+>> wings, and I didn't have reasons to object strongly.
+>> 
+>> I am adding Marcel and Gustavo to CC just in case they have changed their 
+>> mind, but it's definitely a side-topic in this discussion.
+> 
+> I have not changed my mind. HIDP is Bluetooth specific and should stay
+> there. Especially since we are currently discussing changes to make
+> things also work over Bluetooth Low Energy (LE), but that is a complete
+> different topic and it just started.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Just in case it makes a difference, I knew nothing about HIDP when I wrote the message above. My point was rather that hid looks like a bus to which several transport layers can connect (USB, Bluetooth, ZigBee, etc), and that having USB-specific code in hid/ (as opposed to having it in usb/) seems biased towards USB. I was (and am still) wondering how much it limits future uses of the hid core by making it USB-dependent.
+
+In other words: is the hid core generic enough or are there steps to take to make it more generic wrt transport layers? If we are talking about restructuring parts of it, this seems like the right time to ask :-)
+
+Cheers,
+
+St.
+
