@@ -1,122 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab2CLOep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 10:34:45 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58305 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662Ab2CLOen (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 10:34:43 -0400
-Message-ID: <4F5E097F.1040709@gmail.com>
-Date: Mon, 12 Mar 2012 07:34:39 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1755562Ab2CLOew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 10:34:52 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55142 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752777Ab2CLOeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 10:34:46 -0400
+Message-ID: <4F5E097B.4070605@linux.vnet.ibm.com>
+Date: Mon, 12 Mar 2012 09:34:35 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: myungjoo.ham@samsung.com
-CC: dirk.brandewie@gmail.com, Karol Lewandowski <k.lewandowsk@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 0/3] power: max17042_battery: Add DT bindings
-References: <17763564.55121331517212251.JavaMail.weblogic@epml04>
-In-Reply-To: <17763564.55121331517212251.JavaMail.weblogic@epml04>
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 8bit
+To: Marc Dietrich <marvin24@gmx.de>
+CC: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nitin Gupta <ngupta@vflare.org>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: [PATCH] staging: fix powerpc linux-next break on zsmalloc
+References: <1329144469-8575-1-git-send-email-sjenning@linux.vnet.ibm.com> <4F3A480C.9090407@gmx.de> <4F3A7121.9010803@linux.vnet.ibm.com> <5736714.Unq6oKkpjO@ax5200p>
+In-Reply-To: <5736714.Unq6oKkpjO@ax5200p>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031214-7182-0000-0000-000001035570
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Hey Marc,
 
-On 03/11/2012 06:53 PM, 함명주 wrote:
-> Karol Lewandowski<k.lewandowsk@samsung.com>, 2012-03-10 02:32 (GMT+09:00)
->> Dear MungJoo,
+On 02/14/2012 10:21 AM, Marc Dietrich wrote:
+> Hi Seth,
+> 
+> On Tuesday 14 February 2012 08:35:13 Seth Jennings wrote:
+>> On 02/14/2012 05:39 AM, Marc Dietrich wrote:
+>>> Am 14.02.2012 12:22, schrieb Marc Dietrich:
+>>>> Am 13.02.2012 15:47, schrieb Seth Jennings:
+>>>>> linux/vmalloc.h added to zsmalloc-main.c to resolve implicit
+>>>>> declaration errors.
+>>>>>
+>>>>> X86 dependency added to zsmalloc and dependent drivers zcache and
+>>>>> zram.
+>>>>>
+>>>>> This X86 only requirement is not ideal.  Working to find portable
+>>>>> functions for __flush_tlb_one and set_pte.
+>>>>
+>>>> sorry, zcache/zram works fine one ARM here. Why not depend on
+>>>> !POWERPC?
+>>>
+>>> ups, sorry again, I tested an older version only. flush_tlb_one and
+>>> set_pte is only used with the new allocator as it seems.
 >>
->> I wasn't aware of Dirk's patchset and thus, I didn't ever try to make my
->> patches compatible with it.
+>> It would seem that the cpu-local tlb page flushing function for ARM
+>> is local_flush_tlb_kernel_page(), by look at the kmap_atomic() code
+>> in arch/arm/mm/highmem.c.
 >>
->> I've found hopefully correct patchset[1] via google - it's mailing list
->> posting without any feedback...  I've checked linux-next and it clearly
->> hasn't been merged.
+>> So each arch is using a slightly different approach here.
 >>
->> I'm happy to rework my patch but I would like to ask you about specific
->> tree I should base on.  Is this patchset in some subsystem-specific
->> (power?) tree? Other?
+>> A simple #define per-arch could make a it a common call.  I think
+>> I'm going to code it up and see how it goes.
 > 
-> Dear Karol,
-> 
-> I preferred Dirk's patchset included because it is for the correctness of the device driver.
-> 
-> However, as Dirk's patchset has not been updated or merged for long, I guess you may go ahead trying to merge this DT patchset first.
-> 
+> ... and I'm happy to test it ;-)
 
-My patch set was updated on 24/1/12 and has all my changes to date.  I am not
-sure why it
-has not been merged Anton, David?
+So I have a branch ready for you to test if your are willing
 
+git://github.com/spartacus06/linux.git -b portable
 
-> It appears that this patchset does not force much trouble for Dirk's side as the two are virtually disjoint and it seems rebasing Dirk's patchset upon this patchset trivial though I didn't try that yet.
-> 
-Agreed, I would like to see my patches make the 3.4 though since they have been
-out for a while
+The branch is based on Greg's staging-next, since my
+patches that remove the sparsemem dependency are in there.
+The frontswap_v11 patches are in that branch as well.
 
-> Anyway, please consider "Acked-by" from me for the patches.
-> 
-> 
-> Cheers!
-> MyungJoo.
-> 
->>
->> [1] https://lkml.org/lkml/2012/1/24/237
->>
->> Regards,
->> -- 
->> Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
->>
->> On 09.03.2012 01:16, 함명주 wrote:
->>
->>> Dear Karol Lewandowski,
->>>
->>> I've been confused this patchset with Dirk Brandewie's MAX17042 patchset; I though this was a follow-up version of Dirk's, which I think already acked by me.
->>>
->>> Anyway, the patches themselves look fine.
->>>
->>> However, have you checked the compatibility (mergability?) with the recent MAX17042 patches of Dirk Brandewie? I'm not sure about the merge status of Dirk's patchset, but, I think you need to consider his patches as they massively reshaped the device driver.
->>>
->>> Other than that, the patches look fine. (If that issue is already considered, regard this as an Acked-by.)
->>>
->>> Thank you.
->>>
->>>
->>> Cheers!
->>> MyungJoo.
->>>
->>> ------- Original Message -------
->>> Sender : Karol Lewandowski Junior Software Engineer/SPRC-Linux (MSD)/삼성전자
->>> Date : 2012-03-08 19:32 (GMT+09:00)
->>> Title : Re: [PATCH 0/3] power: max17042_battery: Add DT bindings
->>>
->>> Dear MyungJoo Ham,
->>>
->>> Could you take a look at patchset I've sent? It's needed to make use of
->>> max17042 driver on device tree-enabled platforms.
->>>
->>> Regards,
->>
->>
->>
->>
->>
-> 
-> --
-> 
-> MyungJoo Ham (함명주), PHD
-> 
-> System S/W Lab, S/W Platform Team, Software Center
-> Samsung Electronics
-> Cell: +82-10-6714-2858
-> 
-> 
-> 
-> 
-> 
+I did a simple make test with my ARM cross compiler and it
+builds cleanly.  Now I just need to know if it _works_.
+
+I'm not sure if you have been experimenting with frontswap
+since it's not in mainline yet, but you can enable/disable
+it in:
+
+Kernel Features -> Enable frontswap to cache swap pages if tmem is present
+
+Only the frontswap paths use zsmalloc right now. We are looking
+to use it for the cleancache paths too soon (I'm working on
+that now).
+
+I'd appreciate any feedback you can provide!
+
+Thanks,
+Seth
 
