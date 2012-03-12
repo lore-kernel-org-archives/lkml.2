@@ -1,68 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611Ab2CLWWB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 18:22:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40618 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754297Ab2CLWV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 18:21:59 -0400
-Date: Mon, 12 Mar 2012 23:21:57 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
-In-Reply-To: <4B25AD62-B1C9-4C57-AE64-34EB7F47DC9B@enac.fr>
-Message-ID: <alpine.LNX.2.00.1203122316420.18356@pobox.suse.cz>
-References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>   <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz>  <20120308105737.GA11201@polaris.bitmath.org> 
- <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr>  <alpine.LNX.2.00.1203121650500.18356@pobox.suse.cz> <1331574151.14217.86.camel@aeonflux> <4B25AD62-B1C9-4C57-AE64-34EB7F47DC9B@enac.fr>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+	id S1757713Ab2CLWWf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 18:22:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53250 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756832Ab2CLWWe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 18:22:34 -0400
+Message-ID: <1331590938.18960.57.camel@twins>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>, Michal Schmidt <mschmidt@redhat.com>
+Date: Mon, 12 Mar 2012 23:22:18 +0100
+In-Reply-To: <20120312221050.GG23255@google.com>
+References: <20120221211938.GE12236@google.com>
+	 <20120312221050.GG23255@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Mar 2012, Stéphane Chatty wrote:
-
-> Just in case it makes a difference, I knew nothing about HIDP when I 
-> wrote the message above. My point was rather that hid looks like a bus 
-> to which several transport layers can connect (USB, Bluetooth, ZigBee, 
-> etc), and that having USB-specific code in hid/ (as opposed to having it 
-> in usb/) seems biased towards USB. I was (and am still) wondering how 
-> much it limits future uses of the hid core by making it USB-dependent.
+On Mon, 2012-03-12 at 15:10 -0700, Tejun Heo wrote:
 > 
-> In other words: is the hid core generic enough or are there steps to 
-> take to make it more generic wrt transport layers? If we are talking 
-> about restructuring parts of it, this seems like the right time to ask 
-> :-)
+> * How to map controllers which aren't aware of full hierarchy is still
+>   an open question but I'm still standing by one active node on any
+>   root-to-leaf path w/ root group serving as the special rest group. 
 
-Let me answer by a bit of history here. Originally, there have been two 
-copies of HID code in the kernel -- one for USB HID devices, one for 
-Bluetooth HID devices.
-The parsers were not kept in sync, and there was a lot of code 
-duplication, creating quite some mess.
-
-What I did back then in 2006 was that I have extracted the abstract HID 
-parts into HID core, and made it transport-independent in principle, so 
-that both USB HID and Bluetooth HID shared the common infrastructure, 
-while implementing different transport protocols.
-
-Then we extended it a little bit further, making HID core a proper bus, to 
-which individual drivers (independently on underlying transport protocol 
-used) can register.
-
-Currently there are just Bluetooth (hidp) and USB (usbhid) transport 
-implementations, with HID core being transport independent.
-
-Hope this helps,
-
--- 
-Jiri Kosina
-SUSE Labs
+What does this mean?
