@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab2CLOTZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 10:19:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4269 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab2CLOTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 10:19:12 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: cmetcalf@tilera.com, torvalds@linux-foundation.org
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable@kernel.org
-Subject: [PATCH] tile: remove a non-existing header
-Date: Mon, 12 Mar 2012 11:18:50 -0300
-Message-Id: <1331561930-14964-1-git-send-email-mchehab@redhat.com>
+	id S1754203Ab2CLOVQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 10:21:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28663 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab2CLOVN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 10:21:13 -0400
+X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=t3ItOyjDxu0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZrfqmyCWHQPRGerRvaEA:9 a=kV4kfblsFJHMM_VbS9EA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331562071.25686.635.camel@gandalf.stny.rr.com>
+Subject: Re: recent x86-64 nested NMI adjustments
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: mingo@elte.hu, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Date: Mon, 12 Mar 2012 10:21:11 -0400
+In-Reply-To: <4F5E08C30200007800077ACC@nat28.tlf.novell.com>
+References: <4F5DF5C30200007800077A5B@nat28.tlf.novell.com>
+	 <1331558201.25686.629.camel@gandalf.stny.rr.com>
+	 <4F5E08C30200007800077ACC@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While testing some API changes at the EDAC core, I've tested the EDAC
-drivers compilation on all supported architectures, including Tilera.
+On Mon, 2012-03-12 at 13:31 +0000, Jan Beulich wrote:
 
-I noticed that Tilera upstream code has issues: it doesn't compile with
-kernel 3.2:
+> Ah, right - the way the new check got placed I (wrongly) implied
+> it to guard the immediately succeeding check of the "special
+> variable", whereas it really guards (only) test_in_nmi.
 
-In file included from include/linux/linkage.h:5,
-                 from include/linux/kernel.h:13,
-                 from include/linux/sched.h:55,
-                 from arch/tile/kernel/asm-offsets.c:19:
-/home/mchehab/redhat/trees/work/new_edac/arch/tile/include/asm/linkage.h:18:22: error: feedback.h: No such file or directory
-make[1]: *** [arch/tile/kernel/asm-offsets.s] Error 1
+The reason I placed it there was because I thought that would be the
+more common case. As nested NMIs are the .00001% case, and the variable
+check only can prove that we were in a nested NMI, but does not prove we
+are not, in which case it would still need to do the other checks.
 
-Without it, it is not possible to compile anything on this archictecture
-using this default configuration:
-	./arch/tile/configs/tilegx_defconfig
+I figured that a good % of NMIs will interrupt userspace, and let that
+be the fast path. When an NMI interrupts userspace, this check will make
+it skip the rest of the checks. Seemed to be the logical placement.
 
-Cc: stable@kernel.org
-Signed-of-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+But I see where the confusion came from. The placement was for
+optimization of the fast path, not for where it *had* to be.
 
----
 
-Btw, the ./arch/tile/configs/tilepro_defconfig doesn't compile even
-with this fix. It fails at arch/tile/include/asm/atomic_64.h because
-atomic64_t is never defined, but it is used there and on other places.
+> 
+> Thanks for the explanation, and sorry for the noise then.
 
-Also, while the edac_tile driver seems to be for both Tile GX and Tilepro
-sub-archs, it is not included on tilegx_defconfig. It would make sense
-to add it there, in order to make easier for people to test/use the
-EDAC drivers.
+No prob,
 
----
- arch/tile/include/asm/linkage.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+-- Steve
 
-diff --git a/arch/tile/include/asm/linkage.h b/arch/tile/include/asm/linkage.h
-index e121c39..43b298e 100644
---- a/arch/tile/include/asm/linkage.h
-+++ b/arch/tile/include/asm/linkage.h
-@@ -15,8 +15,6 @@
- #ifndef _ASM_TILE_LINKAGE_H
- #define _ASM_TILE_LINKAGE_H
- 
--#include <feedback.h>
--
- #define __ALIGN .align 8
- 
- /*
--- 
-1.7.8
 
