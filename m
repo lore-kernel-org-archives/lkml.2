@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab2CLRDw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:03:52 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47744 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754601Ab2CLRDt convert rfc822-to-8bit (ORCPT
+	id S1754633Ab2CLRGi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:06:38 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:58229 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638Ab2CLRGh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 13:03:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="120217496"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: "Mark A. Grondona" <mgrondona@llnl.gov>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/6] Add a per-dimm structure
-Thread-Topic: [PATCH 0/6] Add a per-dimm structure
-Thread-Index: AQHM/FddfomqTKVEK0avk4xnskAx5pZhekcAgADS+wCAAESmAIAAIlQAgAAjXoCAABCUgIACij2AgAAQXACAAdcwgP//kMVw
-Date: Mon, 12 Mar 2012 17:03:47 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F15B61A34@ORSMSX103.amr.corp.intel.com>
-References: <1331120438-27523-1-git-send-email-mchehab@redhat.com>
- <20120308215716.GA5925@aftab> <4F59DC38.5080104@redhat.com>
- <20120309143806.GA11962@aftab> <4F5A329A.70702@redhat.com>
- <20120309184733.GB13745@aftab> <4F5A5E2D.4090408@redhat.com>
- <20120311113411.GB29175@aftab> <4F5C9B6C.2080904@redhat.com>
- <20120312163911.GC7255@aftab>
-In-Reply-To: <20120312163911.GC7255@aftab>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Mar 2012 13:06:37 -0400
 MIME-Version: 1.0
+In-Reply-To: <1331300109.1149.17.camel@fedora>
+References: <20120309184041.bd10edffa51dcd43ce069487@canb.auug.org.au>
+	<1331300109.1149.17.camel@fedora>
+Date: Mon, 12 Mar 2012 12:06:36 -0500
+Message-ID: <CAMXH7KHdfzjZCsBMkFOnwYtyaqBztMY99QcZ7VwLP0JASUiVAw@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the cpuidle-cons tree with the tip tree
+From: Rob Lee <rob.lee@linaro.org>
+To: Steven Rostedt <srostedt@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Err, the fact that you have UE counters doesn't have anything to do with
-> the request that you want to panic on an UE. Especially if conservative
-> systems would panic on the first UE anyway without asking software.
+Steven and Stephen,
 
-We have some UE events for which even a conservative system might
-think it reasonable to defer the panic (e.g. patrol scrub on a "free" page).
+On Fri, Mar 9, 2012 at 7:35 AM, Steven Rostedt <srostedt@redhat.com> wrote:
+> On Fri, 2012-03-09 at 18:40 +1100, Stephen Rothwell wrote:
+>> diff --cc drivers/cpuidle/cpuidle.c
+>> index 6588f43,56de5f7..0000000
+>> --- a/drivers/cpuidle/cpuidle.c
+>> +++ b/drivers/cpuidle/cpuidle.c
+>> @@@ -92,15 -109,13 +109,13 @@@ int cpuidle_idle_call(void
+>>                 return 0;
+>>         }
+>>
+>> -       target_state = &drv->states[next_state];
+>> -
+>>  -      trace_power_start(POWER_CSTATE, next_state, dev->cpu);
+>>  -      trace_cpu_idle(next_state, dev->cpu);
+>>  +      trace_power_start_rcuidle(POWER_CSTATE, next_state, dev->cpu);
+>>  +      trace_cpu_idle_rcuidle(next_state, dev->cpu);
+>>
+>> -       entered_state = target_state->enter(dev, drv, next_state);
+>> +       entered_state = cpuidle_enter_ops(dev, drv, next_state);
+>>
+>>  -      trace_power_end(dev->cpu);
+>>  -      trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
+>>  +      trace_power_end_rcuidle(dev->cpu);
+>>  +      trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+>>
+>
+> Looks good. My change was just a rename of trace_power_* and
+> trace_cpu_*, and it looks like another change was the clean up of
+> target_state. This is a trivial conflict, and there should be no
+> surprises here.
+>
+> -- Steve
+>
 
--Tony
+Looks good to me as well.
+
+Who should carry this fixup?
+
+Best Regards,
+Rob
+
+>
+>
+>>         if (entered_state >= 0) {
+>>                 /* Update cpuidle counters */
+>
