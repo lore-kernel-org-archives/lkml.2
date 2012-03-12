@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab2CLWdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 18:33:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6873 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757894Ab2CLWdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 18:33:15 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 2/2] intel-iommu: Basic isolation group provider support
-To: david@gibson.dropbear.id.au, aik@ozlabs.ru, dwmw2@infradead.org
-Cc: alex.williamson@redhat.com, iommu@lists.linux-foundation.org,
-        benh@kernel.crashing.org, qemu-devel@nongnu.org, joerg.roedel@amd.com,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 12 Mar 2012 16:33:02 -0600
-Message-ID: <20120312223302.30321.91922.stgit@bling.home>
-In-Reply-To: <20120312220109.30321.83419.stgit@bling.home>
-References: <20120312220109.30321.83419.stgit@bling.home>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1757950Ab2CLWdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 18:33:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53579 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757824Ab2CLWdF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 18:33:05 -0400
+Message-ID: <1331591568.18960.61.camel@twins>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>, Michal Schmidt <mschmidt@redhat.com>
+Date: Mon, 12 Mar 2012 23:32:48 +0100
+In-Reply-To: <20120312222817.GI23255@google.com>
+References: <20120221211938.GE12236@google.com>
+	 <20120312221050.GG23255@google.com> <1331590938.18960.57.camel@twins>
+	 <20120312222817.GI23255@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+On Mon, 2012-03-12 at 15:28 -0700, Tejun Heo wrote:
+> Hey,
+> 
+> On Mon, Mar 12, 2012 at 11:22:18PM +0100, Peter Zijlstra wrote:
+> > On Mon, 2012-03-12 at 15:10 -0700, Tejun Heo wrote:
+> > > 
+> > > * How to map controllers which aren't aware of full hierarchy is still
+> > >   an open question but I'm still standing by one active node on any
+> > >   root-to-leaf path w/ root group serving as the special rest group. 
+> > 
+> > What does this mean?
+> 
+> Let's say we have a tree like the following.
+> 
+>          root
+>       /   |   \
+>      G1  G2   G3
+>              /  \
+> 	   G31  G32
+> 
+> So, for cgroups which don't support full hierarchy, it'll be viewed as
+> either,
+> 
+>          root
+>       /   |   \
+>      G1  G2   G3
+> 
+> or
+> 
+>           root
+>       /   |   |  \
+>      G1  G2  G31 G32
+> 
+> With root being treated specially, probably as just being a equal
+> group as other groups, I'm not fully determined about that yet.
 
- drivers/iommu/intel-iommu.c |   70 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 70 insertions(+), 0 deletions(-)
+I'm assuming that G31/G32's tasks end up in G3 in the first case, but
+where do the tasks in G3 go to in the second case?
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index c9c6053..2e5a709 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -42,6 +42,7 @@
- #include <linux/dmi.h>
- #include <linux/pci-ats.h>
- #include <linux/memblock.h>
-+#include <linux/isolation.h>
- #include <asm/cacheflush.h>
- #include <asm/iommu.h>
- 
-@@ -3597,6 +3598,73 @@ static struct notifier_block device_nb = {
- 	.notifier_call = device_notifier,
- };
- 
-+static int isolation_notifier(struct notifier_block *nb,
-+			      unsigned long action, void *data)
-+{
-+	struct device *dev = data;
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	if (iommu_no_mapping(dev) ||
-+	    !device_to_iommu(pci_domain_nr(pdev->bus),
-+			     pdev->bus->number, pdev->devfn))
-+		return NOTIFY_DONE;
-+
-+
-+	if (action == ISOLATION_NOTIFY_ADD_DEVICE) {
-+		struct device *dma_dev = NULL;
-+		struct pci_dev *bridge = pci_find_upstream_pcie_bridge(pdev);
-+		struct isolation_group *group;
-+
-+		if (bridge) {
-+			if (pci_is_pcie(bridge)) {
-+				struct pci_dev *dma_pdev;
-+				dma_pdev = pci_get_domain_bus_and_slot(
-+					pci_domain_nr(pdev->bus),
-+					bridge->subordinate->number, 0);
-+				dma_dev = &dma_pdev->dev;
-+			}
-+
-+			if (!dma_dev)
-+				dma_dev = &bridge->dev;
-+		} else
-+			dma_dev = dev;
-+
-+		group = to_isolation_group(dma_dev);
-+
-+		if (!group) {
-+			group = isolation_create_group();
-+			if (IS_ERR(group))
-+				return NOTIFY_BAD;
-+
-+			isolation_group_set_iommu_ops(group, &intel_iommu_ops);
-+
-+			if (dma_dev != dev)
-+				isolation_group_add_dev(group, dma_dev);
-+		}
-+
-+		if (isolation_group_add_dev(group, dev))
-+			return NOTIFY_BAD;
-+
-+		return NOTIFY_STOP;
-+
-+	} else if (action == ISOLATION_NOTIFY_DEL_DEVICE) {
-+		struct isolation_group *group = to_isolation_group(dev);
-+
-+		if (isolation_group_del_dev(dev))
-+			return NOTIFY_BAD;
-+
-+		isolation_free_group(group);
-+
-+		return NOTIFY_STOP;
-+	}
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block isolation_nb = {
-+	.notifier_call = isolation_notifier,
-+};
-+
- int __init intel_iommu_init(void)
- {
- 	int ret = 0;
-@@ -3663,6 +3731,8 @@ int __init intel_iommu_init(void)
- 
- 	bus_register_notifier(&pci_bus_type, &device_nb);
- 
-+	isolation_register_notifier(&pci_bus_type, &isolation_nb);
-+
- 	intel_iommu_enabled = 1;
- 
- 	return 0;
+Also, why allow non-hierarchical controllers to begin with? I would very
+much argue for mandating that all controllers work the same wrt
+hierarchy and if that means ditching hierarchy support we should do that
+and modify cgroupfs to not allow creation of directories deeper than 1.
 
+But allowing controllers that implement hierarchy proper and controllers
+that do not and then force them in the same mount point, that just
+doesn't make any friggin sense what so ever.
