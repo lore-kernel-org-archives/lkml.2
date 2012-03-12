@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab2CLXhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:37:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48120 "EHLO mx1.redhat.com"
+	id S932198Ab2CLXh2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:37:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50908 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758115Ab2CLXhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:37:00 -0400
+	id S932151Ab2CLXhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 19:37:22 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 04/35] Disintegrate asm/system.h for AVR32 [ver #2]
+Subject: [PATCH 06/35] Disintegrate asm/system.h for C6X [ver #2]
 To: paul.gortmaker@windriver.com, hpa@zytor.com
 Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, arnd@arndb.de,
-        David Howells <dhowells@redhat.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>
-Date: Mon, 12 Mar 2012 23:36:47 +0000
-Message-ID: <20120312233647.13888.87421.stgit@warthog.procyon.org.uk>
+        David Howells <dhowells@redhat.com>, linux-c6x-dev@linux-c6x.org
+Date: Mon, 12 Mar 2012 23:37:06 +0000
+Message-ID: <20120312233706.13888.5678.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -29,526 +28,515 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disintegrate asm/system.h for AVR32.  This has not been compiled at all.
+Disintegrate asm/system.h for C6X.  Not compiled.  Appears to be missing
+asm/atomic.h and asm/bug.h.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+cc: linux-c6x-dev@linux-c6x.org
 ---
 
- arch/avr32/include/asm/atomic.h        |    2 
- arch/avr32/include/asm/barrier.h       |   27 +++++
- arch/avr32/include/asm/bitops.h        |    1 
- arch/avr32/include/asm/bug.h           |    5 +
- arch/avr32/include/asm/cmpxchg.h       |  117 ++++++++++++++++++++
- arch/avr32/include/asm/exec.h          |   13 ++
- arch/avr32/include/asm/special_insns.h |   13 ++
- arch/avr32/include/asm/switch_to.h     |   46 ++++++++
- arch/avr32/include/asm/system.h        |  184 +-------------------------------
- arch/avr32/mach-at32ap/cpufreq.c       |    1 
- arch/avr32/oprofile/op_model_avr32.c   |    1 
- 11 files changed, 228 insertions(+), 182 deletions(-)
- create mode 100644 arch/avr32/include/asm/barrier.h
- create mode 100644 arch/avr32/include/asm/cmpxchg.h
- create mode 100644 arch/avr32/include/asm/exec.h
- create mode 100644 arch/avr32/include/asm/special_insns.h
- create mode 100644 arch/avr32/include/asm/switch_to.h
+ arch/c6x/include/asm/Kbuild          |    1 
+ arch/c6x/include/asm/barrier.h       |   27 +++++
+ arch/c6x/include/asm/bitops.h        |    1 
+ arch/c6x/include/asm/bug.h           |   21 ++++
+ arch/c6x/include/asm/cmpxchg.h       |   68 +++++++++++++
+ arch/c6x/include/asm/processor.h     |    9 ++
+ arch/c6x/include/asm/setup.h         |    1 
+ arch/c6x/include/asm/special_insns.h |   64 +++++++++++++
+ arch/c6x/include/asm/switch_to.h     |   31 ++++++
+ arch/c6x/include/asm/system.h        |  173 +---------------------------------
+ arch/c6x/kernel/soc.c                |    1 
+ 11 files changed, 227 insertions(+), 170 deletions(-)
+ create mode 100644 arch/c6x/include/asm/barrier.h
+ create mode 100644 arch/c6x/include/asm/bug.h
+ create mode 100644 arch/c6x/include/asm/cmpxchg.h
+ create mode 100644 arch/c6x/include/asm/special_insns.h
+ create mode 100644 arch/c6x/include/asm/switch_to.h
 
-diff --git a/arch/avr32/include/asm/atomic.h b/arch/avr32/include/asm/atomic.h
-index e0ac263..6140727 100644
---- a/arch/avr32/include/asm/atomic.h
-+++ b/arch/avr32/include/asm/atomic.h
-@@ -15,7 +15,7 @@
- #define __ASM_AVR32_ATOMIC_H
- 
- #include <linux/types.h>
--#include <asm/system.h>
-+#include <asm/cmpxchg.h>
- 
- #define ATOMIC_INIT(i)  { (i) }
- 
-diff --git a/arch/avr32/include/asm/barrier.h b/arch/avr32/include/asm/barrier.h
+diff --git a/arch/c6x/include/asm/Kbuild b/arch/c6x/include/asm/Kbuild
+index 13dcf78..3af601e 100644
+--- a/arch/c6x/include/asm/Kbuild
++++ b/arch/c6x/include/asm/Kbuild
+@@ -3,7 +3,6 @@ include include/asm-generic/Kbuild.asm
+ generic-y += atomic.h
+ generic-y += auxvec.h
+ generic-y += bitsperlong.h
+-generic-y += bug.h
+ generic-y += bugs.h
+ generic-y += cputime.h
+ generic-y += current.h
+diff --git a/arch/c6x/include/asm/barrier.h b/arch/c6x/include/asm/barrier.h
 new file mode 100644
-index 0000000..808001c
+index 0000000..538240e
 --- /dev/null
-+++ b/arch/avr32/include/asm/barrier.h
++++ b/arch/c6x/include/asm/barrier.h
 @@ -0,0 +1,27 @@
 +/*
-+ * Copyright (C) 2004-2006 Atmel Corporation
++ *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
 + */
-+#ifndef __ASM_AVR32_BARRIER_H
-+#define __ASM_AVR32_BARRIER_H
++#ifndef _ASM_C6X_BARRIER_H
++#define _ASM_C6X_BARRIER_H
 +
-+#define mb()			asm volatile("" : : : "memory")
-+#define rmb()			mb()
-+#define wmb()			asm volatile("sync 0" : : : "memory")
-+#define read_barrier_depends()  do { } while(0)
-+#define set_mb(var, value)      do { var = value; mb(); } while(0)
++#define nop()                    asm("NOP\n");
 +
-+#ifdef CONFIG_SMP
-+# error "The AVR32 port does not support SMP"
-+#else
-+# define smp_mb()		barrier()
-+# define smp_rmb()		barrier()
-+# define smp_wmb()		barrier()
-+# define smp_read_barrier_depends() do { } while(0)
-+#endif
++#define mb()                     barrier()
++#define rmb()                    barrier()
++#define wmb()                    barrier()
++#define set_mb(var, value)       do { var = value;  mb(); } while (0)
++#define set_wmb(var, value)      do { var = value; wmb(); } while (0)
 +
++#define smp_mb()	         barrier()
++#define smp_rmb()	         barrier()
++#define smp_wmb()	         barrier()
++#define smp_read_barrier_depends()	do { } while (0)
 +
-+#endif /* __ASM_AVR32_BARRIER_H */
-diff --git a/arch/avr32/include/asm/bitops.h b/arch/avr32/include/asm/bitops.h
-index b70c19b..ebe7ad3 100644
---- a/arch/avr32/include/asm/bitops.h
-+++ b/arch/avr32/include/asm/bitops.h
-@@ -13,7 +13,6 @@
- #endif
++#endif /* _ASM_C6X_BARRIER_H */
+diff --git a/arch/c6x/include/asm/bitops.h b/arch/c6x/include/asm/bitops.h
+index 39ab7e8..0bec7e5 100644
+--- a/arch/c6x/include/asm/bitops.h
++++ b/arch/c6x/include/asm/bitops.h
+@@ -15,7 +15,6 @@
  
- #include <asm/byteorder.h>
+ #include <linux/bitops.h>
+ 
 -#include <asm/system.h>
+ #include <asm/byteorder.h>
  
  /*
-  * clear_bit() doesn't provide any barrier for the compiler
-diff --git a/arch/avr32/include/asm/bug.h b/arch/avr32/include/asm/bug.h
-index 2aa373cc..85a92d0 100644
---- a/arch/avr32/include/asm/bug.h
-+++ b/arch/avr32/include/asm/bug.h
-@@ -70,4 +70,9 @@
- 
- #include <asm-generic/bug.h>
- 
-+struct pt_regs;
-+void die(const char *str, struct pt_regs *regs, long err);
-+void _exception(long signr, struct pt_regs *regs, int code,
-+		unsigned long addr);
-+
- #endif /* __ASM_AVR32_BUG_H */
-diff --git a/arch/avr32/include/asm/cmpxchg.h b/arch/avr32/include/asm/cmpxchg.h
+diff --git a/arch/c6x/include/asm/bug.h b/arch/c6x/include/asm/bug.h
 new file mode 100644
-index 0000000..962a6ae
+index 0000000..3df21c0
 --- /dev/null
-+++ b/arch/avr32/include/asm/cmpxchg.h
-@@ -0,0 +1,117 @@
++++ b/arch/c6x/include/asm/bug.h
+@@ -0,0 +1,21 @@
 +/*
-+ * Atomic operations that C can't guarantee us.  Useful for
-+ * resource counting etc.
++ *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ * But use these as seldom as possible since they are slower than
-+ * regular operations.
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
 + *
-+ * Copyright (C) 2004-2006 Atmel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
 + */
-+#ifndef __ASM_AVR32_CMPXCHG_H
-+#define __ASM_AVR32_CMPXCHG_H
++#ifndef _ASM_C6X_BUG_H
++#define _ASM_C6X_BUG_H
 +
-+#define xchg(ptr,x) \
-+	((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
++#include <asm-generic/bug.h>
 +
-+extern void __xchg_called_with_bad_pointer(void);
++struct pt_regs;
 +
-+static inline unsigned long xchg_u32(u32 val, volatile u32 *m)
++extern void die(char *str, struct pt_regs *fp, int nr);
++extern asmlinkage int process_exception(struct pt_regs *regs);
++
++#endif /* _ASM_C6X_BUG_H */
+diff --git a/arch/c6x/include/asm/cmpxchg.h b/arch/c6x/include/asm/cmpxchg.h
+new file mode 100644
+index 0000000..b27c8ce
+--- /dev/null
++++ b/arch/c6x/include/asm/cmpxchg.h
+@@ -0,0 +1,68 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#ifndef _ASM_C6X_CMPXCHG_H
++#define _ASM_C6X_CMPXCHG_H
++
++#include <linux/irqflags.h>
++
++/*
++ * Misc. functions
++ */
++static inline unsigned int __xchg(unsigned int x, volatile void *ptr, int size)
 +{
-+	u32 ret;
++	unsigned int tmp;
++	unsigned long flags;
 +
-+	asm volatile("xchg %[ret], %[m], %[val]"
-+			: [ret] "=&r"(ret), "=m"(*m)
-+			: "m"(*m), [m] "r"(m), [val] "r"(val)
-+			: "memory");
-+	return ret;
-+}
++	local_irq_save(flags);
 +
-+static inline unsigned long __xchg(unsigned long x,
-+				       volatile void *ptr,
-+				       int size)
-+{
-+	switch(size) {
-+	case 4:
-+		return xchg_u32(x, ptr);
-+	default:
-+		__xchg_called_with_bad_pointer();
-+		return x;
-+	}
-+}
-+
-+static inline unsigned long __cmpxchg_u32(volatile int *m, unsigned long old,
-+					  unsigned long new)
-+{
-+	__u32 ret;
-+
-+	asm volatile(
-+		"1:	ssrf	5\n"
-+		"	ld.w	%[ret], %[m]\n"
-+		"	cp.w	%[ret], %[old]\n"
-+		"	brne	2f\n"
-+		"	stcond	%[m], %[new]\n"
-+		"	brne	1b\n"
-+		"2:\n"
-+		: [ret] "=&r"(ret), [m] "=m"(*m)
-+		: "m"(m), [old] "ir"(old), [new] "r"(new)
-+		: "memory", "cc");
-+	return ret;
-+}
-+
-+extern unsigned long __cmpxchg_u64_unsupported_on_32bit_kernels(
-+        volatile int * m, unsigned long old, unsigned long new);
-+#define __cmpxchg_u64 __cmpxchg_u64_unsupported_on_32bit_kernels
-+
-+/* This function doesn't exist, so you'll get a linker error
-+   if something tries to do an invalid cmpxchg().  */
-+extern void __cmpxchg_called_with_bad_pointer(void);
-+
-+#define __HAVE_ARCH_CMPXCHG 1
-+
-+static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
-+				      unsigned long new, int size)
-+{
 +	switch (size) {
++	case 1:
++		tmp = 0;
++		tmp = *((unsigned char *) ptr);
++		*((unsigned char *) ptr) = (unsigned char) x;
++		break;
++	case 2:
++		tmp = 0;
++		tmp = *((unsigned short *) ptr);
++		*((unsigned short *) ptr) = x;
++		break;
 +	case 4:
-+		return __cmpxchg_u32(ptr, old, new);
-+	case 8:
-+		return __cmpxchg_u64(ptr, old, new);
++		tmp = 0;
++		tmp = *((unsigned int *) ptr);
++		*((unsigned int *) ptr) = x;
++		break;
 +	}
-+
-+	__cmpxchg_called_with_bad_pointer();
-+	return old;
++	local_irq_restore(flags);
++	return tmp;
 +}
 +
-+#define cmpxchg(ptr, old, new)					\
-+	((typeof(*(ptr)))__cmpxchg((ptr), (unsigned long)(old),	\
-+				   (unsigned long)(new),	\
-+				   sizeof(*(ptr))))
++#define xchg(ptr, x) \
++	((__typeof__(*(ptr)))__xchg((unsigned int)(x), (void *) (ptr), \
++				    sizeof(*(ptr))))
++#define tas(ptr)    xchg((ptr), 1)
++
 +
 +#include <asm-generic/cmpxchg-local.h>
 +
-+static inline unsigned long __cmpxchg_local(volatile void *ptr,
-+				      unsigned long old,
-+				      unsigned long new, int size)
-+{
-+	switch (size) {
-+	case 4:
-+		return __cmpxchg_u32(ptr, old, new);
-+	default:
-+		return __cmpxchg_local_generic(ptr, old, new, size);
-+	}
-+
-+	return old;
-+}
-+
-+#define cmpxchg_local(ptr, old, new)					\
-+	((typeof(*(ptr)))__cmpxchg_local((ptr), (unsigned long)(old),	\
-+				   (unsigned long)(new),		\
-+				   sizeof(*(ptr))))
-+
++/*
++ * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
++ * them available.
++ */
++#define cmpxchg_local(ptr, o, n)					\
++	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),		\
++						     (unsigned long)(o), \
++						     (unsigned long)(n), \
++						     sizeof(*(ptr))))
 +#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
 +
-+#endif /* __ASM_AVR32_CMPXCHG_H */
-diff --git a/arch/avr32/include/asm/exec.h b/arch/avr32/include/asm/exec.h
++#include <asm-generic/cmpxchg.h>
++
++#endif /* _ASM_C6X_CMPXCHG_H */
+diff --git a/arch/c6x/include/asm/processor.h b/arch/c6x/include/asm/processor.h
+index 8154c4e..c4f1c04 100644
+--- a/arch/c6x/include/asm/processor.h
++++ b/arch/c6x/include/asm/processor.h
+@@ -129,4 +129,13 @@ extern unsigned long get_wchan(struct task_struct *p);
+ 
+ extern const struct seq_operations cpuinfo_op;
+ 
++/* Reset the board */
++#define HARD_RESET_NOW()
++
++extern unsigned int c6x_core_freq;
++
++
++extern void (*c6x_restart)(void);
++extern void (*c6x_halt)(void);
++
+ #endif /* ASM_C6X_PROCESSOR_H */
+diff --git a/arch/c6x/include/asm/setup.h b/arch/c6x/include/asm/setup.h
+index 1808f27..a01e318 100644
+--- a/arch/c6x/include/asm/setup.h
++++ b/arch/c6x/include/asm/setup.h
+@@ -27,6 +27,7 @@ extern unsigned int c6x_devstat;
+ extern unsigned char c6x_fuse_mac[6];
+ 
+ extern void machine_init(unsigned long dt_ptr);
++extern void time_init(void);
+ 
+ #endif /* !__ASSEMBLY__ */
+ #endif /* _ASM_C6X_SETUP_H */
+diff --git a/arch/c6x/include/asm/special_insns.h b/arch/c6x/include/asm/special_insns.h
 new file mode 100644
-index 0000000..f467be8
+index 0000000..3be40df
 --- /dev/null
-+++ b/arch/avr32/include/asm/exec.h
-@@ -0,0 +1,13 @@
++++ b/arch/c6x/include/asm/special_insns.h
+@@ -0,0 +1,64 @@
 +/*
-+ * Copyright (C) 2004-2006 Atmel Corporation
++ *  Port on Texas Instruments TMS320C6x architecture
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __ASM_AVR32_EXEC_H
-+#define __ASM_AVR32_EXEC_H
-+
-+#define arch_align_stack(x)	(x)
-+
-+#endif /* __ASM_AVR32_EXEC_H */
-diff --git a/arch/avr32/include/asm/special_insns.h b/arch/avr32/include/asm/special_insns.h
-new file mode 100644
-index 0000000..f922218
---- /dev/null
-+++ b/arch/avr32/include/asm/special_insns.h
-@@ -0,0 +1,13 @@
-+/*
-+ * Copyright (C) 2004-2006 Atmel Corporation
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
 + */
-+#ifndef __ASM_AVR32_SPECIAL_INSNS_H
-+#define __ASM_AVR32_SPECIAL_INSNS_H
++#ifndef _ASM_C6X_SPECIAL_INSNS_H
++#define _ASM_C6X_SPECIAL_INSNS_H
 +
-+#define nop() asm volatile("nop")
 +
-+#endif /* __ASM_AVR32_SPECIAL_INSNS_H */
-diff --git a/arch/avr32/include/asm/switch_to.h b/arch/avr32/include/asm/switch_to.h
-new file mode 100644
-index 0000000..9a8e9d5
---- /dev/null
-+++ b/arch/avr32/include/asm/switch_to.h
-@@ -0,0 +1,46 @@
-+/*
-+ * Copyright (C) 2004-2006 Atmel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __ASM_AVR32_SWITCH_TO_H
-+#define __ASM_AVR32_SWITCH_TO_H
++#define get_creg(reg) \
++	({ unsigned int __x; \
++	   asm volatile ("mvc .s2 " #reg ",%0\n" : "=b"(__x)); __x; })
 +
-+/*
-+ * Help PathFinder and other Nexus-compliant debuggers keep track of
-+ * the current PID by emitting an Ownership Trace Message each time we
-+ * switch task.
-+ */
-+#ifdef CONFIG_OWNERSHIP_TRACE
-+#include <asm/ocd.h>
-+#define finish_arch_switch(prev)			\
-+	do {						\
-+		ocd_write(PID, prev->pid);		\
-+		ocd_write(PID, current->pid);		\
-+	} while(0)
-+#endif
-+
-+/*
-+ * switch_to(prev, next, last) should switch from task `prev' to task
-+ * `next'. `prev' will never be the same as `next'.
-+ *
-+ * We just delegate everything to the __switch_to assembly function,
-+ * which is implemented in arch/avr32/kernel/switch_to.S
-+ *
-+ * mb() tells GCC not to cache `current' across this call.
-+ */
-+struct cpu_context;
-+struct task_struct;
-+extern struct task_struct *__switch_to(struct task_struct *,
-+				       struct cpu_context *,
-+				       struct cpu_context *);
-+#define switch_to(prev, next, last)					\
-+	do {								\
-+		last = __switch_to(prev, &prev->thread.cpu_context + 1,	\
-+				   &next->thread.cpu_context);		\
++#define set_creg(reg, v) \
++	do { unsigned int __x = (unsigned int)(v); \
++		asm volatile ("mvc .s2 %0," #reg "\n" : : "b"(__x)); \
 +	} while (0)
 +
++#define or_creg(reg, n) \
++	do { unsigned __x, __n = (unsigned)(n);		  \
++		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
++			      "or  .l2 %1,%0,%0\n"	  \
++			      "mvc .s2 %0," #reg "\n"	  \
++			      "nop\n"			  \
++			      : "=&b"(__x) : "b"(__n));	  \
++	} while (0)
 +
-+#endif /* __ASM_AVR32_SWITCH_TO_H */
-diff --git a/arch/avr32/include/asm/system.h b/arch/avr32/include/asm/system.h
-index 62d9ded..0d84f9e 100644
---- a/arch/avr32/include/asm/system.h
-+++ b/arch/avr32/include/asm/system.h
-@@ -1,178 +1,6 @@
++#define and_creg(reg, n) \
++	do { unsigned __x, __n = (unsigned)(n);		  \
++		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
++			      "and .l2 %1,%0,%0\n"	  \
++			      "mvc .s2 %0," #reg "\n"	  \
++			      "nop\n"    \
++			      : "=&b"(__x) : "b"(__n));	  \
++	} while (0)
++
++#define get_coreid() (get_creg(DNUM) & 0xff)
++
++/* Set/get IST */
++#define set_ist(x)	set_creg(ISTP, x)
++#define get_ist()       get_creg(ISTP)
++
++/*
++ * Exception management
++ */
++asmlinkage void enable_exception(void);
++#define disable_exception()
++#define get_except_type()        get_creg(EFR)
++#define ack_exception(type)      set_creg(ECR, 1 << (type))
++#define get_iexcept()            get_creg(IERR)
++#define set_iexcept(mask)        set_creg(IERR, (mask))
++
++#define _extu(x, s, e)							\
++	({      unsigned int __x;					\
++		asm volatile ("extu .S2 %3,%1,%2,%0\n" :		\
++			      "=b"(__x) : "n"(s), "n"(e), "b"(x));	\
++	       __x; })
++
++#endif /* _ASM_C6X_SPECIAL_INSNS_H */
+diff --git a/arch/c6x/include/asm/switch_to.h b/arch/c6x/include/asm/switch_to.h
+new file mode 100644
+index 0000000..83bb5a4
+--- /dev/null
++++ b/arch/c6x/include/asm/switch_to.h
+@@ -0,0 +1,31 @@
++/*
++ *  Port on Texas Instruments TMS320C6x architecture
++ *
++ *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
++ *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ */
++#ifndef _ASM_C6X_SWITCH_TO_H
++#define _ASM_C6X_SWITCH_TO_H
++
++#define prepare_to_switch()    do { } while (0)
++
++struct task_struct;
++struct thread_struct;
++asmlinkage void *__switch_to(struct thread_struct *prev,
++			     struct thread_struct *next,
++			     struct task_struct *tsk);
++
++#define switch_to(prev, next, last)				\
++	do {							\
++		current->thread.wchan = (u_long) __builtin_return_address(0); \
++		(last) = __switch_to(&(prev)->thread,		\
++				     &(next)->thread, (prev));	\
++		mb();						\
++		current->thread.wchan = 0;			\
++	} while (0)
++
++#endif /* _ASM_C6X_SWITCH_TO_H */
+diff --git a/arch/c6x/include/asm/system.h b/arch/c6x/include/asm/system.h
+index e076dc0..ccc4f86 100644
+--- a/arch/c6x/include/asm/system.h
++++ b/arch/c6x/include/asm/system.h
+@@ -1,168 +1,7 @@
 -/*
-- * Copyright (C) 2004-2006 Atmel Corporation
+- *  Port on Texas Instruments TMS320C6x architecture
 - *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
+- *  Copyright (C) 2004, 2009, 2010, 2011 Texas Instruments Incorporated
+- *  Author: Aurelien Jacquiot (aurelien.jacquiot@jaluna.com)
+- *
+- *  This program is free software; you can redistribute it and/or modify
+- *  it under the terms of the GNU General Public License version 2 as
+- *  published by the Free Software Foundation.
 - */
--#ifndef __ASM_AVR32_SYSTEM_H
--#define __ASM_AVR32_SYSTEM_H
+-#ifndef _ASM_C6X_SYSTEM_H
+-#define _ASM_C6X_SYSTEM_H
 -
--#include <linux/compiler.h>
 -#include <linux/linkage.h>
--#include <linux/types.h>
--
--#include <asm/ptrace.h>
--#include <asm/sysreg.h>
--
--#define xchg(ptr,x) \
--	((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
--
--#define nop() asm volatile("nop")
--
--#define mb()			asm volatile("" : : : "memory")
--#define rmb()			mb()
--#define wmb()			asm volatile("sync 0" : : : "memory")
--#define read_barrier_depends()  do { } while(0)
--#define set_mb(var, value)      do { var = value; mb(); } while(0)
--
--/*
-- * Help PathFinder and other Nexus-compliant debuggers keep track of
-- * the current PID by emitting an Ownership Trace Message each time we
-- * switch task.
-- */
--#ifdef CONFIG_OWNERSHIP_TRACE
--#include <asm/ocd.h>
--#define finish_arch_switch(prev)			\
--	do {						\
--		ocd_write(PID, prev->pid);		\
--		ocd_write(PID, current->pid);		\
--	} while(0)
--#endif
--
--/*
-- * switch_to(prev, next, last) should switch from task `prev' to task
-- * `next'. `prev' will never be the same as `next'.
-- *
-- * We just delegate everything to the __switch_to assembly function,
-- * which is implemented in arch/avr32/kernel/switch_to.S
-- *
-- * mb() tells GCC not to cache `current' across this call.
-- */
--struct cpu_context;
--struct task_struct;
--extern struct task_struct *__switch_to(struct task_struct *,
--				       struct cpu_context *,
--				       struct cpu_context *);
--#define switch_to(prev, next, last)					\
--	do {								\
--		last = __switch_to(prev, &prev->thread.cpu_context + 1,	\
--				   &next->thread.cpu_context);		\
--	} while (0)
--
--#ifdef CONFIG_SMP
--# error "The AVR32 port does not support SMP"
--#else
--# define smp_mb()		barrier()
--# define smp_rmb()		barrier()
--# define smp_wmb()		barrier()
--# define smp_read_barrier_depends() do { } while(0)
--#endif
--
 -#include <linux/irqflags.h>
 -
--extern void __xchg_called_with_bad_pointer(void);
+-#define prepare_to_switch()    do { } while (0)
 -
--static inline unsigned long xchg_u32(u32 val, volatile u32 *m)
+-struct task_struct;
+-struct thread_struct;
+-asmlinkage void *__switch_to(struct thread_struct *prev,
+-			     struct thread_struct *next,
+-			     struct task_struct *tsk);
+-
+-#define switch_to(prev, next, last)				\
+-	do {							\
+-		current->thread.wchan = (u_long) __builtin_return_address(0); \
+-		(last) = __switch_to(&(prev)->thread,		\
+-				     &(next)->thread, (prev));	\
+-		mb();						\
+-		current->thread.wchan = 0;			\
+-	} while (0)
+-
+-/* Reset the board */
+-#define HARD_RESET_NOW()
+-
+-#define get_creg(reg) \
+-	({ unsigned int __x; \
+-	   asm volatile ("mvc .s2 " #reg ",%0\n" : "=b"(__x)); __x; })
+-
+-#define set_creg(reg, v) \
+-	do { unsigned int __x = (unsigned int)(v); \
+-		asm volatile ("mvc .s2 %0," #reg "\n" : : "b"(__x)); \
+-	} while (0)
+-
+-#define or_creg(reg, n) \
+-	do { unsigned __x, __n = (unsigned)(n);		  \
+-		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
+-			      "or  .l2 %1,%0,%0\n"	  \
+-			      "mvc .s2 %0," #reg "\n"	  \
+-			      "nop\n"			  \
+-			      : "=&b"(__x) : "b"(__n));	  \
+-	} while (0)
+-
+-#define and_creg(reg, n) \
+-	do { unsigned __x, __n = (unsigned)(n);		  \
+-		asm volatile ("mvc .s2 " #reg ",%0\n"	  \
+-			      "and .l2 %1,%0,%0\n"	  \
+-			      "mvc .s2 %0," #reg "\n"	  \
+-			      "nop\n"    \
+-			      : "=&b"(__x) : "b"(__n));	  \
+-	} while (0)
+-
+-#define get_coreid() (get_creg(DNUM) & 0xff)
+-
+-/* Set/get IST */
+-#define set_ist(x)	set_creg(ISTP, x)
+-#define get_ist()       get_creg(ISTP)
+-
+-/*
+- * Exception management
+- */
+-asmlinkage void enable_exception(void);
+-#define disable_exception()
+-#define get_except_type()        get_creg(EFR)
+-#define ack_exception(type)      set_creg(ECR, 1 << (type))
+-#define get_iexcept()            get_creg(IERR)
+-#define set_iexcept(mask)        set_creg(IERR, (mask))
+-
+-/*
+- * Misc. functions
+- */
+-#define nop()                    asm("NOP\n");
+-#define mb()                     barrier()
+-#define rmb()                    barrier()
+-#define wmb()                    barrier()
+-#define set_mb(var, value)       do { var = value;  mb(); } while (0)
+-#define set_wmb(var, value)      do { var = value; wmb(); } while (0)
+-
+-#define smp_mb()	         barrier()
+-#define smp_rmb()	         barrier()
+-#define smp_wmb()	         barrier()
+-#define smp_read_barrier_depends()	do { } while (0)
+-
+-#define xchg(ptr, x) \
+-	((__typeof__(*(ptr)))__xchg((unsigned int)(x), (void *) (ptr), \
+-				    sizeof(*(ptr))))
+-#define tas(ptr)    xchg((ptr), 1)
+-
+-unsigned int _lmbd(unsigned int, unsigned int);
+-unsigned int _bitr(unsigned int);
+-
+-struct __xchg_dummy { unsigned int a[100]; };
+-#define __xg(x) ((volatile struct __xchg_dummy *)(x))
+-
+-static inline unsigned int __xchg(unsigned int x, volatile void *ptr, int size)
 -{
--	u32 ret;
+-	unsigned int tmp;
+-	unsigned long flags;
 -
--	asm volatile("xchg %[ret], %[m], %[val]"
--			: [ret] "=&r"(ret), "=m"(*m)
--			: "m"(*m), [m] "r"(m), [val] "r"(val)
--			: "memory");
--	return ret;
--}
+-	local_irq_save(flags);
 -
--static inline unsigned long __xchg(unsigned long x,
--				       volatile void *ptr,
--				       int size)
--{
--	switch(size) {
--	case 4:
--		return xchg_u32(x, ptr);
--	default:
--		__xchg_called_with_bad_pointer();
--		return x;
--	}
--}
--
--static inline unsigned long __cmpxchg_u32(volatile int *m, unsigned long old,
--					  unsigned long new)
--{
--	__u32 ret;
--
--	asm volatile(
--		"1:	ssrf	5\n"
--		"	ld.w	%[ret], %[m]\n"
--		"	cp.w	%[ret], %[old]\n"
--		"	brne	2f\n"
--		"	stcond	%[m], %[new]\n"
--		"	brne	1b\n"
--		"2:\n"
--		: [ret] "=&r"(ret), [m] "=m"(*m)
--		: "m"(m), [old] "ir"(old), [new] "r"(new)
--		: "memory", "cc");
--	return ret;
--}
--
--extern unsigned long __cmpxchg_u64_unsupported_on_32bit_kernels(
--        volatile int * m, unsigned long old, unsigned long new);
--#define __cmpxchg_u64 __cmpxchg_u64_unsupported_on_32bit_kernels
--
--/* This function doesn't exist, so you'll get a linker error
--   if something tries to do an invalid cmpxchg().  */
--extern void __cmpxchg_called_with_bad_pointer(void);
--
--#define __HAVE_ARCH_CMPXCHG 1
--
--static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
--				      unsigned long new, int size)
--{
 -	switch (size) {
+-	case 1:
+-		tmp = 0;
+-		tmp = *((unsigned char *) ptr);
+-		*((unsigned char *) ptr) = (unsigned char) x;
+-		break;
+-	case 2:
+-		tmp = 0;
+-		tmp = *((unsigned short *) ptr);
+-		*((unsigned short *) ptr) = x;
+-		break;
 -	case 4:
--		return __cmpxchg_u32(ptr, old, new);
--	case 8:
--		return __cmpxchg_u64(ptr, old, new);
+-		tmp = 0;
+-		tmp = *((unsigned int *) ptr);
+-		*((unsigned int *) ptr) = x;
+-		break;
 -	}
--
--	__cmpxchg_called_with_bad_pointer();
--	return old;
+-	local_irq_restore(flags);
+-	return tmp;
 -}
--
--#define cmpxchg(ptr, old, new)					\
--	((typeof(*(ptr)))__cmpxchg((ptr), (unsigned long)(old),	\
--				   (unsigned long)(new),	\
--				   sizeof(*(ptr))))
 -
 -#include <asm-generic/cmpxchg-local.h>
 -
--static inline unsigned long __cmpxchg_local(volatile void *ptr,
--				      unsigned long old,
--				      unsigned long new, int size)
--{
--	switch (size) {
--	case 4:
--		return __cmpxchg_u32(ptr, old, new);
--	default:
--		return __cmpxchg_local_generic(ptr, old, new, size);
--	}
--
--	return old;
--}
--
--#define cmpxchg_local(ptr, old, new)					\
--	((typeof(*(ptr)))__cmpxchg_local((ptr), (unsigned long)(old),	\
--				   (unsigned long)(new),		\
--				   sizeof(*(ptr))))
--
+-/*
+- * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
+- * them available.
+- */
+-#define cmpxchg_local(ptr, o, n)					\
+-	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),		\
+-						     (unsigned long)(o), \
+-						     (unsigned long)(n), \
+-						     sizeof(*(ptr))))
 -#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
 -
+-#include <asm-generic/cmpxchg.h>
+-
+-#define _extu(x, s, e)							\
+-	({      unsigned int __x;					\
+-		asm volatile ("extu .S2 %3,%1,%2,%0\n" :		\
+-			      "=b"(__x) : "n"(s), "n"(e), "b"(x));	\
+-	       __x; })
+-
+-
+-extern unsigned int c6x_core_freq;
+-
 -struct pt_regs;
--void die(const char *str, struct pt_regs *regs, long err);
--void _exception(long signr, struct pt_regs *regs, int code,
--		unsigned long addr);
 -
--#define arch_align_stack(x)	(x)
--
--#endif /* __ASM_AVR32_SYSTEM_H */
+-extern void die(char *str, struct pt_regs *fp, int nr);
+-extern asmlinkage int process_exception(struct pt_regs *regs);
+-extern void time_init(void);
 +/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
 +#include <asm/barrier.h>
 +#include <asm/cmpxchg.h>
 +#include <asm/exec.h>
 +#include <asm/special_insns.h>
 +#include <asm/switch_to.h>
-diff --git a/arch/avr32/mach-at32ap/cpufreq.c b/arch/avr32/mach-at32ap/cpufreq.c
-index 6277433..18b7656 100644
---- a/arch/avr32/mach-at32ap/cpufreq.c
-+++ b/arch/avr32/mach-at32ap/cpufreq.c
-@@ -19,7 +19,6 @@
- #include <linux/clk.h>
- #include <linux/err.h>
- #include <linux/export.h>
+ extern void free_initmem(void);
+-
+-extern void (*c6x_restart)(void);
+-extern void (*c6x_halt)(void);
+-
+-#endif /* _ASM_C6X_SYSTEM_H */
+diff --git a/arch/c6x/kernel/soc.c b/arch/c6x/kernel/soc.c
+index dd45bc3..0748c94 100644
+--- a/arch/c6x/kernel/soc.c
++++ b/arch/c6x/kernel/soc.c
+@@ -11,7 +11,6 @@
+ #include <linux/module.h>
+ #include <linux/ctype.h>
+ #include <linux/etherdevice.h>
 -#include <asm/system.h>
+ #include <asm/setup.h>
+ #include <asm/soc.h>
  
- static struct clk *cpuclk;
- 
-diff --git a/arch/avr32/oprofile/op_model_avr32.c b/arch/avr32/oprofile/op_model_avr32.c
-index a3e9b3c..f74b780 100644
---- a/arch/avr32/oprofile/op_model_avr32.c
-+++ b/arch/avr32/oprofile/op_model_avr32.c
-@@ -17,7 +17,6 @@
- #include <linux/types.h>
- 
- #include <asm/sysreg.h>
--#include <asm/system.h>
- 
- #define AVR32_PERFCTR_IRQ_GROUP	0
- #define AVR32_PERFCTR_IRQ_LINE	1
 
