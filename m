@@ -1,44 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168Ab2CLUOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 16:14:32 -0400
-Received: from fifo99.com ([67.223.236.141]:35047 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757143Ab2CLUO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 16:14:29 -0400
-Date: Mon, 12 Mar 2012 13:14:21 -0700
-From: Daniel Walker <dwalker@fifo99.com>
-To: Ravi Kumar V <kumarrav@codeaurora.org>
-Cc: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH v3 2/2] DMAEngine: Add DMAEngine driver based on old MSM
- DMA APIs
-Message-ID: <20120312201421.GA3459@fifo99.com>
-References: <1331548364-27845-1-git-send-email-kumarrav@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331548364-27845-1-git-send-email-kumarrav@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757217Ab2CLUO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 16:14:59 -0400
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:40952
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757065Ab2CLUOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 16:14:21 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: haiyangz@microsoft.com, kys@microsoft.com, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: [PATCH 1/2] net/hyperv: Fix data corruption in rndis_filter_receive()
+Date: Mon, 12 Mar 2012 13:20:49 -0700
+Message-Id: <1331583650-29686-2-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1331583650-29686-1-git-send-email-haiyangz@microsoft.com>
+References: <1331583650-29686-1-git-send-email-haiyangz@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 04:02:44PM +0530, Ravi Kumar V wrote:
-> Add DMAEngine based driver using the old MSM DMA APIs internally.
+Limiting the memcpy to be the sizeof(struct rndis_message) can truncate
+the message if there are Per-Packet-Info or Out-of-Band data.
 
-What do you mean by this?
+In my earlier patch (commit 45326342), the unnecessary kmap_atomic and
+kunmap_atomic surrounding this memcpy have been removed because the memory
+in the receive buffer is always mapped. This memcpy is not necessary
+either. To fix the bug, I removed the memcpy.
 
-> The benefit of this approach is that not all the drivers
-> have to get converted to DMAEngine APIs simultaneosly while
-> both the drivers can stay enabled in the kernel. The client
-> drivers using the old MSM APIs directly can now convert to
-> DMAEngine one by one.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/net/hyperv/rndis_filter.c |   33 +++++++++------------------------
+ 1 files changed, 9 insertions(+), 24 deletions(-)
 
-Which drivers?
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index 136efd8..0c3d7d9 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -352,8 +352,7 @@ int rndis_filter_receive(struct hv_device *dev,
+ {
+ 	struct netvsc_device *net_dev = hv_get_drvdata(dev);
+ 	struct rndis_device *rndis_dev;
+-	struct rndis_message rndis_msg;
+-	struct rndis_message *rndis_hdr;
++	struct rndis_message *rndis_msg;
+ 	struct net_device *ndev;
+ 
+ 	if (!net_dev)
+@@ -375,46 +374,32 @@ int rndis_filter_receive(struct hv_device *dev,
+ 		return -ENODEV;
+ 	}
+ 
+-	rndis_hdr = pkt->data;
+-
+-	/* Make sure we got a valid rndis message */
+-	if ((rndis_hdr->ndis_msg_type != REMOTE_NDIS_PACKET_MSG) &&
+-	    (rndis_hdr->msg_len > sizeof(struct rndis_message))) {
+-		netdev_err(ndev, "incoming rndis message buffer overflow "
+-			   "detected (got %u, max %zu)..marking it an error!\n",
+-			   rndis_hdr->msg_len,
+-			   sizeof(struct rndis_message));
+-	}
++	rndis_msg = pkt->data;
+ 
+-	memcpy(&rndis_msg, rndis_hdr,
+-		(rndis_hdr->msg_len > sizeof(struct rndis_message)) ?
+-			sizeof(struct rndis_message) :
+-			rndis_hdr->msg_len);
++	dump_rndis_message(dev, rndis_msg);
+ 
+-	dump_rndis_message(dev, &rndis_msg);
+-
+-	switch (rndis_msg.ndis_msg_type) {
++	switch (rndis_msg->ndis_msg_type) {
+ 	case REMOTE_NDIS_PACKET_MSG:
+ 		/* data msg */
+-		rndis_filter_receive_data(rndis_dev, &rndis_msg, pkt);
++		rndis_filter_receive_data(rndis_dev, rndis_msg, pkt);
+ 		break;
+ 
+ 	case REMOTE_NDIS_INITIALIZE_CMPLT:
+ 	case REMOTE_NDIS_QUERY_CMPLT:
+ 	case REMOTE_NDIS_SET_CMPLT:
+ 		/* completion msgs */
+-		rndis_filter_receive_response(rndis_dev, &rndis_msg);
++		rndis_filter_receive_response(rndis_dev, rndis_msg);
+ 		break;
+ 
+ 	case REMOTE_NDIS_INDICATE_STATUS_MSG:
+ 		/* notification msgs */
+-		rndis_filter_receive_indicate_status(rndis_dev, &rndis_msg);
++		rndis_filter_receive_indicate_status(rndis_dev, rndis_msg);
+ 		break;
+ 	default:
+ 		netdev_err(ndev,
+ 			"unhandled rndis message (type %u len %u)\n",
+-			   rndis_msg.ndis_msg_type,
+-			   rndis_msg.msg_len);
++			   rndis_msg->ndis_msg_type,
++			   rndis_msg->msg_len);
+ 		break;
+ 	}
+ 
+-- 
+1.7.4.1
 
-Daniel
