@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850Ab2CLQGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 12:06:04 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:4545 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751239Ab2CLQGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 12:06:01 -0400
-Message-ID: <4F5E1ECC.1040605@atmel.com>
-Date: Mon, 12 Mar 2012 17:05:32 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1752021Ab2CLQHQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 12:07:16 -0400
+Received: from ftp.meprolight.com ([194.90.149.17]:36475 "EHLO meprolight.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751542Ab2CLQHN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 12:07:13 -0400
+From: Alex Gershgorin <alexg@meprolight.com>
+To: Fabio Estevam <festevam@gmail.com>
+CC: Fabio Estevam <fabio.estevam@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Date: Mon, 12 Mar 2012 18:06:55 +0200
+Subject: RE: I.MX35 PDK
+Thread-Topic: I.MX35 PDK
+Thread-Index: Ac0AU3gj9FbMBrKGSXCsPMsFN/sHngADo4Xl
+Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D891C@MEP-EXCH.meprolight.com>
+References: <CAOMZO5DnP7+zupy9vwBPS0+2XtKM1+nLbwCqBzuCqEG5OWbZRQ@mail.gmail.com>
+	<4875438356E7CA4A8F2145FCD3E61C0B2CBD666A28@MEP-EXCH.meprolight.com>
+	<CAOMZO5Amo0XFf+TV7PprCL079C5Y0qKmo+k-FfShU7k4SG7W6Q@mail.gmail.com>
+	<4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8913@MEP-EXCH.meprolight.com>
+	<4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8918@MEP-EXCH.meprolight.com>
+	<CAOMZO5A6T+WdOE41Wx6Nctwz9wk8FKaxzjbAt_woZkCnuodNYg@mail.gmail.com>
+	<4875438356E7CA4A8F2145FCD3E61C0B2CBD666A29@MEP-EXCH.meprolight.com>,<CAOMZO5B_mZ16zvXdNbKP_PWM5axNPzMeHQttxe8PYHET7UMufg@mail.gmail.com>
+In-Reply-To: <CAOMZO5B_mZ16zvXdNbKP_PWM5axNPzMeHQttxe8PYHET7UMufg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Rob Lee <rob.lee@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: linux-next: manual merge of the cpuidle-cons tree with the arm-soc
- tree
-References: <20120309183732.512d3676599da324f4747219@canb.auug.org.au>
-In-Reply-To: <20120309183732.512d3676599da324f4747219@canb.auug.org.au>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Thanks for your response,
 
-On 03/09/2012 08:37 AM, Stephen Rothwell :
-> Hi Rob,
-> 
-> Today's linux-next merge of the cpuidle-cons tree got a conflict
-> in arch/arm/mach-at91/cpuidle.c between commit 00482a4078f4 ("ARM:
-> at91: implement the standby function for pm/cpuidle") from the
-> arm-soc tree and commit 7a1f6e72dce1 ("ARM: at91: Consolidate time
-> keeping and irq enable") from the cpuidle-cons tree.
-> 
-> I fixed it up (I think - see below) and can carry the fix as
-> necessary.
+> 1. Back resistor 172 to the default value.
+>
+> 2. Removed the resistor 146, through which a voltage was applied from a PMIC
+> (EXT_3V) on "CMOS_VIO".
+>
+> 3. Connecting a resistor 147 which supplies power from the LDO_3V3 on
+> "CMOS_VIO".
 
-Yes: resolution correct. Please carry it.
+> >The camera on the FSL BSP works fine with no hardware modification on
+> >the mx35pdk.
 
-Thanks to Rob and Daniel for their answers.
+> >As I suggested previously you should control the power rails, i2c pad
+> >settings, etc from software so that the camera can also work in
+> >mainline without the need of changing the hardware.
 
-Best regards,
-- -- 
-Nicolas Ferre
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+You're right, currently mainline Linux kernel  i.MX35 PDK platform does not support power management 
+devices, probably for this reason was the need for small changes in equipment.
 
-iQEcBAEBAgAGBQJPXh7HAAoJEAf03oE53VmQSQwH/15D3okPxJSEiH0k8IFt6Df0
-RDY/CdaGYDllGMq7Yc1LiQAPrlHkv+gFNAJkhH8aJvC603pYBFGIa5IPLeZEE+XD
-MkXiO7pQAOdGtojqSrZI8Sp0kxtfdR6QlNu5o518yvlKIkxbWJoXdVty9+MuciOv
-GOR+164hJtlr4fLLg7bTzsdnxquDVBBbks9qLhSYEQBEuNkgXKgNfdMouwVI/Zuj
-sX9DSKnVVm5LS/rrq888JRPPtBf8/HkmOeFRWKktq7Q8WldQbBI79vj01osH++jf
-rwDiM/CSC0nhXY0IWEof+Hz1mSinM07XGZglDYwqI1ca7HId2C/txaFI3NtcC7A=
-=rZpG
------END PGP SIGNATURE-----
+> On my display I see snow flickering and unfortunately not a live video from
+> camera.
+
+> >Do you have this patch applied?
+
+Yes I need to prepare it.
+
+
+ > >http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=f910fb8fcd1c97788f2291c8646597bcd87ee061
+
+> >Also, try to isolate the display from this issue. Capture the image to
+> >a file and try to play it on a PC.
+
+Thanks for the tip, I'll think about how I can check it.
+
+Regards
+
+Alex Gershgorin 
+
+ 
