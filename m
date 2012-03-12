@@ -1,60 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab2CLRza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:55:30 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:50458 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2CLRz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 13:55:29 -0400
-Date: Mon, 12 Mar 2012 10:54:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lai Jiangshan <eag0628@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        patches@linaro.org, tj@kernel.org
-Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine
- call_srcu()
-Message-ID: <20120312175432.GF2471@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
- <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
- <1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
- <1331032571.11248.277.camel@twins>
- <CACvQF52tYmG4Bx+L+cTjVRbvQxj=sKiKrxhuv35H=fAFVvQJ2Q@mail.gmail.com>
- <1331048093.11248.317.camel@twins>
- <20120308195825.GC2412@linux.vnet.ibm.com>
- <1331374193.18960.13.camel@twins>
+	id S1754487Ab2CLRz6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:55:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50425 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751952Ab2CLRz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 13:55:57 -0400
+Date: Mon, 12 Mar 2012 18:55:51 +0100
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, dchinner@redhat.com,
+        sandeen@redhat.com, Kamal Mostafa <kamal@canonical.com>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH 11/19] xfs: Convert to new freezing code
+Message-ID: <20120312175551.GI5998@quack.suse.cz>
+References: <1330963277-26336-1-git-send-email-jack@suse.cz>
+ <1330963277-26336-12-git-send-email-jack@suse.cz>
+ <20120308232041.GU3592@dastard>
+ <20120309142253.GB14159@quack.suse.cz>
+ <20120311224537.GV5091@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331374193.18960.13.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031217-6148-0000-0000-0000042FF7E5
+In-Reply-To: <20120311224537.GV5091@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 11:09:53AM +0100, Peter Zijlstra wrote:
-> On Thu, 2012-03-08 at 11:58 -0800, Paul E. McKenney wrote:
-> > 
-> > But I guess I should ask...  Peter, what do you expect the maximum
-> > call_srcu() rate to be in your use cases?  If tens of thousands are
-> > possible, some adjustments will be needed. 
+On Mon 12-03-12 09:45:37, Dave Chinner wrote:
+> On Fri, Mar 09, 2012 at 03:22:53PM +0100, Jan Kara wrote:
+> > On Fri 09-03-12 10:20:41, Dave Chinner wrote:
+> > > On Mon, Mar 05, 2012 at 05:01:09PM +0100, Jan Kara wrote:
+> > > > Generic code now blocks all writers from standard write paths. So we block all
+> > > > writers coming from ioctl and replace blocking of transactions on frozen
+> > > > filesystem with a debugging check. As a bonus, we get a protection of ioctl
+> > > > against racing remount read-only. We also convert xfs_file_aio_write() to a
+> > > > non-racy freeze protection.
+> > > ....
+> > > > diff --git a/fs/xfs/xfs_trans.c b/fs/xfs/xfs_trans.c
+> > > > index 329b06a..6468a2a 100644
+> > > > --- a/fs/xfs/xfs_trans.c
+> > > > +++ b/fs/xfs/xfs_trans.c
+> > > > @@ -577,7 +577,6 @@ xfs_trans_alloc(
+> > > >  	xfs_mount_t	*mp,
+> > > >  	uint		type)
+> > > >  {
+> > > > -	xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
+> > > >  	return _xfs_trans_alloc(mp, type, KM_SLEEP);
+> > > >  }
+> > > 
+> > > So what is there to stop internal XFS threads from starting
+> > > transactions when the filesystem is frozen? Previously this
+> > > SB_FREEZE_TRANS would guarantee even internal fucntions would get
+> > > stopped, but now there's nothing?
+> >   I've checked XFS now and I didn't find any work that would be done on a
+> > clean filesystem. I found:
+> > _xfs_mru_cache_reap() - doesn't seem to do any IO
 > 
-> The one call-site I currently have is linked to vma lifetimes, so yeah,
-> I guess that that can be lots.
+> Causes iput() on inodes, which if dropping the last reference to the
+> inode can cause them to enter reclaim and hence have transactions
+> run on them to either truncate blocks beyonds EOF or to do the
+> second phase of an unlink(). So it will definitely break the freeze
+> model.
+  OK, I've missed this. I'll fix it.
 
-So the worst case would be if several processes with lots of VMAs were
-to exit at about the same time?  If so, my guess is that call_srcu()
-needs to handle several thousand callbacks showing up within a few
-tens of microseconds.  Is that a reasonable assumption, or am I missing
-an order of magnitude or two in either direction?
+> > xfs_end_io(), xfs_buf_iodone_work() - shouldn't be a problem either since only
+> >   reads can happen on a frozen filesystem
+> > xfs_reclaim_worker() - everything is clean so no IO should happen
+> 
+> It will do work as other things push inodes into reclaim. e.g.
+> filestreams inode expiry. And it will still run to reclaim clean
+> inodes...
+  Sure. But reclaim will start a transaction only if inode is dirty. And
+inode must not be dirty on a frozen filesystem.
+ 
+> > xfs_flush_worker() - everything is clean so no IO should happen
+> > xfs_sync_worker() - again the same if I understand the code right
+> 
+> xfs_sync_worker() will always trigger a log force, so if there is
+> anything that has dirtied the journal, it will trigger IO. We have
+> no protection against the journal being dirtied anymore, so no
+> guarantees can be given here.
+  Yes, it would be a bug if something dirtied a journal while the
+filesystem is frozen. To catch issues like this, I've added WARN_ON in
+xfs_trans_alloc() to actually warn when transaction would be started on a
+frozen filesystem. My testing never triggered it with the latest patch set.
 
-							Thanx, Paul
+> Basically, your patchset creates a "shell" around the outside of the
+> filesystem that catches all the external modifications that can
+> occur through the VFS and ioctls. The "shell" is now the only layer
+> of defense because the patchset removes the layer of protection that
+> prevents internal modifications from occurring.
+  Yes. I'd just note that the "shell" is there already to provide reliable
+remounting read only. I just had to change some properties of the shell to
+be usable for freezing as well. But the shell has to be maintained
+regardless of how we decide to do freezing.
 
+Also believe me that I've initially tried to fix the freezing without the
+external shell. But it just isn't enough to prevent dirty inodes from being
+created (e.g. from directory operations) while sync during freezing is
+running.
+
+Sure I could keep the freezing mechanism on transaction start. But it
+seemed like a cleaner approach to me to protect all the places properly
+with the generic mechanism than having two mechanisms and unclear
+(especially locking) interactions between them.
+
+But in the end, if you guys really feel strongly about it and decide that
+XFS wants to keep it's mechanism of freezing on transaction start, then I
+won't stop you. Although it would mean XFS would have to have three
+counters to protect freezing while other filesystems will need only two.
+Anyway I'm confident enough to remove that mechanism from ext3/4 and ocfs2
+but I don't know XFS internals enough to really argue...
+
+> For example, the XFS patch added a bunch of protection to ioctls on
+> XFS that only modify file metadata and so never were protected
+> against data freezes - they were all implicitly protected by the inner
+> transaction subsystem freeze. All of the above cases were protected
+> by the inner layer of defense, which is now gone.
+  Yes, but all these ioctls are currently buggy with respect to remounting
+read only (not the whole filesystem, just one mountpoint of many where
+filesystem may be mounted). So I'd argue that these particular changes are
+actually bug fixes.
+
+> Not to mention the shrinkers. The inode cache shrinkers can
+> cause inodes to enter reclaim which can trigger EOF truncation just
+> like _xfs_mru_cache_reap(). The dquot cache shrinker can also issue
+> IO, and dquots will be dirtied by EOF truncation. Same with buffers,
+> and the buffer cache shrinker.
+  OK, now I see that even iput() of a clean inode can cause truncation to
+happen for XFS. Thanks for the pointer. I'll see what we could do about
+this.
+
+> I'm sure other filesystems have just as complex or even more complex
+> internal paths that trigger dirtying and IO that the "freeze shell"
+> model does not prevent. I don't think auditing is good enough - the
+> shell model is, IMO, too easy to break and too hard to test for
+> breakage...
+  Well, actually I don't know filesystem which would have as complex
+interactions as XFS has. But maybe there are some. In either case I don't
+think maintaining the "shell" is that hard. You have to maintain the one
+facing to userspace anyway due to remounting. For the internal filesystem
+threads, you have to be aware when you can cause write and be protected
+against freezing in that case. I don't think it's that complex, although I
+agree that the current test coverage will be small (freezing isn't used
+very often) so bugs can go unnoticed for a long time.
+
+Maybe we could add a test in xfs_trans_alloc() checking that fs is
+protected against freezing? That would increase the test coverage a lot.
+Although the test should be probably enabled only for XFS_DEBUG because it
+will be an expensive one.
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
