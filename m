@@ -1,99 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306Ab2CLVeP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 17:34:15 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40806 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757339Ab2CLV3t (ORCPT
+	id S1757479Ab2CLVes (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 17:34:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39785 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795Ab2CLVeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 17:29:49 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, Will Drewry <wad@chromium.org>
-Subject: [PATCH v14 02/13] net/compat.c,linux/filter.h: share compat_sock_fprog
-Date: Mon, 12 Mar 2012 16:28:24 -0500
-Message-Id: <1331587715-26069-2-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1331587715-26069-1-git-send-email-wad@chromium.org>
-References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+	Mon, 12 Mar 2012 17:34:46 -0400
+Date: Mon, 12 Mar 2012 16:34:37 -0500 (CDT)
+From: Manoj Iyer <manoj.iyer@canonical.com>
+X-X-Sender: manjo@lazy
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+cc: Yves-Alexis Perez <corsac@debian.org>,
+        ibm-acpi-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [ibm-acpi-devel] [PATCH] thinkpad-acpi: recognize Lenovo as
+ version string in newer V-series BIOS
+In-Reply-To: <20120310160609.GA6254@khazad-dum.debian.net>
+Message-ID: <alpine.DEB.2.02.1203121558340.3458@lazy>
+References: <1331335944-4662-1-git-send-email-manoj.iyer@canonical.com> <1331335944-4662-2-git-send-email-manoj.iyer@canonical.com> <20120310042844.GA14972@khazad-dum.debian.net> <1331387907.2833.33.camel@scapa>
+ <20120310160609.GA6254@khazad-dum.debian.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any other users of bpf_*_filter that take a struct sock_fprog from
-userspace will need to be able to also accept a compat_sock_fprog
-if the arch supports compat calls.  This change let's the existing
-compat_sock_fprog be shared.
+Henrique/Yves-Alexis,
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Signed-off-by: Will Drewry <wad@chromium.org>
+Yes, the V series systems are listed under Ideapad series on Lenovo's 
+website. I initially was looking at why the Fn+F5 hotkey was not reporting 
+a key event. Looking at the bios dsdt.dsl data on V480 I see
 
-v14: rebase/nochanges
-v13: rebase on to 88ebdda6159ffc15699f204c33feb3e431bf9bdc
-v12: rebase on to linux-next
-v11: introduction
----
- include/linux/filter.h |   11 +++++++++++
- net/compat.c           |    8 --------
- 2 files changed, 11 insertions(+), 8 deletions(-)
+Device (HKEY)
+                     {
+                         Mutex (BFWM, 0x07)
+                         Name (INDV, Zero)
+                         Name (_HID, EisaId ("LEN0068"))
+                         Method (_STA, 0, NotSerialized)
 
-diff --git a/include/linux/filter.h b/include/linux/filter.h
-index aaa2e80..f2e5315 100644
---- a/include/linux/filter.h
-+++ b/include/linux/filter.h
-@@ -10,6 +10,7 @@
- 
- #ifdef __KERNEL__
- #include <linux/atomic.h>
-+#include <linux/compat.h>
- #endif
- 
- /*
-@@ -132,6 +133,16 @@ struct sock_fprog {	/* Required for SO_ATTACH_FILTER. */
- 
- #ifdef __KERNEL__
- 
-+#ifdef CONFIG_COMPAT
-+/*
-+ * A struct sock_filter is architecture independent.
-+ */
-+struct compat_sock_fprog {
-+	u16		len;
-+	compat_uptr_t	filter;		/* struct sock_filter * */
-+};
-+#endif
-+
- struct sk_buff;
- struct sock;
- 
-diff --git a/net/compat.c b/net/compat.c
-index 6def90e..c5c61c8 100644
---- a/net/compat.c
-+++ b/net/compat.c
-@@ -326,14 +326,6 @@ void scm_detach_fds_compat(struct msghdr *kmsg, struct scm_cookie *scm)
- 	__scm_destroy(scm);
- }
- 
--/*
-- * A struct sock_filter is architecture independent.
-- */
--struct compat_sock_fprog {
--	u16		len;
--	compat_uptr_t	filter;		/* struct sock_filter * */
--};
--
- static int do_set_attach_filter(struct socket *sock, int level, int optname,
- 				char __user *optval, unsigned int optlen)
- {
--- 
-1.7.5.4
+and it does not have the acpi_device_id of VPC2004 like other ideapads 
+that I have seen, and seemed like the HKEY could be handled by 
+thinkpad_acpi module. Product version string in DMI says "Lenovo V480" 
+instead of "ThinkPad" and this was not recognized by the thinkpad_acpi 
+module, thus my quirk to load the module.
 
+After loading the module on the V480 I see:
+
+[14511.946260] thinkpad_acpi: ThinkPad ACPI Extras v0.24
+[14511.946262] thinkpad_acpi: http://ibm-acpi.sf.net/
+[14511.946264] thinkpad_acpi: ThinkPad BIOS H5ET23WW (0.23 ), EC unknown
+[14511.946265] thinkpad_acpi: Lenovo Lenovo V480, model 14TD010
+[14511.946707] thinkpad_acpi: detected a 8-level brightness capable 
+ThinkPad
+[14511.952009] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is 
+unblocked
+[14511.953099] Registered led device: tpacpi::thinklight
+[14511.953156] Registered led device: tpacpi::power
+[14511.953203] Registered led device: tpacpi::standby
+[14511.953247] Registered led device: tpacpi::thinkvantage
+[14511.953262] thinkpad_acpi: Standard ACPI backlight interface available, 
+not loading native one
+[14511.953420] thinkpad_acpi: Console audio control enabled, mode: monitor 
+(read only)
+[14511.955196] input: ThinkPad Extra Buttons as 
+/devices/platform/thinkpad_acpi/input/input17
+
+Fn+F15 now reports key press event, 00000080 00001005, and it reported 
+nothing before when the module was not loaded. So prior to loading 
+thinkpad_acpi, /lib/udev/findkeyboards == input/event3, /lib/udev/keymap 
+-i input/event3 returned no valid values for Fn+F5 combo.
+
+I am trying to get this patched module tested on other thinkpad and 
+ideapads that we have to see if there are any regression or other issues. 
+So, please let me know if this something worth supporting.
+
+
+Thanks
+Manoj
+
+On Sat, 10 Mar 2012, Henrique de Moraes Holschuh wrote:
+
+> On Sat, 10 Mar 2012, Yves-Alexis Perez wrote:
+>> On sam., 2012-03-10 at 01:28 -0300, Henrique de Moraes Holschuh wrote:
+>>> So far so good, but what driver functionality works well in these new
+>>> lenovo boxes?
+>>
+>> V-series are Ideapad, so I'm not really sure this need to be added to
+>> thinkpad-acpi.
+>
+> Yeah, it is not a thinkpad, not even in name.
+>
+> However, it just might have enough of the thinkpad ACPI API to work,
+> thus my question.  What good does thinkpad-acpi do in a Lenovo Ideapad
+> V-series?   If it does something useful, we can support it (but it
+> likely needs more than just this patch to be safe).
+>
+> If it doesn't do anything useful, consider this as an absolute NACK
+> (i.e. I will outright revert it if it lands).  Loading thinkpad-acpi on
+> a notebook that doesn't benefit from it is harmful in the long term, as
+> thinkpad-acpi can suddenly start calling weird stuff in ACPI on that box
+> and do something bad.   There is a real reason why we restrict IBM-era
+> stuff to IBM thinkpads, etc.
+>
+> --
+>  "One disk to rule them all, One disk to find them. One disk to bring
+>  them all and in the darkness grind them. In the Land of Redmond
+>  where the shadows lie." -- The Silicon Valley Tarot
+>  Henrique Holschuh
+>
+>
+
+--
+====================
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement
+====================
