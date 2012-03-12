@@ -1,612 +1,425 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757241Ab2CLU07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 16:26:59 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:40499 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756661Ab2CLU06 (ORCPT
+	id S1757244Ab2CLUeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 16:34:09 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49097 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928Ab2CLUeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 16:26:58 -0400
-X-Authenticated: #9962044
-X-Provags-ID: V01U2FsdGVkX18wHhIIWwwwAswuuj/GMVhta0nlMeFnbX54splz+B
-	9Qvztqoq2f6tBY
-From: Marc Dietrich <marvin24@gmx.de>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nitin Gupta <ngupta@vflare.org>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] staging: fix powerpc linux-next break on zsmalloc
-Date: Mon, 12 Mar 2012 21:26:02 +0100
-Message-ID: <1682961.ZuPU006sSl@ax5200p>
-User-Agent: KMail/4.7.3 (Linux/3.2.0-17-generic; KDE/4.7.4; x86_64; ; )
-In-Reply-To: <4F5E097B.4070605@linux.vnet.ibm.com>
-References: <1329144469-8575-1-git-send-email-sjenning@linux.vnet.ibm.com> <5736714.Unq6oKkpjO@ax5200p> <4F5E097B.4070605@linux.vnet.ibm.com>
+	Mon, 12 Mar 2012 16:34:04 -0400
+Date: Mon, 12 Mar 2012 13:33:59 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 3.2.10
+Message-ID: <20120312203359.GA16543@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Y-GMX-Trusted: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Seth,
 
-On Monday 12 March 2012 09:34:35 Seth Jennings wrote:
-> On 02/14/2012 10:21 AM, Marc Dietrich wrote:
-> > On Tuesday 14 February 2012 08:35:13 Seth Jennings wrote:
-> >> On 02/14/2012 05:39 AM, Marc Dietrich wrote:
-> >>> Am 14.02.2012 12:22, schrieb Marc Dietrich:
-> >>>> Am 13.02.2012 15:47, schrieb Seth Jennings:
-> >>>>> linux/vmalloc.h added to zsmalloc-main.c to resolve implicit
-> >>>>> declaration errors.
-> >>>>> 
-> >>>>> X86 dependency added to zsmalloc and dependent drivers zcache
-> >>>>> and
-> >>>>> zram.
-> >>>>> 
-> >>>>> This X86 only requirement is not ideal.  Working to find
-> >>>>> portable
-> >>>>> functions for __flush_tlb_one and set_pte.
-> >>>> 
-> >>>> sorry, zcache/zram works fine one ARM here. Why not depend on
-> >>>> !POWERPC?
-> >>> 
-> >>> ups, sorry again, I tested an older version only. flush_tlb_one and
-> >>> set_pte is only used with the new allocator as it seems.
-> >> 
-> >> It would seem that the cpu-local tlb page flushing function for ARM
-> >> is local_flush_tlb_kernel_page(), by look at the kmap_atomic() code
-> >> in arch/arm/mm/highmem.c.
-> >> 
-> >> So each arch is using a slightly different approach here.
-> >> 
-> >> A simple #define per-arch could make a it a common call.  I think
-> >> I'm going to code it up and see how it goes.
-> > 
-> > ... and I'm happy to test it ;-)
-> 
-> So I have a branch ready for you to test if your are willing
-> 
-> git://github.com/spartacus06/linux.git -b portable
+--SUOF0GtieIMvvwua
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ok, I took three patches I found relavant:
-	454bded136: staging: zsmalloc: change type of vm_area
-	33258b4c9d: staging: zcache: use portable cpu-local tlb flush
-	15959dc488: staging: add ARM/PPC64 to zcache/zram/zsmalloc Kconfig
+I'm announcing the release of the 3.2.10 kernel.
 
-and also backported:
-	cd12909cb5: xen: map foreign pages for shared rings by updating the PTEs 
-directly
+All users of the 3.2 kernel series must upgrade.
 
-to my 3.0 tree which has all changes for zcache/frontswap/zram/cleancache 
-backported from linux-next (sorry, other kernels are more hard to test on this 
-machine).
+The updated 3.2.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
+it linux-3.2.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
+;a=3Dsummary
 
-> The branch is based on Greg's staging-next, since my
-> patches that remove the sparsemem dependency are in there.
-> The frontswap_v11 patches are in that branch as well.
-> 
-> I did a simple make test with my ARM cross compiler and it
-> builds cleanly.  Now I just need to know if it _works_.
-> 
-> I'm not sure if you have been experimenting with frontswap
-> since it's not in mainline yet, but you can enable/disable
-> it in:
-> 
-> Kernel Features -> Enable frontswap to cache swap pages if tmem is present
-> 
-> Only the frontswap paths use zsmalloc right now. We are looking
-> to use it for the cleancache paths too soon (I'm working on
-> that now).
-> 
-> I'd appreciate any feedback you can provide!
+thanks,
 
-I enabled zram (for swap), frontswap and cleancache.
+greg k-h
 
-In a short test, my half proprietary display driver crashes
+------------
 
-[  204.951006] Unable to handle kernel NULL pointer dereference at virtual 
-address 00000000
-[  204.959130] pgd = c1018000
-[  204.961829] [00000000] *pgd=00000000
-[  204.965421] Internal error: Oops: 5 [#1] SMP
-[  204.969682] Modules linked in: nls_iso8859_1 nls_cp437 vfat fat fuse 
-zram(C) snd_soc_alc5632 rt2800usb snd_seq_dummy rt2800lib rt2x00usb 
-snd_soc_tegra_pcm rt2x00lib mac80211 snd_seq_oss snd_seq_midi_event cdc_ether 
-snd_soc_tegra_i2s usbnet snd_soc_tegra_das snd_pcm_oss snd_soc_tegra_alc5632 
-cdc_wdm snd_mixer_oss mii snd_soc_core cdc_acm cfg80211 uvcvideo snd_seq 
-videodev snd_pcm tegra_wdt snd_seq_device snd_timer snd_soc_tegra_utils lm90 
-snd soundcore snd_page_alloc
-[  205.011152] CPU: 0    Tainted: G         C   (3.0.19 #28)
-[  205.016551] PC is at get_zspage_mapping+0x14/0x48
-[  205.021247] LR is at zs_map_object+0x60/0x1a0
-[  205.025597] pc : [<c036179c>]    lr : [<c0361b70>]    psr: 400f0013
-[  205.025603] sp : c3ca5978  ip : c3ca5988  fp : c3ca5984
-[  205.037062] r10: 000197c8  r9 : d86c5000  r8 : 00005045
-[  205.042275] r7 : c06ae000  r6 : dacf0000  r5 : 00000fc3  r4 : c074e8a0
-[  205.048790] r3 : 00080068  r2 : c3ca5994  r1 : c3ca5990  r0 : 00000000
-[  205.055306] Flags: nZcv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment 
-user
-[  205.062428] Control: 10c5387d  Table: 0101804a  DAC: 00000015
-[  205.068164] Process plugin-containe (pid: 1771, stack limit = 0xc3ca42f8)
-[  205.074940] Stack: (0xc3ca5978 to 0xc3ca6000)
-<stack snipped>
-[  205.512112] [<c036179c>] (get_zspage_mapping+0x14/0x48) from [<c0361b70>] 
-(zs_map_object+0x60/0x1a0)
-[  205.521247] [<c0361b70>] (zs_map_object+0x60/0x1a0) from [<bf0186a0>] 
-(zram_bvec_rw.isra.4+0x4b4/0x5b8 [zram])
-[  205.531262] [<bf0186a0>] (zram_bvec_rw.isra.4+0x4b4/0x5b8 [zram]) from 
-[<bf018c20>] (zram_make_request+0x178/0x244 [zram])
-[  205.542304] [<bf018c20>] (zram_make_request+0x178/0x244 [zram]) from 
-[<c0242490>] (generic_make_request+0x46c/0x504)
-[  205.552816] [<c0242490>] (generic_make_request+0x46c/0x504) from 
-[<c024264c>] (submit_bio+0x124/0x164)
-[  205.562117] [<c024264c>] (submit_bio+0x124/0x164) from [<c012c37c>] 
-(swap_writepage+0xfc/0x114)
-[  205.570818] [<c012c37c>] (swap_writepage+0xfc/0x114) from [<c010fc50>] 
-(shrink_page_list+0x3ec/0x810)
-[  205.580030] [<c010fc50>] (shrink_page_list+0x3ec/0x810) from [<c011046c>] 
-(shrink_inactive_list+0x1fc/0x3f4)
-[  205.589846] [<c011046c>] (shrink_inactive_list+0x1fc/0x3f4) from 
-[<c0110a50>] (shrink_zone+0x3ec/0x508)
-[  205.599230] [<c0110a50>] (shrink_zone+0x3ec/0x508) from [<c01115f4>] 
-(try_to_free_pages+0x188/0x434)
-[  205.608364] [<c01115f4>] (try_to_free_pages+0x188/0x434) from [<c0106e10>] 
-(__alloc_pages_nodemask+0x3f0/0x634)
-[  205.618450] [<c0106e10>] (__alloc_pages_nodemask+0x3f0/0x634) from 
-[<c02a0fc0>] (nvmap_alloc_pages_exact.constprop.4+0x4c/0x108)
-[  205.630004] [<c02a0fc0>] (nvmap_alloc_pages_exact.constprop.4+0x4c/0x108) 
-from [<c02a1150>] (handle_page_alloc.isra.3+0xd4/0x16c)
-[  205.641644] [<c02a1150>] (handle_page_alloc.isra.3+0xd4/0x16c) from 
-[<c02a1480>] (nvmap_alloc_handle_id+0x198/0x2c4)
-[  205.652156] [<c02a1480>] (nvmap_alloc_handle_id+0x198/0x2c4) from 
-[<c02a3184>] (nvmap_ioctl_alloc+0xa0/0xb8)
-[  205.661974] [<c02a3184>] (nvmap_ioctl_alloc+0xa0/0xb8) from [<c029fd48>] 
-(nvmap_ioctl+0x1b4/0x234)
-[  205.670925] [<c029fd48>] (nvmap_ioctl+0x1b4/0x234) from [<c0146734>] 
-(do_vfs_ioctl+0x4fc/0x570)
-[  205.679615] [<c0146734>] (do_vfs_ioctl+0x4fc/0x570) from [<c0146808>] 
-(sys_ioctl+0x60/0x84)
-[  205.687971] [<c0146808>] (sys_ioctl+0x60/0x84) from [<c0053dc0>] 
-(ret_fast_syscall+0x0/0x30)
-[  205.696399] Code: e92dd800 e24cb004 e92d4000 e8bd4000 (e5903000) 
-[  205.703172] ---[ end trace 679c2bb67298abde ]---
+ Documentation/hwmon/jc42                    |   26 +-
+ Makefile                                    |    2=20
+ arch/alpha/include/asm/futex.h              |    2=20
+ arch/arm/Kconfig                            |    2=20
+ arch/arm/include/asm/pmu.h                  |    2=20
+ arch/arm/kernel/perf_event.c                |   22 -
+ arch/arm/kernel/perf_event_v6.c             |   22 -
+ arch/arm/kernel/perf_event_v7.c             |   11=20
+ arch/arm/kernel/perf_event_xscale.c         |   20 +
+ arch/arm/mach-dove/common.c                 |    3=20
+ arch/arm/mach-kirkwood/common.c             |    3=20
+ arch/arm/mach-kirkwood/mpp.h                |  320 ++++++++++++++---------=
+-----
+ arch/arm/mach-lpc32xx/include/mach/irqs.h   |    2=20
+ arch/arm/mach-lpc32xx/irq.c                 |   25 +-
+ arch/arm/mach-lpc32xx/serial.c              |   20 +
+ arch/arm/mach-mv78xx0/common.c              |    3=20
+ arch/arm/mach-mv78xx0/mpp.h                 |  226 +++++++++----------
+ arch/arm/mach-omap2/board-4430sdp.c         |   22 +
+ arch/arm/mach-omap2/board-omap4panda.c      |   22 +
+ arch/arm/mach-omap2/omap-iommu.c            |    3=20
+ arch/arm/mach-orion5x/common.c              |    4=20
+ arch/arm/mm/proc-v7.S                       |    4=20
+ arch/arm/plat-orion/common.c                |    9=20
+ arch/arm/plat-orion/include/plat/common.h   |    3=20
+ arch/arm/plat-orion/mpp.c                   |    3=20
+ arch/arm/plat-s3c24xx/dma.c                 |    2=20
+ arch/avr32/Kconfig                          |    1=20
+ arch/s390/Kconfig                           |    3=20
+ arch/s390/include/asm/compat.h              |    7=20
+ arch/s390/kernel/process.c                  |    1=20
+ arch/s390/kernel/ptrace.c                   |    2=20
+ arch/s390/kernel/setup.c                    |    2=20
+ arch/s390/kernel/signal.c                   |    1=20
+ arch/s390/mm/fault.c                        |    1=20
+ arch/s390/mm/mmap.c                         |    2=20
+ arch/x86/include/asm/perf_event.h           |    8=20
+ arch/x86/kernel/cpu/perf_event.h            |    8=20
+ arch/x86/kernel/cpu/perf_event_amd.c        |   37 +++
+ arch/x86/kvm/svm.c                          |    5=20
+ block/bsg.c                                 |    3=20
+ drivers/acpi/sleep.c                        |   16 +
+ drivers/crypto/mv_cesa.c                    |    1=20
+ drivers/gpu/drm/i915/i915_reg.h             |   15 +
+ drivers/gpu/drm/i915/intel_display.c        |   32 ++
+ drivers/gpu/drm/radeon/r600_blit_shaders.c  |    8=20
+ drivers/hid/hid-ids.h                       |    3=20
+ drivers/hid/usbhid/hid-quirks.c             |    1=20
+ drivers/hwmon/Kconfig                       |    5=20
+ drivers/hwmon/jc42.c                        |   30 ++
+ drivers/hwmon/pmbus/pmbus_core.c            |    3=20
+ drivers/hwmon/pmbus/zl6100.c                |   10=20
+ drivers/i2c/busses/i2c-mxs.c                |   13 -
+ drivers/input/mouse/alps.c                  |    7=20
+ drivers/iommu/amd_iommu_init.c              |    2=20
+ drivers/iommu/omap-iommu.c                  |    3=20
+ drivers/md/dm-flakey.c                      |    2=20
+ drivers/md/dm-io.c                          |   23 +-
+ drivers/md/dm-ioctl.c                       |    2=20
+ drivers/md/dm-raid.c                        |   17 -
+ drivers/md/dm-thin-metadata.c               |   25 +-
+ drivers/mfd/cs5535-mfd.c                    |    6=20
+ drivers/mfd/mfd-core.c                      |    2=20
+ drivers/mfd/wm8994-core.c                   |   14 +
+ drivers/misc/cs5535-mfgpt.c                 |    2=20
+ drivers/mmc/host/atmel-mci.c                |   21 -
+ drivers/mmc/host/sdhci-esdhc-imx.c          |    5=20
+ drivers/net/usb/cdc_ether.c                 |    7=20
+ drivers/net/usb/usbnet.c                    |    2=20
+ drivers/net/usb/zaurus.c                    |    7=20
+ drivers/net/wireless/ath/ath9k/ar5008_phy.c |   25 --
+ drivers/net/wireless/ath/ath9k/ar9002_hw.c  |   19 +
+ drivers/net/wireless/ath/ath9k/hw.h         |    1=20
+ drivers/net/wireless/ath/carl9170/tx.c      |    9=20
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c  |   10=20
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |   36 ++-
+ drivers/rapidio/devices/tsi721.c            |    5=20
+ drivers/regulator/88pm8607.c                |    6=20
+ drivers/s390/block/dasd_eckd.c              |    2=20
+ drivers/s390/block/dasd_ioctl.c             |    1=20
+ drivers/s390/char/fs3270.c                  |    1=20
+ drivers/s390/char/vmcp.c                    |    1=20
+ drivers/s390/cio/chsc_sch.c                 |    1=20
+ drivers/s390/cio/qdio_main.c                |    4=20
+ drivers/s390/scsi/zfcp_cfdc.c               |    1=20
+ drivers/scsi/osd/osd_uld.c                  |    4=20
+ drivers/spi/spi-topcliff-pch.c              |    6=20
+ drivers/staging/media/lirc/lirc_serial.c    |  100 ++++----
+ drivers/tty/Kconfig                         |    2=20
+ drivers/video/omap2/dss/hdmi.c              |    3=20
+ drivers/video/omap2/dss/ti_hdmi.h           |    4=20
+ drivers/video/omap2/dss/ti_hdmi_4xxx_ip.c   |   77 +++++-
+ drivers/video/via/hw.c                      |    4=20
+ drivers/watchdog/hpwdt.c                    |    5=20
+ fs/aio.c                                    |    2=20
+ fs/autofs4/autofs_i.h                       |    1=20
+ fs/autofs4/dev-ioctl.c                      |    1=20
+ fs/autofs4/inode.c                          |    2=20
+ fs/autofs4/waitq.c                          |   22 +
+ fs/binfmt_elf.c                             |    2=20
+ fs/cifs/dir.c                               |   20 +
+ include/linux/compat.h                      |    4=20
+ include/linux/regset.h                      |   10=20
+ include/video/omapdss.h                     |    5=20
+ kernel/irq/manage.c                         |   44 +++
+ kernel/kprobes.c                            |   12 -
+ mm/huge_memory.c                            |    6=20
+ mm/memcontrol.c                             |    5=20
+ mm/nommu.c                                  |    2=20
+ net/mac80211/rate.c                         |    2=20
+ sound/pci/hda/hda_codec.c                   |    8=20
+ sound/pci/hda/hda_codec.h                   |    3=20
+ sound/pci/hda/patch_conexant.c              |   22 +
+ sound/pci/hda/patch_realtek.c               |    2=20
+ sound/pci/hda/patch_sigmatel.c              |    2=20
+ sound/soc/imx/imx-ssi.c                     |    2=20
+ sound/soc/soc-dapm.c                        |   12 -
+ 116 files changed, 1081 insertions(+), 585 deletions(-)
 
-nvmap used alloc_vm_area which got a second paramter in newer kernels. I just 
-replaced it with NULL, but that seems to be the wrong way. I don't want to 
-bother you with boring details.
+Akio Idehara (1):
+      Input: ALPS - fix touchpad detection when buttons are pressed
 
-I booted without the xorg driver (so the kernel interface is not used) and got
+Alan Stern (1):
+      HID: usbhid: Add NOGET quirk for the AIREN Slim+ keyboard
 
-Mar 12 21:20:28 ac100 kernel: [  118.264433] ------------[ cut here 
-]------------
-Mar 12 21:20:28 ac100 kernel: [  118.264523] WARNING: at 
-/home/marc/ac100/marvin24s-kernel/drivers/staging/zcache/zcache-main.c:755 
-zcache_pampd_get_data+0x88/0x14c()
-Mar 12 21:20:28 ac100 kernel: [  118.264586] Modules linked in: nls_iso8859_1 
-nls_cp437 vfat fat fuse zram(C) snd_soc_alc5632 snd_seq_dummy rt2800usb 
-rt2800lib rt2x00usb rt2x00lib snd_soc_tegra_alc5632 mac80211 snd_seq_oss 
-snd_soc_tegra_pcm snd_soc_tegra_i2s snd_seq_midi_event snd_soc_tegra_das 
-snd_soc_core snd_pcm_oss snd_mixer_oss uvcvideo videodev cfg80211 tegra_wdt 
-snd_seq cdc_ether usbnet snd_pcm cdc_wdm cdc_acm mii snd_seq_device lm90 
-snd_timer snd soundcore snd_page_alloc snd_soc_tegra_utils
-Mar 12 21:20:28 ac100 kernel: [  118.265176] [<c005acac>] 
-(unwind_backtrace+0x0/0xec) from [<c0444314>] (dump_stack+0x20/0x24)
-Mar 12 21:20:28 ac100 kernel: [  118.265290] [<c0444314>] 
-(dump_stack+0x20/0x24) from [<c00860bc>] (warn_slowpath_common+0x5c/0x74)
-Mar 12 21:20:28 ac100 kernel: [  118.265385] [<c00860bc>] 
-(warn_slowpath_common+0x5c/0x74) from [<c0086100>] 
-(warn_slowpath_null+0x2c/0x34)
-Mar 12 21:20:28 ac100 kernel: [  118.265474] [<c0086100>] 
-(warn_slowpath_null+0x2c/0x34) from [<c035ed9c>] 
-(zcache_pampd_get_data+0x88/0x14c)
-Mar 12 21:20:28 ac100 kernel: [  118.265566] [<c035ed9c>] 
-(zcache_pampd_get_data+0x88/0x14c) from [<c0361028>] (tmem_get+0x160/0x19c)
-Mar 12 21:20:28 ac100 kernel: [  118.265651] [<c0361028>] 
-(tmem_get+0x160/0x19c) from [<c035fc98>] 
-(zcache_get_page.constprop.16+0x8c/0xa8)
-Mar 12 21:20:28 ac100 kernel: [  118.265737] [<c035fc98>] 
-(zcache_get_page.constprop.16+0x8c/0xa8) from [<c035fd9c>] 
-(zcache_frontswap_get_page+0x90/0xa0)
-Mar 12 21:20:28 ac100 kernel: [  118.265843] [<c035fd9c>] 
-(zcache_frontswap_get_page+0x90/0xa0) from [<c013037c>] 
-(__frontswap_get_page+0x90/0xd8)
-Mar 12 21:20:28 ac100 kernel: [  118.265934] [<c013037c>] 
-(__frontswap_get_page+0x90/0xd8) from [<c012c3d8>] (swap_readpage+0x44/0xdc)
-Mar 12 21:20:28 ac100 kernel: [  118.266020] [<c012c3d8>] 
-(swap_readpage+0x44/0xdc) from [<c012c9c8>] (read_swap_cache_async+0xc8/0x11c)
-Mar 12 21:20:28 ac100 kernel: [  118.266106] [<c012c9c8>] 
-(read_swap_cache_async+0xc8/0x11c) from [<c012cab0>] 
-(swapin_readahead+0x94/0x9c)
-Mar 12 21:20:28 ac100 kernel: [  118.266204] [<c012cab0>] 
-(swapin_readahead+0x94/0x9c) from [<c011ff20>] (handle_pte_fault+0x2f4/0x6c4)
-Mar 12 21:20:28 ac100 kernel: [  118.266292] [<c011ff20>] 
-(handle_pte_fault+0x2f4/0x6c4) from [<c01203a8>] (handle_mm_fault+0xb8/0xd0)
-Mar 12 21:20:28 ac100 kernel: [  118.266382] [<c01203a8>] 
-(handle_mm_fault+0xb8/0xd0) from [<c005f114>] (do_page_fault+0xf8/0x28c)
-Mar 12 21:20:28 ac100 kernel: [  118.266483] [<c005f114>] 
-(do_page_fault+0xf8/0x28c) from [<c004e170>] (do_DataAbort+0x44/0xa8)
-Mar 12 21:20:28 ac100 kernel: [  118.266588] [<c004e170>] 
-(do_DataAbort+0x44/0xa8) from [<c0053d64>] (ret_from_exception+0x0/0x10)
-Mar 12 21:20:28 ac100 kernel: [  118.266645] Exception stack(0xdb86dfb0 to 
-0xdb86dff8)
-Mar 12 21:20:28 ac100 kernel: [  118.266697] dfa0:                                     
-b6f4cf68 b6f4e658 00000001 b6f4cee8
-Mar 12 21:20:28 ac100 kernel: [  118.266769] dfc0: 00000011 b6f4c8e8 b6f806ac 
-b6f4b9c0 00000001 b6f4b988 bec64998 00000011
-Mar 12 21:20:28 ac100 kernel: [  118.266835] dfe0: b6f4cf68 bec64948 b6f2fc07 
-b6f2fc66 200f0030 ffffffff
-Mar 12 21:20:28 ac100 kernel: [  118.266885] ---[ end trace 3a9bf99eb36a0d77 
-]---
-Mar 12 21:20:28 ac100 kernel: [  118.266940] kernel BUG at 
-/home/marc/ac100/marvin24s-kernel/drivers/staging/zcache/zcache-main.c:761!
-Mar 12 21:20:28 ac100 kernel: [  118.276268] Unable to handle kernel NULL 
-pointer dereference at virtual address 00000000
-Mar 12 21:20:28 ac100 kernel: [  118.284396] pgd = db2b4000
-Mar 12 21:20:28 ac100 kernel: [  118.287123] [00000000] *pgd=00000000
-Mar 12 21:20:28 ac100 kernel: [  118.290746] Internal error: Oops: 805 [#1] 
-SMP
-Mar 12 21:20:28 ac100 kernel: [  118.295212] Modules linked in: nls_iso8859_1 
-nls_cp437 vfat fat fuse zram(C) snd_soc_alc5632 snd_seq_dummy rt2800usb 
-rt2800lib rt2x00usb rt2x00lib snd_soc_tegra_alc5632 mac80211 snd_seq_oss 
-snd_soc_tegra_pcm snd_soc_tegra_i2s snd_seq_midi_event snd_soc_tegra_das 
-snd_soc_core snd_pcm_oss snd_mixer_oss uvcvideo videodev cfg80211 tegra_wdt 
-snd_seq cdc_ether usbnet snd_pcm cdc_wdm cdc_acm mii snd_seq_device lm90 
-snd_timer snd soundcore snd_page_alloc snd_soc_tegra_utils
-Mar 12 21:20:28 ac100 kernel: [  118.337316] CPU: 1    Tainted: G        WC   
-(3.0.19 #29)
-Mar 12 21:20:28 ac100 kernel: [  118.342765] PC is at __bug+0x2c/0x38
-Mar 12 21:20:28 ac100 kernel: [  118.346387] LR is at 
-console_unlock+0x1ac/0x1c8
-Mar 12 21:20:28 ac100 kernel: [  118.350958] pc : [<c00576bc>]    lr : 
-[<c0086c70>]    psr: 600f0193
-Mar 12 21:20:28 ac100 kernel: [  118.350985] sp : db86dc50  ip : db86db68  fp 
-: db86dc5c
-Mar 12 21:20:28 ac100 kernel: [  118.362488] r10: 00000001  r9 : 00000000  r8 
-: 00000018
-Mar 12 21:20:28 ac100 kernel: [  118.367744] r7 : ffffffea  r6 : 0ca61001  r5 : 
-d572b000  r4 : c06a8304
-Mar 12 21:20:28 ac100 kernel: [  118.374302] r3 : 00000000  r2 : 271aed0f  r1 
-: 00000001  r0 : 0000006f
-Mar 12 21:20:28 ac100 kernel: [  118.380864] Flags: nZCv  IRQs off  FIQs on  
-Mode SVC_32  ISA ARM  Segment user
-Mar 12 21:20:28 ac100 kernel: [  118.388122] Control: 10c5387d  Table: 
-1b2b404a  DAC: 00000015
-Mar 12 21:20:28 ac100 kernel: [  118.393901] Process init (pid: 1, stack limit 
-= 0xdb86c2f8)
-Mar 12 21:20:28 ac100 kernel: [  118.399503] Stack: (0xdb86dc50 to 0xdb86e000)
-Mar 12 21:20:28 ac100 kernel: [  118.403898] dc40:                                     
-db86dc8c db86dc60 c035ed80 c005769c
-Mar 12 21:20:28 ac100 kernel: [  118.412128] dc60: db86dc6c c0104dd8 00000000 
-00001000 db86dd18 daed1794 daed1000 0ca61001
-Mar 12 21:20:28 ac100 kernel: [  118.420359] dc80: db86dcd4 db86dc90 c0361028 
-c035ed20 daed1000 db86dd18 00000018 00000000
-Mar 12 21:20:28 ac100 kernel: [  118.428586] dca0: 00000000 c095c560 ffffffff 
-000f0113 daed1000 db86dd18 c095c560 00000018
-Mar 12 21:20:28 ac100 kernel: [  118.436813] dcc0: 00000000 00000000 db86dd14 
-db86dcd8 c035fc98 c0360ed4 db86dcec 00000000
-Mar 12 21:20:28 ac100 kernel: [  118.445038] dce0: 00000000 000200da 00000000 
-00001000 00000000 c095c560 0000183f 0000003f
-Mar 12 21:20:28 ac100 kernel: [  118.453266] dd00: 000000d0 c095c560 db86dd64 
-db86dd18 c035fd9c c035fc18 0000003f 00000000
-Mar 12 21:20:28 ac100 kernel: [  118.461488] dd20: 00000000 00000000 00000000 
-00000000 00000000 00000000 00000000 00000000
-Mar 12 21:20:28 ac100 kernel: [  118.469716] dd40: 00000000 00000000 c05f9798 
-effffff0 000000c1 000200da db86dd7c db86dd68
-Mar 12 21:20:28 ac100 kernel: [  118.477944] dd60: c013037c c035fd18 c095c560 
-00000000 db86dd94 db86dd80 c012c3d8 c01302f8
-Mar 12 21:20:28 ac100 kernel: [  118.486171] dd80: 0000183f 00000000 db86ddc4 
-db86dd98 c012c9c8 c012c3a0 b6f4e000 db2f5498
-Mar 12 21:20:28 ac100 kernel: [  118.494399] dda0: 000200da 0000183f b6f4e000 
-db2f4d40 00000000 00000000 db86ddf4 db86ddc8
-Mar 12 21:20:28 ac100 kernel: [  118.502628] ddc0: c012cab0 c012c90c c0699498 
-db2f4d40 db2f4d40 db2b4000 db2f5498 b6f4e000
-Mar 12 21:20:28 ac100 kernel: [  118.510857] dde0: 00000000 00307e00 db86de44 
-db86ddf8 c011ff20 c012ca28 00000000 c00d5918
-Mar 12 21:20:28 ac100 kernel: [  118.519086] de00: c05d0020 db3ec580 db2f4d74 
-db2f4d74 0000184e 0000183f db86de34 b6f4e000
-Mar 12 21:20:28 ac100 kernel: [  118.527316] de20: db2b4000 000005b7 db2b6db8 
-db2f4d40 db2f5498 00000000 db86de7c db86de48
-Mar 12 21:20:28 ac100 kernel: [  118.535544] de40: c01203a8 c011fc38 db2b6db8 
-00000000 c025bf1c db2f5498 db86dfb0 db857a80
-Mar 12 21:20:28 ac100 kernel: [  118.543774] de60: b6f4e670 db2f4d40 db2f4d78 
-00000017 db86df04 db86de80 c005f114 c01202fc
-Mar 12 21:20:28 ac100 kernel: [  118.552001] de80: db86df70 00000000 00000000 
-db86df58 db86df3c db86dea0 c01356b0 c013e99c
-Mar 12 21:20:28 ac100 kernel: [  118.560223] dea0: 00000000 00000000 00000000 
-00000000 00000000 00000000 001a2000 00000000
-Mar 12 21:20:28 ac100 kernel: [  118.568449] dec0: 05802400 00000000 00001198 
-00000000 00004ccd 00000000 0091aee5 00000017
-Mar 12 21:20:28 ac100 kernel: [  118.576678] dee0: c05e4dec b6f4e670 db86dfb0 
-00000001 b6f4b988 bec64998 db86dfac db86df08
-Mar 12 21:20:28 ac100 kernel: [  118.584909] df00: c004e170 c005f028 db86df58 
-db857a80 db86df54 db86df20 c0089b14 c00a5f18
-Mar 12 21:20:28 ac100 kernel: [  118.593134] df20: bec64c24 00000001 00000001 
-bec649d0 00000000 00000003 00000000 c008aa50
-Mar 12 21:20:28 ac100 kernel: [  118.601362] df40: 00000000 bec649d0 db86dfa4 
-db86df58 c008aa50 c00a2394 00000003 0000000f
-Mar 12 21:20:28 ac100 kernel: [  118.609590] df60: 00000000 bec649d0 00000000 
-00000000 00000000 db857a80 c0088748 00100100
-Mar 12 21:20:28 ac100 kernel: [  118.617817] df80: 00200200 00000000 00000000 
-0000000f ffffffff b6f4c8e8 b6f806ac b6f4b9c0
-Mar 12 21:20:28 ac100 kernel: [  118.626044] dfa0: 00000000 db86dfb0 c0053d64 
-c004e138 b6f4cf68 b6f4e658 00000001 b6f4cee8
-Mar 12 21:20:28 ac100 kernel: [  118.634273] dfc0: 00000011 b6f4c8e8 b6f806ac 
-b6f4b9c0 00000001 b6f4b988 bec64998 00000011
-Mar 12 21:20:28 ac100 kernel: [  118.642503] dfe0: b6f4cf68 bec64948 b6f2fc07 
-b6f2fc66 200f0030 ffffffff 86950214 104188c8
-Mar 12 21:20:28 ac100 kernel: [  118.650758] [<c00576bc>] (__bug+0x2c/0x38) 
-from [<c035ed80>] (zcache_pampd_get_data+0x6c/0x14c)
-Mar 12 21:20:28 ac100 kernel: [  118.659532] [<c035ed80>] 
-(zcache_pampd_get_data+0x6c/0x14c) from [<c0361028>] (tmem_get+0x160/0x19c)
-Mar 12 21:20:28 ac100 kernel: [  118.668733] [<c0361028>] 
-(tmem_get+0x160/0x19c) from [<c035fc98>] 
-(zcache_get_page.constprop.16+0x8c/0xa8)
-Mar 12 21:20:28 ac100 kernel: [  118.678449] [<c035fc98>] 
-(zcache_get_page.constprop.16+0x8c/0xa8) from [<c035fd9c>] 
-(zcache_frontswap_get_page+0x90/0xa0)
-Mar 12 21:20:28 ac100 kernel: [  118.689483] [<c035fd9c>] 
-(zcache_frontswap_get_page+0x90/0xa0) from [<c013037c>] 
-(__frontswap_get_page+0x90/0xd8)
-Mar 12 21:20:28 ac100 kernel: [  118.699814] [<c013037c>] 
-(__frontswap_get_page+0x90/0xd8) from [<c012c3d8>] (swap_readpage+0x44/0xdc)
-Mar 12 21:20:28 ac100 kernel: [  118.709100] [<c012c3d8>] 
-(swap_readpage+0x44/0xdc) from [<c012c9c8>] (read_swap_cache_async+0xc8/0x11c)
-Mar 12 21:20:28 ac100 kernel: [  118.718560] [<c012c9c8>] 
-(read_swap_cache_async+0xc8/0x11c) from [<c012cab0>] 
-(swapin_readahead+0x94/0x9c)
-Mar 12 21:20:28 ac100 kernel: [  118.728282] [<c012cab0>] 
-(swapin_readahead+0x94/0x9c) from [<c011ff20>] (handle_pte_fault+0x2f4/0x6c4)
-Mar 12 21:20:28 ac100 kernel: [  118.737654] [<c011ff20>] 
-(handle_pte_fault+0x2f4/0x6c4) from [<c01203a8>] (handle_mm_fault+0xb8/0xd0)
-Mar 12 21:20:28 ac100 kernel: [  118.746939] [<c01203a8>] 
-(handle_mm_fault+0xb8/0xd0) from [<c005f114>] (do_page_fault+0xf8/0x28c)
-Mar 12 21:20:28 ac100 kernel: [  118.755884] [<c005f114>] 
-(do_page_fault+0xf8/0x28c) from [<c004e170>] (do_DataAbort+0x44/0xa8)
-Mar 12 21:20:28 ac100 kernel: [  118.764574] [<c004e170>] 
-(do_DataAbort+0x44/0xa8) from [<c0053d64>] (ret_from_exception+0x0/0x10)
-Mar 12 21:20:28 ac100 kernel: [  118.773481] Exception stack(0xdb86dfb0 to 
-0xdb86dff8)
-Mar 12 21:20:28 ac100 kernel: [  118.778571] dfa0:                                     
-b6f4cf68 b6f4e658 00000001 b6f4cee8
-Mar 12 21:20:28 ac100 kernel: [  118.786802] dfc0: 00000011 b6f4c8e8 b6f806ac 
-b6f4b9c0 00000001 b6f4b988 bec64998 00000011
-Mar 12 21:20:28 ac100 kernel: [  118.795026] dfe0: b6f4cf68 bec64948 b6f2fc07 
-b6f2fc66 200f0030 ffffffff
-Mar 12 21:20:28 ac100 kernel: [  118.801690] Code: e59f0010 e1a01003 eb0fb47d 
-e3a03000 (e5833000) 
-Mar 12 21:20:28 ac100 kernel: [  118.808264] ---[ end trace 3a9bf99eb36a0d78 
-]---
-Mar 12 21:20:28 ac100 kernel: [  118.826844] ------------[ cut here 
-]------------
-Mar 12 21:20:28 ac100 kernel: [  118.831491] WARNING: at 
-/home/marc/ac100/marvin24s-kernel/drivers/staging/zcache/zcache-main.c:732 
-zcache_pampd_free+0x90/0x14c()
-Mar 12 21:20:28 ac100 kernel: [  118.843128] Modules linked in: nls_iso8859_1 
-nls_cp437 vfat fat fuse zram(C) snd_soc_alc5632 snd_seq_dummy rt2800usb 
-rt2800lib rt2x00usb rt2x00lib snd_soc_tegra_alc5632 mac80211 snd_seq_oss 
-snd_soc_tegra_pcm snd_soc_tegra_i2s snd_seq_midi_event snd_soc_tegra_das 
-snd_soc_core snd_pcm_oss snd_mixer_oss uvcvideo videodev cfg80211 tegra_wdt 
-snd_seq cdc_ether usbnet snd_pcm cdc_wdm cdc_acm mii snd_seq_device lm90 
-snd_timer snd soundcore snd_page_alloc snd_soc_tegra_utils
-Mar 12 21:20:28 ac100 kernel: [  118.884648] [<c005acac>] 
-(unwind_backtrace+0x0/0xec) from [<c0444314>] (dump_stack+0x20/0x24)
-Mar 12 21:20:28 ac100 kernel: [  118.893177] [<c0444314>] 
-(dump_stack+0x20/0x24) from [<c00860bc>] (warn_slowpath_common+0x5c/0x74)
-Mar 12 21:20:28 ac100 kernel: [  118.902131] [<c00860bc>] 
-(warn_slowpath_common+0x5c/0x74) from [<c0086100>] 
-(warn_slowpath_null+0x2c/0x34)
-Mar 12 21:20:28 ac100 kernel: [  118.911784] [<c0086100>] 
-(warn_slowpath_null+0x2c/0x34) from [<c035ea90>] 
-(zcache_pampd_free+0x90/0x14c)
-Mar 12 21:20:28 ac100 kernel: [  118.921259] [<c035ea90>] 
-(zcache_pampd_free+0x90/0x14c) from [<c03610f0>] (tmem_flush_page+0x8c/0xe8)
-Mar 12 21:20:28 ac100 kernel: [  118.930470] [<c03610f0>] 
-(tmem_flush_page+0x8c/0xe8) from [<c035fe18>] 
-(zcache_flush_page.constprop.17+0x6c/0x9c)
-Mar 12 21:20:28 ac100 kernel: [  118.940720] [<c035fe18>] 
-(zcache_flush_page.constprop.17+0x6c/0x9c) from [<c035ff0c>] 
-(zcache_frontswap_flush_page+0x70/0x7c)
-Mar 12 21:20:28 ac100 kernel: [  118.952020] [<c035ff0c>] 
-(zcache_frontswap_flush_page+0x70/0x7c) from [<c0130440>] 
-(__frontswap_invalidate_page+0x7c/0xe4)
-Mar 12 21:20:28 ac100 kernel: [  118.963055] [<c0130440>] 
-(__frontswap_invalidate_page+0x7c/0xe4) from [<c012d38c>] 
-(swap_entry_free+0x11c/0x158)
-Mar 12 21:20:28 ac100 kernel: [  118.973220] [<c012d38c>] 
-(swap_entry_free+0x11c/0x158) from [<c012ed70>] 
-(free_swap_and_cache+0x30/0xfc)
-Mar 12 21:20:28 ac100 kernel: [  118.982695] [<c012ed70>] 
-(free_swap_and_cache+0x30/0xfc) from [<c011f02c>] (unmap_vmas+0x3b4/0x5ac)
-Mar 12 21:20:28 ac100 kernel: [  118.991736] [<c011f02c>] 
-(unmap_vmas+0x3b4/0x5ac) from [<c0123614>] (exit_mmap+0x13c/0x254)
-Mar 12 21:20:28 ac100 kernel: [  119.000081] [<c0123614>] 
-(exit_mmap+0x13c/0x254) from [<c0083b38>] (mmput+0x54/0x11c)
-Mar 12 21:20:28 ac100 kernel: [  119.007908] [<c0083b38>] (mmput+0x54/0x11c) 
-from [<c0088488>] (exit_mm+0x16c/0x178)
-Mar 12 21:20:28 ac100 kernel: [  119.015573] [<c0088488>] 
-(exit_mm+0x16c/0x178) from [<c008a088>] (do_exit+0x218/0x710)
-Mar 12 21:20:28 ac100 kernel: [  119.023489] [<c008a088>] 
-(do_exit+0x218/0x710) from [<c0057c8c>] (die+0x2e0/0x338)
-Mar 12 21:20:28 ac100 kernel: [  119.031057] [<c0057c8c>] (die+0x2e0/0x338) 
-from [<c04443bc>] (__do_kernel_fault.part.3+0x64/0x84)
-Mar 12 21:20:28 ac100 kernel: [  119.039925] [<c04443bc>] 
-(__do_kernel_fault.part.3+0x64/0x84) from [<c005f28c>] 
-(do_page_fault+0x270/0x28c)
-Mar 12 21:20:28 ac100 kernel: [  119.049656] [<c005f28c>] 
-(do_page_fault+0x270/0x28c) from [<c005f364>] (do_translation_fault+0x2c/0xb0)
-Mar 12 21:20:28 ac100 kernel: [  119.059046] [<c005f364>] 
-(do_translation_fault+0x2c/0xb0) from [<c004e170>] (do_DataAbort+0x44/0xa8)
-Mar 12 21:20:28 ac100 kernel: [  119.068175] [<c004e170>] 
-(do_DataAbort+0x44/0xa8) from [<c005392c>] (__dabt_svc+0x4c/0x60)
-Mar 12 21:20:28 ac100 kernel: [  119.076427] Exception stack(0xdb86dc08 to 
-0xdb86dc50)
-Mar 12 21:20:28 ac100 kernel: [  119.081470] dc00:                   0000006f 
-00000001 271aed0f 00000000 c06a8304 d572b000
-Mar 12 21:20:28 ac100 kernel: [  119.089637] dc20: 0ca61001 ffffffea 00000018 
-00000000 00000001 db86dc5c db86db68 db86dc50
-Mar 12 21:20:28 ac100 kernel: [  119.097800] dc40: c0086c70 c00576bc 600f0193 
-ffffffff
-Mar 12 21:20:28 ac100 kernel: [  119.102849] [<c005392c>] 
-(__dabt_svc+0x4c/0x60) from [<c00576bc>] (__bug+0x2c/0x38)
-Mar 12 21:20:28 ac100 kernel: [  119.110498] [<c00576bc>] (__bug+0x2c/0x38) 
-from [<c035ed80>] (zcache_pampd_get_data+0x6c/0x14c)
-Mar 12 21:20:28 ac100 kernel: [  119.119189] [<c035ed80>] 
-(zcache_pampd_get_data+0x6c/0x14c) from [<c0361028>] (tmem_get+0x160/0x19c)
-Mar 12 21:20:28 ac100 kernel: [  119.128313] [<c0361028>] 
-(tmem_get+0x160/0x19c) from [<c035fc98>] 
-(zcache_get_page.constprop.16+0x8c/0xa8)
-Mar 12 21:20:28 ac100 kernel: [  119.137957] [<c035fc98>] 
-(zcache_get_page.constprop.16+0x8c/0xa8) from [<c035fd9c>] 
-(zcache_frontswap_get_page+0x90/0xa0)
-Mar 12 21:20:28 ac100 kernel: [  119.148904] [<c035fd9c>] 
-(zcache_frontswap_get_page+0x90/0xa0) from [<c013037c>] 
-(__frontswap_get_page+0x90/0xd8)
-Mar 12 21:20:28 ac100 kernel: [  119.159156] [<c013037c>] 
-(__frontswap_get_page+0x90/0xd8) from [<c012c3d8>] (swap_readpage+0x44/0xdc)
-Mar 12 21:20:28 ac100 kernel: [  119.168368] [<c012c3d8>] 
-(swap_readpage+0x44/0xdc) from [<c012c9c8>] (read_swap_cache_async+0xc8/0x11c)
-Mar 12 21:20:28 ac100 kernel: [  119.177753] [<c012c9c8>] 
-(read_swap_cache_async+0xc8/0x11c) from [<c012cab0>] 
-(swapin_readahead+0x94/0x9c)
-Mar 12 21:20:28 ac100 kernel: [  119.187398] [<c012cab0>] 
-(swapin_readahead+0x94/0x9c) from [<c011ff20>] (handle_pte_fault+0x2f4/0x6c4)
-Mar 12 21:20:28 ac100 kernel: [  119.196696] [<c011ff20>] 
-(handle_pte_fault+0x2f4/0x6c4) from [<c01203a8>] (handle_mm_fault+0xb8/0xd0)
-Mar 12 21:20:28 ac100 kernel: [  119.205905] [<c01203a8>] 
-(handle_mm_fault+0xb8/0xd0) from [<c005f114>] (do_page_fault+0xf8/0x28c)
-Mar 12 21:20:28 ac100 kernel: [  119.214769] [<c005f114>] 
-(do_page_fault+0xf8/0x28c) from [<c004e170>] (do_DataAbort+0x44/0xa8)
-Mar 12 21:20:28 ac100 kernel: [  119.223375] [<c004e170>] 
-(do_DataAbort+0x44/0xa8) from [<c0053d64>] (ret_from_exception+0x0/0x10)
-Mar 12 21:20:28 ac100 kernel: [  119.232231] Exception stack(0xdb86dfb0 to 
-0xdb86dff8)
-Mar 12 21:20:28 ac100 kernel: [  119.237273] dfa0:                                     
-b6f4cf68 b6f4e658 00000001 b6f4cee8
-Mar 12 21:20:28 ac100 kernel: [  119.245441] dfc0: 00000011 b6f4c8e8 b6f806ac 
-b6f4b9c0 00000001 b6f4b988 bec64998 00000011
-Mar 12 21:20:28 ac100 kernel: [  119.253606] dfe0: b6f4cf68 bec64948 b6f2fc07 
-b6f2fc66 200f0030 ffffffff
-Mar 12 21:20:28 ac100 kernel: [  119.260209] ---[ end trace 3a9bf99eb36a0d79 
-]---
-Mar 12 21:20:28 ac100 kernel: [  119.264943] ------------[ cut here 
-]------------
-Mar 12 21:20:29 ac100 kernel: [  119.269578] WARNING: at 
-/home/marc/ac100/marvin24s-kernel/drivers/staging/zcache/zcache-main.c:732 
-zcache_pampd_free+0x90/0x14c()
-Mar 12 21:20:29 ac100 kernel: [  119.281213] Modules linked in: nls_iso8859_1 
-nls_cp437 vfat fat fuse zram(C) snd_soc_alc5632 snd_seq_dummy rt2800usb 
-rt2800lib rt2x00usb rt2x00lib snd_soc_tegra_alc5632 mac80211 snd_seq_oss 
-snd_soc_tegra_pcm snd_soc_tegra_i2s snd_seq_midi_event snd_soc_tegra_das 
-snd_soc_core snd_pcm_oss snd_mixer_oss uvcvideo videodev cfg80211 tegra_wdt 
-snd_seq cdc_ether usbnet snd_pcm cdc_wdm cdc_acm mii snd_seq_device lm90 
-snd_timer snd soundcore snd_page_alloc snd_soc_tegra_utils
-Mar 12 21:20:29 ac100 kernel: [  119.322726] [<c005acac>] 
-(unwind_backtrace+0x0/0xec) from [<c0444314>] (dump_stack+0x20/0x24)
-Mar 12 21:20:29 ac100 kernel: [  119.331253] [<c0444314>] 
-(dump_stack+0x20/0x24) from [<c00860bc>] (warn_slowpath_common+0x5c/0x74)
-Mar 12 21:20:29 ac100 kernel: [  119.340205] [<c00860bc>] 
-(warn_slowpath_common+0x5c/0x74) from [<c0086100>] 
-(warn_slowpath_null+0x2c/0x34)
-Mar 12 21:20:29 ac100 kernel: [  119.349855] [<c0086100>] 
-(warn_slowpath_null+0x2c/0x34) from [<c035ea90>] 
-(zcache_pampd_free+0x90/0x14c)
-Mar 12 21:20:29 ac100 kernel: [  119.359329] [<c035ea90>] 
-(zcache_pampd_free+0x90/0x14c) from [<c03610f0>] (tmem_flush_page+0x8c/0xe8)
-Mar 12 21:20:29 ac100 kernel: [  119.368540] [<c03610f0>] 
-(tmem_flush_page+0x8c/0xe8) from [<c035fe18>] 
-(zcache_flush_page.constprop.17+0x6c/0x9c)
-Mar 12 21:20:29 ac100 kernel: [  119.378794] [<c035fe18>] 
-(zcache_flush_page.constprop.17+0x6c/0x9c) from [<c035ff0c>] 
-(zcache_frontswap_flush_page+0x70/0x7c)
-Mar 12 21:20:29 ac100 kernel: [  119.390096] [<c035ff0c>] 
-(zcache_frontswap_flush_page+0x70/0x7c) from [<c0130440>] 
-(__frontswap_invalidate_page+0x7c/0xe4)
-Mar 12 21:20:29 ac100 kernel: [  119.401133] [<c0130440>] 
-(__frontswap_invalidate_page+0x7c/0xe4) from [<c012d38c>] 
-(swap_entry_free+0x11c/0x158)
-Mar 12 21:20:29 ac100 kernel: [  119.411300] [<c012d38c>] 
-(swap_entry_free+0x11c/0x158) from [<c012ed70>] 
-(free_swap_and_cache+0x30/0xfc)
-Mar 12 21:20:29 ac100 kernel: [  119.420774] [<c012ed70>] 
-(free_swap_and_cache+0x30/0xfc) from [<c011f02c>] (unmap_vmas+0x3b4/0x5ac)
-Mar 12 21:20:29 ac100 kernel: [  119.429815] [<c011f02c>] 
-(unmap_vmas+0x3b4/0x5ac) from [<c0123614>] (exit_mmap+0x13c/0x254)
-Mar 12 21:20:29 ac100 kernel: [  119.438161] [<c0123614>] 
-(exit_mmap+0x13c/0x254) from [<c0083b38>] (mmput+0x54/0x11c)
-Mar 12 21:20:29 ac100 kernel: [  119.445987] [<c0083b38>] (mmput+0x54/0x11c) 
-from [<c0088488>] (exit_mm+0x16c/0x178)
-Mar 12 21:20:29 ac100 kernel: [  119.453638] [<c0088488>] 
-(exit_mm+0x16c/0x178) from [<c008a088>] (do_exit+0x218/0x710)
-Mar 12 21:20:29 ac100 kernel: [  119.461549] [<c008a088>] 
-(do_exit+0x218/0x710) from [<c0057c8c>] (die+0x2e0/0x338)
-Mar 12 21:20:29 ac100 kernel: [  119.469113] [<c0057c8c>] (die+0x2e0/0x338) 
-from [<c04443bc>] (__do_kernel_fault.part.3+0x64/0x84)
-Mar 12 21:20:29 ac100 kernel: [  119.477982] [<c04443bc>] 
-(__do_kernel_fault.part.3+0x64/0x84) from [<c005f28c>] 
-(do_page_fault+0x270/0x28c)
-Mar 12 21:20:29 ac100 kernel: [  119.487715] [<c005f28c>] 
-(do_page_fault+0x270/0x28c) from [<c005f364>] (do_translation_fault+0x2c/0xb0)
-Mar 12 21:20:29 ac100 kernel: [  119.497105] [<c005f364>] 
-(do_translation_fault+0x2c/0xb0) from [<c004e170>] (do_DataAbort+0x44/0xa8)
-Mar 12 21:20:29 ac100 kernel: [  119.506236] [<c004e170>] 
-(do_DataAbort+0x44/0xa8) from [<c005392c>] (__dabt_svc+0x4c/0x60)
-Mar 12 21:20:29 ac100 kernel: [  119.514486] Exception stack(0xdb86dc08 to 
-0xdb86dc50)
-Mar 12 21:20:29 ac100 kernel: [  119.519530] dc00:                   0000006f 
-00000001 271aed0f 00000000 c06a8304 d572b000
-Mar 12 21:20:29 ac100 kernel: [  119.527698] dc20: 0ca61001 ffffffea 00000018 
-00000000 00000001 db86dc5c db86db68 db86dc50
-Mar 12 21:20:29 ac100 kernel: [  119.535862] dc40: c0086c70 c00576bc 600f0193 
-ffffffff
-Mar 12 21:20:29 ac100 kernel: [  119.540910] [<c005392c>] 
-(__dabt_svc+0x4c/0x60) from [<c00576bc>] (__bug+0x2c/0x38)
-Mar 12 21:20:29 ac100 kernel: [  119.548560] [<c00576bc>] (__bug+0x2c/0x38) 
-from [<c035ed80>] (zcache_pampd_get_data+0x6c/0x14c)
-Mar 12 21:20:29 ac100 kernel: [  119.557251] [<c035ed80>] 
-(zcache_pampd_get_data+0x6c/0x14c) from [<c0361028>] (tmem_get+0x160/0x19c)
-Mar 12 21:20:29 ac100 kernel: [  119.566375] [<c0361028>] 
-(tmem_get+0x160/0x19c) from [<c035fc98>] 
-(zcache_get_page.constprop.16+0x8c/0xa8)
-Mar 12 21:20:29 ac100 kernel: [  119.576018] [<c035fc98>] 
-(zcache_get_page.constprop.16+0x8c/0xa8) from [<c035fd9c>] 
-(zcache_frontswap_get_page+0x90/0xa0)
-Mar 12 21:20:29 ac100 kernel: [  119.586964] [<c035fd9c>] 
-(zcache_frontswap_get_page+0x90/0xa0) from [<c013037c>] 
-(__frontswap_get_page+0x90/0xd8)
-Mar 12 21:20:29 ac100 kernel: [  119.597216] [<c013037c>] 
-(__frontswap_get_page+0x90/0xd8) from [<c012c3d8>] (swap_readpage+0x44/0xdc)
-Mar 12 21:20:29 ac100 kernel: [  119.606427] [<c012c3d8>] 
-(swap_readpage+0x44/0xdc) from [<c012c9c8>] (read_swap_cache_async+0xc8/0x11c)
-Mar 12 21:20:29 ac100 kernel: [  119.615812] [<c012c9c8>] 
-(read_swap_cache_async+0xc8/0x11c) from [<c012cab0>] 
-(swapin_readahead+0x94/0x9c)
-Mar 12 21:20:29 ac100 kernel: [  119.625457] [<c012cab0>] 
-(swapin_readahead+0x94/0x9c) from [<c011ff20>] (handle_pte_fault+0x2f4/0x6c4)
-Mar 12 21:20:29 ac100 kernel: [  119.634755] [<c011ff20>] 
-(handle_pte_fault+0x2f4/0x6c4) from [<c01203a8>] (handle_mm_fault+0xb8/0xd0)
-Mar 12 21:20:29 ac100 kernel: [  119.643966] [<c01203a8>] 
-(handle_mm_fault+0xb8/0xd0) from [<c005f114>] (do_page_fault+0xf8/0x28c)
-Mar 12 21:20:29 ac100 kernel: [  119.652830] [<c005f114>] 
-(do_page_fault+0xf8/0x28c) from [<c004e170>] (do_DataAbort+0x44/0xa8)
-Mar 12 21:20:29 ac100 kernel: [  119.661434] [<c004e170>] 
-(do_DataAbort+0x44/0xa8) from [<c0053d64>] (ret_from_exception+0x0/0x10)
-Mar 12 21:20:29 ac100 kernel: [  119.670289] Exception stack(0xdb86dfb0 to 
-0xdb86dff8)
-Mar 12 21:20:29 ac100 kernel: [  119.675331] dfa0:                                     
-b6f4cf68 b6f4e658 00000001 b6f4cee8
-Mar 12 21:20:29 ac100 kernel: [  119.683497] dfc0: 00000011 b6f4c8e8 b6f806ac 
-b6f4b9c0 00000001 b6f4b988 bec64998 00000011
-Mar 12 21:20:29 ac100 kernel: [  119.691661] dfe0: b6f4cf68 bec64948 b6f2fc07 
-b6f2fc66 200f0030 ffffffff
-Mar 12 21:20:29 ac100 kernel: [  119.698262] ---[ end trace 3a9bf99eb36a0d7a 
-]---
+Alban Browaeys (1):
+      drm/i915: Prevent a machine hang by checking crtc->active before load=
+ing lut
 
-It's possible that the 3.0 doesn't like the driver from linux-next, but maybe 
-you have some other idea.
+Alexandre Bounine (1):
+      rapidio/tsi721: fix queue wrapping bug in inbound doorbell handler
 
-Thanks!
+Andrea Arcangeli (1):
+      mm: thp: fix BUG on mm->nr_ptes
 
-Marc
+Andrew Lunn (2):
+      ARM: orion: Fix USB phy for orion5x.
+      ARM: orion: Fix Orion5x GPIO regression from MPP cleanup
 
+Andrew Morton (1):
+      alpha: fix 32/64-bit bug in futex support
+
+Anton Vorontsov (1):
+      mm: memcg: Correct unregistring of events attached to the same eventfd
+
+Ben Hutchings (4):
+      media: staging: lirc_serial: Fix init/exit order
+      media: staging: lirc_serial: Free resources on failure paths of lirc_=
+serial_probe()
+      media: staging: lirc_serial: Fix deadlock on resume failure
+      media: staging: lirc_serial: Do not assume error codes returned by re=
+quest_irq()
+
+Boaz Harrosh (1):
+      osd_uld: Bump MAX_OSD_DEVICES from 64 to 1,048,576
+
+Christian Gmeiner (1):
+      mfd: Fix cs5535 section mismatch
+
+Christian Lamparter (1):
+      carl9170: fix frame delivery if sta is in powersave mode
+
+Danny Kukawka (2):
+      cs5535-mfgpt: don't call __init function from __devinit
+      spi-topcliff-pch: rename pch_spi_pcidev to pch_spi_pcidev_driver
+
+David Howells (2):
+      S390: KEYS: Enable the compat keyctl wrapper on s390x
+      NOMMU: Don't need to clear vm_mm when deleting a VMA
+
+Eugeni Dodonov (3):
+      drm/i915: gen7: implement rczunit workaround
+      drm/i915: gen7: Implement an L3 caching workaround.
+      drm/i915: gen7: work around a system hang on IVB
+
+Fabio Baltieri (1):
+      avr32: select generic atomic64_t support
+
+Felix Fietkau (1):
+      ath9k_hw: prevent writes to const data on AR9160
+
+Florian Tobias Schandinat (2):
+      viafb: select HW scaling on VX900 for IGA2
+      viafb: fix IGA1 modesetting on VX900
+
+Greg Kroah-Hartman (1):
+      Linux 3.2.10
+
+Guenter Roeck (3):
+      hwmon: (pmbus_core) Fix maximum number of POUT alarm attributes
+      hwmon: (jc42) Add support for AT30TS00, TS3000GB2, TSE2002GB2, and MC=
+P9804
+      hwmon: (zl6100) Maintain delay parameter in driver instance data
+
+Gusakov Andrey (1):
+      ARM: S3C24XX: DMA resume regression fix
+
+H. Peter Anvin (2):
+      regset: Prevent null pointer reference on readonly regsets
+      regset: Return -EFAULT, not -EIO, on host-side memory fault
+
+Heiko Carstens (1):
+      compat: fix compile breakage on s390
+
+Ian Kent (1):
+      autofs: work around unhappy compat problem on x86-64
+
+Jan Beulich (1):
+      x86/amd: iommu_set_device_table() must not be __init
+
+Javier Martin (1):
+      ASoC: i.MX SSI: Fix DSP_A format.
+
+Jean Delvare (2):
+      mfd: Fix ACPI conflict check
+      hwmon: (jc42) Add support for ST Microelectronics STTS2002 and STTS30=
+00
+
+Jeff Layton (1):
+      cifs: fix dentry refcount leak when opening a FIFO on lookup
+
+Jeff Moyer (1):
+      aio: wake up waiters when freeing unused kiocbs
+
+Jesper Juhl (1):
+      dm ioctl: do not leak argv if target message only contains whitespace
+
+Jett.Zhou (1):
+      regulator: fix the ldo configure according to 88pm860x spec
+
+Joe Thornber (2):
+      dm thin metadata: unlock superblock in init_pmd error path
+      dm thin metadata: decrement counter after removing mapped block
+
+Joerg Roedel (1):
+      perf/x86/kvm: Fix Host-Only/Guest-Only counting with SVM disabled
+
+Johannes Berg (1):
+      iwlwifi: fix key removal
+
+Jonathan E Brassow (2):
+      dm raid: set MD_CHANGE_DEVS when rebuilding
+      dm raid: fix flush support
+
+Keng-Yu Lin (1):
+      ACPI / PM: Do not save/restore NVS on Asus K54C/K54HR
+
+Kenneth Graunke (1):
+      drm/i915: gen7: Disable the RHWO optimization as it can cause GPU han=
+gs.
+
+Larry Finger (1):
+      rtl8192cu: Add new device IDs
+
+Linus Torvalds (1):
+      Fix autofs compile without CONFIG_COMPAT
+
+Ludovic Desroches (1):
+      mmc: atmel-mci: don't use dma features when using DMA with no chan av=
+ailable
+
+Marek Ol=C5=A1=C3=A1k (1):
+      drm/radeon/kms: set SX_MISC in the r6xx blit code (v2)
+
+Mark Brown (2):
+      mfd: Test for jack detection when deciding if wm8994 should suspend
+      ASoC: dapm: Check for bias level when powering down
+
+Maxim Uvarov (1):
+      watchdog: hpwdt: clean up set_memory_x call for 32 bit
+
+Mike Snitzer (2):
+      dm flakey: fix crash on read when corrupt_bio_byte not set
+      dm thin metadata: remove incorrect close_device on creation error pat=
+hs
+
+Milan Broz (1):
+      dm io: fix discard support
+
+Mohammed Shafi Shajakhan (1):
+      mac80211: zero initialize count field in ieee80211_tx_rate
+
+Nicolas Cavallari (1):
+      carl9170: Fix memory accounting when sta is in power-save mode.
+
+Ohad Ben-Cohen (2):
+      ARM: OMAP: make iommu subsys_initcall to fix builtin omap3isp
+      ARM: OMAP: fix iommu, not mailbox
+
+Phil Sutter (1):
+      crypto: mv_cesa - fix final callback not ignoring input data
+
+Prashanth Nageshappa (1):
+      kprobes: return proper error code from register_kprobe()
+
+Rob Clark (1):
+      OMAPDSS: HDMI: hot plug detect fix
+
+Roland Stigge (5):
+      ARM: LPC32xx: serial.c: HW bug workaround
+      ARM: LPC32xx: serial.c: Fixed loop limit
+      ARM: LPC32xx: irq.c: Clear latched event
+      ARM: LPC32xx: Fix interrupt controller init
+      ARM: LPC32xx: Fix irq on GPI_28
+
+Sascha Hauer (1):
+      mmc: sdhci-esdhc-imx: fix for mmc cards on i.MX5
+
+Scott Talbert (1):
+      Move Logitech Harmony 900 from cdc_ether to zaurus
+
+Sebastian Siewior (1):
+      net/usbnet: avoid recursive locking in usbnet_stop()
+
+Stanislaw Gruszka (1):
+      bsg: fix sysfs link remove warning
+
+Steffen Maier (1):
+      S390: qdio: fix handler function arguments for zfcp data router
+
+Stephen Rothwell (1):
+      tty/powerpc: early udbg consoles can't be modules
+
+Takashi Iwai (3):
+      ALSA: hda/realtek - Fix resume of multiple input sources
+      ALSA: hda - Add a fake mute feature
+      ALSA: hda - Always set HP pin in unsol handler for STAC/IDT codecs
+
+Thomas Gleixner (1):
+      genirq: Clear action->thread_mask if IRQ_ONESHOT is not set
+
+Tomi Valkeinen (6):
+      OMAP: 4430SDP/Panda: use gpio_free_array to free HDMI gpios
+      OMAP: 4430SDP/Panda: rename HPD GPIO to CT_CP_HPD
+      OMAPDSS: remove wrong HDMI HPD muxing
+      OMAP: 4430SDP/Panda: setup HDMI GPIO muxes
+      OMAP: 4430SDP/Panda: add HDMI HPD gpio
+      OMAPDSS: HDMI: PHY burnout fix
+
+Will Deacon (5):
+      ARM: 7345/1: errata: update workaround for A9 erratum #743622
+      ARM: 7354/1: perf: limit sample_period to half max_period in non-samp=
+ling mode
+      ARM: 7355/1: perf: clear overflow flag when disabling counter on ARMv=
+7 PMU
+      ARM: 7356/1: perf: check that we have an event in the PMU IRQ handlers
+      ARM: 7357/1: perf: fix overflow handling for xscale2 PMUs
+
+Wolfram Sang (1):
+      i2c: mxs: only flag completion when queue is completely done
+
+Wu Fengguang (1):
+      drm/i915: fix ELD writing for SandyBridge
+
+
+--SUOF0GtieIMvvwua
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPXl23AAoJEDjbvchgkmk+uGcP/3fB4gLG5REmvbLK/AxuDCAN
+hi2lr3R2m2OakWQW3+/Qkufa5qjSInspc4eWdWXJJki7TSxvrxAsL4kGiFvhcqhi
+im1/a0s/RfG5A3CoF2SySQeVBFafkfVLLATTz5GzTVBYzTOM6o/DXpNZr/qhhlY7
+W+trlVwIgzi49okMii6PYj/E3Q/IEmNvSi1N3imuzJf1AKd7Wiz2/1AX6HMmEq4E
+LUJz0t4nizwIdlu8qYD5XLhpDz+gUmPb14ZwtbtkZ9KG+AoKlw0I0m6f/qbYKaf1
+j9/2swTaVPcZY40jNvl0MVktnFxRIUuKTDsDvkFHNpGFElGvqEeE33cqOD64bISu
+pnxOWf0pUs3Jw4iQcbHu3/6AsPQa55WAiFmcYLuK+kJuQwXRYR8un1ilmc0Xsy8q
+rfjwVqo5kVMOUJkgKbml00DMDVvRPR1x/MDCCnUT7owq0adhHY/Dx5m5ou2ppdRr
+tpZV4sr1wirdyT/ggX+qYFvqqeBn+v63a1s0tAqCioULwtSDSdnwBjgPugq/Cr6p
+38UsLd2MsVr0dsS2rnBN8oeEaYWo97rf56Ja9QjbwCD5/7Ez+KFjAw9i0KYUpOru
+7NtXcPFqORT36kFaILzaGGcsIzSsNN8dV/T3XYvhlwjKV2+yWMXJdZoQfUML5hcP
+CWX7QY3G2o/oHDl2IlvK
+=HRX8
+-----END PGP SIGNATURE-----
+
+--SUOF0GtieIMvvwua--
