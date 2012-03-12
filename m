@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021Ab2CLQHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 12:07:16 -0400
-Received: from ftp.meprolight.com ([194.90.149.17]:36475 "EHLO meprolight.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751542Ab2CLQHN convert rfc822-to-8bit (ORCPT
+	id S1752051Ab2CLQIa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 12:08:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46941 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab2CLQI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 12:07:13 -0400
-From: Alex Gershgorin <alexg@meprolight.com>
-To: Fabio Estevam <festevam@gmail.com>
-CC: Fabio Estevam <fabio.estevam@freescale.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Date: Mon, 12 Mar 2012 18:06:55 +0200
-Subject: RE: I.MX35 PDK
-Thread-Topic: I.MX35 PDK
-Thread-Index: Ac0AU3gj9FbMBrKGSXCsPMsFN/sHngADo4Xl
-Message-ID: <4875438356E7CA4A8F2145FCD3E61C0B2CBD5D891C@MEP-EXCH.meprolight.com>
-References: <CAOMZO5DnP7+zupy9vwBPS0+2XtKM1+nLbwCqBzuCqEG5OWbZRQ@mail.gmail.com>
-	<4875438356E7CA4A8F2145FCD3E61C0B2CBD666A28@MEP-EXCH.meprolight.com>
-	<CAOMZO5Amo0XFf+TV7PprCL079C5Y0qKmo+k-FfShU7k4SG7W6Q@mail.gmail.com>
-	<4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8913@MEP-EXCH.meprolight.com>
-	<4875438356E7CA4A8F2145FCD3E61C0B2CBD5D8918@MEP-EXCH.meprolight.com>
-	<CAOMZO5A6T+WdOE41Wx6Nctwz9wk8FKaxzjbAt_woZkCnuodNYg@mail.gmail.com>
-	<4875438356E7CA4A8F2145FCD3E61C0B2CBD666A29@MEP-EXCH.meprolight.com>,<CAOMZO5B_mZ16zvXdNbKP_PWM5axNPzMeHQttxe8PYHET7UMufg@mail.gmail.com>
-In-Reply-To: <CAOMZO5B_mZ16zvXdNbKP_PWM5axNPzMeHQttxe8PYHET7UMufg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Mar 2012 12:08:28 -0400
+Date: Mon, 12 Mar 2012 17:08:26 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
+        John Stultz <john.stultz@lianro.org>
+Subject: Re: [PATCH] time: x86: Fix race switching from vsyscall to non-vsyscall
+ clock
+In-Reply-To: <1331330647-31480-1-git-send-email-john.stultz@linaro.org>
+Message-ID: <alpine.LFD.2.02.1203121703390.2466@ionos>
+References: <1331330647-31480-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your response,
+On Fri, 9 Mar 2012, John Stultz wrote:
 
-> 1. Back resistor 172 to the default value.
->
-> 2. Removed the resistor 146, through which a voltage was applied from a PMIC
-> (EXT_3V) on "CMOS_VIO".
->
-> 3. Connecting a resistor 147 which supplies power from the LDO_3V3 on
-> "CMOS_VIO".
+> When switching from a vsyscall capable to a non-vsyscall capable
+> clocksource, there was a small race, where the last vsyscall
+> gettimeofday before the switch might return a invalid time value
+> using the new non-vsyscall enabled clocksource values after the
+> switch is complete.
+> 
+> This is due to the vsyscall code checking the vclock_mode once
+> outside of the seqcount protected section. After it reads the
+> vclock mode, it doesn't re-check that the sampled clock data
+> that is obtained in the seqcount critical section still matches.
+> 
+> The fix is to sample vclock_mode inside the protected section,
+> and as long as it isn't VCLOCK_NONE, return the calculated
+> value. If it has changed and is now VCLOCK_NONE, fall back
+> to the syscall gettime calculation.
+> 
+> CC: Andy Lutomirski <luto@amacapital.net>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: John Stultz <john.stultz@lianro.org>
+> ---
+>  arch/x86/vdso/vclock_gettime.c |   25 ++++++++++++++++++++-----
+>  1 files changed, 20 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> index 6bc0e72..e7cf1dd 100644
+> --- a/arch/x86/vdso/vclock_gettime.c
+> +++ b/arch/x86/vdso/vclock_gettime.c
+> @@ -85,21 +85,28 @@ notrace static inline long vgetns(void)
+>  notrace static noinline int do_realtime(struct timespec *ts)
+>  {
+>  	unsigned long seq, ns;
+> +	int mode;
+>  	do {
+>  		seq = read_seqbegin(&gtod->lock);
+> +		mode = gtod->clock.vclock_mode;
+>  		ts->tv_sec = gtod->wall_time_sec;
+>  		ts->tv_nsec = gtod->wall_time_nsec;
+>  		ns = vgetns();
+>  	} while (unlikely(read_seqretry(&gtod->lock, seq)));
+> +
+>  	timespec_add_ns(ts, ns);
+> +	if (mode == VCLOCK_NONE)
+> +		return -1;
 
-> >The camera on the FSL BSP works fine with no hardware modification on
-> >the mx35pdk.
+Can't we just return mode and avoid repeated conditionals all over the
+place ?
 
-> >As I suggested previously you should control the power rails, i2c pad
-> >settings, etc from software so that the camera can also work in
-> >mainline without the need of changing the hardware.
+>  {
+	res = VCLOCK_NONE;
 
-You're right, currently mainline Linux kernel  i.MX35 PDK platform does not support power management 
-devices, probably for this reason was the need for small changes in equipment.
+>  	switch (clock) {
+>  	case CLOCK_REALTIME:
+> -		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+> -			return do_realtime(ts);
 
-> On my display I see snow flickering and unfortunately not a live video from
-> camera.
-
-> >Do you have this patch applied?
-
-Yes I need to prepare it.
+  			res = do_realtime(ts);
+		break;			
 
 
- > >http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=f910fb8fcd1c97788f2291c8646597bcd87ee061
+>  	case CLOCK_MONOTONIC_COARSE:
+>  		return do_monotonic_coarse(ts);
+>  	}
 
-> >Also, try to isolate the display from this issue. Capture the image to
-> >a file and try to play it on a PC.
+	return res != VCLOCK_NONE ? 0 : vdso_fallback_gettime(clock, ts);
 
-Thanks for the tip, I'll think about how I can check it.
+Thanks,
 
-Regards
-
-Alex Gershgorin 
-
- 
+	tglx
