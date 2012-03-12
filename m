@@ -1,122 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab2CLUky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 16:40:54 -0400
-Received: from numidia.opendz.org ([98.142.220.152]:40998 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932077Ab2CLUkw (ORCPT
+	id S932120Ab2CLUll (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 16:41:41 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:49460 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932095Ab2CLUlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 16:40:52 -0400
-Date: Mon, 12 Mar 2012 21:44:16 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephen Wilson <wilsons@start.ca>,
-        "Jason A. Donenfeld" <Jason@zx2c4.com>
-Subject: Re: [PATCH 0/9] proc: protect /proc/<pid>/* files across execve
-Message-ID: <20120312204416.GG10787@dztty>
-References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
- <m1pqchocok.fsf@fess.ebiederm.org>
+	Mon, 12 Mar 2012 16:41:40 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Dong Aisheng <dong.aisheng@linaro.org>,
+        Rajendra Nayak <rajendra.nayak@linaro.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl: fix error path in pinconf_map_to_setting()
+Date: Mon, 12 Mar 2012 21:41:10 +0100
+Message-ID: <1331584870-10077-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1pqchocok.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 12:13:15PM -0700, Eric W. Biederman wrote:
-> Djalal Harouni <tixxdz@opendz.org> writes:
-> 
-> > Procfs files and other important objects may contain sensitive information
-> > which must not be seen, inherited or processed across execve.
-> 
-> So I am dense.  /proc/<pid>/mem was special in that it uses a different
-> set of checks than other files, and to do those access checks
-> /proc/<pid>/mem needed to look at exec_id.
-If you are referring to the old protection, yes it was against an ID, but
-not uniq IDs, so you can execve a suid do some tricks to have a match on IDs
-and bypass the protection, how: by opening your /proc/self/mem and pass
-the fd to the exec suid who at read/write time will process its own
-/proc/self/mem
+From: Linus Walleij <linus.walleij@linaro.org>
 
-> For all of the access checks that are not written in that silly way.
-> What is wrong with ptrace_may_access run at every read/write of a file?
-As it was noted, these files change during runtime, so even if you do the
-ptrace check at each syscall (which is of course a good thing), you must be
-sure that you are doing the check on the right target and the processed
-file belongs really to the appropriate process image of the target.
+The code was using the union member
+setting->data.configs.group_or_pin to store a potential
+error code, but since that member is unsigned the
+< 0 comparison was not true, letting errors pass thru,
+ending up as mapped to pin "-22". Fix this up and print
+the error.
 
-This is what Alan says: "bind objects to their process image".
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/pinconf.c |   27 +++++++++++++++++----------
+ 1 files changed, 17 insertions(+), 10 deletions(-)
 
-
-So if ptrace_may_access is done when current == target then it will
-succeed, and if we are processing /proc/self/* then every ptrace check
-will pass, and if you pass the fd of /proc/self/* to a privileged process
-then it will just operate on its own file.
-
-So we need a way/solution to know that we are processing the _right_ files.
-
-
-The proposed exec_id here will change on each execve(): uniq ids, so if we
-execve an external privileged program or have an fd of one of its files,
-the exec_id check will fail, but we must also perform the ptrace check.
-
-> We redo all of the permission checks every time so that should avoid
-> races.
-races are against new execves.
-
-IMHO even with that there will be races, here we are operating on
-virtual files /proc/<pid>/* and the creds and privileges of the process
-can change at any time even after the ptrace check. Some files use locks
-see the /proc/<pid>/io commit 293eb1e7772b25a93647c798c7b89bf26c2da2e0
-
-
-Hope that I'm not out of context.
-
-> I really think you are trying to solve something that is not broken.
-> Certainly I could not see your argument for why anything but
-> /proc/<pid>/mem needs attention.
-This patch series is to complete the protection for all the /proc/<pid>/*
-sensitive files and to update the /proc/<pid>/mem protection.
-For this last one, the checks were ok, but I thought that we can do better
-without keeping dead bytes.
-
-
-For all the thing and to keep track:
-
-This is not news. Alan's historical links:
-http://lkml.org/lkml/2012/1/29/35
-
-The previous discussion on kernel-hardening:
-(includes some variants described by Vasiliy and other problems which I'll
-try to discuss here)
-http://www.openwall.com/lists/kernel-hardening/2012/02/10/1
-
-These are sensitive files, combined with some binaries properties, attackers
-can achieve ASLR bypass ...
-
-> Eric
-Thanks Eric.
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
+index 247b9f2..f9c9cd1 100644
+--- a/drivers/pinctrl/pinconf.c
++++ b/drivers/pinctrl/pinconf.c
+@@ -282,21 +282,28 @@ int pinconf_map_to_setting(struct pinctrl_map const *map,
+ 			  struct pinctrl_setting *setting)
+ {
+ 	struct pinctrl_dev *pctldev = setting->pctldev;
++	int ret;
+ 
+ 	switch (setting->type) {
+ 	case PIN_MAP_TYPE_CONFIGS_PIN:
+-		setting->data.configs.group_or_pin =
+-			pin_get_from_name(pctldev,
+-					  map->data.configs.group_or_pin);
+-		if (setting->data.configs.group_or_pin < 0)
+-			return setting->data.configs.group_or_pin;
++		ret = pin_get_from_name(pctldev,
++					map->data.configs.group_or_pin);
++		if (ret < 0) {
++			dev_err(pctldev->dev, "could not map pin config for \"%s\"",
++				map->data.configs.group_or_pin);
++			return ret;
++		}
++		setting->data.configs.group_or_pin = ret;
+ 		break;
+ 	case PIN_MAP_TYPE_CONFIGS_GROUP:
+-		setting->data.configs.group_or_pin =
+-			pinctrl_get_group_selector(pctldev,
+-					map->data.configs.group_or_pin);
+-		if (setting->data.configs.group_or_pin < 0)
+-			return setting->data.configs.group_or_pin;
++		ret = pinctrl_get_group_selector(pctldev,
++					 map->data.configs.group_or_pin);
++		if (ret < 0) {
++			dev_err(pctldev->dev, "could not map group config for \"%s\"",
++				map->data.configs.group_or_pin);
++			return ret;
++		}
++		setting->data.configs.group_or_pin = ret;
+ 		break;
+ 	default:
+ 		return -EINVAL;
 -- 
-tixxdz
-http://opendz.org
+1.7.8
+
