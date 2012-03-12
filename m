@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab2CLKbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 06:31:18 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52743 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab2CLKbP (ORCPT
+	id S1752835Ab2CLKbj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 06:31:39 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:50222 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab2CLKbh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 06:31:15 -0400
-Message-ID: <4F5DD01D.3010609@mvista.com>
-Date: Mon, 12 Mar 2012 14:29:49 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, jslaby@suse.cz, cwillu@cwillu.com,
-        jackdachef@gmail.com
-Subject: Re: [PATCH] libata: disable runtime pm for hotpluggable port
-References: <1331515012.3412.37.camel@minggr>
-In-Reply-To: <1331515012.3412.37.camel@minggr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Mar 2012 06:31:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6646"; a="169288158"
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, Ravi Kumar V <kumarrav@codeaurora.org>
+Subject: [PATCH v3 0/2] Add Qualcomm MSM ADM DMAEngine driver
+Date: Mon, 12 Mar 2012 16:00:59 +0530
+Message-Id: <1331548259-26865-1-git-send-email-kumarrav@codeaurora.org>
+X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Following are the changes we have done from the previous
+v1 posted here: https://lkml.org/lkml/2011/12/22/148 
 
-On 12-03-2012 5:16, Lin Ming wrote:
+As our ADM Scatter-gather hardware needs
+-32-bit command configuration parameter
+ apart from 
+-32-bit source address
+-32-bit destination address
+-16-bit length
 
-> Currently, hotplug doesn't work if port is already runtime suspended.
-> For now, we simply disable runtime pm for hotpluggable port.
-> Later, we should add runtime pm support for hotpluggable port too.
+So,we have added new parameter in struct scatterlist to support xfer descriptor
+specific private data, and for supporting ADM Box mode DMA we added new
+API and data structure.
 
-> https://lkml.org/lkml/2012/2/19/70
+Changes done from v2:
 
-> TODO: add similar hotpluggable port check for controllers other than AHCI.
+As per our previous discussion you had suggested us to follow the below patch
+https://lkml.org/lkml/2012/1/26/405
+Please check the below link of our discussion
+https://lkml.org/lkml/2012/1/30/48
+ 
+So we have added the new context parameter in device_prep_dma_sg and 
+device_prep_interleave_dma API's to support for passing client channel specific
+private data associated with every transfer descriptor. 
 
-> Reported-and-tested-by: Jiri Slaby<jslaby@suse.cz>
-> Reported-and-tested-by: cwillu@cwillu.com
-> Reported-and-tested-by: jackdachef@gmail.com
-> Signed-off-by: Lin Ming<ming.m.lin@intel.com>
-[...]
+We are using 
+Interleaved API for BOX type transfer.
+SG API for SG type transfer.
+ 
+Ravi Kumar V (2):
+  dmaengine: Add support for per xfer specific privatedata
+  DMAEngine: Add DMAEngine driver based on old MSM DMA APIs
 
-> diff --git a/include/linux/libata.h b/include/linux/libata.h
-> index 3085bdc..ccf0282 100644
-> --- a/include/linux/libata.h
-> +++ b/include/linux/libata.h
-> @@ -209,8 +209,10 @@ enum {
->   	ATA_FLAG_SW_ACTIVITY	= (1<<  22), /* driver supports sw activity
->   					      * led */
->   	ATA_FLAG_NO_DIPM	= (1<<  23), /* host not happy with DIPM */
-> +	ATA_FLAG_EXTERNAL	= (1<<  24), /* controller supports external SATA */
-> +	ATA_FLAG_PLUGGABLE	= (1<<  25), /* port is hotpluggable */
->
-> -	/* bits 24:31 of ap->flags are reserved for LLD specific flags */
-> +	/* bits 26:31 of ap->flags are reserved for LLD specific flags */
+ arch/arm/mach-msm/include/mach/dma.h |   30 ++
+ drivers/dma/Kconfig                  |   12 +
+ drivers/dma/Makefile                 |    1 +
+ drivers/dma/msm-dma.c                |  724 ++++++++++++++++++++++++++++++++++
+ include/linux/dmaengine.h            |    4 +-
+ 5 files changed, 769 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/dma/msm-dma.c
 
-    There's no need to use bits 24..25, I've freed up some lower order bits 
-last year, removing unused values.
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-WBR, Sergei
