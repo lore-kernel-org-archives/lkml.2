@@ -1,132 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab2CLBHf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 21:07:35 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37001 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472Ab2CLBH1 (ORCPT
+	id S1754077Ab2CLBHr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 21:07:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53447 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754016Ab2CLBHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 21:07:27 -0400
-Message-ID: <4F5D4E02.4080209@gmail.com>
-Date: Mon, 12 Mar 2012 11:14:42 +1000
-From: wei <yinwei168@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
-MIME-Version: 1.0
-To: linux-wireless@vger.kernel.org, johannes@sipsolutions.net
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/3] mac80211: improve PID rate control mechanism by avoiding
- rate oscillation problem
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Sun, 11 Mar 2012 21:07:36 -0400
+Message-ID: <1331514446.3022.140.camel@deadeye>
+Subject: Re: [ 02/12] Remove COMPAT_IA32 support
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Mon, 12 Mar 2012 01:07:26 +0000
+In-Reply-To: <20120312002046.041448832@1wt.eu>
+References: <20120312002046.041448832@1wt.eu>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-nZK4uO5dEQLskjifPF0h"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From Wei YIN <Wei.Yin@nicta.com.au>
-Improve PID rate control mechanism by avoiding rate oscillation problem
 
-Signed-off-by: Wei YIN <Wei.Yin@nicta.com.au>
----
-kernel 3.3.0
-net/mac80211/rc80211_pid_debugfs.c | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------
-1 file changed, 65 insertions(+), 6 deletions(-)
+--=-nZK4uO5dEQLskjifPF0h
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
---- wireless-testing_orig/net/mac80211/rc80211_pid_debugfs.c	2012-02-17 13:59:53.487182968 +1000
-+++ wireless-testing/net/mac80211/rc80211_pid_debugfs.c	2012-03-08 14:45:38.727184486 +1000
-@@ -1,5 +1,6 @@
- /*
-  * Copyright 2007, Mattias Nissler <mattias.nissler@gmx.de>
-+ * Copyright 2012, Wei Yin, National ICT Australia <Wei.Yin@nicta.com.au>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -13,12 +14,72 @@
- #include <linux/types.h>
- #include <linux/skbuff.h>
- #include <linux/slab.h>
--#include <linux/export.h>
- 
- #include <net/mac80211.h>
- #include "rate.h"
- 
- #include "rc80211_pid.h"
-+#include <linux/debugfs.h>
-+#include <linux/ieee80211.h>
-+#include <linux/slab.h>
-+#include <linux/export.h>
-+
-+int
-+pid_stats_open(struct inode *inode, struct file *file)
-+{
-+	struct rc_pid_sta_info *sinfo = inode->i_private;
-+	struct rc_pid_debugfs_info *ms;
-+	struct rc_pid_rateinfo *rinfo;
-+	char *p;
-+	int i;
-+
-+	rinfo = sinfo->rinfo;
-+	ms = kmalloc(sizeof(*ms) + 4096, GFP_KERNEL);
-+	if (!ms)
-+		return -ENOMEM;
-+
-+	file->private_data = ms;
-+	p = ms->buf;
-+	p += sprintf(p, "R for current rate;   T for temporary rate\n"
-+			"rate    throughput      attempt          fail"
-+			"        success         this_FLR\n");
-+
-+	for (i = 0; i < sinfo->n_rates; i++) {
-+		struct rc_pid_rateinfo *pr = &rinfo[i];
-+		*(p++) = (i == sinfo->txrate_idx) ? 'R' : ' ';
-+		*(p++) = (i == sinfo->tmp_rate_idx) ? 'T' : ' ';
-+		p += sprintf(p, "%3u%s", pr->bitrate / 2,
-+				(pr->bitrate & 1 ? ".5" : "  "));
-+		p += sprintf(p, 
-+			 "%6u.%2u     %10lu     %10lu     %10lu        %2u%%\n",
-+			 (pr->throughput * 1530 *8 / 1024 / 1024) /100,
-+			 (pr->throughput * 1530 *8 / 1024 / 1024) % 100,
-+			 pr->attempt, pr->fail, pr->success, 
-+			 pr->this_fail == 0 ? 0: 
-+			 (pr->this_fail *100 / 
-+			 pr->this_attempt) % 100);
-+	}
-+	
-+	ms->len = p - ms->buf;
-+
-+	return 0;
-+}
-+
-+ssize_t
-+pid_stats_read(struct file *file, char __user *buf, size_t len, loff_t *ppos)
-+{
-+	struct rc_pid_debugfs_info *ms;
-+
-+	ms = file->private_data;
-+	return simple_read_from_buffer(buf, len, ppos, ms->buf, ms->len);
-+}
-+
-+int
-+pid_stats_release(struct inode *inode, struct file *file)
-+{
-+	kfree(file->private_data);
-+	return 0;
-+}
- 
- static void rate_control_pid_event(struct rc_pid_event_buffer *buf,
- 				   enum rc_pid_event_type type,
-@@ -203,11 +264,9 @@ static ssize_t rate_control_pid_events_r
- 
- static const struct file_operations rc_pid_fop_events = {
- 	.owner = THIS_MODULE,
--	.read = rate_control_pid_events_read,
--	.poll = rate_control_pid_events_poll,
--	.open = rate_control_pid_events_open,
--	.release = rate_control_pid_events_release,
--	.llseek = noop_llseek,
-+	.read = pid_stats_read,
-+	.open = pid_stats_open,
-+	.release = pid_stats_release,
- };
- 
- void rate_control_pid_add_sta_debugfs(void *priv, void *priv_sta,
+On Mon, 2012-03-12 at 01:20 +0100, Willy Tarreau wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let m=
+e know.
 
+The subject/first line should include '[IA64]', as in the original
+commit.  It looks like this has been automatically stripped.
+
+Ben.
+
+> ------------------
+>=20
+> From: Ben Hutchings <ben@decadent.org.uk>
+>=20
+> commit 32974ad4907cdde6c9de612cd1b2ee0568fb9409 upstream
+>=20
+> This just changes Kconfig rather than touching all the other files the
+> original commit did.
+>=20
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  arch/ia64/Kconfig |   17 -----------------
+>  1 files changed, 0 insertions(+), 17 deletions(-)
+>=20
+> diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+> index 1ee596c..20fc9c5 100644
+> --- a/arch/ia64/Kconfig
+> +++ b/arch/ia64/Kconfig
+> @@ -502,23 +502,6 @@ config ARCH_PROC_KCORE_TEXT
+>  	def_bool y
+>  	depends on PROC_KCORE
+> =20
+> -config IA32_SUPPORT
+> -	bool "Support for Linux/x86 binaries"
+> -	help
+> -	  IA-64 processors can execute IA-32 (X86) instructions.  By
+> -	  saying Y here, the kernel will include IA-32 system call
+> -	  emulation support which makes it possible to transparently
+> -	  run IA-32 Linux binaries on an IA-64 Linux system.
+> -	  If in doubt, say Y.
+> -
+> -config COMPAT
+> -	bool
+> -	depends on IA32_SUPPORT
+> -	default y
+> -
+> -config COMPAT_FOR_U64_ALIGNMENT
+> -	def_bool COMPAT
+> -
+>  config IA64_MCA_RECOVERY
+>  	tristate "MCA recovery from errors other than TLB."
+> =20
+
+--=20
+Ben Hutchings
+Life would be so much easier if we could look at the source code.
+
+--=-nZK4uO5dEQLskjifPF0h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT11MTue/yOyVhhEJAQrKcBAAn9Q61emBImJh0SyudQ1MoP7ueWuWgib8
+zhEvgQiKtNlzCx5KYmGxXP1VLRHEVlWK5lKkyeWSfa6rUEEAr1FOA2jhEnlSCCst
+Pcl+q/eDQo+WtC50uBs9TBoxikFYTohLEFIEGHkOu6iFCOl1WrnJd6KXICA+r+Wy
+t9eZjetfuni7VPpnaEQaKg5ZwzMb0arUfhLJ5iVElSRem6X2B6/YSrYnMIGqH01v
+a4Mu2ok+9wr9bmbRepDYfCj4rvKe0ONDKG0muvaMP1sVRC7BccAUtJmoKtKcjehm
+rVyd8rl0JfqX4hMFBoIIUKD6F8qT8zR+FiDb6nuRctnuXq7tl3Mq9xJ6AtFyT4x1
+lsvzPjeIUQfUsaTRiCJ6n0hWQZfPwMTDKWufjdrakwXav8Nf+siBKgQb3YstRyvC
+Pnwgy2geYRG2Bactl4MKSU/1Et3gf0IoTfNDZ3YQ7Ab227nWwix3IWpbwRyvNjj4
+OCthxX6RfUrpePLp5jI9yuWeXh1ard168JCwx1Se9NUk6XKJdyvByHTZrzXbOdDG
+yrdNm/sIgvxUtm0TuDf6PF2YUP2Fr8mH3dhPmioV4o9NygMuvXT9dg50P9/8E4Mc
+LwQYXKfnJ1kzivAA/uSir1rvqeRg1iRl0grMED7duA6JYd5ORBtE+CJhiqPgstoC
+fjAGeevQDiU=
+=i3PJ
+-----END PGP SIGNATURE-----
+
+--=-nZK4uO5dEQLskjifPF0h--
