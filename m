@@ -1,62 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab2CLQ1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 12:27:13 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:53191 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab2CLQ1M (ORCPT
+	id S1753574Ab2CLQ3L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 12:29:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10750 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753193Ab2CLQ3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 12:27:12 -0400
-Date: Mon, 12 Mar 2012 17:26:46 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Borislav Petkov <bp@amd64.org>,
-        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] EDAC: Convert AMD EDAC pieces to use RAS printk
- buffer
-Message-ID: <20120312162646.GB7255@aftab>
-References: <1331040694-12558-1-git-send-email-bp@amd64.org>
- <1331040694-12558-4-git-send-email-bp@amd64.org>
- <4F563067.1090100@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28F15B61916@ORSMSX103.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F15B61916@ORSMSX103.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Mar 2012 12:29:10 -0400
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=9rqPhMEo_WsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=JBtdq7szB1vJRE_r3M8A:9 a=EtujWsRI_y9QW6Hzx2UA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331569747.25686.641.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 5/7] x86/jump labels: Use etiher 5 byte or 2 byte jumps
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 12 Mar 2012 12:29:07 -0400
+In-Reply-To: <20120312161743.GB2607@redhat.com>
+References: <20120308221730.807074710@goodmis.org>
+	 <20120308222202.525768259@goodmis.org> <20120312161743.GB2607@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 04:18:57PM +0000, Luck, Tony wrote:
-> > This is an initial version of the patch which converts MCE decoding
-> > facilities to use the RAS printk buffer. When there's no userspace agent
-> > running (i.e., /sys/devices/system/ras/agent == 0), we fall back to the
-> > default printk'ing into dmesg which is what we've been doing so far.
+On Mon, 2012-03-12 at 12:17 -0400, Jason Baron wrote:
+>  
+> > By allowing the jump labels to be 2 bytes, it speeds up the
+> > nops, not only 2 byte nops are faster than 5 byte nops, but also
+> > because it saves on cache foot print.
+> > 
+> >    text    data     bss     dec     hex filename
+> > 13403667 3666856 2998272 20068795 13239bb ../nobackup/mxtest/vmlinux-old
+> > 13398536 3666856 2998272 20063664 13225b0 ../nobackup/mxtest/vmlinux-new
+> > 
+> > Converting the current v3.2 trace points saved 5,131 bytes.
+> > As more places use jump labels, this will have a bigger savings.
+> > 
 > 
-> This looks unpleasant if your userspace agent set this sysfs file, and
-> then dies (or gets killed).
+> Hi Steven,
+> 
+> Strange. I'm not seeing the text size savings with this patch, relative
+> to the 'old' jump label compiled code. Is your comparison against jump
+> labels disabled?
 
-Yeah, having a sysfs file like that felt unpleasant - I was hoping
-someone would point me to a better solution...
+Note, the code went through several changes since I first pushed these.
+I did not redo the size tests in my rebase.
 
-> Perhaps you need some device file that the agent keeps open (so if the
-> agent goes away, the kernel gets a "close" on the device to tell it
-> to revert). But even with this sort of solution you would still have
-> to worry about races.
+> 
+> Here's the size without your patch 'CONFIG_JUMP_LABEL' set:
+> 
+>    text    data     bss     dec     hex filename
+> 10809465        1023976 1159168 12992609         c64061 vmlinux
+> 
+> And with your patches and 'CONFIG_JUMP_LABEL' set:
+> 
+>    text    data     bss     dec     hex filename
+> 10812613        1023976 1163264 12999853         c65cad vmlinux
 
-Sounds better, especially the close-on-exit part. Please elaborate on
-the races...
+Interesting that your test had a 3k increase?? but the jump label code
+increased by only 720bytes. This looks very fishy.  And yes, I did have
+jump label enabled for my changes. I didn't change the config in the two
+checks. IIRC, I did a localyesconfig so that I would get the updates of
+the modules that would be used it my code, against a distro config.
 
-Thanks.
+> 
+> So an increase in text of 3148. Which is not completely explained by the
+> increase in arch/x86/kernel/jump_label.o:
+> 
+> without your patch 'CONFIG_JUMP_LABEL' set:
+> 
+>    text    data     bss     dec     hex filename
+>     229       0       0     229      e5 arch/x86/kernel/jump_label.o
+> 
+> 
+> with your patch 'CONFIG_JUMP_LABEL' set:
+> 
+>    text    data     bss     dec     hex filename
+>     943       0       8     951     3b7 arch/x86/kernel/jump_label.o
+> 
+> So jump_label.o is 714 bytes larger, which is not enough to explain the
+> 3148 byte increase.
 
--- 
-Regards/Gruss,
-Boris.
+Right this looks strange.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+> 
+> I'm using gcc (GCC) 4.6.2 20111027 (Red Hat 4.6.2-1).
+
+I'm still using 4.6.0.
+
+> 
+> Can you please double check the savings.
+
+I'll check again.
+
+-- Steve
+
+
