@@ -1,93 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796Ab2CLXCU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:02:20 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38115 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757401Ab2CLXCS (ORCPT
+	id S1757982Ab2CLXDF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:03:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54264 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757583Ab2CLXDC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:02:18 -0400
-X-Sasl-enc: FW6YoUvBi3Ch8yf2r8QZt5vu8auSCVf3WbIdcl6cIPAT 1331593337
-Date: Mon, 12 Mar 2012 20:02:13 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Manoj Iyer <manoj.iyer@canonical.com>
-Cc: Yves-Alexis Perez <corsac@debian.org>,
-        ibm-acpi-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [ibm-acpi-devel] [PATCH] thinkpad-acpi: recognize Lenovo as
- version string in newer V-series BIOS
-Message-ID: <20120312230213.GA20690@khazad-dum.debian.net>
-References: <1331335944-4662-1-git-send-email-manoj.iyer@canonical.com>
- <1331335944-4662-2-git-send-email-manoj.iyer@canonical.com>
- <20120310042844.GA14972@khazad-dum.debian.net>
- <1331387907.2833.33.camel@scapa>
- <20120310160609.GA6254@khazad-dum.debian.net>
- <alpine.DEB.2.02.1203121558340.3458@lazy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1203121558340.3458@lazy>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 12 Mar 2012 19:03:02 -0400
+Message-ID: <1331593367.18960.66.camel@twins>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lennart Poettering <mzxreary@0pointer.de>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>, Michal Schmidt <mschmidt@redhat.com>
+Date: Tue, 13 Mar 2012 00:02:47 +0100
+In-Reply-To: <20120312230020.GL23255@google.com>
+References: <20120221211938.GE12236@google.com>
+	 <20120312221050.GG23255@google.com> <1331590938.18960.57.camel@twins>
+	 <20120312222817.GI23255@google.com>
+	 <20120312223113.GB18359@tango.0pointer.de>
+	 <20120312230020.GL23255@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Mar 2012, Manoj Iyer wrote:
-> Yes, the V series systems are listed under Ideapad series on
-> Lenovo's website. I initially was looking at why the Fn+F5 hotkey
-> was not reporting a key event. Looking at the bios dsdt.dsl data on
-> V480 I see
+On Mon, 2012-03-12 at 16:00 -0700, Tejun Heo wrote:
 > 
-> Device (HKEY)
->                     {
->                         Mutex (BFWM, 0x07)
->                         Name (INDV, Zero)
->                         Name (_HID, EisaId ("LEN0068"))
->                         Method (_STA, 0, NotSerialized)
-> 
-> and it does not have the acpi_device_id of VPC2004 like other
-> ideapads that I have seen, and seemed like the HKEY could be handled
-> by thinkpad_acpi module. Product version string in DMI says "Lenovo
-> V480" instead of "ThinkPad" and this was not recognized by the
-> thinkpad_acpi module, thus my quirk to load the module.
-> 
-> After loading the module on the V480 I see:
-> 
-> [14511.946260] thinkpad_acpi: ThinkPad ACPI Extras v0.24
-> [14511.946262] thinkpad_acpi: http://ibm-acpi.sf.net/
-> [14511.946264] thinkpad_acpi: ThinkPad BIOS H5ET23WW (0.23 ), EC unknown
-> [14511.946265] thinkpad_acpi: Lenovo Lenovo V480, model 14TD010
-> [14511.946707] thinkpad_acpi: detected a 8-level brightness capable
-> ThinkPad
-> [14511.952009] thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw:
-> radio is unblocked
-> [14511.953099] Registered led device: tpacpi::thinklight
-> [14511.953156] Registered led device: tpacpi::power
-> [14511.953203] Registered led device: tpacpi::standby
-> [14511.953247] Registered led device: tpacpi::thinkvantage
-> [14511.953262] thinkpad_acpi: Standard ACPI backlight interface
-> available, not loading native one
-> [14511.953420] thinkpad_acpi: Console audio control enabled, mode:
-> monitor (read only)
-> [14511.955196] input: ThinkPad Extra Buttons as
-> /devices/platform/thinkpad_acpi/input/input17
-> 
-> Fn+F15 now reports key press event, 00000080 00001005, and it
-> reported nothing before when the module was not loaded. So prior to
-> loading thinkpad_acpi, /lib/udev/findkeyboards == input/event3,
-> /lib/udev/keymap -i input/event3 returned no valid values for Fn+F5
-> combo.
-> 
-> I am trying to get this patched module tested on other thinkpad and
-> ideapads that we have to see if there are any regression or other
-> issues. So, please let me know if this something worth supporting.
+> Ooh, both will be available to choose from.  I was trying to explain
+> that there can be configuration only at one layer for any task so that
+> it can be mapped to flat hierarchy.  Where to apply the config will be
+> selected by the user (or system tool). 
 
-Yes, it looks like it is worth supporting alright.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Thus in effect this is a false choice, since Lennart and assorted idiots
+conspire against sanity by pushing systemd into our every orifice, and
+since he just said systemd requires one of the two, the choice will be
+made for us, lest we forfeit wanting to boot our system.
