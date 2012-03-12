@@ -1,124 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab2CLSH5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:07:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754104Ab2CLSHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:07:54 -0400
-Date: Mon, 12 Mar 2012 19:00:30 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Dmitry ADAMUSHKA (EXT)" <dmitry.adamushka_ext@softathome.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Roland McGrath <roland@hack.frob.com>
-Subject: Re: 'khelper' (child) is stuck in endless loop: do_signal() and
-	!user_mode(regs)
-Message-ID: <20120312180030.GA2583@redhat.com>
-References: <522171377.62242.1331225909662.JavaMail.root@storentr1.softathome.com> <1486047996.69314.1331570138102.JavaMail.root@storentr1.softathome.com>
+	id S1755972Ab2CLSKF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:10:05 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42526 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754998Ab2CLSKC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 14:10:02 -0400
+Message-ID: <4F5E3BE7.4080207@wwwdotorg.org>
+Date: Mon, 12 Mar 2012 12:09:43 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1486047996.69314.1331570138102.JavaMail.root@storentr1.softathome.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Dmitry Artamonow <mad_soft@inbox.ru>, Olof Johansson <olof@lixom.net>
+CC: linux-tegra@vger.kernel.org, Andi <andi.shyti@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 2/2] arm/tegra: add timeout to PCIe PLL lock detection
+ loop
+References: <20120306201538.GA14350@rainbow> <1331287760-10546-1-git-send-email-mad_soft@inbox.ru>
+In-Reply-To: <1331287760-10546-1-git-send-email-mad_soft@inbox.ru>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12, Dmitry ADAMUSHKA (EXT) wrote:
->
-> just wondering, whether this problem/scenario considered
-> to be completely unrealistic
-
-I think you are absolutely right.
-
-Either x86_32 shouldn't use int80 for syscalls from kernel-mode, or
-system_call paths should take SEGMENT_RPL_MASK into account.
-
-> or I just should resend the x86 patch alone to get more attention? :-)
-
-Probably ;) As I said, I can't help when it comes to the low-level asm
-details. I'd also suggest to cc Roland McGrath <roland@hack.frob.com>
-
-Ingo, Peter, I think we need your time/help.
-
-> --Dmitry
+On 03/09/2012 03:09 AM, Dmitry Artamonow wrote:
+> Tegra PCIe driver waits for PLL to lock using busy loop.
+> If PLL fails to lock for some reason, this leads to silent lockup
+> while booting (PCIe code is not modular).
 > 
-> ----- Original Message -----
-> > From: "Dmitry ADAMUSHKA (EXT)" <dmitry.adamushka_ext@softathome.com>
-> > To: "Oleg Nesterov" <oleg@redhat.com>
-> > Cc: "Ingo Molnar" <mingo@elte.hu>, "Ralf Baechle" <ralf@linux-mips.org>, "wouter cloetens"
-> > <wouter.cloetens@softathome.com>, linux-kernel@vger.kernel.org, "Dmitry Adamushko" <dmitry.adamushko@gmail.com>, "H.
-> > Peter Anvin" <hpa@zytor.com>
-> > Sent: Thursday, March 8, 2012 5:58:29 PM
-> > Subject: Re: 'khelper' (child) is stuck in endless loop: do_signal() and !user_mode(regs)
+> Fix by adding timeout, so if PLL doesn't lock in a couple
+> of seconds, just PCIe driver fails and machine continues to boot.
 > 
-> > > On 03/08, Dmitry ADAMUSHKA (EXT) wrote:
-> > > >
-> > > > The following quick hack "fixes" it for x86.
-> > >
-> > > First of all let me repeat, I do not understand this asm ;)
-> > > Fortunately Ingo and Peter do.
-> > >
-> > > But,
-> > >
-> > > > --- arch/x86/kernel/entry_32.S.orig 2012-03-08 15:42:25.041296595
-> > > > +0100 +++ arch/x86/kernel/entry_32.S 2012-03-08 15:58:29.926081131
-> > > > +0100 @@ -98,12 +98,6 @@
-> > > >  #endif .endm
-> > > >
-> > > > -#ifdef CONFIG_VM86
-> > > > -#define resume_userspace_sig check_userspace
-> > > > -#else -#define resume_userspace_sig resume_userspace
-> > > > -#endif -
-> > > >  /*
-> > > >   * User gs save/restore
-> > > >   *
-> > > > @@ -327,10 +321,19 @@ ret_from_exception:
-> > > >         preempt_stop(CLBR_ANY)
-> > > >  ret_from_intr:
-> > > >         GET_THREAD_INFO(%ebp)
-> > > > -check_userspace: +resume_userspace_sig: +#ifdef CONFIG_VM86
-> > > >         movl PT_EFLAGS(%esp), %eax # mix EFLAGS and CS
-> > > >         movb PT_CS(%esp), %al
-> > > >         andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
-> > > > +#else +/*
-> > > > + * We can be coming here from a syscall done in the kernel space,
-> > > > + * e.g. a failed kernel_execve().
-> > > > + */
-> > > > + movl PT_CS(%esp), %eax
-> > > > + andl $SEGMENT_RPL_MASK, %eax
-> > > > +#endif
-> > > >         cmpl $USER_RPL, %eax
-> > > >         jb resume_kernel # not returning to v8086 or userspace
-> > >
-> > > IIUC (I can be easily wrong) this breaks the endless loop, but
-> > > only after do_notify_resume() was already called.
-> > 
-> > yeah, basically I'm simulating the approach of CONFIG_VM86 here, i.e.
-> > doing the check at the same place in the call chain. Well, and giving
-> > a possibility for that "if (!user_mode(regs))" code in do_signal() to
-> > execute :-))
-> > 
-> > btw., what are the legitimate cases/code-paths for this part of
-> > do_signal()? I see that other archs just copy-past this approach. My
-> > initial thought was that it has something to do with handling (or
-> > rather preserving) some sort of signals that get delivered to
-> > not-yet-fully-created user-space tasks.. so that they get handled when
-> > these new tasks are up-and-running.
-> > 
-> > >
-> > > _perhaps_ it would be better to avoid do_notify_resume() in this
-> > > case altogether. Say, fire_user_return_notifiers() doesn't look
-> > > right in this case, we are not going to return to the usermode.
-> > >
-> > 
-> > yeah, there are some other corner cases I'm not sure about (like with
-> > syscall tracing). Also, there can be other scenarios of entering this
-> > loop... so one way or another, the loop should be broken.
-> > 
-> > --Dmitry
-> This message and any attachments herein are confidential, intended solely for the addressees and are SoftAtHome's ownership. Any unauthorized use or dissemination is prohibited. If you are not the intended addressee of this message, please cancel it immediately and inform the sender.
+> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
 
+> diff --git a/arch/arm/mach-tegra/pcie.c b/arch/arm/mach-tegra/pcie.c
+
+>  	/* Wait for the PLL to lock */
+> +	timeout = 2000;
+>  	do {
+>  		val = pads_readl(PADS_PLL_CTL);
+> +		usleep_range(1000, 1000);
+> +		if (--timeout == 0) {
+> +			pr_err("Tegra PCIe error: timeout waiting for PLL\n");
+> +			return -EBUSY;
+> +		}
+>  	} while (!(val & PADS_PLL_CTL_LOCKDET));
+
+Thierry pointed out that one of NVIDIA's downstream kernels uses a
+timeout of 300 here, rather than 2000 above. Do you see a specific need
+for this timeout for be 2000 rather than 300? It might be nice to be
+consistent.
+
+Olof, I notice you've already applied V1 of this, which has the return
+statement issue. Can you replace it with this, or should Dmitry send an
+incremental patch?
