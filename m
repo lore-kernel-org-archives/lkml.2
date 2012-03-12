@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab2CLThq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:37:46 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64509 "EHLO
+	id S1756482Ab2CLToo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:44:44 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64446 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754612Ab2CLTho convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756338Ab2CLTon convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:37:44 -0400
+	Mon, 12 Mar 2012 15:44:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAK5ve-+L9gVBOp4RVe2pTUbBnrb-PEn7ERbWWkb=7A=4qOrdTQ@mail.gmail.com>
-References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
-	<1331197863-25564-2-git-send-email-bryan.wu@canonical.com>
-	<20120308092913.GF14173@pengutronix.de>
-	<CAK5ve-+L9gVBOp4RVe2pTUbBnrb-PEn7ERbWWkb=7A=4qOrdTQ@mail.gmail.com>
-Date: Mon, 12 Mar 2012 20:37:44 +0100
-Message-ID: <CACRpkdYvfzrdAC1vjT5WD4rk0ozpbXkPtkQpBVMv_WYhdkg7ag@mail.gmail.com>
-Subject: Re: [PATCH 2/3] led-triggers: use atomic kzalloc during led trigger registering
+In-Reply-To: <1331324305-1649-1-git-send-email-swarren@wwwdotorg.org>
+References: <1331324305-1649-1-git-send-email-swarren@wwwdotorg.org>
+Date: Mon, 12 Mar 2012 20:44:42 +0100
+Message-ID: <CACRpkdbkoahUiB01srfBzm1Qh2RQPw5P6BjmouuLETAqfQY6_Q@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: Include <linux/bug.h> to prevent compile errors
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Ming Lei <ming.lei@canonical.com>, rpurdie@rpsys.net,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/10 Bryan Wu <bryan.wu@canonical.com>:
-> 2012/3/8 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
->> On Thu, Mar 08, 2012 at 05:11:02PM +0800, Bryan Wu wrote:
->>> kzalloc might cause sleep and will generate some warning detected by lockdep,
->>> when call led_trigger_register_simple on each cpu cores in SMP. This patch fix
->>> this.
->> The obvious (and IMHO better) alternative is to call
->> led_trigger_register_simple from non-atomic context.
->>
->> For registering this should be OK, shouldn't it?
->>
-> Thanks Uwe, it's my bad. I think I should not use on_each_cpu() API to
-> run led_trigger_register_simple. on_each_cpu() will disable interrupt.
+On Fri, Mar 9, 2012 at 9:18 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-It might have been my mistake even so not your fault ... :-)
+> Macros in <linux/pinctrl/machine.h> call ARRAY_SIZE(), the definition of
+> which eventually calls BUILD_BUG_ON_ZERO(), which is defined in
+> <linux/bug.h>. Include that so that every .c file using the pinctrl macros
+> doesn't have to do that itself.
+
+I get this part...
+
+> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+> ---
+>  include/linux/pinctrl/machine.h |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
+> index fee4349..012731a 100644
+> --- a/include/linux/pinctrl/machine.h
+> +++ b/include/linux/pinctrl/machine.h
+> @@ -12,7 +12,9 @@
+>  #ifndef __LINUX_PINCTRL_MACHINE_H
+>  #define __LINUX_PINCTRL_MACHINE_H
+>
+> -#include "pinctrl-state.h"
+
+?
+
+> +#include <linux/bug.h>
+> +
+> +#include "pinctrl.h"
+
+?
+
+But I moved the states out of machine.h and pinctrl.h just so
+that we shouldn't have to include pinctrl.h into machine.h?
 
 Thanks,
 Linus Walleij
