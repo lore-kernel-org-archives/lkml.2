@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab2CLTfA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:35:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60840 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755851Ab2CLTe7 (ORCPT
+	id S1756792Ab2CLTff (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:35:35 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:40237 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755851Ab2CLTfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:34:59 -0400
-Date: Mon, 12 Mar 2012 19:34:55 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>, Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Message-ID: <20120312193455.GZ12704@decadent.org.uk>
-References: <20120312002046.041448832@1wt.eu>
- <201203121702.06598.arnd@arndb.de>
+	Mon, 12 Mar 2012 15:35:34 -0400
+Message-ID: <4F5E4FF6.2010901@fb.com>
+Date: Mon, 12 Mar 2012 12:35:18 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201203121702.06598.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [ 02/12] Remove COMPAT_IA32 support
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+To: Ingo Molnar <mingo@elte.hu>
+CC: <linux-kernel@vger.kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
+        <linux-perf-users@vger.kernel.org>
+Subject: Re: [PATCH 2/2] perf: Add a new sort order: SORT_INCLUSIVE
+References: <1331160079-13821-1-git-send-email-asharma@fb.com> <1331160079-13821-3-git-send-email-asharma@fb.com> <20120308072258.GB20784@elte.hu>
+In-Reply-To: <20120308072258.GB20784@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
+ definitions=2012-03-12_05:2012-03-12,2012-03-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 05:02:06PM +0000, Arnd Bergmann wrote:
-> On Monday 12 March 2012, Willy Tarreau wrote:
-> > 
-> > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Ben Hutchings <ben@decadent.org.uk>
-> > 
-> > commit 32974ad4907cdde6c9de612cd1b2ee0568fb9409 upstream
-> > 
-> > This just changes Kconfig rather than touching all the other files the
-> > original commit did.
-> > 
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> 
-> I think it would be useful to copy the entire description of the
-> original patch here, which makes it clear why it's a good idea
-> to apply this patch to 2.6.32-longterm.
- 
-Agreed.  Willy, will you do this or should I send a new patch?
+On 3/7/12 11:22 PM, Ingo Molnar wrote:
 
-Ben.
+>
+> I.e. this refactoring and splitup of the function into two parts
+> is not a detail that should matter to builtin-report.c's
+> perf_evsel__add_hist_entry().
+>
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+Agreed. I'll fold this into the next rev.
+
+  -Arun
