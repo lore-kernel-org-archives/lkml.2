@@ -1,95 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab2CLXGh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:06:37 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34347 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753539Ab2CLXGg (ORCPT
+	id S1758039Ab2CLXHO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:07:14 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:56968 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757815Ab2CLXHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:06:36 -0400
-Date: Tue, 13 Mar 2012 10:06:25 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rob Lee <rob.lee@linaro.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: linux-next: manual merge of the cpuidle-cons tree with the
- arm-soc tree
-Message-Id: <20120313100625.b500f0efb546a9f4ceeb12ba@canb.auug.org.au>
-In-Reply-To: <CAMXH7KH_vgri3EPRvkXR+LddRUc=0ve=4u7yr51utBfgV5bF3w@mail.gmail.com>
-References: <20120309183732.512d3676599da324f4747219@canb.auug.org.au>
-	<4F5E1ECC.1040605@atmel.com>
-	<CAMXH7KH_vgri3EPRvkXR+LddRUc=0ve=4u7yr51utBfgV5bF3w@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__13_Mar_2012_10_06_25_+1100_HEgG0i=jaSiYrDYo"
+	Mon, 12 Mar 2012 19:07:11 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
+	<m1pqchocok.fsf@fess.ebiederm.org> <20120312204416.GG10787@dztty>
+	<m11uoxij9c.fsf@fess.ebiederm.org> <20120312224136.GH10787@dztty>
+Date: Mon, 12 Mar 2012 16:10:28 -0700
+In-Reply-To: <20120312224136.GH10787@dztty> (Djalal Harouni's message of "Mon,
+	12 Mar 2012 23:41:36 +0100")
+Message-ID: <m1boo1fmaj.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+doDHRbFXBCB78qaEx1ADwgxTY/oqeUvw=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Djalal Harouni <tixxdz@opendz.org>
+X-Spam-Relay-Country: **
+Subject: Re: [PATCH 0/9] proc: protect /proc/<pid>/* files across execve
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Mar_2012_10_06_25_+1100_HEgG0i=jaSiYrDYo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Djalal Harouni <tixxdz@opendz.org> writes:
 
-Hi Rob,
+> I'm not sure I follow you here, these proc files suffer from the same
+> problems, can you please point what are these non-silly case ?
 
-On Mon, 12 Mar 2012 12:03:48 -0500 Rob Lee <rob.lee@linaro.org> wrote:
+As I read 3.3-rc1 which I have handy I do not see problems.
+
+>> What is needed is for safety is to guard against the race of exec
+>> happening during a read or a write, so that we don't get access
+> before and during. I say before since this is what we are tying to
+> emulate.
+
+>> to something we shouldn't have permissions to.
+>> 
+>> In general that means reference counting or locks.  All exec_id can
+> Locks ? counting yes this perhaps can work as Alan suggested, but a simple
+> check will catch all the things without any node list nor count inc/dec.
+
+An exec_id check adds no value, to files like /proc/pid/environ.
+mm_for_maps nicely does the necessary permission checks and avoids the
+race.
+
+>> > The previous discussion on kernel-hardening:
+>> > (includes some variants described by Vasiliy and other problems which I'll
+>> > try to discuss here)
+>> > http://www.openwall.com/lists/kernel-hardening/2012/02/10/1
+>> 
+>> In your post on openwall I just see you arguing that the current
+>> and deliberate semantics of the permission checks on the proc files are
+>> wrong.  Because the permission checks happen at access time rather than
+>> at open time.
+> Yes if you are speaking about {maps,smaps...} then it should also be at
+> open time and at each syscall (it depends on files) and for the
+> /proc/pid/{maps,smaps,numa_maps} yes it is not safe to give non-privileged
+> processes an fd to an objects attached to a privileged process.
+
+Then the permission checks at access time are broken, and exec_id
+nonsense won't make them better.
+
+>> Well I am sorry.  The permission checks have happened at access time for
+>> ages and that is deliberate.
+> Yes (perhaps even before I use Linux :) ), but IMHO they are not perfect,
+> if they were, then we'll not see all the /proc/<pid>/ problems.
+
+We see problems because we lots of people play in the code and are not
+careful.  It looks to me like you are trying to make the problem worse
+by making the code more complicated and even harder to understand.
+
+> The current patches protect /proc/pid/{maps,smaps,numa_maps} without breaking
+> things, there are no checks at open which is not safe, but I did not add
+> it since I was not sure and I don't want to break things (glibc
+> FORITFY_SOURCE ...).
 >
-> On Mon, Mar 12, 2012 at 11:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com>=
- wrote:
-> > -----BEGIN PGP SIGNED MESSAGE-----
-> > Hash: SHA1
-> >
-> > On 03/09/2012 08:37 AM, Stephen Rothwell :
-> >>
-> >> Today's linux-next merge of the cpuidle-cons tree got a conflict
-> >> in arch/arm/mach-at91/cpuidle.c between commit 00482a4078f4 ("ARM:
-> >> at91: implement the standby function for pm/cpuidle") from the
-> >> arm-soc tree and commit 7a1f6e72dce1 ("ARM: at91: Consolidate time
-> >> keeping and irq enable") from the cpuidle-cons tree.
-> >>
-> >> I fixed it up (I think - see below) and can carry the fix as
-> >> necessary.
-> >
-> > Yes: resolution correct. Please carry it.
->=20
-> Who should carry this fixup and related necessary at91 changes?  Me?
-> FYI, my at91 changes are dependent on my core cpuidle change, but my
-> core cpuidle changes do not require any at91 changes as the at91 and
-> other platform changes were only made to consolidate duplicate code.
+> My patches add the ptrace checks at open only for
+> /proc/<pid>/{environ,pagemap,mem} which is safe, I did not include
+> /proc/pid/{auxv,maps,smaps,...} so please if you have _real_ cases of
+> problems just post them.
 
-I will carry the fixup and Linus will presumably do the same fix when he
-merges these trees in his tree.  I am not sure what you mean by "related
-at91 changes".
+You are thrashing the code and making it more complicated for no
+apparent reason.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>> If you expect /proc/ not to let you find out things about yourself
+>> if you are a suid executable that just seems silly.
+> Ah yes this one about suid/privileged, if you are still privileged then
+> there is no harm, but if you drop your privileges IMHO that means that you
+> do not want to do privileged operations, but that current == task in
+> ptrace which is before the creds check will just allow you to do so.
 
---Signature=_Tue__13_Mar_2012_10_06_25_+1100_HEgG0i=jaSiYrDYo
-Content-Type: application/pgp-signature
+Please show me how you can drop privileges to access yourself.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The current == task check is there because of extreme silliness in
+the security modules and the fact that glibc breaks in entertaining
+was if it can not access /proc/self/masp.  If you I read you right
+you want to reintroduce that breaking for suid exectuables.  Frankly
+that sounds like you a security bug in the making.
 
-iQIcBAEBCAAGBQJPXoFxAAoJEECxmPOUX5FEffYP/3/RYBupwv7zYO3LVID/KfAA
-kjXR8QMl4tp4BT9UmoTatJH8CQ+V03/sKlSdEynEdpR/8g0VAU56pSwhOq8OmWiM
-8xPumPxYJ/DcdtSww9hygjdjxe79tSTnvCCk+dS85t/G4oXlKfshhXK9H1f18jRy
-OyeYWxFn6jMCN4QbZnuTGvkQiYqhD7gH+XZroWkfLFxODhrgxAV+6xPrtawKFLn3
-GtOvRWLcYHRQxqAx2rT43CT8XPoY9LhyvWzB23ddkmwFIX1Yzc/Up8QrJ3LIvhVO
-1CsxhkHEwMOcNrFOZJ0Lykrl7BFJ0Nltb8jiEBJH73SPbBffNLd9XtSI9/2AkwEA
-q+AJBg7EPQw0QsjVCyLt/5cwcxlWAtR7uFAQaj1cUy8A1/l0LviDxxZ6mSikBodI
-G+ENvwe8LN/R3ksB9ZpY31ymlH16CuV/+OJbibt50SKv/+bNU0Yd2BpEkkCfJgG2
-ycUtRHmNzWVe7bOPAEn/xIxKNxkXuuBOIfM+ueq0smGdr4/KtCloaCksK5FO/bDj
-LQ7acljTy5mrnEJkWwm2pmQDx3PvOg6bhVehRRI24ZFm9l7/dQ/yJHX0u0aUT5Xs
-3qgYbOMZxmhqFJU4FUhTW87PpauIYe4XEWUD80vJ/9ZISZIZpvHu5y7TXVVoFDPb
-KdcmVSjl1Swvp64/ulzn
-=lcP4
------END PGP SIGNATURE-----
+> Well, this is another subject.
+>
+>> So in short you seem to be arguing for changing the semantics of access
+>> of every file under /proc/<pid> because there is cognitive dissonance
+>> between your understanding of those files and what is implemented.  I
+>> see no acknowledgement that you are arguing for a semantic change or
+>> any arguments in favor of that change.  At best I see is an argument
+>> that says you the files don't work the way you expect which is most
+>> definitely not sufficient for a change.
+> I really don't understant what you are trying to say/prove here, this is
+> the same issue of the last /proc/<pid>/mem one that got fixed by Linus and
+> Olge patches. These are dynamic files.
 
---Signature=_Tue__13_Mar_2012_10_06_25_+1100_HEgG0i=jaSiYrDYo--
+The /proc/<pid>/mem permission checks were implemented in a very stupid
+way.  In that stupid way they used task->exec_id.  I don't see any
+evidence that anyone touching any of the other proc files made that same
+foolish set of choices.  So I see no evidence that the problem exists
+outside of anywhere except /proc/<pid>/mem.
+
+So very simply it looks to me like your entire patchset is very busily
+trying to fix problems that don't exist.
+
+Eric
