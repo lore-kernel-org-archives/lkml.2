@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab2CLR6y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:58:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48589 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab2CLR6x convert rfc822-to-8bit (ORCPT
+	id S1754868Ab2CLR7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:59:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42624 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076Ab2CLR7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 13:58:53 -0400
-Message-ID: <1331575097.18960.40.camel@twins>
-Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine
- call_srcu()
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Lai Jiangshan <eag0628@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        patches@linaro.org, tj@kernel.org
-Date: Mon, 12 Mar 2012 18:58:17 +0100
-In-Reply-To: <20120312175432.GF2471@linux.vnet.ibm.com>
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
-	 <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
-	 <1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
-	 <1331032571.11248.277.camel@twins>
-	 <CACvQF52tYmG4Bx+L+cTjVRbvQxj=sKiKrxhuv35H=fAFVvQJ2Q@mail.gmail.com>
-	 <1331048093.11248.317.camel@twins>
-	 <20120308195825.GC2412@linux.vnet.ibm.com>
-	 <1331374193.18960.13.camel@twins>
-	 <20120312175432.GF2471@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 12 Mar 2012 13:59:32 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V6 2/3] gpio: Add support for Intel ICHx/3100/Series[56] GPIO
+To: Aaron Sierra <asierra@xes-inc.com>, Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter@roeck-us.net>
+Cc: Peter Tyser <ptyser@xes-inc.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <886b8cc4-caed-4bce-aa48-9f3181ba09ad@zimbra>
+References: <886b8cc4-caed-4bce-aa48-9f3181ba09ad@zimbra>
+Date: Mon, 12 Mar 2012 11:59:27 -0600
+Message-Id: <20120312175927.19EE33E07B0@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 10:54 -0700, Paul E. McKenney wrote:
-> On Sat, Mar 10, 2012 at 11:09:53AM +0100, Peter Zijlstra wrote:
-> > On Thu, 2012-03-08 at 11:58 -0800, Paul E. McKenney wrote:
-> > > 
-> > > But I guess I should ask...  Peter, what do you expect the maximum
-> > > call_srcu() rate to be in your use cases?  If tens of thousands are
-> > > possible, some adjustments will be needed. 
-> > 
-> > The one call-site I currently have is linked to vma lifetimes, so yeah,
-> > I guess that that can be lots.
+On Wed, 07 Mar 2012 11:41:38 -0600 (CST), Aaron Sierra <asierra@xes-inc.com> wrote:
+> From: Peter Tyser <ptyser@xes-inc.com>
 > 
-> So the worst case would be if several processes with lots of VMAs were
-> to exit at about the same time?  If so, my guess is that call_srcu()
-> needs to handle several thousand callbacks showing up within a few
-> tens of microseconds.  Is that a reasonable assumption, or am I missing
-> an order of magnitude or two in either direction?
+> This driver works on many Intel chipsets, including the ICH6, ICH7,
+> ICH8, ICH9, ICH10, 3100, Series 5/3400 (Ibex Peak), Series 6/C200
+> (Cougar Point), and NM10 (Tiger Point).
+> 
+> Additional Intel chipsets should be easily supported if needed, eg the
+> ICH1-5, EP80579, etc.
+> 
+> Tested on QM67 (Cougar Point), QM57 (Ibex Peak), 3100 (Whitmore Lake),
+> and NM10 (Tiger Point).
+> 
+> Includes work from Jean Delvare:
+> 	- Resource leak removal during module load/unload
+> 	- GPIO API bit value enforcement
+> 
+> Also includes code cleanup from Guenter Roeck and Grant Likely.
+> 
+> Signed-off-by: Peter Tyser <ptyser@xes-inc.com>
+> Signed-off-by: Aaron Sierra <asierra@xes-inc.com>
 
-That or a process is doing mmap/munmap loops (some file scanners are
-known to do this). But yeah, that can be lots.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-My current use case doesn't quite trigger since it needs another syscall
-to attach something to a vma before vma tear-down actually ends up
-calling call_srcu() so in practice it won't be much at all (for now).
+It looks like this depends on the mfd patch for the header file, so this should
+be merged via the mfd tree.
 
-Still I think its prudent to make it (srcu callbacks) deal with plenty
-callbacks even if initially there won't be many -- who knows what other
-people will do while you're not paying attention... :-)
+g.
+
+> ---
+>  MAINTAINERS             |    6 +
+>  drivers/gpio/Kconfig    |   13 ++
+>  drivers/gpio/Makefile   |    1 +
+>  drivers/gpio/gpio-ich.c |  419 +++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 439 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/gpio/gpio-ich.c
+> 
