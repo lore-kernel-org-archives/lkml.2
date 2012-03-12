@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab2CLV4W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 17:56:22 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47420 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757654Ab2CLV4S (ORCPT
+	id S932177Ab2CLV4e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 17:56:34 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62792 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932083Ab2CLV43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 17:56:18 -0400
-Date: Mon, 12 Mar 2012 16:56:07 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Thomas Rast <trast@inf.ethz.ch>
-Cc: Junio C Hamano <gitster@pobox.com>, Willy Tarreau <w@1wt.eu>,
-        Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        git@vger.kernel.org
-Subject: Re: [PATCH] git-am: error out when seeing -b/--binary
-Message-ID: <20120312215607.GB11362@burratino>
-References: <20120312024948.GB4650@kroah.com>
- <20120312063027.GB8971@1wt.eu>
- <20120312064855.GB16820@burratino>
- <20120312085820.GA11569@1wt.eu>
- <20120312152004.GB9380@kroah.com>
- <20120312152453.GB12405@1wt.eu>
- <87aa3l4vqq.fsf@thomas.inf.ethz.ch>
- <20120312165703.GB18791@burratino>
- <7vvcm9snko.fsf@alter.siamese.dyndns.org>
- <87399dpk48.fsf@thomas.inf.ethz.ch>
+	Mon, 12 Mar 2012 17:56:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87399dpk48.fsf@thomas.inf.ethz.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120312214914.GA8628@redhat.com>
+References: <jj5qhh$5j5$1@ID-44327.news.uni-berlin.de>
+	<jj684d$6ng$1@ID-44327.news.uni-berlin.de>
+	<CAFLxGvwazkbisZ0Ax==-Yyv2h5mYtnK-S2bOegZHX5g+rB2krQ@mail.gmail.com>
+	<4F574113.8030906@01019freenet.de>
+	<alpine.LRH.2.00.1203121300590.4911@twin.jikos.cz>
+	<CAFLxGvwv159LHtyKdrF1DQZ-vQyagLJ9nNkcAZzkY4O9F-MwNg@mail.gmail.com>
+	<alpine.LNX.2.00.1203121329430.18356@pobox.suse.cz>
+	<CAFLxGvyXwFwLRYw7=eHGLZsiAB9Adcu16z=UPhLtL_Ze3bF-9g@mail.gmail.com>
+	<alpine.LNX.2.00.1203121402460.18356@pobox.suse.cz>
+	<4F5DF8F0.5010801@01019freenet.de>
+	<20120312214914.GA8628@redhat.com>
+Date: Mon, 12 Mar 2012 22:56:28 +0100
+Message-ID: <CAFLxGvxthR5zCQzYR4dtMa=4S2W03K-v8a0d9MTt4Ow=t+UL2w@mail.gmail.com>
+Subject: Re: Corrupted files after suspend to disk
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Dave Jones <davej@redhat.com>,
+        Andreas Hartmann <andihartmann@01019freenet.de>,
+        Jiri Kosina <jkosina@suse.cz>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+        keithp@keithp.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Rast wrote:
+On Mon, Mar 12, 2012 at 10:49 PM, Dave Jones <davej@redhat.com> wrote:
+>
+> This looks like the i915 corruption problem mentioned in a few other threads.
+>
+> if you compare the hexdump of the good/bad files, you find that the corruption
+> happens in 8x 4 byte writes of either 0x00000000 or 0x00aaaaaa.
+>
 
-> Ok, but if I don't get to say anything about repurposing, can I at least
-> make it an error message instead of just spewing out the "invalid
-> option" help?
+This makes sense.
+I'll have a look at the pattern next time!
 
-I don't mind either way.
-
-[...]
-> --- a/git-am.sh
-> +++ b/git-am.sh
-> @@ -380,7 +380,9 @@ do
->  	-i|--interactive)
->  		interactive=t ;;
->  	-b|--binary)
-> -		: ;;
-> +		echo >&2 "The -b/--binary option was deprecated in 1.6.0 and removed in 1.7.10."
-> +		die "Please adjust your scripts."
-> +		;;
-
-Hm, on second thought, if people are seeing this message, I would
-prefer if they write to the mailing list so we can find out about it.
-So I really would rather see this say
-
-	--binary)
-		: ;;
-
-and have "-b" completely unrecognized, without any words in our
-defense except for a note in the release notes mentioning the option's
-removal and that it has been an unadvertised backward-compatibility
-no-op since 1.6.0.
-
-Jonathan
+-- 
+Thanks,
+//richard
