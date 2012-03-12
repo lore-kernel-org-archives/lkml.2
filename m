@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030204Ab2CLXlb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:41:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54160 "EHLO mx1.redhat.com"
+	id S964892Ab2CLXlj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:41:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34311 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964965Ab2CLXl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:41:27 -0400
+	id S964965Ab2CLXle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 19:41:34 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 30/35] Disintegrate asm/system.h for Unicore32 [ver #2]
+Subject: [PATCH 31/35] Disintegrate asm/system.h for Xtensa [ver #2]
 To: paul.gortmaker@windriver.com, hpa@zytor.com
 Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, arnd@arndb.de,
-        David Howells <dhowells@redhat.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>
-Date: Mon, 12 Mar 2012 23:41:09 +0000
-Message-ID: <20120312234109.13888.72647.stgit@warthog.procyon.org.uk>
+        David Howells <dhowells@redhat.com>, Chris Zankel <chris@zankel.net>
+Date: Mon, 12 Mar 2012 23:41:21 +0000
+Message-ID: <20120312234121.13888.82919.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,652 +28,585 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disintegrate asm/system.h for Unicore32.  Not Compiled.
+Disintegrate asm/system.h for Xtensa.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+cc: Chris Zankel <chris@zankel.net>
 ---
 
- arch/unicore32/include/asm/Kbuild      |    2 
- arch/unicore32/include/asm/barrier.h   |   28 +++++
- arch/unicore32/include/asm/bug.h       |   33 ++++++
- arch/unicore32/include/asm/cmpxchg.h   |   58 +++++++++++
- arch/unicore32/include/asm/cr.h        |   49 +++++++++
- arch/unicore32/include/asm/exec.h      |   15 +++
- arch/unicore32/include/asm/io.h        |    1 
- arch/unicore32/include/asm/pgtable.h   |    3 +
- arch/unicore32/include/asm/setup.h     |   18 +++
- arch/unicore32/include/asm/switch_to.h |   30 ++++++
- arch/unicore32/include/asm/system.h    |  168 +-------------------------------
- arch/unicore32/include/asm/uaccess.h   |    1 
- arch/unicore32/kernel/dma.c            |    1 
- arch/unicore32/kernel/head.S           |    1 
- arch/unicore32/kernel/hibernate.c      |    1 
- arch/unicore32/kernel/irq.c            |    1 
- arch/unicore32/kernel/ksyms.c          |    1 
- arch/unicore32/kernel/process.c        |    1 
- arch/unicore32/kernel/traps.c          |    1 
- arch/unicore32/mm/fault.c              |    1 
- arch/unicore32/mm/flush.c              |    1 
- 21 files changed, 241 insertions(+), 174 deletions(-)
- create mode 100644 arch/unicore32/include/asm/barrier.h
- create mode 100644 arch/unicore32/include/asm/bug.h
- create mode 100644 arch/unicore32/include/asm/cmpxchg.h
- create mode 100644 arch/unicore32/include/asm/cr.h
- create mode 100644 arch/unicore32/include/asm/exec.h
- create mode 100644 arch/unicore32/include/asm/setup.h
- create mode 100644 arch/unicore32/include/asm/switch_to.h
+ arch/xtensa/include/asm/atomic.h    |    2 
+ arch/xtensa/include/asm/barrier.h   |   29 +++++
+ arch/xtensa/include/asm/bitops.h    |    1 
+ arch/xtensa/include/asm/cmpxchg.h   |  131 ++++++++++++++++++++++++
+ arch/xtensa/include/asm/exec.h      |   14 +++
+ arch/xtensa/include/asm/setup.h     |    2 
+ arch/xtensa/include/asm/switch_to.h |   22 ++++
+ arch/xtensa/include/asm/system.h    |  189 +----------------------------------
+ arch/xtensa/include/asm/uaccess.h   |    2 
+ arch/xtensa/kernel/process.c        |    1 
+ arch/xtensa/kernel/ptrace.c         |    1 
+ arch/xtensa/kernel/setup.c          |    1 
+ arch/xtensa/kernel/traps.c          |   19 ++++
+ arch/xtensa/mm/fault.c              |    1 
+ arch/xtensa/mm/tlb.c                |    1 
+ 15 files changed, 225 insertions(+), 191 deletions(-)
+ create mode 100644 arch/xtensa/include/asm/barrier.h
+ create mode 100644 arch/xtensa/include/asm/cmpxchg.h
+ create mode 100644 arch/xtensa/include/asm/exec.h
+ create mode 100644 arch/xtensa/include/asm/switch_to.h
 
-diff --git a/arch/unicore32/include/asm/Kbuild b/arch/unicore32/include/asm/Kbuild
-index ca113d6..24c686f 100644
---- a/arch/unicore32/include/asm/Kbuild
-+++ b/arch/unicore32/include/asm/Kbuild
-@@ -3,7 +3,6 @@ include include/asm-generic/Kbuild.asm
- generic-y += atomic.h
- generic-y += auxvec.h
- generic-y += bitsperlong.h
--generic-y += bug.h
- generic-y += bugs.h
- generic-y += cputime.h
- generic-y += current.h
-@@ -38,7 +37,6 @@ generic-y += sections.h
- generic-y += segment.h
- generic-y += sembuf.h
- generic-y += serial.h
--generic-y += setup.h
- generic-y += shmbuf.h
- generic-y += shmparam.h
- generic-y += siginfo.h
-diff --git a/arch/unicore32/include/asm/barrier.h b/arch/unicore32/include/asm/barrier.h
+diff --git a/arch/xtensa/include/asm/atomic.h b/arch/xtensa/include/asm/atomic.h
+index 23592ef..b409893 100644
+--- a/arch/xtensa/include/asm/atomic.h
++++ b/arch/xtensa/include/asm/atomic.h
+@@ -18,7 +18,7 @@
+ 
+ #ifdef __KERNEL__
+ #include <asm/processor.h>
+-#include <asm/system.h>
++#include <asm/cmpxchg.h>
+ 
+ #define ATOMIC_INIT(i)	{ (i) }
+ 
+diff --git a/arch/xtensa/include/asm/barrier.h b/arch/xtensa/include/asm/barrier.h
 new file mode 100644
-index 0000000..b7e5f82
+index 0000000..55707a8
 --- /dev/null
-+++ b/arch/unicore32/include/asm/barrier.h
-@@ -0,0 +1,28 @@
++++ b/arch/xtensa/include/asm/barrier.h
+@@ -0,0 +1,29 @@
 +/*
-+ * Memory barrier implementations for PKUnity SoC and UniCore ISA
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Copyright (C) 2001 - 2005 Tensilica Inc.
 + */
-+#ifndef __UNICORE_BARRIER_H__
-+#define __UNICORE_BARRIER_H__
 +
-+#define isb() __asm__ __volatile__ ("" : : : "memory")
-+#define dsb() __asm__ __volatile__ ("" : : : "memory")
-+#define dmb() __asm__ __volatile__ ("" : : : "memory")
++#ifndef _XTENSA_SYSTEM_H
++#define _XTENSA_SYSTEM_H
 +
-+#define mb()		barrier()
-+#define rmb()		barrier()
-+#define wmb()		barrier()
++#define smp_read_barrier_depends() do { } while(0)
++#define read_barrier_depends() do { } while(0)
++
++#define mb()  barrier()
++#define rmb() mb()
++#define wmb() mb()
++
++#ifdef CONFIG_SMP
++#error smp_* not defined
++#else
 +#define smp_mb()	barrier()
 +#define smp_rmb()	barrier()
 +#define smp_wmb()	barrier()
-+#define read_barrier_depends()		do { } while (0)
-+#define smp_read_barrier_depends()	do { } while (0)
++#endif
 +
-+#define set_mb(var, value)	do { var = value; smp_mb(); } while (0)
++#define set_mb(var, value)	do { var = value; mb(); } while (0)
 +
-+#endif /* __UNICORE_BARRIER_H__ */
-diff --git a/arch/unicore32/include/asm/bug.h b/arch/unicore32/include/asm/bug.h
++#endif /* _XTENSA_SYSTEM_H */
+diff --git a/arch/xtensa/include/asm/bitops.h b/arch/xtensa/include/asm/bitops.h
+index 40aa7fe..5270197 100644
+--- a/arch/xtensa/include/asm/bitops.h
++++ b/arch/xtensa/include/asm/bitops.h
+@@ -21,7 +21,6 @@
+ 
+ #include <asm/processor.h>
+ #include <asm/byteorder.h>
+-#include <asm/system.h>
+ 
+ #ifdef CONFIG_SMP
+ # error SMP not supported on this architecture
+diff --git a/arch/xtensa/include/asm/cmpxchg.h b/arch/xtensa/include/asm/cmpxchg.h
 new file mode 100644
-index 0000000..8304b64
+index 0000000..e321490
 --- /dev/null
-+++ b/arch/unicore32/include/asm/bug.h
-@@ -0,0 +1,33 @@
++++ b/arch/xtensa/include/asm/cmpxchg.h
+@@ -0,0 +1,131 @@
 +/*
-+ * Bug handling for PKUnity SoC and UniCore ISA
++ * Atomic xchg and cmpxchg operations.
 + *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Copyright (C) 2001 - 2005 Tensilica Inc.
 + */
-+#ifndef __UNICORE_BUG_H__
-+#define __UNICORE_BUG_H__
 +
-+#include <linux/linkage.h>
-+#include <asm/bug.h>
++#ifndef _XTENSA_CMPXCHG_H
++#define _XTENSA_CMPXCHG_H
 +
-+struct pt_regs;
-+struct siginfo;
++#ifndef __ASSEMBLY__
 +
-+void die(const char *msg, struct pt_regs *regs, int err);
++#include <linux/stringify.h>
 +
-+void uc32_notify_die(const char *str, struct pt_regs *regs,
-+		struct siginfo *info, unsigned long err, unsigned long trap);
-+
-+void hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int,
-+				       struct pt_regs *),
-+		     int sig, int code, const char *name);
-+
-+extern asmlinkage void __backtrace(void);
-+extern asmlinkage void c_backtrace(unsigned long fp, int pmode);
-+
-+extern void __show_regs(struct pt_regs *);
-+
-+#endif /* __UNICORE_BUG_H__ */
-diff --git a/arch/unicore32/include/asm/cmpxchg.h b/arch/unicore32/include/asm/cmpxchg.h
-new file mode 100644
-index 0000000..2c36450
---- /dev/null
-+++ b/arch/unicore32/include/asm/cmpxchg.h
-@@ -0,0 +1,58 @@
 +/*
-+ * Atomics for PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * cmpxchg
 + */
-+#ifndef __UNICORE_CMPXCHG_H__
-+#define __UNICORE_CMPXCHG_H__
 +
 +static inline unsigned long
-+__xchg(unsigned long x, volatile void *ptr, int size)
++__cmpxchg_u32(volatile int *p, int old, int new)
 +{
-+	unsigned long ret;
++  __asm__ __volatile__("rsil    a15, "__stringify(LOCKLEVEL)"\n\t"
++		       "l32i    %0, %1, 0              \n\t"
++		       "bne	%0, %2, 1f             \n\t"
++		       "s32i    %3, %1, 0              \n\t"
++		       "1:                             \n\t"
++		       "wsr     a15, "__stringify(PS)" \n\t"
++		       "rsync                          \n\t"
++		       : "=&a" (old)
++		       : "a" (p), "a" (old), "r" (new)
++		       : "a15", "memory");
++  return old;
++}
++/* This function doesn't exist, so you'll get a linker error
++ * if something tries to do an invalid cmpxchg(). */
 +
++extern void __cmpxchg_called_with_bad_pointer(void);
++
++static __inline__ unsigned long
++__cmpxchg(volatile void *ptr, unsigned long old, unsigned long new, int size)
++{
 +	switch (size) {
-+	case 1:
-+		asm volatile("@	__xchg1\n"
-+		"	swapb	%0, %1, [%2]"
-+			: "=&r" (ret)
-+			: "r" (x), "r" (ptr)
-+			: "memory", "cc");
-+		break;
-+	case 4:
-+		asm volatile("@	__xchg4\n"
-+		"	swapw	%0, %1, [%2]"
-+			: "=&r" (ret)
-+			: "r" (x), "r" (ptr)
-+			: "memory", "cc");
-+		break;
-+	default:
-+		panic("xchg: bad data size: ptr 0x%p, size %d\n",
-+			ptr, size);
++	case 4:  return __cmpxchg_u32(ptr, old, new);
++	default: __cmpxchg_called_with_bad_pointer();
++		 return old;
 +	}
-+
-+	return ret;
 +}
 +
-+#define xchg(ptr, x) \
-+	((__typeof__(*(ptr)))__xchg((unsigned long)(x), (ptr), sizeof(*(ptr))))
++#define cmpxchg(ptr,o,n)						      \
++	({ __typeof__(*(ptr)) _o_ = (o);				      \
++	   __typeof__(*(ptr)) _n_ = (n);				      \
++	   (__typeof__(*(ptr))) __cmpxchg((ptr), (unsigned long)_o_,	      \
++	   			        (unsigned long)_n_, sizeof (*(ptr))); \
++	})
 +
 +#include <asm-generic/cmpxchg-local.h>
++
++static inline unsigned long __cmpxchg_local(volatile void *ptr,
++				      unsigned long old,
++				      unsigned long new, int size)
++{
++	switch (size) {
++	case 4:
++		return __cmpxchg_u32(ptr, old, new);
++	default:
++		return __cmpxchg_local_generic(ptr, old, new, size);
++	}
++
++	return old;
++}
 +
 +/*
 + * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
 + * them available.
 + */
-+#define cmpxchg_local(ptr, o, n)					\
-+		((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),	\
-+		(unsigned long)(o), (unsigned long)(n), sizeof(*(ptr))))
-+#define cmpxchg64_local(ptr, o, n)					\
-+		__cmpxchg64_local_generic((ptr), (o), (n))
-+
-+#include <asm-generic/cmpxchg.h>
-+
-+#endif /* __UNICORE_CMPXCHG_H__ */
-diff --git a/arch/unicore32/include/asm/cr.h b/arch/unicore32/include/asm/cr.h
-new file mode 100644
-index 0000000..96510a1
---- /dev/null
-+++ b/arch/unicore32/include/asm/cr.h
-@@ -0,0 +1,49 @@
-+/*
-+ * CR registed bits for PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __UNICORE_CR_H__
-+#define __UNICORE_CR_H__
++#define cmpxchg_local(ptr, o, n)				  	       \
++	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr), (unsigned long)(o),\
++			(unsigned long)(n), sizeof(*(ptr))))
++#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
 +
 +/*
-+ * CR1 bits (CP#0 CR1)
++ * xchg_u32
++ *
++ * Note that a15 is used here because the register allocation
++ * done by the compiler is not guaranteed and a window overflow
++ * may not occur between the rsil and wsr instructions. By using
++ * a15 in the rsil, the machine is guaranteed to be in a state
++ * where no register reference will cause an overflow.
 + */
-+#define CR_M	(1 << 0)	/* MMU enable				*/
-+#define CR_A	(1 << 1)	/* Alignment abort enable		*/
-+#define CR_D	(1 << 2)	/* Dcache enable			*/
-+#define CR_I	(1 << 3)	/* Icache enable			*/
-+#define CR_B	(1 << 4)	/* Dcache write mechanism: write back	*/
-+#define CR_T	(1 << 5)	/* Burst enable				*/
-+#define CR_V	(1 << 13)	/* Vectors relocated to 0xffff0000	*/
 +
-+#ifndef __ASSEMBLY__
-+
-+#define vectors_high()	(cr_alignment & CR_V)
-+
-+extern unsigned long cr_no_alignment;	/* defined in entry-unicore.S */
-+extern unsigned long cr_alignment;	/* defined in entry-unicore.S */
-+
-+static inline unsigned int get_cr(void)
++static inline unsigned long xchg_u32(volatile int * m, unsigned long val)
 +{
-+	unsigned int val;
-+	asm("movc %0, p0.c1, #0" : "=r" (val) : : "cc");
-+	return val;
++  unsigned long tmp;
++  __asm__ __volatile__("rsil    a15, "__stringify(LOCKLEVEL)"\n\t"
++		       "l32i    %0, %1, 0              \n\t"
++		       "s32i    %2, %1, 0              \n\t"
++		       "wsr     a15, "__stringify(PS)" \n\t"
++		       "rsync                          \n\t"
++		       : "=&a" (tmp)
++		       : "a" (m), "a" (val)
++		       : "a15", "memory");
++  return tmp;
 +}
 +
-+static inline void set_cr(unsigned int val)
-+{
-+	asm volatile("movc p0.c1, %0, #0	@set CR"
-+	  : : "r" (val) : "cc");
-+	isb();
-+}
++#define xchg(ptr,x) ((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
 +
-+extern void adjust_cr(unsigned long mask, unsigned long set);
++/*
++ * This only works if the compiler isn't horribly bad at optimizing.
++ * gcc-2.5.8 reportedly can't handle this, but I define that one to
++ * be dead anyway.
++ */
++
++extern void __xchg_called_with_bad_pointer(void);
++
++static __inline__ unsigned long
++__xchg(unsigned long x, volatile void * ptr, int size)
++{
++	switch (size) {
++		case 4:
++			return xchg_u32(ptr, x);
++	}
++	__xchg_called_with_bad_pointer();
++	return x;
++}
 +
 +#endif /* __ASSEMBLY__ */
 +
-+#endif /* __UNICORE_CR_H__ */
-diff --git a/arch/unicore32/include/asm/exec.h b/arch/unicore32/include/asm/exec.h
++#endif /* _XTENSA_CMPXCHG_H */
+diff --git a/arch/xtensa/include/asm/exec.h b/arch/xtensa/include/asm/exec.h
 new file mode 100644
-index 0000000..ae707b3
+index 0000000..af949e2
 --- /dev/null
-+++ b/arch/unicore32/include/asm/exec.h
-@@ -0,0 +1,15 @@
++++ b/arch/xtensa/include/asm/exec.h
+@@ -0,0 +1,14 @@
 +/*
-+ * Process execution bits for PKUnity SoC and UniCore ISA
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Copyright (C) 2001 - 2005 Tensilica Inc.
 + */
-+#ifndef __UNICORE_EXEC_H__
-+#define __UNICORE_EXEC_H__
++
++#ifndef _XTENSA_EXEC_H
++#define _XTENSA_EXEC_H
 +
 +#define arch_align_stack(x) (x)
 +
-+#endif /* __UNICORE_EXEC_H__ */
-diff --git a/arch/unicore32/include/asm/io.h b/arch/unicore32/include/asm/io.h
-index adddf6d..39decb6 100644
---- a/arch/unicore32/include/asm/io.h
-+++ b/arch/unicore32/include/asm/io.h
-@@ -16,7 +16,6 @@
++#endif /* _XTENSA_EXEC_H */
+diff --git a/arch/xtensa/include/asm/setup.h b/arch/xtensa/include/asm/setup.h
+index e363652..9fa8ad9 100644
+--- a/arch/xtensa/include/asm/setup.h
++++ b/arch/xtensa/include/asm/setup.h
+@@ -13,4 +13,6 @@
  
- #include <asm/byteorder.h>
- #include <asm/memory.h>
--#include <asm/system.h>
+ #define COMMAND_LINE_SIZE	256
  
- #define PCI_IOBASE	PKUNITY_PCILIO_BASE
- #include <asm-generic/io.h>
-diff --git a/arch/unicore32/include/asm/pgtable.h b/arch/unicore32/include/asm/pgtable.h
-index 68b2f29..71b5520 100644
---- a/arch/unicore32/include/asm/pgtable.h
-+++ b/arch/unicore32/include/asm/pgtable.h
-@@ -312,6 +312,9 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
- 
- #define pgtable_cache_init() do { } while (0)
- 
-+struct mm_struct;
-+extern void show_pte(struct mm_struct *mm, unsigned long addr);
++extern void set_except_vector(int n, void *addr);
 +
- #endif /* !__ASSEMBLY__ */
- 
- #endif /* __UNICORE_PGTABLE_H__ */
-diff --git a/arch/unicore32/include/asm/setup.h b/arch/unicore32/include/asm/setup.h
+ #endif
+diff --git a/arch/xtensa/include/asm/switch_to.h b/arch/xtensa/include/asm/switch_to.h
 new file mode 100644
-index 0000000..30d1e7a
+index 0000000..6b73bf0
 --- /dev/null
-+++ b/arch/unicore32/include/asm/setup.h
-@@ -0,0 +1,18 @@
++++ b/arch/xtensa/include/asm/switch_to.h
+@@ -0,0 +1,22 @@
 +/*
-+ * Setup code for PKUnity SoC and UniCore ISA
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Copyright (C) 2001 - 2005 Tensilica Inc.
 + */
-+#ifndef __UNICORE_SETUP_H__
-+#define __UNICORE_SETUP_H__
 +
-+#include <asm-generic/setup.h>
++#ifndef _XTENSA_SWITCH_TO_H
++#define _XTENSA_SWITCH_TO_H
 +
-+extern int cpu_architecture(void);
-+extern void cpu_init(void);
-+
-+#endif /* __UNICORE_SETUP_H__ */
-diff --git a/arch/unicore32/include/asm/switch_to.h b/arch/unicore32/include/asm/switch_to.h
-new file mode 100644
-index 0000000..db7a40c
---- /dev/null
-+++ b/arch/unicore32/include/asm/switch_to.h
-@@ -0,0 +1,30 @@
-+/*
-+ * Task switching for PKUnity SoC and UniCore ISA
-+ *
-+ * Copyright (C) 2001-2010 GUAN Xue-tao
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++/* * switch_to(n) should switch tasks to task nr n, first
++ * checking that n isn't the current task, in which case it does nothing.
 + */
-+#ifndef __UNICORE_SWITCH_TO_H__
-+#define __UNICORE_SWITCH_TO_H__
++extern void *_switch_to(void *last, void *next);
 +
-+struct task_struct;
-+struct thread_info;
++#define switch_to(prev,next,last)		\
++do {						\
++	(last) = _switch_to(prev, next);	\
++} while(0)
 +
-+/*
-+ * switch_to(prev, next) should switch from task `prev' to `next'
-+ * `prev' will never be the same as `next'.  schedule() itself
-+ * contains the memory barrier to tell GCC not to cache `current'.
-+ */
-+extern struct task_struct *__switch_to(struct task_struct *,
-+		struct thread_info *, struct thread_info *);
-+
-+#define switch_to(prev, next, last)					\
-+do {									\
-+	last = __switch_to(prev,					\
-+		task_thread_info(prev), task_thread_info(next));	\
-+} while (0)
-+
-+#endif /* __UNICORE_SWITCH_TO_H__ */
-diff --git a/arch/unicore32/include/asm/system.h b/arch/unicore32/include/asm/system.h
-index 246b71c..cfc1498 100644
---- a/arch/unicore32/include/asm/system.h
-+++ b/arch/unicore32/include/asm/system.h
-@@ -1,161 +1,7 @@
++#endif /* _XTENSA_SWITCH_TO_H */
+diff --git a/arch/xtensa/include/asm/system.h b/arch/xtensa/include/asm/system.h
+index 1e7e09a..a7f4057 100644
+--- a/arch/xtensa/include/asm/system.h
++++ b/arch/xtensa/include/asm/system.h
+@@ -1,184 +1,5 @@
 -/*
-- * linux/arch/unicore32/include/asm/system.h
+- * include/asm-xtensa/system.h
 - *
-- * Code specific to PKUnity SoC and UniCore ISA
+- * This file is subject to the terms and conditions of the GNU General Public
+- * License.  See the file "COPYING" in the main directory of this archive
+- * for more details.
 - *
-- * Copyright (C) 2001-2010 GUAN Xue-tao
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
+- * Copyright (C) 2001 - 2005 Tensilica Inc.
 - */
--#ifndef __UNICORE_SYSTEM_H__
--#define __UNICORE_SYSTEM_H__
 -
--#ifdef __KERNEL__
+-#ifndef _XTENSA_SYSTEM_H
+-#define _XTENSA_SYSTEM_H
 -
--/*
-- * CR1 bits (CP#0 CR1)
-- */
--#define CR_M	(1 << 0)	/* MMU enable				*/
--#define CR_A	(1 << 1)	/* Alignment abort enable		*/
--#define CR_D	(1 << 2)	/* Dcache enable			*/
--#define CR_I	(1 << 3)	/* Icache enable			*/
--#define CR_B	(1 << 4)	/* Dcache write mechanism: write back	*/
--#define CR_T	(1 << 5)	/* Burst enable				*/
--#define CR_V	(1 << 13)	/* Vectors relocated to 0xffff0000	*/
--
--#ifndef __ASSEMBLY__
--
--#include <linux/linkage.h>
+-#include <linux/stringify.h>
 -#include <linux/irqflags.h>
 -
--struct thread_info;
--struct task_struct;
+-#include <asm/processor.h>
 -
--struct pt_regs;
+-#define smp_read_barrier_depends() do { } while(0)
+-#define read_barrier_depends() do { } while(0)
 -
--void die(const char *msg, struct pt_regs *regs, int err);
+-#define mb()  barrier()
+-#define rmb() mb()
+-#define wmb() mb()
 -
--struct siginfo;
--void uc32_notify_die(const char *str, struct pt_regs *regs,
--		struct siginfo *info, unsigned long err, unsigned long trap);
--
--void hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int,
--				       struct pt_regs *),
--		     int sig, int code, const char *name);
--
--#define xchg(ptr, x) \
--	((__typeof__(*(ptr)))__xchg((unsigned long)(x), (ptr), sizeof(*(ptr))))
--
--extern asmlinkage void __backtrace(void);
--extern asmlinkage void c_backtrace(unsigned long fp, int pmode);
--
--struct mm_struct;
--extern void show_pte(struct mm_struct *mm, unsigned long addr);
--extern void __show_regs(struct pt_regs *);
--
--extern int cpu_architecture(void);
--extern void cpu_init(void);
--
--#define vectors_high()	(cr_alignment & CR_V)
--
--#define isb() __asm__ __volatile__ ("" : : : "memory")
--#define dsb() __asm__ __volatile__ ("" : : : "memory")
--#define dmb() __asm__ __volatile__ ("" : : : "memory")
--
--#define mb()		barrier()
--#define rmb()		barrier()
--#define wmb()		barrier()
+-#ifdef CONFIG_SMP
+-#error smp_* not defined
+-#else
 -#define smp_mb()	barrier()
 -#define smp_rmb()	barrier()
 -#define smp_wmb()	barrier()
--#define read_barrier_depends()		do { } while (0)
--#define smp_read_barrier_depends()	do { } while (0)
+-#endif
 -
--#define set_mb(var, value)	do { var = value; smp_mb(); } while (0)
--#define nop() __asm__ __volatile__("mov\tr0,r0\t@ nop\n\t");
+-#define set_mb(var, value)	do { var = value; mb(); } while (0)
 -
--extern unsigned long cr_no_alignment;	/* defined in entry-unicore.S */
--extern unsigned long cr_alignment;	/* defined in entry-unicore.S */
+-#if !defined (__ASSEMBLY__)
 -
--static inline unsigned int get_cr(void)
--{
--	unsigned int val;
--	asm("movc %0, p0.c1, #0" : "=r" (val) : : "cc");
--	return val;
--}
+-/* * switch_to(n) should switch tasks to task nr n, first
+- * checking that n isn't the current task, in which case it does nothing.
+- */
+-extern void *_switch_to(void *last, void *next);
 -
--static inline void set_cr(unsigned int val)
--{
--	asm volatile("movc p0.c1, %0, #0	@set CR"
--	  : : "r" (val) : "cc");
--	isb();
--}
+-#endif	/* __ASSEMBLY__ */
 -
--extern void adjust_cr(unsigned long mask, unsigned long set);
+-#define switch_to(prev,next,last)		\
+-do {						\
+-	(last) = _switch_to(prev, next);	\
+-} while(0)
 -
 -/*
-- * switch_to(prev, next) should switch from task `prev' to `next'
-- * `prev' will never be the same as `next'.  schedule() itself
-- * contains the memory barrier to tell GCC not to cache `current'.
+- * cmpxchg
 - */
--extern struct task_struct *__switch_to(struct task_struct *,
--		struct thread_info *, struct thread_info *);
--extern void panic(const char *fmt, ...);
--
--#define switch_to(prev, next, last)					\
--do {									\
--	last = __switch_to(prev,					\
--		task_thread_info(prev), task_thread_info(next));	\
--} while (0)
 -
 -static inline unsigned long
--__xchg(unsigned long x, volatile void *ptr, int size)
+-__cmpxchg_u32(volatile int *p, int old, int new)
 -{
--	unsigned long ret;
+-  __asm__ __volatile__("rsil    a15, "__stringify(LOCKLEVEL)"\n\t"
+-		       "l32i    %0, %1, 0              \n\t"
+-		       "bne	%0, %2, 1f             \n\t"
+-		       "s32i    %3, %1, 0              \n\t"
+-		       "1:                             \n\t"
+-		       "wsr     a15, "__stringify(PS)" \n\t"
+-		       "rsync                          \n\t"
+-		       : "=&a" (old)
+-		       : "a" (p), "a" (old), "r" (new)
+-		       : "a15", "memory");
+-  return old;
+-}
+-/* This function doesn't exist, so you'll get a linker error
+- * if something tries to do an invalid cmpxchg(). */
 -
+-extern void __cmpxchg_called_with_bad_pointer(void);
+-
+-static __inline__ unsigned long
+-__cmpxchg(volatile void *ptr, unsigned long old, unsigned long new, int size)
+-{
 -	switch (size) {
--	case 1:
--		asm volatile("@	__xchg1\n"
--		"	swapb	%0, %1, [%2]"
--			: "=&r" (ret)
--			: "r" (x), "r" (ptr)
--			: "memory", "cc");
--		break;
--	case 4:
--		asm volatile("@	__xchg4\n"
--		"	swapw	%0, %1, [%2]"
--			: "=&r" (ret)
--			: "r" (x), "r" (ptr)
--			: "memory", "cc");
--		break;
--	default:
--		panic("xchg: bad data size: ptr 0x%p, size %d\n",
--			ptr, size);
+-	case 4:  return __cmpxchg_u32(ptr, old, new);
+-	default: __cmpxchg_called_with_bad_pointer();
+-		 return old;
 -	}
--
--	return ret;
 -}
 -
+-#define cmpxchg(ptr,o,n)						      \
+-	({ __typeof__(*(ptr)) _o_ = (o);				      \
+-	   __typeof__(*(ptr)) _n_ = (n);				      \
+-	   (__typeof__(*(ptr))) __cmpxchg((ptr), (unsigned long)_o_,	      \
+-	   			        (unsigned long)_n_, sizeof (*(ptr))); \
+-	})
+-
 -#include <asm-generic/cmpxchg-local.h>
+-
+-static inline unsigned long __cmpxchg_local(volatile void *ptr,
+-				      unsigned long old,
+-				      unsigned long new, int size)
+-{
+-	switch (size) {
+-	case 4:
+-		return __cmpxchg_u32(ptr, old, new);
+-	default:
+-		return __cmpxchg_local_generic(ptr, old, new, size);
+-	}
+-
+-	return old;
+-}
 -
 -/*
 - * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
 - * them available.
 - */
--#define cmpxchg_local(ptr, o, n)					\
--		((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),	\
--		(unsigned long)(o), (unsigned long)(n), sizeof(*(ptr))))
--#define cmpxchg64_local(ptr, o, n)					\
--		__cmpxchg64_local_generic((ptr), (o), (n))
+-#define cmpxchg_local(ptr, o, n)				  	       \
+-	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr), (unsigned long)(o),\
+-			(unsigned long)(n), sizeof(*(ptr))))
+-#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
 -
--#include <asm-generic/cmpxchg.h>
+-/*
+- * xchg_u32
+- *
+- * Note that a15 is used here because the register allocation
+- * done by the compiler is not guaranteed and a window overflow
+- * may not occur between the rsil and wsr instructions. By using
+- * a15 in the rsil, the machine is guaranteed to be in a state
+- * where no register reference will cause an overflow.
+- */
 -
--#endif /* __ASSEMBLY__ */
+-static inline unsigned long xchg_u32(volatile int * m, unsigned long val)
+-{
+-  unsigned long tmp;
+-  __asm__ __volatile__("rsil    a15, "__stringify(LOCKLEVEL)"\n\t"
+-		       "l32i    %0, %1, 0              \n\t"
+-		       "s32i    %2, %1, 0              \n\t"
+-		       "wsr     a15, "__stringify(PS)" \n\t"
+-		       "rsync                          \n\t"
+-		       : "=&a" (tmp)
+-		       : "a" (m), "a" (val)
+-		       : "a15", "memory");
+-  return tmp;
+-}
+-
+-#define xchg(ptr,x) ((__typeof__(*(ptr)))__xchg((unsigned long)(x),(ptr),sizeof(*(ptr))))
+-
+-/*
+- * This only works if the compiler isn't horribly bad at optimizing.
+- * gcc-2.5.8 reportedly can't handle this, but I define that one to
+- * be dead anyway.
+- */
+-
+-extern void __xchg_called_with_bad_pointer(void);
+-
+-static __inline__ unsigned long
+-__xchg(unsigned long x, volatile void * ptr, int size)
+-{
+-	switch (size) {
+-		case 4:
+-			return xchg_u32(ptr, x);
+-	}
+-	__xchg_called_with_bad_pointer();
+-	return x;
+-}
+-
+-extern void set_except_vector(int n, void *addr);
+-
+-static inline void spill_registers(void)
+-{
+-	unsigned int a0, ps;
+-
+-	__asm__ __volatile__ (
+-		"movi	a14," __stringify (PS_EXCM_BIT) " | 1\n\t"
+-		"mov	a12, a0\n\t"
+-		"rsr	a13," __stringify(SAR) "\n\t"
+-		"xsr	a14," __stringify(PS) "\n\t"
+-		"movi	a0, _spill_registers\n\t"
+-		"rsync\n\t"
+-		"callx0 a0\n\t"
+-		"mov	a0, a12\n\t"
+-		"wsr	a13," __stringify(SAR) "\n\t"
+-		"wsr	a14," __stringify(PS) "\n\t"
+-		:: "a" (&a0), "a" (&ps)
+-		: "a2", "a3", "a4", "a7", "a11", "a12", "a13", "a14", "a15", "memory");
+-}
 -
 -#define arch_align_stack(x) (x)
 -
--#endif /* __KERNEL__ */
--
--#endif
+-#endif	/* _XTENSA_SYSTEM_H */
 +/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
 +#include <asm/barrier.h>
 +#include <asm/cmpxchg.h>
-+#include <asm/cr.h>
 +#include <asm/exec.h>
-+#include <asm/setup.h>
 +#include <asm/switch_to.h>
-diff --git a/arch/unicore32/include/asm/uaccess.h b/arch/unicore32/include/asm/uaccess.h
-index 2acda50..897e11ad 100644
---- a/arch/unicore32/include/asm/uaccess.h
-+++ b/arch/unicore32/include/asm/uaccess.h
-@@ -16,7 +16,6 @@
+diff --git a/arch/xtensa/include/asm/uaccess.h b/arch/xtensa/include/asm/uaccess.h
+index 3fa526f..6e4bb3b 100644
+--- a/arch/xtensa/include/asm/uaccess.h
++++ b/arch/xtensa/include/asm/uaccess.h
+@@ -17,7 +17,9 @@
+ #define _XTENSA_UACCESS_H
+ 
  #include <linux/errno.h>
++#ifndef __ASSEMBLY__
+ #include <linux/prefetch.h>
++#endif
+ #include <asm/types.h>
  
- #include <asm/memory.h>
--#include <asm/system.h>
- 
- #define __copy_from_user	__copy_from_user
- #define __copy_to_user		__copy_to_user
-diff --git a/arch/unicore32/kernel/dma.c b/arch/unicore32/kernel/dma.c
-index ae441bc..ed2d4d7 100644
---- a/arch/unicore32/kernel/dma.c
-+++ b/arch/unicore32/kernel/dma.c
-@@ -18,7 +18,6 @@
- #include <linux/errno.h>
- #include <linux/io.h>
- 
--#include <asm/system.h>
- #include <asm/irq.h>
- #include <mach/hardware.h>
- #include <mach/dma.h>
-diff --git a/arch/unicore32/kernel/head.S b/arch/unicore32/kernel/head.S
-index 8caf322..fb1eb5c 100644
---- a/arch/unicore32/kernel/head.S
-+++ b/arch/unicore32/kernel/head.S
-@@ -17,7 +17,6 @@
- #include <generated/asm-offsets.h>
- #include <asm/memory.h>
- #include <asm/thread_info.h>
--#include <asm/system.h>
- #include <asm/pgtable-hwdef.h>
- 
- #if (PHYS_OFFSET & 0x003fffff)
-diff --git a/arch/unicore32/kernel/hibernate.c b/arch/unicore32/kernel/hibernate.c
-index 7d0f0b7..d75ef8b 100644
---- a/arch/unicore32/kernel/hibernate.c
-+++ b/arch/unicore32/kernel/hibernate.c
-@@ -15,7 +15,6 @@
- #include <linux/suspend.h>
- #include <linux/bootmem.h>
- 
--#include <asm/system.h>
- #include <asm/page.h>
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
-diff --git a/arch/unicore32/kernel/irq.c b/arch/unicore32/kernel/irq.c
-index d4efa7d..0be5ccd 100644
---- a/arch/unicore32/kernel/irq.c
-+++ b/arch/unicore32/kernel/irq.c
-@@ -26,7 +26,6 @@
- #include <linux/syscore_ops.h>
- #include <linux/gpio.h>
- 
--#include <asm/system.h>
- #include <mach/hardware.h>
- 
- #include "setup.h"
-diff --git a/arch/unicore32/kernel/ksyms.c b/arch/unicore32/kernel/ksyms.c
-index d98bd81..d285d71 100644
---- a/arch/unicore32/kernel/ksyms.c
-+++ b/arch/unicore32/kernel/ksyms.c
-@@ -20,7 +20,6 @@
- #include <linux/io.h>
- 
- #include <asm/checksum.h>
--#include <asm/system.h>
- 
- #include "ksyms.h"
- 
-diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
-index 52edc2b..1b3f152 100644
---- a/arch/unicore32/kernel/process.c
-+++ b/arch/unicore32/kernel/process.c
+ #define VERIFY_READ    0
+diff --git a/arch/xtensa/kernel/process.c b/arch/xtensa/kernel/process.c
+index 47041e7..c00c72c 100644
+--- a/arch/xtensa/kernel/process.c
++++ b/arch/xtensa/kernel/process.c
 @@ -34,7 +34,6 @@
  
- #include <asm/cacheflush.h>
- #include <asm/processor.h>
--#include <asm/system.h>
- #include <asm/stacktrace.h>
- 
- #include "setup.h"
-diff --git a/arch/unicore32/kernel/traps.c b/arch/unicore32/kernel/traps.c
-index b9a2646..2054f0d 100644
---- a/arch/unicore32/kernel/traps.c
-+++ b/arch/unicore32/kernel/traps.c
-@@ -26,7 +26,6 @@
- #include <linux/unistd.h>
- 
- #include <asm/cacheflush.h>
--#include <asm/system.h>
- #include <asm/traps.h>
- 
- #include "setup.h"
-diff --git a/arch/unicore32/mm/fault.c b/arch/unicore32/mm/fault.c
-index 283aa4b..2eeb9c0 100644
---- a/arch/unicore32/mm/fault.c
-+++ b/arch/unicore32/mm/fault.c
-@@ -20,7 +20,6 @@
- #include <linux/sched.h>
- #include <linux/io.h>
- 
--#include <asm/system.h>
  #include <asm/pgtable.h>
- #include <asm/tlbflush.h>
- 
-diff --git a/arch/unicore32/mm/flush.c b/arch/unicore32/mm/flush.c
-index 93478cc..6d4c096 100644
---- a/arch/unicore32/mm/flush.c
-+++ b/arch/unicore32/mm/flush.c
-@@ -14,7 +14,6 @@
- #include <linux/pagemap.h>
- 
- #include <asm/cacheflush.h>
+ #include <asm/uaccess.h>
 -#include <asm/system.h>
- #include <asm/tlbflush.h>
+ #include <asm/io.h>
+ #include <asm/processor.h>
+ #include <asm/platform.h>
+diff --git a/arch/xtensa/kernel/ptrace.c b/arch/xtensa/kernel/ptrace.c
+index 2dff698..33eea4c 100644
+--- a/arch/xtensa/kernel/ptrace.c
++++ b/arch/xtensa/kernel/ptrace.c
+@@ -24,7 +24,6 @@
  
- void flush_cache_mm(struct mm_struct *mm)
+ #include <asm/pgtable.h>
+ #include <asm/page.h>
+-#include <asm/system.h>
+ #include <asm/uaccess.h>
+ #include <asm/ptrace.h>
+ #include <asm/elf.h>
+diff --git a/arch/xtensa/kernel/setup.c b/arch/xtensa/kernel/setup.c
+index 1e5a034..17e746f 100644
+--- a/arch/xtensa/kernel/setup.c
++++ b/arch/xtensa/kernel/setup.c
+@@ -34,7 +34,6 @@
+ # include <linux/seq_file.h>
+ #endif
+ 
+-#include <asm/system.h>
+ #include <asm/bootparam.h>
+ #include <asm/pgtable.h>
+ #include <asm/processor.h>
+diff --git a/arch/xtensa/kernel/traps.c b/arch/xtensa/kernel/traps.c
+index e64efac..bc1e14c 100644
+--- a/arch/xtensa/kernel/traps.c
++++ b/arch/xtensa/kernel/traps.c
+@@ -381,6 +381,25 @@ static __always_inline unsigned long *stack_pointer(struct task_struct *task)
+ 	return sp;
+ }
+ 
++static inline void spill_registers(void)
++{
++	unsigned int a0, ps;
++
++	__asm__ __volatile__ (
++		"movi	a14," __stringify (PS_EXCM_BIT) " | 1\n\t"
++		"mov	a12, a0\n\t"
++		"rsr	a13," __stringify(SAR) "\n\t"
++		"xsr	a14," __stringify(PS) "\n\t"
++		"movi	a0, _spill_registers\n\t"
++		"rsync\n\t"
++		"callx0 a0\n\t"
++		"mov	a0, a12\n\t"
++		"wsr	a13," __stringify(SAR) "\n\t"
++		"wsr	a14," __stringify(PS) "\n\t"
++		:: "a" (&a0), "a" (&ps)
++		: "a2", "a3", "a4", "a7", "a11", "a12", "a13", "a14", "a15", "memory");
++}
++
+ void show_trace(struct task_struct *task, unsigned long *sp)
+ {
+ 	unsigned long a0, a1, pc;
+diff --git a/arch/xtensa/mm/fault.c b/arch/xtensa/mm/fault.c
+index e367e30..b17885a 100644
+--- a/arch/xtensa/mm/fault.c
++++ b/arch/xtensa/mm/fault.c
+@@ -19,7 +19,6 @@
+ #include <asm/cacheflush.h>
+ #include <asm/hardirq.h>
+ #include <asm/uaccess.h>
+-#include <asm/system.h>
+ #include <asm/pgalloc.h>
+ 
+ unsigned long asid_cache = ASID_USER_FIRST;
+diff --git a/arch/xtensa/mm/tlb.c b/arch/xtensa/mm/tlb.c
+index 239461d..e2700b2 100644
+--- a/arch/xtensa/mm/tlb.c
++++ b/arch/xtensa/mm/tlb.c
+@@ -18,7 +18,6 @@
+ #include <asm/processor.h>
+ #include <asm/mmu_context.h>
+ #include <asm/tlbflush.h>
+-#include <asm/system.h>
+ #include <asm/cacheflush.h>
+ 
+ 
 
