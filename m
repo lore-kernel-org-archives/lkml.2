@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017Ab2CLP6g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 11:58:36 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:48720 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751533Ab2CLP6d (ORCPT
+	id S1751689Ab2CLQCw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 12:02:52 -0400
+Received: from host171.canaca.com ([67.55.55.225]:53365 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab2CLQCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 11:58:33 -0400
-Message-ID: <4F5E1D22.5000003@ti.com>
-Date: Mon, 12 Mar 2012 21:28:26 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Aneesh V <aneesh@ti.com>
-CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 0/8] Add TI EMIF SDRAM controller driver
-References: <1331222065-3579-1-git-send-email-aneesh@ti.com>
-In-Reply-To: <1331222065-3579-1-git-send-email-aneesh@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Mar 2012 12:02:49 -0400
+X-Greylist: delayed 2702 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Mar 2012 12:02:49 EDT
+From: Simon Wood <simon@mungewell.org>
+To: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        Michael Bauer <michael@m-bauer.org>,
+        Michal Maly <madcatxster@gmail.com>, Simon Wood <simon@mungewell.org>
+Subject: [PATCH 2/2] HID: hid-lg4ff clean up attribution
+Date: Mon, 12 Mar 2012 08:17:39 -0700
+Message-Id: <1331565459-1892-2-git-send-email-simon@mungewell.org>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1331565459-1892-1-git-send-email-simon@mungewell.org>
+References: <1331565459-1892-1-git-send-email-simon@mungewell.org>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 March 2012 09:24 PM, Aneesh V wrote:
-> Add a driver for the EMIF SDRAM controller used in TI SoCs
-> 
-> EMIF is an SDRAM controller that supports, based on its revision,
-> one or more of LPDDR2/DDR2/DDR3 protocols.This driver adds support
-> for LPDDR2.
-> 
-> The driver supports the following features:
-> - Calculates the DDR AC timing parameters to be set in EMIF
->   registers using data from the device data-sheets and based
->   on the DDR frequency. If data from data-sheets is not available
->   default timing values from the JEDEC spec are used. These
->   will be safe, but not necessarily optimal
-> - API for changing timings during DVFS or at boot-up
-> - Temperature alert configuration and handling of temperature
->   alerts, if any for LPDDR2 devices
->   * temperature alert is based on periodic polling of MR4 mode
->     register in DDR devices automatically performed by hardware
->   * timings are de-rated and brought back to nominal when
->     temperature raises and falls respectively
-> - Cache of calculated register values to avoid re-calculating
->   them
-> 
-> The driver will need some minor updates when it is eventually
-> integrated with Dynamic Voltage and Frequency Scaling (DVFS).
-> This can not be done now as DVFS support is not available in
-> the mainline yet.
-> 
-> Discussions with Santosh Shilimkar <santosh.shilimkar@ti.com>
-> were immensely helpful in shaping up the interfaces. Vibhore Vardhan
-> <vvardhan@gmail.com> did the initial code snippet for thermal
-> handling.
-> 
-> Testing: 
-> - The driver is tested on OMAP4430 SDP.
-> - The driver in a slightly adapted form is also tested on OMAP5.
-> - Since mainline kernel doesn't have DVFS support yet,
->   testing was done using a test module.
-> - Temperature alert handling was tested with simulated interrupts
->   and faked temperature values as testing all cases in real-life
->   scenarios is difficult.
-> - Tested the driver as a module
-> 
-> Cc: Greg KH <greg@kroah.com>
-> 
-> Aneesh V (7):
->   misc: ddr: add LPDDR2 data from JESD209-2
->   misc: emif: add register definitions for EMIF
->   misc: emif: add basic infrastructure for EMIF driver
->   misc: emif: handle frequency and voltage change events
->   misc: emif: add interrupt and temperature handling
->   misc: emif: add one-time settings
->   misc: emif: add debugfs entries for emif
-> 
-I have scanned all the patches again. Thanks a
-lot for taking forward this work. Feel free to
-add mine SOB for entire EMIF driver series.
+This patch adds proper attribution for Michal (who re-wrote significant
+portions of this driver last year) and clarifies that it now supports
+most of the Logitech gaming wheels (not just the Speed Force Wireless).
 
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Simon Wood <simon@mungewell.org>
+---
+ drivers/hid/Kconfig     |    1 +
+ drivers/hid/hid-lg4ff.c |    8 ++++++--
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-Regards
-Santosh
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index a421abd..1a7fd8c 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -307,6 +307,7 @@ config LOGIWHEELS_FF
+ 	  - Logitech G27
+ 	  - Logitech MOMO/MOMO 2
+ 	  - Logitech Formula Force EX
++	  - Logitech Speed Force Wireless (Wii)
+ 
+ config HID_MAGICMOUSE
+ 	tristate "Apple MagicMouse multi-touch support"
+diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
+index 4f3b744..bad760d 100644
+--- a/drivers/hid/hid-lg4ff.c
++++ b/drivers/hid/hid-lg4ff.c
+@@ -1,9 +1,13 @@
+ /*
+- *  Force feedback support for Logitech Speed Force Wireless
++ *  Force feedback support for Logitech Gaming Wheels
++ *
++ *  Including: MOMO, MOMO2, DFGT, DFP, G25, G27
++ *    and Speed Force Wireless (Wii)
+  *
+  *  http://wiibrew.org/wiki/Logitech_USB_steering_wheel
+  *
+  *  Copyright (c) 2010 Simon Wood <simon@mungewell.org>
++ *  Copyright (c) 2011 Michal Maly <madcatxster@gmail.com>
+  */
+ 
+ /*
+@@ -536,7 +540,7 @@ int lg4ff_init(struct hid_device *hid)
+ 		hid_lg4ff_set_leds(hid, 0);
+ 	}
+ 
+-	hid_info(hid, "Force feedback for Logitech Speed Force Wireless by Simon Wood <simon@mungewell.org>\n");
++	hid_info(hid, "Force feedback for Logitech Gaming Wheels\n");
+ 	return 0;
+ }
+ 
+-- 
+1.7.4.1
+
