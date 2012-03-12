@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab2CLUrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 16:47:23 -0400
-Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:50717 "EHLO
-	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756881Ab2CLUrW convert rfc822-to-8bit (ORCPT
+	id S1757310Ab2CLUzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 16:55:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55488 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756963Ab2CLUzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 16:47:22 -0400
-Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-In-Reply-To: <1331574151.14217.86.camel@aeonflux>
-Date: Mon, 12 Mar 2012 21:47:19 +0100
-Cc: Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
-        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        linux-bluetooth@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4B25AD62-B1C9-4C57-AE64-34EB7F47DC9B@enac.fr>
-References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>   <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz>  <20120308105737.GA11201@polaris.bitmath.org>  <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr>  <alpine.LNX.2.00.1203121650500.18356@pobox.suse.cz> <1331574151.14217.86.camel@aeonflux>
-To: Marcel Holtmann <marcel@holtmann.org>
-X-Mailer: Apple Mail (2.1084)
+	Mon, 12 Mar 2012 16:55:44 -0400
+Message-ID: <4F5E62CC.6030002@wwwdotorg.org>
+Date: Mon, 12 Mar 2012 14:55:40 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pinctrl: Include <linux/bug.h> to prevent compile errors
+References: <1331324305-1649-1-git-send-email-swarren@wwwdotorg.org> <CACRpkdbkoahUiB01srfBzm1Qh2RQPw5P6BjmouuLETAqfQY6_Q@mail.gmail.com>
+In-Reply-To: <CACRpkdbkoahUiB01srfBzm1Qh2RQPw5P6BjmouuLETAqfQY6_Q@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Marcel and Jiri
-
-> Hi Jiri,
+On 03/12/2012 01:44 PM, Linus Walleij wrote:
+> On Fri, Mar 9, 2012 at 9:18 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 > 
->>>> What if we were to change the definition of a HID device on the
->>>> modalias level?
->>>> 
->>>> In practise, a HID device can be either an usb device, a hid device,
->>> 
->>> Just to be sure: do you mean "bluetooth device"? or is there such a 
->>> thing as a hid device per se? I'm asking because I've always been 
->>> surprised at seeing usbhid/ in hid/, which kind of breaks the potential 
->>> symmetry between USB and Bluetooth wrt hid.
->> 
->> Please don't get confused by the directory layout ... this has mostly 
->> non-technical reasons -- Marcel wanted to keep bluetooth/hidp under his 
->> wings, and I didn't have reasons to object strongly.
->> 
->> I am adding Marcel and Gustavo to CC just in case they have changed their 
->> mind, but it's definitely a side-topic in this discussion.
+>> Macros in <linux/pinctrl/machine.h> call ARRAY_SIZE(), the definition of
+>> which eventually calls BUILD_BUG_ON_ZERO(), which is defined in
+>> <linux/bug.h>. Include that so that every .c file using the pinctrl macros
+>> doesn't have to do that itself.
 > 
-> I have not changed my mind. HIDP is Bluetooth specific and should stay
-> there. Especially since we are currently discussing changes to make
-> things also work over Bluetooth Low Energy (LE), but that is a complete
-> different topic and it just started.
+> I get this part...
+...
+>> diff --git a/include/linux/pinctrl/machine.h b/include/linux/pinctrl/machine.h
+...
+>> -#include "pinctrl-state.h"
+> 
+> ?
+> 
+>> +#include <linux/bug.h>
+>> +
+>> +#include "pinctrl.h"
+> 
+> ?
+> 
+> But I moved the states out of machine.h and pinctrl.h just so
+> that we shouldn't have to include pinctrl.h into machine.h?
 
-Just in case it makes a difference, I knew nothing about HIDP when I wrote the message above. My point was rather that hid looks like a bus to which several transport layers can connect (USB, Bluetooth, ZigBee, etc), and that having USB-specific code in hid/ (as opposed to having it in usb/) seems biased towards USB. I was (and am still) wondering how much it limits future uses of the hid core by making it USB-dependent.
+Oops. Looks like I completely screwed up a rebase there.
 
-In other words: is the hid core generic enough or are there steps to take to make it more generic wrt transport layers? If we are talking about restructuring parts of it, this seems like the right time to ask :-)
-
-Cheers,
-
-St.
-
+If Paul acks the concept of the patch, I'll repost.
