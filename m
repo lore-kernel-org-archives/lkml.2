@@ -1,122 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754483Ab2CLB6O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 21:58:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53770 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754136Ab2CLB6G (ORCPT
+	id S1754590Ab2CLCAh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 22:00:37 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:31609
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753810Ab2CLCAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 21:58:06 -0400
-Message-ID: <1331517472.3022.150.camel@deadeye>
-Subject: Re: [ 08/12] mac80211: zero initialize count field in
- ieee80211_tx_rate
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Pavel Roskin <proski@gnu.org>,
-        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Date: Mon, 12 Mar 2012 01:57:52 +0000
-In-Reply-To: <20120312002046.282831520@1wt.eu>
-References: <20120312002046.282831520@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-XNDgWf37pbXBrhPtOYNE"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 11 Mar 2012 22:00:30 -0400
+X-SpamScore: -10
+X-BigFish: VPS-10(zz1432N98dK4015Izz1202hzz8275bhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M0R1KM-02-GYL-02
+X-M-MSG: 
+Date: Mon, 12 Mar 2012 10:00:16 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 1/8] ACPI: Introduce ACPI D3_COLD state support
+Message-ID: <20120312020016.GB2820@ladygaga>
+References: <1330592577-16546-1-git-send-email-ming.m.lin@intel.com>
+ <1330592577-16546-2-git-send-email-ming.m.lin@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1330592577-16546-2-git-send-email-ming.m.lin@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 12 Mar 2012 02:00:16.0405 (UTC) FILETIME=[DE9FC450:01CCFFF3]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-XNDgWf37pbXBrhPtOYNE
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 01, 2012 at 05:02:50PM +0800, Lin Ming wrote:
+> From: Zhang Rui <rui.zhang@intel.com>
+> 
+> If a device has _PR3, it means the device supports D3_COLD.
 
-On Mon, 2012-03-12 at 01:20 +0100, Willy Tarreau wrote:
-> 2.6.32-longterm review patch.  If anyone has any objections, please let m=
-e know.
->=20
-> ------------------
->=20
-> From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
->=20
-> commit 8617b093d0031837a7be9b32bc674580cfb5f6b5 upstream.
->=20
-> rate control algorithms concludes the rate as invalid
-> with rate[i].idx < -1 , while they do also check for rate[i].count is
-> non-zero. it would be safer to zero initialize the 'count' field.
-> recently we had a ath9k rate control crash where the ath9k rate control
-> in ath_tx_status assumed to check only for rate[i].count being non-zero
-> in one instance and ended up in using invalid rate index for
-> 'connection monitoring NULL func frames' which eventually lead to the cra=
-sh.
-> thanks to Pavel Roskin for fixing it and finding the root cause.
-> https://bugzilla.redhat.com/show_bug.cgi?id=3D768639
+This confused me...So this means if a device is put to D3, instead of
+turning up the power resources referenced in _PR3, turning them all off
+will make the device in D3 cold. This is understandable, but what about
+_PR0? What power state this device is in when I turned off all the power
+resources referenced in _PR0? Undefined?
 
-In 2.6.32, ath_tx_status() checks that rates[i].idx >=3D 0, so it properly
-ignores these dummy entries.  Further, there is code further down the
-rate_control_get_rate() function that sets .idx only and appears to
-depend on the initialisation of .count =3D 1.
+I'm also confused with _PS3, what power state the device is in after its
+_PS3 is executed? The spec said it will be in D3 cold or D3 hot, so I
+guess there is no way to tell, right?
 
-So I'm pretty sure this patch is wrong for 2.6.32; it could be
-backported but I don't think the change is necessary anyway.
+Thanks,
+Aaron
 
-Ben.
+> Add the ability to validate and enter D3_COLD state in ACPI.
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  drivers/acpi/power.c |    4 ++--
+>  drivers/acpi/scan.c  |    7 +++++++
+>  2 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+> index 9ac2a9f..0d681fb 100644
+> --- a/drivers/acpi/power.c
+> +++ b/drivers/acpi/power.c
+> @@ -500,14 +500,14 @@ int acpi_power_transition(struct acpi_device *device, int state)
+>  {
+>  	int result;
+>  
+> -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3))
+> +	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
+>  		return -EINVAL;
+>  
+>  	if (device->power.state == state)
+>  		return 0;
+>  
+>  	if ((device->power.state < ACPI_STATE_D0)
+> -	    || (device->power.state > ACPI_STATE_D3))
+> +	    || (device->power.state > ACPI_STATE_D3_COLD))
+>  		return -ENODEV;
+>  
+>  	/* TBD: Resources must be ordered. */
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 8ab80ba..571396c 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -885,6 +885,13 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
+>  				acpi_bus_add_power_resource(ps->resources.handles[j]);
+>  		}
+>  
+> +		/* The exist of _PR3 indicates D3Cold support */
+> +		if (i == ACPI_STATE_D3) {
+> +			status = acpi_get_handle(device->handle, object_name, &handle);
+> +			if (ACPI_SUCCESS(status))
+> +				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
+> +		}
+> +
+>  		/* Evaluate "_PSx" to see if we can do explicit sets */
+>  		object_name[2] = 'S';
+>  		status = acpi_get_handle(device->handle, object_name, &handle);
+> -- 
+> 1.7.2.5
+> 
+> 
 
-> Cc: stable@vger.kernel.org
-> Cc: Pavel Roskin <proski@gnu.org>
-> Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-> Signed-off-by: John W. Linville <linville@tuxdriver.com>
->=20
-> diff --git a/net/mac80211/rate.c b/net/mac80211/rate.c
-> index ad64f4d..f9b8e81 100644
-> --- a/net/mac80211/rate.c
-> +++ b/net/mac80211/rate.c
-> @@ -344,7 +344,7 @@ void rate_control_get_rate(struct ieee80211_sub_if_da=
-ta *sdata,
->  	for (i =3D 0; i < IEEE80211_TX_MAX_RATES; i++) {
->  		info->control.rates[i].idx =3D -1;
->  		info->control.rates[i].flags =3D 0;
-> -		info->control.rates[i].count =3D 1;
-> +		info->control.rates[i].count =3D 0;
->  	}
-> =20
->  	if (sdata->local->hw.flags & IEEE80211_HW_HAS_RATE_CONTROL)
->=20
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->=20
-
---=20
-Ben Hutchings
-Life would be so much easier if we could look at the source code.
-
---=-XNDgWf37pbXBrhPtOYNE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT11YIOe/yOyVhhEJAQr+KA//Yz6deJ6Ay+2k128qmIa78+ns8fRx7l7B
-/IpLEwEO8SteqwQC66uluMEFwxo4u31V4roaFxtdKXCPZFT5s4tBAm/AfOkb0NJz
-pw6k5+F/3XQ8Wo3VMEIGd1QbK3g6KjYc78b6hhCmTzT+it8Oz6DlnB0ENoM+MuWj
-ACZkGUGqvhK4Elafh279doFAxHUjFtqK0tsHHWp6UYtzwR8v54DuwLwU3kkgQ2hU
-JfChGOHAixWquh1DO63u+QvRzlFV+xWAoRCHDLBz4tIxqGWaT5lGdKYa2J5Qc29D
-5MQ4FFxkanvjTa4F0DZaumvTlP0+pVqy4i9T0oRTxD5lsVtNUQKqMOeQhVtLDvZ6
-JmwUa8Vu09ZXT2p19je7g6N9h4tCoAmb8J5UY2AptNPVp6YlgDdJEz+N4+doSL2I
-W6mexBSHmzKbn8FrPAS/LZPrru2wRbnch9KMmOiWtDJGojE2x2h3JZc8me22+VJk
-sgBUwoJD0hFzEmAZfakukFVL+ZqVr8ALyM8F2LHWCH1k6SvZNztDmuXS4rdrkia+
-ViaJZAk0QSkKx73s4QNvCNU2GiLkc6b8TKorNfcXp33y8QPJ2NX9NvW2jkeGTExE
-VexQgEp732aPid6l+kn50zvAGP50XiGB7gBdRF/yMiqfRkc5aqyobvbT2PYKbi8f
-ZyVWMpiO8GU=
-=eRBM
------END PGP SIGNATURE-----
-
---=-XNDgWf37pbXBrhPtOYNE--
