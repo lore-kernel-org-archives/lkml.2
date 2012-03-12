@@ -1,78 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab2CLTFo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:05:44 -0400
-Received: from host171.canaca.com ([67.55.55.225]:57791 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756292Ab2CLTFm (ORCPT
+	id S1756602Ab2CLTG1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:06:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16945 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756292Ab2CLTG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:05:42 -0400
-Message-ID: <03eaca06ba2629f55144daa5a386c74b.squirrel@mungewell.org>
-In-Reply-To: <20120312183235.GA28451@opensource.wolfsonmicro.com>
-References: <1331565459-1892-1-git-send-email-simon@mungewell.org>
-    <alpine.LNX.2.00.1203121645050.18356@pobox.suse.cz>
-    <be2be8d04b58ce75fcba9798fcb4e4fa.squirrel@mungewell.org>
-    <20120312180738.GD14020@sirena.org.uk>
-    <3391c87c6cc142e1b50b73eb78e70dc8.squirrel@mungewell.org>
-    <20120312183235.GA28451@opensource.wolfsonmicro.com>
-Date: Mon, 12 Mar 2012 15:05:39 -0400
-Subject: Re: [PATCH 1/2] HID: hid-lg4ff add support for G27 LEDs
-From: simon@mungewell.org
-To: "Mark Brown" <broonie@opensource.wolfsonmicro.com>
-Cc: simon@mungewell.org, "Jiri Kosina" <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Michael Bauer" <michael@m-bauer.org>,
-        "Michal Maly" <madcatxster@gmail.com>
-User-Agent: SquirrelMail/1.4.21
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 12 Mar 2012 15:06:26 -0400
+X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=fBzF5iKUyvoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=GBhLJ1p4cjeliqP90SAA:9 a=PS2_3D2WbZL-iRpi1AcA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1331579183.25686.656.camel@gandalf.stny.rr.com>
+Subject: [PATCH RT] hack: Workaround to mtrr sleeping function called from
+ atomic
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark@redhat.com>, Carsten Emde <cbe@osadl.org>
+Date: Mon, 12 Mar 2012 15:06:23 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+After adding my (unacceptable) CPU hotplug patchset on top of 3.2.9-rt17
+I hit this bug:
 
->> The LEDs on the G27 are very much more specific, mounted on the yoke of
->> the gaming wheel.
->
->> Would this require the use/complexity of the LED subsystem?
->
-> Well, it'd mean that applications that know how to drive LEDs will be
-> able to use the LEDs on this wheel with less per device knowledge which
-> seems like a useful thing and if someone wants to remap a LED to "new
-> mail" or whatever that'll be easier (nethack has the mailer daemon
-> deliver a scroll of mail!).
 
-I'm not familiar with the LED subsystem, but my concerns would be that
-this would add a whole load of code to implement.
+        <3>BUG: sleeping function called from invalid context
+        at /home/rostedt/work/git/linux-rt.git/kernel/rtmutex.c:1264
+        <3>in_atomic(): 1, irqs_disabled(): 1, pid: 0, name: swapper/1
+        2 locks held by swapper/1/0:
+         #0:  (stop_cpus_mutex){......}, at: [<ffffffff8108f1da>]
+        stop_machine_from_inactive_cpu+0x5e/0xd4
+         #1:  (stopper_lock){......}, at: [<ffffffff8108ee75>]
+        queue_stop_cpus_work+0x79/0xce
+        Pid: 0, comm: swapper/1 Not tainted 3.2.9-test-rt17+ #30
+        Call Trace:
+         [<ffffffff8103374f>] __might_sleep+0xf6/0xfb
+         [<ffffffff814281f1>] rt_mutex_lock+0x21/0x34
+         [<ffffffff81428a87>] _mutex_lock+0x3c/0x43
+         [<ffffffff8108ee75>] ? queue_stop_cpus_work+0x79/0xce
+         [<ffffffff8108ee75>] queue_stop_cpus_work+0x79/0xce
+         [<ffffffff8108f21c>] stop_machine_from_inactive_cpu+0xa0/0xd4
+         [<ffffffff810169b6>] ? mtrr_restore+0x4a/0x4a
+         [<ffffffff81016fd8>] mtrr_ap_init+0x5a/0x5c
+         [<ffffffff814175eb>] identify_secondary_cpu+0x19/0x1b
+         [<ffffffff81419e5f>] smp_store_cpu_info+0x3c/0x3e
+         [<ffffffff8141a242>] start_secondary+0xf9/0x1d2
+        
 
-Most of concern is the fact that the Logitech wheels are transitioned from
-a 'simple' wheel when they are plugged in to an 'advanced' wheel, they
-release/re-register with a different USB ID.
+I wrote the following patch to work around this bug and currently the
+hotplug stress test is still chugging along just fine :-)
 
-The port (for a lack of a better word) for controlling the LEDs is mixed
-in with the FF and wheel configuration commands. All this is handled
-within the hid-lg4ff driver (if FF is not enabled you just get the
-'simple' wheel behaviour).
+Note, I expect this patch to be unacceptable too, but I'm posting it for
+those that might be interested.
 
-If you can point me at some (simple) implementations of the LED subsystem,
-possibly with some guidance, we can look to see if the added complexity is
-actually worth it.
+It should probably be commented too. The gist is that if the
+queue_stop_cpus_work() is called from an inactive CPU (one coming on
+line) it does a spin lock on the stopper_lock instead of grabbing it. I
+haven't looked too deeply if this would cause deadlocks, because
+honestly, I think this patch sucks :-p
 
-I'd be pretty sure that other gaming controllers don't abstract their LEDs
-via this subsystem,
-Simon.
 
-PS. I don't really care about email when screaming around Laguna Seca ;-)
+-- Steve
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
+index 561ba3a..899dc12 100644
+--- a/kernel/stop_machine.c
++++ b/kernel/stop_machine.c
+@@ -158,7 +158,7 @@ static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
+ 
+ static void queue_stop_cpus_work(const struct cpumask *cpumask,
+ 				 cpu_stop_fn_t fn, void *arg,
+-				 struct cpu_stop_done *done)
++				 struct cpu_stop_done *done, int inactive)
+ {
+ 	struct cpu_stop_work *work;
+ 	unsigned int cpu;
+@@ -175,7 +175,11 @@ static void queue_stop_cpus_work(const struct cpumask *cpumask,
+ 	 * Make sure that all work is queued on all cpus before we
+ 	 * any of the cpus can execute it.
+ 	 */
+-	mutex_lock(&stopper_lock);
++	if (inactive)
++		while (!mutex_trylock(&stopper_lock))
++			cpu_relax();
++	else
++		mutex_lock(&stopper_lock);
+ 	for_each_cpu(cpu, cpumask)
+ 		cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu),
+ 				    &per_cpu(stop_cpus_work, cpu));
+@@ -188,7 +192,7 @@ static int __stop_cpus(const struct cpumask *cpumask,
+ 	struct cpu_stop_done done;
+ 
+ 	cpu_stop_init_done(&done, cpumask_weight(cpumask));
+-	queue_stop_cpus_work(cpumask, fn, arg, &done);
++	queue_stop_cpus_work(cpumask, fn, arg, &done, 0);
+ 	wait_for_stop_done(&done);
+ 	return done.executed ? done.ret : -ENOENT;
+ }
+@@ -601,7 +605,7 @@ int stop_machine_from_inactive_cpu(int (*fn)(void *), void *data,
+ 	set_state(&smdata, STOPMACHINE_PREPARE);
+ 	cpu_stop_init_done(&done, num_active_cpus());
+ 	queue_stop_cpus_work(cpu_active_mask, stop_machine_cpu_stop, &smdata,
+-			     &done);
++			     &done, 1);
+ 	ret = stop_machine_cpu_stop(&smdata);
+ 
+ 	/* Busy wait for completion. */
+
 
 
