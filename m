@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757769Ab2CLWXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 18:23:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55506 "EHLO mail.zytor.com"
+	id S1757817Ab2CLW0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 18:26:24 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:38086 "EHLO serv04.lahn.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757339Ab2CLWXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 18:23:36 -0400
-Message-ID: <4F5E775D.7080702@zytor.com>
-Date: Mon, 12 Mar 2012 15:23:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Shea Levy <shea@shealevy.com>
-CC: linux-kernel@vger.kernel.org, matt.fleming@intel.com
-Subject: Re: EFI Boot Stub Early Console
-References: <4F5E46EA.7020602@shealevy.com> <4F5E47E4.2070303@shealevy.com> <4F5E74A0.60001@zytor.com> <4F5E761B.7010608@shealevy.com>
-In-Reply-To: <4F5E761B.7010608@shealevy.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+	id S1757704Ab2CLW0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 18:26:23 -0400
+Date: Mon, 12 Mar 2012 23:25:16 +0100
+From: lkml20120218@newton.leun.net
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        James Hogan <james@albanarts.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shawn Starr <shawn.starr@rogers.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Available fix for 3.3 regression Bug #42822 not yet in mainine (Fw:
+ [GIT PULL FOR v3.3] uvcvideo divide by 0 fix)
+Message-ID: <20120312232516.2350ddd3@xenia.leun.net>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 03:18 PM, Shea Levy wrote:
-> On 3/12/12 6:11 PM, H. Peter Anvin wrote:
->> On 03/12/2012 12:00 PM, Shea Levy wrote:
->>> On 3/12/12 2:56 PM, Shea Levy wrote:
->>>> console=tty0
->>> Sorry, that should have been console=ttyS0
->> Have you tried earlyprintk=serial,ttyS0?
->>
->>     -hpa
->>
-> 
-> Just tried. Still nothing in the VirtualBox window, serial port showed
-> boot output up until "[    0.000000] console [tty0] enabled, bootconsole
-> disabled", when the rest of the boot process happened in VirtualBox.
-> 
+Hi,
 
-That sounds like one would expect, no?
+unfortunately the patch mentioned in the forwarded mail below seems not
+to be in mainline yet.
 
-I don't think anyone has implemented an EFI earlyconsole yet, and you
-can't rely on EFI handing over the screen in a mode the kernel can
-handle with earlyconsole=vga, so there aren't really any other alternatives.
+Fixes [Bug #42822] [3.3.0-rc3][uvcvideo][regression] oops -
+uvc_video_clock_update, see
+http://marc.info/?l=linux-kernel&m=132970057611642&w=2
 
-	-hpa
+
+
+Start weitergeleitete Nachricht:
+
+Datum: Mon, 20 Feb 2012 12:49:39 +0100
+Von: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+An: James Hogan <james@albanarts.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+linux-media@vger.kernel.org,        linux-kernel@vger.kernel.org
+Betreff: [GIT PULL FOR v3.3] uvcvideo divide by 0 fix
+
+
+Hi Mauro,
+
+The following changes since commit
+b01543dfe67bb1d191998e90d20534dc354de059:
+
+  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
+
+are available in the git repository at:
+  git://linuxtv.org/pinchartl/uvcvideo.git uvcvideo-stable
+
+The patch fixes a divide by 0 bug reported by a couple of users
+already. Could you please make sure it gets into v3.3 ?
+
+Laurent Pinchart (1):
+      uvcvideo: Avoid division by 0 in timestamp calculation
+
+ drivers/media/video/uvc/uvc_video.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
+
+--
+Regards,
+
+Laurent Pinchart
+
+-- 
+MfG,
+
+Michael Leun
 
