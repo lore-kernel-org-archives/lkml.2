@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758154Ab2CLXhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:37:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45706 "EHLO mx1.redhat.com"
+	id S1758138Ab2CLXhH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:37:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23358 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758100Ab2CLXgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:36:41 -0400
+	id S1758044Ab2CLXgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 19:36:32 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 02/35] Disintegrate asm/system.h for Alpha [ver #2]
+Subject: [PATCH 01/35] Disintegrate asm/system.h for X86 [ver #2]
 To: paul.gortmaker@windriver.com, hpa@zytor.com
 Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, arnd@arndb.de,
-        David Howells <dhowells@redhat.com>, linux-alpha@vger.kernel.org
-Date: Mon, 12 Mar 2012 23:36:24 +0000
-Message-ID: <20120312233624.13888.28148.stgit@warthog.procyon.org.uk>
+        David Howells <dhowells@redhat.com>, x86@kernel.org
+Date: Mon, 12 Mar 2012 23:36:14 +0000
+Message-ID: <20120312233614.13888.73848.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,1583 +28,1734 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disintegrate asm/system.h for Alpha.
+Disintegrate asm/system.h for X86.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: linux-alpha@vger.kernel.org
+cc: x86@kernel.org
 ---
 
- arch/alpha/boot/bootp.c                |    1 
- arch/alpha/boot/bootpz.c               |    1 
- arch/alpha/boot/head.S                 |    1 
- arch/alpha/boot/main.c                 |    1 
- arch/alpha/include/asm/atomic.h        |   68 ++++++
- arch/alpha/include/asm/auxvec.h        |    2 
- arch/alpha/include/asm/core_lca.h      |    2 
- arch/alpha/include/asm/core_mcpcia.h   |    1 
- arch/alpha/include/asm/core_t2.h       |    1 
- arch/alpha/include/asm/elf.h           |    1 
- arch/alpha/include/asm/exec.h          |    6 +
- arch/alpha/include/asm/fpu.h           |    2 
- arch/alpha/include/asm/io.h            |    1 
- arch/alpha/include/asm/irqflags.h      |    2 
- arch/alpha/include/asm/mce.h           |   83 +++++++
- arch/alpha/include/asm/mmu_context.h   |    1 
- arch/alpha/include/asm/pal.h           |  112 ++++++++++
- arch/alpha/include/asm/pgtable.h       |    1 
- arch/alpha/include/asm/setup.h         |   36 +++
- arch/alpha/include/asm/special_insns.h |   41 ++++
- arch/alpha/include/asm/spinlock.h      |    1 
- arch/alpha/include/asm/switch_to.h     |   14 +
- arch/alpha/include/asm/system.h        |  357 --------------------------------
- arch/alpha/include/asm/xchg.h          |    2 
- arch/alpha/kernel/core_apecs.c         |    1 
- arch/alpha/kernel/core_cia.c           |    1 
- arch/alpha/kernel/core_t2.c            |    1 
- arch/alpha/kernel/err_impl.h           |    2 
- arch/alpha/kernel/head.S               |    6 -
- arch/alpha/kernel/irq.c                |    1 
- arch/alpha/kernel/irq_alpha.c          |    1 
- arch/alpha/kernel/osf_sys.c            |    1 
- arch/alpha/kernel/process.c            |    1 
- arch/alpha/kernel/ptrace.c             |    1 
- arch/alpha/kernel/setup.c              |    1 
- arch/alpha/kernel/sys_alcor.c          |    1 
- arch/alpha/kernel/sys_cabriolet.c      |    1 
- arch/alpha/kernel/sys_dp264.c          |    1 
- arch/alpha/kernel/sys_eb64p.c          |    1 
- arch/alpha/kernel/sys_eiger.c          |    1 
- arch/alpha/kernel/sys_jensen.c         |    1 
- arch/alpha/kernel/sys_marvel.c         |    1 
- arch/alpha/kernel/sys_miata.c          |    1 
- arch/alpha/kernel/sys_mikasa.c         |    2 
- arch/alpha/kernel/sys_nautilus.c       |    1 
- arch/alpha/kernel/sys_noritake.c       |    2 
- arch/alpha/kernel/sys_rawhide.c        |    1 
- arch/alpha/kernel/sys_ruffian.c        |    1 
- arch/alpha/kernel/sys_rx164.c          |    1 
- arch/alpha/kernel/sys_sable.c          |    1 
- arch/alpha/kernel/sys_sio.c            |    1 
- arch/alpha/kernel/sys_sx164.c          |    2 
- arch/alpha/kernel/sys_takara.c         |    1 
- arch/alpha/kernel/sys_titan.c          |    1 
- arch/alpha/kernel/sys_wildfire.c       |    1 
- arch/alpha/kernel/traps.c              |    1 
- arch/alpha/kernel/vmlinux.lds.S        |    2 
- arch/alpha/lib/stacktrace.c            |    1 
- arch/alpha/mm/fault.c                  |    1 
- arch/alpha/mm/init.c                   |    2 
- arch/alpha/oprofile/common.c           |    1 
- arch/alpha/oprofile/op_model_ev4.c     |    1 
- arch/alpha/oprofile/op_model_ev5.c     |    1 
- arch/alpha/oprofile/op_model_ev6.c     |    1 
- arch/alpha/oprofile/op_model_ev67.c    |    1 
- 65 files changed, 388 insertions(+), 402 deletions(-)
- create mode 100644 arch/alpha/include/asm/exec.h
- create mode 100644 arch/alpha/include/asm/mce.h
- create mode 100644 arch/alpha/include/asm/special_insns.h
- create mode 100644 arch/alpha/include/asm/switch_to.h
+ arch/x86/ia32/ia32_aout.c                |    1 
+ arch/x86/include/asm/apic.h              |    1 
+ arch/x86/include/asm/auxvec.h            |    7 
+ arch/x86/include/asm/barrier.h           |  116 +++++++
+ arch/x86/include/asm/bug.h               |    4 
+ arch/x86/include/asm/cacheflush.h        |    1 
+ arch/x86/include/asm/elf.h               |    1 
+ arch/x86/include/asm/exec.h              |    1 
+ arch/x86/include/asm/futex.h             |    1 
+ arch/x86/include/asm/i387.h              |    1 
+ arch/x86/include/asm/local.h             |    1 
+ arch/x86/include/asm/mc146818rtc.h       |    1 
+ arch/x86/include/asm/processor.h         |   31 ++
+ arch/x86/include/asm/segment.h           |   58 +++
+ arch/x86/include/asm/special_insns.h     |  199 +++++++++++
+ arch/x86/include/asm/stackprotector.h    |    1 
+ arch/x86/include/asm/switch_to.h         |  129 +++++++
+ arch/x86/include/asm/system.h            |  527 ------------------------------
+ arch/x86/include/asm/tlbflush.h          |    2 
+ arch/x86/include/asm/virtext.h           |    1 
+ arch/x86/kernel/acpi/cstate.c            |    1 
+ arch/x86/kernel/apm_32.c                 |    1 
+ arch/x86/kernel/cpu/mcheck/p5.c          |    1 
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |    1 
+ arch/x86/kernel/cpu/mcheck/winchip.c     |    1 
+ arch/x86/kernel/cpu/mtrr/generic.c       |    1 
+ arch/x86/kernel/cpuid.c                  |    1 
+ arch/x86/kernel/i8259.c                  |    1 
+ arch/x86/kernel/irqinit.c                |    1 
+ arch/x86/kernel/kgdb.c                   |    1 
+ arch/x86/kernel/ldt.c                    |    1 
+ arch/x86/kernel/machine_kexec_32.c       |    1 
+ arch/x86/kernel/mca_32.c                 |    1 
+ arch/x86/kernel/module.c                 |    1 
+ arch/x86/kernel/msr.c                    |    1 
+ arch/x86/kernel/paravirt.c               |    1 
+ arch/x86/kernel/pci-calgary_64.c         |    1 
+ arch/x86/kernel/process.c                |    1 
+ arch/x86/kernel/process_32.c             |    2 
+ arch/x86/kernel/process_64.c             |    2 
+ arch/x86/kernel/ptrace.c                 |    1 
+ arch/x86/kernel/setup.c                  |    1 
+ arch/x86/kernel/tce_64.c                 |    1 
+ arch/x86/kernel/tls.c                    |    1 
+ arch/x86/kernel/traps.c                  |    1 
+ arch/x86/mm/init.c                       |    1 
+ arch/x86/mm/init_32.c                    |    1 
+ arch/x86/mm/init_64.c                    |    1 
+ arch/x86/mm/pgtable_32.c                 |    1 
+ arch/x86/power/hibernate_32.c            |    1 
+ 50 files changed, 555 insertions(+), 561 deletions(-)
+ create mode 100644 arch/x86/include/asm/barrier.h
+ create mode 100644 arch/x86/include/asm/exec.h
+ create mode 100644 arch/x86/include/asm/special_insns.h
+ create mode 100644 arch/x86/include/asm/switch_to.h
 
-diff --git a/arch/alpha/boot/bootp.c b/arch/alpha/boot/bootp.c
-index be61670..2a542a5 100644
---- a/arch/alpha/boot/bootp.c
-+++ b/arch/alpha/boot/bootp.c
-@@ -13,7 +13,6 @@
- #include <generated/utsrelease.h>
- #include <linux/mm.h>
+diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
+index 39e4909..18b2561 100644
+--- a/arch/x86/ia32/ia32_aout.c
++++ b/arch/x86/ia32/ia32_aout.c
+@@ -26,7 +26,6 @@
+ #include <linux/init.h>
+ #include <linux/jiffies.h>
  
 -#include <asm/system.h>
- #include <asm/console.h>
- #include <asm/hwrpb.h>
- #include <asm/pgtable.h>
-diff --git a/arch/alpha/boot/bootpz.c b/arch/alpha/boot/bootpz.c
-index c98865f..d6ad191 100644
---- a/arch/alpha/boot/bootpz.c
-+++ b/arch/alpha/boot/bootpz.c
-@@ -15,7 +15,6 @@
- #include <generated/utsrelease.h>
- #include <linux/mm.h>
- 
--#include <asm/system.h>
- #include <asm/console.h>
- #include <asm/hwrpb.h>
- #include <asm/pgtable.h>
-diff --git a/arch/alpha/boot/head.S b/arch/alpha/boot/head.S
-index f3d9808..b06812b 100644
---- a/arch/alpha/boot/head.S
-+++ b/arch/alpha/boot/head.S
-@@ -4,7 +4,6 @@
-  * initial bootloader stuff..
-  */
- 
--#include <asm/system.h>
- 
- 	.set noreorder
- 	.globl	__start
-diff --git a/arch/alpha/boot/main.c b/arch/alpha/boot/main.c
-index ded57d9..3baf2d1 100644
---- a/arch/alpha/boot/main.c
-+++ b/arch/alpha/boot/main.c
+ #include <asm/uaccess.h>
+ #include <asm/pgalloc.h>
+ #include <asm/cacheflush.h>
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 3ab9bdd..108246d 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
 @@ -11,7 +11,6 @@
- #include <generated/utsrelease.h>
- #include <linux/mm.h>
- 
+ #include <linux/atomic.h>
+ #include <asm/fixmap.h>
+ #include <asm/mpspec.h>
 -#include <asm/system.h>
- #include <asm/console.h>
- #include <asm/hwrpb.h>
- #include <asm/pgtable.h>
-diff --git a/arch/alpha/include/asm/atomic.h b/arch/alpha/include/asm/atomic.h
-index 640f909..f62251e 100644
---- a/arch/alpha/include/asm/atomic.h
-+++ b/arch/alpha/include/asm/atomic.h
-@@ -3,7 +3,6 @@
+ #include <asm/msr.h>
  
- #include <linux/types.h>
- #include <asm/barrier.h>
--#include <asm/system.h>
+ #define ARCH_APICTIMER_STOPS_ON_C3	1
+diff --git a/arch/x86/include/asm/auxvec.h b/arch/x86/include/asm/auxvec.h
+index 1316b4c..77203ac 100644
+--- a/arch/x86/include/asm/auxvec.h
++++ b/arch/x86/include/asm/auxvec.h
+@@ -9,4 +9,11 @@
+ #endif
+ #define AT_SYSINFO_EHDR		33
  
- /*
-  * Atomic operations that C can't guarantee us.  Useful for
-@@ -169,6 +168,73 @@ static __inline__ long atomic64_sub_return(long i, atomic64_t * v)
- 	return result;
- }
- 
++/* entries in ARCH_DLINFO: */
++#if defined(CONFIG_IA32_EMULATION) || !defined(CONFIG_X86_64)
++# define AT_VECTOR_SIZE_ARCH 2
++#else /* else it's non-compat x86-64 */
++# define AT_VECTOR_SIZE_ARCH 1
++#endif
++
+ #endif /* _ASM_X86_AUXVEC_H */
+diff --git a/arch/x86/include/asm/barrier.h b/arch/x86/include/asm/barrier.h
+new file mode 100644
+index 0000000..c6cd358
+--- /dev/null
++++ b/arch/x86/include/asm/barrier.h
+@@ -0,0 +1,116 @@
++#ifndef _ASM_X86_BARRIER_H
++#define _ASM_X86_BARRIER_H
++
++#include <asm/alternative.h>
++#include <asm/nops.h>
++
 +/*
-+ * Atomic exchange routines.
++ * Force strict CPU ordering.
++ * And yes, this is required on UP too when we're talking
++ * to devices.
 + */
 +
-+#define __ASM__MB
-+#define ____xchg(type, args...)		__xchg ## type ## _local(args)
-+#define ____cmpxchg(type, args...)	__cmpxchg ## type ## _local(args)
-+#include <asm/xchg.h>
++#ifdef CONFIG_X86_32
++/*
++ * Some non-Intel clones support out of order store. wmb() ceases to be a
++ * nop for these.
++ */
++#define mb() alternative("lock; addl $0,0(%%esp)", "mfence", X86_FEATURE_XMM2)
++#define rmb() alternative("lock; addl $0,0(%%esp)", "lfence", X86_FEATURE_XMM2)
++#define wmb() alternative("lock; addl $0,0(%%esp)", "sfence", X86_FEATURE_XMM)
++#else
++#define mb() 	asm volatile("mfence":::"memory")
++#define rmb()	asm volatile("lfence":::"memory")
++#define wmb()	asm volatile("sfence" ::: "memory")
++#endif
 +
-+#define xchg_local(ptr,x)						\
-+  ({									\
-+     __typeof__(*(ptr)) _x_ = (x);					\
-+     (__typeof__(*(ptr))) __xchg_local((ptr), (unsigned long)_x_,	\
-+				       sizeof(*(ptr)));			\
-+  })
++/**
++ * read_barrier_depends - Flush all pending reads that subsequents reads
++ * depend on.
++ *
++ * No data-dependent reads from memory-like regions are ever reordered
++ * over this barrier.  All reads preceding this primitive are guaranteed
++ * to access memory (but not necessarily other CPUs' caches) before any
++ * reads following this primitive that depend on the data return by
++ * any of the preceding reads.  This primitive is much lighter weight than
++ * rmb() on most CPUs, and is never heavier weight than is
++ * rmb().
++ *
++ * These ordering constraints are respected by both the local CPU
++ * and the compiler.
++ *
++ * Ordering is not guaranteed by anything other than these primitives,
++ * not even by data dependencies.  See the documentation for
++ * memory_barrier() for examples and URLs to more information.
++ *
++ * For example, the following code would force ordering (the initial
++ * value of "a" is zero, "b" is one, and "p" is "&a"):
++ *
++ * <programlisting>
++ *	CPU 0				CPU 1
++ *
++ *	b = 2;
++ *	memory_barrier();
++ *	p = &b;				q = p;
++ *					read_barrier_depends();
++ *					d = *q;
++ * </programlisting>
++ *
++ * because the read of "*q" depends on the read of "p" and these
++ * two reads are separated by a read_barrier_depends().  However,
++ * the following code, with the same initial values for "a" and "b":
++ *
++ * <programlisting>
++ *	CPU 0				CPU 1
++ *
++ *	a = 2;
++ *	memory_barrier();
++ *	b = 3;				y = b;
++ *					read_barrier_depends();
++ *					x = a;
++ * </programlisting>
++ *
++ * does not enforce ordering, since there is no data dependency between
++ * the read of "a" and the read of "b".  Therefore, on some CPUs, such
++ * as Alpha, "y" could be set to 3 and "x" to 0.  Use rmb()
++ * in cases like this where there are no data dependencies.
++ **/
 +
-+#define cmpxchg_local(ptr, o, n)					\
-+  ({									\
-+     __typeof__(*(ptr)) _o_ = (o);					\
-+     __typeof__(*(ptr)) _n_ = (n);					\
-+     (__typeof__(*(ptr))) __cmpxchg_local((ptr), (unsigned long)_o_,	\
-+					  (unsigned long)_n_,		\
-+					  sizeof(*(ptr)));		\
-+  })
-+
-+#define cmpxchg64_local(ptr, o, n)					\
-+  ({									\
-+	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
-+	cmpxchg_local((ptr), (o), (n));					\
-+  })
++#define read_barrier_depends()	do { } while (0)
 +
 +#ifdef CONFIG_SMP
-+#undef __ASM__MB
-+#define __ASM__MB	"\tmb\n"
++#define smp_mb()	mb()
++#ifdef CONFIG_X86_PPRO_FENCE
++# define smp_rmb()	rmb()
++#else
++# define smp_rmb()	barrier()
 +#endif
-+#undef ____xchg
-+#undef ____cmpxchg
-+#define ____xchg(type, args...)		__xchg ##type(args)
-+#define ____cmpxchg(type, args...)	__cmpxchg ##type(args)
-+#include <asm/xchg.h>
-+
-+#define xchg(ptr,x)							\
-+  ({									\
-+     __typeof__(*(ptr)) _x_ = (x);					\
-+     (__typeof__(*(ptr))) __xchg((ptr), (unsigned long)_x_,		\
-+				 sizeof(*(ptr)));			\
-+  })
-+
-+#define cmpxchg(ptr, o, n)						\
-+  ({									\
-+     __typeof__(*(ptr)) _o_ = (o);					\
-+     __typeof__(*(ptr)) _n_ = (n);					\
-+     (__typeof__(*(ptr))) __cmpxchg((ptr), (unsigned long)_o_,		\
-+				    (unsigned long)_n_,	sizeof(*(ptr)));\
-+  })
-+
-+#define cmpxchg64(ptr, o, n)						\
-+  ({									\
-+	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
-+	cmpxchg((ptr), (o), (n));					\
-+  })
-+
-+#undef __ASM__MB
-+#undef ____cmpxchg
-+
-+#define __HAVE_ARCH_CMPXCHG 1
-+
- #define atomic64_cmpxchg(v, old, new) (cmpxchg(&((v)->counter), old, new))
- #define atomic64_xchg(v, new) (xchg(&((v)->counter), new))
- 
-diff --git a/arch/alpha/include/asm/auxvec.h b/arch/alpha/include/asm/auxvec.h
-index e96fe88..a3a579d 100644
---- a/arch/alpha/include/asm/auxvec.h
-+++ b/arch/alpha/include/asm/auxvec.h
-@@ -21,4 +21,6 @@
- #define AT_L2_CACHESHAPE	36
- #define AT_L3_CACHESHAPE	37
- 
-+#define AT_VECTOR_SIZE_ARCH 4 /* entries in ARCH_DLINFO */
-+
- #endif /* __ASM_ALPHA_AUXVEC_H */
-diff --git a/arch/alpha/include/asm/core_lca.h b/arch/alpha/include/asm/core_lca.h
-index f7cb4b4..8ee6c51 100644
---- a/arch/alpha/include/asm/core_lca.h
-+++ b/arch/alpha/include/asm/core_lca.h
-@@ -1,8 +1,8 @@
- #ifndef __ALPHA_LCA__H__
- #define __ALPHA_LCA__H__
- 
--#include <asm/system.h>
- #include <asm/compiler.h>
-+#include <asm/mce.h>
- 
- /*
-  * Low Cost Alpha (LCA) definitions (these apply to 21066 and 21068,
-diff --git a/arch/alpha/include/asm/core_mcpcia.h b/arch/alpha/include/asm/core_mcpcia.h
-index 9f67a05..ad44bef 100644
---- a/arch/alpha/include/asm/core_mcpcia.h
-+++ b/arch/alpha/include/asm/core_mcpcia.h
-@@ -7,6 +7,7 @@
- 
- #include <linux/types.h>
- #include <asm/compiler.h>
-+#include <asm/mce.h>
- 
- /*
-  * MCPCIA is the internal name for a core logic chipset which provides
-diff --git a/arch/alpha/include/asm/core_t2.h b/arch/alpha/include/asm/core_t2.h
-index 91b4680..ade9d92 100644
---- a/arch/alpha/include/asm/core_t2.h
-+++ b/arch/alpha/include/asm/core_t2.h
-@@ -7,7 +7,6 @@
- #include <linux/types.h>
- #include <linux/spinlock.h>
- #include <asm/compiler.h>
--#include <asm/system.h>
- 
- /*
-  * T2 is the internal name for the core logic chipset which provides
-diff --git a/arch/alpha/include/asm/elf.h b/arch/alpha/include/asm/elf.h
-index da5449e..968d999 100644
---- a/arch/alpha/include/asm/elf.h
-+++ b/arch/alpha/include/asm/elf.h
-@@ -2,6 +2,7 @@
- #define __ASM_ALPHA_ELF_H
- 
- #include <asm/auxvec.h>
-+#include <asm/special_insns.h>
- 
- /* Special values for the st_other field in the symbol table.  */
- 
-diff --git a/arch/alpha/include/asm/exec.h b/arch/alpha/include/asm/exec.h
-new file mode 100644
-index 0000000..4a5a41f
---- /dev/null
-+++ b/arch/alpha/include/asm/exec.h
-@@ -0,0 +1,6 @@
-+#ifndef __ALPHA_EXEC_H
-+#define __ALPHA_EXEC_H
-+
-+#define arch_align_stack(x) (x)
-+
-+#endif /* __ALPHA_EXEC_H */
-diff --git a/arch/alpha/include/asm/fpu.h b/arch/alpha/include/asm/fpu.h
-index ecb17a7..db00f78 100644
---- a/arch/alpha/include/asm/fpu.h
-+++ b/arch/alpha/include/asm/fpu.h
-@@ -1,6 +1,8 @@
- #ifndef __ASM_ALPHA_FPU_H
- #define __ASM_ALPHA_FPU_H
- 
-+#include <asm/special_insns.h>
-+
- /*
-  * Alpha floating-point control register defines:
-  */
-diff --git a/arch/alpha/include/asm/io.h b/arch/alpha/include/asm/io.h
-index 56ff965..7a3d38d 100644
---- a/arch/alpha/include/asm/io.h
-+++ b/arch/alpha/include/asm/io.h
-@@ -6,7 +6,6 @@
- #include <linux/kernel.h>
- #include <linux/mm.h>
- #include <asm/compiler.h>
--#include <asm/system.h>
- #include <asm/pgtable.h>
- #include <asm/machvec.h>
- #include <asm/hwrpb.h>
-diff --git a/arch/alpha/include/asm/irqflags.h b/arch/alpha/include/asm/irqflags.h
-index 299bbc7..ffb1726 100644
---- a/arch/alpha/include/asm/irqflags.h
-+++ b/arch/alpha/include/asm/irqflags.h
-@@ -1,7 +1,7 @@
- #ifndef __ALPHA_IRQFLAGS_H
- #define __ALPHA_IRQFLAGS_H
- 
--#include <asm/system.h>
-+#include <asm/pal.h>
- 
- #define IPL_MIN		0
- #define IPL_SW0		1
-diff --git a/arch/alpha/include/asm/mce.h b/arch/alpha/include/asm/mce.h
-new file mode 100644
-index 0000000..660285b
---- /dev/null
-+++ b/arch/alpha/include/asm/mce.h
-@@ -0,0 +1,83 @@
-+#ifndef __ALPHA_MCE_H
-+#define __ALPHA_MCE_H
++#ifdef CONFIG_X86_OOSTORE
++# define smp_wmb() 	wmb()
++#else
++# define smp_wmb()	barrier()
++#endif
++#define smp_read_barrier_depends()	read_barrier_depends()
++#define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
++#else
++#define smp_mb()	barrier()
++#define smp_rmb()	barrier()
++#define smp_wmb()	barrier()
++#define smp_read_barrier_depends()	do { } while (0)
++#define set_mb(var, value) do { var = value; barrier(); } while (0)
++#endif
 +
 +/*
-+ * This is the logout header that should be common to all platforms
-+ * (assuming they are running OSF/1 PALcode, I guess).
++ * Stop RDTSC speculation. This is needed when you need to use RDTSC
++ * (or get_cycles or vread that possibly accesses the TSC) in a defined
++ * code region.
++ *
++ * (Could use an alternative three way for this if there was one.)
 + */
-+struct el_common {
-+	unsigned int	size;		/* size in bytes of logout area */
-+	unsigned int	sbz1	: 30;	/* should be zero */
-+	unsigned int	err2	:  1;	/* second error */
-+	unsigned int	retry	:  1;	/* retry flag */
-+	unsigned int	proc_offset;	/* processor-specific offset */
-+	unsigned int	sys_offset;	/* system-specific offset */
-+	unsigned int	code;		/* machine check code */
-+	unsigned int	frame_rev;	/* frame revision */
-+};
++static __always_inline void rdtsc_barrier(void)
++{
++	alternative(ASM_NOP3, "mfence", X86_FEATURE_MFENCE_RDTSC);
++	alternative(ASM_NOP3, "lfence", X86_FEATURE_LFENCE_RDTSC);
++}
 +
-+/* Machine Check Frame for uncorrectable errors (Large format)
-+ *      --- This is used to log uncorrectable errors such as
-+ *          double bit ECC errors.
-+ *      --- These errors are detected by both processor and systems.
-+ */
-+struct el_common_EV5_uncorrectable_mcheck {
-+        unsigned long   shadow[8];        /* Shadow reg. 8-14, 25           */
-+        unsigned long   paltemp[24];      /* PAL TEMP REGS.                 */
-+        unsigned long   exc_addr;         /* Address of excepting instruction*/
-+        unsigned long   exc_sum;          /* Summary of arithmetic traps.   */
-+        unsigned long   exc_mask;         /* Exception mask (from exc_sum). */
-+        unsigned long   pal_base;         /* Base address for PALcode.      */
-+        unsigned long   isr;              /* Interrupt Status Reg.          */
-+        unsigned long   icsr;             /* CURRENT SETUP OF EV5 IBOX      */
-+        unsigned long   ic_perr_stat;     /* I-CACHE Reg. <11> set Data parity
-+                                                         <12> set TAG parity*/
-+        unsigned long   dc_perr_stat;     /* D-CACHE error Reg. Bits set to 1:
-+                                                     <2> Data error in bank 0
-+                                                     <3> Data error in bank 1
-+                                                     <4> Tag error in bank 0
-+                                                     <5> Tag error in bank 1 */
-+        unsigned long   va;               /* Effective VA of fault or miss. */
-+        unsigned long   mm_stat;          /* Holds the reason for D-stream 
-+                                             fault or D-cache parity errors */
-+        unsigned long   sc_addr;          /* Address that was being accessed
-+                                             when EV5 detected Secondary cache
-+                                             failure.                 */
-+        unsigned long   sc_stat;          /* Helps determine if the error was
-+                                             TAG/Data parity(Secondary Cache)*/
-+        unsigned long   bc_tag_addr;      /* Contents of EV5 BC_TAG_ADDR    */
-+        unsigned long   ei_addr;          /* Physical address of any transfer
-+                                             that is logged in EV5 EI_STAT */
-+        unsigned long   fill_syndrome;    /* For correcting ECC errors.     */
-+        unsigned long   ei_stat;          /* Helps identify reason of any 
-+                                             processor uncorrectable error
-+                                             at its external interface.     */
-+        unsigned long   ld_lock;          /* Contents of EV5 LD_LOCK register*/
-+};
-+
-+struct el_common_EV6_mcheck {
-+	unsigned int FrameSize;		/* Bytes, including this field */
-+	unsigned int FrameFlags;	/* <31> = Retry, <30> = Second Error */
-+	unsigned int CpuOffset;		/* Offset to CPU-specific info */
-+	unsigned int SystemOffset;	/* Offset to system-specific info */
-+	unsigned int MCHK_Code;
-+	unsigned int MCHK_Frame_Rev;
-+	unsigned long I_STAT;		/* EV6 Internal Processor Registers */
-+	unsigned long DC_STAT;		/* (See the 21264 Spec) */
-+	unsigned long C_ADDR;
-+	unsigned long DC1_SYNDROME;
-+	unsigned long DC0_SYNDROME;
-+	unsigned long C_STAT;
-+	unsigned long C_STS;
-+	unsigned long MM_STAT;
-+	unsigned long EXC_ADDR;
-+	unsigned long IER_CM;
-+	unsigned long ISUM;
-+	unsigned long RESERVED0;
-+	unsigned long PAL_BASE;
-+	unsigned long I_CTL;
-+	unsigned long PCTX;
-+};
++#endif /* _ASM_X86_BARRIER_H */
+diff --git a/arch/x86/include/asm/bug.h b/arch/x86/include/asm/bug.h
+index f654d1b..11e1152 100644
+--- a/arch/x86/include/asm/bug.h
++++ b/arch/x86/include/asm/bug.h
+@@ -36,4 +36,8 @@ do {								\
+ #endif /* !CONFIG_BUG */
+ 
+ #include <asm-generic/bug.h>
 +
 +
-+#endif /* __ALPHA_MCE_H */
-diff --git a/arch/alpha/include/asm/mmu_context.h b/arch/alpha/include/asm/mmu_context.h
-index 86c08a0..4c51c05 100644
---- a/arch/alpha/include/asm/mmu_context.h
-+++ b/arch/alpha/include/asm/mmu_context.h
-@@ -7,7 +7,6 @@
-  * Copyright (C) 1996, Linus Torvalds
-  */
++extern void show_regs_common(void);
++
+ #endif /* _ASM_X86_BUG_H */
+diff --git a/arch/x86/include/asm/cacheflush.h b/arch/x86/include/asm/cacheflush.h
+index 4e12668..9863ee3 100644
+--- a/arch/x86/include/asm/cacheflush.h
++++ b/arch/x86/include/asm/cacheflush.h
+@@ -3,6 +3,7 @@
+ 
+ /* Caches aren't brain-dead on the intel. */
+ #include <asm-generic/cacheflush.h>
++#include <asm/special_insns.h>
+ 
+ #ifdef CONFIG_X86_PAT
+ /*
+diff --git a/arch/x86/include/asm/elf.h b/arch/x86/include/asm/elf.h
+index 5f962df..f27f79a 100644
+--- a/arch/x86/include/asm/elf.h
++++ b/arch/x86/include/asm/elf.h
+@@ -84,7 +84,6 @@ extern unsigned int vdso_enabled;
+ 	(((x)->e_machine == EM_386) || ((x)->e_machine == EM_486))
+ 
+ #include <asm/processor.h>
+-#include <asm/system.h>
+ 
+ #ifdef CONFIG_X86_32
+ #include <asm/desc.h>
+diff --git a/arch/x86/include/asm/exec.h b/arch/x86/include/asm/exec.h
+new file mode 100644
+index 0000000..54c2e1d
+--- /dev/null
++++ b/arch/x86/include/asm/exec.h
+@@ -0,0 +1 @@
++/* define arch_align_stack() here */
+diff --git a/arch/x86/include/asm/futex.h b/arch/x86/include/asm/futex.h
+index d09bb03..71ecbcb 100644
+--- a/arch/x86/include/asm/futex.h
++++ b/arch/x86/include/asm/futex.h
+@@ -9,7 +9,6 @@
+ #include <asm/asm.h>
+ #include <asm/errno.h>
+ #include <asm/processor.h>
+-#include <asm/system.h>
+ 
+ #define __futex_atomic_op1(insn, ret, oldval, uaddr, oparg)	\
+ 	asm volatile("1:\t" insn "\n"				\
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index 2479049..82374df 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -24,6 +24,7 @@
+ #include <asm/user.h>
+ #include <asm/uaccess.h>
+ #include <asm/xsave.h>
++#include <asm/special_insns.h>
+ 
+ extern unsigned int sig_xstate_size;
+ extern void fpu_init(void);
+diff --git a/arch/x86/include/asm/local.h b/arch/x86/include/asm/local.h
+index 9cdae5d..c8bed0d 100644
+--- a/arch/x86/include/asm/local.h
++++ b/arch/x86/include/asm/local.h
+@@ -3,7 +3,6 @@
+ 
+ #include <linux/percpu.h>
  
 -#include <asm/system.h>
- #include <asm/machvec.h>
- #include <asm/compiler.h>
- #include <asm-generic/mm_hooks.h>
-diff --git a/arch/alpha/include/asm/pal.h b/arch/alpha/include/asm/pal.h
-index 9b4ba0d..6699ee5 100644
---- a/arch/alpha/include/asm/pal.h
-+++ b/arch/alpha/include/asm/pal.h
-@@ -48,4 +48,116 @@
- #define PAL_retsys	61
- #define PAL_rti		63
+ #include <linux/atomic.h>
+ #include <asm/asm.h>
  
-+#ifdef __KERNEL__
-+#ifndef __ASSEMBLY__
-+
-+extern void halt(void) __attribute__((noreturn));
-+#define __halt() __asm__ __volatile__ ("call_pal %0 #halt" : : "i" (PAL_halt))
-+
-+#define imb() \
-+__asm__ __volatile__ ("call_pal %0 #imb" : : "i" (PAL_imb) : "memory")
-+
-+#define draina() \
-+__asm__ __volatile__ ("call_pal %0 #draina" : : "i" (PAL_draina) : "memory")
-+
-+#define __CALL_PAL_R0(NAME, TYPE)				\
-+extern inline TYPE NAME(void)					\
-+{								\
-+	register TYPE __r0 __asm__("$0");			\
-+	__asm__ __volatile__(					\
-+		"call_pal %1 # " #NAME				\
-+		:"=r" (__r0)					\
-+		:"i" (PAL_ ## NAME)				\
-+		:"$1", "$16", "$22", "$23", "$24", "$25");	\
-+	return __r0;						\
-+}
-+
-+#define __CALL_PAL_W1(NAME, TYPE0)				\
-+extern inline void NAME(TYPE0 arg0)				\
-+{								\
-+	register TYPE0 __r16 __asm__("$16") = arg0;		\
-+	__asm__ __volatile__(					\
-+		"call_pal %1 # "#NAME				\
-+		: "=r"(__r16)					\
-+		: "i"(PAL_ ## NAME), "0"(__r16)			\
-+		: "$1", "$22", "$23", "$24", "$25");		\
-+}
-+
-+#define __CALL_PAL_W2(NAME, TYPE0, TYPE1)			\
-+extern inline void NAME(TYPE0 arg0, TYPE1 arg1)			\
-+{								\
-+	register TYPE0 __r16 __asm__("$16") = arg0;		\
-+	register TYPE1 __r17 __asm__("$17") = arg1;		\
-+	__asm__ __volatile__(					\
-+		"call_pal %2 # "#NAME				\
-+		: "=r"(__r16), "=r"(__r17)			\
-+		: "i"(PAL_ ## NAME), "0"(__r16), "1"(__r17)	\
-+		: "$1", "$22", "$23", "$24", "$25");		\
-+}
-+
-+#define __CALL_PAL_RW1(NAME, RTYPE, TYPE0)			\
-+extern inline RTYPE NAME(TYPE0 arg0)				\
-+{								\
-+	register RTYPE __r0 __asm__("$0");			\
-+	register TYPE0 __r16 __asm__("$16") = arg0;		\
-+	__asm__ __volatile__(					\
-+		"call_pal %2 # "#NAME				\
-+		: "=r"(__r16), "=r"(__r0)			\
-+		: "i"(PAL_ ## NAME), "0"(__r16)			\
-+		: "$1", "$22", "$23", "$24", "$25");		\
-+	return __r0;						\
-+}
-+
-+#define __CALL_PAL_RW2(NAME, RTYPE, TYPE0, TYPE1)		\
-+extern inline RTYPE NAME(TYPE0 arg0, TYPE1 arg1)		\
-+{								\
-+	register RTYPE __r0 __asm__("$0");			\
-+	register TYPE0 __r16 __asm__("$16") = arg0;		\
-+	register TYPE1 __r17 __asm__("$17") = arg1;		\
-+	__asm__ __volatile__(					\
-+		"call_pal %3 # "#NAME				\
-+		: "=r"(__r16), "=r"(__r17), "=r"(__r0)		\
-+		: "i"(PAL_ ## NAME), "0"(__r16), "1"(__r17)	\
-+		: "$1", "$22", "$23", "$24", "$25");		\
-+	return __r0;						\
-+}
-+
-+__CALL_PAL_W1(cflush, unsigned long);
-+__CALL_PAL_R0(rdmces, unsigned long);
-+__CALL_PAL_R0(rdps, unsigned long);
-+__CALL_PAL_R0(rdusp, unsigned long);
-+__CALL_PAL_RW1(swpipl, unsigned long, unsigned long);
-+__CALL_PAL_R0(whami, unsigned long);
-+__CALL_PAL_W2(wrent, void*, unsigned long);
-+__CALL_PAL_W1(wripir, unsigned long);
-+__CALL_PAL_W1(wrkgp, unsigned long);
-+__CALL_PAL_W1(wrmces, unsigned long);
-+__CALL_PAL_RW2(wrperfmon, unsigned long, unsigned long, unsigned long);
-+__CALL_PAL_W1(wrusp, unsigned long);
-+__CALL_PAL_W1(wrvptptr, unsigned long);
+diff --git a/arch/x86/include/asm/mc146818rtc.h b/arch/x86/include/asm/mc146818rtc.h
+index 0e8e85b..d354fb7 100644
+--- a/arch/x86/include/asm/mc146818rtc.h
++++ b/arch/x86/include/asm/mc146818rtc.h
+@@ -5,7 +5,6 @@
+ #define _ASM_X86_MC146818RTC_H
+ 
+ #include <asm/io.h>
+-#include <asm/system.h>
+ #include <asm/processor.h>
+ #include <linux/mc146818rtc.h>
+ 
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 58545c9..8322a35 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -14,13 +14,13 @@ struct mm_struct;
+ #include <asm/sigcontext.h>
+ #include <asm/current.h>
+ #include <asm/cpufeature.h>
+-#include <asm/system.h>
+ #include <asm/page.h>
+ #include <asm/pgtable_types.h>
+ #include <asm/percpu.h>
+ #include <asm/msr.h>
+ #include <asm/desc_defs.h>
+ #include <asm/nops.h>
++#include <asm/special_insns.h>
+ 
+ #include <linux/personality.h>
+ #include <linux/cpumask.h>
+@@ -29,6 +29,15 @@ struct mm_struct;
+ #include <linux/math64.h>
+ #include <linux/init.h>
+ #include <linux/err.h>
++#include <linux/irqflags.h>
 +
 +/*
-+ * TB routines..
++ * We handle most unaligned accesses in hardware.  On the other hand
++ * unaligned DMA can be quite expensive on some Nehalem processors.
++ *
++ * Based on this we disable the IP header alignment in network drivers.
 + */
-+#define __tbi(nr,arg,arg1...)					\
-+({								\
-+	register unsigned long __r16 __asm__("$16") = (nr);	\
-+	register unsigned long __r17 __asm__("$17"); arg;	\
-+	__asm__ __volatile__(					\
-+		"call_pal %3 #__tbi"				\
-+		:"=r" (__r16),"=r" (__r17)			\
-+		:"0" (__r16),"i" (PAL_tbi) ,##arg1		\
-+		:"$0", "$1", "$22", "$23", "$24", "$25");	\
-+})
++#define NET_IP_ALIGN	0
+ 
+ #define HBP_NUM 4
+ /*
+@@ -1021,4 +1030,24 @@ extern bool cpu_has_amd_erratum(const int *);
+ #define cpu_has_amd_erratum(x)	(false)
+ #endif /* CONFIG_CPU_SUP_AMD */
+ 
++#ifdef CONFIG_X86_32
++/*
++ * disable hlt during certain critical i/o operations
++ */
++#define HAVE_DISABLE_HLT
++#endif
 +
-+#define tbi(x,y)	__tbi(x,__r17=(y),"1" (__r17))
-+#define tbisi(x)	__tbi(1,__r17=(x),"1" (__r17))
-+#define tbisd(x)	__tbi(2,__r17=(x),"1" (__r17))
-+#define tbis(x)		__tbi(3,__r17=(x),"1" (__r17))
-+#define tbiap()		__tbi(-1, /* no second argument */)
-+#define tbia()		__tbi(-2, /* no second argument */)
++void disable_hlt(void);
++void enable_hlt(void);
++
++void cpu_idle_wait(void);
++
++extern unsigned long arch_align_stack(unsigned long sp);
++extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
++
++void default_idle(void);
++bool set_pm_idle_to_default(void);
++
++void stop_this_cpu(void *dummy);
++
+ #endif /* _ASM_X86_PROCESSOR_H */
+diff --git a/arch/x86/include/asm/segment.h b/arch/x86/include/asm/segment.h
+index 5e64171..1654662 100644
+--- a/arch/x86/include/asm/segment.h
++++ b/arch/x86/include/asm/segment.h
+@@ -212,7 +212,61 @@
+ #ifdef __KERNEL__
+ #ifndef __ASSEMBLY__
+ extern const char early_idt_handlers[NUM_EXCEPTION_VECTORS][10];
+-#endif
+-#endif
++
++/*
++ * Load a segment. Fall back on loading the zero
++ * segment if something goes wrong..
++ */
++#define loadsegment(seg, value)						\
++do {									\
++	unsigned short __val = (value);					\
++									\
++	asm volatile("						\n"	\
++		     "1:	movl %k0,%%" #seg "		\n"	\
++									\
++		     ".section .fixup,\"ax\"			\n"	\
++		     "2:	xorl %k0,%k0			\n"	\
++		     "		jmp 1b				\n"	\
++		     ".previous					\n"	\
++									\
++		     _ASM_EXTABLE(1b, 2b)				\
++									\
++		     : "+r" (__val) : : "memory");			\
++} while (0)
++
++/*
++ * Save a segment register away
++ */
++#define savesegment(seg, value)				\
++	asm("mov %%" #seg ",%0":"=r" (value) : : "memory")
++
++/*
++ * x86_32 user gs accessors.
++ */
++#ifdef CONFIG_X86_32
++#ifdef CONFIG_X86_32_LAZY_GS
++#define get_user_gs(regs)	(u16)({unsigned long v; savesegment(gs, v); v;})
++#define set_user_gs(regs, v)	loadsegment(gs, (unsigned long)(v))
++#define task_user_gs(tsk)	((tsk)->thread.gs)
++#define lazy_save_gs(v)		savesegment(gs, (v))
++#define lazy_load_gs(v)		loadsegment(gs, (v))
++#else	/* X86_32_LAZY_GS */
++#define get_user_gs(regs)	(u16)((regs)->gs)
++#define set_user_gs(regs, v)	do { (regs)->gs = (v); } while (0)
++#define task_user_gs(tsk)	(task_pt_regs(tsk)->gs)
++#define lazy_save_gs(v)		do { } while (0)
++#define lazy_load_gs(v)		do { } while (0)
++#endif	/* X86_32_LAZY_GS */
++#endif	/* X86_32 */
++
++static inline unsigned long get_limit(unsigned long segment)
++{
++	unsigned long __limit;
++	asm("lsll %1,%0" : "=r" (__limit) : "r" (segment));
++	return __limit + 1;
++}
 +
 +#endif /* !__ASSEMBLY__ */
 +#endif /* __KERNEL__ */
-+
- #endif /* __ALPHA_PAL_H */
-diff --git a/arch/alpha/include/asm/pgtable.h b/arch/alpha/include/asm/pgtable.h
-index de98a73..81a4342 100644
---- a/arch/alpha/include/asm/pgtable.h
-+++ b/arch/alpha/include/asm/pgtable.h
-@@ -15,6 +15,7 @@
- #include <asm/page.h>
- #include <asm/processor.h>	/* For TASK_SIZE */
- #include <asm/machvec.h>
-+#include <asm/setup.h>
  
- struct mm_struct;
- struct vm_area_struct;
-diff --git a/arch/alpha/include/asm/setup.h b/arch/alpha/include/asm/setup.h
-index 2e023a4..b50014b 100644
---- a/arch/alpha/include/asm/setup.h
-+++ b/arch/alpha/include/asm/setup.h
-@@ -3,4 +3,40 @@
- 
- #define COMMAND_LINE_SIZE	256
- 
-+/*
-+ * We leave one page for the initial stack page, and one page for
-+ * the initial process structure. Also, the console eats 3 MB for
-+ * the initial bootloader (one of which we can reclaim later).
-+ */
-+#define BOOT_PCB	0x20000000
-+#define BOOT_ADDR	0x20000000
-+/* Remove when official MILO sources have ELF support: */
-+#define BOOT_SIZE	(16*1024)
-+
-+#ifdef CONFIG_ALPHA_LEGACY_START_ADDRESS
-+#define KERNEL_START_PHYS	0x300000 /* Old bootloaders hardcoded this.  */
-+#else
-+#define KERNEL_START_PHYS	0x1000000 /* required: Wildfire/Titan/Marvel */
-+#endif
-+
-+#define KERNEL_START	(PAGE_OFFSET+KERNEL_START_PHYS)
-+#define SWAPPER_PGD	KERNEL_START
-+#define INIT_STACK	(PAGE_OFFSET+KERNEL_START_PHYS+0x02000)
-+#define EMPTY_PGT	(PAGE_OFFSET+KERNEL_START_PHYS+0x04000)
-+#define EMPTY_PGE	(PAGE_OFFSET+KERNEL_START_PHYS+0x08000)
-+#define ZERO_PGE	(PAGE_OFFSET+KERNEL_START_PHYS+0x0A000)
-+
-+#define START_ADDR	(PAGE_OFFSET+KERNEL_START_PHYS+0x10000)
-+
-+/*
-+ * This is setup by the secondary bootstrap loader.  Because
-+ * the zero page is zeroed out as soon as the vm system is
-+ * initialized, we need to copy things out into a more permanent
-+ * place.
-+ */
-+#define PARAM			ZERO_PGE
-+#define COMMAND_LINE		((char*)(PARAM + 0x0000))
-+#define INITRD_START		(*(unsigned long *) (PARAM+0x100))
-+#define INITRD_SIZE		(*(unsigned long *) (PARAM+0x108))
-+
- #endif
-diff --git a/arch/alpha/include/asm/special_insns.h b/arch/alpha/include/asm/special_insns.h
+ #endif /* _ASM_X86_SEGMENT_H */
+diff --git a/arch/x86/include/asm/special_insns.h b/arch/x86/include/asm/special_insns.h
 new file mode 100644
-index 0000000..88d3452
+index 0000000..41fc93a
 --- /dev/null
-+++ b/arch/alpha/include/asm/special_insns.h
-@@ -0,0 +1,41 @@
-+#ifndef __ALPHA_SPECIAL_INSNS_H
-+#define __ALPHA_SPECIAL_INSNS_H
++++ b/arch/x86/include/asm/special_insns.h
+@@ -0,0 +1,199 @@
++#ifndef _ASM_X86_SPECIAL_INSNS_H
++#define _ASM_X86_SPECIAL_INSNS_H
 +
-+enum implver_enum {
-+	IMPLVER_EV4,
-+	IMPLVER_EV5,
-+	IMPLVER_EV6
-+};
 +
-+#ifdef CONFIG_ALPHA_GENERIC
-+#define implver()				\
-+({ unsigned long __implver;			\
-+   __asm__ ("implver %0" : "=r"(__implver));	\
-+   (enum implver_enum) __implver; })
++#ifdef __KERNEL__
++
++static inline void native_clts(void)
++{
++	asm volatile("clts");
++}
++
++/*
++ * Volatile isn't enough to prevent the compiler from reordering the
++ * read/write functions for the control registers and messing everything up.
++ * A memory clobber would solve the problem, but would prevent reordering of
++ * all loads stores around it, which can hurt performance. Solution is to
++ * use a variable and mimic reads and writes to it to enforce serialization
++ */
++static unsigned long __force_order;
++
++static inline unsigned long native_read_cr0(void)
++{
++	unsigned long val;
++	asm volatile("mov %%cr0,%0\n\t" : "=r" (val), "=m" (__force_order));
++	return val;
++}
++
++static inline void native_write_cr0(unsigned long val)
++{
++	asm volatile("mov %0,%%cr0": : "r" (val), "m" (__force_order));
++}
++
++static inline unsigned long native_read_cr2(void)
++{
++	unsigned long val;
++	asm volatile("mov %%cr2,%0\n\t" : "=r" (val), "=m" (__force_order));
++	return val;
++}
++
++static inline void native_write_cr2(unsigned long val)
++{
++	asm volatile("mov %0,%%cr2": : "r" (val), "m" (__force_order));
++}
++
++static inline unsigned long native_read_cr3(void)
++{
++	unsigned long val;
++	asm volatile("mov %%cr3,%0\n\t" : "=r" (val), "=m" (__force_order));
++	return val;
++}
++
++static inline void native_write_cr3(unsigned long val)
++{
++	asm volatile("mov %0,%%cr3": : "r" (val), "m" (__force_order));
++}
++
++static inline unsigned long native_read_cr4(void)
++{
++	unsigned long val;
++	asm volatile("mov %%cr4,%0\n\t" : "=r" (val), "=m" (__force_order));
++	return val;
++}
++
++static inline unsigned long native_read_cr4_safe(void)
++{
++	unsigned long val;
++	/* This could fault if %cr4 does not exist. In x86_64, a cr4 always
++	 * exists, so it will never fail. */
++#ifdef CONFIG_X86_32
++	asm volatile("1: mov %%cr4, %0\n"
++		     "2:\n"
++		     _ASM_EXTABLE(1b, 2b)
++		     : "=r" (val), "=m" (__force_order) : "0" (0));
 +#else
-+/* Try to eliminate some dead code.  */
-+#ifdef CONFIG_ALPHA_EV4
-+#define implver() IMPLVER_EV4
++	val = native_read_cr4();
 +#endif
-+#ifdef CONFIG_ALPHA_EV5
-+#define implver() IMPLVER_EV5
-+#endif
-+#if defined(CONFIG_ALPHA_EV6)
-+#define implver() IMPLVER_EV6
-+#endif
++	return val;
++}
++
++static inline void native_write_cr4(unsigned long val)
++{
++	asm volatile("mov %0,%%cr4": : "r" (val), "m" (__force_order));
++}
++
++#ifdef CONFIG_X86_64
++static inline unsigned long native_read_cr8(void)
++{
++	unsigned long cr8;
++	asm volatile("movq %%cr8,%0" : "=r" (cr8));
++	return cr8;
++}
++
++static inline void native_write_cr8(unsigned long val)
++{
++	asm volatile("movq %0,%%cr8" :: "r" (val) : "memory");
++}
 +#endif
 +
-+enum amask_enum {
-+	AMASK_BWX = (1UL << 0),
-+	AMASK_FIX = (1UL << 1),
-+	AMASK_CIX = (1UL << 2),
-+	AMASK_MAX = (1UL << 8),
-+	AMASK_PRECISE_TRAP = (1UL << 9),
-+};
++static inline void native_wbinvd(void)
++{
++	asm volatile("wbinvd": : :"memory");
++}
 +
-+#define amask(mask)						\
-+({ unsigned long __amask, __input = (mask);			\
-+   __asm__ ("amask %1,%0" : "=r"(__amask) : "rI"(__input));	\
-+   __amask; })
++extern void native_load_gs_index(unsigned);
 +
-+#endif /* __ALPHA_SPECIAL_INSNS_H */
-diff --git a/arch/alpha/include/asm/spinlock.h b/arch/alpha/include/asm/spinlock.h
-index d0faca1..3bba21e 100644
---- a/arch/alpha/include/asm/spinlock.h
-+++ b/arch/alpha/include/asm/spinlock.h
-@@ -1,7 +1,6 @@
- #ifndef _ALPHA_SPINLOCK_H
- #define _ALPHA_SPINLOCK_H
- 
++#ifdef CONFIG_PARAVIRT
++#include <asm/paravirt.h>
++#else
++
++static inline unsigned long read_cr0(void)
++{
++	return native_read_cr0();
++}
++
++static inline void write_cr0(unsigned long x)
++{
++	native_write_cr0(x);
++}
++
++static inline unsigned long read_cr2(void)
++{
++	return native_read_cr2();
++}
++
++static inline void write_cr2(unsigned long x)
++{
++	native_write_cr2(x);
++}
++
++static inline unsigned long read_cr3(void)
++{
++	return native_read_cr3();
++}
++
++static inline void write_cr3(unsigned long x)
++{
++	native_write_cr3(x);
++}
++
++static inline unsigned long read_cr4(void)
++{
++	return native_read_cr4();
++}
++
++static inline unsigned long read_cr4_safe(void)
++{
++	return native_read_cr4_safe();
++}
++
++static inline void write_cr4(unsigned long x)
++{
++	native_write_cr4(x);
++}
++
++static inline void wbinvd(void)
++{
++	native_wbinvd();
++}
++
++#ifdef CONFIG_X86_64
++
++static inline unsigned long read_cr8(void)
++{
++	return native_read_cr8();
++}
++
++static inline void write_cr8(unsigned long x)
++{
++	native_write_cr8(x);
++}
++
++static inline void load_gs_index(unsigned selector)
++{
++	native_load_gs_index(selector);
++}
++
++#endif
++
++/* Clear the 'TS' bit */
++static inline void clts(void)
++{
++	native_clts();
++}
++
++#endif/* CONFIG_PARAVIRT */
++
++#define stts() write_cr0(read_cr0() | X86_CR0_TS)
++
++static inline void clflush(volatile void *__p)
++{
++	asm volatile("clflush %0" : "+m" (*(volatile char __force *)__p));
++}
++
++#define nop() asm volatile ("nop")
++
++
++#endif /* __KERNEL__ */
++
++#endif /* _ASM_X86_SPECIAL_INSNS_H */
+diff --git a/arch/x86/include/asm/stackprotector.h b/arch/x86/include/asm/stackprotector.h
+index 1575177..b5d9533 100644
+--- a/arch/x86/include/asm/stackprotector.h
++++ b/arch/x86/include/asm/stackprotector.h
+@@ -38,7 +38,6 @@
+ #include <asm/tsc.h>
+ #include <asm/processor.h>
+ #include <asm/percpu.h>
 -#include <asm/system.h>
- #include <linux/kernel.h>
- #include <asm/current.h>
+ #include <asm/desc.h>
+ #include <linux/random.h>
  
-diff --git a/arch/alpha/include/asm/switch_to.h b/arch/alpha/include/asm/switch_to.h
+diff --git a/arch/x86/include/asm/switch_to.h b/arch/x86/include/asm/switch_to.h
 new file mode 100644
-index 0000000..44c0d4f
+index 0000000..4ec45b3
 --- /dev/null
-+++ b/arch/alpha/include/asm/switch_to.h
-@@ -0,0 +1,14 @@
-+#ifndef __ALPHA_SWITCH_TO_H
-+#define __ALPHA_SWITCH_TO_H
++++ b/arch/x86/include/asm/switch_to.h
+@@ -0,0 +1,129 @@
++#ifndef _ASM_X86_SWITCH_TO_H
++#define _ASM_X86_SWITCH_TO_H
 +
++struct task_struct; /* one of the stranger aspects of C forward declarations */
++struct task_struct *__switch_to(struct task_struct *prev,
++				struct task_struct *next);
++struct tss_struct;
++void __switch_to_xtra(struct task_struct *prev_p, struct task_struct *next_p,
++		      struct tss_struct *tss);
 +
-+struct task_struct;
-+extern struct task_struct *alpha_switch_to(unsigned long, struct task_struct *);
++#ifdef CONFIG_X86_32
 +
-+#define switch_to(P,N,L)						 \
-+  do {									 \
-+    (L) = alpha_switch_to(virt_to_phys(&task_thread_info(N)->pcb), (P)); \
-+    check_mmu_context();						 \
-+  } while (0)
++#ifdef CONFIG_CC_STACKPROTECTOR
++#define __switch_canary							\
++	"movl %P[task_canary](%[next]), %%ebx\n\t"			\
++	"movl %%ebx, "__percpu_arg([stack_canary])"\n\t"
++#define __switch_canary_oparam						\
++	, [stack_canary] "=m" (stack_canary.canary)
++#define __switch_canary_iparam						\
++	, [task_canary] "i" (offsetof(struct task_struct, stack_canary))
++#else	/* CC_STACKPROTECTOR */
++#define __switch_canary
++#define __switch_canary_oparam
++#define __switch_canary_iparam
++#endif	/* CC_STACKPROTECTOR */
 +
-+#endif /* __ALPHA_SWITCH_TO_H */
-diff --git a/arch/alpha/include/asm/system.h b/arch/alpha/include/asm/system.h
-index 9f78e69..c7270dc 100644
---- a/arch/alpha/include/asm/system.h
-+++ b/arch/alpha/include/asm/system.h
-@@ -1,354 +1,5 @@
--#ifndef __ALPHA_SYSTEM_H
--#define __ALPHA_SYSTEM_H
++/*
++ * Saving eflags is important. It switches not only IOPL between tasks,
++ * it also protects other tasks from NT leaking through sysenter etc.
++ */
++#define switch_to(prev, next, last)					\
++do {									\
++	/*								\
++	 * Context-switching clobbers all registers, so we clobber	\
++	 * them explicitly, via unused output variables.		\
++	 * (EAX and EBP is not listed because EBP is saved/restored	\
++	 * explicitly for wchan access and EAX is the return value of	\
++	 * __switch_to())						\
++	 */								\
++	unsigned long ebx, ecx, edx, esi, edi;				\
++									\
++	asm volatile("pushfl\n\t"		/* save    flags */	\
++		     "pushl %%ebp\n\t"		/* save    EBP   */	\
++		     "movl %%esp,%[prev_sp]\n\t"	/* save    ESP   */ \
++		     "movl %[next_sp],%%esp\n\t"	/* restore ESP   */ \
++		     "movl $1f,%[prev_ip]\n\t"	/* save    EIP   */	\
++		     "pushl %[next_ip]\n\t"	/* restore EIP   */	\
++		     __switch_canary					\
++		     "jmp __switch_to\n"	/* regparm call  */	\
++		     "1:\t"						\
++		     "popl %%ebp\n\t"		/* restore EBP   */	\
++		     "popfl\n"			/* restore flags */	\
++									\
++		     /* output parameters */				\
++		     : [prev_sp] "=m" (prev->thread.sp),		\
++		       [prev_ip] "=m" (prev->thread.ip),		\
++		       "=a" (last),					\
++									\
++		       /* clobbered output registers: */		\
++		       "=b" (ebx), "=c" (ecx), "=d" (edx),		\
++		       "=S" (esi), "=D" (edi)				\
++		       							\
++		       __switch_canary_oparam				\
++									\
++		       /* input parameters: */				\
++		     : [next_sp]  "m" (next->thread.sp),		\
++		       [next_ip]  "m" (next->thread.ip),		\
++		       							\
++		       /* regparm parameters for __switch_to(): */	\
++		       [prev]     "a" (prev),				\
++		       [next]     "d" (next)				\
++									\
++		       __switch_canary_iparam				\
++									\
++		     : /* reloaded segment registers */			\
++			"memory");					\
++} while (0)
++
++#else /* CONFIG_X86_32 */
++
++/* frame pointer must be last for get_wchan */
++#define SAVE_CONTEXT    "pushf ; pushq %%rbp ; movq %%rsi,%%rbp\n\t"
++#define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp ; popf\t"
++
++#define __EXTRA_CLOBBER  \
++	, "rcx", "rbx", "rdx", "r8", "r9", "r10", "r11", \
++	  "r12", "r13", "r14", "r15"
++
++#ifdef CONFIG_CC_STACKPROTECTOR
++#define __switch_canary							  \
++	"movq %P[task_canary](%%rsi),%%r8\n\t"				  \
++	"movq %%r8,"__percpu_arg([gs_canary])"\n\t"
++#define __switch_canary_oparam						  \
++	, [gs_canary] "=m" (irq_stack_union.stack_canary)
++#define __switch_canary_iparam						  \
++	, [task_canary] "i" (offsetof(struct task_struct, stack_canary))
++#else	/* CC_STACKPROTECTOR */
++#define __switch_canary
++#define __switch_canary_oparam
++#define __switch_canary_iparam
++#endif	/* CC_STACKPROTECTOR */
++
++/* Save restore flags to clear handle leaking NT */
++#define switch_to(prev, next, last) \
++	asm volatile(SAVE_CONTEXT					  \
++	     "movq %%rsp,%P[threadrsp](%[prev])\n\t" /* save RSP */	  \
++	     "movq %P[threadrsp](%[next]),%%rsp\n\t" /* restore RSP */	  \
++	     "call __switch_to\n\t"					  \
++	     "movq "__percpu_arg([current_task])",%%rsi\n\t"		  \
++	     __switch_canary						  \
++	     "movq %P[thread_info](%%rsi),%%r8\n\t"			  \
++	     "movq %%rax,%%rdi\n\t" 					  \
++	     "testl  %[_tif_fork],%P[ti_flags](%%r8)\n\t"		  \
++	     "jnz   ret_from_fork\n\t"					  \
++	     RESTORE_CONTEXT						  \
++	     : "=a" (last)					  	  \
++	       __switch_canary_oparam					  \
++	     : [next] "S" (next), [prev] "D" (prev),			  \
++	       [threadrsp] "i" (offsetof(struct task_struct, thread.sp)), \
++	       [ti_flags] "i" (offsetof(struct thread_info, flags)),	  \
++	       [_tif_fork] "i" (_TIF_FORK),			  	  \
++	       [thread_info] "i" (offsetof(struct task_struct, stack)),   \
++	       [current_task] "m" (current_task)			  \
++	       __switch_canary_iparam					  \
++	     : "memory", "cc" __EXTRA_CLOBBER)
++
++#endif /* CONFIG_X86_32 */
++
++#endif /* _ASM_X86_SWITCH_TO_H */
+diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
+index 2d2f01c..0d84f9e 100644
+--- a/arch/x86/include/asm/system.h
++++ b/arch/x86/include/asm/system.h
+@@ -1,523 +1,6 @@
+-#ifndef _ASM_X86_SYSTEM_H
+-#define _ASM_X86_SYSTEM_H
 -
--#include <asm/pal.h>
--#include <asm/page.h>
+-#include <asm/asm.h>
+-#include <asm/segment.h>
+-#include <asm/cpufeature.h>
 +/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
- #include <asm/barrier.h>
++#include <asm/barrier.h>
+ #include <asm/cmpxchg.h>
+-#include <asm/nops.h>
 -
--/*
-- * System defines.. Note that this is included both from .c and .S
-- * files, so it does only defines, not any C code.
-- */
--
--/*
-- * We leave one page for the initial stack page, and one page for
-- * the initial process structure. Also, the console eats 3 MB for
-- * the initial bootloader (one of which we can reclaim later).
-- */
--#define BOOT_PCB	0x20000000
--#define BOOT_ADDR	0x20000000
--/* Remove when official MILO sources have ELF support: */
--#define BOOT_SIZE	(16*1024)
--
--#ifdef CONFIG_ALPHA_LEGACY_START_ADDRESS
--#define KERNEL_START_PHYS	0x300000 /* Old bootloaders hardcoded this.  */
--#else
--#define KERNEL_START_PHYS	0x1000000 /* required: Wildfire/Titan/Marvel */
--#endif
--
--#define KERNEL_START	(PAGE_OFFSET+KERNEL_START_PHYS)
--#define SWAPPER_PGD	KERNEL_START
--#define INIT_STACK	(PAGE_OFFSET+KERNEL_START_PHYS+0x02000)
--#define EMPTY_PGT	(PAGE_OFFSET+KERNEL_START_PHYS+0x04000)
--#define EMPTY_PGE	(PAGE_OFFSET+KERNEL_START_PHYS+0x08000)
--#define ZERO_PGE	(PAGE_OFFSET+KERNEL_START_PHYS+0x0A000)
--
--#define START_ADDR	(PAGE_OFFSET+KERNEL_START_PHYS+0x10000)
--
--/*
-- * This is setup by the secondary bootstrap loader.  Because
-- * the zero page is zeroed out as soon as the vm system is
-- * initialized, we need to copy things out into a more permanent
-- * place.
-- */
--#define PARAM			ZERO_PGE
--#define COMMAND_LINE		((char*)(PARAM + 0x0000))
--#define INITRD_START		(*(unsigned long *) (PARAM+0x100))
--#define INITRD_SIZE		(*(unsigned long *) (PARAM+0x108))
--
--#ifndef __ASSEMBLY__
 -#include <linux/kernel.h>
--#define AT_VECTOR_SIZE_ARCH 4 /* entries in ARCH_DLINFO */
+-#include <linux/irqflags.h>
+-
+-/* entries in ARCH_DLINFO: */
+-#if defined(CONFIG_IA32_EMULATION) || !defined(CONFIG_X86_64)
+-# define AT_VECTOR_SIZE_ARCH 2
+-#else /* else it's non-compat x86-64 */
+-# define AT_VECTOR_SIZE_ARCH 1
+-#endif
+-
+-struct task_struct; /* one of the stranger aspects of C forward declarations */
+-struct task_struct *__switch_to(struct task_struct *prev,
+-				struct task_struct *next);
+-struct tss_struct;
+-void __switch_to_xtra(struct task_struct *prev_p, struct task_struct *next_p,
+-		      struct tss_struct *tss);
+-extern void show_regs_common(void);
+-
+-#ifdef CONFIG_X86_32
+-
+-#ifdef CONFIG_CC_STACKPROTECTOR
+-#define __switch_canary							\
+-	"movl %P[task_canary](%[next]), %%ebx\n\t"			\
+-	"movl %%ebx, "__percpu_arg([stack_canary])"\n\t"
+-#define __switch_canary_oparam						\
+-	, [stack_canary] "=m" (stack_canary.canary)
+-#define __switch_canary_iparam						\
+-	, [task_canary] "i" (offsetof(struct task_struct, stack_canary))
+-#else	/* CC_STACKPROTECTOR */
+-#define __switch_canary
+-#define __switch_canary_oparam
+-#define __switch_canary_iparam
+-#endif	/* CC_STACKPROTECTOR */
 -
 -/*
-- * This is the logout header that should be common to all platforms
-- * (assuming they are running OSF/1 PALcode, I guess).
+- * Saving eflags is important. It switches not only IOPL between tasks,
+- * it also protects other tasks from NT leaking through sysenter etc.
 - */
--struct el_common {
--	unsigned int	size;		/* size in bytes of logout area */
--	unsigned int	sbz1	: 30;	/* should be zero */
--	unsigned int	err2	:  1;	/* second error */
--	unsigned int	retry	:  1;	/* retry flag */
--	unsigned int	proc_offset;	/* processor-specific offset */
--	unsigned int	sys_offset;	/* system-specific offset */
--	unsigned int	code;		/* machine check code */
--	unsigned int	frame_rev;	/* frame revision */
--};
+-#define switch_to(prev, next, last)					\
+-do {									\
+-	/*								\
+-	 * Context-switching clobbers all registers, so we clobber	\
+-	 * them explicitly, via unused output variables.		\
+-	 * (EAX and EBP is not listed because EBP is saved/restored	\
+-	 * explicitly for wchan access and EAX is the return value of	\
+-	 * __switch_to())						\
+-	 */								\
+-	unsigned long ebx, ecx, edx, esi, edi;				\
+-									\
+-	asm volatile("pushfl\n\t"		/* save    flags */	\
+-		     "pushl %%ebp\n\t"		/* save    EBP   */	\
+-		     "movl %%esp,%[prev_sp]\n\t"	/* save    ESP   */ \
+-		     "movl %[next_sp],%%esp\n\t"	/* restore ESP   */ \
+-		     "movl $1f,%[prev_ip]\n\t"	/* save    EIP   */	\
+-		     "pushl %[next_ip]\n\t"	/* restore EIP   */	\
+-		     __switch_canary					\
+-		     "jmp __switch_to\n"	/* regparm call  */	\
+-		     "1:\t"						\
+-		     "popl %%ebp\n\t"		/* restore EBP   */	\
+-		     "popfl\n"			/* restore flags */	\
+-									\
+-		     /* output parameters */				\
+-		     : [prev_sp] "=m" (prev->thread.sp),		\
+-		       [prev_ip] "=m" (prev->thread.ip),		\
+-		       "=a" (last),					\
+-									\
+-		       /* clobbered output registers: */		\
+-		       "=b" (ebx), "=c" (ecx), "=d" (edx),		\
+-		       "=S" (esi), "=D" (edi)				\
+-		       							\
+-		       __switch_canary_oparam				\
+-									\
+-		       /* input parameters: */				\
+-		     : [next_sp]  "m" (next->thread.sp),		\
+-		       [next_ip]  "m" (next->thread.ip),		\
+-		       							\
+-		       /* regparm parameters for __switch_to(): */	\
+-		       [prev]     "a" (prev),				\
+-		       [next]     "d" (next)				\
+-									\
+-		       __switch_canary_iparam				\
+-									\
+-		     : /* reloaded segment registers */			\
+-			"memory");					\
+-} while (0)
 -
--/* Machine Check Frame for uncorrectable errors (Large format)
-- *      --- This is used to log uncorrectable errors such as
-- *          double bit ECC errors.
-- *      --- These errors are detected by both processor and systems.
+-/*
+- * disable hlt during certain critical i/o operations
 - */
--struct el_common_EV5_uncorrectable_mcheck {
--        unsigned long   shadow[8];        /* Shadow reg. 8-14, 25           */
--        unsigned long   paltemp[24];      /* PAL TEMP REGS.                 */
--        unsigned long   exc_addr;         /* Address of excepting instruction*/
--        unsigned long   exc_sum;          /* Summary of arithmetic traps.   */
--        unsigned long   exc_mask;         /* Exception mask (from exc_sum). */
--        unsigned long   pal_base;         /* Base address for PALcode.      */
--        unsigned long   isr;              /* Interrupt Status Reg.          */
--        unsigned long   icsr;             /* CURRENT SETUP OF EV5 IBOX      */
--        unsigned long   ic_perr_stat;     /* I-CACHE Reg. <11> set Data parity
--                                                         <12> set TAG parity*/
--        unsigned long   dc_perr_stat;     /* D-CACHE error Reg. Bits set to 1:
--                                                     <2> Data error in bank 0
--                                                     <3> Data error in bank 1
--                                                     <4> Tag error in bank 0
--                                                     <5> Tag error in bank 1 */
--        unsigned long   va;               /* Effective VA of fault or miss. */
--        unsigned long   mm_stat;          /* Holds the reason for D-stream 
--                                             fault or D-cache parity errors */
--        unsigned long   sc_addr;          /* Address that was being accessed
--                                             when EV5 detected Secondary cache
--                                             failure.                 */
--        unsigned long   sc_stat;          /* Helps determine if the error was
--                                             TAG/Data parity(Secondary Cache)*/
--        unsigned long   bc_tag_addr;      /* Contents of EV5 BC_TAG_ADDR    */
--        unsigned long   ei_addr;          /* Physical address of any transfer
--                                             that is logged in EV5 EI_STAT */
--        unsigned long   fill_syndrome;    /* For correcting ECC errors.     */
--        unsigned long   ei_stat;          /* Helps identify reason of any 
--                                             processor uncorrectable error
--                                             at its external interface.     */
--        unsigned long   ld_lock;          /* Contents of EV5 LD_LOCK register*/
--};
--
--struct el_common_EV6_mcheck {
--	unsigned int FrameSize;		/* Bytes, including this field */
--	unsigned int FrameFlags;	/* <31> = Retry, <30> = Second Error */
--	unsigned int CpuOffset;		/* Offset to CPU-specific info */
--	unsigned int SystemOffset;	/* Offset to system-specific info */
--	unsigned int MCHK_Code;
--	unsigned int MCHK_Frame_Rev;
--	unsigned long I_STAT;		/* EV6 Internal Processor Registers */
--	unsigned long DC_STAT;		/* (See the 21264 Spec) */
--	unsigned long C_ADDR;
--	unsigned long DC1_SYNDROME;
--	unsigned long DC0_SYNDROME;
--	unsigned long C_STAT;
--	unsigned long C_STS;
--	unsigned long MM_STAT;
--	unsigned long EXC_ADDR;
--	unsigned long IER_CM;
--	unsigned long ISUM;
--	unsigned long RESERVED0;
--	unsigned long PAL_BASE;
--	unsigned long I_CTL;
--	unsigned long PCTX;
--};
--
--extern void halt(void) __attribute__((noreturn));
--#define __halt() __asm__ __volatile__ ("call_pal %0 #halt" : : "i" (PAL_halt))
--
--#define switch_to(P,N,L)						 \
--  do {									 \
--    (L) = alpha_switch_to(virt_to_phys(&task_thread_info(N)->pcb), (P)); \
--    check_mmu_context();						 \
--  } while (0)
--
--struct task_struct;
--extern struct task_struct *alpha_switch_to(unsigned long, struct task_struct*);
--
--#define imb() \
--__asm__ __volatile__ ("call_pal %0 #imb" : : "i" (PAL_imb) : "memory")
--
--#define draina() \
--__asm__ __volatile__ ("call_pal %0 #draina" : : "i" (PAL_draina) : "memory")
--
--enum implver_enum {
--	IMPLVER_EV4,
--	IMPLVER_EV5,
--	IMPLVER_EV6
--};
--
--#ifdef CONFIG_ALPHA_GENERIC
--#define implver()				\
--({ unsigned long __implver;			\
--   __asm__ ("implver %0" : "=r"(__implver));	\
--   (enum implver_enum) __implver; })
+-#define HAVE_DISABLE_HLT
 -#else
--/* Try to eliminate some dead code.  */
--#ifdef CONFIG_ALPHA_EV4
--#define implver() IMPLVER_EV4
+-
+-/* frame pointer must be last for get_wchan */
+-#define SAVE_CONTEXT    "pushf ; pushq %%rbp ; movq %%rsi,%%rbp\n\t"
+-#define RESTORE_CONTEXT "movq %%rbp,%%rsi ; popq %%rbp ; popf\t"
+-
+-#define __EXTRA_CLOBBER  \
+-	, "rcx", "rbx", "rdx", "r8", "r9", "r10", "r11", \
+-	  "r12", "r13", "r14", "r15"
+-
+-#ifdef CONFIG_CC_STACKPROTECTOR
+-#define __switch_canary							  \
+-	"movq %P[task_canary](%%rsi),%%r8\n\t"				  \
+-	"movq %%r8,"__percpu_arg([gs_canary])"\n\t"
+-#define __switch_canary_oparam						  \
+-	, [gs_canary] "=m" (irq_stack_union.stack_canary)
+-#define __switch_canary_iparam						  \
+-	, [task_canary] "i" (offsetof(struct task_struct, stack_canary))
+-#else	/* CC_STACKPROTECTOR */
+-#define __switch_canary
+-#define __switch_canary_oparam
+-#define __switch_canary_iparam
+-#endif	/* CC_STACKPROTECTOR */
+-
+-/* Save restore flags to clear handle leaking NT */
+-#define switch_to(prev, next, last) \
+-	asm volatile(SAVE_CONTEXT					  \
+-	     "movq %%rsp,%P[threadrsp](%[prev])\n\t" /* save RSP */	  \
+-	     "movq %P[threadrsp](%[next]),%%rsp\n\t" /* restore RSP */	  \
+-	     "call __switch_to\n\t"					  \
+-	     "movq "__percpu_arg([current_task])",%%rsi\n\t"		  \
+-	     __switch_canary						  \
+-	     "movq %P[thread_info](%%rsi),%%r8\n\t"			  \
+-	     "movq %%rax,%%rdi\n\t" 					  \
+-	     "testl  %[_tif_fork],%P[ti_flags](%%r8)\n\t"		  \
+-	     "jnz   ret_from_fork\n\t"					  \
+-	     RESTORE_CONTEXT						  \
+-	     : "=a" (last)					  	  \
+-	       __switch_canary_oparam					  \
+-	     : [next] "S" (next), [prev] "D" (prev),			  \
+-	       [threadrsp] "i" (offsetof(struct task_struct, thread.sp)), \
+-	       [ti_flags] "i" (offsetof(struct thread_info, flags)),	  \
+-	       [_tif_fork] "i" (_TIF_FORK),			  	  \
+-	       [thread_info] "i" (offsetof(struct task_struct, stack)),   \
+-	       [current_task] "m" (current_task)			  \
+-	       __switch_canary_iparam					  \
+-	     : "memory", "cc" __EXTRA_CLOBBER)
 -#endif
--#ifdef CONFIG_ALPHA_EV5
--#define implver() IMPLVER_EV5
--#endif
--#if defined(CONFIG_ALPHA_EV6)
--#define implver() IMPLVER_EV6
--#endif
--#endif
 -
--enum amask_enum {
--	AMASK_BWX = (1UL << 0),
--	AMASK_FIX = (1UL << 1),
--	AMASK_CIX = (1UL << 2),
--	AMASK_MAX = (1UL << 8),
--	AMASK_PRECISE_TRAP = (1UL << 9),
--};
+-#ifdef __KERNEL__
 -
--#define amask(mask)						\
--({ unsigned long __amask, __input = (mask);			\
--   __asm__ ("amask %1,%0" : "=r"(__amask) : "rI"(__input));	\
--   __amask; })
--
--#define __CALL_PAL_R0(NAME, TYPE)				\
--extern inline TYPE NAME(void)					\
--{								\
--	register TYPE __r0 __asm__("$0");			\
--	__asm__ __volatile__(					\
--		"call_pal %1 # " #NAME				\
--		:"=r" (__r0)					\
--		:"i" (PAL_ ## NAME)				\
--		:"$1", "$16", "$22", "$23", "$24", "$25");	\
--	return __r0;						\
--}
--
--#define __CALL_PAL_W1(NAME, TYPE0)				\
--extern inline void NAME(TYPE0 arg0)				\
--{								\
--	register TYPE0 __r16 __asm__("$16") = arg0;		\
--	__asm__ __volatile__(					\
--		"call_pal %1 # "#NAME				\
--		: "=r"(__r16)					\
--		: "i"(PAL_ ## NAME), "0"(__r16)			\
--		: "$1", "$22", "$23", "$24", "$25");		\
--}
--
--#define __CALL_PAL_W2(NAME, TYPE0, TYPE1)			\
--extern inline void NAME(TYPE0 arg0, TYPE1 arg1)			\
--{								\
--	register TYPE0 __r16 __asm__("$16") = arg0;		\
--	register TYPE1 __r17 __asm__("$17") = arg1;		\
--	__asm__ __volatile__(					\
--		"call_pal %2 # "#NAME				\
--		: "=r"(__r16), "=r"(__r17)			\
--		: "i"(PAL_ ## NAME), "0"(__r16), "1"(__r17)	\
--		: "$1", "$22", "$23", "$24", "$25");		\
--}
--
--#define __CALL_PAL_RW1(NAME, RTYPE, TYPE0)			\
--extern inline RTYPE NAME(TYPE0 arg0)				\
--{								\
--	register RTYPE __r0 __asm__("$0");			\
--	register TYPE0 __r16 __asm__("$16") = arg0;		\
--	__asm__ __volatile__(					\
--		"call_pal %2 # "#NAME				\
--		: "=r"(__r16), "=r"(__r0)			\
--		: "i"(PAL_ ## NAME), "0"(__r16)			\
--		: "$1", "$22", "$23", "$24", "$25");		\
--	return __r0;						\
--}
--
--#define __CALL_PAL_RW2(NAME, RTYPE, TYPE0, TYPE1)		\
--extern inline RTYPE NAME(TYPE0 arg0, TYPE1 arg1)		\
--{								\
--	register RTYPE __r0 __asm__("$0");			\
--	register TYPE0 __r16 __asm__("$16") = arg0;		\
--	register TYPE1 __r17 __asm__("$17") = arg1;		\
--	__asm__ __volatile__(					\
--		"call_pal %3 # "#NAME				\
--		: "=r"(__r16), "=r"(__r17), "=r"(__r0)		\
--		: "i"(PAL_ ## NAME), "0"(__r16), "1"(__r17)	\
--		: "$1", "$22", "$23", "$24", "$25");		\
--	return __r0;						\
--}
--
--__CALL_PAL_W1(cflush, unsigned long);
--__CALL_PAL_R0(rdmces, unsigned long);
--__CALL_PAL_R0(rdps, unsigned long);
--__CALL_PAL_R0(rdusp, unsigned long);
--__CALL_PAL_RW1(swpipl, unsigned long, unsigned long);
--__CALL_PAL_R0(whami, unsigned long);
--__CALL_PAL_W2(wrent, void*, unsigned long);
--__CALL_PAL_W1(wripir, unsigned long);
--__CALL_PAL_W1(wrkgp, unsigned long);
--__CALL_PAL_W1(wrmces, unsigned long);
--__CALL_PAL_RW2(wrperfmon, unsigned long, unsigned long, unsigned long);
--__CALL_PAL_W1(wrusp, unsigned long);
--__CALL_PAL_W1(wrvptptr, unsigned long);
+-extern void native_load_gs_index(unsigned);
 -
 -/*
-- * TB routines..
+- * Load a segment. Fall back on loading the zero
+- * segment if something goes wrong..
 - */
--#define __tbi(nr,arg,arg1...)					\
--({								\
--	register unsigned long __r16 __asm__("$16") = (nr);	\
--	register unsigned long __r17 __asm__("$17"); arg;	\
--	__asm__ __volatile__(					\
--		"call_pal %3 #__tbi"				\
--		:"=r" (__r16),"=r" (__r17)			\
--		:"0" (__r16),"i" (PAL_tbi) ,##arg1		\
--		:"$0", "$1", "$22", "$23", "$24", "$25");	\
--})
--
--#define tbi(x,y)	__tbi(x,__r17=(y),"1" (__r17))
--#define tbisi(x)	__tbi(1,__r17=(x),"1" (__r17))
--#define tbisd(x)	__tbi(2,__r17=(x),"1" (__r17))
--#define tbis(x)		__tbi(3,__r17=(x),"1" (__r17))
--#define tbiap()		__tbi(-1, /* no second argument */)
--#define tbia()		__tbi(-2, /* no second argument */)
+-#define loadsegment(seg, value)						\
+-do {									\
+-	unsigned short __val = (value);					\
+-									\
+-	asm volatile("						\n"	\
+-		     "1:	movl %k0,%%" #seg "		\n"	\
+-									\
+-		     ".section .fixup,\"ax\"			\n"	\
+-		     "2:	xorl %k0,%k0			\n"	\
+-		     "		jmp 1b				\n"	\
+-		     ".previous					\n"	\
+-									\
+-		     _ASM_EXTABLE(1b, 2b)				\
+-									\
+-		     : "+r" (__val) : : "memory");			\
+-} while (0)
 -
 -/*
-- * Atomic exchange routines.
+- * Save a segment register away
 - */
+-#define savesegment(seg, value)				\
+-	asm("mov %%" #seg ",%0":"=r" (value) : : "memory")
 -
--#define __ASM__MB
--#define ____xchg(type, args...)		__xchg ## type ## _local(args)
--#define ____cmpxchg(type, args...)	__cmpxchg ## type ## _local(args)
--#include <asm/xchg.h>
+-/*
+- * x86_32 user gs accessors.
+- */
+-#ifdef CONFIG_X86_32
+-#ifdef CONFIG_X86_32_LAZY_GS
+-#define get_user_gs(regs)	(u16)({unsigned long v; savesegment(gs, v); v;})
+-#define set_user_gs(regs, v)	loadsegment(gs, (unsigned long)(v))
+-#define task_user_gs(tsk)	((tsk)->thread.gs)
+-#define lazy_save_gs(v)		savesegment(gs, (v))
+-#define lazy_load_gs(v)		loadsegment(gs, (v))
+-#else	/* X86_32_LAZY_GS */
+-#define get_user_gs(regs)	(u16)((regs)->gs)
+-#define set_user_gs(regs, v)	do { (regs)->gs = (v); } while (0)
+-#define task_user_gs(tsk)	(task_pt_regs(tsk)->gs)
+-#define lazy_save_gs(v)		do { } while (0)
+-#define lazy_load_gs(v)		do { } while (0)
+-#endif	/* X86_32_LAZY_GS */
+-#endif	/* X86_32 */
 -
--#define xchg_local(ptr,x)						\
--  ({									\
--     __typeof__(*(ptr)) _x_ = (x);					\
--     (__typeof__(*(ptr))) __xchg_local((ptr), (unsigned long)_x_,	\
--				       sizeof(*(ptr)));			\
--  })
+-static inline unsigned long get_limit(unsigned long segment)
+-{
+-	unsigned long __limit;
+-	asm("lsll %1,%0" : "=r" (__limit) : "r" (segment));
+-	return __limit + 1;
+-}
 -
--#define cmpxchg_local(ptr, o, n)					\
--  ({									\
--     __typeof__(*(ptr)) _o_ = (o);					\
--     __typeof__(*(ptr)) _n_ = (n);					\
--     (__typeof__(*(ptr))) __cmpxchg_local((ptr), (unsigned long)_o_,	\
--					  (unsigned long)_n_,		\
--					  sizeof(*(ptr)));		\
--  })
+-static inline void native_clts(void)
+-{
+-	asm volatile("clts");
+-}
 -
--#define cmpxchg64_local(ptr, o, n)					\
--  ({									\
--	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
--	cmpxchg_local((ptr), (o), (n));					\
--  })
+-/*
+- * Volatile isn't enough to prevent the compiler from reordering the
+- * read/write functions for the control registers and messing everything up.
+- * A memory clobber would solve the problem, but would prevent reordering of
+- * all loads stores around it, which can hurt performance. Solution is to
+- * use a variable and mimic reads and writes to it to enforce serialization
+- */
+-static unsigned long __force_order;
+-
+-static inline unsigned long native_read_cr0(void)
+-{
+-	unsigned long val;
+-	asm volatile("mov %%cr0,%0\n\t" : "=r" (val), "=m" (__force_order));
+-	return val;
+-}
+-
+-static inline void native_write_cr0(unsigned long val)
+-{
+-	asm volatile("mov %0,%%cr0": : "r" (val), "m" (__force_order));
+-}
+-
+-static inline unsigned long native_read_cr2(void)
+-{
+-	unsigned long val;
+-	asm volatile("mov %%cr2,%0\n\t" : "=r" (val), "=m" (__force_order));
+-	return val;
+-}
+-
+-static inline void native_write_cr2(unsigned long val)
+-{
+-	asm volatile("mov %0,%%cr2": : "r" (val), "m" (__force_order));
+-}
+-
+-static inline unsigned long native_read_cr3(void)
+-{
+-	unsigned long val;
+-	asm volatile("mov %%cr3,%0\n\t" : "=r" (val), "=m" (__force_order));
+-	return val;
+-}
+-
+-static inline void native_write_cr3(unsigned long val)
+-{
+-	asm volatile("mov %0,%%cr3": : "r" (val), "m" (__force_order));
+-}
+-
+-static inline unsigned long native_read_cr4(void)
+-{
+-	unsigned long val;
+-	asm volatile("mov %%cr4,%0\n\t" : "=r" (val), "=m" (__force_order));
+-	return val;
+-}
+-
+-static inline unsigned long native_read_cr4_safe(void)
+-{
+-	unsigned long val;
+-	/* This could fault if %cr4 does not exist. In x86_64, a cr4 always
+-	 * exists, so it will never fail. */
+-#ifdef CONFIG_X86_32
+-	asm volatile("1: mov %%cr4, %0\n"
+-		     "2:\n"
+-		     _ASM_EXTABLE(1b, 2b)
+-		     : "=r" (val), "=m" (__force_order) : "0" (0));
+-#else
+-	val = native_read_cr4();
+-#endif
+-	return val;
+-}
+-
+-static inline void native_write_cr4(unsigned long val)
+-{
+-	asm volatile("mov %0,%%cr4": : "r" (val), "m" (__force_order));
+-}
+-
+-#ifdef CONFIG_X86_64
+-static inline unsigned long native_read_cr8(void)
+-{
+-	unsigned long cr8;
+-	asm volatile("movq %%cr8,%0" : "=r" (cr8));
+-	return cr8;
+-}
+-
+-static inline void native_write_cr8(unsigned long val)
+-{
+-	asm volatile("movq %0,%%cr8" :: "r" (val) : "memory");
+-}
+-#endif
+-
+-static inline void native_wbinvd(void)
+-{
+-	asm volatile("wbinvd": : :"memory");
+-}
+-
+-#ifdef CONFIG_PARAVIRT
+-#include <asm/paravirt.h>
+-#else
+-
+-static inline unsigned long read_cr0(void)
+-{
+-	return native_read_cr0();
+-}
+-
+-static inline void write_cr0(unsigned long x)
+-{
+-	native_write_cr0(x);
+-}
+-
+-static inline unsigned long read_cr2(void)
+-{
+-	return native_read_cr2();
+-}
+-
+-static inline void write_cr2(unsigned long x)
+-{
+-	native_write_cr2(x);
+-}
+-
+-static inline unsigned long read_cr3(void)
+-{
+-	return native_read_cr3();
+-}
+-
+-static inline void write_cr3(unsigned long x)
+-{
+-	native_write_cr3(x);
+-}
+-
+-static inline unsigned long read_cr4(void)
+-{
+-	return native_read_cr4();
+-}
+-
+-static inline unsigned long read_cr4_safe(void)
+-{
+-	return native_read_cr4_safe();
+-}
+-
+-static inline void write_cr4(unsigned long x)
+-{
+-	native_write_cr4(x);
+-}
+-
+-static inline void wbinvd(void)
+-{
+-	native_wbinvd();
+-}
+-
+-#ifdef CONFIG_X86_64
+-
+-static inline unsigned long read_cr8(void)
+-{
+-	return native_read_cr8();
+-}
+-
+-static inline void write_cr8(unsigned long x)
+-{
+-	native_write_cr8(x);
+-}
+-
+-static inline void load_gs_index(unsigned selector)
+-{
+-	native_load_gs_index(selector);
+-}
+-
+-#endif
+-
+-/* Clear the 'TS' bit */
+-static inline void clts(void)
+-{
+-	native_clts();
+-}
+-
+-#endif/* CONFIG_PARAVIRT */
+-
+-#define stts() write_cr0(read_cr0() | X86_CR0_TS)
+-
+-#endif /* __KERNEL__ */
+-
+-static inline void clflush(volatile void *__p)
+-{
+-	asm volatile("clflush %0" : "+m" (*(volatile char __force *)__p));
+-}
+-
+-#define nop() asm volatile ("nop")
+-
+-void disable_hlt(void);
+-void enable_hlt(void);
+-
+-void cpu_idle_wait(void);
+-
+-extern unsigned long arch_align_stack(unsigned long sp);
+-extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
+-
+-void default_idle(void);
+-bool set_pm_idle_to_default(void);
+-
+-void stop_this_cpu(void *dummy);
+-
+-/*
+- * Force strict CPU ordering.
+- * And yes, this is required on UP too when we're talking
+- * to devices.
+- */
+-#ifdef CONFIG_X86_32
+-/*
+- * Some non-Intel clones support out of order store. wmb() ceases to be a
+- * nop for these.
+- */
+-#define mb() alternative("lock; addl $0,0(%%esp)", "mfence", X86_FEATURE_XMM2)
+-#define rmb() alternative("lock; addl $0,0(%%esp)", "lfence", X86_FEATURE_XMM2)
+-#define wmb() alternative("lock; addl $0,0(%%esp)", "sfence", X86_FEATURE_XMM)
+-#else
+-#define mb() 	asm volatile("mfence":::"memory")
+-#define rmb()	asm volatile("lfence":::"memory")
+-#define wmb()	asm volatile("sfence" ::: "memory")
+-#endif
+-
+-/**
+- * read_barrier_depends - Flush all pending reads that subsequents reads
+- * depend on.
+- *
+- * No data-dependent reads from memory-like regions are ever reordered
+- * over this barrier.  All reads preceding this primitive are guaranteed
+- * to access memory (but not necessarily other CPUs' caches) before any
+- * reads following this primitive that depend on the data return by
+- * any of the preceding reads.  This primitive is much lighter weight than
+- * rmb() on most CPUs, and is never heavier weight than is
+- * rmb().
+- *
+- * These ordering constraints are respected by both the local CPU
+- * and the compiler.
+- *
+- * Ordering is not guaranteed by anything other than these primitives,
+- * not even by data dependencies.  See the documentation for
+- * memory_barrier() for examples and URLs to more information.
+- *
+- * For example, the following code would force ordering (the initial
+- * value of "a" is zero, "b" is one, and "p" is "&a"):
+- *
+- * <programlisting>
+- *	CPU 0				CPU 1
+- *
+- *	b = 2;
+- *	memory_barrier();
+- *	p = &b;				q = p;
+- *					read_barrier_depends();
+- *					d = *q;
+- * </programlisting>
+- *
+- * because the read of "*q" depends on the read of "p" and these
+- * two reads are separated by a read_barrier_depends().  However,
+- * the following code, with the same initial values for "a" and "b":
+- *
+- * <programlisting>
+- *	CPU 0				CPU 1
+- *
+- *	a = 2;
+- *	memory_barrier();
+- *	b = 3;				y = b;
+- *					read_barrier_depends();
+- *					x = a;
+- * </programlisting>
+- *
+- * does not enforce ordering, since there is no data dependency between
+- * the read of "a" and the read of "b".  Therefore, on some CPUs, such
+- * as Alpha, "y" could be set to 3 and "x" to 0.  Use rmb()
+- * in cases like this where there are no data dependencies.
+- **/
+-
+-#define read_barrier_depends()	do { } while (0)
 -
 -#ifdef CONFIG_SMP
--#undef __ASM__MB
--#define __ASM__MB	"\tmb\n"
+-#define smp_mb()	mb()
+-#ifdef CONFIG_X86_PPRO_FENCE
+-# define smp_rmb()	rmb()
+-#else
+-# define smp_rmb()	barrier()
 -#endif
--#undef ____xchg
--#undef ____cmpxchg
--#define ____xchg(type, args...)		__xchg ##type(args)
--#define ____cmpxchg(type, args...)	__cmpxchg ##type(args)
--#include <asm/xchg.h>
--
--#define xchg(ptr,x)							\
--  ({									\
--     __typeof__(*(ptr)) _x_ = (x);					\
--     (__typeof__(*(ptr))) __xchg((ptr), (unsigned long)_x_,		\
--				 sizeof(*(ptr)));			\
--  })
--
--#define cmpxchg(ptr, o, n)						\
--  ({									\
--     __typeof__(*(ptr)) _o_ = (o);					\
--     __typeof__(*(ptr)) _n_ = (n);					\
--     (__typeof__(*(ptr))) __cmpxchg((ptr), (unsigned long)_o_,		\
--				    (unsigned long)_n_,	sizeof(*(ptr)));\
--  })
--
--#define cmpxchg64(ptr, o, n)						\
--  ({									\
--	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
--	cmpxchg((ptr), (o), (n));					\
--  })
--
--#undef __ASM__MB
--#undef ____cmpxchg
--
--#define __HAVE_ARCH_CMPXCHG 1
--
--#endif /* __ASSEMBLY__ */
--
--#define arch_align_stack(x) (x)
--
+-#ifdef CONFIG_X86_OOSTORE
+-# define smp_wmb() 	wmb()
+-#else
+-# define smp_wmb()	barrier()
 -#endif
+-#define smp_read_barrier_depends()	read_barrier_depends()
+-#define set_mb(var, value) do { (void)xchg(&var, value); } while (0)
+-#else
+-#define smp_mb()	barrier()
+-#define smp_rmb()	barrier()
+-#define smp_wmb()	barrier()
+-#define smp_read_barrier_depends()	do { } while (0)
+-#define set_mb(var, value) do { var = value; barrier(); } while (0)
+-#endif
+-
+-/*
+- * Stop RDTSC speculation. This is needed when you need to use RDTSC
+- * (or get_cycles or vread that possibly accesses the TSC) in a defined
+- * code region.
+- *
+- * (Could use an alternative three way for this if there was one.)
+- */
+-static __always_inline void rdtsc_barrier(void)
+-{
+-	alternative(ASM_NOP3, "mfence", X86_FEATURE_MFENCE_RDTSC);
+-	alternative(ASM_NOP3, "lfence", X86_FEATURE_LFENCE_RDTSC);
+-}
+-
+-/*
+- * We handle most unaligned accesses in hardware.  On the other hand
+- * unaligned DMA can be quite expensive on some Nehalem processors.
+- *
+- * Based on this we disable the IP header alignment in network drivers.
+- */
+-#define NET_IP_ALIGN	0
+-#endif /* _ASM_X86_SYSTEM_H */
 +#include <asm/exec.h>
 +#include <asm/special_insns.h>
 +#include <asm/switch_to.h>
-diff --git a/arch/alpha/include/asm/xchg.h b/arch/alpha/include/asm/xchg.h
-index beba1b8..1d1b436 100644
---- a/arch/alpha/include/asm/xchg.h
-+++ b/arch/alpha/include/asm/xchg.h
-@@ -1,4 +1,4 @@
--#ifndef __ALPHA_SYSTEM_H
-+#ifndef _ALPHA_ATOMIC_H
- #error Do not include xchg.h directly!
- #else
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 169be89..c0e108e 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -5,7 +5,7 @@
+ #include <linux/sched.h>
+ 
+ #include <asm/processor.h>
+-#include <asm/system.h>
++#include <asm/special_insns.h>
+ 
+ #ifdef CONFIG_PARAVIRT
+ #include <asm/paravirt.h>
+diff --git a/arch/x86/include/asm/virtext.h b/arch/x86/include/asm/virtext.h
+index e0f9aa1..5da71c2 100644
+--- a/arch/x86/include/asm/virtext.h
++++ b/arch/x86/include/asm/virtext.h
+@@ -16,7 +16,6 @@
+ #define _ASM_X86_VIRTEX_H
+ 
+ #include <asm/processor.h>
+-#include <asm/system.h>
+ 
+ #include <asm/vmx.h>
+ #include <asm/svm.h>
+diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
+index f50e7fb..d2b7f27 100644
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -14,6 +14,7 @@
+ #include <acpi/processor.h>
+ #include <asm/acpi.h>
+ #include <asm/mwait.h>
++#include <asm/special_insns.h>
+ 
  /*
-diff --git a/arch/alpha/kernel/core_apecs.c b/arch/alpha/kernel/core_apecs.c
-index ca46b2c..708c831 100644
---- a/arch/alpha/kernel/core_apecs.c
-+++ b/arch/alpha/kernel/core_apecs.c
-@@ -21,6 +21,7 @@
- 
- #include <asm/ptrace.h>
- #include <asm/smp.h>
-+#include <asm/mce.h>
- 
- #include "proto.h"
- #include "pci_impl.h"
-diff --git a/arch/alpha/kernel/core_cia.c b/arch/alpha/kernel/core_cia.c
-index 1d6ee6c..c44339e 100644
---- a/arch/alpha/kernel/core_cia.c
-+++ b/arch/alpha/kernel/core_cia.c
-@@ -23,6 +23,7 @@
- #include <linux/bootmem.h>
- 
- #include <asm/ptrace.h>
-+#include <asm/mce.h>
- 
- #include "proto.h"
- #include "pci_impl.h"
-diff --git a/arch/alpha/kernel/core_t2.c b/arch/alpha/kernel/core_t2.c
-index 2f770e9..3ada4f7 100644
---- a/arch/alpha/kernel/core_t2.c
-+++ b/arch/alpha/kernel/core_t2.c
-@@ -21,6 +21,7 @@
- 
- #include <asm/ptrace.h>
- #include <asm/delay.h>
-+#include <asm/mce.h>
- 
- #include "proto.h"
- #include "pci_impl.h"
-diff --git a/arch/alpha/kernel/err_impl.h b/arch/alpha/kernel/err_impl.h
-index 0c010ca..ae529c4 100644
---- a/arch/alpha/kernel/err_impl.h
-+++ b/arch/alpha/kernel/err_impl.h
-@@ -7,6 +7,8 @@
-  * 	implementations.
-  */
- 
-+#include <asm/mce.h>
-+
- union el_timestamp;
- struct el_subpacket;
- struct ev7_lf_subpackets;
-diff --git a/arch/alpha/kernel/head.S b/arch/alpha/kernel/head.S
-index 4bdd1d2..c352499 100644
---- a/arch/alpha/kernel/head.S
-+++ b/arch/alpha/kernel/head.S
-@@ -8,14 +8,12 @@
-  */
- 
- #include <linux/init.h>
--#include <asm/system.h>
- #include <asm/asm-offsets.h>
-+#include <asm/pal.h>
-+#include <asm/setup.h>
- 
- __HEAD
--.globl swapper_pg_dir
- .globl _stext
--swapper_pg_dir=SWAPPER_PGD
--
- 	.set noreorder
- 	.globl	__start
- 	.ent	__start
-diff --git a/arch/alpha/kernel/irq.c b/arch/alpha/kernel/irq.c
-index 381431a..2872acc 100644
---- a/arch/alpha/kernel/irq.c
-+++ b/arch/alpha/kernel/irq.c
-@@ -26,7 +26,6 @@
- #include <linux/profile.h>
- #include <linux/bitops.h>
+  * Initialize bm_flags based on the CPU cache properties
+diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
+index f76623c..56585a5 100644
+--- a/arch/x86/kernel/apm_32.c
++++ b/arch/x86/kernel/apm_32.c
+@@ -231,7 +231,6 @@
+ #include <linux/syscore_ops.h>
+ #include <linux/i8253.h>
  
 -#include <asm/system.h>
- #include <asm/io.h>
  #include <asm/uaccess.h>
+ #include <asm/desc.h>
+ #include <asm/olpc.h>
+diff --git a/arch/x86/kernel/cpu/mcheck/p5.c b/arch/x86/kernel/cpu/mcheck/p5.c
+index 5c0e653..2d5454c 100644
+--- a/arch/x86/kernel/cpu/mcheck/p5.c
++++ b/arch/x86/kernel/cpu/mcheck/p5.c
+@@ -9,7 +9,6 @@
+ #include <linux/smp.h>
  
-diff --git a/arch/alpha/kernel/irq_alpha.c b/arch/alpha/kernel/irq_alpha.c
-index 51b7fbd..772ddfd 100644
---- a/arch/alpha/kernel/irq_alpha.c
-+++ b/arch/alpha/kernel/irq_alpha.c
-@@ -11,6 +11,7 @@
- #include <asm/machvec.h>
- #include <asm/dma.h>
- #include <asm/perf_event.h>
-+#include <asm/mce.h>
- 
- #include "proto.h"
- #include "irq_impl.h"
-diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
-index 01e8715..49ee319 100644
---- a/arch/alpha/kernel/osf_sys.c
-+++ b/arch/alpha/kernel/osf_sys.c
-@@ -40,7 +40,6 @@
- #include <asm/fpu.h>
- #include <asm/io.h>
- #include <asm/uaccess.h>
+ #include <asm/processor.h>
 -#include <asm/system.h>
- #include <asm/sysinfo.h>
- #include <asm/thread_info.h>
- #include <asm/hwrpb.h>
-diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
-index 89bbe5b..153d3fc 100644
---- a/arch/alpha/kernel/process.c
-+++ b/arch/alpha/kernel/process.c
-@@ -31,7 +31,6 @@
+ #include <asm/mce.h>
+ #include <asm/msr.h>
  
- #include <asm/reg.h>
- #include <asm/uaccess.h>
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 67bb17a..47a1870 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -25,7 +25,6 @@
+ #include <linux/cpu.h>
+ 
+ #include <asm/processor.h>
 -#include <asm/system.h>
- #include <asm/io.h>
- #include <asm/pgtable.h>
- #include <asm/hwrpb.h>
-diff --git a/arch/alpha/kernel/ptrace.c b/arch/alpha/kernel/ptrace.c
-index e2af5eb..54616f4 100644
---- a/arch/alpha/kernel/ptrace.c
-+++ b/arch/alpha/kernel/ptrace.c
-@@ -16,7 +16,6 @@
- 
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
--#include <asm/system.h>
- #include <asm/fpu.h>
- 
- #include "proto.h"
-diff --git a/arch/alpha/kernel/setup.c b/arch/alpha/kernel/setup.c
-index 32de560..9e3107cc5 100644
---- a/arch/alpha/kernel/setup.c
-+++ b/arch/alpha/kernel/setup.c
-@@ -55,7 +55,6 @@ static struct notifier_block alpha_panic_block = {
- 
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
--#include <asm/system.h>
- #include <asm/hwrpb.h>
- #include <asm/dma.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_alcor.c b/arch/alpha/kernel/sys_alcor.c
-index 8606d77..118dc6a 100644
---- a/arch/alpha/kernel/sys_alcor.c
-+++ b/arch/alpha/kernel/sys_alcor.c
-@@ -18,7 +18,6 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/io.h>
- #include <asm/dma.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_cabriolet.c b/arch/alpha/kernel/sys_cabriolet.c
-index 1029619..4c50f8f 100644
---- a/arch/alpha/kernel/sys_cabriolet.c
-+++ b/arch/alpha/kernel/sys_cabriolet.c
-@@ -18,7 +18,6 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_dp264.c b/arch/alpha/kernel/sys_dp264.c
-index bb7f0c7..1447d21 100644
---- a/arch/alpha/kernel/sys_dp264.c
-+++ b/arch/alpha/kernel/sys_dp264.c
-@@ -21,7 +21,6 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_eb64p.c b/arch/alpha/kernel/sys_eb64p.c
-index 3c6c13c..ad40a42 100644
---- a/arch/alpha/kernel/sys_eb64p.c
-+++ b/arch/alpha/kernel/sys_eb64p.c
-@@ -17,7 +17,6 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_eiger.c b/arch/alpha/kernel/sys_eiger.c
-index 35f480d..79d69d7 100644
---- a/arch/alpha/kernel/sys_eiger.c
-+++ b/arch/alpha/kernel/sys_eiger.c
-@@ -18,7 +18,6 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_jensen.c b/arch/alpha/kernel/sys_jensen.c
-index 7f1a87f1..5a0af11 100644
---- a/arch/alpha/kernel/sys_jensen.c
-+++ b/arch/alpha/kernel/sys_jensen.c
-@@ -15,7 +15,6 @@
+ #include <asm/apic.h>
+ #include <asm/idle.h>
+ #include <asm/mce.h>
+diff --git a/arch/x86/kernel/cpu/mcheck/winchip.c b/arch/x86/kernel/cpu/mcheck/winchip.c
+index 54060f5..2d7998f 100644
+--- a/arch/x86/kernel/cpu/mcheck/winchip.c
++++ b/arch/x86/kernel/cpu/mcheck/winchip.c
+@@ -8,7 +8,6 @@
  #include <linux/init.h>
  
- #include <asm/ptrace.h>
+ #include <asm/processor.h>
 -#include <asm/system.h>
+ #include <asm/mce.h>
+ #include <asm/msr.h>
  
- #define __EXTERN_INLINE inline
- #include <asm/io.h>
-diff --git a/arch/alpha/kernel/sys_marvel.c b/arch/alpha/kernel/sys_marvel.c
-index 95cfc83..e8b4f6f 100644
---- a/arch/alpha/kernel/sys_marvel.c
-+++ b/arch/alpha/kernel/sys_marvel.c
-@@ -13,7 +13,6 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_miata.c b/arch/alpha/kernel/sys_miata.c
-index 258da68..d5b9776 100644
---- a/arch/alpha/kernel/sys_miata.c
-+++ b/arch/alpha/kernel/sys_miata.c
-@@ -17,7 +17,6 @@
- #include <linux/reboot.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_mikasa.c b/arch/alpha/kernel/sys_mikasa.c
-index c0fd728..5e82dc1 100644
---- a/arch/alpha/kernel/sys_mikasa.c
-+++ b/arch/alpha/kernel/sys_mikasa.c
-@@ -17,7 +17,7 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
-+#include <asm/mce.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_nautilus.c b/arch/alpha/kernel/sys_nautilus.c
-index 4112200..4d4c046 100644
---- a/arch/alpha/kernel/sys_nautilus.c
-+++ b/arch/alpha/kernel/sys_nautilus.c
-@@ -35,7 +35,6 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_noritake.c b/arch/alpha/kernel/sys_noritake.c
-index 2172528..063e594 100644
---- a/arch/alpha/kernel/sys_noritake.c
-+++ b/arch/alpha/kernel/sys_noritake.c
-@@ -18,7 +18,7 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
-+#include <asm/mce.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_rawhide.c b/arch/alpha/kernel/sys_rawhide.c
-index a125d6b..dfd510a 100644
---- a/arch/alpha/kernel/sys_rawhide.c
-+++ b/arch/alpha/kernel/sys_rawhide.c
-@@ -16,7 +16,6 @@
- #include <linux/init.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_ruffian.c b/arch/alpha/kernel/sys_ruffian.c
-index 2581cbe..a3f4852 100644
---- a/arch/alpha/kernel/sys_ruffian.c
-+++ b/arch/alpha/kernel/sys_ruffian.c
-@@ -18,7 +18,6 @@
- #include <linux/init.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_rx164.c b/arch/alpha/kernel/sys_rx164.c
-index b172b27..08ee737 100644
---- a/arch/alpha/kernel/sys_rx164.c
-+++ b/arch/alpha/kernel/sys_rx164.c
-@@ -17,7 +17,6 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_sable.c b/arch/alpha/kernel/sys_sable.c
-index 98d1dbf..8a0aa6d 100644
---- a/arch/alpha/kernel/sys_sable.c
-+++ b/arch/alpha/kernel/sys_sable.c
-@@ -16,7 +16,6 @@
- #include <linux/init.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_sio.c b/arch/alpha/kernel/sys_sio.c
-index 47bec1e..febd24e 100644
---- a/arch/alpha/kernel/sys_sio.c
-+++ b/arch/alpha/kernel/sys_sio.c
-@@ -20,7 +20,6 @@
- 
- #include <asm/compiler.h>
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_sx164.c b/arch/alpha/kernel/sys_sx164.c
-index 73e1c31..d063b36 100644
---- a/arch/alpha/kernel/sys_sx164.c
-+++ b/arch/alpha/kernel/sys_sx164.c
-@@ -17,7 +17,6 @@
- #include <linux/bitops.h>
- 
- #include <asm/ptrace.h>
--#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-@@ -26,6 +25,7 @@
- #include <asm/core_cia.h>
- #include <asm/hwrpb.h>
+diff --git a/arch/x86/kernel/cpu/mtrr/generic.c b/arch/x86/kernel/cpu/mtrr/generic.c
+index 97b2635..75772ae 100644
+--- a/arch/x86/kernel/cpu/mtrr/generic.c
++++ b/arch/x86/kernel/cpu/mtrr/generic.c
+@@ -12,7 +12,6 @@
+ #include <asm/processor-flags.h>
+ #include <asm/cpufeature.h>
  #include <asm/tlbflush.h>
-+#include <asm/special_insns.h>
- 
- #include "proto.h"
- #include "irq_impl.h"
-diff --git a/arch/alpha/kernel/sys_takara.c b/arch/alpha/kernel/sys_takara.c
-index 2ae99ad..dd0f1ea 100644
---- a/arch/alpha/kernel/sys_takara.c
-+++ b/arch/alpha/kernel/sys_takara.c
-@@ -16,7 +16,6 @@
- #include <linux/init.h>
- 
- #include <asm/ptrace.h>
 -#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_titan.c b/arch/alpha/kernel/sys_titan.c
-index f47b30a..9de928c 100644
---- a/arch/alpha/kernel/sys_titan.c
-+++ b/arch/alpha/kernel/sys_titan.c
-@@ -21,7 +21,6 @@
- #include <linux/bitops.h>
+ #include <asm/mtrr.h>
+ #include <asm/msr.h>
+ #include <asm/pat.h>
+diff --git a/arch/x86/kernel/cpuid.c b/arch/x86/kernel/cpuid.c
+index a524353..39472dd 100644
+--- a/arch/x86/kernel/cpuid.c
++++ b/arch/x86/kernel/cpuid.c
+@@ -43,7 +43,6 @@
  
- #include <asm/ptrace.h>
+ #include <asm/processor.h>
+ #include <asm/msr.h>
 -#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/sys_wildfire.c b/arch/alpha/kernel/sys_wildfire.c
-index 17c85a6..ee18748 100644
---- a/arch/alpha/kernel/sys_wildfire.c
-+++ b/arch/alpha/kernel/sys_wildfire.c
+ 
+ static struct class *cpuid_class;
+ 
+diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c
+index 6104852..36d1853 100644
+--- a/arch/x86/kernel/i8259.c
++++ b/arch/x86/kernel/i8259.c
 @@ -15,7 +15,6 @@
- #include <linux/bitops.h>
+ #include <linux/delay.h>
  
- #include <asm/ptrace.h>
+ #include <linux/atomic.h>
 -#include <asm/system.h>
- #include <asm/dma.h>
- #include <asm/irq.h>
+ #include <asm/timer.h>
+ #include <asm/hw_irq.h>
+ #include <asm/pgtable.h>
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index 313fb5c..99b85b4 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -16,7 +16,6 @@
+ #include <linux/delay.h>
+ 
+ #include <linux/atomic.h>
+-#include <asm/system.h>
+ #include <asm/timer.h>
+ #include <asm/hw_irq.h>
+ #include <asm/pgtable.h>
+diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
+index faba577..4425a12 100644
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -46,7 +46,6 @@
+ 
+ #include <asm/debugreg.h>
+ #include <asm/apicdef.h>
+-#include <asm/system.h>
+ #include <asm/apic.h>
+ #include <asm/nmi.h>
+ 
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index ea69726..ebc9873 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -15,7 +15,6 @@
+ #include <linux/vmalloc.h>
+ #include <linux/uaccess.h>
+ 
+-#include <asm/system.h>
+ #include <asm/ldt.h>
+ #include <asm/desc.h>
  #include <asm/mmu_context.h>
-diff --git a/arch/alpha/kernel/traps.c b/arch/alpha/kernel/traps.c
-index 0414e02..80d987c 100644
---- a/arch/alpha/kernel/traps.c
-+++ b/arch/alpha/kernel/traps.c
-@@ -24,6 +24,7 @@
- #include <asm/sysinfo.h>
- #include <asm/hwrpb.h>
- #include <asm/mmu_context.h>
+diff --git a/arch/x86/kernel/machine_kexec_32.c b/arch/x86/kernel/machine_kexec_32.c
+index a3fa43b..5b19e4d 100644
+--- a/arch/x86/kernel/machine_kexec_32.c
++++ b/arch/x86/kernel/machine_kexec_32.c
+@@ -23,7 +23,6 @@
+ #include <asm/apic.h>
+ #include <asm/cpufeature.h>
+ #include <asm/desc.h>
+-#include <asm/system.h>
+ #include <asm/cacheflush.h>
+ #include <asm/debugreg.h>
+ 
+diff --git a/arch/x86/kernel/mca_32.c b/arch/x86/kernel/mca_32.c
+index 177183c..7eb1e2b 100644
+--- a/arch/x86/kernel/mca_32.c
++++ b/arch/x86/kernel/mca_32.c
+@@ -43,7 +43,6 @@
+ #include <linux/mca.h>
+ #include <linux/kprobes.h>
+ #include <linux/slab.h>
+-#include <asm/system.h>
+ #include <asm/io.h>
+ #include <linux/proc_fs.h>
+ #include <linux/mman.h>
+diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
+index 925179f..f21fd94 100644
+--- a/arch/x86/kernel/module.c
++++ b/arch/x86/kernel/module.c
+@@ -26,7 +26,6 @@
+ #include <linux/gfp.h>
+ #include <linux/jump_label.h>
+ 
+-#include <asm/system.h>
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+ 
+diff --git a/arch/x86/kernel/msr.c b/arch/x86/kernel/msr.c
+index 9635676..eb11369 100644
+--- a/arch/x86/kernel/msr.c
++++ b/arch/x86/kernel/msr.c
+@@ -40,7 +40,6 @@
+ 
+ #include <asm/processor.h>
+ #include <asm/msr.h>
+-#include <asm/system.h>
+ 
+ static struct class *msr_class;
+ 
+diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+index d90272e..4ae36d9 100644
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -37,6 +37,7 @@
+ #include <asm/apic.h>
+ #include <asm/tlbflush.h>
+ #include <asm/timer.h>
 +#include <asm/special_insns.h>
  
- #include "proto.h"
- 
-diff --git a/arch/alpha/kernel/vmlinux.lds.S b/arch/alpha/kernel/vmlinux.lds.S
-index f937ad1..647b84c 100644
---- a/arch/alpha/kernel/vmlinux.lds.S
-+++ b/arch/alpha/kernel/vmlinux.lds.S
-@@ -2,6 +2,7 @@
- #include <asm/thread_info.h>
- #include <asm/cache.h>
- #include <asm/page.h>
-+#include <asm/setup.h>
- 
- OUTPUT_FORMAT("elf64-alpha")
- OUTPUT_ARCH(alpha)
-@@ -25,6 +26,7 @@ SECTIONS
- 		*(.fixup)
- 		*(.gnu.warning)
- 	} :kernel
-+	swapper_pg_dir = SWAPPER_PGD;
- 	_etext = .;	/* End of text section */
- 
- 	NOTES :kernel :note
-diff --git a/arch/alpha/lib/stacktrace.c b/arch/alpha/lib/stacktrace.c
-index 6d432e4..5e83216 100644
---- a/arch/alpha/lib/stacktrace.c
-+++ b/arch/alpha/lib/stacktrace.c
-@@ -1,5 +1,4 @@
- #include <linux/kernel.h>
+ /* nop stub */
+ void _paravirt_nop(void)
+diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+index 726494b..6ac5782 100644
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -42,7 +42,6 @@
+ #include <asm/calgary.h>
+ #include <asm/tce.h>
+ #include <asm/pci-direct.h>
 -#include <asm/system.h>
+ #include <asm/dma.h>
+ #include <asm/rio.h>
+ #include <asm/bios_ebda.h>
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 15763af..e01ed8b 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -15,7 +15,6 @@
+ #include <trace/events/power.h>
+ #include <linux/hw_breakpoint.h>
+ #include <asm/cpu.h>
+-#include <asm/system.h>
+ #include <asm/apic.h>
+ #include <asm/syscalls.h>
+ #include <asm/idle.h>
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index c08d1ff..c8a5244 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -41,7 +41,6 @@
+ #include <linux/cpuidle.h>
  
- typedef unsigned int instr;
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/ldt.h>
+ #include <asm/processor.h>
+ #include <asm/i387.h>
+@@ -58,6 +57,7 @@
+ #include <asm/syscalls.h>
+ #include <asm/debugreg.h>
+ #include <asm/nmi.h>
++#include <asm/switch_to.h>
  
-diff --git a/arch/alpha/mm/fault.c b/arch/alpha/mm/fault.c
-index fadd5f8..5eecab1 100644
---- a/arch/alpha/mm/fault.c
-+++ b/arch/alpha/mm/fault.c
+ asmlinkage void ret_from_fork(void) __asm__("ret_from_fork");
+ 
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index cfa5c90..2466f98 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -40,7 +40,6 @@
+ #include <linux/cpuidle.h>
+ 
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/processor.h>
+ #include <asm/i387.h>
+ #include <asm/mmu_context.h>
+@@ -52,6 +51,7 @@
+ #include <asm/syscalls.h>
+ #include <asm/debugreg.h>
+ #include <asm/nmi.h>
++#include <asm/switch_to.h>
+ 
+ asmlinkage extern void ret_from_fork(void);
+ 
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 5026738..e7d573b 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
 @@ -24,7 +24,6 @@
- #include <linux/interrupt.h>
- #include <linux/module.h>
  
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/processor.h>
+ #include <asm/i387.h>
+ #include <asm/debugreg.h>
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index d7d5099..b7f71ad 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -90,7 +90,6 @@
+ #include <asm/processor.h>
+ #include <asm/bugs.h>
+ 
+-#include <asm/system.h>
+ #include <asm/vsyscall.h>
+ #include <asm/cpu.h>
+ #include <asm/desc.h>
+diff --git a/arch/x86/kernel/tce_64.c b/arch/x86/kernel/tce_64.c
+index 9e540fe..ab40954 100644
+--- a/arch/x86/kernel/tce_64.c
++++ b/arch/x86/kernel/tce_64.c
+@@ -34,6 +34,7 @@
+ #include <asm/tce.h>
+ #include <asm/calgary.h>
+ #include <asm/proto.h>
++#include <asm/cacheflush.h>
+ 
+ /* flush a tce at 'tceaddr' to main memory */
+ static inline void flush_tce(void* tceaddr)
+diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
+index 6bb7b85..73920e4 100644
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -6,7 +6,6 @@
+ 
+ #include <asm/uaccess.h>
+ #include <asm/desc.h>
+-#include <asm/system.h>
+ #include <asm/ldt.h>
+ #include <asm/processor.h>
+ #include <asm/proto.h>
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 4bbe04d..e88ed30 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -50,7 +50,6 @@
+ #include <asm/processor.h>
+ #include <asm/debugreg.h>
+ #include <linux/atomic.h>
+-#include <asm/system.h>
+ #include <asm/traps.h>
+ #include <asm/desc.h>
+ #include <asm/i387.h>
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 6cabf65..4f0cec7 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -12,7 +12,6 @@
+ #include <asm/page_types.h>
+ #include <asm/sections.h>
+ #include <asm/setup.h>
+-#include <asm/system.h>
+ #include <asm/tlbflush.h>
+ #include <asm/tlb.h>
+ #include <asm/proto.h>
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 8663f6c..575d86f 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -35,7 +35,6 @@
+ #include <asm/asm.h>
+ #include <asm/bios_ebda.h>
+ #include <asm/processor.h>
 -#include <asm/system.h>
  #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ #include <asm/dma.h>
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 436a030..fc18be0 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -35,7 +35,6 @@
  
- extern void die_if_kernel(char *,struct pt_regs *,long, unsigned long *);
-diff --git a/arch/alpha/mm/init.c b/arch/alpha/mm/init.c
-index 69d0c57..1ad6ca7 100644
---- a/arch/alpha/mm/init.c
-+++ b/arch/alpha/mm/init.c
-@@ -22,7 +22,6 @@
- #include <linux/vmalloc.h>
- #include <linux/gfp.h>
- 
+ #include <asm/processor.h>
+ #include <asm/bios_ebda.h>
 -#include <asm/system.h>
  #include <asm/uaccess.h>
  #include <asm/pgtable.h>
  #include <asm/pgalloc.h>
-@@ -31,6 +30,7 @@
- #include <asm/mmu_context.h>
- #include <asm/console.h>
- #include <asm/tlb.h>
-+#include <asm/setup.h>
+diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
+index cac7184..a69bcb8 100644
+--- a/arch/x86/mm/pgtable_32.c
++++ b/arch/x86/mm/pgtable_32.c
+@@ -10,7 +10,6 @@
+ #include <linux/spinlock.h>
+ #include <linux/module.h>
  
- extern void die_if_kernel(char *,struct pt_regs *,long);
- 
-diff --git a/arch/alpha/oprofile/common.c b/arch/alpha/oprofile/common.c
-index bd8ac53..a0a5d27 100644
---- a/arch/alpha/oprofile/common.c
-+++ b/arch/alpha/oprofile/common.c
-@@ -12,7 +12,6 @@
- #include <linux/smp.h>
- #include <linux/errno.h>
- #include <asm/ptrace.h>
 -#include <asm/system.h>
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+ #include <asm/fixmap.h>
+diff --git a/arch/x86/power/hibernate_32.c b/arch/x86/power/hibernate_32.c
+index 3769079..74202c1 100644
+--- a/arch/x86/power/hibernate_32.c
++++ b/arch/x86/power/hibernate_32.c
+@@ -10,7 +10,6 @@
+ #include <linux/suspend.h>
+ #include <linux/bootmem.h>
  
- #include "op_impl.h"
- 
-diff --git a/arch/alpha/oprofile/op_model_ev4.c b/arch/alpha/oprofile/op_model_ev4.c
-index 80d764d..18aa9b4 100644
---- a/arch/alpha/oprofile/op_model_ev4.c
-+++ b/arch/alpha/oprofile/op_model_ev4.c
-@@ -11,7 +11,6 @@
- #include <linux/init.h>
- #include <linux/smp.h>
- #include <asm/ptrace.h>
 -#include <asm/system.h>
- 
- #include "op_impl.h"
- 
-diff --git a/arch/alpha/oprofile/op_model_ev5.c b/arch/alpha/oprofile/op_model_ev5.c
-index ceea6e1..c32f8a0 100644
---- a/arch/alpha/oprofile/op_model_ev5.c
-+++ b/arch/alpha/oprofile/op_model_ev5.c
-@@ -11,7 +11,6 @@
- #include <linux/init.h>
- #include <linux/smp.h>
- #include <asm/ptrace.h>
--#include <asm/system.h>
- 
- #include "op_impl.h"
- 
-diff --git a/arch/alpha/oprofile/op_model_ev6.c b/arch/alpha/oprofile/op_model_ev6.c
-index 0869f85..1c84cc2 100644
---- a/arch/alpha/oprofile/op_model_ev6.c
-+++ b/arch/alpha/oprofile/op_model_ev6.c
-@@ -11,7 +11,6 @@
- #include <linux/init.h>
- #include <linux/smp.h>
- #include <asm/ptrace.h>
--#include <asm/system.h>
- 
- #include "op_impl.h"
- 
-diff --git a/arch/alpha/oprofile/op_model_ev67.c b/arch/alpha/oprofile/op_model_ev67.c
-index 5b9d178..34a57a1 100644
---- a/arch/alpha/oprofile/op_model_ev67.c
-+++ b/arch/alpha/oprofile/op_model_ev67.c
-@@ -12,7 +12,6 @@
- #include <linux/init.h>
- #include <linux/smp.h>
- #include <asm/ptrace.h>
--#include <asm/system.h>
- 
- #include "op_impl.h"
- 
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+ #include <asm/mmzone.h>
 
