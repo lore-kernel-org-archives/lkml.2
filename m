@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab2CLOsn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 10:48:43 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:50349 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab2CLOsl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 10:48:41 -0400
-Message-ID: <4F5E0CC1.6010102@linux.vnet.ibm.com>
-Date: Mon, 12 Mar 2012 20:18:33 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1755615Ab2CLOwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 10:52:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38860 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751535Ab2CLOwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 10:52:44 -0400
+Date: Mon, 12 Mar 2012 15:52:42 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jason Gerecke <killertofu@gmail.com>
+Cc: Przemo Firszt <przemo@firszt.eu>, pinglinux@gmail.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxwacom-devel@lists.sourceforge.net
+Subject: Re: [PATCH 1/2] HID: wacom: Reset stylus buttons - Intuos4 WL
+In-Reply-To: <CANRwn3T0osghgP4i_e0xK8FkvKv1gXMwnumggv0pkxrDqPqKDQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1203121552300.18356@pobox.suse.cz>
+References: <1331299252-23699-1-git-send-email-przemo@firszt.eu> <CANRwn3T0osghgP4i_e0xK8FkvKv1gXMwnumggv0pkxrDqPqKDQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix idle ticks in cpu summary line of /proc/stat
-References: <20120311182621.41674b39@de.ibm.com> <20120312121726.GA23608@tiehlicka.suse.cz> <20120312101739.26eb373e@de.ibm.com>
-In-Reply-To: <20120312101739.26eb373e@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12031204-1618-0000-0000-0000010C8131
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 07:47 PM, Martin Schwidefsky wrote:
+On Fri, 9 Mar 2012, Jason Gerecke wrote:
 
-> On Mon, 12 Mar 2012 13:17:26 +0100
-> Michal Hocko <mhocko@suse.cz> wrote:
+> > Signed-off-by: Przemo Firszt <przemo@firszt.eu>
+> > ---
+> >  drivers/hid/hid-wacom.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+> > index 2a440a6..5c25036 100644
+> > --- a/drivers/hid/hid-wacom.c
+> > +++ b/drivers/hid/hid-wacom.c
+> > @@ -352,6 +352,8 @@ static void wacom_i4_parse_pen_report(struct wacom_data *wdata,
+> >        case 0x80: /* Out of proximity report */
+> >                input_report_key(input, BTN_TOUCH, 0);
+> >                input_report_abs(input, ABS_PRESSURE, 0);
+> > +               input_report_key(input, BTN_STYLUS, 0);
+> > +               input_report_key(input, BTN_STYLUS2, 0);
+> >                input_report_key(input, wdata->tool, 0);
+> >                input_report_abs(input, ABS_MISC, 0);
+> >                input_event(input, EV_MSC, MSC_SERIAL, wdata->serial);
+> > --
+> > 1.7.6.4
 > 
->> Goot catch. But I think that the following fix should be better because
->> it doesn't change the semantic of the function. What do you think?
-> ..
->> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
->> index 7656642..dec767f 100644
->> --- a/kernel/time/tick-sched.c
->> +++ b/kernel/time/tick-sched.c
->> @@ -221,7 +221,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
->>  		update_ts_time_stats(cpu, ts, now, last_update_time);
->>  		idle = ts->idle_sleeptime;
->>  	} else {
->> -		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
->> +		if (cpu_online(cpu) && ts->idle_active && !nr_iowait_cpu(cpu)) {
->>  			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
->>
->>  			idle = ktime_add(ts->idle_sleeptime, delta);
->> @@ -262,7 +262,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
->>  		update_ts_time_stats(cpu, ts, now, last_update_time);
->>  		iowait = ts->iowait_sleeptime;
->>  	} else {
->> -		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
->> +		if (cpu_online(cpu) && ts->idle_active && nr_iowait_cpu(cpu) > 0) {
->>  			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
->>
->>  			iowait = ktime_add(ts->iowait_sleeptime, delta);
-> 
-> I would prefer an early exit from the functions. The target cpu is offline,
-> who guarantees that the "struct tick_sched" for the cpu contains anything
-> useful?
-> 
+> Reviewed-by: Jason Gerecke <killertofu@gmail.com>
 
+Applied, thanks.
 
-Also, what about the case where last_update_time is non-NULL?
-With Martin's patch update_ts_time_stats() won't be called for offline cpus,
-whereas with Michal's patch it will be called and hence the counters will get
-updated.. We don't want to update counters for offline cpus right?
-
-Regards,
-Srivatsa S. Bhat
-
+-- 
+Jiri Kosina
+SUSE Labs
