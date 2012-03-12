@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab2CLNer (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 09:34:47 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:42339
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1755527Ab2CLNeq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 09:34:46 -0400
-Date: Mon, 12 Mar 2012 14:34:41 +0100 (CET)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] Adding Secure Deletion to UBIFS
-In-Reply-To: <1331559053.12037.25.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1203121430020.29192@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>   <1330536308.3545.158.camel@sauron.fi.intel.com>   <alpine.DEB.2.00.1203011434220.2462@eristoteles.iwoars.net>  <1331278562.22872.18.camel@sauron.fi.intel.com> 
- <alpine.DEB.2.00.1203091959570.25737@eristoteles.iwoars.net> <1331559053.12037.25.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755546Ab2CLNgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 09:36:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15279 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755395Ab2CLNgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 09:36:47 -0400
+Date: Mon, 12 Mar 2012 09:36:19 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando@oss.ntt.co.jp>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
+        torvalds@linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        mingo@elte.hu, Yinghai Lu <yinghai@kernel.org>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/2] boot: ignore early NMIs
+Message-ID: <20120312133619.GB17288@redhat.com>
+References: <m1ipip6xe8.fsf@fess.ebiederm.org>
+ <4F573E1C.2060909@oss.ntt.co.jp>
+ <4F573E74.5040504@oss.ntt.co.jp>
+ <m1eht31z8e.fsf@fess.ebiederm.org>
+ <4F58495B.5080308@oss.ntt.co.jp>
+ <m1r4x3yrsv.fsf@fess.ebiederm.org>
+ <4F5A6D87.4050809@zytor.com>
+ <4F5D8D0E.8060702@oss.ntt.co.jp>
+ <4F5D8E63.60606@zytor.com>
+ <4F5D943C.5020403@oss.ntt.co.jp>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F5D943C.5020403@oss.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> I think you can use them. But is it possible to kill these things from
-> the data nodes themselves? We can always find it by looking up the index
-> by the data node key, right?
->
+On Mon, Mar 12, 2012 at 03:14:20PM +0900, Fernando Luis Vázquez Cao wrote:
 
-Yep, thats exactly right. Originally it was just inside the data node;
-I put it into the TNC as a optimization later during development. If I use
-the last eight bytes from the data node's key, and I remove the position
-from ubifs_branch, then there is no longer any change to the on-disk
-format, so thats should be useful. Yeah, storing the same value twice
-means also needing a consistency check. What can be done is that when the
-value is loaded once after mounting, it is stored in in the z-node in
-memory.
+[..]
+> The thing is that we want to avoid playing with hardware in the kdump
+> reboot patch when we can avoid it, the premise being that it cannot
+> be accessed without risking a lockup or worse (as the deadlock accessing
+> the I/O APIC showed).
+
+I think there needs to be a limit to being paranoid. On one hand people
+want to run panic notifiers, all the kmsg_dump() hooks in panic path, and
+on the other hand we are afraid of even disabling LAPIC.
+
+I personally think that disabling LAPIC is reasonably practical solution
+to the problem until and unless somebody shows that it deadlocks easily.
+
+Thanks
+Vivek
