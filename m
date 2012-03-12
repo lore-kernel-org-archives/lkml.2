@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab2CLSoB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:44:01 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48097 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756293Ab2CLSn7 convert rfc822-to-8bit (ORCPT
+	id S1756413Ab2CLSoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:44:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48153 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756385Ab2CLSoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:43:59 -0400
+	Mon, 12 Mar 2012 14:44:12 -0400
+Date: Mon, 12 Mar 2012 11:43:33 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Tejun Heo <tj@kernel.org>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3.3] memcg: free mem_cgroup by RCU to fix oops
+In-Reply-To: <20120312150945.GA14551@redhat.com>
+Message-ID: <alpine.LSU.2.00.1203121118500.1796@eggly.anvils>
+References: <alpine.LSU.2.00.1203072155140.11048@eggly.anvils> <alpine.LSU.2.00.1203091138260.19300@eggly.anvils> <20120312150945.GA14551@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <87wr6py82t.fsf@ti.com>
-References: <1329999031-6914-1-git-send-email-tarun.kanti@ti.com>
- <CAMQu2gzdfxJms8cc3VhsVzhGq4f8x1QeY6LU6X+2eFZ4_Yv_bw@mail.gmail.com>
- <20120312173425.A6B893E07B0@localhost> <87wr6py82t.fsf@ti.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 12 Mar 2012 12:43:36 -0600
-X-Google-Sender-Auth: CLEXbxLthYeqDxaF6dOQZgMBj18
-Message-ID: <CACxGe6tH5_GsJ1Wa9zSF711qwFgXR9=yp5AsUMKDn5+egwmavg@mail.gmail.com>
-Subject: Re: [PATCH 0/6] gpio/omap: Some more driver cleanup and fixes
-To: Kevin Hilman <khilman@ti.com>
-Cc: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Tarun Kanti DebBarma <tarun.kanti@ti.com>, linux-omap@vger.kernel.org,
-        tony@atomide.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 12:42 PM, Kevin Hilman <khilman@ti.com> wrote:
-> Grant Likely <grant.likely@secretlab.ca> writes:
->
->> On Thu, 23 Feb 2012 17:56:33 +0530, "Shilimkar, Santosh" <santosh.shilimkar@ti.com> wrote:
->>> On Thu, Feb 23, 2012 at 5:40 PM, Tarun Kanti DebBarma
->>> <tarun.kanti@ti.com> wrote:
->>> > The cleanup is mostly getting rid of redundant fields in struct gpio_bank{}
->>> > as we already have them as part of bank->context now. Also, remove un-used
->>> > variable from gpio_irq_handler.
->>> >
->>> > The fix include correction of _set_gpio_irqenable() implementation and fix
->>> > type mismatch of gpio trigger parameter.
->>> >
->>> > It is baselined on top of Kevin's following series:
->>> > gpio/omap: cleanup and runtime PM conversion for v3.4
->>> > git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-omap-pm.git for_3.4/gpio/runtime-pm-cleanup
->>> >
->>> > I have applied Benoit's GPIO patches in following series on top of Kevin's
->>> > before applying my changes.
->>> > gpio/omap: Cleanup and adaptation to Device Tree
->>> > git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git for_3.4/dt_gpio
->>> >
->>> > Series is available here for reference:
->>> > git://gitorious.org/~tarunkanti/omap-sw-develoment/tarunkantis-linux-omap-dev for_3.4/gpio_further_cleanup_fixes
->>> >
->>> > Power Test: Off-mode and Retention on OMAP3430 (Suspend and Idle paths).
->>> > Functional Test: OMAP2430, OMAP3430SDP, ZOOM3, OMAP4430, OMAP4-BLAZE
->>> >
->>> > Tarun Kanti DebBarma (6):
->>> >  gpio/omap: remove saved_fallingdetect, saved_risingdetect fields
->>> >  gpio/omap: remove saved_wakeup field from struct gpio_bank
->>> >  gpio/omap: remove suspend_wakeup field from struct gpio_bank
->>> >  gpio/omap: get rid of retrigger variable in gpio_irq_handler
->>> >  gpio/omap: fix trigger type to unsigned
->>> >  gpio/omap: fix _set_gpio_irqenable implementation
->>> >
->>> >  drivers/gpio/gpio-omap.c |   56 +++++++++++++++++++--------------------------
->>> >  1 files changed, 24 insertions(+), 32 deletions(-)
->>> >
->>> Nice clean-up series. I have gone through this series one more time
->>> Thanks for updating change-logs. I noticed you dropped the edge triggered
->>> irq wakeup fix....I see on the list now.... Kevin has fixed that already.
->>>
->>> Series looks good to me. You can add:
->>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>
->> What's the status of this series?  Should I be expecting a v2?  Or am I supposed
->> to pick up this one? (a pull req would make things easier for me)
->
-> I haven't been through this one yet.
->
-> You can expect a pull req from me when ready.
+On Mon, 12 Mar 2012, Stanislaw Gruszka wrote:
+> On Fri, Mar 09, 2012 at 11:58:34AM -0800, Hugh Dickins wrote:
+> > On Wed, 7 Mar 2012, Hugh Dickins wrote:
+> > > 
+> > > I'm posting this a little prematurely to get eyes on it, since it's
+> > > more than a two-liner, but 3.3 time is running out.  If it is what's
+> > > needed to fix my oopses, I won't really be sure before Friday morning.
+> > > What's running now on the machine affected is using kfree_rcu(), but I
+> > > did hack it earlier to check that the vfree_rcu() alternative works.
+> > 
+> > Yes, please do send that patch on to Linus for 3.3.
+> > 
+> > It did not get as much as the 36 hours of testing I had hoped for, only
+> > 25 hours so far.  12 hours while I was out yesterday got wasted by a
+> > wireless driver interrupt spewing approximately one million messages:
+> > 
+> > iwl3945 0000:08:00.0: MAC is in deep sleep!. CSR_GP_CNTRL = 0xFFFFFFFF
+> 
+> I replaced that with WARN_ONCE
+> http://marc.info/?l=linux-wireless&m=132912863701997&w=2
+> (the patch is currently in net-next).
 
-Perfect, thx.
+That's very welcome, thank you.  One message will suit me better than
+a million.  But I didn't mention that for every seven of those, there
+was one slightly different message coming too:
 
-g.
+iwl3945 0000:08:00.0: UNKNOWN (0xFFFFFFFF) 4294967295 ... (I got bored)
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+> 
+> > which I've not suffered from before, and hope not again.  Having kdb
+> > in, I did take a look what was going on with the memcg load when it was
+> > interrupted: it appeared to be normal, and I've no reason to suppose that
+> > my kfree_rcu() was in any way responsible for the wireless aberration.
+
+I didn't see it again.  I rebooted and ran the test for 63 hours and
+it went fine this time with no interference from the wifi.  I did have
+the laptop differently positioned this time: maybe it was overheating
+up against the wall, though that position gave no trouble in the past.
+
+> 
+> I don't know if is possible if test patch influence pci or mac80211 code
+> (we use rcu quite intensively in mac8021).
+
+It's very very unlikely that the patch I was testing had a significant
+effect on RCU usage: the test ends up doing just one extra call_rcu every
+minute.  There's a heavy swapping load running alongside, which shouldn't
+be disturbing PCI config at all; but it's possible that a temporarily
+failing memory allocation, or overheat, drove iwl3945 down a strange
+path on this one occasion, and once there it couldn't recover.
+
+Hugh
+
+> Those "MAC is in deep sleep" 
+> usually mean that wireless device registers can not be read through pcie
+> bus - i.e. when pcie bridge is erroneously disabled like in report here:
+> http://marc.info/?l=linux-wireless&m=132577331132329&w=2
+> 
+> Note that wireless device is one of a few connected through pcie bridge
+> on most of the laptops, others external pcie devices like mmc are not
+> used frequently, hence breakage in pci code looks frequently like
+> breakage in wireless driver. Not sure if that was the case here though.
+> 
+> Stanislaw
