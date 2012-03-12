@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab2CLUl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 16:41:56 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:43688 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab2CLUly (ORCPT
+	id S1757076Ab2CLUqi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 16:46:38 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:49135 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756747Ab2CLUqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 16:41:54 -0400
-Date: Mon, 12 Mar 2012 16:41:45 -0400
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	Mon, 12 Mar 2012 16:46:37 -0400
+Date: Mon, 12 Mar 2012 20:46:30 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: ShuoX Liu <shuox.liu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "Brown, Len" <len.brown@intel.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix idle ticks in cpu summary line of /proc/stat
-Message-ID: <20120312164145.5110ed5c@de.ibm.com>
-In-Reply-To: <20120312153906.GE3994@tiehlicka.suse.cz>
-References: <20120311182621.41674b39@de.ibm.com>
-	<20120312121726.GA23608@tiehlicka.suse.cz>
-	<20120312101739.26eb373e@de.ibm.com>
-	<4F5E0CC1.6010102@linux.vnet.ibm.com>
-	<20120312153906.GE3994@tiehlicka.suse.cz>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12031220-1948-0000-0000-0000012D62A3
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH 2/3] cpuidle: Add a debugfs entry to disable specific C
+ state for debug purpose.
+Message-ID: <20120312204629.GA22929@srcf.ucam.org>
+References: <20120305101827.GA19408@khazad-dum.debian.net>
+ <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com>
+ <1330998885.1916.89.camel@ymzhang>
+ <20120306052236.GA19416@kroah.com>
+ <1331013078.1916.103.camel@ymzhang>
+ <20120306143935.GA23346@kroah.com>
+ <1331082051.1916.124.camel@ymzhang>
+ <20120308180106.GD26516@kroah.com>
+ <4F5DBFA8.3080300@intel.com>
+ <4F5DC01D.7040006@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F5DC01D.7040006@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Mar 2012 16:39:06 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+On Mon, Mar 12, 2012 at 05:21:33PM +0800, ShuoX Liu wrote:
 
-> Hmm, the semantic is that the function either returns the sleeptime or
-> -1 if nohz is disabled. Bringing also online/offline into it seems
-> rather confusing. 
-> Maybe we shouldn't do the test layer up when we call the function
-> instead. This should be much cleaner IMO (it also reduced cpu_online
-> call from the governors call paths which might be a problem as well):
-> 
-> diff --git a/fs/proc/stat.c b/fs/proc/stat.c
-> index 121f77c..d437258 100644
-> --- a/fs/proc/stat.c
-> +++ b/fs/proc/stat.c
-> @@ -24,7 +24,10 @@
-> 
->  static u64 get_idle_time(int cpu)
->  {
-> -	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
-> +	u64 idle, idle_time = -1ULL;
-> +	
-> +	if (cpu_online(cpu))
-> +		idle_time = get_cpu_idle_time_us(cpu, NULL);
-> 
->  	if (idle_time == -1ULL) {
->  		/* !NO_HZ so we can rely on cpustat.idle */
-> @@ -38,7 +41,10 @@ static u64 get_idle_time(int cpu)
-> 
->  static u64 get_iowait_time(int cpu)
->  {
-> -	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
-> +	u64 iowait, iowait_time = -1ULL;
-> +	
-> +	if (cpu_online(cpu))
-> +		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
-> 
->  	if (iowait_time == -1ULL)
->  		/* !NO_HZ so we can rely on cpustat.iowait */
-> 
+> In addition, C state might have much impact on performance tuning,
+> as it takes
+> much time to enter/exit C states, which might delay interrupt
+> processing. With
+> the new debug option, developers could check if a deep C state could impact
+> performance and how much impact it could cause.
 
-That looks better and should be equivalent.
+Would anyone doing performance tuning not be using the cpu_dma_latency 
+interface?
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Matthew Garrett | mjg59@srcf.ucam.org
