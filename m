@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab2CLSoR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:44:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48153 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab2CLSoM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:44:12 -0400
-Date: Mon, 12 Mar 2012 11:43:33 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Tejun Heo <tj@kernel.org>, Ying Han <yinghan@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3.3] memcg: free mem_cgroup by RCU to fix oops
-In-Reply-To: <20120312150945.GA14551@redhat.com>
-Message-ID: <alpine.LSU.2.00.1203121118500.1796@eggly.anvils>
-References: <alpine.LSU.2.00.1203072155140.11048@eggly.anvils> <alpine.LSU.2.00.1203091138260.19300@eggly.anvils> <20120312150945.GA14551@redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756401Ab2CLSqG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:46:06 -0400
+Received: from 1wt.eu ([62.212.114.60]:63199 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751952Ab2CLSqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 14:46:04 -0400
+Date: Mon, 12 Mar 2012 19:45:49 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Greg KH <greg@kroah.com>, Jonathan Nieder <jrnieder@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, git@vger.kernel.org,
+        Thomas Rast <trast@student.ethz.ch>
+Subject: Re: stripping [PATCH] without losing later tags from mailed patches (Re: [ 02/12] Remove COMPAT_IA32 support)
+Message-ID: <20120312184549.GG12405@1wt.eu>
+References: <20120312002046.041448832@1wt.eu> <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com> <20120312063027.GB8971@1wt.eu> <20120312064855.GB16820@burratino> <20120312085820.GA11569@1wt.eu> <20120312152004.GB9380@kroah.com> <7vfwddu60f.fsf@alter.siamese.dyndns.org> <20120312164812.GC12405@1wt.eu> <7v4nttu2gf.fsf@alter.siamese.dyndns.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7v4nttu2gf.fsf@alter.siamese.dyndns.org>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Mar 2012, Stanislaw Gruszka wrote:
-> On Fri, Mar 09, 2012 at 11:58:34AM -0800, Hugh Dickins wrote:
-> > On Wed, 7 Mar 2012, Hugh Dickins wrote:
-> > > 
-> > > I'm posting this a little prematurely to get eyes on it, since it's
-> > > more than a two-liner, but 3.3 time is running out.  If it is what's
-> > > needed to fix my oopses, I won't really be sure before Friday morning.
-> > > What's running now on the machine affected is using kfree_rcu(), but I
-> > > did hack it earlier to check that the vfree_rcu() alternative works.
-> > 
-> > Yes, please do send that patch on to Linus for 3.3.
-> > 
-> > It did not get as much as the 36 hours of testing I had hoped for, only
-> > 25 hours so far.  12 hours while I was out yesterday got wasted by a
-> > wireless driver interrupt spewing approximately one million messages:
-> > 
-> > iwl3945 0000:08:00.0: MAC is in deep sleep!. CSR_GP_CNTRL = 0xFFFFFFFF
+On Mon, Mar 12, 2012 at 10:57:36AM -0700, Junio C Hamano wrote:
+> > I've just backported it to 1.7.9.3 (I'm not keen on living on the bleeding
+> > edge with my everyday tools), and it works nicely as expected.
 > 
-> I replaced that with WARN_ONCE
-> http://marc.info/?l=linux-wireless&m=132912863701997&w=2
-> (the patch is currently in net-next).
-
-That's very welcome, thank you.  One message will suit me better than
-a million.  But I didn't mention that for every seven of those, there
-was one slightly different message coming too:
-
-iwl3945 0000:08:00.0: UNKNOWN (0xFFFFFFFF) 4294967295 ... (I got bored)
-
+> This topic will be backported in later versions of 1.7.9.x track,
+> but living on the maintenance track does not have much smaller
+> chance of breakage than living on the tip of 'master' these days,
+> unless you are using distro packaged version. The usual rule of
+> thumb if you are compiling from the source is that the tip of
+> 'master' is more stable than any tagged version, including the
+> maintenance track.  See
 > 
-> > which I've not suffered from before, and hope not again.  Having kdb
-> > in, I did take a look what was going on with the memcg load when it was
-> > interrupted: it appeared to be normal, and I've no reason to suppose that
-> > my kfree_rcu() was in any way responsible for the wireless aberration.
-
-I didn't see it again.  I rebooted and ran the test for 63 hours and
-it went fine this time with no interference from the wifi.  I did have
-the laptop differently positioned this time: maybe it was overheating
-up against the wall, though that position gave no trouble in the past.
-
+> http://thread.gmane.org/gmane.comp.version-control.git/189657/focus=190814
 > 
-> I don't know if is possible if test patch influence pci or mac80211 code
-> (we use rcu quite intensively in mac8021).
+> for details.
 
-It's very very unlikely that the patch I was testing had a significant
-effect on RCU usage: the test ends up doing just one extra call_rcu every
-minute.  There's a heavy swapping load running alongside, which shouldn't
-be disturbing PCI config at all; but it's possible that a temporarily
-failing memory allocation, or overheat, drove iwl3945 down a strange
-path on this one occasion, and once there it couldn't recover.
+I know, but you see I was running on 1.7.2.3. Generally if one version
+works for me, I don't upgrade it for a year or two. I've been hit a few
+times in the past by some quite annoying bugs (as is to be expected from
+any software in the development branch), and lost a lot of time on this.
+Rest assured that I don't feel comfortable on 1.7.9 either, that's a big
+jump for me but I know that most often it works quite well :-)
 
-Hugh
+Willy
 
-> Those "MAC is in deep sleep" 
-> usually mean that wireless device registers can not be read through pcie
-> bus - i.e. when pcie bridge is erroneously disabled like in report here:
-> http://marc.info/?l=linux-wireless&m=132577331132329&w=2
-> 
-> Note that wireless device is one of a few connected through pcie bridge
-> on most of the laptops, others external pcie devices like mmc are not
-> used frequently, hence breakage in pci code looks frequently like
-> breakage in wireless driver. Not sure if that was the case here though.
-> 
-> Stanislaw
