@@ -1,77 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab2CLX0o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:26:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47811 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757396Ab2CLX0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:26:43 -0400
-Date: Mon, 12 Mar 2012 19:26:30 -0400
-From: Dave Jones <davej@redhat.com>
-To: Keith Packard <keithp@keithp.com>
-Cc: Yang Bai <hamo.by@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>, kernel@tesarici.cz
-Subject: Re: inode->i_wb_list corruption.
-Message-ID: <20120312232630.GA20287@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Keith Packard <keithp@keithp.com>, Yang Bai <hamo.by@gmail.com>,
-	Fengguang Wu <fengguang.wu@intel.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Fedora Kernel Team <kernel-team@fedoraproject.org>,
-	kernel@tesarici.cz
-References: <20120306185137.GA15881@redhat.com>
- <20120306210307.GC8781@quack.suse.cz>
- <20120307072608.GA24087@localhost>
- <20120307104240.GB18658@quack.suse.cz>
- <CAO_0yfNt2jgiTPZn5NkwBAjQZtk+377gG71d6QOuXQrDHjdkEg@mail.gmail.com>
- <20120309145713.GA21543@redhat.com>
- <20120309151951.GA30160@redhat.com>
- <CAO_0yfMYOOTvRg9=8_eYP09o0BpzSEk=8vqgNk_vV_u3-biAYA@mail.gmail.com>
- <20120309180015.GA3862@redhat.com>
- <868vj97d20.fsf@sumi.keithp.com>
+	id S1758094Ab2CLX2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:28:45 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52704 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643Ab2CLX2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 19:28:44 -0400
+Date: Mon, 12 Mar 2012 23:28:19 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
+        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de
+Subject: Re: [PATCH v6 1/3] USB: OHCI-HCD: Rename ohci-pnx4008 to ohci-nxp
+Message-ID: <20120312232819.GD10830@n2100.arm.linux.org.uk>
+References: <1331430375-31227-1-git-send-email-stigge@antcom.de> <1331430375-31227-2-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <868vj97d20.fsf@sumi.keithp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1331430375-31227-2-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 12:08:07PM -0800, Keith Packard wrote:
- > <#part sign=pgpmime>
- > On Fri, 9 Mar 2012 13:00:15 -0500, Dave Jones <davej@redhat.com> wrote:
- > 
- > > i915_drm_thaw is a deep nest of functions though, so this is going to be
- > > hard to track down where that write is coming from. Because the corruption
- > > seems to happen to pages that are already allocated, we probably can't
- > > even rely on DEBUG_PAGEALLOC, though it might be worth trying.
- > 
- > I'm worried that the write is coming through the GTT, which would make
- > sense as these look like pixel values. If this is on Ironlake (core
- > I3-I7 first gen), we know there are issues when VT-d is enabled, and
- > the work-around for that doesn't appear to be in place for the hibernate
- > resume case.
+On Sun, Mar 11, 2012 at 02:46:13AM +0100, Roland Stigge wrote:
+> Since this driver is compatible with several NXP devices, the driver is renamed
+> accordingly. Please combine with the following patch which also changes the
+> respective symbol names.
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-Thinking about how the GTT could contain stale pointers, I came up with this scenario:
+Please use -C or -M when generating these kinds of patches.  It makes
+it possible to see what if anything has changed in the renamed file
+(and makes the diff smaller.)
 
-Before we begin the thaw, the initramfs sets up a framebuffer.
-This causes the GTT to be setup.
-
-- Thaw begins, hardware state still points to the GTT setup by the modesetting code.
-  At this point, any graphics operations are going to cause writes through
-  those translations. Bad news if we just wrote a bunch of thawed data there.
-
-  or..
-
-- Thaw begins, and data is written over the GTT setup by the initramfs, but 
-  the hardware registers still points at it, until thaw is complete, when we
-  reprogram the GTT registers to their pre-hibernate values.
-
-If we could somehow set modeset=0 automatically if we detect a hibernate
-partition it would probably 'solve' it, but I suspect the real answer
-would be to do GTT teardown before we do a thaw.
-
-	Dave
-
+Thanks.
