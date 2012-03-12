@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab2CLXOP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:14:15 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59798 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942Ab2CLXOO (ORCPT
+	id S1758104Ab2CLXPd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:15:33 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47333 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab2CLXPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:14:14 -0400
-Date: Mon, 12 Mar 2012 23:14:10 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re-add x86 platform driver tree
-Message-ID: <20120312231410.GB26344@srcf.ucam.org>
-References: <20120312140247.GA10096@srcf.ucam.org>
- <20120313100124.bd2fca4ca2170276d6018651@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8t9RHnE3ZwKMSgU+"
-Content-Disposition: inline
-In-Reply-To: <20120313100124.bd2fca4ca2170276d6018651@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 12 Mar 2012 19:15:32 -0400
+Message-ID: <1331594127.5392.3.camel@phoenix>
+Subject: [PATCH] regulator: Fix the logic of tps65910_get_mode
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Tue, 13 Mar 2012 07:15:27 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We actually clear LDO_ST_ON_BIT for standby mode in tps65910_set_mode.
+Fix the logic in tps65910_get_mode.
 
---8t9RHnE3ZwKMSgU+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Supply state (EEPROM bits):
+ST[1:0] = 00 : Off
+ST[1:0] = 01 : On high power (ACTIVE)
+ST[1:0] = 10 : Off
+ST[1:0] = 11 : On low power (SLEEP)
 
-Hi Stephen,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/tps65910-regulator.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Could you please re-add the x86 platform driver tree? It's at=20
-git://cavan.codon.org.uk/platform-drivers-x86.git linux-next .
+diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
+index 8074d51..33904e7 100644
+--- a/drivers/regulator/tps65910-regulator.c
++++ b/drivers/regulator/tps65910-regulator.c
+@@ -520,7 +520,7 @@ static unsigned int tps65910_get_mode(struct regulator_dev *dev)
+ 	if (value < 0)
+ 		return value;
+ 
+-	if (value & LDO_ST_ON_BIT)
++	if (!(value & LDO_ST_ON_BIT))
+ 		return REGULATOR_MODE_STANDBY;
+ 	else if (value & LDO_ST_MODE_BIT)
+ 		return REGULATOR_MODE_IDLE;
+-- 
+1.7.5.4
 
-Thanks,
---=20
-Matthew Garrett | mjg59@srcf.ucam.org
 
---8t9RHnE3ZwKMSgU+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAk9eg0EACgkQ7Hkv8l1YiTutXwCgj4wKWz/1+aURUbIj+VhjU9Bl
-sDQAnRHR8zOlcqlw5FDhXE11oqZ5Op4n
-=ov9C
------END PGP SIGNATURE-----
-
---8t9RHnE3ZwKMSgU+--
