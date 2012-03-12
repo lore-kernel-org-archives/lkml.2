@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab2CLTC4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:02:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43030 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756292Ab2CLTCy (ORCPT
+	id S1756588Ab2CLTFo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:05:44 -0400
+Received: from host171.canaca.com ([67.55.55.225]:57791 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756292Ab2CLTFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:02:54 -0400
-Date: Mon, 12 Mar 2012 20:02:41 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Roland Stigge <stigge@antcom.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
-Subject: Re: [PATCH v7 0/4] USB: OHCI-HCD: Support for LPC32xx
-Message-ID: <20120312190241.GA28087@pengutronix.de>
-References: <1331463219-23293-1-git-send-email-stigge@antcom.de>
+	Mon, 12 Mar 2012 15:05:42 -0400
+Message-ID: <03eaca06ba2629f55144daa5a386c74b.squirrel@mungewell.org>
+In-Reply-To: <20120312183235.GA28451@opensource.wolfsonmicro.com>
+References: <1331565459-1892-1-git-send-email-simon@mungewell.org>
+    <alpine.LNX.2.00.1203121645050.18356@pobox.suse.cz>
+    <be2be8d04b58ce75fcba9798fcb4e4fa.squirrel@mungewell.org>
+    <20120312180738.GD14020@sirena.org.uk>
+    <3391c87c6cc142e1b50b73eb78e70dc8.squirrel@mungewell.org>
+    <20120312183235.GA28451@opensource.wolfsonmicro.com>
+Date: Mon, 12 Mar 2012 15:05:39 -0400
+Subject: Re: [PATCH 1/2] HID: hid-lg4ff add support for G27 LEDs
+From: simon@mungewell.org
+To: "Mark Brown" <broonie@opensource.wolfsonmicro.com>
+Cc: simon@mungewell.org, "Jiri Kosina" <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Michael Bauer" <michael@m-bauer.org>,
+        "Michal Maly" <madcatxster@gmail.com>
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZGiS0Q5IWpPtfppv"
-Content-Disposition: inline
-In-Reply-To: <1331463219-23293-1-git-send-email-stigge@antcom.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ZGiS0Q5IWpPtfppv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> The LEDs on the G27 are very much more specific, mounted on the yoke of
+>> the gaming wheel.
+>
+>> Would this require the use/complexity of the LED subsystem?
+>
+> Well, it'd mean that applications that know how to drive LEDs will be
+> able to use the LEDs on this wheel with less per device knowledge which
+> seems like a useful thing and if someone wants to remap a LED to "new
+> mail" or whatever that'll be easier (nethack has the mailer daemon
+> deliver a scroll of mail!).
 
-On Sun, Mar 11, 2012 at 11:53:35AM +0100, Roland Stigge wrote:
-> These patches add support for the LPC32xx to the ohci-pnx4008 driver and =
-make
-> the driver use smbus functions.
+I'm not familiar with the LED subsystem, but my concerns would be that
+this would add a whole load of code to implement.
 
-Do you have a branch ready to test (USB driver fixes + mach additions)? I'd
-like to test but I get lots of conflicts when adding the mach related stuff.
-I probably have a different base?
+Most of concern is the fact that the Logitech wheels are transitioned from
+a 'simple' wheel when they are plugged in to an 'advanced' wheel, they
+release/re-register with a different USB ID.
 
-Thanks,
+The port (for a lack of a better word) for controlling the LEDs is mixed
+in with the FF and wheel configuration commands. All this is handled
+within the hid-lg4ff driver (if FF is not enabled you just get the
+'simple' wheel behaviour).
 
-   Wolfram
+If you can point me at some (simple) implementations of the LED subsystem,
+possibly with some guidance, we can look to see if the added complexity is
+actually worth it.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+I'd be pretty sure that other gaming controllers don't abstract their LEDs
+via this subsystem,
+Simon.
 
---ZGiS0Q5IWpPtfppv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+PS. I don't really care about email when screaming around Laguna Seca ;-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iEYEARECAAYFAk9eSFEACgkQD27XaX1/VRvPXwCfQ7SH4OXAeM2blKMJxUVAqtrx
-fuMAoJPGw3o5+mG6l9225svMqVYUpE48
-=Co1x
------END PGP SIGNATURE-----
-
---ZGiS0Q5IWpPtfppv--
