@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab2CLP5y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 11:57:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43430 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751239Ab2CLP5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 11:57:51 -0400
-Date: Mon, 12 Mar 2012 16:57:49 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?St=E9phane_Chatty?= <chatty@enac.fr>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
-In-Reply-To: <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr>
-Message-ID: <alpine.LNX.2.00.1203121650500.18356@pobox.suse.cz>
-References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>  <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz> <20120308105737.GA11201@polaris.bitmath.org>
- <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751824Ab2CLP6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 11:58:24 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38332 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab2CLP6W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 11:58:22 -0400
+Message-ID: <4F5E1D11.8050101@gmail.com>
+Date: Mon, 12 Mar 2012 23:58:09 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 19/37] PCI: Add pci_stop_and_remove_bus()
+References: <1331362837-10740-1-git-send-email-yinghai@kernel.org> <1331362837-10740-20-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1331362837-10740-20-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Mar 2012, Stéphane Chatty wrote:
-
-> > What if we were to change the definition of a HID device on the
-> > modalias level?
-> > 
-> > In practise, a HID device can be either an usb device, a hid device,
+On 03/10/2012 03:00 PM, Yinghai Lu wrote:
+> It supports both pci root bus and pci bus under pci bridge.
 > 
-> Just to be sure: do you mean "bluetooth device"? or is there such a 
-> thing as a hid device per se? I'm asking because I've always been 
-> surprised at seeing usbhid/ in hid/, which kind of breaks the potential 
-> symmetry between USB and Bluetooth wrt hid.
+> -v2: clear pci_bridge's subordinate.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/remove.c |   32 ++++++++++++++++++++++++++++++++
+>  include/linux/pci.h  |    1 +
+>  2 files changed, 33 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+> index d4fdf7b..9ffc071 100644
+> --- a/drivers/pci/remove.c
+> +++ b/drivers/pci/remove.c
+> @@ -170,6 +170,38 @@ void pci_stop_bus_device(struct pci_dev *dev)
+>  	pci_stop_dev(dev);
+>  }
+>  
+> +static void pci_stop_host_bridge(struct pci_host_bridge *bridge)
+> +{
+> +	device_unregister(&bridge->dev);
+> +}
+> +/*
+> + * it will support pci root bus too, in that case we need
+> + *  stop and remove host bridge
+> + */
+> +void pci_stop_and_remove_bus(struct pci_bus *bus)
+> +{
+> +	struct pci_host_bridge *host_bridge = NULL;
+> +	struct pci_dev *pci_bridge = NULL;
+> +
+> +	pci_stop_bus_devices(bus);
+> +
+> +	if (pci_is_root_bus(bus)) {
+> +		host_bridge = to_pci_host_bridge(bus->bridge);
+> +		pci_stop_host_bridge(host_bridge);
+> +	} else
+> +		pci_bridge = bus->self;
+> +
+> +	__pci_remove_bus_devices(bus);
+> +
+> +	pci_remove_bus(bus);
+> +
+It seems that the bus and host_bridge structures may have already been freed here,
+so should not access host_bridge structure any more.
+> +	if (host_bridge)
+> +		host_bridge->bus = NULL;
+> +
+> +	if (pci_bridge)
+> +		pci_bridge->subordinate = NULL;
+> +}
+> +
+>  EXPORT_SYMBOL(pci_stop_and_remove_bus_device);
+>  EXPORT_SYMBOL(pci_stop_and_remove_behind_bridge);
+>  EXPORT_SYMBOL_GPL(pci_stop_bus_device);
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 860091f..8874b90 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -702,6 +702,7 @@ extern void pci_dev_put(struct pci_dev *dev);
+>  extern void pci_remove_bus(struct pci_bus *b);
+>  extern void __pci_remove_bus_device(struct pci_dev *dev);
+>  extern void pci_stop_and_remove_bus_device(struct pci_dev *dev);
+> +void pci_stop_and_remove_bus(struct pci_bus *bus);
+>  extern void pci_stop_bus_device(struct pci_dev *dev);
+>  void pci_setup_cardbus(struct pci_bus *bus);
+>  extern void pci_sort_breadthfirst(void);
 
-Please don't get confused by the directory layout ... this has mostly 
-non-technical reasons -- Marcel wanted to keep bluetooth/hidp under his 
-wings, and I didn't have reasons to object strongly.
-
-I am adding Marcel and Gustavo to CC just in case they have changed their 
-mind, but it's definitely a side-topic in this discussion.
-Marcel, Gustavo -- if you are interested in the whole discussion regarding 
-potential extension of HID core infrastructure to better suit multitouch, 
-please see the whole thread at http://marc.info/?t=133105322800006&r=1&w=4
-
--- 
-Jiri Kosina
-SUSE Labs
