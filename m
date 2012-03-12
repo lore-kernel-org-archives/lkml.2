@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab2CLVJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 17:09:28 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:35540 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753551Ab2CLVJ1 (ORCPT
+	id S1757079Ab2CLVKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 17:10:07 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59668 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756785Ab2CLVKF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 17:09:27 -0400
-X-Authenticated: #1045983
-X-Provags-ID: V01U2FsdGVkX18ecFAyaPUeaEh7lCj3KebmogpAOGpjJqiN4x2Wn3
-	wCJBA7178oyEbw
-Message-ID: <4F5E6600.2070806@gmx.de>
-Date: Mon, 12 Mar 2012 22:09:20 +0100
-From: Helge Deller <deller@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Mon, 12 Mar 2012 17:10:05 -0400
 MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: Octavian Purdila <opurdila@ixiacom.com>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Frank Danapfel <fdanapfe@redhat.com>, Laszlo Ersek <lersek@redhat.com>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] enhance usability of /proc/sys/net/ipv4/ip_local_reserved_ports
-References: <4F5BE563.9050506@gmx.de> <1331523759.1932.13.camel@cr0>
-In-Reply-To: <1331523759.1932.13.camel@cr0>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+In-Reply-To: <1330000688-11226-1-git-send-email-thomas.abraham@linaro.org>
+References: <1330000688-11226-1-git-send-email-thomas.abraham@linaro.org>
+Date: Tue, 13 Mar 2012 02:40:03 +0530
+Message-ID: <CAJuYYwQMB0ANS6noscRe6P4d0JKmTPLP_1r2Sr6-N3amAZiD5Q@mail.gmail.com>
+Subject: Re: [PATCH v3 0/2] regulator: add irq domain and device tree support
+ for MAX8997
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: k.lewandowsk@samsung.com, devicetree-discuss@lists.ozlabs.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        kgene.kim@samsung.com, broonie@opensource.wolfsonmicro.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 04:42 AM, Cong Wang wrote:
-> On Sun, 2012-03-11 at 00:36 +0100, Helge Deller wrote:
->> When writing to the ip_local_reserved_ports proc file it will currently clear
->> all previously reserved ports and update the current list with the one given
->> in the input.
->>
->> This behaviour makes it's usage quite hard, for example:
->> a) The generic proc filesystem limitation of only handle up to PAGE_SIZE-1
->>     characters at maximum may not be sufficient to provide all your wished-to-
->>     be-reserved ports at once.
+Hi Rob/Grant,
+
+On 23 February 2012 18:08, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+> Changes since v2:
+> - Atleast one voltage level has to be specfied for Buck 1/2/5 even if GPIO
+>  DVS option is not used (suggested by MyungJoo Ham).
+> - Reworked the irq_domain support based the v5 of irq_domain generalization
+>  patches.
 >
-> Yes, this should be extended IMHO.
-
-Yes, known problem and not easy to fix.
-
->> b) There is no easy way to disable specific given ports, you always need to
->>     give the full port list at once. This makes shell scripting hard, since
->>     you need to parse everything yourself.
->> c) There is no easy way to just add specific ports or port ranges. Again,
->>     this would be useful for shell scripts.
->>
+> MAX8997 is a multi-function device which includes support for regulators, rtc,
+> battery charger and other sub-blocks. This patchset adds device tree support
+> for the pmic (regulators) sub-block.
 >
-> These could be calculated in user-space, although it maybe not as easy
-> as you want.
-
-Right.
-
->> The following patch solves this problem by simply extending the parser
->> in proc_do_large_bitmap() to accept the keywords "add" and "release" in front
->> of given ports or port ranges and to either add or drop the given ports
->> from the already existing list.
+> The first patch adds irq domain support for the interrupts supported by max8997
+> mainly for removing the need to pass a irq_base from the platform code. The
+> irq_base could not anyway be passed in case of device tree based instantiation.
+> The reverse mapping method used is linear since the sub-drivers of max8997 has
+> access to the max8997 irq_domain from which the linux irq number can be
+> obtained.
 >
-> This looks a little odd, because we do "magic" things with a sysctl
-> file, which is supposed to be plain text file. Do we have existing
-> examples?
+> The second patch adds device tree support for max8997. This patch modifies both
+> mfd and regulator portions of the max8997 code.
+>
+> This patchset is based on the following tree.
+> http://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git [for-next]
+>
+> with all patches merged from
+> http://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git [for-next]
+> http://git.secretlab.ca/git/linux-2.6.git [irqdomain/next]
+>
+> and depends on the following patchset.
+> [PATCH v3 0/4] ARM: Exynos4: Add irq domain and device tree support for wakeup interrupts.
+>
+> This patchset has been tested on Origen board.
+>
+> Thomas Abraham (2):
+>  mfd: add irq domain support for max8997 interrupts
+>  regulator: add device tree support for max8997
 
-I don't think the networking sysctl has such tunables.
-Overall, ip_local_reserved_ports is the only user of the
-large_bitmap function and as such you can't compare the
-input/output of this file with other sysctl files which
-operate on a limited number of integers/booleans/strings only.
-Furthermore my patch does not remove the "plain text"
-behaviour of this file. You can still echo plain ports or
-port lists into it and a "cat" gives you the same output
-as before. It just extends the interface to add/remove
-ports more easily if you want.
-
-One somewhat comparable proc file which comes to my mind in this
-regard is /proc/scsi/scsi where you can echo commands like
-"scsi report-devs 1" and which then reacts. A user of this
-interface is e.g. the known rescan-scsi-bus shell script:
-http://www.garloff.de/kurt/linux/rescan-scsi-bus.sh-1.25
-
-> BTW, as David mentioned, please Cc netdev next time.
-
-Sure. I'll send an updated patch tomorrow and will CC netdev.
+Any comments for this patch series?
 
 Thanks,
-Helge
+Thomas.
+
+>
+>  .../devicetree/bindings/regulator/max8997-pmic.txt |  134 +++++++++++++++++++
+>  arch/arm/mach-exynos/mach-nuri.c                   |    4 -
+>  arch/arm/mach-exynos/mach-origen.c                 |    1 -
+>  drivers/mfd/max8997-irq.c                          |   60 +++++----
+>  drivers/mfd/max8997.c                              |   73 ++++++++++-
+>  drivers/regulator/max8997.c                        |  139 +++++++++++++++++++-
+>  include/linux/mfd/max8997-private.h                |    4 +-
+>  include/linux/mfd/max8997.h                        |    2 +-
+>  8 files changed, 382 insertions(+), 35 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/regulator/max8997-pmic.txt
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
