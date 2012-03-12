@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab2CLRGi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:06:38 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:58229 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab2CLRGh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 13:06:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1331300109.1149.17.camel@fedora>
-References: <20120309184041.bd10edffa51dcd43ce069487@canb.auug.org.au>
-	<1331300109.1149.17.camel@fedora>
-Date: Mon, 12 Mar 2012 12:06:36 -0500
-Message-ID: <CAMXH7KHdfzjZCsBMkFOnwYtyaqBztMY99QcZ7VwLP0JASUiVAw@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the cpuidle-cons tree with the tip tree
-From: Rob Lee <rob.lee@linaro.org>
-To: Steven Rostedt <srostedt@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754577Ab2CLRLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:11:12 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33325 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753185Ab2CLRLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 13:11:11 -0400
+Message-ID: <1331572270.13200.30.camel@joe2Laptop>
+Subject: Re: [PATCH 1/4] jffs2: Convert most D1/D2 macros to jffs2_dbg
+From: Joe Perches <joe@perches.com>
+To: dedekind1@gmail.com
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 12 Mar 2012 10:11:10 -0700
+In-Reply-To: <1331570150.12037.55.camel@sauron.fi.intel.com>
+References: <cover.1329349881.git.joe@perches.com>
+	 <2d68e76db16d42f451370714f03ef952e0839692.1329349881.git.joe@perches.com>
+	 <1330965033.7220.16.camel@golum> <1330966615.3140.6.camel@joe2Laptop>
+	 <1331294012.29445.10.camel@sauron.fi.intel.com>
+	 <1331318968.13055.8.camel@joe2Laptop>
+	 <1331557935.12037.11.camel@sauron.fi.intel.com>
+	 <1331566415.13200.14.camel@joe2Laptop>
+	 <1331570150.12037.55.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven and Stephen,
+On Mon, 2012-03-12 at 18:35 +0200, Artem Bityutskiy wrote:
+> On Mon, 2012-03-12 at 08:33 -0700, Joe Perches wrote:
+> > I tentatively converted them to a bitmap
+> > and a single jffs2_dbg(mask, fmt, ...)
+> > but perhaps all of these could be deleted
+> > too.
+> 
+> I think it is better to convert them to jffs2_debug(). And I guess after
+> the change the "mask" parameter will go away?
 
-On Fri, Mar 9, 2012 at 7:35 AM, Steven Rostedt <srostedt@redhat.com> wrote:
-> On Fri, 2012-03-09 at 18:40 +1100, Stephen Rothwell wrote:
->> diff --cc drivers/cpuidle/cpuidle.c
->> index 6588f43,56de5f7..0000000
->> --- a/drivers/cpuidle/cpuidle.c
->> +++ b/drivers/cpuidle/cpuidle.c
->> @@@ -92,15 -109,13 +109,13 @@@ int cpuidle_idle_call(void
->>                 return 0;
->>         }
->>
->> -       target_state = &drv->states[next_state];
->> -
->>  -      trace_power_start(POWER_CSTATE, next_state, dev->cpu);
->>  -      trace_cpu_idle(next_state, dev->cpu);
->>  +      trace_power_start_rcuidle(POWER_CSTATE, next_state, dev->cpu);
->>  +      trace_cpu_idle_rcuidle(next_state, dev->cpu);
->>
->> -       entered_state = target_state->enter(dev, drv, next_state);
->> +       entered_state = cpuidle_enter_ops(dev, drv, next_state);
->>
->>  -      trace_power_end(dev->cpu);
->>  -      trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
->>  +      trace_power_end_rcuidle(dev->cpu);
->>  +      trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
->>
->
-> Looks good. My change was just a rename of trace_power_* and
-> trace_cpu_*, and it looks like another change was the clean up of
-> target_state. This is a trivial conflict, and there should be no
-> surprises here.
->
-> -- Steve
->
+Mask would remain and perhaps become a module
+variable instead of a compile #define.
 
-Looks good to me as well.
+What is jffs2_debug?  Do you mean JFFS2_DEBUG?
+My intent was to remove JFFS2_<LEVEL> defines and uses.
+These #defines add
+	"(%d) %s" ... task_pid_nr(current), __func__
+which can be added if really necessary via pr_fmt
+to generic pr_<level> uses.
 
-Who should carry this fixup?
+I am not certain of the value for generic uses of
+task_pid_nr in pr_notice,pr_err, or pr_info.
 
-Best Regards,
-Rob
+Dynamic debugging has the ability to optionally add
+task_pid_vnr and __func__ to pr_debug output.
 
->
->
->>         if (entered_state >= 0) {
->>                 /* Update cpuidle counters */
->
+
