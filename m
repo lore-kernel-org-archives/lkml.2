@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756932Ab2CLTwf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:52:35 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:20890
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756876Ab2CLTwd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:52:33 -0400
-X-SpamScore: -18
-X-BigFish: VS-18(zz9371I1447M542M1432N4015Izz1202hzz8275bh8275dhz2fh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC104.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: David Miller <davem@davemloft.net>
-CC: KY Srinivasan <kys@microsoft.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH 1/2] net/hyperv: Fix data corruption in
- rndis_filter_receive()
-Thread-Topic: [PATCH 1/2] net/hyperv: Fix data corruption in
- rndis_filter_receive()
-Thread-Index: AQHM/jqPUZwfx7AJlkugqnN6uP2fnJZltnOAgAEVsrCAAEpNAIAAAD5w
-Date: Mon, 12 Mar 2012 19:52:20 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DCE4276@TK5EX14MBXC223.redmond.corp.microsoft.com>
-References: <1331328437-26852-1-git-send-email-haiyangz@microsoft.com>
-	<20120311.155111.1595145426893784653.davem@davemloft.net>
-	<A1F3067C9B68744AA19F6802BAB8FFDC0DCE4044@TK5EX14MBXC223.redmond.corp.microsoft.com>
- <20120312.125102.65764809953128692.davem@davemloft.net>
-In-Reply-To: <20120312.125102.65764809953128692.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.35]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756894Ab2CLT4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:56:13 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38380 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756343Ab2CLT4L convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 15:56:11 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20120312193020.GA1584@rainbow>
+References: <20120306201538.GA14350@rainbow>
+	<1331287760-10546-1-git-send-email-mad_soft@inbox.ru>
+	<4F5E3BE7.4080207@wwwdotorg.org>
+	<20120312193020.GA1584@rainbow>
+Date: Mon, 12 Mar 2012 12:56:10 -0700
+Message-ID: <CAOesGMi0aqCjLsJ5wWXwFVQL2T8wtUuE14rFZ9h7NKHXcWAoqQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] arm/tegra: add timeout to PCIe PLL lock detection loop
+From: Olof Johansson <olof@lixom.net>
+To: Dmitry Artamonow <mad_soft@inbox.ru>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, linux-tegra@vger.kernel.org,
+        Andi <andi.shyti@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 12, 2012 at 12:30 PM, Dmitry Artamonow <mad_soft@inbox.ru> wrote:
+> On 12:09 Mon 12 Mar     , Stephen Warren wrote:
+>> Thierry pointed out that one of NVIDIA's downstream kernels uses a
+>> timeout of 300 here, rather than 2000 above. Do you see a specific need
+>> for this timeout for be 2000 rather than 300? It might be nice to be
+>> consistent.
+> No, there's no specific need for it to be 2000 - it may as well be 300.
+> I just wanted to stay on the safe side, but I think 300 should be still
+> more than enough time for PLL to lock.
+>
+>>
+>> Olof, I notice you've already applied V1 of this, which has the return
+>> statement issue. Can you replace it with this, or should Dmitry send an
+>> incremental patch?
+>
+> Yes, V1 breaks more things than it fixes, so it would be nice if
+> it can be replaced with fixed version (I hope it's not too late yet).
+> BTW, regarding timeout discussion above - should I resend patch with
+> adjusted timeout, or can you change it while applying? (of course,
+> if we settle on incremental patch, I'll roll this change in)
+
+Please send an incremental patch which also solves the above question. :)
 
 
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Monday, March 12, 2012 3:51 PM
-> To: Haiyang Zhang
-> Cc: KY Srinivasan; netdev@vger.kernel.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH 1/2] net/hyperv: Fix data corruption in
-> rndis_filter_receive()
-> 
-> From: Haiyang Zhang <haiyangz@microsoft.com>
-> Date: Mon, 12 Mar 2012 15:39:02 +0000
-> 
-> > And, thanks for the reminder, I will specify the target tree in future
-> submissions.
-> 
-> You still have to formally resubmit these patches, with the proper indication
-> of where the patches go.  Just replying to my complaint with an answer
-> won't make your patches get replied, as I've completely dropped this
-> submission.
-
-Sure, I'm re-submitting them right now.
-
-Thanks,
-- Haiyang
-
+-Olof
