@@ -1,108 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab2CLEiB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 00:38:01 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:63487 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573Ab2CLEh4 convert rfc822-to-8bit (ORCPT
+	id S1752386Ab2CLEyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 00:54:16 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:16427 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751458Ab2CLEyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 00:37:56 -0400
+	Mon, 12 Mar 2012 00:54:08 -0400
+X-SpamScore: -10
+X-BigFish: VPS-10(zz1454I1432N98dKzz1202hzzz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M0R9M0-02-1O8-02
+X-M-MSG: 
+Date: Mon, 12 Mar 2012 12:53:53 +0800
+From: Aaron Lu <aaron.lu@amd.com>
+To: Lin Ming <ming.m.lin@intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>, Zhang Rui <rui.zhang@intel.com>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Subject: Re: [RFC PATCH v2 8/8] [SCSI] sr: check and enable Zero-power ODD
+ support
+Message-ID: <20120312045353.GA2798@localhost.amd.com>
+References: <Pine.LNX.4.44L0.1203011059230.9392-100000@netrider.rowland.org>
+ <1330671765.3412.7.camel@minggr>
+ <CAOzJMDRTbq5o+jCyTtaAW_RPysfY3LhQ9gFC-tsvM8bsnh=rxQ@mail.gmail.com>
+ <1330743921.6369.2.camel@hp6530s>
+ <1331520598.3436.10.camel@minggr>
 MIME-Version: 1.0
-In-Reply-To: <CAH9JG2XJ3HrQROc-_6Lq6zccgF-QZupVozXCQnXYGN7+DBnq+A@mail.gmail.com>
-References: <1331469965-28846-1-git-send-email-thomas.abraham@linaro.org>
-	<1331469965-28846-6-git-send-email-thomas.abraham@linaro.org>
-	<CAH9JG2XJ3HrQROc-_6Lq6zccgF-QZupVozXCQnXYGN7+DBnq+A@mail.gmail.com>
-Date: Mon, 12 Mar 2012 10:07:54 +0530
-Message-ID: <CAJuYYwSbtJvOM_EY7MXRJ-wEk-vNZvjk64+yKgYRxXABSFk2AQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] mmc: sdhci-s3c: setup pins using pinctrl interface
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linus.walleij@linaro.org,
-        kgene.kim@samsung.com, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1331520598.3436.10.camel@minggr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 12 Mar 2012 04:53:53.0901 (UTC) FILETIME=[1FEF81D0:01CD000C]
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 March 2012 08:08, Kyungmin Park <kmpark@infradead.org> wrote:
-> On 3/11/12, Thomas Abraham <thomas.abraham@linaro.org> wrote:
->> The platform specific callback to setup the sdhci pin mux and pin config
->> is removed and the pinctrl subsystem interface is used to setup the
->> mux and config.
->>
->> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
->> ---
->>  drivers/mmc/host/sdhci-s3c.c |   15 +++++++++++++--
->>  1 files changed, 13 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
->> index ea0767e..76c1c36 100644
->> --- a/drivers/mmc/host/sdhci-s3c.c
->> +++ b/drivers/mmc/host/sdhci-s3c.c
->> @@ -22,6 +22,7 @@
->>  #include <linux/module.h>
->>  #include <linux/of.h>
->>  #include <linux/of_gpio.h>
->> +#include <linux/pinctrl/consumer.h>
->>
->>  #include <linux/mmc/host.h>
->>
->> @@ -50,6 +51,7 @@ struct sdhci_s3c {
->>       struct platform_device  *pdev;
->>       struct resource         *ioarea;
->>       struct s3c_sdhci_platdata *pdata;
->> +     struct pinctrl          *pinctrl;
->>       unsigned int            cur_clk;
->>       int                     ext_cd_irq;
->>       int                     ext_cd_gpio;
->> @@ -529,6 +531,9 @@ static inline struct sdhci_s3c_drv_data
->> *sdhci_s3c_get_driver_data(
->>                       platform_get_device_id(pdev)->driver_data;
->>  }
->>
->> +#include <plat/map-s5p.h>
->> +#include <plat/map-base.h>
->
-> Why this header files are required?
+On Mon, Mar 12, 2012 at 10:49:58AM +0800, Lin Ming wrote:
+> 
+> Would you like the draft incremental patch below?
+> I have not tested it yet.
 
-Sorry, that was a mistake. This was left over here after adding it
-here for some debugging. I will take care next time.
+Yes, this patch looks good to me, feel free to add my acked-by next time
+you post it, thanks.
 
->> +
->>  static int __devinit sdhci_s3c_probe(struct platform_device *pdev)
->>  {
->>       struct s3c_sdhci_platdata *pdata;
->> @@ -538,6 +543,7 @@ static int __devinit sdhci_s3c_probe(struct
->> platform_device *pdev)
->>       struct sdhci_s3c *sc;
->>       struct resource *res;
->>       int ret, irq, ptr, clks;
->> +     char *pstate;
->>
->>       if (!pdev->dev.platform_data && !pdev->dev.of_node) {
->>               dev_err(dev, "no device data specified\n");
->> @@ -643,8 +649,13 @@ static int __devinit sdhci_s3c_probe(struct
->> platform_device *pdev)
->>       }
->>
->>       /* Ensure we have minimal gpio selected CMD/CLK/Detect */
->> -     if (pdata->cfg_gpio)
->> -             pdata->cfg_gpio(pdev, pdata->max_width);
->> +     pstate = pdata->max_width ? "sdhci-pcfg8" : "sdhci-pcfg4";
-> You should check pdata->max_width == 8 instead of max_width itself.
+-Aaron
 
-Thanks. I will fix that.
+> 
+> ---
+>  drivers/ata/libata-core.c  |    3 +++
+>  drivers/ata/libata-scsi.c  |    2 ++
+>  drivers/scsi/sr.c          |   16 +++++++---------
+>  drivers/scsi/sr.h          |    1 -
+>  include/linux/ata.h        |    1 +
+>  include/linux/libata.h     |    2 ++
+>  include/scsi/scsi_device.h |    1 +
+>  7 files changed, 16 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+> index 6742cc4..2a10701 100644
+> --- a/drivers/ata/libata-core.c
+> +++ b/drivers/ata/libata-core.c
+> @@ -2368,6 +2368,9 @@ int ata_dev_configure(struct ata_device *dev)
+>  			dma_dir_string = ", DMADIR";
+>  		}
+>  
+> +		if (atapi_id_has_da(dev->id))
+> +			dev->flags |= ATA_DFLAG_DA;
+> +
+>  		/* print device info to dmesg */
+>  		if (ata_msg_drv(ap) && print_info)
+>  			ata_dev_info(dev,
+> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+> index 231c3ec..0bfbe41 100644
+> --- a/drivers/ata/libata-scsi.c
+> +++ b/drivers/ata/libata-scsi.c
+> @@ -3445,6 +3445,8 @@ void ata_scsi_scan_host(struct ata_port *ap, int sync)
+>  				dev->sdev = sdev;
+>  				scsi_device_put(sdev);
+>  				ata_acpi_bind(dev);
+> +				if (dev->flags & ATA_DFLAG_DA)
+> +					sdev->power_off = 1;
+>  			} else {
+>  				dev->sdev = NULL;
+>  			}
+> diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
+> index 7cd0489..0a75613 100644
+> --- a/drivers/scsi/sr.c
+> +++ b/drivers/scsi/sr.c
+> @@ -87,7 +87,7 @@ static int sr_suspend(struct device *dev, pm_message_t mesg)
+>  	struct scsi_cd *cd;
+>  
+>  	cd = dev_get_drvdata(dev);
+> -	if (cd->zpodd)
+> +	if (cd->device->power_off)
+>  		dev->power.subsys_data->can_power_off = true;
+>  
+>  	return 0;
+> @@ -98,7 +98,7 @@ static int sr_resume(struct device *dev)
+>  	struct scsi_cd *cd;
+>  
+>  	cd = dev_get_drvdata(dev);
+> -	if (cd->zpodd) {
+> +	if (cd->device->power_off) {
+>  		dev->power.subsys_data->can_power_off = false;
+>  		cd->zpodd_event = 0;
+>  	}
+> @@ -245,7 +245,8 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+>  	int ret;
+>  
+>  	/* Not necessary to check events if enter ZPODD state */
+> -	if (cd->zpodd && pm_runtime_suspended(&cd->device->sdev_gendev))
+> +	if (cd->device->power_off &&
+> +			pm_runtime_suspended(&cd->device->sdev_gendev))
+>  		return 0;
+>  
+>  	/* no changer support */
+> @@ -292,7 +293,7 @@ static unsigned int sr_check_events(struct cdrom_device_info *cdi,
+>  	cd->media_present = scsi_status_is_good(ret) ||
+>  		(scsi_sense_valid(&sshdr) && sshdr.asc != 0x3a);
+>  
+> -	if (!cd->media_present && cd->zpodd && !cd->zpodd_event) {
+> +	if (!cd->media_present && cd->device->power_off && !cd->zpodd_event) {
+>  		scsi_autopm_put_device(cd->device);
+>  		cd->zpodd_event = 1;
+>  	}
+> @@ -753,11 +754,8 @@ static int sr_probe(struct device *dev)
+>  	disk->flags |= GENHD_FL_REMOVABLE;
+>  	add_disk(disk);
+>  
+> -	/* TODO: add device attention bit check for ZPODD */
+> -	if (device_run_wake(dev)) {
+> -		cd->zpodd = 1;
+> +	if (sdev->power_off)
+>  		dev_pm_get_subsys_data(dev);
+> -	}
+>  
+>  	sdev_printk(KERN_DEBUG, sdev,
+>  		    "Attached scsi CD-ROM %s\n", cd->cdi.name);
+> @@ -1015,7 +1013,7 @@ static int sr_remove(struct device *dev)
+>  	kref_put(&cd->kref, sr_kref_release);
+>  	mutex_unlock(&sr_ref_mutex);
+>  
+> -	if (cd->zpodd)
+> +	if (cd->device->power_off)
+>  		dev_pm_put_subsys_data(dev);
+>  
+>  	return 0;
+> diff --git a/drivers/scsi/sr.h b/drivers/scsi/sr.h
+> index 39b3d8c..e81da64 100644
+> --- a/drivers/scsi/sr.h
+> +++ b/drivers/scsi/sr.h
+> @@ -42,7 +42,6 @@ typedef struct scsi_cd {
+>  	unsigned readcd_cdda:1;	/* reading audio data using READ_CD */
+>  	unsigned media_present:1;	/* media is present */
+>  
+> -	unsigned zpodd:1;	/* is ZPODD supported */
+>  	unsigned zpodd_event:1;
+>  
+>  	/* GET_EVENT spurious event handling, blk layer guarantees exclusion */
+> diff --git a/include/linux/ata.h b/include/linux/ata.h
+> index 32df2b6..6ee41cc 100644
+> --- a/include/linux/ata.h
+> +++ b/include/linux/ata.h
+> @@ -578,6 +578,7 @@ static inline int ata_is_data(u8 prot)
+>  	  ((u64) (id)[(n) + 0]) )
+>  
+>  #define ata_id_cdb_intr(id)	(((id)[ATA_ID_CONFIG] & 0x60) == 0x20)
+> +#define atapi_id_has_da(id)	((id)[77] & (1 << 4))
+>  
+>  static inline bool ata_id_has_hipm(const u16 *id)
+>  {
+> diff --git a/include/linux/libata.h b/include/linux/libata.h
+> index 36970c6..3085bdc 100644
+> --- a/include/linux/libata.h
+> +++ b/include/linux/libata.h
+> @@ -161,6 +161,8 @@ enum {
+>  	ATA_DFLAG_DETACH	= (1 << 24),
+>  	ATA_DFLAG_DETACHED	= (1 << 25),
+>  
+> +	ATA_DFLAG_DA		= (1 << 26), /* device supports Device Attention */
+> +
+>  	ATA_DEV_UNKNOWN		= 0,	/* unknown device */
+>  	ATA_DEV_ATA		= 1,	/* ATA device */
+>  	ATA_DEV_ATA_UNSUP	= 2,	/* ATA device (unsupported) */
+> diff --git a/include/scsi/scsi_device.h b/include/scsi/scsi_device.h
+> index 8b6c247..4805d5a 100644
+> --- a/include/scsi/scsi_device.h
+> +++ b/include/scsi/scsi_device.h
+> @@ -151,6 +151,7 @@ struct scsi_device {
+>  	unsigned no_read_disc_info:1;	/* Avoid READ_DISC_INFO cmds */
+>  	unsigned no_read_capacity_16:1; /* Avoid READ_CAPACITY_16 cmds */
+>  	unsigned is_visible:1;	/* is the device visible in sysfs */
+> +	unsigned power_off:1; /* Device supports runtime power off */
+>  
+>  	DECLARE_BITMAP(supported_events, SDEV_EVT_MAXBITS); /* supported events */
+>  	struct list_head event_list;	/* asserted events */
+> 
+> 
+> 
+> 
 
-> BTW if platform set the amx_width as 1. How do you handle this?
-
-If the bus width is 1, we need to add pin map entry for 1 bit bus
-width and correspondingly change the code here. I used the sdhci-s3c
-driver for testing the samsung pinctrl driver and only tested with
-4-bit and 8-bit bus width. The changes in this patch are not final yet
-and was mainly included in this series to show how platform callbacks
-can be removed.
-
-Thanks,
-Thomas.
