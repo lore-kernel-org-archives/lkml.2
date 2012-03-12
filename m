@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab2CLBYc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 21:24:32 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48052 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949Ab2CLBYZ (ORCPT
+	id S1754354Ab2CLB0G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 21:26:06 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44766 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab2CLB0B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 21:24:25 -0400
-X-AuditID: 9c930197-b7bd0ae000002080-29-4f5d5041b5ad
-From: "Kim, Jong-Sung" <neidhard.kim@lge.com>
-To: "'Chanho Min'" <chanho0207@gmail.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Cc: "'Linus Walleij'" <linus.walleij@linaro.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Alan Cox'" <alan@linux.intel.com>,
-        "'Shreshtha Kumar Sahu'" <shreshthakumar.sahu@stericsson.com>,
-        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>
-References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>	<20120308184954.GA1275@kroah.com>	<CACRpkdY3A_k_ywWgnFYG_3Jp+EssfULO0R59=GWUG2a0VS3--g@mail.gmail.com>	<20120309163739.GA9545@kroah.com> <CAOAMb1Bpx4ucHgKy+oT2rvt16cubFR3Vi8o3fjwrT65DdJko_Q@mail.gmail.com>
-In-Reply-To: <CAOAMb1Bpx4ucHgKy+oT2rvt16cubFR3Vi8o3fjwrT65DdJko_Q@mail.gmail.com>
-Subject: RE: [PATCH] Clear previous interrupts after fifo is disabled
-Date: Mon, 12 Mar 2012 10:24:17 +0900
-Organization: LG Electronics
-Message-ID: <018601ccffee$d9a8cf00$8cfa6d00$@lge.com>
+	Sun, 11 Mar 2012 21:26:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQIncI9SqTNPd0fm4fZPB+aBpvBgGgGX3bXoAhHnJzIBt8QCXAKfKVtYlXDy9zA=
-Content-Language: ko
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <4F5D4E02.4080209@gmail.com>
+References: <4F5D4E02.4080209@gmail.com>
+From: Julian Calaby <julian.calaby@gmail.com>
+Date: Mon, 12 Mar 2012 12:25:40 +1100
+Message-ID: <CAGRGNgUufVtfdX6D=LPmWXGL=O_x-uBRUWNNyKt1enMEPhGH4w@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] mac80211: improve PID rate control mechanism by
+ avoiding rate oscillation problem
+To: wei <yinwei168@gmail.com>
+Cc: linux-wireless@vger.kernel.org, johannes@sipsolutions.net,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Chanho Min [mailto:chanho0207@gmail.com]
-> Sent: Saturday, March 10, 2012 11:15 AM
-> To: Greg Kroah-Hartman
-> Cc: Linus Walleij; Russell King; Alan Cox; Shreshtha Kumar Sahu; Kim,
-Jong-
-> Sung; linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org
-> Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
-> 
-> >> To me it seems Russell's patch solves part of the problem, and
-> >> Jong-Sung Kim's patch on top of that solves the entire problem, but
-> >> Chanho need to come back and tell whether this is the case in
-> >> practice.
-> >
-> > Ok, then, once it is tested, can someone resend them to me?
-> >
-> > thanks,
-> >
-> > greg k-h
-> 
-> I checked that Jong-Sung Kim's patch solved this hang-up issue and agree
-on
-> it. But, RTIS seems to be cleared as well.
+Hi Wei,
 
-You're right. RTIS should be cleared as well as RXIS. Revised patch:
+Again, a couple of minor comments.
 
-diff --git a/drivers/tty/serial/amba-pl011.c
-b/drivers/tty/serial/amba-pl011.c
-index 6800f5f..39520db 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -224,6 +224,11 @@ static int pl011_fifo_to_tty(struct uart_amba_port
-*uap)
- 		uart_insert_char(&uap->port, ch, UART011_DR_OE, ch, flag);
- 	}
- 
-+	/* RTIS and/or RXIS, but RXFE? Just clear the interrupt(s) */
-+	if(unlikely(fifotaken == 0))
-+		writew(UART011_RTIS | UART011_RXIS, uap->port.membase +
-+		       UART011_ICR);
-+
- 	return fifotaken;
- }
+On Mon, Mar 12, 2012 at 12:14, wei <yinwei168@gmail.com> wrote:
+> From Wei YIN <Wei.Yin@nicta.com.au>
+> Improve PID rate control mechanism by avoiding rate oscillation problem
+>
+> Signed-off-by: Wei YIN <Wei.Yin@nicta.com.au>
+> ---
+> kernel 3.3.0
+> net/mac80211/rc80211_pid_debugfs.c | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------
+> 1 file changed, 65 insertions(+), 6 deletions(-)
+>
+> --- wireless-testing_orig/net/mac80211/rc80211_pid_debugfs.c    2012-02-17 13:59:53.487182968 +1000
+> +++ wireless-testing/net/mac80211/rc80211_pid_debugfs.c 2012-03-08 14:45:38.727184486 +1000
+> @@ -1,5 +1,6 @@
+>  /*
+>  * Copyright 2007, Mattias Nissler <mattias.nissler@gmx.de>
+> + * Copyright 2012, Wei Yin, National ICT Australia <Wei.Yin@nicta.com.au>
+>  *
+>  * This program is free software; you can redistribute it and/or modify
+>  * it under the terms of the GNU General Public License version 2 as
+> @@ -13,12 +14,72 @@
+>  #include <linux/types.h>
+>  #include <linux/skbuff.h>
+>  #include <linux/slab.h>
+> -#include <linux/export.h>
 
+This change should go in a separate patch.
 
+>  #include <net/mac80211.h>
+>  #include "rate.h"
+>
+>  #include "rc80211_pid.h"
+> +#include <linux/debugfs.h>
+> +#include <linux/ieee80211.h>
+> +#include <linux/slab.h>
+> +#include <linux/export.h>
 
+Different types of includes should be grouped together, the #include
+<linux/*> lines should go with their fellows at the top.
+
+Overall, this is significantly improved over your first patch. Well Done.
+
+Does anyone else have any comments about this?
+
+Thanks,
+
+-- 
+Julian Calaby
+
+Email: julian.calaby@gmail.com
+Profile: http://www.google.com/profiles/julian.calaby/
+.Plan: http://sites.google.com/site/juliancalaby/
