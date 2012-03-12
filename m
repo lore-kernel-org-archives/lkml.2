@@ -1,115 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab2CLByX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 21:54:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:65469 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754516Ab2CLByA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 21:54:00 -0400
-X-IronPort-AV: E=Sophos;i="4.73,568,1325433600"; 
-   d="scan'208";a="4505654"
-Message-ID: <4F5D5566.8030807@cn.fujitsu.com>
-Date: Mon, 12 Mar 2012 09:46:14 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Daniel P. Berrange" <berrange@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [RESEND][PATCH 2/2 v3] deal with guest panicked event
-References: <4F58664D.1070800@cn.fujitsu.com> <4F5868C4.2090509@cn.fujitsu.com> <4F5886C4.7040100@cn.fujitsu.com> <4F5897F8.6090503@redhat.com> <20120308113607.GC25529@redhat.com> <4F589D8D.4030105@redhat.com> <20120308115656.GD25529@redhat.com>
-In-Reply-To: <20120308115656.GD25529@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-12 09:42:25,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-12 09:44:03,
-	Serialize complete at 2012-03-12 09:44:03
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1754483Ab2CLB6O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 21:58:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53770 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754136Ab2CLB6G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 21:58:06 -0400
+Message-ID: <1331517472.3022.150.camel@deadeye>
+Subject: Re: [ 08/12] mac80211: zero initialize count field in
+ ieee80211_tx_rate
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Willy Tarreau <w@1wt.eu>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Pavel Roskin <proski@gnu.org>,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Date: Mon, 12 Mar 2012 01:57:52 +0000
+In-Reply-To: <20120312002046.282831520@1wt.eu>
+References: <20120312002046.282831520@1wt.eu>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-XNDgWf37pbXBrhPtOYNE"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03/08/2012 07:56 PM, Daniel P. Berrange Wrote:
-> On Thu, Mar 08, 2012 at 01:52:45PM +0200, Avi Kivity wrote:
->> On 03/08/2012 01:36 PM, Daniel P. Berrange wrote:
->>> On Thu, Mar 08, 2012 at 01:28:56PM +0200, Avi Kivity wrote:
->>>> On 03/08/2012 12:15 PM, Wen Congyang wrote:
->>>>> When the host knows the guest is panicked, it will set
->>>>> exit_reason to KVM_EXIT_GUEST_PANICKED. So if qemu receive
->>>>> this exit_reason, we can send a event to tell management
->>>>> application that the guest is panicked and set the guest
->>>>> status to RUN_STATE_PANICKED.
->>>>>
->>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->>>>> ---
->>>>>  kvm-all.c        |    5 +++++
->>>>>  monitor.c        |    3 +++
->>>>>  monitor.h        |    1 +
->>>>>  qapi-schema.json |    2 +-
->>>>>  qmp.c            |    3 ++-
->>>>>  vl.c             |    1 +
->>>>>  6 files changed, 13 insertions(+), 2 deletions(-)
->>>>>
->>>>> diff --git a/kvm-all.c b/kvm-all.c
->>>>> index 77eadf6..b3c9a83 100644
->>>>> --- a/kvm-all.c
->>>>> +++ b/kvm-all.c
->>>>> @@ -1290,6 +1290,11 @@ int kvm_cpu_exec(CPUState *env)
->>>>>                      (uint64_t)run->hw.hardware_exit_reason);
->>>>>              ret = -1;
->>>>>              break;
->>>>> +        case KVM_EXIT_GUEST_PANICKED:
->>>>> +            monitor_protocol_event(QEVENT_GUEST_PANICKED, NULL);
->>>>> +            vm_stop(RUN_STATE_PANICKED);
->>>>> +            ret = -1;
->>>>> +            break;
->>>>>
->>>>
->>>> If the management application is not aware of this event, then it will
->>>> never resume the guest, so it will appear hung.
->>>
->>> Even if the mgmt app doesn't know about the QEVENT_GUEST_PANICKED, it should
->>> still see a QEVENT_STOP event emitted by vm_stop() surely ? So it will
->>> know the guest CPUs have been stopped, even if it isn't aware of the
->>> reason why, which seems fine to me.
->>
->> No.  The guest is stopped, and there's no reason to suppose that the
->> management app will restart it.  Behaviour has changed.
->>
->> Suppose the guest has reboot_on_panic set; now the behaviour change is
->> even more visible - service will stop completely instead of being
->> interrupted for a bit while the guest reboots.
-> 
-> Hmm, so this calls for a new command line argument to control behaviour,
-> similar to what we do for disk werror, eg something like
-> 
->   --onpanic "report|pause|stop|..."
-> 
-> where
-> 
->  report - emit QEVENT_GUEST_PANICKED only
 
-If the guest is panicked when libvirt is stopped, and we only emit a event,
-we cannot know the guest is panicked when libvirt starts.
+--=-XNDgWf37pbXBrhPtOYNE
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-So I add a new RunState to solve this problem. If the guest is stopped when
-it is panicked, it will change the behaviour. So I think the new RunState
-should be a running state.
+On Mon, 2012-03-12 at 01:20 +0100, Willy Tarreau wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let m=
+e know.
+>=20
+> ------------------
+>=20
+> From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+>=20
+> commit 8617b093d0031837a7be9b32bc674580cfb5f6b5 upstream.
+>=20
+> rate control algorithms concludes the rate as invalid
+> with rate[i].idx < -1 , while they do also check for rate[i].count is
+> non-zero. it would be safer to zero initialize the 'count' field.
+> recently we had a ath9k rate control crash where the ath9k rate control
+> in ath_tx_status assumed to check only for rate[i].count being non-zero
+> in one instance and ended up in using invalid rate index for
+> 'connection monitoring NULL func frames' which eventually lead to the cra=
+sh.
+> thanks to Pavel Roskin for fixing it and finding the root cause.
+> https://bugzilla.redhat.com/show_bug.cgi?id=3D768639
 
-Thanks
-Wen Congyang
+In 2.6.32, ath_tx_status() checks that rates[i].idx >=3D 0, so it properly
+ignores these dummy entries.  Further, there is code further down the
+rate_control_get_rate() function that sets .idx only and appears to
+depend on the initialisation of .count =3D 1.
 
->  pause  - emit QEVENT_GUEST_PANICKED and pause VM
->  stop   - emit QEVENT_GUEST_PANICKED and quit VM
->  stop   - emit QEVENT_GUEST_PANICKED and quit VM
-> 
-> This would map fairly well into libvirt, where we already have config
-> parameters for controlling what todo with a guest when it panics.
-> 
-> Regards,
-> Daniel
+So I'm pretty sure this patch is wrong for 2.6.32; it could be
+backported but I don't think the change is necessary anyway.
 
+Ben.
+
+> Cc: stable@vger.kernel.org
+> Cc: Pavel Roskin <proski@gnu.org>
+> Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+> Signed-off-by: John W. Linville <linville@tuxdriver.com>
+>=20
+> diff --git a/net/mac80211/rate.c b/net/mac80211/rate.c
+> index ad64f4d..f9b8e81 100644
+> --- a/net/mac80211/rate.c
+> +++ b/net/mac80211/rate.c
+> @@ -344,7 +344,7 @@ void rate_control_get_rate(struct ieee80211_sub_if_da=
+ta *sdata,
+>  	for (i =3D 0; i < IEEE80211_TX_MAX_RATES; i++) {
+>  		info->control.rates[i].idx =3D -1;
+>  		info->control.rates[i].flags =3D 0;
+> -		info->control.rates[i].count =3D 1;
+> +		info->control.rates[i].count =3D 0;
+>  	}
+> =20
+>  	if (sdata->local->hw.flags & IEEE80211_HW_HAS_RATE_CONTROL)
+>=20
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>=20
+
+--=20
+Ben Hutchings
+Life would be so much easier if we could look at the source code.
+
+--=-XNDgWf37pbXBrhPtOYNE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAT11YIOe/yOyVhhEJAQr+KA//Yz6deJ6Ay+2k128qmIa78+ns8fRx7l7B
+/IpLEwEO8SteqwQC66uluMEFwxo4u31V4roaFxtdKXCPZFT5s4tBAm/AfOkb0NJz
+pw6k5+F/3XQ8Wo3VMEIGd1QbK3g6KjYc78b6hhCmTzT+it8Oz6DlnB0ENoM+MuWj
+ACZkGUGqvhK4Elafh279doFAxHUjFtqK0tsHHWp6UYtzwR8v54DuwLwU3kkgQ2hU
+JfChGOHAixWquh1DO63u+QvRzlFV+xWAoRCHDLBz4tIxqGWaT5lGdKYa2J5Qc29D
+5MQ4FFxkanvjTa4F0DZaumvTlP0+pVqy4i9T0oRTxD5lsVtNUQKqMOeQhVtLDvZ6
+JmwUa8Vu09ZXT2p19je7g6N9h4tCoAmb8J5UY2AptNPVp6YlgDdJEz+N4+doSL2I
+W6mexBSHmzKbn8FrPAS/LZPrru2wRbnch9KMmOiWtDJGojE2x2h3JZc8me22+VJk
+sgBUwoJD0hFzEmAZfakukFVL+ZqVr8ALyM8F2LHWCH1k6SvZNztDmuXS4rdrkia+
+ViaJZAk0QSkKx73s4QNvCNU2GiLkc6b8TKorNfcXp33y8QPJ2NX9NvW2jkeGTExE
+VexQgEp732aPid6l+kn50zvAGP50XiGB7gBdRF/yMiqfRkc5aqyobvbT2PYKbi8f
+ZyVWMpiO8GU=
+=eRBM
+-----END PGP SIGNATURE-----
+
+--=-XNDgWf37pbXBrhPtOYNE--
