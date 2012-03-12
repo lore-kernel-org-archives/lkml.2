@@ -1,117 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab2CLGUq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 02:20:46 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38358 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab2CLGUj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 02:20:39 -0400
-Message-ID: <4F5D95AF.1020108@openvz.org>
-Date: Mon, 12 Mar 2012 10:20:31 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: Fwd: Control page reclaim granularity
-References: <20120312002806.GA2436@barrios> <20120312020609.GA9610@gmail.com> <20120312051904.GA3831@barrios>
-In-Reply-To: <20120312051904.GA3831@barrios>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752953Ab2CLGak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 02:30:40 -0400
+Received: from 1wt.eu ([62.212.114.60]:63140 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751019Ab2CLGaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 02:30:35 -0400
+Date: Mon, 12 Mar 2012 07:30:27 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [ 02/12] Remove COMPAT_IA32 support
+Message-ID: <20120312063027.GB8971@1wt.eu>
+References: <20120312002046.041448832@1wt.eu> <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120312024948.GB4650@kroah.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minchan Kim wrote:
-> On Mon, Mar 12, 2012 at 10:06:09AM +0800, Zheng Liu wrote:
->> On Mon, Mar 12, 2012 at 09:29:34AM +0900, Minchan Kim wrote:
->>> I forgot to Ccing you.
->>> Sorry.
->>>
->>> ---------- Forwarded message ----------
->>> From: Minchan Kim<minchan@kernel.org>
->>> Date: Mon, Mar 12, 2012 at 9:28 AM
->>> Subject: Re: Control page reclaim granularity
->>> To: Minchan Kim<minchan@kernel.org>, linux-mm<linux-mm@kvack.org>,
->>> linux-kernel<linux-kernel@vger.kernel.org>, Konstantin Khlebnikov<
->>> khlebnikov@openvz.org>, riel@redhat.com, kosaki.motohiro@jp.fujitsu.com
->>>
->>>
->>> On Fri, Mar 09, 2012 at 12:54:03AM +0800, Zheng Liu wrote:
->>>> Hi Minchan,
->>>>
->>>> Sorry, I forgot to say that I don't subscribe linux-mm and linux-kernel
->>>> mailing list.  So please Cc me.
->>>>
->>>> IMHO, maybe we should re-think about how does user use mmap(2).  I
->>>> describe the cases I known in our product system.  They can be
->>>> categorized into two cases.  One is mmaped all data files into memory
->>>> and sometime it uses write(2) to append some data, and another uses
->>>> mmap(2)/munmap(2) and read(2)/write(2) to manipulate the files.  In the
->>>> second case,  the application wants to keep mmaped page into memory and
->>>> let file pages to be reclaimed firstly.  So, IMO, when application uses
->>>> mmap(2) to manipulate files, it is possible to imply that it wants keep
->>>> these mmaped pages into memory and do not be reclaimed.  At least these
->>>> pages do not be reclaimed early than file pages.  I think that maybe we
->>>> can recover that routine and provide a sysctl parameter to let the user
->>>> to set this ratio between mmaped pages and file pages.
->>>
->>> I am not convinced why we should handle mapped page specially.
->>> Sometimem, someone may use mmap by reducing buffer copy compared to read
->>> system call.
->>> So I think we can't make sure mmaped pages are always win.
->>>
->>> My suggestion is that it would be better to declare by user explicitly.
->>> I think we can implement it by madvise and fadvise's WILLNEED option.
->>> Current implementation is just readahead if there isn't a page in memory
->>> but I think
->>> we can promote from inactive to active if there is already a page in
->>> memory.
->>>
->>> It's more clear and it couldn't be affected by kernel page reclaim
->>> algorithm change
->>> like this.
->>
->> Thank you for your advice.  But I still have question about this
->> solution.  If we improve the madvise(2) and fadvise(2)'s WILLNEED
->> option,  it will cause an inconsistently status for pages that be
->> manipulated by madvise(2) and/or fadvise(2).  For example, when I call
->> madvise with WILLNEED flag, some pages will be moved into active list if
->> they already have been in memory, and other pages will be read into
->> memory and be saved in inactive list if they don't be in memory.  Then
->> pages that are in inactive list are possible to be reclaim.  So from the
->> view of users, it is inconsistent because some pages are in memory and
->> some pages are reclaimed.  But actually the user hopes that all of pages
->> can be kept in memory.  IMHO, this inconsistency is weird and makes users
->> puzzled.
->
-> Now problem is that
->
-> 1. User want to keep pages which are used once in a while in memory.
-> 2. Kernel want to reclaim them because they are surely reclaim target
->     pages in point of view by LRU.
->
-> The most desriable approach is that user should use mlock to guarantee
-> them in memory. But mlock is too big overhead and user doesn't want to keep
-> memory all pages all at once.(Ie, he want demand paging when he need the page)
-> Right?
->
-> madvise, it's a just hint for kernel and kernel doesn't need to make sure madvise's behavior.
-> In point of view, such inconsistency might not be a big problem.
->
-> Big problem I think now is that user should use madvise(WILLNEED) periodically because such
-> activation happens once when user calls madvise. If user doesn't use page frequently after
-> user calls it, it ends up moving into inactive list and even could be reclaimed.
-> It's not good. :-(
->
-> Okay. How about adding new VM_WORKINGSET?
-> And reclaimer would give one more round trip in active/inactive list when reclaim happens
-> if the page is referenced.
->
-> Sigh. We have no room for new VM_FLAG in 32 bit.
+On Sun, Mar 11, 2012 at 07:49:48PM -0700, Greg KH wrote:
+> On Mon, Mar 12, 2012 at 01:07:26AM +0000, Ben Hutchings wrote:
+> > On Mon, 2012-03-12 at 01:20 +0100, Willy Tarreau wrote:
+> > > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> > 
+> > The subject/first line should include '[IA64]', as in the original
+> > commit.  It looks like this has been automatically stripped.
+> 
+> Yeah, munging patches to and from quilt and git will cause that to
+> happen at times, it's quite common :(
 
-It would be nice to mark struct address_space with this flag and export AS_UNEVICTABLE somehow.
-Maybe we can reuse file-locking engine for managing these bits =)
+Indeed, and I've even changed my patch formats in haproxy to avoid brackets
+due to this issue. The cause is that many patches are sent with a [PATCH]
+prefix and that with Git, either you keep the subject line intact or you
+remove everything that is between brackets. There's the -b option to only
+remove remove tags looking like [PATCH], but my general experience with it
+was not satisfying (I don't remind why). I have added some scripts to do
+this at some points in the process but it's not 100% reliable as can be
+seen here.
+
+The "funny" thing here is that this comment lacking any IA64 tag annoyed
+me a bit, and I was about to change its name then refrained from doing
+so because I prefered not to keep the original message intact as I did
+not notice the tag went off on my side :-/
+
+Ben, I strongly suggest that you too switch your practise from "[IA64]"
+to "IA64:" as can be seen on many kernel commits these days.
+
+Thanks,
+Willy
+
