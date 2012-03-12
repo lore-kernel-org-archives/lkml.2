@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab2CLTMg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:12:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57704 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755279Ab2CLTMe (ORCPT
+	id S1756646Ab2CLTPu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:15:50 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56715 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555Ab2CLTPs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:12:34 -0400
-Date: Mon, 12 Mar 2012 19:12:32 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: simon@mungewell.org
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Bauer <michael@m-bauer.org>,
-        Michal Maly <madcatxster@gmail.com>
-Subject: Re: [PATCH 1/2] HID: hid-lg4ff add support for G27 LEDs
-Message-ID: <20120312191232.GB30146@opensource.wolfsonmicro.com>
-References: <1331565459-1892-1-git-send-email-simon@mungewell.org>
- <alpine.LNX.2.00.1203121645050.18356@pobox.suse.cz>
- <be2be8d04b58ce75fcba9798fcb4e4fa.squirrel@mungewell.org>
- <20120312180738.GD14020@sirena.org.uk>
- <3391c87c6cc142e1b50b73eb78e70dc8.squirrel@mungewell.org>
- <20120312183235.GA28451@opensource.wolfsonmicro.com>
- <03eaca06ba2629f55144daa5a386c74b.squirrel@mungewell.org>
+	Mon, 12 Mar 2012 15:15:48 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/WwmFnJnmDyWGHa4"
-Content-Disposition: inline
-In-Reply-To: <03eaca06ba2629f55144daa5a386c74b.squirrel@mungewell.org>
-X-Cookie: Someone is speaking well of you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <C6gS2DkSgiG.A.UgC.VuRXPB@chimera>
+References: <WuYv90FoNpB.A.O8.ktRXPB@chimera>
+	<C6gS2DkSgiG.A.UgC.VuRXPB@chimera>
+Date: Mon, 12 Mar 2012 20:15:47 +0100
+Message-ID: <CAPVoSvSG3d1ZnY=x-wv=OnXD7Cx9sdSajBXESAWPXkrSrkUdAA@mail.gmail.com>
+Subject: Re: [Bug #42678] [3.3-rc1] radeon stuck in kernel after lockup
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        =?ISO-8859-1?Q?J=E9r=F4me_Glisse?= <glisse@freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/3/11 Rafael J. Wysocki <rjw@sisk.pl>:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 3.2.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 
---/WwmFnJnmDyWGHa4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Still the same state as of 2012/02/04.
+The regression (X no longer recovering from GPU lockup) is probably
+still there, I'm just no longer seeing it, because the trigger of the
+GPU lockups got fixed. (These GPU lockups themselfs were not a
+regression wrt. 3.3-rc1, that bug existed at least since 3.1)
 
-On Mon, Mar 12, 2012 at 03:05:39PM -0400, simon@mungewell.org wrote:
-
-> If you can point me at some (simple) implementations of the LED subsystem,
-> possibly with some guidance, we can look to see if the added complexity is
-> actually worth it.
-
-I don't think any of the LED drivers are massively complex...  you just
-register and then you get a callback to set the brightness.  That's
-really all there is to it.
-
-> I'd be pretty sure that other gaming controllers don't abstract their LEDs
-> via this subsystem,
-
-How sad :(
-
---/WwmFnJnmDyWGHa4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPXkoxAAoJEBus8iNuMP3dpwYP/AxHgDmK1c0Fo/JSVRFVDJXk
-jkKoEFODOPcMcS3eu+FTSIZ66veuiNxxbItTAP1ih4llbXHRacLJ0teFiPXKETDf
-tu48Arce/jbxNb2ot/iQxPMG3heg2+d0XA08/d2TP9S9UchXx6F2KzSA/0uSF57L
-8aJD4S9Ik9y/cJKO9HvmRZzpqoSA1t3k9p7BDytXiLVDaJrL3eUomqvyhe+Fmq0G
-MgH+eAKDTHsxxBUasLsEYijdALRGI5+K8J5xcKlPgk/qI0vHpkrF9bphsZeESzoZ
-2WZVirOC7aP7etufreq5UqSqFgDhBdDbsVOjcaFdD5F3TdG9J23r3HZSDmRQAkv9
-3e0522W3WHK+hyUyZSBbEpWiDv8TCi9VeDR0dcSpsfxed+hLFs4NwSgjIEMPp/Fg
-W+4V88Fat5LaP16oaels07jeVJT42Gc5b9m7sWOleylmze6gl9Uv6174R6XAOJ4c
-9Qo9wySlCAarSgooaIfRBI6GOejVMwZWRUGK3dgpgaCR7IU3O1fnxjM5M/SH8P//
-BSG3siDQrB0BlDGM3I+JfXgV2zI29piyA6CV9w74Sy9QS+4useZq0RIz/c7RIhSr
-PyF21GCYzNeZxfjCpAevjdbhld7lNsDUq58s75zpvNeZ7mAC9Bd/OnYWc/I4bHuJ
-0uPz/ySar+a59jFTMVWO
-=cNnn
------END PGP SIGNATURE-----
-
---/WwmFnJnmDyWGHa4--
+> Bug-Entry       : https://bugzilla.kernel.org/show_bug.cgi?id=42678
+> Subject         : [3.3-rc1] radeon stuck in kernel after lockup
+> Submitter       : Torsten Kaiser <just.for.lkml@googlemail.com>
+> Date            : 2012-01-21 19:03 (51 days old)
+> Message-ID      : <CAPVoSvSXMvRb=1itu9DjF+s=6zfAChvUxS-x=b8EV9kOZinNpA@mail.gmail.com>
+> References      : http://marc.info/?l=linux-kernel&m=132717279606670&w=2
+> Handled-By      : Jérôme Glisse <glisse@freedesktop.org>
+>
+>
