@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab2CLKuR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 06:50:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43072 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751556Ab2CLKuO (ORCPT
+	id S1752891Ab2CLKv0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 06:51:26 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40928 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab2CLKvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 06:50:14 -0400
-Date: Mon, 12 Mar 2012 10:50:11 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Use DIV_ROUND_CLOSEST in
- wm8350_isink_get_current
-Message-ID: <20120312105011.GB3110@opensource.wolfsonmicro.com>
-References: <1331518676.2558.5.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
-Content-Disposition: inline
-In-Reply-To: <1331518676.2558.5.camel@phoenix>
-X-Cookie: You will triumph over your enemy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Mar 2012 06:51:23 -0400
+Date: Mon, 12 Mar 2012 10:53:12 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Richard Weinberger <richard@nod.at>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: TTY: tty_port questions
+Message-ID: <20120312105312.665d2362@pyramind.ukuu.org.uk>
+In-Reply-To: <4F5DCF39.8080308@nod.at>
+References: <4F5BD51B.7030907@nod.at>
+	<4F5BDB09.3020407@suse.cz>
+	<4F5BE1E6.9000201@nod.at>
+	<4F5C861F.2000507@nod.at>
+	<4F5DCF39.8080308@nod.at>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Another question, what is the purpose of tty_port->console?
+> It seems to have no user.
 
---98e8jtXdkpgskNou
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+So the tty_port layer can in future know about whether it is a console
+without a tty necessarily being present or referenceable.
 
-On Mon, Mar 12, 2012 at 10:17:56AM +0800, Axel Lin wrote:
-> DIV_ROUND_CLOSEST performs the computation (x + d/2)/d with better readability.
+> Is tty_port really the right thing for a console driver like in the UML 
+> case?
 
-Applied, thanks.
+It will be. In order to fix the tty locking mess we need to shove a lot
+of stuff whose lifetime is the lifetime of the physical port somewhere
+else - the tty_port is that structure.
 
---98e8jtXdkpgskNou
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPXdTWAAoJEBus8iNuMP3dh9MP/AhhKE9RQRn+ATC3K4LUuZ/i
-dPUvrDecn+RO1EJod6QACYMiri1wyc5a8M/NpTxm43JHIDlbJBndI4nrt+c2aK9A
-4xNuBSa0lFekDrA/RTb6q7Ue4+jG57SBp2Han7B0td7Q7q0lxKWdczJYOG++OBDz
-1y0nOd/JMUzYe7nW9wFJ2gYG2CazlhppwrZ4iaXgvoQ2gDIdp4YcPGsHjLiiFovU
-Ul4Sr0a8SsshEetEx5bjPO4bNE7JT3v65Wx2+P3QvIXLDzH8ADRNDSmWZVUQlYGW
-/C5XMmmdZ4wyCChs6dBzqeX5lWgWN5Rh+ZDr2O3RoVvU5+/2pr6SM2halZLyQ984
-RCwaegaT6ezWDn88h4uNiQ0WBoK/aLGtOczk1y3yF01j5L7Qp6YHm/HUf1dqtDQ1
-wLEgwB7Gf48eKzEKXyZJ5pXHxIOUXFP66YWEmHYQKloOi20U2aC/vfoANpZmMBfu
-n1rm3lx4lPsug32YEgOOJ4povvnxclW7BWgEUTB9re9onthvNMs2if9i03T19Q6Y
-IqzonMRbBzeSjXCyts2VmBaSXPZWDVuaH0o+ZREYSZB3M4ps2JI514HQE2tvxU9e
-b5pQGz4vLhH0TKzlq0Q0MsnU4VAPHE+YH9X4p96gq5kWBh8+S6e/6itCxyLiT21y
-lpglBkbcNrhafYCDMIlX
-=0jQz
------END PGP SIGNATURE-----
-
---98e8jtXdkpgskNou--
+Alan
