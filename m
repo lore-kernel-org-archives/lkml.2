@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab2CLAuC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 20:50:02 -0400
-Received: from 1wt.eu ([62.212.114.60]:63061 "EHLO 1wt.eu"
+	id S1754916Ab2CLAuU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 20:50:20 -0400
+Received: from 1wt.eu ([62.212.114.60]:63094 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754588Ab2CLAs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 20:48:27 -0400
-Message-Id: <20120312002046.403300238@1wt.eu>
+	id S1754597Ab2CLAss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 20:48:48 -0400
+Message-Id: <20120312004411.443637720@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 Mar 2012 01:20:56 +0100
+Date: Mon, 12 Mar 2012 01:44:14 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Roland McGrath <roland@hack.frob.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 11/12] regset: Return -EFAULT, not -EIO, on host-side memory fault
-In-Reply-To: <feb44625a10a45049eddf27890e95d54@local>
+Cc: Carsten Otte <cotte@de.ibm.com>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 03/13] mm/filemap_xip.c: fix race condition in xip_file_fault()
+In-Reply-To: <fec4dd6c17083169f2e217caca7375ef@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+2.6.27-longterm review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: H. Peter Anvin <hpa@zytor.com>
+From: Carsten Otte <carsteno@de.ibm.com>
 
-commit 5189fa19a4b2b4c3bec37c3a019d446148827717 upstream.
+commit 99f02ef1f18631eb0a4e0ea0a3d56878dbcb4b90 upstream.
 
-There is only one error code to return for a bad user-space buffer
-pointer passed to a system call in the same address space as the
-system call is executed, and that is EFAULT.  Furthermore, the
-low-level access routines, which catch most of the faults, return
-EFAULT already.
+Fix a race condition that shows in conjunction with xip_file_fault() when
+two threads of the same user process fault on the same memory page.
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Roland McGrath <roland@hack.frob.com>
-Cc: <stable@vger.kernel.org>
+In this case, the race winner will install the page table entry and the
+unlucky loser will cause an oops: xip_file_fault calls vm_insert_pfn (via
+vm_insert_mixed) which drops out at this check:
+
+	retval = -EBUSY;
+	if (!pte_none(*pte))
+		goto out_unlock;
+
+The resulting -EBUSY return value will trigger a BUG_ON() in
+xip_file_fault.
+
+This fix simply considers the fault as fixed in this case, because the
+race winner has successfully installed the pte.
+
+[akpm@linux-foundation.org: use conventional (and consistent) comment layout]
+Reported-by: David Sadler <dsadler@us.ibm.com>
+Signed-off-by: Carsten Otte <cotte@de.ibm.com>
+Reported-by: Louis Alex Eisner <leisner@cs.ucsd.edu>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ mm/filemap_xip.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/regset.h b/include/linux/regset.h
-index 5150fd1..686f373 100644
---- a/include/linux/regset.h
-+++ b/include/linux/regset.h
-@@ -339,7 +339,7 @@ static inline int copy_regset_to_user(struct task_struct *target,
- 		return -EOPNOTSUPP;
- 
- 	if (!access_ok(VERIFY_WRITE, data, size))
--		return -EIO;
-+		return -EFAULT;
- 
- 	return regset->get(target, regset, offset, size, NULL, data);
- }
-@@ -365,7 +365,7 @@ static inline int copy_regset_from_user(struct task_struct *target,
- 		return -EOPNOTSUPP;
- 
- 	if (!access_ok(VERIFY_READ, data, size))
--		return -EIO;
-+		return -EFAULT;
- 
- 	return regset->set(target, regset, offset, size, NULL, data);
- }
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+index 1888b2d..e395030 100644
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -262,7 +262,12 @@ found:
+ 							xip_pfn);
+ 		if (err == -ENOMEM)
+ 			return VM_FAULT_OOM;
+-		BUG_ON(err);
++		/*
++		 * err == -EBUSY is fine, we've raced against another thread
++		 * that faulted-in the same page
++		 */
++		if (err != -EBUSY)
++			BUG_ON(err);
+ 		return VM_FAULT_NOPAGE;
+ 	} else {
+ 		int err, ret = VM_FAULT_OOM;
+-- 
+1.7.2.1.45.g54fbc
+
 
 
