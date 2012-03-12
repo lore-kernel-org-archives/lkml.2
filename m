@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab2CLRnA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:43:00 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:37824 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591Ab2CLRm6 (ORCPT
+	id S1753882Ab2CLRnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:43:13 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47273 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab2CLRnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 13:42:58 -0400
-Message-ID: <1331574151.14217.86.camel@aeonflux>
-Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: =?ISO-8859-1?Q?St=E9phane?= Chatty <chatty@enac.fr>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
-        linux-bluetooth@vger.kernel.org
-Date: Mon, 12 Mar 2012 10:42:31 -0700
-In-Reply-To: <alpine.LNX.2.00.1203121650500.18356@pobox.suse.cz>
-References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com>
-	 <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>
-	  <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz>
-	 <20120308105737.GA11201@polaris.bitmath.org>
-	 <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr>
-	 <alpine.LNX.2.00.1203121650500.18356@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 12 Mar 2012 13:43:09 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2] ARM: tegra: export tegra_gpio_{en,dis}able
+To: Stephen Warren <swarren@wwwdotorg.org>, Alan Ott <alan@signal11.us>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>
+In-Reply-To: <4F5A3965.5040300@wwwdotorg.org>
+References: <1330630010-11241-2-git-send-email-alan@signal11.us> <1330727544-11617-1-git-send-email-alan@signal11.us> <4F5A3726.8030505@signal11.us> <4F5A3965.5040300@wwwdotorg.org>
+Date: Mon, 12 Mar 2012 11:43:04 -0600
+Message-Id: <20120312174304.8286D3E07B0@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-> > > What if we were to change the definition of a HID device on the
-> > > modalias level?
-> > > 
-> > > In practise, a HID device can be either an usb device, a hid device,
-> > 
-> > Just to be sure: do you mean "bluetooth device"? or is there such a 
-> > thing as a hid device per se? I'm asking because I've always been 
-> > surprised at seeing usbhid/ in hid/, which kind of breaks the potential 
-> > symmetry between USB and Bluetooth wrt hid.
+On Fri, 09 Mar 2012 10:09:57 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 03/09/2012 10:00 AM, Alan Ott wrote:
+> > On 03/02/2012 05:32 PM, Alan Ott wrote:
+> >> From: Arnd Bergmann <arnd@arndb.de>
+> >>
+> >> These two functions are used in drivers that can be
+> >> modules, so they need to be exported.
+> >>
+> >> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> >> Acked-by: Olof Johansson <olof@lixom.net>
+> ...
+> > Did this patch ever get picked up into someone's tree?
 > 
-> Please don't get confused by the directory layout ... this has mostly 
-> non-technical reasons -- Marcel wanted to keep bluetooth/hidp under his 
-> wings, and I didn't have reasons to object strongly.
-> 
-> I am adding Marcel and Gustavo to CC just in case they have changed their 
-> mind, but it's definitely a side-topic in this discussion.
+> It looks like Grant ack'd it which implies the thought Olof was going to
+> take it through the Tegra tree perhaps? But Olof did the same, so is
+> probably waiting for Grant to take it...
 
-I have not changed my mind. HIDP is Bluetooth specific and should stay
-there. Especially since we are currently discussing changes to make
-things also work over Bluetooth Low Energy (LE), but that is a complete
-different topic and it just started.
+Applied, thx.
 
-> Marcel, Gustavo -- if you are interested in the whole discussion regarding 
-> potential extension of HID core infrastructure to better suit multitouch, 
-> please see the whole thread at http://marc.info/?t=133105322800006&r=1&w=4
+g.
 
-HIDP is just a transport driver in the end. And I heard that the Apple
-Magic Trackpad actually does work nicely. Never tried it by myself.
-
-Regards
-
-Marcel
-
-
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
