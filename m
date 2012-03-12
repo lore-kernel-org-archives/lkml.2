@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab2CLAsR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 20:48:17 -0400
-Received: from 1wt.eu ([62.212.114.60]:63025 "EHLO 1wt.eu"
+	id S1754668Ab2CLAtG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 20:49:06 -0400
+Received: from 1wt.eu ([62.212.114.60]:63036 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754470Ab2CLAsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 20:48:11 -0400
-Message-Id: <20120312002045.940083732@1wt.eu>
+	id S1754541Ab2CLAsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 20:48:15 -0400
+Message-Id: <20120312002046.041448832@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 Mar 2012 01:20:45 +0100
+Date: Mon, 12 Mar 2012 01:20:47 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [ 00/12] 2.6.32.59-longterm review
-Message-ID: <feb44625a10a45049eddf27890e95d54@local>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 02/12] Remove COMPAT_IA32 support
+In-Reply-To: <feb44625a10a45049eddf27890e95d54@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.59 release.
-All patches will be posted as a response to this one. If anyone has any
-issue with these being applied, please let me know. If anyone is a
-maintainer of the proper subsystem, and wants to add a Signed-off-by: line
-to the patch, please respond with it.
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-Responses should be made within 72 hours. Anything received after that time
-might be too late.
+------------------
 
-Please note that the whole -rc patch is not provided anymore, only individual
-patches are provided so that their authors and subsystem maintainers can spot
-issues. If this is a problem for you, please report it so that we try to find
-a solution.
+From: Ben Hutchings <ben@decadent.org.uk>
 
-The diffstat is appended below.
+commit 32974ad4907cdde6c9de612cd1b2ee0568fb9409 upstream
 
- arch/ia64/Kconfig             |   17 -----------------
- arch/s390/Kconfig             |    3 +++
- arch/s390/kernel/setup.c      |    1 +
- block/bsg.c                   |    3 ++-
- drivers/net/usb/usbnet.c      |    2 ++
- drivers/watchdog/hpwdt.c      |    5 +++--
- fs/binfmt_elf.c               |    2 +-
- fs/cifs/dir.c                 |   20 ++++++++++++++++++--
- fs/ecryptfs/crypto.c          |   21 +++++++++++++++++++++
- fs/ecryptfs/ecryptfs_kernel.h |    2 ++
- fs/ecryptfs/file.c            |    3 ++-
- fs/ecryptfs/inode.c           |   18 +++---------------
- include/linux/backing-dev.h   |    1 +
- include/linux/regset.h        |   10 ++++++++--
- mm/backing-dev.c              |   15 ++++++++++-----
- mm/page-writeback.c           |    1 +
- net/mac80211/rate.c           |    2 +-
- 17 files changed, 79 insertions(+), 47 deletions(-)
+This just changes Kconfig rather than touching all the other files the
+original commit did.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/ia64/Kconfig |   17 -----------------
+ 1 files changed, 0 insertions(+), 17 deletions(-)
+
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 1ee596c..20fc9c5 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -502,23 +502,6 @@ config ARCH_PROC_KCORE_TEXT
+ 	def_bool y
+ 	depends on PROC_KCORE
+ 
+-config IA32_SUPPORT
+-	bool "Support for Linux/x86 binaries"
+-	help
+-	  IA-64 processors can execute IA-32 (X86) instructions.  By
+-	  saying Y here, the kernel will include IA-32 system call
+-	  emulation support which makes it possible to transparently
+-	  run IA-32 Linux binaries on an IA-64 Linux system.
+-	  If in doubt, say Y.
+-
+-config COMPAT
+-	bool
+-	depends on IA32_SUPPORT
+-	default y
+-
+-config COMPAT_FOR_U64_ALIGNMENT
+-	def_bool COMPAT
+-
+ config IA64_MCA_RECOVERY
+ 	tristate "MCA recovery from errors other than TLB."
+ 
+-- 
+1.7.2.1.45.g54fbc
+
 
 
