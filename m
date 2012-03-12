@@ -1,59 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755045Ab2CLMNI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 08:13:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64041 "EHLO mx1.redhat.com"
+	id S1754349Ab2CLMRb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 08:17:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57039 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754796Ab2CLMNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 08:13:06 -0400
-Message-ID: <4F5DE84B.8050606@redhat.com>
-Date: Mon, 12 Mar 2012 14:12:59 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1752723Ab2CLMR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 08:17:28 -0400
+Date: Mon, 12 Mar 2012 13:17:26 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fix idle ticks in cpu summary line of /proc/stat
+Message-ID: <20120312121726.GA23608@tiehlicka.suse.cz>
+References: <20120311182621.41674b39@de.ibm.com>
 MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-CC: Davidlohr Bueso <dave@gnu.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        KVM <kvm@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] KVM: x86: add paging gcc optimization
-References: <1331207154.28711.2.camel@offworld> <4F58D48F.8050807@de.ibm.com>
-In-Reply-To: <4F58D48F.8050807@de.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120311182621.41674b39@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/08/2012 05:47 PM, Christian Borntraeger wrote:
-> On 08/03/12 12:45, Davidlohr Bueso wrote:
-> > From: Davidlohr Bueso <dave@gnu.org>
-> > 
-> > Since most guests will have paging enabled for memory management, add likely() optimization
-> > around CR0.PG checks.
->
-> >  {
-> > -	return kvm_read_cr0_bits(vcpu, X86_CR0_PG);
-> > +	return likely(kvm_read_cr0_bits(vcpu, X86_CR0_PG));
->
->
-> IMHO likely/unlikely should be considered more as fast-path/slow-path and not as often/less often.
+On Sun 11-03-12 18:26:21, Martin Schwidefsky wrote:
+> Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update conditional"
+> introduced a bug in regard to cpu hotplug. The effect is that the number
+> of idle ticks in the cpu summary line in /proc/stat is still counting
+> ticks for offline cpus. 
+> 
+> Reproduction is easy, just start a workload that keeps all cpus busy,
+> switch off one or more cpus and then watch the idle field in top.
+> On a dual-core with one cpu 100% busy and one offline cpu you will get
+> something like this:
+> 
+> %Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+> 
+> The problem is that an offline cpu still has ts->idle_active == 1.
+> To fix this get_cpu_idle_time_us and get_cpu_iowait_time_us
+> should check for offline cpus.
 
-Agree.
+Goot catch. But I think that the following fix should be better because
+it doesn't change the semantic of the function. What do you think?
+---
+>From ccd68723637d7003124704a3329179a5947c54d2 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 12 Mar 2012 13:11:38 +0100
+Subject: [PATCH] nohz: fix idle ticks in cpu summary line of /proc/stat
 
-> Is that the case here? This patch  might cause a mis-prediction for non-paging guests all 
-> the time. 
->
-> Non-paging might be really irrelevant, so I am just making a point, since
-> likely/unlikely is mis-used too often especially for "most users do it that way".
+Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update conditional"
+introduced a bug in regard to cpu hotplug. The effect is that the number
+of idle ticks in the cpu summary line in /proc/stat is still counting
+ticks for offline cpus.
 
-In fact this is a classic example.  Almost no guests use real mode (the
-last guests to use real mode extensively was DOS; I think Win9x switches
-to real mode pretty often).  As it's a user-controlled setting, we're
-penalizing users who do things differently.
+Reproduction is easy, just start a workload that keeps all cpus busy,
+switch off one or more cpus and then watch the idle field in top.
+On a dual-core with one cpu 100% busy and one offline cpu you will get
+something like this:
 
-However the majority if is_paging() == true guests is so huge, and since
-non-paging guests don't really expect 2012 performance levels anyway
-(being so old) that I think in practice this is a good optimization here.
+%Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+
+The problem is that an offline cpu still has ts->idle_active == 1.
+To fix this get_cpu_idle_time_us and get_cpu_iowait_time_us
+should check for offline cpus.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ kernel/time/tick-sched.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 7656642..dec767f 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -221,7 +221,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+ 		update_ts_time_stats(cpu, ts, now, last_update_time);
+ 		idle = ts->idle_sleeptime;
+ 	} else {
+-		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
++		if (cpu_online(cpu) && ts->idle_active && !nr_iowait_cpu(cpu)) {
+ 			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+ 
+ 			idle = ktime_add(ts->idle_sleeptime, delta);
+@@ -262,7 +262,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+ 		update_ts_time_stats(cpu, ts, now, last_update_time);
+ 		iowait = ts->iowait_sleeptime;
+ 	} else {
+-		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
++		if (cpu_online(cpu) && ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+ 			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+ 
+ 			iowait = ktime_add(ts->iowait_sleeptime, delta);
+-- 
+1.7.9.1
+
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
