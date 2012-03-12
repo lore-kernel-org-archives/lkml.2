@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965050Ab2CLXlX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:41:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28810 "EHLO mx1.redhat.com"
+	id S1030204Ab2CLXlb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:41:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54160 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964965Ab2CLXlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:41:15 -0400
+	id S964965Ab2CLXl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 19:41:27 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 29/35] Disintegrate asm/system.h for Tile [ver #2]
+Subject: [PATCH 30/35] Disintegrate asm/system.h for Unicore32 [ver #2]
 To: paul.gortmaker@windriver.com, hpa@zytor.com
 Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, arnd@arndb.de,
-        David Howells <dhowells@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 12 Mar 2012 23:40:58 +0000
-Message-ID: <20120312234058.13888.826.stgit@warthog.procyon.org.uk>
+        David Howells <dhowells@redhat.com>, Guan Xuetao <gxt@mprc.pku.edu.cn>
+Date: Mon, 12 Mar 2012 23:41:09 +0000
+Message-ID: <20120312234109.13888.72647.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -29,913 +28,652 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disintegrate asm/system.h for Tile.
+Disintegrate asm/system.h for Unicore32.  Not Compiled.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Chris Metcalf <cmetcalf@tilera.com>
+cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
 ---
 
- arch/tile/include/asm/atomic.h      |    2 
- arch/tile/include/asm/atomic_32.h   |    1 
- arch/tile/include/asm/atomic_64.h   |    1 
- arch/tile/include/asm/barrier.h     |  148 ++++++++++++++++++++
- arch/tile/include/asm/bitops_32.h   |    1 
- arch/tile/include/asm/bitops_64.h   |    1 
- arch/tile/include/asm/cacheflush.h  |   11 +
- arch/tile/include/asm/exec.h        |   20 +++
- arch/tile/include/asm/pgtable.h     |    1 
- arch/tile/include/asm/setup.h       |   22 +++
- arch/tile/include/asm/spinlock_32.h |    1 
- arch/tile/include/asm/switch_to.h   |   76 ++++++++++
- arch/tile/include/asm/system.h      |  265 +----------------------------------
- arch/tile/include/asm/timex.h       |    2 
- arch/tile/include/asm/unaligned.h   |   15 ++
- arch/tile/kernel/early_printk.c     |    1 
- arch/tile/kernel/proc.c             |    1 
- arch/tile/kernel/process.c          |    3 
- arch/tile/kernel/regs_32.S          |    2 
- arch/tile/kernel/regs_64.S          |    2 
- arch/tile/kernel/single_step.c      |    1 
- arch/tile/kernel/traps.c            |    1 
- arch/tile/mm/elf.c                  |    1 
- arch/tile/mm/fault.c                |    1 
- arch/tile/mm/init.c                 |    1 
- arch/tile/mm/pgtable.c              |    1 
- 26 files changed, 309 insertions(+), 273 deletions(-)
- create mode 100644 arch/tile/include/asm/barrier.h
- create mode 100644 arch/tile/include/asm/exec.h
- create mode 100644 arch/tile/include/asm/switch_to.h
+ arch/unicore32/include/asm/Kbuild      |    2 
+ arch/unicore32/include/asm/barrier.h   |   28 +++++
+ arch/unicore32/include/asm/bug.h       |   33 ++++++
+ arch/unicore32/include/asm/cmpxchg.h   |   58 +++++++++++
+ arch/unicore32/include/asm/cr.h        |   49 +++++++++
+ arch/unicore32/include/asm/exec.h      |   15 +++
+ arch/unicore32/include/asm/io.h        |    1 
+ arch/unicore32/include/asm/pgtable.h   |    3 +
+ arch/unicore32/include/asm/setup.h     |   18 +++
+ arch/unicore32/include/asm/switch_to.h |   30 ++++++
+ arch/unicore32/include/asm/system.h    |  168 +-------------------------------
+ arch/unicore32/include/asm/uaccess.h   |    1 
+ arch/unicore32/kernel/dma.c            |    1 
+ arch/unicore32/kernel/head.S           |    1 
+ arch/unicore32/kernel/hibernate.c      |    1 
+ arch/unicore32/kernel/irq.c            |    1 
+ arch/unicore32/kernel/ksyms.c          |    1 
+ arch/unicore32/kernel/process.c        |    1 
+ arch/unicore32/kernel/traps.c          |    1 
+ arch/unicore32/mm/fault.c              |    1 
+ arch/unicore32/mm/flush.c              |    1 
+ 21 files changed, 241 insertions(+), 174 deletions(-)
+ create mode 100644 arch/unicore32/include/asm/barrier.h
+ create mode 100644 arch/unicore32/include/asm/bug.h
+ create mode 100644 arch/unicore32/include/asm/cmpxchg.h
+ create mode 100644 arch/unicore32/include/asm/cr.h
+ create mode 100644 arch/unicore32/include/asm/exec.h
+ create mode 100644 arch/unicore32/include/asm/setup.h
+ create mode 100644 arch/unicore32/include/asm/switch_to.h
 
-diff --git a/arch/tile/include/asm/atomic.h b/arch/tile/include/asm/atomic.h
-index 921dbeb..bb696da 100644
---- a/arch/tile/include/asm/atomic.h
-+++ b/arch/tile/include/asm/atomic.h
-@@ -20,7 +20,7 @@
- #ifndef __ASSEMBLY__
- 
- #include <linux/compiler.h>
--#include <asm/system.h>
-+#include <linux/types.h>
- 
- #define ATOMIC_INIT(i)	{ (i) }
- 
-diff --git a/arch/tile/include/asm/atomic_32.h b/arch/tile/include/asm/atomic_32.h
-index c03349e..466dc4a 100644
---- a/arch/tile/include/asm/atomic_32.h
-+++ b/arch/tile/include/asm/atomic_32.h
-@@ -17,6 +17,7 @@
- #ifndef _ASM_TILE_ATOMIC_32_H
- #define _ASM_TILE_ATOMIC_32_H
- 
-+#include <asm/barrier.h>
- #include <arch/chip.h>
- 
- #ifndef __ASSEMBLY__
-diff --git a/arch/tile/include/asm/atomic_64.h b/arch/tile/include/asm/atomic_64.h
-index 27fe667..f4500c6 100644
---- a/arch/tile/include/asm/atomic_64.h
-+++ b/arch/tile/include/asm/atomic_64.h
-@@ -19,6 +19,7 @@
- 
- #ifndef __ASSEMBLY__
- 
-+#include <asm/barrier.h>
- #include <arch/spr_def.h>
- 
- /* First, the 32-bit atomic ops that are "real" on our 64-bit platform. */
-diff --git a/arch/tile/include/asm/barrier.h b/arch/tile/include/asm/barrier.h
+diff --git a/arch/unicore32/include/asm/Kbuild b/arch/unicore32/include/asm/Kbuild
+index ca113d6..24c686f 100644
+--- a/arch/unicore32/include/asm/Kbuild
++++ b/arch/unicore32/include/asm/Kbuild
+@@ -3,7 +3,6 @@ include include/asm-generic/Kbuild.asm
+ generic-y += atomic.h
+ generic-y += auxvec.h
+ generic-y += bitsperlong.h
+-generic-y += bug.h
+ generic-y += bugs.h
+ generic-y += cputime.h
+ generic-y += current.h
+@@ -38,7 +37,6 @@ generic-y += sections.h
+ generic-y += segment.h
+ generic-y += sembuf.h
+ generic-y += serial.h
+-generic-y += setup.h
+ generic-y += shmbuf.h
+ generic-y += shmparam.h
+ generic-y += siginfo.h
+diff --git a/arch/unicore32/include/asm/barrier.h b/arch/unicore32/include/asm/barrier.h
 new file mode 100644
-index 0000000..990a217
+index 0000000..b7e5f82
 --- /dev/null
-+++ b/arch/tile/include/asm/barrier.h
-@@ -0,0 +1,148 @@
++++ b/arch/unicore32/include/asm/barrier.h
+@@ -0,0 +1,28 @@
 +/*
-+ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ * Memory barrier implementations for PKUnity SoC and UniCore ISA
 + *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
++ * Copyright (C) 2001-2010 GUAN Xue-tao
 + *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
++#ifndef __UNICORE_BARRIER_H__
++#define __UNICORE_BARRIER_H__
 +
-+#ifndef _ASM_TILE_BARRIER_H
-+#define _ASM_TILE_BARRIER_H
++#define isb() __asm__ __volatile__ ("" : : : "memory")
++#define dsb() __asm__ __volatile__ ("" : : : "memory")
++#define dmb() __asm__ __volatile__ ("" : : : "memory")
 +
-+#ifndef __ASSEMBLY__
-+
-+#include <linux/types.h>
-+#include <arch/chip.h>
-+#include <arch/spr_def.h>
-+#include <asm/timex.h>
-+
-+/*
-+ * read_barrier_depends - Flush all pending reads that subsequents reads
-+ * depend on.
-+ *
-+ * No data-dependent reads from memory-like regions are ever reordered
-+ * over this barrier.  All reads preceding this primitive are guaranteed
-+ * to access memory (but not necessarily other CPUs' caches) before any
-+ * reads following this primitive that depend on the data return by
-+ * any of the preceding reads.  This primitive is much lighter weight than
-+ * rmb() on most CPUs, and is never heavier weight than is
-+ * rmb().
-+ *
-+ * These ordering constraints are respected by both the local CPU
-+ * and the compiler.
-+ *
-+ * Ordering is not guaranteed by anything other than these primitives,
-+ * not even by data dependencies.  See the documentation for
-+ * memory_barrier() for examples and URLs to more information.
-+ *
-+ * For example, the following code would force ordering (the initial
-+ * value of "a" is zero, "b" is one, and "p" is "&a"):
-+ *
-+ * <programlisting>
-+ *	CPU 0				CPU 1
-+ *
-+ *	b = 2;
-+ *	memory_barrier();
-+ *	p = &b;				q = p;
-+ *					read_barrier_depends();
-+ *					d = *q;
-+ * </programlisting>
-+ *
-+ * because the read of "*q" depends on the read of "p" and these
-+ * two reads are separated by a read_barrier_depends().  However,
-+ * the following code, with the same initial values for "a" and "b":
-+ *
-+ * <programlisting>
-+ *	CPU 0				CPU 1
-+ *
-+ *	a = 2;
-+ *	memory_barrier();
-+ *	b = 3;				y = b;
-+ *					read_barrier_depends();
-+ *					x = a;
-+ * </programlisting>
-+ *
-+ * does not enforce ordering, since there is no data dependency between
-+ * the read of "a" and the read of "b".  Therefore, on some CPUs, such
-+ * as Alpha, "y" could be set to 3 and "x" to 0.  Use rmb()
-+ * in cases like this where there are no data dependencies.
-+ */
-+#define read_barrier_depends()	do { } while (0)
-+
-+#define __sync()	__insn_mf()
-+
-+#if !CHIP_HAS_MF_WAITS_FOR_VICTIMS()
-+#include <hv/syscall_public.h>
-+/*
-+ * Issue an uncacheable load to each memory controller, then
-+ * wait until those loads have completed.
-+ */
-+static inline void __mb_incoherent(void)
-+{
-+	long clobber_r10;
-+	asm volatile("swint2"
-+		     : "=R10" (clobber_r10)
-+		     : "R10" (HV_SYS_fence_incoherent)
-+		     : "r0", "r1", "r2", "r3", "r4",
-+		       "r5", "r6", "r7", "r8", "r9",
-+		       "r11", "r12", "r13", "r14",
-+		       "r15", "r16", "r17", "r18", "r19",
-+		       "r20", "r21", "r22", "r23", "r24",
-+		       "r25", "r26", "r27", "r28", "r29");
-+}
-+#endif
-+
-+/* Fence to guarantee visibility of stores to incoherent memory. */
-+static inline void
-+mb_incoherent(void)
-+{
-+	__insn_mf();
-+
-+#if !CHIP_HAS_MF_WAITS_FOR_VICTIMS()
-+	{
-+#if CHIP_HAS_TILE_WRITE_PENDING()
-+		const unsigned long WRITE_TIMEOUT_CYCLES = 400;
-+		unsigned long start = get_cycles_low();
-+		do {
-+			if (__insn_mfspr(SPR_TILE_WRITE_PENDING) == 0)
-+				return;
-+		} while ((get_cycles_low() - start) < WRITE_TIMEOUT_CYCLES);
-+#endif /* CHIP_HAS_TILE_WRITE_PENDING() */
-+		(void) __mb_incoherent();
-+	}
-+#endif /* CHIP_HAS_MF_WAITS_FOR_VICTIMS() */
-+}
-+
-+#define fast_wmb()	__sync()
-+#define fast_rmb()	__sync()
-+#define fast_mb()	__sync()
-+#define fast_iob()	mb_incoherent()
-+
-+#define wmb()		fast_wmb()
-+#define rmb()		fast_rmb()
-+#define mb()		fast_mb()
-+#define iob()		fast_iob()
-+
-+#ifdef CONFIG_SMP
-+#define smp_mb()	mb()
-+#define smp_rmb()	rmb()
-+#define smp_wmb()	wmb()
-+#define smp_read_barrier_depends()	read_barrier_depends()
-+#else
++#define mb()		barrier()
++#define rmb()		barrier()
++#define wmb()		barrier()
 +#define smp_mb()	barrier()
 +#define smp_rmb()	barrier()
 +#define smp_wmb()	barrier()
++#define read_barrier_depends()		do { } while (0)
 +#define smp_read_barrier_depends()	do { } while (0)
-+#endif
 +
-+#define set_mb(var, value) \
-+	do { var = value; mb(); } while (0)
++#define set_mb(var, value)	do { var = value; smp_mb(); } while (0)
 +
-+#endif /* !__ASSEMBLY__ */
-+#endif /* _ASM_TILE_BARRIER_H */
-diff --git a/arch/tile/include/asm/bitops_32.h b/arch/tile/include/asm/bitops_32.h
-index 571b118..ddc4c1e 100644
---- a/arch/tile/include/asm/bitops_32.h
-+++ b/arch/tile/include/asm/bitops_32.h
-@@ -17,7 +17,6 @@
- 
- #include <linux/compiler.h>
- #include <linux/atomic.h>
--#include <asm/system.h>
- 
- /* Tile-specific routines to support <asm/bitops.h>. */
- unsigned long _atomic_or(volatile unsigned long *p, unsigned long mask);
-diff --git a/arch/tile/include/asm/bitops_64.h b/arch/tile/include/asm/bitops_64.h
-index e9c8e38..58d021a 100644
---- a/arch/tile/include/asm/bitops_64.h
-+++ b/arch/tile/include/asm/bitops_64.h
-@@ -17,7 +17,6 @@
- 
- #include <linux/compiler.h>
- #include <linux/atomic.h>
--#include <asm/system.h>
- 
- /* See <asm/bitops.h> for API comments. */
- 
-diff --git a/arch/tile/include/asm/cacheflush.h b/arch/tile/include/asm/cacheflush.h
-index e925f4b..0fc63c4 100644
---- a/arch/tile/include/asm/cacheflush.h
-+++ b/arch/tile/include/asm/cacheflush.h
-@@ -20,7 +20,6 @@
- /* Keep includes the same across arches.  */
- #include <linux/mm.h>
- #include <linux/cache.h>
--#include <asm/system.h>
- #include <arch/icache.h>
- 
- /* Caches are physically-indexed and so don't need special treatment */
-@@ -152,4 +151,14 @@ static inline void finv_buffer_local(void *buffer, size_t size)
-  */
- void finv_buffer_remote(void *buffer, size_t size, int hfh);
- 
++#endif /* __UNICORE_BARRIER_H__ */
+diff --git a/arch/unicore32/include/asm/bug.h b/arch/unicore32/include/asm/bug.h
+new file mode 100644
+index 0000000..8304b64
+--- /dev/null
++++ b/arch/unicore32/include/asm/bug.h
+@@ -0,0 +1,33 @@
 +/*
-+ * On SMP systems, when the scheduler does migration-cost autodetection,
-+ * it needs a way to flush as much of the CPU's caches as possible:
++ * Bug handling for PKUnity SoC and UniCore ISA
 + *
-+ * TODO: fill this in!
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
-+static inline void sched_cacheflush(void)
++#ifndef __UNICORE_BUG_H__
++#define __UNICORE_BUG_H__
++
++#include <linux/linkage.h>
++#include <asm/bug.h>
++
++struct pt_regs;
++struct siginfo;
++
++void die(const char *msg, struct pt_regs *regs, int err);
++
++void uc32_notify_die(const char *str, struct pt_regs *regs,
++		struct siginfo *info, unsigned long err, unsigned long trap);
++
++void hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int,
++				       struct pt_regs *),
++		     int sig, int code, const char *name);
++
++extern asmlinkage void __backtrace(void);
++extern asmlinkage void c_backtrace(unsigned long fp, int pmode);
++
++extern void __show_regs(struct pt_regs *);
++
++#endif /* __UNICORE_BUG_H__ */
+diff --git a/arch/unicore32/include/asm/cmpxchg.h b/arch/unicore32/include/asm/cmpxchg.h
+new file mode 100644
+index 0000000..2c36450
+--- /dev/null
++++ b/arch/unicore32/include/asm/cmpxchg.h
+@@ -0,0 +1,58 @@
++/*
++ * Atomics for PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __UNICORE_CMPXCHG_H__
++#define __UNICORE_CMPXCHG_H__
++
++static inline unsigned long
++__xchg(unsigned long x, volatile void *ptr, int size)
 +{
++	unsigned long ret;
++
++	switch (size) {
++	case 1:
++		asm volatile("@	__xchg1\n"
++		"	swapb	%0, %1, [%2]"
++			: "=&r" (ret)
++			: "r" (x), "r" (ptr)
++			: "memory", "cc");
++		break;
++	case 4:
++		asm volatile("@	__xchg4\n"
++		"	swapw	%0, %1, [%2]"
++			: "=&r" (ret)
++			: "r" (x), "r" (ptr)
++			: "memory", "cc");
++		break;
++	default:
++		panic("xchg: bad data size: ptr 0x%p, size %d\n",
++			ptr, size);
++	}
++
++	return ret;
 +}
 +
- #endif /* _ASM_TILE_CACHEFLUSH_H */
-diff --git a/arch/tile/include/asm/exec.h b/arch/tile/include/asm/exec.h
++#define xchg(ptr, x) \
++	((__typeof__(*(ptr)))__xchg((unsigned long)(x), (ptr), sizeof(*(ptr))))
++
++#include <asm-generic/cmpxchg-local.h>
++
++/*
++ * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
++ * them available.
++ */
++#define cmpxchg_local(ptr, o, n)					\
++		((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),	\
++		(unsigned long)(o), (unsigned long)(n), sizeof(*(ptr))))
++#define cmpxchg64_local(ptr, o, n)					\
++		__cmpxchg64_local_generic((ptr), (o), (n))
++
++#include <asm-generic/cmpxchg.h>
++
++#endif /* __UNICORE_CMPXCHG_H__ */
+diff --git a/arch/unicore32/include/asm/cr.h b/arch/unicore32/include/asm/cr.h
 new file mode 100644
-index 0000000..a714e19
+index 0000000..96510a1
 --- /dev/null
-+++ b/arch/tile/include/asm/exec.h
-@@ -0,0 +1,20 @@
++++ b/arch/unicore32/include/asm/cr.h
+@@ -0,0 +1,49 @@
 +/*
-+ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ * CR registed bits for PKUnity SoC and UniCore ISA
 + *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
++ * Copyright (C) 2001-2010 GUAN Xue-tao
 + *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
-+
-+#ifndef _ASM_TILE_EXEC_H
-+#define _ASM_TILE_EXEC_H
-+
-+#define arch_align_stack(x) (x)
-+
-+#endif /* _ASM_TILE_EXEC_H */
-diff --git a/arch/tile/include/asm/pgtable.h b/arch/tile/include/asm/pgtable.h
-index 1a20b7e..6749091 100644
---- a/arch/tile/include/asm/pgtable.h
-+++ b/arch/tile/include/asm/pgtable.h
-@@ -29,7 +29,6 @@
- #include <linux/spinlock.h>
- #include <asm/processor.h>
- #include <asm/fixmap.h>
--#include <asm/system.h>
- 
- struct mm_struct;
- struct vm_area_struct;
-diff --git a/arch/tile/include/asm/setup.h b/arch/tile/include/asm/setup.h
-index 7caf0f3..e58613e 100644
---- a/arch/tile/include/asm/setup.h
-+++ b/arch/tile/include/asm/setup.h
-@@ -31,6 +31,28 @@ void early_panic(const char *fmt, ...);
- void warn_early_printk(void);
- void __init disable_early_printk(void);
- 
-+/* Init-time routine to do tile-specific per-cpu setup. */
-+void setup_cpu(int boot);
-+
-+/* User-level DMA management functions */
-+void grant_dma_mpls(void);
-+void restrict_dma_mpls(void);
-+
-+#ifdef CONFIG_HARDWALL
-+/* User-level network management functions */
-+void reset_network_state(void);
-+void grant_network_mpls(void);
-+void restrict_network_mpls(void);
-+struct task_struct;
-+int hardwall_deactivate(struct task_struct *task);
-+
-+/* Hook hardwall code into changes in affinity. */
-+#define arch_set_cpus_allowed(p, new_mask) do { \
-+	if (p->thread.hardwall && !cpumask_equal(&p->cpus_allowed, new_mask)) \
-+		hardwall_deactivate(p); \
-+} while (0)
-+#endif
-+
- #endif /* __KERNEL__ */
- 
- #endif /* _ASM_TILE_SETUP_H */
-diff --git a/arch/tile/include/asm/spinlock_32.h b/arch/tile/include/asm/spinlock_32.h
-index a5e4208..c0a77b3 100644
---- a/arch/tile/include/asm/spinlock_32.h
-+++ b/arch/tile/include/asm/spinlock_32.h
-@@ -19,7 +19,6 @@
- 
- #include <linux/atomic.h>
- #include <asm/page.h>
--#include <asm/system.h>
- #include <linux/compiler.h>
- 
- /*
-diff --git a/arch/tile/include/asm/switch_to.h b/arch/tile/include/asm/switch_to.h
-new file mode 100644
-index 0000000..1d48c5f
---- /dev/null
-+++ b/arch/tile/include/asm/switch_to.h
-@@ -0,0 +1,76 @@
-+/*
-+ * Copyright 2010 Tilera Corporation. All Rights Reserved.
-+ *
-+ *   This program is free software; you can redistribute it and/or
-+ *   modify it under the terms of the GNU General Public License
-+ *   as published by the Free Software Foundation, version 2.
-+ *
-+ *   This program is distributed in the hope that it will be useful, but
-+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ *   NON INFRINGEMENT.  See the GNU General Public License for
-+ *   more details.
-+ */
-+
-+#ifndef _ASM_TILE_SWITCH_TO_H
-+#define _ASM_TILE_SWITCH_TO_H
-+
-+#include <arch/sim_def.h>
++#ifndef __UNICORE_CR_H__
++#define __UNICORE_CR_H__
 +
 +/*
-+ * switch_to(n) should switch tasks to task nr n, first
-+ * checking that n isn't the current task, in which case it does nothing.
-+ * The number of callee-saved registers saved on the kernel stack
-+ * is defined here for use in copy_thread() and must agree with __switch_to().
++ * CR1 bits (CP#0 CR1)
 + */
-+#define CALLEE_SAVED_FIRST_REG 30
-+#define CALLEE_SAVED_REGS_COUNT 24   /* r30 to r52, plus an empty to align */
++#define CR_M	(1 << 0)	/* MMU enable				*/
++#define CR_A	(1 << 1)	/* Alignment abort enable		*/
++#define CR_D	(1 << 2)	/* Dcache enable			*/
++#define CR_I	(1 << 3)	/* Icache enable			*/
++#define CR_B	(1 << 4)	/* Dcache write mechanism: write back	*/
++#define CR_T	(1 << 5)	/* Burst enable				*/
++#define CR_V	(1 << 13)	/* Vectors relocated to 0xffff0000	*/
 +
 +#ifndef __ASSEMBLY__
 +
++#define vectors_high()	(cr_alignment & CR_V)
++
++extern unsigned long cr_no_alignment;	/* defined in entry-unicore.S */
++extern unsigned long cr_alignment;	/* defined in entry-unicore.S */
++
++static inline unsigned int get_cr(void)
++{
++	unsigned int val;
++	asm("movc %0, p0.c1, #0" : "=r" (val) : : "cc");
++	return val;
++}
++
++static inline void set_cr(unsigned int val)
++{
++	asm volatile("movc p0.c1, %0, #0	@set CR"
++	  : : "r" (val) : "cc");
++	isb();
++}
++
++extern void adjust_cr(unsigned long mask, unsigned long set);
++
++#endif /* __ASSEMBLY__ */
++
++#endif /* __UNICORE_CR_H__ */
+diff --git a/arch/unicore32/include/asm/exec.h b/arch/unicore32/include/asm/exec.h
+new file mode 100644
+index 0000000..ae707b3
+--- /dev/null
++++ b/arch/unicore32/include/asm/exec.h
+@@ -0,0 +1,15 @@
++/*
++ * Process execution bits for PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __UNICORE_EXEC_H__
++#define __UNICORE_EXEC_H__
++
++#define arch_align_stack(x) (x)
++
++#endif /* __UNICORE_EXEC_H__ */
+diff --git a/arch/unicore32/include/asm/io.h b/arch/unicore32/include/asm/io.h
+index adddf6d..39decb6 100644
+--- a/arch/unicore32/include/asm/io.h
++++ b/arch/unicore32/include/asm/io.h
+@@ -16,7 +16,6 @@
+ 
+ #include <asm/byteorder.h>
+ #include <asm/memory.h>
+-#include <asm/system.h>
+ 
+ #define PCI_IOBASE	PKUNITY_PCILIO_BASE
+ #include <asm-generic/io.h>
+diff --git a/arch/unicore32/include/asm/pgtable.h b/arch/unicore32/include/asm/pgtable.h
+index 68b2f29..71b5520 100644
+--- a/arch/unicore32/include/asm/pgtable.h
++++ b/arch/unicore32/include/asm/pgtable.h
+@@ -312,6 +312,9 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+ 
+ #define pgtable_cache_init() do { } while (0)
+ 
++struct mm_struct;
++extern void show_pte(struct mm_struct *mm, unsigned long addr);
++
+ #endif /* !__ASSEMBLY__ */
+ 
+ #endif /* __UNICORE_PGTABLE_H__ */
+diff --git a/arch/unicore32/include/asm/setup.h b/arch/unicore32/include/asm/setup.h
+new file mode 100644
+index 0000000..30d1e7a
+--- /dev/null
++++ b/arch/unicore32/include/asm/setup.h
+@@ -0,0 +1,18 @@
++/*
++ * Setup code for PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __UNICORE_SETUP_H__
++#define __UNICORE_SETUP_H__
++
++#include <asm-generic/setup.h>
++
++extern int cpu_architecture(void);
++extern void cpu_init(void);
++
++#endif /* __UNICORE_SETUP_H__ */
+diff --git a/arch/unicore32/include/asm/switch_to.h b/arch/unicore32/include/asm/switch_to.h
+new file mode 100644
+index 0000000..db7a40c
+--- /dev/null
++++ b/arch/unicore32/include/asm/switch_to.h
+@@ -0,0 +1,30 @@
++/*
++ * Task switching for PKUnity SoC and UniCore ISA
++ *
++ * Copyright (C) 2001-2010 GUAN Xue-tao
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __UNICORE_SWITCH_TO_H__
++#define __UNICORE_SWITCH_TO_H__
++
 +struct task_struct;
++struct thread_info;
 +
 +/*
-+ * Pause the DMA engine and static network before task switching.
++ * switch_to(prev, next) should switch from task `prev' to `next'
++ * `prev' will never be the same as `next'.  schedule() itself
++ * contains the memory barrier to tell GCC not to cache `current'.
 + */
-+#define prepare_arch_switch(next) _prepare_arch_switch(next)
-+void _prepare_arch_switch(struct task_struct *next);
++extern struct task_struct *__switch_to(struct task_struct *,
++		struct thread_info *, struct thread_info *);
 +
-+struct task_struct;
-+#define switch_to(prev, next, last) ((last) = _switch_to((prev), (next)))
-+extern struct task_struct *_switch_to(struct task_struct *prev,
-+				      struct task_struct *next);
-+
-+/* Helper function for _switch_to(). */
-+extern struct task_struct *__switch_to(struct task_struct *prev,
-+				       struct task_struct *next,
-+				       unsigned long new_system_save_k_0);
-+
-+/* Address that switched-away from tasks are at. */
-+extern unsigned long get_switch_to_pc(void);
-+
-+/*
-+ * Kernel threads can check to see if they need to migrate their
-+ * stack whenever they return from a context switch; for user
-+ * threads, we defer until they are returning to user-space.
-+ */
-+#define finish_arch_switch(prev) do {                                     \
-+	if (unlikely((prev)->state == TASK_DEAD))                         \
-+		__insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_OS_EXIT |       \
-+			((prev)->pid << _SIM_CONTROL_OPERATOR_BITS));     \
-+	__insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_OS_SWITCH |             \
-+		(current->pid << _SIM_CONTROL_OPERATOR_BITS));            \
-+	if (current->mm == NULL && !kstack_hash &&                        \
-+	    current_thread_info()->homecache_cpu != smp_processor_id())   \
-+		homecache_migrate_kthread();                              \
++#define switch_to(prev, next, last)					\
++do {									\
++	last = __switch_to(prev,					\
++		task_thread_info(prev), task_thread_info(next));	\
 +} while (0)
 +
-+/* Support function for forking a new task. */
-+void ret_from_fork(void);
-+
-+/* Called from ret_from_fork() when a new process starts up. */
-+struct task_struct *sim_notify_fork(struct task_struct *prev);
-+
-+#endif /* !__ASSEMBLY__ */
-+
-+#endif /* _ASM_TILE_SWITCH_TO_H */
-diff --git a/arch/tile/include/asm/system.h b/arch/tile/include/asm/system.h
-index 23d1842..5b190b4 100644
---- a/arch/tile/include/asm/system.h
-+++ b/arch/tile/include/asm/system.h
-@@ -1,261 +1,4 @@
++#endif /* __UNICORE_SWITCH_TO_H__ */
+diff --git a/arch/unicore32/include/asm/system.h b/arch/unicore32/include/asm/system.h
+index 246b71c..cfc1498 100644
+--- a/arch/unicore32/include/asm/system.h
++++ b/arch/unicore32/include/asm/system.h
+@@ -1,161 +1,7 @@
 -/*
-- * Copyright 2010 Tilera Corporation. All Rights Reserved.
+- * linux/arch/unicore32/include/asm/system.h
 - *
-- *   This program is free software; you can redistribute it and/or
-- *   modify it under the terms of the GNU General Public License
-- *   as published by the Free Software Foundation, version 2.
+- * Code specific to PKUnity SoC and UniCore ISA
 - *
-- *   This program is distributed in the hope that it will be useful, but
-- *   WITHOUT ANY WARRANTY; without even the implied warranty of
-- *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-- *   NON INFRINGEMENT.  See the GNU General Public License for
-- *   more details.
+- * Copyright (C) 2001-2010 GUAN Xue-tao
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
 - */
+-#ifndef __UNICORE_SYSTEM_H__
+-#define __UNICORE_SYSTEM_H__
 -
--#ifndef _ASM_TILE_SYSTEM_H
--#define _ASM_TILE_SYSTEM_H
+-#ifdef __KERNEL__
+-
+-/*
+- * CR1 bits (CP#0 CR1)
+- */
+-#define CR_M	(1 << 0)	/* MMU enable				*/
+-#define CR_A	(1 << 1)	/* Alignment abort enable		*/
+-#define CR_D	(1 << 2)	/* Dcache enable			*/
+-#define CR_I	(1 << 3)	/* Icache enable			*/
+-#define CR_B	(1 << 4)	/* Dcache write mechanism: write back	*/
+-#define CR_T	(1 << 5)	/* Burst enable				*/
+-#define CR_V	(1 << 13)	/* Vectors relocated to 0xffff0000	*/
 -
 -#ifndef __ASSEMBLY__
 -
--#include <linux/types.h>
+-#include <linux/linkage.h>
 -#include <linux/irqflags.h>
 -
--/* NOTE: we can't include <linux/ptrace.h> due to #include dependencies. */
--#include <asm/ptrace.h>
+-struct thread_info;
+-struct task_struct;
 -
--#include <arch/chip.h>
--#include <arch/sim_def.h>
--#include <arch/spr_def.h>
+-struct pt_regs;
 -
--/*
-- * read_barrier_depends - Flush all pending reads that subsequents reads
-- * depend on.
-- *
-- * No data-dependent reads from memory-like regions are ever reordered
-- * over this barrier.  All reads preceding this primitive are guaranteed
-- * to access memory (but not necessarily other CPUs' caches) before any
-- * reads following this primitive that depend on the data return by
-- * any of the preceding reads.  This primitive is much lighter weight than
-- * rmb() on most CPUs, and is never heavier weight than is
-- * rmb().
-- *
-- * These ordering constraints are respected by both the local CPU
-- * and the compiler.
-- *
-- * Ordering is not guaranteed by anything other than these primitives,
-- * not even by data dependencies.  See the documentation for
-- * memory_barrier() for examples and URLs to more information.
-- *
-- * For example, the following code would force ordering (the initial
-- * value of "a" is zero, "b" is one, and "p" is "&a"):
-- *
-- * <programlisting>
-- *	CPU 0				CPU 1
-- *
-- *	b = 2;
-- *	memory_barrier();
-- *	p = &b;				q = p;
-- *					read_barrier_depends();
-- *					d = *q;
-- * </programlisting>
-- *
-- * because the read of "*q" depends on the read of "p" and these
-- * two reads are separated by a read_barrier_depends().  However,
-- * the following code, with the same initial values for "a" and "b":
-- *
-- * <programlisting>
-- *	CPU 0				CPU 1
-- *
-- *	a = 2;
-- *	memory_barrier();
-- *	b = 3;				y = b;
-- *					read_barrier_depends();
-- *					x = a;
-- * </programlisting>
-- *
-- * does not enforce ordering, since there is no data dependency between
-- * the read of "a" and the read of "b".  Therefore, on some CPUs, such
-- * as Alpha, "y" could be set to 3 and "x" to 0.  Use rmb()
-- * in cases like this where there are no data dependencies.
-- */
+-void die(const char *msg, struct pt_regs *regs, int err);
 -
--#define read_barrier_depends()	do { } while (0)
+-struct siginfo;
+-void uc32_notify_die(const char *str, struct pt_regs *regs,
+-		struct siginfo *info, unsigned long err, unsigned long trap);
 -
--#define __sync()	__insn_mf()
+-void hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int,
+-				       struct pt_regs *),
+-		     int sig, int code, const char *name);
 -
--#if CHIP_HAS_SPLIT_CYCLE()
--#define get_cycles_low() __insn_mfspr(SPR_CYCLE_LOW)
--#else
--#define get_cycles_low() __insn_mfspr(SPR_CYCLE)   /* just get all 64 bits */
--#endif
+-#define xchg(ptr, x) \
+-	((__typeof__(*(ptr)))__xchg((unsigned long)(x), (ptr), sizeof(*(ptr))))
 -
--#if !CHIP_HAS_MF_WAITS_FOR_VICTIMS()
--#include <hv/syscall_public.h>
--/*
-- * Issue an uncacheable load to each memory controller, then
-- * wait until those loads have completed.
-- */
--static inline void __mb_incoherent(void)
--{
--	long clobber_r10;
--	asm volatile("swint2"
--		     : "=R10" (clobber_r10)
--		     : "R10" (HV_SYS_fence_incoherent)
--		     : "r0", "r1", "r2", "r3", "r4",
--		       "r5", "r6", "r7", "r8", "r9",
--		       "r11", "r12", "r13", "r14",
--		       "r15", "r16", "r17", "r18", "r19",
--		       "r20", "r21", "r22", "r23", "r24",
--		       "r25", "r26", "r27", "r28", "r29");
--}
--#endif
+-extern asmlinkage void __backtrace(void);
+-extern asmlinkage void c_backtrace(unsigned long fp, int pmode);
 -
--/* Fence to guarantee visibility of stores to incoherent memory. */
--static inline void
--mb_incoherent(void)
--{
--	__insn_mf();
+-struct mm_struct;
+-extern void show_pte(struct mm_struct *mm, unsigned long addr);
+-extern void __show_regs(struct pt_regs *);
 -
--#if !CHIP_HAS_MF_WAITS_FOR_VICTIMS()
--	{
--#if CHIP_HAS_TILE_WRITE_PENDING()
--		const unsigned long WRITE_TIMEOUT_CYCLES = 400;
--		unsigned long start = get_cycles_low();
--		do {
--			if (__insn_mfspr(SPR_TILE_WRITE_PENDING) == 0)
--				return;
--		} while ((get_cycles_low() - start) < WRITE_TIMEOUT_CYCLES);
--#endif /* CHIP_HAS_TILE_WRITE_PENDING() */
--		(void) __mb_incoherent();
--	}
--#endif /* CHIP_HAS_MF_WAITS_FOR_VICTIMS() */
--}
+-extern int cpu_architecture(void);
+-extern void cpu_init(void);
 -
--#define fast_wmb()	__sync()
--#define fast_rmb()	__sync()
--#define fast_mb()	__sync()
--#define fast_iob()	mb_incoherent()
+-#define vectors_high()	(cr_alignment & CR_V)
 -
--#define wmb()		fast_wmb()
--#define rmb()		fast_rmb()
--#define mb()		fast_mb()
--#define iob()		fast_iob()
+-#define isb() __asm__ __volatile__ ("" : : : "memory")
+-#define dsb() __asm__ __volatile__ ("" : : : "memory")
+-#define dmb() __asm__ __volatile__ ("" : : : "memory")
 -
--#ifdef CONFIG_SMP
--#define smp_mb()	mb()
--#define smp_rmb()	rmb()
--#define smp_wmb()	wmb()
--#define smp_read_barrier_depends()	read_barrier_depends()
--#else
+-#define mb()		barrier()
+-#define rmb()		barrier()
+-#define wmb()		barrier()
 -#define smp_mb()	barrier()
 -#define smp_rmb()	barrier()
 -#define smp_wmb()	barrier()
+-#define read_barrier_depends()		do { } while (0)
 -#define smp_read_barrier_depends()	do { } while (0)
--#endif
 -
--#define set_mb(var, value) \
--	do { var = value; mb(); } while (0)
+-#define set_mb(var, value)	do { var = value; smp_mb(); } while (0)
+-#define nop() __asm__ __volatile__("mov\tr0,r0\t@ nop\n\t");
 -
--/*
-- * Pause the DMA engine and static network before task switching.
-- */
--#define prepare_arch_switch(next) _prepare_arch_switch(next)
--void _prepare_arch_switch(struct task_struct *next);
+-extern unsigned long cr_no_alignment;	/* defined in entry-unicore.S */
+-extern unsigned long cr_alignment;	/* defined in entry-unicore.S */
 -
--
--/*
-- * switch_to(n) should switch tasks to task nr n, first
-- * checking that n isn't the current task, in which case it does nothing.
-- * The number of callee-saved registers saved on the kernel stack
-- * is defined here for use in copy_thread() and must agree with __switch_to().
-- */
--#endif /* !__ASSEMBLY__ */
--#define CALLEE_SAVED_FIRST_REG 30
--#define CALLEE_SAVED_REGS_COUNT 24   /* r30 to r52, plus an empty to align */
--#ifndef __ASSEMBLY__
--struct task_struct;
--#define switch_to(prev, next, last) ((last) = _switch_to((prev), (next)))
--extern struct task_struct *_switch_to(struct task_struct *prev,
--				      struct task_struct *next);
--
--/* Helper function for _switch_to(). */
--extern struct task_struct *__switch_to(struct task_struct *prev,
--				       struct task_struct *next,
--				       unsigned long new_system_save_k_0);
--
--/* Address that switched-away from tasks are at. */
--extern unsigned long get_switch_to_pc(void);
--
--/*
-- * On SMP systems, when the scheduler does migration-cost autodetection,
-- * it needs a way to flush as much of the CPU's caches as possible:
-- *
-- * TODO: fill this in!
-- */
--static inline void sched_cacheflush(void)
+-static inline unsigned int get_cr(void)
 -{
+-	unsigned int val;
+-	asm("movc %0, p0.c1, #0" : "=r" (val) : : "cc");
+-	return val;
 -}
+-
+-static inline void set_cr(unsigned int val)
+-{
+-	asm volatile("movc p0.c1, %0, #0	@set CR"
+-	  : : "r" (val) : "cc");
+-	isb();
+-}
+-
+-extern void adjust_cr(unsigned long mask, unsigned long set);
+-
+-/*
+- * switch_to(prev, next) should switch from task `prev' to `next'
+- * `prev' will never be the same as `next'.  schedule() itself
+- * contains the memory barrier to tell GCC not to cache `current'.
+- */
+-extern struct task_struct *__switch_to(struct task_struct *,
+-		struct thread_info *, struct thread_info *);
+-extern void panic(const char *fmt, ...);
+-
+-#define switch_to(prev, next, last)					\
+-do {									\
+-	last = __switch_to(prev,					\
+-		task_thread_info(prev), task_thread_info(next));	\
+-} while (0)
+-
+-static inline unsigned long
+-__xchg(unsigned long x, volatile void *ptr, int size)
+-{
+-	unsigned long ret;
+-
+-	switch (size) {
+-	case 1:
+-		asm volatile("@	__xchg1\n"
+-		"	swapb	%0, %1, [%2]"
+-			: "=&r" (ret)
+-			: "r" (x), "r" (ptr)
+-			: "memory", "cc");
+-		break;
+-	case 4:
+-		asm volatile("@	__xchg4\n"
+-		"	swapw	%0, %1, [%2]"
+-			: "=&r" (ret)
+-			: "r" (x), "r" (ptr)
+-			: "memory", "cc");
+-		break;
+-	default:
+-		panic("xchg: bad data size: ptr 0x%p, size %d\n",
+-			ptr, size);
+-	}
+-
+-	return ret;
+-}
+-
+-#include <asm-generic/cmpxchg-local.h>
+-
+-/*
+- * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
+- * them available.
+- */
+-#define cmpxchg_local(ptr, o, n)					\
+-		((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr),	\
+-		(unsigned long)(o), (unsigned long)(n), sizeof(*(ptr))))
+-#define cmpxchg64_local(ptr, o, n)					\
+-		__cmpxchg64_local_generic((ptr), (o), (n))
+-
+-#include <asm-generic/cmpxchg.h>
+-
+-#endif /* __ASSEMBLY__ */
 -
 -#define arch_align_stack(x) (x)
 -
--/*
-- * Is the kernel doing fixups of unaligned accesses?  If <0, no kernel
-- * intervention occurs and SIGBUS is delivered with no data address
-- * info.  If 0, the kernel single-steps the instruction to discover
-- * the data address to provide with the SIGBUS.  If 1, the kernel does
-- * a fixup.
-- */
--extern int unaligned_fixup;
+-#endif /* __KERNEL__ */
 -
--/* Is the kernel printing on each unaligned fixup? */
--extern int unaligned_printk;
--
--/* Number of unaligned fixups performed */
--extern unsigned int unaligned_fixup_count;
--
--/* Init-time routine to do tile-specific per-cpu setup. */
--void setup_cpu(int boot);
--
--/* User-level DMA management functions */
--void grant_dma_mpls(void);
--void restrict_dma_mpls(void);
--
--#ifdef CONFIG_HARDWALL
--/* User-level network management functions */
--void reset_network_state(void);
--void grant_network_mpls(void);
--void restrict_network_mpls(void);
--int hardwall_deactivate(struct task_struct *task);
--
--/* Hook hardwall code into changes in affinity. */
--#define arch_set_cpus_allowed(p, new_mask) do { \
--	if (p->thread.hardwall && !cpumask_equal(&p->cpus_allowed, new_mask)) \
--		hardwall_deactivate(p); \
--} while (0)
 -#endif
--
--/*
-- * Kernel threads can check to see if they need to migrate their
-- * stack whenever they return from a context switch; for user
-- * threads, we defer until they are returning to user-space.
-- */
--#define finish_arch_switch(prev) do {                                     \
--	if (unlikely((prev)->state == TASK_DEAD))                         \
--		__insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_OS_EXIT |       \
--			((prev)->pid << _SIM_CONTROL_OPERATOR_BITS));     \
--	__insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_OS_SWITCH |             \
--		(current->pid << _SIM_CONTROL_OPERATOR_BITS));            \
--	if (current->mm == NULL && !kstack_hash &&                        \
--	    current_thread_info()->homecache_cpu != smp_processor_id())   \
--		homecache_migrate_kthread();                              \
--} while (0)
--
--/* Support function for forking a new task. */
--void ret_from_fork(void);
--
--/* Called from ret_from_fork() when a new process starts up. */
--struct task_struct *sim_notify_fork(struct task_struct *prev);
--
--#endif /* !__ASSEMBLY__ */
--
--#endif /* _ASM_TILE_SYSTEM_H */
 +/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
 +#include <asm/barrier.h>
++#include <asm/cmpxchg.h>
++#include <asm/cr.h>
 +#include <asm/exec.h>
-+#include <asm/switch_to.h>
-diff --git a/arch/tile/include/asm/timex.h b/arch/tile/include/asm/timex.h
-index 29921f0..dc987d5 100644
---- a/arch/tile/include/asm/timex.h
-+++ b/arch/tile/include/asm/timex.h
-@@ -29,11 +29,13 @@ typedef unsigned long long cycles_t;
- 
- #if CHIP_HAS_SPLIT_CYCLE()
- cycles_t get_cycles(void);
-+#define get_cycles_low() __insn_mfspr(SPR_CYCLE_LOW)
- #else
- static inline cycles_t get_cycles(void)
- {
- 	return __insn_mfspr(SPR_CYCLE);
- }
-+#define get_cycles_low() __insn_mfspr(SPR_CYCLE)   /* just get all 64 bits */
- #endif
- 
- cycles_t get_clock_rate(void);
-diff --git a/arch/tile/include/asm/unaligned.h b/arch/tile/include/asm/unaligned.h
-index 137e2de..37dfbe5 100644
---- a/arch/tile/include/asm/unaligned.h
-+++ b/arch/tile/include/asm/unaligned.h
-@@ -21,4 +21,19 @@
- #define get_unaligned	__get_unaligned_le
- #define put_unaligned	__put_unaligned_le
- 
-+/*
-+ * Is the kernel doing fixups of unaligned accesses?  If <0, no kernel
-+ * intervention occurs and SIGBUS is delivered with no data address
-+ * info.  If 0, the kernel single-steps the instruction to discover
-+ * the data address to provide with the SIGBUS.  If 1, the kernel does
-+ * a fixup.
-+ */
-+extern int unaligned_fixup;
-+
-+/* Is the kernel printing on each unaligned fixup? */
-+extern int unaligned_printk;
-+
-+/* Number of unaligned fixups performed */
-+extern unsigned int unaligned_fixup_count;
-+
- #endif /* _ASM_TILE_UNALIGNED_H */
-diff --git a/arch/tile/kernel/early_printk.c b/arch/tile/kernel/early_printk.c
-index 493a0e6..afb9c9a 100644
---- a/arch/tile/kernel/early_printk.c
-+++ b/arch/tile/kernel/early_printk.c
-@@ -16,6 +16,7 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/string.h>
-+#include <linux/irqflags.h>
- #include <asm/setup.h>
- #include <hv/hypervisor.h>
- 
-diff --git a/arch/tile/kernel/proc.c b/arch/tile/kernel/proc.c
-index 62d8208..7a93270 100644
---- a/arch/tile/kernel/proc.c
-+++ b/arch/tile/kernel/proc.c
-@@ -23,6 +23,7 @@
- #include <linux/sysctl.h>
- #include <linux/hardirq.h>
- #include <linux/mman.h>
-+#include <asm/unaligned.h>
- #include <asm/pgtable.h>
- #include <asm/processor.h>
- #include <asm/sections.h>
-diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
-index 4c1ac6e..a6a2217 100644
---- a/arch/tile/kernel/process.c
-+++ b/arch/tile/kernel/process.c
-@@ -27,16 +27,17 @@
- #include <linux/kernel.h>
- #include <linux/tracehook.h>
- #include <linux/signal.h>
--#include <asm/system.h>
- #include <asm/stack.h>
- #include <asm/homecache.h>
- #include <asm/syscalls.h>
- #include <asm/traps.h>
 +#include <asm/setup.h>
- #ifdef CONFIG_HARDWALL
- #include <asm/hardwall.h>
- #endif
- #include <arch/chip.h>
- #include <arch/abi.h>
-+#include <arch/sim_def.h>
- 
- 
- /*
-diff --git a/arch/tile/kernel/regs_32.S b/arch/tile/kernel/regs_32.S
-index caa1310..c12280c 100644
---- a/arch/tile/kernel/regs_32.S
-+++ b/arch/tile/kernel/regs_32.S
-@@ -13,11 +13,11 @@
-  */
- 
- #include <linux/linkage.h>
--#include <asm/system.h>
- #include <asm/ptrace.h>
- #include <asm/asm-offsets.h>
- #include <arch/spr_def.h>
- #include <asm/processor.h>
 +#include <asm/switch_to.h>
+diff --git a/arch/unicore32/include/asm/uaccess.h b/arch/unicore32/include/asm/uaccess.h
+index 2acda50..897e11ad 100644
+--- a/arch/unicore32/include/asm/uaccess.h
++++ b/arch/unicore32/include/asm/uaccess.h
+@@ -16,7 +16,6 @@
+ #include <linux/errno.h>
  
- /*
-  * See <asm/system.h>; called with prev and next task_struct pointers.
-diff --git a/arch/tile/kernel/regs_64.S b/arch/tile/kernel/regs_64.S
-index f748c1e..0829fd0 100644
---- a/arch/tile/kernel/regs_64.S
-+++ b/arch/tile/kernel/regs_64.S
-@@ -13,11 +13,11 @@
-  */
- 
- #include <linux/linkage.h>
+ #include <asm/memory.h>
 -#include <asm/system.h>
- #include <asm/ptrace.h>
- #include <asm/asm-offsets.h>
- #include <arch/spr_def.h>
- #include <asm/processor.h>
-+#include <asm/switch_to.h>
  
- /*
-  * See <asm/system.h>; called with prev and next task_struct pointers.
-diff --git a/arch/tile/kernel/single_step.c b/arch/tile/kernel/single_step.c
-index b7a8795..bc1eb58 100644
---- a/arch/tile/kernel/single_step.c
-+++ b/arch/tile/kernel/single_step.c
-@@ -25,6 +25,7 @@
- #include <linux/types.h>
- #include <linux/err.h>
+ #define __copy_from_user	__copy_from_user
+ #define __copy_to_user		__copy_to_user
+diff --git a/arch/unicore32/kernel/dma.c b/arch/unicore32/kernel/dma.c
+index ae441bc..ed2d4d7 100644
+--- a/arch/unicore32/kernel/dma.c
++++ b/arch/unicore32/kernel/dma.c
+@@ -18,7 +18,6 @@
+ #include <linux/errno.h>
+ #include <linux/io.h>
+ 
+-#include <asm/system.h>
+ #include <asm/irq.h>
+ #include <mach/hardware.h>
+ #include <mach/dma.h>
+diff --git a/arch/unicore32/kernel/head.S b/arch/unicore32/kernel/head.S
+index 8caf322..fb1eb5c 100644
+--- a/arch/unicore32/kernel/head.S
++++ b/arch/unicore32/kernel/head.S
+@@ -17,7 +17,6 @@
+ #include <generated/asm-offsets.h>
+ #include <asm/memory.h>
+ #include <asm/thread_info.h>
+-#include <asm/system.h>
+ #include <asm/pgtable-hwdef.h>
+ 
+ #if (PHYS_OFFSET & 0x003fffff)
+diff --git a/arch/unicore32/kernel/hibernate.c b/arch/unicore32/kernel/hibernate.c
+index 7d0f0b7..d75ef8b 100644
+--- a/arch/unicore32/kernel/hibernate.c
++++ b/arch/unicore32/kernel/hibernate.c
+@@ -15,7 +15,6 @@
+ #include <linux/suspend.h>
+ #include <linux/bootmem.h>
+ 
+-#include <asm/system.h>
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+diff --git a/arch/unicore32/kernel/irq.c b/arch/unicore32/kernel/irq.c
+index d4efa7d..0be5ccd 100644
+--- a/arch/unicore32/kernel/irq.c
++++ b/arch/unicore32/kernel/irq.c
+@@ -26,7 +26,6 @@
+ #include <linux/syscore_ops.h>
+ #include <linux/gpio.h>
+ 
+-#include <asm/system.h>
+ #include <mach/hardware.h>
+ 
+ #include "setup.h"
+diff --git a/arch/unicore32/kernel/ksyms.c b/arch/unicore32/kernel/ksyms.c
+index d98bd81..d285d71 100644
+--- a/arch/unicore32/kernel/ksyms.c
++++ b/arch/unicore32/kernel/ksyms.c
+@@ -20,7 +20,6 @@
+ #include <linux/io.h>
+ 
+ #include <asm/checksum.h>
+-#include <asm/system.h>
+ 
+ #include "ksyms.h"
+ 
+diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
+index 52edc2b..1b3f152 100644
+--- a/arch/unicore32/kernel/process.c
++++ b/arch/unicore32/kernel/process.c
+@@ -34,7 +34,6 @@
+ 
  #include <asm/cacheflush.h>
-+#include <asm/unaligned.h>
- #include <arch/abi.h>
- #include <arch/opcode.h>
- 
-diff --git a/arch/tile/kernel/traps.c b/arch/tile/kernel/traps.c
-index 4f47b8a..2bb6602 100644
---- a/arch/tile/kernel/traps.c
-+++ b/arch/tile/kernel/traps.c
-@@ -21,6 +21,7 @@
- #include <linux/ptrace.h>
- #include <asm/stack.h>
- #include <asm/traps.h>
-+#include <asm/setup.h>
- 
- #include <arch/interrupts.h>
- #include <arch/spr_def.h>
-diff --git a/arch/tile/mm/elf.c b/arch/tile/mm/elf.c
-index 55e58e9..33368d1 100644
---- a/arch/tile/mm/elf.c
-+++ b/arch/tile/mm/elf.c
-@@ -21,6 +21,7 @@
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
- #include <asm/sections.h>
-+#include <arch/sim_def.h>
- 
- /* Notify a running simulator, if any, that an exec just occurred. */
- static void sim_notify_exec(const char *binary_name)
-diff --git a/arch/tile/mm/fault.c b/arch/tile/mm/fault.c
-index c1eaaa1..cba30e9 100644
---- a/arch/tile/mm/fault.c
-+++ b/arch/tile/mm/fault.c
-@@ -35,7 +35,6 @@
- #include <linux/syscalls.h>
- #include <linux/uaccess.h>
- 
--#include <asm/system.h>
- #include <asm/pgalloc.h>
- #include <asm/sections.h>
- #include <asm/traps.h>
-diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
-index 7309988..830c490 100644
---- a/arch/tile/mm/init.c
-+++ b/arch/tile/mm/init.c
-@@ -38,7 +38,6 @@
- #include <linux/uaccess.h>
- #include <asm/mmu_context.h>
  #include <asm/processor.h>
 -#include <asm/system.h>
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
- #include <asm/dma.h>
-diff --git a/arch/tile/mm/pgtable.c b/arch/tile/mm/pgtable.c
-index de7d8e2..8730369 100644
---- a/arch/tile/mm/pgtable.c
-+++ b/arch/tile/mm/pgtable.c
-@@ -27,7 +27,6 @@
- #include <linux/vmalloc.h>
- #include <linux/smp.h>
+ #include <asm/stacktrace.h>
+ 
+ #include "setup.h"
+diff --git a/arch/unicore32/kernel/traps.c b/arch/unicore32/kernel/traps.c
+index b9a2646..2054f0d 100644
+--- a/arch/unicore32/kernel/traps.c
++++ b/arch/unicore32/kernel/traps.c
+@@ -26,7 +26,6 @@
+ #include <linux/unistd.h>
+ 
+ #include <asm/cacheflush.h>
+-#include <asm/system.h>
+ #include <asm/traps.h>
+ 
+ #include "setup.h"
+diff --git a/arch/unicore32/mm/fault.c b/arch/unicore32/mm/fault.c
+index 283aa4b..2eeb9c0 100644
+--- a/arch/unicore32/mm/fault.c
++++ b/arch/unicore32/mm/fault.c
+@@ -20,7 +20,6 @@
+ #include <linux/sched.h>
+ #include <linux/io.h>
  
 -#include <asm/system.h>
  #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
- #include <asm/fixmap.h>
+ #include <asm/tlbflush.h>
+ 
+diff --git a/arch/unicore32/mm/flush.c b/arch/unicore32/mm/flush.c
+index 93478cc..6d4c096 100644
+--- a/arch/unicore32/mm/flush.c
++++ b/arch/unicore32/mm/flush.c
+@@ -14,7 +14,6 @@
+ #include <linux/pagemap.h>
+ 
+ #include <asm/cacheflush.h>
+-#include <asm/system.h>
+ #include <asm/tlbflush.h>
+ 
+ void flush_cache_mm(struct mm_struct *mm)
 
