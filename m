@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab2CLP1A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 11:27:00 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:7205 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862Ab2CLP04 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
-	Mon, 12 Mar 2012 11:26:56 -0400
-Message-Id: <4F5E23CA0200007800077B90@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 12 Mar 2012 15:26:50 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <mike.mcclurg@citrix.com>, <ke.yu@intel.com>, <kevin.tian@intel.com>,
-        <xen-devel@lists.xensource.com>, <davej@redhat.com>,
-        <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/acpi-processor: C and P-state driver that
- uploads said data to hypervisor.
-References: <1331395500-28033-1-git-send-email-konrad.wilk@oracle.com>
- <1331395500-28033-2-git-send-email-konrad.wilk@oracle.com>
- <4F5DE5AD02000078000779CC@nat28.tlf.novell.com>
- <20120312150729.GB4236@phenom.dumpdata.com>
-In-Reply-To: <20120312150729.GB4236@phenom.dumpdata.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1756057Ab2CLP1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 11:27:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2178 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755862Ab2CLP1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 11:27:17 -0400
+Date: Mon, 12 Mar 2012 10:41:40 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
+	<fernando@oss.ntt.co.jp>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-tip-commits@vger.kernel.org, torvalds@linux-foundation.org,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu,
+        Yinghai Lu <yinghai@kernel.org>, akpm@linux-foundation.org,
+        vgoyal@redhat.com
+Subject: Re: [PATCH 1/2] boot: ignore early NMIs
+Message-ID: <20120312144140.GU24378@redhat.com>
+References: <20120221135934.GF26998@redhat.com>
+ <m1ipip6xe8.fsf@fess.ebiederm.org>
+ <4F573E1C.2060909@oss.ntt.co.jp>
+ <4F573E74.5040504@oss.ntt.co.jp>
+ <m1eht31z8e.fsf@fess.ebiederm.org>
+ <4F58495B.5080308@oss.ntt.co.jp>
+ <m1r4x3yrsv.fsf@fess.ebiederm.org>
+ <4F5A6D87.4050809@zytor.com>
+ <4F5D8D0E.8060702@oss.ntt.co.jp>
+ <4F5D8E63.60606@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F5D8E63.60606@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 12.03.12 at 16:07, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> On Mon, Mar 12, 2012 at 11:01:49AM +0000, Jan Beulich wrote:
->> >>> On 10.03.12 at 17:05, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->> Rather than arbitrarily limiting this, you could call into Xen at startup
->> and scan over all CPUs' ACPI IDs to find the maximum. I think that
->> would even cover statically declared hotplug ones, but adding some
->> slack may still be necessary to cover dynamic hotplug ones (implying
->> that pCPU hotplug patches will make it in at some point).
+On Sun, Mar 11, 2012 at 10:49:23PM -0700, H. Peter Anvin wrote:
+> On 03/11/2012 10:43 PM, Fernando Luis Vázquez Cao wrote:
 > 
-> This would be the XENPF_get_cpuinfo call right? I do plan on looking at the
-
-Yes.
-
-> pCPU hotplug, but I think I need some fancy hardware to test it correctly?
-
-No, you don't really - for testing these code paths you can soft offline
-and then online back CPUs in Xen.
-
->> > +	register_hotcpu_notifier(&xen_cpu_notifier);
->> 
->> This is pointless - you'd get notified of vCPU-s arrival/departure only.
->> Without pCPU hotplug code in place, there's just nothing you can (and
->> need to) do here.
+> > 
+> > To tackle this issue we can either stop the hardlockup detector
+> > or disable the LAPIC (the NMIs needed by x86's hardlockup detector
+> > are generated using performance counters in the LAPIC), leaving
+> > the I/O APICs untouched. The second is simpler and I think it
+> > is the approach Don took to fix this issue in RHEL kernels.
+> > 
+> > Unfortunately, this is not enough, we are still exposed to external
+> > NMIs not routed through the LAPIC. In other words, we have to make
+> > sure that we always have and IDT that is able to handle NMIs without
+> > seemingly random reboots and lockups. To achieve this goal we need
+> > to fix machine_kexec() and the early IDT handlers. The current patch
+> > set takes care of the latter.
+> > 
 > 
-> I hadn't actually looked in details on the pCPU hotplug code to see how it 
-> works.
-> 
-> I presume I need special hardware for this to work as well as the ACPI
-> is involved in triggering the hotplug CPU up calls?
+> The only source of NMIs other than the LAPIC should be the system error
+> which can be disabled through the RTC port, so I think your second
+> paragraph here is way more mechanism than you need for very little gain.
 
-For exercising the ACPI code paths - yes, you'll need suitable
-hardware. But for just exercising the notifier logic, as said above,
-you don't.
+I forgot about the RTC port.  I can't seem to find the documentation for
+it, but I believe it was port 0x70?  That would cover external NMIs I
+believe.  Leaving the disable_lapic would cover internal NMIs.
 
-Jan
+I don't know how far do we want to go with installing stub idt handlers
+and such.  Honestly, I just wanted to i/o apic race condition fixed.
 
+http://lkml.indiana.edu/hypermail/linux/kernel/1202.3/02533.html
+
+Cheers,
+Don
