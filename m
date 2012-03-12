@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab2CLKbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 06:31:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13743 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751059Ab2CLKbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 06:31:49 -0400
-Message-ID: <4F5DD084.3050200@redhat.com>
-Date: Mon, 12 Mar 2012 12:31:32 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F58943E.1050402@redhat.com> <4F595B31.9090301@cn.fujitsu.com>
-In-Reply-To: <4F595B31.9090301@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752976Ab2CLKcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 06:32:33 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:59073 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614Ab2CLKcb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 06:32:31 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6646"; a="169288245"
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, Ravi Kumar V <kumarrav@codeaurora.org>
+Subject: [PATCH v3 1/2] dmaengine: Add support for per xfer specific privatedata
+Date: Mon, 12 Mar 2012 16:02:16 +0530
+Message-Id: <1331548336-27802-1-git-send-email-kumarrav@codeaurora.org>
+X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2012 03:21 AM, Wen Congyang wrote:
-> >>
-> >> Changes from v2 to v3:
-> >> 1. correct spelling
-> >>
-> >> Changes from v1 to v2:
-> >> 1. split up host and guest-side changes
-> >> 2. introduce new request flag to avoid changing return values.
-> > 
-> > I see no Documentation/ changes.
->
-> What shoude be writen into Documentation/? I read the documents under
-> Documentation/virtual/kvm, not all KVM_EXIT_* are writen in api.txt.
-> In this patch set, I introduce a new exit_reason: KVM_EXIT_GUEST_PANICKED,
-> but I donot know where I should write.
+Add new argument to DMA SG and Interleave mode for passing
+per transfer specific private data, using this it enables the
+dma devices which needs to pass the parameters which changes per
+each transfer.
 
-Describe the exit (why it happens).  Also document the new hypercall. 
-If there is no good place for it, start a new file.
+Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
+---
+ include/linux/dmaengine.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 679b349..b8f0495 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -570,7 +570,7 @@ struct dma_device {
+ 		struct dma_chan *chan,
+ 		struct scatterlist *dst_sg, unsigned int dst_nents,
+ 		struct scatterlist *src_sg, unsigned int src_nents,
+-		unsigned long flags);
++		unsigned long flags, void *context);
+ 
+ 	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
+ 		struct dma_chan *chan, struct scatterlist *sgl,
+@@ -581,7 +581,7 @@ struct dma_device {
+ 		size_t period_len, enum dma_transfer_direction direction);
+ 	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
+ 		struct dma_chan *chan, struct dma_interleaved_template *xt,
+-		unsigned long flags);
++		unsigned long flags, void *context);
+ 	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 		unsigned long arg);
+ 
 -- 
-error compiling committee.c: too many arguments to function
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
