@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962Ab2CLSFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:05:43 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:35523 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754720Ab2CLSFk (ORCPT
+	id S1755643Ab2CLSHQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:07:16 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46471 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754104Ab2CLSHO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:05:40 -0400
-Message-ID: <4F5E3ADC.5090200@fb.com>
-Date: Mon, 12 Mar 2012 11:05:16 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Mon, 12 Mar 2012 14:07:14 -0400
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung.kim@lge.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, <linux-perf-users@vger.kernel.org>
-Subject: Re: [PATCH 0/2] perf: add sort by inclusive time functionality (v2)
-References: <1331160079-13821-1-git-send-email-asharma@fb.com> <20120308072901.GC20784@elte.hu> <20120308153130.GC7976@somewhere.redhat.com> <4F58FF47.6090504@fb.com> <4F5DA294.6070700@lge.com>
-In-Reply-To: <4F5DA294.6070700@lge.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-03-12_05:2012-03-12,2012-03-12,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+In-Reply-To: <20120312180423.GC23255@google.com>
+References: <1331582478-2259-1-git-send-email-levinsasha928@gmail.com> <20120312180423.GC23255@google.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 12 Mar 2012 20:06:53 +0200
+Message-ID: <CA+1xoqdz+m7kK+XgsmwM2Bt07eLH294L_PT6DrUkhJvRzpUZCg@mail.gmail.com>
+Subject: Re: [PATCH] blk-cgroup: Call cgroup_path only under cgroup lock
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/12/12 12:15 AM, Namhyung Kim wrote:
-
+On Mon, Mar 12, 2012 at 8:04 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Sasha.
 >
-> I think it's because of the shared hist_entry. If a callchain is a
-> subset of another, it will be marked as inclusive so that it cannot be
-> contributed to total period. Say, there're two chains - X (a -> b -> c)
-> and Y (a -> b), once __hists__add_entry_inclusive() was called on X, we
-> have:
+> On Mon, Mar 12, 2012 at 04:01:18PM -0400, Sasha Levin wrote:
+>> Since we can't keep rcu read lock during blkg_alloc(), we currently
+>> call cgroup_path() without any locks at all.
+>>
+>> This patch adds cgroup locking before calling cgroup_path.
+>>
+>> This also fixes a lockdep warning on boot.
+>>
+>> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 >
-> a -> b -> c
-> a -> b (inclusive)
-> a (inclusive)
+> Which branch is this against?  There's already pending stat update
+> patch from Vivek which fix this problem along with the percpu
+> allocation problem.
 >
-> And then, calling the function on Y should make:
->
-> a -> b
-> a (inclusive)
->
-> However, since both callchains are in tree already they'll be shared and
-> marked *inclusive*. Thus the total period will not increased at all for
-> Y. Also I guess the reverse case - add Y first, and then X - will have
-> the same result.
+> Thanks.
 
-Thanks for figuring this out. Looks like using a single bit 
-(he->inclusive) is insufficient. How about:
-
-struct hist_entry {
-	u64                     period;
-         u64                     period_self;
-	..
-};
-
-Normal mode: period_self == period.
-Inclusive mode: period_self will be zero for inclusive hist_entries.
-Shared entries: we sum up both period and period_self.
-
-We can then compute total_period by summing up period_self.
-
-  -Arun
-
+I've fixed it for linux-next.
