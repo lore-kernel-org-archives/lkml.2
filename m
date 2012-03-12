@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab2CLXDF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:03:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54264 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757583Ab2CLXDC convert rfc822-to-8bit (ORCPT
+	id S1757996Ab2CLXEX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:04:23 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54792 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757401Ab2CLXEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:03:02 -0400
-Message-ID: <1331593367.18960.66.camel@twins>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Lennart Poettering <mzxreary@0pointer.de>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Mon, 12 Mar 2012 19:04:22 -0400
+Date: Mon, 12 Mar 2012 16:04:16 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
         Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
         Vivek Goyal <vgoyal@redhat.com>, Michal Schmidt <mschmidt@redhat.com>
-Date: Tue, 13 Mar 2012 00:02:47 +0100
-In-Reply-To: <20120312230020.GL23255@google.com>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120312230416.GM23255@google.com>
 References: <20120221211938.GE12236@google.com>
-	 <20120312221050.GG23255@google.com> <1331590938.18960.57.camel@twins>
-	 <20120312222817.GI23255@google.com>
-	 <20120312223113.GB18359@tango.0pointer.de>
-	 <20120312230020.GL23255@google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+ <20120312221050.GG23255@google.com>
+ <1331590938.18960.57.camel@twins>
+ <20120312222817.GI23255@google.com>
+ <1331591568.18960.61.camel@twins>
+ <20120312223944.GJ23255@google.com>
+ <1331592241.18960.64.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331592241.18960.64.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 16:00 -0700, Tejun Heo wrote:
+On Mon, Mar 12, 2012 at 11:44:01PM +0100, Peter Zijlstra wrote:
+> On Mon, 2012-03-12 at 15:39 -0700, Tejun Heo wrote:
+> > If we can get to the point where nesting is fully
+> > supported by every controller first, that would be awesome too. 
 > 
-> Ooh, both will be available to choose from.  I was trying to explain
-> that there can be configuration only at one layer for any task so that
-> it can be mapped to flat hierarchy.  Where to apply the config will be
-> selected by the user (or system tool). 
+> As long as that is the goal.. otherwise, I'd be overjoyed if I can rip
+> nesting support out of the cpu-controller.. that stuff is such a pain.
+> Then again, I don't think the container people like this proposal --
+> they were the ones pushing for full hierarchy back when.
 
-Thus in effect this is a false choice, since Lennart and assorted idiots
-conspire against sanity by pushing systemd into our every orifice, and
-since he just said systemd requires one of the two, the choice will be
-made for us, lest we forfeit wanting to boot our system.
+Yeah, the great pain of full hierarchy support is one of the reasons
+why I keep thinking about supporting mapping to flat hierarchy.  Full
+hierarchy could be too painful and not useful enough for some
+controllers.  Then again, cpu and memcg already have it and according
+to Vivek blkcg also had a proposed implementation, so maybe it's okay.
+Let's see.
+
+Thanks.
+
+-- 
+tejun
