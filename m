@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab2CLQIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 12:08:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46941 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab2CLQI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 12:08:28 -0400
-Date: Mon, 12 Mar 2012 17:08:26 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: John Stultz <john.stultz@linaro.org>
-cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        John Stultz <john.stultz@lianro.org>
-Subject: Re: [PATCH] time: x86: Fix race switching from vsyscall to non-vsyscall
- clock
-In-Reply-To: <1331330647-31480-1-git-send-email-john.stultz@linaro.org>
-Message-ID: <alpine.LFD.2.02.1203121703390.2466@ionos>
-References: <1331330647-31480-1-git-send-email-john.stultz@linaro.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752167Ab2CLQJp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 12:09:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44095 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751769Ab2CLQJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 12:09:42 -0400
+Date: Mon, 12 Mar 2012 17:09:40 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Simon Wood <simon@mungewell.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Bauer <michael@m-bauer.org>,
+        Michal Maly <madcatxster@gmail.com>
+Subject: Re: [PATCH 1/2] HID: hid-lg4ff add support for G27 LEDs
+In-Reply-To: <1331565459-1892-1-git-send-email-simon@mungewell.org>
+Message-ID: <alpine.LNX.2.00.1203121708430.18356@pobox.suse.cz>
+References: <1331565459-1892-1-git-send-email-simon@mungewell.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Mar 2012, John Stultz wrote:
+On Mon, 12 Mar 2012, Simon Wood wrote:
 
-> When switching from a vsyscall capable to a non-vsyscall capable
-> clocksource, there was a small race, where the last vsyscall
-> gettimeofday before the switch might return a invalid time value
-> using the new non-vsyscall enabled clocksource values after the
-> switch is complete.
+> This patch adds support for the G27 LEDs. The LEDs are controlled
+> by a 5bit value (0-31) where bit0 is the right most LED, the LEDs
+> are mirrored to the left.
 > 
-> This is due to the vsyscall code checking the vclock_mode once
-> outside of the seqcount protected section. After it reads the
-> vclock mode, it doesn't re-check that the sampled clock data
-> that is obtained in the seqcount critical section still matches.
+> Arrangement on wheel is:
+>    G G Y Y R R(bit4) Y Y G G(bit0)
 > 
-> The fix is to sample vclock_mode inside the protected section,
-> and as long as it isn't VCLOCK_NONE, return the calculated
-> value. If it has changed and is now VCLOCK_NONE, fall back
-> to the syscall gettime calculation.
-> 
-> CC: Andy Lutomirski <luto@amacapital.net>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: John Stultz <john.stultz@lianro.org>
+> Signed-off-by: Simon Wood <simon@mungewell.org>
 > ---
->  arch/x86/vdso/vclock_gettime.c |   25 ++++++++++++++++++++-----
->  1 files changed, 20 insertions(+), 5 deletions(-)
+>  drivers/hid/hid-lg4ff.c |   84 +++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 82 insertions(+), 2 deletions(-)
 > 
-> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-> index 6bc0e72..e7cf1dd 100644
-> --- a/arch/x86/vdso/vclock_gettime.c
-> +++ b/arch/x86/vdso/vclock_gettime.c
-> @@ -85,21 +85,28 @@ notrace static inline long vgetns(void)
->  notrace static noinline int do_realtime(struct timespec *ts)
->  {
->  	unsigned long seq, ns;
-> +	int mode;
->  	do {
->  		seq = read_seqbegin(&gtod->lock);
-> +		mode = gtod->clock.vclock_mode;
->  		ts->tv_sec = gtod->wall_time_sec;
->  		ts->tv_nsec = gtod->wall_time_nsec;
->  		ns = vgetns();
->  	} while (unlikely(read_seqretry(&gtod->lock, seq)));
+> diff --git a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
+> index 6ecc9e2..4f3b744 100644
+> --- a/drivers/hid/hid-lg4ff.c
+> +++ b/drivers/hid/hid-lg4ff.c
+> @@ -49,7 +49,12 @@ static void hid_lg4ff_set_range_g25(struct hid_device *hid, u16 range);
+>  static ssize_t lg4ff_range_show(struct device *dev, struct device_attribute *attr, char *buf);
+>  static ssize_t lg4ff_range_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+>  
+> +static void hid_lg4ff_set_leds(struct hid_device *hid, __u8 leds);
+> +static ssize_t lg4ff_leds_show(struct device *dev, struct device_attribute *attr, char *buf);
+> +static ssize_t lg4ff_leds_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
 > +
->  	timespec_add_ns(ts, ns);
-> +	if (mode == VCLOCK_NONE)
-> +		return -1;
+>  static DEVICE_ATTR(range, S_IRWXU | S_IRWXG | S_IRWXO, lg4ff_range_show, lg4ff_range_store);
+> +static DEVICE_ATTR(leds, S_IRWXU | S_IRWXG | S_IRWXO, lg4ff_leds_show, lg4ff_leds_store);
+>  
+>  static bool list_inited;
+>  
+> @@ -336,6 +341,67 @@ static ssize_t lg4ff_range_store(struct device *dev, struct device_attribute *at
+>  	return count;
+>  }
+>  
+> +/* Read current state of leds and display it in terminal */
+> +static ssize_t lg4ff_leds_show(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	struct lg4ff_device_entry *uninitialized_var(entry);
+> +	struct list_head *h;
+> +	struct hid_device *hid = to_hid_device(dev);
+> +	size_t count;
+> +
+> +	list_for_each(h, &device_list.list) {
+> +		entry = list_entry(h, struct lg4ff_device_entry, list);
+> +		if (strcmp(entry->device_id, (&hid->dev)->kobj.name) == 0)
+> +			break;
+> +	}
 
-Can't we just return mode and avoid repeated conditionals all over the
-place ?
+Please correct me if I am wrong, but I don't see nothing that'd prevent 
+this racing with lg4ff_deinit().
 
->  {
-	res = VCLOCK_NONE;
+The same applies to already existing sysfs attributes actually.
 
->  	switch (clock) {
->  	case CLOCK_REALTIME:
-> -		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
-> -			return do_realtime(ts);
-
-  			res = do_realtime(ts);
-		break;			
-
-
->  	case CLOCK_MONOTONIC_COARSE:
->  		return do_monotonic_coarse(ts);
->  	}
-
-	return res != VCLOCK_NONE ? 0 : vdso_fallback_gettime(clock, ts);
-
-Thanks,
-
-	tglx
+-- 
+Jiri Kosina
+SUSE Labs
