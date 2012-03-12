@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2CLSMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:12:00 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38546 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755606Ab2CLSL7 (ORCPT
+	id S1756222Ab2CLSMP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:12:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55946 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755532Ab2CLSMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:11:59 -0400
-Date: Mon, 12 Mar 2012 18:11:51 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Brown, Len" <len.brown@intel.com>, ShuoX Liu <shuox.liu@intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "H. Peter Anvin" <hpa@zytor.com>, andi.kleen@intel.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH V3] cpuidle: Add a sysfs entry to disable
- specific C state for debug purpose.
-Message-ID: <20120312181151.GE14020@sirena.org.uk>
-References: <20120302142303.648285a7.akpm@linux-foundation.org>
- <C6CB66606345BC4B80CBE69D22ABFBB10220E1@SHSMSX101.ccr.corp.intel.com>
- <4F545A4E.8010801@linux.vnet.ibm.com>
- <4F5466C4.2090808@intel.com>
- <20120305101827.GA19408@khazad-dum.debian.net>
- <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com>
- <1330998885.1916.89.camel@ymzhang>
- <20120306052236.GA19416@kroah.com>
- <1331013078.1916.103.camel@ymzhang>
- <20120306143935.GA23346@kroah.com>
+	Mon, 12 Mar 2012 14:12:14 -0400
+Date: Mon, 12 Mar 2012 11:12:08 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH] blk-cgroup: Call cgroup_path only under cgroup lock
+Message-ID: <20120312181208.GD23255@google.com>
+References: <1331582478-2259-1-git-send-email-levinsasha928@gmail.com>
+ <20120312180423.GC23255@google.com>
+ <CA+1xoqdz+m7kK+XgsmwM2Bt07eLH294L_PT6DrUkhJvRzpUZCg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120306143935.GA23346@kroah.com>
-X-Cookie: Yow!  Are we laid back yet?
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+1xoqdz+m7kK+XgsmwM2Bt07eLH294L_PT6DrUkhJvRzpUZCg@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 06, 2012 at 06:39:35AM -0800, Greg KH wrote:
+On Mon, Mar 12, 2012 at 08:06:53PM +0200, Sasha Levin wrote:
+> On Mon, Mar 12, 2012 at 8:04 PM, Tejun Heo <tj@kernel.org> wrote:
+> > Hello, Sasha.
+> >
+> > On Mon, Mar 12, 2012 at 04:01:18PM -0400, Sasha Levin wrote:
+> >> Since we can't keep rcu read lock during blkg_alloc(), we currently
+> >> call cgroup_path() without any locks at all.
+> >>
+> >> This patch adds cgroup locking before calling cgroup_path.
+> >>
+> >> This also fixes a lockdep warning on boot.
+> >>
+> >> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> >
+> > Which branch is this against?  There's already pending stat update
+> > patch from Vivek which fix this problem along with the percpu
+> > allocation problem.
+> >
+> > Thanks.
+> 
+> I've fixed it for linux-next.
 
-> Do you know of any tools using these files?  I have never heard of them,
-> and I was told we should move these files years ago.  So I don't think
-> there should be any api issues.
+Jens, the pending stats patchset should fix this problem too.  Can you
+please put them on top of other blkcg updates?
 
-powertop uses them.
+Thanks.
+
+-- 
+tejun
