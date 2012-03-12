@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab2CLSLO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:11:14 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:53938 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998Ab2CLSLN (ORCPT
+	id S1756209Ab2CLSMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:12:00 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38546 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606Ab2CLSL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:11:13 -0400
-Date: Mon, 12 Mar 2012 19:10:47 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Mark A. Grondona" <mgrondona@llnl.gov>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Add a per-dimm structure
-Message-ID: <20120312181047.GB8214@aftab>
-References: <20120308215716.GA5925@aftab>
- <4F59DC38.5080104@redhat.com>
- <20120309143806.GA11962@aftab>
- <4F5A329A.70702@redhat.com>
- <20120309184733.GB13745@aftab>
- <4F5A5E2D.4090408@redhat.com>
- <20120311113411.GB29175@aftab>
- <4F5C9B6C.2080904@redhat.com>
- <20120312163911.GC7255@aftab>
- <3908561D78D1C84285E8C5FCA982C28F15B61A34@ORSMSX103.amr.corp.intel.com>
+	Mon, 12 Mar 2012 14:11:59 -0400
+Date: Mon, 12 Mar 2012 18:11:51 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "Brown, Len" <len.brown@intel.com>, ShuoX Liu <shuox.liu@intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "H. Peter Anvin" <hpa@zytor.com>, andi.kleen@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH V3] cpuidle: Add a sysfs entry to disable
+ specific C state for debug purpose.
+Message-ID: <20120312181151.GE14020@sirena.org.uk>
+References: <20120302142303.648285a7.akpm@linux-foundation.org>
+ <C6CB66606345BC4B80CBE69D22ABFBB10220E1@SHSMSX101.ccr.corp.intel.com>
+ <4F545A4E.8010801@linux.vnet.ibm.com>
+ <4F5466C4.2090808@intel.com>
+ <20120305101827.GA19408@khazad-dum.debian.net>
+ <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com>
+ <1330998885.1916.89.camel@ymzhang>
+ <20120306052236.GA19416@kroah.com>
+ <1331013078.1916.103.camel@ymzhang>
+ <20120306143935.GA23346@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F15B61A34@ORSMSX103.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120306143935.GA23346@kroah.com>
+X-Cookie: Yow!  Are we laid back yet?
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 05:03:47PM +0000, Luck, Tony wrote:
-> > Err, the fact that you have UE counters doesn't have anything to do with
-> > the request that you want to panic on an UE. Especially if conservative
-> > systems would panic on the first UE anyway without asking software.
-> 
-> We have some UE events for which even a conservative system might
-> think it reasonable to defer the panic (e.g. patrol scrub on a "free" page).
+On Tue, Mar 06, 2012 at 06:39:35AM -0800, Greg KH wrote:
 
-Right, and in that case you don't need an UE counter because it won't go
-higher than 1, would it?
+> Do you know of any tools using these files?  I have never heard of them,
+> and I was told we should move these files years ago.  So I don't think
+> there should be any api issues.
 
-What my thought is, is that if the system panics on UE unconditionally
-anyway (either by sw or a hw method), then you don't need to enable
-panic_on_ue in edac because it does so anyway, and, as a result, you
-don't need UE counters at all. So, in that case, you could "state" in
-the driver that you don't want to init the UE counters because you're
-not going to use them, no?
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+powertop uses them.
