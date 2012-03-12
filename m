@@ -1,142 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab2CLPN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 11:13:59 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54252 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755823Ab2CLPNw (ORCPT
+	id S1755937Ab2CLPSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 11:18:41 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:55506 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755789Ab2CLPSi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 11:13:52 -0400
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@redhat.com, asharma@fb.com,
-        ravitillo@lbl.gov, vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com,
-        dsahern@gmail.com
-Subject: [PATCH 2/2] perf report: fix annotate double quit issue in branch view mode
-Date: Mon, 12 Mar 2012 16:13:30 +0100
-Message-Id: <1331565210-10865-3-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1331565210-10865-1-git-send-email-eranian@google.com>
-References: <1331565210-10865-1-git-send-email-eranian@google.com>
+	Mon, 12 Mar 2012 11:18:38 -0400
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Mar 2012 11:18:38 EDT
+Date: Mon, 12 Mar 2012 16:11:57 +0100
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+To: Jacek Luczak <difrost.kernel@gmail.com>
+Cc: dave@jikos.cz, Liu Bo <liubo2009@cn.fujitsu.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, josef@redhat.com,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: kernel BUG at fs/btrfs/delayed-inode.c:1466!
+Message-ID: <20120312161157.5d76db38@fem.tu-ilmenau.de>
+In-Reply-To: <CADDYkjRkmqbKQnGL+VGgS2hi6F4Z7PbLb6dUB2PYd0M9pVSmPg@mail.gmail.com>
+References: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com>
+	<20120308155211.GF4334@twin.jikos.cz>
+	<CADDYkjTG-q5+pFRFt9sGKq=cgL=ZgQaNZV=2ipBsSbuvxCa3jw@mail.gmail.com>
+	<4F595D6D.6080809@cn.fujitsu.com>
+	<20120309105537.GG4334@twin.jikos.cz>
+	<CADDYkjRcRbxxPErdMBOs55-gNHZA0GfxcsWNrVbAuv37b3rtvw@mail.gmail.com>
+	<20120309114010.GH4334@twin.jikos.cz>
+	<CADDYkjTsDf0J0v7B-78SiYPsjPsn1VOCbiqAMq8TJxgPc_MiBg@mail.gmail.com>
+	<CADDYkjRkmqbKQnGL+VGgS2hi6F4Z7PbLb6dUB2PYd0M9pVSmPg@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes perf report to not go back two levels when
-pressing the 'q' key while annotating in branch view mode.
+Am Mon, 12 Mar 2012 15:21:49 +0100
+schrieb Jacek Luczak <difrost.kernel@gmail.com>:
 
-When pressing 'q' in annotate mode and if the branch source
-and target belong to different functions, perf now brings
-up the annotation popup menu again to offer the option to
-annotate the other branch source or target.
+> > 2) A *regression* in 3.3.0-rc6-00197-g9f8050c
+> > - completely unusable as reports ENOSPC
+> > - to reproduce, mount volume and issue:
+> > # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> > /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> > On my host this shows:
+> > # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> > /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> > touch: cannot touch `/btrfs/dd': No space left on device
+> > 423
+> > - remount to reset:
+> > # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> > /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> > touch: cannot touch `/btrfs/dd': No space left on device
+> > 1
+> > # umount /btrfs/
+> > # mount -t btrfs /dev/vg00/btrfs /btrfs/ -o
+> > noatime,nodatacow,defaults # CNT=1 ; while [ $CNT -lt 10000 ] ; do
+> >  rm -f /btrfs/dd ; ! touch /vdd && echo "$CNT" && break  ;
+> > CNT=$(( $CNT + 1 )) ; done touch: cannot touch `/btrfs/dd': No
+> > space left on device 423
+> > - bisected down to 5500cdb (Btrfs: increase the global block reserve
+> > estimates). After reverting this one Linus master works for me
+> > again.
+> 
+> With above patch reverted after a longer run I've got ENOSPC again:
+> 1) # df -hP /btrfs
+> Filesystem            Size  Used Avail Use% Mounted on
+> /dev/mapper/vg00-btrfs  195G  179G   11G  95% /btrfs
+> 2) # rm -f /btrfs/dd
+> rm: cannot remove `/btrfs/dd': No space left on device
+> 3) strace
+> unlink("/btrfs/dd")                = -1 ENOSPC (No space left on
+> device) 4) last message from kernel (except WARN_ONs):
+> btrfs: fail to dirty inode 116882385  
+> 
+> I've remouted volume and after that I've been able to remove dd file
+> from volume. In dmesg there's bunch on new WARN_ONs:
+> ------------[ cut here ]------------
+> WARNING: at fs/btrfs/extent-tree.c:4185
+> btrfs_free_block_groups+0x17d/0x2b8 [btrfs]()
+> Hardware name: ProLiant BL460c G6
+> Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
+> autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
+> ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
+> ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
+> dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
+> parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
+> hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
+> hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
+> Pid: 9518, comm: umount Tainted: G        W
+> 3.3.0-rc6-00197-g9f8050c-dirty #1 Call Trace:
+>  [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
+>  [<ffffffffa031a8a7>] ? btrfs_free_block_groups+0x17d/0x2b8 [btrfs]
+>  [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
+>  [<ffffffffa031a8a7>] ? btrfs_free_block_groups+0x17d/0x2b8 [btrfs]
+>  [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
+>  [<ffffffff811320c2>] ? dispose_list+0x27/0x31
+>  [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
+>  [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
+>  [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
+>  [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
+>  [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
+>  [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
+>  [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
+> ---[ end trace fd6da849e53b77dd ]---
+> ------------[ cut here ]------------
+> WARNING: at fs/btrfs/extent-tree.c:4186
+> btrfs_free_block_groups+0x198/0x2b8 [btrfs]()
+> Hardware name: ProLiant BL460c G6
+> Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
+> autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
+> ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
+> ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
+> dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
+> parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
+> hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
+> hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
+> Pid: 9518, comm: umount Tainted: G        W
+> 3.3.0-rc6-00197-g9f8050c-dirty #1 Call Trace:
+>  [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
+>  [<ffffffffa031a8c2>] ? btrfs_free_block_groups+0x198/0x2b8 [btrfs]
+>  [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
+>  [<ffffffffa031a8c2>] ? btrfs_free_block_groups+0x198/0x2b8 [btrfs]
+>  [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
+>  [<ffffffff811320c2>] ? dispose_list+0x27/0x31
+>  [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
+>  [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
+>  [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
+>  [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
+>  [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
+>  [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
+>  [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
+> ---[ end trace fd6da849e53b77de ]---
+> ------------[ cut here ]------------
+> WARNING: at fs/btrfs/extent-tree.c:4187
+> btrfs_free_block_groups+0x1b3/0x2b8 [btrfs]()
+> Hardware name: ProLiant BL460c G6
+> Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
+> autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
+> ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
+> ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
+> dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
+> parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
+> hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
+> hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
+> Pid: 9518, comm: umount Tainted: G        W
+> 3.3.0-rc6-00197-g9f8050c-dirty #1 Call Trace:
+>  [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
+>  [<ffffffffa031a8dd>] ? btrfs_free_block_groups+0x1b3/0x2b8 [btrfs]
+>  [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
+>  [<ffffffffa031a8dd>] ? btrfs_free_block_groups+0x1b3/0x2b8 [btrfs]
+>  [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
+>  [<ffffffff811320c2>] ? dispose_list+0x27/0x31
+>  [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
+>  [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
+>  [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
+>  [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
+>  [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
+>  [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
+>  [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
+> ---[ end trace fd6da849e53b77df ]---
+> ------------[ cut here ]------------
+> WARNING: at fs/btrfs/extent-tree.c:7454
+> btrfs_free_block_groups+0x256/0x2b8 [btrfs]()
+> Hardware name: ProLiant BL460c G6
+> Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
+> autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
+> ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
+> ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
+> dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
+> parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
+> hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
+> hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
+> Pid: 9518, comm: umount Tainted: G        W
+> 3.3.0-rc6-00197-g9f8050c-dirty #1 Call Trace:
+>  [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
+>  [<ffffffffa031a980>] ? btrfs_free_block_groups+0x256/0x2b8 [btrfs]
+>  [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
+>  [<ffffffffa031a980>] ? btrfs_free_block_groups+0x256/0x2b8 [btrfs]
+>  [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
+>  [<ffffffff811320c2>] ? dispose_list+0x27/0x31
+>  [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
+>  [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
+>  [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
+>  [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
+>  [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
+>  [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
+>  [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
+> ---[ end trace fd6da849e53b77e0 ]---
+> space_info 4 has 3043549184 free, is not full
+> space_info total=11953766400, used=8901763072, pinned=0, reserved=0,
+> may_use=121643008, readonly=8454144
+> device fsid b70500f5-3ec6-4a39-9b9a-adad0e8a0346 devid 1 transid 54268
+> /dev/vg00/btrfs
+> btrfs: setting nodatacow
 
-As part of the code restructuring in perf_evsel__hists_browse()
-we also fix a memory leak on options[] in case of error.
+That's similar to my experiences. Without commit 5500cdb the ENOSPC
+errors happens much later but they still happen. And I've seen only a
+few times the error -28 and never those backtraces.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- tools/perf/util/ui/browsers/hists.c |   38 ++++++++++++++++++++++++++++------
- 1 files changed, 31 insertions(+), 7 deletions(-)
-
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index 40fd424..de8ece8 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -856,6 +856,16 @@ static int hists__browser_title(struct hists *self, char *bf, size_t size,
- 	return printed;
- }
- 
-+static inline void free_popup_options(char **options, int n)
-+{
-+	int i;
-+
-+	for (i = 0; i < n; ++i) {
-+		free(options[i]);
-+		options[i] = NULL;
-+	}
-+}
-+
- static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 				    const char *helpline, const char *ev_name,
- 				    bool left_exits,
-@@ -866,6 +876,8 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 	struct hist_browser *browser = hist_browser__new(self);
- 	struct branch_info *bi;
- 	struct pstack *fstack;
-+	char *options[16];
-+	int nr_options = 0;
- 	int key = -1;
- 
- 	if (browser == NULL)
-@@ -877,14 +889,17 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 
- 	ui_helpline__push(helpline);
- 
-+	memset(options, 0, sizeof(options));
-+
- 	while (1) {
- 		const struct thread *thread = NULL;
- 		const struct dso *dso = NULL;
--		char *options[16];
--		int nr_options = 0, choice = 0, i,
-+		int choice = 0,
- 		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
- 		    annotate_f = -2, annotate_t = -2, browse_map = -2;
- 
-+		nr_options = 0;
-+
- 		key = hist_browser__run(browser, ev_name, timer, arg, delay_secs);
- 
- 		if (browser->he_selection != NULL) {
-@@ -1023,17 +1038,16 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			browse_map = nr_options++;
- add_exit_option:
- 		options[nr_options++] = (char *)"Exit";
--
-+retry_popup_menu:
- 		choice = ui__popup_menu(nr_options, options);
- 
--		for (i = 0; i < nr_options - 1; ++i)
--			free(options[i]);
--
- 		if (choice == nr_options - 1)
- 			break;
- 
--		if (choice == -1)
-+		if (choice == -1) {
-+			free_popup_options(options, nr_options - 1);
- 			continue;
-+		}
- 
- 		if (choice == annotate || choice == annotate_t || choice == annotate_f) {
- 			struct hist_entry *he;
-@@ -1064,9 +1078,18 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 			err = hist_entry__tui_annotate(he, evsel->idx,
- 						       timer, arg, delay_secs);
- 			he->used = false;
-+			/*
-+			 * offer option to annotate the other branch source or target
-+			 * (if they exists) when returning from annotate
-+			 */
-+			if ((err == 'q' || err == CTRL('c'))
-+			    && annotate_t != -2 && annotate_f != -2)
-+				goto retry_popup_menu;
-+
- 			ui_browser__update_nr_entries(&browser->b, browser->hists->nr_entries);
- 			if (err)
- 				ui_browser__handle_resize(&browser->b);
-+
- 		} else if (choice == browse_map)
- 			map__browse(browser->selection->map);
- 		else if (choice == zoom_dso) {
-@@ -1112,6 +1135,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 	pstack__delete(fstack);
- out:
- 	hist_browser__delete(browser);
-+	free_popup_options(options, nr_options - 1);
- 	return key;
- }
- 
--- 
-1.7.4.1
-
+regards,
+  Johannes
