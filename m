@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab2CLSKF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:10:05 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42526 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998Ab2CLSKC (ORCPT
+	id S1756072Ab2CLSLO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:11:14 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:53938 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754998Ab2CLSLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:10:02 -0400
-Message-ID: <4F5E3BE7.4080207@wwwdotorg.org>
-Date: Mon, 12 Mar 2012 12:09:43 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Mon, 12 Mar 2012 14:11:13 -0400
+Date: Mon, 12 Mar 2012 19:10:47 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Mark A. Grondona" <mgrondona@llnl.gov>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Add a per-dimm structure
+Message-ID: <20120312181047.GB8214@aftab>
+References: <20120308215716.GA5925@aftab>
+ <4F59DC38.5080104@redhat.com>
+ <20120309143806.GA11962@aftab>
+ <4F5A329A.70702@redhat.com>
+ <20120309184733.GB13745@aftab>
+ <4F5A5E2D.4090408@redhat.com>
+ <20120311113411.GB29175@aftab>
+ <4F5C9B6C.2080904@redhat.com>
+ <20120312163911.GC7255@aftab>
+ <3908561D78D1C84285E8C5FCA982C28F15B61A34@ORSMSX103.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Dmitry Artamonow <mad_soft@inbox.ru>, Olof Johansson <olof@lixom.net>
-CC: linux-tegra@vger.kernel.org, Andi <andi.shyti@gmail.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/2] arm/tegra: add timeout to PCIe PLL lock detection
- loop
-References: <20120306201538.GA14350@rainbow> <1331287760-10546-1-git-send-email-mad_soft@inbox.ru>
-In-Reply-To: <1331287760-10546-1-git-send-email-mad_soft@inbox.ru>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F15B61A34@ORSMSX103.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/09/2012 03:09 AM, Dmitry Artamonow wrote:
-> Tegra PCIe driver waits for PLL to lock using busy loop.
-> If PLL fails to lock for some reason, this leads to silent lockup
-> while booting (PCIe code is not modular).
+On Mon, Mar 12, 2012 at 05:03:47PM +0000, Luck, Tony wrote:
+> > Err, the fact that you have UE counters doesn't have anything to do with
+> > the request that you want to panic on an UE. Especially if conservative
+> > systems would panic on the first UE anyway without asking software.
 > 
-> Fix by adding timeout, so if PLL doesn't lock in a couple
-> of seconds, just PCIe driver fails and machine continues to boot.
-> 
-> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+> We have some UE events for which even a conservative system might
+> think it reasonable to defer the panic (e.g. patrol scrub on a "free" page).
 
-> diff --git a/arch/arm/mach-tegra/pcie.c b/arch/arm/mach-tegra/pcie.c
+Right, and in that case you don't need an UE counter because it won't go
+higher than 1, would it?
 
->  	/* Wait for the PLL to lock */
-> +	timeout = 2000;
->  	do {
->  		val = pads_readl(PADS_PLL_CTL);
-> +		usleep_range(1000, 1000);
-> +		if (--timeout == 0) {
-> +			pr_err("Tegra PCIe error: timeout waiting for PLL\n");
-> +			return -EBUSY;
-> +		}
->  	} while (!(val & PADS_PLL_CTL_LOCKDET));
+What my thought is, is that if the system panics on UE unconditionally
+anyway (either by sw or a hw method), then you don't need to enable
+panic_on_ue in edac because it does so anyway, and, as a result, you
+don't need UE counters at all. So, in that case, you could "state" in
+the driver that you don't want to init the UE counters because you're
+not going to use them, no?
 
-Thierry pointed out that one of NVIDIA's downstream kernels uses a
-timeout of 300 here, rather than 2000 above. Do you see a specific need
-for this timeout for be 2000 rather than 300? It might be nice to be
-consistent.
+-- 
+Regards/Gruss,
+Boris.
 
-Olof, I notice you've already applied V1 of this, which has the return
-statement issue. Can you replace it with this, or should Dmitry send an
-incremental patch?
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
