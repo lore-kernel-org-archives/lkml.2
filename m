@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab2CLBVY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 21:21:24 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37470 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753949Ab2CLBVP (ORCPT
+	id S1754334Ab2CLBYc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 21:24:32 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48052 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753949Ab2CLBYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 21:21:15 -0400
+	Sun, 11 Mar 2012 21:24:25 -0400
+X-AuditID: 9c930197-b7bd0ae000002080-29-4f5d5041b5ad
+From: "Kim, Jong-Sung" <neidhard.kim@lge.com>
+To: "'Chanho Min'" <chanho0207@gmail.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
+Cc: "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Alan Cox'" <alan@linux.intel.com>,
+        "'Shreshtha Kumar Sahu'" <shreshthakumar.sahu@stericsson.com>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>
+References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>	<20120308184954.GA1275@kroah.com>	<CACRpkdY3A_k_ywWgnFYG_3Jp+EssfULO0R59=GWUG2a0VS3--g@mail.gmail.com>	<20120309163739.GA9545@kroah.com> <CAOAMb1Bpx4ucHgKy+oT2rvt16cubFR3Vi8o3fjwrT65DdJko_Q@mail.gmail.com>
+In-Reply-To: <CAOAMb1Bpx4ucHgKy+oT2rvt16cubFR3Vi8o3fjwrT65DdJko_Q@mail.gmail.com>
+Subject: RE: [PATCH] Clear previous interrupts after fifo is disabled
+Date: Mon, 12 Mar 2012 10:24:17 +0900
+Organization: LG Electronics
+Message-ID: <018601ccffee$d9a8cf00$8cfa6d00$@lge.com>
 MIME-Version: 1.0
-In-Reply-To: <4F5D4D1D.40004@gmail.com>
-References: <4F5D4D1D.40004@gmail.com>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Mon, 12 Mar 2012 12:20:54 +1100
-Message-ID: <CAGRGNgXjOvxr1e3PPfRZNKT8WVq9erTxNgiXPYPEmwdBWJVW_A@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3]mac80211: improve PID rate control mechanism by
- avoiding rate oscillation problem
-To: wei <yinwei168@gmail.com>
-Cc: linux-wireless@vger.kernel.org, johannes@sipsolutions.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIncI9SqTNPd0fm4fZPB+aBpvBgGgGX3bXoAhHnJzIBt8QCXAKfKVtYlXDy9zA=
+Content-Language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wei,
+> -----Original Message-----
+> From: Chanho Min [mailto:chanho0207@gmail.com]
+> Sent: Saturday, March 10, 2012 11:15 AM
+> To: Greg Kroah-Hartman
+> Cc: Linus Walleij; Russell King; Alan Cox; Shreshtha Kumar Sahu; Kim,
+Jong-
+> Sung; linux-kernel@vger.kernel.org; linux-serial@vger.kernel.org
+> Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
+> 
+> >> To me it seems Russell's patch solves part of the problem, and
+> >> Jong-Sung Kim's patch on top of that solves the entire problem, but
+> >> Chanho need to come back and tell whether this is the case in
+> >> practice.
+> >
+> > Ok, then, once it is tested, can someone resend them to me?
+> >
+> > thanks,
+> >
+> > greg k-h
+> 
+> I checked that Jong-Sung Kim's patch solved this hang-up issue and agree
+on
+> it. But, RTIS seems to be cleared as well.
 
-Again, a couple of comments
+You're right. RTIS should be cleared as well as RXIS. Revised patch:
 
-On Mon, Mar 12, 2012 at 12:10, wei <yinwei168@gmail.com> wrote:
-> From Wei YIN <Wei.Yin@nicta.com.au>
-> Improve PID rate control mechanism by avoiding rate oscillation problem
->
-> Signed-off-by: Wei YIN <Wei.Yin@nicta.com.au>
-> ---
-> kernel 3.3.0
-> net/mac80211/rc80211_pid.h | 38 ++++++++++++++++++++++++++++++++++++++
-> 1 file changed, 38 insertions(+), 0 deletions(-)
+diff --git a/drivers/tty/serial/amba-pl011.c
+b/drivers/tty/serial/amba-pl011.c
+index 6800f5f..39520db 100644
+--- a/drivers/tty/serial/amba-pl011.c
++++ b/drivers/tty/serial/amba-pl011.c
+@@ -224,6 +224,11 @@ static int pl011_fifo_to_tty(struct uart_amba_port
+*uap)
+ 		uart_insert_char(&uap->port, ch, UART011_DR_OE, ch, flag);
+ 	}
+ 
++	/* RTIS and/or RXIS, but RXFE? Just clear the interrupt(s) */
++	if(unlikely(fifotaken == 0))
++		writew(UART011_RTIS | UART011_RXIS, uap->port.membase +
++		       UART011_ICR);
++
+ 	return fifotaken;
+ }
 
-You shouldn't split this change up into separate files. When I said
-"this should be in a separate patch" - I meant that the change I was
-referring to was unrelated to what your patch was about - most of
-these were minor cleanups or things like that. You should write
-patches that do one thing and do it properly, and if you find any
-places that could use work unrelated to that "one thing", those
-changes should go in a separate patch.
 
-Also, this patch looks like it adds all the data structures that the
-first patch in this series would depend on - this should be part of
-that patch.
 
-Thanks,
-
--- 
-Julian Calaby
-
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
