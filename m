@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab2CLQZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 12:25:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46122 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417Ab2CLQZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 12:25:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="116936919"
-Subject: Re: [PATCH v3 1/2] dmaengine: Add support for per xfer specific
- privatedata
-From: Vinod Koul <vinod.koul@intel.com>
-To: Ravi Kumar V <kumarrav@codeaurora.org>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-In-Reply-To: <1331548336-27802-1-git-send-email-kumarrav@codeaurora.org>
-References: <1331548336-27802-1-git-send-email-kumarrav@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Mar 2012 21:59:56 +0530
-Message-ID: <1331569796.1727.9.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753227Ab2CLQ1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 12:27:13 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:53191 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278Ab2CLQ1M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 12:27:12 -0400
+Date: Mon, 12 Mar 2012 17:26:46 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Borislav Petkov <bp@amd64.org>,
+        Ingo Molnar <mingo@elte.hu>, EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] EDAC: Convert AMD EDAC pieces to use RAS printk
+ buffer
+Message-ID: <20120312162646.GB7255@aftab>
+References: <1331040694-12558-1-git-send-email-bp@amd64.org>
+ <1331040694-12558-4-git-send-email-bp@amd64.org>
+ <4F563067.1090100@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F15B61916@ORSMSX103.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F15B61916@ORSMSX103.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 16:02 +0530, Ravi Kumar V wrote:
-> Add new argument to DMA SG and Interleave mode for passing
-> per transfer specific private data, using this it enables the
-> dma devices which needs to pass the parameters which changes per
-> each transfer.
+On Mon, Mar 12, 2012 at 04:18:57PM +0000, Luck, Tony wrote:
+> > This is an initial version of the patch which converts MCE decoding
+> > facilities to use the RAS printk buffer. When there's no userspace agent
+> > running (i.e., /sys/devices/system/ras/agent == 0), we fall back to the
+> > default printk'ing into dmesg which is what we've been doing so far.
 > 
-> Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
-> ---
->  include/linux/dmaengine.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index 679b349..b8f0495 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -570,7 +570,7 @@ struct dma_device {
->  		struct dma_chan *chan,
->  		struct scatterlist *dst_sg, unsigned int dst_nents,
->  		struct scatterlist *src_sg, unsigned int src_nents,
-> -		unsigned long flags);
-> +		unsigned long flags, void *context);
-Please follow the related discussion we had. Alexandre had already
-posted updated and this needs to follow.
-Also this way you break the existing drivers which use this API, not
-sure why you posted without fixing them?
+> This looks unpleasant if your userspace agent set this sysfs file, and
+> then dies (or gets killed).
 
->  	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
->  		struct dma_chan *chan, struct scatterlist *sgl,
-> @@ -581,7 +581,7 @@ struct dma_device {
->  		size_t period_len, enum dma_transfer_direction direction);
->  	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
->  		struct dma_chan *chan, struct dma_interleaved_template *xt,
-> -		unsigned long flags);
-> +		unsigned long flags, void *context);
->  	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->  		unsigned long arg);
->  
+Yeah, having a sysfs file like that felt unpleasant - I was hoping
+someone would point me to a better solution...
 
+> Perhaps you need some device file that the agent keeps open (so if the
+> agent goes away, the kernel gets a "close" on the device to tell it
+> to revert). But even with this sort of solution you would still have
+> to worry about races.
+
+Sounds better, especially the close-on-exit part. Please elaborate on
+the races...
+
+Thanks.
 
 -- 
-~Vinod
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
