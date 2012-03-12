@@ -1,61 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab2CLC2o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 22:28:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59220 "EHLO
+	id S1754734Ab2CLCcs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 22:32:48 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50623 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab2CLC2f convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753186Ab2CLCck convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 22:28:35 -0400
+	Sun, 11 Mar 2012 22:32:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F5D5D90.8020401@gmail.com>
-References: <4F5D4C4E.1060800@gmail.com> <CAGRGNgX-RDRFNXKTXf=qw7h4bQNypHx0Hgvjd7rvXu9T43f4WQ@mail.gmail.com>
- <4F5D5D90.8020401@gmail.com>
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Mon, 12 Mar 2012 13:28:14 +1100
-Message-ID: <CAGRGNgX37DgMzbTjdhQ5LRD_6JwQi8tyN_6VVzYzwQ-KAat4jA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] mac80211: improve PID rate control mechanism by
- avoiding rate oscillation problem
-To: wei <yinwei168@gmail.com>
-Cc: linux-wireless@vger.kernel.org, johannes@sipsolutions.net,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <1331471632.14746.3.camel@ted>
+References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com> <1331471632.14746.3.camel@ted>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Mon, 12 Mar 2012 10:32:19 +0800
+X-Google-Sender-Auth: n1vDSHMZ1AKlEeKIVra0rGxj5PU
+Message-ID: <CAK5ve-JFotWoeDCfBLpBbTnpvp2hpkY-tK8nJvdN1WfV7o0cdw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] led-class: change back LEDS_CLASS to tristate instead
+ of bool
+To: Richard Purdie <richard.purdie@linuxfoundation.org>
+Cc: akpm <akpm@linux-foundation.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        linux@arm.linux.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wei,
-
-On Mon, Mar 12, 2012 at 13:21, wei <yinwei168@gmail.com> wrote:
-> Thank you, Julian.
-
-No problem =)
-
-> On 12/03/12 11:14, Julian Calaby wrote:
->>> @@ -271,14 +473,17 @@ rate_control_pid_get_rate(void *priv, st
->>>                info->control.rates[0].count =
->>>                        txrc->hw->conf.long_frame_max_tx_count;
->>>        else
->>> -               info->control.rates[0].count =
->>> -                       txrc->hw->conf.short_frame_max_tx_count;
->>> -
->>> +               info->control.rates[0].count = 2;
->> Should this be a constant or something? Why is this being set to 2?
+On Sun, Mar 11, 2012 at 9:13 PM, Richard Purdie
+<richard.purdie@linuxfoundation.org> wrote:
+> On Thu, 2012-03-08 at 17:11 +0800, Bryan Wu wrote:
+>> After moving some core functions to led-core.c, led-class.c can be built as
+>> module again.
+>>
+>> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
 >
-> According to the principle of how PID works, the default FLR is 14% and it attempts to decrease the rate if the FLR is higher than 14%. Let us assume that the current FLR is 14%, Then the probability for two consecutive failed attempts should be 14% * 14% = 0.0196 = 1.96%. The probability is very low. So I think we should not try further retransmission at this rate and fall back as soon as possible. Another reason is that the number of probes at the proposed rate is set to MAX_PROBES = 3 in the implementation, which means we will have 6 attempts at the probing rate. If the current rate is the lowest, say 1 Mbit/s, in 120 ms (a rate adaptation period in PID), the maximum number of attempts is around 8--9. I think I should limit the number of probes within the maximum attempts that can be achieved in one rate adaptation period.
+> I'd prefer to have less code being required in led-core.c but this is
+> better than many of the alternatives. I'm happy to see it becoming
+> modular again, thanks!
 >
-> We could switch back to the configured value. But I need to change the maximum number of probes, MAX_PROBES.
+> Acked-by: Richard Purdie <richard.purdie@linuxfoundation.org>
+>
 
-You should either use a constant (i.e. #define
-PID_SHORT_FRAME_MAX_PROBES 2) or put this reasoning in a comment
-there, otherwise people may question why you've set the count to 2.
+Great, Thank you very much.
 
-Thanks,
+-Bryan
+
+>> ---
+>>  drivers/leds/Kconfig     |    2 +-
+>>  drivers/leds/led-class.c |   70 ----------------------------------------------
+>>  drivers/leds/led-core.c  |   70 ++++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 71 insertions(+), 71 deletions(-)
+>>
+>> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+>> index 9ca28fc..3f17f0d 100644
+>> --- a/drivers/leds/Kconfig
+>> +++ b/drivers/leds/Kconfig
+>> @@ -17,7 +17,7 @@ menuconfig NEW_LEDS
+>>  if NEW_LEDS
+>>
+>>  config LEDS_CLASS
+>> -     bool "LED Class Support"
+>> +     tristate "LED Class Support"
+>>       help
+>>         This option enables the led sysfs class in /sys/class/leds.  You'll
+>>         need this to do anything useful with LEDs.  If unsure, say N.
+>> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+>> index 0c8739c..5bff843 100644
+>> --- a/drivers/leds/led-class.c
+>> +++ b/drivers/leds/led-class.c
+>> @@ -110,50 +110,6 @@ static void led_timer_function(unsigned long data)
+>>       mod_timer(&led_cdev->blink_timer, jiffies + msecs_to_jiffies(delay));
+>>  }
+>>
+>> -static void led_stop_software_blink(struct led_classdev *led_cdev)
+>> -{
+>> -     /* deactivate previous settings */
+>> -     del_timer_sync(&led_cdev->blink_timer);
+>> -     led_cdev->blink_delay_on = 0;
+>> -     led_cdev->blink_delay_off = 0;
+>> -}
+>> -
+>> -static void led_set_software_blink(struct led_classdev *led_cdev,
+>> -                                unsigned long delay_on,
+>> -                                unsigned long delay_off)
+>> -{
+>> -     int current_brightness;
+>> -
+>> -     current_brightness = led_get_brightness(led_cdev);
+>> -     if (current_brightness)
+>> -             led_cdev->blink_brightness = current_brightness;
+>> -     if (!led_cdev->blink_brightness)
+>> -             led_cdev->blink_brightness = led_cdev->max_brightness;
+>> -
+>> -     if (led_get_trigger_data(led_cdev) &&
+>> -         delay_on == led_cdev->blink_delay_on &&
+>> -         delay_off == led_cdev->blink_delay_off)
+>> -             return;
+>> -
+>> -     led_stop_software_blink(led_cdev);
+>> -
+>> -     led_cdev->blink_delay_on = delay_on;
+>> -     led_cdev->blink_delay_off = delay_off;
+>> -
+>> -     /* never on - don't blink */
+>> -     if (!delay_on)
+>> -             return;
+>> -
+>> -     /* never off - just set to brightness */
+>> -     if (!delay_off) {
+>> -             led_set_brightness(led_cdev, led_cdev->blink_brightness);
+>> -             return;
+>> -     }
+>> -
+>> -     mod_timer(&led_cdev->blink_timer, jiffies + 1);
+>> -}
+>> -
+>> -
+>>  /**
+>>   * led_classdev_suspend - suspend an led_classdev.
+>>   * @led_cdev: the led_classdev to suspend.
+>> @@ -262,32 +218,6 @@ void led_classdev_unregister(struct led_classdev *led_cdev)
+>>  }
+>>  EXPORT_SYMBOL_GPL(led_classdev_unregister);
+>>
+>> -void led_blink_set(struct led_classdev *led_cdev,
+>> -                unsigned long *delay_on,
+>> -                unsigned long *delay_off)
+>> -{
+>> -     del_timer_sync(&led_cdev->blink_timer);
+>> -
+>> -     if (led_cdev->blink_set &&
+>> -         !led_cdev->blink_set(led_cdev, delay_on, delay_off))
+>> -             return;
+>> -
+>> -     /* blink with 1 Hz as default if nothing specified */
+>> -     if (!*delay_on && !*delay_off)
+>> -             *delay_on = *delay_off = 500;
+>> -
+>> -     led_set_software_blink(led_cdev, *delay_on, *delay_off);
+>> -}
+>> -EXPORT_SYMBOL(led_blink_set);
+>> -
+>> -void led_brightness_set(struct led_classdev *led_cdev,
+>> -                     enum led_brightness brightness)
+>> -{
+>> -     led_stop_software_blink(led_cdev);
+>> -     led_cdev->brightness_set(led_cdev, brightness);
+>> -}
+>> -EXPORT_SYMBOL(led_brightness_set);
+>> -
+>>  static int __init leds_init(void)
+>>  {
+>>       leds_class = class_create(THIS_MODULE, "leds");
+>> diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+>> index 016d19f..d686004 100644
+>> --- a/drivers/leds/led-core.c
+>> +++ b/drivers/leds/led-core.c
+>> @@ -23,3 +23,73 @@ EXPORT_SYMBOL_GPL(leds_list_lock);
+>>
+>>  LIST_HEAD(leds_list);
+>>  EXPORT_SYMBOL_GPL(leds_list);
+>> +
+>> +static void led_stop_software_blink(struct led_classdev *led_cdev)
+>> +{
+>> +     /* deactivate previous settings */
+>> +     del_timer_sync(&led_cdev->blink_timer);
+>> +     led_cdev->blink_delay_on = 0;
+>> +     led_cdev->blink_delay_off = 0;
+>> +}
+>> +
+>> +static void led_set_software_blink(struct led_classdev *led_cdev,
+>> +                                unsigned long delay_on,
+>> +                                unsigned long delay_off)
+>> +{
+>> +     int current_brightness;
+>> +
+>> +     current_brightness = led_get_brightness(led_cdev);
+>> +     if (current_brightness)
+>> +             led_cdev->blink_brightness = current_brightness;
+>> +     if (!led_cdev->blink_brightness)
+>> +             led_cdev->blink_brightness = led_cdev->max_brightness;
+>> +
+>> +     if (led_get_trigger_data(led_cdev) &&
+>> +         delay_on == led_cdev->blink_delay_on &&
+>> +         delay_off == led_cdev->blink_delay_off)
+>> +             return;
+>> +
+>> +     led_stop_software_blink(led_cdev);
+>> +
+>> +     led_cdev->blink_delay_on = delay_on;
+>> +     led_cdev->blink_delay_off = delay_off;
+>> +
+>> +     /* never on - don't blink */
+>> +     if (!delay_on)
+>> +             return;
+>> +
+>> +     /* never off - just set to brightness */
+>> +     if (!delay_off) {
+>> +             led_set_brightness(led_cdev, led_cdev->blink_brightness);
+>> +             return;
+>> +     }
+>> +
+>> +     mod_timer(&led_cdev->blink_timer, jiffies + 1);
+>> +}
+>> +
+>> +
+>> +void led_blink_set(struct led_classdev *led_cdev,
+>> +                unsigned long *delay_on,
+>> +                unsigned long *delay_off)
+>> +{
+>> +     del_timer_sync(&led_cdev->blink_timer);
+>> +
+>> +     if (led_cdev->blink_set &&
+>> +         !led_cdev->blink_set(led_cdev, delay_on, delay_off))
+>> +             return;
+>> +
+>> +     /* blink with 1 Hz as default if nothing specified */
+>> +     if (!*delay_on && !*delay_off)
+>> +             *delay_on = *delay_off = 500;
+>> +
+>> +     led_set_software_blink(led_cdev, *delay_on, *delay_off);
+>> +}
+>> +EXPORT_SYMBOL(led_blink_set);
+>> +
+>> +void led_brightness_set(struct led_classdev *led_cdev,
+>> +                     enum led_brightness brightness)
+>> +{
+>> +     led_stop_software_blink(led_cdev);
+>> +     led_cdev->brightness_set(led_cdev, brightness);
+>> +}
+>> +EXPORT_SYMBOL(led_brightness_set);
+>
+>
+
+
 
 -- 
-Julian Calaby
-
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.138-1617-6545 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
