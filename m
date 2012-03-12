@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab2CLAtu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 20:49:50 -0400
-Received: from 1wt.eu ([62.212.114.60]:63057 "EHLO 1wt.eu"
+	id S1754824Ab2CLAtx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 20:49:53 -0400
+Received: from 1wt.eu ([62.212.114.60]:63060 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754586Ab2CLAsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 20:48:25 -0400
-Message-Id: <20120312002046.202047769@1wt.eu>
+	id S1754587Ab2CLAs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 20:48:27 -0400
+Message-Id: <20120312002046.363122022@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 Mar 2012 01:20:51 +0100
+Date: Mon, 12 Mar 2012 01:20:55 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>, dan@danny.cz,
-        Carsten Otte <cotte@de.ibm.com>, linux-s390@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 06/12] [S390] KEYS: Enable the compat keyctl wrapper on s390x
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Roland McGrath <roland@hack.frob.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 10/12] regset: Prevent null pointer reference on readonly regsets
 In-Reply-To: <feb44625a10a45049eddf27890e95d54@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +23,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: H. Peter Anvin <hpa@zytor.com>
 
-commit 1d057720609ed052a6371fe1d53300e5e6328e94 upstream.
+commit c8e252586f8d5de906385d8cf6385fee289a825e upstream.
 
-Enable the compat keyctl wrapper on s390x so that 32-bit s390 userspace can
-call the keyctl() syscall.
+The regset common infrastructure assumed that regsets would always
+have .get and .set methods, but not necessarily .active methods.
+Unfortunately people have since written regsets without .set methods.
 
-There's an s390x assembly wrapper that truncates all the register values to
-32-bits and this then calls compat_sys_keyctl() - but the latter only exists if
-CONFIG_KEYS_COMPAT is enabled, and the s390 Kconfig doesn't enable it.
+Rather than putting in stub functions everywhere, handle regsets with
+null .get or .set methods explicitly.
 
-Without this patch, 32-bit calls to the keyctl() syscall are given an ENOSYS
-error:
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Roland McGrath <roland@hack.frob.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-	[root@devel4 ~]# keyctl show
-	Session Keyring
-	-3: key inaccessible (Function not implemented)
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: dan@danny.cz
-Cc: Carsten Otte <cotte@de.ibm.com>
-Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-s390@vger.kernel.org
-Cc: stable@vger.kernel.org
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index d172758..6d99a5f 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -227,6 +227,9 @@ config COMPAT
- config SYSVIPC_COMPAT
- 	def_bool y if COMPAT && SYSVIPC
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index bcb884e..07d096c 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -1421,7 +1421,7 @@ static int fill_thread_core_info(struct elf_thread_core_info *t,
+ 	for (i = 1; i < view->n; ++i) {
+ 		const struct user_regset *regset = &view->regsets[i];
+ 		do_thread_regset_writeback(t->task, regset);
+-		if (regset->core_note_type &&
++		if (regset->core_note_type && regset->get &&
+ 		    (!regset->active || regset->active(t->task, regset))) {
+ 			int ret;
+ 			size_t size = regset->n * regset->size;
+diff --git a/include/linux/regset.h b/include/linux/regset.h
+index 8abee65..5150fd1 100644
+--- a/include/linux/regset.h
++++ b/include/linux/regset.h
+@@ -335,6 +335,9 @@ static inline int copy_regset_to_user(struct task_struct *target,
+ {
+ 	const struct user_regset *regset = &view->regsets[setno];
  
-+config KEYS_COMPAT
-+	def_bool y if COMPAT && KEYS
++	if (!regset->get)
++		return -EOPNOTSUPP;
 +
- config AUDIT_ARCH
- 	def_bool y
+ 	if (!access_ok(VERIFY_WRITE, data, size))
+ 		return -EIO;
+ 
+@@ -358,6 +361,9 @@ static inline int copy_regset_from_user(struct task_struct *target,
+ {
+ 	const struct user_regset *regset = &view->regsets[setno];
+ 
++	if (!regset->set)
++		return -EOPNOTSUPP;
++
+ 	if (!access_ok(VERIFY_READ, data, size))
+ 		return -EIO;
  
 
 
