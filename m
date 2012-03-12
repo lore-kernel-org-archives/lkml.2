@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755546Ab2CLNgt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 09:36:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15279 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755395Ab2CLNgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 09:36:47 -0400
-Date: Mon, 12 Mar 2012 09:36:19 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Fernando Luis =?iso-8859-1?Q?V=E1zquez?= Cao 
-	<fernando@oss.ntt.co.jp>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Don Zickus <dzickus@redhat.com>, linux-tip-commits@vger.kernel.org,
-        torvalds@linux-foundation.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        mingo@elte.hu, Yinghai Lu <yinghai@kernel.org>,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/2] boot: ignore early NMIs
-Message-ID: <20120312133619.GB17288@redhat.com>
-References: <m1ipip6xe8.fsf@fess.ebiederm.org>
- <4F573E1C.2060909@oss.ntt.co.jp>
- <4F573E74.5040504@oss.ntt.co.jp>
- <m1eht31z8e.fsf@fess.ebiederm.org>
- <4F58495B.5080308@oss.ntt.co.jp>
- <m1r4x3yrsv.fsf@fess.ebiederm.org>
- <4F5A6D87.4050809@zytor.com>
- <4F5D8D0E.8060702@oss.ntt.co.jp>
- <4F5D8E63.60606@zytor.com>
- <4F5D943C.5020403@oss.ntt.co.jp>
+	id S1755573Ab2CLNhY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 09:37:24 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:42355
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1755411Ab2CLNhX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 09:37:23 -0400
+Date: Mon, 12 Mar 2012 14:37:21 +0100 (CET)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] Adding Secure Deletion to UBIFS
+In-Reply-To: <1331559361.12037.29.camel@sauron.fi.intel.com>
+Message-ID: <alpine.DEB.2.00.1203121436280.29192@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>  <1330536308.3545.158.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1203011434220.2462@eristoteles.iwoars.net>  <1331278562.22872.18.camel@sauron.fi.intel.com> 
+ <alpine.DEB.2.00.1203091959570.25737@eristoteles.iwoars.net>  <1331559053.12037.25.camel@sauron.fi.intel.com> <1331559361.12037.29.camel@sauron.fi.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F5D943C.5020403@oss.ntt.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 03:14:20PM +0900, Fernando Luis Vázquez Cao wrote:
+Sounds good, I'll use the main git repo and as the first patch I'll claim
+those 8 bytes and make key.h reflect whats going on.
 
-[..]
-> The thing is that we want to avoid playing with hardware in the kdump
-> reboot patch when we can avoid it, the premise being that it cannot
-> be accessed without risking a lockup or worse (as the deadlock accessing
-> the I/O APIC showed).
+Cheers,
+Joel
 
-I think there needs to be a limit to being paranoid. On one hand people
-want to run panic notifiers, all the kmsg_dump() hooks in panic path, and
-on the other hand we are afraid of even disabling LAPIC.
+On Mon, 12 Mar 2012, Artem Bityutskiy wrote:
 
-I personally think that disabling LAPIC is reasonably practical solution
-to the problem until and unless somebody shows that it deadlocks easily.
-
-Thanks
-Vivek
+> On Mon, 2012-03-12 at 15:30 +0200, Artem Bityutskiy wrote:
+> > >  Btw, when I was
+> > > developing it I used the last 8 bytes from the key as the key position,
+> > > because the key was 16 bytes but only 8 were used. Could you comment on
+> > > the last 8 bytes of ubifs keys?
+> >
+> > I think you can use them. But is it possible to kill these things from
+> > the data nodes themselves? We can always find it by looking up the index
+> > by the data node key, right?
+>
+> Joel, but please, send small patches, preparation patches, etc. Do not
+> disappear for several months and do not come back with another big
+> patch. Tell about your intentions in advance.
+>
+> E.g., if you decide to start using those unused 8 bytes - first do small
+> preparations like removing the notion of "key scheme" which we
+> provisioned but never used (from comments as well). Clean-up the "space"
+> for yourself. Then start using them for your purposes. As I said, as
+> soon as I get the first patch I like, I'll create a separate branch in
+> the UBIFS git tree for your work.
+>
+> Thanks!
+>
+> --
+> Best Regards,
+> Artem Bityutskiy
+>
+>
