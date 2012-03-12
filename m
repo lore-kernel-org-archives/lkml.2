@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab2CLAtx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 20:49:53 -0400
-Received: from 1wt.eu ([62.212.114.60]:63060 "EHLO 1wt.eu"
+	id S1754843Ab2CLAt6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 20:49:58 -0400
+Received: from 1wt.eu ([62.212.114.60]:63062 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab2CLAs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 20:48:27 -0400
-Message-Id: <20120312002046.363122022@1wt.eu>
+	id S1754589Ab2CLAs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 20:48:28 -0400
+Message-Id: <20120312002046.443666929@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 Mar 2012 01:20:55 +0100
+Date: Mon, 12 Mar 2012 01:20:57 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Roland McGrath <roland@hack.frob.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 10/12] regset: Prevent null pointer reference on readonly regsets
+Cc: Maxim Uvarov <maxim.uvarov@oracle.com>, Wim Van Sebroeck <wim@iguana.be>
+Subject: [ 12/12] watchdog: hpwdt: clean up set_memory_x call for 32 bit
 In-Reply-To: <feb44625a10a45049eddf27890e95d54@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,59 +22,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H. Peter Anvin <hpa@zytor.com>
+From: Maxim Uvarov <maxim.uvarov@oracle.com>
 
-commit c8e252586f8d5de906385d8cf6385fee289a825e upstream.
+commit 97d2a10d5804d585ab0b58efbd710948401b886a upstream.
 
-The regset common infrastructure assumed that regsets would always
-have .get and .set methods, but not necessarily .active methods.
-Unfortunately people have since written regsets without .set methods.
+1. address has to be page aligned.
+2. set_memory_x uses page size argument, not size.
+Bug causes with following commit:
+	commit da28179b4e90dda56912ee825c7eaa62fc103797
+	Author: Mingarelli, Thomas <Thomas.Mingarelli@hp.com>
+	Date:   Mon Nov 7 10:59:00 2011 +0100
 
-Rather than putting in stub functions everywhere, handle regsets with
-null .get or .set methods explicitly.
+     watchdog: hpwdt: Changes to handle NX secure bit in 32bit path
 
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Roland McGrath <roland@hack.frob.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+    commit e67d668e147c3b4fec638c9e0ace04319f5ceccd upstream.
 
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index bcb884e..07d096c 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -1421,7 +1421,7 @@ static int fill_thread_core_info(struct elf_thread_core_info *t,
- 	for (i = 1; i < view->n; ++i) {
- 		const struct user_regset *regset = &view->regsets[i];
- 		do_thread_regset_writeback(t->task, regset);
--		if (regset->core_note_type &&
-+		if (regset->core_note_type && regset->get &&
- 		    (!regset->active || regset->active(t->task, regset))) {
- 			int ret;
- 			size_t size = regset->n * regset->size;
-diff --git a/include/linux/regset.h b/include/linux/regset.h
-index 8abee65..5150fd1 100644
---- a/include/linux/regset.h
-+++ b/include/linux/regset.h
-@@ -335,6 +335,9 @@ static inline int copy_regset_to_user(struct task_struct *target,
- {
- 	const struct user_regset *regset = &view->regsets[setno];
+    This patch makes use of the set_memory_x() kernel API in order
+    to make necessary BIOS calls to source NMIs.
+
+Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Cc: stable <stable@vger.kernel.org>
+
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 8464ea1..3c166d3 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -231,7 +231,7 @@ static int __devinit cru_detect(unsigned long map_entry,
  
-+	if (!regset->get)
-+		return -EOPNOTSUPP;
-+
- 	if (!access_ok(VERIFY_WRITE, data, size))
- 		return -EIO;
+ 	cmn_regs.u1.reax = CRU_BIOS_SIGNATURE_VALUE;
  
-@@ -358,6 +361,9 @@ static inline int copy_regset_from_user(struct task_struct *target,
- {
- 	const struct user_regset *regset = &view->regsets[setno];
+-	set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
++	set_memory_x((unsigned long)bios32_map, 2);
+ 	asminline_call(&cmn_regs, bios32_entrypoint);
  
-+	if (!regset->set)
-+		return -EOPNOTSUPP;
-+
- 	if (!access_ok(VERIFY_READ, data, size))
- 		return -EIO;
- 
+ 	if (cmn_regs.u1.ral != 0) {
+@@ -250,7 +250,8 @@ static int __devinit cru_detect(unsigned long map_entry,
+ 			cru_rom_addr =
+ 				ioremap(cru_physical_address, cru_length);
+ 			if (cru_rom_addr) {
+-				set_memory_x((unsigned long)cru_rom_addr, cru_length);
++				set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK,
++					(cru_length + PAGE_SIZE - 1) >> PAGE_SHIFT);
+ 				retval = 0;
+ 			}
+ 		}
 
 
