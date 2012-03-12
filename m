@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab2CLTPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:15:50 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56715 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555Ab2CLTPs convert rfc822-to-8bit (ORCPT
+	id S1756657Ab2CLTQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:16:56 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48909 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756617Ab2CLTQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:15:48 -0400
+	Mon, 12 Mar 2012 15:16:54 -0400
+Date: Mon, 12 Mar 2012 20:16:50 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Roland Stigge <stigge@antcom.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
+Subject: Re: [PATCH v7 4/4] USB: ohci-nxp: Remove i2c_write(), use smbus
+Message-ID: <20120312191650.GB28087@pengutronix.de>
+References: <1331463219-23293-1-git-send-email-stigge@antcom.de>
+ <1331463219-23293-5-git-send-email-stigge@antcom.de>
 MIME-Version: 1.0
-In-Reply-To: <C6gS2DkSgiG.A.UgC.VuRXPB@chimera>
-References: <WuYv90FoNpB.A.O8.ktRXPB@chimera>
-	<C6gS2DkSgiG.A.UgC.VuRXPB@chimera>
-Date: Mon, 12 Mar 2012 20:15:47 +0100
-Message-ID: <CAPVoSvSG3d1ZnY=x-wv=OnXD7Cx9sdSajBXESAWPXkrSrkUdAA@mail.gmail.com>
-Subject: Re: [Bug #42678] [3.3-rc1] radeon stuck in kernel after lockup
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        =?ISO-8859-1?Q?J=E9r=F4me_Glisse?= <glisse@freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PmA2V3Z32TCmWXqI"
+Content-Disposition: inline
+In-Reply-To: <1331463219-23293-5-git-send-email-stigge@antcom.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/11 Rafael J. Wysocki <rjw@sisk.pl>:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
->
-> The following bug entry is on the current list of known regressions
-> from 3.2.  Please verify if it still should be listed and let the tracking team
-> know (either way).
 
-Still the same state as of 2012/02/04.
-The regression (X no longer recovering from GPU lockup) is probably
-still there, I'm just no longer seeing it, because the trigger of the
-GPU lockups got fixed. (These GPU lockups themselfs were not a
-regression wrt. 3.3-rc1, that bug existed at least since 3.1)
+--PmA2V3Z32TCmWXqI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Bug-Entry       : https://bugzilla.kernel.org/show_bug.cgi?id=42678
-> Subject         : [3.3-rc1] radeon stuck in kernel after lockup
-> Submitter       : Torsten Kaiser <just.for.lkml@googlemail.com>
-> Date            : 2012-01-21 19:03 (51 days old)
-> Message-ID      : <CAPVoSvSXMvRb=1itu9DjF+s=6zfAChvUxS-x=b8EV9kOZinNpA@mail.gmail.com>
-> References      : http://marc.info/?l=linux-kernel&m=132717279606670&w=2
-> Handled-By      : Jérôme Glisse <glisse@freedesktop.org>
->
->
+
+> +	i2c_smbus_write_byte_data(isp1301_i2c_client,
+> +		ISP1301_I2C_INTERRUPT_RISING | ISP1301_I2C_REG_CLEAR_ADDR,
+> +		0xFF);
+
+No need to resend, still: Breaking the 80 char limit for such cases is usua=
+lly
+more readable.
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--PmA2V3Z32TCmWXqI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAk9eS6IACgkQD27XaX1/VRtjogCdGqAKJTb6Q4ZYt2LeHgbdiceE
+i4YAn1XauoqAPWnZxWOSTtspm7pDnumM
+=37t2
+-----END PGP SIGNATURE-----
+
+--PmA2V3Z32TCmWXqI--
