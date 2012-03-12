@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab2CLRTb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:19:31 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:52654 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753860Ab2CLRT3 (ORCPT
+	id S1756112Ab2CLRXK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:23:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:65469 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754083Ab2CLRXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 13:19:29 -0400
-Message-ID: <4F5E301D.9030700@wwwdotorg.org>
-Date: Mon, 12 Mar 2012 11:19:25 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Mon, 12 Mar 2012 13:23:08 -0400
+Date: Mon, 12 Mar 2012 10:22:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: ShuoX Liu <shuox.liu@intel.com>
+Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "Brown, Len" <len.brown@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] cpuidle: Move cpuidle sysfs entry of each cpu to
+ debugfs.
+Message-ID: <20120312172258.GA29938@kroah.com>
+References: <4F5466C4.2090808@intel.com>
+ <20120305101827.GA19408@khazad-dum.debian.net>
+ <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com>
+ <1330998885.1916.89.camel@ymzhang>
+ <20120306052236.GA19416@kroah.com>
+ <1331013078.1916.103.camel@ymzhang>
+ <20120306143935.GA23346@kroah.com>
+ <1331082051.1916.124.camel@ymzhang>
+ <20120308180106.GD26516@kroah.com>
+ <4F5DBFA8.3080300@intel.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Randy Dunlap <rdunlap@xenotime.net>, Olof Johansson <olof@lixom.net>,
-        Colin Cross <ccross@android.com>, Chris Ball <cjb@laptop.org>,
-        linux-doc@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Documentation/gpio.txt: Explain expected pinctrl
- interaction
-References: <1329719263-18971-1-git-send-email-swarren@nvidia.com> <CACRpkdbPeVBv5VWefDvib5HmGF0K2gT79Mx7g-yviyQj33+Z-w@mail.gmail.com> <20120312163212.70E283E07B0@localhost>
-In-Reply-To: <20120312163212.70E283E07B0@localhost>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F5DBFA8.3080300@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 10:32 AM, Grant Likely wrote:
-> On Tue, 21 Feb 2012 11:46:03 +0100, Linus Walleij <linus.walleij@linaro.org> wrote:
->> On Mon, Feb 20, 2012 at 7:27 AM, Stephen Warren <swarren@nvidia.com> wrote:
->>
->>> Update gpio.txt based on recent discussions regarding interaction with the
->>> pinctrl subsystem.
->>>
->>> Previously, gpio_request() was described as explicitly not performing any
->>> required mux setup operations etc.
->>>
->>> Now, gpio_request() is explicitly as explicitly performing any required mux
->>> setup operations where possible. In the case it isn't, platform code is
->>> required to have set up any required muxing or other configuration prior to
->>> gpio_request() being called, in order to maintain the same semantics.
->>>
->>> This is achieved by gpiolib drivers calling e.g. pinctrl_request_gpio() in
->>> their .request() operation.
->>>
->>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->>
->> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->>
->> Grant can you take this one? I'd prefer for you to have a look at
->> it as well.
+On Mon, Mar 12, 2012 at 05:19:36PM +0800, ShuoX Liu wrote:
+> I created a series to do this.
 > 
-> I've taken this one, but left the 2nd for Olof.
+> [PATCH 1/3] cpuidle: Move cpuidle sysfs entry of each cpu to debugfs.
+> [PATCH 2/3] cpuidle: Add a debugfs entry to disable specific C state
+> for debug purpose.
+> [PATCH 3/3] cpupower: Update the cpupower tool for new debugfs
+> entries of cpuidle.
+> 
+> Below are patches.
 
-Grant, did you take V2 of this patch? I assume not since you replied to V1.
+The patch is line-wrapped and can not be applied :(
 
-For reference, that's:
-http://lkml.org/lkml/2012/3/5/533
+> --- /dev/null
+> +++ b/drivers/cpuidle/debugfs.c
+> @@ -0,0 +1,176 @@
+> +/*
+> + * debugfs.c - debugfs support
+> + *
+> + * (C) 2006-2007 Shaohua Li <shaohua.li@intel.com>
+> + * (C) 2012 ShuoX Liu <shuox.liu@intel.com>
+> + *
+> + * This code is licenced under the GPL.
 
-Thanks.
+What version of the GPL?
+
+thanks,
+
+greg k-h
