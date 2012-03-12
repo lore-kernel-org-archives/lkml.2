@@ -1,196 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab2CLIIG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 04:08:06 -0400
-Received: from exprod5og106.obsmtp.com ([64.18.0.182]:45530 "HELO
-	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752925Ab2CLIHy (ORCPT
+	id S1754747Ab2CLII5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 04:08:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51422 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080Ab2CLIIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 04:07:54 -0400
-From: Mai La <mla@apm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Tirumala R Marri <tmarri@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Michael Neuling <mikey@neuling.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: open-source-review@apm.com, Mai La <mla@apm.com>
-Subject: [PATCH 1/2] [v3] powerpc/44x: Fix PCI MSI support for Maui APM821xx SoC and Bluestone board
-Date: Mon, 12 Mar 2012 15:07:43 +0700
-Message-Id: <1331539663-29641-1-git-send-email-mla@apm.com>
-X-Mailer: git-send-email 1.7.2.5
+	Mon, 12 Mar 2012 04:08:47 -0400
+Date: Mon, 12 Mar 2012 16:14:14 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan@kernel.org>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: Fwd: Control page reclaim granularity
+Message-ID: <20120312081413.GA10923@gmail.com>
+Mail-Followup-To: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+	linux-mm <linux-mm@kvack.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Minchan Kim <minchan@kernel.org>, riel@redhat.com,
+	kosaki.motohiro@jp.fujitsu.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F5D95AF.1020108@openvz.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch consists of:
-- Enable PCI MSI as default for Bluestone board
-- Change definition of number of MSI interrupt as it depends on SoC
-- Fix returning ENODEV as finding MSI node
-- Fix MSI physical high and low address
-- Keep MSI data logically
+On 03/12/2012 02:20 PM, Konstantin Khlebnikov wrote:
+> Minchan Kim wrote:
+>> On Mon, Mar 12, 2012 at 10:06:09AM +0800, Zheng Liu wrote:
+>>> On Mon, Mar 12, 2012 at 09:29:34AM +0900, Minchan Kim wrote:
+>>>> I forgot to Ccing you.
+>>>> Sorry.
+>>>>
+>>>> ---------- Forwarded message ----------
+>>>> From: Minchan Kim<minchan@kernel.org>
+>>>> Date: Mon, Mar 12, 2012 at 9:28 AM
+>>>> Subject: Re: Control page reclaim granularity
+>>>> To: Minchan Kim<minchan@kernel.org>, linux-mm<linux-mm@kvack.org>,
+>>>> linux-kernel<linux-kernel@vger.kernel.org>, Konstantin Khlebnikov<
+>>>> khlebnikov@openvz.org>, riel@redhat.com, kosaki.motohiro@jp.fujitsu.com
+>>>>
+>>>>
+>>>> On Fri, Mar 09, 2012 at 12:54:03AM +0800, Zheng Liu wrote:
+>>>>> Hi Minchan,
+>>>>>
+>>>>> Sorry, I forgot to say that I don't subscribe linux-mm and
+>>>>> linux-kernel
+>>>>> mailing list.  So please Cc me.
+>>>>>
+>>>>> IMHO, maybe we should re-think about how does user use mmap(2).  I
+>>>>> describe the cases I known in our product system.  They can be
+>>>>> categorized into two cases.  One is mmaped all data files into memory
+>>>>> and sometime it uses write(2) to append some data, and another uses
+>>>>> mmap(2)/munmap(2) and read(2)/write(2) to manipulate the files.  In
+>>>>> the
+>>>>> second case,  the application wants to keep mmaped page into memory
+>>>>> and
+>>>>> let file pages to be reclaimed firstly.  So, IMO, when application
+>>>>> uses
+>>>>> mmap(2) to manipulate files, it is possible to imply that it wants
+>>>>> keep
+>>>>> these mmaped pages into memory and do not be reclaimed.  At least
+>>>>> these
+>>>>> pages do not be reclaimed early than file pages.  I think that
+>>>>> maybe we
+>>>>> can recover that routine and provide a sysctl parameter to let the
+>>>>> user
+>>>>> to set this ratio between mmaped pages and file pages.
+>>>>
+>>>> I am not convinced why we should handle mapped page specially.
+>>>> Sometimem, someone may use mmap by reducing buffer copy compared to
+>>>> read
+>>>> system call.
+>>>> So I think we can't make sure mmaped pages are always win.
+>>>>
+>>>> My suggestion is that it would be better to declare by user explicitly.
+>>>> I think we can implement it by madvise and fadvise's WILLNEED option.
+>>>> Current implementation is just readahead if there isn't a page in
+>>>> memory
+>>>> but I think
+>>>> we can promote from inactive to active if there is already a page in
+>>>> memory.
+>>>>
+>>>> It's more clear and it couldn't be affected by kernel page reclaim
+>>>> algorithm change
+>>>> like this.
+>>>
+>>> Thank you for your advice.  But I still have question about this
+>>> solution.  If we improve the madvise(2) and fadvise(2)'s WILLNEED
+>>> option,  it will cause an inconsistently status for pages that be
+>>> manipulated by madvise(2) and/or fadvise(2).  For example, when I call
+>>> madvise with WILLNEED flag, some pages will be moved into active list if
+>>> they already have been in memory, and other pages will be read into
+>>> memory and be saved in inactive list if they don't be in memory.  Then
+>>> pages that are in inactive list are possible to be reclaim.  So from the
+>>> view of users, it is inconsistent because some pages are in memory and
+>>> some pages are reclaimed.  But actually the user hopes that all of pages
+>>> can be kept in memory.  IMHO, this inconsistency is weird and makes
+>>> users
+>>> puzzled.
+>>
+>> Now problem is that
+>>
+>> 1. User want to keep pages which are used once in a while in memory.
+>> 2. Kernel want to reclaim them because they are surely reclaim target
+>>     pages in point of view by LRU.
+>>
+>> The most desriable approach is that user should use mlock to guarantee
+>> them in memory. But mlock is too big overhead and user doesn't want to
+>> keep
+>> memory all pages all at once.(Ie, he want demand paging when he need
+>> the page)
+>> Right?
+>>
+>> madvise, it's a just hint for kernel and kernel doesn't need to make
+>> sure madvise's behavior.
+>> In point of view, such inconsistency might not be a big problem.
+>>
+>> Big problem I think now is that user should use madvise(WILLNEED)
+>> periodically because such
+>> activation happens once when user calls madvise. If user doesn't use
+>> page frequently after
+>> user calls it, it ends up moving into inactive list and even could be
+>> reclaimed.
+>> It's not good. :-(
+>>
+>> Okay. How about adding new VM_WORKINGSET?
+>> And reclaimer would give one more round trip in active/inactive list
+>> when reclaim happens
+>> if the page is referenced.
+>>
+>> Sigh. We have no room for new VM_FLAG in 32 bit.
+> 
+> It would be nice to mark struct address_space with this flag and export
+> AS_UNEVICTABLE somehow.
+> Maybe we can reuse file-locking engine for managing these bits =)
 
-Signed-off-by: Mai La <mla@apm.com>
+Make sense to me.  We can mark this flag in struct address_space and check
+it in page_refereneced_file().  If this flag is set, it will be cleard and
+the function returns referenced > 1.  Then this page can be promoted into
+activate list.  But I prefer to set/clear this flag in madvise.
 
----
-v3:
-* Use upper_32_bits() / lower_32_bits() consistently as Wolfgang Denk recomments
-v2:
-* Change definition of number of MSI interrupt from config to count interrupts in device tree
- 
----
- arch/powerpc/platforms/44x/Kconfig |    2 +
- arch/powerpc/sysdev/ppc4xx_msi.c   |   40 +++++++++++++++++++++++------------
- 2 files changed, 28 insertions(+), 14 deletions(-)
+PS, I have subscribed linux-mm mailing list. :-)
 
-diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-index fcf6bf2..9f04ce3 100644
---- a/arch/powerpc/platforms/44x/Kconfig
-+++ b/arch/powerpc/platforms/44x/Kconfig
-@@ -23,6 +23,8 @@ config BLUESTONE
- 	default n
- 	select PPC44x_SIMPLE
- 	select APM821xx
-+	select PCI_MSI
-+	select PPC4xx_MSI
- 	select IBM_EMAC_RGMII
- 	help
- 	  This option enables support for the APM APM821xx Evaluation board.
-diff --git a/arch/powerpc/sysdev/ppc4xx_msi.c b/arch/powerpc/sysdev/ppc4xx_msi.c
-index 1c2d7af..63989d0 100644
---- a/arch/powerpc/sysdev/ppc4xx_msi.c
-+++ b/arch/powerpc/sysdev/ppc4xx_msi.c
-@@ -28,10 +28,11 @@
- #include <linux/of_platform.h>
- #include <linux/interrupt.h>
- #include <linux/export.h>
-+#include <linux/kernel.h>
- #include <asm/prom.h>
- #include <asm/hw_irq.h>
- #include <asm/ppc-pci.h>
--#include <boot/dcr.h>
-+#include <asm/dcr.h>
- #include <asm/dcr-regs.h>
- #include <asm/msi_bitmap.h>
- 
-@@ -43,13 +44,14 @@
- #define PEIH_FLUSH0	0x30
- #define PEIH_FLUSH1	0x38
- #define PEIH_CNTRST	0x48
--#define NR_MSI_IRQS	4
-+
-+int msi_irqs;
- 
- struct ppc4xx_msi {
- 	u32 msi_addr_lo;
- 	u32 msi_addr_hi;
- 	void __iomem *msi_regs;
--	int msi_virqs[NR_MSI_IRQS];
-+	int *msi_virqs;
- 	struct msi_bitmap bitmap;
- 	struct device_node *msi_dev;
- };
-@@ -61,7 +63,7 @@ static int ppc4xx_msi_init_allocator(struct platform_device *dev,
- {
- 	int err;
- 
--	err = msi_bitmap_alloc(&msi_data->bitmap, NR_MSI_IRQS,
-+	err = msi_bitmap_alloc(&msi_data->bitmap, msi_irqs,
- 			      dev->dev.of_node);
- 	if (err)
- 		return err;
-@@ -83,6 +85,9 @@ static int ppc4xx_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 	struct msi_desc *entry;
- 	struct ppc4xx_msi *msi_data = &ppc4xx_msi;
- 
-+	msi_data->msi_virqs = kmalloc((msi_irqs) * sizeof(int),
-+					    GFP_KERNEL);
-+
- 	list_for_each_entry(entry, &dev->msi_list, list) {
- 		int_no = msi_bitmap_alloc_hwirqs(&msi_data->bitmap, 1);
- 		if (int_no >= 0)
-@@ -150,12 +155,11 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 	if (!sdr_addr)
- 		return -1;
- 
--	SDR0_WRITE(sdr_addr, (u64)res.start >> 32);	 /*HIGH addr */
--	SDR0_WRITE(sdr_addr + 1, res.start & 0xFFFFFFFF); /* Low addr */
--
-+	mtdcri(SDR0, *sdr_addr, upper_32_bits(res.start));	/*HIGH addr */
-+	mtdcri(SDR0, *sdr_addr + 1, lower_32_bits(res.start));	/* Low addr */
- 
- 	msi->msi_dev = of_find_node_by_name(NULL, "ppc4xx-msi");
--	if (msi->msi_dev)
-+	if (!msi->msi_dev)
- 		return -ENODEV;
- 
- 	msi->msi_regs = of_iomap(msi->msi_dev, 0);
-@@ -167,9 +171,12 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 		(u32) (msi->msi_regs + PEIH_TERMADH), (u32) (msi->msi_regs));
- 
- 	msi_virt = dma_alloc_coherent(&dev->dev, 64, &msi_phys, GFP_KERNEL);
--	msi->msi_addr_hi = 0x0;
--	msi->msi_addr_lo = (u32) msi_phys;
--	dev_dbg(&dev->dev, "PCIE-MSI: msi address 0x%x\n", msi->msi_addr_lo);
-+	if (!msi_virt)
-+		return -ENOMEM;
-+	msi->msi_addr_hi = upper_32_bits(msi_phys);
-+	msi->msi_addr_lo = lower_32_bits(msi_phys);
-+	dev_dbg(&dev->dev, "PCIE-MSI: msi address high 0x%x, low 0x%x\n",
-+		msi->msi_addr_hi, msi->msi_addr_lo);
- 
- 	/* Progam the Interrupt handler Termination addr registers */
- 	out_be32(msi->msi_regs + PEIH_TERMADH, msi->msi_addr_hi);
-@@ -185,6 +192,8 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 	out_be32(msi->msi_regs + PEIH_MSIED, *msi_data);
- 	out_be32(msi->msi_regs + PEIH_MSIMK, *msi_mask);
- 
-+	dma_free_coherent(&dev->dev, 64, msi_virt, msi_phys);
-+
- 	return 0;
- }
- 
-@@ -194,7 +203,7 @@ static int ppc4xx_of_msi_remove(struct platform_device *dev)
- 	int i;
- 	int virq;
- 
--	for (i = 0; i < NR_MSI_IRQS; i++) {
-+	for (i = 0; i < msi_irqs; i++) {
- 		virq = msi->msi_virqs[i];
- 		if (virq != NO_IRQ)
- 			irq_dispose_mapping(virq);
-@@ -215,8 +224,6 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 	struct resource res;
- 	int err = 0;
- 
--	msi = &ppc4xx_msi;/*keep the msi data for further use*/
--
- 	dev_dbg(&dev->dev, "PCIE-MSI: Setting up MSI support...\n");
- 
- 	msi = kzalloc(sizeof(struct ppc4xx_msi), GFP_KERNEL);
-@@ -234,6 +241,10 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 		goto error_out;
- 	}
- 
-+	msi_irqs = of_irq_count(dev->dev.of_node);
-+	if (!msi_irqs)
-+		return -1;
-+
- 	if (ppc4xx_setup_pcieh_hw(dev, res, msi))
- 		goto error_out;
- 
-@@ -242,6 +253,7 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 		dev_err(&dev->dev, "Error allocating MSI bitmap\n");
- 		goto error_out;
- 	}
-+	ppc4xx_msi = *msi;
- 
- 	ppc_md.setup_msi_irqs = ppc4xx_setup_msi_irqs;
- 	ppc_md.teardown_msi_irqs = ppc4xx_teardown_msi_irqs;
--- 
-1.7.3.4
-
+Regards,
+Zheng
