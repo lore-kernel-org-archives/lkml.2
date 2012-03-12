@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab2CLSN2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:13:28 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:38990 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234Ab2CLSN1 (ORCPT
+	id S1756238Ab2CLSOx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:14:53 -0400
+Received: from 124-248-200-64.sunnyvision.com ([124.248.200.64]:34993 "EHLO
+	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751932Ab2CLSOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:13:27 -0400
-Date: Mon, 12 Mar 2012 10:52:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lai Jiangshan <eag0628@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
-        patches@linaro.org
-Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine
- call_srcu()
-Message-ID: <20120312175220.GE2471@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
- <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
- <1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
- <1331031498.11248.273.camel@twins>
- <CACvQF53k9TQfPnVYA3DPeQbwqiA+4+Q5SqQ2dJSFQFAVmodD3Q@mail.gmail.com>
- <1331048298.11248.320.camel@twins>
- <20120308194905.GB2412@linux.vnet.ibm.com>
- <1331374349.18960.15.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331374349.18960.15.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031218-7408-0000-0000-00000362CDAB
+	Mon, 12 Mar 2012 14:14:51 -0400
+X-Greylist: delayed 2042 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Mar 2012 14:14:51 EDT
+X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 1F77150F70
+X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com D37B94FAD9
+Message-ID: <x9myPi4@pchome.com.tw>
+From: boris@cloudluca.com
+Subject: Server Rental Service in Hong Kong
+X-Mailer: 4Ujw50g7GQ2KjgMUdgebMkWaj8
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+Date: Tue, 13 Mar 2012 01:31:19 +0800 (HKT)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q2CIExqd014576
 
-On Sat, Mar 10, 2012 at 11:12:29AM +0100, Peter Zijlstra wrote:
-> On Thu, 2012-03-08 at 11:49 -0800, Paul E. McKenney wrote:
-> > 
-> > I too have used (long)(a - b) for a long time, but I saw with my own eyes
-> > the glee in the compiler-writers' eyes when they discussed signed overflow
-> > being undefined in the C standard.  I believe that the reasons for signed
-> > overflow being undefined are long obsolete, but better safe than sorry. 
-> 
-> Thing is, if they break that the whole kernel comes falling down, I
-> really wouldn't worry about RCU at that point. But to each their
-> pet-paranoia I guess ;-)
+Dear All,
 
-But just because I am paranoid doesn't mean that no one is after me!  ;-)
+We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
 
-I agree that the compiler guys would need to provide a chicken switch
-due to the huge amount of code that relies on (long)(a - b) handling
-overflow reasonably.  But avoiding signed integer overflow is pretty
-straightforward.  For example, I use the following in RCU:
+Dell? PowerEdge? EnterpriseRack Mount Server
+-Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
+-8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
+-500GB, 3.5", 6Gbps SAS x 2
+-Raid 1 Mirroring Protection
+-Remote KVM (iDRAC6 Enterprise)
 
-	#define UINT_CMP_GE(a, b)	(UINT_MAX / 2 >= (a) - (b))
-	#define UINT_CMP_LT(a, b)	(UINT_MAX / 2 < (a) - (b))
-	#define ULONG_CMP_GE(a, b)	(ULONG_MAX / 2 >= (a) - (b))
-	#define ULONG_CMP_LT(a, b)	(ULONG_MAX / 2 < (a) - (b))
+Dell(TM) PowerEdge(TM) R410 Rack Mount Server
+-Intel(R) Quad Core E5606 Xeon(R) CPU, 2.13GHz, 4M Cache, 4.86 GT/s QPI
+-4GB Memory (2x2GB), 1333MHz Dual Ranked RDIMMs Fully-Buffered
+-500GB 7.2K RPM SATAII 3.5" Hard Drive x 2
+-iDRAC6 Enterprise or Express (Remote KVM Management)
 
-But yes, part of the reason for my doing this was to make conversations
-with the usual standards-committee suspects go more smoothly.
+Every Dedicated Server Hosting Solution Also Includes: 
+ 
+Software Specification 
+- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
+- Full root-level access 
+- Data Center Facilities 
+- Shared Local & International Bandwidth 
+- 2 IP Addresses Allocation 
+- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
+- FM200¡§based fire suppression system 
+- 24x7 CRAC Air Conditioning and Humidity Control 
+- 24x7 Security Control 
+- 24x7 Remote Hand Service 
 
-							Thanx, Paul
+Pls send us email for further information.Thanks,
+
+Boris 
+boris@cloudluca.com
+
+If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
+
 
