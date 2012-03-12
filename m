@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950Ab2CLWdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 18:33:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53579 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757824Ab2CLWdF convert rfc822-to-8bit (ORCPT
+	id S1757835Ab2CLWhX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 18:37:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39953 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab2CLWhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 18:33:05 -0400
-Message-ID: <1331591568.18960.61.camel@twins>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-From: Peter Zijlstra <peterz@infradead.org>
+	Mon, 12 Mar 2012 18:37:21 -0400
+Date: Mon, 12 Mar 2012 17:37:07 -0500
+From: Serge Hallyn <serge.hallyn@canonical.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
+        cgroups@vger.kernel.org, Michal Schmidt <mschmidt@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
         Lennart Poettering <lennart@poettering.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Vivek Goyal <vgoyal@redhat.com>, Michal Schmidt <mschmidt@redhat.com>
-Date: Mon, 12 Mar 2012 23:32:48 +0100
-In-Reply-To: <20120312222817.GI23255@google.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120312223707.GA8272@peqn>
 References: <20120221211938.GE12236@google.com>
-	 <20120312221050.GG23255@google.com> <1331590938.18960.57.camel@twins>
-	 <20120312222817.GI23255@google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+ <20120312221050.GG23255@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120312221050.GG23255@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 15:28 -0700, Tejun Heo wrote:
-> Hey,
+Quoting Tejun Heo (tj@kernel.org):
+> Hello, guys.
 > 
-> On Mon, Mar 12, 2012 at 11:22:18PM +0100, Peter Zijlstra wrote:
-> > On Mon, 2012-03-12 at 15:10 -0700, Tejun Heo wrote:
-> > > 
-> > > * How to map controllers which aren't aware of full hierarchy is still
-> > >   an open question but I'm still standing by one active node on any
-> > >   root-to-leaf path w/ root group serving as the special rest group. 
-> > 
-> > What does this mean?
+> Thanks a lot for the discussion and here are my take aways:
 > 
-> Let's say we have a tree like the following.
-> 
->          root
->       /   |   \
->      G1  G2   G3
->              /  \
-> 	   G31  G32
-> 
-> So, for cgroups which don't support full hierarchy, it'll be viewed as
-> either,
-> 
->          root
->       /   |   \
->      G1  G2   G3
-> 
-> or
-> 
->           root
->       /   |   |  \
->      G1  G2  G31 G32
-> 
-> With root being treated specially, probably as just being a equal
-> group as other groups, I'm not fully determined about that yet.
+> * At least to me, nobody seems to have strong enough justification for
+>   orthogonal multiple hierarchies, so, yeah, unless something else
 
-I'm assuming that G31/G32's tasks end up in G3 in the first case, but
-where do the tasks in G3 go to in the second case?
+First off, can you (sorry) show an example of exactly what would no
+longer be supported?  Is this the ability to not separately mount
+freezer and cpusets (for instance)?
 
-Also, why allow non-hierarchical controllers to begin with? I would very
-much argue for mandating that all controllers work the same wrt
-hierarchy and if that means ditching hierarchy support we should do that
-and modify cgroupfs to not allow creation of directories deeper than 1.
+I've submitted a topic for the upcoming linux foundation end user summit
+in new york, to get feedback from end users.  (Frankly I don't want to go
+so would love if someone else wanted to do this :).  I think it'd be nice
+to wait and see if this gets accepted, and see whether any end users are
+relying on this.
 
-But allowing controllers that implement hierarchy proper and controllers
-that do not and then force them in the same mount point, that just
-doesn't make any friggin sense what so ever.
+(IMO it's wrong to say that "if you are using a current feature, you'd
+better be reading lkml so you can speak up lest that feature might get
+removed.")
+
+>   happens, I'm scheduling multiple hierarchy support for the chopping
+>   block.  This is a long term thing (think years), so no need to panic
+>   right now and as is life plans may change and fail to materialize,
+>   but I intend to at least move away from it.
+> 
+> * Several people pointed out that it would be inconvenient to require
+>   cgroup hierarchy to be a strict super-imposed tree on top of process
+>   tree and that program groups / sessions aren't like that either.  I
+>   agree, so it will hopefully be single hierarchy which more or less
+>   behaves the same as the current hierarchy.
+> 
+> * How to map controllers which aren't aware of full hierarchy is still
+>   an open question but I'm still standing by one active node on any
+>   root-to-leaf path w/ root group serving as the special rest group.
+> 
+>   This should happen first for the long migration to begin.  I might
+>   get to it someday but if anyone can beat me to it, please go ahead.
+>   I'll be ecstatic to review and merge the patches.
+> 
+> Also, I'll slowly be marking features which don't seem essential,
+> especially the convenience features for multiple hierarchies, as
+> deprecated and eventually chop them.
+> 
+> Thank you.
+> 
+> -- 
+> tejun
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
