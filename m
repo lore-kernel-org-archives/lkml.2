@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab2CLAt6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 20:49:58 -0400
-Received: from 1wt.eu ([62.212.114.60]:63062 "EHLO 1wt.eu"
+	id S1754875Ab2CLAuJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 20:50:09 -0400
+Received: from 1wt.eu ([62.212.114.60]:63066 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754589Ab2CLAs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 20:48:28 -0400
-Message-Id: <20120312002046.443666929@1wt.eu>
+	id S1754593Ab2CLAsk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 20:48:40 -0400
+Message-Id: <20120312004411.301257231@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 Mar 2012 01:20:57 +0100
+Date: Mon, 12 Mar 2012 01:44:11 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Maxim Uvarov <maxim.uvarov@oracle.com>, Wim Van Sebroeck <wim@iguana.be>
-Subject: [ 12/12] watchdog: hpwdt: clean up set_memory_x call for 32 bit
-In-Reply-To: <feb44625a10a45049eddf27890e95d54@local>
+Subject: [ 00/13] 2.6.27.62-longterm review
+Message-ID: <fec4dd6c17083169f2e217caca7375ef@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+This is the start of the longterm review cycle for the 2.6.27.62 release.
+All patches will be posted as a response to this one. If anyone has any
+issue with these being applied, please let me know. If anyone is a
+maintainer of the proper subsystem, and wants to add a Signed-off-by: line
+to the patch, please respond with it.
 
-------------------
+Responses should be made within 72 hours. Anything received after that time
+might be too late.
 
-From: Maxim Uvarov <maxim.uvarov@oracle.com>
+Please note that the whole -rc patch is not provided anymore, only individual
+patches are provided so that their authors and subsystem maintainers can spot
+issues. If this is a problem for you, please report it so that we try to find
+a solution.
 
-commit 97d2a10d5804d585ab0b58efbd710948401b886a upstream.
+The diffstat is appended below.
 
-1. address has to be page aligned.
-2. set_memory_x uses page size argument, not size.
-Bug causes with following commit:
-	commit da28179b4e90dda56912ee825c7eaa62fc103797
-	Author: Mingarelli, Thomas <Thomas.Mingarelli@hp.com>
-	Date:   Mon Nov 7 10:59:00 2011 +0100
-
-     watchdog: hpwdt: Changes to handle NX secure bit in 32bit path
-
-    commit e67d668e147c3b4fec638c9e0ace04319f5ceccd upstream.
-
-    This patch makes use of the set_memory_x() kernel API in order
-    to make necessary BIOS calls to source NMIs.
-
-Signed-off-by: Maxim Uvarov <maxim.uvarov@oracle.com>
-Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-Cc: stable <stable@vger.kernel.org>
-
-diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
-index 8464ea1..3c166d3 100644
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -231,7 +231,7 @@ static int __devinit cru_detect(unsigned long map_entry,
- 
- 	cmn_regs.u1.reax = CRU_BIOS_SIGNATURE_VALUE;
- 
--	set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
-+	set_memory_x((unsigned long)bios32_map, 2);
- 	asminline_call(&cmn_regs, bios32_entrypoint);
- 
- 	if (cmn_regs.u1.ral != 0) {
-@@ -250,7 +250,8 @@ static int __devinit cru_detect(unsigned long map_entry,
- 			cru_rom_addr =
- 				ioremap(cru_physical_address, cru_length);
- 			if (cru_rom_addr) {
--				set_memory_x((unsigned long)cru_rom_addr, cru_length);
-+				set_memory_x((unsigned long)cru_rom_addr & PAGE_MASK,
-+					(cru_length + PAGE_SIZE - 1) >> PAGE_SHIFT);
- 				retval = 0;
- 			}
- 		}
+ arch/powerpc/include/asm/ppc_asm.h |    1 +
+ arch/powerpc/include/asm/reg.h     |   45 +++++++++++++++++++++++++++++++++++-
+ drivers/cdrom/cdrom.c              |    8 +-----
+ drivers/infiniband/hw/mlx4/mad.c   |    7 +----
+ drivers/video/atmel_lcdfb.c        |    2 +-
+ fs/ecryptfs/file.c                 |    2 +-
+ fs/ecryptfs/inode.c                |    4 +-
+ fs/ecryptfs/read_write.c           |    4 +-
+ fs/udf/super.c                     |    6 ++++
+ include/linux/proportions.h        |    4 +++
+ kernel/relay.c                     |   10 ++++++-
+ mm/filemap_xip.c                   |    7 ++++-
+ 12 files changed, 78 insertions(+), 22 deletions(-)
 
 
