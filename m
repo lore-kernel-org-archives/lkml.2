@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757753Ab2CLWMU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 18:12:20 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:37943 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757697Ab2CLWMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 18:12:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=bz/9b5T2UvJ/m2n4cmd1nBzUJ6H32bYv
-	HAbG4xDTQxZXrTBxEItLXxzrVNRotvPN+eVZcilxufusEkALYn5qT04SPUxXL7Vl
-	w3u8siAo6sEOo4v3HiaMqpokaTJDTFbOHUZWov1AxFdaNdHcrAH4AVB8Bt6+oJ+I
-	mAz0BDKGKOA=
-From: Junio C Hamano <gitster@pobox.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Thomas Rast <trast@inf.ethz.ch>, Willy Tarreau <w@1wt.eu>,
-        Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        git@vger.kernel.org
-Subject: Re: [PATCH] git-am: error out when seeing -b/--binary
-References: <20120312024948.GB4650@kroah.com> <20120312063027.GB8971@1wt.eu>
- <20120312064855.GB16820@burratino> <20120312085820.GA11569@1wt.eu>
- <20120312152004.GB9380@kroah.com> <20120312152453.GB12405@1wt.eu>
- <87aa3l4vqq.fsf@thomas.inf.ethz.ch> <20120312165703.GB18791@burratino>
- <7vvcm9snko.fsf@alter.siamese.dyndns.org> <87399dpk48.fsf@thomas.inf.ethz.ch>
- <20120312215607.GB11362@burratino>
-Date: Mon, 12 Mar 2012 15:12:13 -0700
-In-Reply-To: <20120312215607.GB11362@burratino> (Jonathan Nieder's message of
- "Mon, 12 Mar 2012 16:56:07 -0500")
-Message-ID: <7vy5r5o4ea.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1757734Ab2CLWMS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 18:12:18 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33482 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757574Ab2CLWMP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 18:12:15 -0400
+Date: Mon, 12 Mar 2012 15:12:09 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Lin Ming <ming.m.lin@intel.com>, Norbert Preining <preining@logic.at>,
+        "Srivatsa S . Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH v2 0/3] ahci: fix boot/resume COMRESET failures
+Message-ID: <20120312221209.GH23255@google.com>
+References: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 6CC097E2-6C90-11E1-BD62-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+In-Reply-To: <1329849524-23758-1-git-send-email-computersforpeace@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Nieder <jrnieder@gmail.com> writes:
+On Tue, Feb 21, 2012 at 10:38:41AM -0800, Brian Norris wrote:
+> This series addresses regression problems with
+> 
+>     commit 7faa33da9b7add01db9f1ad92c6a5d9145e940a7
+>     ahci: start engine only during soft/hard resets
+> 
+> Because the fix provided by the above commit caused COMRESET failures and
+> 10 second boot-time/resume-time hangs for certain DVD drives, we need to
+> make the fix conditional to certain devices/platforms. Add a flag for this.
+> 
+> Brian
+> 
+> v2: change flag name to AHCI_HFLAG_DELAY_ENGINE, write more detailed
+>     comments
+> 
+> v1: flag named AHCI_HFLAG_STRICT_SPEC
+> 
+> Brian Norris (3):
+>   ahci: add AHCI_HFLAG_DELAY_ENGINE host flag
+>   ahci: move AHCI_HFLAGS() macro to ahci.h
+>   ahci_platform: add STRICT_AHCI platform type
 
-> Hm, on second thought, if people are seeing this message, I would
-> prefer if they write to the mailing list so we can find out about it.
-> So I really would rather see this say
->
-> 	--binary)
-> 		: ;;
->
-> and have "-b" completely unrecognized, without any words in our
-> defense except for a note in the release notes mentioning the option's
-> removal and that it has been an unadvertised backward-compatibility
-> no-op since 1.6.0.
+This looks good to me.  Jeff?
 
-I do not mind keeping --binary working intact, but I think an
-approach to say that "-b" no longer works and is finally removed
-very firmly is a very sane one.  We would be getting a slightly
-better feel of how stale the people's script could be with your
-approach, but at the same time, we would be annoying far more people
-who do not even know that there are some people passionately trying
-to make the users' Git life better, or where these people are
-hanging out.
-
-I do not think removal of a no-op "-b" is something subject to
-voting at this point, so the only thing you would get from the
-better feel of the user universe is when we can repurpose the option
-safely.
+-- 
+tejun
