@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab2CLQva (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 12:51:30 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:53382 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753144Ab2CLQv2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 12:51:28 -0400
-Date: Mon, 12 Mar 2012 17:51:01 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] amd64_edac: Fix the rank number of pages count
-Message-ID: <20120312165101.GF7255@aftab>
-References: <1331556515-7902-1-git-send-email-mchehab@redhat.com>
- <1331556515-7902-4-git-send-email-mchehab@redhat.com>
+	id S1753933Ab2CLQyI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 12:54:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42438 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753185Ab2CLQyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 12:54:07 -0400
+Date: Mon, 12 Mar 2012 17:53:59 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Roland McGrath <roland@hack.frob.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Kushal Das <kdas@redhat.com>
+Subject: Re: Extending coredump note section to contain filenames
+Message-ID: <20120312165359.GA32400@host2.jankratochvil.net>
+References: <4F5A3A4D.1020008@redhat.com>
+ <20120309172934.GA18173@host2.jankratochvil.net>
+ <4F5DE6A4.2030303@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331556515-7902-4-git-send-email-mchehab@redhat.com>
+In-Reply-To: <4F5DE6A4.2030303@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 09:48:34AM -0300, Mauro Carvalho Chehab wrote:
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  drivers/edac/amd64_edac.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Mon, 12 Mar 2012 13:05:56 +0100, Denys Vlasenko wrote:
+> Build-ids are useful, but they still don't map directly to the names
+> of loaded files. You need to rely on /usr/lib/debug/.build-id/XX/YYYYYYYYYY
+> symlinks to translate build-ids to names.
+
+There is draft of https://fedoraproject.org/wiki/Darkserver but it is not yet
+deployed.  This will give you distro and file version / URL for the specified
+build-id.  Without any local symlinks/files at all.
+
+Reasons why it has not yet been finished + deployed I find out of the scope of
+this thread.
+
+
+> Why we don't save library names in coredump?
+
+Because they are useless.  If you have a filename there how to find which
+content it should match?  Even if you verify the file is still there with the
+same content there is a race it can no longer be true when you read the core
+file 5 seconds later.
+
+The build-id mapping server above always works and without races.
+
+
+> > it can have unknown content etc.
 > 
-> diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-> index ea7eb9a..d74bcd3 100644
-> --- a/drivers/edac/amd64_edac.c
-> +++ b/drivers/edac/amd64_edac.c
-> @@ -2227,7 +2227,7 @@ static int init_csrows(struct mem_ctl_info *mci)
->  		for (j = 0; j < pvt->channel_count; j++) {
->  			csrow->channels[j].dimm->mtype = mtype;
->  			csrow->channels[j].dimm->edac_mode = edac_mode;
-> -			csrow->channels[j].dimm->nr_pages = nr_pages / pvt->channel_count;
-> +			csrow->channels[j].dimm->nr_pages = nr_pages;
->
+> I don't understand. *What* can have unknown content?
 
-This one has, again no commit message :( but nevertheless, I already
-have a fix queued:
+You will save there "/lib64/libc-2.14.90.so".  But the next day you have no
+idea which compilation or build the core file was generated for, that virtual
+machine can be either already updated or even reinstalled from scratch etc.
+"/lib64/libc-2.14.90.so" does not say anything about the build.
 
-http://git.kernel.org/?p=linux/kernel/git/bp/bp.git;a=commitdiff;h=98c35aebc9734c1c970e3b4654dc8bd2e34f2a20
 
-Thanks.
+> I'll be satisfied with 99.9999% success rate instead of 100% :)
 
--- 
-Regards/Gruss,
-Boris.
+I am not, I prefer 100% build-id server.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+
+Regards,
+Jan
