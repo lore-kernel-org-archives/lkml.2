@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab2CLCLN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 22:11:13 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:43210 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab2CLCLH (ORCPT
+	id S1754666Ab2CLCMr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 22:12:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50303 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754401Ab2CLCMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 22:11:07 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Mark Manning <mark4th@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: bug in the way Linux loads elf files...
-In-Reply-To: Your message of "Sun, 11 Mar 2012 17:49:40 CDT."
-             <CAPGNrUWYc6xzaqPnLmD12Vaz3mr9hEA6k4OP70FCjhBYM7mVhA@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <CAPGNrUWYc6xzaqPnLmD12Vaz3mr9hEA6k4OP70FCjhBYM7mVhA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1331518262_3085P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Sun, 11 Mar 2012 22:12:41 -0400
+Message-ID: <1331518354.2558.3.camel@phoenix>
+Subject: [PATCH] mfd: sm501: Use DIV_ROUND_CLOSEST
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ben Dooks <ben-linux@fluff.org>, Samuel Ortiz <sameo@linux.intel.com>
+Date: Mon, 12 Mar 2012 10:12:34 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-Date: Sun, 11 Mar 2012 22:11:02 -0400
-Message-ID: <65215.1331518262@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020204.4F5D5B38.0057,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1331518262_3085P
-Content-Type: text/plain; charset=us-ascii
+Use DIV_ROUND_CLOSEST to replace sm501fb_round_div function.
 
-On Sun, 11 Mar 2012 17:49:40 CDT, Mark Manning said:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/sm501.c |   10 +---------
+ 1 files changed, 1 insertions(+), 9 deletions(-)
 
-> i patched MemSiz to be larger than FileSiz which should work but does not.
+diff --git a/drivers/mfd/sm501.c b/drivers/mfd/sm501.c
+index f4d8611..d927dd4 100644
+--- a/drivers/mfd/sm501.c
++++ b/drivers/mfd/sm501.c
+@@ -387,14 +387,6 @@ int sm501_unit_power(struct device *dev, unsigned int unit, unsigned int to)
+ 
+ EXPORT_SYMBOL_GPL(sm501_unit_power);
+ 
+-
+-/* Perform a rounded division. */
+-static long sm501fb_round_div(long num, long denom)
+-{
+-        /* n / d + 1 / 2 = (2n + d) / 2d */
+-        return (2 * num + denom) / (2 * denom);
+-}
+-
+ /* clock value structure. */
+ struct sm501_clock {
+ 	unsigned long mclk;
+@@ -428,7 +420,7 @@ static int sm501_calc_clock(unsigned long freq,
+ 		/* try all 8 shift values.*/
+ 		for (shift = 0; shift < 8; shift++) {
+ 			/* Calculate difference to requested clock */
+-			diff = sm501fb_round_div(mclk, divider << shift) - freq;
++			diff = DIV_ROUND_CLOSEST(mclk, divider << shift) - freq;
+ 			if (diff < 0)
+ 				diff = -diff;
+ 
+-- 
+1.7.5.4
 
-OK, I'll bite...
 
-1) Does the standard say specfically that MemSiz>FileSize is supposed to work?
-
-2) If it *were* to work, what would it *mean*?  Under what real-world conditions will
-we encounter this case?
-
---==_Exmh_1331518262_3085P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBT11bNQdmEQWDXROgAQIjEw//dY5xliHYFvOMaLdwL3pq6Q7QiL/11PUB
-CkGf3gVI8nxc1QYR4oXoGn95UM/YLKAsbJlkJN0ffQJ2LWgNF01gnQbqc462vTvO
-2uLy6hDdxSAkmHJtIoDO8N8o7zeuNLQ8E/wYqMXppqd1h5VFcOJcEe5LJm2PA3Rr
-8XX31++Er/Ek6VZKTVL/7BEwFFgYaQM0MfBWk6Ni/BtoSFMt2zkGeUhR+SpqwgNu
-0Y5/khAhT7I+D3EDsCBrgONHGENGkJScO7hHz80cAexTjdNksTPKcMo4MmI9N1Ik
-/Qlqd562PJBOP4JoKNrLhQmBb6WNbBQa74pZEHE6uxyQFmMfV7mMVj0APSQGMqCE
-uEv4Uuign7x1Q6gS2EpPyeK38Y54fB2FyZohq4srz83JRnvTATjE5I9pP9eiGXgx
-7KdXFyCZoPyFuCi/wxglR8M/zNZBt2c/lAgdzFVEoFNI2W4GSzPM9OJwCDsYyx2/
-/gZyVD8BdGXTvBDqtN7dI7NHzw0T73Nxhus8UmyMBcMNq6wV9RIfyUHfeclrXPvI
-yWUT9qDR8/wMra797SiaVaTLiEd8Ron9VkGZ/BSt/3dGLpDjM6QU7/38zxqJdFUh
-H1ZMk9CkWcsqdkn0L7tKxYj5s5f+tpZHd90Japd/9LqPfwBUXr5S7Ht9BGHGfbaI
-Z5DPBbTA1Ko=
-=VBT9
------END PGP SIGNATURE-----
-
---==_Exmh_1331518262_3085P--
 
