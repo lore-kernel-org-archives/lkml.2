@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490Ab2CLQK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 12:10:58 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:17460 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab2CLQKx (ORCPT
+	id S1752351Ab2CLQMW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 12:12:22 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60509 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751353Ab2CLQMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 12:10:53 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6646"; a="171701206"
-X-IronPort-AV: E=Sophos;i="4.73,569,1325491200"; 
-   d="scan'208";a="218402952"
-Message-ID: <4F5E1FFF.9080003@qca.qualcomm.com>
-Date: Mon, 12 Mar 2012 21:40:39 +0530
-From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Mon, 12 Mar 2012 12:12:20 -0400
+Date: Mon, 12 Mar 2012 16:12:18 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linus.walleij@linaro.org,
+        kgene.kim@samsung.com, patches@linaro.org
+Subject: Re: [PATCH 5/5] mmc: sdhci-s3c: setup pins using pinctrl interface
+Message-ID: <20120312161218.GK3110@opensource.wolfsonmicro.com>
+References: <1331469965-28846-1-git-send-email-thomas.abraham@linaro.org>
+ <1331469965-28846-6-git-send-email-thomas.abraham@linaro.org>
+ <20120312142143.GC14020@sirena.org.uk>
+ <CAJuYYwQ=vhcrbH3gsMBuLG1D_p=mx_RFbN86+ETPT4bLYrRgEA@mail.gmail.com>
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Willy Tarreau <w@1wt.eu>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, Pavel Roskin <proski@gnu.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 08/12] mac80211: zero initialize count field in ieee80211_tx_rate
-References: <20120312002046.282831520@1wt.eu>	 <1331517472.3022.150.camel@deadeye> <4F5D7D47.102@qca.qualcomm.com>	 <20120312063412.GD8971@1wt.eu> <4F5D9D3D.6090206@qca.qualcomm.com> <1331565826.3022.156.camel@deadeye> <4F5E1C66.1010604@qca.qualcomm.com>
-In-Reply-To: <4F5E1C66.1010604@qca.qualcomm.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.30.39.5]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dxRQSzdsN/lOP445"
+Content-Disposition: inline
+In-Reply-To: <CAJuYYwQ=vhcrbH3gsMBuLG1D_p=mx_RFbN86+ETPT4bLYrRgEA@mail.gmail.com>
+X-Cookie: You will triumph over your enemy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 12 March 2012 09:25 PM, Mohammed Shafi Shajakhan wrote:
-> Hi Ben,
->
-> On Monday 12 March 2012 08:53 PM, Ben Hutchings wrote:
->> On Mon, 2012-03-12 at 12:22 +0530, Mohammed Shafi Shajakhan wrote:
->>> Hi Willy,
->>>
->>>> On Mon, Mar 12, 2012 at 10:06:23AM +0530, Mohammed Shafi Shajakhan
->>>> wrote:
->>>>>> So I'm pretty sure this patch is wrong for 2.6.32; it could be
->>>>>> backported but I don't think the change is necessary anyway.
->>>>>
->>>>> true, but i think its better to initialize the count = 0 rather than
->>>>> count = 1, though the older version driver checks for rate[i].idx>= 0
->>>>> in ath_rc_tx_status. while the ath_tx_status has no such iteration in
->>>>> the older driver code.
->>>>
->>>> In practice, if the patch brings nothing and not even correctness, I'd
->>>> rather drop it than make us believe that some issue is fixed. However
->>>> if you think it does happen to fix a real issue in 2.6.32 (possibly
->>>> combined with some other missing patch), please tell me so and I will
->>>> happily undelete it.
->>>>
->>>
->>> we can drop it. also as there was no driver code checking for
->>> rate[i].count in the 2.6.32 driver. i am also not sure this fixes
->>> something in 2.6.32 but the patch itself is correct.
->> [...]
->>
->> Please read and answer the *whole* of my earlier message. The later
->> code in the rate_control_get_rate() function in 2.6.32 does appear to
->> depend on .count = 1, and there may be code elsewhere that does so too.
->>
->
-> are you referring to those code in tx.c ieee80211_tx_h_rate_control.
-> sorry if i had again missed something.
 
-if you are referring to that rate[0].count should be definitely 
-non-zero. at least the first rate should be non-zero as the drivers rate 
-control algorithm should properly fill it up, or mac80211's 
-rate_control_send_low should fill it up by 1 for 'no ack frames'
-(or)  max retries set by the driver for other frames(recently NULL func
-  is added connection monitoring frame whose status will be needed).
+--dxRQSzdsN/lOP445
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-thanks,
-shafi
+On Mon, Mar 12, 2012 at 08:01:34PM +0530, Thomas Abraham wrote:
+
+> Yes, I agree with your comment. I did refer to manuals of s3c24xx to
+> Exynos to ensure that the samsung pinctrl driver is generic and
+> reusable on all samsung soc's. I hope I have not missed out something
+> important that would require additional tweaks in the samsung pinctrl
+> driver. The missing bits now are gpio interrupt and wakeup interrupt
+> support in the samsung pinctrl driver. Once that is complete, I
+> believe it should be easy to add support for other SoC and convert the
+> drivers to use pinctrl (other option being to let pinctrl driver hog
+> all the mappings at boot and remove the cfg_gpio platform callbacks
+> from the driver).
+
+Yes, I don't see any fundamental problems here - it's more that either
+we'll need to get all the SoCs converted over (which is a lot of work)
+or we'll need to have drivers be able to cope with running either way.
+
+--dxRQSzdsN/lOP445
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPXiBbAAoJEBus8iNuMP3dI9oP/34qglJfej0g6XSdlJvd5X+5
+y03PKJQYtnY/C0DbjWs+J1xBh19JyKDQWtWgrRA8ku6r5WGXcUgCYA8GHfTUNk6W
+vbo6TcUrhSTlhBHPJgpmMNK/j2ua57v95RZpfRNjDM+mnFCE3GJqx+fPQ1H4BrmU
+4H7i/ZqbT0FpMBcYaS032b7pPaiPevlM8Zk8cymismLBN5L93im8TbjVkqkt7tKP
+XfWAVXGB2jLqWeguOWQZ+u8B8QzBEcyeFqx0pw6iYapWAN4qfYu8DNqtEaKnDSgO
+2TyKDNid6ATu27mlae9+61OM2c39VujZur4mwHC4DJ+x3pdIhzCJh0PWMyg5dUlZ
+Njk4Tg6WTmw7niSze4WX2Va+Sygroau9jaZqXgk2JY4B6YBdyrMqILClRbeTFWDp
+sxTWVWo32H94YJuFfSwHTUvtCStMYzURfbL46gg0IL7GGJD+a2bIeEHFgNnhM/q7
+LRwmThIRiJLUNQf5+Svc0pRg+KSQMa6DVt01QkjcQN3wNA5QdsqbQEDIn1D7M9Eg
+x2iLdllXbb5O7bfIe5rDuMsiWl8rU+u6VPT76dfvXBAWpMLDe5LUjXc19nxN30Nj
+Oxjd2iqzpSD6S6yTpkBv8Yxhv8zTFWOLmnwEfzPws/suNTLywIKrTNRgh0L3RC0l
+1TWk2fqB5dpZQ+wu9wGs
+=T40z
+-----END PGP SIGNATURE-----
+
+--dxRQSzdsN/lOP445--
