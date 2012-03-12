@@ -1,200 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2CLOSW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 10:18:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63801 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab2CLOSU (ORCPT
+	id S1754004Ab2CLOSb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 10:18:31 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36854 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753272Ab2CLOSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 10:18:20 -0400
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]drivers:staging:mei Fix some typos in staging/mei
-Date: Mon, 12 Mar 2012 07:18:09 -0700
-Message-Id: <1331561889-19488-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Mon, 12 Mar 2012 10:18:25 -0400
+Message-ID: <4F5E05AD.20200@openvz.org>
+Date: Mon, 12 Mar 2012 18:18:21 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: Fwd: Control page reclaim granularity
+References: <4F5D95AF.1020108@openvz.org> <20120312081413.GA10923@gmail.com> <20120312134226.GA5120@barrios>
+In-Reply-To: <20120312134226.GA5120@barrios>
+Content-Type: multipart/mixed;
+ boundary="------------040505090707040106050504"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+This is a multi-part message in MIME format.
+--------------040505090707040106050504
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-The below patch fixes some typos in drivers/staging/mei/* that I have found while
-doing a little bit of reading.
+Minchan Kim wrote:
+> On Mon, Mar 12, 2012 at 04:14:14PM +0800, Zheng Liu wrote:
+>> On 03/12/2012 02:20 PM, Konstantin Khlebnikov wrote:
+>>> Minchan Kim wrote:
+>>>> On Mon, Mar 12, 2012 at 10:06:09AM +0800, Zheng Liu wrote:
+>>>>> On Mon, Mar 12, 2012 at 09:29:34AM +0900, Minchan Kim wrote:
+>>>>>> I forgot to Ccing you.
+>>>>>> Sorry.
+>>>>>>
+>>>>>> ---------- Forwarded message ----------
+>>>>>> From: Minchan Kim<minchan@kernel.org>
+>>>>>> Date: Mon, Mar 12, 2012 at 9:28 AM
+>>>>>> Subject: Re: Control page reclaim granularity
+>>>>>> To: Minchan Kim<minchan@kernel.org>, linux-mm<linux-mm@kvack.org>,
+>>>>>> linux-kernel<linux-kernel@vger.kernel.org>, Konstantin Khlebnikov<
+>>>>>> khlebnikov@openvz.org>, riel@redhat.com, kosaki.motohiro@jp.fujitsu.com
+>>>>>>
+>>>>>>
+>>>>>> On Fri, Mar 09, 2012 at 12:54:03AM +0800, Zheng Liu wrote:
+>>>>>>> Hi Minchan,
+>>>>>>>
+>>>>>>> Sorry, I forgot to say that I don't subscribe linux-mm and
+>>>>>>> linux-kernel
+>>>>>>> mailing list.  So please Cc me.
+>>>>>>>
+>>>>>>> IMHO, maybe we should re-think about how does user use mmap(2).  I
+>>>>>>> describe the cases I known in our product system.  They can be
+>>>>>>> categorized into two cases.  One is mmaped all data files into memory
+>>>>>>> and sometime it uses write(2) to append some data, and another uses
+>>>>>>> mmap(2)/munmap(2) and read(2)/write(2) to manipulate the files.  In
+>>>>>>> the
+>>>>>>> second case,  the application wants to keep mmaped page into memory
+>>>>>>> and
+>>>>>>> let file pages to be reclaimed firstly.  So, IMO, when application
+>>>>>>> uses
+>>>>>>> mmap(2) to manipulate files, it is possible to imply that it wants
+>>>>>>> keep
+>>>>>>> these mmaped pages into memory and do not be reclaimed.  At least
+>>>>>>> these
+>>>>>>> pages do not be reclaimed early than file pages.  I think that
+>>>>>>> maybe we
+>>>>>>> can recover that routine and provide a sysctl parameter to let the
+>>>>>>> user
+>>>>>>> to set this ratio between mmaped pages and file pages.
+>>>>>>
+>>>>>> I am not convinced why we should handle mapped page specially.
+>>>>>> Sometimem, someone may use mmap by reducing buffer copy compared to
+>>>>>> read
+>>>>>> system call.
+>>>>>> So I think we can't make sure mmaped pages are always win.
+>>>>>>
+>>>>>> My suggestion is that it would be better to declare by user explicitly.
+>>>>>> I think we can implement it by madvise and fadvise's WILLNEED option.
+>>>>>> Current implementation is just readahead if there isn't a page in
+>>>>>> memory
+>>>>>> but I think
+>>>>>> we can promote from inactive to active if there is already a page in
+>>>>>> memory.
+>>>>>>
+>>>>>> It's more clear and it couldn't be affected by kernel page reclaim
+>>>>>> algorithm change
+>>>>>> like this.
+>>>>>
+>>>>> Thank you for your advice.  But I still have question about this
+>>>>> solution.  If we improve the madvise(2) and fadvise(2)'s WILLNEED
+>>>>> option,  it will cause an inconsistently status for pages that be
+>>>>> manipulated by madvise(2) and/or fadvise(2).  For example, when I call
+>>>>> madvise with WILLNEED flag, some pages will be moved into active list if
+>>>>> they already have been in memory, and other pages will be read into
+>>>>> memory and be saved in inactive list if they don't be in memory.  Then
+>>>>> pages that are in inactive list are possible to be reclaim.  So from the
+>>>>> view of users, it is inconsistent because some pages are in memory and
+>>>>> some pages are reclaimed.  But actually the user hopes that all of pages
+>>>>> can be kept in memory.  IMHO, this inconsistency is weird and makes
+>>>>> users
+>>>>> puzzled.
+>>>>
+>>>> Now problem is that
+>>>>
+>>>> 1. User want to keep pages which are used once in a while in memory.
+>>>> 2. Kernel want to reclaim them because they are surely reclaim target
+>>>>      pages in point of view by LRU.
+>>>>
+>>>> The most desriable approach is that user should use mlock to guarantee
+>>>> them in memory. But mlock is too big overhead and user doesn't want to
+>>>> keep
+>>>> memory all pages all at once.(Ie, he want demand paging when he need
+>>>> the page)
+>>>> Right?
+>>>>
+>>>> madvise, it's a just hint for kernel and kernel doesn't need to make
+>>>> sure madvise's behavior.
+>>>> In point of view, such inconsistency might not be a big problem.
+>>>>
+>>>> Big problem I think now is that user should use madvise(WILLNEED)
+>>>> periodically because such
+>>>> activation happens once when user calls madvise. If user doesn't use
+>>>> page frequently after
+>>>> user calls it, it ends up moving into inactive list and even could be
+>>>> reclaimed.
+>>>> It's not good. :-(
+>>>>
+>>>> Okay. How about adding new VM_WORKINGSET?
+>>>> And reclaimer would give one more round trip in active/inactive list
+>>>> erwhen reclaim happens
+>>>> if the page is referenced.
+>>>>
+>>>> Sigh. We have no room for new VM_FLAG in 32 bit.
+>>> p
+>>> It would be nice to mark struct address_space with this flag and export
+>>> AS_UNEVICTABLE somehow.
+>>> Maybe we can reuse file-locking engine for managing these bits =)
+>>
+>> Make sense to me.  We can mark this flag in struct address_space and check
+>> it in page_refereneced_file().  If this flag is set, it will be cleard and
+>
+> Disadvantage is that we could set reclaim granularity as per-inode.
+> I want to set it as per-vma, not per-inode.
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+But with per-inode flag we can tune all files, not only memory-mapped.
+See, attached patch. Currently I thinking about managing code,
+file-locking engine really fits perfectly =)
 
+>
+>> the function returns referenced>  1.  Then this page can be promoted into
+>> activate list.  But I prefer to set/clear this flag in madvise.
+>
+> Hmm, My idea is following as,
+> If we can set new VM flag into VMA or something, reclaimer can check it when shrink_[in]active_list
+> and he can prevent to deactivate/reclaim if he takes a look the page is in VMA which
+> are set by new VM flag and the page is referenced recently at least once.
+> It means it gives one more round trip in his list(ie, active/inactive list)
+> rather than activation so that the page would become less reclaimable.
+>
+>>
+>> PS, I have subscribed linux-mm mailing list. :-)
+>
+> Congratulations! :)
+>
+>>
+>> Regards,
+>> Zheng
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+
+
+--------------040505090707040106050504
+Content-Type: text/plain;
+ name="mm-introduce-mapping-as_workingset-flag"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="mm-introduce-mapping-as_workingset-flag"
+
+mm: introduce mapping AS_WORKINGSET flag
+
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+
+This patch introduces new flag AS_WORKINGSET in mapping->flags.
+If it set reclaimer will activates all pages for this inode after first usage.
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- drivers/staging/mei/interface.c       |    2 +-
- drivers/staging/mei/interface.h       |    2 +-
- drivers/staging/mei/interrupt.c       |    6 +++---
- drivers/staging/mei/iorw.c            |    4 ++--
- drivers/staging/mei/main.c            |    4 ++--
- drivers/staging/mei/mei-amt-version.c |    2 +-
- drivers/staging/mei/mei.h             |    2 +-
- drivers/staging/mei/mei.txt           |    6 +++---
- drivers/staging/mei/mei_dev.h         |    2 +-
- 9 files changed, 15 insertions(+), 15 deletions(-)
+ include/linux/pagemap.h |   16 ++++++++++++++++
+ mm/vmscan.c             |   15 ++++++++++++---
+ 2 files changed, 28 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/mei/interface.c b/drivers/staging/mei/interface.c
-index a873be7..8a80e80 100644
---- a/drivers/staging/mei/interface.c
-+++ b/drivers/staging/mei/interface.c
-@@ -275,7 +275,7 @@ int mei_flow_ctrl_creds(struct mei_device *dev, struct mei_cl *cl)
-  * @returns
-  *	0 on success
-  *	-ENOENT when me client is not found
-- *	-EINVAL wehn ctrl credits are <= 0
-+ *	-EINVAL when ctrl credits are <= 0
-  */
- int mei_flow_ctrl_reduce(struct mei_device *dev, struct mei_cl *cl)
- {
-diff --git a/drivers/staging/mei/interface.h b/drivers/staging/mei/interface.h
-index e5bfb18..fb90c6f 100644
---- a/drivers/staging/mei/interface.h
-+++ b/drivers/staging/mei/interface.h
-@@ -60,7 +60,7 @@ void mei_wd_set_start_timeout(struct mei_device *dev, u16 timeout);
-  */
- void mei_watchdog_register(struct mei_device *dev);
- /*
-- * mei_watchdog_unregister  - Uegistering watchdog interface
-+ * mei_watchdog_unregister  - Unregistering watchdog interface
-  * @dev - mei device
-  */
- void mei_watchdog_unregister(struct mei_device *dev);
-diff --git a/drivers/staging/mei/interrupt.c b/drivers/staging/mei/interrupt.c
-index ce14e39..47fa9e2 100644
---- a/drivers/staging/mei/interrupt.c
-+++ b/drivers/staging/mei/interrupt.c
-@@ -718,7 +718,7 @@ static void mei_irq_thread_read_bus_message(struct mei_device *dev,
- 				dev->me_client_index++;
- 				dev->me_client_presentation_num++;
- 
--				/** Send Client Propeties request **/
-+				/** Send Client Properties request **/
- 				res = mei_host_client_properties(dev);
- 				if (res < 0) {
- 					dev_dbg(&dev->pdev->dev, "mei_host_client_properties() failed");
-@@ -1506,7 +1506,7 @@ irqreturn_t mei_interrupt_thread_handler(int irq, void *dev_id)
- 	dev->host_hw_state = mei_hcsr_read(dev);
- 
- 	/* Ack the interrupt here
--	 * In case of MSI we don't go throuhg the quick handler */
-+	 * In case of MSI we don't go through the quick handler */
- 	if (pci_dev_msi_enabled(dev->pdev))
- 		mei_reg_write(dev, H_CSR, dev->host_hw_state);
- 
-@@ -1542,7 +1542,7 @@ irqreturn_t mei_interrupt_thread_handler(int irq, void *dev_id)
- 			return IRQ_HANDLED;
- 		}
- 	}
--	/* check slots avalable for reading */
-+	/* check slots available for reading */
- 	slots = mei_count_full_read_slots(dev);
- 	dev_dbg(&dev->pdev->dev, "slots =%08x  extra_write_index =%08x.\n",
- 		slots, dev->extra_write_index);
-diff --git a/drivers/staging/mei/iorw.c b/drivers/staging/mei/iorw.c
-index a3fbac9..a6b9694 100644
---- a/drivers/staging/mei/iorw.c
-+++ b/drivers/staging/mei/iorw.c
-@@ -109,8 +109,8 @@ int mei_ioctl_connect_client(struct file *file,
- 	dev_dbg(&dev->pdev->dev, "FW Client - Max Msg Len = %d\n",
- 			dev->me_clients[i].props.max_msg_length);
- 
--	/* if we're connecting to amthi client so we will use the exist
--	 * connection
-+	/* if we're connecting to amthi client then we will use the
-+	 * existing connection
- 	 */
- 	if (uuid_le_cmp(data->in_client_uuid, mei_amthi_guid) == 0) {
- 		dev_dbg(&dev->pdev->dev, "FW Client is amthi\n");
-diff --git a/drivers/staging/mei/main.c b/drivers/staging/mei/main.c
-index 22afc92..64456ce 100644
---- a/drivers/staging/mei/main.c
-+++ b/drivers/staging/mei/main.c
-@@ -430,7 +430,7 @@ static ssize_t mei_read(struct file *file, char __user *ubuf,
- 		goto free;
- 	} else if ((!cl->read_cb || !cl->read_cb->information) &&
- 		    *offset > 0) {
--		/*Offset needs to be cleaned for contingous reads*/
-+		/*Offset needs to be cleaned for contiguous reads*/
- 		*offset = 0;
- 		rets = 0;
- 		goto out;
-@@ -493,7 +493,7 @@ copy_buffer:
- 		goto free;
- 	}
- 
--	/* length is being turncated to PAGE_SIZE, however, */
-+	/* length is being truncated to PAGE_SIZE, however, */
- 	/* information size may be longer */
- 	length = min_t(size_t, length, (cb->information - *offset));
- 
-diff --git a/drivers/staging/mei/mei-amt-version.c b/drivers/staging/mei/mei-amt-version.c
-index 970f2d3..ac2a507 100644
---- a/drivers/staging/mei/mei-amt-version.c
-+++ b/drivers/staging/mei/mei-amt-version.c
-@@ -77,7 +77,7 @@
- #include "mei.h"
- 
- /*****************************************************************************
-- * Intel Management Enginin Interface
-+ * Intel Management Engine Interface
-  *****************************************************************************/
- 
- #define mei_msg(_me, fmt, ARGS...) do {         \
-diff --git a/drivers/staging/mei/mei.h b/drivers/staging/mei/mei.h
-index b09b11c..bc0d8b6 100644
---- a/drivers/staging/mei/mei.h
-+++ b/drivers/staging/mei/mei.h
-@@ -77,7 +77,7 @@
-  * Only in close() (file_operation release()) the communication between
-  * the clients is disconnected
-  *
-- * The IOCTL argument is a struct with a union the contains
-+ * The IOCTL argument is a struct with a union that contains
-  * the input parameter and the output parameter for this IOCTL.
-  *
-  * The input parameter is UUID of the FW Client.
-diff --git a/drivers/staging/mei/mei.txt b/drivers/staging/mei/mei.txt
-index 516bfe7..2785697 100644
---- a/drivers/staging/mei/mei.txt
-+++ b/drivers/staging/mei/mei.txt
-@@ -4,7 +4,7 @@ Intel(R) Management Engine Interface (Intel(R) MEI)
- Introduction
- =======================
- 
--The Intel Management Engine (Intel ME) is an isolated andprotected computing
-+The Intel Management Engine (Intel ME) is an isolated and protected computing
- resource (Co-processor) residing inside certain Intel chipsets. The Intel ME
- provides support for computer/IT management features. The feature set
- depends on the Intel chipset SKU.
-@@ -176,8 +176,8 @@ Intel AMT OS Health Watchdog:
- =============================
- The Intel AMT Watchdog is an OS Health (Hang/Crash) watchdog.
- Whenever the OS hangs or crashes, Intel AMT will send an event
--to any subsciber to this event. This mechanism means that
--IT knows when a platform crashes even when there is a hard failureon the host.
-+to any subscriber to this event. This mechanism means that
-+IT knows when a platform crashes even when there is a hard failure on the host.
- 
- The Intel AMT Watchdog is composed of two parts:
- 	1) Firmware feature - receives the heartbeats
-diff --git a/drivers/staging/mei/mei_dev.h b/drivers/staging/mei/mei_dev.h
-index 0d937b0..10b1b4e 100644
---- a/drivers/staging/mei/mei_dev.h
-+++ b/drivers/staging/mei/mei_dev.h
-@@ -89,7 +89,7 @@ enum mei_states {
- 	MEI_POWER_UP
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index cfaaa69..c15fc17 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -24,6 +24,7 @@ enum mapping_flags {
+ 	AS_ENOSPC	= __GFP_BITS_SHIFT + 1,	/* ENOSPC on async write */
+ 	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
+ 	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
++	AS_WORKINGSET	= __GFP_BITS_SHIFT + 4,	/* promote pages activation */
  };
  
--/* init clients  states*/
-+/* init clients states*/
- enum mei_init_clients_states {
- 	MEI_START_MESSAGE = 0,
- 	MEI_ENUM_CLIENTS_MESSAGE,
--- 
-1.7.5.4
+ static inline void mapping_set_error(struct address_space *mapping, int error)
+@@ -53,6 +54,21 @@ static inline int mapping_unevictable(struct address_space *mapping)
+ 	return !!mapping;
+ }
+ 
++static inline void mapping_set_workingset(struct address_space *mapping)
++{
++	set_bit(AS_WORKINGSET, &mapping->flags);
++}
++
++static inline void mapping_clear_workingset(struct address_space *mapping)
++{
++	clear_bit(AS_WORKINGSET, &mapping->flags);
++}
++
++static inline int mapping_test_workingset(struct address_space *mapping)
++{
++	return mapping && test_bit(AS_WORKINGSET, &mapping->flags);
++}
++
+ static inline gfp_t mapping_gfp_mask(struct address_space * mapping)
+ {
+ 	return (__force gfp_t)mapping->flags & __GFP_BITS_MASK;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 57b9658..5ccbe8c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -701,6 +701,7 @@ enum page_references {
+ };
+ 
+ static enum page_references page_check_references(struct page *page,
++						  struct address_space *mapping,
+ 						  struct mem_cgroup_zone *mz,
+ 						  struct scan_control *sc)
+ {
+@@ -721,6 +722,13 @@ static enum page_references page_check_references(struct page *page,
+ 	if (vm_flags & VM_LOCKED)
+ 		return PAGEREF_RECLAIM;
+ 
++	/*
++	 * Activate workingset page if referenced at least once.
++	 */
++	if (mapping_test_workingset(mapping) &&
++	    (referenced_ptes || referenced_page))
++		return PAGEREF_ACTIVATE;
++
+ 	if (referenced_ptes) {
+ 		if (PageAnon(page))
+ 			return PAGEREF_ACTIVATE;
+@@ -828,7 +836,9 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			}
+ 		}
+ 
+-		references = page_check_references(page, mz, sc);
++		mapping = page_mapping(page);
++
++		references = page_check_references(page, mapping, mz, sc);
+ 		switch (references) {
+ 		case PAGEREF_ACTIVATE:
+ 			goto activate_locked;
+@@ -848,11 +858,10 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 				goto keep_locked;
+ 			if (!add_to_swap(page))
+ 				goto activate_locked;
++			mapping = &swapper_space;
+ 			may_enter_fs = 1;
+ 		}
+ 
+-		mapping = page_mapping(page);
+-
+ 		/*
+ 		 * The page is mapped into the page tables of one or more
+ 		 * processes. Try to unmap it here.
 
+--------------040505090707040106050504--
