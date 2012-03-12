@@ -1,66 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753710Ab2CLQia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 12:38:30 -0400
-Received: from smtp.witbe.net ([81.88.96.48]:55558 "EHLO smtp.witbe.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552Ab2CLQi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 12:38:27 -0400
-X-Greylist: delayed 2120 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Mar 2012 12:38:27 EDT
-Date: Mon, 12 Mar 2012 17:03:01 +0100
-From: Paul Rolland (=?UTF-8?B?44Od44O844Or44O744Ot44Op44Oz?=) 
-	<rol@witbe.net>
-To: linux-kernel@vger.kernel.org
-Cc: rol@witbe.net
-Subject: Blocked in keyctl(...) ???
-Message-ID: <20120312170301.5982e054@tux.DEF.witbe.net>
-Organization: Witbe.net
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-unknown-linux-gnu)
-X-Ncc-RegId: fr.witbe
-X-Face: +^rP^g;Vjb!M*"%3$mF6xWU{DwwAx)W=b_<WXQMv}Rk8,fQ)?Wnk0NK/+m,;eWci?+;=I}d^:]I+)D+|r'vxjYjp.?o-8Va|&sD*-GVKn>}?Y)|*X<5cv@M`1P{\:)p9_:$=)(NY2`%AcypV*]z>YIyy5yY"9PUoV5@)*(W:S5e-48Ct7Wu6CkkO[=KB"ox,_2B/FwY&hr/E1H&<9IbOCx6NrBa"}FLA)UIvHg`9%NC\LfYB3ia]
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/vX=/urC=syveZ0oehAYwBni"; protocol="application/pgp-signature"
+	id S1753788Ab2CLQjj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 12:39:39 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:53305 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab2CLQjh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 12:39:37 -0400
+Date: Mon, 12 Mar 2012 17:39:11 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: "Mark A. Grondona" <mgrondona@llnl.gov>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Add a per-dimm structure
+Message-ID: <20120312163911.GC7255@aftab>
+References: <1331120438-27523-1-git-send-email-mchehab@redhat.com>
+ <20120308215716.GA5925@aftab>
+ <4F59DC38.5080104@redhat.com>
+ <20120309143806.GA11962@aftab>
+ <4F5A329A.70702@redhat.com>
+ <20120309184733.GB13745@aftab>
+ <4F5A5E2D.4090408@redhat.com>
+ <20120311113411.GB29175@aftab>
+ <4F5C9B6C.2080904@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F5C9B6C.2080904@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/vX=/urC=syveZ0oehAYwBni
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sun, Mar 11, 2012 at 09:32:44AM -0300, Mauro Carvalho Chehab wrote:
+> Well, this change can be done, but still we need to decide how to export it ;)
+> 
+> The new edac_mc_handle_error() with replaces all the legacy edac_mc_handle* calls
+> does what the other calls used to do. I didn't change its behavior. Anyway, what
+> it does for UE errors is:
+> 
+> 	...
+> 	/* Some logic to get the memory DIMM labels */
+>         trace_mc_error(type, mci->mc_idx, msg, label, location,
+>                        detail, other_detail);
+> 	
+> 	if (type == HW_EVENT_ERR_CORRECTED) {
+> 		...
+>         } else {
+> 		...
+>                 if (edac_mc_get_log_ue())
+>                         edac_mc_printk(mci, KERN_WARNING,
+>                                 "UE %s on %s (%s%s %s)\n",
+>                                 msg, label, location, detail, other_detail);
+> 
+>                 if (edac_mc_get_panic_on_ue())
+>                         panic("UE %s on %s (%s%s %s)\n",
+>                               msg, label, location, detail, other_detail);
+> 
+>                 edac_increment_ue_error(mci, enable_filter, pos);
+>         }
+> 
+> So, it basically:
+> 	1) prints the memory location and the DIMM label(s) of the memory(ies)
+> 	   from where the error originates;
+> 	2) if edac_mc_panic_on_ue is set, it will panic;
+> 	3) otherwise, it will increment the UE error counters.
+> 
+> It shouldn't be hard to add a patch to disable the sysfs error UE counters if 
+> edac_mc_panic_on_ue is enabled.
 
-Hello,
+Err, the fact that you have UE counters doesn't have anything to do with
+the request that you want to panic on an UE. Especially if conservative
+systems would panic on the first UE anyway without asking software.
 
-Sometimes, my applications start "locking": nothing happens anymore, can't
-kill them...=20
-I manage to strace them, to find that they are executing the following
-syscall:
+So what I meant was to make it optional in the core edac code whether
+you want to install a UE counter in the ranks or not. So that, for
+example, if amd64_edac doesn't want to have UE counters, it simply
+says so and the core generates only CE counters per rank. Or, with
+positive logic, an edac driver explicitly requests what counters it
+wants installed.
 
-13686 keyctl(0x1, 0, 0xffffffffffffffff, 0x7fa90fd6a2c0, 0
+> Anyway, an UE error with a 128 bits cacheline points to a location that has
+> two DIMMs (or 4 DIMMs, on memory controllers with mirror mode enabled). So,
+> incrementing a DIMM error counter doesn't seem to be the right thing to do.
+> 
+> Well, it may increment two DIMM error counters (or 4 DIMM error counters), but
+> it would change the current behavior.
+> 
+> It should also be noticed that the MCA-based Intel memory controllers have the 
+> (likely limited) capability of recovering from an UE error. So, an UE error 
+> may not mean a fatal error. So, the UE error counter value can actually be
+> bigger than 1.
 
-and that syscall never returns.
-I don't have anything interesting in the system logs, and that happened to
-me while using all the 3.3-rcX up to rc5 (I've just rebooted an rc7).
-Can't tell if that occured pre-3.3 or not.
+Yes, that's why make it optional - if the hardware can support it,
+it can have it. If it doesn't make sense, then no need for it - that
+simple.
 
-Does anyone know what could cause something like that ?=20
-Should I fwd my .config ?
+> 
+> > 
+> > [..]
+> > 
+> >> One alternative would simply to remove all those intermediate
+> >> counters, letting userspace to count the errors via perf (provided
+> >> that we have a proper location field).
+> > 
+> > Yes, that would be where we want to go eventually because I too don't
+> > see any reason for those counters. Besides, they don't decay over time,
+> > for example, say you have a DIMM which experiences a temporary failure
+> > and generates k CEs. Then, the source of that error disappears and the
+> > DIMM works fine for months.
+> 
+> Userspace applications may reset the error counters. There is a sysfs node
+> for it.
 
-Best,
-Paul
+No, I'm not talking about resetting but decaying. I.e., each
+error counted has a certain validity and gets discarded
+after a while - similar to the leaky bucket algorithm:
+http://en.wikipedia.org/wiki/Leaky_bucket
 
+Thanks.
 
---Sig_/vX=/urC=syveZ0oehAYwBni
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+-- 
+Regards/Gruss,
+Boris.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iEYEARECAAYFAk9eHjUACgkQZP464AVDf+CkPgCfXvhe4MHT6r6BuFF1fCDarIU8
-9AQAoIg7+mdF2jv6HzpgPc+niM1BEjes
-=z6CR
------END PGP SIGNATURE-----
-
---Sig_/vX=/urC=syveZ0oehAYwBni--
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
