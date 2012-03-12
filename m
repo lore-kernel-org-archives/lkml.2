@@ -1,406 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479Ab2CLEME (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 00:12:04 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41837 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab2CLELz (ORCPT
+	id S1751577Ab2CLEWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 00:22:19 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:55280 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867Ab2CLEWL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 00:11:55 -0400
-Message-ID: <1331525506.8110.2.camel@phoenix>
-Subject: [PATCH] regulator: Merge tps65217_pmic_ldo234_ops and
- tps65217_pmic_dcdc_ops to tps65217_pmic_ops
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: AnilKumar Ch <anilkumar@ti.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 12 Mar 2012 12:11:46 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 12 Mar 2012 00:22:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F5D1661.4090007@samsung.com>
+References: <1331469965-28846-1-git-send-email-thomas.abraham@linaro.org>
+	<1331469965-28846-4-git-send-email-thomas.abraham@linaro.org>
+	<4F5D1661.4090007@samsung.com>
+Date: Mon, 12 Mar 2012 09:52:10 +0530
+Message-ID: <CAJuYYwQPrOte4EjpfBbUW0vg+qFJwYgZcSM88iZ95C8LwWuptg@mail.gmail.com>
+Subject: Re: [PATCH 3/5] ARM: Exynos4: Add pinctrl devices and pin maps
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linus.walleij@linaro.org,
+        patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most callback functions implementation for tps65217_pmic_ldo234_ops and
-tps65217_pmic_dcdc_ops are the same except the rid range checking.
+2012/3/12 Kukjin Kim <kgene.kim@samsung.com>:
+> Thomas Abraham wrote:
+>> Add the three pinctrl platform devices and the pin maps for Exynos4.
+>>
+>> Signed-off-by: Thomas Abraham<thomas.abraham@linaro.org>
+>> ---
+>>   arch/arm/mach-exynos/Kconfig              |    1 +
+>>   arch/arm/mach-exynos/Makefile             |    1 +
+>>   arch/arm/mach-exynos/common.h             |    6 ++
+>>   arch/arm/mach-exynos/dev-pinctrl.c        |  115 +++++++++++++++++++++++++++++
+>>   arch/arm/plat-samsung/include/plat/devs.h |    3 +
+>>   5 files changed, 126 insertions(+), 0 deletions(-)
+>>   create mode 100644 arch/arm/mach-exynos/dev-pinctrl.c
+>
+> [...]
+>
+>> +#include<linux/kernel.h>
+>> +#include<linux/dma-mapping.h>
+>> +#include<linux/platform_device.h>
+>> +#include<linux/interrupt.h>
+>> +#include<linux/pinctrl/machine.h>
+>
+> #include <linux/ioport.h> for DEFINE_RES_xxx at below.
+>
+>> +
+>> +#include<plat/devs.h>
+>> +#include<plat/pinctrl.h>
+>> +
+>> +#include<mach/map.h>
+>> +
+>> +static struct resource exynos4_pinctrl_resource0[] = {
+>> +     [0] = {
+>> +             .start  = EXYNOS4_PA_GPIO1,
+>> +             .end    = EXYNOS4_PA_GPIO1 + SZ_4K - 1,
+>> +             .flags  = IORESOURCE_MEM,
+>> +     },
+>
+> [0] = DEFINE_RES_MEM(EXYNOS4_PA_GPIO1, SZ_4K),
+>
+>> +     [1] = {
+>> +             .start  = IRQ_GPIO_XA,
+>> +             .end    = IRQ_GPIO_XA,
+>> +             .flags  = IORESOURCE_IRQ,
+>> +     },
+>
+> [1] = DEFINE_RES_IRQ(IRQ_GPIO_XA),
+>
+> But I'm thinking, we need to move to use EXYNOS4_IRQ_GPIO_XA here for
+> both EXYNOS4 and EXYNOS5 and as a note, I'm working on updating IRQ
+> naming you can see it in this week :)
 
-This patch uses tps65217_pmic_ops for all DCDCx, LDO2, LDO3, and LDO4.
-And rework tps65217_pmic_set_voltage to make it can be called for
-DCDCx, LDO2, LDO3, and LDO4.
+Thanks for reviewing this patch series. I will use DEFINE_RES_xxx for
+resource instantiation.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps65217-regulator.c |  259 +++++++++-----------------------
- 1 files changed, 72 insertions(+), 187 deletions(-)
+Regards,
+Thomas.
 
-diff --git a/drivers/regulator/tps65217-regulator.c b/drivers/regulator/tps65217-regulator.c
-index 15f2fa0..e39521b 100644
---- a/drivers/regulator/tps65217-regulator.c
-+++ b/drivers/regulator/tps65217-regulator.c
-@@ -151,166 +151,69 @@ static struct tps_info tps65217_pmic_regs[] = {
- 			TPS65217_REG_DEFLS2, TPS65217_DEFLDO4_LDO4_MASK),
- };
- 
--static int tps65217_pmic_dcdc_is_enabled(struct regulator_dev *dev)
-+static int tps65217_pmic_is_enabled(struct regulator_dev *dev)
- {
- 	int ret;
- 	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int data, dcdc = rdev_get_id(dev);
-+	unsigned int data, rid = rdev_get_id(dev);
- 
--	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
-+	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
- 		return -EINVAL;
- 
- 	ret = tps65217_reg_read(tps, TPS65217_REG_ENABLE, &data);
- 	if (ret)
- 		return ret;
- 
--	return (data & tps->info[dcdc]->enable_mask) ? 1 : 0;
-+	return (data & tps->info[rid]->enable_mask) ? 1 : 0;
- }
- 
--static int tps65217_pmic_ldo_is_enabled(struct regulator_dev *dev)
-+static int tps65217_pmic_enable(struct regulator_dev *dev)
- {
--	int ret;
- 	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int data, ldo = rdev_get_id(dev);
-+	unsigned int rid = rdev_get_id(dev);
- 
--	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
--		return -EINVAL;
--
--	ret = tps65217_reg_read(tps, TPS65217_REG_ENABLE, &data);
--	if (ret)
--		return ret;
--
--	return (data & tps->info[ldo]->enable_mask) ? 1 : 0;
--}
--
--static int tps65217_pmic_dcdc_enable(struct regulator_dev *dev)
--{
--	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int dcdc = rdev_get_id(dev);
--
--	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
-+	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
- 		return -EINVAL;
- 
- 	/* Enable the regulator and password protection is level 1 */
- 	return tps65217_set_bits(tps, TPS65217_REG_ENABLE,
--				tps->info[dcdc]->enable_mask,
--				tps->info[dcdc]->enable_mask,
-+				tps->info[rid]->enable_mask,
-+				tps->info[rid]->enable_mask,
- 				TPS65217_PROTECT_L1);
- }
- 
--static int tps65217_pmic_dcdc_disable(struct regulator_dev *dev)
-+static int tps65217_pmic_disable(struct regulator_dev *dev)
- {
- 	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int dcdc = rdev_get_id(dev);
-+	unsigned int rid = rdev_get_id(dev);
- 
--	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
-+	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
- 		return -EINVAL;
- 
- 	/* Disable the regulator and password protection is level 1 */
- 	return tps65217_clear_bits(tps, TPS65217_REG_ENABLE,
--			tps->info[dcdc]->enable_mask, TPS65217_PROTECT_L1);
--}
--
--static int tps65217_pmic_ldo_enable(struct regulator_dev *dev)
--{
--	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int ldo = rdev_get_id(dev);
--
--	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
--		return -EINVAL;
--
--	/* Enable the regulator and password protection is level 1 */
--	return tps65217_set_bits(tps, TPS65217_REG_ENABLE,
--				tps->info[ldo]->enable_mask,
--				tps->info[ldo]->enable_mask,
--				TPS65217_PROTECT_L1);
--}
--
--static int tps65217_pmic_ldo_disable(struct regulator_dev *dev)
--{
--	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int ldo = rdev_get_id(dev);
--
--	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
--		return -EINVAL;
--
--	/* Disable the regulator and password protection is level 1 */
--	return tps65217_clear_bits(tps, TPS65217_REG_ENABLE,
--			tps->info[ldo]->enable_mask, TPS65217_PROTECT_L1);
--}
--
--static int tps65217_pmic_dcdc_get_voltage_sel(struct regulator_dev *dev)
--{
--	int ret;
--	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int selector, dcdc = rdev_get_id(dev);
--
--	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
--		return -EINVAL;
--
--	ret = tps65217_reg_read(tps, tps->info[dcdc]->set_vout_reg, &selector);
--	if (ret)
--		return ret;
--
--	selector &= tps->info[dcdc]->set_vout_mask;
--
--	return selector;
-+			tps->info[rid]->enable_mask, TPS65217_PROTECT_L1);
- }
- 
--static int tps65217_pmic_dcdc_set_voltage(struct regulator_dev *dev,
--				  int min_uV, int max_uV, unsigned *selector)
-+static int tps65217_pmic_get_voltage_sel(struct regulator_dev *dev)
- {
- 	int ret;
- 	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int dcdc = rdev_get_id(dev);
--
--	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
--		return -EINVAL;
-+	unsigned int selector, rid = rdev_get_id(dev);
- 
--	if (min_uV < tps->info[dcdc]->min_uV
--		|| min_uV > tps->info[dcdc]->max_uV)
-+	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
- 		return -EINVAL;
- 
--	if (max_uV < tps->info[dcdc]->min_uV
--		|| max_uV > tps->info[dcdc]->max_uV)
--		return -EINVAL;
--
--	ret = tps->info[dcdc]->uv_to_vsel(min_uV, selector);
-+	ret = tps65217_reg_read(tps, tps->info[rid]->set_vout_reg, &selector);
- 	if (ret)
- 		return ret;
- 
--	/* Set the voltage based on vsel value and write protect level is 2 */
--	ret = tps65217_set_bits(tps, tps->info[dcdc]->set_vout_reg,
--					tps->info[dcdc]->set_vout_mask,
--					*selector, TPS65217_PROTECT_L2);
--	if (ret)
--		return ret;
--
--	/* Set GO bit to initiate voltage transistion */
--	return tps65217_set_bits(tps, TPS65217_REG_DEFSLEW,
--				TPS65217_DEFSLEW_GO, TPS65217_DEFSLEW_GO,
--				TPS65217_PROTECT_L2);
--}
--
--static int tps65217_pmic_ldo_get_voltage_sel(struct regulator_dev *dev)
--{
--	int ret;
--	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int selector, ldo = rdev_get_id(dev);
--
--	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
--		return -EINVAL;
--
--	ret = tps65217_reg_read(tps, tps->info[ldo]->set_vout_reg, &selector);
--	if (ret)
--		return ret;
--
--	selector &= tps->info[ldo]->set_vout_mask;
-+	selector &= tps->info[rid]->set_vout_mask;
- 
- 	return selector;
- }
- 
--static int tps65217_pmic_ldo_set_voltage_sel(struct regulator_dev *dev,
-+static int tps65217_pmic_ldo1_set_voltage_sel(struct regulator_dev *dev,
- 						unsigned selector)
- {
- 	struct tps65217 *tps = rdev_get_drvdata(dev);
-@@ -328,112 +231,95 @@ static int tps65217_pmic_ldo_set_voltage_sel(struct regulator_dev *dev,
- 					selector, TPS65217_PROTECT_L2);
- }
- 
--static int tps65217_pmic_ldo_set_voltage(struct regulator_dev *dev,
-+static int tps65217_pmic_set_voltage(struct regulator_dev *dev,
- 				  int min_uV, int max_uV, unsigned *selector)
- {
- 	int ret;
- 	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int ldo = rdev_get_id(dev);
-+	unsigned int rid = rdev_get_id(dev);
- 
--	if (ldo < TPS65217_LDO_2 || ldo > TPS65217_LDO_4)
-+	/* LDO1 implements set_voltage_sel callback */
-+	if (rid == TPS65217_LDO_1)
- 		return -EINVAL;
- 
--	if (min_uV < tps->info[ldo]->min_uV
--		|| min_uV > tps->info[ldo]->max_uV)
-+	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
- 		return -EINVAL;
- 
--	if (max_uV < tps->info[ldo]->min_uV
--		|| max_uV > tps->info[ldo]->max_uV)
-+	if (min_uV < tps->info[rid]->min_uV
-+		|| min_uV > tps->info[rid]->max_uV)
- 		return -EINVAL;
- 
--	ret = tps->info[ldo]->uv_to_vsel(min_uV, selector);
-+	if (max_uV < tps->info[rid]->min_uV
-+		|| max_uV > tps->info[rid]->max_uV)
-+		return -EINVAL;
-+
-+	ret = tps->info[rid]->uv_to_vsel(min_uV, selector);
- 	if (ret)
- 		return ret;
- 
- 	/* Set the voltage based on vsel value and write protect level is 2 */
--	return tps65217_set_bits(tps, tps->info[ldo]->set_vout_reg,
--					tps->info[ldo]->set_vout_mask,
--					*selector, TPS65217_PROTECT_L2);
--}
--
--static int tps65217_pmic_dcdc_list_voltage(struct regulator_dev *dev,
--					unsigned selector)
--{
--	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int dcdc = rdev_get_id(dev);
--
--	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
--		return -EINVAL;
--
--	if (selector >= tps->info[dcdc]->table_len)
--		return -EINVAL;
-+	ret = tps65217_set_bits(tps, tps->info[rid]->set_vout_reg,
-+				tps->info[rid]->set_vout_mask,
-+				*selector, TPS65217_PROTECT_L2);
-+
-+	/* Set GO bit for DCDCx to initiate voltage transistion */
-+	switch (rid) {
-+	case TPS65217_DCDC_1 ... TPS65217_DCDC_3:
-+		ret = tps65217_set_bits(tps, TPS65217_REG_DEFSLEW,
-+				       TPS65217_DEFSLEW_GO, TPS65217_DEFSLEW_GO,
-+				       TPS65217_PROTECT_L2);
-+		break;
-+	}
- 
--	return tps->info[dcdc]->vsel_to_uv(selector);
-+	return ret;
- }
- 
--static int tps65217_pmic_ldo_list_voltage(struct regulator_dev *dev,
-+static int tps65217_pmic_list_voltage(struct regulator_dev *dev,
- 					unsigned selector)
- {
- 	struct tps65217 *tps = rdev_get_drvdata(dev);
--	unsigned int ldo = rdev_get_id(dev);
-+	unsigned int rid = rdev_get_id(dev);
- 
--	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
-+	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
- 		return -EINVAL;
- 
--	if (selector >= tps->info[ldo]->table_len)
-+	if (selector >= tps->info[rid]->table_len)
- 		return -EINVAL;
- 
--	if (tps->info[ldo]->table)
--		return tps->info[ldo]->table[selector];
-+	if (tps->info[rid]->table)
-+		return tps->info[rid]->table[selector];
- 
--	return tps->info[ldo]->vsel_to_uv(selector);
-+	return tps->info[rid]->vsel_to_uv(selector);
- }
- 
--/* Operations permitted on DCDCx */
--static struct regulator_ops tps65217_pmic_dcdc_ops = {
--	.is_enabled		= tps65217_pmic_dcdc_is_enabled,
--	.enable			= tps65217_pmic_dcdc_enable,
--	.disable		= tps65217_pmic_dcdc_disable,
--	.get_voltage_sel	= tps65217_pmic_dcdc_get_voltage_sel,
--	.set_voltage		= tps65217_pmic_dcdc_set_voltage,
--	.list_voltage		= tps65217_pmic_dcdc_list_voltage,
-+/* Operations permitted on DCDCx, LDO2, LDO3 and LDO4 */
-+static struct regulator_ops tps65217_pmic_ops = {
-+	.is_enabled		= tps65217_pmic_is_enabled,
-+	.enable			= tps65217_pmic_enable,
-+	.disable		= tps65217_pmic_disable,
-+	.get_voltage_sel	= tps65217_pmic_get_voltage_sel,
-+	.set_voltage		= tps65217_pmic_set_voltage,
-+	.list_voltage		= tps65217_pmic_list_voltage,
- };
- 
- /* Operations permitted on LDO1 */
- static struct regulator_ops tps65217_pmic_ldo1_ops = {
--	.is_enabled		= tps65217_pmic_ldo_is_enabled,
--	.enable			= tps65217_pmic_ldo_enable,
--	.disable		= tps65217_pmic_ldo_disable,
--	.get_voltage_sel	= tps65217_pmic_ldo_get_voltage_sel,
--	.set_voltage_sel	= tps65217_pmic_ldo_set_voltage_sel,
--	.list_voltage		= tps65217_pmic_ldo_list_voltage,
--};
--
--/* Operations permitted on LDO2, LDO3 and LDO4 */
--static struct regulator_ops tps65217_pmic_ldo234_ops = {
--	.is_enabled		= tps65217_pmic_ldo_is_enabled,
--	.enable			= tps65217_pmic_ldo_enable,
--	.disable		= tps65217_pmic_ldo_disable,
--	.get_voltage_sel	= tps65217_pmic_ldo_get_voltage_sel,
--	.set_voltage		= tps65217_pmic_ldo_set_voltage,
--	.list_voltage		= tps65217_pmic_ldo_list_voltage,
-+	.is_enabled		= tps65217_pmic_is_enabled,
-+	.enable			= tps65217_pmic_enable,
-+	.disable		= tps65217_pmic_disable,
-+	.get_voltage_sel	= tps65217_pmic_get_voltage_sel,
-+	.set_voltage_sel	= tps65217_pmic_ldo1_set_voltage_sel,
-+	.list_voltage		= tps65217_pmic_list_voltage,
- };
- 
- static struct regulator_desc regulators[] = {
--	TPS65217_REGULATOR("DCDC1", TPS65217_DCDC_1,
--				tps65217_pmic_dcdc_ops, 64),
--	TPS65217_REGULATOR("DCDC2",TPS65217_DCDC_2,
--				tps65217_pmic_dcdc_ops, 64),
--	TPS65217_REGULATOR("DCDC3", TPS65217_DCDC_3,
--				tps65217_pmic_dcdc_ops, 64),
--	TPS65217_REGULATOR("LDO1", TPS65217_LDO_1,
--				tps65217_pmic_ldo1_ops, 16),
--	TPS65217_REGULATOR("LDO2", TPS65217_LDO_2,
--				tps65217_pmic_ldo234_ops, 64),
--	TPS65217_REGULATOR("LDO3", TPS65217_LDO_3,
--				tps65217_pmic_ldo234_ops, 32),
--	TPS65217_REGULATOR("LDO4", TPS65217_LDO_4,
--				tps65217_pmic_ldo234_ops, 32),
-+	TPS65217_REGULATOR("DCDC1", TPS65217_DCDC_1, tps65217_pmic_ops, 64),
-+	TPS65217_REGULATOR("DCDC2", TPS65217_DCDC_2, tps65217_pmic_ops, 64),
-+	TPS65217_REGULATOR("DCDC3", TPS65217_DCDC_3, tps65217_pmic_ops, 64),
-+	TPS65217_REGULATOR("LDO1", TPS65217_LDO_1, tps65217_pmic_ldo1_ops, 16),
-+	TPS65217_REGULATOR("LDO2", TPS65217_LDO_2, tps65217_pmic_ops, 64),
-+	TPS65217_REGULATOR("LDO3", TPS65217_LDO_3, tps65217_pmic_ops, 32),
-+	TPS65217_REGULATOR("LDO4", TPS65217_LDO_4, tps65217_pmic_ops, 32),
- };
- 
- static int __devinit tps65217_regulator_probe(struct platform_device *pdev)
-@@ -486,7 +372,6 @@ static void __exit tps65217_regulator_exit(void)
- }
- module_exit(tps65217_regulator_exit);
- 
--
- MODULE_AUTHOR("AnilKumar Ch <anilkumar@ti.com>");
- MODULE_DESCRIPTION("TPS65217 voltage regulator driver");
- MODULE_ALIAS("platform:tps65217-pmic");
--- 
-1.7.5.4
-
-
-
+[...]
