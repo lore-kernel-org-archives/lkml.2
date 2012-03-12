@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab2CLMvj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 08:51:39 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40393 "EHLO
+	id S1755277Ab2CLM6w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 08:58:52 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54514 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015Ab2CLMvg convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754261Ab2CLM6u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 08:51:36 -0400
+	Mon, 12 Mar 2012 08:58:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F57E3D2.40405@wwwdotorg.org>
-References: <1331071533-24789-1-git-send-email-linus.walleij@stericsson.com>
-	<4F57E3D2.40405@wwwdotorg.org>
-Date: Mon, 12 Mar 2012 13:51:35 +0100
-Message-ID: <CACRpkdbSzU-eXCfzFVmynO_D44PYA4g7dRSvRj+0s6uZxYD+tw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] pinctrl: support pinconfig on the U300
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
+In-Reply-To: <alpine.LNX.2.00.1203121329430.18356@pobox.suse.cz>
+References: <201202162251.47063.rjw@sisk.pl>
+	<Pine.LNX.4.44L0.1202161722310.1150-100000@iolanthe.rowland.org>
+	<CAFLxGvwWBWTmv+uUH87UB3Ly31hjVU5kWpSyihGDKj6_8oc6WA@mail.gmail.com>
+	<201202170016.14313.rjw@sisk.pl>
+	<jj5qhh$5j5$1@ID-44327.news.uni-berlin.de>
+	<jj684d$6ng$1@ID-44327.news.uni-berlin.de>
+	<CAFLxGvwazkbisZ0Ax==-Yyv2h5mYtnK-S2bOegZHX5g+rB2krQ@mail.gmail.com>
+	<4F574113.8030906@01019freenet.de>
+	<alpine.LRH.2.00.1203121300590.4911@twin.jikos.cz>
+	<CAFLxGvwv159LHtyKdrF1DQZ-vQyagLJ9nNkcAZzkY4O9F-MwNg@mail.gmail.com>
+	<alpine.LNX.2.00.1203121329430.18356@pobox.suse.cz>
+Date: Mon, 12 Mar 2012 13:58:49 +0100
+Message-ID: <CAFLxGvyXwFwLRYw7=eHGLZsiAB9Adcu16z=UPhLtL_Ze3bF-9g@mail.gmail.com>
+Subject: Re: Corrupted files after suspend to disk
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andreas Hartmann <andihartmann@01019freenet.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 7, 2012 at 11:40 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 03/06/2012 03:05 PM, Linus Walleij wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
+On Mon, Mar 12, 2012 at 1:30 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Mon, 12 Mar 2012, richard -rw- weinberger wrote:
+>
+>> > This is happening to me as well. Something like 1 resume out of 5 goes
+>> > wrong this very same way.
+>> >
+>> > This is thinkpad x200s.
+>> >
+>> > All the userspace is segfaulting all over the place (most frequently in
+>> > libselinux for some reason).
+>> >
+>> > I am not able to verify the 'drop_caches' theory, as I can't invoke a
+>> > single command that wouldn't crash.
 >>
->> This adds pin configuration support for the U300 driver pair,
->> we can now read out the biasing and drive mode in debugfs and
->> configure it using the new configuration API.
+>> The question is how should we proceed?
+>> I've reported this issue one year (!!!) ago.
 >
->> +int u300_pin_config_set(struct pinctrl_dev *pctldev,
->> +                     unsigned pin,
->> +                     unsigned long config)
->> +{
->> +     struct pinctrl_gpio_range *range = u300_match_gpio_range(pin);
->> +     int ret;
->> +
->> +     if (!range)
->> +             return -EINVAL;
->> +
->> +     /* Note: none of these configurations take any argument */
->> +     ret = u300_gpio_config_set(range->gc,
->> +                                (pin - range->pin_base + range->base),
->> +                                to_config_param(config));
->
-> I'm a little confused here; the documentation for most of the
-> PIN_CONFIG_* parameters that this function is passed does explicitly
-> document that there is an associated argument value. For example,
-> IN_CONFIG_BIAS_PULL_UP is coupled with the pull up resistance in Ohms.
-> Shouldn't this code extract the argument and validate that it's a
-> supported value for the HW?
+> Hmm, 3.3-rcX seems to be the first version when it started to happen to
+> me. I take it that you have seen this also with 3.2? 3.1?
 
-It says:
+Quote from my very first email:
+"I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
+running Linux 2.6.37.4."
 
- * @PIN_CONFIG_BIAS_PULL_UP: the pin will be pulled up (usually with high
- *      impedance to VDD), if the controller supports specifying a certain
- *      pull-up resistance, this is given as an argument (in Ohms) when
- *      setting this parameter.
+http://marc.info/?l=linux-kernel&m=130089790801080
 
-Notice "if controller supports specifying ..." clause.
+With some releases the problem happened not that often.
 
-The reverse holds: if the pin controller doesn't support specifying that,
-the pull-up will just be enabled, no matter what the argument was.
-
-But maybe I should try to dig out which exact value it is, since it's
-anyway a 1-1 copuling between board data and this one driver it
-could be clearer (though the argument will just be checked to be
-the one value the chip supports, and then discarded).
-
-Yours,
-Linus Walleij
+-- 
+Thanks,
+//richard
