@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030230Ab2CLXmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:42:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7765 "EHLO mx1.redhat.com"
+	id S965106Ab2CLXmX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:42:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9978 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964963Ab2CLXlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:41:53 -0400
+	id S1030233Ab2CLXmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 19:42:19 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 33/35] Disintegrate asm/system.h on all arches [ver #2]
+Subject: [PATCH 35/35] Delete all instances of asm/system.h [ver #2]
 To: paul.gortmaker@windriver.com, hpa@zytor.com
 Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, arnd@arndb.de,
         David Howells <dhowells@redhat.com>
-Date: Mon, 12 Mar 2012 23:41:44 +0000
-Message-ID: <20120312234144.13888.3323.stgit@warthog.procyon.org.uk>
+Date: Mon, 12 Mar 2012 23:42:07 +0000
+Message-ID: <20120312234207.13888.3237.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,146 +28,380 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-asm/system.h is a cause of circular dependency problems because it contains
-commonly used primitive stuff like barrier definitions and uncommonly used
-stuff like switch_to() that might require MMU definitions.
-
-Disintegrate asm/system.h on all arches into the following common segments:
-
- (1) asm/barrier.h
-
-     Memory barrier stuff - already done for MIPS and Alpha.
-
- (2) asm/atomic.h
-
-     Move xchg() and cmpxchg() here as they're atomic ops.
-
- (3) asm/bug.h
-
-     Move die() and similar here.
-
- (4) asm/arch_hooks.h
-
-     Move common arch hooks here (such as default_idle()).
-
- (5) asm/elf.h
-
-     Move AT_VECTOR_SIZE_ARCH here.
-
- (6) asm/switch_to.h
-
-     Move switch_to() here.
+Delete all instances of asm/system.h as they should be redundant by this
+point.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- drivers/misc/sgi-gru/gru_instructions.h |    1 +
- fs/binfmt_elf.c                         |    1 +
- fs/binfmt_elf_fdpic.c                   |    1 +
- fs/exec.c                               |    1 +
- include/asm-generic/bitops/atomic.h     |    2 +-
- include/linux/llist.h                   |    3 +--
- include/linux/spinlock.h                |    1 +
- kernel/sched/core.c                     |    1 +
- 8 files changed, 8 insertions(+), 3 deletions(-)
+ arch/alpha/include/asm/system.h      |    5 -----
+ arch/arm/include/asm/system.h        |    9 ---------
+ arch/avr32/include/asm/system.h      |    6 ------
+ arch/blackfin/include/asm/system.h   |    5 -----
+ arch/c6x/include/asm/system.h        |    6 ------
+ arch/cris/include/asm/system.h       |    5 -----
+ arch/frv/include/asm/system.h        |    4 ----
+ arch/h8300/include/asm/system.h      |    5 -----
+ arch/hexagon/include/asm/system.h    |    5 -----
+ arch/ia64/include/asm/system.h       |    4 ----
+ arch/m32r/include/asm/system.h       |    6 ------
+ arch/m68k/include/asm/system.h       |    5 -----
+ arch/microblaze/include/asm/system.h |    6 ------
+ arch/mips/include/asm/system.h       |    5 -----
+ arch/mn10300/include/asm/system.h    |    5 -----
+ arch/openrisc/include/asm/system.h   |    5 -----
+ arch/parisc/include/asm/system.h     |    6 ------
+ arch/powerpc/include/asm/system.h    |    6 ------
+ arch/s390/include/asm/system.h       |    7 -------
+ arch/score/include/asm/system.h      |    6 ------
+ arch/sh/include/asm/system.h         |    8 --------
+ arch/sparc/include/asm/system.h      |    6 ------
+ arch/tile/include/asm/system.h       |    4 ----
+ arch/unicore32/include/asm/system.h  |    7 -------
+ arch/x86/include/asm/system.h        |    6 ------
+ arch/xtensa/include/asm/system.h     |    5 -----
+ include/asm-generic/system.h         |    5 -----
+ 27 files changed, 0 insertions(+), 152 deletions(-)
+ delete mode 100644 arch/alpha/include/asm/system.h
+ delete mode 100644 arch/arm/include/asm/system.h
+ delete mode 100644 arch/avr32/include/asm/system.h
+ delete mode 100644 arch/blackfin/include/asm/system.h
+ delete mode 100644 arch/c6x/include/asm/system.h
+ delete mode 100644 arch/cris/include/asm/system.h
+ delete mode 100644 arch/frv/include/asm/system.h
+ delete mode 100644 arch/h8300/include/asm/system.h
+ delete mode 100644 arch/hexagon/include/asm/system.h
+ delete mode 100644 arch/ia64/include/asm/system.h
+ delete mode 100644 arch/m32r/include/asm/system.h
+ delete mode 100644 arch/m68k/include/asm/system.h
+ delete mode 100644 arch/microblaze/include/asm/system.h
+ delete mode 100644 arch/mips/include/asm/system.h
+ delete mode 100644 arch/mn10300/include/asm/system.h
+ delete mode 100644 arch/openrisc/include/asm/system.h
+ delete mode 100644 arch/parisc/include/asm/system.h
+ delete mode 100644 arch/powerpc/include/asm/system.h
+ delete mode 100644 arch/s390/include/asm/system.h
+ delete mode 100644 arch/score/include/asm/system.h
+ delete mode 100644 arch/sh/include/asm/system.h
+ delete mode 100644 arch/sparc/include/asm/system.h
+ delete mode 100644 arch/tile/include/asm/system.h
+ delete mode 100644 arch/unicore32/include/asm/system.h
+ delete mode 100644 arch/x86/include/asm/system.h
+ delete mode 100644 arch/xtensa/include/asm/system.h
+ delete mode 100644 include/asm-generic/system.h
 
-diff --git a/drivers/misc/sgi-gru/gru_instructions.h b/drivers/misc/sgi-gru/gru_instructions.h
-index d95587c..04d5170 100644
---- a/drivers/misc/sgi-gru/gru_instructions.h
-+++ b/drivers/misc/sgi-gru/gru_instructions.h
-@@ -40,6 +40,7 @@ extern void gru_wait_abort_proc(void *cb);
- 			*((volatile unsigned long *)(p)) = v; /* force st.rel */	\
- 		} while (0)
- #elif defined(CONFIG_X86_64)
-+#include <asm/cacheflush.h>
- #define __flush_cache(p)		clflush(p)
- #define gru_ordered_store_ulong(p, v)					\
- 		do {							\
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 07d096c..d104261 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -35,6 +35,7 @@
- #include <asm/uaccess.h>
- #include <asm/param.h>
- #include <asm/page.h>
-+#include <asm/exec.h>
- 
- static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs);
- static int load_elf_library(struct file *);
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index 30745f4..c7f277a 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -39,6 +39,7 @@
- #include <asm/uaccess.h>
- #include <asm/param.h>
- #include <asm/pgalloc.h>
-+#include <asm/exec.h>
- 
- typedef char *elf_caddr_t;
- 
-diff --git a/fs/exec.c b/fs/exec.c
-index 153dee1..0ce48b3 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -59,6 +59,7 @@
- #include <asm/uaccess.h>
- #include <asm/mmu_context.h>
- #include <asm/tlb.h>
-+#include <asm/exec.h>
- 
- #include <trace/events/task.h>
- #include "internal.h"
-diff --git a/include/asm-generic/bitops/atomic.h b/include/asm-generic/bitops/atomic.h
-index ecc44a8..9ae6c34 100644
---- a/include/asm-generic/bitops/atomic.h
-+++ b/include/asm-generic/bitops/atomic.h
-@@ -2,7 +2,7 @@
- #define _ASM_GENERIC_BITOPS_ATOMIC_H_
- 
- #include <asm/types.h>
--#include <asm/system.h>
-+#include <linux/irqflags.h>
- 
- #ifdef CONFIG_SMP
- #include <asm/spinlock.h>
-diff --git a/include/linux/llist.h b/include/linux/llist.h
-index 801b44b..a5199f6 100644
---- a/include/linux/llist.h
-+++ b/include/linux/llist.h
-@@ -56,8 +56,7 @@
-  */
- 
- #include <linux/kernel.h>
--#include <asm/system.h>
--#include <asm/processor.h>
-+#include <asm/cmpxchg.h>
- 
- struct llist_head {
- 	struct llist_node *first;
-diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
-index 7df6c17..fa0f93e 100644
---- a/include/linux/spinlock.h
-+++ b/include/linux/spinlock.h
-@@ -55,6 +55,7 @@
- #include <linux/kernel.h>
- #include <linux/stringify.h>
- #include <linux/bottom_half.h>
-+#include <asm/barrier.h>
- 
- #include <asm/system.h>
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b342f57..fff13cb 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -72,6 +72,7 @@
- #include <linux/slab.h>
- #include <linux/init_task.h>
- 
-+#include <asm/switch_to.h>
- #include <asm/tlb.h>
- #include <asm/irq_regs.h>
- #include <asm/mutex.h>
+diff --git a/arch/alpha/include/asm/system.h b/arch/alpha/include/asm/system.h
+deleted file mode 100644
+index c7270dc..0000000
+--- a/arch/alpha/include/asm/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/exec.h>
+-#include <asm/special_insns.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/system.h
+deleted file mode 100644
+index ae2c8c2..0000000
+--- a/arch/arm/include/asm/system.h
++++ /dev/null
+@@ -1,9 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/compiler.h>
+-#include <asm/cr_reg.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+-#include <asm/system_info.h>
+-#include <asm/system_misc.h>
+diff --git a/arch/avr32/include/asm/system.h b/arch/avr32/include/asm/system.h
+deleted file mode 100644
+index 0d84f9e..0000000
+--- a/arch/avr32/include/asm/system.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/special_insns.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/blackfin/include/asm/system.h b/arch/blackfin/include/asm/system.h
+deleted file mode 100644
+index a7f4057..0000000
+--- a/arch/blackfin/include/asm/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/c6x/include/asm/system.h b/arch/c6x/include/asm/system.h
+deleted file mode 100644
+index 0d84f9e..0000000
+--- a/arch/c6x/include/asm/system.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/special_insns.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/cris/include/asm/system.h b/arch/cris/include/asm/system.h
+deleted file mode 100644
+index a7f4057..0000000
+--- a/arch/cris/include/asm/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/frv/include/asm/system.h b/arch/frv/include/asm/system.h
+deleted file mode 100644
+index 659bcdb..0000000
+--- a/arch/frv/include/asm/system.h
++++ /dev/null
+@@ -1,4 +0,0 @@
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/h8300/include/asm/system.h b/arch/h8300/include/asm/system.h
+deleted file mode 100644
+index a7f4057..0000000
+--- a/arch/h8300/include/asm/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/hexagon/include/asm/system.h b/arch/hexagon/include/asm/system.h
+deleted file mode 100644
+index a7f4057..0000000
+--- a/arch/hexagon/include/asm/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/ia64/include/asm/system.h b/arch/ia64/include/asm/system.h
+deleted file mode 100644
+index 5b190b4..0000000
+--- a/arch/ia64/include/asm/system.h
++++ /dev/null
+@@ -1,4 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/m32r/include/asm/system.h b/arch/m32r/include/asm/system.h
+deleted file mode 100644
+index a55c384..0000000
+--- a/arch/m32r/include/asm/system.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/dcache_clear.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/m68k/include/asm/system.h b/arch/m68k/include/asm/system.h
+deleted file mode 100644
+index a7f4057..0000000
+--- a/arch/m68k/include/asm/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/microblaze/include/asm/system.h b/arch/microblaze/include/asm/system.h
+deleted file mode 100644
+index 0d84f9e..0000000
+--- a/arch/microblaze/include/asm/system.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/special_insns.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/mips/include/asm/system.h b/arch/mips/include/asm/system.h
+deleted file mode 100644
+index a7f4057..0000000
+--- a/arch/mips/include/asm/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/mn10300/include/asm/system.h b/arch/mn10300/include/asm/system.h
+deleted file mode 100644
+index a7f4057..0000000
+--- a/arch/mn10300/include/asm/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/openrisc/include/asm/system.h b/arch/openrisc/include/asm/system.h
+deleted file mode 100644
+index a7f4057..0000000
+--- a/arch/openrisc/include/asm/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/parisc/include/asm/system.h b/arch/parisc/include/asm/system.h
+deleted file mode 100644
+index fc2c126..0000000
+--- a/arch/parisc/include/asm/system.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/exec.h>
+-#include <asm/ldcw.h>
+-#include <asm/special_insns.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/powerpc/include/asm/system.h b/arch/powerpc/include/asm/system.h
+deleted file mode 100644
+index 502c1e0..0000000
+--- a/arch/powerpc/include/asm/system.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/debug.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/s390/include/asm/system.h b/arch/s390/include/asm/system.h
+deleted file mode 100644
+index 641c729..0000000
+--- a/arch/s390/include/asm/system.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/ctl_reg.h>
+-#include <asm/exec.h>
+-#include <asm/facility.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/score/include/asm/system.h b/arch/score/include/asm/system.h
+deleted file mode 100644
+index 0d84f9e..0000000
+--- a/arch/score/include/asm/system.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/special_insns.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/sh/include/asm/system.h b/arch/sh/include/asm/system.h
+deleted file mode 100644
+index 04268aa..0000000
+--- a/arch/sh/include/asm/system.h
++++ /dev/null
+@@ -1,8 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/bl_bit.h>
+-#include <asm/cache_insns.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+-#include <asm/traps.h>
+diff --git a/arch/sparc/include/asm/system.h b/arch/sparc/include/asm/system.h
+deleted file mode 100644
+index ed532ba..0000000
+--- a/arch/sparc/include/asm/system.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cpu_type.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/tile/include/asm/system.h b/arch/tile/include/asm/system.h
+deleted file mode 100644
+index 5b190b4..0000000
+--- a/arch/tile/include/asm/system.h
++++ /dev/null
+@@ -1,4 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/unicore32/include/asm/system.h b/arch/unicore32/include/asm/system.h
+deleted file mode 100644
+index cfc1498..0000000
+--- a/arch/unicore32/include/asm/system.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/cr.h>
+-#include <asm/exec.h>
+-#include <asm/setup.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
+deleted file mode 100644
+index 0d84f9e..0000000
+--- a/arch/x86/include/asm/system.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/special_insns.h>
+-#include <asm/switch_to.h>
+diff --git a/arch/xtensa/include/asm/system.h b/arch/xtensa/include/asm/system.h
+deleted file mode 100644
+index a7f4057..0000000
+--- a/arch/xtensa/include/asm/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
+diff --git a/include/asm-generic/system.h b/include/asm-generic/system.h
+deleted file mode 100644
+index a7f4057..0000000
+--- a/include/asm-generic/system.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
+-#include <asm/barrier.h>
+-#include <asm/cmpxchg.h>
+-#include <asm/exec.h>
+-#include <asm/switch_to.h>
 
