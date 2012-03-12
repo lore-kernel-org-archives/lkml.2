@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab2CLIVk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 04:21:40 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39445 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab2CLIVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 04:21:31 -0400
-From: Yang Bai <hamo.by@gmail.com>
-To: mmarek@suse.cz, rostedt@goodmis.org, sboyd@codeaurora.org,
-        hamo.by@gmail.com, adobriyan@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] scripts: refactor remove structure forward declarations
-Date: Mon, 12 Mar 2012 16:20:51 +0800
-Message-Id: <1331540451-2380-1-git-send-email-hamo.by@gmail.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S1754821Ab2CLIWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 04:22:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41073 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753236Ab2CLIWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 04:22:30 -0400
+Date: Mon, 12 Mar 2012 09:22:20 +0100
+From: Jan Kara <jack@suse.cz>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jaya Kumar <jayalk@intworks.biz>, Sage Weil <sage@newdream.net>,
+        ceph-devel@vger.kernel.org, Eric Van Hensbergen <ericvh@gmail.com>,
+        Ron Minnich <rminnich@sandia.gov>, Latchesar Ionkov <lucho@ionkov.net>,
+        v9fs-developer@lists.sourceforge.net,
+        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 0/7 v3] Push file_update_time() into .page_mkwrite
+Message-ID: <20120312082220.GA5998@quack.suse.cz>
+References: <1330959258-23211-1-git-send-email-jack@suse.cz>
+ <1331497397.4641.87.camel@fourier>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331497397.4641.87.camel@fourier>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since now it has some problems when generate TAGS,
-refactor this code. Now it will not show the error
-message and will remove declarations using emacs etags.
+On Sun 11-03-12 13:23:17, Kamal Mostafa wrote:
+> On Mon, 2012-03-05 at 15:54 +0100, Jan Kara wrote:
+> > Hello,
+> > 
+> >   to provide reliable support for filesystem freezing, filesystems need to have
+> > complete control over when metadata is changed.  [...]
+> 
+> This patch set has been tested at Canonical along with the testing for
+> "[PATCH 00/19] Fix filesystem freezing deadlocks".
+> 
+> Please add the following endorsements for these patches (those actually
+> exercised by our test case):  1, 2, 6, 7
+> 
+> Tested-by: Kamal Mostafa <kamal@canonical.com>
+> Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+> Tested-by: Dann Frazier <dann.frazier@canonical.com>
+> Tested-by: Massimo Morana <massimo.morana@canonical.com>
+  Thanks for testing guys!
 
-Signed-off-by: Yang Bai <hamo.by@gmail.com>
----
- scripts/tags.sh |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 833813a..2b377fc 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -166,9 +166,6 @@ exuberant()
- 	all_defconfigs | xargs -r $1 -a                         \
- 	--langdef=dotconfig --language-force=dotconfig          \
- 	--regex-dotconfig='/^#?[[:blank:]]*(CONFIG_[[:alnum:]_]+)/\1/'
--
--	# Remove structure forward declarations.
--	LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' tags
- }
- 
- emacs()
-@@ -233,6 +230,7 @@ if [ "${ARCH}" = "um" ]; then
- 	fi
- fi
- 
-+remove_structs=
- case "$1" in
- 	"cscope")
- 		docscope
-@@ -245,10 +243,17 @@ case "$1" in
- 	"tags")
- 		rm -f tags
- 		xtags ctags
-+		remove_structs=y
- 		;;
- 
- 	"TAGS")
- 		rm -f TAGS
- 		xtags etags
-+		remove_structs=y
- 		;;
- esac
-+
-+# Remove structure forward declarations.
-+if [ -n $remove_structs ]; then
-+    LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' $1
-+fi
+								Honza
 -- 
-1.7.9.1
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
