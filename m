@@ -1,85 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab2CLK0I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 06:26:08 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749Ab2CLK0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 06:26:06 -0400
-Message-ID: <4F5DCF39.8080308@nod.at>
-Date: Mon, 12 Mar 2012 11:26:01 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+	id S1752591Ab2CLK2c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 06:28:32 -0400
+Received: from stats.peacock.arvixe.com ([174.122.104.67]:55623 "EHLO
+	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751853Ab2CLK2a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 06:28:30 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=firszt.eu;
+	h=Message-ID:In-Reply-To:References:Date:Subject:From:To:Cc:Reply-To:User-Agent:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Priority:Importance;
+	b=TmH05IVxf2TEycwBqUfxKEwXwt/+laL5MSGC7BYGeAmcJTTJXyUH0zwlxOHOdcSlSLjapVK+/6VBzIucGmHidegOycCvJQBwEn8CfMlvpYU7X1AfS2pD5wgGFZFrJIaj;
+Message-ID: <5949dcded77a16e0b804c4b5231a3c49.squirrel@webmail.firszt.eu>
+In-Reply-To: <CAGzDe_Y=vcKrdqSpwudSwWJKPU4hnSboDA3j81gOY7BZnBax2w@mail.gmail.com>
+References: <1331324862-15989-1-git-send-email-przemo@firszt.eu>
+    <CAGzDe_Y=vcKrdqSpwudSwWJKPU4hnSboDA3j81gOY7BZnBax2w@mail.gmail.com>
+Date: Mon, 12 Mar 2012 10:28:13 -0000
+Subject: Re: [PATCH] HID: wacom: Add reporting of wheel for Intuos4 WL
+From: "Przemo Firszt" <przemo@firszt.eu>
+To: "Chris Bagwell" <chris@cnpbagwell.com>
+Cc: "Przemo Firszt" <przemo@firszt.eu>, killertofu@gmail.com,
+        pinglinux@gmail.com, jkosina@suse.cz,
+        linuxwacom-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Reply-To: przemo@firszt.eu
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        gregkh@linuxfoundation.org, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: TTY: tty_port questions
-References: <4F5BD51B.7030907@nod.at> <4F5BDB09.3020407@suse.cz> <4F5BE1E6.9000201@nod.at> <4F5C861F.2000507@nod.at>
-In-Reply-To: <4F5C861F.2000507@nod.at>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=iso-8859-2
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - peacock.arvixe.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.03.2012 12:01, Richard Weinberger wrote:
-> Am 11.03.2012 00:21, schrieb Richard Weinberger:
->> Am 10.03.2012 23:51, schrieb Jiri Slaby:
->>> On 03/10/2012 11:26 PM, Richard Weinberger wrote:
->>>> Hi!
->>>
->>>> While moving UML's console driver to tty_port some strange things
->>>> happened. So, I have a few questions. :-)
->>>
->>>> The original driver did not implement tty_operations->hangup(). If
->>>> I implement it and call tty_port_hangup(), as Alan suggested, the
->>>> login fails on all TTYs except tty0. It fails because the opened
->>>> TTY returns EIO upon read()/write() after /bin/login called
->>>> vhangup().
->>>
->>>> The call chain is: vhangup() ->  tty_vhangup_self() ->  tty_vhangup()
->>>> ->  __tty_hangup()
->>>
->>>> Within __tty_hangup() something happens that I don't fully
->>>> understand:
->>>
->>>> if (cons_filp) { if (tty->ops->close) for (n = 0; n<  closecount;
->>>> n++) tty->ops->close(tty, cons_filp); } else if (tty->ops->hangup)
->>>> (tty->ops->hangup)(tty);
->>>
->>>> Login on tty0 works because cons_filp is not NULL and
->>>> tty->ops->close() is called. On the other hand login fails on every
->>>> other TTY because cons_filp remains NULL and the TTY hangs up.
->>>
->>>> Is there something missing in my hangup function?
->>>
->>>> If I omit tty_operations->hangup() and leave it, like the old
->>>> driver, NULL non-tty0 TTYs cannot be opened. (getty terminates
->>>> immediately because it cannot open any TTY.) open() retuns -EIO
->>>> because the TTY_CLOSING is set in tty->flags.
->>>
->>>> How can this be?
->>>
->>> Hmm, it looks like some process is sitting on a TTY which was hung.
->>> And the system offers this hung TTY to others on further opens. Could
->>> you check that there is no process with open TTY after the vhangup?
->>>
+
+Dnia 9 Marca 2012, 10:40 pm, Pt, Chris Bagwell napisa³(a):
+> On Fri, Mar 9, 2012 at 2:27 PM, Przemo Firszt <przemo@firszt.eu> wrote:
+>> This patch adds reporting of ABS_WHEEL event. Raported walues are 0..71
+>> and are related to absolute location of the finger on the wheel.
 >>
->> "lsof | grep tty" does not show anything else than tty0. :-\
+>> Signed-off-by: Przemo Firszt <przemo@firszt.eu>
+>> Reviewed-by: Jason Gerecke <killertofu@gmail.com>
+>> ---
+>>  drivers/hid/hid-wacom.c |   25 +++++++++++++++++++++++++
+>>  1 files changed, 25 insertions(+), 0 deletions(-)
 >>
+>> diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+>> index 5c25036..dab7588 100644
+>> --- a/drivers/hid/hid-wacom.c
+>> +++ b/drivers/hid/hid-wacom.c
+>> @@ -36,6 +36,7 @@
+>>  struct wacom_data {
+>>        __u16 tool;
+>>        __u16 butstate;
+>> +       __u8 whlstate;
+>>        __u8 features;
+>>        __u32 id;
+>>        __u32 serial;
+>> @@ -322,6 +323,23 @@ static void wacom_i4_parse_button_report(struct
+>> wacom_data *wdata,
+>>                        struct input_dev *input, unsigned char *data)
+>>  {
+>>        __u16 new_butstate;
+>> +       __u8 new_whlstate;
+>> +       __u8 sync = 0;
+>> +
+>> +       new_whlstate = data[1];
+>> +       if (new_whlstate != wdata->whlstate) {
+>> +               wdata->whlstate = new_whlstate;
+>> +               if (new_whlstate & 0x80) {
+>> +                       input_report_key(input, BTN_TOUCH, 1);
+>> +                       input_report_abs(input, ABS_WHEEL, (new_whlstate
+>> & 0x7f));
+>> +                       input_report_key(input, BTN_TOOL_FINGER, 1);
+>> +               } else {
+>> +                       input_report_key(input, BTN_TOUCH, 0);
+>> +                       input_report_abs(input, ABS_WHEEL, 0);
+>> +                       input_report_key(input, BTN_TOOL_FINGER, 0);
+>> +               }
+>> +               sync = 1;
+>> +       }
+>>
+>>        new_butstate = (data[3] << 1) | (data[2] & 0x01);
+>>        if (new_butstate != wdata->butstate) {
+>> @@ -336,6 +354,10 @@ static void wacom_i4_parse_button_report(struct
+>> wacom_data *wdata,
+>>                input_report_key(input, BTN_7, new_butstate & 0x080);
+>>                input_report_key(input, BTN_8, new_butstate & 0x100);
+>>                input_report_key(input, BTN_TOOL_FINGER, 1);
+>> +               sync = 1;
+>> +       }
+>> +
+>> +       if (sync) {
+>>                input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
+>>                input_event(input, EV_MSC, MSC_SERIAL, 0xffffffff);
+>>                input_sync(input);
+>> @@ -512,6 +534,9 @@ static int wacom_input_mapped(struct hid_device
+>> *hdev, struct hid_input *hi,
+>>                input_set_abs_params(input, ABS_DISTANCE, 0, 32, 0, 0);
+>>                break;
+>>        case USB_DEVICE_ID_WACOM_INTUOS4_BLUETOOTH:
+>> +               __set_bit(ABS_WHEEL, input->absbit);
+>> +               input_set_abs_params(input, ABS_WHEEL, 0, 71, 0, 0);
+>> +               input_set_capability(input, EV_MSC, MSC_SERIAL);
 >
-> BTW: When I start the kernel with /bin/sh as init, opening and writing to any TTY works fine.
-> It looks like Fedora 16's userspace does something that makes the TTYs unhappy.
+> Is this input_set_capability MSC_SERIAL line to fix the next line
+> thats above case statement?
 >
-> Thanks,
-> //richard
+>          __set_bit(MSC_SERIAL, input->mscbit);
+>
+> Should the original line be deleted/replaced?
+Chris,
+Thanks - good catch!
+I no longer have the graphire tablet to test is it's safe to set "evbit" 
+to "EV_MSC". That's the difference between "__set_bit(MSC_SERIAL,
+input->mscbit);" and "input_set_capability(input, EV_MSC, MSC_SERIAL);" if
+I read the code correctly. I'm OK to move "input_set_capability(input,
+EV_MSC, MSC_SERIAL);" before the case statement, if someone can test that
+it doesn't brak pad buttons on graphire tablet.
 
-Another question, what is the purpose of tty_port->console?
-It seems to have no user.
+-- 
+Regards,
+Przemo Firszt
 
-Is tty_port really the right thing for a console driver like in the UML 
-case?
-
-Thanks,
-//richard
