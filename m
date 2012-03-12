@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab2CLT25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:28:57 -0400
-Received: from smtp27.mail.ru ([94.100.176.180]:45794 "EHLO smtp27.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755891Ab2CLT24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:28:56 -0400
-Date: Mon, 12 Mar 2012 23:30:21 +0400
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: Stephen Warren <swarren@wwwdotorg.org>, Olof Johansson <olof@lixom.net>
-Cc: linux-tegra@vger.kernel.org, Andi <andi.shyti@gmail.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 2/2] arm/tegra: add timeout to PCIe PLL lock detection
- loop
-Message-ID: <20120312193020.GA1584@rainbow>
-References: <20120306201538.GA14350@rainbow>
- <1331287760-10546-1-git-send-email-mad_soft@inbox.ru>
- <4F5E3BE7.4080207@wwwdotorg.org>
+	id S1756761Ab2CLT3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:29:10 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:51093 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755891Ab2CLT3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 15:29:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=utzjTBrt21Iupkyi+/8J9QslfzKnEqOS
+	BHjQp+rsue5gc3p16fDpEWyQ9BhDe8tY4zhh0pbMV+j+rI7DXKgmPmA8AotCokkM
+	t1oOZSegeHLxdDTZ1KJz0vqjWT53iJS3Y1sVOaEMTLxFhKW5IOeWSOdMLqxWUNNP
+	hUBP4tqZ1TU=
+From: Junio C Hamano <gitster@pobox.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Greg KH <greg@kroah.com>, Jonathan Nieder <jrnieder@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, git@vger.kernel.org,
+        Thomas Rast <trast@student.ethz.ch>
+Subject: Re: stripping [PATCH] without losing later tags from mailed patches
+ (Re: [ 02/12] Remove COMPAT_IA32 support)
+References: <20120312002046.041448832@1wt.eu>
+ <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com>
+ <20120312063027.GB8971@1wt.eu> <20120312064855.GB16820@burratino>
+ <20120312085820.GA11569@1wt.eu> <20120312152004.GB9380@kroah.com>
+ <7vfwddu60f.fsf@alter.siamese.dyndns.org> <20120312164812.GC12405@1wt.eu>
+ <7v4nttu2gf.fsf@alter.siamese.dyndns.org> <20120312184549.GG12405@1wt.eu>
+Date: Mon, 12 Mar 2012 12:29:02 -0700
+In-Reply-To: <20120312184549.GG12405@1wt.eu> (Willy Tarreau's message of
+ "Mon, 12 Mar 2012 19:45:49 +0100")
+Message-ID: <7vboo1sjnl.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F5E3BE7.4080207@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam: Not detected
-X-Mras: Ok
+X-Pobox-Relay-ID: A0DD4DAC-6C79-11E1-A2AE-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12:09 Mon 12 Mar     , Stephen Warren wrote:
-> Thierry pointed out that one of NVIDIA's downstream kernels uses a
-> timeout of 300 here, rather than 2000 above. Do you see a specific need
-> for this timeout for be 2000 rather than 300? It might be nice to be
-> consistent.
-No, there's no specific need for it to be 2000 - it may as well be 300.
-I just wanted to stay on the safe side, but I think 300 should be still
-more than enough time for PLL to lock.
+Willy Tarreau <w@1wt.eu> writes:
 
-> 
-> Olof, I notice you've already applied V1 of this, which has the return
-> statement issue. Can you replace it with this, or should Dmitry send an
-> incremental patch?
+> Rest assured that I don't feel comfortable on 1.7.9 either, that's a big
+> jump for me but I know that most often it works quite well :-)
 
-Yes, V1 breaks more things than it fixes, so it would be nice if
-it can be replaced with fixed version (I hope it's not too late yet).
-BTW, regarding timeout discussion above - should I resend patch with
-adjusted timeout, or can you change it while applying? (of course,
-if we settle on incremental patch, I'll roll this change in)
+It being a big jump is not a problem I can solve, as it is up to you
+to deliberately stay behind until you decide to make a big jump.
 
--- 
-Best regards,
-Dmitry "MAD" Artamonow
-
+I can indirectly solve it by not backporting as many fixes to the
+maintenance tracks, but I am too nice to be playing that nasty ;-).
