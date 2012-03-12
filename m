@@ -1,153 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2CLHfE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 03:35:04 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:34475 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab2CLHe7 (ORCPT
+	id S1752720Ab2CLHnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 03:43:37 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59368 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab2CLHnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 03:34:59 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6646"; a="169261568"
-Message-ID: <4F5DA722.3090806@codeaurora.org>
-Date: Mon, 12 Mar 2012 00:34:58 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Mon, 12 Mar 2012 03:43:31 -0400
+X-AuditID: 9c93016f-b7c68ae000000b77-f0-4f5da920d9e0
+Message-ID: <4F5DA91F.7060908@lge.com>
+Date: Mon, 12 Mar 2012 16:43:27 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Yang Bai <hamo.by@gmail.com>
-CC: mmarek@suse.cz, rostedt@goodmis.org, adobriyan@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Makefile: fix error when gen TAGS
-References: <1331524397-19783-1-git-send-email-hamo.by@gmail.com> <4F5D9BCF.3030302@codeaurora.org> <CAO_0yfPR3cvrpuOS68pYJFSHFQdfu0C=PzAA5iRu01otQTNaNg@mail.gmail.com>
-In-Reply-To: <CAO_0yfPR3cvrpuOS68pYJFSHFQdfu0C=PzAA5iRu01otQTNaNg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Newsgroups: gmane.linux.kernel,gmane.linux.kernel.perf.user
+To: Arun Sharma <asharma@fb.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH 0/2] perf: add sort by inclusive time functionality (v2)
+References: <1331160079-13821-1-git-send-email-asharma@fb.com>
+In-Reply-To: <1331160079-13821-1-git-send-email-asharma@fb.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/12/2012 12:06 AM, Yang Bai wrote:
-> On Mon, Mar 12, 2012 at 2:46 PM, Stephen Boyd<sboyd@codeaurora.org>  wrote:
->>
->> What does ctags --version print out for you? I'm not aware of exuberant tags
->> outputting files called TAGS (although etags would do that and then this
->> patch wouldn't make sense).
-> hamo@trinity ~ $ ctags --version
-> Exuberant Ctags 5.9~svn20110310, Copyright (C) 1996-2009 Darren Hiebert
->    Compiled: Nov  9 2011, 03:17:31
->    Addresses:<dhiebert@users.sourceforge.net>, http://ctags.sourceforge.net
->    Optional compiled features: +wildcards, +regex
+Hi,
+
+2012-03-08 7:41 AM, Arun Sharma wrote:
+> This patch series refactors existing code a bit and adds sort by
+> inclusive time (time spent in the function + callees).
 >
-> hamo@trinity ~ $ etags --version
-> Exuberant Ctags 5.9~svn20110310, Copyright (C) 1996-2009 Darren Hiebert
->    Compiled: Nov  9 2011, 03:17:31
->    Addresses:<dhiebert@users.sourceforge.net>, http://ctags.sourceforge.net
->    Optional compiled features: +wildcards, +regex
+> Sample command lines:
 >
-> hamo@trinity ~ $ ls -l /usr/bin/etags
-> lrwxrwxrwx 1 root root 23 Feb  8 17:48 /usr/bin/etags ->  /etc/alternatives/etags
-> hamo@trinity ~ $ ls -l /etc/alternatives/etags
-> lrwxrwxrwx 1 root root 24 Feb 15 10:06 /etc/alternatives/etags ->
-> /usr/bin/ctags-exuberant
+> # perf record -ag -- sleep 1
+> # perf report -g graph,0.5,callee -n -s inclusive
 >
-> So I think which kind of name Exuberant Ctags generates depends on argv[0].
+> Known bugs:
+>
+> total_period computation is broken for order=callee
 >
 
-Ah ok. How about this patch instead? Then we don't duplicate the sed 
-statement.
+I'd like to add two more :).
 
----->8-------
-
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 833813a..b390096 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -168,7 +168,7 @@ exuberant()
-         --regex-dotconfig='/^#?[[:blank:]]*(CONFIG_[[:alnum:]_]+)/\1/'
-
-         # Remove structure forward declarations.
--       LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' tags
-+       LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' $2
-  }
-
-  emacs()
-@@ -213,9 +213,9 @@ emacs()
-  xtags()
-  {
-         if $1 --version 2>&1 | grep -iq exuberant; then
--               exuberant $1
-+               exuberant $1 $2
-         elif $1 --version 2>&1 | grep -iq emacs; then
--               emacs $1
-+               emacs $1 $2
-         else
-                 all_sources | xargs $1 -a
-          fi
-@@ -244,11 +244,11 @@ case "$1" in
-
-         "tags")
-                 rm -f tags
--               xtags ctags
-+               xtags ctags $1
-                 ;;
-
-         "TAGS")
-                 rm -f TAGS
--               xtags etags
-+               xtags etags $1
-                 ;;
-  esac
+* If perf record misses callchain info, perf report will get stuck.
+* If it's used with "symbol" sort order, it'll get stuck too.
 
 
-But then with your next patch maybe it would be better to just have a flag?
+BTW, I don't like the name 'inclusive' as a sort key. If it cares about time, 
+IMHO, the name should contain 'time' - something like 'itime' or 'inctime'?
 
-----8<-----
+Furthermore, I don't think it is a sort key. As it doesn't sort anything,  and 
+only affects the way calculating symbol's period value, wouldn't it be better 
+making it a separate switch rather than a sort key? Plus, checking whether it 
+has callchain data and symbol sort key might be added also.
 
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 833813a..4b1755d 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -166,9 +166,6 @@ exuberant()
-         all_defconfigs | xargs -r $1 -a                         \
-         --langdef=dotconfig --language-force=dotconfig          \
-         --regex-dotconfig='/^#?[[:blank:]]*(CONFIG_[[:alnum:]_]+)/\1/'
--
--       # Remove structure forward declarations.
--       LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' tags
-  }
-
-  emacs()
-@@ -233,6 +230,7 @@ if [ "${ARCH}" = "um" ]; then
-         fi
-  fi
-
-+remove_structs=
-  case "$1" in
-         "cscope")
-                 docscope
-@@ -244,11 +242,18 @@ case "$1" in
-
-         "tags")
-                 rm -f tags
--               xtags ctags
-+               xtags ctags $1
-+               remove_structs=y
-                 ;;
-
-         "TAGS")
-                 rm -f TAGS
--               xtags etags
-+               xtags etags $1
-+               remove_structs=y
-                 ;;
-  esac
-+
-+# Remove structure forward declarations.
-+if [ -n $remove_structs ]; then
-+       LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' $1
-+fi
-
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Thanks,
+Namhyung
