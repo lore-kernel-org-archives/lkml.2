@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab2CLVPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 17:15:06 -0400
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:51410 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756661Ab2CLVPC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 17:15:02 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 4/4 v2] ARM: u300: configure some pins as an example
-Date: Mon, 12 Mar 2012 22:14:40 +0100
-Message-ID: <1331586880-15690-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.8
+	id S1757358Ab2CLV0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 17:26:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40128 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755176Ab2CLV0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 17:26:47 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [GIT PULL] Renesas SoC updates for v3.4
+Date: Mon, 12 Mar 2012 22:30:56 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Rob Herring <robherring2@gmail.com>
+References: <201203092155.04731.rjw@sisk.pl> <201203092252.48110.rjw@sisk.pl> <20120312011359.GB9503@linux-sh.org>
+In-Reply-To: <20120312011359.GB9503@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203122230.56595.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Monday, March 12, 2012, Paul Mundt wrote:
+> On Fri, Mar 09, 2012 at 10:52:47PM +0100, Rafael J. Wysocki wrote:
+> > On Friday, March 09, 2012, Arnd Bergmann wrote:
+> > > On Friday 09 March 2012, Rafael J. Wysocki wrote:
+> > > > Please pull Renesas SoC updates for v3.4 since commit
+> > > > ce8fea7aa4ad9e3b40999a08622ef27c77159659:
+> > > > 
+> > > >     mmap: EINVAL not ENOMEM when rejecting VM_GROWS
+> > > > 
+> > > > with top-most commit f57fd2100e8273af3a9d2ff67714903d2dfd1eef
+> > > 
+> > > Hi Rafael,
+> > > 
+> > > Please rebase this on an -rc release, otherwise we get a rather
+> > > messy history in the arm-soc tree.
+> > 
+> > Well, OK, I can rebase it on -rc7 if there is one, unless Paul
+> > has already pulled from clk_ops-rename.  Paul?
+> > 
+> Nope, I haven't had a chance yet. Feel free to rebase as necessary and
+> I'll grab them afterwards.
 
-To show how the pin configuration is used on the U300, let's
-include some configs for two GPIO pins.
+Thanks, I've just rebased clk_ops-rename on top of -rc7.
 
-ChangeLog v1->v2:
-- Provide a better example, set the clock return pin to pull-up
-  and set the card detect pin to high impedance.
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/mach-u300/core.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-index f326d31..a7b3f36 100644
---- a/arch/arm/mach-u300/core.c
-+++ b/arch/arm/mach-u300/core.c
-@@ -27,6 +27,7 @@
- #include <linux/mtd/fsmc.h>
- #include <linux/pinctrl/machine.h>
- #include <linux/pinctrl/consumer.h>
-+#include <linux/pinctrl/pinconf-generic.h>
- #include <linux/dma-mapping.h>
- 
- #include <asm/types.h>
-@@ -1605,7 +1606,15 @@ static struct platform_device dma_device = {
- 	},
- };
- 
--/* Pinmux settings */
-+static unsigned long pin_pullup_conf[] = {
-+	PIN_CONF_PACKED(PIN_CONFIG_BIAS_PULL_UP, 1),
-+};
-+
-+static unsigned long pin_highz_conf[] = {
-+	PIN_CONF_PACKED(PIN_CONFIG_BIAS_HIGH_IMPEDANCE, 0),
-+};
-+
-+/* Pin control settings */
- static struct pinctrl_map __initdata u300_pinmux_map[] = {
- 	/* anonymous maps for chip power and EMIFs */
- 	PIN_MAP_MUX_GROUP_HOG_DEFAULT("pinctrl-u300", NULL, "power"),
-@@ -1615,6 +1624,12 @@ static struct pinctrl_map __initdata u300_pinmux_map[] = {
- 	PIN_MAP_MUX_GROUP_DEFAULT("mmci",  "pinctrl-u300", NULL, "mmc0"),
- 	PIN_MAP_MUX_GROUP_DEFAULT("pl022", "pinctrl-u300", NULL, "spi0"),
- 	PIN_MAP_MUX_GROUP_DEFAULT("uart0", "pinctrl-u300", NULL, "uart0"),
-+	/* This pin is used for clock return rather than GPIO */
-+	PIN_MAP_CONFIGS_PIN_DEFAULT("mmci", "pinctrl-u300", "PIO APP GPIO 11",
-+				    pin_pullup_conf),
-+	/* This pin is used for card detect */
-+	PIN_MAP_CONFIGS_PIN_DEFAULT("mmci", "pinctrl-u300", "PIO MS INS",
-+				    pin_highz_conf),
- };
- 
- struct u300_mux_hog {
-@@ -1640,7 +1655,6 @@ static int __init u300_pinctrl_fetch(void)
- 
- 	for (i = 0; i < ARRAY_SIZE(u300_mux_hogs); i++) {
- 		struct pinctrl *p;
--		int ret;
- 
- 		p = pinctrl_get_select_default(u300_mux_hogs[i].dev);
- 		if (IS_ERR(p)) {
--- 
-1.7.8
-
+Rafael
