@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965093Ab2CLXlz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:41:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14455 "EHLO mx1.redhat.com"
+	id S1030230Ab2CLXmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:42:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7765 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964896Ab2CLXlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:41:51 -0400
+	id S964963Ab2CLXlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 19:41:53 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 32/35] Move all declarations of free_initmem() to linux/mm.h
- [ver #2]
+Subject: [PATCH 33/35] Disintegrate asm/system.h on all arches [ver #2]
 To: paul.gortmaker@windriver.com, hpa@zytor.com
 Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, arnd@arndb.de,
-        David Howells <dhowells@redhat.com>, linux-c6x-dev@linux-c6x.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
-        sparclinux@vger.kernel.org, x86@kernel.org, linux-mm@kvack.org
-Date: Mon, 12 Mar 2012 23:41:33 +0000
-Message-ID: <20120312234133.13888.21207.stgit@warthog.procyon.org.uk>
+        David Howells <dhowells@redhat.com>
+Date: Mon, 12 Mar 2012 23:41:44 +0000
+Message-ID: <20120312234144.13888.3323.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -31,114 +28,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move all declarations of free_initmem() to linux/mm.h so that there's only one
-and it's used by everything.
+asm/system.h is a cause of circular dependency problems because it contains
+commonly used primitive stuff like barrier definitions and uncommonly used
+stuff like switch_to() that might require MMU definitions.
+
+Disintegrate asm/system.h on all arches into the following common segments:
+
+ (1) asm/barrier.h
+
+     Memory barrier stuff - already done for MIPS and Alpha.
+
+ (2) asm/atomic.h
+
+     Move xchg() and cmpxchg() here as they're atomic ops.
+
+ (3) asm/bug.h
+
+     Move die() and similar here.
+
+ (4) asm/arch_hooks.h
+
+     Move common arch hooks here (such as default_idle()).
+
+ (5) asm/elf.h
+
+     Move AT_VECTOR_SIZE_ARCH here.
+
+ (6) asm/switch_to.h
+
+     Move switch_to() here.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: linux-c6x-dev@linux-c6x.org
-cc: microblaze-uclinux@itee.uq.edu.au
-cc: linux-sh@vger.kernel.org
-cc: sparclinux@vger.kernel.org
-cc: x86@kernel.org
-cc: linux-mm@kvack.org
 ---
 
- arch/c6x/include/asm/system.h        |    1 -
- arch/frv/include/asm/system.h        |    2 --
- arch/microblaze/include/asm/system.h |    1 -
- arch/sh/include/asm/system.h         |    1 -
- arch/sparc/mm/init_64.h              |    2 --
- arch/x86/include/asm/page_types.h    |    1 -
- include/linux/mm.h                   |    2 ++
- init/main.c                          |    1 -
- 8 files changed, 2 insertions(+), 9 deletions(-)
+ drivers/misc/sgi-gru/gru_instructions.h |    1 +
+ fs/binfmt_elf.c                         |    1 +
+ fs/binfmt_elf_fdpic.c                   |    1 +
+ fs/exec.c                               |    1 +
+ include/asm-generic/bitops/atomic.h     |    2 +-
+ include/linux/llist.h                   |    3 +--
+ include/linux/spinlock.h                |    1 +
+ kernel/sched/core.c                     |    1 +
+ 8 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/arch/c6x/include/asm/system.h b/arch/c6x/include/asm/system.h
-index ccc4f86..0d84f9e 100644
---- a/arch/c6x/include/asm/system.h
-+++ b/arch/c6x/include/asm/system.h
-@@ -4,4 +4,3 @@
- #include <asm/exec.h>
- #include <asm/special_insns.h>
- #include <asm/switch_to.h>
--extern void free_initmem(void);
-diff --git a/arch/frv/include/asm/system.h b/arch/frv/include/asm/system.h
-index 5c707a2..659bcdb 100644
---- a/arch/frv/include/asm/system.h
-+++ b/arch/frv/include/asm/system.h
-@@ -1,6 +1,4 @@
--/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
- #include <asm/barrier.h>
- #include <asm/cmpxchg.h>
- #include <asm/exec.h>
- #include <asm/switch_to.h>
--extern void free_initmem(void);
-diff --git a/arch/microblaze/include/asm/system.h b/arch/microblaze/include/asm/system.h
-index ccc4f86..0d84f9e 100644
---- a/arch/microblaze/include/asm/system.h
-+++ b/arch/microblaze/include/asm/system.h
-@@ -4,4 +4,3 @@
- #include <asm/exec.h>
- #include <asm/special_insns.h>
- #include <asm/switch_to.h>
--extern void free_initmem(void);
-diff --git a/arch/sh/include/asm/system.h b/arch/sh/include/asm/system.h
-index e2042aa..04268aa 100644
---- a/arch/sh/include/asm/system.h
-+++ b/arch/sh/include/asm/system.h
-@@ -6,4 +6,3 @@
- #include <asm/exec.h>
- #include <asm/switch_to.h>
- #include <asm/traps.h>
--void free_initmem(void);
-diff --git a/arch/sparc/mm/init_64.h b/arch/sparc/mm/init_64.h
-index 77d1b31..3e1ac8b 100644
---- a/arch/sparc/mm/init_64.h
-+++ b/arch/sparc/mm/init_64.h
-@@ -36,8 +36,6 @@ extern unsigned long kern_locked_tte_data;
+diff --git a/drivers/misc/sgi-gru/gru_instructions.h b/drivers/misc/sgi-gru/gru_instructions.h
+index d95587c..04d5170 100644
+--- a/drivers/misc/sgi-gru/gru_instructions.h
++++ b/drivers/misc/sgi-gru/gru_instructions.h
+@@ -40,6 +40,7 @@ extern void gru_wait_abort_proc(void *cb);
+ 			*((volatile unsigned long *)(p)) = v; /* force st.rel */	\
+ 		} while (0)
+ #elif defined(CONFIG_X86_64)
++#include <asm/cacheflush.h>
+ #define __flush_cache(p)		clflush(p)
+ #define gru_ordered_store_ulong(p, v)					\
+ 		do {							\
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 07d096c..d104261 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -35,6 +35,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/param.h>
+ #include <asm/page.h>
++#include <asm/exec.h>
  
- extern void prom_world(int enter);
+ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs);
+ static int load_elf_library(struct file *);
+diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
+index 30745f4..c7f277a 100644
+--- a/fs/binfmt_elf_fdpic.c
++++ b/fs/binfmt_elf_fdpic.c
+@@ -39,6 +39,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/param.h>
+ #include <asm/pgalloc.h>
++#include <asm/exec.h>
  
--extern void free_initmem(void);
--
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
- #define VMEMMAP_CHUNK_SHIFT	22
- #define VMEMMAP_CHUNK		(1UL << VMEMMAP_CHUNK_SHIFT)
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index bce688d..e21fdd1 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -55,7 +55,6 @@ extern unsigned long init_memory_mapping(unsigned long start,
- 					 unsigned long end);
+ typedef char *elf_caddr_t;
  
- extern void initmem_init(void);
--extern void free_initmem(void);
+diff --git a/fs/exec.c b/fs/exec.c
+index 153dee1..0ce48b3 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -59,6 +59,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+ #include <asm/tlb.h>
++#include <asm/exec.h>
  
- #endif	/* !__ASSEMBLY__ */
+ #include <trace/events/task.h>
+ #include "internal.h"
+diff --git a/include/asm-generic/bitops/atomic.h b/include/asm-generic/bitops/atomic.h
+index ecc44a8..9ae6c34 100644
+--- a/include/asm-generic/bitops/atomic.h
++++ b/include/asm-generic/bitops/atomic.h
+@@ -2,7 +2,7 @@
+ #define _ASM_GENERIC_BITOPS_ATOMIC_H_
  
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 17b27cd..5fcaeaa 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1253,6 +1253,8 @@ static inline void pgtable_page_dtor(struct page *page)
- extern void free_area_init(unsigned long * zones_size);
- extern void free_area_init_node(int nid, unsigned long * zones_size,
- 		unsigned long zone_start_pfn, unsigned long *zholes_size);
-+extern void free_initmem(void);
-+
- #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
- /*
-  * With CONFIG_HAVE_MEMBLOCK_NODE_MAP set, an architecture may initialise its
-diff --git a/init/main.c b/init/main.c
-index ff49a6d..de41307 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -87,7 +87,6 @@ extern void mca_init(void);
- extern void sbus_init(void);
- extern void prio_tree_init(void);
- extern void radix_tree_init(void);
--extern void free_initmem(void);
- #ifndef CONFIG_DEBUG_RODATA
- static inline void mark_rodata_ro(void) { }
- #endif
+ #include <asm/types.h>
+-#include <asm/system.h>
++#include <linux/irqflags.h>
+ 
+ #ifdef CONFIG_SMP
+ #include <asm/spinlock.h>
+diff --git a/include/linux/llist.h b/include/linux/llist.h
+index 801b44b..a5199f6 100644
+--- a/include/linux/llist.h
++++ b/include/linux/llist.h
+@@ -56,8 +56,7 @@
+  */
+ 
+ #include <linux/kernel.h>
+-#include <asm/system.h>
+-#include <asm/processor.h>
++#include <asm/cmpxchg.h>
+ 
+ struct llist_head {
+ 	struct llist_node *first;
+diff --git a/include/linux/spinlock.h b/include/linux/spinlock.h
+index 7df6c17..fa0f93e 100644
+--- a/include/linux/spinlock.h
++++ b/include/linux/spinlock.h
+@@ -55,6 +55,7 @@
+ #include <linux/kernel.h>
+ #include <linux/stringify.h>
+ #include <linux/bottom_half.h>
++#include <asm/barrier.h>
+ 
+ #include <asm/system.h>
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b342f57..fff13cb 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -72,6 +72,7 @@
+ #include <linux/slab.h>
+ #include <linux/init_task.h>
+ 
++#include <asm/switch_to.h>
+ #include <asm/tlb.h>
+ #include <asm/irq_regs.h>
+ #include <asm/mutex.h>
 
