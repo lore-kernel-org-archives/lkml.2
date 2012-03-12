@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab2CLMDV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 08:03:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56118 "EHLO mx2.suse.de"
+	id S1754838Ab2CLMFV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 08:05:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54638 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754463Ab2CLMDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 08:03:20 -0400
-Date: Mon, 12 Mar 2012 13:03:15 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Andreas Hartmann <andihartmann@01019freenet.de>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
-Subject: Re: Corrupted files after suspend to disk
-In-Reply-To: <4F574113.8030906@01019freenet.de>
-Message-ID: <alpine.LRH.2.00.1203121300590.4911@twin.jikos.cz>
-References: <201202162251.47063.rjw@sisk.pl> <Pine.LNX.4.44L0.1202161722310.1150-100000@iolanthe.rowland.org> <CAFLxGvwWBWTmv+uUH87UB3Ly31hjVU5kWpSyihGDKj6_8oc6WA@mail.gmail.com> <201202170016.14313.rjw@sisk.pl> <jj5qhh$5j5$1@ID-44327.news.uni-berlin.de>
- <jj684d$6ng$1@ID-44327.news.uni-berlin.de> <CAFLxGvwazkbisZ0Ax==-Yyv2h5mYtnK-S2bOegZHX5g+rB2krQ@mail.gmail.com> <4F574113.8030906@01019freenet.de>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752723Ab2CLMFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 08:05:19 -0400
+Message-ID: <4F5DE679.2050003@redhat.com>
+Date: Mon, 12 Mar 2012 14:05:13 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4 changelog-v2] KVM: Switch to srcu-less get_dirty_log()
+References: <20120301193316.96682d60.yoshikawa.takuya@oss.ntt.co.jp> <20120303142148.2689454b30dc86d84c4a19f5@gmail.com> <20120306111540.GA29914@amt.cnet> <20120306234317.2817d2071038d11ab3831c82@gmail.com> <20120306150104.GA3041@amt.cnet> <20120307002317.d8682de9c6ccd6af8ccac467@gmail.com> <20120306152850.GB3353@amt.cnet> <20120307170745.3147f776.yoshikawa.takuya@oss.ntt.co.jp> <20120307232520.GB29570@amt.cnet> <20120308103545.24b81093.yoshikawa.takuya@oss.ntt.co.jp> <20120309000835.GA25838@amt.cnet>
+In-Reply-To: <20120309000835.GA25838@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Mar 2012, Andreas Hartmann wrote:
+On 03/09/2012 02:08 AM, Marcelo Tosatti wrote:
+> > So, it would be helpful if you can apply the patch series and I can work
+> > on top of that: although I cannot use servers with 100GB memory now,
+> > migrating a guest with 16GB memory or so may be possible later: I need
+> > to reserve servers for that.
+>
+> Makes sense.
 
-> > On my system kernel suspend *seems* to work.
-> > I've seen no corrupted files so far.
-> > 
-> > But sometimes the resume is failing. (One out of 5 resumes fails).
-> > I was unable to get any kernel output.
-> > 
-> > So I'm not sure whether this is the same issue
-> > or another one. :-\
-> 
-> I'm pretty sure that this is the same issue. What you are telling
-> correlates with my research here.
-> I even got resumes where the machine came up again, but nothing could be
-> done (it wasn't possible to switch of the password secured screen saver
-> any more - login at the shell wasn't possible, too, because the started
-> bash crashed), 
+To me too.
 
-This is happening to me as well. Something like 1 resume out of 5 goes 
-wrong this very same way. 
+> It looks good to me, Avi can you review & ack please?
 
-This is thinkpad x200s.
-
-All the userspace is segfaulting all over the place (most frequently in 
-libselinux for some reason).
-
-I am not able to verify the 'drop_caches' theory, as I can't invoke a 
-single command that wouldn't crash.
+Patchset is fine from my point of view, I think it's a great improvement.
 
 -- 
-Jiri Kosina
-SUSE Labs
+error compiling committee.c: too many arguments to function
 
