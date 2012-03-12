@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab2CLKcd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 06:32:33 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:59073 "EHLO
+	id S1753281Ab2CLKdB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 06:33:01 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:7462 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752614Ab2CLKcb (ORCPT
+	with ESMTP id S1752782Ab2CLKc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 06:32:31 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6646"; a="169288245"
+	Mon, 12 Mar 2012 06:32:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6646"; a="169288288"
 From: Ravi Kumar V <kumarrav@codeaurora.org>
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <dan.j.williams@intel.com>,
@@ -17,46 +17,836 @@ Cc: Dan Williams <dan.j.williams@intel.com>,
         Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         gregkh@linuxfoundation.org, Ravi Kumar V <kumarrav@codeaurora.org>
-Subject: [PATCH v3 1/2] dmaengine: Add support for per xfer specific privatedata
-Date: Mon, 12 Mar 2012 16:02:16 +0530
-Message-Id: <1331548336-27802-1-git-send-email-kumarrav@codeaurora.org>
+Subject: [PATCH v3 2/2] DMAEngine: Add DMAEngine driver based on old MSM DMA APIs
+Date: Mon, 12 Mar 2012 16:02:44 +0530
+Message-Id: <1331548364-27845-1-git-send-email-kumarrav@codeaurora.org>
 X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new argument to DMA SG and Interleave mode for passing
-per transfer specific private data, using this it enables the
-dma devices which needs to pass the parameters which changes per
-each transfer.
+Add DMAEngine based driver using the old MSM DMA APIs internally.
+The benefit of this approach is that not all the drivers
+have to get converted to DMAEngine APIs simultaneosly while
+both the drivers can stay enabled in the kernel. The client
+drivers using the old MSM APIs directly can now convert to
+DMAEngine one by one.
 
 Signed-off-by: Ravi Kumar V <kumarrav@codeaurora.org>
 ---
- include/linux/dmaengine.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-msm/include/mach/dma.h |   30 ++
+ drivers/dma/Kconfig                  |   12 +
+ drivers/dma/Makefile                 |    1 +
+ drivers/dma/msm-dma.c                |  724 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 767 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/dma/msm-dma.c
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 679b349..b8f0495 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -570,7 +570,7 @@ struct dma_device {
- 		struct dma_chan *chan,
- 		struct scatterlist *dst_sg, unsigned int dst_nents,
- 		struct scatterlist *src_sg, unsigned int src_nents,
--		unsigned long flags);
-+		unsigned long flags, void *context);
+diff --git a/arch/arm/mach-msm/include/mach/dma.h b/arch/arm/mach-msm/include/mach/dma.h
+index 05583f5..5a432c5 100644
+--- a/arch/arm/mach-msm/include/mach/dma.h
++++ b/arch/arm/mach-msm/include/mach/dma.h
+@@ -18,6 +18,36 @@
+ #include <linux/list.h>
+ #include <mach/msm_iomap.h>
  
- 	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
- 		struct dma_chan *chan, struct scatterlist *sgl,
-@@ -581,7 +581,7 @@ struct dma_device {
- 		size_t period_len, enum dma_transfer_direction direction);
- 	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
- 		struct dma_chan *chan, struct dma_interleaved_template *xt,
--		unsigned long flags);
-+		unsigned long flags, void *context);
- 	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 		unsigned long arg);
++#define sg_dma_offset(sg)               ((sg)->offset)
++#define box_dma_row_address(box)        ((box)->dma_row_address)
++#define box_dma_row_len(box)            ((box)->dma_row_len)
++#define box_dma_row_num(box)            ((box)->dma_row_num)
++#define box_dma_row_offset(box)         ((box)->dma_row_offset)
++
++#define MSM_DMA_CMD_MASK		0x9FFF8
++#define MSM_DMA_CMD_SHIFT		0
++#define MSM_BOX_SRC_RLEN_MASK		0xFFFF
++#define MSM_BOX_SRC_RLEN_SHIFT		16
++#define MSM_BOX_SRC_RNUM_MASK		0xFFFF
++#define MSM_BOX_SRC_RNUM_SHIFT		16
++#define MSM_BOX_SRC_ROFFSET_MASK	0xFFFF
++#define MSM_BOX_SRC_ROFFSET_SHIFT	16
++#define MSM_BOX_DST_RLEN_MASK		0xFFFF
++#define MSM_BOX_DST_RNUM_MASK		0xFFFF
++#define MSM_BOX_DST_ROFFSET_MASK	0xFFFF
++#define MSM_BOX_MODE_CMD		0x3
++
++enum adm_flush_type {
++	ADM_FORCED_FLUSH,
++	ADM_GRACEFUL_FLUSH,
++};
++
++enum adm_dma_type {
++	ADM_SINGLE_MODE,
++	ADM_SG_MODE,
++	ADM_BOX_MODE,
++};
++
+ struct msm_dmov_errdata {
+ 	uint32_t flush[6];
+ };
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index f1a2749..85d16a8 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -252,6 +252,18 @@ config EP93XX_DMA
+ 	help
+ 	  Enable support for the Cirrus Logic EP93xx M2P/M2M DMA controller.
  
++config MSM_DMA
++	tristate "Qualcomm MSM DMA support"
++	depends on ARCH_MSM
++	select DMA_ENGINE
++	help
++	  Support the Qualcomm DMA engine. This engine is integrated into
++	  Qualcomm chips.
++
++	  Say Y here if you have such a chipset.
++
++	  If unsure, say N.
++
+ config DMA_ENGINE
+ 	bool
+ 
+diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
+index 009a222..55026d1 100644
+--- a/drivers/dma/Makefile
++++ b/drivers/dma/Makefile
+@@ -19,6 +19,7 @@ obj-$(CONFIG_COH901318) += coh901318.o coh901318_lli.o
+ obj-$(CONFIG_AMCC_PPC440SPE_ADMA) += ppc4xx/
+ obj-$(CONFIG_IMX_SDMA) += imx-sdma.o
+ obj-$(CONFIG_IMX_DMA) += imx-dma.o
++obj-$(CONFIG_MSM_DMA) += msm-dma.o
+ obj-$(CONFIG_MXS_DMA) += mxs-dma.o
+ obj-$(CONFIG_TIMB_DMA) += timb_dma.o
+ obj-$(CONFIG_SIRF_DMA) += sirf-dma.o
+diff --git a/drivers/dma/msm-dma.c b/drivers/dma/msm-dma.c
+new file mode 100644
+index 0000000..0b47c0f
+--- /dev/null
++++ b/drivers/dma/msm-dma.c
+@@ -0,0 +1,724 @@
++/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/spinlock.h>
++#include <linux/dmapool.h>
++#include <linux/dmaengine.h>
++#include <linux/dma-mapping.h>
++
++#include <mach/dma.h>
++
++#define SD3_CHAN_START			0
++#define MSM_DMOV_CRCI_COUNT		16
++#define MSM_DMA_MAX_CHANS_PER_DEVICE	16
++#define MAX_TRANSFER_LENGTH		65535
++#define NO_ERR_CHAN_STATUS		0x80000002
++#define to_msm_chan(chan) container_of(chan, struct msm_dma_chan, channel)
++
++struct msm_dma_chan {
++	int chan_id;
++	dma_cookie_t completed_cookie;
++	dma_cookie_t error_cookie;
++	spinlock_t lock;
++	struct list_head active_list;
++	struct list_head pending_list;
++	struct dma_chan channel;
++	struct dma_pool *desc_pool;
++	struct device *dev;
++	int max_len;
++	int err;
++	struct tasklet_struct tasklet;
++};
++
++struct msm_dma_device {
++	void __iomem *base;
++	struct device *dev;
++	struct dma_device common;
++	struct msm_dma_chan *chan[MSM_DMA_MAX_CHANS_PER_DEVICE];
++};
++
++struct msm_dma_desc_hw {
++	unsigned int cmd_list_ptr;
++} __aligned(8);
++
++/* Single Item Mode */
++struct adm_cmd_t {
++	unsigned int cmd_cntrl;
++	unsigned int src;
++	unsigned int dst;
++	unsigned int len;
++};
++
++struct adm_box_cmd_t {
++	uint32_t cmd_cntrl;
++	uint32_t src_row_addr;
++	uint32_t dst_row_addr;
++	uint32_t src_dst_len;
++	uint32_t num_rows;
++	uint32_t row_offset;
++};
++
++struct msm_dma_desc_sw {
++	struct msm_dma_desc_hw hw;
++	struct adm_cmd_t *vaddr_cmd;
++	struct adm_box_cmd_t *vaddr_box_cmd;
++	size_t coherent_size;
++	dma_addr_t paddr_cmd_list;
++	struct list_head node;
++	struct msm_dmov_cmd dmov_cmd;
++	struct dma_async_tx_descriptor async_tx;
++} __aligned(8);
++
++static int msm_dma_alloc_chan_resources(struct dma_chan *dchan)
++{
++	struct msm_dma_chan *chan = to_msm_chan(dchan);
++
++	/* Has this channel already been allocated? */
++	if (chan->desc_pool)
++		return 1;
++
++	/*
++	 * We need the descriptor to be aligned to 8bytes
++	 * for meeting ADM specification requirement.
++	 */
++	chan->desc_pool = dma_pool_create("msm_dma_desc_pool",
++					chan->dev,
++					sizeof(struct msm_dma_desc_sw),
++				__alignof__(struct msm_dma_desc_sw), 0);
++	if (!chan->desc_pool) {
++		dev_err(chan->dev, "unable to allocate channel %d "
++				"descriptor pool\n", chan->chan_id);
++		return -ENOMEM;
++	}
++
++	chan->completed_cookie = 1;
++	dchan->cookie = 1;
++
++	/* there is at least one descriptor free to be allocated */
++	return 1;
++}
++
++static void msm_dma_free_desc_list(struct msm_dma_chan *chan,
++						struct list_head *list)
++{
++	struct msm_dma_desc_sw *desc, *_desc;
++
++	list_for_each_entry_safe(desc, _desc, list, node) {
++		list_del(&desc->node);
++		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
++	}
++}
++
++static void msm_dma_free_chan_resources(struct dma_chan *dchan)
++{
++	struct msm_dma_chan *chan = to_msm_chan(dchan);
++	unsigned long flags;
++
++	dev_dbg(chan->dev, "Free all channel resources.\n");
++	spin_lock_irqsave(&chan->lock, flags);
++	msm_dma_free_desc_list(chan, &chan->active_list);
++	msm_dma_free_desc_list(chan, &chan->pending_list);
++	spin_unlock_irqrestore(&chan->lock, flags);
++
++	dma_pool_destroy(chan->desc_pool);
++	chan->desc_pool = NULL;
++}
++
++static enum dma_status msm_dma_desc_status(struct msm_dma_chan *chan,
++					struct msm_dma_desc_sw *desc)
++{
++	return dma_async_is_complete(desc->async_tx.cookie,
++					chan->completed_cookie,
++					chan->channel.cookie);
++}
++
++static void msm_chan_desc_cleanup(struct msm_dma_chan *chan)
++{
++	struct msm_dma_desc_sw *desc, *_desc;
++	unsigned long flags;
++
++	dev_dbg(chan->dev, "Cleaning completed descriptor of channel %d\n",
++							chan->chan_id);
++	spin_lock_irqsave(&chan->lock, flags);
++
++	list_for_each_entry_safe(desc, _desc, &chan->active_list, node) {
++		dma_async_tx_callback callback;
++		void *callback_param;
++
++		if (msm_dma_desc_status(chan, desc) == DMA_IN_PROGRESS)
++			break;
++
++		/* Remove from the list of running transactions */
++		list_del(&desc->node);
++
++		/* Run the link descriptor callback function */
++		callback = desc->async_tx.callback;
++		callback_param = desc->async_tx.callback_param;
++		if (callback) {
++			spin_unlock_irqrestore(&chan->lock, flags);
++			callback(callback_param);
++			spin_lock_irqsave(&chan->lock, flags);
++		}
++
++		/* Run any dependencies, then free the descriptor */
++		dma_run_dependencies(&desc->async_tx);
++		spin_unlock_irqrestore(&chan->lock, flags);
++
++		if (desc->vaddr_cmd) {
++			dma_free_coherent(chan->dev, desc->coherent_size,
++						(void *)desc->vaddr_cmd,
++							desc->paddr_cmd_list);
++		} else {
++			dma_free_coherent(chan->dev, desc->coherent_size,
++						(void *)desc->vaddr_box_cmd,
++							desc->paddr_cmd_list);
++		}
++		spin_lock_irqsave(&chan->lock, flags);
++		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
++	}
++
++	spin_unlock_irqrestore(&chan->lock, flags);
++}
++
++static void dma_do_tasklet(unsigned long data)
++{
++	struct msm_dma_chan *chan = (struct msm_dma_chan *)data;
++	msm_chan_desc_cleanup(chan);
++}
++
++static void
++msm_dma_complete_func(struct msm_dmov_cmd *cmd,
++				unsigned int result,
++				struct msm_dmov_errdata *err)
++{
++	unsigned long flags;
++	struct msm_dma_desc_sw *desch = container_of(cmd,
++				struct msm_dma_desc_sw, dmov_cmd);
++	struct msm_dma_chan *chan = to_msm_chan(desch->async_tx.chan);
++
++	spin_lock_irqsave(&chan->lock, flags);
++
++	if ((result != NO_ERR_CHAN_STATUS) && err)
++		chan->error_cookie = desch->async_tx.cookie;
++	chan->completed_cookie = desch->async_tx.cookie;
++
++	tasklet_schedule(&chan->tasklet);
++
++	spin_unlock_irqrestore(&chan->lock, flags);
++}
++
++/*
++ *  Passes transfer descriptors to DMA hardware.
++ */
++static void msm_dma_issue_pending(struct dma_chan *dchan)
++{
++	struct msm_dma_chan *chan = to_msm_chan(dchan);
++	struct msm_dma_desc_sw *desch;
++	unsigned long flags;
++
++	if (chan->err)
++		return;
++
++	spin_lock_irqsave(&chan->lock, flags);
++
++	if (list_empty(&chan->pending_list))
++		goto out_unlock;
++
++	desch = list_first_entry(&chan->pending_list, struct msm_dma_desc_sw,
++									node);
++	list_del(&desch->node);
++	desch->dmov_cmd.complete_func = msm_dma_complete_func;
++	desch->dmov_cmd.execute_func = NULL;
++	desch->dmov_cmd.cmdptr = DMOV_CMD_ADDR(desch->async_tx.phys);
++	list_add_tail(&desch->node, &chan->active_list);
++	mb();
++	msm_dmov_enqueue_cmd(chan->chan_id, &desch->dmov_cmd);
++out_unlock:
++	spin_unlock_irqrestore(&chan->lock, flags);
++}
++
++/*
++ *  Assignes cookie for each transfer descriptor passed.
++ *  Returns
++ *	Assigend cookie for success.
++ *	Error value for failure.
++ */
++static dma_cookie_t msm_dma_tx_submit(struct dma_async_tx_descriptor *tx)
++{
++	struct msm_dma_chan *chan = to_msm_chan(tx->chan);
++	struct msm_dma_desc_sw *desc = container_of(tx,
++	struct msm_dma_desc_sw, async_tx);
++	unsigned long flags;
++	dma_cookie_t cookie = -EBUSY;
++
++	if (chan->err)
++		return cookie;
++
++	spin_lock_irqsave(&chan->lock, flags);
++
++	/*
++	 * assign cookies to all of the software descriptors
++	 * that make up this transaction
++	 */
++	cookie = chan->channel.cookie;
++	cookie++;
++	if (cookie < 0)
++		cookie = DMA_MIN_COOKIE;
++
++	desc->async_tx.cookie = cookie;
++	chan->channel.cookie = cookie;
++
++	/* put this transaction onto the tail of the pending queue */
++	list_add_tail(&desc->node, &chan->pending_list);
++
++	spin_unlock_irqrestore(&chan->lock, flags);
++
++	return cookie;
++}
++
++/*
++ *  Returns the DMA transfer status of a particular cookie
++ */
++static enum dma_status msm_tx_status(struct dma_chan *dchan,
++					dma_cookie_t cookie,
++				struct dma_tx_state *txstate)
++{
++	struct msm_dma_chan *chan = to_msm_chan(dchan);
++	dma_cookie_t last_used;
++	dma_cookie_t last_complete;
++	enum dma_status status;
++
++	last_used = dchan->cookie;
++	last_complete = chan->completed_cookie;
++
++	dma_set_tx_state(txstate, last_complete, last_used, 0);
++
++	status = dma_async_is_complete(cookie, last_complete, last_used);
++
++	if (status != DMA_IN_PROGRESS)
++		if (chan->error_cookie == cookie)
++			status = DMA_ERROR;
++
++	return status;
++}
++
++static struct msm_dma_desc_sw *msm_dma_alloc_descriptor(
++				struct msm_dma_chan *chan,
++				int cmd_cnt,
++				enum adm_dma_type mask)
++{
++	struct msm_dma_desc_sw *desc;
++	dma_addr_t pdesc_addr;
++	dma_addr_t paddr_cmd_list;
++	void *err = NULL;
++
++	desc = dma_pool_alloc(chan->desc_pool, GFP_ATOMIC, &pdesc_addr);
++	if (!desc) {
++		dev_dbg(chan->dev, "out of memory for desc\n");
++		return ERR_CAST(desc);
++	}
++
++	memset(desc, 0, sizeof(*desc));
++	desc->async_tx.phys = pdesc_addr;
++
++	if (mask == ADM_BOX_MODE) {
++		desc->coherent_size = sizeof(struct adm_box_cmd_t);
++		desc->vaddr_box_cmd = dma_alloc_coherent(chan->dev,
++				sizeof(struct adm_box_cmd_t),
++				&paddr_cmd_list, GFP_ATOMIC);
++		if (!desc->vaddr_box_cmd) {
++			dev_dbg(chan->dev, "out of memory for desc\n");
++			err = desc->vaddr_box_cmd;
++			goto fail;
++		}
++	} else {
++		desc->coherent_size = sizeof(struct adm_cmd_t)*cmd_cnt;
++
++		desc->vaddr_cmd = dma_alloc_coherent(chan->dev,
++				sizeof(struct adm_cmd_t)*cmd_cnt,
++				&paddr_cmd_list, GFP_ATOMIC);
++
++		if (!desc->vaddr_cmd) {
++			dev_dbg(chan->dev, "out of memory for desc\n");
++			err = desc->vaddr_cmd;
++			goto fail;
++		}
++	}
++
++	dma_async_tx_descriptor_init(&desc->async_tx, &chan->channel);
++	desc->async_tx.tx_submit = msm_dma_tx_submit;
++	desc->paddr_cmd_list = paddr_cmd_list;
++	desc->hw.cmd_list_ptr = (paddr_cmd_list >> 3) | CMD_PTR_LP;
++	return desc;
++fail:
++	dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
++	return ERR_CAST(err);
++}
++
++/*
++ *  Prepares the transfer descriptors for SG transaction.
++ *  Returns
++ *	address of dma_async_tx_descriptor for success.
++ *	Pointer of error value for failure.
++ */
++static struct dma_async_tx_descriptor *msm_dma_prep_sg(
++		struct dma_chan *dchan,
++		struct scatterlist *dst_sg, unsigned int dst_nents,
++		struct scatterlist *src_sg, unsigned int src_nents,
++		unsigned long flags, void *context)
++{
++
++	struct msm_dma_chan *chan;
++	struct msm_dma_desc_sw *new;
++	size_t copy, len;
++	int cmd_cnt = 0;
++	int first = 0;
++	int i;
++	dma_addr_t src;
++	dma_addr_t dst;
++	struct adm_cmd_t *cmdlist_vaddr;
++	struct scatterlist *sg;
++	u32 *cmd_cntrl = context;
++
++	if (!dchan)
++		return ERR_PTR(-EINVAL);
++
++	if (dst_nents == 0 || src_nents == 0)
++		return ERR_PTR(-EINVAL);
++	if (!dst_sg || !src_sg)
++		return ERR_PTR(-EINVAL);
++
++	if (dst_nents != src_nents)
++		return ERR_PTR(-EINVAL);
++
++	chan = to_msm_chan(dchan);
++
++	cmd_cnt = src_nents;
++	for (i = 0; i < src_nents; i++) {
++		len = sg_dma_len(src_sg + i);
++		if (len != MAX_TRANSFER_LENGTH)
++			cmd_cnt += len/MAX_TRANSFER_LENGTH;
++	}
++
++	new = msm_dma_alloc_descriptor(chan, cmd_cnt, ADM_SG_MODE);
++
++	if (!new) {
++		dev_err(chan->dev,
++			"No free memory for link descriptor\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	cmdlist_vaddr = new->vaddr_cmd;
++
++	for_each_sg(src_sg, sg, src_nents, i) {
++		len = sg_dma_len(sg);
++		src = sg_dma_address(sg);
++		do {
++			copy = (len >= MAX_TRANSFER_LENGTH) ?
++						MAX_TRANSFER_LENGTH : len;
++			cmdlist_vaddr->src = src;
++			cmdlist_vaddr->len = copy;
++			cmdlist_vaddr->cmd_cntrl = *(cmd_cntrl + i) &
++							MSM_DMA_CMD_MASK;
++			if (first == 0) {
++				if (cmd_cnt == 1)
++					cmdlist_vaddr->cmd_cntrl |= CMD_LC;
++				else
++					cmdlist_vaddr->cmd_cntrl |= CMD_OCB;
++				first = 1;
++			}
++			cmdlist_vaddr++;
++			len -= copy;
++			src += copy;
++		} while (len);
++	}
++	if (cmd_cnt > 1) {
++		cmdlist_vaddr--;
++		cmdlist_vaddr->cmd_cntrl |= CMD_LC | CMD_OCU;
++	}
++
++	cmdlist_vaddr = new->vaddr_cmd;
++
++	for_each_sg(dst_sg, sg, src_nents, i) {
++		len = sg_dma_len(sg);
++		dst = sg_dma_address(sg);
++		do {
++			copy = (len >= MAX_TRANSFER_LENGTH) ?
++					MAX_TRANSFER_LENGTH : len;
++			cmdlist_vaddr->dst = dst;
++			cmdlist_vaddr++;
++			len -= copy;
++			dst += copy;
++		} while (len);
++
++	}
++
++#ifdef DEBUG
++	cmdlist_vaddr = new->vaddr_cmd;
++	i = 0;
++	do {
++		dev_dbg(chan->dev, "cmd %d src 0x%x dst 0x%x len 0x%x "
++						"cntrl 0x%x\n",
++				i, cmdlist_vaddr->src, cmdlist_vaddr->dst,
++				cmdlist_vaddr->len, cmdlist_vaddr->cmd_cntrl);
++			cmdlist_vaddr++;
++	} while (!((cmdlist_vaddr-1)->cmd_cntrl & CMD_LC));
++#endif
++	new->async_tx.flags = flags;
++	new->async_tx.cookie = -EBUSY;
++
++	return &new->async_tx;
++}
++
++struct dma_async_tx_descriptor *msm_dma_prep_interleaved(struct dma_chan *dchan,
++					struct dma_interleaved_template *xt,
++					unsigned long flags, void *context)
++{
++
++	struct msm_dma_chan *chan;
++	struct msm_dma_desc_sw *new;
++	struct adm_box_cmd_t *box_cmd_vaddr;
++	u32 *cmd_cntrl = context;
++
++	if (!dchan)
++		return ERR_PTR(-EINVAL);
++
++	if (!xt)
++		return ERR_PTR(-EINVAL);
++
++	chan = to_msm_chan(dchan);
++
++	new = msm_dma_alloc_descriptor(chan, 1, ADM_BOX_MODE);
++
++	if (!new) {
++		dev_err(chan->dev,
++			"No free memory for link descriptor\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	box_cmd_vaddr = new->vaddr_box_cmd;
++
++
++	box_cmd_vaddr->src_row_addr = xt->src_start;
++	box_cmd_vaddr->dst_row_addr = xt->dst_start;
++	box_cmd_vaddr->src_dst_len =
++			((xt->sgl[0].size & MSM_BOX_SRC_RLEN_MASK) <<
++					MSM_BOX_SRC_RLEN_SHIFT) |
++				(xt->sgl[0].size & MSM_BOX_DST_RLEN_MASK);
++
++	box_cmd_vaddr->cmd_cntrl = (cmd_cntrl[0] & MSM_DMA_CMD_MASK) |
++						MSM_BOX_MODE_CMD | CMD_LC;
++
++	box_cmd_vaddr->num_rows =
++			((xt->numf & MSM_BOX_SRC_RNUM_MASK) <<
++			MSM_BOX_SRC_RNUM_SHIFT) |
++			(xt->numf & MSM_BOX_DST_RNUM_MASK);
++
++	if ((xt->src_sgl) && (xt->src_inc))
++		box_cmd_vaddr->row_offset =
++				((xt->sgl[0].size + xt->sgl[0].icg) &
++				MSM_BOX_SRC_ROFFSET_MASK) <<
++				MSM_BOX_SRC_ROFFSET_SHIFT;
++	else if ((!xt->src_sgl) && (xt->src_inc))
++		box_cmd_vaddr->row_offset = ((xt->sgl[0].size) &
++				MSM_BOX_SRC_ROFFSET_MASK) <<
++				MSM_BOX_SRC_ROFFSET_SHIFT;
++	else
++		box_cmd_vaddr->row_offset =
++			(0 & MSM_BOX_SRC_ROFFSET_MASK) <<
++			MSM_BOX_SRC_ROFFSET_SHIFT;
++
++
++	if ((xt->dst_sgl) && (xt->dst_inc))
++		box_cmd_vaddr->row_offset |=
++			((xt->sgl[0].size + xt->sgl[0].icg) &
++			MSM_BOX_DST_ROFFSET_MASK);
++	else if ((!xt->dst_sgl) && (xt->dst_inc))
++		box_cmd_vaddr->row_offset |= ((xt->sgl[0].size) &
++					MSM_BOX_DST_ROFFSET_MASK);
++	else
++		box_cmd_vaddr->row_offset |= (0 & MSM_BOX_DST_ROFFSET_MASK);
++
++	new->async_tx.flags = flags;
++	new->async_tx.cookie = -EBUSY;
++
++	return &new->async_tx;
++}
++
++/*
++ *  Controlling the hardware channel like stopping, flushing.
++ */
++static int msm_dma_chan_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
++							unsigned long arg)
++{
++	enum adm_flush_type cmd_type = arg;
++
++	if (cmd == DMA_TERMINATE_ALL) {
++		switch (cmd_type) {
++		case ADM_GRACEFUL_FLUSH:
++				msm_dmov_stop_cmd(chan->chan_id, NULL, 1);
++			break;
++		case ADM_FORCED_FLUSH:
++			/*
++			 * We treate default as forced flush
++			 * so we fall through
++			 */
++		default:
++				msm_dmov_stop_cmd(chan->chan_id, NULL, 0);
++			break;
++		}
++	}
++	return 0;
++}
++
++static void msm_dma_chan_remove(struct msm_dma_chan *chan)
++{
++	tasklet_kill(&chan->tasklet);
++	list_del(&chan->channel.device_node);
++	kfree(chan);
++}
++
++static __devinit int msm_dma_chan_probe(struct msm_dma_device *qdev,
++					int channel)
++{
++	struct msm_dma_chan *chan;
++
++	chan = kzalloc(sizeof(*chan), GFP_KERNEL);
++	if (!chan) {
++		dev_err(qdev->dev, "no free memory for DMA channels!\n");
++		return -ENOMEM;
++	}
++
++	spin_lock_init(&chan->lock);
++	INIT_LIST_HEAD(&chan->pending_list);
++	INIT_LIST_HEAD(&chan->active_list);
++
++	chan->chan_id = channel;
++	chan->completed_cookie = 0;
++	chan->channel.cookie = 0;
++	chan->max_len = MAX_TRANSFER_LENGTH;
++	chan->err = 0;
++	qdev->chan[channel] = chan;
++	chan->channel.device = &qdev->common;
++	chan->dev = qdev->dev;
++
++	tasklet_init(&chan->tasklet, dma_do_tasklet, (unsigned long)chan);
++
++	list_add_tail(&chan->channel.device_node, &qdev->common.channels);
++	qdev->common.chancnt++;
++
++	return 0;
++}
++
++static int __devinit msm_dma_probe(struct platform_device *pdev)
++{
++	struct msm_dma_device *qdev;
++	int i;
++	int ret = 0;
++
++	qdev = kzalloc(sizeof(*qdev), GFP_KERNEL);
++	if (!qdev) {
++		dev_err(&pdev->dev, "Not enough memory for device\n");
++		return -ENOMEM;
++	}
++
++	qdev->dev = &pdev->dev;
++	INIT_LIST_HEAD(&qdev->common.channels);
++	qdev->common.device_alloc_chan_resources =
++				msm_dma_alloc_chan_resources;
++	qdev->common.device_free_chan_resources =
++				msm_dma_free_chan_resources;
++	dma_cap_set(DMA_SG, qdev->common.cap_mask);
++	dma_cap_set(DMA_INTERLEAVE, qdev->common.cap_mask);
++
++	qdev->common.device_prep_dma_sg = msm_dma_prep_sg;
++	qdev->common.device_prep_interleaved_dma = msm_dma_prep_interleaved;
++	qdev->common.device_issue_pending = msm_dma_issue_pending;
++	qdev->common.dev = &pdev->dev;
++	qdev->common.device_tx_status = msm_tx_status;
++	qdev->common.device_control = msm_dma_chan_control;
++
++	for (i = SD3_CHAN_START; i < MSM_DMA_MAX_CHANS_PER_DEVICE; i++) {
++		ret = msm_dma_chan_probe(qdev, i);
++		if (ret) {
++			dev_err(&pdev->dev, "channel %d probe failed\n", i);
++			goto chan_free;
++		}
++	}
++
++	dev_info(&pdev->dev, "registering dma device\n");
++
++	ret = dma_async_device_register(&qdev->common);
++
++	if (ret) {
++		dev_err(&pdev->dev, "Registering Dma device failed\n");
++		goto chan_free;
++	}
++
++	dev_set_drvdata(&pdev->dev, qdev);
++	return 0;
++chan_free:
++	for (i = SD3_CHAN_START; i < MSM_DMA_MAX_CHANS_PER_DEVICE; i++) {
++		if (qdev->chan[i])
++			msm_dma_chan_remove(qdev->chan[i]);
++	}
++	kfree(qdev);
++	return ret;
++}
++
++static int  __devexit msm_dma_remove(struct platform_device *pdev)
++{
++	struct msm_dma_device *qdev = platform_get_drvdata(pdev);
++	int i;
++
++	dma_async_device_unregister(&qdev->common);
++
++	for (i = SD3_CHAN_START; i < MSM_DMA_MAX_CHANS_PER_DEVICE; i++) {
++		if (qdev->chan[i])
++			msm_dma_chan_remove(qdev->chan[i]);
++	}
++
++	dev_set_drvdata(&pdev->dev, NULL);
++	kfree(qdev);
++
++	return 0;
++}
++
++static struct platform_driver msm_dma_driver = {
++	.remove = __devexit_p(msm_dma_remove),
++	.driver = {
++		.name = "msm_dma",
++		.owner = THIS_MODULE,
++	},
++};
++
++static __init int msm_dma_init(void)
++{
++	return platform_driver_probe(&msm_dma_driver, msm_dma_probe);
++}
++subsys_initcall(msm_dma_init);
++
++static void __exit msm_dma_exit(void)
++{
++	platform_driver_unregister(&msm_dma_driver);
++}
++module_exit(msm_dma_exit);
++
++MODULE_DESCRIPTION("Qualcomm DMA driver");
++MODULE_LICENSE("GPL v2");
 -- 
 Sent by a consultant of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
