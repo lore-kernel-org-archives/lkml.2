@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965058Ab2CLXo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:44:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18792 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964858Ab2CLXjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:39:08 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 17/35] Make asm-generic/cmpxchg.h #include
- asm-generic/cmpxchg-local.h [ver #2]
-To: paul.gortmaker@windriver.com, hpa@zytor.com
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, arnd@arndb.de,
-        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>
-Date: Mon, 12 Mar 2012 23:38:58 +0000
-Message-ID: <20120312233858.13888.34822.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
-References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S965020Ab2CLXpa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:45:30 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:49050 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932258Ab2CLXp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 19:45:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
+	J4XS3P0UW5OLS63d5M0ltZ/NYlnJloEV7vtGD15eu5ZXcHY7zW+56M82vexTmlQy
+	jaAC4jhPFZTv1/4lgrFqJHTMlHjmjQLGldy0pBMAXQiZhVBTHJV0fPF8UAJ0Bpzd
+	72khD1xGX1E2hlkIxXcPzwsRxr/liM1aDj9G7J8LCm0=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.9.4
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 12 Mar 2012 16:45:21 -0700
+Message-ID: <7vvcm9mlim.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 6F251078-6C9D-11E1-8EFC-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make asm-generic/cmpxchg.h #include asm-generic/cmpxchg-local.h as all arch
-files that #include the former also #include the latter.  See:
+The latest maintenance release Git 1.7.9.4 is now available at the
+usual places.
 
-	grep -rl asm-generic/cmpxchg-local[.]h arch/ | sort > b
-	grep -rl asm-generic/cmpxchg[.]h arch/ | sort > a
-	comm a b
+The release tarballs are found at:
 
-This simplifies the disintegration of asm-generic/system.h for arches that
-don't have their own.
+    http://code.google.com/p/git-core/downloads/list
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Arnd Bergmann <arnd@arndb.de>
----
+and their SHA-1 checksums are:
 
- include/asm-generic/cmpxchg.h |    2 ++
- include/asm-generic/system.h  |    1 -
- 2 files changed, 2 insertions(+), 1 deletions(-)
+05d2ff75ffd3356516d096f992b4fb3b8b6c0079  git-1.7.9.4.tar.gz
+4d8b27a244969a707e83f6699fd00c322ff0ad5e  git-htmldocs-1.7.9.4.tar.gz
+833dc143d2d296754d681c57b41a008ff433b225  git-manpages-1.7.9.4.tar.gz
 
-diff --git a/include/asm-generic/cmpxchg.h b/include/asm-generic/cmpxchg.h
-index 213ac6e..e0449af 100644
---- a/include/asm-generic/cmpxchg.h
-+++ b/include/asm-generic/cmpxchg.h
-@@ -10,6 +10,8 @@
- #error "Cannot use generic cmpxchg on SMP"
- #endif
- 
-+#include <asm-generic/cmpxchg-local.h>
-+
- /*
-  * Atomic compare and exchange.
-  *
-diff --git a/include/asm-generic/system.h b/include/asm-generic/system.h
-index 215efa7..82cb53a 100644
---- a/include/asm-generic/system.h
-+++ b/include/asm-generic/system.h
-@@ -19,7 +19,6 @@
- #include <linux/types.h>
- #include <linux/irqflags.h>
- 
--#include <asm/cmpxchg-local.h>
- #include <asm/cmpxchg.h>
- 
- struct task_struct;
+Also the following public repositories all have a copy of the v1.7.9.4
+tag and the maint branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+----------------------------------------------------------------
+
+Changes since v1.7.9.3 are as follows:
+
+Jakub Narebski (1):
+      gitweb: Fix fixed string (non-regexp) project search
+
+Junio C Hamano (6):
+      am -3: allow nonstandard -p<num> option
+      test: "am -3" can accept non-standard -p<num>
+      t4011: modernise style
+      t4011: illustrate "diff-index -p" on stat-dirty paths
+      diff -p: squelch "diff --git" header for stat-dirty paths
+      Git 1.7.9.4
+
+Thomas Rast (5):
+      t5510: refactor bundle->pack conversion
+      t5510: ensure we stay in the toplevel test dir
+      bundle: keep around names passed to add_pending_object()
+      Document the --histogram diff option
+      t5704: fix nonportable sed/grep usages
 
