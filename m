@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab2CLWBD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 18:01:03 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35874 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757463Ab2CLWBB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 18:01:01 -0400
-Message-ID: <4F5E7219.7020301@gmail.com>
-Date: Mon, 12 Mar 2012 17:00:57 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1757615Ab2CLWDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 18:03:35 -0400
+Received: from edge10.ethz.ch ([82.130.75.186]:43678 "EHLO edge10.ethz.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757073Ab2CLWDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 18:03:33 -0400
+From: Thomas Rast <trast@inf.ethz.ch>
+To: Jonathan Nieder <jrnieder@gmail.com>
+CC: Junio C Hamano <gitster@pobox.com>, Willy Tarreau <w@1wt.eu>,
+        Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        <git@vger.kernel.org>
+Subject: Re: [PATCH] git-am: error out when seeing -b/--binary
+References: <20120312024948.GB4650@kroah.com> <20120312063027.GB8971@1wt.eu>
+	<20120312064855.GB16820@burratino> <20120312085820.GA11569@1wt.eu>
+	<20120312152004.GB9380@kroah.com> <20120312152453.GB12405@1wt.eu>
+	<87aa3l4vqq.fsf@thomas.inf.ethz.ch> <20120312165703.GB18791@burratino>
+	<7vvcm9snko.fsf@alter.siamese.dyndns.org>
+	<87399dpk48.fsf@thomas.inf.ethz.ch> <20120312215607.GB11362@burratino>
+Date: Mon, 12 Mar 2012 23:03:15 +0100
+In-Reply-To: <20120312215607.GB11362@burratino> (Jonathan Nieder's message of
+	"Mon, 12 Mar 2012 16:56:07 -0500")
+Message-ID: <874ntto4t8.fsf@thomas.inf.ethz.ch>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Andrew Lunn <andrew@lunn.ch>, Paul Walmsley <paul@pwsan.com>,
-        linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jamie Iles <jamie@jamieiles.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 3/3] clk: basic clock hardware types
-References: <1331366064-1273-1-git-send-email-mturquette@linaro.org> <1331366064-1273-4-git-send-email-mturquette@linaro.org> <4F5E5A0C.6080604@gmail.com> <CAJOA=zOS44YRfg3A7D8G+jWoQ_gzRQ937A7tYDU+DxWce_khzQ@mail.gmail.com>
-In-Reply-To: <CAJOA=zOS44YRfg3A7D8G+jWoQ_gzRQ937A7tYDU+DxWce_khzQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+X-Originating-IP: [188.155.176.28]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 03:58 PM, Turquette, Mike wrote:
-> On Mon, Mar 12, 2012 at 1:18 PM, Rob Herring <robherring2@gmail.com> wrote:
->> On 03/10/2012 01:54 AM, Mike Turquette wrote:
->>> Many platforms support simple gateable clocks, fixed-rate clocks,
->>> adjustable divider clocks and multi-parent multiplexer clocks.
->>>
->>> This patch introduces basic clock types for the above-mentioned hardware
->>> which share some common characteristics.
->>>
->>> Based on original work by Jeremy Kerr and contribution by Jamie Iles.
->>> Dividers and multiplexor clocks originally contributed by Richard Zhao &
->>> Sascha Hauer.
->>>
+Jonathan Nieder <jrnieder@gmail.com> writes:
 
-snip
+> Hm, on second thought, if people are seeing this message, I would
+> prefer if they write to the mailing list so we can find out about it.
+> So I really would rather see this say
+>
+> 	--binary)
+> 		: ;;
+>
+> and have "-b" completely unrecognized, without any words in our
+> defense except for a note in the release notes mentioning the option's
+> removal and that it has been an unadvertised backward-compatibility
+> no-op since 1.6.0.
 
->>> +static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
->>> +             unsigned long parent_rate)
->>> +{
->>> +     struct clk_divider *divider = to_clk_divider(hw);
->>> +     unsigned int div;
->>> +     unsigned long flags = 0;
->>> +
->>> +     if (divider->lock)
->>> +             spin_lock_irqsave(divider->lock, flags);
->>> +
->>> +     div = readl(divider->reg) >> divider->shift;
->>> +     div &= (1 << divider->width) - 1;
->>> +
->>> +     if (divider->lock)
->>> +             spin_unlock_irqrestore(divider->lock, flags);
->>
->> What are you locking against? You are only reading the register.
-> 
-> Hi Rob,
-> 
-> These register-level locks originally came in from the divider &
-> multiplexer patches from Richard and Sascha and I'm sure they can give
-> you more details than I.
-> 
-> Basically on their platform they have some 32-bits regs that have a
-> lot of overlapping clock functions in them, such as enable/disable and
-> adjusting a divider all in one reg.  Those operations are protected by
-> different locks (enable spinlock and prepare mutex, respectively) so
-> some synchronization mechanism is necessary.  On OMAP we don't use
-> this since we have a billion registers that typically only map to one
-> clock each.  I also wonder if having device type memory for the
-> affected regions makes a this irrelevant on ARM... but that wouldn't
-> matter for non-ARM architectures.  Just a thought.
-> 
+I'd hate doing that, mostly because other projects got me really angry
+about similar issues, e.g., 71c020c (Disable asciidoc 8.4.1+ semantics
+for `{plus}` and friends, 2009-07-25).
 
-In fact, I pointed out that locking for a register access was needed in
-an early version of this series as well. However, locking is only needed
-if you are doing a read-mod-write on a field in a shared register or
-reading from multiple registers. It makes no sense if you are *only*
-reading a single shared register as is the case here. That's already an
-atomic operation.
+By the time I knew what the problem was, I figured posting anywhere was
+useless since the change was already in the wild, and thus needed
+working around on our end; and all I could possibly post was an angry
+letter saying how unhappy I was about their work.
 
-Rob
+I didn't, and worked around it.  But that was after a lot of frustrated
+investigation.  So I'd rather not do the same to our unlucky users.
 
+-- 
+Thomas Rast
+trast@{inf,student}.ethz.ch
