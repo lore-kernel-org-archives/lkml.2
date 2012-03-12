@@ -1,71 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab2CLGFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 02:05:54 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39775 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972Ab2CLGFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 02:05:47 -0400
-Date: Mon, 12 Mar 2012 07:05:03 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/7] uprobes/core: make macro names consistent.
-Message-ID: <20120312060503.GA1479@elte.hu>
-References: <20120310174501.19949.50137.sendpatchset@srdronam.in.ibm.com>
- <20120311140735.GA27053@elte.hu>
- <20120312055437.GH13284@linux.vnet.ibm.com>
+	id S1753315Ab2CLGI7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 02:08:59 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:38521 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218Ab2CLGIx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 02:08:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120312055437.GH13284@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <1331312686-2077-3-git-send-email-k.lewandowsk@samsung.com>
+References: <1331312686-2077-1-git-send-email-k.lewandowsk@samsung.com>
+	<1331312686-2077-3-git-send-email-k.lewandowsk@samsung.com>
+Date: Mon, 12 Mar 2012 11:38:52 +0530
+Message-ID: <CAJuYYwQ1QmnZ5L_FO3zW3TzfpS=XTDQFf-T14noehQyDzwqDTA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] i2c-s3c2410: Add HDMIPHY quirk for S3C2440
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: ben-linux@fluff.org, m.szyprowski@samsung.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
+        t.stanislaws@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 9 March 2012 22:34, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
+> From: Tomasz Stanislawski <t.stanislaws@samsung.com>
+>
+> This patch adds support for s3c2440 I2C bus controller dedicated HDMIPHY device on
+> Exynos4 platform. Some quirks are introduced due to differences between HDMIPHY
+> and other I2C controllers on Exynos4.  These differences are:
+> - no GPIOs, HDMIPHY is inside the SoC and the controller is connected
+>  internally
+> - due to unknown reason (probably HW bug in HDMIPHY and/or the controller) a
+>  transfer fails to finish. The controller hangs after sending the last byte,
+>  the workaround for this bug is resetting the controller after each transfer
+>
+> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
+> Tested-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  .../devicetree/bindings/i2c/samsung-i2c.txt        |   10 +++++-
+>  drivers/i2c/busses/i2c-s3c2410.c                   |   34 ++++++++++++++++++++
+>  2 files changed, 42 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
+> index 38832c7..ac0917c 100644
+> --- a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
+> +++ b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
+> @@ -10,14 +10,20 @@ Required properties:
+>     region.
+>   - interrupts: interrupt number to the cpu.
+>   - samsung,i2c-sda-delay: Delay (in ns) applied to data line (SDA) edges.
+> -  - gpios: The order of the gpios should be the following: <SDA, SCL>.
+> -    The gpio specifier depends on the gpio controller.
+>
+>  Optional properties:
+> +  - gpios: The order of the gpios should be the following: <SDA, SCL>.
+> +    The gpio specifier depends on the gpio controller. Required in all cases
+> +    except when "samsung,i2c-no-gpio" is also specified.
+> +  - samsung,i2c-no-gpio: input/output lines of the controller are
+> +    permanently wired to the respective client, there are no gpio
+> +    lines that need to be configured to enable this controller
+>   - samsung,i2c-slave-addr: Slave address in multi-master enviroment. If not
+>     specified, default value is 0.
+>   - samsung,i2c-max-bus-freq: Desired frequency in Hz of the bus. If not
+>     specified, the default value in Hz is 100000.
+> +  - samsung,i2c-quirk-hdmiphy: Quirk for HDMI PHY block on S3C2440 -
+> +    reduce timeout and reset controller when doing transefers
+>
+>  Example:
+>
+> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+> index 5b400c6..9f3be51 100644
+> --- a/drivers/i2c/busses/i2c-s3c2410.c
+> +++ b/drivers/i2c/busses/i2c-s3c2410.c
+> @@ -48,6 +48,8 @@
+>  #define TYPE_BITS              0x000000ff
+>  #define TYPE_S3C2410           0x00000001
+>  #define TYPE_S3C2440           0x00000002
+> +#define FLAG_HDMIPHY           0x00000100
+> +#define FLAG_NO_GPIO           0x00000200
+>
+>  /* i2c controller state */
+>  enum s3c24xx_i2c_state {
+> @@ -449,6 +451,13 @@ static int s3c24xx_i2c_set_master(struct s3c24xx_i2c *i2c)
+>        unsigned long iicstat;
+>        int timeout = 400;
+>
+> +       /* the timeout for HDMIPHY is reduced to 10 ms because
+> +        * the hangup is expected to happen, so waiting 400 ms
+> +        * causes only unnecessary system hangup
+> +        */
+> +       if (i2c->type & FLAG_HDMIPHY)
+> +               timeout = 10;
+> +
+>        while (timeout-- > 0) {
+>                iicstat = readl(i2c->regs + S3C2410_IICSTAT);
+>
+> @@ -458,6 +467,15 @@ static int s3c24xx_i2c_set_master(struct s3c24xx_i2c *i2c)
+>                msleep(1);
+>        }
+>
+> +       /* hang-up of bus dedicated for HDMIPHY occurred, resetting */
+> +       if (i2c->type & FLAG_HDMIPHY) {
+> +               writel(0, i2c->regs + S3C2410_IICCON);
+> +               writel(0, i2c->regs + S3C2410_IICSTAT);
+> +               writel(0, i2c->regs + S3C2410_IICDS);
+> +
+> +               return 0;
+> +       }
+> +
+>        return -ETIMEDOUT;
+>  }
+>
+> @@ -739,6 +757,9 @@ static int s3c24xx_i2c_parse_dt_gpio(struct s3c24xx_i2c *i2c)
+>  {
+>        int idx, gpio, ret;
+>
+> +       if (i2c->type & FLAG_NO_GPIO)
+> +               return 0;
+> +
+>        for (idx = 0; idx < 2; idx++) {
+>                gpio = of_get_gpio(i2c->dev->of_node, idx);
+>                if (!gpio_is_valid(gpio)) {
+> @@ -763,6 +784,10 @@ free_gpio:
+>  static void s3c24xx_i2c_dt_gpio_free(struct s3c24xx_i2c *i2c)
+>  {
+>        unsigned int idx;
+> +
+> +       if (i2c->type & FLAG_NO_GPIO)
+> +               return;
+> +
+>        for (idx = 0; idx < 2; idx++)
+>                gpio_free(i2c->gpios[idx]);
+>  }
+> @@ -846,6 +871,12 @@ s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
+>        match = of_match_node(&s3c24xx_i2c_match[0], np);
+>        i2c->type = (unsigned int)match->data;
+>
+> +       if (i2c->type == TYPE_S3C2440 && of_get_property(np, "samsung,i2c-quirk-hdmiphy", NULL))
+> +               i2c->type |= FLAG_HDMIPHY;
+> +
+> +       if (of_get_property(np, "samsung,i2c-no-gpio", NULL))
+> +               i2c->type |= FLAG_NO_GPIO;
+> +
+>        of_property_read_u32(np, "samsung,i2c-sda-delay", &pdata->sda_delay);
+>        of_property_read_u32(np, "samsung,i2c-slave-addr", &pdata->slave_addr);
+>        of_property_read_u32(np, "samsung,i2c-max-bus-freq",
+> @@ -1103,6 +1134,9 @@ static struct platform_device_id s3c24xx_driver_ids[] = {
+>        }, {
+>                .name           = "s3c2440-i2c",
+>                .driver_data    = TYPE_S3C2440,
+> +       }, {
+> +               .name           = "s3c2440-hdmiphy-i2c",
+> +               .driver_data    = TYPE_S3C2440 | FLAG_HDMIPHY | FLAG_NO_GPIO,
+>        }, { },
+>  };
+>  MODULE_DEVICE_TABLE(platform, s3c24xx_driver_ids);
+> --
+> 1.7.9
+>
 
-* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
-
-> * Ingo Molnar <mingo@elte.hu> [2012-03-11 15:07:36]:
-> 
-> > 
-> > Which tree are these patches against? They don't apply to 
-> > tip:master cleanly.
-> 
-> To me it applied cleanly on top of 
-> commit 90549600c550ab189c4611060603f7f15bda2b5e
-
-It's a new commit:
-
- c94082656dac: x86: Use enum instead of literals for trap values
-
-Interacting with this cleanup:
-
- x86/trivial: Rename trap_no to trap_nr in thread struct
-
-Also, while touching the trap_nr sites please use X86_TRAP_PF 
-instead of '14' and X86_TRAP_MF instead of '16', etc.
-
-Thanks,
-
-	Ingo
+Reviewed-by: Thomas Abraham <thomas.abraham@linaro.org>
