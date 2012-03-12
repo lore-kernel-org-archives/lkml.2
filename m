@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab2CLKH2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 06:07:28 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:47814 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab2CLKHY (ORCPT
+	id S1751932Ab2CLKMH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 06:12:07 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56502 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab2CLKMD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 06:07:24 -0400
-Date: Mon, 12 Mar 2012 13:07:13 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Joey Lee <jlee@novell.com>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] acer-wmi: ignore missing Aspire 5741G keys (checkpatched)
-Message-ID: <20120312100643.GA24726@swordfish.minsk.epam.com>
-References: <20120306123355.GA3904@swordfish.minsk.epam.com>
- <1331266669.10557.107.camel@linux-s257.site>
+	Mon, 12 Mar 2012 06:12:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331266669.10557.107.camel@linux-s257.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120312002545.GE10787@dztty>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org>
+ <1331421919-15499-2-git-send-email-tixxdz@opendz.org> <20120311172512.GA2729@redhat.com>
+ <CA+55aFweRPaxMk1Y8vQg+yzwRA94GYngtZLrB0AkHo5-egfQBg@mail.gmail.com>
+ <20120311233233.GC10787@dztty> <CA+55aFzVZLqnwiXqH4zm6Vn_2QgiRSTDP8uuY3rXyQhobRv63g@mail.gmail.com>
+ <20120312002545.GE10787@dztty>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 12 Mar 2012 03:11:43 -0700
+X-Google-Sender-Auth: FowSLqIsZea7mQ8ZmpqcO_WaJvU
+Message-ID: <CA+55aFzdLEkzc4iE3J1CgYwuo_cCigsV9RTt-DF2nJniKm0k0A@mail.gmail.com>
+Subject: Re: [PATCH 1/9] exec: add a global execve counter
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acer-wmi: ignore missing Aspire 5741G keys
+On Sun, Mar 11, 2012 at 5:25 PM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> On Sun, Mar 11, 2012 at 04:42:37PM -0700, Linus Torvalds wrote:
+>> That's the point. I made the mistake of using mm_users initially, but
+>> ysing mm_count - which is what I said to use (and what Oleg fixed
+>> things to in commit 6d08f2c71397) should *not* have that problem. It
+>> just keeps the 'struct mm_struct' itself around.
+> And that mm_struct will explode and only the VFS will catch it.
+>
+> Given  1024 processes * (RLIMIT_NOFILE 1024 - 3) == ~1020000
+>
+> more than 1020000 mm structs (all of dead processes ?)
+>
+> A quick test on a default ubuntu:
+> cat /proc/sys/fs/file-max
+> 388411
+>
+> So we are able to keep around 388411 dead mm_struct in memory, just try it.
 
-Ignore Aspire's 5741G:
- KEY_PREVIOUSSONG
- KEY_NEXTSONG
- KEY_PLAYPAUSE
- KEY_STOP
- KEY_VOLUMEDOWN
- 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Umm.
 
----
+I think your argument is totally braindead and wrong.
 
- drivers/platform/x86/acer-wmi.c |    5 +++++
- 1 file changed, 5 insertions(+)
+My counter-argument is very simple: "So what?"
 
-diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-index b848277..e45b9ad 100644
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -107,11 +107,16 @@ static const struct key_entry acer_wmi_keymap[] = {
- 	{KE_KEY, 0x24, {KEY_PROG4} },    /* Social networking_Key */
- 	{KE_IGNORE, 0x41, {KEY_MUTE} },
- 	{KE_IGNORE, 0x42, {KEY_PREVIOUSSONG} },
-+	{KE_IGNORE, 0x4d, {KEY_PREVIOUSSONG} },
- 	{KE_IGNORE, 0x43, {KEY_NEXTSONG} },
-+	{KE_IGNORE, 0x4e, {KEY_NEXTSONG} },
- 	{KE_IGNORE, 0x44, {KEY_PLAYPAUSE} },
-+	{KE_IGNORE, 0x4f, {KEY_PLAYPAUSE} },
- 	{KE_IGNORE, 0x45, {KEY_STOP} },
-+	{KE_IGNORE, 0x50, {KEY_STOP} },
- 	{KE_IGNORE, 0x48, {KEY_VOLUMEUP} },
- 	{KE_IGNORE, 0x49, {KEY_VOLUMEDOWN} },
-+	{KE_IGNORE, 0x4a, {KEY_VOLUMEDOWN} },
- 	{KE_IGNORE, 0x61, {KEY_SWITCHVIDEOMODE} },
- 	{KE_IGNORE, 0x62, {KEY_BRIGHTNESSUP} },
- 	{KE_IGNORE, 0x63, {KEY_BRIGHTNESSDOWN} },
+Those mm_structs are small. They are something like a couple of
+hundred bytes. If you really worry about open files, you should worry
+about the size of the inode, and people using the "pipe()" system
+call. Then you have those open files with an inode, *and* several kB
+of data that can be trivially filled by the user with a simple
+"write()" that they never need read.
 
+So "struct mm_struct" is totally irrelevant, and not in any way a
+special thing. It's not the biggest, it's not the most interesting,
+and it's simply not interesting. You're barking up the wrong tree.
+
+> Our embedded devices will suffer, serial login will be killed, getty, ...
+> ssh root owned ... I've experienced this.
+
+None of it has anything to do with 'struct mm_struct', though, has it?
+
+I suspect the real thing to do is to just make the OOM killer look at
+how many files are open too. Make each open file count as 4kB (or
+more), and use it when deciding what to kill. Fix the actual real
+problem instead of trying to fix one small detail - and one that isn't
+even the right small detail.
+
+                   Linus
