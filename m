@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab2CLSBA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:01:00 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754020Ab2CLSA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:00:58 -0400
-Message-ID: <4F5E39D7.60501@nod.at>
-Date: Mon, 12 Mar 2012 19:00:55 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+	id S1755422Ab2CLSB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:01:59 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:43825 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754057Ab2CLSB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 14:01:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=oor4fZ1idcwp/G1BH9HUTocO4aLz5/uV
+	sJXuxLY0RfsaeXVSUFW3tCWZvGV+2ZEmGDSkaHDofetctsA/MeiIprbqRbBbExNE
+	KykmuFvCcdwb/U8+Q3pImE2JWj/CIlPyyEhrh2o7zhbEYy3YuGOU9iaWkQTYDowE
+	pIHzSnEwoaY=
+From: Junio C Hamano <gitster@pobox.com>
+To: Greg KH <greg@kroah.com>
+Cc: Willy Tarreau <w@1wt.eu>, Jonathan Nieder <jrnieder@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, git@vger.kernel.org,
+        Thomas Rast <trast@student.ethz.ch>
+Subject: Re: stripping [PATCH] without losing later tags from mailed patches
+ (Re: [ 02/12] Remove COMPAT_IA32 support)
+References: <20120312002046.041448832@1wt.eu>
+ <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com>
+ <20120312063027.GB8971@1wt.eu> <20120312064855.GB16820@burratino>
+ <20120312085820.GA11569@1wt.eu> <20120312152004.GB9380@kroah.com>
+ <7vfwddu60f.fsf@alter.siamese.dyndns.org> <20120312171257.GA25347@kroah.com>
+Date: Mon, 12 Mar 2012 11:01:55 -0700
+In-Reply-To: <20120312171257.GA25347@kroah.com> (Greg KH's message of "Mon,
+ 12 Mar 2012 10:12:57 -0700")
+Message-ID: <7vzkblsnos.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: jengelh@medozas.de, eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        rostedt@goodmis.org
-Subject: Re: [PATCH v6] Netfilter ring buffer support
-References: <1330989588-26833-1-git-send-email-richard@nod.at> <20120308012849.GA9164@1984> <4F5875B5.1090802@nod.at> <20120312130803.GA31865@1984> <4F5DF9B1.6050703@nod.at> <20120312141230.GA32616@1984>
-In-Reply-To: <20120312141230.GA32616@1984>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 74CCB966-6C6D-11E1-A534-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.03.2012 15:12, Pablo Neira Ayuso wrote:
-> On Mon, Mar 12, 2012 at 02:27:13PM +0100, Richard Weinberger wrote:
-> [...]
->>> Looking at the code, those are included if bridging is enabled.
->>> Otherwise, I'll be happy to take a patch for this.
->>
->> Doesn't NFLOG just pass the packet header to userspace?
->
-> It also passes several interesting metainformation regarding the
-> packet to user-space as well. And it can be easily extended to add
-> more metainformation without breaking backward compatibility.
->
->> How can you derive meta-information like "PHYSIN" and "PHYSOUT" from
->> the packet header?
->
-> See nflog_get_physindev and nflog_get_physoutdev in libnetfilter_log.
+Greg KH <greg@kroah.com> writes:
 
-Oh. This sounds great.
+> Does the flag propagate from 'git quiltimport'?
 
->> Iff NFLOG is able to produce same log string like LOG does I'm fine.
->
-> This is a patch yet incomplete for libnetfilter_log:
->
-> http://1984.lsi.us.es/git/rlogd/tree/libnflog.patch
->
-> It allows you to print in LOG output format. It still need to add
-> support for UDP, UDPlite, and so on, but that shouldn't be hard to
-> make.
->
-> I'd be happy if someone takes it over and finish it.
+I didn't even know the script was shipped as part of the main
+Porcelain until I looked.  I do not think anybody is maintaining it;
+the last update was from the 1.6.2 era.
 
-Okay. I'll take over it.
-Stay tuned!
+A tested patch from quilt stakeholders is very much welcomed.
 
-Thanks,
-//richard
+Thanks for bringing the script to my attention.
+
