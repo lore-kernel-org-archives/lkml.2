@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab2CLRnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:43:13 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47273 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab2CLRnJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 13:43:09 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2] ARM: tegra: export tegra_gpio_{en,dis}able
-To: Stephen Warren <swarren@wwwdotorg.org>, Alan Ott <alan@signal11.us>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>
-In-Reply-To: <4F5A3965.5040300@wwwdotorg.org>
-References: <1330630010-11241-2-git-send-email-alan@signal11.us> <1330727544-11617-1-git-send-email-alan@signal11.us> <4F5A3726.8030505@signal11.us> <4F5A3965.5040300@wwwdotorg.org>
-Date: Mon, 12 Mar 2012 11:43:04 -0600
-Message-Id: <20120312174304.8286D3E07B0@localhost>
+	id S1753637Ab2CLRsN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:48:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6671 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752835Ab2CLRsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 13:48:11 -0400
+Date: Mon, 12 Mar 2012 13:48:03 -0400
+From: Dave Jones <davej@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: snd_pcm lockdep report from 3.3-rc6
+Message-ID: <20120312174803.GA1946@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Takashi Iwai <tiwai@suse.de>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120312143514.GA1881@redhat.com>
+ <s5hfwdd3ecn.wl%tiwai@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hfwdd3ecn.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Mar 2012 10:09:57 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 03/09/2012 10:00 AM, Alan Ott wrote:
-> > On 03/02/2012 05:32 PM, Alan Ott wrote:
-> >> From: Arnd Bergmann <arnd@arndb.de>
-> >>
-> >> These two functions are used in drivers that can be
-> >> modules, so they need to be exported.
-> >>
-> >> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> >> Acked-by: Olof Johansson <olof@lixom.net>
-> ...
-> > Did this patch ever get picked up into someone's tree?
-> 
-> It looks like Grant ack'd it which implies the thought Olof was going to
-> take it through the Tegra tree perhaps? But Olof did the same, so is
-> probably waiting for Grant to take it...
+On Mon, Mar 12, 2012 at 06:42:48PM +0100, Takashi Iwai wrote:
 
-Applied, thx.
+ > No, the check above should be correct.  The code tries to re-lock when
+ > the stream is linked like group-lock -> stream-lock.
+ > 
+ > However, that code is known to be too tricky and messy for long time.
+ > It'd be really better to get rid of this complexity.  I tried some
+ > times but failed to reach to the final goal due to lack of time.
+ > 
+ > OK, let me respin my old patch.  The refreshed one is attached below.
+ > (Note that it's totally untested.  I have to leave my office now,
+ >  sorry for that.  Let me know if the wonder happens and it works :)
 
-g.
+it certainly makes the code look a little simpler!
+I'll run with it for a while, and see if anything falls out.
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
+thanks,
+
+	Dave
