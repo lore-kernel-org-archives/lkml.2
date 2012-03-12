@@ -1,223 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755638Ab2CLOV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 10:21:58 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:63216 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab2CLOVw convert rfc822-to-8bit (ORCPT
+	id S1755395Ab2CLOZM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 10:25:12 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:48029 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232Ab2CLOZJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 10:21:52 -0400
+	Mon, 12 Mar 2012 10:25:09 -0400
+Date: Mon, 12 Mar 2012 14:24:44 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: x86@kernel.org, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, matt.fleming@intel.com
+Subject: Re: [PATCH v5 5/5] x86: efi: allow basic init with mixed 32/64-bit
+ efi/kernel
+Message-ID: <20120312142444.GB11969@srcf.ucam.org>
+References: <1329081869-20779-1-git-send-email-olof@lixom.net>
+ <1329081869-20779-6-git-send-email-olof@lixom.net>
 MIME-Version: 1.0
-In-Reply-To: <CADDYkjTsDf0J0v7B-78SiYPsjPsn1VOCbiqAMq8TJxgPc_MiBg@mail.gmail.com>
-References: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com>
-	<20120308155211.GF4334@twin.jikos.cz>
-	<CADDYkjTG-q5+pFRFt9sGKq=cgL=ZgQaNZV=2ipBsSbuvxCa3jw@mail.gmail.com>
-	<4F595D6D.6080809@cn.fujitsu.com>
-	<20120309105537.GG4334@twin.jikos.cz>
-	<CADDYkjRcRbxxPErdMBOs55-gNHZA0GfxcsWNrVbAuv37b3rtvw@mail.gmail.com>
-	<20120309114010.GH4334@twin.jikos.cz>
-	<CADDYkjTsDf0J0v7B-78SiYPsjPsn1VOCbiqAMq8TJxgPc_MiBg@mail.gmail.com>
-Date: Mon, 12 Mar 2012 15:21:49 +0100
-Message-ID: <CADDYkjRkmqbKQnGL+VGgS2hi6F4Z7PbLb6dUB2PYd0M9pVSmPg@mail.gmail.com>
-Subject: Re: kernel BUG at fs/btrfs/delayed-inode.c:1466!
-From: Jacek Luczak <difrost.kernel@gmail.com>
-To: dave@jikos.cz, Jacek Luczak <difrost.kernel@gmail.com>,
-        Liu Bo <liubo2009@cn.fujitsu.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, josef@redhat.com,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Chris Mason <chris.mason@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1329081869-20779-6-git-send-email-olof@lixom.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/10 Jacek Luczak <difrost.kernel@gmail.com>:
-> 2012/3/9 David Sterba <dave@jikos.cz>:
->> On Fri, Mar 09, 2012 at 12:08:12PM +0100, Jacek Luczak wrote:
->>> For this one I've created also a report [1].
->>> >
->>> > so there is probably other problem in reservations and it just blew up during
->>> > the unlink call.
->>>
->>> Could be as this came up after a longer time of throwing above WARN_ON.
->>>
->>> I'm now cloning the Linus tree. Lets see if both will pop up on there.
->>
->> The 3.3-rc6 should help in one case, with
->>
->> http://thread.gmane.org/gmane.comp.file-systems.btrfs/15268
->>
->> but I was able to reproduce the WARN_ON even with this patch, didn't get
->> to debugging it again yet.
->>
->
->
-> The story so far looks like this:
-> 1) kernel 3.2.7:
-> - on the BUG_ON triggers after a longer while of CI env (doing builds)
-> running. This has been already reproduced twice.
-> - WARN_ON spams heavily, even after BUG_ON pop up.
-> - possible relation between WARN_ON and BUG_ON.
+As you say, this isn't a full solution - we'll need additional thunking 
+to fix the general case. But it's a step in the right direction and it's 
+better than what we have now, so ACK.
 
-WARN_ON still popup in 3.3.0-rc6-00197-g9f8050c but did not triggered
-BUG_ON after ~300 occurrence.
-
-> 2) A *regression* in 3.3.0-rc6-00197-g9f8050c
-> - completely unusable as reports ENOSPC
-> - to reproduce, mount volume and issue:
-> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
-> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
-> On my host this shows:
-> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
-> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
-> touch: cannot touch `/btrfs/dd': No space left on device
-> 423
-> - remount to reset:
-> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
-> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
-> touch: cannot touch `/btrfs/dd': No space left on device
-> 1
-> # umount /btrfs/
-> # mount -t btrfs /dev/vg00/btrfs /btrfs/ -o noatime,nodatacow,defaults
-> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
-> /vdd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
-> touch: cannot touch `/btrfs/dd': No space left on device
-> 423
-> - bisected down to 5500cdb (Btrfs: increase the global block reserve
-> estimates). After reverting this one Linus master works for me again.
-
-With above patch reverted after a longer run I've got ENOSPC again:
-1) # df -hP /btrfs
-Filesystem            Size  Used Avail Use% Mounted on
-/dev/mapper/vg00-btrfs  195G  179G   11G  95% /btrfs
-2) # rm -f /btrfs/dd
-rm: cannot remove `/btrfs/dd': No space left on device
-3) strace
-unlink("/btrfs/dd")                = -1 ENOSPC (No space left on device)
-4) last message from kernel (except WARN_ONs):
-btrfs: fail to dirty inode 116882385 error -28
-
-I've remouted volume and after that I've been able to remove dd file
-from volume. In dmesg there's bunch on new WARN_ONs:
-------------[ cut here ]------------
-WARNING: at fs/btrfs/extent-tree.c:4185
-btrfs_free_block_groups+0x17d/0x2b8 [btrfs]()
-Hardware name: ProLiant BL460c G6
-Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
-autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
-ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
-ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
-dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
-parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
-hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
-hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
-Pid: 9518, comm: umount Tainted: G        W    3.3.0-rc6-00197-g9f8050c-dirty #1
-Call Trace:
- [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
- [<ffffffffa031a8a7>] ? btrfs_free_block_groups+0x17d/0x2b8 [btrfs]
- [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
- [<ffffffffa031a8a7>] ? btrfs_free_block_groups+0x17d/0x2b8 [btrfs]
- [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
- [<ffffffff811320c2>] ? dispose_list+0x27/0x31
- [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
- [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
- [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
- [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
- [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
- [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
- [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
----[ end trace fd6da849e53b77dd ]---
-------------[ cut here ]------------
-WARNING: at fs/btrfs/extent-tree.c:4186
-btrfs_free_block_groups+0x198/0x2b8 [btrfs]()
-Hardware name: ProLiant BL460c G6
-Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
-autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
-ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
-ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
-dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
-parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
-hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
-hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
-Pid: 9518, comm: umount Tainted: G        W    3.3.0-rc6-00197-g9f8050c-dirty #1
-Call Trace:
- [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
- [<ffffffffa031a8c2>] ? btrfs_free_block_groups+0x198/0x2b8 [btrfs]
- [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
- [<ffffffffa031a8c2>] ? btrfs_free_block_groups+0x198/0x2b8 [btrfs]
- [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
- [<ffffffff811320c2>] ? dispose_list+0x27/0x31
- [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
- [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
- [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
- [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
- [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
- [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
- [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
----[ end trace fd6da849e53b77de ]---
-------------[ cut here ]------------
-WARNING: at fs/btrfs/extent-tree.c:4187
-btrfs_free_block_groups+0x1b3/0x2b8 [btrfs]()
-Hardware name: ProLiant BL460c G6
-Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
-autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
-ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
-ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
-dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
-parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
-hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
-hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
-Pid: 9518, comm: umount Tainted: G        W    3.3.0-rc6-00197-g9f8050c-dirty #1
-Call Trace:
- [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
- [<ffffffffa031a8dd>] ? btrfs_free_block_groups+0x1b3/0x2b8 [btrfs]
- [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
- [<ffffffffa031a8dd>] ? btrfs_free_block_groups+0x1b3/0x2b8 [btrfs]
- [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
- [<ffffffff811320c2>] ? dispose_list+0x27/0x31
- [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
- [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
- [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
- [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
- [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
- [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
- [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
----[ end trace fd6da849e53b77df ]---
-------------[ cut here ]------------
-WARNING: at fs/btrfs/extent-tree.c:7454
-btrfs_free_block_groups+0x256/0x2b8 [btrfs]()
-Hardware name: ProLiant BL460c G6
-Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
-autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
-ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
-ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
-dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
-parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
-hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
-hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
-Pid: 9518, comm: umount Tainted: G        W    3.3.0-rc6-00197-g9f8050c-dirty #1
-Call Trace:
- [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
- [<ffffffffa031a980>] ? btrfs_free_block_groups+0x256/0x2b8 [btrfs]
- [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
- [<ffffffffa031a980>] ? btrfs_free_block_groups+0x256/0x2b8 [btrfs]
- [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
- [<ffffffff811320c2>] ? dispose_list+0x27/0x31
- [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
- [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
- [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
- [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
- [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
- [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
- [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
----[ end trace fd6da849e53b77e0 ]---
-space_info 4 has 3043549184 free, is not full
-space_info total=11953766400, used=8901763072, pinned=0, reserved=0,
-may_use=121643008, readonly=8454144
-device fsid b70500f5-3ec6-4a39-9b9a-adad0e8a0346 devid 1 transid 54268
-/dev/vg00/btrfs
-btrfs: setting nodatacow
-
--Jacek
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
