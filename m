@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab2CLSE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:04:29 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:45013 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755005Ab2CLSEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:04:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=fM4vszAIHXf1G2s9VIVQAxLeWW0C0cJx
-	tIsRjRtRCaccvE4dL8yMOzJqHlP4+8ER97Ln0yfiLLiYD7pccRaVKN1A5mQK5ugN
-	/tIH60GZPCVxIH8SH/ulh8iaEFdWA42u0tAXYrT0+JOLrwz/t5rOSOM/izZP9uIc
-	vsJ7TyqlO4Y=
-From: Junio C Hamano <gitster@pobox.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Thomas Rast <trast@inf.ethz.ch>, Willy Tarreau <w@1wt.eu>,
-        Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        git@vger.kernel.org, Thomas Rast <trast@student.ethz.ch>
-Subject: Re: stripping [PATCH] without losing later tags from mailed patches
- (Re: [ 02/12] Remove COMPAT_IA32 support)
-References: <20120312002046.041448832@1wt.eu>
- <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com>
- <20120312063027.GB8971@1wt.eu> <20120312064855.GB16820@burratino>
- <20120312085820.GA11569@1wt.eu> <20120312152004.GB9380@kroah.com>
- <20120312152453.GB12405@1wt.eu> <87aa3l4vqq.fsf@thomas.inf.ethz.ch>
- <20120312165703.GB18791@burratino>
-Date: Mon, 12 Mar 2012 11:04:23 -0700
-In-Reply-To: <20120312165703.GB18791@burratino> (Jonathan Nieder's message of
- "Mon, 12 Mar 2012 11:57:03 -0500")
-Message-ID: <7vvcm9snko.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755962Ab2CLSFn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:05:43 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:35523 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754720Ab2CLSFk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 14:05:40 -0400
+Message-ID: <4F5E3ADC.5090200@fb.com>
+Date: Mon, 12 Mar 2012 11:05:16 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: CD0783EA-6C6D-11E1-AB82-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+To: Namhyung Kim <namhyung.kim@lge.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, <linux-perf-users@vger.kernel.org>
+Subject: Re: [PATCH 0/2] perf: add sort by inclusive time functionality (v2)
+References: <1331160079-13821-1-git-send-email-asharma@fb.com> <20120308072901.GC20784@elte.hu> <20120308153130.GC7976@somewhere.redhat.com> <4F58FF47.6090504@fb.com> <4F5DA294.6070700@lge.com>
+In-Reply-To: <4F5DA294.6070700@lge.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
+ definitions=2012-03-12_05:2012-03-12,2012-03-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Nieder <jrnieder@gmail.com> writes:
+On 3/12/12 12:15 AM, Namhyung Kim wrote:
 
-> Thomas Rast wrote:
 >
->> The problem with -b is that it's a backwards-compatibility shorthand for
->> --binary, which used to pass --allow-binary-replacement (or --binary) to
->> git-apply.  However, that option was obsoleted in 2b6eef9 (Make apply
->> --binary a no-op., 2006-09-06) and has been a no-op for over 5 years.
->> It has also not been documented since cb3a160 (git-am: ignore --binary
->> option, 2008-08-09).
->>
->> So perhaps we can safely claim -b for --keep-non-patch, like so:
+> I think it's because of the shared hist_entry. If a callchain is a
+> subset of another, it will be marked as inclusive so that it cannot be
+> contributed to total period. Say, there're two chains - X (a -> b -> c)
+> and Y (a -> b), once __hists__add_entry_inclusive() was called on X, we
+> have:
+>
+> a -> b -> c
+> a -> b (inclusive)
+> a (inclusive)
+>
+> And then, calling the function on Y should make:
+>
+> a -> b
+> a (inclusive)
+>
+> However, since both callchains are in tree already they'll be shared and
+> marked *inclusive*. Thus the total period will not increased at all for
+> Y. Also I guess the reverse case - add Y first, and then X - will have
+> the same result.
 
-We can delete "git am -b" (as it was deprecated long time ago), wait
-for a cycle or two, and then repurpose it.  I do not mind starting
-the first step (delete, but do not say anything about repurposing)
-before 1.7.10-rc1 happens.
+Thanks for figuring this out. Looks like using a single bit 
+(he->inclusive) is insufficient. How about:
+
+struct hist_entry {
+	u64                     period;
+         u64                     period_self;
+	..
+};
+
+Normal mode: period_self == period.
+Inclusive mode: period_self will be zero for inclusive hist_entries.
+Shared entries: we sum up both period and period_self.
+
+We can then compute total_period by summing up period_self.
+
+  -Arun
+
