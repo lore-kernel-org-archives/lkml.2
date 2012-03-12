@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab2CLAtR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 20:49:17 -0400
-Received: from 1wt.eu ([62.212.114.60]:63042 "EHLO 1wt.eu"
+	id S1754756Ab2CLAt3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 20:49:29 -0400
+Received: from 1wt.eu ([62.212.114.60]:63045 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754560Ab2CLAsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 20:48:17 -0400
-Message-Id: <20120312002046.081639698@1wt.eu>
+	id S1754577Ab2CLAsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 20:48:18 -0400
+Message-Id: <20120312002046.121573243@1wt.eu>
 User-Agent: quilt/0.48-1
-Date: Mon, 12 Mar 2012 01:20:48 +0100
+Date: Mon, 12 Mar 2012 01:20:49 +0100
 From: Willy Tarreau <w@1wt.eu>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jens Axboe <jens.axboe@oracle.com>, Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 03/12] writeback: fixups for !dirty_writeback_centisecs
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Tim Gardner <tim.gardner@canonical.com>
+Subject: [ 04/12] bsg: fix sysfs link remove warning
 In-Reply-To: <feb44625a10a45049eddf27890e95d54@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,110 +23,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <jens.axboe@oracle.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 6423104b6a1e6f0c18be60e8c33f02d263331d5e upstream.
+BugLink: http://bugs.launchpad.net/bugs/946928
 
-Commit 69b62d01 fixed up most of the places where we would enter
-busy schedule() spins when disabling the periodic background
-writeback. This fixes up the sb timer so that it doesn't get
-hammered on with the delay disabled, and ensures that it gets
-rearmed if needed when /proc/sys/vm/dirty_writeback_centisecs
-gets modified.
+We create "bsg" link if q->kobj.sd is not NULL, so remove it only
+when the same condition is true.
 
-bdi_forker_task() also needs to check for !dirty_writeback_centisecs
-and use schedule() appropriately, fix that up too.
+Fixes:
 
-Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
-Tested-by: Xavier Roche <roche@httrack.com>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+WARNING: at fs/sysfs/inode.c:323 sysfs_hash_and_remove+0x2b/0x77()
+sysfs: can not remove 'bsg', no directory
+Call Trace:
+  [<c0429683>] warn_slowpath_common+0x6a/0x7f
+  [<c0537a68>] ? sysfs_hash_and_remove+0x2b/0x77
+  [<c042970b>] warn_slowpath_fmt+0x2b/0x2f
+  [<c0537a68>] sysfs_hash_and_remove+0x2b/0x77
+  [<c053969a>] sysfs_remove_link+0x20/0x23
+  [<c05d88f1>] bsg_unregister_queue+0x40/0x6d
+  [<c0692263>] __scsi_remove_device+0x31/0x9d
+  [<c069149f>] scsi_forget_host+0x41/0x52
+  [<c0689fa9>] scsi_remove_host+0x71/0xe0
+  [<f7de5945>] quiesce_and_remove_host+0x51/0x83 [usb_storage]
+  [<f7de5a1e>] usb_stor_disconnect+0x18/0x22 [usb_storage]
+  [<c06c29de>] usb_unbind_interface+0x4e/0x109
+  [<c067a80f>] __device_release_driver+0x6b/0xa6
+  [<c067a861>] device_release_driver+0x17/0x22
+  [<c067a46a>] bus_remove_device+0xd6/0xe6
+  [<c06785e2>] device_del+0xf2/0x137
+  [<c06c101f>] usb_disable_device+0x94/0x1a0
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+(cherry picked from commit 37b40adf2d1b4a5e51323be73ccf8ddcf3f15dd3)
+
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 ---
- include/linux/backing-dev.h |    1 +
- mm/backing-dev.c            |   15 ++++++++++-----
- mm/page-writeback.c         |    1 +
- 3 files changed, 12 insertions(+), 5 deletions(-)
+ block/bsg.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index b449e73..61e43a6 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -105,6 +105,7 @@ void bdi_start_writeback(struct backing_dev_info *bdi, struct super_block *sb,
- 				long nr_pages);
- int bdi_writeback_task(struct bdi_writeback *wb);
- int bdi_has_dirty_io(struct backing_dev_info *bdi);
-+void bdi_arm_supers_timer(void);
+diff --git a/block/bsg.c b/block/bsg.c
+index 7154a7a..e3e3241 100644
+--- a/block/bsg.c
++++ b/block/bsg.c
+@@ -977,7 +977,8 @@ void bsg_unregister_queue(struct request_queue *q)
  
- extern spinlock_t bdi_lock;
- extern struct list_head bdi_list;
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 67a33a5..d824401 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -41,7 +41,6 @@ static struct timer_list sync_supers_timer;
- 
- static int bdi_sync_supers(void *);
- static void sync_supers_timer_fn(unsigned long);
--static void arm_supers_timer(void);
- 
- static void bdi_add_default_flusher_task(struct backing_dev_info *bdi);
- 
-@@ -242,7 +241,7 @@ static int __init default_bdi_init(void)
- 
- 	init_timer(&sync_supers_timer);
- 	setup_timer(&sync_supers_timer, sync_supers_timer_fn, 0);
--	arm_supers_timer();
-+	bdi_arm_supers_timer();
- 
- 	err = bdi_init(&default_backing_dev_info);
- 	if (!err)
-@@ -364,10 +363,13 @@ static int bdi_sync_supers(void *unused)
- 	return 0;
- }
- 
--static void arm_supers_timer(void)
-+void bdi_arm_supers_timer(void)
- {
- 	unsigned long next;
- 
-+	if (!dirty_writeback_interval)
-+		return;
-+
- 	next = msecs_to_jiffies(dirty_writeback_interval * 10) + jiffies;
- 	mod_timer(&sync_supers_timer, round_jiffies_up(next));
- }
-@@ -375,7 +377,7 @@ static void arm_supers_timer(void)
- static void sync_supers_timer_fn(unsigned long unused)
- {
- 	wake_up_process(sync_supers_tsk);
--	arm_supers_timer();
-+	bdi_arm_supers_timer();
- }
- 
- static int bdi_forker_task(void *ptr)
-@@ -418,7 +420,10 @@ static int bdi_forker_task(void *ptr)
- 
- 			spin_unlock_bh(&bdi_lock);
- 			wait = msecs_to_jiffies(dirty_writeback_interval * 10);
--			schedule_timeout(wait);
-+			if (wait)
-+				schedule_timeout(wait);
-+			else
-+				schedule();
- 			try_to_freeze();
- 			continue;
- 		}
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 2c5d792..52f71ae 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -694,6 +694,7 @@ int dirty_writeback_centisecs_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
- {
- 	proc_dointvec(table, write, buffer, length, ppos);
-+	bdi_arm_supers_timer();
- 	return 0;
- }
- 
+ 	mutex_lock(&bsg_mutex);
+ 	idr_remove(&bsg_minor_idr, bcd->minor);
+-	sysfs_remove_link(&q->kobj, "bsg");
++	if (q->kobj.sd)
++		sysfs_remove_link(&q->kobj, "bsg");
+ 	device_unregister(bcd->class_dev);
+ 	bcd->class_dev = NULL;
+ 	kref_put(&bcd->ref, bsg_kref_release_function);
 -- 
 1.7.2.1.45.g54fbc
 
