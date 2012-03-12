@@ -1,53 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab2CLPdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 11:33:38 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40664 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756025Ab2CLPdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 11:33:36 -0400
-Message-ID: <1331566415.13200.14.camel@joe2Laptop>
-Subject: Re: [PATCH 1/4] jffs2: Convert most D1/D2 macros to jffs2_dbg
-From: Joe Perches <joe@perches.com>
-To: dedekind1@gmail.com
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 12 Mar 2012 08:33:35 -0700
-In-Reply-To: <1331557935.12037.11.camel@sauron.fi.intel.com>
-References: <cover.1329349881.git.joe@perches.com>
-	 <2d68e76db16d42f451370714f03ef952e0839692.1329349881.git.joe@perches.com>
-	 <1330965033.7220.16.camel@golum> <1330966615.3140.6.camel@joe2Laptop>
-	 <1331294012.29445.10.camel@sauron.fi.intel.com>
-	 <1331318968.13055.8.camel@joe2Laptop>
-	 <1331557935.12037.11.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755842Ab2CLPjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 11:39:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42006 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752673Ab2CLPjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 11:39:08 -0400
+Date: Mon, 12 Mar 2012 16:39:06 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] fix idle ticks in cpu summary line of /proc/stat
+Message-ID: <20120312153906.GE3994@tiehlicka.suse.cz>
+References: <20120311182621.41674b39@de.ibm.com>
+ <20120312121726.GA23608@tiehlicka.suse.cz>
+ <20120312101739.26eb373e@de.ibm.com>
+ <4F5E0CC1.6010102@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F5E0CC1.6010102@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 15:12 +0200, Artem Bityutskiy wrote:
-> On Fri, 2012-03-09 at 10:49 -0800, Joe Perches wrote:
-> > On Fri, 2012-03-09 at 13:53 +0200, Artem Bityutskiy wrote:
-> > > OK, pushed these ones, although I think that mechanical D1->jffs2_dbg()
-> > > conversion is not very useful and to make your patch-set worth the
-> > > trouble you should do few more clean-up steps, like I suggested.
-> > 
-> > Do you want me to remove the D2/jffs2_dbg(2, ...) instances
-> > or just eliminate the first arg to jffs2_dbg and keep the
-> > current jffs2_dbg(2,...) instances?
+On Mon 12-03-12 20:18:33, Srivatsa S. Bhat wrote:
+> On 03/12/2012 07:47 PM, Martin Schwidefsky wrote:
 > 
-> Just remove. There were few other suggestions as well :-)
+> > On Mon, 12 Mar 2012 13:17:26 +0100
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> >> Goot catch. But I think that the following fix should be better because
+> >> it doesn't change the semantic of the function. What do you think?
+> > ..
+> >> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> >> index 7656642..dec767f 100644
+> >> --- a/kernel/time/tick-sched.c
+> >> +++ b/kernel/time/tick-sched.c
+> >> @@ -221,7 +221,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+> >>  		update_ts_time_stats(cpu, ts, now, last_update_time);
+> >>  		idle = ts->idle_sleeptime;
+> >>  	} else {
+> >> -		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
+> >> +		if (cpu_online(cpu) && ts->idle_active && !nr_iowait_cpu(cpu)) {
+> >>  			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+> >>
+> >>  			idle = ktime_add(ts->idle_sleeptime, delta);
+> >> @@ -262,7 +262,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+> >>  		update_ts_time_stats(cpu, ts, now, last_update_time);
+> >>  		iowait = ts->iowait_sleeptime;
+> >>  	} else {
+> >> -		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+> >> +		if (cpu_online(cpu) && ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+> >>  			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+> >>
+> >>  			iowait = ktime_add(ts->iowait_sleeptime, delta);
+> > 
+> > I would prefer an early exit from the functions. The target cpu is offline,
+> > who guarantees that the "struct tick_sched" for the cpu contains anything
+> > useful?
 
-what about all the dbg_<foo> calls like
-dbg_readinode(fmt, ...)?
+Hmm, the semantic is that the function either returns the sleeptime or
+-1 if nohz is disabled. Bringing also online/offline into it seems
+rather confusing. 
+Maybe we shouldn't do the test layer up when we call the function
+instead. This should be much cleaner IMO (it also reduced cpu_online
+call from the governors call paths which might be a problem as well):
 
-I tentatively converted them to a bitmap
-and a single jffs2_dbg(mask, fmt, ...)
-but perhaps all of these could be deleted
-too.
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 121f77c..d437258 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -24,7 +24,10 @@
+ 
+ static u64 get_idle_time(int cpu)
+ {
+-	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
++	u64 idle, idle_time = -1ULL;
++	
++	if (cpu_online(cpu))
++		idle_time = get_cpu_idle_time_us(cpu, NULL);
+ 
+ 	if (idle_time == -1ULL) {
+ 		/* !NO_HZ so we can rely on cpustat.idle */
+@@ -38,7 +41,10 @@ static u64 get_idle_time(int cpu)
+ 
+ static u64 get_iowait_time(int cpu)
+ {
+-	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
++	u64 iowait, iowait_time = -1ULL;
++	
++	if (cpu_online(cpu))
++		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+ 
+ 	if (iowait_time == -1ULL)
+ 		/* !NO_HZ so we can rely on cpustat.iowait */
 
+> 
+> Also, what about the case where last_update_time is non-NULL?
+> With Martin's patch update_ts_time_stats() won't be called for offline cpus,
 
+This is a separate issue AFAIU. If there is a possibility that somebody
+is calling it like that then it is a bug. I am not familiar with cpu
+governors (non-NULL update users) but we shouldn't paper over any bug with
+this /proc/stat fix.
 
+> whereas with Michal's patch it will be called and hence the counters will get
+> updated.. We don't want to update counters for offline cpus right?
+> 
+> Regards,
+> Srivatsa S. Bhat
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
