@@ -1,111 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab2CLCAh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 22:00:37 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:31609
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753810Ab2CLCAa (ORCPT
+	id S1754599Ab2CLCAv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 22:00:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65326 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754610Ab2CLCAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 22:00:30 -0400
-X-SpamScore: -10
-X-BigFish: VPS-10(zz1432N98dK4015Izz1202hzz8275bhz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M0R1KM-02-GYL-02
-X-M-MSG: 
-Date: Mon, 12 Mar 2012 10:00:16 +0800
-From: Aaron Lu <aaron.lu@amd.com>
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Zhang Rui <rui.zhang@intel.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Tejun Heo <tj@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-ide@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>
-Subject: Re: [RFC PATCH v2 1/8] ACPI: Introduce ACPI D3_COLD state support
-Message-ID: <20120312020016.GB2820@ladygaga>
-References: <1330592577-16546-1-git-send-email-ming.m.lin@intel.com>
- <1330592577-16546-2-git-send-email-ming.m.lin@intel.com>
+	Sun, 11 Mar 2012 22:00:44 -0400
+Date: Mon, 12 Mar 2012 10:06:09 +0800
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, riel@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com
+Subject: Re: Fwd: Control page reclaim granularity
+Message-ID: <20120312020609.GA9610@gmail.com>
+Mail-Followup-To: Minchan Kim <minchan@kernel.org>,
+	linux-mm <linux-mm@kvack.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Konstantin Khlebnikov <khlebnikov@openvz.org>, riel@redhat.com,
+	kosaki.motohiro@jp.fujitsu.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1330592577-16546-2-git-send-email-ming.m.lin@intel.com>
+In-Reply-To: <20120312002806.GA2436@barrios>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 12 Mar 2012 02:00:16.0405 (UTC) FILETIME=[DE9FC450:01CCFFF3]
-X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Mar 01, 2012 at 05:02:50PM +0800, Lin Ming wrote:
-> From: Zhang Rui <rui.zhang@intel.com>
+On Mon, Mar 12, 2012 at 09:29:34AM +0900, Minchan Kim wrote:
+> I forgot to Ccing you.
+> Sorry.
 > 
-> If a device has _PR3, it means the device supports D3_COLD.
-
-This confused me...So this means if a device is put to D3, instead of
-turning up the power resources referenced in _PR3, turning them all off
-will make the device in D3 cold. This is understandable, but what about
-_PR0? What power state this device is in when I turned off all the power
-resources referenced in _PR0? Undefined?
-
-I'm also confused with _PS3, what power state the device is in after its
-_PS3 is executed? The spec said it will be in D3 cold or D3 hot, so I
-guess there is no way to tell, right?
-
-Thanks,
-Aaron
-
-> Add the ability to validate and enter D3_COLD state in ACPI.
-> 
-> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
->  drivers/acpi/power.c |    4 ++--
->  drivers/acpi/scan.c  |    7 +++++++
->  2 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
-> index 9ac2a9f..0d681fb 100644
-> --- a/drivers/acpi/power.c
-> +++ b/drivers/acpi/power.c
-> @@ -500,14 +500,14 @@ int acpi_power_transition(struct acpi_device *device, int state)
->  {
->  	int result;
->  
-> -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3))
-> +	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
->  		return -EINVAL;
->  
->  	if (device->power.state == state)
->  		return 0;
->  
->  	if ((device->power.state < ACPI_STATE_D0)
-> -	    || (device->power.state > ACPI_STATE_D3))
-> +	    || (device->power.state > ACPI_STATE_D3_COLD))
->  		return -ENODEV;
->  
->  	/* TBD: Resources must be ordered. */
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 8ab80ba..571396c 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -885,6 +885,13 @@ static int acpi_bus_get_power_flags(struct acpi_device *device)
->  				acpi_bus_add_power_resource(ps->resources.handles[j]);
->  		}
->  
-> +		/* The exist of _PR3 indicates D3Cold support */
-> +		if (i == ACPI_STATE_D3) {
-> +			status = acpi_get_handle(device->handle, object_name, &handle);
-> +			if (ACPI_SUCCESS(status))
-> +				device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-> +		}
-> +
->  		/* Evaluate "_PSx" to see if we can do explicit sets */
->  		object_name[2] = 'S';
->  		status = acpi_get_handle(device->handle, object_name, &handle);
-> -- 
-> 1.7.2.5
+> ---------- Forwarded message ----------
+> From: Minchan Kim <minchan@kernel.org>
+> Date: Mon, Mar 12, 2012 at 9:28 AM
+> Subject: Re: Control page reclaim granularity
+> To: Minchan Kim <minchan@kernel.org>, linux-mm <linux-mm@kvack.org>,
+> linux-kernel <linux-kernel@vger.kernel.org>, Konstantin Khlebnikov <
+> khlebnikov@openvz.org>, riel@redhat.com, kosaki.motohiro@jp.fujitsu.com
 > 
 > 
+> On Fri, Mar 09, 2012 at 12:54:03AM +0800, Zheng Liu wrote:
+> > Hi Minchan,
+> >
+> > Sorry, I forgot to say that I don't subscribe linux-mm and linux-kernel
+> > mailing list.  So please Cc me.
+> >
+> > IMHO, maybe we should re-think about how does user use mmap(2).  I
+> > describe the cases I known in our product system.  They can be
+> > categorized into two cases.  One is mmaped all data files into memory
+> > and sometime it uses write(2) to append some data, and another uses
+> > mmap(2)/munmap(2) and read(2)/write(2) to manipulate the files.  In the
+> > second case,  the application wants to keep mmaped page into memory and
+> > let file pages to be reclaimed firstly.  So, IMO, when application uses
+> > mmap(2) to manipulate files, it is possible to imply that it wants keep
+> > these mmaped pages into memory and do not be reclaimed.  At least these
+> > pages do not be reclaimed early than file pages.  I think that maybe we
+> > can recover that routine and provide a sysctl parameter to let the user
+> > to set this ratio between mmaped pages and file pages.
+> 
+> I am not convinced why we should handle mapped page specially.
+> Sometimem, someone may use mmap by reducing buffer copy compared to read
+> system call.
+> So I think we can't make sure mmaped pages are always win.
+> 
+> My suggestion is that it would be better to declare by user explicitly.
+> I think we can implement it by madvise and fadvise's WILLNEED option.
+> Current implementation is just readahead if there isn't a page in memory
+> but I think
+> we can promote from inactive to active if there is already a page in
+> memory.
+> 
+> It's more clear and it couldn't be affected by kernel page reclaim
+> algorithm change
+> like this.
 
+Thank you for your advice.  But I still have question about this
+solution.  If we improve the madvise(2) and fadvise(2)'s WILLNEED
+option,  it will cause an inconsistently status for pages that be
+manipulated by madvise(2) and/or fadvise(2).  For example, when I call
+madvise with WILLNEED flag, some pages will be moved into active list if
+they already have been in memory, and other pages will be read into
+memory and be saved in inactive list if they don't be in memory.  Then
+pages that are in inactive list are possible to be reclaim.  So from the
+view of users, it is inconsistent because some pages are in memory and
+some pages are reclaimed.  But actually the user hopes that all of pages
+can be kept in memory.  IMHO, this inconsistency is weird and makes users
+puzzled.
+
+Regards,
+Zheng
