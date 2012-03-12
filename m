@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753964Ab2CLLma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 07:42:30 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60447 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185Ab2CLLm1 (ORCPT
+	id S1752273Ab2CLLqj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 07:46:39 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39023 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab2CLLqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 07:42:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH v7 1/4] USB: OHCI-HCD: Rename ohci-pnx4008 to ohci-nxp
-Date: Mon, 12 Mar 2012 08:46:28 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, w.sang@pengutronix.de,
-        kevin.wells@nxp.com, linux-arm-kernel@lists.infradead.org
-References: <1331463219-23293-1-git-send-email-stigge@antcom.de> <1331463219-23293-2-git-send-email-stigge@antcom.de>
-In-Reply-To: <1331463219-23293-2-git-send-email-stigge@antcom.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Mon, 12 Mar 2012 07:46:37 -0400
+Date: Mon, 12 Mar 2012 11:48:32 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Richard Weinberger <richard@nod.at>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: TTY: tty_port questions
+Message-ID: <20120312114832.784bb6fe@pyramind.ukuu.org.uk>
+In-Reply-To: <4F5DDAD4.4060504@nod.at>
+References: <4F5BD51B.7030907@nod.at>
+	<4F5BDB09.3020407@suse.cz>
+	<4F5BE1E6.9000201@nod.at>
+	<4F5C861F.2000507@nod.at>
+	<4F5DCF39.8080308@nod.at>
+	<20120312105312.665d2362@pyramind.ukuu.org.uk>
+	<4F5DDAD4.4060504@nod.at>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203120846.29070.arnd@arndb.de>
-X-Provags-ID: V02:K0:0UZtT50dbQpdaKMcO8qBrwZKlGCeboMaIiyEENgW1bv
- N0gdOfCpwWUVgJavepqljX3WFGdHJ31UK69D/hd9cYGB3u2K09
- qmRkDnvGlWet1wZQbUJtvmMzLobT/kSstFyfg7Kp08UMMia2XW
- mXKZ+/PJqF1Q1Z637pVNqj1hfq2WA0rIdzNJBcknSnZN5OTvTz
- 9eiA6JwDSOxSahGFMLs5N1amkGQPXHkWwUYb9+CKlq0S72PJDv
- XFDd0o+TKA+sZUDagC+Yz86LeI5ju+jtUZmgUzcYGc/w0NnUE1
- eCKFTdYHN/KKW1nTKk3/GO5aCXC6NnvRaHfA6GSuQkY0/e7+5z
- Z9blsp6xzWJPR170qAv4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 11 March 2012, Roland Stigge wrote:
-> Since this driver is compatible with several NXP devices, the driver is renamed
-> accordingly. Please combine with the following patch which also changes the
-> respective symbol names.
+On Mon, 12 Mar 2012 12:15:32 +0100
+Richard Weinberger <richard@nod.at> wrote:
+
+> On 12.03.2012 11:53, Alan Cox wrote:
+> >> Another question, what is the purpose of tty_port->console?
+> >> It seems to have no user.
+> >
+> > So the tty_port layer can in future know about whether it is a console
+> > without a tty necessarily being present or referenceable.
+> >
+> >> Is tty_port really the right thing for a console driver like in the UML
+> >> case?
+> >
+> > It will be. In order to fix the tty locking mess we need to shove a lot
+> > of stuff whose lifetime is the lifetime of the physical port somewhere
+> > else - the tty_port is that structure.
+> >
 > 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> 
+> "It will be" in terms of "not now"? ;-)
 
-Hi Roland,
+As in, it's the very next step on.
 
-As a general comment, it's helpful to use the "-M" flag to git-format-patch
-whenever you rename files, because that makes it obvious whether you have
-changed anything in the file or not.
-
-> --- /dev/null
-> +++ linux-2.6/drivers/usb/host/ohci-nxp.c
-> @@ -0,0 +1,453 @@
-> +/*
-> + * drivers/usb/host/ohci-pnx4008.c
-> + *
-> + * driver for Philips PNX4008 USB Host
-> + *
-
-I think your second patch does not change this comment and probably should.
-
-Just remove the file name from the comment because that one is generally
-not helpful.
-
-	Arnd
-
+Alan
