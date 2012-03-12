@@ -1,62 +1,623 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab2CLJiw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 05:38:52 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:47363 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755054Ab2CLJit convert rfc822-to-8bit (ORCPT
+	id S1755234Ab2CLJmt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 05:42:49 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:62861 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754954Ab2CLJmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 05:38:49 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-Date: Mon, 12 Mar 2012 09:37:47 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B6E99@saturn3.aculab.com>
-In-Reply-To: <CAOD=uF4Vx581zvpAT0dHKjUkrdsiZo-DTNR352V8tALM_P2roA@mail.gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-Thread-Index: Acz/Z7HuzNgx7t4MRgqSnnQP4EbZQAAy4ABQ
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "santosh prasad nayak" <santoshprasadnayak@gmail.com>,
-        "Rajesh Borundia" <rajesh.borundia@qlogic.com>
-Cc: "Sony Chacko" <sony.chacko@qlogic.com>, "netdev" <netdev@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        <kernel-janitors@vger.kernel.org>
-X-OriginalArrivalTime: 12 Mar 2012 09:37:47.0519 (UTC) FILETIME=[C8C358F0:01CD0033]
+	Mon, 12 Mar 2012 05:42:44 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [PATCH 1/3] [PATCH RFC] adv7180: add support to user controls
+Date: Mon, 12 Mar 2012 10:44:32 +0100
+Message-Id: <1331545474-21946-1-git-send-email-federico.vaga@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Video user controls such as brightness, contrast, saturation, and
+hue are now handled.
+
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+Cc: Alan Cox <alan@linux.intel.com>
+---
+ drivers/media/video/adv7180.c |  418 ++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 350 insertions(+), 68 deletions(-)
+
+diff --git a/drivers/media/video/adv7180.c b/drivers/media/video/adv7180.c
+index d2138d0..e6ee685 100644
+--- a/drivers/media/video/adv7180.c
++++ b/drivers/media/video/adv7180.c
+@@ -48,6 +48,7 @@
+ #define ADV7180_INPUT_CONTROL_PAL_COMB_N_PED		0xd0
+ #define ADV7180_INPUT_CONTROL_PAL_SECAM			0xe0
+ #define ADV7180_INPUT_CONTROL_PAL_SECAM_PED		0xf0
++#define ADV7180_INPUT_CONTROL_INSEL_MASK		0x0f
  
-
-> -----Original Message-----
-> From: netdev-owner@vger.kernel.org 
-> [mailto:netdev-owner@vger.kernel.org] On Behalf Of santosh 
-> prasad nayak
-> Sent: 11 March 2012 09:17
-> To: Rajesh Borundia
-> Cc: Sony Chacko; netdev; linux-kernel; kernel-janitors@vger.kernel.org
-> Subject: Re: [PATCH 3/3] netxen: qlogic ethernet : Fix Endian Bug.
-> 
-> Thanks Rajesh for clarification.
-> Included all your inputs in the following patch.
-> This is for review not a formal one. Once review is done I will send a
-> formal patch.
-
-I'm not sure of the exact nature of the issues here,
-but whenever I see code that casts between the addresses
-of integer types large bells start ringing - such code
-tends to have unwanted dependencies against the sizes
-and endiannesses of the relevant fields.
-This code might be ok, but lines like:
-> +	if (*(__le64 *)mac == cpu_to_le64(~0ULL)) {
-rather give me the willies.
-
-	David
-
+ #define ADV7180_EXTENDED_OUTPUT_CONTROL_REG		0x04
+ #define ADV7180_EXTENDED_OUTPUT_CONTROL_NTSCDIS		0xC5
+@@ -55,9 +56,29 @@
+ #define ADV7180_AUTODETECT_ENABLE_REG			0x07
+ #define ADV7180_AUTODETECT_DEFAULT			0x7f
+ 
++#define ADV7180_CON_REG		0x08	/*Unsigned */
++#define CON_REG_MIN		0
++#define CON_REG_DEF		128
++#define CON_REG_MAX		255
++
++#define ADV7180_BRI_REG		0x0a	/*Signed */
++#define BRI_REG_MIN		-128
++#define BRI_REG_DEF		0
++#define BRI_REG_MAX		127
++
++#define ADV7180_HUE_REG		0x0b	/*Signed, inverted */
++#define HUE_REG_MIN		-127
++#define HUE_REG_DEF		0
++#define HUE_REG_MAX		128
++
+ #define ADV7180_ADI_CTRL_REG				0x0e
+ #define ADV7180_ADI_CTRL_IRQ_SPACE			0x20
+ 
++#define ADV7180_PWR_MAN_REG		0x0f
++#define ADV7180_PWR_MAN_ON		0x04
++#define ADV7180_PWR_MAN_OFF		0x24
++#define ADV7180_PWR_MAN_RES		0x80
++
+ #define ADV7180_STATUS1_REG				0x10
+ #define ADV7180_STATUS1_IN_LOCK		0x01
+ #define ADV7180_STATUS1_AUTOD_MASK	0x70
+@@ -78,6 +99,12 @@
+ #define ADV7180_ICONF1_PSYNC_ONLY	0x10
+ #define ADV7180_ICONF1_ACTIVE_TO_CLR	0xC0
+ 
++#define ADV7180_SD_SAT_CB_REG	0xe3	/*Unsigned */
++#define ADV7180_SD_SAT_CR_REG	0xe4	/*Unsigned */
++#define SAT_REG_MIN		0
++#define SAT_REG_DEF		128
++#define SAT_REG_MAX		255
++
+ #define ADV7180_IRQ1_LOCK	0x01
+ #define ADV7180_IRQ1_UNLOCK	0x02
+ #define ADV7180_ISR1_ADI	0x42
+@@ -90,6 +117,9 @@
+ #define ADV7180_IMR3_ADI	0x4C
+ #define ADV7180_IMR4_ADI	0x50
+ 
++#define ADV7180_NTSC_V_BIT_END_REG	0xE6
++#define ADV7180_NTSC_V_BIT_END_MANUAL_NVEND	0x4F
++
+ struct adv7180_state {
+ 	struct v4l2_subdev	sd;
+ 	struct work_struct	work;
+@@ -97,6 +127,11 @@ struct adv7180_state {
+ 	int			irq;
+ 	v4l2_std_id		curr_norm;
+ 	bool			autodetect;
++	s8			brightness;
++	s16			hue;
++	u8			contrast;
++	u8			saturation;
++	u8			input;
+ };
+ 
+ static v4l2_std_id adv7180_std_to_v4l2(u8 status1)
+@@ -155,7 +190,7 @@ static u32 adv7180_status_to_v4l2(u8 status1)
+ }
+ 
+ static int __adv7180_status(struct i2c_client *client, u32 *status,
+-	v4l2_std_id *std)
++			    v4l2_std_id *std)
+ {
+ 	int status1 = i2c_smbus_read_byte_data(client, ADV7180_STATUS1_REG);
+ 
+@@ -192,6 +227,36 @@ static int adv7180_querystd(struct v4l2_subdev *sd, v4l2_std_id *std)
+ 	return err;
+ }
+ 
++static int adv7180_s_routing(struct v4l2_subdev *sd, u32 input,
++			     u32 output, u32 config)
++{
++	struct adv7180_state *state = to_state(sd);
++	int ret = mutex_lock_interruptible(&state->mutex);
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++
++	if (ret)
++		return ret;
++
++	/*We cannot discriminate between LQFP and 40-pin LFCSP, so accept
++	 * all inputs and let the card driver take care of validation
++	 */
++	if ((input & ADV7180_INPUT_CONTROL_INSEL_MASK) != input)
++		goto out;
++
++	ret = i2c_smbus_read_byte_data(client, ADV7180_INPUT_CONTROL_REG);
++
++	if (ret < 0)
++		goto out;
++
++	ret &= ~ADV7180_INPUT_CONTROL_INSEL_MASK;
++	ret = i2c_smbus_write_byte_data(client,
++					ADV7180_INPUT_CONTROL_REG, ret | input);
++	state->input = input;
++out:
++	mutex_unlock(&state->mutex);
++	return ret;
++}
++
+ static int adv7180_g_input_status(struct v4l2_subdev *sd, u32 *status)
+ {
+ 	struct adv7180_state *state = to_state(sd);
+@@ -205,7 +270,7 @@ static int adv7180_g_input_status(struct v4l2_subdev *sd, u32 *status)
+ }
+ 
+ static int adv7180_g_chip_ident(struct v4l2_subdev *sd,
+-	struct v4l2_dbg_chip_ident *chip)
++				struct v4l2_dbg_chip_ident *chip)
+ {
+ 	struct i2c_client *client = v4l2_get_subdevdata(sd);
+ 
+@@ -222,9 +287,10 @@ static int adv7180_s_std(struct v4l2_subdev *sd, v4l2_std_id std)
+ 
+ 	/* all standards -> autodetect */
+ 	if (std == V4L2_STD_ALL) {
+-		ret = i2c_smbus_write_byte_data(client,
+-			ADV7180_INPUT_CONTROL_REG,
+-			ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM);
++		ret =
++		    i2c_smbus_write_byte_data(client, ADV7180_INPUT_CONTROL_REG,
++				ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM
++					      | state->input);
+ 		if (ret < 0)
+ 			goto out;
+ 
+@@ -236,7 +302,8 @@ static int adv7180_s_std(struct v4l2_subdev *sd, v4l2_std_id std)
+ 			goto out;
+ 
+ 		ret = i2c_smbus_write_byte_data(client,
+-			ADV7180_INPUT_CONTROL_REG, ret);
++						ADV7180_INPUT_CONTROL_REG,
++						ret | state->input);
+ 		if (ret < 0)
+ 			goto out;
+ 
+@@ -249,14 +316,138 @@ out:
+ 	return ret;
+ }
+ 
++static int adv7180_queryctrl(struct v4l2_subdev *sd, struct v4l2_queryctrl *qc)
++{
++	switch (qc->id) {
++	case V4L2_CID_BRIGHTNESS:
++		return v4l2_ctrl_query_fill(qc, BRI_REG_MIN, BRI_REG_MAX,
++					    1, BRI_REG_DEF);
++	case V4L2_CID_HUE:
++		return v4l2_ctrl_query_fill(qc, HUE_REG_MIN, HUE_REG_MAX,
++					    1, HUE_REG_DEF);
++	case V4L2_CID_CONTRAST:
++		return v4l2_ctrl_query_fill(qc, CON_REG_MIN, CON_REG_MAX,
++					    1, CON_REG_DEF);
++	case V4L2_CID_SATURATION:
++		return v4l2_ctrl_query_fill(qc, SAT_REG_MIN, SAT_REG_MAX,
++					    1, SAT_REG_DEF);
++	default:
++		break;
++	}
++
++	return -EINVAL;
++}
++
++static int adv7180_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
++{
++	struct adv7180_state *state = to_state(sd);
++	int ret = mutex_lock_interruptible(&state->mutex);
++	if (ret)
++		return ret;
++
++	switch (ctrl->id) {
++	case V4L2_CID_BRIGHTNESS:
++		ctrl->value = state->brightness;
++		break;
++	case V4L2_CID_HUE:
++		ctrl->value = state->hue;
++		break;
++	case V4L2_CID_CONTRAST:
++		ctrl->value = state->contrast;
++		break;
++	case V4L2_CID_SATURATION:
++		ctrl->value = state->saturation;
++		break;
++	default:
++		ret = -EINVAL;
++	}
++
++	mutex_unlock(&state->mutex);
++	return ret;
++}
++
++static int adv7180_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
++{
++	struct adv7180_state *state = to_state(sd);
++	struct i2c_client *client = v4l2_get_subdevdata(sd);
++	int ret = mutex_lock_interruptible(&state->mutex);
++	if (ret)
++		return ret;
++
++	switch (ctrl->id) {
++	case V4L2_CID_BRIGHTNESS:
++		if ((ctrl->value > BRI_REG_MAX)
++		    || (ctrl->value < BRI_REG_MIN)) {
++			ret = -ERANGE;
++			break;
++		}
++		state->brightness = ctrl->value;
++		ret = i2c_smbus_write_byte_data(client,
++						ADV7180_BRI_REG,
++						state->brightness);
++		break;
++	case V4L2_CID_HUE:
++		if ((ctrl->value > HUE_REG_MAX)
++		    || (ctrl->value < HUE_REG_MIN)) {
++			ret = -ERANGE;
++			break;
++		}
++		state->hue = ctrl->value;
++		/*Hue is inverted according to HSL chart */
++		ret = i2c_smbus_write_byte_data(client,
++						ADV7180_HUE_REG, -state->hue);
++		break;
++	case V4L2_CID_CONTRAST:
++		if ((ctrl->value > CON_REG_MAX)
++		    || (ctrl->value < CON_REG_MIN)) {
++			ret = -ERANGE;
++			break;
++		}
++		state->contrast = ctrl->value;
++		ret = i2c_smbus_write_byte_data(client,
++						ADV7180_CON_REG,
++						state->contrast);
++		break;
++	case V4L2_CID_SATURATION:
++		if ((ctrl->value > SAT_REG_MAX)
++		    || (ctrl->value < SAT_REG_MIN)) {
++			ret = -ERANGE;
++			break;
++		}
++		/*
++		 *This could be V4L2_CID_BLUE_BALANCE/V4L2_CID_RED_BALANCE
++		 *Let's not confuse the user, everybody understands saturation
++		 */
++		state->saturation = ctrl->value;
++		ret = i2c_smbus_write_byte_data(client,
++						ADV7180_SD_SAT_CB_REG,
++						state->saturation);
++		if (ret < 0)
++			break;
++		ret = i2c_smbus_write_byte_data(client,
++						ADV7180_SD_SAT_CR_REG,
++						state->saturation);
++		break;
++	default:
++		ret = -EINVAL;
++	}
++
++	mutex_unlock(&state->mutex);
++	return ret;
++}
++
+ static const struct v4l2_subdev_video_ops adv7180_video_ops = {
+ 	.querystd = adv7180_querystd,
+ 	.g_input_status = adv7180_g_input_status,
++	.s_routing = adv7180_s_routing,
+ };
+ 
+ static const struct v4l2_subdev_core_ops adv7180_core_ops = {
+ 	.g_chip_ident = adv7180_g_chip_ident,
+ 	.s_std = adv7180_s_std,
++	.queryctrl = adv7180_queryctrl,
++	.g_ctrl = adv7180_g_ctrl,
++	.s_ctrl = adv7180_s_ctrl,
+ };
+ 
+ static const struct v4l2_subdev_ops adv7180_ops = {
+@@ -267,13 +458,13 @@ static const struct v4l2_subdev_ops adv7180_ops = {
+ static void adv7180_work(struct work_struct *work)
+ {
+ 	struct adv7180_state *state = container_of(work, struct adv7180_state,
+-		work);
++						   work);
+ 	struct i2c_client *client = v4l2_get_subdevdata(&state->sd);
+ 	u8 isr3;
+ 
+ 	mutex_lock(&state->mutex);
+ 	i2c_smbus_write_byte_data(client, ADV7180_ADI_CTRL_REG,
+-		ADV7180_ADI_CTRL_IRQ_SPACE);
++				  ADV7180_ADI_CTRL_IRQ_SPACE);
+ 	isr3 = i2c_smbus_read_byte_data(client, ADV7180_ISR3_ADI);
+ 	/* clear */
+ 	i2c_smbus_write_byte_data(client, ADV7180_ICR3_ADI, isr3);
+@@ -297,56 +488,51 @@ static irqreturn_t adv7180_irq(int irq, void *devid)
+ 	return IRQ_HANDLED;
+ }
+ 
+-/*
+- * Generic i2c probe
+- * concerning the addresses: i2c wants 7 bit (without the r/w bit), so '>>1'
+- */
+-
+-static __devinit int adv7180_probe(struct i2c_client *client,
+-			const struct i2c_device_id *id)
++static int init_device(struct i2c_client *client, struct adv7180_state *state)
+ {
+-	struct adv7180_state *state;
+-	struct v4l2_subdev *sd;
+ 	int ret;
+ 
+-	/* Check if the adapter supports the needed features */
+-	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
+-		return -EIO;
+-
+-	v4l_info(client, "chip found @ 0x%02x (%s)\n",
+-			client->addr << 1, client->adapter->name);
+-
+-	state = kzalloc(sizeof(struct adv7180_state), GFP_KERNEL);
+-	if (state == NULL) {
+-		ret = -ENOMEM;
+-		goto err;
+-	}
+-
+-	state->irq = client->irq;
+-	INIT_WORK(&state->work, adv7180_work);
+-	mutex_init(&state->mutex);
+-	state->autodetect = true;
+-	sd = &state->sd;
+-	v4l2_i2c_subdev_init(sd, client, &adv7180_ops);
+-
+ 	/* Initialize adv7180 */
+ 	/* Enable autodetection */
+-	ret = i2c_smbus_write_byte_data(client, ADV7180_INPUT_CONTROL_REG,
+-		ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM);
+-	if (ret < 0)
+-		goto err_unreg_subdev;
++	if (state->autodetect) {
++		ret =
++		    i2c_smbus_write_byte_data(client, ADV7180_INPUT_CONTROL_REG,
++				ADV7180_INPUT_CONTROL_AD_PAL_BG_NTSC_J_SECAM
++					      | state->input);
++		if (ret < 0)
++			return ret;
+ 
+-	ret = i2c_smbus_write_byte_data(client, ADV7180_AUTODETECT_ENABLE_REG,
+-		ADV7180_AUTODETECT_DEFAULT);
+-	if (ret < 0)
+-		goto err_unreg_subdev;
++		ret =
++		    i2c_smbus_write_byte_data(client,
++					      ADV7180_AUTODETECT_ENABLE_REG,
++					      ADV7180_AUTODETECT_DEFAULT);
++		if (ret < 0)
++			return ret;
++	} else {
++		ret = v4l2_std_to_adv7180(state->curr_norm);
++		if (ret < 0)
++			return ret;
+ 
++		ret =
++		    i2c_smbus_write_byte_data(client, ADV7180_INPUT_CONTROL_REG,
++					      ret | state->input);
++		if (ret < 0)
++			return ret;
++
++	}
+ 	/* ITU-R BT.656-4 compatible */
+ 	ret = i2c_smbus_write_byte_data(client,
+-		ADV7180_EXTENDED_OUTPUT_CONTROL_REG,
+-		ADV7180_EXTENDED_OUTPUT_CONTROL_NTSCDIS);
++			ADV7180_EXTENDED_OUTPUT_CONTROL_REG,
++			ADV7180_EXTENDED_OUTPUT_CONTROL_NTSCDIS);
+ 	if (ret < 0)
+-		goto err_unreg_subdev;
++		return ret;
++
++	/* Manually set V bit end position in NTSC mode */
++	ret = i2c_smbus_write_byte_data(client,
++					ADV7180_NTSC_V_BIT_END_REG,
++					ADV7180_NTSC_V_BIT_END_MANUAL_NVEND);
++	if (ret < 0)
++		return ret;
+ 
+ 	/* read current norm */
+ 	__adv7180_status(client, NULL, &state->curr_norm);
+@@ -354,45 +540,109 @@ static __devinit int adv7180_probe(struct i2c_client *client,
+ 	/* register for interrupts */
+ 	if (state->irq > 0) {
+ 		ret = request_irq(state->irq, adv7180_irq, 0, DRIVER_NAME,
+-			state);
++				  state);
+ 		if (ret)
+-			goto err_unreg_subdev;
++			return ret;
+ 
+ 		ret = i2c_smbus_write_byte_data(client, ADV7180_ADI_CTRL_REG,
+-			ADV7180_ADI_CTRL_IRQ_SPACE);
++						ADV7180_ADI_CTRL_IRQ_SPACE);
+ 		if (ret < 0)
+-			goto err_unreg_subdev;
++			return ret;
+ 
+ 		/* config the Interrupt pin to be active low */
+ 		ret = i2c_smbus_write_byte_data(client, ADV7180_ICONF1_ADI,
+-			ADV7180_ICONF1_ACTIVE_LOW | ADV7180_ICONF1_PSYNC_ONLY);
++						ADV7180_ICONF1_ACTIVE_LOW |
++						ADV7180_ICONF1_PSYNC_ONLY);
+ 		if (ret < 0)
+-			goto err_unreg_subdev;
++			return ret;
+ 
+ 		ret = i2c_smbus_write_byte_data(client, ADV7180_IMR1_ADI, 0);
+ 		if (ret < 0)
+-			goto err_unreg_subdev;
++			return ret;
+ 
+ 		ret = i2c_smbus_write_byte_data(client, ADV7180_IMR2_ADI, 0);
+ 		if (ret < 0)
+-			goto err_unreg_subdev;
++			return ret;
+ 
+ 		/* enable AD change interrupts interrupts */
+ 		ret = i2c_smbus_write_byte_data(client, ADV7180_IMR3_ADI,
+-			ADV7180_IRQ3_AD_CHANGE);
++						ADV7180_IRQ3_AD_CHANGE);
+ 		if (ret < 0)
+-			goto err_unreg_subdev;
++			return ret;
+ 
+ 		ret = i2c_smbus_write_byte_data(client, ADV7180_IMR4_ADI, 0);
+ 		if (ret < 0)
+-			goto err_unreg_subdev;
++			return ret;
+ 
+ 		ret = i2c_smbus_write_byte_data(client, ADV7180_ADI_CTRL_REG,
+-			0);
++						0);
+ 		if (ret < 0)
+-			goto err_unreg_subdev;
++			return ret;
++	}
++
++	/*Set default value for controls */
++	ret = i2c_smbus_write_byte_data(client, ADV7180_BRI_REG,
++					state->brightness);
++	if (ret < 0)
++		return ret;
++
++	ret = i2c_smbus_write_byte_data(client, ADV7180_HUE_REG, state->hue);
++	if (ret < 0)
++		return ret;
++
++	ret = i2c_smbus_write_byte_data(client, ADV7180_CON_REG,
++					state->contrast);
++	if (ret < 0)
++		return ret;
++
++	ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CB_REG,
++					state->saturation);
++	if (ret < 0)
++		return ret;
++
++	ret = i2c_smbus_write_byte_data(client, ADV7180_SD_SAT_CR_REG,
++					state->saturation);
++	if (ret < 0)
++		return ret;
++
++	return 0;
++}
++
++static __devinit int adv7180_probe(struct i2c_client *client,
++				   const struct i2c_device_id *id)
++{
++	struct adv7180_state *state;
++	struct v4l2_subdev *sd;
++	int ret;
++
++	/* Check if the adapter supports the needed features */
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
++		return -EIO;
++
++	v4l_info(client, "chip found @ 0x%02x (%s)\n",
++		 client->addr, client->adapter->name);
++
++	state = kzalloc(sizeof(struct adv7180_state), GFP_KERNEL);
++	if (state == NULL) {
++		ret = -ENOMEM;
++		goto err;
+ 	}
+ 
++	state->irq = client->irq;
++	INIT_WORK(&state->work, adv7180_work);
++	mutex_init(&state->mutex);
++	state->autodetect = true;
++	state->brightness = BRI_REG_DEF;
++	state->hue = HUE_REG_DEF;
++	state->contrast = CON_REG_DEF;
++	state->saturation = SAT_REG_DEF;
++	state->input = 0;
++	sd = &state->sd;
++	v4l2_i2c_subdev_init(sd, client, &adv7180_ops);
++
++	ret = init_device(client, state);
++	if (0 != ret)
++		goto err_unreg_subdev;
+ 	return 0;
+ 
+ err_unreg_subdev:
+@@ -432,16 +682,49 @@ static const struct i2c_device_id adv7180_id[] = {
+ 	{},
+ };
+ 
++#ifdef CONFIG_PM
++static int adv7180_suspend(struct i2c_client *client, pm_message_t state)
++{
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, ADV7180_PWR_MAN_REG,
++					ADV7180_PWR_MAN_OFF);
++	if (ret < 0)
++		return ret;
++	return 0;
++}
++
++static int adv7180_resume(struct i2c_client *client)
++{
++	struct v4l2_subdev *sd = i2c_get_clientdata(client);
++	struct adv7180_state *state = to_state(sd);
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, ADV7180_PWR_MAN_REG,
++					ADV7180_PWR_MAN_ON);
++	if (ret < 0)
++		return ret;
++	ret = init_device(client, state);
++	if (ret < 0)
++		return ret;
++	return 0;
++}
++#endif
++
+ MODULE_DEVICE_TABLE(i2c, adv7180_id);
+ 
+ static struct i2c_driver adv7180_driver = {
+ 	.driver = {
+-		.owner	= THIS_MODULE,
+-		.name	= DRIVER_NAME,
+-	},
+-	.probe		= adv7180_probe,
+-	.remove		= __devexit_p(adv7180_remove),
+-	.id_table	= adv7180_id,
++		   .owner = THIS_MODULE,
++		   .name = DRIVER_NAME,
++		   },
++	.probe = adv7180_probe,
++	.remove = __devexit_p(adv7180_remove),
++#ifdef CONFIG_PM
++	.suspend = adv7180_suspend,
++	.resume = adv7180_resume,
++#endif
++	.id_table = adv7180_id,
+ };
+ 
+ static __init int adv7180_init(void)
+@@ -460,4 +743,3 @@ module_exit(adv7180_exit);
+ MODULE_DESCRIPTION("Analog Devices ADV7180 video decoder driver");
+ MODULE_AUTHOR("Mocean Laboratories");
+ MODULE_LICENSE("GPL v2");
+-
+-- 
+1.7.7.6
 
