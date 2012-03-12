@@ -1,56 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273Ab2CLLqj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 07:46:39 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39023 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751780Ab2CLLqh (ORCPT
+	id S1754092Ab2CLLuz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 07:50:55 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34363 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784Ab2CLLuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 07:46:37 -0400
-Date: Mon, 12 Mar 2012 11:48:32 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Richard Weinberger <richard@nod.at>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: TTY: tty_port questions
-Message-ID: <20120312114832.784bb6fe@pyramind.ukuu.org.uk>
-In-Reply-To: <4F5DDAD4.4060504@nod.at>
-References: <4F5BD51B.7030907@nod.at>
-	<4F5BDB09.3020407@suse.cz>
-	<4F5BE1E6.9000201@nod.at>
-	<4F5C861F.2000507@nod.at>
-	<4F5DCF39.8080308@nod.at>
-	<20120312105312.665d2362@pyramind.ukuu.org.uk>
-	<4F5DDAD4.4060504@nod.at>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Mar 2012 07:50:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <4EAF753B-6FBF-4EB8-A200-C7BCE7FDEEA0@gmx.ch>
+References: <2C80D678-F219-4B4E-A7FB-D0F890ECC7DD@gmx.ch>
+	<CAJd=RBBnxKa+roD+G-G_bnVLBKCmw-wtW+pO8BtQRVmPkRoJpw@mail.gmail.com>
+	<4EAF753B-6FBF-4EB8-A200-C7BCE7FDEEA0@gmx.ch>
+Date: Mon, 12 Mar 2012 19:50:49 +0800
+Message-ID: <CAJd=RBC=iWSSZMmqSc0US9rL0msTDMfm95wmuh_mzYGwGRbFfA@mail.gmail.com>
+Subject: Re: bug in thread_group_times (+possible patch)
+From: Hillf Danton <dhillf@gmail.com>
+To: Fawzi Mohamed <fawzi@gmx.ch>
+Cc: linux-kernel@vger.kernel.org, Thomas Dargel <td@chemie.hu-berlin.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Mar 2012 12:15:32 +0100
-Richard Weinberger <richard@nod.at> wrote:
+On Sun, Mar 11, 2012 at 11:19 PM, Fawzi Mohamed <fawzi@gmx.ch> wrote:
+>
+> I just tested and div64_u64 was already available.
 
-> On 12.03.2012 11:53, Alan Cox wrote:
-> >> Another question, what is the purpose of tty_port->console?
-> >> It seems to have no user.
-> >
-> > So the tty_port layer can in future know about whether it is a console
-> > without a tty necessarily being present or referenceable.
-> >
-> >> Is tty_port really the right thing for a console driver like in the UML
-> >> case?
-> >
-> > It will be. In order to fix the tty locking mess we need to shove a lot
-> > of stuff whose lifetime is the lifetime of the physical port somewhere
-> > else - the tty_port is that structure.
-> >
-> 
-> "It will be" in terms of "not now"? ;-)
-
-As in, it's the very next step on.
-
-Alan
+Looks  ready to send a patch to LKML
