@@ -1,125 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab2CLBxl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 21:53:41 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:32114 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754006Ab2CLBxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 21:53:34 -0400
-X-AuditID: cbfee612-b7c09ae0000024ca-27-4f5d571ca803
-Date: Mon, 12 Mar 2012 01:53:32 +0000 (GMT)
-From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
-Subject: Re: Re: [PATCH 0/3] power: max17042_battery: Add DT bindings
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: DirkBrandewie <dirk.brandewie@gmail.com>,
+	id S1754565Ab2CLByX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 21:54:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65469 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754516Ab2CLByA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 21:54:00 -0400
+X-IronPort-AV: E=Sophos;i="4.73,568,1325433600"; 
+   d="scan'208";a="4505654"
+Message-ID: <4F5D5566.8030807@cn.fujitsu.com>
+Date: Mon, 12 Mar 2012 09:46:14 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Daniel P. Berrange" <berrange@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "AntonVorontsov<cbou"@mail.ru, "DavidWoodhouse<dwmw2"@infradead.org
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20120312013452496@myungjoo.ham
-Msgkey: 20120312013452496@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120312013452496@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <17763564.55121331517212251.JavaMail.weblogic@epml04>
-X-Brightmail-Tracker: AAAAAA==
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [RESEND][PATCH 2/2 v3] deal with guest panicked event
+References: <4F58664D.1070800@cn.fujitsu.com> <4F5868C4.2090509@cn.fujitsu.com> <4F5886C4.7040100@cn.fujitsu.com> <4F5897F8.6090503@redhat.com> <20120308113607.GC25529@redhat.com> <4F589D8D.4030105@redhat.com> <20120308115656.GD25529@redhat.com>
+In-Reply-To: <20120308115656.GD25529@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-12 09:42:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-12 09:44:03,
+	Serialize complete at 2012-03-12 09:44:03
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2C1sQd1009956
 
-Karol Lewandowski<k.lewandowsk@samsung.com>, 2012-03-10 02:32 (GMT+09:00)
-> Dear MungJoo,
+At 03/08/2012 07:56 PM, Daniel P. Berrange Wrote:
+> On Thu, Mar 08, 2012 at 01:52:45PM +0200, Avi Kivity wrote:
+>> On 03/08/2012 01:36 PM, Daniel P. Berrange wrote:
+>>> On Thu, Mar 08, 2012 at 01:28:56PM +0200, Avi Kivity wrote:
+>>>> On 03/08/2012 12:15 PM, Wen Congyang wrote:
+>>>>> When the host knows the guest is panicked, it will set
+>>>>> exit_reason to KVM_EXIT_GUEST_PANICKED. So if qemu receive
+>>>>> this exit_reason, we can send a event to tell management
+>>>>> application that the guest is panicked and set the guest
+>>>>> status to RUN_STATE_PANICKED.
+>>>>>
+>>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>>>>> ---
+>>>>>  kvm-all.c        |    5 +++++
+>>>>>  monitor.c        |    3 +++
+>>>>>  monitor.h        |    1 +
+>>>>>  qapi-schema.json |    2 +-
+>>>>>  qmp.c            |    3 ++-
+>>>>>  vl.c             |    1 +
+>>>>>  6 files changed, 13 insertions(+), 2 deletions(-)
+>>>>>
+>>>>> diff --git a/kvm-all.c b/kvm-all.c
+>>>>> index 77eadf6..b3c9a83 100644
+>>>>> --- a/kvm-all.c
+>>>>> +++ b/kvm-all.c
+>>>>> @@ -1290,6 +1290,11 @@ int kvm_cpu_exec(CPUState *env)
+>>>>>                      (uint64_t)run->hw.hardware_exit_reason);
+>>>>>              ret = -1;
+>>>>>              break;
+>>>>> +        case KVM_EXIT_GUEST_PANICKED:
+>>>>> +            monitor_protocol_event(QEVENT_GUEST_PANICKED, NULL);
+>>>>> +            vm_stop(RUN_STATE_PANICKED);
+>>>>> +            ret = -1;
+>>>>> +            break;
+>>>>>
+>>>>
+>>>> If the management application is not aware of this event, then it will
+>>>> never resume the guest, so it will appear hung.
+>>>
+>>> Even if the mgmt app doesn't know about the QEVENT_GUEST_PANICKED, it should
+>>> still see a QEVENT_STOP event emitted by vm_stop() surely ? So it will
+>>> know the guest CPUs have been stopped, even if it isn't aware of the
+>>> reason why, which seems fine to me.
+>>
+>> No.  The guest is stopped, and there's no reason to suppose that the
+>> management app will restart it.  Behaviour has changed.
+>>
+>> Suppose the guest has reboot_on_panic set; now the behaviour change is
+>> even more visible - service will stop completely instead of being
+>> interrupted for a bit while the guest reboots.
 > 
-> I wasn't aware of Dirk's patchset and thus, I didn't ever try to make my
-> patches compatible with it.
+> Hmm, so this calls for a new command line argument to control behaviour,
+> similar to what we do for disk werror, eg something like
 > 
-> I've found hopefully correct patchset[1] via google - it's mailing list
-> posting without any feedback...  I've checked linux-next and it clearly
-> hasn't been merged.
+>   --onpanic "report|pause|stop|..."
 > 
-> I'm happy to rework my patch but I would like to ask you about specific
-> tree I should base on.  Is this patchset in some subsystem-specific
-> (power?) tree? Other?
-
-Dear Karol,
-
-I preferred Dirk's patchset included because it is for the correctness of the device driver.
-
-However, as Dirk's patchset has not been updated or merged for long, I guess you may go ahead trying to merge this DT patchset first.
-
-It appears that this patchset does not force much trouble for Dirk's side as the two are virtually disjoint and it seems rebasing Dirk's patchset upon this patchset trivial though I didn't try that yet.
-
-Anyway, please consider "Acked-by" from me for the patches.
-
-
-Cheers!
-MyungJoo.
-
+> where
 > 
-> [1] https://lkml.org/lkml/2012/1/24/237
+>  report - emit QEVENT_GUEST_PANICKED only
+
+If the guest is panicked when libvirt is stopped, and we only emit a event,
+we cannot know the guest is panicked when libvirt starts.
+
+So I add a new RunState to solve this problem. If the guest is stopped when
+it is panicked, it will change the behaviour. So I think the new RunState
+should be a running state.
+
+Thanks
+Wen Congyang
+
+>  pause  - emit QEVENT_GUEST_PANICKED and pause VM
+>  stop   - emit QEVENT_GUEST_PANICKED and quit VM
+>  stop   - emit QEVENT_GUEST_PANICKED and quit VM
+> 
+> This would map fairly well into libvirt, where we already have config
+> parameters for controlling what todo with a guest when it panics.
 > 
 > Regards,
-> -- 
-> Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
-> 
-> On 09.03.2012 01:16, ÇÔ¸íÁÖ wrote:
-> 
-> > Dear Karol Lewandowski,
-> > 
-> > I've been confused this patchset with Dirk Brandewie's MAX17042 patchset; I though this was a follow-up version of Dirk's, which I think already acked by me.
-> > 
-> > Anyway, the patches themselves look fine.
-> > 
-> > However, have you checked the compatibility (mergability?) with the recent MAX17042 patches of Dirk Brandewie? I'm not sure about the merge status of Dirk's patchset, but, I think you need to consider his patches as they massively reshaped the device driver.
-> > 
-> > Other than that, the patches look fine. (If that issue is already considered, regard this as an Acked-by.)
-> > 
-> > Thank you.
-> > 
-> > 
-> > Cheers!
-> > MyungJoo.
-> > 
-> > ------- Original Message -------
-> > Sender : Karol Lewandowski Junior Software Engineer/SPRC-Linux (MSD)/»ï¼ºÀüÀÚ
-> > Date : 2012-03-08 19:32 (GMT+09:00)
-> > Title : Re: [PATCH 0/3] power: max17042_battery: Add DT bindings
-> > 
-> > Dear MyungJoo Ham,
-> > 
-> > Could you take a look at patchset I've sent? It's needed to make use of
-> > max17042 driver on device tree-enabled platforms.
-> > 
-> > Regards,
-> 
-> 
-> 
-> 
-> 
+> Daniel
 
---
-
-MyungJoo Ham (ÇÔ¸íÁÖ), PHD
-
-System S/W Lab, S/W Platform Team, Software Center
-Samsung Electronics
-Cell: +82-10-6714-2858
-
-
-
- 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
