@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab2CLI3d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 04:29:33 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:54268 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291Ab2CLI30 (ORCPT
+	id S1752944Ab2CLIbZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 04:31:25 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:36943 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752626Ab2CLIbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 04:29:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120308184954.GA1275@kroah.com>
-References: <CAOAMb1ASB0zznSSOAU9HgPNW2e=Do+8hSJ6JZ00DxtAxqsXyXQ@mail.gmail.com>
-	<20120308184954.GA1275@kroah.com>
-Date: Mon, 12 Mar 2012 09:29:25 +0100
-Message-ID: <CACRpkdayeUPFCzcKftAnkkLkB5QHhghtSxb4=uziDLDgGnsyGw@mail.gmail.com>
-Subject: Re: [PATCH] Clear previous interrupts after fifo is disabled
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Chanho Min <chanho0207@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Alan Cox <alan@linux.intel.com>,
-        Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>,
-        "Kim, Jong-Sung" <neidhard.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Mar 2012 04:31:20 -0400
+X-AuditID: cbfee61a-b7b78ae000001ceb-d3-4f5db4560540
+Message-id: <4F5DB455.1080907@samsung.com>
+Date: Mon, 12 Mar 2012 17:31:17 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: linux-input@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: sameo@linux.intel.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com
+Subject: [PATCH v3 0/2] input: add MAX8997-haptic driver
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 8, 2012 at 7:49 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
+MAX8997 has several features in a single chip,
+This patchset supports unimplemented haptic driver of MAX8997.
 
-> Can someone, if this is still needed, and everyone agrees on how to
-> solve it, please send me the needed fix?
+This patchset tested on TRATS board based on EXYNOS4210.
 
-I've send a patch combining the probe() and startup() fixes from Russell
-with the latest patch from Jong-Sung Kim into what may very well
-be the silver bullet.
-Subject "serial: PL011: clear pending interrupts"
+v2
+- code clean and remove unnecessary code according to comment of Dmitry
+Torokhov
 
-Yours,
-Linus Walleij
+v3
+- use work_struct to enable/disable max8997-haptic instead of using mutex
+  in irq handler statck of forced feedbacky
+
+Donggeun Kim (2):
+  mfd: add platform data for MAX8997 haptic driver
+  input: add driver support for MAX8997-haptic
+
+ drivers/input/misc/Kconfig          |   12 +
+ drivers/input/misc/Makefile         |    1 +
+ drivers/input/misc/max8997_haptic.c |  377
++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/max8997.h         |   53 +++++-
+ 4 files changed, 442 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/input/misc/max8997_haptic.c
