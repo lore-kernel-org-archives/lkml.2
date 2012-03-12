@@ -1,101 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab2CLTBz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:01:55 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34777 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105Ab2CLTBx (ORCPT
+	id S1756564Ab2CLTCW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:02:22 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:51759 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755200Ab2CLTCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:01:53 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH] usb: Don't make USB_ARCH_HAS_OHCI and USB_ARCH_HAS_EHCI depend on USB_SUPPORT.
-Date: Mon, 12 Mar 2012 12:01:44 -0700
-Message-Id: <1331578904-15561-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Mon, 12 Mar 2012 15:02:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=MAb9DWH+zlTxyTZ2eDgcwpt7GyhP7naDLHEsp5HisNpT73FM417nLmFgA8j+p
+	oQoOurdycx9PykkMK5PwS/Kem9Q4M05Bs4qqsLytGtH8h4rwhKcTXGtjaqGd2M7Z
+	D5coBBJcvFXcvC8CuAcT0m6AiWTQMYHlkm16NZ/mGbMd0w=
+Message-ID: <4F5E47E4.2070303@shealevy.com>
+Date: Mon, 12 Mar 2012 15:00:52 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Cc: matt.fleming@intel.com
+Subject: Re: EFI Boot Stub Early Console
+References: <4F5E46EA.7020602@shealevy.com>
+In-Reply-To: <4F5E46EA.7020602@shealevy.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On 3/12/12 2:56 PM, Shea Levy wrote:
+> console=tty0
 
-The fact that an architecture/board has OHCI or EHCI does not depend on
-the fact that the kernel is configured with USB_SUPPORT.
-
-Make the Kconfig reflect this fact thus avoiding ugly messages like:
-
-warning: (MIPS_ALCHEMY && CAVIUM_OCTEON_REFERENCE_BOARD && SOC_AR71XX && SOC_AR724X && SOC_AR913X && SOC_AR933X) selects USB_ARCH_HAS_EHCI which has unmet direct dependencies (USB_SUPPORT)
-
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/usb/Kconfig |   42 +++++++++++++++++++++---------------------
- 1 files changed, 21 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-index 0b0afc8..b9ffe6e 100644
---- a/drivers/usb/Kconfig
-+++ b/drivers/usb/Kconfig
-@@ -10,27 +10,6 @@ menuconfig USB_SUPPORT
- 	  This option adds core support for Universal Serial Bus (USB).
- 	  You will also need drivers from the following menu to make use of it.
- 
--if USB_SUPPORT
--
--config USB_COMMON
--	tristate
--	default y
--	depends on USB || USB_GADGET
--
--# Host-side USB depends on having a host controller
--# NOTE:  dummy_hcd is always an option, but it's ignored here ...
--# NOTE:  SL-811 option should be board-specific ...
--config USB_ARCH_HAS_HCD
--	boolean
--	default y if USB_ARCH_HAS_OHCI
--	default y if USB_ARCH_HAS_EHCI
--	default y if USB_ARCH_HAS_XHCI
--	default y if PCMCIA && !M32R			# sl811_cs
--	default y if ARM				# SL-811
--	default y if BLACKFIN				# SL-811
--	default y if SUPERH				# r8a66597-hcd
--	default PCI
--
- # many non-PCI SOC chips embed OHCI
- config USB_ARCH_HAS_OHCI
- 	boolean
-@@ -79,6 +58,27 @@ config USB_ARCH_HAS_EHCI
- 	default y if MACH_LOONGSON1
- 	default PCI
- 
-+if USB_SUPPORT
-+
-+config USB_COMMON
-+	tristate
-+	default y
-+	depends on USB || USB_GADGET
-+
-+# Host-side USB depends on having a host controller
-+# NOTE:  dummy_hcd is always an option, but it's ignored here ...
-+# NOTE:  SL-811 option should be board-specific ...
-+config USB_ARCH_HAS_HCD
-+	boolean
-+	default y if USB_ARCH_HAS_OHCI
-+	default y if USB_ARCH_HAS_EHCI
-+	default y if USB_ARCH_HAS_XHCI
-+	default y if PCMCIA && !M32R			# sl811_cs
-+	default y if ARM				# SL-811
-+	default y if BLACKFIN				# SL-811
-+	default y if SUPERH				# r8a66597-hcd
-+	default PCI
-+
- # some non-PCI HCDs implement xHCI
- config USB_ARCH_HAS_XHCI
- 	boolean
--- 
-1.7.2.3
-
+Sorry, that should have been console=ttyS0
