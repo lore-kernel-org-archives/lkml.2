@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab2CLVlw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 17:41:52 -0400
-Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:49229 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752326Ab2CLVlv (ORCPT
+	id S1757366Ab2CLVmu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 17:42:50 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59582 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754042Ab2CLVmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 17:41:51 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: alsa-devel@alsa-project.org
-Subject: Triple implementation of WM8766 and quadruple WM8776!
-Date: Mon, 12 Mar 2012 22:40:54 +0100
-User-Agent: KMail/1.9.10
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
+	Mon, 12 Mar 2012 17:42:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201203122241.12234.linux@rainbow-software.org>
+In-Reply-To: <4F5E3F63.5080506@wwwdotorg.org>
+References: <1330993336-9538-1-git-send-email-swarren@nvidia.com>
+	<1330993336-9538-2-git-send-email-swarren@nvidia.com>
+	<CACRpkdYdSaNsrr34o2Cc4vS12ee9oY7FG0pxB92mefHZKwdEpA@mail.gmail.com>
+	<4F5E3F63.5080506@wwwdotorg.org>
+Date: Mon, 12 Mar 2012 22:42:48 +0100
+Message-ID: <CACRpkdYsD2LCNoox6ztHTP76X8a_qxjiZFO4ou=BgZ4oE0qHtg@mail.gmail.com>
+Subject: Re: [PATCH V2 2/3] pinctrl: allow concurrent gpio and mux function
+ ownership of pins
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Colin Cross <ccross@android.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-I'm trying do implement support for Philips PSC724 Ultimate Edge card, which 
-is based on VT1722 + WM8776 + WM8766 chips. Found that the best file to base 
-my work on is sound/pci/ice1712/se.c (as SE-200PCI card contains both WM8776 
-and WM8766 chips).
+On Mon, Mar 12, 2012 at 7:24 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-While doing this, found that there are three implementations of WM8766 codec 
-control, two of them in the same driver(!):
-sound/pci/ice1712/se.c
-sound/pci/ice1712/prodigy_hifi.c
-sound/pci/oxygen/xonar_wm87x6.c (+sound/pci/oxygen/wm8766.h)
+> Linus, now that Grant has ack'd and applied the documentation change
+> behind this, could you take this one patch into the pinctrl tree.
 
-And WM8776 status is even worse, there are four implementations, again two 
-being in the same driver:
-sound/pci/ice1712/se.c
-sound/pci/ice1712/maya44.c
-sound/pci/oxygen/xonar_wm87x6.c (+sound/pci/oxygen/wm8776.h)
-sound/soc/codecs/wm8776.c (this one being official and stand-alone module but 
-it does not seem to be usable as a part of sound card driver)
+Of course, applied.
 
-My code would enlarge both of these lists and I don't like that. What to do?
+> I assume it's 3.5 material.
 
--- 
-Ondrej Zary
+No it goes in now, we can't have documentation that is misleading...
+Besides, I like it.
+
+Yours,
+Linus Walleij
