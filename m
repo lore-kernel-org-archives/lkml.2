@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab2CLSB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:01:59 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:43825 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754057Ab2CLSB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:01:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=oor4fZ1idcwp/G1BH9HUTocO4aLz5/uV
-	sJXuxLY0RfsaeXVSUFW3tCWZvGV+2ZEmGDSkaHDofetctsA/MeiIprbqRbBbExNE
-	KykmuFvCcdwb/U8+Q3pImE2JWj/CIlPyyEhrh2o7zhbEYy3YuGOU9iaWkQTYDowE
-	pIHzSnEwoaY=
-From: Junio C Hamano <gitster@pobox.com>
-To: Greg KH <greg@kroah.com>
-Cc: Willy Tarreau <w@1wt.eu>, Jonathan Nieder <jrnieder@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, git@vger.kernel.org,
-        Thomas Rast <trast@student.ethz.ch>
-Subject: Re: stripping [PATCH] without losing later tags from mailed patches
- (Re: [ 02/12] Remove COMPAT_IA32 support)
-References: <20120312002046.041448832@1wt.eu>
- <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com>
- <20120312063027.GB8971@1wt.eu> <20120312064855.GB16820@burratino>
- <20120312085820.GA11569@1wt.eu> <20120312152004.GB9380@kroah.com>
- <7vfwddu60f.fsf@alter.siamese.dyndns.org> <20120312171257.GA25347@kroah.com>
-Date: Mon, 12 Mar 2012 11:01:55 -0700
-In-Reply-To: <20120312171257.GA25347@kroah.com> (Greg KH's message of "Mon,
- 12 Mar 2012 10:12:57 -0700")
-Message-ID: <7vzkblsnos.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 74CCB966-6C6D-11E1-A534-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+	id S1755655Ab2CLSCZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:02:25 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43730 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754092Ab2CLSCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 14:02:23 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: axboe@kernel.dk
+Cc: tj@kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] blk-cgroup: Call cgroup_path only under cgroup lock
+Date: Mon, 12 Mar 2012 16:01:18 -0400
+Message-Id: <1331582478-2259-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <greg@kroah.com> writes:
+Since we can't keep rcu read lock during blkg_alloc(), we currently
+call cgroup_path() without any locks at all.
 
-> Does the flag propagate from 'git quiltimport'?
+This patch adds cgroup locking before calling cgroup_path.
 
-I didn't even know the script was shipped as part of the main
-Porcelain until I looked.  I do not think anybody is maintaining it;
-the last update was from the 1.6.2 era.
+This also fixes a lockdep warning on boot.
 
-A tested patch from quilt stakeholders is very much welcomed.
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ block/blk-cgroup.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Thanks for bringing the script to my attention.
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index cb6b176..b5f539c 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -508,7 +508,9 @@ static struct blkio_group *blkg_alloc(struct blkio_cgroup *blkcg,
+ 	INIT_LIST_HEAD(&blkg->q_node);
+ 	blkg->blkcg = blkcg;
+ 	blkg->refcnt = 1;
++	cgroup_lock();
+ 	cgroup_path(blkcg->css.cgroup, blkg->path, sizeof(blkg->path));
++	cgroup_unlock();
+ 
+ 	for (i = 0; i < BLKIO_NR_POLICIES; i++) {
+ 		struct blkio_policy_type *pol = blkio_policy[i];
+-- 
+1.7.8.4
 
