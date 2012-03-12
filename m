@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817Ab2CLW0Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 18:26:24 -0400
-Received: from serv04.lahn.de ([213.239.197.57]:38086 "EHLO serv04.lahn.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757704Ab2CLW0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 18:26:23 -0400
-Date: Mon, 12 Mar 2012 23:25:16 +0100
-From: lkml20120218@newton.leun.net
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        James Hogan <james@albanarts.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Starr <shawn.starr@rogers.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Available fix for 3.3 regression Bug #42822 not yet in mainine (Fw:
- [GIT PULL FOR v3.3] uvcvideo divide by 0 fix)
-Message-ID: <20120312232516.2350ddd3@xenia.leun.net>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757838Ab2CLW2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 18:28:08 -0400
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:49603 "EHLO
+	homiemail-a41.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757548Ab2CLW2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 18:28:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=shealevy.com; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type:content-transfer-encoding; q=dns; s=shealevy.com;
+	 b=i1rDmw1HGfmCniE9ev18cPQtbWzKL/Zauxi5c+gNKFgNKIu4TC5gjpWtsaQA5
+	1SVZ56FdCRpQmAYuLb4uVcSO6+B8hyeoLwR9vsLnNIuPLtgGh0v1zJpMH8G5UIUG
+	IibgpLtCy6uV3DzsCHk5Qu9q9O54bcOYxRZ/JT4mgHEmV4=
+Message-ID: <4F5E7873.8070500@shealevy.com>
+Date: Mon, 12 Mar 2012 18:28:03 -0400
+From: Shea Levy <shea@shealevy.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, matt.fleming@intel.com
+Subject: Re: EFI Boot Stub Early Console
+References: <4F5E46EA.7020602@shealevy.com> <4F5E47E4.2070303@shealevy.com> <4F5E74A0.60001@zytor.com> <4F5E761B.7010608@shealevy.com> <4F5E775D.7080702@zytor.com>
+In-Reply-To: <4F5E775D.7080702@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 3/12/12 6:23 PM, H. Peter Anvin wrote:
+> I don't think anyone has implemented an EFI earlyconsole yet, and you
+> can't rely on EFI handing over the screen in a mode the kernel can
+> handle with earlyconsole=vga, so there aren't really any other alternatives.
 
-unfortunately the patch mentioned in the forwarded mail below seems not
-to be in mainline yet.
+Ah, ok, so what I'm looking for doesn't exist (yet?). Thanks.
 
-Fixes [Bug #42822] [3.3.0-rc3][uvcvideo][regression] oops -
-uvc_video_clock_update, see
-http://marc.info/?l=linux-kernel&m=132970057611642&w=2
-
-
-
-Start weitergeleitete Nachricht:
-
-Datum: Mon, 20 Feb 2012 12:49:39 +0100
-Von: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-An: James Hogan <james@albanarts.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-linux-media@vger.kernel.org,        linux-kernel@vger.kernel.org
-Betreff: [GIT PULL FOR v3.3] uvcvideo divide by 0 fix
-
-
-Hi Mauro,
-
-The following changes since commit
-b01543dfe67bb1d191998e90d20534dc354de059:
-
-  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
-
-are available in the git repository at:
-  git://linuxtv.org/pinchartl/uvcvideo.git uvcvideo-stable
-
-The patch fixes a divide by 0 bug reported by a couple of users
-already. Could you please make sure it gets into v3.3 ?
-
-Laurent Pinchart (1):
-      uvcvideo: Avoid division by 0 in timestamp calculation
-
- drivers/media/video/uvc/uvc_video.c |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
-
---
-Regards,
-
-Laurent Pinchart
-
--- 
-MfG,
-
-Michael Leun
-
+~Shea
