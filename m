@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab2CLQ5V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 12:57:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39056 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185Ab2CLQ5T (ORCPT
+	id S1754194Ab2CLRAo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:00:44 -0400
+Received: from mga09.intel.com ([134.134.136.24]:17941 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753185Ab2CLRAm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 12:57:19 -0400
-Date: Mon, 12 Mar 2012 11:57:03 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Thomas Rast <trast@inf.ethz.ch>
-Cc: Willy Tarreau <w@1wt.eu>, Greg KH <greg@kroah.com>,
-        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, git@vger.kernel.org,
-        Thomas Rast <trast@student.ethz.ch>
-Subject: Re: stripping [PATCH] without losing later tags from mailed patches
- (Re: [ 02/12] Remove COMPAT_IA32 support)
-Message-ID: <20120312165703.GB18791@burratino>
-References: <20120312002046.041448832@1wt.eu>
- <1331514446.3022.140.camel@deadeye>
- <20120312024948.GB4650@kroah.com>
- <20120312063027.GB8971@1wt.eu>
- <20120312064855.GB16820@burratino>
- <20120312085820.GA11569@1wt.eu>
- <20120312152004.GB9380@kroah.com>
- <20120312152453.GB12405@1wt.eu>
- <87aa3l4vqq.fsf@thomas.inf.ethz.ch>
+	Mon, 12 Mar 2012 13:00:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="120215598"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        EDAC devel <linux-edac@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 3/3] EDAC: Convert AMD EDAC pieces to use RAS printk
+ buffer
+Thread-Topic: [PATCH 3/3] EDAC: Convert AMD EDAC pieces to use RAS printk
+ buffer
+Thread-Index: AQHM+52OAGJLSTC5XEayndO+1KM0H5Zd7lyAgAjwwGCAAHjXAP//ksOw
+Date: Mon, 12 Mar 2012 16:59:37 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F15B61A1F@ORSMSX103.amr.corp.intel.com>
+References: <1331040694-12558-1-git-send-email-bp@amd64.org>
+ <1331040694-12558-4-git-send-email-bp@amd64.org>
+ <4F563067.1090100@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F15B61916@ORSMSX103.amr.corp.intel.com>
+ <20120312162646.GB7255@aftab>
+In-Reply-To: <20120312162646.GB7255@aftab>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87aa3l4vqq.fsf@thomas.inf.ethz.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Rast wrote:
+> Sounds better, especially the close-on-exit part. Please elaborate on
+> the races...
 
-> The problem with -b is that it's a backwards-compatibility shorthand for
-> --binary, which used to pass --allow-binary-replacement (or --binary) to
-> git-apply.  However, that option was obsoleted in 2b6eef9 (Make apply
-> --binary a no-op., 2006-09-06) and has been a no-op for over 5 years.
-> It has also not been documented since cb3a160 (git-am: ignore --binary
-> option, 2008-08-09).
->
-> So perhaps we can safely claim -b for --keep-non-patch, like so:
+Errors are happening asynchronously to everything. Race looks like:
 
-Thanks.
+Daemon exits (or is killed)
+   <<<< race begins here
+kernel close routine called
+close routine updates your global variable
+   <<<< race ends here
 
-It we want to be extra friendly to people who have been using
-"format-patch --binary" with "am -b" in their scripts, we could have a
-transitional period during which -b is treated as a usage error.
+-Tony
 
-Luckily, a quick Google code search does not reveal any users for "am
--b", so I am not too worried and would not mind your patch that just
-switches over right away, though.  After all, the failure modes are:
 
- - if my current script using "am -b" gets run using ancient git, it
-   will accept binary patches and will strip out too many brackets
-   in the subject line
-
- - if my ancient script using "am -b" gets run using current git, it
-   will helpefully keep [IA64] brackets in the subject line
-
-Neither seems terribly painful.
-
-The manual would need to mention that this once meant --binary to
-avoid confusion when that happens.
-
-Hope that helps,
-Jonathan
