@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab2CLR5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:57:41 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:41819 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273Ab2CLR5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 13:57:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=AiEV5/S8vbAV4UwpDc9Rkidt3XmBFn1e
-	wRn+oItcrtt5HnWUciFpd92/xaUmN/MWxMFBe6c68/IpUwHTJLHtfWqb6EGpFNlI
-	CBgAoXPz7zeqTXOzGIpagxoKpDDBxgB0nHRiOCfjYuV5alJzRVd0lCPi67q1AeTZ
-	QJPT6mutKmE=
-From: Junio C Hamano <gitster@pobox.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Greg KH <greg@kroah.com>, Jonathan Nieder <jrnieder@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, git@vger.kernel.org,
-        Thomas Rast <trast@student.ethz.ch>
-Subject: Re: stripping [PATCH] without losing later tags from mailed patches
- (Re: [ 02/12] Remove COMPAT_IA32 support)
-References: <20120312002046.041448832@1wt.eu>
- <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com>
- <20120312063027.GB8971@1wt.eu> <20120312064855.GB16820@burratino>
- <20120312085820.GA11569@1wt.eu> <20120312152004.GB9380@kroah.com>
- <7vfwddu60f.fsf@alter.siamese.dyndns.org> <20120312164812.GC12405@1wt.eu>
-Date: Mon, 12 Mar 2012 10:57:36 -0700
-In-Reply-To: <20120312164812.GC12405@1wt.eu> (Willy Tarreau's message of
- "Mon, 12 Mar 2012 17:48:12 +0100")
-Message-ID: <7v4nttu2gf.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: DAEF9890-6C6C-11E1-A723-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+	id S1754589Ab2CLR6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:58:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48589 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449Ab2CLR6x convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 13:58:53 -0400
+Message-ID: <1331575097.18960.40.camel@twins>
+Subject: Re: [RFC PATCH 5/6] implement per-cpu&per-domain state machine
+ call_srcu()
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Lai Jiangshan <eag0628@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, darren@dvhart.com, fweisbec@gmail.com,
+        patches@linaro.org, tj@kernel.org
+Date: Mon, 12 Mar 2012 18:58:17 +0100
+In-Reply-To: <20120312175432.GF2471@linux.vnet.ibm.com>
+References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com>
+	 <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com>
+	 <1331027858-7648-5-git-send-email-laijs@cn.fujitsu.com>
+	 <1331032571.11248.277.camel@twins>
+	 <CACvQF52tYmG4Bx+L+cTjVRbvQxj=sKiKrxhuv35H=fAFVvQJ2Q@mail.gmail.com>
+	 <1331048093.11248.317.camel@twins>
+	 <20120308195825.GC2412@linux.vnet.ibm.com>
+	 <1331374193.18960.13.camel@twins>
+	 <20120312175432.GF2471@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Willy Tarreau <w@1wt.eu> writes:
+On Mon, 2012-03-12 at 10:54 -0700, Paul E. McKenney wrote:
+> On Sat, Mar 10, 2012 at 11:09:53AM +0100, Peter Zijlstra wrote:
+> > On Thu, 2012-03-08 at 11:58 -0800, Paul E. McKenney wrote:
+> > > 
+> > > But I guess I should ask...  Peter, what do you expect the maximum
+> > > call_srcu() rate to be in your use cases?  If tens of thousands are
+> > > possible, some adjustments will be needed. 
+> > 
+> > The one call-site I currently have is linked to vma lifetimes, so yeah,
+> > I guess that that can be lots.
+> 
+> So the worst case would be if several processes with lots of VMAs were
+> to exit at about the same time?  If so, my guess is that call_srcu()
+> needs to handle several thousand callbacks showing up within a few
+> tens of microseconds.  Is that a reasonable assumption, or am I missing
+> an order of magnitude or two in either direction?
 
-> Hi Junio,
->
-> On Mon, Mar 12, 2012 at 09:40:48AM -0700, Junio C Hamano wrote:
->> Greg KH <greg@kroah.com> writes:
->> 
->> > I don't see a -b option to 'git am' in the manpage, am I missing
->> > something here?
->> 
->> As this is a recent enhancement, it is very much appreciated if you
->> try out 1.7.10-rc0 (or 'master').
->
-> I've just backported it to 1.7.9.3 (I'm not keen on living on the bleeding
-> edge with my everyday tools), and it works nicely as expected.
+That or a process is doing mmap/munmap loops (some file scanners are
+known to do this). But yeah, that can be lots.
 
-This topic will be backported in later versions of 1.7.9.x track,
-but living on the maintenance track does not have much smaller
-chance of breakage than living on the tip of 'master' these days,
-unless you are using distro packaged version. The usual rule of
-thumb if you are compiling from the source is that the tip of
-'master' is more stable than any tagged version, including the
-maintenance track.  See
+My current use case doesn't quite trigger since it needs another syscall
+to attach something to a vma before vma tear-down actually ends up
+calling call_srcu() so in practice it won't be much at all (for now).
 
-http://thread.gmane.org/gmane.comp.version-control.git/189657/focus=190814
-
-for details.
+Still I think its prudent to make it (srcu callbacks) deal with plenty
+callbacks even if initially there won't be many -- who knows what other
+people will do while you're not paying attention... :-)
