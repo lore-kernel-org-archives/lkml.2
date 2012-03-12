@@ -1,82 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab2CLJ1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 05:27:13 -0400
-Received: from mga14.intel.com ([143.182.124.37]:27087 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754012Ab2CLJ1L convert rfc822-to-8bit (ORCPT
+	id S1754960Ab2CLJ23 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 05:28:29 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:36087 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171Ab2CLJ2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 05:27:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="76347134"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "peterz@infradead.org" <peterz@infradead.org>
-Subject: [PATCH] Fix the race between smp_call_function and CPU booting
-Thread-Topic: [PATCH] Fix the race between smp_call_function and CPU booting
-Thread-Index: Ac0AMkf58fFhOwlxQ12bG6GdAj6CkA==
-Date: Mon, 12 Mar 2012 09:27:04 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 12 Mar 2012 05:28:25 -0400
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 12 Mar 2012 14:55:14 +0530
+Message-Id: <20120312092514.5379.36595.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH v2 1/7] uprobes/core: Make macro names consistent.
+x-cbid: 12031200-3568-0000-0000-000001594AC7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: liu chuansheng <chuansheng.liu@intel.com>
-Subject: [PATCH] Fix the race between smp_call_function and CPU booting
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-When system is waking up from suspend state, sometimes the smp_call_function is called which will cause deadlock specially on the platform which just has two CPUs.
+Rename macros that refer to individual uprobe to start with UPROBE_ instead
+of UPROBES_.
 
-CPU0:                                           CPU1:
-pm_suspend -->
-suspend_devices_and_enter -->
-enable_nonboot_cpus -->
-_cpu_up -->
-__cpu_up -->
-native_cpu_up
-                                                start_secondary
-                                                        -- set cpu online
-                                                        -- waiting for the active state new thread call:
-smp_call_function -->
-smp_call_function_many -->
-smp_call_function_single -->
-   -- csd_lock
-   -- generic_exec_single -->
-   -- arch_send_call_function_single_ipi
-   -- csd_lock_wait
+This is pure cleanup, no functional change intended.
 
-At this time, both CPUs are blocked. Normally the CPU0 will set the CPU1 with active state after finished the _cpu_up calling, but CPU1 can not handle the IPI due to the corresponding irq is still disabled, which will be enabled after waiting for the active state.
-
-The solution is just to send smp call to active cpus instead of online cpus.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- kernel/smp.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/uprobes.h |    6 +++---
+ arch/x86/kernel/uprobes.c      |   18 +++++++++---------
+ include/linux/uprobes.h        |    4 ++--
+ kernel/events/uprobes.c        |   18 +++++++++---------
+ 4 files changed, 23 insertions(+), 23 deletions(-)
 
-diff --git a/kernel/smp.c b/kernel/smp.c index fb67dfa..e67674b 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -573,7 +573,7 @@ EXPORT_SYMBOL(smp_call_function_many);
- int smp_call_function(smp_call_func_t func, void *info, int wait)  {
-        preempt_disable();
--       smp_call_function_many(cpu_online_mask, func, info, wait);
-+       smp_call_function_many(cpu_active_mask, func, info, wait);
-        preempt_enable();
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index f7ce310..5c399e4 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -26,10 +26,10 @@
+ typedef u8 uprobe_opcode_t;
  
-        return 0;
---
-1.7.0.4
-
+ #define MAX_UINSN_BYTES			  16
+-#define UPROBES_XOL_SLOT_BYTES		 128	/* to keep it cache aligned */
++#define UPROBE_XOL_SLOT_BYTES		 128	/* to keep it cache aligned */
+ 
+-#define UPROBES_BKPT_INSN		0xcc
+-#define UPROBES_BKPT_INSN_SIZE		   1
++#define UPROBE_BKPT_INSN		0xcc
++#define UPROBE_BKPT_INSN_SIZE		   1
+ 
+ struct arch_uprobe {
+ 	u16				fixups;
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 04dfcef..6dfa89e 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -31,14 +31,14 @@
+ /* Post-execution fixups. */
+ 
+ /* No fixup needed */
+-#define UPROBES_FIX_NONE	0x0
++#define UPROBE_FIX_NONE	0x0
+ /* Adjust IP back to vicinity of actual insn */
+-#define UPROBES_FIX_IP		0x1
++#define UPROBE_FIX_IP		0x1
+ /* Adjust the return address of a call insn */
+-#define UPROBES_FIX_CALL	0x2
++#define UPROBE_FIX_CALL	0x2
+ 
+-#define UPROBES_FIX_RIP_AX	0x8000
+-#define UPROBES_FIX_RIP_CX	0x4000
++#define UPROBE_FIX_RIP_AX	0x8000
++#define UPROBE_FIX_RIP_CX	0x4000
+ 
+ /* Adaptations for mhiramat x86 decoder v14. */
+ #define OPCODE1(insn)		((insn)->opcode.bytes[0])
+@@ -269,9 +269,9 @@ static void prepare_fixups(struct arch_uprobe *auprobe, struct insn *insn)
+ 		break;
+ 	}
+ 	if (fix_ip)
+-		auprobe->fixups |= UPROBES_FIX_IP;
++		auprobe->fixups |= UPROBE_FIX_IP;
+ 	if (fix_call)
+-		auprobe->fixups |= UPROBES_FIX_CALL;
++		auprobe->fixups |= UPROBE_FIX_CALL;
+ }
+ 
+ #ifdef CONFIG_X86_64
+@@ -341,12 +341,12 @@ static void handle_riprel_insn(struct mm_struct *mm, struct arch_uprobe *auprobe
+ 		 * is NOT the register operand, so we use %rcx (register
+ 		 * #1) for the scratch register.
+ 		 */
+-		auprobe->fixups = UPROBES_FIX_RIP_CX;
++		auprobe->fixups = UPROBE_FIX_RIP_CX;
+ 		/* Change modrm from 00 000 101 to 00 000 001. */
+ 		*cursor = 0x1;
+ 	} else {
+ 		/* Use %rax (register #0) for the scratch register. */
+-		auprobe->fixups = UPROBES_FIX_RIP_AX;
++		auprobe->fixups = UPROBE_FIX_RIP_AX;
+ 		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
+ 		*cursor = (reg << 3);
+ 	}
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index f85797e..838fb31 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -35,10 +35,10 @@ struct vm_area_struct;
+ /* flags that denote/change uprobes behaviour */
+ 
+ /* Have a copy of original instruction */
+-#define UPROBES_COPY_INSN	0x1
++#define UPROBE_COPY_INSN	0x1
+ 
+ /* Dont run handlers when first register/ last unregister in progress*/
+-#define UPROBES_RUN_HANDLER	0x2
++#define UPROBE_RUN_HANDLER	0x2
+ 
+ struct uprobe_consumer {
+ 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 5ce32e3..0d36bf3 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -177,7 +177,7 @@ static int __replace_page(struct vm_area_struct *vma, struct page *page, struct 
+  */
+ bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
+ {
+-	return *insn == UPROBES_BKPT_INSN;
++	return *insn == UPROBE_BKPT_INSN;
+ }
+ 
+ /*
+@@ -259,8 +259,8 @@ static int write_opcode(struct mm_struct *mm, struct arch_uprobe *auprobe,
+ 
+ 	/* poke the new insn in, ASSUMES we don't cross page boundary */
+ 	vaddr &= ~PAGE_MASK;
+-	BUG_ON(vaddr + UPROBES_BKPT_INSN_SIZE > PAGE_SIZE);
+-	memcpy(vaddr_new + vaddr, &opcode, UPROBES_BKPT_INSN_SIZE);
++	BUG_ON(vaddr + UPROBE_BKPT_INSN_SIZE > PAGE_SIZE);
++	memcpy(vaddr_new + vaddr, &opcode, UPROBE_BKPT_INSN_SIZE);
+ 
+ 	kunmap_atomic(vaddr_new);
+ 	kunmap_atomic(vaddr_old);
+@@ -308,7 +308,7 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
+ 	lock_page(page);
+ 	vaddr_new = kmap_atomic(page);
+ 	vaddr &= ~PAGE_MASK;
+-	memcpy(opcode, vaddr_new + vaddr, UPROBES_BKPT_INSN_SIZE);
++	memcpy(opcode, vaddr_new + vaddr, UPROBE_BKPT_INSN_SIZE);
+ 	kunmap_atomic(vaddr_new);
+ 	unlock_page(page);
+ 
+@@ -352,7 +352,7 @@ int __weak set_bkpt(struct mm_struct *mm, struct arch_uprobe *auprobe, unsigned 
+ 	if (result)
+ 		return result;
+ 
+-	return write_opcode(mm, auprobe, vaddr, UPROBES_BKPT_INSN);
++	return write_opcode(mm, auprobe, vaddr, UPROBE_BKPT_INSN);
+ }
+ 
+ /**
+@@ -635,7 +635,7 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+ 
+ 	addr = (unsigned long)vaddr;
+ 
+-	if (!(uprobe->flags & UPROBES_COPY_INSN)) {
++	if (!(uprobe->flags & UPROBE_COPY_INSN)) {
+ 		ret = copy_insn(uprobe, vma, addr);
+ 		if (ret)
+ 			return ret;
+@@ -647,7 +647,7 @@ static int install_breakpoint(struct mm_struct *mm, struct uprobe *uprobe,
+ 		if (ret)
+ 			return ret;
+ 
+-		uprobe->flags |= UPROBES_COPY_INSN;
++		uprobe->flags |= UPROBE_COPY_INSN;
+ 	}
+ 	ret = set_bkpt(mm, &uprobe->arch, addr);
+ 
+@@ -857,7 +857,7 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+ 			uprobe->consumers = NULL;
+ 			__uprobe_unregister(uprobe);
+ 		} else {
+-			uprobe->flags |= UPROBES_RUN_HANDLER;
++			uprobe->flags |= UPROBE_RUN_HANDLER;
+ 		}
+ 	}
+ 
+@@ -889,7 +889,7 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
+ 	if (consumer_del(uprobe, consumer)) {
+ 		if (!uprobe->consumers) {
+ 			__uprobe_unregister(uprobe);
+-			uprobe->flags &= ~UPROBES_RUN_HANDLER;
++			uprobe->flags &= ~UPROBE_RUN_HANDLER;
+ 		}
+ 	}
+ 
 
 
