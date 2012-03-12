@@ -1,247 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab2CLCNG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 22:13:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50303 "EHLO
+	id S1754720Ab2CLCN5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 22:13:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49386 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754401Ab2CLCM4 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754401Ab2CLCNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 22:12:56 -0400
+	Sun, 11 Mar 2012 22:13:50 -0400
+Message-ID: <4F5D5D90.8020401@gmail.com>
+Date: Mon, 12 Mar 2012 12:21:04 +1000
+From: wei <yinwei168@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <201203102251.10364.rjw@sisk.pl>
-References: <201202292359.05122.rjw@sisk.pl>
-	<1331106056-14532-1-git-send-email-myungjoo.ham@samsung.com>
-	<201203102251.10364.rjw@sisk.pl>
-Date: Mon, 12 Mar 2012 11:12:55 +0900
-X-Google-Sender-Auth: ecLVDOeBq8ITV5WWplFc2En0pTg
-Message-ID: <CAJ0PZbSXzkvkOjWw66k5ZrtksQxiF0HwcFZ4jHKs9=4XodszVg@mail.gmail.com>
-Subject: Re: [PATCH] PM / devfreq: add relation of recommended frequency.
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kevin Hilman <khilman@ti.com>, Mike Turquette <mturquette@ti.com>
+To: Julian Calaby <julian.calaby@gmail.com>
+CC: linux-wireless@vger.kernel.org, johannes@sipsolutions.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] mac80211: improve PID rate control mechanism by
+ avoiding rate oscillation problem
+References: <4F5D4C4E.1060800@gmail.com> <CAGRGNgX-RDRFNXKTXf=qw7h4bQNypHx0Hgvjd7rvXu9T43f4WQ@mail.gmail.com>
+In-Reply-To: <CAGRGNgX-RDRFNXKTXf=qw7h4bQNypHx0Hgvjd7rvXu9T43f4WQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/11 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Wednesday, March 07, 2012, MyungJoo Ham wrote:
->> The semantics of "target frequency" given to devfreq driver from
->> devfreq framework has always been interpretted as "at least" or GLB
->> (greatest lower bound). However, the framework might want the
->> device driver to limit its max frequency (LUB: least upper bound),
->> especially if it is given by thermal framework (it's too hot).
+Thank you, Julian.
+
+You helped me a lot improving the patch. Your suggestion are very
+valuable. Thank you.
+
+The reason for why I change this value to 2 is below.
+
+On 12/03/12 11:14, Julian Calaby wrote:
+> Hi Wei,
+>
+> Much better!
+>
+> Still a few style comments below.
+>
+> On Mon, Mar 12, 2012 at 12:07, wei <yinwei168@gmail.com> wrote:
+>> From Wei YIN <Wei.Yin@nicta.com.au>
+>> Improve PID rate control mechanism by avoiding rate oscillation problem
 >>
->> Thus, the target fuction should have another parameter to express
->> whether the framework wants GLB or LUB. And, the additional parameter,
->> "u32 options", does it.
->>
->> With the update, devfreq_recommended_opp() is also updated.
->>
->> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->
-> This one looks good.
->
-> Do you want me to take it as a patch, or to pull it from your tree?
->
-> Rafael
-
-Hello Rafael,
-
-
-Please pull it from the tree
-(http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/devfreq-for-next)
-as the change log has been corrected.
-
-git://git.infradead.org/users/kmpark/linux-samsung devfreq-for-next
-
-
-
-Thank you.
-
-
-Cheers!
-MyungJoo.
-
->
->
+>> Signed-off-by: Wei YIN <Wei.Yin@nicta.com.au>
 >> ---
->> Changes from v1
->> - Style update.
->> ---
->>  drivers/devfreq/devfreq.c     |   41 ++++++++++++++++++++++++++++++-----------
->>  drivers/devfreq/exynos4_bus.c |   14 ++++++++++----
->>  include/linux/devfreq.h       |   16 +++++++++++++---
->>  3 files changed, 53 insertions(+), 18 deletions(-)
+>> kernel 3.3.0
+>> net/mac80211/rc80211_pid_algo.c | 392 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++---------------------------------------------------------------------------
+>> 1 file changed, 317 insertions(+), 75 deletions(-)
 >>
->> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
->> index 0b49f59..13794d1 100644
->> --- a/drivers/devfreq/devfreq.c
->> +++ b/drivers/devfreq/devfreq.c
->> @@ -84,6 +84,7 @@ int update_devfreq(struct devfreq *devfreq)
->>  {
->>       unsigned long freq;
->>       int err = 0;
->> +     u32 flags = 0;
+>> --- wireless-testing_orig/net/mac80211/rc80211_pid_algo.c       2012-02-17 13:59:53.495254495 +1000
+>> +++ wireless-testing/net/mac80211/rc80211_pid_algo.c    2012-03-08 20:00:31.791698813 +1000
+>> @@ -155,99 +217,239 @@ static void rate_control_pid_sample(stru
+>>        /* Ignore all frames that were sent with a different rate than the rate
+>>         * we currently advise mac80211 to use. */
+>> -       if (info->status.rates[0].idx != spinfo->txrate_idx)
+>> -               return;
 >>
->>       if (!mutex_is_locked(&devfreq->lock)) {
->>               WARN(true, "devfreq->lock must be locked by the caller.\n");
->> @@ -104,18 +105,20 @@ int update_devfreq(struct devfreq *devfreq)
->>        * qos_min_freq
->>        */
->>
->> -     if (devfreq->qos_min_freq && freq < devfreq->qos_min_freq)
->> +     if (devfreq->qos_min_freq && freq < devfreq->qos_min_freq) {
->>               freq = devfreq->qos_min_freq;
->> -     if (devfreq->max_freq && freq > devfreq->max_freq)
->> +             flags &= ~DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use GLB */
->> +     }
->> +     if (devfreq->max_freq && freq > devfreq->max_freq) {
->>               freq = devfreq->max_freq;
->> -     if (devfreq->min_freq && freq < devfreq->min_freq)
->> +             flags |= DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use LUB */
->> +     }
->> +     if (devfreq->min_freq && freq < devfreq->min_freq) {
->>               freq = devfreq->min_freq;
->> +             flags &= ~DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use GLB */
->> +     }
->>
->> -     /*
->> -      * TODO in the devfreq-next:
->> -      * add relation or use rance (freq_min, freq_max)
->> -      */
->> -     err = devfreq->profile->target(devfreq->dev.parent, &freq);
->> +     err = devfreq->profile->target(devfreq->dev.parent, &freq, flags);
->>       if (err)
->>               return err;
->>
->> @@ -773,14 +776,30 @@ module_exit(devfreq_exit);
->>   *                        freq value given to target callback.
->>   * @dev              The devfreq user device. (parent of devfreq)
->>   * @freq     The frequency given to target function
->> + * @flags    Flags handed from devfreq framework.
->>   *
->>   */
->> -struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq)
->> +struct opp *devfreq_recommended_opp(struct device *dev, unsigned long *freq,
->> +                                 u32 flags)
->>  {
->> -     struct opp *opp = opp_find_freq_ceil(dev, freq);
->> +     struct opp *opp;
->>
->> -     if (opp == ERR_PTR(-ENODEV))
->> +     if (flags & DEVFREQ_FLAG_LEAST_UPPER_BOUND) {
->> +             /* The freq is an upper bound. opp should be lower */
->>               opp = opp_find_freq_floor(dev, freq);
->> +
->> +             /* If not available, use the closest opp */
->> +             if (opp == ERR_PTR(-ENODEV))
->> +                     opp = opp_find_freq_ceil(dev, freq);
->> +     } else {
->> +             /* The freq is an lower bound. opp should be higher */
->> +             opp = opp_find_freq_ceil(dev, freq);
->> +
->> +             /* If not available, use the closest opp */
->> +             if (opp == ERR_PTR(-ENODEV))
->> +                     opp = opp_find_freq_floor(dev, freq);
->> +     }
->> +
->>       return opp;
->>  }
->>
->> diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
->> index 590d686..1a361e9 100644
->> --- a/drivers/devfreq/exynos4_bus.c
->> +++ b/drivers/devfreq/exynos4_bus.c
->> @@ -619,13 +619,19 @@ static int exynos4_bus_setvolt(struct busfreq_data *data, struct opp *opp,
->>       return err;
->>  }
->>
->> -static int exynos4_bus_target(struct device *dev, unsigned long *_freq)
->> +static int exynos4_bus_target(struct device *dev, unsigned long *_freq,
->> +                           u32 flags)
->>  {
->>       int err = 0;
->> -     struct busfreq_data *data = dev_get_drvdata(dev);
->> -     struct opp *opp = devfreq_recommended_opp(dev, _freq);
->> -     unsigned long old_freq = opp_get_freq(data->curr_opp);
->> +     struct platform_device *pdev = container_of(dev, struct platform_device,
->> +                                                 dev);
->> +     struct busfreq_data *data = platform_get_drvdata(pdev);
->> +     struct opp *opp = devfreq_recommended_opp(dev, _freq, flags);
->>       unsigned long freq = opp_get_freq(opp);
->> +     unsigned long old_freq = opp_get_freq(data->curr_opp);
->> +
->> +     if (IS_ERR(opp))
->> +             return PTR_ERR(opp);
->>
->>       if (old_freq == freq)
->>               return 0;
->> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
->> index f27d511..85d4b0f 100644
->> --- a/include/linux/devfreq.h
->> +++ b/include/linux/devfreq.h
->> @@ -59,6 +59,14 @@ struct devfreq_pm_qos_table {
->>       s32 qos_value;
->>  };
->>
->> +/*
->> + * The resulting frequency should be at most this. (this bound is the
->> + * least upper bound; thus, the resulting freq should be lower or same)
->> + * If the flag is not set, the resulting frequency should be at most the
->> + * bound (greatest lower bound)
->> + */
->> +#define DEVFREQ_FLAG_LEAST_UPPER_BOUND               0x1
->> +
->>  /**
->>   * struct devfreq_dev_profile - Devfreq's user device profile
->>   * @initial_freq     The operating frequency when devfreq_add_device() is
->> @@ -74,6 +82,8 @@ struct devfreq_pm_qos_table {
->>   *                   higher than any operable frequency, set maximum.
->>   *                   Before returning, target function should set
->>   *                   freq at the current frequency.
->> + *                   The "flags" parameter's possible values are
->> + *                   explained above with "DEVFREQ_FLAG_*" macros.
->>   * @get_dev_status   The device should provide the current performance
->>   *                   status to devfreq, which is used by governors.
->>   * @exit             An optional callback that is called when devfreq
->> @@ -92,7 +102,7 @@ struct devfreq_dev_profile {
->>       int qos_type;
->>       struct devfreq_pm_qos_table *qos_list;
->>
->> -     int (*target)(struct device *dev, unsigned long *freq);
->> +     int (*target)(struct device *dev, unsigned long *freq, u32 flags);
->>       int (*get_dev_status)(struct device *dev,
->>                             struct devfreq_dev_status *stat);
->>       void (*exit)(struct device *dev);
->> @@ -198,7 +208,7 @@ extern int devfreq_remove_device(struct devfreq *devfreq);
->>
->>  /* Helper functions for devfreq user device driver with OPP. */
->>  extern struct opp *devfreq_recommended_opp(struct device *dev,
->> -                                        unsigned long *freq);
->> +                                        unsigned long *freq, u32 flags);
->>  extern int devfreq_register_opp_notifier(struct device *dev,
->>                                        struct devfreq *devfreq);
->>  extern int devfreq_unregister_opp_notifier(struct device *dev,
->> @@ -253,7 +263,7 @@ static int devfreq_remove_device(struct devfreq *devfreq)
->>  }
->>
->>  static struct opp *devfreq_recommended_opp(struct device *dev,
->> -                                        unsigned long *freq)
->> +                                        unsigned long *freq, u32 flags)
->>  {
->>       return -EINVAL;
->>  }
->>
+>> -       spinfo->tx_num_xmit++;
+>> +       if ((info->status.rates[0].idx != spinfo->txrate_idx) &&
+>> +                       (info->status.rates[0].idx != spinfo->tmp_rate_idx))
+>> +               return;
+> You don't need the parentheses around the != expressions.
+>
+>> @@ -271,14 +473,17 @@ rate_control_pid_get_rate(void *priv, st
+>>                info->control.rates[0].count =
+>>                        txrc->hw->conf.long_frame_max_tx_count;
+>>        else
+>> -               info->control.rates[0].count =
+>> -                       txrc->hw->conf.short_frame_max_tx_count;
+>> -
+>> +               info->control.rates[0].count = 2;
+> Should this be a constant or something? Why is this being set to 2?
+
+According to the principle of how PID works, the default FLR is 14% and it attempts to decrease the rate if the FLR is higher than 14%. Let us assume that the current FLR is 14%, Then the probability for two consecutive failed attempts should be 14% * 14% = 0.0196 = 1.96%. The probability is very low. So I think we should not try further retransmission at this rate and fall back as soon as possible. Another reason is that the number of probes at the proposed rate is set to MAX_PROBES = 3 in the implementation, which means we will have 6 attempts at the probing rate. If the current rate is the lowest, say 1 Mbit/s, in 120 ms (a rate adaptation period in PID), the maximum number of attempts is around 8--9. I think I should limit the number of probes within the maximum attempts that can be achieved in one rate adaptation period.
+
+We could switch back to the configured value. But I need to change the maximum number of probes, MAX_PROBES. 
+
+>  
+>> @@ -321,7 +530,7 @@ rate_control_pid_rate_init(void *priv, s
+>>                s = false;
+>>                for (j = 0; j < sband->n_bitrates - i; j++)
+>>                        if (unlikely(sband->bitrates[rinfo[j].index].bitrate >
+>> -                                    sband->bitrates[rinfo[j + 1].index].bitrate)) {
+>> +                               sband->bitrates[rinfo[j + 1].index].bitrate)) {
+> You should drop this whitespace change as it's unrelated to the rest
+> of your patch.
+>
+> Thanks,
 >
 
-
-
--- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
