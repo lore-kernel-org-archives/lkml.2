@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab2CLLUi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 07:20:38 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3379 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752340Ab2CLLUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 07:20:35 -0400
-Subject: [PATCH v2] tun: don't hold network namespace by tun sockets
-To: davem@davemloft.net
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: xemul@parallels.com, ebiederm@aristanetworks.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shemminger@vyatta.com, devel@openvz.org
-Date: Mon, 12 Mar 2012 15:20:19 +0400
-Message-ID: <20120312111826.26257.40812.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1753461Ab2CLLWm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 07:22:42 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46166 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723Ab2CLLWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 07:22:40 -0400
+Date: Mon, 12 Mar 2012 12:22:32 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Subject: Re: [PATCH bisected regression] sched: rebuild sched domains at
+ suspend/resume
+In-Reply-To: <4F5D00AE.8000602@openvz.org>
+Message-ID: <alpine.LFD.2.02.1203121221130.2466@ionos>
+References: <20120306204357.13169.90791.stgit@zurg> <1331067743.11248.333.camel@twins> <CA+55aFxPiW=T8iNy=Fb_fuO2DYV9+sQL-mr8=Uc7cWymTyVt6A@mail.gmail.com> <1331084302.11248.338.camel@twins> <CA+55aFx6NXjLpAz_Bu1wvaxFB-2zrYGkfBeN_8rM5q7MkYuNEQ@mail.gmail.com>
+ <4F5D00AE.8000602@openvz.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2: sk_release_kernel() used for socket release. Dummy tun_release() is
-required for sk_release_kernel() ---> sock_release() ---> sock->ops->release()
-call.
+On Sun, 11 Mar 2012, Konstantin Khlebnikov wrote:
+> Linus Torvalds wrote:
+> > On Tue, Mar 6, 2012 at 5:38 PM, Peter Zijlstra<a.p.zijlstra@chello.nl>
+> > wrote:
+> > > On Tue, 2012-03-06 at 16:54 -0800, Linus Torvalds wrote:
+> > > > I do agree that reverting is probably safer at this point, but can we
+> > > > get agreement on this?
+> > > 
+> > > I agree with reverting, shoot it in the head :-) Do you want a git
+> > > thingy?
+> > 
+> > Well, it's less a "git thingy" and more that there are tons of people
+> > involved with the original commit that haven't even piped up.
+> > 
+> > Srivatsa, Ingo, Prashanth..
+> > 
+> > In fact, I notice that Prashanth doesn't even seem to have been cc'd,
+> > even if he's the original reporter of the commit that gets reverted.
+> > Added (see lkml)
+> 
+> I forget to mention my kernel boot options. I live with them for a while, so I
+> just forget about it.
+> "debug threadirqs i915.i915_enable_rc6=1 i915.i915_enable_fbc=1
+> i915.lvds_downclock=1 crashkernel=128M"
+> 
+> So, "threadirqs" is a lost piece of the puzzle -- without it I cannot
+> reproduce the bug.
+> However, I have no idea how this is connected to sched-domains. =)
 
-TUN was designed to destroy it's socket on network namespace shutdown. But this
-will never happen for persistent device, because it's socket holds network
-namespace.
-This patch removes of holding network namespace by TUN socket and replaces it
-by creating socket in init_net and then changing it's net it to the desired
-one. On shutdown socket is moved back to init_net prior to final put.
+To be honest, I have no idea either. Can you figure out where the box
+hangs or is it in the "silent" phase of suspend/resume?
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Thanks,
 
----
- drivers/net/tun.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+	tglx
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 2c5d349..b13ee48 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -359,7 +359,7 @@ static void tun_free_netdev(struct net_device *dev)
- {
- 	struct tun_struct *tun = netdev_priv(dev);
- 
--	sock_put(tun->socket.sk);
-+	sk_release_kernel(tun->socket.sk);
- }
- 
- /* Net device open. */
-@@ -980,10 +980,16 @@ static int tun_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	return ret;
- }
- 
-+static int tun_release(struct socket *sock)
-+{
-+	return 0;
-+}
-+
- /* Ops structure to mimic raw sockets with tun */
- static const struct proto_ops tun_socket_ops = {
- 	.sendmsg = tun_sendmsg,
- 	.recvmsg = tun_recvmsg,
-+	.release = tun_release,
- };
- 
- static struct proto tun_proto = {
-@@ -1110,10 +1116,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		tun->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
- 
- 		err = -ENOMEM;
--		sk = sk_alloc(net, AF_UNSPEC, GFP_KERNEL, &tun_proto);
-+		sk = sk_alloc(&init_net, AF_UNSPEC, GFP_KERNEL, &tun_proto);
- 		if (!sk)
- 			goto err_free_dev;
- 
-+		sk_change_net(sk, net);
- 		tun->socket.wq = &tun->wq;
- 		init_waitqueue_head(&tun->wq.wait);
- 		tun->socket.ops = &tun_socket_ops;
-@@ -1174,7 +1181,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 	return 0;
- 
-  err_free_sk:
--	sock_put(sk);
-+	tun_free_netdev(dev);
-  err_free_dev:
- 	free_netdev(dev);
-  failed:
 
