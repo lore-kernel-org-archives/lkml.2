@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab2CLT0c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:26:32 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40676 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756536Ab2CLT0a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:26:30 -0400
-X-Sasl-enc: siAL/JBS/MGfrzVwl9i0lY7VEjYKiHw61AirTzWIll+c 1331580388
-Date: Mon, 12 Mar 2012 12:26:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Willy Tarreau <w@1wt.eu>, Jonathan Nieder <jrnieder@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, git@vger.kernel.org,
-        Thomas Rast <trast@student.ethz.ch>
-Subject: Re: stripping [PATCH] without losing later tags from mailed patches
- (Re: [ 02/12] Remove COMPAT_IA32 support)
-Message-ID: <20120312192627.GA24873@kroah.com>
-References: <20120312002046.041448832@1wt.eu>
- <1331514446.3022.140.camel@deadeye>
- <20120312024948.GB4650@kroah.com>
- <20120312063027.GB8971@1wt.eu>
- <20120312064855.GB16820@burratino>
- <20120312085820.GA11569@1wt.eu>
- <20120312152004.GB9380@kroah.com>
- <7vfwddu60f.fsf@alter.siamese.dyndns.org>
- <20120312171257.GA25347@kroah.com>
- <7vzkblsnos.fsf@alter.siamese.dyndns.org>
+	id S1756724Ab2CLT25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:28:57 -0400
+Received: from smtp27.mail.ru ([94.100.176.180]:45794 "EHLO smtp27.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755891Ab2CLT24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 15:28:56 -0400
+Date: Mon, 12 Mar 2012 23:30:21 +0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Stephen Warren <swarren@wwwdotorg.org>, Olof Johansson <olof@lixom.net>
+Cc: linux-tegra@vger.kernel.org, Andi <andi.shyti@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-kernel@vger.kernel.org, Colin Cross <ccross@android.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 2/2] arm/tegra: add timeout to PCIe PLL lock detection
+ loop
+Message-ID: <20120312193020.GA1584@rainbow>
+References: <20120306201538.GA14350@rainbow>
+ <1331287760-10546-1-git-send-email-mad_soft@inbox.ru>
+ <4F5E3BE7.4080207@wwwdotorg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7vzkblsnos.fsf@alter.siamese.dyndns.org>
+In-Reply-To: <4F5E3BE7.4080207@wwwdotorg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 11:01:55AM -0700, Junio C Hamano wrote:
-> Greg KH <greg@kroah.com> writes:
+On 12:09 Mon 12 Mar     , Stephen Warren wrote:
+> Thierry pointed out that one of NVIDIA's downstream kernels uses a
+> timeout of 300 here, rather than 2000 above. Do you see a specific need
+> for this timeout for be 2000 rather than 300? It might be nice to be
+> consistent.
+No, there's no specific need for it to be 2000 - it may as well be 300.
+I just wanted to stay on the safe side, but I think 300 should be still
+more than enough time for PLL to lock.
+
 > 
-> > Does the flag propagate from 'git quiltimport'?
-> 
-> I didn't even know the script was shipped as part of the main
-> Porcelain until I looked.  I do not think anybody is maintaining it;
-> the last update was from the 1.6.2 era.
+> Olof, I notice you've already applied V1 of this, which has the return
+> statement issue. Can you replace it with this, or should Dmitry send an
+> incremental patch?
 
-Ah, so my feeling that I'm the only one using it is true :)
+Yes, V1 breaks more things than it fixes, so it would be nice if
+it can be replaced with fixed version (I hope it's not too late yet).
+BTW, regarding timeout discussion above - should I resend patch with
+adjusted timeout, or can you change it while applying? (of course,
+if we settle on incremental patch, I'll roll this change in)
 
-> A tested patch from quilt stakeholders is very much welcomed.
+-- 
+Best regards,
+Dmitry "MAD" Artamonow
 
-I'll be glad to maintain this if you need me to.  I'll poke around with
-it tomorrow to see what needs to be done here.
-
-thanks,
-
-greg k-h
