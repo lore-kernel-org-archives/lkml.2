@@ -1,107 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab2CLMRb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 08:17:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57039 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752723Ab2CLMR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 08:17:28 -0400
-Date: Mon, 12 Mar 2012 13:17:26 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fix idle ticks in cpu summary line of /proc/stat
-Message-ID: <20120312121726.GA23608@tiehlicka.suse.cz>
-References: <20120311182621.41674b39@de.ibm.com>
+	id S1754754Ab2CLMXx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 08:23:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36112 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752540Ab2CLMXw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 08:23:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120311182621.41674b39@de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LRH.2.00.1203121300590.4911@twin.jikos.cz>
+References: <201202162251.47063.rjw@sisk.pl>
+	<Pine.LNX.4.44L0.1202161722310.1150-100000@iolanthe.rowland.org>
+	<CAFLxGvwWBWTmv+uUH87UB3Ly31hjVU5kWpSyihGDKj6_8oc6WA@mail.gmail.com>
+	<201202170016.14313.rjw@sisk.pl>
+	<jj5qhh$5j5$1@ID-44327.news.uni-berlin.de>
+	<jj684d$6ng$1@ID-44327.news.uni-berlin.de>
+	<CAFLxGvwazkbisZ0Ax==-Yyv2h5mYtnK-S2bOegZHX5g+rB2krQ@mail.gmail.com>
+	<4F574113.8030906@01019freenet.de>
+	<alpine.LRH.2.00.1203121300590.4911@twin.jikos.cz>
+Date: Mon, 12 Mar 2012 13:23:50 +0100
+Message-ID: <CAFLxGvwv159LHtyKdrF1DQZ-vQyagLJ9nNkcAZzkY4O9F-MwNg@mail.gmail.com>
+Subject: Re: Corrupted files after suspend to disk
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andreas Hartmann <andihartmann@01019freenet.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 11-03-12 18:26:21, Martin Schwidefsky wrote:
-> Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update conditional"
-> introduced a bug in regard to cpu hotplug. The effect is that the number
-> of idle ticks in the cpu summary line in /proc/stat is still counting
-> ticks for offline cpus. 
-> 
-> Reproduction is easy, just start a workload that keeps all cpus busy,
-> switch off one or more cpus and then watch the idle field in top.
-> On a dual-core with one cpu 100% busy and one offline cpu you will get
-> something like this:
-> 
-> %Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-> 
-> The problem is that an offline cpu still has ts->idle_active == 1.
-> To fix this get_cpu_idle_time_us and get_cpu_iowait_time_us
-> should check for offline cpus.
+On Mon, Mar 12, 2012 at 1:03 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Wed, 7 Mar 2012, Andreas Hartmann wrote:
+>
+>> > On my system kernel suspend *seems* to work.
+>> > I've seen no corrupted files so far.
+>> >
+>> > But sometimes the resume is failing. (One out of 5 resumes fails).
+>> > I was unable to get any kernel output.
+>> >
+>> > So I'm not sure whether this is the same issue
+>> > or another one. :-\
+>>
+>> I'm pretty sure that this is the same issue. What you are telling
+>> correlates with my research here.
+>> I even got resumes where the machine came up again, but nothing could be
+>> done (it wasn't possible to switch of the password secured screen saver
+>> any more - login at the shell wasn't possible, too, because the started
+>> bash crashed),
+>
+> This is happening to me as well. Something like 1 resume out of 5 goes
+> wrong this very same way.
+>
+> This is thinkpad x200s.
+>
+> All the userspace is segfaulting all over the place (most frequently in
+> libselinux for some reason).
+>
+> I am not able to verify the 'drop_caches' theory, as I can't invoke a
+> single command that wouldn't crash.
 
-Goot catch. But I think that the following fix should be better because
-it doesn't change the semantic of the function. What do you think?
----
->From ccd68723637d7003124704a3329179a5947c54d2 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Mon, 12 Mar 2012 13:11:38 +0100
-Subject: [PATCH] nohz: fix idle ticks in cpu summary line of /proc/stat
-
-Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update conditional"
-introduced a bug in regard to cpu hotplug. The effect is that the number
-of idle ticks in the cpu summary line in /proc/stat is still counting
-ticks for offline cpus.
-
-Reproduction is easy, just start a workload that keeps all cpus busy,
-switch off one or more cpus and then watch the idle field in top.
-On a dual-core with one cpu 100% busy and one offline cpu you will get
-something like this:
-
-%Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-
-The problem is that an offline cpu still has ts->idle_active == 1.
-To fix this get_cpu_idle_time_us and get_cpu_iowait_time_us
-should check for offline cpus.
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- kernel/time/tick-sched.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 7656642..dec767f 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -221,7 +221,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
- 		update_ts_time_stats(cpu, ts, now, last_update_time);
- 		idle = ts->idle_sleeptime;
- 	} else {
--		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
-+		if (cpu_online(cpu) && ts->idle_active && !nr_iowait_cpu(cpu)) {
- 			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
- 
- 			idle = ktime_add(ts->idle_sleeptime, delta);
-@@ -262,7 +262,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
- 		update_ts_time_stats(cpu, ts, now, last_update_time);
- 		iowait = ts->iowait_sleeptime;
- 	} else {
--		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
-+		if (cpu_online(cpu) && ts->idle_active && nr_iowait_cpu(cpu) > 0) {
- 			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
- 
- 			iowait = ktime_add(ts->iowait_sleeptime, delta);
--- 
-1.7.9.1
-
+The question is how should we proceed?
+I've reported this issue one year (!!!) ago.
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Thanks,
+//richard
