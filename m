@@ -1,96 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab2CLOCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 10:02:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35908 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212Ab2CLOCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 10:02:38 -0400
-Date: Mon, 12 Mar 2012 15:02:29 +0100
-From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>, Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 5/9] writeback: introduce the pageout work
-Message-ID: <20120312140229.GG5998@quack.suse.cz>
-References: <20120302095910.GB1744@quack.suse.cz>
- <20120302103951.GA13378@localhost>
- <20120302115700.7d970497.akpm@linux-foundation.org>
- <20120303135558.GA9869@localhost>
- <1331135301.32316.29.camel@sauron.fi.intel.com>
- <20120309073113.GA5337@localhost>
- <20120309095135.GC21038@quack.suse.cz>
- <1331309451.29445.42.camel@sauron.fi.intel.com>
- <20120309211156.GA6262@quack.suse.cz>
- <1331555774.12037.9.camel@sauron.fi.intel.com>
+	id S1752724Ab2CLOGh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 10:06:37 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38410 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab2CLOGd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 10:06:33 -0400
+Date: Mon, 12 Mar 2012 14:06:20 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Marc Reilly <marc@cpdesign.com.au>, sameo@linux.intel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, u.kleine-koenig@pengutronix.de,
+        spi-devel-general@lists.sourceforge.net, oskar@scara.com
+Subject: Re: mfd: mc13xxx: add I2C support, V2
+Message-ID: <20120312140620.GB14020@sirena.org.uk>
+References: <1331429402-9639-1-git-send-email-marc@cpdesign.com.au>
+ <20120311115018.GA16825@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1331555774.12037.9.camel@sauron.fi.intel.com>
+In-Reply-To: <20120311115018.GA16825@pengutronix.de>
+X-Cookie: Yow!  Are we laid back yet?
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 12-03-12 14:36:14, Artem Bityutskiy wrote:
-> On Fri, 2012-03-09 at 22:11 +0100, Jan Kara wrote:
-> > On Fri 09-03-12 18:10:51, Artem Bityutskiy wrote:
-> > > On Fri, 2012-03-09 at 10:51 +0100, Jan Kara wrote:
-> > > > > However I cannot find any ubifs functions to form the above loop, so
-> > > > > ubifs should be safe for now.
-> > > >   Yeah, me neither but I also failed to find a place where
-> > > > ubifs_evict_inode() truncates inode space when deleting the inode... Artem?
-> > > 
-> > > We do call 'truncate_inode_pages()':
-> > > 
-> > > static void ubifs_evict_inode(struct inode *inode)
-> > > {
-> > > 	...
-> > > 
-> > >         truncate_inode_pages(&inode->i_data, 0);
-> > > 
-> > >         ...
-> > > }
-> >   Well, but that just removes pages from page cache. You should somewhere
-> > also free allocated blocks and free the inode... And I'm sure you do,
-> > otherwise you would pretty quickly notice that file deletion does not work
-> > :) Just I could not find which function does it.
-> 
-> ubifs_evict_inode() -> ubifs_jnl_delete_inode() ->
-> ubifs_tnc_remove_ino()
-> 
-> Basically, deletion in UBIFS is about writing a so-called "deletion
-> inode" to the journal and then removing all the data nodes of the
-> truncated inode from the TNC (in-memory cache of the FS index, which is
-> just a huge B-tree, like in reiser4 which inspired me long time ago, and
-> like in btrfs).
-> 
-> The second part of the overall deletion job will be when we commit - the
-> updated version of the FS index will be written to the flash media.
-  Oh, I see. This is what I was missing. And I presume you always make sure
-to have enough space for new FS index so it cannot deadlock when trying to
-push out dirty pages.
+On Sun, Mar 11, 2012 at 12:50:18PM +0100, Wolfram Sang wrote:
 
-> If we get a power cut before the commit, the journal reply will see the
-> deletion inode and will clean-up the index. The deletion inode is never
-> erased before the commit.
-> 
-> Basically, this design is dictated by the fact that we do not have a
-> cheap way of doing in-place updates.
-> 
-> This is a short version of the story. Here are some docs as well:
-> http://www.linux-mtd.infradead.org/doc/ubifs.html#L_documentation
-  I see. Thanks.
+> free, if this is desired. I think the regmap approach should have been tried
+> before we go custom. sound/soc/codecs/ad193x.c might give an impression how
+> regmap spi/i2c in one driver could look like.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+There's a bunch of other examples in sound/soc and also the wm831x PMIC
+driver in drivers/mfd.  For an initial conversion I'd not worry about
+the cache, especially with some of the older PMICs hardware designers
+were known to come up with some "innovative usability solutions" which
+can cause hassle.
