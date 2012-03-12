@@ -1,172 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab2CLRjv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:39:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58058 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2CLRjt (ORCPT
+	id S1752318Ab2CLRke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:40:34 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:4019 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363Ab2CLRkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 13:39:49 -0400
-Subject: [PATCH] Added backlight driver for Acer Aspire 4736
-From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-To: rpurdie@rpsys.net
-Cc: FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Mar 2012 23:16:33 -0400
-Message-ID: <1331608593.2267.73.camel@debian.Gayathri>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Mar 2012 13:40:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6647"; a="171735649"
+From: Laura Abbott <lauraa@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dave.martin@linaro.org, nicolas.pitre@linaro.org,
+        catalin.marinas@arm.com
+Cc: linux-arm-msm@vger.kernel.org, Laura Abbott <lauraa@codeaurora.org>
+Subject: [PATCH] arm: Add unwinding support for memset and memzero.
+Date: Mon, 12 Mar 2012 10:40:27 -0700
+Message-Id: <1331574027-28542-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ,
+Both memset and memzero lack unwinding annoations. If
+an abort occurs trying to access the pointer, the backtrace
+is incomplete. Add unwinding annotations to both functions
+so we can actually get a useful backtrace.
 
-  Brightness control was not  working on Acer Aspire 4736 using default ACPI interface.  acer-acpi also do not support 4730 series since it uses new WMI interface.
-This driver adds brightness control by accessing the LBB PCI configuration register. This approach may also work on other laptops in 4730 series .But currently ,  it is only tested  for 
-Aspire 4736. 
-
->From 03dbda16c90278aa1c088e5208bd99ac3c76f911 Mon Sep 17 00:00:00 2001
-From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-Date: Mon, 12 Mar 2012 23:08:20 -0400
-Subject: [PATCH] Added backlight driver for Acer Aspire 4736
-
-Added backlight driver for Acer Aspire 4736
-
-Signed-off-by: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
 ---
- drivers/video/backlight/acer4736_bl.c |  110 +++++++++++++++++++++++++++++++++
- 1 files changed, 110 insertions(+), 0 deletions(-)
- create mode 100644 drivers/video/backlight/acer4736_bl.c
+ arch/arm/lib/memset.S  |    7 +++++--
+ arch/arm/lib/memzero.S |    7 +++++--
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/backlight/acer4736_bl.c b/drivers/video/backlight/acer4736_bl.c
-new file mode 100644
-index 0000000..6fe2937
---- /dev/null
-+++ b/drivers/video/backlight/acer4736_bl.c
-@@ -0,0 +1,110 @@
-+/*
-+ * Backlight driver for Acer Aspire 4736
-+ *
-+ * Copyright (C) Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This driver uses LBB PCI configuration register to change the
-+ * backlight brightness.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/backlight.h>
-+#include <linux/err.h>
-+#include <linux/dmi.h>
-+#include <linux/io.h>
-+#include <linux/pci.h>
-+
-+static u8 max_brightness = 0xFF;
-+static u8 lbb_offset =  0xF4;
-+static unsigned int device_id = 0x2a42;
-+static unsigned int vendor_id = 0x8086;
-+
-+struct backlight_device *acer_backlight_device;
-+struct pci_dev *pdev;
-+
-+static int acer_dmi_match(const struct dmi_system_id *id)
-+{
-+	printk(KERN_INFO "acer4736_bl: %s detected\n", id->ident);
-+	return 1;
-+}
-+
-+static const struct dmi_system_id __initdata acer_device_table[] = {
-+{
-+		.callback	= acer_dmi_match,
-+		.ident		= "Aspire 4736",
-+		.matches	= {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 4736"),
-+		},
-+	},
-+	{}
-+};
-+static int read_brightness(struct backlight_device *bd)
-+{
-+	u8 result;
-+	pci_read_config_byte(pdev, lbb_offset, &result);
-+	return result;
-+}
-+
-+static int update_brightness(struct backlight_device *bd)
-+{
-+	u8 intensity = bd->props.brightness;
-+	if (intensity > max_brightness) {
-+		printk(KERN_INFO "Acer4736_bl: Invalid parameter. Maximum value is %d"
-+		, max_brightness);
-+		return -1;
-+	}
-+	pci_write_config_byte(pdev, lbb_offset, intensity);
-+	return 0;
-+}
-+static const struct  backlight_ops acer_backlight_ops = {
-+	.get_brightness = read_brightness,
-+	.update_status  = update_brightness,
-+};
-+
-+static int __init acer4736_bl_init(void)
-+{
-+	struct backlight_properties props;
-+	if (!dmi_check_system(acer_device_table))
-+		return -ENODEV;
-+
-+	pdev = pci_get_device(vendor_id, device_id, NULL);
-+
-+	if (!pdev)
-+		return -ENODEV;
-+
-+	printk(KERN_INFO "Loading Acer 4736 backlight driver\n");
-+	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.type = BACKLIGHT_RAW;
-+	props.max_brightness = max_brightness;
-+
-+	acer_backlight_device = backlight_device_register("acer_backlight",
-+		NULL, NULL, &acer_backlight_ops, &props);
-+	acer_backlight_device->props.max_brightness = max_brightness;
-+	acer_backlight_device->props.brightness  =
-+		read_brightness(acer_backlight_device);
-+	backlight_update_status(acer_backlight_device);
-+
-+	return 0;
-+}
-+
-+static void __exit acer4736_bl_exit(void)
-+{
-+	pci_dev_put(pdev);
-+	backlight_device_unregister(acer_backlight_device);
-+}
-+
-+module_init(acer4736_bl_init);
-+module_exit(acer4736_bl_exit);
-+
-+MODULE_AUTHOR("Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>");
-+MODULE_DESCRIPTION("Acer Aspire 4736 Backlight Driver");
-+MODULE_LICENSE("GPL");
-+MODULE_DEVICE_TABLE(dmi, acer_device_table);
+diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
+index 650d592..4379912 100644
+--- a/arch/arm/lib/memset.S
++++ b/arch/arm/lib/memset.S
+@@ -11,6 +11,7 @@
+  */
+ #include <linux/linkage.h>
+ #include <asm/assembler.h>
++#include <asm/unwind.h>
+ 
+ 	.text
+ 	.align	5
+@@ -29,6 +30,7 @@
+  */
+ 
+ ENTRY(memset)
++UNWIND(.fnstart)
+ 	ands	r3, r0, #3		@ 1 unaligned?
+ 	bne	1b			@ 1
+ /*
+@@ -41,7 +43,7 @@ ENTRY(memset)
+ 	blt	4f
+ 
+ #if ! CALGN(1)+0
+-
++UNWIND(.save {lr})
+ /*
+  * We need an extra register for this loop - save the return address and
+  * use the LR
+@@ -68,7 +70,7 @@ ENTRY(memset)
+ 	ldr	lr, [sp], #4
+ 
+ #else
+-
++UNWIND(.save {r4, r5, r6, r7, lr})
+ /*
+  * This version aligns the destination pointer in order to write
+  * whole cache lines at once.
+@@ -124,4 +126,5 @@ ENTRY(memset)
+ 	tst	r2, #1
+ 	strneb	r1, [r0], #1
+ 	mov	pc, lr
++UNWIND(.fnend)
+ ENDPROC(memset)
+diff --git a/arch/arm/lib/memzero.S b/arch/arm/lib/memzero.S
+index 3fbdef5..26f9ce8 100644
+--- a/arch/arm/lib/memzero.S
++++ b/arch/arm/lib/memzero.S
+@@ -9,6 +9,7 @@
+  */
+ #include <linux/linkage.h>
+ #include <asm/assembler.h>
++#include <asm/unwind.h>
+ 
+ 	.text
+ 	.align	5
+@@ -31,6 +32,7 @@
+  */
+ 
+ ENTRY(__memzero)
++UNWIND(.fnstart)
+ 	mov	r2, #0			@ 1
+ 	ands	r3, r0, #3		@ 1 unaligned?
+ 	bne	1b			@ 1
+@@ -41,7 +43,7 @@ ENTRY(__memzero)
+ 	blt	4f			@ 1 have < 16 bytes
+ 
+ #if ! CALGN(1)+0
+-
++UNWIND(.save {lr})
+ /*
+  * We need an extra register for this loop - save the return address and
+  * use the LR
+@@ -68,7 +70,7 @@ ENTRY(__memzero)
+ 	ldr	lr, [sp], #4		@ 1
+ 
+ #else
+-
++UNWIND(.save{r4, r5, r6, r7})
+ /*
+  * This version aligns the destination pointer in order to write
+  * whole cache lines at once.
+@@ -122,4 +124,5 @@ ENTRY(__memzero)
+ 	tst	r1, #1			@ 1 a byte left over
+ 	strneb	r2, [r0], #1		@ 1
+ 	mov	pc, lr			@ 1
++UNWIND(.fnend)
+ ENDPROC(__memzero)
 -- 
-1.7.2.5
-
-
-
-------
-
-Thanks , 
-
-Pradeep Subrahmanion
-
-
+1.7.8.3
 
