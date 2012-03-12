@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab2CLVEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 17:04:47 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48042 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab2CLVEq (ORCPT
+	id S932104Ab2CLVJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 17:09:28 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:35540 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753551Ab2CLVJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 17:04:46 -0400
-Message-ID: <4F5E64EB.6050200@wwwdotorg.org>
-Date: Mon, 12 Mar 2012 15:04:43 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Mon, 12 Mar 2012 17:09:27 -0400
+X-Authenticated: #1045983
+X-Provags-ID: V01U2FsdGVkX18ecFAyaPUeaEh7lCj3KebmogpAOGpjJqiN4x2Wn3
+	wCJBA7178oyEbw
+Message-ID: <4F5E6600.2070806@gmx.de>
+Date: Mon, 12 Mar 2012 22:09:20 +0100
+From: Helge Deller <deller@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@stericsson.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] pinctrl: fix error path in pinconf_map_to_setting()
-References: <1331584870-10077-1-git-send-email-linus.walleij@stericsson.com>
-In-Reply-To: <1331584870-10077-1-git-send-email-linus.walleij@stericsson.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Cong Wang <amwang@redhat.com>
+CC: Octavian Purdila <opurdila@ixiacom.com>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Frank Danapfel <fdanapfe@redhat.com>, Laszlo Ersek <lersek@redhat.com>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] enhance usability of /proc/sys/net/ipv4/ip_local_reserved_ports
+References: <4F5BE563.9050506@gmx.de> <1331523759.1932.13.camel@cr0>
+In-Reply-To: <1331523759.1932.13.camel@cr0>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 02:41 PM, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> The code was using the union member
-> setting->data.configs.group_or_pin to store a potential
-> error code, but since that member is unsigned the
-> < 0 comparison was not true, letting errors pass thru,
+On 03/12/2012 04:42 AM, Cong Wang wrote:
+> On Sun, 2012-03-11 at 00:36 +0100, Helge Deller wrote:
+>> When writing to the ip_local_reserved_ports proc file it will currently clear
+>> all previously reserved ports and update the current list with the one given
+>> in the input.
+>>
+>> This behaviour makes it's usage quite hard, for example:
+>> a) The generic proc filesystem limitation of only handle up to PAGE_SIZE-1
+>>     characters at maximum may not be sufficient to provide all your wished-to-
+>>     be-reserved ports at once.
+>
+> Yes, this should be extended IMHO.
 
-"thru" is a pet peeve of mine; it'd be great to spell this correctly as
-"through".
+Yes, known problem and not easy to fix.
 
-> ending up as mapped to pin "-22". Fix this up and print
-> the error.
+>> b) There is no easy way to disable specific given ports, you always need to
+>>     give the full port list at once. This makes shell scripting hard, since
+>>     you need to parse everything yourself.
+>> c) There is no easy way to just add specific ports or port ranges. Again,
+>>     this would be useful for shell scripts.
+>>
+>
+> These could be calculated in user-space, although it maybe not as easy
+> as you want.
 
-Oops. Sorry about that.
+Right.
 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-...
-> -		setting->data.configs.group_or_pin =
-> -			pin_get_from_name(pctldev,
-> -					  map->data.configs.group_or_pin);
-> -		if (setting->data.configs.group_or_pin < 0)
-> -			return setting->data.configs.group_or_pin;
-> +		ret = pin_get_from_name(pctldev,
-> +					map->data.configs.group_or_pin);
-> +		if (ret < 0) {
+>> The following patch solves this problem by simply extending the parser
+>> in proc_do_large_bitmap() to accept the keywords "add" and "release" in front
+>> of given ports or port ranges and to either add or drop the given ports
+>> from the already existing list.
+>
+> This looks a little odd, because we do "magic" things with a sysctl
+> file, which is supposed to be plain text file. Do we have existing
+> examples?
 
-"ret" here is named "pin" other places pin_get_from_name() is called,
-and that naming seems to make a bit more sense here too.
+I don't think the networking sysctl has such tunables.
+Overall, ip_local_reserved_ports is the only user of the
+large_bitmap function and as such you can't compare the
+input/output of this file with other sysctl files which
+operate on a limited number of integers/booleans/strings only.
+Furthermore my patch does not remove the "plain text"
+behaviour of this file. You can still echo plain ports or
+port lists into it and a "cat" gives you the same output
+as before. It just extends the interface to add/remove
+ports more easily if you want.
 
-Otherwise,
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+One somewhat comparable proc file which comes to my mind in this
+regard is /proc/scsi/scsi where you can echo commands like
+"scsi report-devs 1" and which then reacts. A user of this
+interface is e.g. the known rescan-scsi-bus shell script:
+http://www.garloff.de/kurt/linux/rescan-scsi-bus.sh-1.25
+
+> BTW, as David mentioned, please Cc netdev next time.
+
+Sure. I'll send an updated patch tomorrow and will CC netdev.
+
+Thanks,
+Helge
