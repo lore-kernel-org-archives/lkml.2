@@ -1,153 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754067Ab2CLJML (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 05:12:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2563 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752854Ab2CLJMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 05:12:09 -0400
-Subject: [PATCH] kvm: ioapic: conditionally delay irq delivery during eoi
- broadcast
-To: mtosatti@redhat.com, avi@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-From: Jason Wang <jasowang@redhat.com>
-Cc: gleb@redhat.com, mst@redhat.com
-Date: Mon, 12 Mar 2012 17:07:35 +0800
-Message-ID: <20120312090734.8414.21043.stgit@amd-6168-8-1.englab.nay.redhat.com>
-User-Agent: StGit/0.16-1-g60c4
+	id S1754544Ab2CLJPm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 05:15:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49704 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691Ab2CLJPj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 05:15:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAOD=uF6=2b-s_ErZ8zB+Mmo=gzE8wJdQ+h=TPz7U-sc1ucyw=Q@mail.gmail.com>
+References: <1331534303-4093-1-git-send-email-santoshprasadnayak@gmail.com>
+	<20120311.234808.1919218898572322534.davem@davemloft.net>
+	<CAOD=uF6=2b-s_ErZ8zB+Mmo=gzE8wJdQ+h=TPz7U-sc1ucyw=Q@mail.gmail.com>
+Date: Mon, 12 Mar 2012 14:45:38 +0530
+Message-ID: <CAOD=uF4qUhKRpWerFkouqNgzTNRL7DRu3G0kxgTb2E31Ox-=aA@mail.gmail.com>
+Subject: Re: [PATCH 3/3 v2] netxen: qlogic ethernet : Fix endian bug.
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: sony.chacko@qlogic.com, rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we call ioapic_service() immediately when we find the irq is still
-active during eoi broadcast. But for real hardware, there's some dealy between
-the EOI writing and irq delivery (system bus latency?). So we need to emulate
-this behavior. Otherwise, for a guest who haven't register a proper irq handler
-, it would stay in the interrupt routine as this irq would be re-injected
-immediately after guest enables interrupt. This would lead guest can't move
-forward and may miss the possibility to get proper irq handler registered (one
-example is windows guest resuming from hibernation).
+Subject and comments are provided below for review.
+This is for review not a formal one. Please let me know
+if any more changes are required so that I can include it in
+a formal patch.
 
-As there's no way to differ the unhandled irq from new raised ones, this patch
-solve this problems by scheduling a delayed work when the count of irq injected
-during eoi broadcast exceeds a threshold value. After this patch, the guest can
-move a little forward when there's no suitable irq handler in case it may
-register one very soon and for guest who has a bad irq detection routine ( such
-as note_interrupt() in linux ), this bad irq would be recognized soon as in the
-past.
+--------------------------------------------------------------------------------------------------------
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- virt/kvm/ioapic.c |   47 +++++++++++++++++++++++++++++++++++++++++++++--
- virt/kvm/ioapic.h |    2 ++
- 2 files changed, 47 insertions(+), 2 deletions(-)
+Subject: [PATCH 3/3 v2] netxen: qlogic ethernet : Fix endian bug.
 
-diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-index dcaf272..892253e 100644
---- a/virt/kvm/ioapic.c
-+++ b/virt/kvm/ioapic.c
-@@ -221,6 +221,24 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
- 	return ret;
- }
- 
-+static void kvm_ioapic_eoi_inject_work(struct work_struct *work)
-+{
-+	int i, ret;
-+	struct kvm_ioapic *ioapic = container_of(work, struct kvm_ioapic,
-+						 eoi_inject.work);
-+	spin_lock(&ioapic->lock);
-+	for (i = 0; i < IOAPIC_NUM_PINS; i++) {
-+		union kvm_ioapic_redirect_entry *ent = &ioapic->redirtbl[i];
-+
-+		if (ent->fields.trig_mode != IOAPIC_LEVEL_TRIG)
-+			continue;
-+
-+		if (ioapic->irr & (1 << i) && !ent->fields.remote_irr)
-+			ret = ioapic_service(ioapic, i);
-+	}
-+	spin_unlock(&ioapic->lock);
-+}
-+
- static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
- 				     int trigger_mode)
- {
-@@ -249,8 +267,29 @@ static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
- 
- 		ASSERT(ent->fields.trig_mode == IOAPIC_LEVEL_TRIG);
- 		ent->fields.remote_irr = 0;
--		if (!ent->fields.mask && (ioapic->irr & (1 << i)))
--			ioapic_service(ioapic, i);
-+		if (!ent->fields.mask && (ioapic->irr & (1 << i))) {
-+			++ioapic->irq_eoi;
-+			if (ioapic->irq_eoi == 100) {
-+				/*
-+				 * Real hardware does not deliver the irq so
-+				 * immediately during eoi broadcast, so we need
-+				 * to emulate this behavior. Otherwise, for
-+				 * guests who has not registered handler of a
-+				 * level irq, this irq would be injected
-+				 * immediately after guest enables interrupt
-+				 * (which happens usually at the end of the
-+				 * common interrupt routine). This would lead
-+				 * guest can't move forward and may miss the
-+				 * possibility to get proper irq handler
-+				 * registered. So we need to give some breath to
-+				 * guest. TODO: 1 is too long?
-+				 */
-+				schedule_delayed_work(&ioapic->eoi_inject, 1);
-+				ioapic->irq_eoi = 0;
-+			} else {
-+				ioapic_service(ioapic, i);
-+			}
-+		}
- 	}
- }
- 
-@@ -375,12 +414,14 @@ void kvm_ioapic_reset(struct kvm_ioapic *ioapic)
- {
- 	int i;
- 
-+	cancel_delayed_work_sync(&ioapic->eoi_inject);
- 	for (i = 0; i < IOAPIC_NUM_PINS; i++)
- 		ioapic->redirtbl[i].fields.mask = 1;
- 	ioapic->base_address = IOAPIC_DEFAULT_BASE_ADDRESS;
- 	ioapic->ioregsel = 0;
- 	ioapic->irr = 0;
- 	ioapic->id = 0;
-+	ioapic->irq_eoi = 0;
- 	update_handled_vectors(ioapic);
- }
- 
-@@ -398,6 +439,7 @@ int kvm_ioapic_init(struct kvm *kvm)
- 	if (!ioapic)
- 		return -ENOMEM;
- 	spin_lock_init(&ioapic->lock);
-+	INIT_DELAYED_WORK(&ioapic->eoi_inject, kvm_ioapic_eoi_inject_work);
- 	kvm->arch.vioapic = ioapic;
- 	kvm_ioapic_reset(ioapic);
- 	kvm_iodevice_init(&ioapic->dev, &ioapic_mmio_ops);
-@@ -418,6 +460,7 @@ void kvm_ioapic_destroy(struct kvm *kvm)
- {
- 	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
- 
-+	cancel_delayed_work_sync(&ioapic->eoi_inject);
- 	if (ioapic) {
- 		kvm_io_bus_unregister_dev(kvm, KVM_MMIO_BUS, &ioapic->dev);
- 		kvm->arch.vioapic = NULL;
-diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
-index 0b190c3..8938e66 100644
---- a/virt/kvm/ioapic.h
-+++ b/virt/kvm/ioapic.h
-@@ -47,6 +47,8 @@ struct kvm_ioapic {
- 	void (*ack_notifier)(void *opaque, int irq);
- 	spinlock_t lock;
- 	DECLARE_BITMAP(handled_vectors, 256);
-+	struct delayed_work eoi_inject;
-+	u32 irq_eoi;
- };
- 
- #ifdef DEBUG
+Change the datatype of "ip_addr" to __be32 as 'ip' should be in
+big endian format.
 
+Adapter needs "ip address" in big endian format stored at lower 32bit
+of req.word[1]. netxen_config_ipaddr() now receives 'ip' in big endian
+format. To satisfy adapter's need, use memcpy() to copy byte by byte
+of 'ip' into lower 32bit of req.word[1].
+
+Mac address and serial number of adapter need to be in little endian format.
+Change the data type of the related  variables to __le32 / __le64 or cast it
+explicitly to __le32 / __le64 depending upon the requirement.
+
+---------------------------------------------------------------------------------------------------------------
+
+
+Regards
+Santosh
+
+
+
+On Mon, Mar 12, 2012 at 12:22 PM, santosh prasad nayak
+<santoshprasadnayak@gmail.com> wrote:
+> Sure David.
+> I will resend it with proper comment.
+>
+> Regards
+> Santosh
+>
+> On Mon, Mar 12, 2012 at 12:18 PM, David Miller <davem@davemloft.net> wrote:
+>> From: santosh nayak <santoshprasadnayak@gmail.com>
+>> Date: Mon, 12 Mar 2012 12:08:23 +0530
+>>
+>>> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+>>>
+>>> Fix endian bug.
+>>>
+>>> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
+>>
+>> This is a very non-trivial patch, therefore the terse commit
+>> message and the lack of any comments in this code is unacceptable.
+>>
+>> This commit message is not only terse, it's wrong.  You're not
+>> fixing an endian bug, you're fixing several of them.
+>>
+>> Explain everything in your commit message.
+>>
+>>>       req.words[0] = cpu_to_le64(cmd);
+>>> -     req.words[1] = cpu_to_le64(ip);
+>>> +     memcpy(&req.words[1], &ip, sizeof(u32));
+>>
+>> Nobody is going to read that and have any idea why it's correct unless
+>> they happen to be able to discover the long thread you guys had this
+>> past week working out how to do this change correctly.
+>>
+>> Putting a comment here for the rest of us mere mortals is therefore
+>> absolutely required.
