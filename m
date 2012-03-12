@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab2CLMBq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 08:01:46 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:62895 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab2CLMBo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 08:01:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1203111322550.20299@chino.kir.corp.google.com>
-References: <CAJd=RBBK4tx91ZQu0WKzBGx8E-Na6oUwmpBUQVB0yPkR=ySPjg@mail.gmail.com>
-	<CAJd=RBB3202WV4zJratpp8c8VjkipNEbB_p9bGjLKrxr7qL-RA@mail.gmail.com>
-	<alpine.DEB.2.00.1203111322550.20299@chino.kir.corp.google.com>
-Date: Mon, 12 Mar 2012 20:01:43 +0800
-Message-ID: <CAJd=RBBn35FU99qoXwmPx+FK6=Vt-DXsCje3bAXYB+GrvR9hPg@mail.gmail.com>
-Subject: Re: [PATCH] hugetlbfs: add err code in initializing module
-From: Hillf Danton <dhillf@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754834Ab2CLMCM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 08:02:12 -0400
+Received: from mail.aixtema.de ([212.117.64.100]:33193 "EHLO mail.aixtema.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752925Ab2CLMCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 08:02:10 -0400
+Message-ID: <1331553720.6203.5.camel@mobile>
+Subject: Re: Patch for Sitecom LN-031
+From: Joerg Neikes <j.neikes@midlandgate.de>
+To: David Miller <davem@davemloft.net>
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 12 Mar 2012 13:02:00 +0100
+In-Reply-To: <20120311.155308.854791460127462538.davem@davemloft.net>
+References: <1331282643.5426.6.camel@mobile>
+	 <20120311.155308.854791460127462538.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-AntiVirus: checked by AntiVir MailGate (version: 2.0.1.16; AVE: 7.9.10.20; VDF: 7.11.25.22; host: mail.aixtema.de)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 4:25 AM, David Rientjes <rientjes@google.com> wrote:
->
-> The patch looks good, however, we typically do things like
->
->        error = -ENOMEM;
->        hugetlbfs_inode_cachep = kmem_cache_create(...);
->        if (!hugetlbfs_inode_cachep)
->                ...
->
-> instead.  Sometimes people grep to see if a call a function that can fail,
-> such as kmem_cache_create(), is followed up by a check for NULL and this
-> would otherwise fail.
->
->
-It is updated, thanks David.
+Am Sonntag, den 11.03.2012, 15:53 -0700 schrieb David Miller:
+> From: Joerg Neikes <j.neikes@midlandgate.de>
+> Date: Fri, 09 Mar 2012 09:44:03 +0100
+> 
+> > This patch adds support for the Sitecom LN-031 USB adapter with a AX88178 chip.
+> > 
+> > Added USB id to find correct driver for AX88178 1000 Ethernet adapter.
+> > 
+> > Signed-off-by: Joerg Neikes <j.neikes@midlandgate.de>
+> 
+> Applied, but please put more appropriate content in your subject
+> lines in the future.
+> 
+> You should, at a minimum, prefix the subject line with the driver or
+> subsystem name you are modifying.  In this case something like
+> "asix: " would have been appropriate.
+> 
 
--hd
-===cut here===
-From: Hillf Danton <dhillf@gmail.com>
-Subject: [PATCH] hugetlbfs: add err code in initilizing module
+Thanks for the information about the subsystem.
+Next time i will write it to the subject line.
 
-Error code is added if fail to create inode kmem cache, and newly registered
-hugetlb FS is unregistered if fail to mount, both for unlikely corner cases.
+This was my first change ever send for Kernel adding.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
 
---- a/fs/hugetlbfs/inode.c	Sun Mar 11 12:46:38 2012
-+++ b/fs/hugetlbfs/inode.c	Mon Mar 12 19:52:16 2012
-@@ -997,6 +997,7 @@ static int __init init_hugetlbfs_fs(void
- 	if (error)
- 		return error;
-
-+	error = -ENOMEM;
- 	hugetlbfs_inode_cachep = kmem_cache_create("hugetlbfs_inode_cache",
- 					sizeof(struct hugetlbfs_inode_info),
- 					0, 0, init_once);
-@@ -1015,6 +1016,7 @@ static int __init init_hugetlbfs_fs(void
- 	}
-
- 	error = PTR_ERR(vfsmount);
-+	unregister_filesystem(&hugetlbfs_fs_type);
-
-  out:
- 	if (error)
---
