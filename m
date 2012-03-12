@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab2CLIAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 04:00:06 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61973 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab2CLH77 (ORCPT
+	id S1754574Ab2CLIGa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 04:06:30 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57994 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925Ab2CLIGY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 03:59:59 -0400
-Message-ID: <1331539194.13086.4.camel@phoenix>
-Subject: [PATCH RFC/RFT 2/2] regulator: Convert tps6507x to set_voltage_sel
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Mon, 12 Mar 2012 15:59:54 +0800
-In-Reply-To: <1331539070.13086.2.camel@phoenix>
-References: <1331539070.13086.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 12 Mar 2012 04:06:24 -0400
+MIME-Version: 1.0
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <20120309124119.GV3273@opensource.wolfsonmicro.com>
+References: <1328856038-21912-1-git-send-email-myungjoo.ham@samsung.com>
+	<1330344939-18394-1-git-send-email-myungjoo.ham@samsung.com>
+	<1330344939-18394-2-git-send-email-myungjoo.ham@samsung.com>
+	<20120309124119.GV3273@opensource.wolfsonmicro.com>
+Date: Mon, 12 Mar 2012 17:06:23 +0900
+X-Google-Sender-Auth: a3u36J02Y0Rsk3crle642kINt3o
+Message-ID: <CAJ0PZbTnKf2VA-OCyVjEC7kf7mnqt04UDjDw-zqi8f7J6yJUiA@mail.gmail.com>
+Subject: Re: [PATCH v6 1/5] Extcon (external connector): import Android's
+ switch class and modify.
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnevag?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, gregkh@linuxfoundation.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Joerg Roedel <joerg.roedel@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps6507x-regulator.c |   31 +++++--------------------------
- 1 files changed, 5 insertions(+), 26 deletions(-)
+On Fri, Mar 9, 2012 at 9:41 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Feb 27, 2012 at 09:15:35PM +0900, MyungJoo Ham wrote:
+>
+>> +#ifdef CONFIG_ANDROID
+>> +             extcon_class = class_create(THIS_MODULE, "switch");
+>> +#else /* !CONFIG_ANDROID */
+>> +             extcon_class = class_create(THIS_MODULE, "extcon");
+>> +#endif /* CONFIG_ANDROID */
+>
+> This seems somewhat sad - if ANDROID is turned on the standard ABI
+> vanishes.  It'd be much nicer to do this with a symlink (or with
+> symlinks within the android directory if the driver core doesn't support
+> that).  That way userspace code can be written to the new ABI and will
+> work on Android systems without ifdefery.
 
-diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
-index e140a15..832833f 100644
---- a/drivers/regulator/tps6507x-regulator.c
-+++ b/drivers/regulator/tps6507x-regulator.c
-@@ -328,12 +328,11 @@ static int tps6507x_pmic_get_voltage(struct regulator_dev *dev)
- 	return tps->info[rid]->table[data] * 1000;
- }
- 
--static int tps6507x_pmic_set_voltage(struct regulator_dev *dev,
--					  int min_uV, int max_uV,
--					  unsigned *selector)
-+static int tps6507x_pmic_set_voltage_sel(struct regulator_dev *dev,
-+					  unsigned selector)
- {
- 	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
--	int data, vsel, rid = rdev_get_id(dev);
-+	int data, rid = rdev_get_id(dev);
- 	u8 reg, mask;
- 
- 	switch (rid) {
-@@ -367,32 +366,12 @@ static int tps6507x_pmic_set_voltage(struct regulator_dev *dev,
- 		return -EINVAL;
- 	}
- 
--	if (min_uV < tps->info[rid]->min_uV || min_uV > tps->info[rid]->max_uV)
--		return -EINVAL;
--	if (max_uV < tps->info[rid]->min_uV || max_uV > tps->info[rid]->max_uV)
--		return -EINVAL;
--
--	for (vsel = 0; vsel < tps->info[rid]->table_len; vsel++) {
--		int mV = tps->info[rid]->table[vsel];
--		int uV = mV * 1000;
--
--		/* Break at the first in-range value */
--		if (min_uV <= uV && uV <= max_uV)
--			break;
--	}
--
--	/* write to the register in case we found a match */
--	if (vsel == tps->info[rid]->table_len)
--		return -EINVAL;
--
--	*selector = vsel;
--
- 	data = tps6507x_pmic_reg_read(tps, reg);
- 	if (data < 0)
- 		return data;
- 
- 	data &= ~mask;
--	data |= vsel;
-+	data |= selector;
- 
- 	return tps6507x_pmic_reg_write(tps, reg, data);
- }
-@@ -417,7 +396,7 @@ static struct regulator_ops tps6507x_pmic_ops = {
- 	.enable = tps6507x_pmic_enable,
- 	.disable = tps6507x_pmic_disable,
- 	.get_voltage = tps6507x_pmic_get_voltage,
--	.set_voltage = tps6507x_pmic_set_voltage,
-+	.set_voltage_sel = tps6507x_pmic_set_voltage_sel,
- 	.list_voltage = tps6507x_pmic_list_voltage,
- };
- 
+Yes, this was the itching part.
+
+I'll first look into creating symlinks (either /sys/class/switch -->
+/sys/class/extcon or /sys/class/switch/* --> /sys/class/extcon/*).
+However, I think this symbolic links are better created selectively w/
+CONFIG_ANDROID.
+
+Thanks.
+
+
+Cheers!
+MyungJoo.
+
 -- 
-1.7.5.4
-
-
-
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
