@@ -1,258 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab2CLOWA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 10:22:00 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:49544 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116Ab2CLOVz convert rfc822-to-8bit (ORCPT
+	id S1755638Ab2CLOV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 10:21:58 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:63216 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414Ab2CLOVw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 10:21:55 -0400
+	Mon, 12 Mar 2012 10:21:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F5DF72F.4020009@samsung.com>
-References: <1331312686-2077-1-git-send-email-k.lewandowsk@samsung.com>
-	<1331312686-2077-2-git-send-email-k.lewandowsk@samsung.com>
-	<CAJuYYwRDb-NvOzpzWtV8erw8UZeHjBUDUPjm-Cg0GTz6BCCV5w@mail.gmail.com>
-	<4F5DF72F.4020009@samsung.com>
-Date: Mon, 12 Mar 2012 19:51:53 +0530
-Message-ID: <CAJuYYwRHOD6KS17oVkA4-Qpv=+5Q=onZDsDe+uhaxy2b2G94nw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] i2c-s3c2410: Rework device type handling
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: ben-linux@fluff.org, m.szyprowski@samsung.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        t.stanislaws@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>
+In-Reply-To: <CADDYkjTsDf0J0v7B-78SiYPsjPsn1VOCbiqAMq8TJxgPc_MiBg@mail.gmail.com>
+References: <CADDYkjQHvmfhmsdt7K0O74DZK6BVqxPaWh_jEi8uJ_HBEz-QhQ@mail.gmail.com>
+	<20120308155211.GF4334@twin.jikos.cz>
+	<CADDYkjTG-q5+pFRFt9sGKq=cgL=ZgQaNZV=2ipBsSbuvxCa3jw@mail.gmail.com>
+	<4F595D6D.6080809@cn.fujitsu.com>
+	<20120309105537.GG4334@twin.jikos.cz>
+	<CADDYkjRcRbxxPErdMBOs55-gNHZA0GfxcsWNrVbAuv37b3rtvw@mail.gmail.com>
+	<20120309114010.GH4334@twin.jikos.cz>
+	<CADDYkjTsDf0J0v7B-78SiYPsjPsn1VOCbiqAMq8TJxgPc_MiBg@mail.gmail.com>
+Date: Mon, 12 Mar 2012 15:21:49 +0100
+Message-ID: <CADDYkjRkmqbKQnGL+VGgS2hi6F4Z7PbLb6dUB2PYd0M9pVSmPg@mail.gmail.com>
+Subject: Re: kernel BUG at fs/btrfs/delayed-inode.c:1466!
+From: Jacek Luczak <difrost.kernel@gmail.com>
+To: dave@jikos.cz, Jacek Luczak <difrost.kernel@gmail.com>,
+        Liu Bo <liubo2009@cn.fujitsu.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, josef@redhat.com,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Chris Mason <chris.mason@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 March 2012 18:46, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
-> On 12.03.2012 06:58, Thomas Abraham wrote:
->
-> Hi Thomas!
->
->> On 9 March 2012 22:34, Karol Lewandowski <k.lewandowsk@samsung.com> wrote:
->>> Reorganize driver a bit to better handle device tree-based systems:
+2012/3/10 Jacek Luczak <difrost.kernel@gmail.com>:
+> 2012/3/9 David Sterba <dave@jikos.cz>:
+>> On Fri, Mar 09, 2012 at 12:08:12PM +0100, Jacek Luczak wrote:
+>>> For this one I've created also a report [1].
+>>> >
+>>> > so there is probably other problem in reservations and it just blew up during
+>>> > the unlink call.
 >>>
->>>  - move machine type to driver's private structure instead of
->>>   quering platform device variants in runtime
+>>> Could be as this came up after a longer time of throwing above WARN_ON.
 >>>
->>>  - replace s3c24xx_i2c_type enum with plain unsigned int that can
->>>   hold not only device type but also hw revision-specific quirks
->>>
->>> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
->>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->>> ---
->>>  drivers/i2c/busses/i2c-s3c2410.c |   56 +++++++++++++------------------------
->>>  1 files changed, 20 insertions(+), 36 deletions(-)
->>>
->>> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
->>> index 737f721..5b400c6 100644
->>> --- a/drivers/i2c/busses/i2c-s3c2410.c
->>> +++ b/drivers/i2c/busses/i2c-s3c2410.c
->>> @@ -44,8 +44,12 @@
->>>  #include <plat/regs-iic.h>
->>>  #include <plat/iic.h>
->>>
->>> -/* i2c controller state */
->>> +/* type */
->>> +#define TYPE_BITS              0x000000ff
->>> +#define TYPE_S3C2410           0x00000001
->>> +#define TYPE_S3C2440           0x00000002
->>>
->>> +/* i2c controller state */
->>>  enum s3c24xx_i2c_state {
->>>        STATE_IDLE,
->>>        STATE_START,
->>> @@ -54,14 +58,10 @@ enum s3c24xx_i2c_state {
->>>        STATE_STOP
->>>  };
->>>
->>> -enum s3c24xx_i2c_type {
->>> -       TYPE_S3C2410,
->>> -       TYPE_S3C2440,
->>> -};
->>> -
->>>  struct s3c24xx_i2c {
->>>        spinlock_t              lock;
->>>        wait_queue_head_t       wait;
->>> +       unsigned int            type;
->>>        unsigned int            suspended:1;
->>>
->>>        struct i2c_msg          *msg;
->>> @@ -88,28 +88,6 @@ struct s3c24xx_i2c {
->>>  #endif
->>>  };
->>>
->>> -/* default platform data removed, dev should always carry data. */
->>> -
->>> -/* s3c24xx_i2c_is2440()
->>> - *
->>> - * return true is this is an s3c2440
->>> -*/
->>> -
->>> -static inline int s3c24xx_i2c_is2440(struct s3c24xx_i2c *i2c)
->>> -{
->>> -       struct platform_device *pdev = to_platform_device(i2c->dev);
->>> -       enum s3c24xx_i2c_type type;
->>> -
->>> -#ifdef CONFIG_OF
->>> -       if (i2c->dev->of_node)
->>> -               return of_device_is_compatible(i2c->dev->of_node,
->>> -                               "samsung,s3c2440-i2c");
->>> -#endif
->>> -
->>> -       type = platform_get_device_id(pdev)->driver_data;
->>> -       return type == TYPE_S3C2440;
->>> -}
->>> -
->>>  /* s3c24xx_i2c_master_complete
->>>  *
->>>  * complete the message and wake up the caller, using the given return code,
->>> @@ -676,7 +654,7 @@ static int s3c24xx_i2c_clockrate(struct s3c24xx_i2c *i2c, unsigned int *got)
->>>
->>>        writel(iiccon, i2c->regs + S3C2410_IICCON);
->>>
->>> -       if (s3c24xx_i2c_is2440(i2c)) {
->>> +       if (i2c->type & TYPE_S3C2440) {
+>>> I'm now cloning the Linus tree. Lets see if both will pop up on there.
 >>
->> This should be changed to
->> if (i2c->type == TYPE_S3C2440)
+>> The 3.3-rc6 should help in one case, with
+>>
+>> http://thread.gmane.org/gmane.comp.file-systems.btrfs/15268
+>>
+>> but I was able to reproduce the WARN_ON even with this patch, didn't get
+>> to debugging it again yet.
+>>
 >
 >
-> Equality check won't work here after second patch is applied
-> (i2c->type might have FLAG_*s set on upper bits).
->
+> The story so far looks like this:
+> 1) kernel 3.2.7:
+> - on the BUG_ON triggers after a longer while of CI env (doing builds)
+> running. This has been already reproduced twice.
+> - WARN_ON spams heavily, even after BUG_ON pop up.
+> - possible relation between WARN_ON and BUG_ON.
 
-Right. I assumed that if a another type is added, its value will be 3.
-But looks like you intend to assign 4, 8, 16 and so on for the new
-types. Probably, this approach needs to documented in this file.
-Otherwise, the above check would not work if ever a new type is added
-without knowing this approach.
+WARN_ON still popup in 3.3.0-rc6-00197-g9f8050c but did not triggered
+BUG_ON after ~300 occurrence.
 
->>
->>>                unsigned long sda_delay;
->>>
->>>                if (pdata->sda_delay) {
->>> @@ -847,6 +825,8 @@ static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
->>>  }
->>>
->>>  #ifdef CONFIG_OF
->>> +static const struct of_device_id s3c24xx_i2c_match[];
->>> +
->>>  /* s3c24xx_i2c_parse_dt
->>>  *
->>>  * Parse the device tree node and retreive the platform data.
->>> @@ -856,11 +836,16 @@ static void
->>>  s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
->>>  {
->>>        struct s3c2410_platform_i2c *pdata = i2c->pdata;
->>> +       const struct of_device_id *match;
->>>
->>>        if (!np)
->>>                return;
->>>
->>>        pdata->bus_num = -1; /* i2c bus number is dynamically assigned */
->>> +
->>> +       match = of_match_node(&s3c24xx_i2c_match[0], np);
->>
->> This could be
->> match = of_match_node(s3c24xx_i2c_match, np);
->
->
-> If you (and Ben, of course) don't mind I would prefer more verbose but
-> also more explicit version.
->
+> 2) A *regression* in 3.3.0-rc6-00197-g9f8050c
+> - completely unusable as reports ENOSPC
+> - to reproduce, mount volume and issue:
+> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> On my host this shows:
+> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> touch: cannot touch `/btrfs/dd': No space left on device
+> 423
+> - remount to reset:
+> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> /btrfs/dd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> touch: cannot touch `/btrfs/dd': No space left on device
+> 1
+> # umount /btrfs/
+> # mount -t btrfs /dev/vg00/btrfs /btrfs/ -o noatime,nodatacow,defaults
+> # CNT=1 ; while [ $CNT -lt 10000 ] ; do  rm -f /btrfs/dd ; ! touch
+> /vdd && echo "$CNT" && break  ; CNT=$(( $CNT + 1 )) ; done
+> touch: cannot touch `/btrfs/dd': No space left on device
+> 423
+> - bisected down to 5500cdb (Btrfs: increase the global block reserve
+> estimates). After reverting this one Linus master works for me again.
 
-I am fine the explicit version.
+With above patch reverted after a longer run I've got ENOSPC again:
+1) # df -hP /btrfs
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/mapper/vg00-btrfs  195G  179G   11G  95% /btrfs
+2) # rm -f /btrfs/dd
+rm: cannot remove `/btrfs/dd': No space left on device
+3) strace
+unlink("/btrfs/dd")                = -1 ENOSPC (No space left on device)
+4) last message from kernel (except WARN_ONs):
+btrfs: fail to dirty inode 116882385 error -28
 
->>> +       i2c->type = (unsigned int)match->data;
->>> +
->>
->> This function (s3c24xx_i2c_parse_dt) is intended to retrieve the data
->> from i2c device node. It would be better to not add the determination
->> of the i2c type inside this function.
->>
->>>        of_property_read_u32(np, "samsung,i2c-sda-delay", &pdata->sda_delay);
->>>        of_property_read_u32(np, "samsung,i2c-slave-addr", &pdata->slave_addr);
->>>        of_property_read_u32(np, "samsung,i2c-max-bus-freq",
->>> @@ -906,9 +891,10 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
->>>                goto err_noclk;
->>>        }
->>>
->>> -       if (pdata)
->>> +       if (pdata) {
->>>                memcpy(i2c->pdata, pdata, sizeof(*pdata));
->>> -       else
->>> +               i2c->type = platform_get_device_id(pdev)->driver_data;
->>> +       } else
->>>                s3c24xx_i2c_parse_dt(pdev->dev.of_node, i2c);
->>
->> It would be better to move the task of retrieving the driver data to a
->> separate function. An example of this listed below (copied from the
->> samsung uart driver).
->
->
-> Well, I was under impression that #ifdefs inside functions were quite
-> disliked by kernel devs.  Now I see that these are quite common in kernel..
-> Thus, I will happily use your suggestion, thanks.
->
+I've remouted volume and after that I've been able to remove dd file
+from volume. In dmesg there's bunch on new WARN_ONs:
+------------[ cut here ]------------
+WARNING: at fs/btrfs/extent-tree.c:4185
+btrfs_free_block_groups+0x17d/0x2b8 [btrfs]()
+Hardware name: ProLiant BL460c G6
+Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
+autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
+ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
+ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
+dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
+parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
+hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
+hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
+Pid: 9518, comm: umount Tainted: G        W    3.3.0-rc6-00197-g9f8050c-dirty #1
+Call Trace:
+ [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
+ [<ffffffffa031a8a7>] ? btrfs_free_block_groups+0x17d/0x2b8 [btrfs]
+ [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
+ [<ffffffffa031a8a7>] ? btrfs_free_block_groups+0x17d/0x2b8 [btrfs]
+ [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
+ [<ffffffff811320c2>] ? dispose_list+0x27/0x31
+ [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
+ [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
+ [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
+ [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
+ [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
+ [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
+ [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
+---[ end trace fd6da849e53b77dd ]---
+------------[ cut here ]------------
+WARNING: at fs/btrfs/extent-tree.c:4186
+btrfs_free_block_groups+0x198/0x2b8 [btrfs]()
+Hardware name: ProLiant BL460c G6
+Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
+autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
+ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
+ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
+dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
+parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
+hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
+hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
+Pid: 9518, comm: umount Tainted: G        W    3.3.0-rc6-00197-g9f8050c-dirty #1
+Call Trace:
+ [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
+ [<ffffffffa031a8c2>] ? btrfs_free_block_groups+0x198/0x2b8 [btrfs]
+ [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
+ [<ffffffffa031a8c2>] ? btrfs_free_block_groups+0x198/0x2b8 [btrfs]
+ [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
+ [<ffffffff811320c2>] ? dispose_list+0x27/0x31
+ [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
+ [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
+ [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
+ [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
+ [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
+ [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
+ [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
+---[ end trace fd6da849e53b77de ]---
+------------[ cut here ]------------
+WARNING: at fs/btrfs/extent-tree.c:4187
+btrfs_free_block_groups+0x1b3/0x2b8 [btrfs]()
+Hardware name: ProLiant BL460c G6
+Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
+autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
+ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
+ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
+dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
+parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
+hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
+hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
+Pid: 9518, comm: umount Tainted: G        W    3.3.0-rc6-00197-g9f8050c-dirty #1
+Call Trace:
+ [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
+ [<ffffffffa031a8dd>] ? btrfs_free_block_groups+0x1b3/0x2b8 [btrfs]
+ [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
+ [<ffffffffa031a8dd>] ? btrfs_free_block_groups+0x1b3/0x2b8 [btrfs]
+ [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
+ [<ffffffff811320c2>] ? dispose_list+0x27/0x31
+ [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
+ [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
+ [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
+ [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
+ [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
+ [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
+ [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
+---[ end trace fd6da849e53b77df ]---
+------------[ cut here ]------------
+WARNING: at fs/btrfs/extent-tree.c:7454
+btrfs_free_block_groups+0x256/0x2b8 [btrfs]()
+Hardware name: ProLiant BL460c G6
+Modules linked in: btrfs zlib_deflate lzo_compress ipmi_devintf
+autofs4 be2iscsi iscsi_boot_sysfs ib_iser rdma_cm ib_cm iw_cm ib_sa
+ib_mad ib_addr iscsi_tcp bnx2i cnic uio ipv6 cxgb3i libcxgbi iw_cxgb3
+ib_core cxgb3 libiscsi_tcp libiscsi scsi_transport_iscsi dm_mirror
+dm_region_hash dm_log dm_multipath video battery acpi_pad acpi_ipmi ac
+parport usbhid evdev acpi_power_meter radeon ttm drm_kms_helper drm
+hwmon ipmi_si bnx2x backlight i2c_algo_bit ipmi_msghandler i2c_core
+hpilo mdio hpwdt psmouse uhci_hcd ehci_hcd
+Pid: 9518, comm: umount Tainted: G        W    3.3.0-rc6-00197-g9f8050c-dirty #1
+Call Trace:
+ [<ffffffff8105caca>] ? print_oops_end_marker+0x9/0x20
+ [<ffffffffa031a980>] ? btrfs_free_block_groups+0x256/0x2b8 [btrfs]
+ [<ffffffff8105cc92>] ? warn_slowpath_common+0x78/0x8d
+ [<ffffffffa031a980>] ? btrfs_free_block_groups+0x256/0x2b8 [btrfs]
+ [<ffffffffa0327473>] ? close_ctree+0x1e1/0x380 [btrfs]
+ [<ffffffff811320c2>] ? dispose_list+0x27/0x31
+ [<ffffffff8113248c>] ? evict_inodes+0xc5/0xcc
+ [<ffffffff8112098c>] ? generic_shutdown_super+0x4d/0xc1
+ [<ffffffff81120a67>] ? kill_anon_super+0x9/0x11
+ [<ffffffffa030a3aa>] ? btrfs_kill_super+0xd/0x73 [btrfs]
+ [<ffffffff81120c81>] ? deactivate_locked_super+0x2f/0x5f
+ [<ffffffff81135d5f>] ? sys_umount+0x2c1/0x30b
+ [<ffffffff813ef0f9>] ? system_call_fastpath+0x16/0x1b
+---[ end trace fd6da849e53b77e0 ]---
+space_info 4 has 3043549184 free, is not full
+space_info total=11953766400, used=8901763072, pinned=0, reserved=0,
+may_use=121643008, readonly=8454144
+device fsid b70500f5-3ec6-4a39-9b9a-adad0e8a0346 devid 1 transid 54268
+/dev/vg00/btrfs
+btrfs: setting nodatacow
 
-It would be a bad idea to use #ifdef that would deviate from the
-objective of single kernel binary image. But in the example below, the
-#ifdef is used solely to exclude the OF related code if the kernel
-being built do not have OF support included. The check on
-pdev->dev.of_node is the one that ensures that there is runtime
-compatibility with both dt and non-dt. So the #ifdef does not
-necessitate separate kernel to be built for dt and non-dt case.
-
->>
->> static inline struct s3c24xx_serial_drv_data *s3c24xx_get_driver_data(
->>                         struct platform_device *pdev)
->> {
->> #ifdef CONFIG_OF
->>         if (pdev->dev.of_node) {
->>                 const struct of_device_id *match;
->>                 match = of_match_node(s3c24xx_uart_dt_match, pdev->dev.of_node);
->>                 return (struct s3c24xx_serial_drv_data *)match->data;
->>         }
->> #endif
->>         return (struct s3c24xx_serial_drv_data *)
->>                         platform_get_device_id(pdev)->driver_data;
->> }
->>
->>>
->>>        strlcpy(i2c->adap.name, "s3c2410-i2c", sizeof(i2c->adap.name));
->>> @@ -1123,13 +1109,11 @@ MODULE_DEVICE_TABLE(platform, s3c24xx_driver_ids);
->>>
->>>  #ifdef CONFIG_OF
->>>  static const struct of_device_id s3c24xx_i2c_match[] = {
->>> -       { .compatible = "samsung,s3c2410-i2c" },
->>> -       { .compatible = "samsung,s3c2440-i2c" },
->>> +       { .compatible = "samsung,s3c2410-i2c", .data = (void *)TYPE_S3C2410 },
->>> +       { .compatible = "samsung,s3c2440-i2c", .data = (void *)TYPE_S3C2440 },
->>>        {},
->>>  };
->>>  MODULE_DEVICE_TABLE(of, s3c24xx_i2c_match);
->>> -#else
->>> -#define s3c24xx_i2c_match NULL
->>>  #endif
->>>
->>>  static struct platform_driver s3c24xx_i2c_driver = {
->>> @@ -1140,7 +1124,7 @@ static struct platform_driver s3c24xx_i2c_driver = {
->>>                .owner  = THIS_MODULE,
->>>                .name   = "s3c-i2c",
->>>                .pm     = S3C24XX_DEV_PM_OPS,
->>> -               .of_match_table = s3c24xx_i2c_match,
->>> +               .of_match_table = of_match_ptr(s3c24xx_i2c_match),
->>
->> Should this change be a separate patch?
->
->
-> Ok, I'll move this part to another patch.
->
-> Thanks for review!
-> --
-> Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
+-Jacek
