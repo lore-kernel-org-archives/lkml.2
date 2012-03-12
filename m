@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab2CLRDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:03:55 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50915 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab2CLRDt (ORCPT
+	id S1754856Ab2CLRDw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:03:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47744 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754601Ab2CLRDt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Mar 2012 13:03:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="120217496"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>, Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: "Mark A. Grondona" <mgrondona@llnl.gov>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/6] Add a per-dimm structure
+Thread-Topic: [PATCH 0/6] Add a per-dimm structure
+Thread-Index: AQHM/FddfomqTKVEK0avk4xnskAx5pZhekcAgADS+wCAAESmAIAAIlQAgAAjXoCAABCUgIACij2AgAAQXACAAdcwgP//kMVw
+Date: Mon, 12 Mar 2012 17:03:47 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F15B61A34@ORSMSX103.amr.corp.intel.com>
+References: <1331120438-27523-1-git-send-email-mchehab@redhat.com>
+ <20120308215716.GA5925@aftab> <4F59DC38.5080104@redhat.com>
+ <20120309143806.GA11962@aftab> <4F5A329A.70702@redhat.com>
+ <20120309184733.GB13745@aftab> <4F5A5E2D.4090408@redhat.com>
+ <20120311113411.GB29175@aftab> <4F5C9B6C.2080904@redhat.com>
+ <20120312163911.GC7255@aftab>
+In-Reply-To: <20120312163911.GC7255@aftab>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <4F5E1ECC.1040605@atmel.com>
-References: <20120309183732.512d3676599da324f4747219@canb.auug.org.au>
-	<4F5E1ECC.1040605@atmel.com>
-Date: Mon, 12 Mar 2012 12:03:48 -0500
-Message-ID: <CAMXH7KH_vgri3EPRvkXR+LddRUc=0ve=4u7yr51utBfgV5bF3w@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the cpuidle-cons tree with the
- arm-soc tree
-From: Rob Lee <rob.lee@linaro.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Stephen, Nicolas, Daniel,
+> Err, the fact that you have UE counters doesn't have anything to do with
+> the request that you want to panic on an UE. Especially if conservative
+> systems would panic on the first UE anyway without asking software.
 
-On Mon, Mar 12, 2012 at 11:05 AM, Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
->
-> On 03/09/2012 08:37 AM, Stephen Rothwell :
->> Hi Rob,
->>
->> Today's linux-next merge of the cpuidle-cons tree got a conflict
->> in arch/arm/mach-at91/cpuidle.c between commit 00482a4078f4 ("ARM:
->> at91: implement the standby function for pm/cpuidle") from the
->> arm-soc tree and commit 7a1f6e72dce1 ("ARM: at91: Consolidate time
->> keeping and irq enable") from the cpuidle-cons tree.
->>
->> I fixed it up (I think - see below) and can carry the fix as
->> necessary.
->
-> Yes: resolution correct. Please carry it.
->
+We have some UE events for which even a conservative system might
+think it reasonable to defer the panic (e.g. patrol scrub on a "free" page).
 
-Who should carry this fixup and related necessary at91 changes?  Me?
-FYI, my at91 changes are dependent on my core cpuidle change, but my
-core cpuidle changes do not require any at91 changes as the at91 and
-other platform changes were only made to consolidate duplicate code.
-
-Best Regards,
-Rob
-
-> Thanks to Rob and Daniel for their answers.
->
-
-Thank you as well Nicolas.
-
-> Best regards,
-> - --
-> Nicolas Ferre
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.11 (GNU/Linux)
-> Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
->
-> iQEcBAEBAgAGBQJPXh7HAAoJEAf03oE53VmQSQwH/15D3okPxJSEiH0k8IFt6Df0
-> RDY/CdaGYDllGMq7Yc1LiQAPrlHkv+gFNAJkhH8aJvC603pYBFGIa5IPLeZEE+XD
-> MkXiO7pQAOdGtojqSrZI8Sp0kxtfdR6QlNu5o518yvlKIkxbWJoXdVty9+MuciOv
-> GOR+164hJtlr4fLLg7bTzsdnxquDVBBbks9qLhSYEQBEuNkgXKgNfdMouwVI/Zuj
-> sX9DSKnVVm5LS/rrq888JRPPtBf8/HkmOeFRWKktq7Q8WldQbBI79vj01osH++jf
-> rwDiM/CSC0nhXY0IWEof+Hz1mSinM07XGZglDYwqI1ca7HId2C/txaFI3NtcC7A=
-> =rZpG
-> -----END PGP SIGNATURE-----
+-Tony
