@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752402Ab2CLGqr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 02:46:47 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:47178 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab2CLGql (ORCPT
+	id S1753553Ab2CLGsk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 02:48:40 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:44395 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab2CLGsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 02:46:41 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6646"; a="171567186"
-Message-ID: <4F5D9BCF.3030302@codeaurora.org>
-Date: Sun, 11 Mar 2012 23:46:39 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Yang Bai <hamo.by@gmail.com>
-CC: mmarek@suse.cz, rostedt@goodmis.org, adobriyan@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Makefile: fix error when gen TAGS
-References: <1331524397-19783-1-git-send-email-hamo.by@gmail.com>
-In-Reply-To: <1331524397-19783-1-git-send-email-hamo.by@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 12 Mar 2012 02:48:31 -0400
+Date: Sun, 11 Mar 2012 23:48:08 -0700 (PDT)
+Message-Id: <20120311.234808.1919218898572322534.davem@davemloft.net>
+To: santoshprasadnayak@gmail.com
+Cc: sony.chacko@qlogic.com, rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 3/3 v2] netxen: qlogic ethernet : Fix endian bug.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1331534303-4093-1-git-send-email-santoshprasadnayak@gmail.com>
+References: <1331534303-4093-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 11 Mar 2012 23:48:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/11/2012 8:53 PM, Yang Bai wrote:
-> scripts/tags.sh has a problem that it does not
-> test which kind of tags we are generating and
-> assumes tags. So when gen TAGS it shows:
->    GEN     TAGS
->    sed: can't read tags: No such file or directory
->    make: *** [TAGS] Error 2
->
-> Signed-off-by: Yang Bai<hamo.by@gmail.com>
-> ---
->   scripts/tags.sh |    6 +++++-
->   1 files changed, 5 insertions(+), 1 deletions(-)
->
-> diff --git a/scripts/tags.sh b/scripts/tags.sh
-> index 833813a..ce94e34 100755
-> --- a/scripts/tags.sh
-> +++ b/scripts/tags.sh
-> @@ -168,7 +168,11 @@ exuberant()
->   	--regex-dotconfig='/^#?[[:blank:]]*(CONFIG_[[:alnum:]_]+)/\1/'
->
->   	# Remove structure forward declarations.
-> -	LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' tags
-> +	if [[ -e tags ]]; then
-> +	    LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' tags
-> +	else
-> +	    LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' TAGS
-> +	fi
->   }
->   
+From: santosh nayak <santoshprasadnayak@gmail.com>
+Date: Mon, 12 Mar 2012 12:08:23 +0530
 
-What does ctags --version print out for you? I'm not aware of exuberant 
-tags outputting files called TAGS (although etags would do that and then 
-this patch wouldn't make sense).
+> From: Santosh Nayak <santoshprasadnayak@gmail.com>
+> 
+> Fix endian bug.
+> 
+> Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-It would be nice if etags was updated to take care of this forward 
-declaration removal. Care to send that patch?
+This is a very non-trivial patch, therefore the terse commit
+message and the lack of any comments in this code is unacceptable.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+This commit message is not only terse, it's wrong.  You're not
+fixing an endian bug, you're fixing several of them.
 
+Explain everything in your commit message.
+
+>  	req.words[0] = cpu_to_le64(cmd);
+> -	req.words[1] = cpu_to_le64(ip);
+> +	memcpy(&req.words[1], &ip, sizeof(u32));
+
+Nobody is going to read that and have any idea why it's correct unless
+they happen to be able to discover the long thread you guys had this
+past week working out how to do this change correctly.
+
+Putting a comment here for the rest of us mere mortals is therefore
+absolutely required.
