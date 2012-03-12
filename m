@@ -1,96 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757593Ab2CLV5g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 17:57:36 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:62224 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282Ab2CLV5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 17:57:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=v/FzuLqOhxbzMg/u1lpWpPK5f1ALtYot
-	3H0X3SGkMghL6JUKuTSzqI1ZHJVktRBotPY/oWm+YQZYQJVfVbPhj2ejSDWol6ve
-	WcANiLq4zLTX8QyHLbZpBmY7GHSQv3uPIlVIFphaAVRefS4O5mKHYBhEhDNr4dKa
-	nN+UvF9zXQo=
-From: Junio C Hamano <gitster@pobox.com>
-To: Thomas Rast <trast@inf.ethz.ch>
-Cc: Junio C Hamano <gitster@pobox.com>, Jonathan Nieder <jrnieder@gmail.com>,
-        Willy Tarreau <w@1wt.eu>, Greg KH <greg@kroah.com>,
-        Ben Hutchings <ben@decadent.org.uk>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, <git@vger.kernel.org>
-Subject: Re: stripping [PATCH] without losing later tags from mailed patches
- (Re: [ 02/12] Remove COMPAT_IA32 support)
-References: <20120312002046.041448832@1wt.eu>
- <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com>
- <20120312063027.GB8971@1wt.eu> <20120312064855.GB16820@burratino>
- <20120312085820.GA11569@1wt.eu> <20120312152004.GB9380@kroah.com>
- <20120312152453.GB12405@1wt.eu> <87aa3l4vqq.fsf@thomas.inf.ethz.ch>
- <20120312165703.GB18791@burratino> <7vvcm9snko.fsf@alter.siamese.dyndns.org>
- <87399dpk48.fsf@thomas.inf.ethz.ch>
-Date: Mon, 12 Mar 2012 14:57:26 -0700
-In-Reply-To: <87399dpk48.fsf@thomas.inf.ethz.ch> (Thomas Rast's message of
- "Mon, 12 Mar 2012 22:47:19 +0100")
-Message-ID: <7v399dpjnd.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1757587Ab2CLWBD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 18:01:03 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35874 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757463Ab2CLWBB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 18:01:01 -0400
+Message-ID: <4F5E7219.7020301@gmail.com>
+Date: Mon, 12 Mar 2012 17:00:57 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 5BB59F26-6C8E-11E1-B0FE-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+To: "Turquette, Mike" <mturquette@ti.com>
+CC: Andrew Lunn <andrew@lunn.ch>, Paul Walmsley <paul@pwsan.com>,
+        linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jamie Iles <jamie@jamieiles.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 3/3] clk: basic clock hardware types
+References: <1331366064-1273-1-git-send-email-mturquette@linaro.org> <1331366064-1273-4-git-send-email-mturquette@linaro.org> <4F5E5A0C.6080604@gmail.com> <CAJOA=zOS44YRfg3A7D8G+jWoQ_gzRQ937A7tYDU+DxWce_khzQ@mail.gmail.com>
+In-Reply-To: <CAJOA=zOS44YRfg3A7D8G+jWoQ_gzRQ937A7tYDU+DxWce_khzQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Rast <trast@inf.ethz.ch> writes:
+On 03/12/2012 03:58 PM, Turquette, Mike wrote:
+> On Mon, Mar 12, 2012 at 1:18 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> On 03/10/2012 01:54 AM, Mike Turquette wrote:
+>>> Many platforms support simple gateable clocks, fixed-rate clocks,
+>>> adjustable divider clocks and multi-parent multiplexer clocks.
+>>>
+>>> This patch introduces basic clock types for the above-mentioned hardware
+>>> which share some common characteristics.
+>>>
+>>> Based on original work by Jeremy Kerr and contribution by Jamie Iles.
+>>> Dividers and multiplexor clocks originally contributed by Richard Zhao &
+>>> Sascha Hauer.
+>>>
 
->> We can delete "git am -b" (as it was deprecated long time ago), wait
->> for a cycle or two, and then repurpose it.  I do not mind starting
->> the first step (delete, but do not say anything about repurposing)
->> before 1.7.10-rc1 happens.
->
-> Ok, but if I don't get to say anything about repurposing, can I at least
-> make it an error message instead of just spewing out the "invalid
-> option" help?
+snip
 
-Surely.  It is not "Am I at least allowed to say" at all; we really
-_should_ make it clear why it is no longer supported.
+>>> +static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
+>>> +             unsigned long parent_rate)
+>>> +{
+>>> +     struct clk_divider *divider = to_clk_divider(hw);
+>>> +     unsigned int div;
+>>> +     unsigned long flags = 0;
+>>> +
+>>> +     if (divider->lock)
+>>> +             spin_lock_irqsave(divider->lock, flags);
+>>> +
+>>> +     div = readl(divider->reg) >> divider->shift;
+>>> +     div &= (1 << divider->width) - 1;
+>>> +
+>>> +     if (divider->lock)
+>>> +             spin_unlock_irqrestore(divider->lock, flags);
+>>
+>> What are you locking against? You are only reading the register.
+> 
+> Hi Rob,
+> 
+> These register-level locks originally came in from the divider &
+> multiplexer patches from Richard and Sascha and I'm sure they can give
+> you more details than I.
+> 
+> Basically on their platform they have some 32-bits regs that have a
+> lot of overlapping clock functions in them, such as enable/disable and
+> adjusting a divider all in one reg.  Those operations are protected by
+> different locks (enable spinlock and prepare mutex, respectively) so
+> some synchronization mechanism is necessary.  On OMAP we don't use
+> this since we have a billion registers that typically only map to one
+> clock each.  I also wonder if having device type memory for the
+> affected regions makes a this irrelevant on ARM... but that wouldn't
+> matter for non-ARM architectures.  Just a thought.
+> 
 
-What I meant was that "it will start meaning something different" is
-not a relevant thing to see when somebody sees his old script that
-uses "-b" breaks.
+In fact, I pointed out that locking for a register access was needed in
+an early version of this series as well. However, locking is only needed
+if you are doing a read-mod-write on a field in a shared register or
+reading from multiple registers. It makes no sense if you are *only*
+reading a single shared register as is the case here. That's already an
+atomic operation.
 
-Let's apply your patch so that we do not have to wait one cycle too
-long.
+Rob
 
-Thanks.
-
->
-> ----- 8< -----
-> Subject: [PATCH] git-am: error out when seeing -b/--binary
->
-> The --binary option to git-apply has been a no-op since 2b6eef9 (Make
-> apply --binary a no-op., 2006-09-06) and was deprecated in cb3a160
-> (git-am: ignore --binary option, 2008-08-09).
->
-> We could remove it outright, but let's be nice to people who still
-> have scripts saying 'git am -b' (if they exist) and tell them the
-> reason for the sudden failure.
->
-> Signed-off-by: Thomas Rast <trast@student.ethz.ch>
-> ---
->  git-am.sh |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/git-am.sh b/git-am.sh
-> index 0bd290b..faae820 100755
-> --- a/git-am.sh
-> +++ b/git-am.sh
-> @@ -380,7 +380,9 @@ do
->  	-i|--interactive)
->  		interactive=t ;;
->  	-b|--binary)
-> -		: ;;
-> +		echo >&2 "The -b/--binary option was deprecated in 1.6.0 and removed in 1.7.10."
-> +		die "Please adjust your scripts."
-> +		;;
->  	-3|--3way)
->  		threeway=t ;;
->  	-s|--signoff)
