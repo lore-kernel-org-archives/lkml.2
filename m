@@ -1,189 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348Ab2CLECS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 00:02:18 -0400
-Received: from exprod5og115.obsmtp.com ([64.18.0.246]:43196 "HELO
-	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750715Ab2CLECJ (ORCPT
+	id S1751479Ab2CLEME (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 00:12:04 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41837 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2CLELz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 00:02:09 -0400
-From: Mai La <mla@apm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Tirumala R Marri <tmarri@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Michael Neuling <mikey@neuling.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: open-source-review@apm.com, Mai La <mla@apm.com>
-Subject: [PATCH 1/2] powerpc/44x: Fix PCI MSI support for Maui APM821xx SoC and Bluestone board
-Date: Mon, 12 Mar 2012 11:01:58 +0700
-Message-Id: <1331524918-22515-1-git-send-email-mla@apm.com>
-X-Mailer: git-send-email 1.7.2.5
+	Mon, 12 Mar 2012 00:11:55 -0400
+Message-ID: <1331525506.8110.2.camel@phoenix>
+Subject: [PATCH] regulator: Merge tps65217_pmic_ldo234_ops and
+ tps65217_pmic_dcdc_ops to tps65217_pmic_ops
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: AnilKumar Ch <anilkumar@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 12 Mar 2012 12:11:46 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch consists of:
-- Enable PCI MSI as default for Bluestone board
-- Change definition of number of MSI interrupt as it depends on SoC
-- Fix returning ENODEV as finding MSI node
-- Fix MSI physical high and low address
-- Keep MSI data logically
+Most callback functions implementation for tps65217_pmic_ldo234_ops and
+tps65217_pmic_dcdc_ops are the same except the rid range checking.
 
-Signed-off-by: Mai La <mla@apm.com>
+This patch uses tps65217_pmic_ops for all DCDCx, LDO2, LDO3, and LDO4.
+And rework tps65217_pmic_set_voltage to make it can be called for
+DCDCx, LDO2, LDO3, and LDO4.
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- arch/powerpc/platforms/44x/Kconfig |    2 +
- arch/powerpc/sysdev/ppc4xx_msi.c   |   40 +++++++++++++++++++++++------------
- 2 files changed, 28 insertions(+), 14 deletions(-)
+ drivers/regulator/tps65217-regulator.c |  259 +++++++++-----------------------
+ 1 files changed, 72 insertions(+), 187 deletions(-)
 
-diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-index fcf6bf2..9f04ce3 100644
---- a/arch/powerpc/platforms/44x/Kconfig
-+++ b/arch/powerpc/platforms/44x/Kconfig
-@@ -23,6 +23,8 @@ config BLUESTONE
- 	default n
- 	select PPC44x_SIMPLE
- 	select APM821xx
-+	select PCI_MSI
-+	select PPC4xx_MSI
- 	select IBM_EMAC_RGMII
- 	help
- 	  This option enables support for the APM APM821xx Evaluation board.
-diff --git a/arch/powerpc/sysdev/ppc4xx_msi.c b/arch/powerpc/sysdev/ppc4xx_msi.c
-index 1c2d7af..63989d0 100644
---- a/arch/powerpc/sysdev/ppc4xx_msi.c
-+++ b/arch/powerpc/sysdev/ppc4xx_msi.c
-@@ -28,10 +28,11 @@
- #include <linux/of_platform.h>
- #include <linux/interrupt.h>
- #include <linux/export.h>
-+#include <linux/kernel.h>
- #include <asm/prom.h>
- #include <asm/hw_irq.h>
- #include <asm/ppc-pci.h>
--#include <boot/dcr.h>
-+#include <asm/dcr.h>
- #include <asm/dcr-regs.h>
- #include <asm/msi_bitmap.h>
- 
-@@ -43,13 +44,14 @@
- #define PEIH_FLUSH0	0x30
- #define PEIH_FLUSH1	0x38
- #define PEIH_CNTRST	0x48
--#define NR_MSI_IRQS	4
-+
-+int msi_irqs;
- 
- struct ppc4xx_msi {
- 	u32 msi_addr_lo;
- 	u32 msi_addr_hi;
- 	void __iomem *msi_regs;
--	int msi_virqs[NR_MSI_IRQS];
-+	int *msi_virqs;
- 	struct msi_bitmap bitmap;
- 	struct device_node *msi_dev;
+diff --git a/drivers/regulator/tps65217-regulator.c b/drivers/regulator/tps65217-regulator.c
+index 15f2fa0..e39521b 100644
+--- a/drivers/regulator/tps65217-regulator.c
++++ b/drivers/regulator/tps65217-regulator.c
+@@ -151,166 +151,69 @@ static struct tps_info tps65217_pmic_regs[] = {
+ 			TPS65217_REG_DEFLS2, TPS65217_DEFLDO4_LDO4_MASK),
  };
-@@ -61,7 +63,7 @@ static int ppc4xx_msi_init_allocator(struct platform_device *dev,
+ 
+-static int tps65217_pmic_dcdc_is_enabled(struct regulator_dev *dev)
++static int tps65217_pmic_is_enabled(struct regulator_dev *dev)
  {
- 	int err;
+ 	int ret;
+ 	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int data, dcdc = rdev_get_id(dev);
++	unsigned int data, rid = rdev_get_id(dev);
  
--	err = msi_bitmap_alloc(&msi_data->bitmap, NR_MSI_IRQS,
-+	err = msi_bitmap_alloc(&msi_data->bitmap, msi_irqs,
- 			      dev->dev.of_node);
- 	if (err)
- 		return err;
-@@ -83,6 +85,9 @@ static int ppc4xx_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 	struct msi_desc *entry;
- 	struct ppc4xx_msi *msi_data = &ppc4xx_msi;
+-	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
++	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
+ 		return -EINVAL;
  
-+	msi_data->msi_virqs = kmalloc((msi_irqs) * sizeof(int),
-+					    GFP_KERNEL);
-+
- 	list_for_each_entry(entry, &dev->msi_list, list) {
- 		int_no = msi_bitmap_alloc_hwirqs(&msi_data->bitmap, 1);
- 		if (int_no >= 0)
-@@ -150,12 +155,11 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 	if (!sdr_addr)
- 		return -1;
+ 	ret = tps65217_reg_read(tps, TPS65217_REG_ENABLE, &data);
+ 	if (ret)
+ 		return ret;
  
--	SDR0_WRITE(sdr_addr, (u64)res.start >> 32);	 /*HIGH addr */
--	SDR0_WRITE(sdr_addr + 1, res.start & 0xFFFFFFFF); /* Low addr */
--
-+	mtdcri(SDR0, *sdr_addr, upper_32_bits(res.start));	/*HIGH addr */
-+	mtdcri(SDR0, *sdr_addr + 1, lower_32_bits(res.start));	/* Low addr */
- 
- 	msi->msi_dev = of_find_node_by_name(NULL, "ppc4xx-msi");
--	if (msi->msi_dev)
-+	if (!msi->msi_dev)
- 		return -ENODEV;
- 
- 	msi->msi_regs = of_iomap(msi->msi_dev, 0);
-@@ -167,9 +171,12 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 		(u32) (msi->msi_regs + PEIH_TERMADH), (u32) (msi->msi_regs));
- 
- 	msi_virt = dma_alloc_coherent(&dev->dev, 64, &msi_phys, GFP_KERNEL);
--	msi->msi_addr_hi = 0x0;
--	msi->msi_addr_lo = (u32) msi_phys;
--	dev_dbg(&dev->dev, "PCIE-MSI: msi address 0x%x\n", msi->msi_addr_lo);
-+	if (!msi_virt)
-+		return -ENOMEM;
-+	msi->msi_addr_hi = (u32)(msi_phys >> 32);
-+	msi->msi_addr_lo = (u32)(msi_phys & 0xffffffff);
-+	dev_dbg(&dev->dev, "PCIE-MSI: msi address high 0x%x, low 0x%x\n",
-+		msi->msi_addr_hi, msi->msi_addr_lo);
- 
- 	/* Progam the Interrupt handler Termination addr registers */
- 	out_be32(msi->msi_regs + PEIH_TERMADH, msi->msi_addr_hi);
-@@ -185,6 +192,8 @@ static int ppc4xx_setup_pcieh_hw(struct platform_device *dev,
- 	out_be32(msi->msi_regs + PEIH_MSIED, *msi_data);
- 	out_be32(msi->msi_regs + PEIH_MSIMK, *msi_mask);
- 
-+	dma_free_coherent(&dev->dev, 64, msi_virt, msi_phys);
-+
- 	return 0;
+-	return (data & tps->info[dcdc]->enable_mask) ? 1 : 0;
++	return (data & tps->info[rid]->enable_mask) ? 1 : 0;
  }
  
-@@ -194,7 +203,7 @@ static int ppc4xx_of_msi_remove(struct platform_device *dev)
- 	int i;
- 	int virq;
+-static int tps65217_pmic_ldo_is_enabled(struct regulator_dev *dev)
++static int tps65217_pmic_enable(struct regulator_dev *dev)
+ {
+-	int ret;
+ 	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int data, ldo = rdev_get_id(dev);
++	unsigned int rid = rdev_get_id(dev);
  
--	for (i = 0; i < NR_MSI_IRQS; i++) {
-+	for (i = 0; i < msi_irqs; i++) {
- 		virq = msi->msi_virqs[i];
- 		if (virq != NO_IRQ)
- 			irq_dispose_mapping(virq);
-@@ -215,8 +224,6 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 	struct resource res;
- 	int err = 0;
- 
--	msi = &ppc4xx_msi;/*keep the msi data for further use*/
+-	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
+-		return -EINVAL;
 -
- 	dev_dbg(&dev->dev, "PCIE-MSI: Setting up MSI support...\n");
+-	ret = tps65217_reg_read(tps, TPS65217_REG_ENABLE, &data);
+-	if (ret)
+-		return ret;
+-
+-	return (data & tps->info[ldo]->enable_mask) ? 1 : 0;
+-}
+-
+-static int tps65217_pmic_dcdc_enable(struct regulator_dev *dev)
+-{
+-	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int dcdc = rdev_get_id(dev);
+-
+-	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
++	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
+ 		return -EINVAL;
  
- 	msi = kzalloc(sizeof(struct ppc4xx_msi), GFP_KERNEL);
-@@ -234,6 +241,10 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 		goto error_out;
- 	}
+ 	/* Enable the regulator and password protection is level 1 */
+ 	return tps65217_set_bits(tps, TPS65217_REG_ENABLE,
+-				tps->info[dcdc]->enable_mask,
+-				tps->info[dcdc]->enable_mask,
++				tps->info[rid]->enable_mask,
++				tps->info[rid]->enable_mask,
+ 				TPS65217_PROTECT_L1);
+ }
  
-+	msi_irqs = of_irq_count(dev->dev.of_node);
-+	if (!msi_irqs)
-+		return -1;
+-static int tps65217_pmic_dcdc_disable(struct regulator_dev *dev)
++static int tps65217_pmic_disable(struct regulator_dev *dev)
+ {
+ 	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int dcdc = rdev_get_id(dev);
++	unsigned int rid = rdev_get_id(dev);
+ 
+-	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
++	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
+ 		return -EINVAL;
+ 
+ 	/* Disable the regulator and password protection is level 1 */
+ 	return tps65217_clear_bits(tps, TPS65217_REG_ENABLE,
+-			tps->info[dcdc]->enable_mask, TPS65217_PROTECT_L1);
+-}
+-
+-static int tps65217_pmic_ldo_enable(struct regulator_dev *dev)
+-{
+-	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int ldo = rdev_get_id(dev);
+-
+-	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
+-		return -EINVAL;
+-
+-	/* Enable the regulator and password protection is level 1 */
+-	return tps65217_set_bits(tps, TPS65217_REG_ENABLE,
+-				tps->info[ldo]->enable_mask,
+-				tps->info[ldo]->enable_mask,
+-				TPS65217_PROTECT_L1);
+-}
+-
+-static int tps65217_pmic_ldo_disable(struct regulator_dev *dev)
+-{
+-	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int ldo = rdev_get_id(dev);
+-
+-	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
+-		return -EINVAL;
+-
+-	/* Disable the regulator and password protection is level 1 */
+-	return tps65217_clear_bits(tps, TPS65217_REG_ENABLE,
+-			tps->info[ldo]->enable_mask, TPS65217_PROTECT_L1);
+-}
+-
+-static int tps65217_pmic_dcdc_get_voltage_sel(struct regulator_dev *dev)
+-{
+-	int ret;
+-	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int selector, dcdc = rdev_get_id(dev);
+-
+-	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
+-		return -EINVAL;
+-
+-	ret = tps65217_reg_read(tps, tps->info[dcdc]->set_vout_reg, &selector);
+-	if (ret)
+-		return ret;
+-
+-	selector &= tps->info[dcdc]->set_vout_mask;
+-
+-	return selector;
++			tps->info[rid]->enable_mask, TPS65217_PROTECT_L1);
+ }
+ 
+-static int tps65217_pmic_dcdc_set_voltage(struct regulator_dev *dev,
+-				  int min_uV, int max_uV, unsigned *selector)
++static int tps65217_pmic_get_voltage_sel(struct regulator_dev *dev)
+ {
+ 	int ret;
+ 	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int dcdc = rdev_get_id(dev);
+-
+-	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
+-		return -EINVAL;
++	unsigned int selector, rid = rdev_get_id(dev);
+ 
+-	if (min_uV < tps->info[dcdc]->min_uV
+-		|| min_uV > tps->info[dcdc]->max_uV)
++	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
+ 		return -EINVAL;
+ 
+-	if (max_uV < tps->info[dcdc]->min_uV
+-		|| max_uV > tps->info[dcdc]->max_uV)
+-		return -EINVAL;
+-
+-	ret = tps->info[dcdc]->uv_to_vsel(min_uV, selector);
++	ret = tps65217_reg_read(tps, tps->info[rid]->set_vout_reg, &selector);
+ 	if (ret)
+ 		return ret;
+ 
+-	/* Set the voltage based on vsel value and write protect level is 2 */
+-	ret = tps65217_set_bits(tps, tps->info[dcdc]->set_vout_reg,
+-					tps->info[dcdc]->set_vout_mask,
+-					*selector, TPS65217_PROTECT_L2);
+-	if (ret)
+-		return ret;
+-
+-	/* Set GO bit to initiate voltage transistion */
+-	return tps65217_set_bits(tps, TPS65217_REG_DEFSLEW,
+-				TPS65217_DEFSLEW_GO, TPS65217_DEFSLEW_GO,
+-				TPS65217_PROTECT_L2);
+-}
+-
+-static int tps65217_pmic_ldo_get_voltage_sel(struct regulator_dev *dev)
+-{
+-	int ret;
+-	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int selector, ldo = rdev_get_id(dev);
+-
+-	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
+-		return -EINVAL;
+-
+-	ret = tps65217_reg_read(tps, tps->info[ldo]->set_vout_reg, &selector);
+-	if (ret)
+-		return ret;
+-
+-	selector &= tps->info[ldo]->set_vout_mask;
++	selector &= tps->info[rid]->set_vout_mask;
+ 
+ 	return selector;
+ }
+ 
+-static int tps65217_pmic_ldo_set_voltage_sel(struct regulator_dev *dev,
++static int tps65217_pmic_ldo1_set_voltage_sel(struct regulator_dev *dev,
+ 						unsigned selector)
+ {
+ 	struct tps65217 *tps = rdev_get_drvdata(dev);
+@@ -328,112 +231,95 @@ static int tps65217_pmic_ldo_set_voltage_sel(struct regulator_dev *dev,
+ 					selector, TPS65217_PROTECT_L2);
+ }
+ 
+-static int tps65217_pmic_ldo_set_voltage(struct regulator_dev *dev,
++static int tps65217_pmic_set_voltage(struct regulator_dev *dev,
+ 				  int min_uV, int max_uV, unsigned *selector)
+ {
+ 	int ret;
+ 	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int ldo = rdev_get_id(dev);
++	unsigned int rid = rdev_get_id(dev);
+ 
+-	if (ldo < TPS65217_LDO_2 || ldo > TPS65217_LDO_4)
++	/* LDO1 implements set_voltage_sel callback */
++	if (rid == TPS65217_LDO_1)
+ 		return -EINVAL;
+ 
+-	if (min_uV < tps->info[ldo]->min_uV
+-		|| min_uV > tps->info[ldo]->max_uV)
++	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
+ 		return -EINVAL;
+ 
+-	if (max_uV < tps->info[ldo]->min_uV
+-		|| max_uV > tps->info[ldo]->max_uV)
++	if (min_uV < tps->info[rid]->min_uV
++		|| min_uV > tps->info[rid]->max_uV)
+ 		return -EINVAL;
+ 
+-	ret = tps->info[ldo]->uv_to_vsel(min_uV, selector);
++	if (max_uV < tps->info[rid]->min_uV
++		|| max_uV > tps->info[rid]->max_uV)
++		return -EINVAL;
 +
- 	if (ppc4xx_setup_pcieh_hw(dev, res, msi))
- 		goto error_out;
++	ret = tps->info[rid]->uv_to_vsel(min_uV, selector);
+ 	if (ret)
+ 		return ret;
  
-@@ -242,6 +253,7 @@ static int __devinit ppc4xx_msi_probe(struct platform_device *dev)
- 		dev_err(&dev->dev, "Error allocating MSI bitmap\n");
- 		goto error_out;
- 	}
-+	ppc4xx_msi = *msi;
+ 	/* Set the voltage based on vsel value and write protect level is 2 */
+-	return tps65217_set_bits(tps, tps->info[ldo]->set_vout_reg,
+-					tps->info[ldo]->set_vout_mask,
+-					*selector, TPS65217_PROTECT_L2);
+-}
+-
+-static int tps65217_pmic_dcdc_list_voltage(struct regulator_dev *dev,
+-					unsigned selector)
+-{
+-	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int dcdc = rdev_get_id(dev);
+-
+-	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
+-		return -EINVAL;
+-
+-	if (selector >= tps->info[dcdc]->table_len)
+-		return -EINVAL;
++	ret = tps65217_set_bits(tps, tps->info[rid]->set_vout_reg,
++				tps->info[rid]->set_vout_mask,
++				*selector, TPS65217_PROTECT_L2);
++
++	/* Set GO bit for DCDCx to initiate voltage transistion */
++	switch (rid) {
++	case TPS65217_DCDC_1 ... TPS65217_DCDC_3:
++		ret = tps65217_set_bits(tps, TPS65217_REG_DEFSLEW,
++				       TPS65217_DEFSLEW_GO, TPS65217_DEFSLEW_GO,
++				       TPS65217_PROTECT_L2);
++		break;
++	}
  
- 	ppc_md.setup_msi_irqs = ppc4xx_setup_msi_irqs;
- 	ppc_md.teardown_msi_irqs = ppc4xx_teardown_msi_irqs;
+-	return tps->info[dcdc]->vsel_to_uv(selector);
++	return ret;
+ }
+ 
+-static int tps65217_pmic_ldo_list_voltage(struct regulator_dev *dev,
++static int tps65217_pmic_list_voltage(struct regulator_dev *dev,
+ 					unsigned selector)
+ {
+ 	struct tps65217 *tps = rdev_get_drvdata(dev);
+-	unsigned int ldo = rdev_get_id(dev);
++	unsigned int rid = rdev_get_id(dev);
+ 
+-	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
++	if (rid < TPS65217_DCDC_1 || rid > TPS65217_LDO_4)
+ 		return -EINVAL;
+ 
+-	if (selector >= tps->info[ldo]->table_len)
++	if (selector >= tps->info[rid]->table_len)
+ 		return -EINVAL;
+ 
+-	if (tps->info[ldo]->table)
+-		return tps->info[ldo]->table[selector];
++	if (tps->info[rid]->table)
++		return tps->info[rid]->table[selector];
+ 
+-	return tps->info[ldo]->vsel_to_uv(selector);
++	return tps->info[rid]->vsel_to_uv(selector);
+ }
+ 
+-/* Operations permitted on DCDCx */
+-static struct regulator_ops tps65217_pmic_dcdc_ops = {
+-	.is_enabled		= tps65217_pmic_dcdc_is_enabled,
+-	.enable			= tps65217_pmic_dcdc_enable,
+-	.disable		= tps65217_pmic_dcdc_disable,
+-	.get_voltage_sel	= tps65217_pmic_dcdc_get_voltage_sel,
+-	.set_voltage		= tps65217_pmic_dcdc_set_voltage,
+-	.list_voltage		= tps65217_pmic_dcdc_list_voltage,
++/* Operations permitted on DCDCx, LDO2, LDO3 and LDO4 */
++static struct regulator_ops tps65217_pmic_ops = {
++	.is_enabled		= tps65217_pmic_is_enabled,
++	.enable			= tps65217_pmic_enable,
++	.disable		= tps65217_pmic_disable,
++	.get_voltage_sel	= tps65217_pmic_get_voltage_sel,
++	.set_voltage		= tps65217_pmic_set_voltage,
++	.list_voltage		= tps65217_pmic_list_voltage,
+ };
+ 
+ /* Operations permitted on LDO1 */
+ static struct regulator_ops tps65217_pmic_ldo1_ops = {
+-	.is_enabled		= tps65217_pmic_ldo_is_enabled,
+-	.enable			= tps65217_pmic_ldo_enable,
+-	.disable		= tps65217_pmic_ldo_disable,
+-	.get_voltage_sel	= tps65217_pmic_ldo_get_voltage_sel,
+-	.set_voltage_sel	= tps65217_pmic_ldo_set_voltage_sel,
+-	.list_voltage		= tps65217_pmic_ldo_list_voltage,
+-};
+-
+-/* Operations permitted on LDO2, LDO3 and LDO4 */
+-static struct regulator_ops tps65217_pmic_ldo234_ops = {
+-	.is_enabled		= tps65217_pmic_ldo_is_enabled,
+-	.enable			= tps65217_pmic_ldo_enable,
+-	.disable		= tps65217_pmic_ldo_disable,
+-	.get_voltage_sel	= tps65217_pmic_ldo_get_voltage_sel,
+-	.set_voltage		= tps65217_pmic_ldo_set_voltage,
+-	.list_voltage		= tps65217_pmic_ldo_list_voltage,
++	.is_enabled		= tps65217_pmic_is_enabled,
++	.enable			= tps65217_pmic_enable,
++	.disable		= tps65217_pmic_disable,
++	.get_voltage_sel	= tps65217_pmic_get_voltage_sel,
++	.set_voltage_sel	= tps65217_pmic_ldo1_set_voltage_sel,
++	.list_voltage		= tps65217_pmic_list_voltage,
+ };
+ 
+ static struct regulator_desc regulators[] = {
+-	TPS65217_REGULATOR("DCDC1", TPS65217_DCDC_1,
+-				tps65217_pmic_dcdc_ops, 64),
+-	TPS65217_REGULATOR("DCDC2",TPS65217_DCDC_2,
+-				tps65217_pmic_dcdc_ops, 64),
+-	TPS65217_REGULATOR("DCDC3", TPS65217_DCDC_3,
+-				tps65217_pmic_dcdc_ops, 64),
+-	TPS65217_REGULATOR("LDO1", TPS65217_LDO_1,
+-				tps65217_pmic_ldo1_ops, 16),
+-	TPS65217_REGULATOR("LDO2", TPS65217_LDO_2,
+-				tps65217_pmic_ldo234_ops, 64),
+-	TPS65217_REGULATOR("LDO3", TPS65217_LDO_3,
+-				tps65217_pmic_ldo234_ops, 32),
+-	TPS65217_REGULATOR("LDO4", TPS65217_LDO_4,
+-				tps65217_pmic_ldo234_ops, 32),
++	TPS65217_REGULATOR("DCDC1", TPS65217_DCDC_1, tps65217_pmic_ops, 64),
++	TPS65217_REGULATOR("DCDC2", TPS65217_DCDC_2, tps65217_pmic_ops, 64),
++	TPS65217_REGULATOR("DCDC3", TPS65217_DCDC_3, tps65217_pmic_ops, 64),
++	TPS65217_REGULATOR("LDO1", TPS65217_LDO_1, tps65217_pmic_ldo1_ops, 16),
++	TPS65217_REGULATOR("LDO2", TPS65217_LDO_2, tps65217_pmic_ops, 64),
++	TPS65217_REGULATOR("LDO3", TPS65217_LDO_3, tps65217_pmic_ops, 32),
++	TPS65217_REGULATOR("LDO4", TPS65217_LDO_4, tps65217_pmic_ops, 32),
+ };
+ 
+ static int __devinit tps65217_regulator_probe(struct platform_device *pdev)
+@@ -486,7 +372,6 @@ static void __exit tps65217_regulator_exit(void)
+ }
+ module_exit(tps65217_regulator_exit);
+ 
+-
+ MODULE_AUTHOR("AnilKumar Ch <anilkumar@ti.com>");
+ MODULE_DESCRIPTION("TPS65217 voltage regulator driver");
+ MODULE_ALIAS("platform:tps65217-pmic");
 -- 
-1.7.3.4
+1.7.5.4
+
+
 
