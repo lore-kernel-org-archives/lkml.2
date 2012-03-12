@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab2CLQyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 12:54:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42438 "EHLO mx1.redhat.com"
+	id S1754384Ab2CLQyR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 12:54:17 -0400
+Received: from 1wt.eu ([62.212.114.60]:63189 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185Ab2CLQyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 12:54:07 -0400
-Date: Mon, 12 Mar 2012 17:53:59 +0100
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Roland McGrath <roland@hack.frob.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Kushal Das <kdas@redhat.com>
-Subject: Re: Extending coredump note section to contain filenames
-Message-ID: <20120312165359.GA32400@host2.jankratochvil.net>
-References: <4F5A3A4D.1020008@redhat.com>
- <20120309172934.GA18173@host2.jankratochvil.net>
- <4F5DE6A4.2030303@redhat.com>
-MIME-Version: 1.0
+	id S1754060Ab2CLQyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 12:54:13 -0400
+Date: Mon, 12 Mar 2012 17:53:56 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Thomas Rast <trast@inf.ethz.ch>
+Cc: Greg KH <greg@kroah.com>, Jonathan Nieder <jrnieder@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, git@vger.kernel.org,
+        Thomas Rast <trast@student.ethz.ch>
+Subject: Re: stripping [PATCH] without losing later tags from mailed patches (Re: [ 02/12] Remove COMPAT_IA32 support)
+Message-ID: <20120312165356.GD12405@1wt.eu>
+References: <20120312002046.041448832@1wt.eu> <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com> <20120312063027.GB8971@1wt.eu> <20120312064855.GB16820@burratino> <20120312085820.GA11569@1wt.eu> <20120312152004.GB9380@kroah.com> <20120312152453.GB12405@1wt.eu> <87aa3l4vqq.fsf@thomas.inf.ethz.ch>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F5DE6A4.2030303@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87aa3l4vqq.fsf@thomas.inf.ethz.ch>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Mar 2012 13:05:56 +0100, Denys Vlasenko wrote:
-> Build-ids are useful, but they still don't map directly to the names
-> of loaded files. You need to rely on /usr/lib/debug/.build-id/XX/YYYYYYYYYY
-> symlinks to translate build-ids to names.
-
-There is draft of https://fedoraproject.org/wiki/Darkserver but it is not yet
-deployed.  This will give you distro and file version / URL for the specified
-build-id.  Without any local symlinks/files at all.
-
-Reasons why it has not yet been finished + deployed I find out of the scope of
-this thread.
-
-
-> Why we don't save library names in coredump?
-
-Because they are useless.  If you have a filename there how to find which
-content it should match?  Even if you verify the file is still there with the
-same content there is a race it can no longer be true when you read the core
-file 5 seconds later.
-
-The build-id mapping server above always works and without races.
-
-
-> > it can have unknown content etc.
+On Mon, Mar 12, 2012 at 05:41:49PM +0100, Thomas Rast wrote:
+> [+cc Junio because of backwards-compat issues]
 > 
-> I don't understand. *What* can have unknown content?
+> Willy Tarreau <w@1wt.eu> writes:
+> 
+> > On Mon, Mar 12, 2012 at 08:20:04AM -0700, Greg KH wrote:
+> >> 
+> >> I don't see a -b option to 'git am' in the manpage, am I missing
+> >> something here?
+> >
+> > It's in the master tree only right now, and the option is "--keep-non-patch"
+> > (could have been shorter). Currently rebuilding to test it :-)
+> 
+> Exactly.
+> 
+> The problem with -b is that it's a backwards-compatibility shorthand for
+> --binary, which used to pass --allow-binary-replacement (or --binary) to
+> git-apply.  However, that option was obsoleted in 2b6eef9 (Make apply
+> --binary a no-op., 2006-09-06) and has been a no-op for over 5 years.
+> It has also not been documented since cb3a160 (git-am: ignore --binary
+> option, 2008-08-09).
+> 
+> So perhaps we can safely claim -b for --keep-non-patch, like so:
 
-You will save there "/lib64/libc-2.14.90.so".  But the next day you have no
-idea which compilation or build the core file was generated for, that virtual
-machine can be either already updated or even reinstalled from scratch etc.
-"/lib64/libc-2.14.90.so" does not say anything about the build.
-
-
-> I'll be satisfied with 99.9999% success rate instead of 100% :)
-
-I am not, I prefer 100% build-id server.
-
+Yes I do think so, especially since 5 years ago, git commands were
+called hyphenated like "git-am" instead of "git am". So I don't think
+there's any risk in reusing the option.
 
 Regards,
-Jan
+Willy
+
