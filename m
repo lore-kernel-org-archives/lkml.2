@@ -1,83 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab2CLJC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 05:02:57 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50416 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752793Ab2CLJCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 05:02:52 -0400
-X-IronPort-AV: E=Sophos;i="4.73,570,1325433600"; 
-   d="scan'208";a="4512361"
-Message-ID: <4F5DBC26.7060204@cn.fujitsu.com>
-Date: Mon, 12 Mar 2012 17:04:38 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1754067Ab2CLJML (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 05:12:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2563 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752854Ab2CLJMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 05:12:09 -0400
+Subject: [PATCH] kvm: ioapic: conditionally delay irq delivery during eoi
+ broadcast
+To: mtosatti@redhat.com, avi@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+From: Jason Wang <jasowang@redhat.com>
+Cc: gleb@redhat.com, mst@redhat.com
+Date: Mon, 12 Mar 2012 17:07:35 +0800
+Message-ID: <20120312090734.8414.21043.stgit@amd-6168-8-1.englab.nay.redhat.com>
+User-Agent: StGit/0.16-1-g60c4
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F58943E.1050402@redhat.com> <4F595B31.9090301@cn.fujitsu.com>
-In-Reply-To: <4F595B31.9090301@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-12 17:00:48,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-12 17:00:51,
-	Serialize complete at 2012-03-12 17:00:51
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03/09/2012 09:21 AM, Wen Congyang Wrote:
-> At 03/08/2012 07:13 PM, Avi Kivity Wrote:
->> On 03/08/2012 09:57 AM, Wen Congyang wrote:
->>> We can know the guest is paniced when the guest runs on xen.
->>> But we do not have such feature on kvm.
->>>
->>> Another purpose of this feature is: management app(for example:
->>> libvirt) can do auto dump when the guest is crashed. If management
->>> app does not do auto dump, the guest's user can do dump by hand if
->>> he sees the guest is paniced.
->>>
->>> I touch the hypervisor instead of using virtio-serial, because
->>> 1. it is simple
->>> 2. the virtio-serial is an optional device, and the guest may
->>>    not have such device.
->>>
->>> Changes from v2 to v3:
->>> 1. correct spelling
->>>
->>> Changes from v1 to v2:
->>> 1. split up host and guest-side changes
->>> 2. introduce new request flag to avoid changing return values.
->>
->> I see no Documentation/ changes.
+Currently, we call ioapic_service() immediately when we find the irq is still
+active during eoi broadcast. But for real hardware, there's some dealy between
+the EOI writing and irq delivery (system bus latency?). So we need to emulate
+this behavior. Otherwise, for a guest who haven't register a proper irq handler
+, it would stay in the interrupt routine as this irq would be re-injected
+immediately after guest enables interrupt. This would lead guest can't move
+forward and may miss the possibility to get proper irq handler registered (one
+example is windows guest resuming from hibernation).
 
-Do you have any other comments about this patch?
+As there's no way to differ the unhandled irq from new raised ones, this patch
+solve this problems by scheduling a delayed work when the count of irq injected
+during eoi broadcast exceeds a threshold value. After this patch, the guest can
+move a little forward when there's no suitable irq handler in case it may
+register one very soon and for guest who has a bad irq detection routine ( such
+as note_interrupt() in linux ), this bad irq would be recognized soon as in the
+past.
 
-> 
-> What shoude be writen into Documentation/? I read the documents under
-> Documentation/virtual/kvm, not all KVM_EXIT_* are writen in api.txt.
-> In this patch set, I introduce a new exit_reason: KVM_EXIT_GUEST_PANICKED,
-> but I donot know where I should write.
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ virt/kvm/ioapic.c |   47 +++++++++++++++++++++++++++++++++++++++++++++--
+ virt/kvm/ioapic.h |    2 ++
+ 2 files changed, 47 insertions(+), 2 deletions(-)
 
-What about this?
-
-Thanks
-Wen Congyang
-
-> 
-> Thanks
-> Wen Congyang
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+index dcaf272..892253e 100644
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -221,6 +221,24 @@ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int level)
+ 	return ret;
+ }
+ 
++static void kvm_ioapic_eoi_inject_work(struct work_struct *work)
++{
++	int i, ret;
++	struct kvm_ioapic *ioapic = container_of(work, struct kvm_ioapic,
++						 eoi_inject.work);
++	spin_lock(&ioapic->lock);
++	for (i = 0; i < IOAPIC_NUM_PINS; i++) {
++		union kvm_ioapic_redirect_entry *ent = &ioapic->redirtbl[i];
++
++		if (ent->fields.trig_mode != IOAPIC_LEVEL_TRIG)
++			continue;
++
++		if (ioapic->irr & (1 << i) && !ent->fields.remote_irr)
++			ret = ioapic_service(ioapic, i);
++	}
++	spin_unlock(&ioapic->lock);
++}
++
+ static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
+ 				     int trigger_mode)
+ {
+@@ -249,8 +267,29 @@ static void __kvm_ioapic_update_eoi(struct kvm_ioapic *ioapic, int vector,
+ 
+ 		ASSERT(ent->fields.trig_mode == IOAPIC_LEVEL_TRIG);
+ 		ent->fields.remote_irr = 0;
+-		if (!ent->fields.mask && (ioapic->irr & (1 << i)))
+-			ioapic_service(ioapic, i);
++		if (!ent->fields.mask && (ioapic->irr & (1 << i))) {
++			++ioapic->irq_eoi;
++			if (ioapic->irq_eoi == 100) {
++				/*
++				 * Real hardware does not deliver the irq so
++				 * immediately during eoi broadcast, so we need
++				 * to emulate this behavior. Otherwise, for
++				 * guests who has not registered handler of a
++				 * level irq, this irq would be injected
++				 * immediately after guest enables interrupt
++				 * (which happens usually at the end of the
++				 * common interrupt routine). This would lead
++				 * guest can't move forward and may miss the
++				 * possibility to get proper irq handler
++				 * registered. So we need to give some breath to
++				 * guest. TODO: 1 is too long?
++				 */
++				schedule_delayed_work(&ioapic->eoi_inject, 1);
++				ioapic->irq_eoi = 0;
++			} else {
++				ioapic_service(ioapic, i);
++			}
++		}
+ 	}
+ }
+ 
+@@ -375,12 +414,14 @@ void kvm_ioapic_reset(struct kvm_ioapic *ioapic)
+ {
+ 	int i;
+ 
++	cancel_delayed_work_sync(&ioapic->eoi_inject);
+ 	for (i = 0; i < IOAPIC_NUM_PINS; i++)
+ 		ioapic->redirtbl[i].fields.mask = 1;
+ 	ioapic->base_address = IOAPIC_DEFAULT_BASE_ADDRESS;
+ 	ioapic->ioregsel = 0;
+ 	ioapic->irr = 0;
+ 	ioapic->id = 0;
++	ioapic->irq_eoi = 0;
+ 	update_handled_vectors(ioapic);
+ }
+ 
+@@ -398,6 +439,7 @@ int kvm_ioapic_init(struct kvm *kvm)
+ 	if (!ioapic)
+ 		return -ENOMEM;
+ 	spin_lock_init(&ioapic->lock);
++	INIT_DELAYED_WORK(&ioapic->eoi_inject, kvm_ioapic_eoi_inject_work);
+ 	kvm->arch.vioapic = ioapic;
+ 	kvm_ioapic_reset(ioapic);
+ 	kvm_iodevice_init(&ioapic->dev, &ioapic_mmio_ops);
+@@ -418,6 +460,7 @@ void kvm_ioapic_destroy(struct kvm *kvm)
+ {
+ 	struct kvm_ioapic *ioapic = kvm->arch.vioapic;
+ 
++	cancel_delayed_work_sync(&ioapic->eoi_inject);
+ 	if (ioapic) {
+ 		kvm_io_bus_unregister_dev(kvm, KVM_MMIO_BUS, &ioapic->dev);
+ 		kvm->arch.vioapic = NULL;
+diff --git a/virt/kvm/ioapic.h b/virt/kvm/ioapic.h
+index 0b190c3..8938e66 100644
+--- a/virt/kvm/ioapic.h
++++ b/virt/kvm/ioapic.h
+@@ -47,6 +47,8 @@ struct kvm_ioapic {
+ 	void (*ack_notifier)(void *opaque, int irq);
+ 	spinlock_t lock;
+ 	DECLARE_BITMAP(handled_vectors, 256);
++	struct delayed_work eoi_inject;
++	u32 irq_eoi;
+ };
+ 
+ #ifdef DEBUG
 
