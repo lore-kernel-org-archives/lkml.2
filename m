@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965089Ab2CLXoU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:44:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50648 "EHLO mx1.redhat.com"
+	id S965058Ab2CLXo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:44:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18792 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758046Ab2CLXk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:40:27 -0400
+	id S964858Ab2CLXjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 19:39:08 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20120308121828.2cdbdc8c@de.ibm.com>
-References: <20120308121828.2cdbdc8c@de.ibm.com> <20120307194548.15987.36073.stgit@warthog.procyon.org.uk> <20120307195001.15987.31240.stgit@warthog.procyon.org.uk>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: dhowells@redhat.com, paul.gortmaker@windriver.com, hpa@zytor.com,
-        torvalds@linux-foundation.org, sfr@canb.auug.org.au, mingo@redhat.com,
-        arnd@arndb.de, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 22/29] Disintegrate asm/system.h for S390
-Date: Mon, 12 Mar 2012 23:40:06 +0000
-Message-ID: <14404.1331595606@redhat.com>
+Subject: [PATCH 17/35] Make asm-generic/cmpxchg.h #include
+ asm-generic/cmpxchg-local.h [ver #2]
+To: paul.gortmaker@windriver.com, hpa@zytor.com
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, arnd@arndb.de,
+        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>
+Date: Mon, 12 Mar 2012 23:38:58 +0000
+Message-ID: <20120312233858.13888.34822.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
+References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+Make asm-generic/cmpxchg.h #include asm-generic/cmpxchg-local.h as all arch
+files that #include the former also #include the latter.  See:
 
-> This hunk will conflict with "[PATCH] rework smp code" in the linux-next
-> tree. The sigp.h header is disintegrated as well..
-> But except for this little hiccup I like the idea to split system.h,
-> makes a lot of sense.
+	grep -rl asm-generic/cmpxchg-local[.]h arch/ | sort > b
+	grep -rl asm-generic/cmpxchg[.]h arch/ | sort > a
+	comm a b
 
-I've just posted a new version of my patchset that reverses the order of the
-patches to put the arch-specific bits first.  Each arch-specific bit is a
-stand-alone reduction of that asm/system.h to just a bunch of #includes which
-is deleted by the final patch (except where asm-generic/system.h is involved).
+This simplifies the disintegration of asm-generic/system.h for arches that
+don't have their own.
 
-As these are independent, it would, for example, be possible to just take the
-s390 one into your tree and merge it with your changes.
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Arnd Bergmann <arnd@arndb.de>
+---
 
-David
+ include/asm-generic/cmpxchg.h |    2 ++
+ include/asm-generic/system.h  |    1 -
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/include/asm-generic/cmpxchg.h b/include/asm-generic/cmpxchg.h
+index 213ac6e..e0449af 100644
+--- a/include/asm-generic/cmpxchg.h
++++ b/include/asm-generic/cmpxchg.h
+@@ -10,6 +10,8 @@
+ #error "Cannot use generic cmpxchg on SMP"
+ #endif
+ 
++#include <asm-generic/cmpxchg-local.h>
++
+ /*
+  * Atomic compare and exchange.
+  *
+diff --git a/include/asm-generic/system.h b/include/asm-generic/system.h
+index 215efa7..82cb53a 100644
+--- a/include/asm-generic/system.h
++++ b/include/asm-generic/system.h
+@@ -19,7 +19,6 @@
+ #include <linux/types.h>
+ #include <linux/irqflags.h>
+ 
+-#include <asm/cmpxchg-local.h>
+ #include <asm/cmpxchg.h>
+ 
+ struct task_struct;
+
