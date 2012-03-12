@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab2CLPZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 11:25:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59092 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752673Ab2CLPZf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 11:25:35 -0400
-Message-ID: <1331565925.3022.157.camel@deadeye>
-Subject: Re: [ 02/12] Remove COMPAT_IA32 support
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Date: Mon, 12 Mar 2012 15:25:25 +0000
-In-Reply-To: <20120312063027.GB8971@1wt.eu>
-References: <20120312002046.041448832@1wt.eu>
-	 <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com>
-	 <20120312063027.GB8971@1wt.eu>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-lF73H5zMu4/TBORrBgXe"
-X-Mailer: Evolution 3.2.2-1 
+	id S1756035Ab2CLP1A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 11:27:00 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:7205 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755862Ab2CLP04 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
+	Mon, 12 Mar 2012 11:26:56 -0400
+Message-Id: <4F5E23CA0200007800077B90@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Mon, 12 Mar 2012 15:26:50 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <mike.mcclurg@citrix.com>, <ke.yu@intel.com>, <kevin.tian@intel.com>,
+        <xen-devel@lists.xensource.com>, <davej@redhat.com>,
+        <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/acpi-processor: C and P-state driver that
+ uploads said data to hypervisor.
+References: <1331395500-28033-1-git-send-email-konrad.wilk@oracle.com>
+ <1331395500-28033-2-git-send-email-konrad.wilk@oracle.com>
+ <4F5DE5AD02000078000779CC@nat28.tlf.novell.com>
+ <20120312150729.GB4236@phenom.dumpdata.com>
+In-Reply-To: <20120312150729.GB4236@phenom.dumpdata.com>
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 12.03.12 at 16:07, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Mon, Mar 12, 2012 at 11:01:49AM +0000, Jan Beulich wrote:
+>> >>> On 10.03.12 at 17:05, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> Rather than arbitrarily limiting this, you could call into Xen at startup
+>> and scan over all CPUs' ACPI IDs to find the maximum. I think that
+>> would even cover statically declared hotplug ones, but adding some
+>> slack may still be necessary to cover dynamic hotplug ones (implying
+>> that pCPU hotplug patches will make it in at some point).
+> 
+> This would be the XENPF_get_cpuinfo call right? I do plan on looking at the
 
---=-lF73H5zMu4/TBORrBgXe
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yes.
 
-On Mon, 2012-03-12 at 07:30 +0100, Willy Tarreau wrote:
-> On Sun, Mar 11, 2012 at 07:49:48PM -0700, Greg KH wrote:
-> > On Mon, Mar 12, 2012 at 01:07:26AM +0000, Ben Hutchings wrote:
-> > > On Mon, 2012-03-12 at 01:20 +0100, Willy Tarreau wrote:
-> > > > 2.6.32-longterm review patch.  If anyone has any objections, please=
- let me know.
-> > >=20
-> > > The subject/first line should include '[IA64]', as in the original
-> > > commit.  It looks like this has been automatically stripped.
-> >=20
-> > Yeah, munging patches to and from quilt and git will cause that to
-> > happen at times, it's quite common :(
->=20
-> Indeed, and I've even changed my patch formats in haproxy to avoid bracke=
-ts
-> due to this issue. The cause is that many patches are sent with a [PATCH]
-> prefix and that with Git, either you keep the subject line intact or you
-> remove everything that is between brackets. There's the -b option to only
-> remove remove tags looking like [PATCH], but my general experience with i=
-t
-> was not satisfying (I don't remind why). I have added some scripts to do
-> this at some points in the process but it's not 100% reliable as can be
-> seen here.
->=20
-> The "funny" thing here is that this comment lacking any IA64 tag annoyed
-> me a bit, and I was about to change its name then refrained from doing
-> so because I prefered not to keep the original message intact as I did
-> not notice the tag went off on my side :-/
->=20
-> Ben, I strongly suggest that you too switch your practise from "[IA64]"
-> to "IA64:" as can be seen on many kernel commits these days.
+> pCPU hotplug, but I think I need some fancy hardware to test it correctly?
 
-That is my personal practice.  But I copied this subject from the
-mainline commit.
+No, you don't really - for testing these code paths you can soft offline
+and then online back CPUs in Xen.
 
-Ben.
+>> > +	register_hotcpu_notifier(&xen_cpu_notifier);
+>> 
+>> This is pointless - you'd get notified of vCPU-s arrival/departure only.
+>> Without pCPU hotplug code in place, there's just nothing you can (and
+>> need to) do here.
+> 
+> I hadn't actually looked in details on the pCPU hotplug code to see how it 
+> works.
+> 
+> I presume I need special hardware for this to work as well as the ACPI
+> is involved in triggering the hotplug CPU up calls?
 
---=20
-Ben Hutchings
-Life would be so much easier if we could look at the source code.
+For exercising the ACPI code paths - yes, you'll need suitable
+hardware. But for just exercising the notifier logic, as said above,
+you don't.
 
---=-lF73H5zMu4/TBORrBgXe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Jan
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT14VZee/yOyVhhEJAQoz+A//QQuhKj3mJPaJnDdR/8nFqwWi7AI7yEH3
-tQTN7JQTY2odu44m3p+yQmZ+s9xK9U+byj2QLXXwi51g2C/dkDSi2OY+SuYXdBDS
-6qkpa9bSRbpBC7BpJS7K3ZXxVBB9HbHostvdSZ2fADg17qjNRC0JGShjCzwc7HCO
-pQ6y2KVXCcmcu4bB41DRy+S3bAdDgAB+fjYTSiehXSPi8LZtsG6Yw6rguKMLz6hg
-EeHy//KPr1aEO9UcgZrTE6OkALLChArmPWUj89pNBi9y2LWkPInWGWxC1DxuyMo8
-vKHApoogLBSaxtSpAGmmX4J0vx3vRXOhioWeAblnOUj1MVsmesv4Tduf0mLv1OuF
-LuX381Im8DUCwXZER09ywQozmyhsc6m1RkGd7YnQVy8oVG/AIXw+HeMbiR280JGj
-owbPszUN2Sq1vgNPzkj/702qF4AfaaxoPgIGhoq1JGinphiJ7gEnDHHgoRYzSs9e
-qZPqm/fMH1nZuSZoCUvxGCH9OvYtO1kzuKc15pBxwP1dkFOdIuIkkv8xqNckJaQV
-FA963+EYpKppHZTG15FvHOt+BB+opuKsbN+n/bdx8NDRqTJH3n4tw4WdUQnBBURJ
-sNEd+/tGRpENOkMzbftpQH9IgUPoPlBiD0fTdDSi9UE90IOa7haFE0uFJZJg0Vg7
-ai/xeZWQeQs=
-=kCNl
------END PGP SIGNATURE-----
-
---=-lF73H5zMu4/TBORrBgXe--
