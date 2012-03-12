@@ -1,371 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab2CLLv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 07:51:29 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37919 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab2CLLv1 (ORCPT
+	id S1754612Ab2CLL5U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 07:57:20 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:34279 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab2CLL5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 07:51:27 -0400
-Date: Mon, 12 Mar 2012 12:51:17 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH v6 2/3] clk: introduce the common clock framework
-Message-ID: <20120312115117.GN3852@pengutronix.de>
-References: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
- <1331366064-1273-3-git-send-email-mturquette@linaro.org>
- <20120311113414.GM3852@pengutronix.de>
- <CAJOA=zMdkLB-DCPOk=kz5mn6BK6A_swocyCHJHeGE6H7FxBbmQ@mail.gmail.com>
+	Mon, 12 Mar 2012 07:57:18 -0400
+Message-ID: <4F5DE482.20704@linux.vnet.ibm.com>
+Date: Mon, 12 Mar 2012 17:26:50 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJOA=zMdkLB-DCPOk=kz5mn6BK6A_swocyCHJHeGE6H7FxBbmQ@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:34:08 up 120 days, 19:21, 99 users,  load average: 0.00, 0.02,
- 0.16
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Subject: Re: [PATCH bisected regression] sched: rebuild sched domains at suspend/resume
+References: <20120306204357.13169.90791.stgit@zurg> <1331067743.11248.333.camel@twins> <CA+55aFxPiW=T8iNy=Fb_fuO2DYV9+sQL-mr8=Uc7cWymTyVt6A@mail.gmail.com> <1331084302.11248.338.camel@twins> <CA+55aFx6NXjLpAz_Bu1wvaxFB-2zrYGkfBeN_8rM5q7MkYuNEQ@mail.gmail.com> <4F5D00AE.8000602@openvz.org> <alpine.LFD.2.02.1203121221130.2466@ionos>
+In-Reply-To: <alpine.LFD.2.02.1203121221130.2466@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12031201-5490-0000-0000-000000ED0045
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 11, 2012 at 02:24:46PM -0700, Turquette, Mike wrote:
-> On Sun, Mar 11, 2012 at 4:34 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> > Hi Mike,
-> >
-> > I was about to give my tested-by when I decided to test the set_rate
-> > function. Unfortunately this is broken for several reasons. I'll try
-> > to come up with a fixup series later the day.
-> 
-> I haven't tested clk_set_rate since V4, but I also haven't changed the
-> code appreciably.  I'll retest on my end also.
-> 
-> > On Fri, Mar 09, 2012 at 11:54:23PM -0800, Mike Turquette wrote:
-> >> +     /* find the new rate and see if parent rate should change too */
-> >> +     WARN_ON(!clk->ops->round_rate);
-> >> +
-> >> +     new_rate = clk->ops->round_rate(clk->hw, rate, &parent_new_rate);
-> >
-> > You don't need a WARN_ON when you derefence clk->ops->round_rate anyway.
-> 
-> Agreed that the WARN_ON should not be there.
-> 
-> The v6 Documentation/clk.txt states that .round_rate is mandatory for
-> clocks that can adjust their rate, but I need to clarify this a bit
-> more.  Ideally we want to be able to call clk_set_rate on any clock
-> and get a changed rate (if possible) by either adjusting that clocks
-> rate direction (e.g. a PLL or an adjustable divider) or by propagating
-> __clk_set_rate up the parents (assuming of course that
-> CLK_SET_RATE_PARENT flag is set appropriately).
-> 
-> > Also, even when the current clock does not have a set_rate function it
-> > can still change its rate when the CLK_SET_RATE_PARENT is set.
-> 
-> Correct.  I'll clean this up and make the documentation a bit more
-> verbose on when .set_rate/.round_rate/.recalc_rate are mandatory.
-> 
-> >
-> >> +
-> >> +     /* NOTE: pre-rate change notifications will stack */
-> >> +     if (clk->notifier_count)
-> >> +             ret = __clk_notify(clk, PRE_RATE_CHANGE, clk->rate, new_rate);
-> >> +
-> >> +     if (ret == NOTIFY_BAD)
-> >> +             return clk;
-> >> +
-> >> +     /* speculate rate changes down the tree */
-> >> +     hlist_for_each_entry(child, tmp, &clk->children, child_node) {
-> >> +             ret = __clk_speculate_rates(child, new_rate);
-> >> +             if (ret == NOTIFY_BAD)
-> >> +                     return clk;
-> >> +     }
-> >> +
-> >> +     /* change the rate of this clk */
-> >> +     if (clk->ops->set_rate)
-> >> +             ret = clk->ops->set_rate(clk->hw, new_rate);
-> >
-> > I don't know the reason why you change the child clock before the parent
-> > clock, but it cannot work since this clock will change its rate based on
-> > the old parent rate and not the new one.
-> 
-> This depends on the .round_rate implementation, which I admit to
-> having lost some sleep over.  A clever .round_rate will request the
-> "intermediate" rate for a clock when propagating a request to change
-> the parent rate later on.  Take for instance the following:
-> 
-> pll @ 200MHz (locked)
->     |
-> parent @ 100MHz (can divide by 1 or 2; currently divider is 2)
->     |
-> child @ 25MHz (can divide by 2 or 4; currently divider is 4)
-> 
-> If we want child to run at 100MHz then the desirable configuration
-> would be to have parent divide-by-1 and child divide-by-2.  When we
-> call,
-> 
-> clk_set_rate(child, 100MHz);
-> 
-> Its .round_rate should return 50MHz, and &parent_new_rate should be
-> 200MHz.  So 50MHz is an "intermediate" rate, but it gets us the
-> divider we want.  And in fact 50MHz reflects reality because that will
-> be the rate of child until the parent propagation completes and we can
-> adjust parent's dividers.  (this is one reason why I prefer for
-> pre-rate change notifiers to stack on top of each other).
-> 
-> So now that &parent_new_rate is > 0, __clk_set_rate will propagate the
-> request up and parent's .round_rate will simply return 200MHz and
-> leave it's own &parent_new_rate at 0.  This will change from
-> divide-by-2 to divide-by-1 and from this highest point in the tree we
-> will propagate post-rate change notifiers downstream, as part of the
-> recalc_rate tree walk.
-> 
-> I have tested this with OMAP4's CPUfreq driver and I think, while
-> complicated, it is a sound way to approach the problem.  Maybe the API
-> can be cleaned up, if you have any suggestions.
+On 03/12/2012 04:52 PM, Thomas Gleixner wrote:
 
-I cannot see all implications this way will have. All this rate
-propagation is more complex than I thought it would be. I tried another
-approach on the weekend which basically does not try to do all in a
-single recursion but instead sets the rate in multiple steps:
-
-1) call a function which calculates all new rates of affected clocks
-   in a rate change and safes the value in a clk->new_rate field. This
-   function returns the topmost clock which has to be changed.
-2) starting from the topmost clock notify all clients. This walks the
-   whole subtree even if a notfifier refuses the change. If necessary
-   we can walk the whole subtree again to abort the change.
-3) actually change rates starting from the topmost clocks and notify
-   all clients on the way. I changed the set_rate callback to void.
-   Instead of failing (what is failing in case of set_rate? The clock
-   will still have some rate) I check for the result with
-   clk_ops->recalc_rate.
-
-In the end what's more important than the implementation details is that
-it actually works. I created a little test module which sets up two
-cascaded dividers, tries to change the rate at the output and checks the
-result.  We might want to add something like this (and maybe similar
-tests for reparenting and other stuff) to the generic clock framework
-later.  It's good to have something generic to test the framework with
-without depending on some particular SoC.
-
-Sascha
-
-8<----------------------------------------------------
-
-clk: Add clock test module
-
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- drivers/clk/clk-test.c |  169 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 169 insertions(+), 0 deletions(-)
- create mode 100644 drivers/clk/clk-test.c
-
-diff --git a/drivers/clk/clk-test.c b/drivers/clk/clk-test.c
-new file mode 100644
-index 0000000..6f901fd
---- /dev/null
-+++ b/drivers/clk/clk-test.c
-@@ -0,0 +1,169 @@
-+#include <linux/spinlock.h>
-+#include <linux/clk-provider.h>
-+#include <linux/clk.h>
-+#include <linux/module.h>
-+
-+/*
-+ * We build a fixed rate source clock with two cascaded 2bit dividers:
-+ *
-+ * f1 -> div1 -> div2
-+ *
-+ * and try set the rate of div2 from 0Hz to f1 + 1 Hz.
-+ *
-+ * This makes the following resulting dividers possible:
-+ *
-+ * 1, 2, 4, 6, 8, 9, 12, 16
-+ *
-+ * Sometimes there are different results possible due to integer maths.
-+ * For example if we have an input frequency of 100Hz and request an
-+ * output of 16Hz the best divider values would be 2 and 4 resulting
-+ * in a real frequency of 12.5Hz. We also accept 2 and 3 as result
-+ * because 100 / (3 * 2) = 16.6667 which is too high, but multiplying
-+ * 16 * 3 * 2 results in 96Hz which is lower than 100Hz.
-+ *
-+ */
-+
-+static unsigned long div1_reg, div2_reg;
-+
-+static struct clk *f1, *div1, *div2;
-+
-+static DEFINE_SPINLOCK(imx_ccm_lock);
-+
-+//#define FIXED_RATE 144
-+#define FIXED_RATE 100
-+
-+static inline struct clk *register_divider(const char *name, const char *parent,
-+		void __iomem *reg, u8 shift, u8 width)
-+{
-+	return clk_register_divider(NULL, name, parent, CLK_SET_RATE_PARENT,
-+			reg, shift, width, 0, &imx_ccm_lock);
-+}
-+
-+static unsigned long divs[] = {
-+	1, 2, 3, 4, 6, 8, 9, 12, 16,
-+};
-+
-+static int check_rounded_rate(unsigned long want, unsigned long rounded)
-+{
-+	int i, j;
-+	unsigned long best1 = 0, best2 = 0, now;
-+
-+	if (want > FIXED_RATE) {
-+		best1 = best2 = FIXED_RATE;
-+		goto found2;
-+	}
-+
-+	for (i = 1; i <= 4; i++) {
-+		for (j = 1; j <= 4; j++) {
-+			now = FIXED_RATE / i / j;
-+			if (now <= want && now > best1)
-+				best1 = now;
-+		}
-+	}
-+
-+	if (!best1)
-+		best1 = (FIXED_RATE / 4) / 4;
-+
-+	for (i = 0; i < ARRAY_SIZE(divs); i++) {
-+		if (FIXED_RATE <= want * divs[i]) {
-+			best2 = FIXED_RATE / divs[i];
-+			goto found2;
-+		}
-+	}
-+
-+	if (!best2)
-+		best2 = FIXED_RATE / 16;
-+found2:
-+	if (rounded != best1 && rounded != best2) {
-+		if (best1 == best2)
-+			printk("clk-test: wanted rate %ld, best result would be %ld,"
-+					" but we have %ld\n",
-+					want, best1, rounded);
-+		else
-+			printk("clk-test: wanted rate %ld, best result would be %ld or %ld,"
-+					" but we have %ld\n",
-+					want, best1, best2, rounded);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int check_real_rate(unsigned long rate)
-+{
-+	unsigned long realrate1, realrate2;
-+
-+	realrate1 = FIXED_RATE / (div1_reg + 1) / (div2_reg + 1);
-+	realrate2 = FIXED_RATE / ((div1_reg + 1) * (div2_reg + 1));
-+
-+	if (rate != realrate1 && rate != realrate2) {
-+		if (realrate1 == realrate2)
-+			printk("clk-test: divider returns rate %ld, but instead has %ld\n",
-+					rate, realrate1);
-+		else
-+			printk("clk-test: divider returns rate %ld, but instead has %ld or %ld\n",
-+					rate, realrate1, realrate2);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static int set_rate_test(void)
-+{
-+	unsigned long i, rate, rounded;
-+	int ret, errors = 0;
-+
-+	for (i = 0; i < FIXED_RATE + 1; i++) {
-+		rounded = clk_round_rate(div2, i);
-+		ret = check_rounded_rate(i, rounded);
-+		if (ret)
-+			errors++;
-+		ret = clk_set_rate(div2, i);
-+		if (ret) {
-+			printk("%s: setting rate of div2 to %ld failed with %d\n",
-+					__func__, i, ret);
-+			errors++;
-+		}
-+
-+		rate = clk_get_rate(div2);
-+
-+		if (rounded != rate) {
-+			printk("clk_test: wanted %ld, core rounded to %ld, have now: %ld\n",
-+					i, rounded, rate);
-+			errors++;
-+		}
-+
-+		ret = check_real_rate(rate);
-+		if (ret)
-+			errors++;
-+	}
-+
-+	return errors;
-+}
-+
-+static int clk_test_init(void)
-+{
-+	int errors;
-+
-+	f1 = clk_register_fixed_rate(NULL, "f1", NULL, CLK_IS_ROOT, FIXED_RATE);
-+	div1 = register_divider("div1", "f1", &div1_reg, 0, 2);
-+	div2 = register_divider("div2", "div1", &div2_reg, 0, 2);
-+
-+	if (!f1 || !div1 || !div2) {
-+		printk("clk-test: failed to register clocks\n");
-+		return -EINVAL;
-+	}
-+
-+	errors = set_rate_test();
-+
-+	printk("clk-test: finished with %d errors\n", errors);
-+#if 0
-+	/* Oh, oh */
-+	clk_unregister(f1);
-+	clk_unregister(div1);
-+	clk_unregister(div2);
-+#endif
-+	return -EINVAL;
-+}
-+subsys_initcall(clk_test_init);
--- 
-1.7.9.1
+> On Sun, 11 Mar 2012, Konstantin Khlebnikov wrote:
+>> Linus Torvalds wrote:
+>>> On Tue, Mar 6, 2012 at 5:38 PM, Peter Zijlstra<a.p.zijlstra@chello.nl>
+>>> wrote:
+>>>> On Tue, 2012-03-06 at 16:54 -0800, Linus Torvalds wrote:
+>>>>> I do agree that reverting is probably safer at this point, but can we
+>>>>> get agreement on this?
+>>>>
+>>>> I agree with reverting, shoot it in the head :-) Do you want a git
+>>>> thingy?
+>>>
+>>> Well, it's less a "git thingy" and more that there are tons of people
+>>> involved with the original commit that haven't even piped up.
+>>>
+>>> Srivatsa, Ingo, Prashanth..
+>>>
+>>> In fact, I notice that Prashanth doesn't even seem to have been cc'd,
+>>> even if he's the original reporter of the commit that gets reverted.
+>>> Added (see lkml)
+>>
+>> I forget to mention my kernel boot options. I live with them for a while, so I
+>> just forget about it.
+>> "debug threadirqs i915.i915_enable_rc6=1 i915.i915_enable_fbc=1
+>> i915.lvds_downclock=1 crashkernel=128M"
+>>
+>> So, "threadirqs" is a lost piece of the puzzle -- without it I cannot
+>> reproduce the bug.
+>> However, I have no idea how this is connected to sched-domains. =)
+> 
+> To be honest, I have no idea either. Can you figure out where the box
+> hangs or is it in the "silent" phase of suspend/resume?
+> 
 
 
+I built a kernel with a config close to the one that Konstantin shared and
+when I booted it with threadirqs parameter, I saw the suspend hangs.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Specifically, it hangs mostly at the processors level of pm_test.
+# echo processors > /sys/power/pm_test
+# echo mem > /sys/power/state
+
+[But just a few times, processors level test passed and I had to go to
+the core level (which is inclusive of processors level) to recreate the
+hang.]
+
+And by the way, I hit these warnings at freezer level test, a couple of
+times:
+
+
+[   75.519681] PM: Syncing filesystems ... done.
+[   75.758038] PM: Preparing system for mem sleep
+[   75.941235] Freezing user space processes ... (elapsed 0.01 seconds) done.
+[   75.953543] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+[   75.964517] suspend debug: Waiting for 5 seconds.
+[   80.961583] PM: Finishing wakeup.
+[   80.961619] Restarting tasks ... 
+[   80.963297] rtkit-daemon[1056]: The canary thread is apparently starving. Taking action.
+[   80.963376] rtkit-daemon[1056]: Demoting known real-time threads.
+[   80.963797] rtkit-daemon[1056]: Successfully demoted thread 1260 of process 1260 (/usr/bin/pulseaudio).
+[   80.963869] rtkit-daemon[1056]: Demoted 1 threads.
+[   80.964506] done.
+[   80.971719] video LNXVIDEO:00: Restoring backlight state
+[   80.974799] video LNXVIDEO:01: Restoring backlight state
+[   81.140119] dbus-daemon[826]: (process:1418): datetime-plugin-DEBUG: Exiting due to inactivity
+[   81.199218] dbus-daemon[826]: (upowerd:1011): UPower-Linux-WARNING **: energy_full (104.240100) is greater than energy_full_design (103.496400)
+[   83.004353] PM: Syncing filesystems ... done.
+[   83.086329] PM: Preparing system for mem sleep
+[   83.259932] Freezing user space processes ... (elapsed 0.01 seconds) done.
+[   83.272214] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+[   83.283177] suspend debug: Waiting for 5 seconds.
+[   88.281663] PM: Finishing wakeup.
+[   88.281735] Restarting tasks ... done.
+[   88.292095] video LNXVIDEO:00: Restoring backlight state
+[   88.292567] dbus-daemon[826]: (upowerd:1011): UPower-Linux-WARNING **: energy 121.012426 bigger than full 104.240100
+[   88.296088] video LNXVIDEO:01: Restoring backlight state
+[   88.491333] dbus-daemon[826]: (upowerd:1011): UPower-Linux-WARNING **: energy_full (104.240100) is greater than energy_full_design (103.496400)
+[   89.265442] PM: Syncing filesystems ... done.
+[   89.361045] PM: Preparing system for mem sleep
+[   89.538006] Freezing user space processes ... (elapsed 0.01 seconds) done.
+[   89.552637] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+[   89.564523] suspend debug: Waiting for 5 seconds.
+[   94.563665] PM: Finishing wakeup.
+[   94.563737] Restarting tasks ... 
+[   94.566142] ------------[ cut here ]------------
+[   94.566346] WARNING: at drivers/gpu/drm/i915/i915_irq.c:652 ironlake_irq_handler+0x362/0x41d [i915]()
+[   94.566585] Hardware name: 4180F59
+[   94.566685] Missed a PM interrupt
+[   94.566787] Modules linked in: fuse lockd rfcomm bnep ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_state nf_conntrack ip6_tables snd_hda_codec_conexant thinkpad_acpi snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm uvcvideo videobuf2_core btusb bluetooth rfkilldone.
+[   94.567953]  videodev i2c_i801 snd_timer media snd e1000e soundcore joydev v4l2_compat_ioctl32 videobuf2_vmalloc videobuf2_memops snd_page_alloc pcspkr iTCO_wdt iTCO_vendor_support microcode sunrpc uinput sdhci_pci sdhci mmc_core nouveau ttm i915 drm_kms_helper drm i2c_algo_bit mxm_wmi i2c_core video wmi [last unloaded: scsi_wait_scan]
+[   94.568292] Pid: 175, comm: irq/42-i915 Not tainted 3.3.0-rc4-cpusetfix-mar12 #2
+[   94.568344] Call Trace:
+[   94.568390]  [<ffffffff81048509>] warn_slowpath_common+0x83/0x9b
+[   94.568437]  [<ffffffff810485c4>] warn_slowpath_fmt+0x46/0x48
+[   94.568503]  [<ffffffffa007d456>] ? ironlake_irq_handler+0x33a/0x41d [i915]
+[   94.568575]  [<ffffffffa007d47e>] ironlake_irq_handler+0x362/0x41d [i915]
+[   94.568635]  [<ffffffff8107314b>] ? get_parent_ip+0xe/0x3f
+[   94.568686]  [<ffffffff810b619a>] ? irq_thread_fn+0x3c/0x3c
+[   94.568735]  [<ffffffff810b61bf>] irq_forced_thread_fn+0x25/0x45
+[   94.568783]  [<ffffffff814e0c28>] ? _raw_spin_unlock_irq+0x32/0x45
+[   94.568832]  [<ffffffff810b606a>] irq_thread+0xf7/0x1eb
+[   94.568876]  [<ffffffff810b5f73>] ? irq_finalize_oneshot+0xb3/0xb3
+[   94.568929]  [<ffffffff81065a28>] kthread+0xa6/0xae
+[   94.568972]  [<ffffffff814e8fb4>] kernel_thread_helper+0x4/0x10
+[   94.569019]  [<ffffffff814e1074>] ? retint_restore_args+0x13/0x13
+[   94.569071]  [<ffffffff81065982>] ? __init_kthread_worker+0x5a/0x5a
+[   94.569125]  [<ffffffff814e8fb0>] ? gs_change+0x13/0x13
+[   94.569169] ---[ end trace f5e3ff2f2a987fde ]---
+[   94.571593] video LNXVIDEO:00: Restoring backlight state
+[   94.574446] video LNXVIDEO:01: Restoring backlight state
+[   94.808431] dbus-daemon[826]: (upowerd:1011): UPower-Linux-WARNING **: energy_full (104.240100) is greater than energy_full_design (103.496400)
+[   95.685606] PM: Syncing filesystems ... done.
+[   95.788492] PM: Preparing system for mem sleep
+[   95.967680] Freezing user space processes ... (elapsed 0.01 seconds) done.
+[   95.981441] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+[   95.993481] suspend debug: Waiting for 5 seconds.
+[  100.997651] PM: Finishing wakeup.
+[  101.002702] Restarting tasks ... done.
+[  101.010209] dbus-daemon[826]: (upowerd:1011): UPower-Linux-WARNING **: no voltage values, using 10V as approximation
+[  101.012911] dbus-daemon[826]: (upowerd:1011): UPower-Linux-WARNING **: energy_full (93.910000) is greater than energy_full_design (93.240000)
+[  101.012989] video LNXVIDEO:00: Restoring backlight state
+[  101.016114] video LNXVIDEO:01: Restoring backlight state
+[  101.340434] dbus-daemon[826]: (upowerd:1011): UPower-Linux-WARNING **: energy_full (104.240100) is greater than energy_full_design (103.496400)
+[  101.350376] sendmail[1618]: starting daemon (8.14.5): SMTP+queueing@01:00:00
+[  101.352701] systemd[1]: Failed to read PID file /run/sendmail.pid after start. The service might be broken.
+[  101.680287] sm-msp-queue[1625]: starting daemon (8.14.5): queueing@01:00:00
+[  101.680842] systemd[1]: Failed to read PID file /run/sm-client.pid after start. The service might be broken.
+[  101.681421] systemd[1]: Startup finished in 4s 220ms 750us (kernel) + 18s 7ms 177us (initrd) + 1min 19s 320ms 874us (userspace) = 1min 41s 548ms 801us.
+[  220.735559] PM: Syncing filesystems ... done.
+[  220.977183] PM: Preparing system for mem sleep
+[  221.146370] Freezing user space processes ... (elapsed 0.01 seconds) done.
+[  221.160728] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+[  221.173679] suspend debug: Waiting for 5 seconds.
+[  226.172693] PM: Finishing wakeup.
+[  226.175017] Restarting tasks ... 
+[  226.176134] ------------[ cut here ]------------
+[  226.176974] rtkit-daemon[1056]: The canary thread is apparently starving. Taking action.
+[  226.176989] rtkit-daemon[1056]: Demoting known real-time threads.
+[  226.177692] rtkit-daemon[1056]: Successfully demoted thread 1260 of process 1260 (/usr/bin/pulseaudio).
+[  226.177706] rtkit-daemon[1056]: Demoted 1 threads.
+[  226.178712] done.
+[  226.194843] WARNING: at drivers/gpu/drm/i915/i915_irq.c:652 ironlake_irq_handler+0x362/0x41d [i915]()
+[  226.197917] Hardware name: 4180F59
+[  226.200863] Missed a PM interrupt
+[  226.203780] Modules linked in: fuse lockd rfcomm bnep ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_state nf_conntrack ip6_tables snd_hda_codec_conexant thinkpad_acpi snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm uvcvideo videobuf2_core btusb bluetooth rfkill videodev i2c_i801 snd_timer media snd e1000e soundcore joydev v4l2_compat_ioctl32 videobuf2_vmalloc videobuf2_memops snd_page_alloc pcspkr iTCO_wdt iTCO_vendor_support microcode sunrpc uinput sdhci_pci sdhci mmc_core nouveau ttm i915 drm_kms_helper drm i2c_algo_bit mxm_wmi i2c_core video wmi [last unloaded: scsi_wait_scan]
+[  226.217371] Pid: 175, comm: irq/42-i915 Tainted: G        W    3.3.0-rc4-cpusetfix-mar12 #2
+[  226.220766] Call Trace:
+[  226.224134]  [<ffffffff81048509>] warn_slowpath_common+0x83/0x9b
+[  226.227452]  [<ffffffff810485c4>] warn_slowpath_fmt+0x46/0x48
+[  226.230839]  [<ffffffffa007d456>] ? ironlake_irq_handler+0x33a/0x41d [i915]
+[  226.234106]  [<ffffffffa007d47e>] ironlake_irq_handler+0x362/0x41d [i915]
+[  226.237326]  [<ffffffff8107314b>] ? get_parent_ip+0xe/0x3f
+[  226.240371]  [<ffffffff810b619a>] ? irq_thread_fn+0x3c/0x3c
+[  226.243306]  [<ffffffff810b61bf>] irq_forced_thread_fn+0x25/0x45
+[  226.246172]  [<ffffffff814e0c28>] ? _raw_spin_unlock_irq+0x32/0x45
+[  226.248982]  [<ffffffff810b606a>] irq_thread+0xf7/0x1eb
+[  226.251781]  [<ffffffff810b5f73>] ? irq_finalize_oneshot+0xb3/0xb3
+[  226.254616]  [<ffffffff81065a28>] kthread+0xa6/0xae
+[  226.257430]  [<ffffffff814e8fb4>] kernel_thread_helper+0x4/0x10
+[  226.260246]  [<ffffffff814e1074>] ? retint_restore_args+0x13/0x13
+[  226.263057]  [<ffffffff81065982>] ? __init_kthread_worker+0x5a/0x5a
+[  226.265890]  [<ffffffff814e8fb0>] ? gs_change+0x13/0x13
+[  226.268681] ---[ end trace f5e3ff2f2a987fdf ]---
+[  226.274789] video LNXVIDEO:00: Restoring backlight state
+[  226.280073] video LNXVIDEO:01: Restoring backlight state
+[  226.488477] dbus-daemon[826]: (upowerd:1011): UPower-Linux-WARNING **: energy_full (104.240100) is greater than energy_full_design (103.496400)
+
+
+Regards,
+Srivatsa S. Bhat
+
