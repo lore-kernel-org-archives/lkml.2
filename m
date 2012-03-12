@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab2CLSEc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 14:04:32 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48893 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027Ab2CLSE3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 14:04:29 -0400
-Date: Mon, 12 Mar 2012 11:04:23 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] blk-cgroup: Call cgroup_path only under cgroup lock
-Message-ID: <20120312180423.GC23255@google.com>
-References: <1331582478-2259-1-git-send-email-levinsasha928@gmail.com>
+	id S1756206Ab2CLSEm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 14:04:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63219 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756153Ab2CLSEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 14:04:31 -0400
+Message-ID: <4F5E3AAB.7020603@redhat.com>
+Date: Mon, 12 Mar 2012 20:04:27 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331582478-2259-1-git-send-email-levinsasha928@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] KVM: Avoid checking huge page mappings in get_dirty_log()
+References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp> <20120301193216.b14538bb.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120301193216.b14538bb.yoshikawa.takuya@oss.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Sasha.
+On 03/01/2012 12:32 PM, Takuya Yoshikawa wrote:
+> Dropped such mappings when we enabled dirty logging and we will never
+> create new ones until we stop the logging.
+>
+> For this we introduce a new function which can be used to write protect
+> a range of PT level pages: although we do not need to care about a range
+> of pages at this point, the following patch will need this feature to
+> optimize the write protection of many pages.
+>
+>
 
-On Mon, Mar 12, 2012 at 04:01:18PM -0400, Sasha Levin wrote:
-> Since we can't keep rcu read lock during blkg_alloc(), we currently
-> call cgroup_path() without any locks at all.
-> 
-> This patch adds cgroup locking before calling cgroup_path.
-> 
-> This also fixes a lockdep warning on boot.
-> 
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+It occurs to me that we should write-protect huge page tables, since it
+makes write protection much faster (we make up for this later at write
+fault time, but that might not occur, and even if it does we reduce
+guest jitter).  In fact I once proposed a more involved variant, called
+O(1) write protection, in which we write-protect the topmost page table
+only and only un-write-protect the paths that fault.
 
-Which branch is this against?  There's already pending stat update
-patch from Vivek which fix this problem along with the percpu
-allocation problem.
-
-Thanks.
+That can be done later however and shouldn't affect this patchset.
 
 -- 
-tejun
+error compiling committee.c: too many arguments to function
+
