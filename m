@@ -1,35 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab2CLNFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 09:05:47 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:15561 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755250Ab2CLNFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 09:05:45 -0400
-Message-ID: <4F5DF49B.7030704@parallels.com>
-Date: Mon, 12 Mar 2012 17:05:31 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+	id S1755423Ab2CLNGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 09:06:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51379 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755309Ab2CLNGs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 09:06:48 -0400
+Date: Mon, 12 Mar 2012 21:06:53 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
+        s.hauer@pengutronix.de, dongas86@gmail.com, thomas.abraham@linaro.org,
+        tony@atomide.com
+Subject: Re: [PATCH] dt: pinctrl: Document device tree binding
+Message-ID: <20120312130651.GB19513@S2101-09.ap.freescale.net>
+References: <1331316873-20052-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-To: "davem@davemloft.net" <davem@davemloft.net>
-CC: Pavel Emelianov <xemul@parallels.com>,
-        "ebiederm@aristanetworks.com" <ebiederm@aristanetworks.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [Devel] [PATCH v2] tun: don't hold network namespace by tun sockets
-References: <20120312111826.26257.40812.stgit@localhost6.localdomain6>
-In-Reply-To: <20120312111826.26257.40812.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331316873-20052-1-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop this patch. There will be third version.
-Sorry for inconvenience.
+On Fri, Mar 09, 2012 at 11:14:33AM -0700, Stephen Warren wrote:
+> The core pin controller bindings define:
+> * The fact that pin controllers expose pin configurations as nodes in
+>   device tree.
+> * That the bindings for those pin configuration nodes is defined by the
+>   individual pin controller drivers.
+> * A standardized set of properties for client devices to define numbered
+>   or named pin configuration states, each referring to some number of the
+>   afore-mentioned pin configuration nodes.
+> * That the bindings for the client devices determines the set of numbered
+>   or named states that must exist.
+> 
+> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
 
--- 
-Best regards,
-Stanislav Kinsbursky
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
