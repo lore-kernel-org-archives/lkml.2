@@ -1,255 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab2CLWk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 18:40:59 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61950 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757400Ab2CLWk6 (ORCPT
+	id S1757957Ab2CLWoV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 18:44:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38073 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab2CLWoU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 18:40:58 -0400
-Message-ID: <1331592048.5392.1.camel@phoenix>
-Subject: [PATCH] regulator: Use simple equations to get register address
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Margarita Olaya Cabrera <magi@slimlogic.co.uk>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 13 Mar 2012 06:40:48 +0800
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 12 Mar 2012 18:44:20 -0400
+Message-ID: <1331592241.18960.64.camel@twins>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>, Michal Schmidt <mschmidt@redhat.com>
+Date: Mon, 12 Mar 2012 23:44:01 +0100
+In-Reply-To: <20120312223944.GJ23255@google.com>
+References: <20120221211938.GE12236@google.com>
+	 <20120312221050.GG23255@google.com> <1331590938.18960.57.camel@twins>
+	 <20120312222817.GI23255@google.com> <1331591568.18960.61.camel@twins>
+	 <20120312223944.GJ23255@google.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The address of ctrl and sel registers can be calculated by simple equations.
-This patch simplifies the implementation in tps65912_get_ctrl_register and
-implements tps65912_get_sel_register to replace tps65912_get_dcdc_sel_register
-and tps65912_get_ldo_sel_register.
+On Mon, 2012-03-12 at 15:39 -0700, Tejun Heo wrote:
+> If we can get to the point where nesting is fully
+> supported by every controller first, that would be awesome too. 
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps65912-regulator.c |  162 ++++----------------------------
- 1 files changed, 18 insertions(+), 144 deletions(-)
+As long as that is the goal.. otherwise, I'd be overjoyed if I can rip
+nesting support out of the cpu-controller.. that stuff is such a pain.
+Then again, I don't think the container people like this proposal --
+they were the ones pushing for full hierarchy back when.
 
-diff --git a/drivers/regulator/tps65912-regulator.c b/drivers/regulator/tps65912-regulator.c
-index b685757..9c4d827 100644
---- a/drivers/regulator/tps65912-regulator.c
-+++ b/drivers/regulator/tps65912-regulator.c
-@@ -219,146 +219,30 @@ static unsigned long tps65912_vsel_to_uv_ldo(u8 vsel)
- 
- static int tps65912_get_ctrl_register(int id)
- {
--	switch (id) {
--	case TPS65912_REG_DCDC1:
--		return TPS65912_DCDC1_AVS;
--	case TPS65912_REG_DCDC2:
--		return TPS65912_DCDC2_AVS;
--	case TPS65912_REG_DCDC3:
--		return TPS65912_DCDC3_AVS;
--	case TPS65912_REG_DCDC4:
--		return TPS65912_DCDC4_AVS;
--	case TPS65912_REG_LDO1:
--		return TPS65912_LDO1_AVS;
--	case TPS65912_REG_LDO2:
--		return TPS65912_LDO2_AVS;
--	case TPS65912_REG_LDO3:
--		return TPS65912_LDO3_AVS;
--	case TPS65912_REG_LDO4:
--		return TPS65912_LDO4_AVS;
--	case TPS65912_REG_LDO5:
--		return TPS65912_LDO5;
--	case TPS65912_REG_LDO6:
--		return TPS65912_LDO6;
--	case TPS65912_REG_LDO7:
--		return TPS65912_LDO7;
--	case TPS65912_REG_LDO8:
--		return TPS65912_LDO8;
--	case TPS65912_REG_LDO9:
--		return TPS65912_LDO9;
--	case TPS65912_REG_LDO10:
--		return TPS65912_LDO10;
--	default:
-+	if (id >= TPS65912_REG_DCDC1 && id <= TPS65912_REG_LDO4)
-+		return id * 3 + TPS65912_DCDC1_AVS;
-+	else if (id >= TPS65912_REG_LDO5 && id <= TPS65912_REG_LDO10)
-+		return id - TPS65912_REG_LDO5 + TPS65912_LDO5;
-+	else
- 		return -EINVAL;
--	}
- }
- 
--static int tps65912_get_dcdc_sel_register(struct tps65912_reg *pmic, int id)
-+static int tps65912_get_sel_register(struct tps65912_reg *pmic, int id)
- {
- 	struct tps65912 *mfd = pmic->mfd;
--	int opvsel = 0, sr = 0;
-+	int opvsel;
- 	u8 reg = 0;
- 
--	if (id < TPS65912_REG_DCDC1 || id > TPS65912_REG_DCDC4)
--		return -EINVAL;
--
--	switch (id) {
--	case TPS65912_REG_DCDC1:
--		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC1_OP);
--		sr = ((opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT);
--		if (sr)
--			reg = TPS65912_DCDC1_AVS;
-+	if (id >= TPS65912_REG_DCDC1 && id <= TPS65912_REG_LDO4) {
-+		opvsel = tps65912_reg_read(mfd, id * 3 + TPS65912_DCDC1_OP);
-+		if (opvsel & OP_SELREG_MASK)
-+			reg = id * 3 + TPS65912_DCDC1_AVS;
- 		else
--			reg = TPS65912_DCDC1_OP;
--		break;
--	case TPS65912_REG_DCDC2:
--		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC2_OP);
--		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
--		if (sr)
--			reg = TPS65912_DCDC2_AVS;
--		else
--			reg = TPS65912_DCDC2_OP;
--		break;
--	case TPS65912_REG_DCDC3:
--		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC3_OP);
--		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
--		if (sr)
--			reg = TPS65912_DCDC3_AVS;
--		else
--			reg = TPS65912_DCDC3_OP;
--		break;
--	case TPS65912_REG_DCDC4:
--		opvsel = tps65912_reg_read(mfd, TPS65912_DCDC4_OP);
--		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
--		if (sr)
--			reg = TPS65912_DCDC4_AVS;
--		else
--			reg = TPS65912_DCDC4_OP;
--		break;
--	}
--	return reg;
--}
--
--static int tps65912_get_ldo_sel_register(struct tps65912_reg *pmic, int id)
--{
--	struct tps65912 *mfd = pmic->mfd;
--	int opvsel = 0, sr = 0;
--	u8 reg = 0;
--
--	if (id < TPS65912_REG_LDO1 || id > TPS65912_REG_LDO10)
-+			reg = id * 3 + TPS65912_DCDC1_OP;
-+	} else if (id >= TPS65912_REG_LDO5 && id <= TPS65912_REG_LDO10) {
-+		reg = id - TPS65912_REG_LDO5 + TPS65912_LDO5;
-+	} else {
- 		return -EINVAL;
--
--	switch (id) {
--	case TPS65912_REG_LDO1:
--		opvsel = tps65912_reg_read(mfd, TPS65912_LDO1_OP);
--		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
--		if (sr)
--			reg = TPS65912_LDO1_AVS;
--		else
--			reg = TPS65912_LDO1_OP;
--		break;
--	case TPS65912_REG_LDO2:
--		opvsel = tps65912_reg_read(mfd, TPS65912_LDO2_OP);
--		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
--		if (sr)
--			reg = TPS65912_LDO2_AVS;
--		else
--			reg = TPS65912_LDO2_OP;
--		break;
--	case TPS65912_REG_LDO3:
--		opvsel = tps65912_reg_read(mfd, TPS65912_LDO3_OP);
--		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
--		if (sr)
--			reg = TPS65912_LDO3_AVS;
--		else
--			reg = TPS65912_LDO3_OP;
--		break;
--	case TPS65912_REG_LDO4:
--		opvsel = tps65912_reg_read(mfd, TPS65912_LDO4_OP);
--		sr = (opvsel & OP_SELREG_MASK) >> OP_SELREG_SHIFT;
--		if (sr)
--			reg = TPS65912_LDO4_AVS;
--		else
--			reg = TPS65912_LDO4_OP;
--		break;
--	case TPS65912_REG_LDO5:
--		reg = TPS65912_LDO5;
--		break;
--	case TPS65912_REG_LDO6:
--		reg = TPS65912_LDO6;
--		break;
--	case TPS65912_REG_LDO7:
--		reg = TPS65912_LDO7;
--		break;
--	case TPS65912_REG_LDO8:
--		reg = TPS65912_LDO8;
--		break;
--	case TPS65912_REG_LDO9:
--		reg = TPS65912_LDO9;
--		break;
--	case TPS65912_REG_LDO10:
--		reg = TPS65912_LDO10;
--		break;
- 	}
- 
- 	return reg;
-@@ -597,7 +481,7 @@ static int tps65912_set_voltage_dcdc(struct regulator_dev *dev,
- 	int value;
- 	u8 reg;
- 
--	reg = tps65912_get_dcdc_sel_register(pmic, id);
-+	reg = tps65912_get_sel_register(pmic, id);
- 	value = tps65912_reg_read(mfd, reg);
- 	value &= 0xC0;
- 	return tps65912_reg_write(mfd, reg, selector | value);
-@@ -611,7 +495,7 @@ static int tps65912_get_voltage_ldo(struct regulator_dev *dev)
- 	int vsel = 0;
- 	u8 reg;
- 
--	reg = tps65912_get_ldo_sel_register(pmic, id);
-+	reg = tps65912_get_sel_register(pmic, id);
- 	vsel = tps65912_reg_read(mfd, reg);
- 	vsel &= 0x3F;
- 
-@@ -625,7 +509,7 @@ static int tps65912_set_voltage_ldo(struct regulator_dev *dev,
- 	struct tps65912 *mfd = pmic->mfd;
- 	int id = rdev_get_id(dev), reg, value;
- 
--	reg = tps65912_get_ldo_sel_register(pmic, id);
-+	reg = tps65912_get_sel_register(pmic, id);
- 	value = tps65912_reg_read(mfd, reg);
- 	value &= 0xC0;
- 	return tps65912_reg_write(mfd, reg, selector | value);
-@@ -748,22 +632,12 @@ static struct platform_driver tps65912_driver = {
- 	.remove = __devexit_p(tps65912_remove),
- };
- 
--/**
-- * tps65912_init
-- *
-- * Module init function
-- */
- static int __init tps65912_init(void)
- {
- 	return platform_driver_register(&tps65912_driver);
- }
- subsys_initcall(tps65912_init);
- 
--/**
-- * tps65912_cleanup
-- *
-- * Module exit function
-- */
- static void __exit tps65912_cleanup(void)
- {
- 	platform_driver_unregister(&tps65912_driver);
--- 
-1.7.5.4
-
-
-
+Another way there is simply deprecating and removing all
+non-hierarchical controllers (and not adding any more while we're at
+it).
