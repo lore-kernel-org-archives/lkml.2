@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab2CLTpv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:45:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64261 "EHLO mx1.redhat.com"
+	id S1756790Ab2CLTqH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:46:07 -0400
+Received: from 1wt.eu ([62.212.114.60]:63216 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756443Ab2CLTpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:45:50 -0400
-Message-ID: <4F5E526B.2020406@redhat.com>
-Date: Mon, 12 Mar 2012 20:45:47 +0100
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-CC: Roland McGrath <roland@hack.frob.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Kushal Das <kdas@redhat.com>
-Subject: Re: Extending coredump note section to contain filenames
-References: <4F5A3A4D.1020008@redhat.com> <20120309172934.GA18173@host2.jankratochvil.net> <4F5DE6A4.2030303@redhat.com> <20120312165359.GA32400@host2.jankratochvil.net> <4F5E4757.705@redhat.com> <20120312190818.GA25523@host2.jankratochvil.net>
-In-Reply-To: <20120312190818.GA25523@host2.jankratochvil.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756440Ab2CLTqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 15:46:05 -0400
+Date: Mon, 12 Mar 2012 20:45:45 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [ 02/12] Remove COMPAT_IA32 support
+Message-ID: <20120312194545.GJ12405@1wt.eu>
+References: <20120312002046.041448832@1wt.eu> <201203121702.06598.arnd@arndb.de> <20120312193455.GZ12704@decadent.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120312193455.GZ12704@decadent.org.uk>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 08:08 PM, Jan Kratochvil wrote:
-> On Mon, 12 Mar 2012 19:58:31 +0100, Denys Vlasenko wrote:
->>       This is better, isn't it?
->>       Wouldn't it be nice if gdb would retrieve binary's name by itself?
->
-> Yes, that yum should have been executed automatically, instead of just
-> suggested by that:
-> 	Try: yum --disablerepo='*' --enablerepo='*-debuginfo' install /usr/lib/debug/.build-id/ec/1fd70dbee0db36eff9527254d9d2bbfd260f13
+On Mon, Mar 12, 2012 at 07:34:55PM +0000, Ben Hutchings wrote:
+> On Mon, Mar 12, 2012 at 05:02:06PM +0000, Arnd Bergmann wrote:
+> > On Monday 12 March 2012, Willy Tarreau wrote:
+> > > 
+> > > 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: Ben Hutchings <ben@decadent.org.uk>
+> > > 
+> > > commit 32974ad4907cdde6c9de612cd1b2ee0568fb9409 upstream
+> > > 
+> > > This just changes Kconfig rather than touching all the other files the
+> > > original commit did.
+> > > 
+> > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> > 
+> > I think it would be useful to copy the entire description of the
+> > original patch here, which makes it clear why it's a good idea
+> > to apply this patch to 2.6.32-longterm.
+>  
+> Agreed.  Willy, will you do this or should I send a new patch?
 
-My network is down. "yum install" won't work.
+I'll do it, don't worry. I'm adding this by hand to the patch :
 
+Original patch description :
+--
+    [IA64] Remove COMPAT_IA32 support
+    
+    This has been broken since May 2008 when Al Viro killed altroot support.
+    Since nobody has complained, it would appear that there are no users of
+    this code (A plausible theory since the main OSVs that support ia64 prefer
+    to use the IA32-EL software emulation).
+    
+    Signed-off-by: Tony Luck <tony.luck@intel.com>
+--
 
-> But this is a user interface issue, it was discussed with PackageKit people
-> etc. but it went nowhere.
->
-> Sorry but I cannot code the whole OS myself including all the Gnome UI
-> interfaces.
->
->>       (BTW: nothing prevents it from checking build ids and refusing
->>       to use it if they don't match.)
->
-> And if they do not match it will need to run the yum command above anyway.
-> So why to code two ways where the first one (by filename) works only sometimes
-> while the second way works always?
-
-My network is down. "yum install" won't work.
-
-
->> Does it follow from the above that filenames are *never* useful?
->
-> They can be sometimes useful but they are superseded by build-ids; with
-> build-ids they can be safely ignored.
-
-I just gave you an example where filename is useful.
--- 
-vda
+Thanks Ben,
+Willy
 
