@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab2CLA2R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Mar 2012 20:28:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37973 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754444Ab2CLA2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Mar 2012 20:28:13 -0400
-Date: Mon, 12 Mar 2012 09:28:06 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Minchan Kim <minchan@kernel.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, riel@redhat.com,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: Control page reclaim granularity
-Message-ID: <20120312002806.GA2436@barrios>
-References: <20120308093514.GA28856@barrios>
- <20120308165403.GA10005@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120308165403.GA10005@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754571Ab2CLAsR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Mar 2012 20:48:17 -0400
+Received: from 1wt.eu ([62.212.114.60]:63025 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754470Ab2CLAsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Mar 2012 20:48:11 -0400
+Message-Id: <20120312002045.940083732@1wt.eu>
+User-Agent: quilt/0.48-1
+Date: Mon, 12 Mar 2012 01:20:45 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [ 00/12] 2.6.32.59-longterm review
+Message-ID: <feb44625a10a45049eddf27890e95d54@local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 12:54:03AM +0800, Zheng Liu wrote:
-> Hi Minchan,
-> 
-> Sorry, I forgot to say that I don't subscribe linux-mm and linux-kernel
-> mailing list.  So please Cc me.
-> 
-> IMHO, maybe we should re-think about how does user use mmap(2).  I
-> describe the cases I known in our product system.  They can be
-> categorized into two cases.  One is mmaped all data files into memory
-> and sometime it uses write(2) to append some data, and another uses
-> mmap(2)/munmap(2) and read(2)/write(2) to manipulate the files.  In the
-> second case,  the application wants to keep mmaped page into memory and
-> let file pages to be reclaimed firstly.  So, IMO, when application uses
-> mmap(2) to manipulate files, it is possible to imply that it wants keep
-> these mmaped pages into memory and do not be reclaimed.  At least these
-> pages do not be reclaimed early than file pages.  I think that maybe we
-> can recover that routine and provide a sysctl parameter to let the user
-> to set this ratio between mmaped pages and file pages.
+This is the start of the longterm review cycle for the 2.6.32.59 release.
+All patches will be posted as a response to this one. If anyone has any
+issue with these being applied, please let me know. If anyone is a
+maintainer of the proper subsystem, and wants to add a Signed-off-by: line
+to the patch, please respond with it.
 
-I am not convinced why we should handle mapped page specially.
-Sometimem, someone may use mmap by reducing buffer copy compared to read system call.
-So I think we can't make sure mmaped pages are always win.
+Responses should be made within 72 hours. Anything received after that time
+might be too late.
 
-My suggestion is that it would be better to declare by user explicitly.
-I think we can implement it by madvise and fadvise's WILLNEED option.
-Current implementation is just readahead if there isn't a page in memory but I think
-we can promote from inactive to active if there is already a page in
-memory.
+Please note that the whole -rc patch is not provided anymore, only individual
+patches are provided so that their authors and subsystem maintainers can spot
+issues. If this is a problem for you, please report it so that we try to find
+a solution.
 
-It's more clear and it couldn't be affected by kernel page reclaim algorithm change
-like this.
+The diffstat is appended below.
 
-> 
-> Regards,
-> Zheng
+ arch/ia64/Kconfig             |   17 -----------------
+ arch/s390/Kconfig             |    3 +++
+ arch/s390/kernel/setup.c      |    1 +
+ block/bsg.c                   |    3 ++-
+ drivers/net/usb/usbnet.c      |    2 ++
+ drivers/watchdog/hpwdt.c      |    5 +++--
+ fs/binfmt_elf.c               |    2 +-
+ fs/cifs/dir.c                 |   20 ++++++++++++++++++--
+ fs/ecryptfs/crypto.c          |   21 +++++++++++++++++++++
+ fs/ecryptfs/ecryptfs_kernel.h |    2 ++
+ fs/ecryptfs/file.c            |    3 ++-
+ fs/ecryptfs/inode.c           |   18 +++---------------
+ include/linux/backing-dev.h   |    1 +
+ include/linux/regset.h        |   10 ++++++++--
+ mm/backing-dev.c              |   15 ++++++++++-----
+ mm/page-writeback.c           |    1 +
+ net/mac80211/rate.c           |    2 +-
+ 17 files changed, 79 insertions(+), 47 deletions(-)
+
+
