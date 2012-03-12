@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab2CLT3K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 15:29:10 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:51093 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755891Ab2CLT3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 15:29:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=utzjTBrt21Iupkyi+/8J9QslfzKnEqOS
-	BHjQp+rsue5gc3p16fDpEWyQ9BhDe8tY4zhh0pbMV+j+rI7DXKgmPmA8AotCokkM
-	t1oOZSegeHLxdDTZ1KJz0vqjWT53iJS3Y1sVOaEMTLxFhKW5IOeWSOdMLqxWUNNP
-	hUBP4tqZ1TU=
-From: Junio C Hamano <gitster@pobox.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Greg KH <greg@kroah.com>, Jonathan Nieder <jrnieder@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, git@vger.kernel.org,
-        Thomas Rast <trast@student.ethz.ch>
-Subject: Re: stripping [PATCH] without losing later tags from mailed patches
- (Re: [ 02/12] Remove COMPAT_IA32 support)
-References: <20120312002046.041448832@1wt.eu>
- <1331514446.3022.140.camel@deadeye> <20120312024948.GB4650@kroah.com>
- <20120312063027.GB8971@1wt.eu> <20120312064855.GB16820@burratino>
- <20120312085820.GA11569@1wt.eu> <20120312152004.GB9380@kroah.com>
- <7vfwddu60f.fsf@alter.siamese.dyndns.org> <20120312164812.GC12405@1wt.eu>
- <7v4nttu2gf.fsf@alter.siamese.dyndns.org> <20120312184549.GG12405@1wt.eu>
-Date: Mon, 12 Mar 2012 12:29:02 -0700
-In-Reply-To: <20120312184549.GG12405@1wt.eu> (Willy Tarreau's message of
- "Mon, 12 Mar 2012 19:45:49 +0100")
-Message-ID: <7vboo1sjnl.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1756756Ab2CLT3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 15:29:44 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:48315 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756662Ab2CLT3n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 15:29:43 -0400
+Date: Mon, 12 Mar 2012 12:29:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "Brown, Len" <len.brown@intel.com>, ShuoX Liu <shuox.liu@intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "H. Peter Anvin" <hpa@zytor.com>, andi.kleen@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH V3] cpuidle: Add a sysfs entry to disable
+ specific C state for debug purpose.
+Message-ID: <20120312192936.GC24873@kroah.com>
+References: <C6CB66606345BC4B80CBE69D22ABFBB10220E1@SHSMSX101.ccr.corp.intel.com>
+ <4F545A4E.8010801@linux.vnet.ibm.com>
+ <4F5466C4.2090808@intel.com>
+ <20120305101827.GA19408@khazad-dum.debian.net>
+ <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com>
+ <1330998885.1916.89.camel@ymzhang>
+ <20120306052236.GA19416@kroah.com>
+ <1331013078.1916.103.camel@ymzhang>
+ <20120306143935.GA23346@kroah.com>
+ <20120312181151.GE14020@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: A0DD4DAC-6C79-11E1-A2AE-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+In-Reply-To: <20120312181151.GE14020@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Willy Tarreau <w@1wt.eu> writes:
+On Mon, Mar 12, 2012 at 06:11:51PM +0000, Mark Brown wrote:
+> On Tue, Mar 06, 2012 at 06:39:35AM -0800, Greg KH wrote:
+> 
+> > Do you know of any tools using these files?  I have never heard of them,
+> > and I was told we should move these files years ago.  So I don't think
+> > there should be any api issues.
+> 
+> powertop uses them.
 
-> Rest assured that I don't feel comfortable on 1.7.9 either, that's a big
-> jump for me but I know that most often it works quite well :-)
+Ok, then we can't move them all.
 
-It being a big jump is not a problem I can solve, as it is up to you
-to deliberately stay behind until you decide to make a big jump.
+We should then just move the ones that have multiple lines, as I'm
+pretty sure powertop doesn't use them, right?
 
-I can indirectly solve it by not backporting as many fixes to the
-maintenance tracks, but I am too nice to be playing that nasty ;-).
+thanks,
+
+greg k-h
