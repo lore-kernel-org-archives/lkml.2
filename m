@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758203Ab2CLXxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 19:53:38 -0400
-Received: from mdf.yatescounty.org ([66.155.173.157]:51898 "EHLO
-	yatescounty.org" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756572Ab2CLXxf (ORCPT
+	id S1753016Ab2CLX6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 19:58:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40174 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab2CLX6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 19:53:35 -0400
-X-Greylist: delayed 10381 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Mar 2012 19:53:35 EDT
-X-Propel-Return-Path: <davvey01@dhl.com>
-Reply-To: <davveymoore1@yahoo.co.jp>
-From: "david Moore Williams" <davvey01@dhl.com>
-Subject: Notification!!!
-Date: Mon, 12 Mar 2012 17.58.37 +0100
+	Mon, 12 Mar 2012 19:58:03 -0400
+Date: Mon, 12 Mar 2012 18:57:52 -0500 (CDT)
+From: Manoj Iyer <manoj.iyer@canonical.com>
+X-X-Sender: manjo@lazy
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+cc: Manoj Iyer <manoj.iyer@canonical.com>,
+        Yves-Alexis Perez <corsac@debian.org>,
+        ibm-acpi-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [ibm-acpi-devel] [PATCH] thinkpad-acpi: recognize Lenovo as
+ version string in newer V-series BIOS
+In-Reply-To: <20120312230213.GA20690@khazad-dum.debian.net>
+Message-ID: <alpine.DEB.2.02.1203121852500.6421@lazy>
+References: <1331335944-4662-1-git-send-email-manoj.iyer@canonical.com> <1331335944-4662-2-git-send-email-manoj.iyer@canonical.com> <20120310042844.GA14972@khazad-dum.debian.net> <1331387907.2833.33.camel@scapa> <20120310160609.GA6254@khazad-dum.debian.net>
+ <alpine.DEB.2.02.1203121558340.3458@lazy> <20120312230213.GA20690@khazad-dum.debian.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <YCEXCSVRmyBWDrow00G00001b15@ycexcsvr.yatescounty.local>
-X-OriginalArrivalTime: 12 Mar 2012 16:58:37.0767 (UTC)
-	FILETIME=[5E56E570:01CD0071]
-To: undisclosed-recipients:;
-X-Propel-ID: 2G18rc3ciTHk
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+>>
+>> I am trying to get this patched module tested on other thinkpad and
+>> ideapads that we have to see if there are any regression or other
+>> issues. So, please let me know if this something worth supporting.
+>
+> Yes, it looks like it is worth supporting alright.
 
-How are you and your family? I guess you are doing great.
+ok great. So, as I said earlier I will try and get this patched module 
+tested on other ideapads to make sure we are not breaking existing 
+systems. Unfortunately the systems are with our Taiwan engineers and will 
+take a couple of days for them to get back with results.
 
-My apology for reaching you through this medium.
+>
+> --
+>  "One disk to rule them all, One disk to find them. One disk to bring
+>  them all and in the darkness grind them. In the Land of Redmond
+>  where the shadows lie." -- The Silicon Valley Tarot
+>  Henrique Holschuh
+>
+>
 
-My name is Mr. David Moore,and i am a registered staff of DHL.
-
-I have been working with the DHL as a special delivery agent Nation wide for eight years now.
-
-I have this little deal that i will disclose to you which i want us to handle, 
-
-but i will need to get your approval before we can proceed.
-
-it is 100% risk free, Fund involved is 50/50.
-
-Kindly get back to me ASAP with your information for identification as i will 
-
-forward you mine in my next mail.
-
-Once i receive your email,I will explain details of the offer to you to enable us 
-
-proceed without further delay.
-
-Name:
-
-Address:
-
-Phone number(Mobile)
-
-Thank you
-
-Mr. David Moore
-DHL special Agent
-davveymoore@yahoo.com
+--
+====================
+Manoj Iyer
+Ubuntu/Canonical
+Hardware Enablement
+====================
