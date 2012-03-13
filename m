@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340Ab2CMPcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 11:32:06 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:10150 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756094Ab2CMPcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 11:32:03 -0400
-X-IronPort-AV: E=Sophos;i="4.73,577,1325491200"; 
-   d="scan'208";a="633016435"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        "sfrench@samba.org" <sfrench@samba.org>,
-        "sage@newdream.net" <sage@newdream.net>,
-        "ericvh@gmail.com" <ericvh@gmail.com>
-Subject: Re: [PATCH 04/25] vfs: add i_op->atomic_open()
-Thread-Topic: [PATCH 04/25] vfs: add i_op->atomic_open()
-Thread-Index: AQHNASuUC7lUB3jyj06t8SMxFcM85ZZoz8+A
-Date: Tue, 13 Mar 2012 15:31:47 +0000
-Message-ID: <1331652707.3419.16.camel@lade.trondhjem.org>
-References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
-	 <1331155362-11132-5-git-send-email-miklos@szeredi.hu>
-	 <1331649485.3419.12.camel@lade.trondhjem.org>
-	 <87y5r47cyg.fsf@tucsk.pomaz.szeredi.hu>
-In-Reply-To: <87y5r47cyg.fsf@tucsk.pomaz.szeredi.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <07009DF35449064DBC896DB8964DF189@tahoe.netapp.com>
-MIME-Version: 1.0
+	id S1756590Ab2CMPc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 11:32:28 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38182 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab2CMPc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 11:32:26 -0400
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 1/2] page_alloc.c: kill add_from_early_node_map
+Date: Tue, 13 Mar 2012 11:32:00 -0400
+Message-Id: <1331652720-3054-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2DFWCvg022131
 
-On Tue, 2012-03-13 at 16:11 +0100, Miklos Szeredi wrote:
-> "Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
-> 
-> > On Wed, 2012-03-07 at 22:22 +0100, Miklos Szeredi wrote:
-> >> +
-> >> +	if ((nd->flags & LOOKUP_OPEN) && dir_inode->i_op->atomic_open) {
-> >> +		struct file *filp;
-> >> +
-> >> +		filp = atomic_open(nd, dentry, op, want_write, &create_error);
-> >> +		if (filp) {
-> >> +			dput(dentry);
-> >> +			return filp;
-> >> +		}
-> >> +		/* fall back to plain lookup */
-> >> +	}
-> >
-> > Would it be possible to allow the filesystem to return a new dentry even
-> > if it can't complete the actual open? That way we can return the actual
-> > symlink that caused the open to fail instead of looking it up separately
-> > (which may be subject to races).
-> 
-> This should be possible, but I'm reluctant to add more arguments to
-> ->atomic_open.  Other possibilites that come to mind:
-> 
->   return -ELOOKEDUP - caller should retry d_lookup and proceed with the result
-> 
->   call opendata_set_dentry(od, dentry) and return NULL - caller checks
->   opendata for non-NULL dentry and proceeds with that
+No one seems to be calling add_from_early_node_map anywhere from the
+kernel.
 
-Or convert the existing 'dentry' argument into a struct dentry **.
+Also, deleting this function decreases page_alloc.o file size.
 
-Then again, it might just be easier to convert the existing arguments
-into a single "open" structure.
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+---
+ include/linux/mm.h |    2 --
+ mm/page_alloc.c    |   12 ------------
+ 2 files changed, 0 insertions(+), 14 deletions(-)
 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 17b27cd..d8c4339 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1291,8 +1291,6 @@ extern void get_pfn_range_for_nid(unsigned int nid,
+ extern unsigned long find_min_pfn_with_active_regions(void);
+ extern void free_bootmem_with_active_regions(int nid,
+ 						unsigned long max_low_pfn);
+-int add_from_early_node_map(struct range *range, int az,
+-				   int nr_range, int nid);
+ extern void sparse_memory_present_with_active_regions(int nid);
+ 
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a13ded1..3171f4c 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3925,18 +3925,6 @@ void __init free_bootmem_with_active_regions(int nid, unsigned long max_low_pfn)
+ 	}
+ }
+ 
+-int __init add_from_early_node_map(struct range *range, int az,
+-				   int nr_range, int nid)
+-{
+-	unsigned long start_pfn, end_pfn;
+-	int i;
+-
+-	/* need to go over early_node_map to find out good range for node */
+-	for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL)
+-		nr_range = add_range(range, az, nr_range, start_pfn, end_pfn);
+-	return nr_range;
+-}
+-
+ /**
+  * sparse_memory_present_with_active_regions - Call memory_present for each active range
+  * @nid: The node to call memory_present for. If MAX_NUMNODES, all nodes will be used.
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+1.7.5.4
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
