@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab2CMPbG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 11:31:06 -0400
-Received: from edge20.ethz.ch ([82.130.99.26]:7803 "EHLO edge20.ethz.ch"
+	id S1756340Ab2CMPcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 11:32:06 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:10150 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751340Ab2CMPbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 11:31:04 -0400
-From: Thomas Rast <trast@student.ethz.ch>
-To: Jonathan Nieder <jrnieder@gmail.com>
-CC: Junio C Hamano <gitster@pobox.com>, Willy Tarreau <w@1wt.eu>,
-        Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        <git@vger.kernel.org>
-Subject: Re: [PATCH] git-am: error out when seeing -b/--binary
-References: <20120312064855.GB16820@burratino> <20120312085820.GA11569@1wt.eu>
-	<20120312152004.GB9380@kroah.com> <20120312152453.GB12405@1wt.eu>
-	<87aa3l4vqq.fsf@thomas.inf.ethz.ch> <20120312165703.GB18791@burratino>
-	<7vvcm9snko.fsf@alter.siamese.dyndns.org>
-	<87399dpk48.fsf@thomas.inf.ethz.ch> <20120312215607.GB11362@burratino>
-	<874ntto4t8.fsf@thomas.inf.ethz.ch> <20120312222227.GC11362@burratino>
-Date: Tue, 13 Mar 2012 16:31:00 +0100
-In-Reply-To: <20120312222227.GC11362@burratino> (Jonathan Nieder's message of
-	"Mon, 12 Mar 2012 17:22:27 -0500")
-Message-ID: <87fwdcldqj.fsf@thomas.inf.ethz.ch>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1756094Ab2CMPcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 11:32:03 -0400
+X-IronPort-AV: E=Sophos;i="4.73,577,1325491200"; 
+   d="scan'208";a="633016435"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hch@infradead.org" <hch@infradead.org>,
+        "sfrench@samba.org" <sfrench@samba.org>,
+        "sage@newdream.net" <sage@newdream.net>,
+        "ericvh@gmail.com" <ericvh@gmail.com>
+Subject: Re: [PATCH 04/25] vfs: add i_op->atomic_open()
+Thread-Topic: [PATCH 04/25] vfs: add i_op->atomic_open()
+Thread-Index: AQHNASuUC7lUB3jyj06t8SMxFcM85ZZoz8+A
+Date: Tue, 13 Mar 2012 15:31:47 +0000
+Message-ID: <1331652707.3419.16.camel@lade.trondhjem.org>
+References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
+	 <1331155362-11132-5-git-send-email-miklos@szeredi.hu>
+	 <1331649485.3419.12.camel@lade.trondhjem.org>
+	 <87y5r47cyg.fsf@tucsk.pomaz.szeredi.hu>
+In-Reply-To: <87y5r47cyg.fsf@tucsk.pomaz.szeredi.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <07009DF35449064DBC896DB8964DF189@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [129.132.153.233]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2DFWCvg022131
 
-Jonathan Nieder <jrnieder@gmail.com> writes:
+On Tue, 2012-03-13 at 16:11 +0100, Miklos Szeredi wrote:
+> "Myklebust, Trond" <Trond.Myklebust@netapp.com> writes:
+> 
+> > On Wed, 2012-03-07 at 22:22 +0100, Miklos Szeredi wrote:
+> >> +
+> >> +	if ((nd->flags & LOOKUP_OPEN) && dir_inode->i_op->atomic_open) {
+> >> +		struct file *filp;
+> >> +
+> >> +		filp = atomic_open(nd, dentry, op, want_write, &create_error);
+> >> +		if (filp) {
+> >> +			dput(dentry);
+> >> +			return filp;
+> >> +		}
+> >> +		/* fall back to plain lookup */
+> >> +	}
+> >
+> > Would it be possible to allow the filesystem to return a new dentry even
+> > if it can't complete the actual open? That way we can return the actual
+> > symlink that caused the open to fail instead of looking it up separately
+> > (which may be subject to races).
+> 
+> This should be possible, but I'm reluctant to add more arguments to
+> ->atomic_open.  Other possibilites that come to mind:
+> 
+>   return -ELOOKEDUP - caller should retry d_lookup and proceed with the result
+> 
+>   call opendata_set_dentry(od, dentry) and return NULL - caller checks
+>   opendata for non-NULL dentry and proceeds with that
 
-> 	--binary)
-> 		: ;;
-> 	-b)
-> 		gettextln >&2 "The -b option (a no-op short for --binary) was removed in 1.7.10."
-> 		die "$(gettext "Please adjust your scripts.")"
-> 		;;
->
-> Mentioning deprecation in 1.6.0 in the message left me uneasy because
-> we never actually did anything to actively deprecate the option; it
-> just has not been needed since 1.4.3 and we stopped advertising it in
-> the manpage in 1.6.0.  So I don't like the implication of "this is all
-> right because we told you so" --- on the contrary, it is "in practice
-> nobody seems to be using this option and we hope nobody will notice
-> when we take it away".
+Or convert the existing 'dentry' argument into a struct dentry **.
 
-Hmm, I had an alternate patch ready in the morning, but Junio beat us to
-it and applied the old one to master.
-
-I don't really think it matters enough to apply *another*, so I'll leave
-it at that.
+Then again, it might just be easier to convert the existing arguments
+into a single "open" structure.
 
 -- 
-Thomas Rast
-trast@{inf,student}.ethz.ch
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
