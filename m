@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758156Ab2CMVY6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 17:24:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40370 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878Ab2CMVY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 17:24:57 -0400
-Date: Tue, 13 Mar 2012 22:24:55 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: simon@mungewell.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michael Bauer <michael@m-bauer.org>,
-        Michal Maly <madcatxster@gmail.com>
-Subject: Re: [PATCH 1/2] HID: hid-lg4ff add support for G27 LEDs
-In-Reply-To: <ced1eb513cb4134634e89feab0db49ca.squirrel@mungewell.org>
-Message-ID: <alpine.LNX.2.00.1203132224410.18356@pobox.suse.cz>
-References: <ced1eb513cb4134634e89feab0db49ca.squirrel@mungewell.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1758481Ab2CMVZU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 17:25:20 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:32920 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758220Ab2CMVZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 17:25:17 -0400
+Message-ID: <4F5FBB3B.1090800@xenotime.net>
+Date: Tue, 13 Mar 2012 14:25:15 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -next] vgaarb.h: fix build warnings
+References: <20120130144102.8d202c7d8eccd503a86b3053@canb.auug.org.au> <4F26F2F8.30505@xenotime.net>
+In-Reply-To: <4F26F2F8.30505@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012, simon@mungewell.org wrote:
+On 01/30/2012 11:43 AM, Randy Dunlap wrote:
 
-> > Not really, it's rather simple to use and as Mark said, it's a proper
-> infrastructure to use here.
-> > We already have HID drivers which are using this -- you can look at
-> PicoLCD or Wiimote drivers and you'll see that it's indeed fairly
-> simple.
+This patch is still needed in linux-next of 20120313.
+
+
+> From: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> So _you_ say.... I'm getting an Oops when device attempts to init the LED
-> subsytem. :-(
-> --
-> Mar 13 12:54:56 ubuntu kernel: [  458.639674] Call Trace:
-> Mar 13 12:54:56 ubuntu kernel: [  458.641143]  [<c13498ed>] ?
-> device_create+0x2d/0x30
-> Mar 13 12:54:56 ubuntu kernel: [  458.641245]  [<c1439119>]
-> led_classdev_register+0x99/0xf0
-> Mar 13 12:54:56 ubuntu kernel: [  458.641306]  [<e0977311>]
-> lg4ff_init+0x2a1/0x570 [hid_logitech]
-> Mar 13 12:54:56 ubuntu kernel: [  458.641313]  [<e0975427>]
-> lg_probe+0x147/0x2c0 [hid_logitech]
-> --
+> Fix build warnings by providing a struct stub since no fields of
+> the struct are used:
+> 
+> include/linux/vgaarb.h:66:9: warning: 'struct pci_dev' declared inside parameter list
+> include/linux/vgaarb.h:66:9: warning: its scope is only this definition or declaration, which is probably not what you want
+> include/linux/vgaarb.h:99:34: warning: 'struct pci_dev' declared inside parameter list
+> include/linux/vgaarb.h:109:6: warning: 'struct pci_dev' declared inside parameter list
+> include/linux/vgaarb.h:121:8: warning: 'struct pci_dev' declared inside parameter list
+> include/linux/vgaarb.h:140:37: warning: 'struct pci_dev' declared inside parameter list
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Cc:	David Airlie <airlied@linux.ie>
+> Cc:	dri-devel@lists.freedesktop.org
+> ---
+>  include/linux/vgaarb.h |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> --- linux-next-20120130.orig/include/linux/vgaarb.h
+> +++ linux-next-20120130/include/linux/vgaarb.h
+> @@ -47,6 +47,8 @@
+>   */
+>  #define VGA_DEFAULT_DEVICE     (NULL)
+>  
+> +struct pci_dev;
+> +
+>  /* For use by clients */
+>  
+>  /**
+> 
 
-Could you please post the full oops?
+
 
 -- 
-Jiri Kosina
-SUSE Labs
+~Randy
