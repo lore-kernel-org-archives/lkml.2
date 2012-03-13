@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757756Ab2CMIYa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:24:30 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40505 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412Ab2CMIY2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:24:28 -0400
-Message-ID: <4F5F0436.4010106@monstr.eu>
-Date: Tue, 13 Mar 2012 09:24:22 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1756828Ab2CMI1R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:27:17 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37550 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752803Ab2CMI1O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 04:27:14 -0400
+Date: Tue, 13 Mar 2012 09:26:43 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avery Pennarun <apenwarr@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Fabio M. Di Nitto" <fdinitto@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Olaf Hering <olaf@aepfle.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 4/5] printk: use alloc_bootmem() instead of
+ memblock_alloc().
+Message-ID: <20120313082643.GA1888@elte.hu>
+References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
+ <1331617001-20906-5-git-send-email-apenwarr@gmail.com>
+ <CAE9FiQUakjaxE3fTm1w3SuuE-cAXAg2fePmEdwmjomAgp88Psg@mail.gmail.com>
+ <CAHqTa-0b1DBDNYzDQ6UHHCivF9S-H3zvZWH0KZ21OQ8gQq6WYg@mail.gmail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Jiri Kosina <trivial@kernel.org>, microblaze-uclinux@itee.uq.edu.au,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH trivial next 4/9] microblaze: Use vsprintf extention %pf
- with builtin_return_address
-References: <cover.1330454853.git.joe@perches.com> <a980a9c855113fd613ee768a503f5bd5299efafd.1330454853.git.joe@perches.com>
-In-Reply-To: <a980a9c855113fd613ee768a503f5bd5299efafd.1330454853.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHqTa-0b1DBDNYzDQ6UHHCivF9S-H3zvZWH0KZ21OQ8gQq6WYg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches wrote:
-> Emit the function name not the address when possible.
-> 
-> builtin_return_address() gives an address.  When building
-> a kernel with CONFIG_KALLSYMS, emit the actual function
-> name not the address.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  arch/microblaze/mm/pgtable.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Applied.
+* Avery Pennarun <apenwarr@gmail.com> wrote:
+
+> Hmm.  x86 uses nobootmem.c, [...]
+
+For new code, we use memblock_reserve(), memblock_alloc(), et al.
 
 Thanks,
-Michal
 
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+	Ingo
