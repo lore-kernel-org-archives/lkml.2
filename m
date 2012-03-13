@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759406Ab2CMClR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 22:41:17 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:41355 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759369Ab2CMClP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 22:41:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1331362837-10740-3-git-send-email-yinghai@kernel.org>
-References: <1331362837-10740-1-git-send-email-yinghai@kernel.org> <1331362837-10740-3-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 12 Mar 2012 20:40:53 -0600
-Message-ID: <CAErSpo5jCx5MdMOWgNQ+KVbn-6XDJSVvoO35J2DnpSMJyU-a4Q@mail.gmail.com>
-Subject: Re: [PATCH v2 02/37] PNPACPI: Fix device ref leaking in acpi_pnp_match
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@kernel.org, Len Brown <lenb@kernel.org>,
-        Adam Belay <abelay@mit.edu>, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1752703Ab2CMCmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 22:42:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751582Ab2CMCmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 22:42:39 -0400
+Message-ID: <1331606555.22608.6.camel@ul30vt>
+Subject: Re: [PATCH] PCI: Device specific reset function
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Tadeusz Struk <tadeusz.struk@intel.com>
+Cc: bhelgaas@google.com, jbarnes@virtuousgeek.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Date: Mon, 12 Mar 2012 20:42:35 -0600
+In-Reply-To: <4f5e2a73.YyO0Gu2m5JhSVsu6%tadeusz.struk@intel.com>
+References: <4f5e2a73.YyO0Gu2m5JhSVsu6%tadeusz.struk@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> During testing pci root bus removal, found some root bus bridge is not freed.
->
-> If booting with pnpacpi=off, those hostbridge could be freed without problem.
->
-> It turns out that some devices reference are not released during acpi_pnp_match.
->
-> That match should not hold one device ref during every calling.
->
-> Add put_device calling before returning.
-
-Changelog doesn't fit in 80 columns when using "git log".  I mentioned
-this before; please try it yourself.
-
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: stable@kernel.org
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: Adam Belay <abelay@mit.edu>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: linux-acpi@vger.kernel.org
+On Mon, 2012-03-12 at 16:55 +0000, Tadeusz Struk wrote:
+> I have a use case where I need to cleanup resource allocated for Virtual
+> Functions after a guest OS that used it crashed. This cleanup needs to
+> be done before the VF is being FLRed. The only possible way to do this
+> seems to be by using pci_dev_specific_reset() function.
+> This patch adds specific reset function to the pci_driver struct.
+> 
+> Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
 > ---
->  drivers/pnp/pnpacpi/core.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-> index b00c176..d21e8f5 100644
-> --- a/drivers/pnp/pnpacpi/core.c
-> +++ b/drivers/pnp/pnpacpi/core.c
-> @@ -321,9 +321,14 @@ static int __init acpi_pnp_match(struct device *dev, void *_pnp)
->  {
->        struct acpi_device *acpi = to_acpi_device(dev);
->        struct pnp_dev *pnp = _pnp;
-> +       struct device *physical_device;
+>  drivers/pci/quirks.c |    4 ++++
+>  include/linux/pci.h  |    1 +
+>  2 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 6476547..13d224b 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -3081,8 +3081,12 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
+>  
+>  int pci_dev_specific_reset(struct pci_dev *dev, int probe)
+>  {
+> +	struct pci_driver *drv = dev->driver;
+>  	const struct pci_dev_reset_methods *i;
+>  
+> +	if (drv && drv->reset)
+> +		return drv->reset(dev, probe);
 > +
-> +       physical_device = acpi_get_physical_device(acpi->handle);
-> +       if (physical_device)
-> +               put_device(physical_device);
->
->        /* true means it matched */
-> -       return !acpi_get_physical_device(acpi->handle)
-> +       return !physical_device
->            && compare_pnp_id(pnp->id, acpi_device_hid(acpi));
->  }
->
-> --
-> 1.7.7
->
+
+Isn't this exactly what the below code is for (pci_dev_reset_methods)?
+In the case of KVM device assignment, the device should be reset via
+this path if the guest crashes, but it may or may not be attached to
+pci-stub at the time.  I assume you're not adding a reset handler to
+pci-stub, so we'll pass through here and use FLR, violating the premise
+of the patch.  Thanks,
+
+Alex
+
+>  	for (i = pci_dev_reset_methods; i->reset; i++) {
+>  		if ((i->vendor == dev->vendor ||
+>  		     i->vendor == (u16)PCI_ANY_ID) &&
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index a16b1df..2ccd838 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -560,6 +560,7 @@ struct pci_driver {
+>  	int  (*resume_early) (struct pci_dev *dev);
+>  	int  (*resume) (struct pci_dev *dev);	                /* Device woken up */
+>  	void (*shutdown) (struct pci_dev *dev);
+> +	int  (*reset) (struct pci_dev *dev, int probe);
+>  	struct pci_error_handlers *err_handler;
+>  	struct device_driver	driver;
+>  	struct pci_dynids dynids;
+
+
+
