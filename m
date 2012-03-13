@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759169Ab2CMAoc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:44:32 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48383 "EHLO
+	id S1759151Ab2CMAob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:44:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48400 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964848Ab2CMAXz (ORCPT
+	with ESMTP id S964855Ab2CMAX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:23:55 -0400
+	Mon, 12 Mar 2012 20:23:57 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Takashi Iwai <tiwai@suse.de>,
+Cc: stable-review@kernel.org, Risto Suominen <Risto.Suominen@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 136/196] ALSA: powermac - Fix obsoleted machine_is_compatible()
-Date: Mon, 12 Mar 2012 20:20:49 -0400
-Message-Id: <1331598109-31424-91-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 135/196] ALSA: powermac - Lineout detection on G4 DA
+Date: Mon, 12 Mar 2012 20:20:48 -0400
+Message-Id: <1331598109-31424-90-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,36 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Risto Suominen <Risto.Suominen@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 68c7ccb8f85801655aa681391dc0ee037a2b66d4 upstream.
+commit b6d7335001f331f2d295ff15d67e385615ceff81 upstream.
 
-machine_is_compatible() was renamed to of_machine_is_compatible().
+Lineout (Pro Speaker) detection on PowerMac G4 Digital Audio (Tumbler).
 
+Signed-off-by: Risto Suominen <Risto.Suominen@gmail.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/ppc/tumbler.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/ppc/tumbler.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/sound/ppc/tumbler.c b/sound/ppc/tumbler.c
-index 696280c..31efa21 100644
+index 3b7471c..696280c 100644
 --- a/sound/ppc/tumbler.c
 +++ b/sound/ppc/tumbler.c
-@@ -47,7 +47,7 @@
- #define DBG(fmt...)
- #endif
+@@ -1137,7 +1137,8 @@ static long tumbler_find_device(const char *device, const char *platform,
+ 		gp->inactive_val = (*base) ? 0x4 : 0x5;
+ 	} else {
+ 		const u32 *prop = NULL;
+-		gp->active_state = IS_G4DA && !strcmp(device, "keywest-gpio15");
++		gp->active_state = IS_G4DA
++				&& !strncmp(device, "keywest-gpio1", 13);
+ 		gp->active_val = 0x4;
+ 		gp->inactive_val = 0x5;
+ 		/* Here are some crude hacks to extract the GPIO polarity and
+@@ -1315,6 +1316,9 @@ static int __devinit tumbler_init(struct snd_pmac *chip)
+  	if (irq <= NO_IRQ)
+ 		irq = tumbler_find_device("line-output-detect",
+ 					  NULL, &mix->line_detect, 1);
++	if (IS_G4DA && irq <= NO_IRQ)
++		irq = tumbler_find_device("keywest-gpio16",
++					  NULL, &mix->line_detect, 1);
+ 	mix->lineout_irq = irq;
  
--#define IS_G4DA (machine_is_compatible("PowerMac3,4"))
-+#define IS_G4DA (of_machine_is_compatible("PowerMac3,4"))
- 
- /* i2c address for tumbler */
- #define TAS_I2C_ADDR	0x34
+ 	tumbler_reset_audio(chip);
 -- 
 1.7.9.3
 
