@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030284Ab2CMJ5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 05:57:41 -0400
-Received: from damascus.uab.es ([158.109.168.135]:62614 "EHLO damascus.uab.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965083Ab2CMJ5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 05:57:39 -0400
-Date: Tue, 13 Mar 2012 11:58:05 +0100
-From: Davidlohr Bueso <dave@gnu.org>
-Subject: Re: [PATCH] KVM: VMX: add tracepoint for vpids
-In-reply-to: <4F5DD140.7040605@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Message-id: <1331636285.12394.4.camel@offworld>
-Organization: GNU
-MIME-version: 1.0
-X-Mailer: Evolution 3.0.3-2
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-X-Spam-Tests: ALL_TRUSTED=-1
-X-imss-version: 2.054
-X-imss-result: Passed
-X-imss-scanInfo: M:P L:N SM:0
-X-imss-tmaseResult: TT:0 TS:0.0000 TC:00 TRN:0 TV:6.5.1024(18770.005)
-X-imss-scores: Clean:99.90000 C:2 M:3 S:5 R:5
-X-imss-settings: Baseline:3 C:3 M:3 S:3 R:3 (0.5000 0.5000)
-References: <1331481472.17316.1.camel@offbook> <4F5DB245.9060205@redhat.com>
- <1331551781.1334.3.camel@offworld> <4F5DD140.7040605@redhat.com>
+	id S1760351Ab2CMKAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:00:30 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50377 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760197Ab2CMKA2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 06:00:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMHCuPXSCZjiyW28aPPjO4zF0vgabZUrqtUK5nMXLwNzSWUjQA@mail.gmail.com>
+References: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
+	<1329905650-30161-3-git-send-email-amit.kachhap@linaro.org>
+	<CAMHCuPUOnftKYaGjEpA9rZFc1yjH3U-EkEEUWqcFapSKROTopQ@mail.gmail.com>
+	<CAK44p23nZ0kgdieasMkChV8B51Rjt=KrmypN+ksV+nym_e0Cqw@mail.gmail.com>
+	<CAMHCuPXSCZjiyW28aPPjO4zF0vgabZUrqtUK5nMXLwNzSWUjQA@mail.gmail.com>
+Date: Tue, 13 Mar 2012 12:00:28 +0200
+Message-ID: <CAP245DUqz-N3nG+bc-3b=4YgYk3LMJTWk_wB7Db1ZBm0fBQOSQ@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 2/4] thermal: Add generic cpufreq cooling implementation
+From: Amit Kucheria <amit.kucheria@linaro.org>
+To: Sundar <sunder.svit@gmail.com>
+Cc: Amit Kachhap <amit.kachhap@linaro.org>, len.brown@intel.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        mark.gross@intel.com, linux-pm@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 12:34 +0200, Avi Kivity wrote:
-> On 03/12/2012 01:29 PM, Davidlohr Bueso wrote:
-> > On Mon, 2012-03-12 at 10:22 +0200, Avi Kivity wrote:
-> > > On 03/11/2012 05:57 PM, Davidlohr Bueso wrote:
-> > > > From: Davidlohr Bueso <dave@gnu.org>
-> > > >
-> > > > Add a new tracepoint for vpid allocation and freeing associated to all vCPUs.
-> > > >
-> > > 
-> > > Why?
-> > > 
-> >
-> > We have been using this tracepoint for some time now to help debug vpids
-> > and simulating tagged TLB behavior and performance. This gets to be non
-> > trivial when working with large amounts of guests and vCPUs.
-> 
-> I don't follow.  Can you give an example of when this tracepoint would
-> be useful?
-> 
+Sundar,
 
-For example when running lots of guests with many different hardware
-configurations (ept on/off, vpid on/off) I trace what vcpu has or
-doesn't have a corresponding vpid associated. Perhaps this is more
-useful for experimental things than actual KVM development.
+On Tue, Mar 13, 2012 at 11:45 AM, Sundar <sunder.svit@gmail.com> wrote:
+> Hi Amit,
+>
+> Thanks for the replies. One more query
+>
+> On Tue, Mar 13, 2012 at 10:37 AM, Amit Kachhap <amit.kachhap@linaro.org> wrote:
+>
+>>> "Different cpu related cooling devices": Do you mean cooling devices
+>>> for different CPUs (num_cpus) or are you referring to different
+>>> customers aka consumer drivers who could use this framework and impose
+>>> the cooling.
+>> Correct but the consumer driver only has to use the other
+>> thermal-sys.c functions. Only register cpu cooling devices is
+>> implemented in this work.
+>
+> Am i right in noting that this framework then doesnt handle other
+> devices for cooling like Graphics, LCD etc?
 
+At the moment it doesn't. But there was some discussion around
+creating something that will work with devfreq. This would allow
+peripheral drivers to be plugged in as well. Amit is investigating
+that at present.
 
-
+/Amit
