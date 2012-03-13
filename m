@@ -1,495 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759926Ab2CMHbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 03:31:16 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:63422 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755647Ab2CMHbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 03:31:11 -0400
-Date: Tue, 13 Mar 2012 08:30:49 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Ingo Molnar <mingo@elte.hu>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [PATCH V4 3/3] x86/PCI: initial support for sta2x11 I/O hub
-Message-ID: <314ded3b8511dd75e9e53e3db90a692784c011cd.1331622735.git.rubini@gnudd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-References: <cover.1331622735.git.rubini@gnudd.com>
-In-Reply-To: <cover.1331622735.git.rubini@gnudd.com>
+	id S1759674Ab2CMHgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 03:36:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33468 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752595Ab2CMHgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 03:36:12 -0400
+From: santosh nayak <santoshprasadnayak@gmail.com>
+To: sony.chacko@qlogic.com
+Cc: rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Santosh Nayak <santoshprasadnayak@gmail.com>
+Subject: [PATCH 3/3 v3] netxen: qlogic ethernet : Fix endian bug.
+Date: Tue, 13 Mar 2012 13:04:52 +0530
+Message-Id: <1331624093-12598-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "ConneXt" sta2x11 I/O Hub is a bridge from PCIe to AMBA, and is
-used as main chipset in some Atom boards.  The set of peripherals it
-exports live in an AMBA bus internal to the chip, so a custom
-remapping of addresses is needed. This is implemented by fixup calls
-for the PCI deivices, based on CONFIG_X86_DEV_DMA_OPS and
-CONFIG_X86_DMA_REMAP .
+From: Santosh Nayak <santoshprasadnayak@gmail.com>
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-Cc: Alan Cox <alan@linux.intel.com>
+Change the datatype of "ip_addr" to __be32 as 'ip' should be in
+big endian format.
+
+Adapter needs "ip address" in big endian format stored at lower 32bit
+of req.word[1]. netxen_config_ipaddr() now receives 'ip' in big endian
+format. To satisfy adapter's need, use memcpy() to copy byte by byte
+of 'ip' into lower 32bit of req.word[1].
+
+Mac address and serial number of adapter need to be in little endian format.
+Change the data type of the related  variables to __le32 / __le64 or cast it
+explicitly to __le32 / __le64 depending upon the requirement.
+
+Signed-off-by: Santosh Nayak <santoshprasadnayak@gmail.com>
 ---
- arch/x86/Kconfig             |   28 +++-
- arch/x86/pci/Makefile        |    2 +
- arch/x86/pci/sta2x11-fixup.c |  367 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 392 insertions(+), 5 deletions(-)
- create mode 100644 arch/x86/pci/sta2x11-fixup.c
+ drivers/net/ethernet/qlogic/netxen/netxen_nic.h    |    4 ++--
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |   10 +++++-----
+ .../net/ethernet/qlogic/netxen/netxen_nic_main.c   |    4 ++--
+ 3 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 9f6255b..ab1f411 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -331,6 +331,7 @@ config X86_EXTENDED_PLATFORM
- 		NUMAQ (IBM/Sequent)
- 		RDC R-321x SoC
- 		SGI 320/540 (Visual Workstation)
-+		STA2X11-based (e.g. Northville)
- 		Summit/EXA (IBM x440)
- 		Unisys ES7000 IA32 series
- 		Moorestown MID devices
-@@ -463,10 +464,10 @@ config X86_32_NON_STANDARD
- 	depends on X86_32 && SMP
- 	depends on X86_EXTENDED_PLATFORM
- 	---help---
--	  This option compiles in the NUMAQ, Summit, bigsmp, ES7000, default
--	  subarchitectures.  It is intended for a generic binary kernel.
--	  if you select them all, kernel will probe it one by one. and will
--	  fallback to default.
-+	  This option compiles in the NUMAQ, Summit, bigsmp, ES7000, 
-+	  STA2X11, default subarchitectures.  It is intended for a generic
-+	  binary kernel. If you select them all, kernel will probe it
-+	  one by one and will fallback to default.
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
+index 2eeac32..b5de8a7 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic.h
+@@ -954,7 +954,7 @@ typedef struct nx_mac_list_s {
  
- # Alphabetically sorted list of Non standard 32 bit platforms
+ struct nx_vlan_ip_list {
+ 	struct list_head list;
+-	u32 ip_addr;
++	__be32 ip_addr;
+ };
  
-@@ -506,6 +507,22 @@ config X86_VISWS
- 	  A kernel compiled for the Visual Workstation will run on general
- 	  PCs as well. See <file:Documentation/sgi-visws.txt> for details.
+ /*
+@@ -1780,7 +1780,7 @@ int netxen_process_rcv_ring(struct nx_host_sds_ring *sds_ring, int max);
+ void netxen_p3_free_mac_list(struct netxen_adapter *adapter);
+ int netxen_config_intr_coalesce(struct netxen_adapter *adapter);
+ int netxen_config_rss(struct netxen_adapter *adapter, int enable);
+-int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int cmd);
++int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip, int cmd);
+ int netxen_linkevent_request(struct netxen_adapter *adapter, int enable);
+ void netxen_advert_link_change(struct netxen_adapter *adapter, int linkup);
+ void netxen_pci_camqm_read_2M(struct netxen_adapter *, u64, u64 *);
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+index 6f37470..ef752ca 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
+@@ -909,7 +909,7 @@ int netxen_config_rss(struct netxen_adapter *adapter, int enable)
+ 	return rv;
+ }
  
-+config STA2X11
-+	bool "STA2X11 Companion Chip Support"
-+	depends on X86_32_NON_STANDARD && PCI
-+	select X86_DEV_DMA_OPS
-+	select X86_DMA_REMAP
-+	select SWIOTLB
-+	select MFD_STA2X11
-+	select ARCH_REQUIRE_GPIOLIB
-+	default n
-+	---help---
-+	  This adds support for boards based on the STA2X11 IO-Hub,
-+	  a.k.a. "ConneXt". The chip is used in place of the standard
-+	  PC chipset, so all "standard" peripherals are missing. If this
-+	  option is selected the kernel will still be able to boot on
-+	  standard PC machines.
-+
- config X86_SUMMIT
- 	bool "Summit/EXA (IBM x440)"
- 	depends on X86_32_NON_STANDARD
-@@ -2251,10 +2268,11 @@ config HAVE_TEXT_POKE_SMP
+-int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int cmd)
++int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip, int cmd)
+ {
+ 	nx_nic_req_t req;
+ 	u64 word;
+@@ -922,7 +922,7 @@ int netxen_config_ipaddr(struct netxen_adapter *adapter, u32 ip, int cmd)
+ 	req.req_hdr = cpu_to_le64(word);
  
- config X86_DEV_DMA_OPS
- 	bool
--	depends on X86_64
-+	depends on X86_64 || STA2X11
+ 	req.words[0] = cpu_to_le64(cmd);
+-	req.words[1] = cpu_to_le64(ip);
++	memcpy(&req.words[1], &ip, sizeof(u32));
  
- config X86_DMA_REMAP
- 	bool
-+	depends on STA2X11
+ 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
+ 	if (rv != 0) {
+@@ -1050,7 +1050,7 @@ int netxen_get_flash_mac_addr(struct netxen_adapter *adapter, u64 *mac)
+ 	if (netxen_get_flash_block(adapter, offset, sizeof(u64), pmac) == -1)
+ 		return -1;
  
- source "net/Kconfig"
+-	if (*mac == cpu_to_le64(~0ULL)) {
++	if (*mac == ~0ULL)) {
  
-diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
-index e76e18c..3af5a1e 100644
---- a/arch/x86/pci/Makefile
-+++ b/arch/x86/pci/Makefile
-@@ -11,6 +11,8 @@ obj-$(CONFIG_X86_INTEL_CE)      += ce4100.o
- obj-$(CONFIG_ACPI)		+= acpi.o
- obj-y				+= legacy.o irq.o
+ 		offset = NX_OLD_MAC_ADDR_OFFSET +
+ 			(adapter->portnum * sizeof(u64));
+@@ -1059,7 +1059,7 @@ int netxen_get_flash_mac_addr(struct netxen_adapter *adapter, u64 *mac)
+ 					offset, sizeof(u64), pmac) == -1)
+ 			return -1;
  
-+obj-$(CONFIG_STA2X11)           += sta2x11-fixup.o
-+
- obj-$(CONFIG_X86_VISWS)		+= visws.o
+-		if (*mac == cpu_to_le64(~0ULL))
++		if (*mac == ~0ULL)
+ 			return -1;
+ 	}
+ 	return 0;
+@@ -2155,7 +2155,7 @@ static u32 netxen_md_rd_crb(struct netxen_adapter *adapter,
+ static u32
+ netxen_md_rdrom(struct netxen_adapter *adapter,
+ 			struct netxen_minidump_entry_rdrom
+-				*romEntry, u32 *data_buff)
++				*romEntry, __le32 *data_buff)
+ {
+ 	int i, count = 0;
+ 	u32 size, lck_val;
+diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+index 7648995..65a718f 100644
+--- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
++++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_main.c
+@@ -805,12 +805,12 @@ netxen_check_options(struct netxen_adapter *adapter)
+ 	char brd_name[NETXEN_MAX_SHORT_NAME];
+ 	char serial_num[32];
+ 	int i, offset, val, err;
+-	int *ptr32;
++	__le32 *ptr32;
+ 	struct pci_dev *pdev = adapter->pdev;
  
- obj-$(CONFIG_X86_NUMAQ)		+= numaq_32.o
-diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
-new file mode 100644
-index 0000000..5aaa434
---- /dev/null
-+++ b/arch/x86/pci/sta2x11-fixup.c
-@@ -0,0 +1,367 @@
-+/*
-+ * arch/x86/pci/sta2x11-fixup.c
-+ * glue code for lib/swiotlb.c and DMA translation between STA2x11
-+ * AMBA memory mapping and the X86 memory mapping
-+ *
-+ * ST Microelectronics ConneXt (STA2X11/STA2X10)
-+ *
-+ * Copyright (c) 2010-2011 Wind River Systems, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-+ * See the GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ *
-+ */
-+
-+#include <linux/pci.h>
-+#include <linux/pci_ids.h>
-+#include <linux/export.h>
-+#include <linux/list.h>
-+
-+#define STA2X11_SWIOTLB_SIZE (4*1024*1024)
-+extern int swiotlb_late_init_with_default_size(size_t default_size);
-+
-+/*
-+ * We build a list of bus numbers that are under the ConneXt. The
-+ * main bridge hosts 4 busses, which are the 4 endpoints, in order.
-+ */
-+#define STA2X11_NR_EP		4	/* 0..3 included */
-+#define STA2X11_NR_FUNCS	8	/* 0..7 included */
-+#define STA2X11_AMBA_SIZE	(512 << 20)
-+
-+struct sta2x11_ahb_regs { /* saved during suspend */
-+	u32 base, pexlbase, pexhbase, crw;
-+};
-+
-+struct sta2x11_mapping {
-+	u32 amba_base;
-+	int is_suspended;
-+	struct sta2x11_ahb_regs regs[STA2X11_NR_FUNCS];
-+};
-+
-+struct sta2x11_instance {
-+	struct list_head list;
-+	int bus0;
-+	struct sta2x11_mapping map[STA2X11_NR_EP];
-+};
-+
-+static LIST_HEAD(sta2x11_instance_list);
-+
-+/* At probe time, record new instances of this bridge (likely one only) */
-+static void sta2x11_new_instance(struct pci_dev *pdev)
-+{
-+	struct sta2x11_instance *instance;
-+
-+	instance = kzalloc(sizeof(*instance), GFP_ATOMIC);
-+	if (!instance)
-+		return;
-+	/* This has a subordinate bridge, with 4 more-subordinate ones */
-+	instance->bus0 = pdev->subordinate->number + 1;
-+
-+	if (list_empty(&sta2x11_instance_list)) {
-+		int size = STA2X11_SWIOTLB_SIZE;
-+		/* First instance: register your own swiotlb area */
-+		dev_info(&pdev->dev, "Using SWIOTLB (size %i)\n", size);
-+		if (swiotlb_late_init_with_default_size(size))
-+			dev_emerg(&pdev->dev, "init swiotlb failed\n");
-+	}
-+	list_add(&instance->list, &sta2x11_instance_list);
-+}
-+DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_STMICRO, 0xcc17, sta2x11_new_instance);
-+
-+/*
-+ * Utility functions used in this file from below
-+ */
-+static struct sta2x11_instance *sta2x11_pdev_to_instance(struct pci_dev *pdev)
-+{
-+	struct sta2x11_instance *instance;
-+	int ep;
-+
-+	list_for_each_entry(instance, &sta2x11_instance_list, list) {
-+		ep = pdev->bus->number - instance->bus0;
-+		if (ep >= 0 && ep < STA2X11_NR_EP)
-+			return instance;
-+	}
-+	return NULL;
-+}
-+
-+static int sta2x11_pdev_to_ep(struct pci_dev *pdev)
-+{
-+	struct sta2x11_instance *instance;
-+
-+	instance = sta2x11_pdev_to_instance(pdev);
-+	if (!instance)
-+		return -1;
-+
-+	return pdev->bus->number - instance->bus0;
-+}
-+
-+static struct sta2x11_mapping *sta2x11_pdev_to_mapping(struct pci_dev *pdev)
-+{
-+	struct sta2x11_instance *instance;
-+	int ep;
-+
-+	instance = sta2x11_pdev_to_instance(pdev);
-+	if (!instance)
-+		return NULL;
-+	ep = sta2x11_pdev_to_ep(pdev);
-+	return instance->map + ep;
-+}
-+
-+/* This is exported, as some devices need to access the MFD registers */
-+struct sta2x11_instance *sta2x11_get_instance(struct pci_dev *pdev)
-+{
-+	return sta2x11_pdev_to_instance(pdev);
-+}
-+EXPORT_SYMBOL(sta2x11_get_instance);
-+
-+
-+/**
-+ * p2a - Translate physical address to STA2x11 AMBA address,
-+ *       used for DMA transfers to STA2x11
-+ * @p: Physical address
-+ * @pdev: PCI device (must be hosted within the connext)
-+ */
-+static dma_addr_t p2a(dma_addr_t p, struct pci_dev *pdev)
-+{
-+	struct sta2x11_mapping *map;
-+	dma_addr_t a;
-+
-+	map = sta2x11_pdev_to_mapping(pdev);
-+	a = p + map->amba_base;
-+	return a;
-+}
-+
-+/**
-+ * a2p - Translate STA2x11 AMBA address to physical address
-+ *       used for DMA transfers from STA2x11
-+ * @a: STA2x11 AMBA address
-+ * @pdev: PCI device (must be hosted within the connext)
-+ */
-+static dma_addr_t a2p(dma_addr_t a, struct pci_dev *pdev)
-+{
-+	struct sta2x11_mapping *map;
-+	dma_addr_t p;
-+
-+	map = sta2x11_pdev_to_mapping(pdev);
-+	p = a - map->amba_base;
-+	return p;
-+}
-+
-+/**
-+ * sta2x11_swiotlb_alloc_coherent - Allocate swiotlb bounce buffers
-+ *     returns virtual address. This is the only "special" function here.
-+ * @dev: PCI device
-+ * @size: Size of the buffer
-+ * @dma_handle: DMA address
-+ * @flags: memory flags
-+ */
-+static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
-+					    size_t size,
-+					    dma_addr_t *dma_handle,
-+					    gfp_t flags,
-+					    struct dma_attrs *attrs)
-+{
-+	void *vaddr;
-+
-+	vaddr = dma_generic_alloc_coherent(dev, size, dma_handle, flags, attrs);
-+	if (!vaddr)
-+		vaddr = swiotlb_alloc_coherent(dev, size, dma_handle, flags,
-+					       attrs);
-+	*dma_handle = p2a(*dma_handle, to_pci_dev(dev));
-+	return vaddr;
-+}
-+
-+/* We have our own dma_ops: the same as swiotlb but from alloc (above) */
-+static struct dma_map_ops sta2x11_dma_ops = {
-+	.alloc = sta2x11_swiotlb_alloc_coherent,
-+	.free = swiotlb_free_coherent,
-+	.map_page = swiotlb_map_page,
-+	.unmap_page = swiotlb_unmap_page,
-+	.map_sg = swiotlb_map_sg_attrs,
-+	.unmap_sg = swiotlb_unmap_sg_attrs,
-+	.sync_single_for_cpu = swiotlb_sync_single_for_cpu,
-+	.sync_single_for_device = swiotlb_sync_single_for_device,
-+	.sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
-+	.sync_sg_for_device = swiotlb_sync_sg_for_device,
-+	.mapping_error = swiotlb_dma_mapping_error,
-+	.dma_supported = NULL, /* FIXME: we should use this instead! */
-+};
-+
-+/* At setup time, we use our own ops if the device is a ConneXt one */
-+static void sta2x11_setup_pdev(struct pci_dev *pdev)
-+{
-+	struct sta2x11_instance *instance = sta2x11_pdev_to_instance(pdev);
-+
-+	if (!instance) /* either a sta2x11 bridge or another ST device */
-+		return;
-+	pci_set_consistent_dma_mask(pdev, STA2X11_AMBA_SIZE - 1);
-+	pci_set_dma_mask(pdev, STA2X11_AMBA_SIZE - 1);
-+	pdev->dev.archdata.dma_ops = &sta2x11_dma_ops;
-+
-+	/* We must enable all devices as master, for audio DMA to work */
-+	pci_set_master(pdev);
-+}
-+DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_STMICRO, PCI_ANY_ID, sta2x11_setup_pdev);
-+
-+/*
-+ * The following three functions are exported (used in swiotlb: FIXME)
-+ */
-+/**
-+ * dma_capable - Check if device can manage DMA transfers (FIXME: kill it)
-+ * @dev: device for a PCI device
-+ * @addr: DMA address
-+ * @size: DMA size
-+ */
-+bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
-+{
-+	struct sta2x11_mapping *map;
-+
-+	if (dev->archdata.dma_ops != &sta2x11_dma_ops) {
-+		if (!dev->dma_mask)
-+			return false;
-+		return addr + size - 1 <= *dev->dma_mask;
-+	}
-+
-+	map = sta2x11_pdev_to_mapping(to_pci_dev(dev));
-+
-+	if (!map || (addr < map->amba_base))
-+		return false;
-+	if (addr + size >= map->amba_base + STA2X11_AMBA_SIZE) {
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
-+/**
-+ * phys_to_dma - Return the DMA AMBA address used for this STA2x11 device
-+ * @dev: device for a PCI device
-+ * @paddr: Physical address
-+ */
-+dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-+{
-+	if (dev->archdata.dma_ops != &sta2x11_dma_ops)
-+		return paddr;
-+	return p2a(paddr, to_pci_dev(dev));
-+}
-+
-+/**
-+ * dma_to_phys - Return the physical address used for this STA2x11 DMA address
-+ * @dev: device for a PCI device
-+ * @daddr: STA2x11 AMBA DMA address
-+ */
-+phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
-+{
-+	if (dev->archdata.dma_ops != &sta2x11_dma_ops)
-+		return daddr;
-+	return a2p(daddr, to_pci_dev(dev));
-+}
-+
-+
-+/*
-+ * At boot we must set up the mappings for the pcie-to-amba bridge.
-+ * It involves device access, and the same happens at suspend/resume time
-+ */
-+
-+#define AHB_MAPB		0xCA4
-+#define AHB_CRW(i)		(AHB_MAPB + 0  + (i) * 0x10)
-+#define AHB_CRW_SZMASK			0xfffffc00UL
-+#define AHB_CRW_ENABLE			(1 << 0)
-+#define AHB_CRW_WTYPE_MEM		(2 << 1)
-+#define AHB_CRW_ROE			(1UL << 3)	/* Relax Order Ena */
-+#define AHB_CRW_NSE			(1UL << 4)	/* No Snoop Enable */
-+#define AHB_BASE(i)		(AHB_MAPB + 4  + (i) * 0x10)
-+#define AHB_PEXLBASE(i)		(AHB_MAPB + 8  + (i) * 0x10)
-+#define AHB_PEXHBASE(i)		(AHB_MAPB + 12 + (i) * 0x10)
-+
-+/* At probe time, enable mapping for each endpoint, using the pdev */
-+static void sta2x11_map_ep(struct pci_dev *pdev)
-+{
-+	struct sta2x11_mapping *map = sta2x11_pdev_to_mapping(pdev);
-+	int i;
-+
-+	if (!map)
-+		return;
-+	pci_read_config_dword(pdev, AHB_BASE(0), &map->amba_base);
-+
-+	/* Configure AHB mapping */
-+	pci_write_config_dword(pdev, AHB_PEXLBASE(0), 0);
-+	pci_write_config_dword(pdev, AHB_PEXHBASE(0), 0);
-+	pci_write_config_dword(pdev, AHB_CRW(0), STA2X11_AMBA_SIZE |
-+			       AHB_CRW_WTYPE_MEM | AHB_CRW_ENABLE);
-+
-+	/* Disable all the other windows */
-+	for (i = 1; i < STA2X11_NR_FUNCS; i++)
-+		pci_write_config_dword(pdev, AHB_CRW(i), 0);
-+
-+	dev_info(&pdev->dev,
-+		 "sta2x11: Map EP %i: AMBA address %#8x-%#8x\n",
-+		 sta2x11_pdev_to_ep(pdev),  map->amba_base,
-+		 map->amba_base + STA2X11_AMBA_SIZE - 1);
-+}
-+DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_STMICRO, PCI_ANY_ID, sta2x11_map_ep);
-+
-+#ifdef CONFIG_PM /* Some register values must be saved and restored */
-+
-+static void suspend_mapping(struct pci_dev *pdev)
-+{
-+	struct sta2x11_mapping *map = sta2x11_pdev_to_mapping(pdev);
-+	int i;
-+
-+	if (!map)
-+		return;
-+
-+	if (map->is_suspended)
-+		return;
-+	map->is_suspended = 1;
-+
-+	/* Save all window configs */
-+	for (i = 0; i < STA2X11_NR_FUNCS; i++) {
-+		struct sta2x11_ahb_regs *regs = map->regs + i;
-+
-+		pci_read_config_dword(pdev, AHB_BASE(i), &regs->base);
-+		pci_read_config_dword(pdev, AHB_PEXLBASE(i), &regs->pexlbase);
-+		pci_read_config_dword(pdev, AHB_PEXHBASE(i), &regs->pexhbase);
-+		pci_read_config_dword(pdev, AHB_CRW(i), &regs->crw);
-+	}
-+}
-+DECLARE_PCI_FIXUP_SUSPEND(PCI_VENDOR_ID_STMICRO, PCI_ANY_ID, suspend_mapping);
-+
-+static void resume_mapping(struct pci_dev *pdev)
-+{
-+	struct sta2x11_mapping *map = sta2x11_pdev_to_mapping(pdev);
-+	int i;
-+
-+	if (!map)
-+		return;
-+
-+
-+	if (!map->is_suspended)
-+		goto out;
-+	map->is_suspended = 0;
-+
-+	/* Restore all window configs */
-+	for (i = 0; i < STA2X11_NR_FUNCS; i++) {
-+		struct sta2x11_ahb_regs *regs = map->regs + i;
-+
-+		pci_write_config_dword(pdev, AHB_BASE(i), regs->base);
-+		pci_write_config_dword(pdev, AHB_PEXLBASE(i), regs->pexlbase);
-+		pci_write_config_dword(pdev, AHB_PEXHBASE(i), regs->pexhbase);
-+		pci_write_config_dword(pdev, AHB_CRW(i), regs->crw);
-+	}
-+out:
-+	pci_set_master(pdev); /* Like at boot, enable master on all devices */
-+}
-+DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_STMICRO, PCI_ANY_ID, resume_mapping);
-+
-+#endif /* CONFIG_PM */
+ 	adapter->driver_mismatch = 0;
+ 
+-	ptr32 = (int *)&serial_num;
++	ptr32 = (__le32 *)&serial_num;
+ 	offset = NX_FW_SERIAL_NUM_OFFSET;
+ 	for (i = 0; i < 8; i++) {
+ 		if (netxen_rom_fast_read(adapter, offset, &val) == -1) {
 -- 
-1.7.7.2
+1.7.4.4
+
