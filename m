@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965127Ab2CMAl0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:41:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48538 "EHLO
+	id S1758223Ab2CMAlr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:41:47 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48520 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759070Ab2CMAYO (ORCPT
+	with ESMTP id S1759065Ab2CMAYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:24:14 -0400
+	Mon, 12 Mar 2012 20:24:13 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Neil Horman <nhorman@tuxdriver.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>, security@kernel.org,
-        Jeff Layton <jlayton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Bruce Rogers <brogers@novell.com>,
+        Olaf Kirch <okir@suse.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 084/196] nfs4: Ensure that ACL pages sent over NFS were not allocated from the slab (v3)
-Date: Mon, 12 Mar 2012 20:19:57 -0400
-Message-Id: <1331598109-31424-39-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 140/196] virtio_net: Add schedule check to napi_enable call
+Date: Mon, 12 Mar 2012 20:20:53 -0400
+Message-Id: <1331598109-31424-95-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,164 +24,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Bruce Rogers <brogers@novell.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit e9e3d724e2145f5039b423c290ce2b2c3d8f94bc upstream.
+commit 3e9d08ec0a68f6faf718d5a7e050fe5ca0ba004f upstream.
 
-The "bad_page()" page allocator sanity check was reported recently (call
-chain as follows):
+Under harsh testing conditions, including low memory, the guest would
+stop receiving packets. With this patch applied we no longer see any
+problems in the driver while performing these tests for extended periods
+of time.
 
-  bad_page+0x69/0x91
-  free_hot_cold_page+0x81/0x144
-  skb_release_data+0x5f/0x98
-  __kfree_skb+0x11/0x1a
-  tcp_ack+0x6a3/0x1868
-  tcp_rcv_established+0x7a6/0x8b9
-  tcp_v4_do_rcv+0x2a/0x2fa
-  tcp_v4_rcv+0x9a2/0x9f6
-  do_timer+0x2df/0x52c
-  ip_local_deliver+0x19d/0x263
-  ip_rcv+0x539/0x57c
-  netif_receive_skb+0x470/0x49f
-  :virtio_net:virtnet_poll+0x46b/0x5c5
-  net_rx_action+0xac/0x1b3
-  __do_softirq+0x89/0x133
-  call_softirq+0x1c/0x28
-  do_softirq+0x2c/0x7d
-  do_IRQ+0xec/0xf5
-  default_idle+0x0/0x50
-  ret_from_intr+0x0/0xa
-  default_idle+0x29/0x50
-  cpu_idle+0x95/0xb8
-  start_kernel+0x220/0x225
-  _sinittext+0x22f/0x236
+Make sure napi is scheduled subsequent to each napi_enable.
 
-It occurs because an skb with a fraglist was freed from the tcp
-retransmit queue when it was acked, but a page on that fraglist had
-PG_Slab set (indicating it was allocated from the Slab allocator (which
-means the free path above can't safely free it via put_page.
+[PG: in 34, virtqueue_disable_cb is vi->rvq->vq_ops->disable_cb]
 
-We tracked this back to an nfsv4 setacl operation, in which the nfs code
-attempted to fill convert the passed in buffer to an array of pages in
-__nfs4_proc_set_acl, which gets used by the skb->frags list in
-xs_sendpages.  __nfs4_proc_set_acl just converts each page in the buffer
-to a page struct via virt_to_page, but the vfs allocates the buffer via
-kmalloc, meaning the PG_slab bit is set.  We can't create a buffer with
-kmalloc and free it later in the tcp ack path with put_page, so we need
-to either:
-
-1) ensure that when we create the list of pages, no page struct has
-   PG_Slab set
-
- or
-
-2) not use a page list to send this data
-
-Given that these buffers can be multiple pages and arbitrarily sized, I
-think (1) is the right way to go.  I've written the below patch to
-allocate a page from the buddy allocator directly and copy the data over
-to it.  This ensures that we have a put_page free-able page for every
-entry that winds up on an skb frag list, so it can be safely freed when
-the frame is acked.  We do a put page on each entry after the
-rpc_call_sync call so as to drop our own reference count to the page,
-leaving only the ref count taken by tcp_sendpages.  This way the data
-will be properly freed when the ack comes in
-
-Successfully tested by myself to solve the above oops.
-
-Note, as this is the result of a setacl operation that exceeded a page
-of data, I think this amounts to a local DOS triggerable by an
-uprivlidged user, so I'm CCing security on this as well.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: security@kernel.org
-CC: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bruce Rogers <brogers@novell.com>
+Signed-off-by: Olaf Kirch <okir@suse.de>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/nfs/nfs4proc.c |   44 ++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 42 insertions(+), 2 deletions(-)
+ drivers/net/virtio_net.c |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 071fced..5b33856 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -49,6 +49,7 @@
- #include <linux/mount.h>
- #include <linux/module.h>
- #include <linux/sunrpc/bc_xprt.h>
-+#include <linux/mm.h>
- 
- #include "nfs4_fs.h"
- #include "delegation.h"
-@@ -3241,6 +3242,35 @@ static void buf_to_pages(const void *buf, size_t buflen,
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index f5b5d74..2cc49dd 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -448,6 +448,20 @@ static void skb_recv_done(struct virtqueue *rvq)
  	}
  }
  
-+static int buf_to_pages_noslab(const void *buf, size_t buflen,
-+		struct page **pages, unsigned int *pgbase)
++static void virtnet_napi_enable(struct virtnet_info *vi)
 +{
-+	struct page *newpage, **spages;
-+	int rc = 0;
-+	size_t len;
-+	spages = pages;
++	napi_enable(&vi->napi);
 +
-+	do {
-+		len = min(PAGE_CACHE_SIZE, buflen);
-+		newpage = alloc_page(GFP_KERNEL);
-+
-+		if (newpage == NULL)
-+			goto unwind;
-+		memcpy(page_address(newpage), buf, len);
-+                buf += len;
-+                buflen -= len;
-+		*pages++ = newpage;
-+		rc++;
-+	} while (buflen != 0);
-+
-+	return rc;
-+
-+unwind:
-+	for(; rc > 0; rc--)
-+		__free_page(spages[rc-1]);
-+	return -ENOMEM;
++	/* If all buffers were filled by other side before we napi_enabled, we
++	 * won't get another interrupt, so process any outstanding packets
++	 * now.  virtnet_poll wants re-enable the queue, so we disable here.
++	 * We synchronize against interrupts via NAPI_STATE_SCHED */
++	if (napi_schedule_prep(&vi->napi)) {
++		vi->rvq->vq_ops->disable_cb(vi->rvq);
++		__napi_schedule(&vi->napi);
++	}
 +}
 +
- struct nfs4_cached_acl {
- 	int cached;
- 	size_t len;
-@@ -3407,13 +3437,23 @@ static int __nfs4_proc_set_acl(struct inode *inode, const void *buf, size_t bufl
- 		.rpc_argp	= &arg,
- 		.rpc_resp	= &res,
- 	};
--	int ret;
-+	int ret, i;
+ static void refill_work(struct work_struct *work)
+ {
+ 	struct virtnet_info *vi;
+@@ -456,7 +470,7 @@ static void refill_work(struct work_struct *work)
+ 	vi = container_of(work, struct virtnet_info, refill.work);
+ 	napi_disable(&vi->napi);
+ 	still_empty = !try_fill_recv(vi, GFP_KERNEL);
+-	napi_enable(&vi->napi);
++	virtnet_napi_enable(vi);
  
- 	if (!nfs4_server_supports_acls(server))
- 		return -EOPNOTSUPP;
-+	i = buf_to_pages_noslab(buf, buflen, arg.acl_pages, &arg.acl_pgbase);
-+	if (i < 0)
-+		return i;
- 	nfs_inode_return_delegation(inode);
--	buf_to_pages(buf, buflen, arg.acl_pages, &arg.acl_pgbase);
- 	ret = nfs4_call_sync(server, &msg, &arg, &res, 1);
-+
-+	/*
-+	 * Free each page after tx, so the only ref left is
-+	 * held by the network stack
-+	 */
-+	for (; i > 0; i--)
-+		put_page(pages[i-1]);
-+
- 	nfs_access_zap_cache(inode);
- 	nfs_zap_acl_cache(inode);
- 	return ret;
+ 	/* In theory, this can happen: if we don't get any buffers in
+ 	 * we will *never* try to fill again. */
+@@ -642,16 +656,7 @@ static int virtnet_open(struct net_device *dev)
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
+ 
+-	napi_enable(&vi->napi);
+-
+-	/* If all buffers were filled by other side before we napi_enabled, we
+-	 * won't get another interrupt, so process any outstanding packets
+-	 * now.  virtnet_poll wants re-enable the queue, so we disable here.
+-	 * We synchronize against interrupts via NAPI_STATE_SCHED */
+-	if (napi_schedule_prep(&vi->napi)) {
+-		vi->rvq->vq_ops->disable_cb(vi->rvq);
+-		__napi_schedule(&vi->napi);
+-	}
++	virtnet_napi_enable(vi);
+ 	return 0;
+ }
+ 
 -- 
 1.7.9.3
 
