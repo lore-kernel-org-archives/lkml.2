@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964904Ab2CMAYA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:24:00 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48389 "EHLO
+	id S1759074Ab2CMAny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:43:54 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48426 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964853Ab2CMAX4 (ORCPT
+	with ESMTP id S964883Ab2CMAX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:23:56 -0400
+	Mon, 12 Mar 2012 20:23:59 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Risto Suominen <Risto.Suominen@gmail.com>,
+Cc: stable-review@kernel.org, Vince Weaver <vweaver1@eecs.utk.edu>,
         Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 134/196] ALSA: powermac - Reverse HP detection on G4 DA
-Date: Mon, 12 Mar 2012 20:20:47 -0400
-Message-Id: <1331598109-31424-89-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 137/196] ALSA: hda - MacBookPro 5,3 line-in support
+Date: Mon, 12 Mar 2012 20:20:50 -0400
+Message-Id: <1331598109-31424-92-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,54 +23,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Risto Suominen <Risto.Suominen@gmail.com>
+From: Vince Weaver <vweaver1@eecs.utk.edu>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 819ef70b135ba66cd1659c913255686bf931e3d4 upstream.
+commit 4e7d7c6018567fa03f387d06602d4145c75ebbe0 upstream.
 
-Reverse headphone detection bit on PowerMac G4 Digital Audio (Tumbler).
+I've found the following patch is necessary to enable line-in on
+my MacBookPro 5,3 machine.  With the patch applied I've successfully
+recorded audio from the line-in jack.  This is based on the existing
+5,5 support.
 
-Signed-off-by: Risto Suominen <Risto.Suominen@gmail.com>
+Signed-off-by: Vince Weaver <vweaver1@eecs.utk.edu>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/ppc/tumbler.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_cirrus.c |   22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/sound/ppc/tumbler.c b/sound/ppc/tumbler.c
-index 789f44f..3b7471c 100644
---- a/sound/ppc/tumbler.c
-+++ b/sound/ppc/tumbler.c
-@@ -30,6 +30,7 @@
- #include <linux/kmod.h>
- #include <linux/slab.h>
- #include <linux/interrupt.h>
-+#include <linux/string.h>
- #include <sound/core.h>
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -46,6 +47,8 @@
- #define DBG(fmt...)
- #endif
+diff --git a/sound/pci/hda/patch_cirrus.c b/sound/pci/hda/patch_cirrus.c
+index 350ee8a..1c6d1c3 100644
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -65,6 +65,7 @@ struct cs_spec {
  
-+#define IS_G4DA (machine_is_compatible("PowerMac3,4"))
+ /* available models */
+ enum {
++	CS420X_MBP53,
+ 	CS420X_MBP55,
+ 	CS420X_IMAC27,
+ 	CS420X_AUTO,
+@@ -838,7 +839,8 @@ static void cs_automute(struct hda_codec *codec)
+ 				    AC_VERB_SET_PIN_WIDGET_CONTROL,
+ 				    hp_present ? 0 : PIN_OUT);
+ 	}
+-	if (spec->board_config == CS420X_MBP55 ||
++	if (spec->board_config == CS420X_MBP53 ||
++	    spec->board_config == CS420X_MBP55 ||
+ 	    spec->board_config == CS420X_IMAC27) {
+ 		unsigned int gpio = hp_present ? 0x02 : 0x08;
+ 		snd_hda_codec_write(codec, 0x01, 0,
+@@ -1080,6 +1082,7 @@ static int cs_parse_auto_config(struct hda_codec *codec)
+ }
+ 
+ static const char *cs420x_models[CS420X_MODELS] = {
++	[CS420X_MBP53] = "mbp53",
+ 	[CS420X_MBP55] = "mbp55",
+ 	[CS420X_IMAC27] = "imac27",
+ 	[CS420X_AUTO] = "auto",
+@@ -1087,6 +1090,7 @@ static const char *cs420x_models[CS420X_MODELS] = {
+ 
+ 
+ static struct snd_pci_quirk cs420x_cfg_tbl[] = {
++	SND_PCI_QUIRK(0x10de, 0x0ac0, "MacBookPro 5,3", CS420X_MBP53),
+ 	SND_PCI_QUIRK(0x10de, 0xcb79, "MacBookPro 5,5", CS420X_MBP55),
+ 	SND_PCI_QUIRK(0x8086, 0x7270, "IMac 27 Inch", CS420X_IMAC27),
+ 	{} /* terminator */
+@@ -1097,6 +1101,20 @@ struct cs_pincfg {
+ 	u32 val;
+ };
+ 
++static struct cs_pincfg mbp53_pincfgs[] = {
++	{ 0x09, 0x012b4050 },
++	{ 0x0a, 0x90100141 },
++	{ 0x0b, 0x90100140 },
++	{ 0x0c, 0x018b3020 },
++	{ 0x0d, 0x90a00110 },
++	{ 0x0e, 0x400000f0 },
++	{ 0x0f, 0x01cbe030 },
++	{ 0x10, 0x014be060 },
++	{ 0x12, 0x400000f0 },
++	{ 0x15, 0x400000f0 },
++	{} /* terminator */
++};
 +
- /* i2c address for tumbler */
- #define TAS_I2C_ADDR	0x34
+ static struct cs_pincfg mbp55_pincfgs[] = {
+ 	{ 0x09, 0x012b4030 },
+ 	{ 0x0a, 0x90100121 },
+@@ -1126,6 +1144,7 @@ static struct cs_pincfg imac27_pincfgs[] = {
+ };
  
-@@ -1134,7 +1137,7 @@ static long tumbler_find_device(const char *device, const char *platform,
- 		gp->inactive_val = (*base) ? 0x4 : 0x5;
- 	} else {
- 		const u32 *prop = NULL;
--		gp->active_state = 0;
-+		gp->active_state = IS_G4DA && !strcmp(device, "keywest-gpio15");
- 		gp->active_val = 0x4;
- 		gp->inactive_val = 0x5;
- 		/* Here are some crude hacks to extract the GPIO polarity and
+ static struct cs_pincfg *cs_pincfgs[CS420X_MODELS] = {
++	[CS420X_MBP53] = mbp53_pincfgs,
+ 	[CS420X_MBP55] = mbp55_pincfgs,
+ 	[CS420X_IMAC27] = imac27_pincfgs,
+ };
+@@ -1158,6 +1177,7 @@ static int patch_cs420x(struct hda_codec *codec)
+ 
+ 	switch (spec->board_config) {
+ 	case CS420X_IMAC27:
++	case CS420X_MBP53:
+ 	case CS420X_MBP55:
+ 		/* GPIO1 = headphones */
+ 		/* GPIO3 = speakers */
 -- 
 1.7.9.3
 
