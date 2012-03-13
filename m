@@ -1,105 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab2CMXVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 19:21:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57582 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331Ab2CMXVE convert rfc822-to-8bit (ORCPT
+	id S1754844Ab2CMXVc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 19:21:32 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:58633 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785Ab2CMXVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 19:21:04 -0400
+	Tue, 13 Mar 2012 19:21:30 -0400
+Date: Tue, 13 Mar 2012 16:21:26 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Leonid Petrov <user1@lpetrov.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: USB 3.0 card, chipset VIA VL800 + external harddrive @ 3.3.0-rc7
+ = no luck
+Message-ID: <20120313232126.GA31025@kroah.com>
+References: <4F5F7A3F.nail2BJ11Y4JL@lpetrov.net>
 MIME-Version: 1.0
-In-Reply-To: <4F5C8414.5090800@parallels.com>
-References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
-	<1331325556-16447-7-git-send-email-ssouhlal@FreeBSD.org>
-	<4F5C8414.5090800@parallels.com>
-Date: Tue, 13 Mar 2012 16:21:03 -0700
-Message-ID: <CABCjUKCioWO-F7k=hVs_18B3uyL4zG3-krPFDh++YAnmejKKdg@mail.gmail.com>
-Subject: Re: [PATCH v2 06/13] slab: Add kmem_cache_gfp_flags() helper function.
-From: Suleiman Souhlal <suleiman@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Suleiman Souhlal <ssouhlal@freebsd.org>, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, penberg@kernel.org, cl@linux.com,
-        yinghan@google.com, hughd@google.com, gthelen@google.com,
-        peterz@infradead.org, dan.magenheimer@oracle.com, hannes@cmpxchg.org,
-        mgorman@suse.de, James.Bottomley@hansenpartnership.com,
-        linux-mm@kvack.org, devel@openvz.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F5F7A3F.nail2BJ11Y4JL@lpetrov.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 11, 2012 at 3:53 AM, Glauber Costa <glommer@parallels.com> wrote:
-> On 03/10/2012 12:39 AM, Suleiman Souhlal wrote:
->>
->> This function returns the gfp flags that are always applied to
->> allocations of a kmem_cache.
->>
->> Signed-off-by: Suleiman Souhlal<suleiman@google.com>
->> ---
->>  include/linux/slab_def.h |    6 ++++++
->>  include/linux/slob_def.h |    6 ++++++
->>  include/linux/slub_def.h |    6 ++++++
->>  3 files changed, 18 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
->> index fbd1117..25f9a6a 100644
->> --- a/include/linux/slab_def.h
->> +++ b/include/linux/slab_def.h
->> @@ -159,6 +159,12 @@ found:
->>        return __kmalloc(size, flags);
->>  }
->>
->> +static inline gfp_t
->> +kmem_cache_gfp_flags(struct kmem_cache *cachep)
->> +{
->> +       return cachep->gfpflags;
->> +}
->> +
->>  #ifdef CONFIG_NUMA
->>  extern void *__kmalloc_node(size_t size, gfp_t flags, int node);
->>  extern void *kmem_cache_alloc_node(struct kmem_cache *, gfp_t flags, int
->> node);
->> diff --git a/include/linux/slob_def.h b/include/linux/slob_def.h
->> index 0ec00b3..3fa527d 100644
->> --- a/include/linux/slob_def.h
->> +++ b/include/linux/slob_def.h
->> @@ -34,4 +34,10 @@ static __always_inline void *__kmalloc(size_t size,
->> gfp_t flags)
->>        return kmalloc(size, flags);
->>  }
->>
->> +static inline gfp_t
->> +kmem_cache_gfp_flags(struct kmem_cache *cachep)
->> +{
->> +       return 0;
->> +}
->> +
->>  #endif /* __LINUX_SLOB_DEF_H */
->> diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
->> index a32bcfd..5911d81 100644
->> --- a/include/linux/slub_def.h
->> +++ b/include/linux/slub_def.h
->> @@ -313,4 +313,10 @@ static __always_inline void *kmalloc_node(size_t
->> size, gfp_t flags, int node)
->>  }
->>  #endif
->>
->> +static inline gfp_t
->> +kmem_cache_gfp_flags(struct kmem_cache *cachep)
->> +{
->> +       return cachep->allocflags;
->> +}
->> +
->
->
-> Why is this needed? Can't the caller just call
-> mem_cgroup_get_kmem_cache(cachep, flags | cachep->allocflags) ?
+On Tue, Mar 13, 2012 at 12:47:59PM -0400, Leonid Petrov wrote:
+> When connected to usb-3.0: 
+> --------------------------
+> 
+> Mar 13 10:37:52 localhost kernel: hub 10-0:1.0: Cannot enable port 3.  Maybe the USB cable is bad?
 
-Because slub calls this cachep->allocflags, while slab calls it
-cachep->gfpflags.
+Are you sure you have a USB 3.0 cable?
 
-I'll look into renaming one of them to match the other.
+And this would be best to be asked on the linux-usb@vger.kernel.org
+list, try resending it there.
 
--- Suleiman
+thanks,
+
+greg k-h
