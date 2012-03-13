@@ -1,163 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758580Ab2CMBDi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 21:03:38 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47411 "EHLO
+	id S1758495Ab2CMBEW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 21:04:22 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46771 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758270Ab2CMAWD (ORCPT
+	with ESMTP id S1757697Ab2CMAR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:22:03 -0400
+	Mon, 12 Mar 2012 20:17:57 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
+Cc: stable-review@kernel.org, Li Zefan <lizf@cn.fujitsu.com>,
+        Chris Mason <chris.mason@oracle.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 049/196] x86, microcode, AMD: Extend ucode size verification
-Date: Mon, 12 Mar 2012 20:19:22 -0400
-Message-Id: <1331598109-31424-4-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 027/196] Btrfs: Fix uninitialized root flags for subvolumes
+Date: Mon, 12 Mar 2012 20:12:35 -0400
+Message-Id: <1331597724-31358-28-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
-In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
- <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Li Zefan <lizf@cn.fujitsu.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 44d60c0f5c58c2168f31df9a481761451840eb54 upstream.
+commit 08fe4db170b4193603d9d31f40ebaf652d07ac9c upstream.
 
-The different families have a different max size for the ucode patch,
-adjust size checking to the family we're running on. Also, do not
-vzalloc the max size of the ucode but only the actual size that is
-passed on from the firmware loader.
+root_item->flags and root_item->byte_limit are not initialized when
+a subvolume is created. This bug is not revealed until we added
+readonly snapshot support - now you mount a btrfs filesystem and you
+may find the subvolumes in it are readonly.
 
-[PG: baseline of 44d60c0f5~1 differs in multiple trivial ways from
- the 34's; this commit makes get_next_ucode() look like 44d60c0f5's]
+To work around this problem, we steal a bit from root_item->inode_item->flags,
+and use it to indicate if those fields have been properly initialized.
+When we read a tree root from disk, we check if the bit is set, and if
+not we'll set the flag and initialize the two fields of the root item.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Reported-by: Andreas Philipp <philipp.andreas@gmail.com>
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Tested-by: Andreas Philipp <philipp.andreas@gmail.com>
+Signed-off-by: Chris Mason <chris.mason@oracle.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/microcode_amd.c |   74 +++++++++++++++++++++++++--------------
- 1 file changed, 48 insertions(+), 26 deletions(-)
+ fs/btrfs/ctree.h       |    4 ++++
+ fs/btrfs/disk-io.c     |    4 +++-
+ fs/btrfs/ioctl.c       |    4 ++++
+ fs/btrfs/root-tree.c   |   18 ++++++++++++++++++
+ fs/btrfs/transaction.c |    1 +
+ 5 files changed, 30 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
-index e1af7c0..ed47400 100644
---- a/arch/x86/kernel/microcode_amd.c
-+++ b/arch/x86/kernel/microcode_amd.c
-@@ -66,7 +66,6 @@ struct microcode_amd {
- 	unsigned int			mpb[0];
- };
+diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+index 746a724..a79a910 100644
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -1184,6 +1184,8 @@ struct btrfs_root {
+ #define BTRFS_INODE_NOATIME		(1 << 9)
+ #define BTRFS_INODE_DIRSYNC		(1 << 10)
  
--#define UCODE_MAX_SIZE			2048
- #define UCODE_CONTAINER_SECTION_HDR	8
- #define UCODE_CONTAINER_HEADER_SIZE	12
++#define BTRFS_INODE_ROOT_ITEM_INIT	(1 << 31)
++
+ /* some macros to generate set/get funcs for the struct fields.  This
+  * assumes there is a lefoo_to_cpu for every type, so lets make a simple
+  * one for u8:
+@@ -2185,6 +2187,8 @@ int btrfs_find_dead_roots(struct btrfs_root *root, u64 objectid);
+ int btrfs_find_orphan_roots(struct btrfs_root *tree_root);
+ int btrfs_set_root_node(struct btrfs_root_item *item,
+ 			struct extent_buffer *node);
++void btrfs_check_and_init_root_item(struct btrfs_root_item *item);
++
+ /* dir-item.c */
+ int btrfs_insert_dir_item(struct btrfs_trans_handle *trans,
+ 			  struct btrfs_root *root, const char *name,
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index feca041..fa46c2d 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -1146,8 +1146,10 @@ struct btrfs_root *btrfs_read_fs_root_no_radix(struct btrfs_root *tree_root,
+ 	root->commit_root = btrfs_root_node(root);
+ 	BUG_ON(!root->node);
+ out:
+-	if (location->objectid != BTRFS_TREE_LOG_OBJECTID)
++	if (location->objectid != BTRFS_TREE_LOG_OBJECTID) {
+ 		root->ref_cows = 1;
++		btrfs_check_and_init_root_item(&root->root_item);
++	}
  
-@@ -155,6 +154,37 @@ static int apply_microcode_amd(int cpu)
+ 	return root;
+ }
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index e9d0535..e624555 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -286,6 +286,10 @@ static noinline int create_subvol(struct btrfs_root *root,
+ 	inode_item->nbytes = cpu_to_le64(root->leafsize);
+ 	inode_item->mode = cpu_to_le32(S_IFDIR | 0755);
+ 
++	root_item.flags = 0;
++	root_item.byte_limit = 0;
++	inode_item->flags = cpu_to_le64(BTRFS_INODE_ROOT_ITEM_INIT);
++
+ 	btrfs_set_root_bytenr(&root_item, leaf->start);
+ 	btrfs_set_root_generation(&root_item, trans->transid);
+ 	btrfs_set_root_level(&root_item, 0);
+diff --git a/fs/btrfs/root-tree.c b/fs/btrfs/root-tree.c
+index 67fa2d2..3174255 100644
+--- a/fs/btrfs/root-tree.c
++++ b/fs/btrfs/root-tree.c
+@@ -459,3 +459,21 @@ again:
+ 	btrfs_free_path(path);
  	return 0;
  }
- 
-+static unsigned int verify_ucode_size(int cpu, const u8 *buf, unsigned int size)
++
++/*
++ * Old btrfs forgets to init root_item->flags and root_item->byte_limit
++ * for subvolumes. To work around this problem, we steal a bit from
++ * root_item->inode_item->flags, and use it to indicate if those fields
++ * have been properly initialized.
++ */
++void btrfs_check_and_init_root_item(struct btrfs_root_item *root_item)
 +{
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+	unsigned int max_size, actual_size;
++	u64 inode_flags = le64_to_cpu(root_item->inode.flags);
 +
-+#define F1XH_MPB_MAX_SIZE 2048
-+#define F14H_MPB_MAX_SIZE 1824
-+#define F15H_MPB_MAX_SIZE 4096
-+
-+	switch (c->x86) {
-+	case 0x14:
-+		max_size = F14H_MPB_MAX_SIZE;
-+		break;
-+	case 0x15:
-+		max_size = F15H_MPB_MAX_SIZE;
-+		break;
-+	default:
-+		max_size = F1XH_MPB_MAX_SIZE;
-+		break;
++	if (!(inode_flags & BTRFS_INODE_ROOT_ITEM_INIT)) {
++		inode_flags |= BTRFS_INODE_ROOT_ITEM_INIT;
++		root_item->inode.flags = cpu_to_le64(inode_flags);
++		root_item->flags = 0;
++		root_item->byte_limit = 0;
 +	}
-+
-+	actual_size = buf[4] + (buf[5] << 8);
-+
-+	if (actual_size > size || actual_size > max_size) {
-+		pr_err("section size mismatch\n");
-+		return 0;
-+	}
-+
-+	return actual_size;
 +}
-+
- static int get_ucode_data(void *to, const u8 *from, size_t n)
- {
- 	memcpy(to, from, n);
-@@ -162,37 +192,29 @@ static int get_ucode_data(void *to, const u8 *from, size_t n)
- }
+diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+index 2cb1160..5110e70 100644
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -805,6 +805,7 @@ static noinline int create_pending_snapshot(struct btrfs_trans_handle *trans,
+ 	record_root_in_trans(trans, root);
+ 	btrfs_set_root_last_snapshot(&root->root_item, trans->transid);
+ 	memcpy(new_root_item, &root->root_item, sizeof(*new_root_item));
++	btrfs_check_and_init_root_item(new_root_item);
  
- static void *
--get_next_ucode(const u8 *buf, unsigned int size, unsigned int *mc_size)
-+get_next_ucode(int cpu, const u8 *buf, unsigned int size, unsigned int *mc_size)
- {
--	unsigned int total_size;
--	u8 section_hdr[UCODE_CONTAINER_SECTION_HDR];
--	void *mc;
-+	void *mc = NULL;
-+	unsigned int actual_size = 0;
- 
--	if (get_ucode_data(section_hdr, buf, UCODE_CONTAINER_SECTION_HDR))
--		return NULL;
--
--	if (section_hdr[0] != UCODE_UCODE_TYPE) {
-+	if (buf[0] != UCODE_UCODE_TYPE) {
- 		pr_err("error: invalid type field in container file section header\n");
--		return NULL;
-+		goto out;
- 	}
- 
--	total_size = (unsigned long) (section_hdr[4] + (section_hdr[5] << 8));
-+	actual_size = verify_ucode_size(cpu, buf, size);
-+	if (!actual_size)
-+		goto out;
- 
--	if (total_size > size || total_size > UCODE_MAX_SIZE) {
--		pr_err("error: size mismatch\n");
--		return NULL;
--	}
-+	mc = vmalloc(actual_size);
-+	if (!mc)
-+		goto out;
- 
--	mc = vmalloc(UCODE_MAX_SIZE);
--	if (mc) {
--		memset(mc, 0, UCODE_MAX_SIZE);
--		if (get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR,
--				   total_size)) {
--			vfree(mc);
--			mc = NULL;
--		} else
--			*mc_size = total_size + UCODE_CONTAINER_SECTION_HDR;
--	}
-+	memset(mc, 0, actual_size);
-+	get_ucode_data(mc, buf + UCODE_CONTAINER_SECTION_HDR, actual_size);
-+	*mc_size = actual_size + UCODE_CONTAINER_SECTION_HDR;
-+
-+out:
- 	return mc;
- }
- 
-@@ -258,7 +280,7 @@ generic_load_microcode(int cpu, const u8 *data, size_t size)
- 		unsigned int uninitialized_var(mc_size);
- 		struct microcode_header_amd *mc_header;
- 
--		mc = get_next_ucode(ucode_ptr, leftover, &mc_size);
-+		mc = get_next_ucode(cpu, ucode_ptr, leftover, &mc_size);
- 		if (!mc)
- 			break;
- 
+ 	old = btrfs_lock_root_node(root);
+ 	btrfs_cow_block(trans, root, old, NULL, 0, &old);
 -- 
 1.7.9.3
 
