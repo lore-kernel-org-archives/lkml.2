@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab2CMQAD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 12:00:03 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51938 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab2CMQAA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 12:00:00 -0400
-Date: Tue, 13 Mar 2012 08:59:55 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Michal Schmidt <mschmidt@redhat.com>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-Message-ID: <20120313155955.GB7349@google.com>
-References: <20120221211938.GE12236@google.com>
- <20120312221050.GG23255@google.com>
- <1331590938.18960.57.camel@twins>
- <20120312222817.GI23255@google.com>
- <20120313140345.GC29169@redhat.com>
+	id S1757294Ab2CMQAa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 12:00:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51640 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753579Ab2CMQA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 12:00:29 -0400
+Date: Tue, 13 Mar 2012 12:00:24 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shli@fusionio.com>
+Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, neilb@suse.de,
+        axboe@kernel.dk, Shaohua Li <shli@fusionio.com>
+Subject: Re: [patch 7/7] blk: use correct sectors limitation for discard
+ request
+Message-ID: <20120313160024.GH29169@redhat.com>
+References: <20120312030412.375458948@fusionio.com>
+ <20120312031306.030156009@fusionio.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120313140345.GC29169@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120312031306.030156009@fusionio.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Vivek.
-
-On Tue, Mar 13, 2012 at 10:03:45AM -0400, Vivek Goyal wrote:
-> > With root being treated specially, probably as just being a equal
-> > group as other groups, I'm not fully determined about that yet.
+On Mon, Mar 12, 2012 at 11:04:19AM +0800, Shaohua Li wrote:
+> max_discard_sectors doesn't equal to max_sectors/max_hw_sectors. Without this,
+> discard request merge might be ignored.
 > 
-> So what wrong with flattening the whole hierarchy and all groups being active
-> in the path? It is not worse then second option?
+> Signed-off-by: Shaohua Li <shli@fusionio.com>
+> ---
+>  block/blk-merge.c      |    9 +++++++--
+>  include/linux/blkdev.h |    5 +++++
+>  2 files changed, 12 insertions(+), 2 deletions(-)
 > 
->              root
->        /   |  |  |  \
->       G1  G2  G3 G31 G32
+> Index: linux/block/blk-merge.c
+> ===================================================================
+> --- linux.orig/block/blk-merge.c	2012-03-09 14:05:35.562062857 +0800
+> +++ linux/block/blk-merge.c	2012-03-09 14:07:55.432062246 +0800
+> @@ -228,13 +228,16 @@ no_merge:
+>  int ll_back_merge_fn(struct request_queue *q, struct request *req,
+>  		     struct bio *bio)
+>  {
+> -	unsigned short max_sectors;
+> +	unsigned int max_sectors;
+>  
+>  	if (unlikely(req->cmd_type == REQ_TYPE_BLOCK_PC))
+>  		max_sectors = queue_max_hw_sectors(q);
+>  	else
+>  		max_sectors = queue_max_sectors(q);
+>  
+> +	if (unlikely(req->cmd_flags & REQ_DISCARD))
+> +		max_sectors = queue_max_discard_sectors(q);
+> +
 
-It is worse because while there isn't much need for orthogonal
-hierarchies, people often need to apply different limits at different
-levels of the hierarchy for different controllers.  ie. it often
-happens that the distinction between G31 and G32 matters for one
-controller but not for others.  The problem with flattening like you
-suggested above is that it isn't a hierarchy at all - membership isn't
-recursive.
+May be make above check an "else if" condition above instead of starting
+another "if" block.
 
-Imposing limits at single level is an additional restriction and may
-cause some config complexity but it'll be at least explicit and can
-co-exist with full hierarchy in meaningful way.
-
-Thanks.
-
--- 
-tejun
+Thanks
+Vivek
