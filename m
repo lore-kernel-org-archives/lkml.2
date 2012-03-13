@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759531Ab2CMFq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:46:57 -0400
-Received: from smtp12.mail.ru ([94.100.176.89]:34321 "EHLO smtp12.mail.ru"
+	id S1759486Ab2CMFsF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:48:05 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58866 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759464Ab2CMFq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:46:56 -0400
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: Olof Johansson <olof@lixom.net>
-Cc: Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        linux-tegra@vger.kernel.org, Andi <andi.shyti@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Dmitry Artamonow <mad_soft@inbox.ru>
-Subject: [PATCH] arm/tegra: pcie: fix return value of function
-Date: Tue, 13 Mar 2012 09:46:27 +0400
-Message-Id: <1331617587-10714-1-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.5.1.300.gc565c
-In-Reply-To: <CAOesGMi0aqCjLsJ5wWXwFVQL2T8wtUuE14rFZ9h7NKHXcWAoqQ@mail.gmail.com>
-References: <CAOesGMi0aqCjLsJ5wWXwFVQL2T8wtUuE14rFZ9h7NKHXcWAoqQ@mail.gmail.com>
-X-Spam: Not detected
-X-Mras: Ok
+	id S1758509Ab2CMFsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 01:48:03 -0400
+Date: Tue, 13 Mar 2012 06:47:44 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
+Subject: Re: [PATCH] uprobes/core: handle breakpoint and signal step
+ exception.
+Message-ID: <20120313054744.GA27315@elte.hu>
+References: <20120223110245.12459.7391.sendpatchset@srdronam.in.ibm.com>
+ <20120227091212.GA7092@elte.hu>
+ <20120308131824.GC13284@linux.vnet.ibm.com>
+ <20120308134809.GB28488@elte.hu>
+ <20120309062853.GD13284@linux.vnet.ibm.com>
+ <20120309073348.GA15570@elte.hu>
+ <20120313052016.GA27824@elte.hu>
+ <20120313054242.GA1623@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120313054242.GA1623@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In previous patch (arm/tegra: add timeout to PCIe PLL lock detection loop)
-tegra_pcie_enable_controller() function type has been changed from
-void to int, but the last return statement wasn't converted, so
-function returns undefined value. Fix it.
 
-Also while at it, address couple of minor concerns raised by reviewers:
-use usleep_range for delay, and lower the value of timeout to 300ms
-to be consistent with Nvidia Vibrante kernel.
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
----
- arch/arm/mach-tegra/pcie.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> To make it available to uprobes please move is_ia32_task() to 
+> processor.h and make it return 1 on i386 kernels. This should 
+> be a very simple patch - and that's all that is needed.
 
-diff --git a/arch/arm/mach-tegra/pcie.c b/arch/arm/mach-tegra/pcie.c
-index 7313059..54a816f 100644
---- a/arch/arm/mach-tegra/pcie.c
-+++ b/arch/arm/mach-tegra/pcie.c
-@@ -639,10 +639,10 @@ static int tegra_pcie_enable_controller(void)
- 	pads_writel(0xfa5cfa5c, 0xc8);
- 
- 	/* Wait for the PLL to lock */
--	timeout = 2000;
-+	timeout = 300;
- 	do {
- 		val = pads_readl(PADS_PLL_CTL);
--		mdelay(1);
-+		usleep_range(1000, 1000);
- 		if (--timeout == 0) {
- 			pr_err("Tegra PCIe error: timeout waiting for PLL\n");
- 			return -EBUSY;
-@@ -677,7 +677,7 @@ static int tegra_pcie_enable_controller(void)
- 	/* Disable all execptions */
- 	afi_writel(0, AFI_FPCI_ERROR_MASKS);
- 
--	return;
-+	return 0;
- }
- 
- static void tegra_pcie_xclk_clamp(bool clamp)
--- 
-1.7.5.1.300.gc565c
+Side note: in general I don't mind making compat.h a bit more 
+generic (at all), but is_ia32_task() is really a generic x86 
+specific check that we can move to processor.h cleanly.
 
+Some other effort should make compat.h bitness agnostic - 
+uprobes doesn't actually make use of the compat types and 
+facilities there, and it resulted in a nonsensical change like 
+making the alloc function generic ...
+
+Thanks,
+
+	Ingo
