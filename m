@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab2CMPWI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 11:22:08 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:57002 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143Ab2CMPWF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 11:22:05 -0400
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: <davinci-linux-open-source@linux.davincidsp.com>
-CC: <nsekhar@ti.com>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Manjunathappa, Prakash" <prakash.pm@ti.com>,
-        Ajay Kumar Gupta <ajay.gupta@ti.com>
-Subject: [PATCH] arm:da850: register musb device
-Date: Tue, 13 Mar 2012 20:33:35 +0530
-Message-ID: <1331651015-32586-1-git-send-email-prakash.pm@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1756212Ab2CMPYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 11:24:33 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59221 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755565Ab2CMPYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 11:24:32 -0400
+Date: Tue, 13 Mar 2012 16:24:17 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung.kim@lge.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] perf report: Treat an argument as a symbol filter
+Message-ID: <20120313152417.GA12193@elte.hu>
+References: <1331619294-29162-1-git-send-email-namhyung.kim@lge.com>
+ <1331619294-29162-4-git-send-email-namhyung.kim@lge.com>
+ <20120313062105.GB24357@elte.hu>
+ <1331646021.18960.71.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331646021.18960.71.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Properly set up the OTG mode thru the CFGCHIP2 register, enable the
-USB0_DRVVBUS pin, and finally register the MUSB platform device.
 
-Signed-off-by: Ajay Kumar Gupta <ajay.gupta@ti.com>
-Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
----
-Patche are on top below posted patches:
-http://www.spinics.net/lists/linux-usb/msg59656.html
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
- arch/arm/mach-davinci/board-da850-evm.c |   12 ++++++++++++
- arch/arm/mach-davinci/usb.c             |    9 +++++++++
- 2 files changed, 21 insertions(+), 0 deletions(-)
+> On Tue, 2012-03-13 at 07:21 +0100, Ingo Molnar wrote:
+> > To play the devil's advocate it uses up valuable perf report 
+> > command line real estate and we probably cannot change this 
+> > workflow in the future, once people get used to it. 
+> 
+> I would indeed suggest to make it a proper argument and add 
+> argument parsing to report like we have for all the other 
+> commands.
+> 
+> Say something like: perf report --symbol-filter="foobar" and 
+> maybe an appropriate short version.
 
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index 178d178..539e12c 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -787,6 +787,18 @@ static __init void da850_evm_usb_init(void)
- 	 */
- 	cfgchip2 &= ~CFGCHIP2_USB1PHYCLKMUX;
- 	cfgchip2 |=  CFGCHIP2_USB2PHYCLKMUX;
-+	/*
-+	 * We have to override VBUS/ID signals when MUSB is configured into the
-+	 * host-only mode -- ID pin will float if no cable is connected, so the
-+	 * controller won't be able to drive VBUS thinking that it's a B-device.
-+	 * Otherwise, we want to use the OTG mode and enable VBUS comparators.
-+	 */
-+	cfgchip2 &= ~CFGCHIP2_OTGMODE;
-+#if CONFIG_USB_MUSB_DA8XX
-+	cfgchip2 |=  CFGCHIP2_FORCE_HOST;
-+#else
-+	cfgchip2 |=  CFGCHIP2_SESENDEN | CFGCHIP2_VBDTCTEN;
-+#endif
- 
- 	__raw_writel(cfgchip2, DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP2_REG));
- 
-diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
-index 25c3520..a941dc5 100644
---- a/arch/arm/mach-davinci/usb.c
-+++ b/arch/arm/mach-davinci/usb.c
-@@ -284,6 +284,15 @@ void __init da8xx_board_usb_init(const short pins[],
- 		goto usb11_setup_fail;
- 	}
- 
-+	/*
-+	 * TPS2065 switch @ 5V supplies 1 A (sustains 1.5 A),
-+	 * with the power on to power good time of 3 ms.
-+	 */
-+	ret = da8xx_register_usb20(1000, 3);
-+	if (ret)
-+		pr_warning("%s: USB 2.0 registration failed: %d\n",
-+			   __func__, ret);
-+
- 	return;
- 
- usb11_setup_fail:
--- 
-1.7.1
+No objection against also having a command line option, but I 
+really like the Git way of doing things like:
 
+   git remote update tip
+
+where it's several layers of commands plus arguments, with no 
+silly command switch names to remember.
+
+Thanks,
+
+	Ingo
