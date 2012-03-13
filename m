@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab2CMOim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 10:38:42 -0400
-Received: from mga03.intel.com ([143.182.124.21]:8965 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751380Ab2CMOik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 10:38:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="118285726"
-Message-ID: <1331649633.3595.70.camel@sauron.fi.intel.com>
-Subject: Re: linux-next: manual merge of the l2-mtd tree with the vfs tree
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Stefan Roese <sr@denx.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Joe Perches <joe@perches.com>
-Date: Tue, 13 Mar 2012 16:40:33 +0200
-In-Reply-To: <20120313141859.302878a8e2246979c288440d@canb.auug.org.au>
-References: <20120313141859.302878a8e2246979c288440d@canb.auug.org.au>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-fxWckKyBgNztmx2UICJY"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Mime-Version: 1.0
+	id S1755474Ab2CMOjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 10:39:37 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:65094 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753592Ab2CMOjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 10:39:35 -0400
+Message-ID: <4F5F5C22.1080506@gmail.com>
+Date: Tue, 13 Mar 2012 09:39:30 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Dong Aisheng <b29396@freescale.com>
+CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        vinod.koul@linux.intel.com, s.hauer@pengutronix.de,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        rdunlap@xenotime.net, kernel@pengutronix.de, cjb@laptop.org,
+        shawn.guo@freescale.com
+Subject: Re: [PATCH v1 3/5] ARM: imx28evk: add mmc dt support
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com> <1331628428-24017-4-git-send-email-b29396@freescale.com>
+In-Reply-To: <1331628428-24017-4-git-send-email-b29396@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/13/2012 03:47 AM, Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> ---
+>  arch/arm/boot/dts/imx28-evk.dts |   14 ++++++++++++++
+>  arch/arm/boot/dts/imx28.dtsi    |   33 +++++++++++++++++++++++++++++++++
+>  arch/arm/mach-mxs/imx28-dt.c    |    2 ++
+>  3 files changed, 49 insertions(+), 0 deletions(-)
 
---=-fxWckKyBgNztmx2UICJY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+snip
 
-On Tue, 2012-03-13 at 14:18 +1100, Stephen Rothwell wrote:
-> Hi Artem,
->=20
-> Today's linux-next merge of the l2-mtd tree got a conflict in
-> fs/jffs2/fs.c between commit de071e1a7466 ("switch open-coded instances
-> of d_make_root() to new helper") from the vfs tree and commit
-> ab9b393d6ee8 ("jffs2: Convert most D1/D2 macros to jffs2_dbg") from the
-> l2-mtd tree.
->=20
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
+> diff --git a/arch/arm/mach-mxs/imx28-dt.c b/arch/arm/mach-mxs/imx28-dt.c
+> index 78d1129..429b88e 100644
+> --- a/arch/arm/mach-mxs/imx28-dt.c
+> +++ b/arch/arm/mach-mxs/imx28-dt.c
+> @@ -23,6 +23,8 @@ static const struct of_dev_auxdata imx28_auxdata_lookup[] __initconst = {
+>  	OF_DEV_AUXDATA("arm,pl011", MX28_DUART_BASE_ADDR, "duart", NULL),
+>  	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC0_BASE_ADDR, "imx28-fec.0", NULL),
+>  	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC1_BASE_ADDR, "imx28-fec.1", NULL),
+> +	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP0_BASE_ADDR, "mxs-mmc.0", NULL),
+> +	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP1_BASE_ADDR, "mxs-mmc.1", NULL),
 
-Thanks. Although I do not see the latest l2-mtd.git tree in the master
-branch of linux-next, I see some old version of it. E.g., the jffs2
-changes are not there.
+Why is this needed?
 
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-fxWckKyBgNztmx2UICJY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPX1xhAAoJECmIfjd9wqK0wxcQAJJTlUMM8orZg6pjFKgIXeFZ
-3ikDpLRbCezQNA63erar5eIexrqmgcHlnTDYwwjbMZ3rqMQurnXFXfgtaveAgbXq
-sSA+kEWeAIDlov0ouTgzfVqGBHH/0qvkbh7+YL38Zm4GbRONULjbSgDutXkbl3Oi
-TqQ+snV8wx+3Vz/QSyXmAHtbrl9GY6ezs4o0hn9n2D6i7D/0mtVSThtJ4RvDAAI0
-x3NiHuz2Nz2E8Xyc4hr1YA1TRvj2ESccOy1MZR0hsYa+CxL4E5Rxi4oZX3eYwqLm
-Inlz9vJZ7qQFFn9/KKYj+ELNdY9yqOFd9hAUttUiXNazh8IM7aHaIzLk4yJ1lKrR
-I7H7muJfTNJJTsZdjOkbIP5jUpVugEnJdiCCs7yT93nTlixKgSym+O5wxb/u6XA8
-XHGnCO040jz8uAuAT6zfBNx2sllsKyKeHr8i1zBuwkOaDdNOZmdMZVmqitUmALgF
-J36g805mZLFSbuSLh2xeUyyXzdeyalZ+IW+J4ynagr7NA5JCNJNLN4XNqtXiksLt
-RtsaPS5uIG1xvXvyqoVTDYYnhJZKgqvc48gkX1n7cRIwwmVhKLzNIs6vMOglv0rd
-e+VJc/tUdK9YGXG/t/JXzmMPRTUwpN2SF3SOqEZWXRPG0CdinjB7J8y9ghGJ9yHf
-tZGedkeIAj/Qsoxg5lPm
-=t+Xn
------END PGP SIGNATURE-----
-
---=-fxWckKyBgNztmx2UICJY--
+>  	{ /* sentinel */ }
+>  };
+>  
 
