@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab2CMQe6 (ORCPT <rfc822;w@1wt.eu>);
+	id S1755350Ab2CMQfK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 12:35:10 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51657 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752604Ab2CMQe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Mar 2012 12:34:58 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:53974 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab2CMQe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 12:34:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:in-reply-to:message-id:references:mime-version:
-	content-type; q=dns; s=newdream.net; b=wCdTXRQzoFYxYn6Ri+sPIacoC
-	5MSC/LapqRSCfxfbf8K3m8G2rtLzTV22/DSwlKk6Oac43NLCNQ8eeJPPpe5ijx0f
-	5DV6nNxdVrxiC53olulpuJ/TJh3NXcgctaQfdqQzALFcr4DZ8CK8ocWoAR84KbKP
-	8HFxx8JYlki+i8rmJA=
-Date: Tue, 13 Mar 2012 09:34:53 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Miklos Szeredi <miklos@szeredi.hu>
-cc: Christoph Hellwig <hch@infradead.org>, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond.Myklebust@netapp.com, sfrench@samba.org, ericvh@gmail.com
-Subject: Re: [PATCH 06/25] vfs: add i_op->atomic_create()
-In-Reply-To: <874nts8uf8.fsf@tucsk.pomaz.szeredi.hu>
-Message-ID: <Pine.LNX.4.64.1203130932420.10527@cobra.newdream.net>
-References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
- <1331155362-11132-7-git-send-email-miklos@szeredi.hu> <20120313093720.GC11797@infradead.org>
- <87lin49259.fsf@tucsk.pomaz.szeredi.hu> <20120313115552.GA21043@infradead.org>
- <87haxs8we3.fsf@tucsk.pomaz.szeredi.hu> <874nts8uf8.fsf@tucsk.pomaz.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-ID: <1331656495.11405.4.camel@joe2Laptop>
+Subject: Re: [PATCH 1/4] jffs2: Convert most D1/D2 macros to jffs2_dbg
+From: Joe Perches <joe@perches.com>
+To: dedekind1@gmail.com
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 13 Mar 2012 09:34:55 -0700
+In-Reply-To: <1331642368.3595.31.camel@sauron.fi.intel.com>
+References: <cover.1329349881.git.joe@perches.com>
+	 <2d68e76db16d42f451370714f03ef952e0839692.1329349881.git.joe@perches.com>
+	 <1330965033.7220.16.camel@golum> <1330966615.3140.6.camel@joe2Laptop>
+	 <1331294012.29445.10.camel@sauron.fi.intel.com>
+	 <1331318968.13055.8.camel@joe2Laptop>
+	 <1331557935.12037.11.camel@sauron.fi.intel.com>
+	 <1331566415.13200.14.camel@joe2Laptop>
+	 <1331570150.12037.55.camel@sauron.fi.intel.com>
+	 <1331572270.13200.30.camel@joe2Laptop>
+	 <1331642368.3595.31.camel@sauron.fi.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012, Miklos Szeredi wrote:
-> Miklos Szeredi <miklos@szeredi.hu> writes:
-> 
-> > Christoph Hellwig <hch@infradead.org> writes:
-> >
-> >> On Tue, Mar 13, 2012 at 12:22:10PM +0100, Miklos Szeredi wrote:
-> >>> Good point.  Yes, ->create is probably worth getting rid of.  Mkdir, I'm
-> >>> not so sure, but I'll look at what filesystems are doing.
-> >>
-> >> Btw, is there any good reason to keep ->atomic_open and ->atomic_create
-> >> separate?  It seems like the instances in general share code anyway.
-> >
-> > ->atomic_open is called before lookup, ->atomic_create after lookup.
-> >
-> > How would we differentiate between the two if they were common?  We
-> > could have a filesystem flag, but for example CEPH does weird things
-> > like using ->atomic_open for !O_CREAT and ->atomic_create for O_CREAT.
+On Tue, 2012-03-13 at 14:39 +0200, Artem Bityutskiy wrote:
+> On Mon, 2012-03-12 at 10:11 -0700, Joe Perches wrote:
+> > On Mon, 2012-03-12 at 18:35 +0200, Artem Bityutskiy wrote:
+> > > On Mon, 2012-03-12 at 08:33 -0700, Joe Perches wrote:
+> > > > I tentatively converted them to a bitmap
+> > > > and a single jffs2_dbg(mask, fmt, ...)
+> > > > but perhaps all of these could be deleted
+> > > > too.
+> > > I think it is better to convert them to jffs2_debug(). And I guess after
+> > > the change the "mask" parameter will go away?
+> > Mask would remain and perhaps become a module
+> > variable instead of a compile #define.
+> > What is jffs2_debug?
+> Sorry, I meant to suggest to just turn them all to jffs2_dbg() which you
+> introduced, without any bitmasks.
 
-Don't let what Ceph used to do distract you; I only got certain intent 
-cases to work and didn't bother with the others.
+These functions are conditionally compiled today.
 
-> Or let the filesystem do the lookup in ->atomic_open if it wants (and
-> pass the need_lookup flag to the filesystem).
+Introducing a bitmask allows the same conditional
+compilation optimization.
 
-Either way is fine from my perspective.
+David?  as nominal maintainer, do you have an opinion?
 
-sage
+btw: Artem, you are not listed in the MAINTAINERS
+entry for jffs2.  Should you be?
+
