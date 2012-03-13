@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab2CMKvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 06:51:48 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:50203 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757707Ab2CMKvq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 06:51:46 -0400
+	id S1757970Ab2CMKwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:52:14 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:52934 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757808Ab2CMKwL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 06:52:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <1331597724-31358-8-git-send-email-paul.gortmaker@windriver.com>
-References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
-	<1331597724-31358-8-git-send-email-paul.gortmaker@windriver.com>
-Date: Tue, 13 Mar 2012 11:51:44 +0100
-Message-ID: <CABPqkBRSYH7YiTZUug0RaQgwoCYhiMWa6=0QY7hdpjsE0h84EA@mail.gmail.com>
-Subject: Re: [34-longterm 007/196] perf: Better fit max unprivileged mlock
- pages for tools needs
-From: Stephane Eranian <eranian@google.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+In-Reply-To: <CAMHCuPUQSPgt8mP2FY7hxi8345ZbLYi9NNbo5P24CDpZp50=_A@mail.gmail.com>
+References: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
+	<1329905650-30161-3-git-send-email-amit.kachhap@linaro.org>
+	<CAMHCuPUOnftKYaGjEpA9rZFc1yjH3U-EkEEUWqcFapSKROTopQ@mail.gmail.com>
+	<CAK44p23nZ0kgdieasMkChV8B51Rjt=KrmypN+ksV+nym_e0Cqw@mail.gmail.com>
+	<CAMHCuPXSCZjiyW28aPPjO4zF0vgabZUrqtUK5nMXLwNzSWUjQA@mail.gmail.com>
+	<CAP245DUqz-N3nG+bc-3b=4YgYk3LMJTWk_wB7Db1ZBm0fBQOSQ@mail.gmail.com>
+	<CAMHCuPUQSPgt8mP2FY7hxi8345ZbLYi9NNbo5P24CDpZp50=_A@mail.gmail.com>
+Date: Tue, 13 Mar 2012 16:22:09 +0530
+Message-ID: <CAK44p224FTbnBXOo34TPgB2dKjT1x-rGbDB+kPitvNhoXy35Tg@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 2/4] thermal: Add generic cpufreq cooling implementation
+From: Amit Kachhap <amit.kachhap@linaro.org>
+To: Sundar <sunder.svit@gmail.com>
+Cc: Amit Kucheria <amit.kucheria@linaro.org>, len.brown@intel.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        mark.gross@intel.com, linux-pm@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 1:12 AM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> From: Frederic Weisbecker <fweisbec@gmail.com>
+On 13 March 2012 15:44, Sundar <sunder.svit@gmail.com> wrote:
+> On Tue, Mar 13, 2012 at 3:30 PM, Amit Kucheria <amit.kucheria@linaro.org> wrote:
+>> Sundar,
 >
->                   -------------------
->    This is a commit scheduled for the next v2.6.34 longterm release.
->    If you see a problem with using this for longterm, please comment.
->                   -------------------
+> Hi Amit,
 >
-> commit 880f57318450dbead6a03f9e31a1468924d6dd88 upstream.
+>> At the moment it doesn't. But there was some discussion around
+>> creating something that will work with devfreq. This would allow
+>> peripheral drivers to be plugged in as well. Amit is investigating
+>> that at present.
 >
-> The maximum kilobytes of locked memory that an unprivileged user
-> can reserve is of 512 kB = 128 pages by default, scaled to the
-> number of onlined CPUs, which fits well with the tools that use
-> 128 data pages by default.
+> What if we work towards a generic constraint framework which models
+> thermals as a performance constraint.
 >
-> However tools actually use 129 pages, because they need one more
-> for the user control page. Thus the default mlock threshold is
-> not sufficient for the default tools needs and we always end up
-> to evaluate the constant mlock rlimit policy, which doesn't have
-> this scaling with the number of online CPUs.
+> Drivers can register to this constraint; platform code can then decide
+> to issue restrictions either to the CPU or other power-hungry
+> peripherals based on the platform conditions.
 >
-> Hence, on systems that have more than 16 CPUs, we overlap the
-> rlimit threshold and fail to mmap:
->
->        $ perf record ls
->        Error: failed to mmap with 1 (Operation not permitted)
->
-But isn't that simply coming from the fact that perf chose to request
-128 pages by default? I don't know how this size was chosen. If perf
-were to allocate 127 (data) pages, you would not have that problem
-with the current default limit, would you?
+> That also allows to model CPU frequency as a generic constraint but
+> via an actual consumer, say the thermal driver.
 
+Yes that should be helpful. Even the things your are suggesting are
+somewhat same with some patches submitted which sets cpufreq min/max
+constraint.
 
-> Just increase the max unprivileged mlock threshold by one page
-> so that it supports well perf tools even after 16 CPUs.
 >
-> Reported-by: Han Pingtian <phan@redhat.com>
-> Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Stephane Eranian <eranian@google.com>
-> LKML-Reference: <1300904979-5508-1-git-send-email-fweisbec@gmail.com>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  kernel/perf_event.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> Cheers!
 >
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index 2357b19..b203546 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -57,7 +57,8 @@ static atomic_t nr_task_events __read_mostly;
->  */
->  int sysctl_perf_event_paranoid __read_mostly = 1;
->
-> -int sysctl_perf_event_mlock __read_mostly = 512; /* 'free' kb per user */
-> +/* Minimum for 128 pages + 1 for the user control page */
-> +int sysctl_perf_event_mlock __read_mostly = 516; /* 'free' kb per user */
->
->  /*
->  * max perf event sample rate
 > --
-> 1.7.9.3
->
+> ---------
+> The views expressed in this email are personal and do not necessarily
+> echo my employers.
