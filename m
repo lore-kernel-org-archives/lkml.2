@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759748Ab2CMGAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 02:00:53 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45077 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759468Ab2CMGAv convert rfc822-to-8bit (ORCPT
+	id S1759793Ab2CMGDc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 02:03:32 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32800 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759692Ab2CMGDb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 02:00:51 -0400
+	Tue, 13 Mar 2012 02:03:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120312.225302.488696931454771146.davem@davemloft.net>
-References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com> <20120312.225302.488696931454771146.davem@davemloft.net>
-From: Avery Pennarun <apenwarr@gmail.com>
-Date: Tue, 13 Mar 2012 02:00:30 -0400
-Message-ID: <CAHqTa-3DiZhd_yoRTzp2Np0Rp=_zrfL7CbN_twu+ZZeu7f4ENg@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Persist printk buffer across reboots.
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, josh@joshtriplett.org,
-        paulmck@linux.vnet.ibm.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        fdinitto@redhat.com, hannes@cmpxchg.org, olaf@aepfle.de,
-        paul.gortmaker@windriver.com, tj@kernel.org, hpa@linux.intel.com,
-        yinghai@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <CAErSpo5cCC4HySedQ85BFKkPQ0VuYWX+NTjZLd4GpcATh1ix3g@mail.gmail.com>
+References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
+	<1331362837-10740-24-git-send-email-yinghai@kernel.org>
+	<CAErSpo5cCC4HySedQ85BFKkPQ0VuYWX+NTjZLd4GpcATh1ix3g@mail.gmail.com>
+Date: Mon, 12 Mar 2012 23:03:30 -0700
+X-Google-Sender-Auth: qDlVNs838Ue_pj6Qn6-YFeNcoFg
+Message-ID: <CAE9FiQWvOpJ1N=QLQ3MHRqVGw7pz1Fuma60pJSwzqP5Jc5PF3Q@mail.gmail.com>
+Subject: Re: [PATCH v2 23/37] PCI, ACPI: Add pci_root_hp hot add hotplug notification
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 1:53 AM, David Miller <davem@davemloft.net> wrote:
-> From: Avery Pennarun <apenwarr@gmail.com>
-> Date: Tue, 13 Mar 2012 01:36:36 -0400
+On Mon, Mar 12, 2012 at 8:22 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> It is from acpiphp_glue.c
+>>
+>> How to use it?
+>> Find out root bus number to acpi root name mapping from dmesg or /sys
+>>
+>>  echo "\_SB.PCIB 0" > /proc/acpi/sci/notify
+>> to add it back
 >
->> The last patch in this series implements a new CONFIG_PRINTK_PERSIST option
->> that, when enabled, puts the printk buffer in a well-defined memory location
->> so that we can keep appending to it after a reboot.  The upshot is that,
->> even after a kernel panic or non-panic hard lockup, on the next boot
->> userspace will be able to grab the kernel messages leading up to it.  It
->> could then upload the messages to a server (for example) to keep crash
->> statistics.
+> Nope.  That might be a way to exercise this for debug purposes (and it
+> only works when /proc/acpi/sci/notify is compiled in), but we
+> definitely don't want normal users to deal with ACPI pathnames like
+> this.
+
+before this patch set, only way is: Users really put one root bus in
+and press buton etc to trigger notification
+to get it work.
+
 >
-> On some platforms there are formal ways to reserve areas of memory
-> such that the bootup firmware will know to not touch it on soft resets
-> no matter what.  For example, on Sparc there are OpenFirmware calls to
-> set aside such an area of soft-reset preserved memory.
+> Most of this functionality belongs in the ACPI core, not here.  The
+> core should be handling these notify events and turning them into
+> .add() and .remove() calls to the driver.
 >
-> I think some formal agreement with the system firmware is a lot better
-> when available, and should be explicitly accomodated in these changes
-> so that those of us with such facilities can very easily hook it up.
+> But since the ACPI core doesn't do that yet, we have to do it in the
+> driver, like we do for CPU, memory, etc.  That part is fine.  But I
+> think it at least belongs *in* the driver, i.e., in pci_root.c, not in
+> a new pci_root_hp.c file.
 
-Sounds good to me.  Do you have any pointers?  Just use an
-early_param?  If we see the early_param but we can't reserve the
-requested address, should we fall back to probing or disable the
-PRINTK_PERSIST mode entirely?
+don't want to pollute pci_root.c.
 
-Thanks,
+in separated file, we can use CONFIG_HOTPLUG in Makefile instead of pci_root.c
 
-Avery
+>
+> There definitely should not be another acpi_walk_namespace() and
+> another list of ACPI host bridges.  The core *does* already walk the
+> namespace and call acpi_pci_root_add() for us.  And the driver already
+> has a list of host bridges (acpi_pci_roots).
+
+no, we may not have acpi_pci_root there.
