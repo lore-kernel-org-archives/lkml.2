@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964976Ab2CMH2y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 03:28:54 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:63410 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964832Ab2CMH2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 03:28:51 -0400
-Date: Tue, 13 Mar 2012 08:28:12 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, Ingo Molnar <mingo@elte.hu>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [PATCH V4 0/3] *** SUBJECT HERE ***
-Message-ID: <cover.1331622735.git.rubini@gnudd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+	id S1759945Ab2CMH2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 03:28:37 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:49741 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752067Ab2CMH2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 03:28:32 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 10/12] PCI, pciehp: Separate pci_hp_add_bridge()
+Date: Tue, 13 Mar 2012 00:26:32 -0700
+Message-Id: <1331623594-30543-11-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1331623594-30543-1-git-send-email-yinghai@kernel.org>
+References: <1331623594-30543-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090206.4F5EF71E.005A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a repost of the patch set I sent on Feb 22nd.
+Will use it for other pci hp hotplug support
 
-Patch 3 is dependent on patch 1 and 2, which are unordered. The
-big patch was picked up from V2 but without its dependencies.
-It seems like the set can be accepted but was probably forgotten.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/hotplug-pci.c        |   13 +++++++++++++
+ drivers/pci/hotplug/pciehp_pci.c |   18 ++----------------
+ drivers/pci/pci.h                |    1 +
+ 3 files changed, 16 insertions(+), 16 deletions(-)
 
-Other patches (for the sub-devices in this chip) are being worked on,
-but they all depend on CONFIG_STA2X11, so I'd like these to be merged
-if there are no serious problem (if there are, I can work to fix them).
-
-thanks
-/alessandro
-
-
-Summary:
-
-Patch 1: no functional effect (it uses an existing "#ifdef CONFIG_X86_64"
-in the 32-bit world, so it's not CONFIG_X86_64 but a new name)
-
-Patch 2: no functional effect (it allows some inline functions to not be
-inline where needed, with a new config symbol).
-
-Patch 3: is the good meat, but was already picked up so I think it's
-good as is.
-
-
-History:
-
-V4: rebased on next-20120309, no changes.
-
-V3: rebased on next-20120221. Fixed patch 3 to match new DMA
-prototypes. Renamed patch 3 as Ingo and Jesse merged it. Added both of
-them to explicit Cc: list in the email set.
-
-V2: rebased, minor and less-minor changes in patch 3/3.
-
-
-
-Alessandro Rubini (3):
-  x86: introduce CONFIG_X86_DEV_DMA_OPS
-  x86: introduce CONFIG_X86_DMA_REMAP
-  x86/PCI: initial support for sta2x11 I/O hub
-
- arch/x86/Kconfig                   |   34 +++-
- arch/x86/include/asm/device.h      |    4 +-
- arch/x86/include/asm/dma-mapping.h |    9 +-
- arch/x86/pci/Makefile              |    2 +
- arch/x86/pci/sta2x11-fixup.c       |  367 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 409 insertions(+), 7 deletions(-)
- create mode 100644 arch/x86/pci/sta2x11-fixup.c
-
+diff --git a/drivers/pci/hotplug-pci.c b/drivers/pci/hotplug-pci.c
+index d3509cd..d0999b1 100644
+--- a/drivers/pci/hotplug-pci.c
++++ b/drivers/pci/hotplug-pci.c
+@@ -4,6 +4,19 @@
+ #include <linux/export.h>
+ #include "pci.h"
+ 
++int __ref pci_hp_add_bridge(struct pci_dev *dev)
++{
++	struct pci_bus *parent = dev->bus;
++	int pass, busnr = parent->secondary;
++
++	for (pass = 0; pass < 2; pass++)
++		busnr = pci_scan_bridge(parent, dev, busnr, pass);
++	if (!dev->subordinate)
++		return -1;
++
++	return 0;
++}
++EXPORT_SYMBOL(pci_hp_add_bridge);
+ 
+ unsigned int __devinit pci_do_scan_bus(struct pci_bus *bus)
+ {
+diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
+index e21171c..b9a9fce 100644
+--- a/drivers/pci/hotplug/pciehp_pci.c
++++ b/drivers/pci/hotplug/pciehp_pci.c
+@@ -34,19 +34,6 @@
+ #include "../pci.h"
+ #include "pciehp.h"
+ 
+-static int __ref pciehp_add_bridge(struct pci_dev *dev)
+-{
+-	struct pci_bus *parent = dev->bus;
+-	int pass, busnr = parent->secondary;
+-
+-	for (pass = 0; pass < 2; pass++)
+-		busnr = pci_scan_bridge(parent, dev, busnr, pass);
+-	if (!dev->subordinate)
+-		return -1;
+-
+-	return 0;
+-}
+-
+ int pciehp_configure_device(struct slot *p_slot)
+ {
+ 	struct pci_dev *dev;
+@@ -75,9 +62,8 @@ int pciehp_configure_device(struct slot *p_slot)
+ 		if (!dev)
+ 			continue;
+ 		if ((dev->hdr_type == PCI_HEADER_TYPE_BRIDGE) ||
+-				(dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)) {
+-			pciehp_add_bridge(dev);
+-		}
++		    (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS))
++			pci_hp_add_bridge(dev);
+ 		pci_dev_put(dev);
+ 	}
+ 
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index 13b1159..9378d81 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -124,6 +124,7 @@ static inline int pci_proc_detach_bus(struct pci_bus *bus) { return 0; }
+ #endif
+ 
+ /* Functions for PCI Hotplug drivers to use */
++int pci_hp_add_bridge(struct pci_dev *dev);
+ extern unsigned int pci_do_scan_bus(struct pci_bus *bus);
+ 
+ #ifdef HAVE_PCI_LEGACY
 -- 
-1.7.7.2
+1.7.7
+
