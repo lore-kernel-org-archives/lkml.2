@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab2CMHJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 03:09:38 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48013 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758351Ab2CMHJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 03:09:34 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V3 8/8] memcg: Add memory controller documentation for hugetlb management
-Date: Tue, 13 Mar 2012 12:37:12 +0530
-Message-Id: <1331622432-24683-9-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9
-In-Reply-To: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12031307-5816-0000-0000-000001B5A9DF
+	id S1757513Ab2CMHK6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 03:10:58 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:35847 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755926Ab2CMHK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 03:10:56 -0400
+Message-ID: <1331622633.2048.87.camel@epip-laptop>
+Subject: Re: [PATCH 7/7] arch/unicore32/kernel/dma.c: ensure arguments to
+ request_irq and free_irq are compatible
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 13 Mar 2012 15:10:33 +0800
+In-Reply-To: <alpine.DEB.2.02.1203120625570.2066@localhost6.localdomain6>
+References: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1331494587-12196-8-git-send-email-Julia.Lawall@lip6.fr>
+	 <1331513926.2048.58.camel@epip-laptop>
+	 <alpine.DEB.2.02.1203120625570.2066@localhost6.localdomain6>
+Organization: MPRC, PKU
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+On Mon, 2012-03-12 at 06:27 +0100, Julia Lawall wrote:
+> On Mon, 12 Mar 2012, Guan Xuetao wrote:
+> 
+> > On Sun, 2012-03-11 at 20:36 +0100, Julia Lawall wrote:
+> >> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> >>
+> >> Convert calls to free_irq so that the second argument is the same as the
+> >> last argument of the corresponding call to request_irq, rather than the
+> >> second to last.  Without this property, free_irq does nothing.
+> >>
+> >> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> >>
+> >> ---
+> >>  arch/unicore32/kernel/dma.c |    2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/arch/unicore32/kernel/dma.c b/arch/unicore32/kernel/dma.c
+> >> index ae441bc..c813fec 100644
+> >> --- a/arch/unicore32/kernel/dma.c
+> >> +++ b/arch/unicore32/kernel/dma.c
+> >> @@ -173,7 +173,7 @@ int __init puv3_init_dma(void)
+> >>  	ret = request_irq(IRQ_DMAERR, dma_err_handler, 0, "DMAERR", NULL);
+> >>  	if (ret) {
+> >>  		printk(KERN_CRIT "Can't register IRQ for DMAERR\n");
+> >> -		free_irq(IRQ_DMA, "DMA");
+> >> +		free_irq(IRQ_DMA, NULL);
+> >>  		return ret;
+> >>  	}
+> >>
+> > Yeah, it's an obvious mistake. Thanks.
+> > Because the dma device is just located inside PKUnity-3 SoC, and
+> > request_irq() should always return 0, I prefer to remove this free_irq()
+> > line.
+> 
+> Remove the whole if test I guess.  Is there a nce way to indicate that the 
+> return value is not needed (eg for the benefit of future bug finding 
+> rules)?
+> 
+> julia
+In this case, removing the line containing free_irq() is well enough,
+because IRQ_DMA can work even when IRQ_DMAERR doesn't work. And we need
+printk and error return value to get potential logical bug information.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- Documentation/cgroups/memory.txt |   29 +++++++++++++++++++++++++++++
- 1 files changed, 29 insertions(+), 0 deletions(-)
+Thanks & Regards,
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 4c95c00..d99c41b 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -43,6 +43,7 @@ Features:
-  - usage threshold notifier
-  - oom-killer disable knob and oom-notifier
-  - Root cgroup has no limit controls.
-+ - resource accounting for HugeTLB pages
- 
-  Kernel memory support is work in progress, and the current version provides
-  basically functionality. (See Section 2.7)
-@@ -75,6 +76,12 @@ Brief summary of control files.
-  memory.kmem.tcp.limit_in_bytes  # set/show hard limit for tcp buf memory
-  memory.kmem.tcp.usage_in_bytes  # show current tcp buf memory allocation
- 
-+
-+ memory.hugetlb.<hugepagesize>.limit_in_bytes     # set/show limit of "hugepagesize" hugetlb usage
-+ memory.hugetlb.<hugepagesize>.max_usage_in_bytes # show max "hugepagesize" hugetlb  usage recorded
-+ memory.hugetlb.<hugepagesize>.usage_in_bytes     # show current res_counter usage for "hugepagesize" hugetlb
-+						  # see 5.7 for details
-+
- 1. History
- 
- The memory controller has a long history. A request for comments for the memory
-@@ -279,6 +286,15 @@ per cgroup, instead of globally.
- 
- * tcp memory pressure: sockets memory pressure for the tcp protocol.
- 
-+2.8 HugeTLB extension
-+
-+This extension allows to limit the HugeTLB usage per control group and
-+enforces the controller limit during page fault. Since HugeTLB doesn't
-+support page reclaim, enforcing the limit at page fault time implies that,
-+the application will get SIGBUS signal if it tries to access HugeTLB pages
-+beyond its limit. This requires the application to know beforehand how much
-+HugeTLB pages it would require for its use.
-+
- 3. User Interface
- 
- 0. Configuration
-@@ -287,6 +303,7 @@ a. Enable CONFIG_CGROUPS
- b. Enable CONFIG_RESOURCE_COUNTERS
- c. Enable CONFIG_CGROUP_MEM_RES_CTLR
- d. Enable CONFIG_CGROUP_MEM_RES_CTLR_SWAP (to use swap extension)
-+f. Enable CONFIG_MEM_RES_CTLR_HUGETLB (to use HugeTLB extension)
- 
- 1. Prepare the cgroups (see cgroups.txt, Why are cgroups needed?)
- # mount -t tmpfs none /sys/fs/cgroup
-@@ -510,6 +527,18 @@ unevictable=<total anon pages> N0=<node 0 pages> N1=<node 1 pages> ...
- 
- And we have total = file + anon + unevictable.
- 
-+5.7 HugeTLB resource control files
-+For a system supporting two hugepage size (16M and 16G) the control
-+files include:
-+
-+ memory.hugetlb.16GB.limit_in_bytes
-+ memory.hugetlb.16GB.max_usage_in_bytes
-+ memory.hugetlb.16GB.usage_in_bytes
-+ memory.hugetlb.16MB.limit_in_bytes
-+ memory.hugetlb.16MB.max_usage_in_bytes
-+ memory.hugetlb.16MB.usage_in_bytes
-+
-+
- 6. Hierarchy support
- 
- The memory controller supports a deep hierarchy and hierarchical accounting.
--- 
-1.7.9
+Guan Xuetao
 
