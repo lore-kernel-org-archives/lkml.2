@@ -1,40 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216Ab2CMVg5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 17:36:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49275 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757809Ab2CMVgz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 17:36:55 -0400
-Date: Tue, 13 Mar 2012 14:36:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V3 3/8] hugetlb: add charge/uncharge calls for HugeTLB
- alloc/free
-Message-Id: <20120313143654.5dd1243d.akpm@linux-foundation.org>
-In-Reply-To: <1331622432-24683-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1331622432-24683-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1759693Ab2CMVh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 17:37:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43225 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758284Ab2CMVh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 17:37:58 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [GIT PULL] Renesas SoC updates for v3.4, take 2
+Date: Tue, 13 Mar 2012 22:42:07 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Paul Mundt <lethal@linux-sh.org>
+References: <201203092155.04731.rjw@sisk.pl> <201203131939.36186.arnd@arndb.de> <201203132117.50390.rjw@sisk.pl>
+In-Reply-To: <201203132117.50390.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201203132242.07283.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 12:37:07 +0530
-"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Tuesday, March 13, 2012, Rafael J. Wysocki wrote:
+> On Tuesday, March 13, 2012, Arnd Bergmann wrote:
+> > On Tuesday 13 March 2012, Rafael J. Wysocki wrote:
+> > > > Note that the __io() issue has turned out to be more urgent than I first
+> > > > thought when we discussed it, so it would be good to apply the patch below
+> > > > on top of your series.
+> > > 
+> > > Do you want me to apply it now or will you do that in your tree?
+> > 
+> > Doesn't matter to me, as long as one of you applies it ;-)
+> 
+> OK, so I will add it to the soc branch in the Renesas tree.
 
-> +		return ERR_PTR(-VM_FAULT_SIGBUS);
+Applied and pushed back the updated tree.
 
-whee, so we have (ab)used the err.h infrastructure to carry
-VM_FAULT_foo codes, thus creating a secret requirement that the
-VM_FAULT_foo values not exceed MAX_ERRNO.
-
-What a hack, whodidthat?
+Thanks,
+Rafael
