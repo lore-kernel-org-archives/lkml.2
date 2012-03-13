@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab2CMASR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:18:17 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46846 "EHLO
+	id S932212Ab2CMASP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:18:15 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46848 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137Ab2CMASM (ORCPT
+	with ESMTP id S932138Ab2CMASM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Mar 2012 20:18:12 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Arjan Mels <arjan.mels@gmx.net>,
-        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>,
-        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 016/196] staging: usbip: bugfixes related to kthread conversion
-Date: Mon, 12 Mar 2012 20:12:24 -0400
-Message-Id: <1331597724-31358-17-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 036/196] b43: allocate receive buffers big enough for max frame len + offset
+Date: Mon, 12 Mar 2012 20:12:44 -0400
+Message-Id: <1331597724-31358-37-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,82 +21,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arjan Mels <arjan.mels@gmx.net>
+From: "John W. Linville" <linville@tuxdriver.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d2dd0b07c3e725d386d20294ec906f7ddef207fa upstream.
+commit c85ce65ecac078ab1a1835c87c4a6319cf74660a upstream.
 
-When doing a usb port reset do a queued reset instead to prevent a
-deadlock: the reset will cause the driver to unbind, causing the
-usb_driver_lock_for_reset to stall.
+Otherwise, skb_put inside of dma_rx can fail...
 
-Signed-off-by: Arjan Mels <arjan.mels@gmx.net>
-Cc: Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
-Cc: Max Vozeler <max@vozeler.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+	https://bugzilla.kernel.org/show_bug.cgi?id=32042
+
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/staging/usbip/stub_rx.c |   40 +++++++++++++++------------------------
- 1 file changed, 15 insertions(+), 25 deletions(-)
+ drivers/net/wireless/b43/dma.c |    2 +-
+ drivers/net/wireless/b43/dma.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/usbip/stub_rx.c b/drivers/staging/usbip/stub_rx.c
-index bc26740..16a7df1 100644
---- a/drivers/staging/usbip/stub_rx.c
-+++ b/drivers/staging/usbip/stub_rx.c
-@@ -170,33 +170,23 @@ static int tweak_set_configuration_cmd(struct urb *urb)
+diff --git a/drivers/net/wireless/b43/dma.c b/drivers/net/wireless/b43/dma.c
+index fa40fdf..b8900f0 100644
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -1538,7 +1538,7 @@ static void dma_rx(struct b43_dmaring *ring, int *slot)
+ 		dmaaddr = meta->dmaaddr;
+ 		goto drop_recycle_buffer;
+ 	}
+-	if (unlikely(len > ring->rx_buffersize)) {
++	if (unlikely(len + ring->frameoffset > ring->rx_buffersize)) {
+ 		/* The data did not fit into one descriptor buffer
+ 		 * and is split over multiple buffers.
+ 		 * This should never happen, as we try to allocate buffers
+diff --git a/drivers/net/wireless/b43/dma.h b/drivers/net/wireless/b43/dma.h
+index dc91944..a9282d7 100644
+--- a/drivers/net/wireless/b43/dma.h
++++ b/drivers/net/wireless/b43/dma.h
+@@ -163,7 +163,7 @@ struct b43_dmadesc_generic {
+ /* DMA engine tuning knobs */
+ #define B43_TXRING_SLOTS		256
+ #define B43_RXRING_SLOTS		64
+-#define B43_DMA0_RX_BUFFERSIZE		IEEE80211_MAX_FRAME_LEN
++#define B43_DMA0_RX_BUFFERSIZE		(B43_DMA0_RX_FRAMEOFFSET + IEEE80211_MAX_FRAME_LEN)
  
- static int tweak_reset_device_cmd(struct urb *urb)
- {
--	struct usb_ctrlrequest *req;
--	__u16 value;
--	__u16 index;
--	int ret;
--
--	req = (struct usb_ctrlrequest *) urb->setup_packet;
--	value = le16_to_cpu(req->wValue);
--	index = le16_to_cpu(req->wIndex);
--
--	usbip_uinfo("reset_device (port %d) to %s\n", index,
--						dev_name(&urb->dev->dev));
-+	struct stub_priv *priv = (struct stub_priv *) urb->context;
-+	struct stub_device *sdev = priv->sdev;
- 
--	/* all interfaces should be owned by usbip driver, so just reset it.  */
--	ret = usb_lock_device_for_reset(urb->dev, NULL);
--	if (ret < 0) {
--		dev_err(&urb->dev->dev, "lock for reset\n");
--		return ret;
--	}
--
--	/* try to reset the device */
--	ret = usb_reset_device(urb->dev);
--	if (ret < 0)
--		dev_err(&urb->dev->dev, "device reset\n");
-+	usbip_uinfo("reset_device %s\n", dev_name(&urb->dev->dev));
- 
--	usb_unlock_device(urb->dev);
--
--	return ret;
-+	/*
-+	 * usb_lock_device_for_reset caused a deadlock: it causes the driver
-+	 * to unbind. In the shutdown the rx thread is signalled to shut down
-+	 * but this thread is pending in the usb_lock_device_for_reset.
-+	 *
-+	 * Instead queue the reset.
-+	 *
-+	 * Unfortunatly an existing usbip connection will be dropped due to
-+	 * driver unbinding.
-+	 */
-+	usb_queue_reset_device(sdev->interface);
-+	return 0;
- }
- 
- /*
+ /* Pointer poison */
+ #define B43_DMA_PTR_POISON		((void *)ERR_PTR(-ENOMEM))
 -- 
 1.7.9.3
 
