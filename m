@@ -1,68 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab2CMEsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 00:48:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27420 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755101Ab2CMEse convert rfc822-to-8bit (ORCPT
+	id S1757257Ab2CMEsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 00:48:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35256 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033Ab2CMEsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 00:48:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="118088087"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Amit Kachhap <amit.kachhap@linaro.org>
-CC: "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
-        "patches@linaro.org" <patches@linaro.org>
-Subject: RE: [PATCH 1/4] thermal: exynos: Add thermal interface support for
- linux thermal layer
-Thread-Topic: [PATCH 1/4] thermal: exynos: Add thermal interface support for
- linux thermal layer
-Thread-Index: AQHM+S325crfIhSomU2a5BXeXqw6HJZmfwxQgADUMQCAAGKN8A==
-Date: Tue, 13 Mar 2012 04:48:23 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5904C758@BGSMSX101.gar.corp.intel.com>
-References: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org>
-	<1330772767-16120-2-git-send-email-amit.kachhap@linaro.org>
-	<4D68720C2E767A4AA6A8796D42C8EB5904B13D@BGSMSX101.gar.corp.intel.com>
- <CAK44p23NwjPe3Ku0tfFXCQzi+2fdgEipFf+oCVKk99sC9qVMBA@mail.gmail.com>
-In-Reply-To: <CAK44p23NwjPe3Ku0tfFXCQzi+2fdgEipFf+oCVKk99sC9qVMBA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Mar 2012 00:48:47 -0400
+Date: Mon, 12 Mar 2012 21:48:16 -0700
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Message-ID: <tip-4v31etnhgg9kwd6ocgx3rxl8@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, aman@tmm1.net,
+        leslaw.kopec@nasza-klasa.pl, dsmythies@telus.net, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, aman@tmm1.net,
+        leslaw.kopec@nasza-klasa.pl, dsmythies@telus.net, tglx@linutronix.de,
+        mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Fix nohz load accounting -- again!
+Git-Commit-ID: c308b56b5398779cd3da0f62ab26b0453494c3d4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 12 Mar 2012 21:48:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Amit,
+Commit-ID:  c308b56b5398779cd3da0f62ab26b0453494c3d4
+Gitweb:     http://git.kernel.org/tip/c308b56b5398779cd3da0f62ab26b0453494c3d4
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Thu, 1 Mar 2012 15:04:46 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 12 Mar 2012 20:43:17 +0100
 
-[snip.]
+sched: Fix nohz load accounting -- again!
 
-> >> +
-> >> + † † kobject_uevent(&th_zone->therm_dev->device.kobj, KOBJ_CHANGE);
-> >
-> > Wouldn't it make more sense to pass the trip point id also as an 'env'
-> > parameter ? This way, the user space can easily figure out which trip
-> > point has been crossed.
-> Its a good suggestion. I will check if some uevent property allows that.
+Various people reported nohz load tracking still being wrecked, but Doug
+spotted the actual problem. We fold the nohz remainder in too soon,
+causing us to loose samples and under-account.
 
-The kobject_uevent_env(...) call allows that. The third argument takes a
-char *envp[]. For example, We could pass "trip=0" to indicate the trip point.
-I should have mentioned this in my previous reply itself..missed it..
+So instead of playing catch-up up-front, always do a single load-fold
+with whatever state we encounter and only then fold the nohz remainder
+and play catch-up.
 
-Thanks,
-Durga
+Reported-by: Doug Smythies <dsmythies@telus.net>
+Reported-by: Les√Ö=82aw Kope=C4=87 <leslaw.kopec@nasza-klasa.pl>
+Reported-by: Aman Gupta <aman@tmm1.net>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/n/tip-4v31etnhgg9kwd6ocgx3rxl8@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched/core.c |   53 +++++++++++++++++++++++++--------------------------
+ 1 files changed, 26 insertions(+), 27 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 47614a5..e3ccc13 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2266,13 +2266,10 @@ calc_load_n(unsigned long load, unsigned long exp,
+  * Once we've updated the global active value, we need to apply the exponential
+  * weights adjusted to the number of cycles missed.
+  */
+-static void calc_global_nohz(unsigned long ticks)
++static void calc_global_nohz(void)
+ {
+ 	long delta, active, n;
+ 
+-	if (time_before(jiffies, calc_load_update))
+-		return;
+-
+ 	/*
+ 	 * If we crossed a calc_load_update boundary, make sure to fold
+ 	 * any pending idle changes, the respective CPUs might have
+@@ -2284,31 +2281,25 @@ static void calc_global_nohz(unsigned long ticks)
+ 		atomic_long_add(delta, &calc_load_tasks);
+ 
+ 	/*
+-	 * If we were idle for multiple load cycles, apply them.
++	 * It could be the one fold was all it took, we done!
+ 	 */
+-	if (ticks >= LOAD_FREQ) {
+-		n = ticks / LOAD_FREQ;
++	if (time_before(jiffies, calc_load_update + 10))
++		return;
+ 
+-		active = atomic_long_read(&calc_load_tasks);
+-		active = active > 0 ? active * FIXED_1 : 0;
++	/*
++	 * Catch-up, fold however many we are behind still
++	 */
++	delta = jiffies - calc_load_update - 10;
++	n = 1 + (delta / LOAD_FREQ);
+ 
+-		avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
+-		avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
+-		avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
++	active = atomic_long_read(&calc_load_tasks);
++	active = active > 0 ? active * FIXED_1 : 0;
+ 
+-		calc_load_update += n * LOAD_FREQ;
+-	}
++	avenrun[0] = calc_load_n(avenrun[0], EXP_1, active, n);
++	avenrun[1] = calc_load_n(avenrun[1], EXP_5, active, n);
++	avenrun[2] = calc_load_n(avenrun[2], EXP_15, active, n);
+ 
+-	/*
+-	 * Its possible the remainder of the above division also crosses
+-	 * a LOAD_FREQ period, the regular check in calc_global_load()
+-	 * which comes after this will take care of that.
+-	 *
+-	 * Consider us being 11 ticks before a cycle completion, and us
+-	 * sleeping for 4*LOAD_FREQ + 22 ticks, then the above code will
+-	 * age us 4 cycles, and the test in calc_global_load() will
+-	 * pick up the final one.
+-	 */
++	calc_load_update += n * LOAD_FREQ;
+ }
+ #else
+ void calc_load_account_idle(struct rq *this_rq)
+@@ -2320,7 +2311,7 @@ static inline long calc_load_fold_idle(void)
+ 	return 0;
+ }
+ 
+-static void calc_global_nohz(unsigned long ticks)
++static void calc_global_nohz(void)
+ {
+ }
+ #endif
+@@ -2348,8 +2339,6 @@ void calc_global_load(unsigned long ticks)
+ {
+ 	long active;
+ 
+-	calc_global_nohz(ticks);
+-
+ 	if (time_before(jiffies, calc_load_update + 10))
+ 		return;
+ 
+@@ -2361,6 +2350,16 @@ void calc_global_load(unsigned long ticks)
+ 	avenrun[2] = calc_load(avenrun[2], EXP_15, active);
+ 
+ 	calc_load_update += LOAD_FREQ;
++
++	/*
++	 * Account one period with whatever state we found before
++	 * folding in the nohz state and ageing the entire idle period.
++	 *
++	 * This avoids loosing a sample when we go idle between 
++	 * calc_load_account_active() (10 ticks ago) and now and thus
++	 * under-accounting.
++	 */
++	calc_global_nohz();
+ }
+ 
+ /*
