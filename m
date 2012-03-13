@@ -1,62 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab2CMSed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 14:34:33 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:39524 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754365Ab2CMSeb (ORCPT
+	id S1755464Ab2CMSe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 14:34:58 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62132 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822Ab2CMSe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 14:34:31 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6647"; a="169804772"
-Date: Tue, 13 Mar 2012 13:34:28 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: David Howells <dhowells@redhat.com>
-Cc: paul.gortmaker@windriver.com, hpa@zytor.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        arnd@arndb.de, linux-hexagon@vger.kernel.org
-Subject: Re: [PATCH 10/35] Disintegrate asm/system.h for Hexagon [ver #2]
-Message-ID: <20120313183428.GC31083@codeaurora.org>
-References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
- <20120312233747.13888.75605.stgit@warthog.procyon.org.uk>
+	Tue, 13 Mar 2012 14:34:57 -0400
+Date: Tue, 13 Mar 2012 22:34:52 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: dirk.brandewie@gmail.com
+Cc: linux-kernel@vger.kernel.org, dg77.kim@samsung.com,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        Jason.Wortham@maxim-ic.com, bruce.e.robertson@intel.com,
+        Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: [PATCH 5/5] max17042: Change capacity property to use reported
+ SOC register
+Message-ID: <20120313183452.GB15964@oksana.dev.rtsoft.ru>
+References: <1327425968-21195-1-git-send-email-dirk.brandewie@gmail.com>
+ <1327425968-21195-6-git-send-email-dirk.brandewie@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120312233747.13888.75605.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1327425968-21195-6-git-send-email-dirk.brandewie@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 11:37:47PM +0000, David Howells wrote:
-> Disintegrate asm/system.h for Hexagon.  Not compiled.
+On Tue, Jan 24, 2012 at 09:26:08AM -0800, dirk.brandewie@gmail.com wrote:
+> From: Dirk Brandewie <dirk.brandewie@gmail.com>
 > 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: linux-hexagon@vger.kernel.org
+> The SOC register (0dh) reports the state of charge before empty
+> compensation adjustments are applied.  The max value reported by this
+> register will decrease as the battery ages.
+> 
+> Use the RepSOC register (06h) to report the capacity of the
+> battery. RepSOC contains a filtered version of the battery capacity
+> after empty compensation adjustments have been applied.
+> 
+> Reported-by: Gary Keyes <gary.e.keyes@intel.com>
+> 
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 > ---
+>  drivers/power/max17042_battery.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
->  arch/hexagon/include/asm/atomic.h    |    1 
->  arch/hexagon/include/asm/barrier.h   |   41 +++++++++++
->  arch/hexagon/include/asm/bitops.h    |    1 
->  arch/hexagon/include/asm/cmpxchg.h   |   90 +++++++++++++++++++++++
->  arch/hexagon/include/asm/exec.h      |   28 +++++++
->  arch/hexagon/include/asm/switch_to.h |   34 +++++++++
->  arch/hexagon/include/asm/system.h    |  131 +---------------------------------
->  arch/hexagon/kernel/ptrace.c         |    1 
->  arch/hexagon/kernel/smp.c            |    1 
->  arch/hexagon/kernel/vm_events.c      |    1 
->  10 files changed, 199 insertions(+), 130 deletions(-)
->  create mode 100644 arch/hexagon/include/asm/barrier.h
->  create mode 100644 arch/hexagon/include/asm/cmpxchg.h
->  create mode 100644 arch/hexagon/include/asm/exec.h
->  create mode 100644 arch/hexagon/include/asm/switch_to.h
-> 
+> diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+> index 6e96b58..2194278 100644
+> --- a/drivers/power/max17042_battery.c
+> +++ b/drivers/power/max17042_battery.c
+> @@ -160,7 +160,7 @@ static int max17042_get_property(struct power_supply *psy,
+>  		break;
+>  	case POWER_SUPPLY_PROP_CAPACITY:
+>  		val->intval = max17042_read_reg(chip->client,
+> -				MAX17042_SOC) / 256;
+> +				MAX17042_RepSOC) / 256;
 
+Applied. But I don't get it: PROP_CAPACITY should report
+percents! And it looks that it reports something very
+different.
 
+Also, if you look down the file, you'll see this:
 
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
+        case POWER_SUPPLY_PROP_CHARGE_FULL:
+                ret = max17042_read_reg(chip->client, MAX17042_RepSOC);
+                if (ret < 0)
+                        return ret;
 
+                if ((ret >> 8) >= MAX17042_BATTERY_FULL)
+                        val->intval = 1;
+                else if (ret >= 0)
+                        val->intval = 0;
+                break;
+
+Wut? This is also wrong. PROP_CHARGE_FULL reports uAh, not "fully
+charged" boolean status.
+
+Please, read Documentation/power/power_supply_class.txt:
+
+~ ~ ~ ~ ~ ~ ~  Charge/Energy/Capacity - how to not confuse  ~ ~ ~ ~ ~ ~ ~
+~                                                                       ~
+~ Because both "charge" (µAh) and "energy" (µWh) represents "capacity"  ~
+~ of battery, this class distinguish these terms. Don't mix them!       ~
+~                                                                       ~
+~ CHARGE_* attributes represents capacity in µAh only.                  ~
+~ ENERGY_* attributes represents capacity in µWh only.                  ~
+~ CAPACITY attribute represents capacity in *percents*, from 0 to 100.  ~
+~                                                                       ~
+~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+
+The driver is seriously broken, very. I'd even consider adding
+'depends on BROKEN', as the driver might be the source of the
+confusion for drivers based on this one and for userland devs.
+
+Thanks,
 
 -- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
