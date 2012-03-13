@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab2CMMqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:46:21 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59097 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752264Ab2CMMqU (ORCPT
+	id S1752875Ab2CMMqu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:46:50 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:57883 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab2CMMqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 08:46:20 -0400
-Message-ID: <4F5F4197.4070605@gmail.com>
-Date: Tue, 13 Mar 2012 07:46:15 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 13 Mar 2012 08:46:48 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6647"; a="169681679"
+Message-ID: <4F5F41AF.1090907@codeaurora.org>
+Date: Tue, 13 Mar 2012 18:16:39 +0530
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Dong Aisheng <b29396@freescale.com>
-CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com
-Subject: Re: [PATCH 1/1] of: add NULL parameter check for of_device_is_available
-References: <1331638805-17136-1-git-send-email-b29396@freescale.com>
-In-Reply-To: <1331638805-17136-1-git-send-email-b29396@freescale.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Walker <dwalker@fifo99.com>
+CC: Russell King <linux@arm.linux.org.uk>, Vinod Koul <vinod.koul@intel.com>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bryan Huntsman <bryanh@codeaurora.org>, gregkh@linuxfoundation.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 2/2] DMAEngine: Add DMAEngine driver based on old MSM
+ DMA APIs
+References: <1331548364-27845-1-git-send-email-kumarrav@codeaurora.org> <20120312201421.GA3459@fifo99.com>
+In-Reply-To: <20120312201421.GA3459@fifo99.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2012 06:40 AM, Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> This function will return 1 even the device node passed in
-> is NULL which is a little error-prone.
-> Change to return 0 if the device node passed in is NULL.
-> 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+On 3/13/2012 1:44 AM, Daniel Walker wrote:
+> On Mon, Mar 12, 2012 at 04:02:44PM +0530, Ravi Kumar V wrote:
+>> Add DMAEngine based driver using the old MSM DMA APIs internally.
+>
+> What do you mean by this?
+>
+There is a MSM DMA driver in arch/arm/mach-msm/ which is not in
+dmaengine framework standards, but that driver is been used by client 
+drivers nand, eMMC and serial drivers. Now if we implement the whole dma 
+driver using dmaengine framework then nand, eMMC like drivers will be 
+failed as they are using old dma driver API's, so instead of 
+implementing new driver from scratch we are keeping the old dma API's as 
+it is and using those API's in new dmaengine framework.So that we can 
+convert clients drivers to use dma engine framework.
 
-Applied.
+>> The benefit of this approach is that not all the drivers
+>> have to get converted to DMAEngine APIs simultaneosly while
+>> both the drivers can stay enabled in the kernel. The client
+>> drivers using the old MSM APIs directly can now convert to
+>> DMAEngine one by one.
+>
+> Which drivers?
 
-Rob
+client drivers which are using dma.
+>
+> Daniel
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-> ---
->  drivers/of/base.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 133908a..b9347d8 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -280,6 +280,9 @@ int of_device_is_available(const struct device_node *device)
->  	const char *status;
->  	int statlen;
->  
-> +	if (device == NULL)
-> +		return 0;
-> +
->  	status = of_get_property(device, "status", &statlen);
->  	if (status == NULL)
->  		return 1;
 
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
