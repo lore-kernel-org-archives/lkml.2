@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965350Ab2CMAkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:40:06 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48586 "EHLO
+	id S965011Ab2CMAkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:40:42 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48576 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759093Ab2CMAYR (ORCPT
+	with ESMTP id S1759079Ab2CMAYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:24:17 -0400
+	Mon, 12 Mar 2012 20:24:15 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Edgar Hucek <gimli@dark-green.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
+Cc: stable-review@kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 132/196] hwmon: (applesmc) Add MacBookAir3,1(3,2) support
-Date: Mon, 12 Mar 2012 20:20:45 -0400
-Message-Id: <1331598109-31424-87-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 153/196] e1000: fix Tx hangs by disabling 64-bit DMA
+Date: Mon, 12 Mar 2012 20:21:06 -0400
+Message-Id: <1331598109-31424-108-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,61 +24,263 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Edgar Hucek <gimli@dark-green.com>
+From: Jesse Brandeburg <jesse.brandeburg@intel.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 132af03233b493101a53010383b5abb5b9ff1e51 upstream.
+commit e508be174ad36b0cf9b324cd04978c2b13c21502 upstream.
 
-This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the
-applesmc driver.
+Several users report issues with 32-bit adapters when plugged
+into PCI slots in machines with >= 4GB ram.  In particular AMD
+systems with HyperTransport to PCI bridges seem to trigger the
+issue, but it isn't limited to only them.
 
-[rydberg@euromail.se: minor cleanup]
-Signed-off-by: Edgar Hucek <gimli@dark-green.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+This issue is not easily reproducible here, yet still continues
+to occur in the field.  For e1000 on PCI devices, just disable DMA
+addresses over the 4GB boundary when in PCI (not PCI-X) mode, to
+prevent the issue from continuing to pop up.  The performance
+impact for this is negligible.
 
+The code was refactored to move the init of the hw struct to its
+own function. This allows the init to be called very early in
+probe, which then allows using hw-> members for this fix.
+
+A slight refactor to the DMA mask code was done for minor
+correctness based on the instructions in DMA-API-HOWTO.
+
+[PG: 34 has pci prefix, e.g pci_set_dma_mask vs. dma_set_mask]
+
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/hwmon/applesmc.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/e1000/e1000_main.c |  162 +++++++++++++++++++++++-----------------
+ 1 file changed, 92 insertions(+), 70 deletions(-)
 
-diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index 57c0331..7765a6b 100644
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -162,6 +162,10 @@ static const char *temperature_sensors_sets[][41] = {
- /* Set 22: MacBook Pro 7,1 */
- 	{ "TB0T", "TB1T", "TB2T", "TC0D", "TC0P", "TN0D", "TN0P", "TN0S",
- 	  "TN1D", "TN1F", "TN1G", "TN1S", "Th1H", "Ts0P", "Ts0S", NULL },
-+/* Set 23: MacBook Air 3,1 */
-+	{ "TB0T", "TB1T", "TB2T", "TC0D", "TC0E", "TC0P", "TC1E", "TCZ3",
-+	  "TCZ4", "TCZ5", "TG0E", "TG1E", "TG2E", "TGZ3", "TGZ4", "TGZ5",
-+	  "TH0F", "TH0O", "TM0P" },
+diff --git a/drivers/net/e1000/e1000_main.c b/drivers/net/e1000/e1000_main.c
+index 13e34d2..d61af66 100644
+--- a/drivers/net/e1000/e1000_main.c
++++ b/drivers/net/e1000/e1000_main.c
+@@ -787,6 +787,70 @@ static const struct net_device_ops e1000_netdev_ops = {
  };
  
- /* List of keys used to read/write fan speeds */
-@@ -1385,11 +1389,17 @@ static __initdata struct dmi_match_data applesmc_dmi_data[] = {
- 	{ .accelerometer = 1, .light = 1, .temperature_set = 21 },
- /* MacBook Pro 7,1: accelerometer, backlight and temperature set 22 */
- 	{ .accelerometer = 1, .light = 1, .temperature_set = 22 },
-+/* MacBook Air 3,1: accelerometer, backlight and temperature set 23 */
-+	{ .accelerometer = 0, .light = 0, .temperature_set = 23 },
- };
+ /**
++ * e1000_init_hw_struct - initialize members of hw struct
++ * @adapter: board private struct
++ * @hw: structure used by e1000_hw.c
++ *
++ * Factors out initialization of the e1000_hw struct to its own function
++ * that can be called very early at init (just after struct allocation).
++ * Fields are initialized based on PCI device information and
++ * OS network device settings (MTU size).
++ * Returns negative error codes if MAC type setup fails.
++ */
++static int e1000_init_hw_struct(struct e1000_adapter *adapter,
++				struct e1000_hw *hw)
++{
++	struct pci_dev *pdev = adapter->pdev;
++
++	/* PCI config space info */
++	hw->vendor_id = pdev->vendor;
++	hw->device_id = pdev->device;
++	hw->subsystem_vendor_id = pdev->subsystem_vendor;
++	hw->subsystem_id = pdev->subsystem_device;
++	hw->revision_id = pdev->revision;
++
++	pci_read_config_word(pdev, PCI_COMMAND, &hw->pci_cmd_word);
++
++	hw->max_frame_size = adapter->netdev->mtu +
++			     ENET_HEADER_SIZE + ETHERNET_FCS_SIZE;
++	hw->min_frame_size = MINIMUM_ETHERNET_FRAME_SIZE;
++
++	/* identify the MAC */
++	if (e1000_set_mac_type(hw)) {
++		DPRINTK(PROBE, ERR, "Unknown MAC Type\n");
++		return -EIO;
++	}
++
++	switch (hw->mac_type) {
++	default:
++		break;
++	case e1000_82541:
++	case e1000_82547:
++	case e1000_82541_rev_2:
++	case e1000_82547_rev_2:
++		hw->phy_init_script = 1;
++		break;
++	}
++
++	e1000_set_media_type(hw);
++	e1000_get_bus_info(hw);
++
++	hw->wait_autoneg_complete = false;
++	hw->tbi_compatibility_en = true;
++	hw->adaptive_ifs = true;
++
++	/* Copper options */
++
++	if (hw->media_type == e1000_media_type_copper) {
++		hw->mdix = AUTO_ALL_MODES;
++		hw->disable_polarity_correction = false;
++		hw->master_slave = E1000_MASTER_SLAVE;
++	}
++
++	return 0;
++}
++
++/**
+  * e1000_probe - Device Initialization Routine
+  * @pdev: PCI device information struct
+  * @ent: entry in e1000_pci_tbl
+@@ -823,22 +887,6 @@ static int __devinit e1000_probe(struct pci_dev *pdev,
+ 	if (err)
+ 		return err;
  
- /* Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
-  * So we need to put "Apple MacBook Pro" before "Apple MacBook". */
- static __initdata struct dmi_system_id applesmc_whitelist[] = {
-+	{ applesmc_dmi_match, "Apple MacBook Air 3", {
-+	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-+	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir3") },
-+		&applesmc_dmi_data[23]},
- 	{ applesmc_dmi_match, "Apple MacBook Air 2", {
- 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
- 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir2") },
+-	if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(64)) &&
+-	    !pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64))) {
+-		pci_using_dac = 1;
+-	} else {
+-		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+-		if (err) {
+-			err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
+-			if (err) {
+-				E1000_ERR("No usable DMA configuration, "
+-					  "aborting\n");
+-				goto err_dma;
+-			}
+-		}
+-		pci_using_dac = 0;
+-	}
+-
+ 	err = pci_request_selected_regions(pdev, bars, e1000_driver_name);
+ 	if (err)
+ 		goto err_pci_reg;
+@@ -882,6 +930,32 @@ static int __devinit e1000_probe(struct pci_dev *pdev,
+ 		}
+ 	}
+ 
++	/* make ready for any if (hw->...) below */
++	err = e1000_init_hw_struct(adapter, hw);
++	if (err)
++		goto err_sw_init;
++
++	/*
++	 * there is a workaround being applied below that limits
++	 * 64-bit DMA addresses to 64-bit hardware.  There are some
++	 * 32-bit adapters that Tx hang when given 64-bit DMA addresses
++	 */
++	pci_using_dac = 0;
++	if ((hw->bus_type == e1000_bus_type_pcix) &&
++	    !dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))) {
++		/*
++		 * according to DMA-API-HOWTO, coherent calls will always
++		 * succeed if the set call did
++		 */
++		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
++		pci_using_dac = 1;
++	} else if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(32))) {
++		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
++	} else {
++		pr_err("No usable DMA config, aborting\n");
++		goto err_dma;
++	}
++
+ 	netdev->netdev_ops = &e1000_netdev_ops;
+ 	e1000_set_ethtool_ops(netdev);
+ 	netdev->watchdog_timeo = 5 * HZ;
+@@ -956,8 +1030,6 @@ static int __devinit e1000_probe(struct pci_dev *pdev,
+ 	if (!is_valid_ether_addr(netdev->perm_addr))
+ 		DPRINTK(PROBE, ERR, "Invalid MAC Address\n");
+ 
+-	e1000_get_bus_info(hw);
+-
+ 	init_timer(&adapter->tx_fifo_stall_timer);
+ 	adapter->tx_fifo_stall_timer.function = &e1000_82547_tx_fifo_stall;
+ 	adapter->tx_fifo_stall_timer.data = (unsigned long)adapter;
+@@ -1070,6 +1142,7 @@ err_eeprom:
+ 		iounmap(hw->flash_address);
+ 	kfree(adapter->tx_ring);
+ 	kfree(adapter->rx_ring);
++err_dma:
+ err_sw_init:
+ 	iounmap(hw->hw_addr);
+ err_ioremap:
+@@ -1077,7 +1150,6 @@ err_ioremap:
+ err_alloc_etherdev:
+ 	pci_release_selected_regions(pdev, bars);
+ err_pci_reg:
+-err_dma:
+ 	pci_disable_device(pdev);
+ 	return err;
+ }
+@@ -1129,62 +1201,12 @@ static void __devexit e1000_remove(struct pci_dev *pdev)
+  * @adapter: board private structure to initialize
+  *
+  * e1000_sw_init initializes the Adapter private data structure.
+- * Fields are initialized based on PCI device information and
+- * OS network device settings (MTU size).
++ * e1000_init_hw_struct MUST be called before this function
+  **/
+ 
+ static int __devinit e1000_sw_init(struct e1000_adapter *adapter)
+ {
+-	struct e1000_hw *hw = &adapter->hw;
+-	struct net_device *netdev = adapter->netdev;
+-	struct pci_dev *pdev = adapter->pdev;
+-
+-	/* PCI config space info */
+-
+-	hw->vendor_id = pdev->vendor;
+-	hw->device_id = pdev->device;
+-	hw->subsystem_vendor_id = pdev->subsystem_vendor;
+-	hw->subsystem_id = pdev->subsystem_device;
+-	hw->revision_id = pdev->revision;
+-
+-	pci_read_config_word(pdev, PCI_COMMAND, &hw->pci_cmd_word);
+-
+ 	adapter->rx_buffer_len = MAXIMUM_ETHERNET_VLAN_SIZE;
+-	hw->max_frame_size = netdev->mtu +
+-			     ENET_HEADER_SIZE + ETHERNET_FCS_SIZE;
+-	hw->min_frame_size = MINIMUM_ETHERNET_FRAME_SIZE;
+-
+-	/* identify the MAC */
+-
+-	if (e1000_set_mac_type(hw)) {
+-		DPRINTK(PROBE, ERR, "Unknown MAC Type\n");
+-		return -EIO;
+-	}
+-
+-	switch (hw->mac_type) {
+-	default:
+-		break;
+-	case e1000_82541:
+-	case e1000_82547:
+-	case e1000_82541_rev_2:
+-	case e1000_82547_rev_2:
+-		hw->phy_init_script = 1;
+-		break;
+-	}
+-
+-	e1000_set_media_type(hw);
+-
+-	hw->wait_autoneg_complete = false;
+-	hw->tbi_compatibility_en = true;
+-	hw->adaptive_ifs = true;
+-
+-	/* Copper options */
+-
+-	if (hw->media_type == e1000_media_type_copper) {
+-		hw->mdix = AUTO_ALL_MODES;
+-		hw->disable_polarity_correction = false;
+-		hw->master_slave = E1000_MASTER_SLAVE;
+-	}
+ 
+ 	adapter->num_tx_queues = 1;
+ 	adapter->num_rx_queues = 1;
 -- 
 1.7.9.3
 
