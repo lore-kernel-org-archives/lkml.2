@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760058Ab2CMIvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:51:15 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33056 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756128Ab2CMIvM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:51:12 -0400
+	id S1760086Ab2CMIyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:54:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24164 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756165Ab2CMIy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 04:54:29 -0400
+Message-ID: <4F5F0B36.1020808@redhat.com>
+Date: Tue, 13 Mar 2012 10:54:14 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYvfzrdAC1vjT5WD4rk0ozpbXkPtkQpBVMv_WYhdkg7ag@mail.gmail.com>
-References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
- <1331197863-25564-2-git-send-email-bryan.wu@canonical.com>
- <20120308092913.GF14173@pengutronix.de> <CAK5ve-+L9gVBOp4RVe2pTUbBnrb-PEn7ERbWWkb=7A=4qOrdTQ@mail.gmail.com>
- <CACRpkdYvfzrdAC1vjT5WD4rk0ozpbXkPtkQpBVMv_WYhdkg7ag@mail.gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Tue, 13 Mar 2012 16:50:51 +0800
-X-Google-Sender-Auth: RgFO_FmYmMqd95UPdQmvtDEL6ko
-Message-ID: <CAK5ve-+ZNoiS3qdQ6O543uSAO9L0rr2c=WwuXm-biAqfGfjc7w@mail.gmail.com>
-Subject: Re: [PATCH 2/3] led-triggers: use atomic kzalloc during led trigger registering
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Ming Lei <ming.lei@canonical.com>, rpurdie@rpsys.net,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
+References: <4F58664D.1070800@cn.fujitsu.com> <4F58943E.1050402@redhat.com> <4F595B31.9090301@cn.fujitsu.com> <4F5DBC26.7060204@cn.fujitsu.com> <4F5DD0FD.9070904@redhat.com> <4F5EECD9.8050508@cn.fujitsu.com>
+In-Reply-To: <4F5EECD9.8050508@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 3:37 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> 2012/3/10 Bryan Wu <bryan.wu@canonical.com>:
->> 2012/3/8 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
->>> On Thu, Mar 08, 2012 at 05:11:02PM +0800, Bryan Wu wrote:
->>>> kzalloc might cause sleep and will generate some warning detected by lockdep,
->>>> when call led_trigger_register_simple on each cpu cores in SMP. This patch fix
->>>> this.
->>> The obvious (and IMHO better) alternative is to call
->>> led_trigger_register_simple from non-atomic context.
->>>
->>> For registering this should be OK, shouldn't it?
->>>
->> Thanks Uwe, it's my bad. I think I should not use on_each_cpu() API to
->> run led_trigger_register_simple. on_each_cpu() will disable interrupt.
+On 03/13/2012 08:44 AM, Wen Congyang wrote:
+> At 03/12/2012 06:33 PM, Avi Kivity Wrote:
+> > On 03/12/2012 11:04 AM, Wen Congyang wrote:
+> >> Do you have any other comments about this patch?
+> >>
+> > 
+> > Not really, but I'm not 100% convinced the patch is worthwhile.  It's
+> > likely to only be used by Linux, which has kexec facilities, and you can
+> > put talk to management via virtio-serial and describe the crash in more
+> > details than a simple hypercall.
 >
-> It might have been my mistake even so not your fault ... :-)
+> Hmm, can we use virtio-serial to talk with not-linux OS? I guess the answer
+> is no. If so, virtio-serial is also used by linux.
+
+You can use virtio-serial with any guest that has a driver.  There are
+drivers available for Windows.
+
+> Another problem is: virtio-serial is available on many deployed versions
+> but the guest must have virtio-serial device. So we cannot know the guest
+> is panicked if it does not have virtio-serial device while the hypercall does
+> not depend on any device.
 >
 
-No problem, man. I just simply replaced GFP_KERNEL with GFP_ATOMIC
-without thinking deeper.
+The hypercall implementation must exist in the hypervisor.
 
-Best Regards,
+virtio-serial is used by the guest agent, so it's likely to be
+availalble in all cloud or data center deployments.
+
 -- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.138-1617-6545 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+error compiling committee.c: too many arguments to function
+
