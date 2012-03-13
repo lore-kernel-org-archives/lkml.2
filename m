@@ -1,48 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab2CMHUB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 03:20:01 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1601 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244Ab2CMHUA convert rfc822-to-8bit (ORCPT
+	id S1758234Ab2CMHVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 03:21:14 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49271 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753915Ab2CMHVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 03:20:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 13 Mar 2012 00:19:59 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>
-Date: Tue, 13 Mar 2012 12:49:52 +0530
-Subject: RE: [RESEND PATCH 1/2] MFD: MAX77693: add MAX77693 MFD driver
-Thread-Topic: [RESEND PATCH 1/2] MFD: MAX77693: add MAX77693 MFD driver
-Thread-Index: Ac0A6LmB71GmYXDvRBWgsROsFLgJZAAAOPHA
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DD2912D3E@BGMAIL02.nvidia.com>
-References: <4F5EDB01.9070308@samsung.com>
- <D958900912E20642BCBC71664EFECE3E6DD2912D02@BGMAIL02.nvidia.com>
- <CAH9JG2VrNCPMHoy5pUyc7nTzv-B7ucXheMy7PBtVUfaebt=yUA@mail.gmail.com>
- <D958900912E20642BCBC71664EFECE3E6DD2912D10@BGMAIL02.nvidia.com>
- <4F5EF376.3060909@samsung.com>
-In-Reply-To: <4F5EF376.3060909@samsung.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Tue, 13 Mar 2012 03:21:13 -0400
+Message-ID: <4F5EF563.5000700@openvz.org>
+Date: Tue, 13 Mar 2012 11:21:07 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+To: minchan@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        riel@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        Zheng Liu <wenqing.lz@taobao.com>
+Subject: Re: Fwd: Control page reclaim granularity
+References: <20120313024818.GA7125@barrios> <1331620214-4893-1-git-send-email-wenqing.lz@taobao.com> <20120313064832.GA4968@gmail.com>
+In-Reply-To: <20120313064832.GA4968@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That's fine, Thanks.
+Zheng Liu wrote:
+> Sorry, please forgive me.  This patch has a defect.  When one page is
+> scaned and flag is clear, all other's flags also are clear too.
 
-> I had plan for using regmap for i2c read/write operation on later patch.
-> But I haven't yet tested max77693 driver with regmap for i2c,
-> so I posted max77693 mfd driver which was tested by using i2c legacy way.
-> 
-> Thank you,
-> Chanwoo Choi
+Yeah, funny patch =)
