@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab2CMASP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:18:15 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46848 "EHLO
+	id S1758417Ab2CMAVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:21:08 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46857 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932138Ab2CMASM (ORCPT
+	with ESMTP id S932208Ab2CMASO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:18:12 -0400
+	Mon, 12 Mar 2012 20:18:14 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "John W. Linville" <linville@tuxdriver.com>,
+Cc: stable-review@kernel.org, Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 036/196] b43: allocate receive buffers big enough for max frame len + offset
-Date: Mon, 12 Mar 2012 20:12:44 -0400
-Message-Id: <1331597724-31358-37-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 029/196] ath9k: fix a chip wakeup related crash in ath9k_start
+Date: Mon, 12 Mar 2012 20:12:37 -0400
+Message-Id: <1331597724-31358-30-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,53 +22,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit c85ce65ecac078ab1a1835c87c4a6319cf74660a upstream.
+commit f62d816fc4324afbb7cf90110c70b6a14139b225 upstream.
 
-Otherwise, skb_put inside of dma_rx can fail...
+When the chip is still asleep when ath9k_start is called,
+ath9k_hw_configpcipowersave can trigger a data bus error.
 
-	https://bugzilla.kernel.org/show_bug.cgi?id=32042
-
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/wireless/b43/dma.c |    2 +-
- drivers/net/wireless/b43/dma.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/wireless/b43/dma.c b/drivers/net/wireless/b43/dma.c
-index fa40fdf..b8900f0 100644
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -1538,7 +1538,7 @@ static void dma_rx(struct b43_dmaring *ring, int *slot)
- 		dmaaddr = meta->dmaaddr;
- 		goto drop_recycle_buffer;
- 	}
--	if (unlikely(len > ring->rx_buffersize)) {
-+	if (unlikely(len + ring->frameoffset > ring->rx_buffersize)) {
- 		/* The data did not fit into one descriptor buffer
- 		 * and is split over multiple buffers.
- 		 * This should never happen, as we try to allocate buffers
-diff --git a/drivers/net/wireless/b43/dma.h b/drivers/net/wireless/b43/dma.h
-index dc91944..a9282d7 100644
---- a/drivers/net/wireless/b43/dma.h
-+++ b/drivers/net/wireless/b43/dma.h
-@@ -163,7 +163,7 @@ struct b43_dmadesc_generic {
- /* DMA engine tuning knobs */
- #define B43_TXRING_SLOTS		256
- #define B43_RXRING_SLOTS		64
--#define B43_DMA0_RX_BUFFERSIZE		IEEE80211_MAX_FRAME_LEN
-+#define B43_DMA0_RX_BUFFERSIZE		(B43_DMA0_RX_FRAMEOFFSET + IEEE80211_MAX_FRAME_LEN)
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index 115e1ae..b9585fb 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1090,6 +1090,8 @@ static int ath9k_start(struct ieee80211_hw *hw)
+ 		  "Starting driver with initial channel: %d MHz\n",
+ 		  curchan->center_freq);
  
- /* Pointer poison */
- #define B43_DMA_PTR_POISON		((void *)ERR_PTR(-ENOMEM))
++	ath9k_ps_wakeup(sc);
++
+ 	mutex_lock(&sc->mutex);
+ 
+ 	if (ath9k_wiphy_started(sc)) {
+@@ -1199,6 +1201,8 @@ static int ath9k_start(struct ieee80211_hw *hw)
+ mutex_unlock:
+ 	mutex_unlock(&sc->mutex);
+ 
++	ath9k_ps_restore(sc);
++
+ 	return r;
+ }
+ 
 -- 
 1.7.9.3
 
