@@ -1,70 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759602Ab2CMDpB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 23:45:01 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44364 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759559Ab2CMDo7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 23:44:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <1331362837-10740-36-git-send-email-yinghai@kernel.org>
-References: <1331362837-10740-1-git-send-email-yinghai@kernel.org> <1331362837-10740-36-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 12 Mar 2012 21:44:37 -0600
-Message-ID: <CAErSpo7MEUsBEVQy0=YRzFOBDx8b4ahVTLaFesiEtkFbDNpuow@mail.gmail.com>
-Subject: Re: [PATCH v2 35/37] PCI: Make /sys/bus/pci/rescan rescan root
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1759628Ab2CMDpP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 23:45:15 -0400
+Received: from mail.nudt.edu.cn ([61.187.54.11]:59948 "HELO eyou.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1757425Ab2CMDpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 23:45:11 -0400
+X-EYOU-SPAMVALUE: 0
+X-EYOU-DEALDRC: 
+X-EMDG-VER: 2011-01-28
+Message-ID: <531609576.06786@eyou.net>
+X-EYOUMAIL-SMTPAUTH: liwang@nudt.edu.cn
+From: Li Wang <liwang@nudt.edu.cn>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: Dustin Kirkland <dustin.kirkland@gazzang.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        Yunchuan Wen <wenyunchuan@kylinos.com.cn>, <ecryptfs@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Li Wang <liwang@nudt.edu.cn>
+Subject: [PATCH] eCryptfs: Fix kernel bug for writing mmaped non-eCryptfs file
+Date: Tue, 13 Mar 2012 19:39:49 +0800
+Message-Id: <1331638789-3770-1-git-send-email-liwang@nudt.edu.cn>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> It will rediscover removed pci root buses.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/pci-sysfs.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index 4d122cb..fc0a7de 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -284,6 +284,7 @@ msi_bus_store(struct device *dev, struct device_attribute *attr,
->
->  #ifdef CONFIG_HOTPLUG
->  static DEFINE_MUTEX(pci_remove_rescan_mutex);
-> +void __weak arch_pci_root_rescan(void) { }
->  static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
->                                size_t count)
->  {
-> @@ -295,6 +296,7 @@ static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
->
->        if (val) {
->                mutex_lock(&pci_remove_rescan_mutex);
-> +               arch_pci_root_rescan();
->                while ((b = pci_find_next_bus(b)) != NULL)
->                        pci_rescan_bus(b);
->                mutex_unlock(&pci_remove_rescan_mutex);
+eCryptfs did not handle the writing for mmaped non-eCryptfs file.
+Instead, it put BUG_ON(!(crypt_stat->flags & ECRYPTFS_ENCRYPTED))
+on ecryptfs_writepage call path. This patch enables eCryptfs to
+deal with such case, to fully support non-eCryptfs operations as it
+claims.
 
-This is gross.  We used to rescan every previously-discovered PCI root bus.
+---
 
-Now, we do the same, plus:
-1) Scan the ACPI namespace for PCI host bridges, adding and scanning
-any we haven't seen before, and
-2) scan domain 0, buses 0 - pcibios_last_bus, looking for any we
-haven't seen before.
+To make the bug present
 
-These just don't fit with the previous functionality.  The scan should
-be done on the *ACPI namespace*, which is where any new bridges would
-live.  It shouldn't be done in the PCI namespace.  The new bridges
-aren't part of PCI.
+cd cipher // enter eCryptfs cipher text folder
+echo "123" > foo // make non-eCryptfs file
+cd ..
+mount -t ecryptfs cipher plain -o ecryptfs_passthrough // allow for non-eCryptfs files to be read and written from within an eCryptfs mount
+cd plain
+run the following program
+
+int main()
+{
+	int fd = open("foo", O_RDWR);
+	char * addr;
+	addr = (char *)mmap(NULL, 256, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	add[0] = '3';
+	munmap(addr, 256);
+	close(fd);
+	return 0;
+}
+
+Signed-off-by: Li Wang <liwang@nudt.edu.cn>
+Signed-off-by: Yunchuan Wen <wenyunchuan@kylinos.com.cn>
+---
+ fs/ecryptfs/mmap.c |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
+
+diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
+index 10ec695..a4be0e9 100644
+--- a/fs/ecryptfs/mmap.c
++++ b/fs/ecryptfs/mmap.c
+@@ -65,6 +65,32 @@ struct page *ecryptfs_get_locked_page(struct inode *inode, loff_t index)
+ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	int rc;
++	struct inode *inode;
++	struct ecryptfs_crypt_stat *crypt_stat;
++
++	inode = page->mapping->host;
++	crypt_stat = &ecryptfs_inode_to_private(inode)->crypt_stat;
++	if (!(crypt_stat->flags & ECRYPTFS_ENCRYPTED)) {
++		size_t size;
++		loff_t file_size = i_size_read(inode);
++		pgoff_t end_page_index = file_size >> PAGE_CACHE_SHIFT;
++
++		if (end_page_index < page->index)
++			size = 0;
++		else if (end_page_index == page->index)
++			size = file_size & ~PAGE_CACHE_MASK;
++		else
++			size = PAGE_CACHE_SIZE;
++
++		rc = ecryptfs_write_lower_page_segment(inode, page, 0, size);
++		if (unlikely(rc)) {
++			ecryptfs_printk(KERN_WARNING, "Error write "
++					"page (upper index [0x%.16lx])\n", page->index);
++			ClearPageUptodate(page);
++		} else
++			SetPageUptodate(page);
++		goto out;
++	}
+ 
+ 	/*
+ 	 * Refuse to write the page out if we are called from reclaim context
+-- 
+1.7.6.5
+
