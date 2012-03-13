@@ -1,47 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759783Ab2CMVkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 17:40:47 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46659 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871Ab2CMVkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 17:40:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="138287136"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] x86/mce two miscellaneous MCE fixes
-Date: Tue, 13 Mar 2012 14:40:45 -0700
-Message-Id: <4f5fbedd16019e0539@agluck-desktop.sc.intel.com>
+	id S1759768Ab2CMVmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 17:42:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49290 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752582Ab2CMVmf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 17:42:35 -0400
+Date: Tue, 13 Mar 2012 14:42:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V3 5/8] hugetlbfs: Add memcg control files for
+ hugetlbfs
+Message-Id: <20120313144233.49026e6a.akpm@linux-foundation.org>
+In-Reply-To: <1331622432-24683-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1331622432-24683-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
+On Tue, 13 Mar 2012 12:37:09 +0530
+"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> This add control files for hugetlbfs in memcg
+> 
+> ...
+>
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -220,6 +221,10 @@ struct hstate {
+>  	unsigned int nr_huge_pages_node[MAX_NUMNODES];
+>  	unsigned int free_huge_pages_node[MAX_NUMNODES];
+>  	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
+> +	/* cgroup control files */
+> +	struct cftype cgroup_limit_file;
+> +	struct cftype cgroup_usage_file;
+> +	struct cftype cgroup_max_usage_file;
+>  	char name[HSTATE_NAME_LEN];
+>  };
 
-are available in the git repository at:
+We don't need all these in here if, for example, cgroups is disabled?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git mce-for-tip
+> ...
+>
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1817,6 +1817,36 @@ static int __init hugetlb_init(void)
+>  }
+>  module_init(hugetlb_init);
+>  
+> +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+> +int register_hugetlb_memcg_files(struct cgroup *cgroup,
+> +				 struct cgroup_subsys *ss)
+> +{
+> +	int ret = 0;
+> +	struct hstate *h;
+> +
+> +	for_each_hstate(h) {
+> +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_limit_file);
+> +		if (ret)
+> +			return ret;
+> +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_usage_file);
+> +		if (ret)
+> +			return ret;
+> +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_max_usage_file);
+> +		if (ret)
+> +			return ret;
+> +
+> +	}
+> +	return ret;
+> +}
+> +/* mm/memcontrol.c because mem_cgroup_read/write is not availabel outside */
 
-for you to fetch changes up to fadd85f16a8ec3fee8af599e79a209682dc52348:
+Comment has a spelling mistake.
 
-  x86/mce: Fix return value of mce_chrdev_read() when erst is disabled (2012-02-22 13:14:16 -0800)
+> +int mem_cgroup_hugetlb_file_init(struct hstate *h, int idx);
 
-----------------------------------------------------------------
-Two miscellaneous MCE fixes
 
-----------------------------------------------------------------
-Greg Kroah-Hartman (1):
-      x86/mce: Convert static array of pointers to per-cpu variables
+No, please put it in a header file.  Always.  Where both callers and
+the implementation see the same propotype.
 
-Naoya Horiguchi (1):
-      x86/mce: Fix return value of mce_chrdev_read() when erst is disabled
+> +#else
+> +static int mem_cgroup_hugetlb_file_init(struct hstate *h, int idx)
+> +{
+> +	return 0;
+> +}
+> +#endif
 
- arch/x86/include/asm/mce.h           |    2 +-
- arch/x86/kernel/cpu/mcheck/mce.c     |   14 ++++++++++----
- arch/x86/kernel/cpu/mcheck/mce_amd.c |    9 +++++----
- 3 files changed, 16 insertions(+), 9 deletions(-)
+So this will go into the same header file.
+
