@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab2CMWdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 18:33:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23482 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759270Ab2CMWdf (ORCPT
+	id S1760147Ab2CMWfx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 18:35:53 -0400
+Received: from irongate.mail.utexas.edu ([146.6.25.6]:21838 "EHLO
+	irongate.mail.utexas.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755927Ab2CMWfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 18:33:35 -0400
-X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=GQe9zCMQTfAA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=imeR3UVgisiY6QAHTEAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1331678012.25686.666.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] trace: Fix build breakage without CONFIG_PERF_EVENTS
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Date: Tue, 13 Mar 2012 18:33:32 -0400
-In-Reply-To: <20120228145744.GG1694@m.brq.redhat.com>
-References: <1330426967-17067-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	 <1330427423-25499-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	 <20120228145744.GG1694@m.brq.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 13 Mar 2012 18:35:51 -0400
+X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Mar 2012 18:35:51 EDT
+X-Utexas-Sender-Group: RELAYLIST-AEMS
+X-IronPort-MID: 166941591
+X-Utexas-Seen-Inbound: true
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApwEAF/JX0+sEEdW/2dsb2JhbABDtnaCN1KBPg4FiAquCIRLiQeNVIMiBIhVjHuQI4MD
+X-IronPort-AV: E=Sophos;i="4.73,579,1325484000"; 
+   d="scan'208";a="166941591"
+From: Ashay Rane <ashay.rane@tacc.utexas.edu>
+To: <linux-perf-users@vger.kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        <linux-kernel@vger.kernel.org>,
+        Ashay Rane <ashay.rane@tacc.utexas.edu>
+Subject: [PATCH 1/1] Fix number of events displayed in header
+Date: Tue, 13 Mar 2012 17:24:57 -0500
+Message-ID: <1331677497-23525-1-git-send-email-ashay.rane@tacc.utexas.edu>
+X-Mailer: git-send-email 1.7.4.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-02-28 at 15:57 +0100, Jiri Olsa wrote:
->  
-> 
-> ook, this one fixies that for me as well ;) I got your replies mixed in
-> mailbox and thought this one was not actually working..
-> 
-> I also added this bit to get rid of the switch warnings,
-> feel free to use it.
-> 
-> thanks,
-> jirka
+Signed-off-by: Ashay Rane <ashay.rane@tacc.utexas.edu>
+---
+ tools/perf/builtin-report.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-Can you send me your Signed-off-by for this too. Thanks.
-
--- Steve
-
-> ---
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index dd478fc..5f3f3be 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -144,12 +144,14 @@ struct event_filter;
->  enum trace_reg {
->  	TRACE_REG_REGISTER,
->  	TRACE_REG_UNREGISTER,
-> +#ifdef CONFIG_PERF_EVENTS
->  	TRACE_REG_PERF_REGISTER,
->  	TRACE_REG_PERF_UNREGISTER,
->  	TRACE_REG_PERF_OPEN,
->  	TRACE_REG_PERF_CLOSE,
->  	TRACE_REG_PERF_ADD,
->  	TRACE_REG_PERF_DEL,
-> +#endif
->  };
->  
->  struct ftrace_event_call;
-
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 25d34d4..58a20cf 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -202,11 +202,9 @@ static size_t hists__fprintf_nr_sample_events(struct hists *self,
+ 					      const char *evname, FILE *fp)
+ {
+ 	size_t ret;
+-	char unit;
+-	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
++	u64 total_period = self->stats.total_period;
+ 
+-	nr_events = convert_unit(nr_events, &unit);
+-	ret = fprintf(fp, "# Events: %lu%c", nr_events, unit);
++	ret = fprintf(fp, "# Events: %llu", total_period);
+ 	if (evname != NULL)
+ 		ret += fprintf(fp, " %s", evname);
+ 	return ret + fprintf(fp, "\n#\n");
+-- 
+1.7.4.1
 
