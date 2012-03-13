@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223Ab2CMAlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:41:47 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48520 "EHLO
+	id S1759047Ab2CMAYK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:24:10 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48464 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759065Ab2CMAYN (ORCPT
+	with ESMTP id S1759019Ab2CMAYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:24:13 -0400
+	Mon, 12 Mar 2012 20:24:04 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Bruce Rogers <brogers@novell.com>,
-        Olaf Kirch <okir@suse.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: stable-review@kernel.org, Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 140/196] virtio_net: Add schedule check to napi_enable call
-Date: Mon, 12 Mar 2012 20:20:53 -0400
-Message-Id: <1331598109-31424-95-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 141/196] Bluetooth: Add support Bluetooth controller of MacbookPro 6,2
+Date: Mon, 12 Mar 2012 20:20:54 -0400
+Message-Id: <1331598109-31424-96-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,84 +23,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bruce Rogers <brogers@novell.com>
+From: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3e9d08ec0a68f6faf718d5a7e050fe5ca0ba004f upstream.
+commit 9c047157a20521cd525527947b13b950d168d2e6 upstream.
 
-Under harsh testing conditions, including low memory, the guest would
-stop receiving packets. With this patch applied we no longer see any
-problems in the driver while performing these tests for extended periods
-of time.
+Bluetooth controller of MacbookPro 6,2 does not work.
+Because Device Class of these controllers was set 255 (Vendor Sepecific Class).
 
-Make sure napi is scheduled subsequent to each napi_enable.
+T:  Bus=01 Lev=03 Prnt=03 Port=02 Cnt=03 Dev#=  8 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=05ac ProdID=8218 Rev=00.22
+S:  Manufacturer=Apple Inc.
+S:  Product=Bluetooth USB Host Controller
+C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 
-[PG: in 34, virtqueue_disable_cb is vi->rvq->vq_ops->disable_cb]
-
-Signed-off-by: Bruce Rogers <brogers@novell.com>
-Signed-off-by: Olaf Kirch <okir@suse.de>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/virtio_net.c |   27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
+ drivers/bluetooth/btusb.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index f5b5d74..2cc49dd 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -448,6 +448,20 @@ static void skb_recv_done(struct virtqueue *rvq)
- 	}
- }
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index c9e2dc8..f55332d 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -65,6 +65,9 @@ static struct usb_device_id btusb_table[] = {
+ 	/* Apple MacBookPro8,2 */
+ 	{ USB_DEVICE(0x05ac, 0x821a) },
  
-+static void virtnet_napi_enable(struct virtnet_info *vi)
-+{
-+	napi_enable(&vi->napi);
++	/* Apple MacBookPro6,2 */
++	{ USB_DEVICE(0x05ac, 0x8218) },
 +
-+	/* If all buffers were filled by other side before we napi_enabled, we
-+	 * won't get another interrupt, so process any outstanding packets
-+	 * now.  virtnet_poll wants re-enable the queue, so we disable here.
-+	 * We synchronize against interrupts via NAPI_STATE_SCHED */
-+	if (napi_schedule_prep(&vi->napi)) {
-+		vi->rvq->vq_ops->disable_cb(vi->rvq);
-+		__napi_schedule(&vi->napi);
-+	}
-+}
-+
- static void refill_work(struct work_struct *work)
- {
- 	struct virtnet_info *vi;
-@@ -456,7 +470,7 @@ static void refill_work(struct work_struct *work)
- 	vi = container_of(work, struct virtnet_info, refill.work);
- 	napi_disable(&vi->napi);
- 	still_empty = !try_fill_recv(vi, GFP_KERNEL);
--	napi_enable(&vi->napi);
-+	virtnet_napi_enable(vi);
- 
- 	/* In theory, this can happen: if we don't get any buffers in
- 	 * we will *never* try to fill again. */
-@@ -642,16 +656,7 @@ static int virtnet_open(struct net_device *dev)
- {
- 	struct virtnet_info *vi = netdev_priv(dev);
- 
--	napi_enable(&vi->napi);
--
--	/* If all buffers were filled by other side before we napi_enabled, we
--	 * won't get another interrupt, so process any outstanding packets
--	 * now.  virtnet_poll wants re-enable the queue, so we disable here.
--	 * We synchronize against interrupts via NAPI_STATE_SCHED */
--	if (napi_schedule_prep(&vi->napi)) {
--		vi->rvq->vq_ops->disable_cb(vi->rvq);
--		__napi_schedule(&vi->napi);
--	}
-+	virtnet_napi_enable(vi);
- 	return 0;
- }
+ 	/* AVM BlueFRITZ! USB v2.0 */
+ 	{ USB_DEVICE(0x057c, 0x3800) },
  
 -- 
 1.7.9.3
