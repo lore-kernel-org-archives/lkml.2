@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759870Ab2CMVr4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 17:47:56 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43247 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860Ab2CMVrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 17:47:55 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andreas Hartmann <andihartmann@01019freenet.de>
-Subject: Re: Corrupted files after suspend to disk
-Date: Tue, 13 Mar 2012 22:52:06 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Dave Jones <davej@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        "richard -rw- weinberger" <richard.weinberger@gmail.com>,
-        linux-kernel@vger.kernel.org, keithp@keithp.com
-References: <jj5qhh$5j5$1@ID-44327.news.uni-berlin.de> <20120312214914.GA8628@redhat.com> <4F5F0C59.3000400@01019freenet.de>
-In-Reply-To: <4F5F0C59.3000400@01019freenet.de>
+	id S1759920Ab2CMVsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 17:48:08 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60320 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759881Ab2CMVsE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 17:48:04 -0400
+Message-ID: <4F5FC090.90005@gmail.com>
+Date: Tue, 13 Mar 2012 16:48:00 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Mike Turquette <mturquette@linaro.org>
+CC: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        linaro-dev@lists.linaro.org, Saravana Kannan <skannan@codeaurora.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, patches@linaro.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 2/3] clk: introduce the common clock framework
+References: <1331366064-1273-1-git-send-email-mturquette@linaro.org> <1331366064-1273-3-git-send-email-mturquette@linaro.org>
+In-Reply-To: <1331366064-1273-3-git-send-email-mturquette@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203132252.06417.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, March 13, 2012, Andreas Hartmann wrote:
-> Dave Jones wrote:
-> > On Mon, Mar 12, 2012 at 02:24:00PM +0100, Andreas Hartmann wrote:
-> >  
-> >  > >>>>> This is happening to me as well. Something like 1 resume out of 5 goes
-> >  > >>>>> wrong this very same way.
-> >  > >>>>>
-> >  > >>>>> This is thinkpad x200s.
-> >  > >>>>>
-> >  > >>>>> All the userspace is segfaulting all over the place (most frequently in
-> >  > >>>>> libselinux for some reason).
-> >  > >>>>>
-> >  > >>>>> I am not able to verify the 'drop_caches' theory, as I can't invoke a
-> >  > >>>>> single command that wouldn't crash.
-> >  > >>>>
-> >  > >>>> The question is how should we proceed?
-> >  > >>>> I've reported this issue one year (!!!) ago.
-> >  > >>>
-> >  > >>> Hmm, 3.3-rcX seems to be the first version when it started to happen to
-> >  > >>> me. I take it that you have seen this also with 3.2? 3.1?
-> >  > >>
-> >  > >> Quote from my very first email:
-> >  > >> "I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
-> >  > >> running Linux 2.6.37.4."
-> >  > > 
-> >  > > So we both seem to have Lenovos at least. I thus wanted to verify whether 
-> >  > > the problem will trigger with thinkpad_acpi removed, but it oopsed while 
-> >  > > rmmoding :) I will start looking into this right away.
-> >  > > 
-> >  > > Is your system using thinkpad_acpi as well?
-> >  > 
-> >  > I dont't think, that it is lenovo related as I'm having a MSI machine.
-> >  > 
-> >  > https://bugzilla.novell.com/show_bug.cgi?id=732908
-> >  > 
-> >  > Following the link, you are able to compare the used chips - maybe there
-> >  > are some equal components?
-> > 
-> > This looks like the i915 corruption problem mentioned in a few other threads.
-> > 
-> > if you compare the hexdump of the good/bad files, you find that the corruption
-> > happens in 8x 4 byte writes of either 0x00000000 or 0x00aaaaaa.
-> > 
-> > KeithP clued me in last week that that looks like an ARGB pixel quad, so these
-> > writes are likely 8 pixel strips.
+Mike,
+
+On 03/10/2012 01:54 AM, Mike Turquette wrote:
+> The common clock framework defines a common struct clk useful across
+> most platforms as well as an implementation of the clk api that drivers
+> can use safely for managing clocks.
 > 
-> Thanks Dave. I disabled i915 (with nomodeset) and voila, the problem
-> disappears. As I already know, that the problem isn't X-related (I saw
-> it even without any X involved, only with runlevel 3 and nothing more),
-> the problem seems to be now narrowed down to the relevant component.
+> The net result is consolidation of many different struct clk definitions
+> and platform-specific clock framework implementations.
+> 
+> This patch introduces the common struct clk, struct clk_ops and an
+> implementation of the well-known clock api in include/clk/clk.h.
+> Platforms may define their own hardware-specific clock structure and
+> their own clock operation callbacks, so long as it wraps an instance of
+> struct clk_hw.
+> 
+> See Documentation/clk.txt for more details.
+> 
+> This patch is based on the work of Jeremy Kerr, which in turn was based
+> on the work of Ben Herrenschmidt.
+> 
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> Signed-off-by: Mike Turquette <mturquette@ti.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Arnd Bergman <arnd.bergmann@linaro.org>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Cc: Shawn Guo <shawn.guo@freescale.com>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Richard Zhao <richard.zhao@linaro.org>
+> Cc: Saravana Kannan <skannan@codeaurora.org>
+> Cc: Magnus Damm <magnus.damm@gmail.com>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Linus Walleij <linus.walleij@stericsson.com>
+> Cc: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Amit Kucheria <amit.kucheria@linaro.org>
+> Cc: Deepak Saxena <dsaxena@linaro.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Andrew Lunn <andrew@lunn.ch>
 
-I wonder what's the kernel command line you can reproduce the problem with?
+snip
 
-Rafael
+> +
+> +	/*
+> +	 * walk the list of orphan clocks and reparent any that are children of
+> +	 * this clock
+> +	 */
+> +	hlist_for_each_entry(orphan, tmp, &clk_orphan_list, child_node)
+
+In __clk_init, this needs to be hlist_for_each_entry_safe as entries can
+be removed.
+
+Rob
