@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759508Ab2CMVdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 17:33:10 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:44189 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853Ab2CMVdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 17:33:07 -0400
-Date: Tue, 13 Mar 2012 17:33:04 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Phillip Susi <phillsusi@gmail.com>
-Cc: Andreas Dilger <adilger@whamcloud.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: getdents - ext4 vs btrfs performance
-Message-ID: <20120313213304.GB11969@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Phillip Susi <phillsusi@gmail.com>,
-	Andreas Dilger <adilger@whamcloud.com>,
-	Lukas Czerner <lczerner@redhat.com>,
-	Jacek Luczak <difrost.kernel@gmail.com>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
- <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
- <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
- <20120310044804.GB5652@thunk.org>
- <4F5F9A97.5060404@ubuntu.com>
- <20120313195339.GA24124@thunk.org>
- <4F5FAC9C.9070607@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F5FAC9C.9070607@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1759625Ab2CMVdV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 17:33:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49261 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab2CMVdS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 17:33:18 -0400
+Date: Tue, 13 Mar 2012 14:33:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V3 2/8] memcg: Add HugeTLB extension
+Message-Id: <20120313143316.0ef74d0e.akpm@linux-foundation.org>
+In-Reply-To: <1331622432-24683-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1331622432-24683-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 04:22:52PM -0400, Phillip Susi wrote:
-> 
-> I think a format change would be preferable to runtime sorting.
+On Tue, 13 Mar 2012 12:37:06 +0530
+"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-Are you volunteering to spearhead the design and coding of such a
-thing?  Run-time sorting is backwards compatible, and a heck of a lot
-easier to code and test...
+> +static int mem_cgroup_hugetlb_usage(struct mem_cgroup *memcg)
+> +{
+> +	int idx;
+> +	for (idx = 0; idx < hugetlb_max_hstate; idx++) {
+> +		if (memcg->hugepage[idx].usage > 0)
+> +			return memcg->hugepage[idx].usage;
+> +	}
+> +	return 0;
+> +}
 
-The reality is we'd probably want to implement run-time sorting
-*anyway*, for the vast majority of people who don't want to convert to
-a new incompatible file system format.  (Even if you can do the
-conversion using e2fsck --- which is possible, but it would be even
-more code to write --- system administrators tend to be very
-conservative about such things, since they might need to boot an older
-kernel, or use a rescue CD that doesn't have an uptodate kernel or
-file system utilities, etc.)
+Please document the function?  Had you done this, I might have been
+able to work out why the function bales out on the first used hugepage
+size, but I can't :(
 
-> So the index nodes contain the hash ranges for the leaf block, but
-> the leaf block only contains the regular directory entries, not a
-> hash for each name?  That would mean that adding or removing names
-> would require moving around the regular directory entries wouldn't
-> it?
+This could have used for_each_hstate(), had that macro been better
+designed (or updated).
 
-They aren't sorted in the leaf block, so we only need to move around
-regular directory entries when we do a node split (and at the moment
-we don't support shrinking directories), so we don't have to worry the
-reverse case.
-
-> I would think that hash collisions are rare enough that reading a
-> directory block you end up not needing once in a blue moon would be
-> chalked up under "who cares".  So just stick with hash, offset pairs
-> to map the hash to the normal directory entry.
-
-With a 64-bit hash, and if we were actually going to implement this as
-a new incompatible feature, you're probably right in terms of
-accepting the extra directory block search.
-
-We would still have to implement the case where hash collisions *do*
-exist, though, and make sure the right thing happens in that case.
-Even if the chance of that happening is 1 in 2**32, with enough
-deployed systems (i.e., every Android handset, etc.) it's going to
-happen in real life.
-
-					- Ted
-
-
-
+Upon return this function coerces an unsigned long long into an "int". 
+We decided last week that more than 2^32 hugepages was not
+inconceivable, so I guess that's a bug.
 
