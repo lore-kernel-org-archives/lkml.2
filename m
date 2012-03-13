@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965087Ab2CMAYc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:24:32 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48675 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964938Ab2CMAY3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:24:29 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Romain Francoise <romain@orebokech.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 160/196] ipv6: Silence privacy extensions initialization
-Date: Mon, 12 Mar 2012 20:21:13 -0400
-Message-Id: <1331598109-31424-115-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.3
-In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
- <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
+	id S1030277Ab2CMAf4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:35:56 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:33470 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932232Ab2CMAfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 20:35:53 -0400
+Message-ID: <1331598952.13200.43.camel@joe2Laptop>
+Subject: Re: [PATCH net-next] net: ipv4: Standardize prefixes for message
+ logging
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 12 Mar 2012 17:35:52 -0700
+In-Reply-To: <20120312.170558.584205292599435892.davem@davemloft.net>
+References: <1331526971.13200.9.camel@joe2Laptop>
+	 <20120311.234846.455580505379366792.davem@davemloft.net>
+	 <1331571812.13200.23.camel@joe2Laptop>
+	 <20120312.170558.584205292599435892.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Romain Francoise <romain@orebokech.com>
+On Mon, 2012-03-12 at 17:05 -0700, David Miller wrote:
+> From: Joe Perches <joe@perches.com>
+> Date: Mon, 12 Mar 2012 10:03:32 -0700
+> > Add #define pr_fmt(fmt) as appropriate.
+> > Add "IPv4: ", "TCP: ", and "IPsec: " to appropriate files.
+> > Standardize on "UDPLite: " for appropriate uses.
+> > Some prefixes were previously "UDPLITE: " and "UDP-Lite: ".
+[]
+> Looks good, and applied,
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+OK.  I'll submit a similar change for net/ipv6 in awhile.
 
-commit 2fdc1c8093255f9da877d7b9ce3f46c2098377dc upstream.
+> but I left out this hunk:
+ 
+> > diff --git a/net/ipv4/ipcomp.c b/net/ipv4/ipcomp.c
+> > index 63b64c4..56d6768 100644
+> > --- a/net/ipv4/ipcomp.c
+> > +++ b/net/ipv4/ipcomp.c
+> > @@ -13,6 +13,7 @@
+> >   *   - Compression stats.
+> >   *   - Adaptive compression.
+> >   */
+> > +
+> >  #include <linux/module.h>
+> >  #include <linux/err.h>
+> >  #include <linux/rtnetlink.h>
+> 
+> As it seemed accidental, if not gratuitous.
 
-When a network namespace is created (via CLONE_NEWNET), the loopback
-interface is automatically added to the new namespace, triggering a
-printk in ipv6_add_dev() if CONFIG_IPV6_PRIVACY is set.
+It wasn't accidental, though I could have mentioned it
+in the changelog.  Most files have a blank line between
+an initial block commment and the first #include.
 
-This is problematic for applications which use CLONE_NEWNET as
-part of a sandbox, like Chromium's suid sandbox or recent versions of
-vsftpd. On a busy machine, it can lead to thousands of useless
-"lo: Disabled Privacy Extensions" messages appearing in dmesg.
+I just do that by habit when looking if a file could
+benefit from a #define pr_fmt.
 
-It's easy enough to check the status of privacy extensions via the
-use_tempaddr sysctl, so just removing the printk seems like the most
-sensible solution.
+I added a similar blank line to udplite.c, but there
+I also added pr_fmt.
 
-Signed-off-by: Romain Francoise <romain@orebokech.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- net/ipv6/addrconf.c |    3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 844ffc5..34ad669 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -408,9 +408,6 @@ static struct inet6_dev * ipv6_add_dev(struct net_device *dev)
- 	    dev->type == ARPHRD_TUNNEL6 ||
- 	    dev->type == ARPHRD_SIT ||
- 	    dev->type == ARPHRD_NONE) {
--		printk(KERN_INFO
--		       "%s: Disabled Privacy Extensions\n",
--		       dev->name);
- 		ndev->cnf.use_tempaddr = -1;
- 	} else {
- 		in6_dev_hold(ndev);
--- 
-1.7.9.3
+cheers, Joe
 
