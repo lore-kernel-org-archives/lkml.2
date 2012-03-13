@@ -1,110 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964845Ab2CMXJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 19:09:44 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42704 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760410Ab2CMXJm (ORCPT
+	id S1760585Ab2CMXLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 19:11:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50062 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760201Ab2CMXLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 19:09:42 -0400
-Date: Tue, 13 Mar 2012 23:09:39 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
-        Peter Hsiang <cdefgab1288@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: max98095: add jack detection
-Message-ID: <20120313230939.GO3177@opensource.wolfsonmicro.com>
-References: <1331667848-8168-1-git-send-email-rklein@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1HuzLmPZrG5RH6bG"
-Content-Disposition: inline
-In-Reply-To: <1331667848-8168-1-git-send-email-rklein@nvidia.com>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Mar 2012 19:11:46 -0400
+Date: Tue, 13 Mar 2012 16:11:38 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        linux@arm.linux.org.uk
+Subject: Re: [PATCH 3/3] led-triggers: create a trigger for CPU activity
+Message-Id: <20120313161138.cbeb594d.akpm@linux-foundation.org>
+In-Reply-To: <1331197863-25564-3-git-send-email-bryan.wu@canonical.com>
+References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
+	<1331197863-25564-3-git-send-email-bryan.wu@canonical.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu,  8 Mar 2012 17:11:03 +0800
+Bryan Wu <bryan.wu@canonical.com> wrote:
 
---1HuzLmPZrG5RH6bG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Attempting to consolidate the ARM LED code, this removes the
+> custom RealView LED trigger code to turn LEDs on and off in
+> response to CPU activity and replace it with a standard trigger.
+> 
+> (bryan.wu@canonical.com:
+> It moves arch/arm/kernel/leds.c syscore stubs into this trigger.
+> It also provides ledtrig_cpu trigger event stub in <linux/leds.h>.
+> Although it was inspired by ARM work, it can be used in other arch.)
 
-On Tue, Mar 13, 2012 at 12:44:08PM -0700, Rhyland Klein wrote:
+The patch doesn't "remove" or "move" anything.  It wholly consists of
+additions.  Confused.
 
-> This change adds the logic to support using the jack detect mechanism built
-> in to the codec to detect both when a jack was inserted and what type of
-> jack is present.
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+> 
+> Reviewed-by: Jamie Iles <jamie@jamieiles.com>
+> Tested-by: Jochen Friedrich <jochen@scram.de>
 
-This looks mostly good, a few things below.
+The authorship is a bit unclear.  You're the primary author, yes?
 
-> @@ -51,6 +52,9 @@ struct max98095_priv {
->  	u8 lin_state;
->  	unsigned int mic1pre;
->  	unsigned int mic2pre;
-> +	int irq;
-
-You can just get the irq from the I2C device.
-
-> +	if (max98095->headphone_jack == max98095->mic_jack)
-> +		snd_soc_jack_report(max98095->headphone_jack,
-> +					hp_report | mic_report,
-> +					SND_JACK_HEADSET);
-> +	else {
-
-Braces on both sides of the if for clarity.
-
-> +static irqreturn_t max98095_jack_handler(int irq, void *data)
+> --- /dev/null
+> +++ b/drivers/leds/ledtrig-cpu.c
+> @@ -0,0 +1,119 @@
+> +/*
+> + * ledtrig-cpu.c - LED trigger based on CPU activity
+> + *
+> + * Copyright 2011 Linus Walleij <linus.walleij@linaro.org>
+> + * Copyright 2011 Bryan Wu <bryan.wu@canonical.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/slab.h>
+> +#include <linux/percpu.h>
+> +#include <linux/syscore_ops.h>
+> +#include "leds.h"
+> +
+> +static DEFINE_PER_CPU(struct led_trigger *, cpu_trig);
+> +static DEFINE_PER_CPU(char [8], trig_name);
+> +
+> +void ledtrig_cpu(enum cpu_led_event ledevt)
 > +{
-> +	struct snd_soc_codec *codec = data;
-> +	int ret;
+> +	struct led_trigger *trig = __get_cpu_var(cpu_trig);
 > +
-> +	ret = max98095_report_jack(codec);
+> +	if (!trig)
+> +		return;
 > +
-> +	return ret ? IRQ_NONE : IRQ_HANDLED;
-
-There is no point in having a separate function here, this function has
-no contents.  Just inline it.  Please also avoid the use of the ternery
-operator.
-
-> +	/* configure jack detection: slew is calculated as 4 * (delay + 1)
-> +	 * The default is 24 (0x18) to get 100ms delay.
-> +	 */
-> +	ret = snd_soc_write(codec, M98095_08E_JACK_DC_SLEW,
-> +				M98095_DEFAULT_SLEW_DELAY);
-> +	if (ret < 0) {
-> +		dev_err(codec->dev, "Failed to cfg auto detect %d\n", ret);
-> +		return ret;
+> +	/* Locate the correct CPU LED */
+> +	switch (ledevt) {
+> +	case CPU_LED_IDLE_END:
+> +	case CPU_LED_START:
+> +		/* Will turn the LED on, max brightness */
+> +		led_trigger_event(trig, LED_FULL);
+> +		break;
+> +
+> +	case CPU_LED_IDLE_START:
+> +	case CPU_LED_STOP:
+> +	case CPU_LED_HALTED:
+> +		/* Will turn the LED off */
+> +		led_trigger_event(trig, LED_OFF);
+> +		break;
+> +
+> +	default:
+> +		/* Will leave the LED as it is */
+> +		break;
 > +	}
+> +}
+> +EXPORT_SYMBOL(ledtrig_cpu);
 
-Platform data?
+This is a global, exported-to-modules API function.  It should be
+documented.
 
-> +	enable_irq(max98095->irq);
+It should especially be documented if it has tricky unobvious calling
+conditions, as this function does.  AFAICT it must be called by code
+which is running on the target CPU and which is pinned to that CPU via
+either preempt_disable() or set_cpus_allowed().
 
-You shouldn't be fiddling around with enable_irq() and disable_irq().
-Why are you doing this?
+Or something else - I don't have a clue, and the author didn't tell me :(
 
---1HuzLmPZrG5RH6bG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +static int ledtrig_cpu_syscore_suspend(void)
+> +{
+> +	ledtrig_cpu(CPU_LED_STOP);
+> +	return 0;
+> +}
+> +
+> +static void ledtrig_cpu_syscore_resume(void)
+> +{
+> +	ledtrig_cpu(CPU_LED_START);
+> +}
+> +
+> +static void ledtrig_cpu_syscore_shutdown(void)
+> +{
+> +	ledtrig_cpu(CPU_LED_HALTED);
+> +}
+> +
+> +static struct syscore_ops ledtrig_cpu_syscore_ops = {
+> +	.shutdown	= ledtrig_cpu_syscore_shutdown,
+> +	.suspend	= ledtrig_cpu_syscore_suspend,
+> +	.resume		= ledtrig_cpu_syscore_resume,
+> +};
+> +
+> +static void __init ledtrig_cpu_register(void *info)
+> +{
+> +	int cpuid = smp_processor_id();
+> +	struct led_trigger *trig;
+> +	char *name = __get_cpu_var(trig_name);
+> +
+> +	snprintf(name, 8, "cpu%d", cpuid);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+This explodes at 10,000 CPUS ;)
 
-iQIcBAEBAgAGBQJPX9OtAAoJEBus8iNuMP3deCQP/RN1o6j/vjrZf43Y/Nw/iik9
-ja5uoUWE7K3AoF0gqIeEm2Qk7RI1lUiKPQiAMGXppJvSlMDr+2kWWJiKejxhGU5W
-GLkfDiUAHvfXT4m4r+GPYwTdQPyJF5kX3uQUEd13jEQHz2Mbq/I5646n1d5EQ2T0
-KVnCQGlIutqYj1p+j6eHTKS2u8fRwuw1WMJoJr03+VS3b3Uw9C2wu82LmvNN8O0x
-GMyiIhwwH/xwNasSeYzO85RKkB8nnmvNWhLK1oZKo6Wux6YWs+iKaBV0E+ZpXheV
-sjmvfLnoTXyycZjPxL6Xq6JJAba9yTKermG0kTK/BnFWbEh6FtFHsTE0ejPARjqg
-u25+CvtyzHAP0MVUlvgqbWw21fEN0VhtCdQiUCqkw5vnXEQJh4YOwE96gBHdl4Gh
-/1ZP5f1Wdbh2xIOLBmGzZCiGl1wM/oaegheNXje6h5u39iD6fc6wxKnCQz7a8moV
-jHRxH7o8n8Qs5rSfalXb/HY2P2on5gN3EvcowGftRIgBxbEISei/S9z5h0jUfRY4
-kMEPg7YYfmDvLr8V/yVViTLGiJBOZ9yeiT3yNMU3Q7C5R+kAN7iFK5yxnS+qwX4W
-uVJur8sLOJk2ymWxbKcfQU5WRG34mHA3UI6cBxVr5CdAL7ChuAbGNIY6s/ntqqQi
-wg28OGVf233EG78bk4bD
-=fepc
------END PGP SIGNATURE-----
+> +	led_trigger_register_simple(name, &trig);
+> +
+> +	pr_info("LED trigger %s indicate activity on CPU %d\n",
+> +		trig->name, cpuid);
+> +
+> +	__get_cpu_var(cpu_trig) = trig;
+> +}
+> +
+> +static void __exit ledtrig_cpu_unregister(void *info)
+> +{
+> +	struct led_trigger *trig = __get_cpu_var(cpu_trig);
+> +	char *name = __get_cpu_var(trig_name);
+> +
+> +	led_trigger_unregister_simple(trig);
+> +	__get_cpu_var(cpu_trig) = NULL;
+> +	memset(name, 0, 8);
+> +}
+> +
+> +static int __init ledtrig_cpu_init(void)
+> +{
+> +	on_each_cpu(ledtrig_cpu_register, NULL, 1);
 
---1HuzLmPZrG5RH6bG--
+on_each_cpu() only calls the function on presently-onlined CPUs.  How
+does this code interact with CPU hotplug?
+
+And as you've already noted, led_trigger_register_simple() is totally
+not callable from interrupt context.  And we're not just talking about
+under local_irq_disable() here: on_each_cpu() will raise cross-cpu hard
+interrupts to call the function on remote CPUs.  We end up trying to do
+down_write() and who knows what else from within a hard interrupt
+handler.
+
+> --- a/include/linux/leds.h
+> +++ b/include/linux/leds.h
+> @@ -210,4 +210,19 @@ struct gpio_led_platform_data {
+>  struct platform_device *gpio_led_register_device(
+>  		int id, const struct gpio_led_platform_data *pdata);
+>  
+> +#if defined(CONFIG_LEDS_TRIGGER_CPU) || defined(CONFIG_LEDS_TRIGGER_CPU_MODULE)
+> +enum cpu_led_event {
+> +	CPU_LED_IDLE_START,	/* CPU enters idle */
+> +	CPU_LED_IDLE_END,	/* CPU idle ends */
+> +	CPU_LED_START,		/* Machine starts, especially resume */
+> +	CPU_LED_STOP,		/* Machine stops, especially suspend */
+> +	CPU_LED_HALTED,		/* Machine shutdown */
+> +};
+> +
+> +/* Use this routine to handle LEDs */
+> +extern void ledtrig_cpu(enum cpu_led_event evt);
+> +#else
+> +#define ledtrig_cpu(evt) do {} while (0)
+> +#endif
+
+a) the stub function should be written in C, not CPP please
+
+b) it makes no sense to provide the stub function when the
+   definition of its argument type (enum cpu_led_event) is not
+   also available.
+
