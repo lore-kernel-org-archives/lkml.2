@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030315Ab2CMJxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 05:53:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57349 "EHLO
+	id S1030227Ab2CMJwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 05:52:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61400 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965119Ab2CMJw6 (ORCPT
+	with ESMTP id S965016Ab2CMJwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 05:52:58 -0400
+	Tue, 13 Mar 2012 05:52:51 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 18/35] Create asm-generic/barrier.h [ver #2]
-Date: Tue, 13 Mar 2012 09:10:33 +0000
+Subject: Re: [PATCH 17/35] Make asm-generic/cmpxchg.h #include asm-generic/cmpxchg-local.h [ver #2]
+Date: Tue, 13 Mar 2012 09:00:41 +0000
 User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
 Cc: paul.gortmaker@windriver.com, hpa@zytor.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk> <20120312233907.13888.85219.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20120312233907.13888.85219.stgit@warthog.procyon.org.uk>
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux@openrisc.net
+References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk> <20120312233858.13888.34822.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120312233858.13888.34822.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203130910.34070.arnd@arndb.de>
-X-Provags-ID: V02:K0:mrKsyz77EQCASS8zY6hKXevR+PSLAjvXcJEusH6TwmQ
- IhKMNy2za7nCTsBJaNmZeBw1fcK642UIXjDP2tR4w+jUlsouro
- BsZpEYGpQ0HtniRbVahnhURW0KIZU37x2rGPl0D+Kj3EBn3ghL
- Zn0GTWEZeRBN5HIPiEgz4YUxBvMFAjPkaU8zVhDBnwCdg0XKxb
- eKq9iAf0NHmxrnQJ6TVrH5sXTwVGOAgTpArdi5+maRAPhdX1+O
- txU8SiKvZ6wgbuAGVpH1yLEovY+RvGn//P9vUL85mK3ugSi0fm
- wPDzMQJxixBNhnAO9NB+AzEzwJTf8K00PsQpdrWimnWxWdY/jd
- FYn1nAIziGhVTgclFklc=
+Message-Id: <201203130900.41993.arnd@arndb.de>
+X-Provags-ID: V02:K0:LCfO4e0NPOP8w9AkYNUBfb2yWIJkavKMIMjCc7Fl8SV
+ FBvd4r+Bu2hAWLGQWJVJrAb8i+RJmiGKBJz6WJN2ADnBYzigSt
+ 1P+8W5iRpUXxOJtA+beQbvmR3Z/nr/mLEu9MQia5VxTP2niO+q
+ eQFX1F8mC5hVLzggOW12qZuV7H47cj5pM87EZl7WPuVH3TLhsi
+ 61ghMu4fNcTfv/256db/pSCW6t5fdM0QznhdZS68w3EB++VTna
+ LVayT3+oYKAfCNMktAG+uPdMI5TiDO4VvXiYAvNSkEPQH8d9fY
+ ZYDyi5FwOKL/L+dLeXaXTsNy5rY+s+3EfgoJDQFWa91gkIUMAU
+ 6Aq5dj8Bqjx52YaXBKY4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Monday 12 March 2012, David Howells wrote:
-> Create asm-generic/barrier.h and move the barrier definitions from
-> asm-generic/system.h to it.
+> Make asm-generic/cmpxchg.h #include asm-generic/cmpxchg-local.h as all arch
+> files that #include the former also #include the latter.  See:
+> 
+>         grep -rl asm-generic/cmpxchg-local[.]h arch/ | sort > b
+>         grep -rl asm-generic/cmpxchg[.]h arch/ | sort > a
+>         comm a b
+> 
+> This simplifies the disintegration of asm-generic/system.h for arches that
+> don't have their own.
 > 
 > Signed-off-by: David Howells <dhowells@redhat.com>
 > cc: Arnd Bergmann <arnd@arndb.de>
 
 Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+I would suggest we merge this one through the openrisc tree, along with the
+other asm-generic patches in your series.
+
+asm-generic patches tend to have dependencies on other stuff and they
+rarely conflict with one another, so generally my preference is to have
+them sent by whoever needs them, with my ack.
+
+	Arnd
 
