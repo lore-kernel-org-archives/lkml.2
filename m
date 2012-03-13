@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab2CMMfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:35:19 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:20876
+	id S1752445Ab2CMMgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:36:13 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:18939
 	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752050Ab2CMMfR (ORCPT
+	by vger.kernel.org with ESMTP id S1752129Ab2CMMgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 08:35:17 -0400
+	Tue, 13 Mar 2012 08:36:11 -0400
 X-SpamScore: -9
-X-BigFish: VPS-9(zz936eK1432N98dKc8kzz1202hzz8275bhz2dh2a8h668h839h93fh)
+X-BigFish: VPS-9(zz936eK1432N98dKc8kzz1202hzz8275bh84d07hz2dh2a8h668h839h93fh)
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: Re: [Patch 07/07] Touch: DA9052/53 touch screen driver v1
+Subject: Re: [PATCH] LEDS: LED module for DA9052/53 PMIC v2
 From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: <dmitry.torokhov@gmail.com>
-CC: <sameo@linux.intel.com>, <m.grzeschik@pengutronix.de>,
-        <randy.dunlap@oracle.com>, <linaro-dev@lists.linaro.org>,
-        <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        David Dajun Chen <dchen@diasemi.com>
-In-Reply-To: <1328532695.30549.86.camel@dhruva>
-References: <1328532695.30549.86.camel@dhruva>
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: <rpurdie@rpsys.net>, <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <Dajun.Chen@diasemi.com>
+In-Reply-To: <1329916149.24042.7.camel@dhruva>
+References: <1329916149.24042.7.camel@dhruva>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Mar 2012 17:55:06 +0530
-Message-ID: <1331641506.7058.0.camel@dhruva>
+Date: Tue, 13 Mar 2012 17:56:00 +0530
+Message-ID: <1331641560.7058.1.camel@dhruva>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -32,62 +29,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any update on the below patch
-On Mon, 2012-02-06 at 18:21 +0530, Ashish Jangam wrote:
-> This driver adds support for DA9052/53 4-wire resistive ADC interfaced
-> touchscreen controller.
-> 
-> DA9052/53 is a MFD therefore this driver depends on DA9052/53 core
-> driver for core functionalities.
-> 
-> This patch is functionally tested on Samsung SMDKV6410.
+Any update on below patch?
+On Wed, 2012-02-22 at 18:39 +0530, Ashish Jangam wrote:
+> LED Driver for Dialog Semiconductor DA9052/53 PMICs.
 > 
 > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
 > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 > ---
->  drivers/input/touchscreen/Kconfig      |    7 +
->  drivers/input/touchscreen/Makefile     |    1 +
->  drivers/input/touchscreen/da9052_tsi.c |  353 ++++++++++++++++++++++++++++++++
->  3 files changed, 361 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/input/touchscreen/da9052_tsi.c
-> diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-> index 2b21a70..32a3e26 100644
-> --- a/drivers/input/touchscreen/Kconfig
-> +++ b/drivers/input/touchscreen/Kconfig
-> @@ -187,6 +187,13 @@ config TOUCHSCREEN_DA9034
->  	  Say Y here to enable the support for the touchscreen found
->  	  on Dialog Semiconductor DA9034 PMIC.
+>  drivers/leds/Kconfig       |    8 ++
+>  drivers/leds/Makefile      |    1 +
+>  drivers/leds/leds-da9052.c |  214 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 223 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/leds/leds-da9052.c
+> 
+> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> index e2ac190..b826f88 100644
+> --- a/drivers/leds/Kconfig
+> +++ b/drivers/leds/Kconfig
+> @@ -266,6 +266,14 @@ config LEDS_DA903X
+>  	  This option enables support for on-chip LED drivers found
+>  	  on Dialog Semiconductor DA9030/DA9034 PMICs.
 >  
-> +config TOUCHSCREEN_DA9052
-> +	tristate "Dialog DA9052/DA9053 TSI"
+> +config LEDS_DA9052
+> +	tristate "Dialog DA9052/DA9053 LEDS"
+> +	depends on LEDS_CLASS
 > +	depends on PMIC_DA9052
 > +	help
-> +	  Say y here to support the touchscreen found on Dialog Semiconductor
-> +	  DA9052-BC and DA9053-AA/Bx PMICs.
+> +	  This option enables support for on-chip LED drivers found
+> +	  on Dialog Semiconductor DA9052-BC and DA9053-AA/Bx PMICs.
 > +
->  config TOUCHSCREEN_DYNAPRO
->  	tristate "Dynapro serial touchscreen"
->  	select SERIO
-> diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
-> index d9acbdc..c76b21c 100644
-> --- a/drivers/input/touchscreen/Makefile
-> +++ b/drivers/input/touchscreen/Makefile
-> @@ -22,6 +22,7 @@ obj-$(CONFIG_TOUCHSCREEN_CYTTSP_CORE)	+= cyttsp_core.o
->  obj-$(CONFIG_TOUCHSCREEN_CYTTSP_I2C)	+= cyttsp_i2c.o
->  obj-$(CONFIG_TOUCHSCREEN_CYTTSP_SPI)	+= cyttsp_spi.o
->  obj-$(CONFIG_TOUCHSCREEN_DA9034)	+= da9034-ts.o
-> +obj-$(CONFIG_TOUCHSCREEN_DA9052)	+= da9052_tsi.o
->  obj-$(CONFIG_TOUCHSCREEN_DYNAPRO)	+= dynapro.o
->  obj-$(CONFIG_TOUCHSCREEN_HAMPSHIRE)	+= hampshire.o
->  obj-$(CONFIG_TOUCHSCREEN_GUNZE)		+= gunze.o
-> diff --git a/drivers/input/touchscreen/da9052_tsi.c b/drivers/input/touchscreen/da9052_tsi.c
+>  config LEDS_DAC124S085
+>  	tristate "LED Support for DAC124S085 SPI DAC"
+>  	depends on LEDS_CLASS
+> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> index fa0f428..479048f 100644
+> --- a/drivers/leds/Makefile
+> +++ b/drivers/leds/Makefile
+> @@ -32,6 +32,7 @@ obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
+>  obj-$(CONFIG_LEDS_PCA955X)		+= leds-pca955x.o
+>  obj-$(CONFIG_LEDS_PCA9633)		+= leds-pca9633.o
+>  obj-$(CONFIG_LEDS_DA903X)		+= leds-da903x.o
+> +obj-$(CONFIG_LEDS_DA9052)		+= leds-da9052.o
+>  obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
+>  obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
+>  obj-$(CONFIG_LEDS_PWM)			+= leds-pwm.o
+> diff --git a/drivers/leds/leds-da9052.c b/drivers/leds/leds-da9052.c
 > new file mode 100644
-> index 0000000..8c672ee
+> index 0000000..15281b4
 > --- /dev/null
-> +++ b/drivers/input/touchscreen/da9052_tsi.c
-> @@ -0,0 +1,353 @@
+> +++ b/drivers/leds/leds-da9052.c
+> @@ -0,0 +1,214 @@
 > +/*
-> + * TSI driver for Dialog DA9052
+> + * LED Driver for Dialog DA9052 PMICs.
 > + *
 > + * Copyright(c) 2012 Dialog Semiconductor Ltd.
 > + *
@@ -99,347 +92,207 @@ On Mon, 2012-02-06 at 18:21 +0530, Ashish Jangam wrote:
 > + *  option) any later version.
 > + *
 > + */
+> +
 > +#include <linux/module.h>
-> +#include <linux/input.h>
-> +#include <linux/delay.h>
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
 > +#include <linux/platform_device.h>
-> +#include <linux/interrupt.h>
+> +#include <linux/leds.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/slab.h>
 > +
 > +#include <linux/mfd/da9052/reg.h>
 > +#include <linux/mfd/da9052/da9052.h>
+> +#include <linux/mfd/da9052/pdata.h>
 > +
-> +#define TSI_PEN_DOWN_STATUS 0x40
+> +#define DA9052_OPENDRAIN_OUTPUT	2
+> +#define DA9052_SET_HIGH_LVL_OUTPUT	(1 << 3)
+> +#define DA9052_MASK_UPPER_NIBBLE	0xF0
+> +#define DA9052_MASK_LOWER_NIBBLE	0x0F
+> +#define DA9052_NIBBLE_SHIFT		4
+> +#define DA9052_MAX_BRIGHTNESS		0x5f
 > +
-> +struct da9052_tsi {
+> +struct da9052_led {
+> +	struct led_classdev cdev;
+> +	struct work_struct work;
 > +	struct da9052 *da9052;
-> +	struct input_dev *dev;
-> +	struct delayed_work ts_pen_work;
-> +	int irq_pendwn;
-> +	int irq_datardy;
+> +	unsigned char led_index;
+> +	unsigned char id;
+> +	int brightness;
 > +};
 > +
-> +static int da9052_ts_start(struct da9052_tsi *tsi)
+> +unsigned char led_reg[] = {
+> +	DA9052_LED_CONT_4_REG,
+> +	DA9052_LED_CONT_5_REG,
+> +};
+> +
+> +static int da9052_set_led_brightness(struct da9052_led *led)
 > +{
-> +	return da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG,
-> +				 1 << 0, 1 << 0);
+> +	u8 val;
+> +	int error;
+> +
+> +	val = (led->brightness & 0x7f) | DA9052_LED_CONT_DIM;
+> +
+> +	error = da9052_reg_write(led->da9052, led_reg[led->led_index], val);
+> +	if (error < 0)
+> +		dev_err(led->da9052->dev, "Failed to set led brightness, %d\n",
+> +			error);
+> +	return error;
 > +}
 > +
-> +static int da9052_ts_stop(struct da9052_tsi *tsi)
+> +static void da9052_led_work(struct work_struct *work)
 > +{
-> +	return da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG, 1 << 0, 0);
+> +	struct da9052_led *led = container_of(work, struct da9052_led, work);
+> +
+> +	da9052_set_led_brightness(led);
 > +}
 > +
-> +static irqreturn_t da9052_ts_pendwn_irq(int irq, void *data)
+> +static void da9052_led_set(struct led_classdev *led_cdev,
+> +			   enum led_brightness value)
 > +{
-> +	struct da9052_tsi *tsi = data;
+> +	struct da9052_led *led;
 > +
-> +	/* Mask PEN_DOWN event and unmask TSI_READY event */
-> +	disable_irq_nosync(tsi->irq_pendwn);
-> +	enable_irq(tsi->irq_datardy);
-> +
-> +	da9052_ts_start(tsi);
-> +
-> +	input_report_key(tsi->dev, BTN_TOUCH, 1);
-> +	input_sync(tsi->dev);
-> +
-> +	schedule_delayed_work(&tsi->ts_pen_work, HZ/50);
-> +
-> +	return IRQ_HANDLED;
+> +	led = container_of(led_cdev, struct da9052_led, cdev);
+> +	led->brightness = value;
+> +	schedule_work(&led->work);
 > +}
 > +
-> +static int da9052_ts_read(struct da9052_tsi *tsi)
+> +static int da9052_configure_leds(struct da9052 *da9052)
 > +{
-> +	int ret = 0;
-> +	u16 x, y, z;
-> +	u8 v;
+> +	int error;
+> +	unsigned char register_value = DA9052_OPENDRAIN_OUTPUT
+> +				       | DA9052_SET_HIGH_LVL_OUTPUT;
 > +
-> +	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_X_MSB_REG);
-> +	if (ret < 0)
-> +		goto exit;
+> +	error = da9052_reg_update(da9052, DA9052_GPIO_14_15_REG,
+> +				  DA9052_MASK_LOWER_NIBBLE,
+> +				  register_value);
 > +
-> +	x = (u16) ret;
-> +
-> +	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_Y_MSB_REG);
-> +	if (ret < 0)
-> +		goto exit;
-> +
-> +	y = (u16) ret;
-> +
-> +	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_Z_MSB_REG);
-> +	if (ret < 0)
-> +		goto exit;
-> +
-> +	z = (u16) ret;
-> +
-> +	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_LSB_REG);
-> +	if (ret < 0)
-> +		goto exit;
-> +
-> +	v = (u8) ret;
-> +
-> +	x = ((x << 2) & 0x3fc) | (v & 0x3);
-> +	y = ((y << 2) & 0x3fc) | ((v & 0xc) >> 2);
-> +	z = ((z << 2) & 0x3fc) | ((v & 0x30) >> 4);
-> +
-> +	input_report_abs(tsi->dev, ABS_X, x);
-> +	input_report_abs(tsi->dev, ABS_Y, y);
-> +	input_report_abs(tsi->dev, ABS_PRESSURE, z);
-> +	input_report_key(tsi->dev, BTN_TOUCH, 1);
-> +	input_sync(tsi->dev);
-> +
-> +exit:
-> +	return ret;
-> +}
-> +
-> +static irqreturn_t da9052_ts_datardy_irq(int irq, void *data)
-> +{
-> +	struct da9052_tsi *tsi = data;
-> +
-> +	da9052_ts_read(tsi);
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static void da9052_ts_pen_work(struct work_struct *work)
-> +{
-> +	struct da9052_tsi *tsi = container_of(work, struct da9052_tsi,
-> +					      ts_pen_work.work);
-> +	struct input_dev *ip_dev = tsi->dev;
-> +	int ret;
-> +
-> +	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_LSB_REG);
-> +	if (ret < 0)
-> +		return;
-> +
-> +	if (ret & TSI_PEN_DOWN_STATUS) /* Pen Down */
-> +		schedule_delayed_work(&tsi->ts_pen_work, HZ/50);
-> +	else {
-> +		/* Pen UP */
-> +		da9052_ts_stop(tsi);
-> +
-> +		/* Mask TSI_READY event and unmask PEN_DOWN event */
-> +		disable_irq(tsi->irq_datardy);
-> +		enable_irq(tsi->irq_pendwn);
-> +
-> +		/* Report Pen UP */
-> +		input_report_abs(ip_dev, ABS_PRESSURE, 0);
-> +		input_report_key(ip_dev, BTN_TOUCH, 0);
-> +		input_sync(ip_dev);
+> +	if (error < 0) {
+> +		dev_err(da9052->dev, "Failed to write GPIO 14-15 reg, %d\n",
+> +			error);
+> +		return error;
 > +	}
+> +
+> +	error = da9052_reg_update(da9052, DA9052_GPIO_14_15_REG,
+> +				  DA9052_MASK_UPPER_NIBBLE,
+> +				  register_value << DA9052_NIBBLE_SHIFT);
+> +	if (error < 0)
+> +		dev_err(da9052->dev, "Failed to write GPIO 14-15 reg, %d\n",
+> +			error);
+> +
+> +	return error;
 > +}
 > +
-> +static int __devinit da9052_ts_configure_gpio(struct da9052 *da9052)
+> +static int __devinit da9052_led_probe(struct platform_device *pdev)
 > +{
-> +	int ret;
-> +
-> +	ret = da9052_reg_update(da9052, DA9052_GPIO_2_3_REG, 0x30, 0);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = da9052_reg_update(da9052, DA9052_GPIO_4_5_REG, 0x33, 0);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = da9052_reg_update(da9052, DA9052_GPIO_6_7_REG, 0x33, 0);
-> +
-> +	return ret;
-> +}
-> +
-> +static int __devinit da9052_configure_tsi(struct da9052_tsi *tsi)
-> +{
-> +	ssize_t ret;
-> +
-> +	ret = da9052_ts_configure_gpio(tsi->da9052);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* Measure TSI sample every 1ms */
-> +	ret = da9052_reg_update(tsi->da9052, DA9052_ADC_CONT_REG,
-> +				1 << 6, 1 << 6);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* TSI_DELAY: 3 slots, TSI_SKIP: 0 slots, TSI_MODE: XYZP */
-> +	ret = da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG, 0xFC, 0xC0);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* Mask PEN_DOWN and TSI_READY events */
-> +	disable_irq(tsi->irq_pendwn);
-> +	disable_irq(tsi->irq_datardy);
-> +
-> +	/*Supply TSIRef through LD09 */
-> +	ret = da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x59);
-> +
-> +	return ret;
-> +}
-> +
-> +static int da9052_ts_input_open(struct input_dev *input_dev)
-> +{
-> +	struct da9052_tsi *tsi = input_get_drvdata(input_dev);
-> +
-> +	/* Unmask PEN_DOWN event */
-> +	enable_irq(tsi->irq_pendwn);
-> +
-> +	/* Enable Pen Detect Circuit */
-> +	return da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG,
-> +				 1 << 1, 1 << 1);
-> +}
-> +
-> +static void da9052_ts_input_close(struct input_dev *input_dev)
-> +{
-> +	struct da9052_tsi *tsi = input_get_drvdata(input_dev);
-> +	int ret;
-> +
-> +	ret = da9052_reg_read(tsi->da9052, DA9052_TSI_LSB_REG);
-> +
-> +	if (ret & TSI_PEN_DOWN_STATUS) /* Pen Down */
-> +		disable_irq(tsi->irq_datardy);
-> +	else
-> +		disable_irq(tsi->irq_pendwn);
-> +
-> +	cancel_delayed_work_sync(&tsi->ts_pen_work);
-> +
-> +	da9052_ts_stop(tsi);
-> +
-> +	/* Disable Pen Detect Circuit */
-> +	da9052_reg_update(tsi->da9052, DA9052_TSI_CONT_A_REG, 1 << 1, 0);
-> +}
-> +
-> +static int __devinit da9052_ts_probe(struct platform_device *pdev)
-> +{
-> +	struct da9052_tsi *tsi;
-> +	struct input_dev *input_dev;
+> +	struct da9052_pdata *pdata;
 > +	struct da9052 *da9052;
-> +	int ret;
+> +	struct led_platform_data *pled;
+> +	struct da9052_led *led = NULL;
+> +	int error = -ENODEV;
+> +	int i;
 > +
 > +	da9052 = dev_get_drvdata(pdev->dev.parent);
-> +	if (da9052 == NULL)
-> +		return -EINVAL;
-> +
-> +	tsi = devm_kzalloc(&pdev->dev, sizeof(struct da9052_tsi), GFP_KERNEL);
-> +	if (!tsi)
-> +		return -ENOMEM;
-> +
-> +	input_dev = input_allocate_device();
-> +	if (!input_dev) {
-> +		dev_err(tsi->da9052->dev, "Failed to allocate input device\n");
-> +		ret = -ENOMEM;
-> +		goto err_mem;
+> +	pdata = da9052->dev->platform_data;
+> +	if (pdata == NULL) {
+> +		dev_err(&pdev->dev, "No platform data\n");
+> +		goto err;
 > +	}
 > +
-> +	INIT_DELAYED_WORK(&tsi->ts_pen_work, da9052_ts_pen_work);
-> +
-> +	tsi->da9052 = da9052;
-> +
-> +	input_dev->id.version = 0x0101;
-> +	input_dev->id.vendor = 0x15B6;
-> +	input_dev->id.product = 0x9052;
-> +	input_dev->name = "Dialog DA9052 TouchScreen Driver";
-> +	input_dev->dev.parent = &pdev->dev;
-> +	input_dev->open = da9052_ts_input_open;
-> +	input_dev->close = da9052_ts_input_close;
-> +	__set_bit(EV_ABS, input_dev->evbit);
-> +	__set_bit(EV_KEY, input_dev->evbit);
-> +	__set_bit(BTN_TOUCH, input_dev->keybit);
-> +
-> +	input_set_abs_params(input_dev, ABS_X, 0, 1023, 0, 0);
-> +	input_set_abs_params(input_dev, ABS_Y, 0, 1023, 0, 0);
-> +	input_set_abs_params(input_dev, ABS_PRESSURE, 0, 1023, 0, 0);
-> +
-> +	tsi->dev = input_dev;
-> +	input_set_drvdata(input_dev, tsi);
-> +
-> +	tsi->irq_pendwn = platform_get_irq_byname(pdev, "PENDWN");
-> +	if (tsi->irq_pendwn < 0) {
-> +		ret = tsi->irq_pendwn;
-> +		goto err_input;
+> +	pled = pdata->pled;
+> +	if (pled == NULL) {
+> +		dev_err(&pdev->dev, "No platform data for LED\n");
+> +		goto err;
 > +	}
 > +
-> +	ret = request_threaded_irq(tsi->irq_pendwn, NULL, da9052_ts_pendwn_irq,
-> +				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +				   "PENDWN", tsi);
-> +	if (ret < 0) {
-> +		dev_err(tsi->da9052->dev,
-> +			"Failed to register %s IRQ %d, error = %d\n", "PENDWN",
-> +			tsi->irq_pendwn, ret);
-> +		goto err_input;
+> +	led = devm_kzalloc(&pdev->dev,
+> +			   sizeof(struct da9052_led) * pled->num_leds,
+> +			   GFP_KERNEL);
+> +	if (led == NULL) {
+> +		dev_err(&pdev->dev, "Failed to alloc memory\n");
+> +		error = -ENOMEM;
+> +		goto err;
 > +	}
 > +
-> +	tsi->irq_datardy = platform_get_irq_byname(pdev, "TSIRDY");
-> +	if (tsi->irq_datardy < 0) {
-> +		ret = tsi->irq_datardy;
-> +		goto err_pendwn_irq;
+> +	for (i = 0; i < pled->num_leds; i++) {
+> +		led[i].cdev.name = pled->leds[i].name;
+> +		led[i].cdev.brightness_set = da9052_led_set;
+> +		led[i].cdev.brightness = LED_OFF;
+> +		led[i].cdev.max_brightness = DA9052_MAX_BRIGHTNESS;
+> +		led[i].brightness = LED_OFF;
+> +		led[i].led_index = pled->leds[i].flags;
+> +		led[i].da9052 = dev_get_drvdata(pdev->dev.parent);
+> +		INIT_WORK(&led[i].work, da9052_led_work);
+> +
+> +		error = led_classdev_register(pdev->dev.parent, &led[i].cdev);
+> +		if (error) {
+> +			dev_err(&pdev->dev, "Failed to register led %d\n",
+> +				led[i].led_index);
+> +			goto err_register;
+> +		}
+> +
+> +		error = da9052_set_led_brightness(&led[i]);
+> +		if (error) {
+> +			dev_err(&pdev->dev, "Unable to init led %d\n",
+> +				led[i].led_index);
+> +			continue;
+> +		}
+> +	}
+> +	error = da9052_configure_leds(led->da9052);
+> +	if (error) {
+> +		dev_err(&pdev->dev, "Failed to configure GPIO LED%d\n", error);
+> +		goto err_register;
 > +	}
 > +
-> +	ret = request_threaded_irq(tsi->irq_datardy, NULL,
-> +				   da9052_ts_datardy_irq,
-> +				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +				   "TSIRDY", tsi);
-> +	if (ret < 0) {
-> +		dev_err(tsi->da9052->dev,
-> +			"Failed to register %s IRQ %d, error = %d\n", "TSIRDY",
-> +			tsi->irq_datardy, ret);
-> +		goto err_pendwn_irq;
-> +	}
-> +
-> +	ret = da9052_configure_tsi(tsi);
-> +	if (ret < 0)
-> +		goto err_datardy_irq;
-> +
-> +	ret = input_register_device(tsi->dev);
-> +	if (ret < 0)
-> +		goto err_datardy_irq;
-> +
-> +	platform_set_drvdata(pdev, tsi);
+> +	platform_set_drvdata(pdev, led);
 > +
 > +	return 0;
 > +
-> +err_datardy_irq:
-> +	free_irq(tsi->irq_datardy, tsi);
-> +err_pendwn_irq:
-> +	free_irq(tsi->irq_pendwn, tsi);
-> +err_input:
-> +	input_free_device(input_dev);
-> +err_mem:
-> +	devm_kfree(&pdev->dev, tsi);
-> +	return ret;
+> +err_register:
+> +	for (i = i - 1; i >= 0; i--) {
+> +		led_classdev_unregister(&led[i].cdev);
+> +		cancel_work_sync(&led[i].work);
+> +	}
+> +err:
+> +	return error;
 > +}
 > +
-> +static int  __devexit da9052_ts_remove(struct platform_device *pdev)
+> +static int __devexit da9052_led_remove(struct platform_device *pdev)
 > +{
-> +	struct da9052_tsi *tsi = platform_get_drvdata(pdev);
+> +	struct da9052_led *led = platform_get_drvdata(pdev);
+> +	struct da9052_pdata *pdata;
+> +	struct da9052 *da9052;
+> +	struct led_platform_data *pled;
+> +	int i;
 > +
-> +	da9052_reg_write(tsi->da9052, DA9052_LDO9_REG, 0x19);
+> +	da9052 = dev_get_drvdata(pdev->dev.parent);
+> +	pdata = da9052->dev->platform_data;
+> +	pled = pdata->pled;
 > +
-> +	free_irq(tsi->irq_pendwn, tsi);
-> +	free_irq(tsi->irq_datardy, tsi);
-> +
-> +	input_unregister_device(tsi->dev);
-> +
-> +	platform_set_drvdata(pdev, NULL);
-> +
-> +	devm_kfree(&pdev->dev, tsi);
+> +	for (i = 0; i < pled->num_leds; i++) {
+> +		led[i].brightness = 0;
+> +		da9052_set_led_brightness(&led[i]);
+> +		led_classdev_unregister(&led[i].cdev);
+> +		cancel_work_sync(&led[i].work);
+> +	}
 > +
 > +	return 0;
 > +}
 > +
-> +static struct platform_driver da9052_tsi_driver = {
-> +
-> +	.probe = da9052_ts_probe,
-> +	.remove = __devexit_p(da9052_ts_remove),
-> +	.driver = {
-> +		.name = "da9052-tsi",
-> +		.owner = THIS_MODULE,
+> +static struct platform_driver da9052_led_driver = {
+> +	.driver		= {
+> +		.name	= "da9052-leds",
+> +		.owner	= THIS_MODULE,
 > +	},
+> +	.probe		= da9052_led_probe,
+> +	.remove		= __devexit_p(da9052_led_remove),
 > +};
 > +
-> +module_platform_driver(da9052_tsi_driver);
+> +module_platform_driver(da9052_led_driver);
 > +
-> +MODULE_DESCRIPTION("Touchscreen driver for Dialog Semiconductor DA9052");
-> +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
+> +MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
+> +MODULE_DESCRIPTION("LED driver for Dialog DA9052 PMIC");
 > +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:da9052-tsi");
-> 
 > 
 
 
