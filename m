@@ -1,107 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044Ab2CMFAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:00:15 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41388 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab2CMFAM (ORCPT
+	id S964920Ab2CMFBO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:01:14 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41765 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab2CMFBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:00:12 -0400
-Message-ID: <4F5ED458.5070301@openvz.org>
-Date: Tue, 13 Mar 2012 09:00:08 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: Fwd: Control page reclaim granularity
-References: <4F5D95AF.1020108@openvz.org> <20120312081413.GA10923@gmail.com> <20120312134226.GA5120@barrios> <4F5E05AD.20200@openvz.org> <20120313024818.GA7125@barrios> <4F5ECF01.2000402@openvz.org>
-In-Reply-To: <4F5ECF01.2000402@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Mar 2012 01:01:13 -0400
+Date: Tue, 13 Mar 2012 16:01:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: linux-next: manual merge of the devicetree tree with the powerpc
+ tree
+Message-Id: <20120313160100.c8cc3fd2b3d1f485ef7e7954@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__13_Mar_2012_16_01_00_+1100_zyfs5ewjJ2IaWld+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konstantin Khlebnikov wrote:
-> Minchan Kim wrote:
->> On Mon, Mar 12, 2012 at 06:18:21PM +0400, Konstantin Khlebnikov wrote:
->>> Minchan Kim wrote:
->>>> On Mon, Mar 12, 2012 at 04:14:14PM +0800, Zheng Liu wrote:
->>>>> On 03/12/2012 02:20 PM, Konstantin Khlebnikov wrote:
->>>>>> Minchan Kim wrote:
->>>>>>> On Mon, Mar 12, 2012 at 10:06:09AM +0800, Zheng Liu wrote:
-> <CUT>
->>>>>>>
->>>>>>> Now problem is that
->>>>>>>
->>>>>>> 1. User want to keep pages which are used once in a while in memory.
->>>>>>> 2. Kernel want to reclaim them because they are surely reclaim target
->>>>>>> pages in point of view by LRU.
->>>>>>>
->>>>>>> The most desriable approach is that user should use mlock to guarantee
->>>>>>> them in memory. But mlock is too big overhead and user doesn't want to
->>>>>>> keep
->>>>>>> memory all pages all at once.(Ie, he want demand paging when he need
->>>>>>> the page)
->>>>>>> Right?
->>>>>>>
->>>>>>> madvise, it's a just hint for kernel and kernel doesn't need to make
->>>>>>> sure madvise's behavior.
->>>>>>> In point of view, such inconsistency might not be a big problem.
->>>>>>>
->>>>>>> Big problem I think now is that user should use madvise(WILLNEED)
->>>>>>> periodically because such
->>>>>>> activation happens once when user calls madvise. If user doesn't use
->>>>>>> page frequently after
->>>>>>> user calls it, it ends up moving into inactive list and even could be
->>>>>>> reclaimed.
->>>>>>> It's not good. :-(
->>>>>>>
->>>>>>> Okay. How about adding new VM_WORKINGSET?
->>>>>>> And reclaimer would give one more round trip in active/inactive list
->>>>>>> erwhen reclaim happens
->>>>>>> if the page is referenced.
->>>>>>>
->>>>>>> Sigh. We have no room for new VM_FLAG in 32 bit.
->>>>>> p
->>>>>> It would be nice to mark struct address_space with this flag and export
->>>>>> AS_UNEVICTABLE somehow.
->>>>>> Maybe we can reuse file-locking engine for managing these bits =)
->>>>>
->>>>> Make sense to me. We can mark this flag in struct address_space and check
->>>>> it in page_refereneced_file(). If this flag is set, it will be cleard and
->>>>
->>>> Disadvantage is that we could set reclaim granularity as per-inode.
->>>> I want to set it as per-vma, not per-inode.
->>>
->>> But with per-inode flag we can tune all files, not only memory-mapped.
->>
->> I don't oppose per-inode setting but I believe we need file range or mmapped vma,
->> still. One file may have different characteristic part, something is working set
->> something is streaming part.
->>
->>> See, attached patch. Currently I thinking about managing code,
->>> file-locking engine really fits perfectly =)
->>
->> file-locking engine?
->> You consider fcntl as interface for it?
->> What do you mean?
->>
->
-> If we set bits on inode we somehow account its users and clear AS_WORKINGSET and AS_UNEVICTABLE
-> at last file close. We can use file-locking engine for locking inodes in memory -- file lock automatically
-> release inode at last fput(). Maybe it's too tricky and we should add couple simple atomic counters to
-> generic strict inode (like i_writecount/i_readcount) but in this case we will add new code on fast-path.
-> So, looks like invention new kind of struct file_lock is best approach.
-> I don't want implement range-locking for now, but I can do it if somebody really wants this.
->
-> Yes, we can use fcntl(), but fadvise() is much better.
+--Signature=_Tue__13_Mar_2012_16_01_00_+1100_zyfs5ewjJ2IaWld+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Another mad idea: if we mark vma, then we can add fake vma (belong init_mm for example) to
-inode rmap to lock inode's pages range in memory without actually mapping file.
-In page_referenced_one() we should handle this fake vma differently,
-because page_check_address() will always fail for it.
-Thus we can effectively implement AS_WORKINGSET and AS_UNEVICTABLE for arbitrary page ranges.
+Hi Grant,
+
+Today's linux-next merge of the devicetree tree got a conflict in
+include/linux/of.h between commit eb740b5f3e65 ("powerpc/eeh: Introduce
+EEH device") from the powerpc tree and commit 0f22dd395fc4 ("of: Only
+compile OF_DYNAMIC on PowerPC pseries and iseries") from the devicetree
+tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/of.h
+index bdb1c07,533603e..0000000
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@@ -75,14 -72,10 +75,17 @@@ struct of_phandle_args=20
+  	uint32_t args[MAX_PHANDLE_ARGS];
+  };
+ =20
+ +#if defined(CONFIG_EEH)
+ +static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
+ +{
+ +	return dn->edev;
+ +}
+ +#endif
+ +
+- #if defined(CONFIG_SPARC) || !defined(CONFIG_OF)
++ #ifdef CONFIG_OF_DYNAMIC
++ extern struct device_node *of_node_get(struct device_node *node);
++ extern void of_node_put(struct device_node *node);
++ #else /* CONFIG_OF_DYNAMIC */
+  /* Dummy ref counting routines - to be implemented later */
+  static inline struct device_node *of_node_get(struct device_node *node)
+  {
+
+--Signature=_Tue__13_Mar_2012_16_01_00_+1100_zyfs5ewjJ2IaWld+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPXtSMAAoJEECxmPOUX5FElNgP/0FT0pYxw7Y7rDxKxfjXPeWz
+3zJ7xzzoUk9tzbIeCVlHaKjtXu1aUiHk3zGEAEYSyu7mKru7BW7SQa4SVXJy1oU5
+NxzzAtqa5cbqmNoM/KvV0E5/4AUnK42WaG3lUCVjUaN0b206RDzLTdOJ4mSzt/TN
+LBZ/eIuV9OhSPNLcIWwnIbdtrwtcNmGcch8Ut56lWnuQpStCFJWj1Z+lL1Fo4x4v
+oJjfG0hYadWuuWZpqT8nJDOW3uvJlGDYcOMbXpu4/luXm/jHqnYc0ZrHf4/48+Gw
+zpl1Hi7lptRAiYYMTEQXvqQC76GJ0V8UUK7yMS3Jmj/Gg6VhAZD9popB6ePnbir0
+TrzjnCxjAA/69cCEN5/bR7jTly1UfbgsbF8CDczpZQBHNRoAsXepKgfdI43VL478
+KlqrUJ+Iw+OxJ6/wT2MazdRNpvyURwlutvfWvqwzI4+heNcS/rnFnFrRho1uM4BP
+gPcqTy+dQZ5V7iywfJrD7NHkrTeED1jIjo8Shh/G3XwZnLkZUu+t+8YBTzhPkyT1
+PyjisHHqBWuzO4M3LVqyloduFRgs6kjAnJMqFaVO+KIEP4Fhx5UvkiPQt2BcxucU
+JIHAXv+FFBHOys0N4W+NhuRp9oEkb+QTTTeR5EUsFYgndcV/rj/gvE5/UrfsvYLR
+0DulTl2+GYR00vx/+lnP
+=is3p
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__13_Mar_2012_16_01_00_+1100_zyfs5ewjJ2IaWld+--
