@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758331Ab2CMFfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:35:11 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10946 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab2CMFfJ convert rfc822-to-8bit (ORCPT
+	id S1758874Ab2CMFhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:37:00 -0400
+Received: from mail-vx0-f202.google.com ([209.85.220.202]:54485 "EHLO
+	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755046Ab2CMFg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:35:09 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 12 Mar 2012 22:35:04 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>
-Date: Tue, 13 Mar 2012 11:05:01 +0530
-Subject: RE: [RESEND PATCH 1/2] MFD: MAX77693: add MAX77693 MFD driver
-Thread-Topic: [RESEND PATCH 1/2] MFD: MAX77693: add MAX77693 MFD driver
-Thread-Index: Ac0A2knKHGLZVEU0REOWKzbgryP36QAAI5Ag
-Message-ID: <D958900912E20642BCBC71664EFECE3E6DD2912D02@BGMAIL02.nvidia.com>
-References: <4F5EDB01.9070308@samsung.com>
-In-Reply-To: <4F5EDB01.9070308@samsung.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Mar 2012 01:36:57 -0400
+From: Avery Pennarun <apenwarr@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Fabio M. Di Nitto" <fdinitto@redhat.com>,
+        Avery Pennarun <apenwarr@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Olaf Hering <olaf@aepfle.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Yinghai LU <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH 2/5] mm: bootmem: it's okay to reserve_bootmem an invalid address.
+Date: Tue, 13 Mar 2012 01:36:38 -0400
+Message-Id: <1331617001-20906-3-git-send-email-apenwarr@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
+References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why don't you make use of regmap for all i2c read/ write operations?
+...but only if you provide BOOTMEM_EXCLUSIVE, which should guarantee that
+you're actually checking the return value.  In that case, just return an
+error code if the memory you tried to get is invalid.  This lets callers
+safely probe around for a valid memory range.
 
-> +int max77693_read_reg(struct i2c_client *i2c, u8 reg, u8 *dest)
-> +{
-> +	struct max77693_dev *max77693 = i2c_get_clientdata(i2c);
-> +	int ret;
-> +
-> +	mutex_lock(&max77693->iolock);
-> +	ret = i2c_smbus_read_byte_data(i2c, reg);
-> +	mutex_unlock(&max77693->iolock);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret &= 0xff;
-> +	*dest = ret;
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(max77693_read_reg);
-> +
+If you don't use BOOTMEM_EXCLUSIVE and the memory address is invalid, just
+crash as before, since the caller is probably not bothering to check the
+return value.
+
+Signed-off-by: Avery Pennarun <apenwarr@gmail.com>
+---
+ mm/bootmem.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 7a9f505..d397dae 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -351,7 +351,10 @@ static int __init mark_bootmem(unsigned long start, unsigned long end,
+ 			return 0;
+ 		pos = bdata->node_low_pfn;
+ 	}
+-	BUG();
++	/* people who don't use BOOTMEM_EXCLUSIVE don't check the return
++	 * value, so BUG() if it goes wrong. */
++	BUG_ON(!(reserve && (flags & BOOTMEM_EXCLUSIVE));
++	return -ENOENT;
+ }
+ 
+ /**
+@@ -421,7 +424,7 @@ int __init reserve_bootmem_node(pg_data_t *pgdat, unsigned long physaddr,
+ }
+ 
+ /**
+- * reserve_bootmem - mark a page range as usable
++ * reserve_bootmem - mark a page range as reserved
+  * @addr: starting address of the range
+  * @size: size of the range in bytes
+  * @flags: reservation flags (see linux/bootmem.h)
+-- 
+1.7.7.3
+
