@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964799Ab2CMAYV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:24:21 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48556 "EHLO
+	id S1030285Ab2CMAjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:39:11 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48611 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759078Ab2CMAYP (ORCPT
+	with ESMTP id S964927Ab2CMAYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:24:15 -0400
+	Mon, 12 Mar 2012 20:24:20 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Oskar Schirmer <oskar@scara.com>,
-        Steve French <sfrench@us.ibm.com>,
+Cc: stable-review@kernel.org, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 151/196] cifs: fix another memleak, in cifs_root_iget
-Date: Mon, 12 Mar 2012 20:21:04 -0400
-Message-Id: <1331598109-31424-106-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 148/196] b43: Fix warning at drivers/mmc/core/core.c:237 in mmc_wait_for_cmd
+Date: Mon, 12 Mar 2012 20:21:01 -0400
+Message-Id: <1331598109-31424-103-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,63 +23,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oskar Schirmer <oskar@scara.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit a7851ce73b9fdef53f251420e6883cf4f3766534 upstream.
+commit 9f2a0fac625bcef9c579bcf0b0c904ab1a56e7c4 upstream.
 
-cifs_root_iget allocates full_path through
-cifs_build_path_to_root, but fails to kfree it upon
-cifs_get_inode_info* failure.
+On module removal, the sdio version of b43 generates the following warning:
 
-Make all failure exit paths traverse clean up
-handling at the end of the function.
+[  851.560519] ------------[ cut here ]------------
+[  851.560531] WARNING: at drivers/mmc/core/core.c:237 mmc_wait_for_cmd+0x88/0x90()
+[  851.560534] Hardware name: 20552PG
+[  851.560536] Modules linked in: b43(-) ssb mmc_block binfmt_misc rfcomm sco bnep ppdev l2cap ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp kvm_intel kvm arc4 iwlagn snd_hda_codec_conexant snd_hda_intel snd_hda_codec iwlcore snd_hwdep snd_pcm thinkpad_acpi mac80211 snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq r852 joydev snd_timer sm_common pcmcia nand snd_seq_device cfg80211 sdhci_pci btusb psmouse tpm_tis yenta_socket nand_ids lp snd pcmcia_rsrc nand_ecc bluetooth sdhci tpm pcmcia_core parport mtd snd_page_alloc serio_raw tpm_bios soundcore nvram led_class sha256_generic aes_i586 aes_generic dm_crypt i915 drm_kms_helper drm ahci intel_agp i2c_algo_bit intel_gtt e1000e libahci video agpgart output
+[  851.560620] Pid: 2504, comm: rmmod Not tainted 2.6.36-titan0+ #1
+[  851.560622] Call Trace:
+[  851.560631]  [<c014a102>] warn_slowpath_common+0x72/0xa0
+[  851.560636]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
+[  851.560641]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
+[  851.560645]  [<c014a152>] warn_slowpath_null+0x22/0x30
+[  851.560649]  [<c04d94c8>] mmc_wait_for_cmd+0x88/0x90
+[  851.560655]  [<c0401585>] ? device_release+0x25/0x80
+[  851.560660]  [<c04df210>] mmc_io_rw_direct_host+0xa0/0x150
+[  851.560665]  [<c04df370>] mmc_io_rw_direct+0x30/0x40
+[  851.560669]  [<c04e06e7>] sdio_disable_func+0x37/0xa0
+[  851.560683]  [<f8dfcb80>] b43_sdio_remove+0x30/0x50 [b43]
+[  851.560687]  [<c04df8cc>] sdio_bus_remove+0x1c/0x60
+[  851.560692]  [<c016d39f>] ? blocking_notifier_call_chain+0x1f/0x30
+[  851.560697]  [<c0404991>] __device_release_driver+0x51/0xb0
+[  851.560701]  [<c0404a7f>] driver_detach+0x8f/0xa0
+[  851.560705]  [<c0403c83>] bus_remove_driver+0x63/0xa0
+[  851.560709]  [<c0405039>] driver_unregister+0x49/0x80
+[  851.560713]  [<c0405039>] ? driver_unregister+0x49/0x80
+[  851.560718]  [<c04dfad7>] sdio_unregister_driver+0x17/0x20
+[  851.560727]  [<f8dfcb42>] b43_sdio_exit+0x12/0x20 [b43]
+[  851.560734]  [<f8dfe76f>] b43_exit+0x17/0x3c [b43]
+[  851.560740]  [<c017fb8d>] sys_delete_module+0x13d/0x200
+[  851.560747]  [<c01fd7d2>] ? do_munmap+0x212/0x300
+[  851.560752]  [<c010311f>] sysenter_do_call+0x12/0x28
+[  851.560757] ---[ end trace 31e14488072d2f7d ]---
+[  851.560759] ------------[ cut here ]------------
 
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
-Reviewed-by: Jesper Juhl <jj@chaosbits.net>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+The warning is caused by b43 not claiming the device before calling
+sdio_disable_func().
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: Arnd Hannemann <arnd@arndnet.de>
+Tested-by: Arnd Hannemann <arnd@arndnet.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/cifs/inode.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/wireless/b43/sdio.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 49b47c3..da3e83f 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -793,8 +793,10 @@ struct inode *cifs_root_iget(struct super_block *sb, unsigned long ino)
- 		rc = cifs_get_inode_info(&inode, full_path, NULL, sb,
- 						xid, NULL);
+diff --git a/drivers/net/wireless/b43/sdio.c b/drivers/net/wireless/b43/sdio.c
+index 4e56b7b..8b18314 100644
+--- a/drivers/net/wireless/b43/sdio.c
++++ b/drivers/net/wireless/b43/sdio.c
+@@ -175,7 +175,9 @@ static void b43_sdio_remove(struct sdio_func *func)
+ 	struct b43_sdio *sdio = sdio_get_drvdata(func);
  
--	if (!inode)
--		return ERR_PTR(-ENOMEM);
-+	if (!inode) {
-+		inode = ERR_PTR(-ENOMEM);
-+		goto out;
-+	}
- 
- 	if (rc && cifs_sb->tcon->ipc) {
- 		cFYI(1, ("ipc connection - fake read inode"));
-@@ -805,13 +807,11 @@ struct inode *cifs_root_iget(struct super_block *sb, unsigned long ino)
- 		inode->i_uid = cifs_sb->mnt_uid;
- 		inode->i_gid = cifs_sb->mnt_gid;
- 	} else if (rc) {
--		kfree(full_path);
--		_FreeXid(xid);
- 		iget_failed(inode);
--		return ERR_PTR(rc);
-+		inode = ERR_PTR(rc);
- 	}
- 
--
-+out:
- 	kfree(full_path);
- 	/* can not call macro FreeXid here since in a void func
- 	 * TODO: This is no longer true
+ 	ssb_bus_unregister(&sdio->ssb);
++	sdio_claim_host(func);
+ 	sdio_disable_func(func);
++	sdio_release_host(func);
+ 	kfree(sdio);
+ 	sdio_set_drvdata(func, NULL);
+ }
 -- 
 1.7.9.3
 
