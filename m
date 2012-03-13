@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500Ab2CMUXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 16:23:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56034 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783Ab2CMUXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 16:23:44 -0400
-Date: Tue, 13 Mar 2012 16:23:38 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: netdev@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: tun oops dereferencing garbage nsproxy-> address.
-Message-ID: <20120313202338.GA23737@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>, netdev@vger.kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20120313034201.GA13156@redhat.com>
- <m1vcm8e537.fsf@fess.ebiederm.org>
- <20120313182646.GB11500@redhat.com>
- <m1wr6oclep.fsf@fess.ebiederm.org>
+	id S1753555Ab2CMUa2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 16:30:28 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:43303 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752789Ab2CMUa0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 16:30:26 -0400
+Message-ID: <4F5FAE63.3090908@xenotime.net>
+Date: Tue, 13 Mar 2012 13:30:27 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1wr6oclep.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Michal Januszewski <spock@gentoo.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, x86@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] x86: export 'pcibios_enabled'
+References: <20120313204114.e160849af7dbe5a4b4e5c0ad@canb.auug.org.au>
+In-Reply-To: <20120313204114.e160849af7dbe5a4b4e5c0ad@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 01:10:06PM -0700, Eric W. Biederman wrote:
+From: Randy Dunlap <rdunlap@xenotime.net>
 
- > >  > > My guess is the fuzzer called some syscall that set current->nsproxy
- > >  > > to garbage (0x0000000100000001), which later got dereferenced when it
- > >  > > subsequently randomly did an open() on tun.
- > >  > 
- > >  > It smells like a memory stomp.  current->nsproxy is always supposed to
- > >  > have a valid value, and it never would have an odd value.  The value
- > >  > should always be at least 8 byte aligned.
- > >  > 
- > >  > Since the value is impossible this doesn't feel like a path where the
- > >  > error handling is wrong.
- > >
- > > 0x0000000100000001 looks like one of strange values my fuzzer passes syscalls
- > > when they ask for an address.
- > >
- > > So something managed to get that set as nsproxy.  The fuzzer avoids calling
- > > clone(), so are there other syscalls that might set this ?
- > 
- > setns and unshare might touch the nsproxy for the same reasons as clone,
- > but the rules are very similar to clone.
+Export 'pcibios_enabled' so that when uvesafb is built as a
+loadable module (on X86_32), the build will succeed.
 
-Hmm, the only way that seems possible to set nsproxy is if the process was run
-with CAP_SYS_ADMIN, which it wasn't.
+ERROR: "pcibios_enabled" [drivers/video/uvesafb.ko] undefined!
 
-Maybe your theory holds water, and something else wrote that value to the
-current thread at a random offset. Fun.
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+Cc:	Michal Januszewski <spock@gentoo.org>
+Cc:	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc:	linux-fbdev@vger.kernel.org
+Cc:	x86@kernel.org
+---
+Applies to mainline; found in linux-next.
 
-	Dave 
+ arch/x86/pci/pcbios.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20120313.orig/arch/x86/pci/pcbios.c
++++ linux-next-20120313/arch/x86/pci/pcbios.c
+@@ -27,6 +27,7 @@
+ #define PCIBIOS_HW_TYPE2_SPEC		0x20
+ 
+ int pcibios_enabled;
++EXPORT_SYMBOL(pcibios_enabled);
+ 
+ /* According to the BIOS specification at:
+  * http://members.datafast.net.au/dft0802/specs/bios21.pdf, we could
