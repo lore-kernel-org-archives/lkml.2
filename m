@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964889Ab2CMJS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 05:18:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48183 "EHLO mx1.redhat.com"
+	id S964943Ab2CMJ1J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 05:27:09 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:34353 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760013Ab2CMJS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 05:18:56 -0400
-Date: Tue, 13 Mar 2012 09:18:43 +0000
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-Message-ID: <20120313091843.GB3800@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <4F58664D.1070800@cn.fujitsu.com>
- <4F58943E.1050402@redhat.com>
- <4F595B31.9090301@cn.fujitsu.com>
- <4F5DBC26.7060204@cn.fujitsu.com>
- <4F5DD0FD.9070904@redhat.com>
+	id S1756585Ab2CMJ1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 05:27:06 -0400
+Date: Tue, 13 Mar 2012 10:26:49 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [GIT PULL/NEXT] sched/arch: Introduce the
+ finish_arch_post_lock_switch() scheduler callback
+Message-ID: <20120313092649.GA15406@elte.hu>
+References: <20120313110840.7b444deb6b1bb902c15f3cdf@canb.auug.org.au>
+ <20120313061622.GA24357@elte.hu>
+ <20120313083310.GA27560@flint.arm.linux.org.uk>
+ <20120313083630.GA10131@elte.hu>
+ <20120313084713.GB27560@flint.arm.linux.org.uk>
+ <20120313085628.GB6991@elte.hu>
+ <20120313090040.GE27560@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F5DD0FD.9070904@redhat.com>
+In-Reply-To: <20120313090040.GE27560@flint.arm.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 12:33:33PM +0200, Avi Kivity wrote:
-> On 03/12/2012 11:04 AM, Wen Congyang wrote:
-> > Do you have any other comments about this patch?
-> >
+
+* Russell King <rmk@arm.linux.org.uk> wrote:
+
+> On Tue, Mar 13, 2012 at 09:56:28AM +0100, Ingo Molnar wrote:
+> > 
+> > * Russell King <rmk@arm.linux.org.uk> wrote:
+> > 
+> > > Sorry, you're blaming the wrong person.  I got the commit via 
+> > > a pull, not via a patch.
+> > 
+> > This is the most idiotic excuse I've ever read.
 > 
-> Not really, but I'm not 100% convinced the patch is worthwhile.  It's
-> likely to only be used by Linux, which has kexec facilities, and you can
-> put talk to management via virtio-serial and describe the crash in more
-> details than a simple hypercall.
+> Sod this crap, I'm dropping Catalin's patches. [...]
 
-As mentioned before, I don't think virtio-serial is a good fit for this.
-We want something that is simple & guaranteed always available. Using
-virtio-serial requires significant setup work on both the host and guest.
-Many management application won't know to make a vioserial device available
-to all guests they create. Most administrators won't even configure kexec,
-let alone virtio serial on top of it. The hypercall requires zero host
-side config, and zero guest side config, which IMHO is what we need for
-this feature.
+As I said it in my first mail, doing that is unnecessary - but 
+if you insist on being difficult then Catalin, feel free to pull 
+the patch from tip:sched/arch:
 
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched/arch
 
-Daniel
--- 
-|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
-|: http://libvirt.org              -o-             http://virt-manager.org :|
-|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
-|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
+   HEAD: 01f23e1630 sched/arch: Introduce the finish_arch_post_lock_switch() scheduler callback
+
+it's v3.3-rc7 based so it will generate no conflict with 
+linux-next. It only contains this commit so you can use it 
+without pulling in other pending scheduler changes.
+
+This is the trivial and easy Git based topic branch approach 
+PeterZ asked Russell a month ago to consider:
+
+   http://lkml.org/lkml/2012/2/16/232
+
+which request Russell sadly ignored.
+
+In any case, Catalin's ARM work is not blocked in any fashion.
+
+Thanks,
+
+	Ingo
