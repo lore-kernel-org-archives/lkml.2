@@ -1,105 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760215Ab2CMWlp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 18:41:45 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:49635 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760074Ab2CMWln convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 18:41:43 -0400
+	id S1760264Ab2CMWmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 18:42:43 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:44228 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758573Ab2CMWml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 18:42:41 -0400
+Date: Tue, 13 Mar 2012 15:42:36 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andrew Miller <amiller@amilx.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8187se: r8180_core.c: Fix coding style issue
+Message-ID: <20120313224236.GA12677@kroah.com>
+References: <1331440353-2829-1-git-send-email-amiller@amilx.com>
 MIME-Version: 1.0
-In-Reply-To: <4F5FC090.90005@gmail.com>
-References: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
- <1331366064-1273-3-git-send-email-mturquette@linaro.org> <4F5FC090.90005@gmail.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Tue, 13 Mar 2012 15:41:21 -0700
-Message-ID: <CAJOA=zMtaiHWmUJJO7eWEmGQkNmkzHnr0B4zneDrEEirFn3hAw@mail.gmail.com>
-Subject: Re: [PATCH v6 2/3] clk: introduce the common clock framework
-To: Rob Herring <robherring2@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Paul Walmsley <paul@pwsan.com>,
-        linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@stericsson.com>, patches@linaro.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331440353-2829-1-git-send-email-amiller@amilx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 2:48 PM, Rob Herring <robherring2@gmail.com> wrote:
-> Mike,
->
-> On 03/10/2012 01:54 AM, Mike Turquette wrote:
->> The common clock framework defines a common struct clk useful across
->> most platforms as well as an implementation of the clk api that drivers
->> can use safely for managing clocks.
->>
->> The net result is consolidation of many different struct clk definitions
->> and platform-specific clock framework implementations.
->>
->> This patch introduces the common struct clk, struct clk_ops and an
->> implementation of the well-known clock api in include/clk/clk.h.
->> Platforms may define their own hardware-specific clock structure and
->> their own clock operation callbacks, so long as it wraps an instance of
->> struct clk_hw.
->>
->> See Documentation/clk.txt for more details.
->>
->> This patch is based on the work of Jeremy Kerr, which in turn was based
->> on the work of Ben Herrenschmidt.
->>
->> Signed-off-by: Mike Turquette <mturquette@linaro.org>
->> Signed-off-by: Mike Turquette <mturquette@ti.com>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Arnd Bergman <arnd.bergmann@linaro.org>
->> Cc: Paul Walmsley <paul@pwsan.com>
->> Cc: Shawn Guo <shawn.guo@freescale.com>
->> Cc: Sascha Hauer <s.hauer@pengutronix.de>
->> Cc: Richard Zhao <richard.zhao@linaro.org>
->> Cc: Saravana Kannan <skannan@codeaurora.org>
->> Cc: Magnus Damm <magnus.damm@gmail.com>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
->> Cc: Linus Walleij <linus.walleij@stericsson.com>
->> Cc: Stephen Boyd <sboyd@codeaurora.org>
->> Cc: Amit Kucheria <amit.kucheria@linaro.org>
->> Cc: Deepak Saxena <dsaxena@linaro.org>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Cc: Andrew Lunn <andrew@lunn.ch>
->
-> snip
->
->> +
->> +     /*
->> +      * walk the list of orphan clocks and reparent any that are children of
->> +      * this clock
->> +      */
->> +     hlist_for_each_entry(orphan, tmp, &clk_orphan_list, child_node)
->
-> In __clk_init, this needs to be hlist_for_each_entry_safe as entries can
-> be removed.
+On Sat, Mar 10, 2012 at 11:32:33PM -0500, Andrew Miller wrote:
+> Fix long line coding style issue
+> 
+> Signed-off-by: Andrew Miller <amiller@amilx.com>
+> ---
+>  drivers/staging/rtl8187se/r8180_core.c |  556 ++++++++++++++++++++++----------
+>  1 files changed, 386 insertions(+), 170 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
+> index 04c2391..05f25eb 100644
+> --- a/drivers/staging/rtl8187se/r8180_core.c
+> +++ b/drivers/staging/rtl8187se/r8180_core.c
+> @@ -79,8 +79,11 @@ module_param(hwwep, int, S_IRUGO|S_IWUSR);
+>  module_param(channels, int, S_IRUGO|S_IWUSR);
+>  
+>  MODULE_PARM_DESC(devname, " Net interface name, wlan%d=default");
+> -MODULE_PARM_DESC(hwseqnum, " Try to use hardware 802.11 header sequence numbers. Zero=default");
+> -MODULE_PARM_DESC(hwwep, " Try to use hardware WEP support. Still broken and not available on all cards");
+> +MODULE_PARM_DESC(hwseqnum, " Try to use hardware 802.11 header sequence "
+> +				"numbers. Zero=default");
+> +MODULE_PARM_DESC(hwwep, " Try to use hardware WEP support. "
+> +			"Still broken and not"
+> +			" available on all cards");
 
-Thanks for the catch Rob.  I'll take this in.
+Never break up strings, you can ignore those warnings, they are foolish.
 
-Regards,
-Mike
+> -void buffer_free(struct net_device *dev, struct buffer **buffer, int len, short consistent)
+> +void buffer_free(struct net_device *dev,
+> +		struct buffer **buffer,
+> +		int len,
+> +		short consistent)
 
->
-> Rob
->
-> _______________________________________________
-> linaro-dev mailing list
-> linaro-dev@lists.linaro.org
-> http://lists.linaro.org/mailman/listinfo/linaro-dev
+Nicer, but how about:
+void buffer_free(struct net_device *dev, struct buffer **buffer, int len,
+		 short consistent)
+
+Instead?  No need to put every variable on a new line, and this lines
+things up better.
+
+>  {
+>  
+>  	struct buffer *tmp, *next;
+> @@ -516,7 +523,8 @@ short check_nic_enought_desc(struct net_device *dev, int priority)
+>  	struct ieee80211_device *ieee = netdev_priv(dev);
+>  	int requiredbyte, required;
+>  
+> -	requiredbyte = priv->ieee80211->fts + sizeof(struct ieee80211_header_data);
+> +	requiredbyte = priv->ieee80211->fts +
+> +		sizeof(struct ieee80211_header_data);
+>  
+>  	if (ieee->current_network.QoS_Enable)
+>  		requiredbyte += 2;
+> @@ -982,49 +990,70 @@ short alloc_tx_desc_ring(struct net_device *dev, int bufsize, int count,
+>  
+>  		switch (addr) {
+>  		case TX_MANAGEPRIORITY_RING_ADDR:
+> -			if (-1 == buffer_add(&(priv->txmapbufs), buf, dma_tmp, NULL)) {
+> +			if (-1 == buffer_add(&(priv->txmapbufs),
+> +					buf,
+> +					dma_tmp,
+> +					NULL)) {
+
+That's just harder to read, no need to do this, right?
+
+Be wise in your cleanup, you don't have to fix up every warning, do the
+ones that make sense.
+
+Care to retry?
+
+greg k-h
