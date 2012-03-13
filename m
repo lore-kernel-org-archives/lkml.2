@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760521Ab2CMKjJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 06:39:09 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:60252 "EHLO mx2.parallels.com"
+	id S1760520Ab2CMKrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:47:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58116 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760490Ab2CMKjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 06:39:02 -0400
-Message-ID: <4F5F236A.1070609@parallels.com>
-Date: Tue, 13 Mar 2012 14:37:30 +0400
-From: Glauber Costa <glommer@parallels.com>
+	id S1760186Ab2CMKrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 06:47:39 -0400
+Message-ID: <4F5F25BF.7060100@redhat.com>
+Date: Tue, 13 Mar 2012 12:47:27 +0200
+From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Suleiman Souhlal <ssouhlal@FreeBSD.org>, <cgroups@vger.kernel.org>,
-        <suleiman@google.com>, <penberg@kernel.org>, <cl@linux.com>,
-        <yinghan@google.com>, <hughd@google.com>, <gthelen@google.com>,
-        <peterz@infradead.org>, <dan.magenheimer@oracle.com>,
-        <hannes@cmpxchg.org>, <mgorman@suse.de>,
-        <James.Bottomley@HansenPartnership.com>, <linux-mm@kvack.org>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 02/13] memcg: Kernel memory accounting infrastructure.
-References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org> <1331325556-16447-3-git-send-email-ssouhlal@FreeBSD.org> <4F5C5E54.2020408@parallels.com> <20120313152446.28b0d696.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120313152446.28b0d696.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: "Daniel P. Berrange" <berrange@redhat.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, kvm list <kvm@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
+References: <4F58664D.1070800@cn.fujitsu.com> <4F58943E.1050402@redhat.com> <4F595B31.9090301@cn.fujitsu.com> <4F5DBC26.7060204@cn.fujitsu.com> <4F5DD0FD.9070904@redhat.com> <20120313091843.GB3800@redhat.com>
+In-Reply-To: <20120313091843.GB3800@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> After looking codes, I think we need to think
-> whether independent_kmem_limit is good or not....
+On 03/13/2012 11:18 AM, Daniel P. Berrange wrote:
+> On Mon, Mar 12, 2012 at 12:33:33PM +0200, Avi Kivity wrote:
+> > On 03/12/2012 11:04 AM, Wen Congyang wrote:
+> > > Do you have any other comments about this patch?
+> > >
+> > 
+> > Not really, but I'm not 100% convinced the patch is worthwhile.  It's
+> > likely to only be used by Linux, which has kexec facilities, and you can
+> > put talk to management via virtio-serial and describe the crash in more
+> > details than a simple hypercall.
 >
-> How about adding MEMCG_KMEM_ACCOUNT flag instead of this and use only
-> memcg->res/memcg->memsw rather than adding a new counter, memcg->kmem ?
->
-> if MEMCG_KMEM_ACCOUNT is set     ->  slab is accoutned to mem->res/memsw.
-> if MEMCG_KMEM_ACCOUNT is not set ->  slab is never accounted.
->
-> (I think On/Off switch is required..)
->
-> Thanks,
-> -Kame
->
+> As mentioned before, I don't think virtio-serial is a good fit for this.
+> We want something that is simple & guaranteed always available. Using
+> virtio-serial requires significant setup work on both the host and guest.
 
-This has been discussed before, I can probably find it in the archives 
-if you want to go back and see it.
+So what?  It needs to be done anyway for the guest agent.
 
-But in a nutshell:
+> Many management application won't know to make a vioserial device available
+> to all guests they create. 
 
-1) Supposing independent knob disappear (I will explain in item 2 why I 
-don't want it to), I don't thing a flag makes sense either. *If* we are 
-planning to enable/disable this, it might make more sense to put some 
-work on it, and allow particular slabs to be enabled/disabled by writing 
-to memory.kmem.slabinfo (-* would disable all, +* enable all, +kmalloc* 
-enable all kmalloc, etc).
+Then they won't know to deal with the panic event either.
 
-Alternatively, what we could do instead, is something similar to what 
-ended up being done for tcp, by request of the network people: if you 
-never touch the limit file, don't bother with it at all, and simply does 
-not account. With Suleiman's lazy allocation infrastructure, that should 
-actually be trivial. And then again, a flag is not necessary, because 
-writing to the limit file does the job, and also convey the meaning well 
-enough.
+> Most administrators won't even configure kexec,
+> let alone virtio serial on top of it. 
 
-2) For the kernel itself, we are mostly concerned that a malicious 
-container may pin into memory big amounts of kernel memory which is, 
-ultimately, unreclaimable. In particular, with overcommit allowed 
-scenarios, you can fill the whole physical memory (or at least a 
-significant part) with those objects, well beyond your softlimit 
-allowance, making the creation of further containers impossible.
-With user memory, you can reclaim the cgroup back to its place. With 
-kernel memory, you can't.
+It should be done by the OS vendor, not the individual admin.
 
-In the particular example of 32-bit boxes, you can easily fill up a 
-large part of the available 1gb kernel memory with pinned memory and 
-render the whole system unresponsive.
+> The hypercall requires zero host
+> side config, and zero guest side config, which IMHO is what we need for
+> this feature.
 
-Never allowing the kernel memory to go beyond the soft limit was one of 
-the proposed alternatives. However, it may force you to establish a soft
-limit where one was not previously needed. Or, establish a low soft 
-limit when you really need a bigger one.
+If it was this one feature, yes.  But we keep getting more and more
+features like that and we bloat the hypervisor.  There's a reason we
+have a host-to-guest channel, we should use it.
 
-All that said, while reading your message, thinking a bit, the following 
-crossed my mind:
+-- 
+error compiling committee.c: too many arguments to function
 
-- We can account the slabs to memcg->res normally, and just store the
-   information that this is kernel memory into a percpu counter, as
-   I proposed recently.
-- The knob goes away, and becomes implicit: if you ever write anything
-   to memory.kmem.limit_in_bytes, we transfer that memory to a separate
-   kmem res_counter, and proceed from there. We can keep accounting to
-   memcg->res anyway, just that kernel memory will now have a separate
-   limit.
-- With this scheme, it may not be necessary to ever have a file
-   memory.kmem.soft_limit_in_bytes. Reclaim is always part of the normal
-   memcg reclaim.
-
-The outlined above would work for us, and make the whole scheme simpler, 
-I believe.
-
-What do you think ?
