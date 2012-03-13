@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760436Ab2CMKGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 06:06:22 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:62231 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759900Ab2CMKGV convert rfc822-to-8bit (ORCPT
+	id S1760449Ab2CMKKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:10:17 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:35033 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760153Ab2CMKKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 06:06:21 -0400
+	Tue, 13 Mar 2012 06:10:14 -0400
+Message-ID: <4F5F1CF2.5000809@gmail.com>
+Date: Tue, 13 Mar 2012 18:09:54 +0800
+From: Cong Wang <xiyou.wangcong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <1330784327-7172-1-git-send-email-luciarosculete@gmail.com>
-References: <1330784327-7172-1-git-send-email-luciarosculete@gmail.com>
-Date: Tue, 13 Mar 2012 12:06:20 +0200
-Message-ID: <CAEnQRZAitvn9R+fzgFSjvak2yv8dwnRepShR7Ws71uBqeJHs8A@mail.gmail.com>
-Subject: Re: [PATCH] semaphore: fix comment
-From: Daniel Baluta <daniel.baluta@gmail.com>
-To: Lucia Rosculete <luciarosculete@gmail.com>, jkosina@suse.cz
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/2] module: use rcu to protect module list read
+References: <1331389203-3309-1-git-send-email-xiyou.wangcong@gmail.com> <1331393157.2453.15.camel@edumazet-laptop> <87k42pz66x.fsf@rustcorp.com.au>
+In-Reply-To: <87k42pz66x.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 3, 2012 at 4:18 PM, Lucia Rosculete
-<luciarosculete@gmail.com> wrote:
->         Replace "mutex" with "semaphore" in down_trylock comment
+On 03/13/2012 08:37 AM, Rusty Russell wrote:
+> On Sat, 10 Mar 2012 07:25:57 -0800, Eric Dumazet<eric.dumazet@gmail.com>  wrote:
+>> Le samedi 10 mars 2012 Ã  22:20 +0800, Cong Wang a Ã©crit :
+>>> Now the read of module list is protected by preempt disable + *_rcu
+>>> list operations, this is odd, as RCU read lock should be able to
+>>> protect it directly. This patch makes the read of module list
+>>> protected by RCU read lock and the write still protected by
+>>> module_mutex.
+>>>
+>>
+>> Problem is that your patch does more than that.
+>>
+>> In set_all_modules_text_rw() and set_all_modules_text_ro() you removed
+>> the mutex in favor of rcu_read_lock()
+>>
+>> Also, module code uses synchronize_sched(), not synchronize_rcu()
 >
-> Signed-off-by: Lucia Rosculete <luciarosculete@gmail.com>
-> ---
->  kernel/semaphore.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> Yes, but only for paranoia.  Really, it's vs. stop_machine().
 >
-> diff --git a/kernel/semaphore.c b/kernel/semaphore.c
-> index 60636a4..4567fc0 100644
-> --- a/kernel/semaphore.c
-> +++ b/kernel/semaphore.c
-> @@ -118,7 +118,7 @@ EXPORT_SYMBOL(down_killable);
->  * down_trylock - try to acquire the semaphore, without waiting
->  * @sem: the semaphore to be acquired
->  *
-> - * Try to acquire the semaphore atomically.  Returns 0 if the mutex has
-> + * Try to acquire the semaphore atomically.  Returns 0 if the semaphore has
->  * been acquired successfully or 1 if it it cannot be acquired.
->  *
->  * NOTE: This return value is inverted from both spin_trylock and
-> --
-> 1.7.6.3
+>> Take a look at Documentation/RCU/whatisRCU.txt and see that
+>> preempt_disable() / preempt_enable() are documented as a right protect
+>> code, in line 333.
+>>
+>> You added races in /proc/modules as well.
+>
+> I'm surprised that patch didn't warn... CONFIG_DEBUG_ATOMIC_SLEEP=y
+> might help here....
 
-Hello Jiri,
+Ok I will enable it for testing.
 
-Can you have a look?
-
-thanks,
-Daniel.
+Thanks.
