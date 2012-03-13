@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759073Ab2CMAYO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:24:14 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48477 "EHLO
+	id S965127Ab2CMAl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:41:26 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48538 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759027Ab2CMAYH (ORCPT
+	with ESMTP id S1759070Ab2CMAYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:24:07 -0400
+	Mon, 12 Mar 2012 20:24:14 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "Edgar (gimli) Hucek" <gimli@dark-green.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+Cc: stable-review@kernel.org, Neil Horman <nhorman@tuxdriver.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>, security@kernel.org,
+        Jeff Layton <jlayton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 143/196] Bluetooth: Add MacBookAir3,1(2) support
-Date: Mon, 12 Mar 2012 20:20:56 -0400
-Message-Id: <1331598109-31424-98-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 084/196] nfs4: Ensure that ACL pages sent over NFS were not allocated from the slab (v3)
+Date: Mon, 12 Mar 2012 20:19:57 -0400
+Message-Id: <1331598109-31424-39-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,109 +25,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Edgar (gimli) Hucek" <gimli@dark-green.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3e3ede7dda2d77d2cbec608e663b6a6ace501bfc upstream.
+commit e9e3d724e2145f5039b423c290ce2b2c3d8f94bc upstream.
 
-Adding the new MacBookAir3,1(2) to btusb.
+The "bad_page()" page allocator sanity check was reported recently (call
+chain as follows):
 
-Output without the patch and btusb loaded :
+  bad_page+0x69/0x91
+  free_hot_cold_page+0x81/0x144
+  skb_release_data+0x5f/0x98
+  __kfree_skb+0x11/0x1a
+  tcp_ack+0x6a3/0x1868
+  tcp_rcv_established+0x7a6/0x8b9
+  tcp_v4_do_rcv+0x2a/0x2fa
+  tcp_v4_rcv+0x9a2/0x9f6
+  do_timer+0x2df/0x52c
+  ip_local_deliver+0x19d/0x263
+  ip_rcv+0x539/0x57c
+  netif_receive_skb+0x470/0x49f
+  :virtio_net:virtnet_poll+0x46b/0x5c5
+  net_rx_action+0xac/0x1b3
+  __do_softirq+0x89/0x133
+  call_softirq+0x1c/0x28
+  do_softirq+0x2c/0x7d
+  do_IRQ+0xec/0xf5
+  default_idle+0x0/0x50
+  ret_from_intr+0x0/0xa
+  default_idle+0x29/0x50
+  cpu_idle+0x95/0xb8
+  start_kernel+0x220/0x225
+  _sinittext+0x22f/0x236
 
-T:  Bus=03 Lev=02 Prnt=03 Port=02 Cnt=01 Dev#=  6 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=05ac ProdID=821b Rev= 0.34
-S:  Manufacturer=Apple Inc.
-S:  Product=Bluetooth USB Host Controller
-C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  32 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  32 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=(none)
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+It occurs because an skb with a fraglist was freed from the tcp
+retransmit queue when it was acked, but a page on that fraglist had
+PG_Slab set (indicating it was allocated from the Slab allocator (which
+means the free path above can't safely free it via put_page.
 
-Output with the patch and btusb loaded :
+We tracked this back to an nfsv4 setacl operation, in which the nfs code
+attempted to fill convert the passed in buffer to an array of pages in
+__nfs4_proc_set_acl, which gets used by the skb->frags list in
+xs_sendpages.  __nfs4_proc_set_acl just converts each page in the buffer
+to a page struct via virt_to_page, but the vfs allocates the buffer via
+kmalloc, meaning the PG_slab bit is set.  We can't create a buffer with
+kmalloc and free it later in the tcp ack path with put_page, so we need
+to either:
 
-T:  Bus=03 Lev=02 Prnt=03 Port=02 Cnt=01 Dev#=  6 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=05ac ProdID=821b Rev= 0.34
-S:  Manufacturer=Apple Inc.
-S:  Product=Bluetooth USB Host Controller
-C:* #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=  0mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  32 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  32 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  64 Ivl=1ms
-I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-E:  Ad=84(I) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS=  32 Ivl=0ms
-I:* If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+1) ensure that when we create the list of pages, no page struct has
+   PG_Slab set
 
-Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+ or
+
+2) not use a page list to send this data
+
+Given that these buffers can be multiple pages and arbitrarily sized, I
+think (1) is the right way to go.  I've written the below patch to
+allocate a page from the buddy allocator directly and copy the data over
+to it.  This ensures that we have a put_page free-able page for every
+entry that winds up on an skb frag list, so it can be safely freed when
+the frame is acked.  We do a put page on each entry after the
+rpc_call_sync call so as to drop our own reference count to the page,
+leaving only the ref count taken by tcp_sendpages.  This way the data
+will be properly freed when the ack comes in
+
+Successfully tested by myself to solve the above oops.
+
+Note, as this is the result of a setacl operation that exceeded a page
+of data, I think this amounts to a local DOS triggerable by an
+uprivlidged user, so I'm CCing security on this as well.
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: security@kernel.org
+CC: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/bluetooth/btusb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nfs/nfs4proc.c |   44 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 42 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 7225e11..0eb6d1b 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -71,6 +71,9 @@ static struct usb_device_id btusb_table[] = {
- 	/* Apple MacBookPro6,2 */
- 	{ USB_DEVICE(0x05ac, 0x8218) },
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 071fced..5b33856 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -49,6 +49,7 @@
+ #include <linux/mount.h>
+ #include <linux/module.h>
+ #include <linux/sunrpc/bc_xprt.h>
++#include <linux/mm.h>
  
-+	/* Apple MacBookAir3,1, MacBookAir3,2 */
-+	{ USB_DEVICE(0x05ac, 0x821b) },
+ #include "nfs4_fs.h"
+ #include "delegation.h"
+@@ -3241,6 +3242,35 @@ static void buf_to_pages(const void *buf, size_t buflen,
+ 	}
+ }
+ 
++static int buf_to_pages_noslab(const void *buf, size_t buflen,
++		struct page **pages, unsigned int *pgbase)
++{
++	struct page *newpage, **spages;
++	int rc = 0;
++	size_t len;
++	spages = pages;
 +
- 	/* AVM BlueFRITZ! USB v2.0 */
- 	{ USB_DEVICE(0x057c, 0x3800) },
++	do {
++		len = min(PAGE_CACHE_SIZE, buflen);
++		newpage = alloc_page(GFP_KERNEL);
++
++		if (newpage == NULL)
++			goto unwind;
++		memcpy(page_address(newpage), buf, len);
++                buf += len;
++                buflen -= len;
++		*pages++ = newpage;
++		rc++;
++	} while (buflen != 0);
++
++	return rc;
++
++unwind:
++	for(; rc > 0; rc--)
++		__free_page(spages[rc-1]);
++	return -ENOMEM;
++}
++
+ struct nfs4_cached_acl {
+ 	int cached;
+ 	size_t len;
+@@ -3407,13 +3437,23 @@ static int __nfs4_proc_set_acl(struct inode *inode, const void *buf, size_t bufl
+ 		.rpc_argp	= &arg,
+ 		.rpc_resp	= &res,
+ 	};
+-	int ret;
++	int ret, i;
  
+ 	if (!nfs4_server_supports_acls(server))
+ 		return -EOPNOTSUPP;
++	i = buf_to_pages_noslab(buf, buflen, arg.acl_pages, &arg.acl_pgbase);
++	if (i < 0)
++		return i;
+ 	nfs_inode_return_delegation(inode);
+-	buf_to_pages(buf, buflen, arg.acl_pages, &arg.acl_pgbase);
+ 	ret = nfs4_call_sync(server, &msg, &arg, &res, 1);
++
++	/*
++	 * Free each page after tx, so the only ref left is
++	 * held by the network stack
++	 */
++	for (; i > 0; i--)
++		put_page(pages[i-1]);
++
+ 	nfs_access_zap_cache(inode);
+ 	nfs_zap_acl_cache(inode);
+ 	return ret;
 -- 
 1.7.9.3
 
