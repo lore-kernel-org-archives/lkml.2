@@ -1,162 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759506Ab2CMDSP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 23:18:15 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:18549
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757210Ab2CMDSO (ORCPT
+	id S932156Ab2CMDTL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 23:19:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:45280 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab2CMDTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 23:18:14 -0400
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Tue, 13 Mar 2012 11:20:10 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "dongas86@gmail.com" <dongas86@gmail.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "thomas.abraham@linaro.org" <thomas.abraham@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>
-Subject: Re: [PATCH] dt: pinctrl: Document device tree binding
-Message-ID: <20120313032010.GB4513@shlinux2.ap.freescale.net>
-References: <1331316873-20052-1-git-send-email-swarren@wwwdotorg.org>
- <20120312143407.GA4513@shlinux2.ap.freescale.net>
- <4F5E2F63.6070303@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4F5E2F63.6070303@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	Mon, 12 Mar 2012 23:19:09 -0400
+Date: Tue, 13 Mar 2012 14:18:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>
+Subject: linux-next: manual merge of the l2-mtd tree with the vfs tree
+Message-Id: <20120313141859.302878a8e2246979c288440d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__13_Mar_2012_14_18_59_+1100_SuclbATR4GqMGJfj"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 01:16:19AM +0800, Stephen Warren wrote:
-> On 03/12/2012 08:34 AM, Dong Aisheng wrote:
-> > On Sat, Mar 10, 2012 at 02:14:33AM +0800, Stephen Warren wrote:
-> >> The core pin controller bindings define:
-> >> * The fact that pin controllers expose pin configurations as nodes in
-> >>   device tree.
-> >> * That the bindings for those pin configuration nodes is defined by the
-> >>   individual pin controller drivers.
-> >> * A standardized set of properties for client devices to define numbered
-> >>   or named pin configuration states, each referring to some number of the
-> >>   afore-mentioned pin configuration nodes.
-> >> * That the bindings for the client devices determines the set of numbered
-> >>   or named states that must exist.
-> 
-> >> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-> 
-> >> +Required properties:
-> >> +pinctrl-0:	List of phandles, each pointing at a pin configuration
-> >> +		node. These referenced pin configuration nodes must be child
-> >> +		nodes of the pin controller that they configure. Multiple
-> >> +		entries may exist in this list so that multiple pin
-> >> +		controllers may be configured, or so that a state may be built
-> >> +		from multiple nodes for a single pin controller, each
-> >> +		contributing part of the overall configuration. See the next
-> >> +		section of this document for details of the format of these
-> >> +		pin configuration nodes.
-> >> +
-> >> +		In some cases, it may be useful to define a state, but for it
-> >> +		to be empty. This may be required when a common IP block is
-> >> +		used in an SoC either without a pin controller, or where the
-> >> +		pin controller does not affect the HW module in question. If
-> >> +		the binding for that IP block requires certain pin states to
-> >> +		exist, they must still be defined, but may be left empty.
-> >> +
-> >
-> > It looks this functions similar as the PIN_MAP_DUMMY_STATE you introduced
-> > before to address the issues that the shared IP block may need or not need
-> > pinctrl configuration on different platforms(correct me if wrong).
-> 
-> Yes, it's to generate the dummy states.
-> 
-> > Then, there may be cases like below which may look a bit confusing
-> > to people.
-> > device {
-> > 	pinctrl-names = "active", "idle";
-> > 	pinctrl-0;
-> > 	pinctrl-1;
-> > };
-> 
-> I'd personally expect the syntax to look like:
-> 
-> device {
-> 	pinctrl-names = "active", "idle";
-> 	pinctrl-0 = <>;
-> 	pinctrl-1 = <>;
-> };
-> 
-> which has an explicitly empty value. Admittedly, these would both
-> compile down to the exact same thing in the DTB, but I think the
-> interpretation of the above is pretty readable.
-> 
-> > I'm wondering if we can let each individual driver to handle this special case?
-> > Like checking device id then make decision whether call pinctrl_* APIs.
-> > Then we can just do not define those properties for devices who
-> > do not need pin configurations.
-> 
-> The individual client drivers certainly could work that way.
-> 
-> However, the disadvantage is that the client driver then needs explicit
-> code to deal with this case, and this needs to be triggered by using a
-Since this is purely specific to IP block(e.g. the driver knows this ip used
-in which platform does not need pin configuration), so i guess it's natural
-that the driver can also handle it instead of device tree, just like
-a lot of existing drivers in kernel do similar things for tricks
-on different SoCs.
+--Signature=_Tue__13_Mar_2012_14_18_59_+1100_SuclbATR4GqMGJfj
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> different compatible flag (or perhaps some other explicit property).
-> You'd have to write this code over and over for each individual driver.
-> 
-I still do not understand why need a more special compatible flag?
-My understanding is that in device driver side, they can do:
-if (is_soc_a || is_soc_b) {
-	pinctrl_get(dev, "default");
-	....
-} else if (is_soc_c) {
-	/* do nothing */
-}
-I can't see why we still need a special compatible flag to tell driver.
-Just do not define pinctrl-* properties for that devices in device tree.
-Did i understand wrong?
+Hi Artem,
 
-> That also means that if you were the first user of an IP block in a
-> system which didn't need pin muxing for it, you'd have to modify the
-> kernel to support pinctrl being optional before you could use that device.
-> 
-Why need modify the kernel?
-Assuming above example.
-I'm a bit confused.
+Today's linux-next merge of the l2-mtd tree got a conflict in
+fs/jffs2/fs.c between commit de071e1a7466 ("switch open-coded instances
+of d_make_root() to new helper") from the vfs tree and commit
+ab9b393d6ee8 ("jffs2: Convert most D1/D2 macros to jffs2_dbg") from the
+l2-mtd tree.
 
-> If the pinctrl subsystem itself hides this from the client driver, then
-> you'd never need to add any code to any driver to support this case, and
-> all you'd need to do is write a few lines of device tree to use the
-> driver; no code changes.
-> 
-Yes, that is the benefit.
-My only concern is that if this may make people confuse when see
-such code in device tree since we,i guess, still do not have such examples
-in device tree. And i'm afraid this is a bit not HW oriented.
-device {
-	pinctrl-names = "active", "idle";
-	pinctrl-0 = <>;
-	pinctrl-1 = <>;
-};
-So i'm asking if we do it in driver.
-Maybe device tree people can give some comments.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
 
-Regards
-Dong Aisheng
+[Al, I suspect that your patch should have changed the debug print as
+well ...]
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/jffs2/fs.c
+index c0d5c9d,43052fa..0000000
+--- a/fs/jffs2/fs.c
++++ b/fs/jffs2/fs.c
+@@@ -560,10 -572,10 +572,10 @@@ int jffs2_do_fill_super(struct super_bl
+ =20
+  	ret =3D -ENOMEM;
+ =20
+- 	D1(printk(KERN_DEBUG "jffs2_do_fill_super(): d_alloc_root()\n"));
++ 	jffs2_dbg(1, "%s(): d_alloc_root()\n", __func__);
+ -	sb->s_root =3D d_alloc_root(root_i);
+ +	sb->s_root =3D d_make_root(root_i);
+  	if (!sb->s_root)
+ -		goto out_root_i;
+ +		goto out_root;
+ =20
+  	sb->s_maxbytes =3D 0xFFFFFFFF;
+  	sb->s_blocksize =3D PAGE_CACHE_SIZE;
+
+--Signature=_Tue__13_Mar_2012_14_18_59_+1100_SuclbATR4GqMGJfj
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPXryjAAoJEECxmPOUX5FEYa4P/Ap8yQ74ao1Ih1s2B4Y2lznq
+AfmimLg704VO4zE44+tY5virObCXOpM97FYKoxKQb2m5V96lWP60ISKRmQwNyvHg
+WMBKqealAUFZoRIiWqtN+1yK3j5hAf7BGV3BNvcsMXS7zL2Et31I8Id6NVNAmEFH
+G8WxB/05RAhEWFPiuplKwGcvTdkAnJXMVw9kEfSSgT7tWGH7GpgaXbxx+xvVWiVm
+nlVPn2ZREVG0+xhBPrKvHGFX2Wp/gX3eqg+RYoLtI3Fdm3SQI6A1YvEoGxWZ+etz
+wi9zmzSiiao6KQS++U/1x129CRFSzK5OGUZCzmhonAyDx+mfHBlONYnzP6kc/nBF
+kFkosTIkC97pLvF4Z2jNOikH0EstHPOmqOukqZVHBACCU+lt0kYiTwJiAZNg45Q0
+4twSkEDnbgjbir0eM2HnUEnRK5yOybMgt5apqtKjBHf4YLNBq9onq+IbvLPyDKfR
+RokkuV3phsTIiIX22WJQbfXBgQaVwf4U2JgcLtoHf1jT0hPpPjKCMg7p2mIlM7Kw
+/ttuvh3LnXrVzjcfH4jpq0D7RjR1tUwJpO1oYw/fQUK+VXGl3ZIAVu+oIURctuVE
+ftZoIBIwNi9x0AIQUB3L9ObES+yyrHXIF7xfjLq2l1RWoEM6/jj81Pm/oue0BvER
+3bTMUUmgB04fpv9pTvy2
+=e6/O
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__13_Mar_2012_14_18_59_+1100_SuclbATR4GqMGJfj--
