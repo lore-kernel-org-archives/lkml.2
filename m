@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758450Ab2CMB1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 21:27:40 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:54399 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753328Ab2CMB1i (ORCPT
+	id S964850Ab2CMBgh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 21:36:37 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42604 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758272Ab2CMBgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 21:27:38 -0400
-Date: Tue, 13 Mar 2012 10:27:34 +0900
-From: Simon Horman <horms@verge.net.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux-sh list <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cao Minh Hiep <hiepcm@gmail.com>
-Subject: Re: [PATCH 0/6] PM / Domains: System suspend fixes and "always on"
- flag
-Message-ID: <20120313012731.GA9482@verge.net.au>
-References: <201203130123.16268.rjw@sisk.pl>
+	Mon, 12 Mar 2012 21:36:35 -0400
+X-AuditID: 9c930197-b7cacae00000461f-75-4f5ea4a13c16
+Message-ID: <4F5EA49F.7020706@lge.com>
+Date: Tue, 13 Mar 2012 10:36:31 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201203130123.16268.rjw@sisk.pl>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.kernel.perf.user,gmane.linux.kernel
+To: Arun Sharma <asharma@fb.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH 0/2] perf: add sort by inclusive time functionality (v2)
+References: <1331160079-13821-1-git-send-email-asharma@fb.com> <4F5DA91F.7060908@lge.com> <4F5E3E8C.1020005@fb.com> <4F5E554C.4060209@fb.com>
+In-Reply-To: <4F5E554C.4060209@fb.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 01:23:15AM +0100, Rafael J. Wysocki wrote:
-> Hi all,
-> 
-> The following patches fix system suspend/resume and hibernation device
-> callback routines in the generic PM domains code and add an "always on" flag
-> for devices allowing their drivers to protect them from surprise power
-> removals.
-> 
-> [1/6] - Fix system resume of devices involved in system wakeup.
-> [2/6] - Fix hibernation restore of devices.
-> [3/6] - Introduce "always on" flag for "special" devices in PM domains.
-> [4/6] - Make TMU clocksource driver use the "always on" flag.
-> [5/6] - Make CMT clocksource driver use the "always on" flag.
-> [6/6] - Make MTU2 clocksource driver use the "always on" flag.
-> 
-> All of them are v3.4 material if there are no objections.
+Hi,
 
-Hi Rafael,
+2012-03-13 4:58 AM, Arun Sharma wrote:
+> On 3/12/12 11:21 AM, Arun Sharma wrote:
+>>> BTW, I don't like the name 'inclusive' as a sort key. If it cares about
+>>> time, IMHO, the name should contain 'time' - something like 'itime' or
+>>> 'inctime'?
+>>
+>> The existing sort orders: pid, comm, dso, symbol, parent -- all care
+>> about time, but none of them have time in their name?
+>
+> I'll take that back. What they sort on depends on the event.
+>
+> perf record -ge cache-misses
+> perf report -s inclusive
+>
+> will sort by the number of cache-misses and not time.
+>
+> -Arun
 
-I have tested that my Mackerel boots with the default config and each of
-these patches applied in turn. The tests were made on head of the
-linux-next branch of your linux-pm tree ("sh_mmcif / PM: Use PM QoS latency
-constraint") + the "sh-sci / PM: Avoid deadlocking runtime PM" patch at the
-link below.
+AFAIK, "sort" here means how perf identifies a sample event from others: 
+"comm" will collect samples have same pid/comm, then "dso" will group samples 
+belong to same library, and "symbol" will group again samples have same symbol 
+name. This is what default sort order (comm,dso,symbol) does.
 
-http://marc.info/?l=linux-sh&m=133073065924863&w=4
+In case of "inclusive" it does same thing with "symbol" as you use sort_sym 
+for the inclusive sort_dimension. Sorting by period for output is done at 
+final stage and it won't be affected by any sort orders. It maybe sound 
+confusing but that's how it works.
 
-Please let me know if there are other tests you would like run.
-
-All patches:
-
-Tested-by: Simon Horman <horms@verge.net.au>
+Thanks,
+Namhyung
