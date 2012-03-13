@@ -1,89 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab2CMHGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 03:06:09 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51437 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab2CMHGH convert rfc822-to-8bit (ORCPT
+	id S1755413Ab2CMHIH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 03:08:07 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:56818 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab2CMHIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 03:06:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <4F5E32F2.5030000@codeaurora.org>
-References: <1331540451-2380-1-git-send-email-hamo.by@gmail.com> <4F5E32F2.5030000@codeaurora.org>
-From: Yang Bai <hamo.by@gmail.com>
-Date: Tue, 13 Mar 2012 15:05:47 +0800
-Message-ID: <CAO_0yfMUA6zD4PkUVwdnfjNMXdz-=Fy1GQZjj2N83MKDKzRwiA@mail.gmail.com>
-Subject: Re: [PATCH] scripts: refactor remove structure forward declarations
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: mmarek@suse.cz, rostedt@goodmis.org, adobriyan@gmail.com,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Mar 2012 03:08:04 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V3 1/8] hugetlb: rename max_hstate to hugetlb_max_hstate
+Date: Tue, 13 Mar 2012 12:37:05 +0530
+Message-Id: <1331622432-24683-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12031307-2000-0000-0000-000006BCF41F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-cc linux-kbuild
+We will be using this from other subsystems like memcg
+in later patches.
 
-On Tue, Mar 13, 2012 at 1:31 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 03/12/12 01:20, Yang Bai wrote:
->> Since now it has some problems when generate TAGS,
->> refactor this code. Now it will not show the error
->> message and will remove declarations using emacs etags.
->>
->> Signed-off-by: Yang Bai <hamo.by@gmail.com>
->
-> Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
->
->> ---
->>  scripts/tags.sh |   11 ++++++++---
->>  1 files changed, 8 insertions(+), 3 deletions(-)
->>
->> diff --git a/scripts/tags.sh b/scripts/tags.sh
->> index 833813a..2b377fc 100755
->> --- a/scripts/tags.sh
->> +++ b/scripts/tags.sh
->> @@ -166,9 +166,6 @@ exuberant()
->>       all_defconfigs | xargs -r $1 -a                         \
->>       --langdef=dotconfig --language-force=dotconfig          \
->>       --regex-dotconfig='/^#?[[:blank:]]*(CONFIG_[[:alnum:]_]+)/\1/'
->> -
->> -     # Remove structure forward declarations.
->> -     LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' tags
->>  }
->>
->>  emacs()
->> @@ -233,6 +230,7 @@ if [ "${ARCH}" = "um" ]; then
->>       fi
->>  fi
->>
->> +remove_structs=
->>  case "$1" in
->>       "cscope")
->>               docscope
->> @@ -245,10 +243,17 @@ case "$1" in
->>       "tags")
->>               rm -f tags
->>               xtags ctags
->> +             remove_structs=y
->>               ;;
->>
->>       "TAGS")
->>               rm -f TAGS
->>               xtags etags
->> +             remove_structs=y
->>               ;;
->>  esac
->> +
->> +# Remove structure forward declarations.
->> +if [ -n $remove_structs ]; then
->> +    LANG=C sed -i -e '/^\([a-zA-Z_][a-zA-Z0-9_]*\)\t.*\t\/\^struct \1;.*\$\/;"\tx$/d' $1
->> +fi
->
->
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ mm/hugetlb.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 5f34bd8..d623e71 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -34,7 +34,7 @@ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+ static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
+ unsigned long hugepages_treat_as_movable;
+ 
+-static int max_hstate;
++static int hugetlb_max_hstate;
+ unsigned int default_hstate_idx;
+ struct hstate hstates[HUGE_MAX_HSTATE];
+ 
+@@ -46,7 +46,7 @@ static unsigned long __initdata default_hstate_max_huge_pages;
+ static unsigned long __initdata default_hstate_size;
+ 
+ #define for_each_hstate(h) \
+-	for ((h) = hstates; (h) < &hstates[max_hstate]; (h)++)
++	for ((h) = hstates; (h) < &hstates[hugetlb_max_hstate]; (h)++)
+ 
+ /*
+  * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
+@@ -1808,9 +1808,9 @@ void __init hugetlb_add_hstate(unsigned order)
+ 		printk(KERN_WARNING "hugepagesz= specified twice, ignoring\n");
+ 		return;
+ 	}
+-	BUG_ON(max_hstate >= HUGE_MAX_HSTATE);
++	BUG_ON(hugetlb_max_hstate >= HUGE_MAX_HSTATE);
+ 	BUG_ON(order == 0);
+-	h = &hstates[max_hstate++];
++	h = &hstates[hugetlb_max_hstate++];
+ 	h->order = order;
+ 	h->mask = ~((1ULL << (order + PAGE_SHIFT)) - 1);
+ 	h->nr_huge_pages = 0;
+@@ -1831,10 +1831,10 @@ static int __init hugetlb_nrpages_setup(char *s)
+ 	static unsigned long *last_mhp;
+ 
+ 	/*
+-	 * !max_hstate means we haven't parsed a hugepagesz= parameter yet,
++	 * !hugetlb_max_hstate means we haven't parsed a hugepagesz= parameter yet,
+ 	 * so this hugepages= parameter goes to the "default hstate".
+ 	 */
+-	if (!max_hstate)
++	if (!hugetlb_max_hstate)
+ 		mhp = &default_hstate_max_huge_pages;
+ 	else
+ 		mhp = &parsed_hstate->max_huge_pages;
+@@ -1853,7 +1853,7 @@ static int __init hugetlb_nrpages_setup(char *s)
+ 	 * But we need to allocate >= MAX_ORDER hstates here early to still
+ 	 * use the bootmem allocator.
+ 	 */
+-	if (max_hstate && parsed_hstate->order >= MAX_ORDER)
++	if (hugetlb_max_hstate && parsed_hstate->order >= MAX_ORDER)
+ 		hugetlb_hstate_alloc_pages(parsed_hstate);
+ 
+ 	last_mhp = mhp;
+-- 
+1.7.9
+
