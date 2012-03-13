@@ -1,199 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab2CMTcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 15:32:14 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:59581 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753866Ab2CMTcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 15:32:11 -0400
-Date: Tue, 13 Mar 2012 15:21:20 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2012-03-13
-Message-ID: <20120313192119.GC5837@tuxdriver.com>
+	id S932234Ab2CMTca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 15:32:30 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42969 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754359Ab2CMTcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 15:32:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [GIT PULL] Renesas SoC updates for v3.4, take 2
+Date: Tue, 13 Mar 2012 20:36:22 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Paul Mundt <lethal@linux-sh.org>
+References: <201203092155.04731.rjw@sisk.pl> <201203122353.30182.rjw@sisk.pl> <201203131026.08495.arnd@arndb.de>
+In-Reply-To: <201203131026.08495.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203132036.22991.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, March 13, 2012, Arnd Bergmann wrote:
+> On Monday 12 March 2012, Rafael J. Wysocki wrote:
+> > Please pull Renesas SoC updates for v3.4 since commit
+> > fde7d9049e55ab85a390be7f415d74c9f62dd0f9
+> > 
+> >     Linux 3.3-rc7
+> > 
+> > with top-most commit 2854903ad1329d09d7ec35639fff0949e45d496d
+> > 
+> >     ARM: mach-shmobile: default to no earlytimer
+> > 
+> > from the git repository at:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/renesas.git soc
+> > 
+> > They include:
+> > 
+> > * The rename of shmobile struct clk_ops to struct sh_clk_ops to avoid
+> >   possible future name space collision with common struct clk code.
+> > 
+> >   This also affects drivers that are shared with the sh architecture,
+> >   so the branch containing this part of the material, clk_ops-rename,
+> >   will be merged into the Paul Mundt's sh tree if necessary.
+> > 
+> > * Introduction of L2 Cache support for r8a7779.
+> > 
+> > * Conversion of the mach-shmobile subarch to properly use a per-SoC
+> >   map_io and separate init_early callback for early serial console
+> >   support on platforms where that is possible.
+> > 
+> > Magnus Damm is the author of all the changes.
+> > 
+> 
+> Thanks for rebasing this, Olof will merge this soon.
 
---gKMricLos+KVdGMg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks!
 
-Dave,
+> Note that the __io() issue has turned out to be more urgent than I first
+> thought when we discussed it, so it would be good to apply the patch below
+> on top of your series.
 
-Stanislaw has given us two late-breaking fixes intended for 3.3.  One
-avoids a NULL pointer dereference in iwl3945, and the other corrects a
-locking issue in the rt2x00 driver that can lead to random traffic
-stalls.
+Do you want me to apply it now or will you do that in your tree?
 
-Please let me know if there are problems!
+Rafael
 
-Thanks,
 
-John
+> 8<-----
+> ARM: shmobile: remove additional __io() macro use
+> 
+> setup-r8a7779.c has grown a new user of the __io() macro. Rob Herring's
+> PIO cleanup series already gets rid of all other uses in shmobile, so
+> we should ensure that this one gets removed as well.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> diff --git a/arch/arm/mach-shmobile/setup-r8a7779.c b/arch/arm/mach-shmobile/setup-r8a7779.c
+> index ce57d90..9545d82 100644
+> --- a/arch/arm/mach-shmobile/setup-r8a7779.c
+> +++ b/arch/arm/mach-shmobile/setup-r8a7779.c
+> @@ -246,7 +246,7 @@ void __init r8a7779_add_standard_devices(void)
+>  {
+>  #ifdef CONFIG_CACHE_L2X0
+>  	/* Early BRESP enable, Shared attribute override enable, 64K*16way */
+> -	l2x0_init(__io(0xf0100000), 0x40470000, 0x82000fff);
+> +	l2x0_init((void __iomem __force *)(0xf0100000), 0x40470000, 0x82000fff);
+>  #endif
+>  	r8a7779_pm_init();
+>  
+> 
+> 
 
----
-
-The following changes since commit 1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d:
-
-  tun: don't hold network namespace by tun sockets (2012-03-12 17:14:00 -07=
-00)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
-avem
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
-nto for-davem
-
-Stanislaw Gruszka (2):
-      iwl3945: fix possible il->txq NULL pointer dereference in delayed wor=
-ks
-      rt2x00: fix random stalls
-
- drivers/net/wireless/iwlegacy/3945-mac.c  |    2 +-
- drivers/net/wireless/iwlegacy/3945.c      |    7 ++++---
- drivers/net/wireless/rt2x00/rt2x00dev.c   |    6 +++++-
- drivers/net/wireless/rt2x00/rt2x00mac.c   |    9 +++++++++
- drivers/net/wireless/rt2x00/rt2x00queue.c |    3 +++
- 5 files changed, 22 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/wireless/iwlegacy/3945-mac.c b/drivers/net/wireles=
-s/iwlegacy/3945-mac.c
-index 54b2d39..a7dfba8 100644
---- a/drivers/net/wireless/iwlegacy/3945-mac.c
-+++ b/drivers/net/wireless/iwlegacy/3945-mac.c
-@@ -2475,7 +2475,7 @@ il3945_bg_alive_start(struct work_struct *data)
- 	    container_of(data, struct il_priv, alive_start.work);
-=20
- 	mutex_lock(&il->mutex);
--	if (test_bit(S_EXIT_PENDING, &il->status))
-+	if (test_bit(S_EXIT_PENDING, &il->status) || il->txq =3D=3D NULL)
- 		goto out;
-=20
- 	il3945_alive_start(il);
-diff --git a/drivers/net/wireless/iwlegacy/3945.c b/drivers/net/wireless/iw=
-legacy/3945.c
-index 1489b15..c80eb9b 100644
---- a/drivers/net/wireless/iwlegacy/3945.c
-+++ b/drivers/net/wireless/iwlegacy/3945.c
-@@ -1870,11 +1870,12 @@ il3945_bg_reg_txpower_periodic(struct work_struct *=
-work)
- 	struct il_priv *il =3D container_of(work, struct il_priv,
- 					  _3945.thermal_periodic.work);
-=20
--	if (test_bit(S_EXIT_PENDING, &il->status))
--		return;
--
- 	mutex_lock(&il->mutex);
-+	if (test_bit(S_EXIT_PENDING, &il->status) || il->txq =3D=3D NULL)
-+		goto out;
-+
- 	il3945_reg_txpower_periodic(il);
-+out:
- 	mutex_unlock(&il->mutex);
- }
-=20
-diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless=
-/rt2x00/rt2x00dev.c
-index d2a1ea9..fd356b7 100644
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -426,10 +426,14 @@ void rt2x00lib_txdone(struct queue_entry *entry,
- 	/*
- 	 * If the data queue was below the threshold before the txdone
- 	 * handler we must make sure the packet queue in the mac80211 stack
--	 * is reenabled when the txdone handler has finished.
-+	 * is reenabled when the txdone handler has finished. This has to be
-+	 * serialized with rt2x00mac_tx(), otherwise we can wake up queue
-+	 * before it was stopped.
- 	 */
-+	spin_lock_bh(&entry->queue->tx_lock);
- 	if (!rt2x00queue_threshold(entry->queue))
- 		rt2x00queue_unpause_queue(entry->queue);
-+	spin_unlock_bh(&entry->queue->tx_lock);
- }
- EXPORT_SYMBOL_GPL(rt2x00lib_txdone);
-=20
-diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless=
-/rt2x00/rt2x00mac.c
-index ede3c58..2df2eb6 100644
---- a/drivers/net/wireless/rt2x00/rt2x00mac.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
-@@ -152,13 +152,22 @@ void rt2x00mac_tx(struct ieee80211_hw *hw, struct sk_=
-buff *skb)
- 	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, false)))
- 		goto exit_fail;
-=20
-+	/*
-+	 * Pausing queue has to be serialized with rt2x00lib_txdone(). Note
-+	 * we should not use spin_lock_bh variant as bottom halve was already
-+	 * disabled before ieee80211_xmit() call.
-+	 */
-+	spin_lock(&queue->tx_lock);
- 	if (rt2x00queue_threshold(queue))
- 		rt2x00queue_pause_queue(queue);
-+	spin_unlock(&queue->tx_lock);
-=20
- 	return;
-=20
-  exit_fail:
-+	spin_lock(&queue->tx_lock);
- 	rt2x00queue_pause_queue(queue);
-+	spin_unlock(&queue->tx_lock);
-  exit_free_skb:
- 	ieee80211_free_txskb(hw, skb);
- }
-diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wirele=
-ss/rt2x00/rt2x00queue.c
-index 5adfb3e..9b1b2b7 100644
---- a/drivers/net/wireless/rt2x00/rt2x00queue.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
-@@ -619,6 +619,9 @@ int rt2x00queue_write_tx_frame(struct data_queue *queue=
-, struct sk_buff *skb,
- 	else if (test_bit(REQUIRE_DMA, &queue->rt2x00dev->cap_flags))
- 		rt2x00queue_align_frame(skb);
-=20
-+	/*
-+	 * That function must be called with bh disabled.
-+	 */
- 	spin_lock(&queue->tx_lock);
-=20
- 	if (unlikely(rt2x00queue_full(queue))) {
---=20
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
-
---gKMricLos+KVdGMg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPX54vAAoJEJctW/TcYTgG0n0QAJtc0AIOD0Wr2zpapWi9l2hy
-QjADABvIGTyXtJs+7ea2ho6kogQexCsit6wUnobexFcy4K7gFRrgeOwTrurXqWgx
-egwGlIwQ6v2sy8tfiiSuCJmaMrXC6IDQIdOUObiTL4nAa3q7UlLizkeQFZmTNu7Z
-WRY/dcdhh2zTNRQJ/ka/XkxrCIvsD3jmr8uwvvmgEero8Mc2lxDka6u7h9drEYz2
-wB+TkPLDfbUkV9pdyF8266QQBpya4Bmuegn4qCsGjlPmduB3jczD76vu5PEG0O1Y
-6OaiM2p9XugJ7bFCS4bDY3M1/phIfPK+G57gbeTi0+ralfMQnG5SRafEaEeHveGu
-6QYb+TYQmLeh9S39x0H2bIQ+FvgHr1jL7L1q30hMnmfs/+7TN5btgTzHdHVAbQie
-jwDZuiZHzFkQ6P3e8nRWiEQiF1zvSVZ/8O3yq1K6BJcY/iheAWARG7l0K87SctF+
-di9OIJOingxhYCMV40/QkXY+zn/Yhf4MLWnogVXbcuMFHR3w+tyXQJNv2kddqWT3
-DZKt3uNqYv+8Kmdqh4u7QlZMHan4JUJhgiqJQZjbqL1WFPk6MVr6nxeRTa+87tMz
-P0kbVZVEOgMLHp+0L7zYenVZkm1cm6MRt2SlDOAQFXnjV3KU1u40gdkEQeVY4CKl
-PoDLcxW7fGpAJuN8omhl
-=i/pt
------END PGP SIGNATURE-----
-
---gKMricLos+KVdGMg--
