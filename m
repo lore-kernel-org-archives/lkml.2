@@ -1,236 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760271Ab2CMJnt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 05:43:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37827 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760220Ab2CMJnq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 05:43:46 -0400
-Date: Tue, 13 Mar 2012 02:43:15 -0700
-From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Message-ID: <tip-5cb4ac3a583d4ee18c8682ab857e093c4a0d0895@git.kernel.org>
-Cc: mingo@redhat.com, torvalds@linux-foundation.org, peterz@infradead.org,
-        rostedt@goodmis.org, jkenisto@linux.vnet.ibm.com, tglx@linutronix.de,
-        oleg@redhat.com, linux-mm@kvack.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org, hch@infradead.org,
-        ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
-        srikar@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        andi@firstfloor.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, hch@infradead.org, ananth@in.ibm.com,
-        masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
-        rostedt@goodmis.org, jkenisto@linux.vnet.ibm.com,
-        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com,
-        linux-mm@kvack.org, mingo@elte.hu
-In-Reply-To: <20120312092545.5379.91251.sendpatchset@srdronam.in.ibm.com>
-References: <20120312092545.5379.91251.sendpatchset@srdronam.in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/uprobes] uprobes/core: Rename bkpt to swbp
-Git-Commit-ID: 5cb4ac3a583d4ee18c8682ab857e093c4a0d0895
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1760292Ab2CMJn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 05:43:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30141 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760240Ab2CMJns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 05:43:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="117187578"
+From: "Ryan Ware" <ware@linux.intel.com>
+To: "'James Morris'" <jmorris@namei.org>,
+        "Mimi Zohar" <zohar@linux.vnet.ibm.com>
+Cc: <linux-security-module@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>,
+        "David Safford" <safford@linux.vnet.ibm.com>,
+        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+References: <1330629048-5933-1-git-send-email-zohar@linux.vnet.ibm.com> <alpine.LRH.2.02.1203072057350.29863@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.02.1203072057350.29863@tundra.namei.org>
+Subject: RE: [PATCH v2 00/11] ima: appraisal extension
+Date: Tue, 13 Mar 2012 11:42:42 +0200
+Message-ID: <03e301cd00fd$a590ab60$f0b20220$@linux.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Mar 2012 02:43:20 -0700 (PDT)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQHM99/4TdGVm9sbz0CkvgUUxxqyW5ZfKryAgAjgWdA=
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5cb4ac3a583d4ee18c8682ab857e093c4a0d0895
-Gitweb:     http://git.kernel.org/tip/5cb4ac3a583d4ee18c8682ab857e093c4a0d0895
-Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-AuthorDate: Mon, 12 Mar 2012 14:55:45 +0530
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 13 Mar 2012 06:22:21 +0100
 
-uprobes/core: Rename bkpt to swbp
 
-bkpt doesnt seem to be a correct abbrevation for breakpoint.
-Choice was between bp and breakpoint. Since bp can refer to
-things other than breakpoint, use swbp to refer to breakpoints.
+> -----Original Message-----
+> From: linux-security-module-owner@vger.kernel.org [mailto:linux-security-
+> module-owner@vger.kernel.org] On Behalf Of James Morris
+> Sent: Wednesday, March 07, 2012 12:08 PM
+> To: Mimi Zohar
+> Cc: linux-security-module@vger.kernel.org; linux-kernel@vger.kernel.org;
+> linux-fsdevel@vger.kernel.org; David Safford; Kasatkin, Dmitry
+> Subject: Re: [PATCH v2 00/11] ima: appraisal extension
+> 
+> On Thu, 1 Mar 2012, Mimi Zohar wrote:
+> 
+> > IMA currently maintains an integrity measurement list used to assert
+> > the integrity of the running system to a third party.  The
+> > IMA-appraisal extension adds local integrity validation and
+> > enforcement of the measurement against a "good" value stored as an
+> > extended attribute 'security.ima'.
+> 
+> Do you know if any distros are planning on integrating EVM/IMA?
+> 
+> What about Tizen ?  The now defunct MeeGo project weas previously the main
+> intended user.
 
-This is pure cleanup, no functional change intended.
+James, we are intending on incorporating this into Tizen for product
+verticals that require the additional integrity protections these features
+provide.
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Cc: Linux-mm <linux-mm@kvack.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120312092545.5379.91251.sendpatchset@srdronam.in.ibm.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/uprobes.h |    4 ++--
- include/linux/uprobes.h        |    4 ++--
- kernel/events/uprobes.c        |   34 +++++++++++++++++-----------------
- 3 files changed, 21 insertions(+), 21 deletions(-)
+Ryan
 
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index 384f1be..0500391 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -28,8 +28,8 @@ typedef u8 uprobe_opcode_t;
- #define MAX_UINSN_BYTES			  16
- #define UPROBE_XOL_SLOT_BYTES		 128	/* to keep it cache aligned */
- 
--#define UPROBE_BKPT_INSN		0xcc
--#define UPROBE_BKPT_INSN_SIZE		   1
-+#define UPROBE_SWBP_INSN		0xcc
-+#define UPROBE_SWBP_INSN_SIZE		   1
- 
- struct arch_uprobe {
- 	u16				fixups;
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 5869918..eac525f 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -52,9 +52,9 @@ struct uprobe_consumer {
- };
- 
- #ifdef CONFIG_UPROBES
--extern int __weak set_bkpt(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
-+extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
- extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
--extern bool __weak is_bkpt_insn(uprobe_opcode_t *insn);
-+extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
- extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
- extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
- extern int uprobe_mmap(struct vm_area_struct *vma);
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 9c5ddff..e56e56a 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -170,14 +170,14 @@ out:
- }
- 
- /**
-- * is_bkpt_insn - check if instruction is breakpoint instruction.
-+ * is_swbp_insn - check if instruction is breakpoint instruction.
-  * @insn: instruction to be checked.
-- * Default implementation of is_bkpt_insn
-+ * Default implementation of is_swbp_insn
-  * Returns true if @insn is a breakpoint instruction.
-  */
--bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
-+bool __weak is_swbp_insn(uprobe_opcode_t *insn)
- {
--	return *insn == UPROBE_BKPT_INSN;
-+	return *insn == UPROBE_SWBP_INSN;
- }
- 
- /*
-@@ -227,7 +227,7 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	 * adding probes in write mapped pages since the breakpoints
- 	 * might end up in the file copy.
- 	 */
--	if (!valid_vma(vma, is_bkpt_insn(&opcode)))
-+	if (!valid_vma(vma, is_swbp_insn(&opcode)))
- 		goto put_out;
- 
- 	uprobe = container_of(auprobe, struct uprobe, arch);
-@@ -259,8 +259,8 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 
- 	/* poke the new insn in, ASSUMES we don't cross page boundary */
- 	vaddr &= ~PAGE_MASK;
--	BUG_ON(vaddr + UPROBE_BKPT_INSN_SIZE > PAGE_SIZE);
--	memcpy(vaddr_new + vaddr, &opcode, UPROBE_BKPT_INSN_SIZE);
-+	BUG_ON(vaddr + UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
-+	memcpy(vaddr_new + vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
- 
- 	kunmap_atomic(vaddr_new);
- 	kunmap_atomic(vaddr_old);
-@@ -308,7 +308,7 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
- 	lock_page(page);
- 	vaddr_new = kmap_atomic(page);
- 	vaddr &= ~PAGE_MASK;
--	memcpy(opcode, vaddr_new + vaddr, UPROBE_BKPT_INSN_SIZE);
-+	memcpy(opcode, vaddr_new + vaddr, UPROBE_SWBP_INSN_SIZE);
- 	kunmap_atomic(vaddr_new);
- 	unlock_page(page);
- 
-@@ -317,7 +317,7 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
- 	return 0;
- }
- 
--static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
-+static int is_swbp_at_addr(struct mm_struct *mm, unsigned long vaddr)
- {
- 	uprobe_opcode_t opcode;
- 	int result;
-@@ -326,14 +326,14 @@ static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
- 	if (result)
- 		return result;
- 
--	if (is_bkpt_insn(&opcode))
-+	if (is_swbp_insn(&opcode))
- 		return 1;
- 
- 	return 0;
- }
- 
- /**
-- * set_bkpt - store breakpoint at a given address.
-+ * set_swbp - store breakpoint at a given address.
-  * @auprobe: arch specific probepoint information.
-  * @mm: the probed process address space.
-  * @vaddr: the virtual address to insert the opcode.
-@@ -341,18 +341,18 @@ static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
-  * For mm @mm, store the breakpoint instruction at @vaddr.
-  * Return 0 (success) or a negative errno.
-  */
--int __weak set_bkpt(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr)
-+int __weak set_swbp(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr)
- {
- 	int result;
- 
--	result = is_bkpt_at_addr(mm, vaddr);
-+	result = is_swbp_at_addr(mm, vaddr);
- 	if (result == 1)
- 		return -EEXIST;
- 
- 	if (result)
- 		return result;
- 
--	return write_opcode(auprobe, mm, vaddr, UPROBE_BKPT_INSN);
-+	return write_opcode(auprobe, mm, vaddr, UPROBE_SWBP_INSN);
- }
- 
- /**
-@@ -371,7 +371,7 @@ set_orig_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long v
- 	if (verify) {
- 		int result;
- 
--		result = is_bkpt_at_addr(mm, vaddr);
-+		result = is_swbp_at_addr(mm, vaddr);
- 		if (!result)
- 			return -EINVAL;
- 
-@@ -642,7 +642,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 		if (ret)
- 			return ret;
- 
--		if (is_bkpt_insn((uprobe_opcode_t *)uprobe->arch.insn))
-+		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
- 			return -EEXIST;
- 
- 		ret = arch_uprobes_analyze_insn(&uprobe->arch, mm);
-@@ -651,7 +651,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 
- 		uprobe->flags |= UPROBE_COPY_INSN;
- 	}
--	ret = set_bkpt(&uprobe->arch, mm, addr);
-+	ret = set_swbp(&uprobe->arch, mm, addr);
- 
- 	return ret;
- }
