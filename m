@@ -1,283 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab2CMFT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:19:58 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50156 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518Ab2CMFT4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:19:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 13 Mar 2012 14:18:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix behavior of shard anon pages at task_move
- (Was Re: [PATCH v3 2/2] memcg: avoid THP split in task migration
-Message-Id: <20120313141823.18daeeed.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.LSU.2.00.1203091225440.19372@eggly.anvils>
-References: <1330719189-20047-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1330719189-20047-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<20120309101658.8b36ce4f.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.LSU.2.00.1203081816170.18242@eggly.anvils>
-	<20120309122448.92931dc6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120309150109.51ba8ea1.nishimura@mxp.nes.nec.co.jp>
-	<20120309162357.71c8c573.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.LSU.2.00.1203091225440.19372@eggly.anvils>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754718Ab2CMFUo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:20:44 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:49907 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754413Ab2CMFUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 01:20:43 -0400
+Date: Tue, 13 Mar 2012 06:20:16 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
+Subject: Re: [PATCH] uprobes/core: handle breakpoint and signal step
+ exception.
+Message-ID: <20120313052016.GA27824@elte.hu>
+References: <20120223110245.12459.7391.sendpatchset@srdronam.in.ibm.com>
+ <20120227091212.GA7092@elte.hu>
+ <20120308131824.GC13284@linux.vnet.ibm.com>
+ <20120308134809.GB28488@elte.hu>
+ <20120309062853.GD13284@linux.vnet.ibm.com>
+ <20120309073348.GA15570@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120309073348.GA15570@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Mar 2012 13:05:05 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
 
-> On Fri, 9 Mar 2012, KAMEZAWA Hiroyuki wrote:
-> > From 1012e97e3b123fb80d0ec6b1f5d3dbc87a5a5139 Mon Sep 17 00:00:00 2001
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-> > Suggested-by: Hugh Dickins <hughd@google.com>
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> Yes, this is much like what I had in mind (well, on disk):
-> I'm glad we are in agreement now.
+> * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 > 
-> But first priority, I think, should be to revert to the silly "> 2"
-> test for 3.3 final, so it behaves just like 2.6.35 through 3.2:
-> I'll send Andrew and Linus a patch for that shortly.
-> 
-> > ---
-> >  Documentation/cgroups/memory.txt |   10 ++++++++--
-> >  include/linux/swap.h             |    9 ---------
-> >  mm/memcontrol.c                  |   15 +++------------
-> >  mm/swapfile.c                    |   31 -------------------------------
-> >  4 files changed, 11 insertions(+), 54 deletions(-)
+> > * Ingo Molnar <mingo@elte.hu> [2012-03-08 14:48:09]:
 > > 
-> > diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> > index 4c95c00..16bc9f2 100644
-> > --- a/Documentation/cgroups/memory.txt
-> > +++ b/Documentation/cgroups/memory.txt
-> > @@ -185,6 +185,9 @@ behind this approach is that a cgroup that aggressively uses a shared
-> >  page will eventually get charged for it (once it is uncharged from
-> >  the cgroup that brought it in -- this will happen on memory pressure).
-> >  
-> > +(*)See section 8.2. At task moving, you can recharge mapped pages to other
-> > +   cgroup.
-> > +
+> > > 
+> > > * Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > @@ -233,9 +233,11 @@ static inline void __user *arch_compat_alloc_user_space(long len)
+> > > >  
+> > > >  	if (test_thread_flag(TIF_IA32)) {
+> > > >  		sp = task_pt_regs(current)->sp;
+> > > > +#ifdef CONFIG_X86_64
+> > > >  	} else {
+> > > >  		/* -128 for the x32 ABI redzone */
+> > > >  		sp = __this_cpu_read(old_rsp) - 128;
+> > > > +#endif
+> > > >  	}
+> > > >  
+> > > >  	return (void __user *)round_down(sp - len, 16);
+> > > 
+> > > So 'sp' is undefined if that TIF check fails?
+> > > 
+> > > Also, on a 32-bit kernel the TIF check probably fails all the 
+> > > time, because we don't set TIF_IA32 (and don't know that flag).
+> > 
+> > > 
+> > > It would probably be better to make the whole helper inline 
+> > > #ifdef 64-bit, it does not look very useful on 32-bit.
+> > > 
+> > 
+> > arch_compat_alloc_user_space gets called from compat_alloc_user_space
+> > which is arch agnostic and exported too.
+> > 
+> > So I will change this to
+> > 
+> > void __user *arch_compat_alloc_user_space(long len)
+> > {
+> >   	if (is_ia32_compat_task(current))
+> >   		sp = task_pt_regs(current)->sp;
+> > #ifdef CONFIG_X86_64
+> >   	else
+> >   		/* -128 for the x32 ABI redzone */
+> >   		sp = __this_cpu_read(old_rsp) - 128;
+> > #endif
+> >   
+> >   	return (void __user *)round_down(sp - len, 16);
+> > }
+> > 
+> > where is_ia32_compat_task() is the new macro that you 
+> > suggested we put in compat.h which would return true if the 
+> > task is 32 bit emulated on x86_64 or running on i386 machine.
+> > 
+> > Hence we can avoid the case where sp is not set.
 > 
-> Perhaps:
-> 
-> But see section 8.2: when moving a task to another cgroup, its pages may
-> be recharged to the new cgroup, if move_charge_at_immigrate has been chosen.
-> 
-> (I've intentionally omitted the word "mapped" there because it can move
-> even unmapped file pages and swapped-out anon pages.)
-> 
+> Ok - looks good at first glance.
 
-Sure.
+It does not look good on a second glance though, once I checked 
+your latest patches.
 
+arch_compat_alloc_user_space() is arch agnostic on 
+*CONFIG_COMPAT=y* kernels.
 
-> >  Exception: If CONFIG_CGROUP_CGROUP_MEM_RES_CTLR_SWAP is not used.
-> >  When you do swapoff and make swapped-out pages of shmem(tmpfs) to
-> >  be backed into memory in force, charges for pages are accounted against the
-> > @@ -623,8 +626,8 @@ memory cgroup.
-> >    bit | what type of charges would be moved ?
-> >   -----+------------------------------------------------------------------------
-> >     0  | A charge of an anonymous page(or swap of it) used by the target task.
-> > -      | Those pages and swaps must be used only by the target task. You must
-> > -      | enable Swap Extension(see 2.4) to enable move of swap charges.
-> > +      | Even if it's shared, it will be moved in force(*). You must enable Swap
-> 
-> What is this "force"?  I solved the Documentation problem by simply
-> removing one sentence, but you have tried harder.
-> 
+It's generally not available on 32-bit builds - CONFIG_COMPAT is 
+a facility to provide 32-bit syscall compatibility on 64-bit 
+kernels. Such a facility is not needed on 32-bit kernels.
 
-Ok, I remove the force (Sorry, I was not enough logical.)
+So providing this:
 
+> void __user *arch_compat_alloc_user_space(long len)
+> {
+>	if (is_ia32_compat_task(current))
+>               sp = task_pt_regs(current)->sp;
 
+on 32-bit systems makes little sense.
 
-> > +      | Extension(see 2.4) to enable move of swap charges.
-> >   -----+------------------------------------------------------------------------
-> >     1  | A charge of file pages(normal file, tmpfs file(e.g. ipc shared memory)
-> >        | and swaps of tmpfs file) mmapped by the target task. Unlike the case of
-> > @@ -635,6 +638,9 @@ memory cgroup.
-> >        | page_mapcount(page) > 1). You must enable Swap Extension(see 2.4) to
-> >        | enable move of swap charges.
-> >  
-> > +(*) Because of this, fork() -> move -> exec() will move all parent's page
-> > +    to the target cgroup. Please be careful.
-> > +
-> 
-> It only moves those pages which were in the old cgroup.
-> 
+So ... instead of adding is_compat_task() to compat.h it would 
+be better to add it to another x86 header (processor.h might be 
+good but I have not checked very hard) and maybe name it 
+is_32bit_task() or so, to make sure there's no confusion with 
+CONFIG_COMPAT=y methods.
 
+I.e. you could drop this patch altogether:
 
-You're right.
+  x86/trivial: Fix 'old_rsp' undefined build failure when including asm/compat.h
 
-I'll consinder simpler one.
+And rework the is_ia32_compat_task() patch to use another header 
+and to use the is_32bit_task() name. Also, you should double 
+check whether the x32 execution model needs special 
+consideration as well:
 
+ #define TIF_IA32		17	/* IA32 compatibility process */
+ #define TIF_X32		30	/* 32-bit native x86-64 binary */
 
-
-> >  8.3 TODO
-> >  
-> >  - Implement madvise(2) to let users decide the vma to be moved or not to be
-> > diff --git a/include/linux/swap.h b/include/linux/swap.h
-> > index f7df3ea..13c8d6f 100644
-> > --- a/include/linux/swap.h
-> > +++ b/include/linux/swap.h
-> > @@ -390,7 +390,6 @@ static inline void deactivate_swap_token(struct mm_struct *mm, bool swap_token)
-> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> >  extern void
-> >  mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout);
-> > -extern int mem_cgroup_count_swap_user(swp_entry_t ent, struct page **pagep);
-> >  #else
-> >  static inline void
-> >  mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
-> > @@ -535,14 +534,6 @@ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent)
-> >  {
-> >  }
-> >  
-> > -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> > -static inline int
-> > -mem_cgroup_count_swap_user(swp_entry_t ent, struct page **pagep)
-> > -{
-> > -	return 0;
-> > -}
-> > -#endif
-> > -
-> >  #endif /* CONFIG_SWAP */
-> >  #endif /* __KERNEL__*/
-> >  #endif /* _LINUX_SWAP_H */
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index c83aeb5..e7e4e3d 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -5100,12 +5100,9 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
-> >  
-> >  	if (!page || !page_mapped(page))
-> >  		return NULL;
-> > -	if (PageAnon(page)) {
-> > -		/* we don't move shared anon */
-> > -		if (!move_anon() || page_mapcount(page) > 2)
-> > -			return NULL;
-> > +	if (PageAnon(page) && !move_anon()) {
-> > +		return NULL;
-> >  	} else if (!move_file())
-> > -		/* we ignore mapcount for file pages */
-> >  		return NULL;
-> 
-> Doesn't that need to be
-> 
-> 	if (PageAnon(page)) {
-> 		if (!move_anon())
-> 			return NULL;
-> 	} else if (!move_file())
-> 		return NULL;
-> 
-> I think what you've written there makes treatment of anon pages
-> in the move_anon() case dependent on move_file(), doesn't it?
-> 
-
-will rewrite.
-
-
-
-> >  	if (!get_page_unless_zero(page))
-> >  		return NULL;
-> > @@ -5116,18 +5113,12 @@ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
-> >  static struct page *mc_handle_swap_pte(struct vm_area_struct *vma,
-> >  			unsigned long addr, pte_t ptent, swp_entry_t *entry)
-> >  {
-> > -	int usage_count;
-> >  	struct page *page = NULL;
-> >  	swp_entry_t ent = pte_to_swp_entry(ptent);
-> >  
-> >  	if (!move_anon() || non_swap_entry(ent))
-> >  		return NULL;
-> > -	usage_count = mem_cgroup_count_swap_user(ent, &page);
-> > -	if (usage_count > 1) { /* we don't move shared anon */
-> > -		if (page)
-> > -			put_page(page);
-> > -		return NULL;
-> > -	}
-> > +	page = lookup_swap_cache(ent);
-> 
-> It's annoying, but there's a tiny reason why that line needs to be
-> 
-> #ifdef CONFIG_SWAP
-> 	page = find_get_page(&swapper_space, ent.val);
-> #endif
-> 
-> because lookup_swap_cache() updates some antiquated swap lookup stats
-> (which I do sometimes look at), which a straight find_get_page() avoids,
-> rightly in this case; but swapper_space only defined when CONFIG_SWAP=y.
-> 
-> I was about to propose that we just add an arg to lookup_swap_cache(),
-> for updating those stats or not; but see that mincore.c would like a
-> little more than that to avoid its CONFIG_SWAPs, not sure quite what.
-> 
-> So for now, please just use the #ifdef CONFIG_SWAP find_get_page()
-> that we use elsewhere, and I'll try to remove those warts later on.
-> 
-
-Okay, I will do that.
-
-
-> >  	if (do_swap_account)
-> >  		entry->val = ent.val;
-> >  
-> > diff --git a/mm/swapfile.c b/mm/swapfile.c
-> > index fa3c519..85b4548 100644
-> > --- a/mm/swapfile.c
-> > +++ b/mm/swapfile.c
-> > @@ -720,37 +720,6 @@ int free_swap_and_cache(swp_entry_t entry)
-> >  	return p != NULL;
-> >  }
-> >  
-> > -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> > -/**
-> > - * mem_cgroup_count_swap_user - count the user of a swap entry
-> > - * @ent: the swap entry to be checked
-> > - * @pagep: the pointer for the swap cache page of the entry to be stored
-> > - *
-> > - * Returns the number of the user of the swap entry. The number is valid only
-> > - * for swaps of anonymous pages.
-> > - * If the entry is found on swap cache, the page is stored to pagep with
-> > - * refcount of it being incremented.
-> > - */
-> > -int mem_cgroup_count_swap_user(swp_entry_t ent, struct page **pagep)
-> > -{
-> > -	struct page *page;
-> > -	struct swap_info_struct *p;
-> > -	int count = 0;
-> > -
-> > -	page = find_get_page(&swapper_space, ent.val);
-> > -	if (page)
-> > -		count += page_mapcount(page);
-> > -	p = swap_info_get(ent);
-> > -	if (p) {
-> > -		count += swap_count(p->swap_map[swp_offset(ent)]);
-> > -		spin_unlock(&swap_lock);
-> > -	}
-> > -
-> > -	*pagep = page;
-> > -	return count;
-> > -}
-> > -#endif
-> > -
-> 
-> Exactly, delete delete delete!
-> 
- :)
+otherwise uprobe will not work with x32 tasks properly.
 
 Thanks,
--Kame
 
+	Ingo
