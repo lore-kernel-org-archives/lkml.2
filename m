@@ -1,417 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab2CMNoK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 09:44:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65152 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753603Ab2CMNoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 09:44:07 -0400
-From: Hans de Goede <hdegoede@redhat.com>
-To: Andrew Morton <akpm@google.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: [PATCH] poll: add poll_requested_events() and poll_does_not_wait() functions
-Date: Tue, 13 Mar 2012 14:45:56 +0100
-Message-Id: <1331646356-3449-2-git-send-email-hdegoede@redhat.com>
-In-Reply-To: <1331646356-3449-1-git-send-email-hdegoede@redhat.com>
-References: <1331646356-3449-1-git-send-email-hdegoede@redhat.com>
+	id S1754268Ab2CMNoc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 09:44:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35932 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab2CMNoG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 09:44:06 -0400
+Date: Tue, 13 Mar 2012 14:44:00 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
+        linux-perf-users@vger.kernel.org
+Subject: Re: [PATCH 2/2] perf: Add a new sort order: SORT_INCLUSIVE
+Message-ID: <20120313134357.GA24028@somewhere.redhat.com>
+References: <1331160079-13821-1-git-send-email-asharma@fb.com>
+ <1331160079-13821-3-git-send-email-asharma@fb.com>
+ <20120308153933.GD7976@somewhere.redhat.com>
+ <20120308182226.GA10065@dev3310.snc6.facebook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120308182226.GA10065@dev3310.snc6.facebook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+On Thu, Mar 08, 2012 at 10:22:26AM -0800, Arun Sharma wrote:
+> On Thu, Mar 08, 2012 at 04:39:36PM +0100, Frederic Weisbecker wrote:
+> > 
+> > I don't yet understand the point of this.
+> > 
+> > Imagine those three hists:
+> > 
+> > a -> b -> c
+> > a -> b -> d
+> > a-> e -> f
+> > 
+> > The fractal inverted mode (-G) will report this:
+> > 
+> > a--
+> >   |
+> >   ----- b
+> >   |     |
+> >   |     -----c
+> >   |     |
+> >   |     -----d
+> >   |
+> >   ----- e
+> >         |
+> >         -----f
+> > 
+> 
+> Please see the test program attached. It has only two paths from main()
+> to c(). But for this discussion, imagine a callgraph with 10 different
+> paths.
 
-In some cases the poll() implementation in a driver has to do different
-things depending on the events the caller wants to poll for. An example is
-when a driver needs to start a DMA engine if the caller polls for POLLIN,
-but doesn't want to do that if POLLIN is not requested but instead only
-POLLOUT or POLLPRI is requested. This is something that can happen in the
-video4linux subsystem among others.
+Ok that makes sense.
 
-Unfortunately, the current epoll/poll/select implementation doesn't provide
-that information reliably. The poll_table_struct does have it: it has a key
-field with the event mask. But once a poll() call matches one or more bits
-of that mask any following poll() calls are passed a NULL poll_table pointer.
+Thanks.
 
-Also, the eventpoll implementation always left the key field at ~0 instead
-of using the requested events mask.
-
-This was changed in eventpoll.c so the key field now contains the actual
-events that should be polled for as set by the caller.
-
-The solution to the NULL poll_table pointer is to set the qproc field to
-NULL in poll_table once poll() matches the events, not the poll_table
-pointer itself. That way drivers can obtain the mask through a new
-poll_requested_events inline.
-
-The poll_table_struct can still be NULL since some kernel code calls it
-internally (netfs_state_poll() in ./drivers/staging/pohmelfs/netfs.h). In
-that case poll_requested_events() returns ~0 (i.e. all events).
-
-Very rarely drivers might want to know whether poll_wait will actually wait.
-If another earlier file descriptor in the set already matched the events the
-caller wanted to wait for, then the kernel will return from the select() call
-without waiting. This might be useful information in order to avoid doing
-expensive work.
-
-A new helper function poll_does_not_wait() is added that drivers can use to
-detect this situation. This is now used in sock_poll_wait() in
-include/net/sock.h. This was the only place in the kernel that needed this
-information.
-
-Drivers should no longer access any of the poll_table internals, but use the
-poll_requested_events() and poll_does_not_wait() access functions instead.
-In order to enforce that the poll_table fields are now prepended with an
-underscore and a comment was added warning against using them directly.
-
-This required a change in unix_dgram_poll() in unix/af_unix.c which used the
-key field to get the requested events. It's been replaced by a call to
-poll_requested_events().
-
-For qproc it was especially important to change its name since the behavior of
-that field changes with this patch since this function pointer can now be NULL
-when that wasn't possible in the past.
-
-Any driver accessing the qproc or key fields directly will now fail to compile.
-
-Some notes regarding the correctness of this patch: the driver's poll()
-function is called with a 'struct poll_table_struct *wait' argument. This
-pointer may or may not be NULL, drivers can never rely on it being one or
-the other as that depends on whether or not an earlier file descriptor in
-the select()'s fdset matched the requested events.
-
-There are only three things a driver can do with the wait argument:
-
-1) obtain the key field:
-
-	events = wait ? wait->key : ~0;
-
-   This will still work although it should be replaced with the new
-   poll_requested_events() function (which does exactly the same).
-   This will now even work better, since wait is no longer set to NULL
-   unnecessarily.
-
-2) use the qproc callback. This could be deadly since qproc can now be
-   NULL. Renaming qproc should prevent this from happening. There are no
-   kernel drivers that actually access this callback directly, BTW.
-
-3) test whether wait == NULL to determine whether poll would return without
-   waiting. This is no longer sufficient as the correct test is now
-   wait == NULL || wait->_qproc == NULL.
-
-   However, the worst that can happen here is a slight performance hit in
-   the case where wait != NULL and wait->_qproc == NULL. In that case the
-   driver will assume that poll_wait() will actually add the fd to the set
-   of waiting file descriptors. Of course, poll_wait() will not do that
-   since it tests for wait->_qproc. This will not break anything, though.
-
-   There is only one place in the whole kernel where this happens
-   (sock_poll_wait() in include/net/sock.h) and that code will be replaced
-   by a call to poll_does_not_wait() in the next patch.
-
-   Note that even if wait->_qproc != NULL drivers cannot rely on poll_wait()
-   actually waiting. The next file descriptor from the set might match the
-   event mask and thus any possible waits will never happen.
-
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Reviewed-by: Jonathan Corbet <corbet@lwn.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
----
- fs/eventpoll.c       |   18 +++++++++++++++---
- fs/select.c          |   40 ++++++++++++++++++----------------------
- include/linux/poll.h |   37 +++++++++++++++++++++++++++++++------
- include/net/sock.h   |    2 +-
- net/unix/af_unix.c   |    2 +-
- 5 files changed, 66 insertions(+), 33 deletions(-)
-
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index ea54cde..42cff65 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -699,9 +699,12 @@ static int ep_read_events_proc(struct eventpoll *ep, struct list_head *head,
- 			       void *priv)
- {
- 	struct epitem *epi, *tmp;
-+	poll_table pt;
- 
-+	init_poll_funcptr(&pt, NULL);
- 	list_for_each_entry_safe(epi, tmp, head, rdllink) {
--		if (epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
-+		pt._key = epi->event.events;
-+		if (epi->ffd.file->f_op->poll(epi->ffd.file, &pt) &
- 		    epi->event.events)
- 			return POLLIN | POLLRDNORM;
- 		else {
-@@ -1093,6 +1096,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
- 	/* Initialize the poll table using the queue callback */
- 	epq.epi = epi;
- 	init_poll_funcptr(&epq.pt, ep_ptable_queue_proc);
-+	epq.pt._key = event->events;
- 
- 	/*
- 	 * Attach the item to the poll hooks and get current event bits.
-@@ -1187,6 +1191,9 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
- {
- 	int pwake = 0;
- 	unsigned int revents;
-+	poll_table pt;
-+
-+	init_poll_funcptr(&pt, NULL);
- 
- 	/*
- 	 * Set the new event interest mask before calling f_op->poll();
-@@ -1194,13 +1201,14 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
- 	 * f_op->poll() call and the new event set registering.
- 	 */
- 	epi->event.events = event->events;
-+	pt._key = event->events;
- 	epi->event.data = event->data; /* protected by mtx */
- 
- 	/*
- 	 * Get current event bits. We can safely use the file* here because
- 	 * its usage count has been increased by the caller of this function.
- 	 */
--	revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL);
-+	revents = epi->ffd.file->f_op->poll(epi->ffd.file, &pt);
- 
- 	/*
- 	 * If the item is "hot" and it is not registered inside the ready
-@@ -1235,6 +1243,9 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
- 	unsigned int revents;
- 	struct epitem *epi;
- 	struct epoll_event __user *uevent;
-+	poll_table pt;
-+
-+	init_poll_funcptr(&pt, NULL);
- 
- 	/*
- 	 * We can loop without lock because we are passed a task private list.
-@@ -1247,7 +1258,8 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
- 
- 		list_del_init(&epi->rdllink);
- 
--		revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
-+		pt._key = epi->event.events;
-+		revents = epi->ffd.file->f_op->poll(epi->ffd.file, &pt) &
- 			epi->event.events;
- 
- 		/*
-diff --git a/fs/select.c b/fs/select.c
-index e782258..16211c7 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -223,7 +223,7 @@ static void __pollwait(struct file *filp, wait_queue_head_t *wait_address,
- 	get_file(filp);
- 	entry->filp = filp;
- 	entry->wait_address = wait_address;
--	entry->key = p->key;
-+	entry->key = p->_key;
- 	init_waitqueue_func_entry(&entry->wait, pollwake);
- 	entry->wait.private = pwq;
- 	add_wait_queue(wait_address, &entry->wait);
-@@ -386,13 +386,11 @@ get_max:
- static inline void wait_key_set(poll_table *wait, unsigned long in,
- 				unsigned long out, unsigned long bit)
- {
--	if (wait) {
--		wait->key = POLLEX_SET;
--		if (in & bit)
--			wait->key |= POLLIN_SET;
--		if (out & bit)
--			wait->key |= POLLOUT_SET;
--	}
-+	wait->_key = POLLEX_SET;
-+	if (in & bit)
-+		wait->_key |= POLLIN_SET;
-+	if (out & bit)
-+		wait->_key |= POLLOUT_SET;
- }
- 
- int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
-@@ -414,7 +412,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 	poll_initwait(&table);
- 	wait = &table.pt;
- 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
--		wait = NULL;
-+		wait->_qproc = NULL;
- 		timed_out = 1;
- 	}
- 
-@@ -459,17 +457,17 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 					if ((mask & POLLIN_SET) && (in & bit)) {
- 						res_in |= bit;
- 						retval++;
--						wait = NULL;
-+						wait->_qproc = NULL;
- 					}
- 					if ((mask & POLLOUT_SET) && (out & bit)) {
- 						res_out |= bit;
- 						retval++;
--						wait = NULL;
-+						wait->_qproc = NULL;
- 					}
- 					if ((mask & POLLEX_SET) && (ex & bit)) {
- 						res_ex |= bit;
- 						retval++;
--						wait = NULL;
-+						wait->_qproc = NULL;
- 					}
- 				}
- 			}
-@@ -481,7 +479,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 				*rexp = res_ex;
- 			cond_resched();
- 		}
--		wait = NULL;
-+		wait->_qproc = NULL;
- 		if (retval || timed_out || signal_pending(current))
- 			break;
- 		if (table.error) {
-@@ -720,7 +718,7 @@ struct poll_list {
-  * interested in events matching the pollfd->events mask, and the result
-  * matching that mask is both recorded in pollfd->revents and returned. The
-  * pwait poll_table will be used by the fd-provided poll handler for waiting,
-- * if non-NULL.
-+ * if pwait->_qproc is non-NULL.
-  */
- static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
- {
-@@ -738,9 +736,7 @@ static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
- 		if (file != NULL) {
- 			mask = DEFAULT_POLLMASK;
- 			if (file->f_op && file->f_op->poll) {
--				if (pwait)
--					pwait->key = pollfd->events |
--							POLLERR | POLLHUP;
-+				pwait->_key = pollfd->events | POLLERR | POLLHUP;
- 				mask = file->f_op->poll(file, pwait);
- 			}
- 			/* Mask out unneeded events. */
-@@ -763,7 +759,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 
- 	/* Optimise the no-wait case */
- 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
--		pt = NULL;
-+		pt->_qproc = NULL;
- 		timed_out = 1;
- 	}
- 
-@@ -781,22 +777,22 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 			for (; pfd != pfd_end; pfd++) {
- 				/*
- 				 * Fish for events. If we found one, record it
--				 * and kill the poll_table, so we don't
-+				 * and kill poll_table->_qproc, so we don't
- 				 * needlessly register any other waiters after
- 				 * this. They'll get immediately deregistered
- 				 * when we break out and return.
- 				 */
- 				if (do_pollfd(pfd, pt)) {
- 					count++;
--					pt = NULL;
-+					pt->_qproc = NULL;
- 				}
- 			}
- 		}
- 		/*
- 		 * All waiters have already been registered, so don't provide
--		 * a poll_table to them on the next loop iteration.
-+		 * a poll_table->_qproc to them on the next loop iteration.
- 		 */
--		pt = NULL;
-+		pt->_qproc = NULL;
- 		if (!count) {
- 			count = wait->error;
- 			if (signal_pending(current))
-diff --git a/include/linux/poll.h b/include/linux/poll.h
-index cf40010..48fe8bc 100644
---- a/include/linux/poll.h
-+++ b/include/linux/poll.h
-@@ -32,21 +32,46 @@ struct poll_table_struct;
-  */
- typedef void (*poll_queue_proc)(struct file *, wait_queue_head_t *, struct poll_table_struct *);
- 
-+/*
-+ * Do not touch the structure directly, use the access functions
-+ * poll_does_not_wait() and poll_requested_events() instead.
-+ */
- typedef struct poll_table_struct {
--	poll_queue_proc qproc;
--	unsigned long key;
-+	poll_queue_proc _qproc;
-+	unsigned long _key;
- } poll_table;
- 
- static inline void poll_wait(struct file * filp, wait_queue_head_t * wait_address, poll_table *p)
- {
--	if (p && wait_address)
--		p->qproc(filp, wait_address, p);
-+	if (p && p->_qproc && wait_address)
-+		p->_qproc(filp, wait_address, p);
-+}
-+
-+/*
-+ * Return true if it is guaranteed that poll will not wait. This is the case
-+ * if the poll() of another file descriptor in the set got an event, so there
-+ * is no need for waiting.
-+ */
-+static inline bool poll_does_not_wait(const poll_table *p)
-+{
-+	return p == NULL || p->_qproc == NULL;
-+}
-+
-+/*
-+ * Return the set of events that the application wants to poll for.
-+ * This is useful for drivers that need to know whether a DMA transfer has
-+ * to be started implicitly on poll(). You typically only want to do that
-+ * if the application is actually polling for POLLIN and/or POLLOUT.
-+ */
-+static inline unsigned long poll_requested_events(const poll_table *p)
-+{
-+	return p ? p->_key : ~0UL;
- }
- 
- static inline void init_poll_funcptr(poll_table *pt, poll_queue_proc qproc)
- {
--	pt->qproc = qproc;
--	pt->key   = ~0UL; /* all events enabled */
-+	pt->_qproc = qproc;
-+	pt->_key   = ~0UL; /* all events enabled */
- }
- 
- struct poll_table_entry {
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 91c1c8b..da7f2ec 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1824,7 +1824,7 @@ static inline bool wq_has_sleeper(struct socket_wq *wq)
- static inline void sock_poll_wait(struct file *filp,
- 		wait_queue_head_t *wait_address, poll_table *p)
- {
--	if (p && wait_address) {
-+	if (!poll_does_not_wait(p) && wait_address) {
- 		poll_wait(filp, wait_address, p);
- 		/*
- 		 * We need to be sure we are in sync with the
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 85d3bb7..59f5202 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -2175,7 +2175,7 @@ static unsigned int unix_dgram_poll(struct file *file, struct socket *sock,
- 	}
- 
- 	/* No write status requested, avoid expensive OUT tests. */
--	if (wait && !(wait->key & (POLLWRBAND | POLLWRNORM | POLLOUT)))
-+	if (!(poll_requested_events(wait) & (POLLWRBAND | POLLWRNORM | POLLOUT)))
- 		return mask;
- 
- 	writable = unix_writable(sk);
--- 
-1.7.9.3
-
+> 
+> With -G, c() appears 10 times in the callgraph and the user is required
+> to manually sum up the samples to realize that the callgraph under c()
+> is very expensive.
+> 
+> With -s inclusive, c() will show up at the very top after main().
+> 
+>  -Arun
+> 
+> #include <stdio.h>
+> 
+> int sum = 0;
+> 
+> #define LOOP(n)                                         \
+>         {                                               \
+>                 int j;                                  \
+>                 for (j = 0; j < 10000; j++) {           \
+>                         sum += j;                       \
+>                 }                                       \
+>         }
+> 
+> int f()
+> {
+>         LOOP(100);
+> }
+> 
+> int d()
+> {
+>         LOOP(100);
+>         f();
+> }
+> 
+> int e()
+> {
+> 	LOOP(100);
+> 	f();
+> }
+> 
+> int c()
+> {
+> 	LOOP(100);
+> 	d();
+> 	LOOP(100);
+> 	e();
+> }
+> 
+> int b() 
+> {
+> 	LOOP(70);
+> 	c();
+> }
+> 
+> int a() 
+> {
+> 	LOOP(30);
+> 	c();
+> }
+> 
+> int main()
+> {
+> 	int i;
+> 	for (i = 0; i < 10000; i++) {
+> 		a();
+> 		b();
+> 	}
+> }
+> 
