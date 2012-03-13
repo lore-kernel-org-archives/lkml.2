@@ -1,279 +1,425 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759493Ab2CMDO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 23:14:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:65432 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757210Ab2CMDOZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 23:14:25 -0400
+	id S1759501Ab2CMDRD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 23:17:03 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:57618 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759457Ab2CMDRA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 23:17:00 -0400
 MIME-Version: 1.0
-In-Reply-To: <1331362837-10740-23-git-send-email-yinghai@kernel.org>
-References: <1331362837-10740-1-git-send-email-yinghai@kernel.org> <1331362837-10740-23-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 12 Mar 2012 21:14:03 -0600
-Message-ID: <CAErSpo4=pL_y0q=1-4GMGenOmKmLFgtAbpYi3GNrErGVZqCcBg@mail.gmail.com>
-Subject: Re: [PATCH v2 22/37] PCI, acpiphp: remove hot-add support of pci host bridge
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20120312115117.GN3852@pengutronix.de>
+References: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
+ <1331366064-1273-3-git-send-email-mturquette@linaro.org> <20120311113414.GM3852@pengutronix.de>
+ <CAJOA=zMdkLB-DCPOk=kz5mn6BK6A_swocyCHJHeGE6H7FxBbmQ@mail.gmail.com> <20120312115117.GN3852@pengutronix.de>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Mon, 12 Mar 2012 20:16:36 -0700
+Message-ID: <CAJOA=zPx0ARsoO4ueSTMe_z2Gs4xG4P2qn1=-vHFf7_k=+K6hQ@mail.gmail.com>
+Subject: Re: [PATCH v6 2/3] clk: introduce the common clock framework
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> It causes confusing.
-
-"causes confusion."
-
-> We may only need acpi hp for pci host bridge.
+On Mon, Mar 12, 2012 at 4:51 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Sun, Mar 11, 2012 at 02:24:46PM -0700, Turquette, Mike wrote:
+>> On Sun, Mar 11, 2012 at 4:34 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+>> > Hi Mike,
+>> >
+>> > I was about to give my tested-by when I decided to test the set_rate
+>> > function. Unfortunately this is broken for several reasons. I'll try
+>> > to come up with a fixup series later the day.
+>>
+>> I haven't tested clk_set_rate since V4, but I also haven't changed the
+>> code appreciably.  I'll retest on my end also.
+>>
+>> > On Fri, Mar 09, 2012 at 11:54:23PM -0800, Mike Turquette wrote:
+>> >> +     /* find the new rate and see if parent rate should change too */
+>> >> +     WARN_ON(!clk->ops->round_rate);
+>> >> +
+>> >> +     new_rate = clk->ops->round_rate(clk->hw, rate, &parent_new_rate);
+>> >
+>> > You don't need a WARN_ON when you derefence clk->ops->round_rate anyway.
+>>
+>> Agreed that the WARN_ON should not be there.
+>>
+>> The v6 Documentation/clk.txt states that .round_rate is mandatory for
+>> clocks that can adjust their rate, but I need to clarify this a bit
+>> more.  Ideally we want to be able to call clk_set_rate on any clock
+>> and get a changed rate (if possible) by either adjusting that clocks
+>> rate direction (e.g. a PLL or an adjustable divider) or by propagating
+>> __clk_set_rate up the parents (assuming of course that
+>> CLK_SET_RATE_PARENT flag is set appropriately).
+>>
+>> > Also, even when the current clock does not have a set_rate function it
+>> > can still change its rate when the CLK_SET_RATE_PARENT is set.
+>>
+>> Correct.  I'll clean this up and make the documentation a bit more
+>> verbose on when .set_rate/.round_rate/.recalc_rate are mandatory.
+>>
+>> >
+>> >> +
+>> >> +     /* NOTE: pre-rate change notifications will stack */
+>> >> +     if (clk->notifier_count)
+>> >> +             ret = __clk_notify(clk, PRE_RATE_CHANGE, clk->rate, new_rate);
+>> >> +
+>> >> +     if (ret == NOTIFY_BAD)
+>> >> +             return clk;
+>> >> +
+>> >> +     /* speculate rate changes down the tree */
+>> >> +     hlist_for_each_entry(child, tmp, &clk->children, child_node) {
+>> >> +             ret = __clk_speculate_rates(child, new_rate);
+>> >> +             if (ret == NOTIFY_BAD)
+>> >> +                     return clk;
+>> >> +     }
+>> >> +
+>> >> +     /* change the rate of this clk */
+>> >> +     if (clk->ops->set_rate)
+>> >> +             ret = clk->ops->set_rate(clk->hw, new_rate);
+>> >
+>> > I don't know the reason why you change the child clock before the parent
+>> > clock, but it cannot work since this clock will change its rate based on
+>> > the old parent rate and not the new one.
+>>
+>> This depends on the .round_rate implementation, which I admit to
+>> having lost some sleep over.  A clever .round_rate will request the
+>> "intermediate" rate for a clock when propagating a request to change
+>> the parent rate later on.  Take for instance the following:
+>>
+>> pll @ 200MHz (locked)
+>>     |
+>> parent @ 100MHz (can divide by 1 or 2; currently divider is 2)
+>>     |
+>> child @ 25MHz (can divide by 2 or 4; currently divider is 4)
+>>
+>> If we want child to run at 100MHz then the desirable configuration
+>> would be to have parent divide-by-1 and child divide-by-2.  When we
+>> call,
+>>
+>> clk_set_rate(child, 100MHz);
+>>
+>> Its .round_rate should return 50MHz, and &parent_new_rate should be
+>> 200MHz.  So 50MHz is an "intermediate" rate, but it gets us the
+>> divider we want.  And in fact 50MHz reflects reality because that will
+>> be the rate of child until the parent propagation completes and we can
+>> adjust parent's dividers.  (this is one reason why I prefer for
+>> pre-rate change notifiers to stack on top of each other).
+>>
+>> So now that &parent_new_rate is > 0, __clk_set_rate will propagate the
+>> request up and parent's .round_rate will simply return 200MHz and
+>> leave it's own &parent_new_rate at 0.  This will change from
+>> divide-by-2 to divide-by-1 and from this highest point in the tree we
+>> will propagate post-rate change notifiers downstream, as part of the
+>> recalc_rate tree walk.
+>>
+>> I have tested this with OMAP4's CPUfreq driver and I think, while
+>> complicated, it is a sound way to approach the problem.  Maybe the API
+>> can be cleaned up, if you have any suggestions.
 >
-> Split host bridge hot-add support to another file, and keep acpiphp simple.
+> I cannot see all implications this way will have. All this rate
+> propagation is more complex than I thought it would be.
 
-I think it's a good thing to remove host bridge hotplug from acpiphp;
-thanks for doing that.
+Hi Sascha,
 
-However, I think you removed it here, but didn't add it elsewhere
-until a different patch.  That means we can't bisect across this.  It
-would be better to do the entire move in a single patch.
+Yes it is very complicated.  The solution I have now (recursive
+__clk_set_rate, clever .round_rate which requests parent rate) was not
+something I arrived at immediately.
 
-> Also remove not used res_lock in the struct.
+I decided to validate the v6 patches more thoroughly today, based on
+your claim that clk_set_rate is broken and here is what I found:
+
+1) clk_set_rate works.  I pulled in the latest OMAP4 CPUfreq code into
+my common clk branch and it Just Worked.  This is a dumb
+implementation involving no upwards parent propagation, and the clock
+changing is of type struct clk_hw_omap (relocking a PLL)
+
+2) while I was at it I verified the rate change notifiers +
+clk_set_parent, which also work (I had not touched these since v4 and
+wanted to make sure nothing was broken)
+
+Here is where things get interesting.  I tried the same parent rate
+propagation via CPUfreq that I had done previously in the v4 series
+(http://article.gmane.org/gmane.linux.ports.arm.omap/68225), but this
+time it didn't work.  The difference is that back in v4 all of my
+clocks in that propagation chain were struct clk_hw_omap, none of them
+were any of the basic clock types.  Now in v6, one of the clocks in
+the chain is struct clk_divider.  I started looking at the divider's
+.round_rate code and for the case where CLK_PARENT_SET_RATE flag is
+set the code doesn't make any sense.  I spent some time today trying
+to fix struct clk_divider's .round_rate implementation and came to
+realize that there might not be a sane default for how such code
+should work.  A sane default for the common divider that works
+correctly on OMAP may not be what you want on iMX.
+
+To illustrate: if CLK_SET_RATE_PARENT flag is set for my clk_divider
+I'd really like to divide by 1 and pass the exact same rate that was
+requested for my clk_divider up to the parent.  But the existing
+divider code tries to find the largest div for clk_divider and request
+a faster rate from the parent (well, I assume this is what it is
+supposed to do as the code doesn't quite get this right).
+
+Do you have any ideas on this?  Also, can you verify if this is what
+was failing for you, or maybe provide a log if the bug you mentioned
+exists elsewhere?  An extreme solution to the problem would be for
+clk_divider to not support the CLK_SET_PARENT flag if we cannot agree
+on a sane default for this behavior.  I like the idea of the divider
+choosing the smallest div possible and requesting the balance from the
+parent, but I need feedback from others on that point.  For non-rate
+adjustable clocks (clk_gate in particular) it is very easy to continue
+supporting this flag as the .round_rate implementation should just be
+a "pass through" up to the parent.  In fact this behavior is what some
+of my omap clocks are doing and that is why parent propagation for
+CPUfreq was working for me back in v4.
+
+> I tried another
+> approach on the weekend which basically does not try to do all in a
+> single recursion but instead sets the rate in multiple steps:
 >
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 1) call a function which calculates all new rates of affected clocks
+>   in a rate change and safes the value in a clk->new_rate field. This
+>   function returns the topmost clock which has to be changed.
+> 2) starting from the topmost clock notify all clients. This walks the
+>   whole subtree even if a notfifier refuses the change. If necessary
+>   we can walk the whole subtree again to abort the change.
+> 3) actually change rates starting from the topmost clocks and notify
+>   all clients on the way. I changed the set_rate callback to void.
+>   Instead of failing (what is failing in case of set_rate? The clock
+>   will still have some rate) I check for the result with
+>   clk_ops->recalc_rate.
+
+I've considered something like this for "clock groups", especially
+when the set of clocks changing are all on the same device and the
+permutations are well known ahead of time.  Is this working for you
+now?
+
+>
+> In the end what's more important than the implementation details is that
+> it actually works. I created a little test module which sets up two
+> cascaded dividers, tries to change the rate at the output and checks the
+> result.  We might want to add something like this (and maybe similar
+> tests for reparenting and other stuff) to the generic clock framework
+> later.  It's good to have something generic to test the framework with
+> without depending on some particular SoC.
+
+Agreed about the generic test.  I'm not taking it into the current
+series, but we can grow the test cases and submit them later on.
+
+Thanks,
+Mike
+
+>
+> Sascha
+>
+> 8<----------------------------------------------------
+>
+> clk: Add clock test module
+>
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 > ---
->  drivers/pci/hotplug/acpiphp.h      |    9 +---
->  drivers/pci/hotplug/acpiphp_glue.c |  104 +++++++-----------------------------
->  2 files changed, 21 insertions(+), 92 deletions(-)
+>  drivers/clk/clk-test.c |  169 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 169 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/clk/clk-test.c
 >
-> diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
-> index 7722108..1a62e7b 100644
-> --- a/drivers/pci/hotplug/acpiphp.h
-> +++ b/drivers/pci/hotplug/acpiphp.h
-> @@ -79,18 +79,15 @@ struct acpiphp_bridge {
->        /* Ejectable PCI-to-PCI bridge (PCI bridge and PCI function) */
->        struct acpiphp_func *func;
->
-> -       int type;
->        int nr_slots;
->
->        u32 flags;
->
-> -       /* This bus (host bridge) or Secondary bus (PCI-to-PCI bridge) */
-> +       /* Secondary bus (PCI-to-PCI bridge) */
->        struct pci_bus *pci_bus;
->
->        /* PCI-to-PCI bridge device */
->        struct pci_dev *pci_dev;
-> -
-> -       spinlock_t res_lock;
->  };
->
->
-> @@ -148,10 +145,6 @@ struct acpiphp_attention_info
->  /* PCI bus bridge HID */
->  #define ACPI_PCI_HOST_HID              "PNP0A03"
->
-> -/* PCI BRIDGE type */
-> -#define BRIDGE_TYPE_HOST               0
-> -#define BRIDGE_TYPE_P2P                        1
-> -
->  /* ACPI _STA method value (ignore bit 4; battery present) */
->  #define ACPI_STA_PRESENT               (0x00000001)
->  #define ACPI_STA_ENABLED               (0x00000002)
-> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-> index 10b2122..1ca82ae 100644
-> --- a/drivers/pci/hotplug/acpiphp_glue.c
-> +++ b/drivers/pci/hotplug/acpiphp_glue.c
-> @@ -283,7 +283,7 @@ static int detect_ejectable_slots(acpi_handle handle)
->        return found;
->  }
->
-> -/* initialize miscellaneous stuff for both root and PCI-to-PCI bridge */
-> +/* initialize miscellaneous stuff for PCI-to-PCI bridge */
->  static void init_bridge_misc(struct acpiphp_bridge *bridge)
->  {
->        acpi_status status;
-> @@ -300,25 +300,21 @@ static void init_bridge_misc(struct acpiphp_bridge *bridge)
->        }
->
->        /* install notify handler */
-> -       if (bridge->type != BRIDGE_TYPE_HOST) {
-> -               if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
-> -                       status = acpi_remove_notify_handler(bridge->func->handle,
-> -                                               ACPI_SYSTEM_NOTIFY,
-> -                                               handle_hotplug_event_func);
-> -                       if (ACPI_FAILURE(status))
-> -                               err("failed to remove notify handler\n");
-> -               }
-> -               status = acpi_install_notify_handler(bridge->handle,
-> -                                            ACPI_SYSTEM_NOTIFY,
-> -                                            handle_hotplug_event_bridge,
-> -                                            bridge);
-> -
-> -               if (ACPI_FAILURE(status)) {
-> -                       err("failed to register interrupt notify handler\n");
-> -               }
-> +       if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
-> +               status = acpi_remove_notify_handler(bridge->func->handle,
-> +                                       ACPI_SYSTEM_NOTIFY,
-> +                                       handle_hotplug_event_func);
-> +               if (ACPI_FAILURE(status))
-> +                       err("failed to remove notify handler\n");
->        }
-> -}
-> +       status = acpi_install_notify_handler(bridge->handle,
-> +                                    ACPI_SYSTEM_NOTIFY,
-> +                                    handle_hotplug_event_bridge,
-> +                                    bridge);
->
-> +       if (ACPI_FAILURE(status))
-> +               err("failed to register interrupt notify handler\n");
+> diff --git a/drivers/clk/clk-test.c b/drivers/clk/clk-test.c
+> new file mode 100644
+> index 0000000..6f901fd
+> --- /dev/null
+> +++ b/drivers/clk/clk-test.c
+> @@ -0,0 +1,169 @@
+> +#include <linux/spinlock.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/clk.h>
+> +#include <linux/module.h>
+> +
+> +/*
+> + * We build a fixed rate source clock with two cascaded 2bit dividers:
+> + *
+> + * f1 -> div1 -> div2
+> + *
+> + * and try set the rate of div2 from 0Hz to f1 + 1 Hz.
+> + *
+> + * This makes the following resulting dividers possible:
+> + *
+> + * 1, 2, 4, 6, 8, 9, 12, 16
+> + *
+> + * Sometimes there are different results possible due to integer maths.
+> + * For example if we have an input frequency of 100Hz and request an
+> + * output of 16Hz the best divider values would be 2 and 4 resulting
+> + * in a real frequency of 12.5Hz. We also accept 2 and 3 as result
+> + * because 100 / (3 * 2) = 16.6667 which is too high, but multiplying
+> + * 16 * 3 * 2 results in 96Hz which is lower than 100Hz.
+> + *
+> + */
+> +
+> +static unsigned long div1_reg, div2_reg;
+> +
+> +static struct clk *f1, *div1, *div2;
+> +
+> +static DEFINE_SPINLOCK(imx_ccm_lock);
+> +
+> +//#define FIXED_RATE 144
+> +#define FIXED_RATE 100
+> +
+> +static inline struct clk *register_divider(const char *name, const char *parent,
+> +               void __iomem *reg, u8 shift, u8 width)
+> +{
+> +       return clk_register_divider(NULL, name, parent, CLK_SET_RATE_PARENT,
+> +                       reg, shift, width, 0, &imx_ccm_lock);
 > +}
->
->  /* find acpiphp_func from acpiphp_bridge */
->  static struct acpiphp_func *acpiphp_bridge_handle_to_function(acpi_handle handle)
-> @@ -375,28 +371,6 @@ static inline void config_p2p_bridge_flags(struct acpiphp_bridge *bridge)
->        }
->  }
->
-> -
-> -/* allocate and initialize host bridge data structure */
-> -static void add_host_bridge(acpi_handle *handle)
-> -{
-> -       struct acpiphp_bridge *bridge;
-> -       struct acpi_pci_root *root = acpi_pci_find_root(handle);
-> -
-> -       bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
-> -       if (bridge == NULL)
-> -               return;
-> -
-> -       bridge->type = BRIDGE_TYPE_HOST;
-> -       bridge->handle = handle;
-> -
-> -       bridge->pci_bus = root->bus;
-> -
-> -       spin_lock_init(&bridge->res_lock);
-> -
-> -       init_bridge_misc(bridge);
-> -}
-> -
-> -
->  /* allocate and initialize PCI-to-PCI bridge data structure */
->  static void add_p2p_bridge(acpi_handle *handle)
->  {
-> @@ -408,7 +382,6 @@ static void add_p2p_bridge(acpi_handle *handle)
->                return;
->        }
->
-> -       bridge->type = BRIDGE_TYPE_P2P;
->        bridge->handle = handle;
->        config_p2p_bridge_flags(bridge);
->
-> @@ -425,7 +398,6 @@ static void add_p2p_bridge(acpi_handle *handle)
->         * (which we access during module unload).
->         */
->        get_device(&bridge->pci_bus->dev);
-> -       spin_lock_init(&bridge->res_lock);
->
->        init_bridge_misc(bridge);
->        return;
-> @@ -485,12 +457,6 @@ static int add_bridge(acpi_handle handle)
->                        return 0;
->        }
->
-> -       /* check if this bridge has ejectable slots */
-> -       if (detect_ejectable_slots(handle) > 0) {
-> -               dbg("found PCI host-bus bridge with hot-pluggable slots\n");
-> -               add_host_bridge(handle);
-> -       }
-> -
->        /* search P2P bridges under this host bridge */
->        status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
->                                     find_p2p_bridge, NULL, NULL, NULL);
-> @@ -524,8 +490,7 @@ static void cleanup_bridge(struct acpiphp_bridge *bridge)
->        if (ACPI_FAILURE(status))
->                err("failed to remove notify handler\n");
->
-> -       if ((bridge->type != BRIDGE_TYPE_HOST) &&
-> -           ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func)) {
-> +       if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
->                status = acpi_install_notify_handler(bridge->func->handle,
->                                                ACPI_SYSTEM_NOTIFY,
->                                                handle_hotplug_event_func,
-> @@ -1078,15 +1043,10 @@ static void acpiphp_sanitize_bus(struct pci_bus *bus)
->  static int acpiphp_configure_bridge (acpi_handle handle)
->  {
->        struct pci_bus *bus;
-> +       struct pci_dev *pdev = acpi_get_pci_dev(handle);
->
-> -       if (acpi_is_root_bridge(handle)) {
-> -               struct acpi_pci_root *root = acpi_pci_find_root(handle);
-> -               bus = root->bus;
-> -       } else {
-> -               struct pci_dev *pdev = acpi_get_pci_dev(handle);
-> -               bus = pdev->subordinate;
-> -               pci_dev_put(pdev);
-> -       }
-> +       bus = pdev->subordinate;
-> +       pci_dev_put(pdev);
->
->        pci_bus_size_bridges(bus);
->        pci_bus_assign_resources(bus);
-> @@ -1249,8 +1209,7 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
->        case ACPI_NOTIFY_EJECT_REQUEST:
->                /* request device eject */
->                dbg("%s: Device eject notify on %s\n", __func__, objname);
-> -               if ((bridge->type != BRIDGE_TYPE_HOST) &&
-> -                   (bridge->flags & BRIDGE_HAS_EJ0)) {
-> +               if (bridge->flags & BRIDGE_HAS_EJ0) {
->                        struct acpiphp_slot *slot;
->                        slot = bridge->func->slot;
->                        if (!acpiphp_disable_slot(slot))
-> @@ -1381,21 +1340,6 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
->                              _handle_hotplug_event_func);
->  }
->
-> -static acpi_status
-> -find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
-> -{
-> -       int *count = (int *)context;
-> -
-> -       if (!acpi_is_root_bridge(handle))
-> -               return AE_OK;
-> -
-> -       (*count)++;
-> -       acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
-> -                                   handle_hotplug_event_bridge, NULL);
-> -
-> -       return AE_OK ;
-> -}
-> -
->  static struct acpi_pci_driver acpi_pci_hp_driver = {
->        .add =          add_bridge,
->        .remove =       remove_bridge,
-> @@ -1406,15 +1350,7 @@ static struct acpi_pci_driver acpi_pci_hp_driver = {
->  */
->  int __init acpiphp_glue_init(void)
->  {
-> -       int num = 0;
-> -
-> -       acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> -                       ACPI_UINT32_MAX, find_root_bridges, NULL, &num, NULL);
-> -
-> -       if (num <= 0)
-> -               return -1;
-> -       else
-> -               acpi_pci_register_driver(&acpi_pci_hp_driver);
-> +       acpi_pci_register_driver(&acpi_pci_hp_driver);
->
->        return 0;
->  }
+> +
+> +static unsigned long divs[] = {
+> +       1, 2, 3, 4, 6, 8, 9, 12, 16,
+> +};
+> +
+> +static int check_rounded_rate(unsigned long want, unsigned long rounded)
+> +{
+> +       int i, j;
+> +       unsigned long best1 = 0, best2 = 0, now;
+> +
+> +       if (want > FIXED_RATE) {
+> +               best1 = best2 = FIXED_RATE;
+> +               goto found2;
+> +       }
+> +
+> +       for (i = 1; i <= 4; i++) {
+> +               for (j = 1; j <= 4; j++) {
+> +                       now = FIXED_RATE / i / j;
+> +                       if (now <= want && now > best1)
+> +                               best1 = now;
+> +               }
+> +       }
+> +
+> +       if (!best1)
+> +               best1 = (FIXED_RATE / 4) / 4;
+> +
+> +       for (i = 0; i < ARRAY_SIZE(divs); i++) {
+> +               if (FIXED_RATE <= want * divs[i]) {
+> +                       best2 = FIXED_RATE / divs[i];
+> +                       goto found2;
+> +               }
+> +       }
+> +
+> +       if (!best2)
+> +               best2 = FIXED_RATE / 16;
+> +found2:
+> +       if (rounded != best1 && rounded != best2) {
+> +               if (best1 == best2)
+> +                       printk("clk-test: wanted rate %ld, best result would be %ld,"
+> +                                       " but we have %ld\n",
+> +                                       want, best1, rounded);
+> +               else
+> +                       printk("clk-test: wanted rate %ld, best result would be %ld or %ld,"
+> +                                       " but we have %ld\n",
+> +                                       want, best1, best2, rounded);
+> +               return -EINVAL;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static int check_real_rate(unsigned long rate)
+> +{
+> +       unsigned long realrate1, realrate2;
+> +
+> +       realrate1 = FIXED_RATE / (div1_reg + 1) / (div2_reg + 1);
+> +       realrate2 = FIXED_RATE / ((div1_reg + 1) * (div2_reg + 1));
+> +
+> +       if (rate != realrate1 && rate != realrate2) {
+> +               if (realrate1 == realrate2)
+> +                       printk("clk-test: divider returns rate %ld, but instead has %ld\n",
+> +                                       rate, realrate1);
+> +               else
+> +                       printk("clk-test: divider returns rate %ld, but instead has %ld or %ld\n",
+> +                                       rate, realrate1, realrate2);
+> +               return -EINVAL;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static int set_rate_test(void)
+> +{
+> +       unsigned long i, rate, rounded;
+> +       int ret, errors = 0;
+> +
+> +       for (i = 0; i < FIXED_RATE + 1; i++) {
+> +               rounded = clk_round_rate(div2, i);
+> +               ret = check_rounded_rate(i, rounded);
+> +               if (ret)
+> +                       errors++;
+> +               ret = clk_set_rate(div2, i);
+> +               if (ret) {
+> +                       printk("%s: setting rate of div2 to %ld failed with %d\n",
+> +                                       __func__, i, ret);
+> +                       errors++;
+> +               }
+> +
+> +               rate = clk_get_rate(div2);
+> +
+> +               if (rounded != rate) {
+> +                       printk("clk_test: wanted %ld, core rounded to %ld, have now: %ld\n",
+> +                                       i, rounded, rate);
+> +                       errors++;
+> +               }
+> +
+> +               ret = check_real_rate(rate);
+> +               if (ret)
+> +                       errors++;
+> +       }
+> +
+> +       return errors;
+> +}
+> +
+> +static int clk_test_init(void)
+> +{
+> +       int errors;
+> +
+> +       f1 = clk_register_fixed_rate(NULL, "f1", NULL, CLK_IS_ROOT, FIXED_RATE);
+> +       div1 = register_divider("div1", "f1", &div1_reg, 0, 2);
+> +       div2 = register_divider("div2", "div1", &div2_reg, 0, 2);
+> +
+> +       if (!f1 || !div1 || !div2) {
+> +               printk("clk-test: failed to register clocks\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       errors = set_rate_test();
+> +
+> +       printk("clk-test: finished with %d errors\n", errors);
+> +#if 0
+> +       /* Oh, oh */
+> +       clk_unregister(f1);
+> +       clk_unregister(div1);
+> +       clk_unregister(div2);
+> +#endif
+> +       return -EINVAL;
+> +}
+> +subsys_initcall(clk_test_init);
 > --
-> 1.7.7
+> 1.7.9.1
 >
+>
+>
+> --
+> Pengutronix e.K.                           |                             |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
