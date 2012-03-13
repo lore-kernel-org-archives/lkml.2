@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759216Ab2CMAry (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:47:54 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48246 "EHLO
+	id S1759200Ab2CMAsi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:48:38 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48240 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758948Ab2CMAXe (ORCPT
+	with ESMTP id S1758943Ab2CMAXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Mar 2012 20:23:34 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Abhijith Das <adas@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>,
+Cc: stable-review@kernel.org,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 123/196] GFS2: Fix writing to non-page aligned gfs2_quota structures
-Date: Mon, 12 Mar 2012 20:20:36 -0400
-Message-Id: <1331598109-31424-78-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 121/196] Staging: rtl8192su: add device ids
+Date: Mon, 12 Mar 2012 20:20:34 -0400
+Message-Id: <1331598109-31424-76-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,174 +24,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Abhijith Das <adas@redhat.com>
+From: Florian Schilhabel <florian.c.schilhabel@googlemail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 7e619bc3e6252dc746f64ac3b486e784822e9533 upstream.
+commit 15d93ed070125d51693f102a0f94045dcaf30d9b upstream.
 
-This is the upstream fix for this bug. This patch differs
-from the RHEL5 fix (Red Hat bz #555754) which simply writes to the 8-byte
-value field of the quota. In upstream quota code, we're
-required to write the entire quota (88 bytes) which can be split
-across a page boundary. We check for such quotas, and read/write
-the two parts from/to the corresponding pages holding these parts.
+This patch adds some device ids.
+The list of supported devices was extracted from realteks driver package.
+(0x050d, 0x815F) and (0x0df6, 0x004b) are not in the official list of
+supported devices  and may not work correctly.
+In case of problems with these, they should probably be removed from the list.
 
-With this patch, I don't see the bug anymore using the reproducer
-in Red Hat bz 555754. I successfully ran a couple of simple tests/mounts/
-umounts and it doesn't seem like this patch breaks anything else.
-
-[PG: fix cosmetic whitespace warning coming from git am]
-
-Signed-off-by: Abhi Das <adas@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Signed-off-by: Florian Schilhabel <florian.c.schilhabel@googlemail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/gfs2/quota.c |   86 +++++++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 61 insertions(+), 25 deletions(-)
+ drivers/staging/rtl8192su/r8192U_core.c |   30 +++++++++++++++++++++++-------
+ 1 file changed, 23 insertions(+), 7 deletions(-)
 
-diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index 6dbcbad..f1c8d79 100644
---- a/fs/gfs2/quota.c
-+++ b/fs/gfs2/quota.c
-@@ -637,15 +637,40 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
- 	unsigned blocksize, iblock, pos;
- 	struct buffer_head *bh, *dibh;
- 	struct page *page;
--	void *kaddr;
--	struct gfs2_quota *qp;
--	s64 value;
--	int err = -EIO;
-+	void *kaddr, *ptr;
-+	struct gfs2_quota q, *qp;
-+	int err, nbytes;
- 	u64 size;
+diff --git a/drivers/staging/rtl8192su/r8192U_core.c b/drivers/staging/rtl8192su/r8192U_core.c
+index f4cc5f0..a813a7b 100644
+--- a/drivers/staging/rtl8192su/r8192U_core.c
++++ b/drivers/staging/rtl8192su/r8192U_core.c
+@@ -113,14 +113,30 @@ u32 rt_global_debug_component = \
+ #define CAM_CONTENT_COUNT 8
  
- 	if (gfs2_is_stuffed(ip))
- 		gfs2_unstuff_dinode(ip, NULL);
--	
-+
-+	memset(&q, 0, sizeof(struct gfs2_quota));
-+	err = gfs2_internal_read(ip, NULL, (char *)&q, &loc, sizeof(q));
-+	if (err < 0)
-+		return err;
-+
-+	err = -EIO;
-+	qp = &q;
-+	qp->qu_value = be64_to_cpu(qp->qu_value);
-+	qp->qu_value += change;
-+	qp->qu_value = cpu_to_be64(qp->qu_value);
-+	qd->qd_qb.qb_value = qp->qu_value;
-+	if (fdq) {
-+		if (fdq->d_fieldmask & FS_DQ_BSOFT) {
-+			qp->qu_warn = cpu_to_be64(fdq->d_blk_softlimit);
-+			qd->qd_qb.qb_warn = qp->qu_warn;
-+		}
-+		if (fdq->d_fieldmask & FS_DQ_BHARD) {
-+			qp->qu_limit = cpu_to_be64(fdq->d_blk_hardlimit);
-+			qd->qd_qb.qb_limit = qp->qu_limit;
-+		}
-+	}
-+
-+	/* Write the quota into the quota file on disk */
-+	ptr = qp;
-+	nbytes = sizeof(struct gfs2_quota);
-+get_a_page:
- 	page = grab_cache_page(mapping, index);
- 	if (!page)
- 		return -ENOMEM;
-@@ -667,7 +692,12 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
- 	if (!buffer_mapped(bh)) {
- 		gfs2_block_map(inode, iblock, bh, 1);
- 		if (!buffer_mapped(bh))
--			goto unlock;
-+			goto unlock_out;
-+		/* If it's a newly allocated disk block for quota, zero it */
-+		if (buffer_new(bh)) {
-+			memset(bh->b_data, 0, bh->b_size);
-+			set_buffer_uptodate(bh);
-+		}
- 	}
+ static const struct usb_device_id rtl8192_usb_id_tbl[] = {
+-	/* Realtek */
+-	{USB_DEVICE(0x0bda, 0x8171)},
+-	{USB_DEVICE(0x050d, 0x815F)}, /* Belkin F5D8053 v6 */
+-	{USB_DEVICE(0x0df6, 0x004b)},	/* WL-349 */
+-	/* Guillemot */
+-	{USB_DEVICE(0x06f8, 0xe031)},
+-	//92SU
++	{USB_DEVICE(0x0bda, 0x8171)}, /* Realtek */
+ 	{USB_DEVICE(0x0bda, 0x8172)},
++	{USB_DEVICE(0x0bda, 0x8173)},
++	{USB_DEVICE(0x0bda, 0x8174)},
++	{USB_DEVICE(0x0bda, 0x8712)},
++	{USB_DEVICE(0x0bda, 0x8713)},
++	{USB_DEVICE(0x07aa, 0x0047)},
++	{USB_DEVICE(0x07d1, 0x3303)},
++	{USB_DEVICE(0x07d1, 0x3302)},
++	{USB_DEVICE(0x07d1, 0x3300)},
++	{USB_DEVICE(0x1740, 0x9603)},
++	{USB_DEVICE(0x1740, 0x9605)},
++	{USB_DEVICE(0x050d, 0x815F)},
++	{USB_DEVICE(0x06f8, 0xe031)},
++	{USB_DEVICE(0x7392, 0x7611)},
++	{USB_DEVICE(0x7392, 0x7612)},
++	{USB_DEVICE(0x7392, 0x7622)},
++	{USB_DEVICE(0x0DF6, 0x0045)},
++	{USB_DEVICE(0x0E66, 0x0015)},
++	{USB_DEVICE(0x0E66, 0x0016)},
++	{USB_DEVICE(0x0b05, 0x1786)},
++	/* these are not in the official list */
++	{USB_DEVICE(0x050d, 0x815F)}, /* Belkin F5D8053 v6 */
++	{USB_DEVICE(0x0df6, 0x004b)}, /* WL-349 */
+ 	{}
+ };
  
- 	if (PageUptodate(page))
-@@ -677,32 +707,34 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
- 		ll_rw_block(READ_META, 1, &bh);
- 		wait_on_buffer(bh);
- 		if (!buffer_uptodate(bh))
--			goto unlock;
-+			goto unlock_out;
- 	}
- 
- 	gfs2_trans_add_bh(ip->i_gl, bh, 0);
- 
- 	kaddr = kmap_atomic(page, KM_USER0);
--	qp = kaddr + offset;
--	value = (s64)be64_to_cpu(qp->qu_value) + change;
--	qp->qu_value = cpu_to_be64(value);
--	qd->qd_qb.qb_value = qp->qu_value;
--	if (fdq) {
--		if (fdq->d_fieldmask & FS_DQ_BSOFT) {
--			qp->qu_warn = cpu_to_be64(fdq->d_blk_softlimit);
--			qd->qd_qb.qb_warn = qp->qu_warn;
--		}
--		if (fdq->d_fieldmask & FS_DQ_BHARD) {
--			qp->qu_limit = cpu_to_be64(fdq->d_blk_hardlimit);
--			qd->qd_qb.qb_limit = qp->qu_limit;
--		}
--	}
-+	if (offset + sizeof(struct gfs2_quota) > PAGE_CACHE_SIZE)
-+		nbytes = PAGE_CACHE_SIZE - offset;
-+	memcpy(kaddr + offset, ptr, nbytes);
- 	flush_dcache_page(page);
- 	kunmap_atomic(kaddr, KM_USER0);
-+	unlock_page(page);
-+	page_cache_release(page);
-+
-+	/* If quota straddles page boundary, we need to update the rest of the
-+	 * quota at the beginning of the next page */
-+	if (offset != 0) { /* first page, offset is closer to PAGE_CACHE_SIZE */
-+		ptr = ptr + nbytes;
-+		nbytes = sizeof(struct gfs2_quota) - nbytes;
-+		offset = 0;
-+		index++;
-+		goto get_a_page;
-+	}
- 
-+	/* Update the disk inode timestamp and size (if extended) */
- 	err = gfs2_meta_inode_buffer(ip, &dibh);
- 	if (err)
--		goto unlock;
-+		goto out;
- 
- 	size = loc + sizeof(struct gfs2_quota);
- 	if (size > inode->i_size) {
-@@ -715,7 +747,9 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
- 	brelse(dibh);
- 	mark_inode_dirty(inode);
- 
--unlock:
-+out:
-+	return err;
-+unlock_out:
- 	unlock_page(page);
- 	page_cache_release(page);
- 	return err;
-@@ -779,8 +813,10 @@ static int do_sync(unsigned int num_qd, struct gfs2_quota_data **qda)
- 	 * rgrp since it won't be allocated during the transaction
- 	 */
- 	al->al_requested = 1;
--	/* +1 in the end for block requested above for unstuffing */
--	blocks = num_qd * data_blocks + RES_DINODE + num_qd + 1;
-+	/* +3 in the end for unstuffing block, inode size update block
-+	 * and another block in case quota straddles page boundary and
-+	 * two blocks need to be updated instead of 1 */
-+	blocks = num_qd * data_blocks + RES_DINODE + num_qd + 3;
- 
- 	if (nalloc)
- 		al->al_requested += nalloc * (data_blocks + ind_blocks);		
 -- 
 1.7.9.3
 
