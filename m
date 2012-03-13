@@ -1,36 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759755Ab2CMF4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:56:39 -0400
-Received: from nm18-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.214]:33753 "HELO
-	nm18-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759741Ab2CMF4i convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:56:38 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 291825.10691.bm@omp1029.access.mail.sp2.yahoo.com
-X-YMail-OSG: plkwYngVM1khwApVcREZ__TGEsecBtqMTVCONdFaSGd2a.v
- Zsan0Sc371M86EiS8EbMY9rFwjoofHIBtI5HewP95rVLXD8EbcWPsqmSWd8q
- NpdtUvetRFC14W0E0ORIFuGw9F9zuAHBmN4mdn.iwgkGa6wpfr0qzblG4a9W
- 5SwcEY.uW8e3pO79q2hbbrbTgd_trXuhdjBU07Tg8f0tT55r6AGb8UfpFkHn
- BbrzgoVxDQ9uoYIVJxZsLqrSlULrSY2pFPD4PVnTL4HSm4orvc7DCmt0YbzR
- 5bxBcxdtQ.c1WypY30Chr3cORDUgfmC46qoYp4Q4aqrO3Y.guGQgo3iNP_NQ
- qTDsf6c7oRi0Ds8hv6tALcFP0OadYozovuVBkuDzL856zJGf0mflQ1EqWrbE
- FvLGXmKYyNhYnCQEPMEODmI751DCZ9D0NBFUfuduPtslnRRihr7KLE9Ub_jc
- NT9I-
-X-RocketYMMF: webfacebook41
-X-Mailer: YahooMailClassic/15.0.5 YahooMailWebService/0.8.116.338427
-Message-ID: <1331618197.30311.YahooMailClassic@web1101.biz.mail.sk1.yahoo.com>
-Date: Mon, 12 Mar 2012 22:56:37 -0700 (PDT)
-From: Armstrong Financial Service <infofinanceoffer2009@gmail.com>
-Reply-To: armstrongalecfirm@yahoo.com.ph
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1759778Ab2CMF5g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:57:36 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:55950 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759751Ab2CMF5e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 01:57:34 -0400
+Date: Mon, 12 Mar 2012 22:53:02 -0700 (PDT)
+Message-Id: <20120312.225302.488696931454771146.davem@davemloft.net>
+To: apenwarr@gmail.com
+Cc: akpm@linux-foundation.org, josh@joshtriplett.org,
+        paulmck@linux.vnet.ibm.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        fdinitto@redhat.com, hannes@cmpxchg.org, olaf@aepfle.de,
+        paul.gortmaker@windriver.com, tj@kernel.org, hpa@linux.intel.com,
+        yinghai@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 0/5] Persist printk buffer across reboots.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
+References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 12 Mar 2012 22:53:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Avery Pennarun <apenwarr@gmail.com>
+Date: Tue, 13 Mar 2012 01:36:36 -0400
 
-Do you need any financial help at 3.5% rate? email us now
+> The last patch in this series implements a new CONFIG_PRINTK_PERSIST option
+> that, when enabled, puts the printk buffer in a well-defined memory location
+> so that we can keep appending to it after a reboot.  The upshot is that,
+> even after a kernel panic or non-panic hard lockup, on the next boot
+> userspace will be able to grab the kernel messages leading up to it.  It
+> could then upload the messages to a server (for example) to keep crash
+> statistics.
+
+On some platforms there are formal ways to reserve areas of memory
+such that the bootup firmware will know to not touch it on soft resets
+no matter what.  For example, on Sparc there are OpenFirmware calls to
+set aside such an area of soft-reset preserved memory.
+
+I think some formal agreement with the system firmware is a lot better
+when available, and should be explicitly accomodated in these changes
+so that those of us with such facilities can very easily hook it up.
