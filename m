@@ -1,46 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760003Ab2CMIEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:04:45 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45815 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab2CMIEk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:04:40 -0400
+	id S1759989Ab2CMIHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:07:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39581 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756496Ab2CMIHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 04:07:50 -0400
+Date: Tue, 13 Mar 2012 09:07:48 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] fix idle ticks in cpu summary line of /proc/stat
+Message-ID: <20120313080748.GA7754@tiehlicka.suse.cz>
+References: <20120311182621.41674b39@de.ibm.com>
+ <20120312121726.GA23608@tiehlicka.suse.cz>
+ <20120312101739.26eb373e@de.ibm.com>
+ <4F5E0CC1.6010102@linux.vnet.ibm.com>
+ <20120312153906.GE3994@tiehlicka.suse.cz>
+ <20120312164145.5110ed5c@de.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20120313080535.GA5243@gmail.com>
-References: <20120313024818.GA7125@barrios>
-	<1331620214-4893-1-git-send-email-wenqing.lz@taobao.com>
-	<20120313064832.GA4968@gmail.com>
-	<4F5EF563.5000700@openvz.org>
-	<CAFPAmTTPxGzrZrW+FR4B_MYDB372HyzdnioO0=CRwx0zQueRSQ@mail.gmail.com>
-	<CAFPAmTS-ExDtS7rpJoygc6MCwC10spapyThq7=5cCCGFbjZtqA@mail.gmail.com>
-	<20120313080535.GA5243@gmail.com>
-Date: Tue, 13 Mar 2012 13:34:39 +0530
-Message-ID: <CAFPAmTSR_Lvsi2+Uid3a9RQK5bBnN3vD_cje6o02f-gBusCJHQ@mail.gmail.com>
-Subject: Re: Fwd: Control page reclaim granularity
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Kautuk Consul <consul.kautuk@gmail.com>, minchan@kernel.org,
-        riel@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        Zheng Liu <wenqing.lz@taobao.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120312164145.5110ed5c@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> Hi Kautuk,
->
-> IMHO, running application with root privilege is too dangerous.  We
-> should avoid it.
->
+OK, so the updated version of the patch looks like this. I am sorry but
+I had time to only compile test this...
+---
+>From d12247f14c5f8b00ae97a87442f62e49227a759b Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Mon, 12 Mar 2012 13:11:38 +0100
+Subject: [PATCH] nohz: fix idle ticks in cpu summary line of /proc/stat
 
-I agree, but that's not my point.
+Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
+conditional" introduced a bug in regard to cpu hotplug. The effect is
+that the number of idle ticks in the cpu summary line in /proc/stat is
+still counting ticks for offline cpus.
 
-All I'm saying is that we probably don't want to give normal
-unprivileged usermode apps
-the capability to set the mapping to AS_UNEVICTABLE as anyone can then
-write an application
-that hogs memory without allowing the kernel to free it through memory reclaim.
+Reproduction is easy, just start a workload that keeps all cpus busy,
+switch off one or more cpus and then watch the idle field in top.
+On a dual-core with one cpu 100% busy and one offline cpu you will get
+something like this:
+
+%Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+
+The problem is that an offline cpu still has ts->idle_active == 1.
+To fix this we should make sure that the cpu is online when calling
+get_cpu_idle_time_us and get_cpu_iowait_time_us.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ fs/proc/stat.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+index 121f77c..62bda24 100644
+--- a/fs/proc/stat.c
++++ b/fs/proc/stat.c
+@@ -24,10 +24,13 @@
+ 
+ static u64 get_idle_time(int cpu)
+ {
+-	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
++	u64 idle, idle_time = -1ULL;
++
++	if (cpu_online(cpu))
++		idle_time = get_cpu_idle_time_us(cpu, NULL);
+ 
+ 	if (idle_time == -1ULL) {
+-		/* !NO_HZ so we can rely on cpustat.idle */
++		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+ 		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+ 		idle += arch_idle_time(cpu);
+ 	} else
+@@ -38,10 +41,13 @@ static u64 get_idle_time(int cpu)
+ 
+ static u64 get_iowait_time(int cpu)
+ {
+-	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
++	u64 iowait, iowait_time = -1ULL;
++
++	if (cpu_online(cpu))
++		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+ 
+ 	if (iowait_time == -1ULL)
+-		/* !NO_HZ so we can rely on cpustat.iowait */
++		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+ 		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+ 	else
+ 		iowait = usecs_to_cputime64(iowait_time);
+-- 
+1.7.9.1
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
