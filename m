@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030329Ab2CMKRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 06:17:21 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:59351 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965046Ab2CMKRT (ORCPT
+	id S1030341Ab2CMKSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:18:18 -0400
+Received: from 88-230.252-81.static-ip.oleane.fr ([81.252.230.88]:47498 "EHLO
+	smtp.lii-enac.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965115Ab2CMKSP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 06:17:19 -0400
-Message-ID: <4F5F1E86.8060707@gmail.com>
-Date: Tue, 13 Mar 2012 18:16:38 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [V2 PATCH 1/3] module: use rcu to protect module list read
-References: <1331463255-31019-1-git-send-email-xiyou.wangcong@gmail.com> <1331487502.2449.20.camel@edumazet-laptop>
-In-Reply-To: <1331487502.2449.20.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 13 Mar 2012 06:18:15 -0400
+Subject: Re: [PATCH 4/5] HID: autoload hid-multitouch as needed
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=iso-8859-1
+From: =?iso-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+In-Reply-To: <alpine.LNX.2.00.1203122316420.18356@pobox.suse.cz>
+Date: Tue, 13 Mar 2012 11:17:38 +0100
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "benjamin.tissoires" <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        linux-bluetooth@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0EB7B0B6-EE4F-4E42-A1E6-0414D39AEAE6@enac.fr>
+References: <1331053026-21272-1-git-send-email-benjamin.tissoires@gmail.com> <1331053026-21272-5-git-send-email-benjamin.tissoires@gmail.com>    <alpine.LNX.2.00.1203072234550.29034@pobox.suse.cz>   <20120308105737.GA11201@polaris.bitmath.org>   <6E17845C-6F9F-4CB6-AA5D-DEEDCD2089E8@enac.fr>   <alpine.LNX.2.00.1203121650500.18356@pobox.suse.cz>  <1331574151.14217.86.camel@aeonflux>  <4B25AD62-B1C9-4C57-AE64-34EB7F47DC9B@enac.fr> <alpine.LNX.2.00.1203122316420.18356@pobox.suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 01:38 AM, Eric Dumazet wrote:
-> Le dimanche 11 mars 2012 Ã  18:54 +0800, Cong Wang a Ã©crit :
->> V2:
-> ...
->>
->> @@ -1639,7 +1639,7 @@ static void mod_sysfs_teardown(struct module *mod)
->>   static int __unlink_module(void *_mod)
->>   {
->>   	struct module *mod = _mod;
->> -	list_del(&mod->list);
->> +	list_del_rcu(&mod->list);
->>   	module_bug_cleanup(mod);
->>   	return 0;
->>   }
->> @@
->
-> You mix too many different things in a single patch.
->
-> For example, lets review this __unlink_module() change...
 
-Oops, sorry I missed this part...
+Le 12 mars 2012 à 23:21, Jiri Kosina a écrit :
 
->
-> If this was really needed, it should be a single patch so that it can be
-> a stable submission.
->
-> As it is not needed (since its called from stop_machine()), this makes
-> your whole patch looking suspicious.
->
-> I suggest you make a 100% cleanup patch, changing the title as well,
-> because module code _already_ uses RCU.
->
-> "module: use rcu to protect module list read" makes no sense at all.
->
-> To meet current RCU API best pratices, you change preempt_enable() by
-> rcu_read_unlock_sched() and preempt_disable() by rcu_read_lock_sched()
->
-> Then, if you believe other changes are needed, submit them with an
-> explicit changelog explaining the change, not hiding them in a big
-> cleanup patch.
->
->
+> On Mon, 12 Mar 2012, Stéphane Chatty wrote:
+> 
+>> Just in case it makes a difference, I knew nothing about HIDP when I 
+>> wrote the message above. My point was rather that hid looks like a bus 
+>> to which several transport layers can connect (USB, Bluetooth, ZigBee, 
+>> etc), and that having USB-specific code in hid/ (as opposed to having it 
+>> in usb/) seems biased towards USB. I was (and am still) wondering how 
+>> much it limits future uses of the hid core by making it USB-dependent.
+>> 
+>> In other words: is the hid core generic enough or are there steps to 
+>> take to make it more generic wrt transport layers? If we are talking 
+>> about restructuring parts of it, this seems like the right time to ask 
+>> :-)
+> 
+> Let me answer by a bit of history here. Originally, there have been two 
+> copies of HID code in the kernel -- one for USB HID devices, one for 
+> Bluetooth HID devices.
+> The parsers were not kept in sync, and there was a lot of code 
+> duplication, creating quite some mess.
+> 
+> What I did back then in 2006 was that I have extracted the abstract HID 
+> parts into HID core, and made it transport-independent in principle, so 
+> that both USB HID and Bluetooth HID shared the common infrastructure, 
+> while implementing different transport protocols.
+> 
+> Then we extended it a little bit further, making HID core a proper bus, to 
+> which individual drivers (independently on underlying transport protocol 
+> used) can register.
+> 
+> Currently there are just Bluetooth (hidp) and USB (usbhid) transport 
+> implementations, with HID core being transport independent.
+> 
+> Hope this helps,
 
-Fair enough, Rusty gave me the same suggestion, I will split this patch.
+Very useful clarification, thanks. Now, I guess I understand why Marcel wants to keep hidp in bluetooth/. And, to be honest, things would have been clearer to me when I explored the handling of the USB/HID class if I had found a hid (or usbhid) directory in usb/ rather than a usbhid subdirectory in hid/: it did not make the above situation very obvious to me. Don't you think we could go along with Marcel and move usbhid to usb/?
 
-Thanks!
+St.
+
+
+
+
