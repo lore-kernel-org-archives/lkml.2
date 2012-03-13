@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758186Ab2CMARy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:17:54 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46694 "EHLO
+	id S1758144Ab2CMARw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:17:52 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46695 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab2CMARr (ORCPT
+	with ESMTP id S1758025Ab2CMARr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Mar 2012 20:17:47 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
@@ -12,9 +12,9 @@ To: stable@kernel.org, linux-kernel@vger.kernel.org
 Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 022/196] irda: prevent heap corruption on invalid nickname
-Date: Mon, 12 Mar 2012 20:12:30 -0400
-Message-Id: <1331597724-31358-23-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 021/196] irda: validate peer name and attribute lengths
+Date: Mon, 12 Mar 2012 20:12:29 -0400
+Message-Id: <1331597724-31358-22-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -29,36 +29,40 @@ From: Dan Rosenberg <drosenberg@vsecurity.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d50e7e3604778bfc2dc40f440e0742dbae399d54 upstream.
+commit d370af0ef7951188daeb15bae75db7ba57c67846 upstream.
 
-Invalid nicknames containing only spaces will result in an underflow in
-a memcpy size calculation, subsequently destroying the heap and
-panicking.
-
-v2 also catches the case where the provided nickname is longer than the
-buffer size, which can result in controllable heap corruption.
+Length fields provided by a peer for names and attributes may be longer
+than the destination array sizes.  Validate lengths to prevent stack
+buffer overflows.
 
 Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/irda/irnet/irnet_ppp.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/irda/iriap.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/net/irda/irnet/irnet_ppp.c b/net/irda/irnet/irnet_ppp.c
-index 6a1a202..ab5bee2 100644
---- a/net/irda/irnet/irnet_ppp.c
-+++ b/net/irda/irnet/irnet_ppp.c
-@@ -106,6 +106,9 @@ irnet_ctrl_write(irnet_socket *	ap,
- 	      while(isspace(start[length - 1]))
- 		length--;
+diff --git a/net/irda/iriap.c b/net/irda/iriap.c
+index b6fd6d1..26272fe 100644
+--- a/net/irda/iriap.c
++++ b/net/irda/iriap.c
+@@ -656,10 +656,16 @@ static void iriap_getvaluebyclass_indication(struct iriap_cb *self,
+ 	n = 1;
  
-+	      DABORT(length < 5 || length > NICKNAME_MAX_LEN + 5,
-+		     -EINVAL, CTRL_ERROR, "Invalid nickname.\n");
+ 	name_len = fp[n++];
 +
- 	      /* Copy the name for later reuse */
- 	      memcpy(ap->rname, start + 5, length - 5);
- 	      ap->rname[length - 5] = '\0';
++	IRDA_ASSERT(name_len < IAS_MAX_CLASSNAME + 1, return;);
++
+ 	memcpy(name, fp+n, name_len); n+=name_len;
+ 	name[name_len] = '\0';
+ 
+ 	attr_len = fp[n++];
++
++	IRDA_ASSERT(attr_len < IAS_MAX_ATTRIBNAME + 1, return;);
++
+ 	memcpy(attr, fp+n, attr_len); n+=attr_len;
+ 	attr[attr_len] = '\0';
+ 
 -- 
 1.7.9.3
 
