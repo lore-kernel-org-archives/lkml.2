@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755785Ab2CMMMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:12:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751491Ab2CMMMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 08:12:46 -0400
-Message-ID: <4F5F39B9.1090109@redhat.com>
-Date: Tue, 13 Mar 2012 13:12:41 +0100
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1752267Ab2CMMRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:17:33 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58767 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab2CMMRc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 08:17:32 -0400
+Date: Tue, 13 Mar 2012 12:17:07 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL/NEXT] sched/arch: Introduce the
+	finish_arch_post_lock_switch() scheduler callback
+Message-ID: <20120313121707.GA2174@flint.arm.linux.org.uk>
+References: <20120313083310.GA27560@flint.arm.linux.org.uk> <20120313083630.GA10131@elte.hu> <20120313084713.GB27560@flint.arm.linux.org.uk> <20120313085628.GB6991@elte.hu> <20120313090040.GE27560@flint.arm.linux.org.uk> <20120313092649.GA15406@elte.hu> <20120313095020.GA13220@flint.arm.linux.org.uk> <20120313101859.GA2626@elte.hu> <20120313112729.GA25835@flint.arm.linux.org.uk> <20120313115640.GA27378@elte.hu>
 MIME-Version: 1.0
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-CC: Roland McGrath <roland@hack.frob.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Kushal Das <kdas@redhat.com>
-Subject: Re: Extending coredump note section to contain filenames
-References: <4F5A3A4D.1020008@redhat.com> <20120309172934.GA18173@host2.jankratochvil.net> <4F5DE6A4.2030303@redhat.com> <20120312165359.GA32400@host2.jankratochvil.net> <4F5E4757.705@redhat.com>
-In-Reply-To: <4F5E4757.705@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120313115640.GA27378@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 07:58 PM, Denys Vlasenko wrote:
-> On 03/12/2012 05:53 PM, Jan Kratochvil wrote:
->> On Mon, 12 Mar 2012 13:05:56 +0100, Denys Vlasenko wrote:
->>> Why we don't save library names in coredump?
->>
->> Because they are useless.
->
-> They may be useless in some situations. Not in every situation,
-> by a long shot. Here is a live example from my system:
- >...
+On Tue, Mar 13, 2012 at 12:56:40PM +0100, Ingo Molnar wrote:
+> Look into the fine conflict report Russell: it conflicts with 
+> *Linus's* tree, because it's based off some random 
+> barely-beyond-rc1 development window -rc3 base. Even at the 
+> commit date of Feb 27 we had a more stable base tree available - 
+> and especially when you pulled it, several weeks down the line, 
+> -rc3 was not a defensible base for the integrated result.
 
-Another example. abrt project wants to do better duplicate detection
-for coredumps, where duplicate is defined as "this crash is probably
-caused by the same bug".
+I'm not going to ask someone to rebase their patches after they've been
+fully tested on a set of platforms.  It has been stated many times that
+rebasing invalidates the testing that the patches have been subjected
+to, and these have been tested by several different people on a range
+of platforms.
 
-This needs to be done quickly. Downloading and installing debuginfos
-are definitely out of the question.
+It seems what _you_ care more about is having nice clean git trees and
+proper git flow at the detriment to dealing with tested changes.
 
-Karel decided to do it by walking the stack and creating a simplified
-backtrace of this form:
-
-BUILD_ID OFFSET SYMBOL MODNAME
-
-where
-BUILD_ID: build id of the binary file the address is mapped to.
-OFFSET: offset from the start of the executable section of the file
-     the stored instruction pointer points to.
-SYMBOL: name of the function if it is known.
-MODNAME: name of the binary or library.
-
-We wrote a small standalone tool which generates such trace.
-The code we have now frequently generates something like this:
-
-ec1fd70dbee0db36eff9527254d9d2bbfd260f13 0x34a7 close_stdout [exe]
-ec1fd70dbee0db36eff9527254d9d2bbfd260f13 0x3dd8 close_stdout [exe]
-ec1fd70dbee0db36eff9527254d9d2bbfd260f13 0x2093 - [exe]
-ec1fd70dbee0db36eff9527254d9d2bbfd260f13 0x1659 - [exe]
-
-Naturally, "[exe]" is there because we don't know executable names.
-I have a new code which uses saved /proc/pid/maps and it generates:
-
-ec1fd70dbee0db36eff9527254d9d2bbfd260f13 0x34a7 close_stdout /usr/bin/md5sum
-ec1fd70dbee0db36eff9527254d9d2bbfd260f13 0x3dd8 close_stdout /usr/bin/md5sum
-ec1fd70dbee0db36eff9527254d9d2bbfd260f13 0x2093 - /usr/bin/md5sum
-ec1fd70dbee0db36eff9527254d9d2bbfd260f13 0x1659 - /usr/bin/md5sum
-
-If anyone would want to use this tool on a large collection
-of coredumps with the intent of fishing out similar crashes
-(this is not a theoretical assumption, we *do* have people
-who badly need this feature), they won't get nice names of binaries,
-they'll get non-informative "[exe]" things - because /proc/pid/maps
-info is not saved in coredump, and won't be available.
-This will impair ability to perform crash similarity analysis.
+The fact of the matter is that I took a set of well tested patches into
+my tree which _you_ were copied on multiple times, that Peter Z. was
+aware of what was happening, and which trivially conflict with some other
+change which happened along the way.  Such a trivial conflict does _NOT_
+justify rebasing the patch set, thereby invalidating all the testing that
+has done.
 
 -- 
-vda
-
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
