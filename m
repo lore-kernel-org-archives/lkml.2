@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760351Ab2CMKAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 06:00:30 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50377 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760197Ab2CMKA2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 06:00:28 -0400
+	id S1030301Ab2CMKAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:00:38 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:47427
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965083Ab2CMKAe convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 06:00:34 -0400
+X-SpamScore: -19
+X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4Rz2dh668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0M0TIGQ-01-0NI-02
+X-M-MSG: 
+Date: Tue, 13 Mar 2012 11:00:24 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: KyongHo Cho <pullip.cho@samsung.com>
+CC: Kukjin Kim <kgene.kim@samsung.com>,
+        Subash Patel <subash.ramaswamy@linaro.org>,
+        <linux-kernel@vger.kernel.org>,
+        Younglak Kim <younglak1004.kim@samsung.com>,
+        <iommu@lists.linux-foundation.org>,
+        <linux-samsung-soc@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v11 3/3] iommu/exynos: Add iommu driver for Exynos
+ Platforms
+Message-ID: <20120313100024.GG18973@amd.com>
+References: <017a01ccfdee$4e5e7a00$eb1b6e00$%cho@samsung.com>
+ <20120312150156.GF18973@amd.com>
+ <CAHQjnOOCQb4G1aeFB0FQVBstXpaXmahnQO8+FoinPcQNZEieGg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAMHCuPXSCZjiyW28aPPjO4zF0vgabZUrqtUK5nMXLwNzSWUjQA@mail.gmail.com>
-References: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
-	<1329905650-30161-3-git-send-email-amit.kachhap@linaro.org>
-	<CAMHCuPUOnftKYaGjEpA9rZFc1yjH3U-EkEEUWqcFapSKROTopQ@mail.gmail.com>
-	<CAK44p23nZ0kgdieasMkChV8B51Rjt=KrmypN+ksV+nym_e0Cqw@mail.gmail.com>
-	<CAMHCuPXSCZjiyW28aPPjO4zF0vgabZUrqtUK5nMXLwNzSWUjQA@mail.gmail.com>
-Date: Tue, 13 Mar 2012 12:00:28 +0200
-Message-ID: <CAP245DUqz-N3nG+bc-3b=4YgYk3LMJTWk_wB7Db1ZBm0fBQOSQ@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 2/4] thermal: Add generic cpufreq cooling implementation
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Sundar <sunder.svit@gmail.com>
-Cc: Amit Kachhap <amit.kachhap@linaro.org>, len.brown@intel.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        mark.gross@intel.com, linux-pm@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <CAHQjnOOCQb4G1aeFB0FQVBstXpaXmahnQO8+FoinPcQNZEieGg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sundar,
+On Tue, Mar 13, 2012 at 05:50:16PM +0900, KyongHo Cho wrote:
+> >> +struct sysmmu_drvdata {
+> >> +     struct device *sysmmu;
+> >> +     char *dbgname;
+> >> +     int nsfrs;
+> >> +     void __iomem **sfrbases;
+> >> +     struct clk *clk[2];
+> >> +     int activations;
+> >> +     rwlock_t lock;
+> >> +     struct iommu_domain *domain;
+> >> +     sysmmu_fault_handler_t fault_handler;
+> >> +     unsigned long pgtable;
+> >> +     struct iommu_client client;
+> >> +};
+> >
+> > Is there any reason why 'struct iommu_client' is a seperate data
+> > structure? Otherwise it can be merged with 'truct sysmmu_drvdata'.
 
-On Tue, Mar 13, 2012 at 11:45 AM, Sundar <sunder.svit@gmail.com> wrote:
-> Hi Amit,
->
-> Thanks for the replies. One more query
->
-> On Tue, Mar 13, 2012 at 10:37 AM, Amit Kachhap <amit.kachhap@linaro.org> wrote:
->
->>> "Different cpu related cooling devices": Do you mean cooling devices
->>> for different CPUs (num_cpus) or are you referring to different
->>> customers aka consumer drivers who could use this framework and impose
->>> the cooling.
->> Correct but the consumer driver only has to use the other
->> thermal-sys.c functions. Only register cpu cooling devices is
->> implemented in this work.
->
-> Am i right in noting that this framework then doesnt handle other
-> devices for cooling like Graphics, LCD etc?
+Of course this doesn't need to be changed immediatly. I just asked if
+there was a specific reason for this seperation.
 
-At the moment it doesn't. But there was some discussion around
-creating something that will work with devfreq. This would allow
-peripheral drivers to be plugged in as well. Amit is investigating
-that at present.
+> The problems will be soon fixed and I will post next patch tomorrow.
 
-/Amit
+Fine. Please also get the Acked-bys from the Exynos maintainer on
+patches 1 and 2 at least. I'll merge it then.
+
+
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
