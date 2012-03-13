@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab2CMAOW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:14:22 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53126 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570Ab2CMAOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:14:21 -0400
-Date: Mon, 12 Mar 2012 17:14:11 -0700 (PDT)
-Message-Id: <20120312.171411.899890153797891857.davem@davemloft.net>
-To: skinsbursky@parallels.com
-Cc: xemul@parallels.com, ebiederm@aristanetworks.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shemminger@vyatta.com, devel@openvz.org
-Subject: Re: [PATCH v3] tun: don't hold network namespace by tun sockets
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120312125833.24166.72610.stgit@localhost6.localdomain6>
-References: <20120312125833.24166.72610.stgit@localhost6.localdomain6>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1756883Ab2CMAQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:16:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33001 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756248Ab2CMAQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 20:16:40 -0400
+Message-ID: <4F5E91DE.80609@zytor.com>
+Date: Mon, 12 Mar 2012 17:16:30 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+CC: Denys Vlasenko <dvlasenk@redhat.com>,
+        Roland McGrath <roland@hack.frob.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Kushal Das <kdas@redhat.com>
+Subject: Re: Extending coredump note section to contain filenames
+References: <4F5A3A4D.1020008@redhat.com> <20120309172934.GA18173@host2.jankratochvil.net> <4F5DE6A4.2030303@redhat.com> <20120312165359.GA32400@host2.jankratochvil.net> <4F5E76CE.4030601@zytor.com> <20120312223144.GA9636@host2.jankratochvil.net>
+In-Reply-To: <20120312223144.GA9636@host2.jankratochvil.net>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 12 Mar 2012 17:14:13 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-aFrom: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Date: Mon, 12 Mar 2012 16:59:41 +0400
+On 03/12/2012 03:31 PM, Jan Kratochvil wrote:
+> On Mon, 12 Mar 2012 23:21:02 +0100, H. Peter Anvin wrote:
+>> In particular, for libraries which aren't installed in standard system
+>> directories (because they are test versions or mapped with dlopen()) it
+>> would be good to have a hint of where to find them.  The build-id can
+>> then tell you if you have the right version.
+> 
+> I believe "/proc/sys/kernel/core_pattern" was created so that Linux kernel
+> does not have to contain code dumping of many associated info, the filenames
+> seem to me to belong in this category.
+> 
 
-> v3: added previously removed sock_put() to the tun_release() callback, because
-> sk_release_kernel() doesn't drop the socket reference.
-> 
-> v2: sk_release_kernel() used for socket release. Dummy tun_release() is
-> required for sk_release_kernel() ---> sock_release() ---> sock->ops->release()
-> call.
-> 
-> TUN was designed to destroy it's socket on network namesapce shutdown. But this
-> will never happen for persistent device, because it's socket holds network
-> namespace.
-> This patch removes of holding network namespace by TUN socket and replaces it
-> by creating socket in init_net and then changing it's net it to desired one. On
-> shutdown socket is moved back to init_net prior to final put.
-> 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+That's quite absurd if you think about it... we're talking about each
+individual library, not necessarily the root binary.
 
-Looks good, applied, thanks.
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
