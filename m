@@ -1,86 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751746Ab2CMMVM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:21:12 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57890 "EHLO mx2.mail.elte.hu"
+	id S1751995Ab2CMMWj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:22:39 -0400
+Received: from dwdmx5.dwd.de ([141.38.3.242]:36484 "EHLO dwdmx5.dwd.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855Ab2CMMVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 08:21:10 -0400
-Date: Tue, 13 Mar 2012 13:20:53 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL/NEXT] sched/arch: Introduce the
- finish_arch_post_lock_switch() scheduler callback
-Message-ID: <20120313122053.GA17549@elte.hu>
-References: <20120313083630.GA10131@elte.hu>
- <20120313084713.GB27560@flint.arm.linux.org.uk>
- <20120313085628.GB6991@elte.hu>
- <20120313090040.GE27560@flint.arm.linux.org.uk>
- <20120313092649.GA15406@elte.hu>
- <20120313095020.GA13220@flint.arm.linux.org.uk>
- <20120313101859.GA2626@elte.hu>
- <20120313112729.GA25835@flint.arm.linux.org.uk>
- <20120313115640.GA27378@elte.hu>
- <20120313120014.GB13220@flint.arm.linux.org.uk>
+	id S1751514Ab2CMMWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 08:22:36 -0400
+Date: Tue, 13 Mar 2012 12:22:30 +0000 (GMT)
+From: Holger Kiehl <Holger.Kiehl@dwd.de>
+X-X-Sender: kiehl@diagnostix.dwd.de
+To: Shaohua Li <shli@kernel.org>
+cc: Holger Kiehl <Holger.Kiehl@dwd.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "neilb@suse.de" <neilb@suse.de>, "axboe@kernel.dk" <axboe@kernel.dk>
+Subject: Re: [patch 0/7] Add TRIM support for raid linear/0/1/10
+In-Reply-To: <4F5EFEB6.4060402@kernel.org>
+Message-ID: <alpine.LRH.2.02.1203131213480.15848@diagnostix.dwd.de>
+References: <20120312030412.375458948@fusionio.com> <alpine.LRH.2.02.1203121806120.23719@diagnostix.dwd.de> <4F5EFEB6.4060402@kernel.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120313120014.GB13220@flint.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 13 Mar 2012, Shaohua Li wrote:
 
-* Russell King <rmk@arm.linux.org.uk> wrote:
+> On 3/13/12 2:22 AM, Holger Kiehl wrote:
+> > Hello,
+> >
+> > On Mon, 12 Mar 2012, Shaohua Li wrote:
+> >
+> >> The patches add TRIM support for raid linear/0/1/10. I'll add TRIM
+> support for
+> >> raid 4/5/6 later. The implementation is pretty straightforward and
+> >> self-explained.
+> >>
+> > First, thanks for this patch!
+> >
+> > I have applied those patches against 3.3.0-rc7 and during boot the kernel
+> > reports a lot of the following:
+> >
+> > Mar 12 18:56:00 c3po kernel: [ 7.611045] md/raid0:md3: make_request bug:
+> can't convert block across chunks or bigger than 512k 18861064 512
+> > Mar 12 18:56:00 c3po kernel: [ 7.611047] md/raid0:md3: make_request bug:
+> can't convert block across chunks or bigger than 512k 18862088 512
+> > Mar 12 18:56:00 c3po kernel: [ 7.611049] md/raid0:md3: make_request bug:
+> can't convert block across chunks or bigger than 512k 18863112 512
+> > Mar 12 18:56:00 c3po kernel: [ 7.611052] md/raid0:md3: make_request bug:
+> can't convert block across chunks or bigger than 512k 18864136 512
+> > Mar 12 18:56:00 c3po kernel: [ 7.611054] md/raid0:md3: make_request bug:
+> can't convert block across chunks or bigger than 512k 18865160 512
+> > Mar 12 18:56:00 c3po kernel: [ 7.611056] md/raid0:md3: make_request bug:
+> can't convert block across chunks or bigger than 512k 18866184 512
+> Looks our SMTP server does something stupid. Sorry if you get two copies
+> of the mail.
+> 
+> Thanks for testing. Looks I fixed a sanity check in bio.c but there are
+> similar check in raid0/10 which I forgot to fix. Below patch should fix it.
+> please try.
+> 
+Now I get following messages during boot (and it takes a very long time):
 
-> Why am _I_ responsible for which kernel version _Catalin_ used 
-> for _his_ patches when _he_ committed them?
+    Mar 13 10:23:25 c3po kernel: [  251.355041]   bio ffff88019e0abc70, biotail ffff88019e0ddc00, buffer           (null), len 0
+    Mar 13 10:23:25 c3po kernel: [  251.355052] request botched: dev sdb: type=1, flags=916c081
+    Mar 13 10:23:25 c3po kernel: [  251.355054]   sector 52929353, nr/cnr 0/8
+    Mar 13 10:23:25 c3po kernel: [  251.355055]   bio ffff88019e0aba70, biotail ffff88019e0dda00, buffer           (null), len 0
+    Mar 13 10:23:25 c3po kernel: [  251.355068] request botched: dev sdc: type=1, flags=916c081
+    Mar 13 10:23:25 c3po kernel: [  251.355069]   sector 52929346, nr/cnr 0/1016
+    Mar 13 10:23:25 c3po kernel: [  251.355071]   bio ffff88019e0aae00, biotail ffff88019e0db380, buffer           (null), len 0
+    Mar 13 10:23:25 c3po kernel: [  251.373583] request botched: dev sda: type=1, flags=916c081
+    Mar 13 10:23:25 c3po kernel: [  251.373585]   sector 52929354, nr/cnr 0/1016
+    Mar 13 10:23:25 c3po kernel: [  251.373587]   bio ffff88019e0aba00, biotail ffff88019e0ddc00, buffer           (null), len 0
+    Mar 13 10:23:25 c3po kernel: [  251.373597] request botched: dev sdb: type=1, flags=916c081
+    Mar 13 10:23:25 c3po kernel: [  251.373599]   sector 52929354, nr/cnr 0/1016
+    Mar 13 10:23:25 c3po kernel: [  251.373600]   bio ffff88019e0ab800, biotail ffff88019e0dda00, buffer           (null), len 0
+    Mar 13 10:23:25 c3po kernel: [  251.373612] request botched: dev sdc: type=1, flags=916c081
+    Mar 13 10:23:25 c3po kernel: [  251.373614]   sector 52929347, nr/cnr 0/8
+    Mar 13 10:23:25 c3po kernel: [  251.373616]   bio ffff88019e0aaa70, biotail ffff88019e0db380, buffer           (null), len 0
+    Mar 13 10:23:25 c3po kernel: [  251.392135] request botched: dev sda: type=1, flags=916c081
+    Mar 13 10:23:25 c3po kernel: [  251.392137]   sector 52929355, nr/cnr 0/8
+    Mar 13 10:23:25 c3po kernel: [  251.392139]   bio ffff88019e0ab670, biotail ffff88019e0ddc00, buffer           (null), len 0
+    Mar 13 10:23:25 c3po kernel: [  251.392150] request botched: dev sdb: type=1, flags=916c081
+    Mar 13 10:23:25 c3po kernel: [  251.392152]   sector 52929355, nr/cnr 0/8
+    Mar 13 10:23:25 c3po kernel: [  251.392153]   bio ffff88019e0ab470, biotail ffff88019e0dda00, buffer           (null), len 0
 
-If you then pull that tree from him and push it out to 
-linux-next? Then *of course* you are responsible, it was your 
-decision to pull it.
+After boot the system runs fine, but as soon as I do something (make clean of
+kernel tree with a sync) I get the same messages as above and it takes a
+long time to sync:
 
-I frequently reject pulls from subsystem maintainers on similar 
-(and sometimes lesser) grounds - because such mistakes tend to 
-compound with time.
+    Mar 13 10:44:59 c3po kernel: [ 1550.740528] request botched: dev sda: type=1, flags=9164081
+    Mar 13 10:44:59 c3po kernel: [ 1550.740533]   sector 12580617, nr/cnr 0/776
+    Mar 13 10:44:59 c3po kernel: [ 1550.740537]   bio ffff8801a362b670, biotail ffff8801a30f3d80, buffer           (null), len 0
+    Mar 13 10:44:59 c3po kernel: [ 1550.747141] request botched: dev sdb: type=1, flags=9164081
+    Mar 13 10:44:59 c3po kernel: [ 1550.747144]   sector 12579841, nr/cnr 0/248
+    Mar 13 10:44:59 c3po kernel: [ 1550.747148]   bio ffff88019e0dd200, biotail ffff88019e0dd200, buffer           (null), len 0
+    Mar 13 10:44:59 c3po kernel: [ 1550.749429] request botched: dev sdc: type=1, flags=9164081
+    Mar 13 10:44:59 c3po kernel: [ 1550.749432]   sector 12579841, nr/cnr 0/248
+    Mar 13 10:44:59 c3po kernel: [ 1550.749436]   bio ffff8801a362b600, biotail ffff8801a362b600, buffer           (null), len 0
+    Mar 13 10:44:59 c3po kernel: [ 1550.755332] request botched: dev sda: type=1, flags=916c081
+    Mar 13 10:44:59 c3po kernel: [ 1550.755335]   sector 12580618, nr/cnr 0/248
+    Mar 13 10:44:59 c3po kernel: [ 1550.755339]   bio ffff8801a30f3d80, biotail ffff8801a30f3d80, buffer           (null), len 0
+    Mar 13 10:44:59 c3po kernel: [ 1550.806832] request botched: dev sdb: type=1, flags=9164081
+    Mar 13 10:44:59 c3po kernel: [ 1550.806836]   sector 12266497, nr/cnr 0/1000
+    Mar 13 10:44:59 c3po kernel: [ 1550.806840]   bio ffff8801a4dca800, biotail ffff88019e0c9000, buffer           (null), len 0
+    Mar 13 10:44:59 c3po kernel: [ 1550.811972] request botched: dev sda: type=1, flags=9164081
+    Mar 13 10:44:59 c3po kernel: [ 1550.811976]   sector 12266497, nr/cnr 0/1000
+    Mar 13 10:44:59 c3po kernel: [ 1550.811979]   bio ffff88019e0dd200, biotail ffff8801a3794000, buffer           (null), len 0
+    Mar 13 10:44:59 c3po kernel: [ 1550.814081] request botched: dev sdc: type=1, flags=9164081
+    Mar 13 10:44:59 c3po kernel: [ 1550.814084]   sector 12265497, nr/cnr 0/24
+    Mar 13 10:44:59 c3po kernel: [ 1550.814087]   bio ffff8801a4dca870, biotail ffff8801a37f4080, buffer           (null), len 0
+    Mar 13 10:44:59 c3po kernel: [ 1550.819150] request botched: dev sdc: type=1, flags=916c081
+    Mar 13 10:44:59 c3po kernel: [ 1550.819153]   sector 12265498, nr/cnr 0/1000
 
-The thing is, if you do Git pulls from someone then you must be 
-absolutely anal about it, because you cannot really fix things 
-up after the fact. The people you pull from must be your 
-extended arms, they must be doing an equal or better job than 
-you. That gives a basis of trust.
+Please give me any hints what I can try next.
 
-Once that is established, you can be permissive about mistakes. 
-
-But arguing that you are not responsible for what you pull is 
-absolutely grotesque and establishes a new low for this 
-discussion really...
-
-Also, as I told you in the very first mail, I am *fine* with 
-this having happened, so you having zapped the commits is 
-indefensible IMO. Mistakes do happen and the patch is fine 
-technically and sfr and Linus could have handled the trivial 
-conflict. What I suggested was to do it a bit better in the 
-future. Is that too much to ask for?
-
-> You're insane.  Totally.
-
-I think you owe me an apology :-(
-
-Thanks,
-
-	Ingo
+Regards,
+Holger
