@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030277Ab2CMAf4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:35:56 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:33470 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932232Ab2CMAfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:35:53 -0400
-Message-ID: <1331598952.13200.43.camel@joe2Laptop>
-Subject: Re: [PATCH net-next] net: ipv4: Standardize prefixes for message
- logging
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 12 Mar 2012 17:35:52 -0700
-In-Reply-To: <20120312.170558.584205292599435892.davem@davemloft.net>
-References: <1331526971.13200.9.camel@joe2Laptop>
-	 <20120311.234846.455580505379366792.davem@davemloft.net>
-	 <1331571812.13200.23.camel@joe2Laptop>
-	 <20120312.170558.584205292599435892.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S965132Ab2CMAgW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:36:22 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48684 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965049Ab2CMAY3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 20:24:29 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        Chris Mason <chris.mason@oracle.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 154/196] btrfs: Require CAP_SYS_ADMIN for filesystem rebalance
+Date: Mon, 12 Mar 2012 20:21:07 -0400
+Message-Id: <1331598109-31424-109-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.3
+In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
+ <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 17:05 -0700, David Miller wrote:
-> From: Joe Perches <joe@perches.com>
-> Date: Mon, 12 Mar 2012 10:03:32 -0700
-> > Add #define pr_fmt(fmt) as appropriate.
-> > Add "IPv4: ", "TCP: ", and "IPsec: " to appropriate files.
-> > Standardize on "UDPLite: " for appropriate uses.
-> > Some prefixes were previously "UDPLITE: " and "UDP-Lite: ".
-[]
-> Looks good, and applied,
+From: Ben Hutchings <ben@decadent.org.uk>
 
-OK.  I'll submit a similar change for net/ipv6 in awhile.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-> but I left out this hunk:
+commit 6f88a4403def422bd8e276ddf6863d6ac71435d2 upstream.
+
+Filesystem rebalancing (BTRFS_IOC_BALANCE) affects the entire
+filesystem and may run uninterruptibly for a long time.  This does not
+seem to be something that an unprivileged user should be able to do.
+
+Reported-by: Aron Xu <happyaron.xu@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Chris Mason <chris.mason@oracle.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ fs/btrfs/volumes.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index 8db7b14..c04ebb1 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -22,6 +22,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/random.h>
+ #include <linux/iocontext.h>
++#include <linux/capability.h>
+ #include <asm/div64.h>
+ #include "compat.h"
+ #include "ctree.h"
+@@ -1908,6 +1909,9 @@ int btrfs_balance(struct btrfs_root *dev_root)
+ 	if (dev_root->fs_info->sb->s_flags & MS_RDONLY)
+ 		return -EROFS;
  
-> > diff --git a/net/ipv4/ipcomp.c b/net/ipv4/ipcomp.c
-> > index 63b64c4..56d6768 100644
-> > --- a/net/ipv4/ipcomp.c
-> > +++ b/net/ipv4/ipcomp.c
-> > @@ -13,6 +13,7 @@
-> >   *   - Compression stats.
-> >   *   - Adaptive compression.
-> >   */
-> > +
-> >  #include <linux/module.h>
-> >  #include <linux/err.h>
-> >  #include <linux/rtnetlink.h>
-> 
-> As it seemed accidental, if not gratuitous.
-
-It wasn't accidental, though I could have mentioned it
-in the changelog.  Most files have a blank line between
-an initial block commment and the first #include.
-
-I just do that by habit when looking if a file could
-benefit from a #define pr_fmt.
-
-I added a similar blank line to udplite.c, but there
-I also added pr_fmt.
-
-cheers, Joe
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
+ 	mutex_lock(&dev_root->fs_info->volume_mutex);
+ 	dev_root = dev_root->fs_info->dev_root;
+ 
+-- 
+1.7.9.3
 
