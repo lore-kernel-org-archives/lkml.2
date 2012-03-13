@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab2CMSnW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 14:43:22 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:46557 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867Ab2CMSnU (ORCPT
+	id S1756824Ab2CMSqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 14:46:07 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:59118 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753222Ab2CMSqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 14:43:20 -0400
-Message-ID: <4F5F9531.60900@windriver.com>
-Date: Tue, 13 Mar 2012 14:42:57 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Tue, 13 Mar 2012 14:46:05 -0400
+Message-ID: <4F5F95BF.8060104@fb.com>
+Date: Tue, 13 Mar 2012 11:45:19 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@amd.com>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Joerg-Volker-Peetz <jvpeetz@web.de>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [34-longterm 181/196] x86, AMD: Fix ARAT feature setting again
-References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com> <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com> <1331598109-31424-136-git-send-email-paul.gortmaker@windriver.com> <4F5F51E2.1090304@amd.com>
-In-Reply-To: <4F5F51E2.1090304@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Namhyung Kim <namhyung.kim@lge.com>
+CC: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>, <linux-perf-users@vger.kernel.org>
+Subject: Re: [PATCH 0/2] perf: add sort by inclusive time functionality (v2)
+References: <1331160079-13821-1-git-send-email-asharma@fb.com> <4F5DA91F.7060908@lge.com> <4F5E3E8C.1020005@fb.com> <4F5E9FFA.7060300@lge.com>
+In-Reply-To: <4F5E9FFA.7060300@lge.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
+ definitions=2012-03-13_07:2012-03-13,2012-03-13,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-03-13 09:55 AM, Boris Ostrovsky wrote:
-> On 03/12/12 20:21, Paul Gortmaker wrote:
->> From: Borislav Petkov<borislav.petkov@amd.com>
->>
->>                     -------------------
->>      This is a commit scheduled for the next v2.6.34 longterm release.
->>      If you see a problem with using this for longterm, please comment.
-> 
-> 
-> Paul, please use e9cdd343a5e42c43bcda01e609fa23089e026470 instead of the 
-> one below.
+On 3/12/12 6:16 PM, Namhyung Kim wrote:
 
-Thanks, I'll make the exchange.
+> $ perf record -g sleep 1
+> $ perf report -s inclusive,symbol
 
-P.
+Thanks. I was able to reproduce the hangs and they went away after I 
+added sort_sym_inclusive (a copy of sort_sym, except for the se_header).
 
-> 
-> -boris
-> 
->>                     -------------------
->>
->> commit 14fb57dccb6e1defe9f89a66f548fcb24c374c1d upstream.
->>
->> Trying to enable the local APIC timer on early K8 revisions
->> uncovers a number of other issues with it, in conjunction with
->> the C1E enter path on AMD. Fixing those causes much more churn
->> and troubles than the benefit of using that timer brings so
->> don't enable it on K8 at all, falling back to the original
->> functionality the kernel had wrt to that.
->>
->> Reported-and-bisected-by: Nick Bowler<nbowler@elliptictech.com>
->> Cc: Boris Ostrovsky<Boris.Ostrovsky@amd.com>
->> Cc: Andreas Herrmann<andreas.herrmann3@amd.com>
->> Cc: Greg Kroah-Hartman<greg@kroah.com>
->> Cc: Hans Rosenfeld<hans.rosenfeld@amd.com>
->> Cc: Nick Bowler<nbowler@elliptictech.com>
->> Cc: Joerg-Volker-Peetz<jvpeetz@web.de>
->> Signed-off-by: Borislav Petkov<borislav.petkov@amd.com>
->> Link: http://lkml.kernel.org/r/1305636919-31165-3-git-send-email-bp@amd64.org
->> Signed-off-by: Ingo Molnar<mingo@elte.hu>
->> Signed-off-by: Paul Gortmaker<paul.gortmaker@windriver.com>
->> ---
->>   arch/x86/kernel/cpu/amd.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
->> index d618dc1..76a7f76 100644
->> --- a/arch/x86/kernel/cpu/amd.c
->> +++ b/arch/x86/kernel/cpu/amd.c
->> @@ -567,7 +567,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
->>   #endif
->>
->>   	/* As a rule processors have APIC timer running in deep C states */
->> -	if (c->x86>= 0xf&&  !cpu_has_amd_erratum(amd_erratum_400))
->> +	if (c->x86>  0xf&&  !cpu_has_amd_erratum(amd_erratum_400))
->>   		set_cpu_cap(c, X86_FEATURE_ARAT);
->>
->>   	/*
-> 
-> 
+The output of perf report now better describes how the symbols are 
+sorted. The text reads: "Symbol (Inclusive)".
+
+v3 is coming via my next mail.
+
+  -Arun
+
