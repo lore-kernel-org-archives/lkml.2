@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009Ab2CLRfh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 13:35:37 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49090 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab2CLRff (ORCPT
+	id S1751807Ab2CLRjv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 13:39:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58058 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab2CLRjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 13:35:35 -0400
+	Mon, 12 Mar 2012 13:39:49 -0400
 Subject: [PATCH] Added backlight driver for Acer Aspire 4736
 From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
 To: rpurdie@rpsys.net
 Cc: FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Mar 2012 23:12:17 -0400
-Message-ID: <1331608337.2267.67.camel@debian.Gayathri>
+Date: Mon, 12 Mar 2012 23:16:33 -0400
+Message-ID: <1331608593.2267.73.camel@debian.Gayathri>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3
 Content-Transfer-Encoding: 7bit
@@ -167,5 +167,6 @@ index 0000000..6fe2937
 Thanks , 
 
 Pradeep Subrahmanion
+
 
 
