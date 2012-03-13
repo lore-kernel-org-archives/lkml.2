@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759402Ab2CMSWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 14:22:14 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:64435 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758733Ab2CMSWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 14:22:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=dCPwn+DNsD2oL/sORcJ0ED4VGuVhEeXc
-	pwEDd/QiR/cQKCtSMFZxRi2vIlWHaq+4+0wLRTAchqffA6Pc1HlRfeKkLwdI4RkQ
-	VmbcgP/E2GE8uy21EwP8kuVxsNwL0XjB5mF0Ca+igR7iccynY8cEkrVaDi9+hET5
-	Um/ftjugYqY=
-From: Junio C Hamano <gitster@pobox.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Thomas Rast <trast@student.ethz.ch>, Willy Tarreau <w@1wt.eu>,
-        Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        git@vger.kernel.org
-Subject: Re: [PATCH] git-am: error out when seeing -b/--binary
-References: <20120312152453.GB12405@1wt.eu>
- <87aa3l4vqq.fsf@thomas.inf.ethz.ch> <20120312165703.GB18791@burratino>
- <7vvcm9snko.fsf@alter.siamese.dyndns.org> <87399dpk48.fsf@thomas.inf.ethz.ch>
- <20120312215607.GB11362@burratino> <874ntto4t8.fsf@thomas.inf.ethz.ch>
- <20120312222227.GC11362@burratino> <87fwdcldqj.fsf@thomas.inf.ethz.ch>
- <7v62e8la9y.fsf@alter.siamese.dyndns.org> <20120313175158.GA6653@burratino>
-Date: Tue, 13 Mar 2012 11:22:10 -0700
-In-Reply-To: <20120313175158.GA6653@burratino> (Jonathan Nieder's message of
- "Tue, 13 Mar 2012 12:51:58 -0500")
-Message-ID: <7vipi8wect.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1759427Ab2CMSW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 14:22:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5044 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758733Ab2CMSWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 14:22:23 -0400
+Date: Tue, 13 Mar 2012 14:22:20 -0400
+From: Dave Jones <davej@redhat.com>
+To: viro@zeniv.linux.org.uk
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: suppress page allocation failure warnings from sys_listxattr
+Message-ID: <20120313182220.GA11500@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, viro@zeniv.linux.org.uk,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 73AB9580-6D39-11E1-8F14-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Nieder <jrnieder@gmail.com> writes:
+This size is user controllable, and so it's trivial for someone to trigger a
+stream of order:4 page allocation errors.
 
->> I really don't think it is a good idea to avoid mentioning 1.6.0, at
->> which we *removed* description of the option in our manual pages and
->> from the "git am -h" help message. How much more active deprecation
->> would a user want?
->
-> A warning when the option is used or a mention in the release notes.
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-Ok, then we should probably instead do these two starting at 1.7.10 ("the
-official deprecation date"), and then start erroring out on "-b" three
-cycles after that.
+--- 
+There's also a similar problem in setxattr, but I'm not sure how we want
+to pass NOWARN down to memdup_user. Thoughts ?
+
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 82f4337..544df90 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -496,7 +496,7 @@ listxattr(struct dentry *d, char __user *list, size_t size)
+ 	if (size) {
+ 		if (size > XATTR_LIST_MAX)
+ 			size = XATTR_LIST_MAX;
+-		klist = kmalloc(size, GFP_KERNEL);
++		klist = kmalloc(size, __GFP_NOWARN | GFP_KERNEL);
+ 		if (!klist)
+ 			return -ENOMEM;
+ 	}
