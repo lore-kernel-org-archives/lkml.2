@@ -1,77 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab2CMT34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 15:29:56 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53902 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab2CMT3z (ORCPT
+	id S1759453Ab2CMTcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 15:32:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:59581 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866Ab2CMTcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 15:29:55 -0400
-Date: Tue, 13 Mar 2012 12:29:49 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Brown, Len" <len.brown@intel.com>, ShuoX Liu <shuox.liu@intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "H. Peter Anvin" <hpa@zytor.com>, andi.kleen@intel.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH V3] cpuidle: Add a sysfs entry to disable
- specific C state for debug purpose.
-Message-ID: <20120313192949.GA8568@kroah.com>
-References: <4F5466C4.2090808@intel.com>
- <20120305101827.GA19408@khazad-dum.debian.net>
- <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com>
- <1330998885.1916.89.camel@ymzhang>
- <20120306052236.GA19416@kroah.com>
- <1331013078.1916.103.camel@ymzhang>
- <20120306143935.GA23346@kroah.com>
- <20120312181151.GE14020@sirena.org.uk>
- <20120312192936.GC24873@kroah.com>
- <1331602594.1916.155.camel@ymzhang>
+	Tue, 13 Mar 2012 15:32:11 -0400
+Date: Tue, 13 Mar 2012 15:21:20 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless 2012-03-13
+Message-ID: <20120313192119.GC5837@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
 Content-Disposition: inline
-In-Reply-To: <1331602594.1916.155.camel@ymzhang>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 09:36:34AM +0800, Yanmin Zhang wrote:
-> On Mon, 2012-03-12 at 12:29 -0700, Greg KH wrote:
-> > On Mon, Mar 12, 2012 at 06:11:51PM +0000, Mark Brown wrote:
-> > > On Tue, Mar 06, 2012 at 06:39:35AM -0800, Greg KH wrote:
-> > > 
-> > > > Do you know of any tools using these files?  I have never heard of them,
-> > > > and I was told we should move these files years ago.  So I don't think
-> > > > there should be any api issues.
-> > > 
-> > > powertop uses them.
-> > 
-> > Ok, then we can't move them all.
-> > 
-> > We should then just move the ones that have multiple lines, as I'm
-> > pretty sure powertop doesn't use them, right?
-> All sys files under cpu/cpuXXX/cpuidle have single line. If we move
-> some files to debugfs and keep others under sysfs, users might be confused.
-> 
-> Should we go back to the 1st version which just adds the new entry to
-> sysfs?
 
-Wait, I thought this whole thing started when we wanted to move the
-files that had multiple lines out of sysfs?
+--gKMricLos+KVdGMg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If none of these do, and they all are being used by tools already, then
-fine, they should stay.
+Dave,
 
-But for some reason, I thought there was a problem here.  Perhaps that
-was in the cpufreq code?
+Stanislaw has given us two late-breaking fixes intended for 3.3.  One
+avoids a NULL pointer dereference in iwl3945, and the other corrects a
+locking issue in the rt2x00 driver that can lead to random traffic
+stalls.
 
-confused,
+Please let me know if there are problems!
 
-greg k-h
+Thanks,
+
+John
+
+---
+
+The following changes since commit 1ab5ecb90cb6a3df1476e052f76a6e8f6511cb3d:
+
+  tun: don't hold network namespace by tun sockets (2012-03-12 17:14:00 -07=
+00)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-d=
+avem
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless i=
+nto for-davem
+
+Stanislaw Gruszka (2):
+      iwl3945: fix possible il->txq NULL pointer dereference in delayed wor=
+ks
+      rt2x00: fix random stalls
+
+ drivers/net/wireless/iwlegacy/3945-mac.c  |    2 +-
+ drivers/net/wireless/iwlegacy/3945.c      |    7 ++++---
+ drivers/net/wireless/rt2x00/rt2x00dev.c   |    6 +++++-
+ drivers/net/wireless/rt2x00/rt2x00mac.c   |    9 +++++++++
+ drivers/net/wireless/rt2x00/rt2x00queue.c |    3 +++
+ 5 files changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlegacy/3945-mac.c b/drivers/net/wireles=
+s/iwlegacy/3945-mac.c
+index 54b2d39..a7dfba8 100644
+--- a/drivers/net/wireless/iwlegacy/3945-mac.c
++++ b/drivers/net/wireless/iwlegacy/3945-mac.c
+@@ -2475,7 +2475,7 @@ il3945_bg_alive_start(struct work_struct *data)
+ 	    container_of(data, struct il_priv, alive_start.work);
+=20
+ 	mutex_lock(&il->mutex);
+-	if (test_bit(S_EXIT_PENDING, &il->status))
++	if (test_bit(S_EXIT_PENDING, &il->status) || il->txq =3D=3D NULL)
+ 		goto out;
+=20
+ 	il3945_alive_start(il);
+diff --git a/drivers/net/wireless/iwlegacy/3945.c b/drivers/net/wireless/iw=
+legacy/3945.c
+index 1489b15..c80eb9b 100644
+--- a/drivers/net/wireless/iwlegacy/3945.c
++++ b/drivers/net/wireless/iwlegacy/3945.c
+@@ -1870,11 +1870,12 @@ il3945_bg_reg_txpower_periodic(struct work_struct *=
+work)
+ 	struct il_priv *il =3D container_of(work, struct il_priv,
+ 					  _3945.thermal_periodic.work);
+=20
+-	if (test_bit(S_EXIT_PENDING, &il->status))
+-		return;
+-
+ 	mutex_lock(&il->mutex);
++	if (test_bit(S_EXIT_PENDING, &il->status) || il->txq =3D=3D NULL)
++		goto out;
++
+ 	il3945_reg_txpower_periodic(il);
++out:
+ 	mutex_unlock(&il->mutex);
+ }
+=20
+diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless=
+/rt2x00/rt2x00dev.c
+index d2a1ea9..fd356b7 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -426,10 +426,14 @@ void rt2x00lib_txdone(struct queue_entry *entry,
+ 	/*
+ 	 * If the data queue was below the threshold before the txdone
+ 	 * handler we must make sure the packet queue in the mac80211 stack
+-	 * is reenabled when the txdone handler has finished.
++	 * is reenabled when the txdone handler has finished. This has to be
++	 * serialized with rt2x00mac_tx(), otherwise we can wake up queue
++	 * before it was stopped.
+ 	 */
++	spin_lock_bh(&entry->queue->tx_lock);
+ 	if (!rt2x00queue_threshold(entry->queue))
+ 		rt2x00queue_unpause_queue(entry->queue);
++	spin_unlock_bh(&entry->queue->tx_lock);
+ }
+ EXPORT_SYMBOL_GPL(rt2x00lib_txdone);
+=20
+diff --git a/drivers/net/wireless/rt2x00/rt2x00mac.c b/drivers/net/wireless=
+/rt2x00/rt2x00mac.c
+index ede3c58..2df2eb6 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00mac.c
++++ b/drivers/net/wireless/rt2x00/rt2x00mac.c
+@@ -152,13 +152,22 @@ void rt2x00mac_tx(struct ieee80211_hw *hw, struct sk_=
+buff *skb)
+ 	if (unlikely(rt2x00queue_write_tx_frame(queue, skb, false)))
+ 		goto exit_fail;
+=20
++	/*
++	 * Pausing queue has to be serialized with rt2x00lib_txdone(). Note
++	 * we should not use spin_lock_bh variant as bottom halve was already
++	 * disabled before ieee80211_xmit() call.
++	 */
++	spin_lock(&queue->tx_lock);
+ 	if (rt2x00queue_threshold(queue))
+ 		rt2x00queue_pause_queue(queue);
++	spin_unlock(&queue->tx_lock);
+=20
+ 	return;
+=20
+  exit_fail:
++	spin_lock(&queue->tx_lock);
+ 	rt2x00queue_pause_queue(queue);
++	spin_unlock(&queue->tx_lock);
+  exit_free_skb:
+ 	ieee80211_free_txskb(hw, skb);
+ }
+diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wirele=
+ss/rt2x00/rt2x00queue.c
+index 5adfb3e..9b1b2b7 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -619,6 +619,9 @@ int rt2x00queue_write_tx_frame(struct data_queue *queue=
+, struct sk_buff *skb,
+ 	else if (test_bit(REQUIRE_DMA, &queue->rt2x00dev->cap_flags))
+ 		rt2x00queue_align_frame(skb);
+=20
++	/*
++	 * That function must be called with bh disabled.
++	 */
+ 	spin_lock(&queue->tx_lock);
+=20
+ 	if (unlikely(rt2x00queue_full(queue))) {
+--=20
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
+
+--gKMricLos+KVdGMg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPX54vAAoJEJctW/TcYTgG0n0QAJtc0AIOD0Wr2zpapWi9l2hy
+QjADABvIGTyXtJs+7ea2ho6kogQexCsit6wUnobexFcy4K7gFRrgeOwTrurXqWgx
+egwGlIwQ6v2sy8tfiiSuCJmaMrXC6IDQIdOUObiTL4nAa3q7UlLizkeQFZmTNu7Z
+WRY/dcdhh2zTNRQJ/ka/XkxrCIvsD3jmr8uwvvmgEero8Mc2lxDka6u7h9drEYz2
+wB+TkPLDfbUkV9pdyF8266QQBpya4Bmuegn4qCsGjlPmduB3jczD76vu5PEG0O1Y
+6OaiM2p9XugJ7bFCS4bDY3M1/phIfPK+G57gbeTi0+ralfMQnG5SRafEaEeHveGu
+6QYb+TYQmLeh9S39x0H2bIQ+FvgHr1jL7L1q30hMnmfs/+7TN5btgTzHdHVAbQie
+jwDZuiZHzFkQ6P3e8nRWiEQiF1zvSVZ/8O3yq1K6BJcY/iheAWARG7l0K87SctF+
+di9OIJOingxhYCMV40/QkXY+zn/Yhf4MLWnogVXbcuMFHR3w+tyXQJNv2kddqWT3
+DZKt3uNqYv+8Kmdqh4u7QlZMHan4JUJhgiqJQZjbqL1WFPk6MVr6nxeRTa+87tMz
+P0kbVZVEOgMLHp+0L7zYenVZkm1cm6MRt2SlDOAQFXnjV3KU1u40gdkEQeVY4CKl
+PoDLcxW7fGpAJuN8omhl
+=i/pt
+-----END PGP SIGNATURE-----
+
+--gKMricLos+KVdGMg--
