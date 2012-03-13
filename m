@@ -1,150 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab2CMD0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 23:26:11 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53620 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759026Ab2CMD0H convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 23:26:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <1331362837-10740-25-git-send-email-yinghai@kernel.org>
-References: <1331362837-10740-1-git-send-email-yinghai@kernel.org> <1331362837-10740-25-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 12 Mar 2012 21:25:45 -0600
-Message-ID: <CAErSpo6g3pei2+oW0wLEpytBTh6wGTyzo28oVVzFECxZdta+FA@mail.gmail.com>
-Subject: Re: [PATCH v2 24/37] PCI, ACPI: Add pci_root_hp hot removal
- notification support.
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1759533Ab2CMD2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 23:28:39 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50856 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759022Ab2CMD2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 23:28:37 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3 1/2] mfd: add irq domain support for max8997 interrupts
+To: Thomas Abraham <thomas.abraham@linaro.org>, linux-kernel@vger.kernel.org
+Cc: k.lewandowsk@samsung.com, devicetree-discuss@lists.ozlabs.org,
+        rob.herring@calxeda.com, kgene.kim@samsung.com,
+        broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, dg77.kim@samsung.com,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+In-Reply-To: <1330000688-11226-2-git-send-email-thomas.abraham@linaro.org>
+References: <1330000688-11226-1-git-send-email-thomas.abraham@linaro.org> <1330000688-11226-2-git-send-email-thomas.abraham@linaro.org>
+Date: Mon, 12 Mar 2012 21:28:32 -0600
+Message-Id: <20120313032832.655983E07E4@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> Add missing hot_remove support for root device.
->
-> How to use it?
-> Find out root bus number to acpi root name mapping from dmesg or /sys
->
->  echo "\_SB.PCIB 3" > /proc/acpi/sci/notify
-> to remove root bus
-
-Same comments as before: this is definitely NOT the way users should
-use this.  If you want to do that for debugging the ACPI notification
-path, fine, but the normal way is for the platform to generate this
-notification.  I think the normal way for users to manually remove an
-ACPI device should be something like:
-
-    echo 1 > /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/remove
-
-just like we do for PCI devices.
-
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: linux-acpi@vger.kernel.org
+On Thu, 23 Feb 2012 18:08:07 +0530, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+> Add irq domain support for max8997 interrupts. The reverse mapping method
+> used is linear mapping since the sub-drivers of max8997 such as regulator
+> and charger drivers can use the max8997 irq_domain to get the linux irq
+> number for max8997 interrupts. All uses of irq_base in platform data and
+> max8997 driver private data are removed.
+> 
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
 > ---
->  drivers/acpi/pci_root_hp.c |   61 ++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 61 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/acpi/pci_root_hp.c b/drivers/acpi/pci_root_hp.c
-> index dc11e81..f5585f5 100644
-> --- a/drivers/acpi/pci_root_hp.c
-> +++ b/drivers/acpi/pci_root_hp.c
-> @@ -73,6 +73,12 @@ static void add_acpi_root_bridge(acpi_handle handle)
->        list_add(&bridge->list, &acpi_root_bridge_list);
->  }
->
-> +static void remove_acpi_root_bridge(struct acpi_root_bridge *bridge)
-> +{
-> +       list_del(&bridge->list);
-> +       kfree(bridge);
-> +}
-> +
->  struct acpi_root_hp_work {
->        struct work_struct work;
->        acpi_handle handle;
-> @@ -142,6 +148,55 @@ static void handle_root_bridge_insertion(acpi_handle handle)
->                printk(KERN_ERR "cannot start bridge\n");
->  }
->
-> +static int acpi_root_evaluate_object(acpi_handle handle, char *cmd, int val)
-> +{
-> +       acpi_status status;
-> +       struct acpi_object_list arg_list;
-> +       union acpi_object arg;
-> +
-> +       arg_list.count = 1;
-> +       arg_list.pointer = &arg;
-> +       arg.type = ACPI_TYPE_INTEGER;
-> +       arg.integer.value = val;
-> +
-> +       status = acpi_evaluate_object(handle, cmd, &arg_list, NULL);
-> +       if (ACPI_FAILURE(status)) {
-> +               printk(KERN_WARNING "%s: %s to %d failed\n",
-> +                                __func__, cmd, val);
-> +               return -1;
-> +       }
-> +
-> +       return 0;
+>  arch/arm/mach-exynos/mach-nuri.c    |    4 --
+>  arch/arm/mach-exynos/mach-origen.c  |    1 -
+>  drivers/mfd/max8997-irq.c           |   60 ++++++++++++++++++++--------------
+>  drivers/mfd/max8997.c               |    1 -
+>  include/linux/mfd/max8997-private.h |    4 ++-
+>  include/linux/mfd/max8997.h         |    1 -
+>  6 files changed, 38 insertions(+), 33 deletions(-)
 
-This function really has nothing to do with host bridges.  Are you
-sure there's no generic function you can use instead?
+Nice patch.  Nice diffstat too.  Some comments below, but I'm happy with where
+this is at.
 
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+> 
+> diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
+> index a6b9162..1e9ba12 100644
+> --- a/arch/arm/mach-exynos/mach-nuri.c
+> +++ b/arch/arm/mach-exynos/mach-nuri.c
+> @@ -1078,12 +1078,8 @@ static struct platform_device nuri_max8903_device = {
+>  static void __init nuri_power_init(void)
+>  {
+>  	int gpio;
+> -	int irq_base = IRQ_GPIO_END + 1;
+>  	int ta_en = 0;
+>  
+> -	nuri_max8997_pdata.irq_base = irq_base;
+> -	irq_base += MAX8997_IRQ_NR;
+> -
+>  	gpio = EXYNOS4_GPX0(7);
+>  	gpio_request(gpio, "AP_PMIC_IRQ");
+>  	s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
+> diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
+> index 02c242e..328dadb 100644
+> --- a/arch/arm/mach-exynos/mach-origen.c
+> +++ b/arch/arm/mach-exynos/mach-origen.c
+> @@ -424,7 +424,6 @@ static struct max8997_platform_data __initdata origen_max8997_pdata = {
+>  	.buck1_gpiodvs	= false,
+>  	.buck2_gpiodvs	= false,
+>  	.buck5_gpiodvs	= false,
+> -	.irq_base	= IRQ_GPIO_END + 1,
+>  
+>  	.ignore_gpiodvs_side_effect = true,
+>  	.buck125_default_idx = 0x0,
+> diff --git a/drivers/mfd/max8997-irq.c b/drivers/mfd/max8997-irq.c
+> index 09274cf..3d8c9d1 100644
+> --- a/drivers/mfd/max8997-irq.c
+> +++ b/drivers/mfd/max8997-irq.c
+> @@ -142,7 +142,8 @@ static void max8997_irq_sync_unlock(struct irq_data *data)
+>  static const inline struct max8997_irq_data *
+>  irq_to_max8997_irq(struct max8997_dev *max8997, int irq)
+>  {
+> -	return &max8997_irqs[irq - max8997->irq_base];
+> +	struct irq_data *data = irq_get_irq_data(irq);
+> +	return &max8997_irqs[data->hwirq];
+
+Hahaha.  The max8997_irqs table is kind of overdone when the group and mask values
+can be arithmetically derived from the hwirq number..
+
+This change is fine, but the driver could use some refactoring.  :-)
+
+>  }
+>  
+>  static void max8997_irq_mask(struct irq_data *data)
+> @@ -182,7 +183,7 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
+>  	u8 irq_reg[MAX8997_IRQ_GROUP_NR] = {};
+>  	u8 irq_src;
+>  	int ret;
+> -	int i;
+> +	int i, cur_irq;
+>  
+>  	ret = max8997_read_reg(max8997->i2c, MAX8997_REG_INTSRC, &irq_src);
+>  	if (ret < 0) {
+> @@ -269,8 +270,10 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
+>  
+>  	/* Report */
+>  	for (i = 0; i < MAX8997_IRQ_NR; i++) {
+> -		if (irq_reg[max8997_irqs[i].group] & max8997_irqs[i].mask)
+> -			handle_nested_irq(max8997->irq_base + i);
+> +		if (irq_reg[max8997_irqs[i].group] & max8997_irqs[i].mask) {
+> +			cur_irq = irq_find_mapping(max8997->irq_domain, i);
+> +			handle_nested_irq(cur_irq);
+> +		}
+
+Well, if you're using the linear mapping, then only actually allocated irqs will
+have a mapping set up.  So the driver could simply do:
+
+	for (i = 0; i < MAX8997_IRQ_NR; i++) {
+		cur_irq = irq_find_mapping(max8997->irq_domain, i);
+		if (cur_irq)
+			handle_nested_irq(cur_irq);
+	}
+
+>  	}
+>  
+>  	return IRQ_HANDLED;
+> @@ -278,26 +281,40 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
+>  
+>  int max8997_irq_resume(struct max8997_dev *max8997)
+>  {
+> -	if (max8997->irq && max8997->irq_base)
+> -		max8997_irq_thread(max8997->irq_base, max8997);
+> +	if (max8997->irq && max8997->irq_domain)
+> +		max8997_irq_thread(0, max8997);
+> +	return 0;
 > +}
 > +
-> +static void handle_root_bridge_removal(acpi_handle handle,
-> +                struct acpi_root_bridge *bridge)
+> +static int max8997_irq_domain_map(struct irq_domain *d, unsigned int irq,
+> +					irq_hw_number_t hw)
 > +{
-> +       u32 flags = 0;
-> +       struct acpi_device *device;
+> +	struct max8997_dev *max8997 = d->host_data;
 > +
-> +       if (bridge) {
-> +               flags = bridge->flags;
-> +               remove_acpi_root_bridge(bridge);
-> +       }
+> +	irq_set_chip_data(irq, max8997);
+> +	irq_set_chip_and_handler(irq, &max8997_irq_chip, handle_edge_irq);
+> +	irq_set_nested_thread(irq, 1);
+> +#ifdef CONFIG_ARM
+> +	set_irq_flags(irq, IRQF_VALID);
+> +#else
+> +	irq_set_noprobe(irq);
+> +#endif
+>  	return 0;
+>  }
+>  
+> +static struct irq_domain_ops max8997_irq_domain_ops = {
+> +	.map = max8997_irq_domain_map,
+> +};
 > +
-> +       if (!acpi_bus_get_device(handle, &device)) {
-> +               int ret_val = acpi_bus_trim(device, 1);
-> +
-> +               printk(KERN_DEBUG "acpi_bus_trim return %x\n", ret_val);
-> +       }
-> +
-> +       if (flags & ROOT_BRIDGE_HAS_PS3) {
-> +               acpi_status status;
-> +
-> +               status = acpi_evaluate_object(handle, "_PS3", NULL, NULL);
-> +               if (ACPI_FAILURE(status))
-> +                       printk(KERN_WARNING "%s: _PS3 failed\n", __func__);
-> +       }
-> +       if (flags & ROOT_BRIDGE_HAS_EJ0)
-> +               acpi_root_evaluate_object(handle, "_EJ0", 1);
-> +}
-> +
->  static void _handle_hotplug_event_root(struct work_struct *work)
->  {
->        struct acpi_root_bridge *bridge;
-> @@ -182,6 +237,12 @@ static void _handle_hotplug_event_root(struct work_struct *work)
->                }
->                break;
->
-> +       case ACPI_NOTIFY_EJECT_REQUEST:
-> +               /* request device eject */
-> +               printk(KERN_DEBUG "%s: Device eject notify on %s\n", __func__,
-> +                                objname);
-> +               handle_root_bridge_removal(handle, bridge);
-> +               break;
->        default:
->                printk(KERN_WARNING "notify_handler: unknown event type 0x%x for %s\n",
->                                 type, objname);
-> --
-> 1.7.7
->
+>  int max8997_irq_init(struct max8997_dev *max8997)
+>  {
+> +	struct irq_domain *domain;
+>  	int i;
+> -	int cur_irq;
+>  	int ret;
+>  	u8 val;
+>  
+>  	if (!max8997->irq) {
+>  		dev_warn(max8997->dev, "No interrupt specified.\n");
+> -		max8997->irq_base = 0;
+> -		return 0;
+> -	}
+> -
+> -	if (!max8997->irq_base) {
+> -		dev_err(max8997->dev, "No interrupt base specified.\n");
+>  		return 0;
+>  	}
+>  
+> @@ -327,18 +344,11 @@ int max8997_irq_init(struct max8997_dev *max8997)
+>  					true : false;
+>  	}
+>  
+> -	/* Register with genirq */
+> -	for (i = 0; i < MAX8997_IRQ_NR; i++) {
+> -		cur_irq = i + max8997->irq_base;
+> -		irq_set_chip_data(cur_irq, max8997);
+> -		irq_set_chip_and_handler(cur_irq, &max8997_irq_chip,
+> -				handle_edge_irq);
+> -		irq_set_nested_thread(cur_irq, 1);
+> -#ifdef CONFIG_ARM
+> -		set_irq_flags(cur_irq, IRQF_VALID);
+> -#else
+> -		irq_set_noprobe(cur_irq);
+> -#endif
+> +	domain = irq_domain_add_linear(NULL, MAX8997_IRQ_NR,
+> +					&max8997_irq_domain_ops, &max8997);
+> +	if (!domain) {
+> +		dev_err(max8997->dev, "could not create irq domain\n");
+> +		return -ENODEV;
+>  	}
+>  
+>  	ret = request_threaded_irq(max8997->irq, NULL, max8997_irq_thread,
+> diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
+> index cb83a7a..20ecad3 100644
+> --- a/drivers/mfd/max8997.c
+> +++ b/drivers/mfd/max8997.c
+> @@ -143,7 +143,6 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+>  	if (!pdata)
+>  		goto err;
+>  
+> -	max8997->irq_base = pdata->irq_base;
+>  	max8997->ono = pdata->ono;
+>  
+>  	mutex_init(&max8997->iolock);
+> diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
+> index 3f4deb6..830152c 100644
+> --- a/include/linux/mfd/max8997-private.h
+> +++ b/include/linux/mfd/max8997-private.h
+> @@ -23,6 +23,8 @@
+>  #define __LINUX_MFD_MAX8997_PRIV_H
+>  
+>  #include <linux/i2c.h>
+> +#include <linux/export.h>
+> +#include <linux/irqdomain.h>
+>  
+>  #define MAX8997_REG_INVALID	(0xff)
+>  
+> @@ -325,7 +327,7 @@ struct max8997_dev {
+>  
+>  	int irq;
+>  	int ono;
+> -	int irq_base;
+> +	struct irq_domain *irq_domain;
+>  	struct mutex irqlock;
+>  	int irq_masks_cur[MAX8997_IRQ_GROUP_NR];
+>  	int irq_masks_cache[MAX8997_IRQ_GROUP_NR];
+> diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
+> index fff5905..818486c 100644
+> --- a/include/linux/mfd/max8997.h
+> +++ b/include/linux/mfd/max8997.h
+> @@ -155,7 +155,6 @@ struct max8997_led_platform_data {
+>  
+>  struct max8997_platform_data {
+>  	/* IRQ */
+> -	int irq_base;
+>  	int ono;
+>  	int wakeup;
+>  
+> -- 
+> 1.6.6.rc2
+> 
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
