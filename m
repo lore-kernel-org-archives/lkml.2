@@ -1,144 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab2CMCq0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 22:46:26 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33906 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab2CMCqY (ORCPT
+	id S1754200Ab2CMCsN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 22:48:13 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37232 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab2CMCsJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 22:46:24 -0400
-Date: Mon, 12 Mar 2012 19:45:11 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
-Message-ID: <20120313024511.GF19584@count0.beaverton.ibm.com>
-References: <20120309134732.GA3696@redhat.com>
- <20120309141349.GC13346@moon>
- <20120309142620.GA5334@redhat.com>
- <20120309144239.GD13346@moon>
- <20120309152122.GA7802@redhat.com>
- <20120309154224.GE13346@moon>
- <20120309220244.GD19584@count0.beaverton.ibm.com>
- <20120309223932.GB725@moon>
- <20120309235901.GE19584@count0.beaverton.ibm.com>
- <20120310074854.GA3065@moon>
+	Mon, 12 Mar 2012 22:48:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120310074854.GA3065@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031302-6148-0000-0000-00000432B82E
+In-Reply-To: <1331362837-10740-8-git-send-email-yinghai@kernel.org>
+References: <1331362837-10740-1-git-send-email-yinghai@kernel.org> <1331362837-10740-8-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 12 Mar 2012 20:47:48 -0600
+Message-ID: <CAErSpo7+zqJs1hG9ht3gX7CCqAVvoy+QTJb6xZUU9=LzwfwpYg@mail.gmail.com>
+Subject: Re: [PATCH v2 07/37] PCI: pci_bus_size_bridges() should not size own bridge
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 11:48:54AM +0400, Cyrill Gorcunov wrote:
-> On Fri, Mar 09, 2012 at 03:59:01PM -0800, Matt Helsley wrote:
-> > > Well, in final version I switched back to
-> > > 
-> > > +	if (mm->num_exe_file_vmas)
-> > > +		return -EBUSY;
-> > > 
-> > > simply because it's more flexible than mm->exe_file.
-> > > 
-> > > With mm->exe_file this prctl option become a one-shot
-> > > only, and while at moment our user-space tool can perfectly
-> > > live with that I thought that there is no strict need to
-> > > limit the option this way from the very beginning.
-> > 
-> > As far as backward compatibility, isn't it better to lift that restriction
-> > later rather than add it? I think the latter would very likely "break"
-> > things whereas the former would not.
-> 
-> Indeed. But I think any change will mean compatibility broken, programs
-> may rely on one-shot or multi-shot behaviour. So I personally vote
-> for more flexible approach here.
+On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> During checking acpiphp code, found following sequence:
+>        pci_bus_size_bridges(bus);
+>        pci_bus_assign_resources(bus);
+>        pci_enable_bridges(bus);
 
-Very true. In fact thinking about this prctl a bit more makes me more certain
-that one-shot is better and it ought to stay that way forever. The
-flexibility to change the /proc/pid/exe symlink could be yet another
-way for malicious code to obscure a compromised program and
-masquerade as a benign process. That's a problem inherent in this prctl
-whether its one-shot or multi-shot. However, if you use the one-shot
-approach then a security-concious program can use this prctl once
-during its early initialization to ensure the prctl cannot later be abused
-for this purpose.
+One of these lines is indented with tab, the others with spaces, which
+makes it not line up when using "git log".  Try it sometime.
 
-> 
-> > 
-> > I also prefer that restriction because it establishes a bound on how
-> > frequently the symlink can change. Keeping it a one-shot deal makes the
-> > values that show up in tools like top more reliable for admins.
-> 
-> How? Once exe_file changed -- we already cheating the kernel, it's not
-> bad, not good, just work this way ;) I mean imagine an admin which
-> runs top and sees some program in 'top' ouput (btw, I'm not sure but
-> does top really parse /proc/pid/exe?) so say he sees some programs
+> The problem is that when bus is not root bus, pci_bus_size_bridges would also size
+> own pci bridge bus->self if that bridge resource is not inserted before.
+> but later pci_bus_assign_resources will not allocate those size bridge res.
+>
+> So try make it less confusing, let it does not include self sizing.
+> and add with_self parameter info __pci_bus_size_bridge()
 
-Sorry, my phrase "tools like top" was ambiguous. I was trying to succinctly
-refer to top as one type of program which might rely on this information.
-I don't know if top itself uses this file but it would be reasonable for
-tools of that kind to use/display it to an administrator.
+You failed to make this less confusing.  Adding words to function
+names, adding "__" prefixes, adding flags to say "include self" or not
+-- they all make things hard to read.
 
-> names -- how would he know if a program did change own /proc/pid/exe
-> at all? Note it's not that important how many times the symlink was
-> changed there is simply no way to find out if it was changed at all,
-> and actually from my POV it's a win for transparent c/r, that was
-> all the idea.
+> Fixes caller in pci hotplug componets.
 
-I am quite aware of the c/r use for this prctl :). However I also
-wonder if there aren't serious malicious uses of it. I'm not saying the
-symlink has to be perfectly accurate at all times,  but it's easy and
-reasonable to make it much harder to abuse this particular prctl for
-malicious purposes by making it one-shot.
+"components"
 
-> 
-> > > 
-> > > As far as I understand overall num_exe_file_vmas concept -- we track
-> > > a number of VM_EXECUTABLE with it, so setting new exe_file should not
-> > > change num_exe_file_vmas I think.
-> > 
-> > True, it's literally correct. However the whole reason for having it
-> > is to turn the mm->exe_file reference into a sort of weak reference
-> > which happens to coincide with counting the number of VM_EXECUTABLE vmas
-> > until you do c/r (really just the restart side of c/r).
-> > 
-> 
-> Look. We actually have a period of time where exe_file is set but
-> num_exe_file_vmas = 0 when we start program execution before elf
-> map get parsed, so I dare to say such state is legitime (yes, userspace
-> doesn't see this state and yes, we start mapping elf sections pretty
-> immediately after exe_file assigned). So I don't see much problem in
-> extending this "state" (exe_file!=0,num_exe_file_vmas = 0).
-
-True, there is a time when that combination of values occurs. However
-who sets those values and when is the important difference.
-
-Before this patch that state was rather ephemeral and almost entirely
-under the control of the kernel. The only way userspace could change it
-was by unmapping the region(s) mapped during exec*(). At that point it
-could not "lie" and insert some other symlink there and the admin would
-be better able to determine what had happened.
-
-With this patch -- especially the multi-shot form -- the symlink will
-be entirely under the control of (potentially untrusted) userspace code
-and the admin is totally at the mercy of the userspace code. In
-single-shot form programs could use the prctl() to ensure the symlink
-could not be changed later -- the restart tool would be the only program
-that would need to ensure that prctl() had not been used since the last
-exec*().
-
-If we're going to let userspace do arbitrary things to the symlink I can't
-help but wonder why we can't skip the prctl() altogether and just enable
-MAP_EXECUTABLE in mmap().
-
-Cheers,
-	-Matt Helsley
-
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/hotplug/acpiphp_glue.c     |    2 +-
+>  drivers/pci/hotplug/cpci_hotplug_pci.c |    2 +-
+>  drivers/pci/hotplug/shpchp_pci.c       |    2 +-
+>  drivers/pci/setup-bus.c                |   24 +++++++++++++++---------
+>  include/linux/pci.h                    |    1 +
+>  5 files changed, 19 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+> index 806c44f..10b2122 100644
+> --- a/drivers/pci/hotplug/acpiphp_glue.c
+> +++ b/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -816,7 +816,7 @@ static int __ref enable_device(struct acpiphp_slot *slot)
+>                            dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
+>                                max = pci_scan_bridge(bus, dev, max, pass);
+>                                if (pass && dev->subordinate)
+> -                                       pci_bus_size_bridges(dev->subordinate);
+> +                                       pci_bus_size_bridges_with_self(dev->subordinate);
+>                        }
+>                }
+>        }
+> diff --git a/drivers/pci/hotplug/cpci_hotplug_pci.c b/drivers/pci/hotplug/cpci_hotplug_pci.c
+> index ae853cc..4ef80ad 100644
+> --- a/drivers/pci/hotplug/cpci_hotplug_pci.c
+> +++ b/drivers/pci/hotplug/cpci_hotplug_pci.c
+> @@ -313,7 +313,7 @@ int __ref cpci_configure_slot(struct slot *slot)
+>                                continue;
+>                        }
+>                        child->subordinate = pci_do_scan_bus(child);
+> -                       pci_bus_size_bridges(child);
+> +                       pci_bus_size_bridges_with_self(child);
+>                }
+>                pci_dev_put(dev);
+>        }
+> diff --git a/drivers/pci/hotplug/shpchp_pci.c b/drivers/pci/hotplug/shpchp_pci.c
+> index df7e4bf..d92807b 100644
+> --- a/drivers/pci/hotplug/shpchp_pci.c
+> +++ b/drivers/pci/hotplug/shpchp_pci.c
+> @@ -85,7 +85,7 @@ int __ref shpchp_configure_device(struct slot *p_slot)
+>                                continue;
+>                        }
+>                        child->subordinate = pci_do_scan_bus(child);
+> -                       pci_bus_size_bridges(child);
+> +                       pci_bus_size_bridges_with_self(child);
+>                }
+>                pci_configure_slot(dev);
+>                pci_dev_put(dev);
+> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+> index f35a679..ec2026c 100644
+> --- a/drivers/pci/setup-bus.c
+> +++ b/drivers/pci/setup-bus.c
+> @@ -982,8 +982,8 @@ handle_done:
+>        ;
+>  }
+>
+> -void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+> -                       struct list_head *realloc_head)
+> +static void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+> +                       struct list_head *realloc_head, bool with_self)
+>  {
+>        struct pci_dev *dev;
+>        unsigned long mask, prefmask;
+> @@ -1001,13 +1001,13 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+>
+>                case PCI_CLASS_BRIDGE_PCI:
+>                default:
+> -                       __pci_bus_size_bridges(b, realloc_head);
+> +                       __pci_bus_size_bridges(b, realloc_head, true);
+>                        break;
+>                }
+>        }
+>
+> -       /* The root bus? */
+> -       if (!bus->self)
+> +       /* Is root bus or not wanted? */
+> +       if (!bus->self || !with_self)
+>                return;
+>
+>        switch (bus->self->class >> 8) {
+> @@ -1047,9 +1047,15 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+>        }
+>  }
+>
+> +void __ref pci_bus_size_bridges_with_self(struct pci_bus *bus)
+> +{
+> +       __pci_bus_size_bridges(bus, NULL, true);
+> +}
+> +EXPORT_SYMBOL(pci_bus_size_bridges_with_self);
+> +
+>  void __ref pci_bus_size_bridges(struct pci_bus *bus)
+>  {
+> -       __pci_bus_size_bridges(bus, NULL);
+> +       __pci_bus_size_bridges(bus, NULL, false);
+>  }
+>  EXPORT_SYMBOL(pci_bus_size_bridges);
+>
+> @@ -1362,7 +1368,7 @@ again:
+>        /* Depth first, calculate sizes and alignments of all
+>           subordinate buses. */
+>        list_for_each_entry(bus, &pci_root_buses, node)
+> -               __pci_bus_size_bridges(bus, add_list);
+> +               __pci_bus_size_bridges(bus, add_list, false);
+>
+>        /* Depth last, allocate resources and update the hardware. */
+>        list_for_each_entry(bus, &pci_root_buses, node)
+> @@ -1439,7 +1445,7 @@ void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge)
+>                                  IORESOURCE_PREFETCH;
+>
+>  again:
+> -       __pci_bus_size_bridges(parent, &add_list);
+> +       __pci_bus_size_bridges(parent, &add_list, true);
+>        __pci_bridge_assign_resources(bridge, &add_list, &fail_head);
+>        BUG_ON(!list_empty(&add_list));
+>        tried_times++;
+> @@ -1500,7 +1506,7 @@ void pci_assign_unassigned_bus_resources(struct pci_bus *bus)
+>                    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
+>                        if (dev->subordinate)
+>                                __pci_bus_size_bridges(dev->subordinate,
+> -                                                        &add_list);
+> +                                                &add_list, true);
+>        up_read(&pci_bus_sem);
+>        __pci_bus_assign_resources(bus, &add_list, NULL);
+>        BUG_ON(!list_empty(&add_list));
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 634bbf5..87dceca 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -906,6 +906,7 @@ int pci_vpd_truncate(struct pci_dev *dev, size_t size);
+>  resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
+>  void pci_bus_assign_resources(const struct pci_bus *bus);
+>  void pci_bus_size_bridges(struct pci_bus *bus);
+> +void pci_bus_size_bridges_with_self(struct pci_bus *bus);
+>  int pci_claim_resource(struct pci_dev *, int);
+>  void pci_assign_unassigned_resources(void);
+>  void pci_assign_unassigned_bridge_resources(struct pci_dev *bridge);
+> --
+> 1.7.7
+>
