@@ -1,138 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753253Ab2CMNUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 09:20:24 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50600 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab2CMNUX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 09:20:23 -0400
+	id S1753224Ab2CMNZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 09:25:07 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34200 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752952Ab2CMNZF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 09:25:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <1331622432-24683-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1331622432-24683-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Date: Tue, 13 Mar 2012 21:20:21 +0800
-Message-ID: <CAJd=RBAHYi-BOXBO+u0u9-C=35Lu=ow=L77w2WSsndUBxVKf9w@mail.gmail.com>
-Subject: Re: [PATCH -V3 3/8] hugetlb: add charge/uncharge calls for HugeTLB alloc/free
-From: Hillf Danton <dhillf@gmail.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        aarcange@redhat.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Date: Tue, 13 Mar 2012 09:25:03 -0400
+X-Google-Sender-Auth: qwZ_ef0yUujZ7rF62zKynKvC1uA
+Message-ID: <CAOvdn6W+-w2wYdqLCMHUDJr0WDXn3ssBvWnvvZy7Ni_FG2C0jQ@mail.gmail.com>
+Subject: 3.2.10 stable build failures?
+From: Ben Guthro <ben@guthro.net>
+To: greg@kroah.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 3:07 PM, Aneesh Kumar K.V
-<aneesh.kumar@linux.vnet.ibm.com> wrote:
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
->
-> This adds necessary charge/uncharge calls in the HugeTLB code
->
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> ---
->  mm/hugetlb.c    |   21 ++++++++++++++++++++-
->  mm/memcontrol.c |    5 +++++
->  2 files changed, 25 insertions(+), 1 deletions(-)
->
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index fe7aefd..b7152d1 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -21,6 +21,8 @@
->  #include <linux/rmap.h>
->  #include <linux/swap.h>
->  #include <linux/swapops.h>
-> +#include <linux/memcontrol.h>
-> +#include <linux/page_cgroup.h>
->
->  #include <asm/page.h>
->  #include <asm/pgtable.h>
-> @@ -542,6 +544,9 @@ static void free_huge_page(struct page *page)
->        BUG_ON(page_mapcount(page));
->        INIT_LIST_HEAD(&page->lru);
->
-> +       if (mapping)
-> +               mem_cgroup_hugetlb_uncharge_page(h - hstates,
-> +                                                pages_per_huge_page(h), page);
->        spin_lock(&hugetlb_lock);
->        if (h->surplus_huge_pages_node[nid] && huge_page_order(h) < MAX_ORDER) {
->                update_and_free_page(h, page);
-> @@ -1019,12 +1024,15 @@ static void vma_commit_reservation(struct hstate *h,
->  static struct page *alloc_huge_page(struct vm_area_struct *vma,
->                                    unsigned long addr, int avoid_reserve)
->  {
-> +       int ret, idx;
->        struct hstate *h = hstate_vma(vma);
->        struct page *page;
-> +       struct mem_cgroup *memcg = NULL;
->        struct address_space *mapping = vma->vm_file->f_mapping;
->        struct inode *inode = mapping->host;
->        long chg;
->
-> +       idx = h - hstates;
+Hello - I merged the 3.2.10 stable patch set that you pushed yesterday
+into my tree, but am seeing build failures that
+WM1811_JACKDET_MODE_MASK is undeclared.
 
-Better if hstate index is computed with a tiny inline helper?
-Other than that,
+This looks like it originated with the following commit:
 
-Acked-by: Hillf Danton <dhillf@gmail.com>
+commit 315e73b400c9a287a53efb5f857d308589674ac5
+Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: � Mon Feb 20 21:32:32 2012 +0000
 
->        /*
->         * Processes that did not create the mapping will have no reserves and
->         * will not have accounted against quota. Check that the quota can be
-> @@ -1039,6 +1047,12 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->                if (hugetlb_get_quota(inode->i_mapping, chg))
->                        return ERR_PTR(-VM_FAULT_SIGBUS);
->
-> +       ret = mem_cgroup_hugetlb_charge_page(idx, pages_per_huge_page(h),
-> +                                            &memcg);
-> +       if (ret) {
-> +               hugetlb_put_quota(inode->i_mapping, chg);
-> +               return ERR_PTR(-VM_FAULT_SIGBUS);
-> +       }
->        spin_lock(&hugetlb_lock);
->        page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
->        spin_unlock(&hugetlb_lock);
-> @@ -1046,6 +1060,9 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->        if (!page) {
->                page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
->                if (!page) {
-> +                       mem_cgroup_hugetlb_uncharge_memcg(idx,
-> +                                                        pages_per_huge_page(h),
-> +                                                        memcg);
->                        hugetlb_put_quota(inode->i_mapping, chg);
->                        return ERR_PTR(-VM_FAULT_SIGBUS);
->                }
-> @@ -1054,7 +1071,9 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->        set_page_private(page, (unsigned long) mapping);
->
->        vma_commit_reservation(h, vma, addr);
-> -
-> +       /* update page cgroup details */
-> +       mem_cgroup_hugetlb_commit_charge(idx, pages_per_huge_page(h),
-> +                                        memcg, page);
->        return page;
->  }
->
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 8cac77b..f4aa11c 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2901,6 +2901,11 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
->
->        if (PageSwapCache(page))
->                return NULL;
-> +       /*
-> +        * HugeTLB page uncharge happen in the HugeTLB compound page destructor
-> +        */
-> +       if (PageHuge(page))
-> +               return NULL;
->
->        if (PageTransHuge(page)) {
->                nr_pages <<= compound_order(page);
-> --
-> 1.7.9
->
+� � mfd: Test for jack detection when deciding if wm8994 should suspend
+
+� � commit e7c248a049c2aac21bded0b0722caee6f0e57256 upstream.
+
+� � The jack detection on WM1811 is often required during system suspend, add
+� � it as another check when deciding if we should suspend.
+
+� � Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+� � Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+� � Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
+
+I've grepped the entire 3.2.10 source tree for
+WM1811_JACKDET_MODE_MASK - but have only found the occurence in the if
+statement introduced in the above changeset
+
+
+In the mainline tree, "git blame" says this was introduced in the
+following changeset to
+include/linux/mfd/wm8994/registers.h
+
+commit af6b6fe41c4bc9e7933d66bbbf5106e0e7e6e484
+Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: � Wed Nov 30 20:32:05 2011 +0000
+
+� � ASoC: Implement support for WM1811A jack detection
+
+� � The WM1811A features an advanced low power accessory detection subsystem
+� � which allows the device to be maintained in a very low power state while
+� � the system is idle without sacrificing any accessory detection features.
+
+� � Implement software support for this, automatically managing the power
+� � configuration of the device depending on the detected accessory.
+
+� � Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+
+
+Would you recommend me backporting that changeset from mainline, or
+reverting the offending one?
+
+
+- Ben Guthro
