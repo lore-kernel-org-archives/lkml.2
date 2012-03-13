@@ -1,40 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab2CMNkk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 09:40:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39262 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab2CMNkj convert rfc822-to-8bit (ORCPT
+	id S1754065Ab2CMNlD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 09:41:03 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:64714 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab2CMNlB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 09:40:39 -0400
-Message-ID: <1331646021.18960.71.camel@twins>
-Subject: Re: [PATCH 4/4] perf report: Treat an argument as a symbol filter
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung.kim@lge.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 13 Mar 2012 14:40:21 +0100
-In-Reply-To: <20120313062105.GB24357@elte.hu>
-References: <1331619294-29162-1-git-send-email-namhyung.kim@lge.com>
-	 <1331619294-29162-4-git-send-email-namhyung.kim@lge.com>
-	 <20120313062105.GB24357@elte.hu>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 13 Mar 2012 09:41:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACVxJT_UWzpVo1Jfbf5Z2A-s16QjEv05MiNSY_EGihKTPuMyxg@mail.gmail.com>
+References: <CACVxJT_UWzpVo1Jfbf5Z2A-s16QjEv05MiNSY_EGihKTPuMyxg@mail.gmail.com>
+Date: Tue, 13 Mar 2012 15:41:00 +0200
+Message-ID: <CACVxJT8nG3QNMAQ3rA0hp11x=ARgJEkHS408TPeL_3SH7cwZFg@mail.gmail.com>
+Subject: Re: seq_put_decimal_ull() et al
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-13 at 07:21 +0100, Ingo Molnar wrote:
-> To play the devil's advocate it uses up valuable perf report 
-> command line real estate and we probably cannot change this 
-> workflow in the future, once people get used to it. 
+On Tue, Mar 13, 2012 at 4:35 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>> Subject:    + procfs-add-num_to_str-to-speed-up-proc-stat-fix-2.patch added to -mm tree
+>
+> I think the fix is to create proper binary interface for exporting
+> interrupt counts.
+> Programs can parse raw data equally well if programming language is
+> even minimally reasonable
+> (POSIX shell may not qualify, though).
 
-I would indeed suggest to make it a proper argument and add argument
-parsing to report like we have for all the other commands.
-
-Say something like: perf report --symbol-filter="foobar"
-and maybe an appropriate short version.
+Ugh, I meant a file with binary data, not complete fileless interface.
