@@ -1,41 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab2CME4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 00:56:35 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:54213 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757185Ab2CME4c (ORCPT
+	id S1758044Ab2CMFAP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:00:15 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41388 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab2CMFAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 00:56:32 -0400
-Date: Mon, 12 Mar 2012 23:56:14 -0500
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [git pull]
-Message-ID: <20120312235614.1f22c90b@jbarnes-x220>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 13 Mar 2012 01:00:12 -0400
+Message-ID: <4F5ED458.5070301@openvz.org>
+Date: Tue, 13 Mar 2012 09:00:08 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: Fwd: Control page reclaim granularity
+References: <4F5D95AF.1020108@openvz.org> <20120312081413.GA10923@gmail.com> <20120312134226.GA5120@barrios> <4F5E05AD.20200@openvz.org> <20120313024818.GA7125@barrios> <4F5ECF01.2000402@openvz.org>
+In-Reply-To: <4F5ECF01.2000402@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 12.43.225.40 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit
-4f262acfde22b63498b5e4f165e53d3bb4e96400:
+Konstantin Khlebnikov wrote:
+> Minchan Kim wrote:
+>> On Mon, Mar 12, 2012 at 06:18:21PM +0400, Konstantin Khlebnikov wrote:
+>>> Minchan Kim wrote:
+>>>> On Mon, Mar 12, 2012 at 04:14:14PM +0800, Zheng Liu wrote:
+>>>>> On 03/12/2012 02:20 PM, Konstantin Khlebnikov wrote:
+>>>>>> Minchan Kim wrote:
+>>>>>>> On Mon, Mar 12, 2012 at 10:06:09AM +0800, Zheng Liu wrote:
+> <CUT>
+>>>>>>>
+>>>>>>> Now problem is that
+>>>>>>>
+>>>>>>> 1. User want to keep pages which are used once in a while in memory.
+>>>>>>> 2. Kernel want to reclaim them because they are surely reclaim target
+>>>>>>> pages in point of view by LRU.
+>>>>>>>
+>>>>>>> The most desriable approach is that user should use mlock to guarantee
+>>>>>>> them in memory. But mlock is too big overhead and user doesn't want to
+>>>>>>> keep
+>>>>>>> memory all pages all at once.(Ie, he want demand paging when he need
+>>>>>>> the page)
+>>>>>>> Right?
+>>>>>>>
+>>>>>>> madvise, it's a just hint for kernel and kernel doesn't need to make
+>>>>>>> sure madvise's behavior.
+>>>>>>> In point of view, such inconsistency might not be a big problem.
+>>>>>>>
+>>>>>>> Big problem I think now is that user should use madvise(WILLNEED)
+>>>>>>> periodically because such
+>>>>>>> activation happens once when user calls madvise. If user doesn't use
+>>>>>>> page frequently after
+>>>>>>> user calls it, it ends up moving into inactive list and even could be
+>>>>>>> reclaimed.
+>>>>>>> It's not good. :-(
+>>>>>>>
+>>>>>>> Okay. How about adding new VM_WORKINGSET?
+>>>>>>> And reclaimer would give one more round trip in active/inactive list
+>>>>>>> erwhen reclaim happens
+>>>>>>> if the page is referenced.
+>>>>>>>
+>>>>>>> Sigh. We have no room for new VM_FLAG in 32 bit.
+>>>>>> p
+>>>>>> It would be nice to mark struct address_space with this flag and export
+>>>>>> AS_UNEVICTABLE somehow.
+>>>>>> Maybe we can reuse file-locking engine for managing these bits =)
+>>>>>
+>>>>> Make sense to me. We can mark this flag in struct address_space and check
+>>>>> it in page_refereneced_file(). If this flag is set, it will be cleard and
+>>>>
+>>>> Disadvantage is that we could set reclaim granularity as per-inode.
+>>>> I want to set it as per-vma, not per-inode.
+>>>
+>>> But with per-inode flag we can tune all files, not only memory-mapped.
+>>
+>> I don't oppose per-inode setting but I believe we need file range or mmapped vma,
+>> still. One file may have different characteristic part, something is working set
+>> something is streaming part.
+>>
+>>> See, attached patch. Currently I thinking about managing code,
+>>> file-locking engine really fits perfectly =)
+>>
+>> file-locking engine?
+>> You consider fcntl as interface for it?
+>> What do you mean?
+>>
+>
+> If we set bits on inode we somehow account its users and clear AS_WORKINGSET and AS_UNEVICTABLE
+> at last file close. We can use file-locking engine for locking inodes in memory -- file lock automatically
+> release inode at last fput(). Maybe it's too tricky and we should add couple simple atomic counters to
+> generic strict inode (like i_writecount/i_readcount) but in this case we will add new code on fast-path.
+> So, looks like invention new kind of struct file_lock is best approach.
+> I don't want implement range-locking for now, but I can do it if somebody really wants this.
+>
+> Yes, we can use fcntl(), but fadvise() is much better.
 
-  Merge branch 'fixes' of git://git.linaro.org/people/rmk/linux-arm (2012-03-07 08:33:03 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci for-linus
-
-A single fix for a regression that affects some people who try to
-disable ASPM for whatever reason.
-
-Matthew Garrett (1):
-      PCI: ignore pre-1.1 ASPM quirking when ASPM is disabled
-
- drivers/pci/pcie/aspm.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Another mad idea: if we mark vma, then we can add fake vma (belong init_mm for example) to
+inode rmap to lock inode's pages range in memory without actually mapping file.
+In page_referenced_one() we should handle this fake vma differently,
+because page_check_address() will always fail for it.
+Thus we can effectively implement AS_WORKINGSET and AS_UNEVICTABLE for arbitrary page ranges.
