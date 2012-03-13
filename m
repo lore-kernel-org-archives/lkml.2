@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759211Ab2CMFmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:42:43 -0400
-Received: from mail-ey0-f202.google.com ([209.85.215.202]:40802 "EHLO
-	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757840Ab2CMFml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:42:41 -0400
-From: Avery Pennarun <apenwarr@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Fabio M. Di Nitto" <fdinitto@redhat.com>,
-        Avery Pennarun <apenwarr@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Olaf Hering <olaf@aepfle.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Yinghai LU <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 0/5] Persist printk buffer across reboots.
-Date: Tue, 13 Mar 2012 01:36:36 -0400
-Message-Id: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
-X-Mailer: git-send-email 1.7.7.3
+	id S1759397Ab2CMFnK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:43:10 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44685 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758287Ab2CMFnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 01:43:07 -0400
+Date: Tue, 13 Mar 2012 06:42:42 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
+Subject: Re: [PATCH] uprobes/core: handle breakpoint and signal step
+ exception.
+Message-ID: <20120313054242.GA1623@elte.hu>
+References: <20120223110245.12459.7391.sendpatchset@srdronam.in.ibm.com>
+ <20120227091212.GA7092@elte.hu>
+ <20120308131824.GC13284@linux.vnet.ibm.com>
+ <20120308134809.GB28488@elte.hu>
+ <20120309062853.GD13284@linux.vnet.ibm.com>
+ <20120309073348.GA15570@elte.hu>
+ <20120313052016.GA27824@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120313052016.GA27824@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last patch in this series implements a new CONFIG_PRINTK_PERSIST option
-that, when enabled, puts the printk buffer in a well-defined memory location
-so that we can keep appending to it after a reboot.  The upshot is that,
-even after a kernel panic or non-panic hard lockup, on the next boot
-userspace will be able to grab the kernel messages leading up to it.  It
-could then upload the messages to a server (for example) to keep crash
-statistics.
 
-The preceding patches in the series are mostly just things I fixed up while
-working on that patch.
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-Some notes:
+> I.e. you could drop this patch altogether:
+> 
+>   x86/trivial: Fix 'old_rsp' undefined build failure when including asm/compat.h
+> 
+> And rework the is_ia32_compat_task() patch to use another 
+> header and to use the is_32bit_task() name. Also, you should 
+> double check whether the x32 execution model needs special 
+> consideration as well:
+> 
+>  #define TIF_IA32		17	/* IA32 compatibility process */
+>  #define TIF_X32		30	/* 32-bit native x86-64 binary */
+> 
+> otherwise uprobe will not work with x32 tasks properly.
 
-- I'm not totally sure of the locking or portability issues when calling
-  memblock or bootmem.  This all happens really early, and I *think*
-  interrupts are still disabled at that time, so it's probably okay.
+Given that x32 tasks are using native 64-bit syscalls, what you 
+need is the is_ia32_task() check. We have that in -tip already, 
+in compat.h. If uprobes uses that definition then uprobes will 
+be able to probe x32 tasks as well.
 
-- Tested this version on x86 (kvm) and it works with soft reboot (ie. reboot
-  -f).  Since some BIOSes wipe the memory during boot, you might not have
-  any luck.  It should be great on many embedded systems, though, including
-  the MIPS system I've tested a variant of this patch on.  (Our MIPS build
-  is based on a slightly older kernel so it's not 100% the same, but I think
-  this should behave identically.)
-  
-- The way we choose a well-defined memory location is slightly suspicious
-  (we just count down from the top of the address space) but I've tested it
-  pretty carefully, and it seems to be okay.
+To make it available to uprobes please move is_ia32_task() to 
+processor.h and make it return 1 on i386 kernels. This should be 
+a very simple patch - and that's all that is needed.
 
-- In printk.c with CONFIG_PRINTK_PERSIST set, we're #defining words like
-  log_end.  It might be cleaner to replace all instances of log_end with
-  LOG_END to make this more clear.  This is also the reason the struct
-  logbits members start with _: because otherwise they conflict with the
-  macro.  Suggestions welcome.
+Thanks,
 
-Patch generated against v3.3-rc7.
-
-Avery Pennarun (5):
-  mm: bootmem: BUG() if you try to allocate bootmem too late.
-  mm: bootmem: it's okay to reserve_bootmem an invalid address.
-  mm: nobootmem: implement reserve_bootmem() in terms of memblock.
-  printk: use alloc_bootmem() instead of memblock_alloc().
-  printk: CONFIG_PRINTK_PERSIST: persist printk buffer across reboots.
-
- init/Kconfig    |   12 ++++++
- kernel/printk.c |  117 +++++++++++++++++++++++++++++++++++++++++++++---------
- mm/bootmem.c    |   10 ++++-
- mm/nobootmem.c  |   23 +++++++++++
- 4 files changed, 140 insertions(+), 22 deletions(-)
-
--- 
-1.7.7.3
-
+	Ingo
