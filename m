@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758307Ab2CMASj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:18:39 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46916 "EHLO
+	id S964791Ab2CMAS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:18:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46887 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757664Ab2CMASe (ORCPT
+	with ESMTP id S932301Ab2CMASY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:18:34 -0400
+	Mon, 12 Mar 2012 20:18:24 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Goldwyn Rodrigues <rgoldwyn@gmail.com>,
-        Goldwyn Rodrigues <rgoldwyn@suse.de>, jlbec <jlbec@evilplan.org>,
+Cc: stable-review@kernel.org, Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 038/196] Treat writes as new when holes span across page boundaries
-Date: Mon, 12 Mar 2012 20:12:46 -0400
-Message-Id: <1331597724-31358-39-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 035/196] p54usb: IDs for two new devices
+Date: Mon, 12 Mar 2012 20:12:43 -0400
+Message-Id: <1331597724-31358-36-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,45 +22,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Goldwyn Rodrigues <rgoldwyn@gmail.com>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 272b62c1f0f6f742046e45b50b6fec98860208a0 upstream.
+commit 220107610c7c2c9703e09eb363e8ab31025b9315 upstream.
 
-When a hole spans across page boundaries, the next write forces
-a read of the block. This could end up reading existing garbage
-data from the disk in ocfs2_map_page_blocks. This leads to
-non-zero holes. In order to avoid this, mark the writes as new
-when the holes span across page boundaries.
-
-Signed-off-by: Goldwyn Rodrigues <rgoldwyn@suse.de>
-Signed-off-by: jlbec <jlbec@evilplan.org>
+Reported-by: Mark Davis [via p54/devices wiki]
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ocfs2/aops.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/p54/p54usb.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index e504ab7..3de08db 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -1035,6 +1035,12 @@ static int ocfs2_prepare_page_for_write(struct inode *inode, u64 *p_blkno,
- 	ocfs2_figure_cluster_boundaries(OCFS2_SB(inode->i_sb), cpos,
- 					&cluster_start, &cluster_end);
+diff --git a/drivers/net/wireless/p54/p54usb.c b/drivers/net/wireless/p54/p54usb.c
+index 9a57d14..3317906d 100644
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -56,6 +56,7 @@ static struct usb_device_id p54u_table[] __devinitdata = {
+ 	{USB_DEVICE(0x0846, 0x4210)},	/* Netgear WG121 the second ? */
+ 	{USB_DEVICE(0x0846, 0x4220)},	/* Netgear WG111 */
+ 	{USB_DEVICE(0x09aa, 0x1000)},	/* Spinnaker Proto board */
++	{USB_DEVICE(0x0bf8, 0x1007)},	/* Fujitsu E-5400 USB */
+ 	{USB_DEVICE(0x0cde, 0x0006)},	/* Medion 40900, Roper Europe */
+ 	{USB_DEVICE(0x0db0, 0x6826)},	/* MSI UB54G (MS-6826) */
+ 	{USB_DEVICE(0x107b, 0x55f2)},	/* Gateway WGU-210 (Gemtek) */
+@@ -68,6 +69,7 @@ static struct usb_device_id p54u_table[] __devinitdata = {
+ 	{USB_DEVICE(0x1915, 0x2235)},	/* Linksys WUSB54G Portable OEM */
+ 	{USB_DEVICE(0x2001, 0x3701)},	/* DLink DWL-G120 Spinnaker */
+ 	{USB_DEVICE(0x2001, 0x3703)},	/* DLink DWL-G122 */
++	{USB_DEVICE(0x2001, 0x3762)},	/* Conceptronic C54U */
+ 	{USB_DEVICE(0x5041, 0x2234)},	/* Linksys WUSB54G */
+ 	{USB_DEVICE(0x5041, 0x2235)},	/* Linksys WUSB54G Portable */
  
-+	/* treat the write as new if the a hole/lseek spanned across
-+	 * the page boundary.
-+	 */
-+	new = new | ((i_size_read(inode) <= page_offset(page)) &&
-+			(page_offset(page) <= user_pos));
-+
- 	if (page == wc->w_target_page) {
- 		map_from = user_pos & (PAGE_CACHE_SIZE - 1);
- 		map_to = map_from + user_len;
 -- 
 1.7.9.3
 
