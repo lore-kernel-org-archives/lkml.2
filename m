@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759590Ab2CMDlD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 23:41:03 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33282 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759578Ab2CMDk7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 23:40:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <1331362837-10740-35-git-send-email-yinghai@kernel.org>
-References: <1331362837-10740-1-git-send-email-yinghai@kernel.org> <1331362837-10740-35-git-send-email-yinghai@kernel.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 12 Mar 2012 21:40:38 -0600
-Message-ID: <CAErSpo5nz0QN4y6P0AoWvKMUUQOQpKgGijwUFEmqPc6NewGW_Q@mail.gmail.com>
-Subject: Re: [PATCH v2 34/37] x86, PCI: Add arch version pci_root_rescan()
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1759587Ab2CMDmD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 23:42:03 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53405 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759496Ab2CMDmB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 23:42:01 -0400
+Date: Tue, 13 Mar 2012 14:41:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: linux-next: manual merge of the isci tree with the scsi tree
+Message-Id: <20120313144152.5bd633a5ea6e496c059a9465@canb.auug.org.au>
+In-Reply-To: <CABE8wwtNcA4QcJyLC6zipjygjAYa6o=bwPyz6xS9A=PLiU+2kg@mail.gmail.com>
+References: <20120313134512.848baf17f46729fa0fac195d@canb.auug.org.au>
+	<CABE8wwtNcA4QcJyLC6zipjygjAYa6o=bwPyz6xS9A=PLiU+2kg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__13_Mar_2012_14_41_52_+1100_aMV7ePo/lkQFtABA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> It will call acpi version pci_root_rescan and legacy pci_root_rescan.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  arch/x86/pci/common.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-> index 2ebdc231..0ec860f 100644
-> --- a/arch/x86/pci/common.c
-> +++ b/arch/x86/pci/common.c
-> @@ -10,6 +10,7 @@
->  #include <linux/init.h>
->  #include <linux/dmi.h>
->  #include <linux/slab.h>
-> +#include <linux/pci-acpi.h>
->
->  #include <asm/acpi.h>
->  #include <asm/segment.h>
-> @@ -661,6 +662,12 @@ struct pci_bus * __devinit pci_scan_bus_with_sysdata(int busno)
->        return pci_scan_bus_on_node(busno, &pci_root_ops, -1);
->  }
->
-> +void arch_pci_root_rescan(void)
-> +{
-> +       acpi_pci_root_rescan();
-> +       pcibios_root_rescan();
+--Signature=_Tue__13_Mar_2012_14_41_52_+1100_aMV7ePo/lkQFtABA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't think we need this either.
+Hi Dan,
 
-We don't need pcibios_root_rescan() because there's no way to add or
-remove buses except via the normal ACPI hotplug mechanisms.  (Well,
-you did add sysfs ways to do it, but I don't like those either, and
-they certainly don't work for any kind of normal hotplug users might
-do.)
-
-We don't need acpi_pci_root_rescan(), because for actual host bridge
-add/remove, we will get ACPI notify events, and we can use the normal
-ways of handling those events.  For debug purposes, we can have a
-sysfs interface that kicks things off the same way a notify event
-would.
-
-> +}
-> +
->  /*
->  * NUMA info for PCI busses
->  *
-> --
-> 1.7.7
+On Mon, 12 Mar 2012 19:50:33 -0700 "Williams, Dan J" <dan.j.williams@intel.=
+com> wrote:
 >
+> I was wondering why it had not happened prior to this point...  in any
+
+It had, I just put up with it the first time :-)
+
+> event I'll get my tree rebased on top scsi-misc so that isci.git#all
+> will just be the pending delta.
+
+Thanks.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__13_Mar_2012_14_41_52_+1100_aMV7ePo/lkQFtABA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPXsIAAAoJEECxmPOUX5FEmf4P/11yLwCsZvBza4RpxSVq3W9s
+Z9GgcmDbiCyUs1+d+T2vcrLz1LNdqxgS4sHLd6ZCkipsGfkK+QTdxjduZWudtfx4
+VKTv1N0axTUXueXsahLoqU1lDXraEdUAhoffyRjmt65KTY1/7S5oFctoZaasvY/F
+HZtIWad0iFby2esv9txiY54PmER0YLaWyFqaotjfl8CagT6eUKnEFD5A5vD4YG/t
+N5j0lIFINJ792izxhqUtj/aFzGki+enaALvq+1y9bzN8waC16Kw7hI+RyeWwx7WW
+/hLfZyHhrEq0LtjqIGsFpDDcYeoh9qacsVn97aI24HnEs995czVfWvLK5wh9RmEC
+oRNM9SEs7vZipEOG/PSDLmxqsrWFXhbg92VH5xWGWFhAu09nxQLVbJoQ7h/XpoIs
+a33VG78xXf6BGmBIiSwm102mb/H3FXSRcsyUBAzqwg/sbS1gBcoV7uED100FFinh
+JGo/bXElkPjGQQhO4KQNWGtNT1iW05f5EseQdJypWtAz27posvS1WmDgnxQippkE
+ikjUAT/P54XV6MbpeNwYtkcIGbcKwdsVIS3MkujYJ3ZwaausthUinAVGPDvmwcMv
+tud5k9OGZAmHZCmlJX5ROMW4thHdgRW5Fd95Ex+vjKdyJRVrrhpmSFzK4E2irWzE
+7ZIgEulcoH0ug0ujG7yr
+=4l3p
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__13_Mar_2012_14_41_52_+1100_aMV7ePo/lkQFtABA--
