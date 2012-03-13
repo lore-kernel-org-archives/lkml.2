@@ -1,27 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238Ab2CMQSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 12:18:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41712 "EHLO
+	id S1757444Ab2CMQSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 12:18:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41716 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753066Ab2CMQSE (ORCPT
+	with ESMTP id S1753833Ab2CMQSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 12:18:04 -0400
-Date: Tue, 13 Mar 2012 09:17:42 -0700
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-8aa8a7c80ccdfac2df5ee48a51a4a7bee2143d4f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, eranian@google.com,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20120313155102.GA6465@quad>
-References: <20120313155102.GA6465@quad>
+	Tue, 13 Mar 2012 12:18:39 -0400
+Date: Tue, 13 Mar 2012 09:16:55 -0700
+From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Message-ID: <tip-ef334a20d84f52407a8a2afd02ddeaecbef0ad3d@git.kernel.org>
+Cc: mingo@redhat.com, torvalds@linux-foundation.org, peterz@infradead.org,
+        rostedt@goodmis.org, jkenisto@linux.vnet.ibm.com, tglx@linutronix.de,
+        oleg@redhat.com, linux-mm@kvack.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, hch@infradead.org,
+        ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
+        srikar@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        andi@firstfloor.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, hch@infradead.org, ananth@in.ibm.com,
+        masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
+        rostedt@goodmis.org, jkenisto@linux.vnet.ibm.com,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com,
+        linux-mm@kvack.org, mingo@elte.hu
+In-Reply-To: <20120313140303.17134.1401.sendpatchset@srdronam.in.ibm.com>
+References: <20120313140303.17134.1401.sendpatchset@srdronam.in.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf record:
-  Fix buffer overrun bug in tracepoint_id_to_path()
-Git-Commit-ID: 8aa8a7c80ccdfac2df5ee48a51a4a7bee2143d4f
+Subject: [tip:perf/uprobes] x86: Move is_ia32_task to asm/thread_info.
+ h from asm/compat.h
+Git-Commit-ID: ef334a20d84f52407a8a2afd02ddeaecbef0ad3d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,60 +37,86 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Mar 2012 09:17:48 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Mar 2012 09:17:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8aa8a7c80ccdfac2df5ee48a51a4a7bee2143d4f
-Gitweb:     http://git.kernel.org/tip/8aa8a7c80ccdfac2df5ee48a51a4a7bee2143d4f
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Tue, 13 Mar 2012 16:51:02 +0100
+Commit-ID:  ef334a20d84f52407a8a2afd02ddeaecbef0ad3d
+Gitweb:     http://git.kernel.org/tip/ef334a20d84f52407a8a2afd02ddeaecbef0ad3d
+Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+AuthorDate: Tue, 13 Mar 2012 19:33:03 +0530
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 13 Mar 2012 17:01:28 +0100
+CommitDate: Tue, 13 Mar 2012 16:31:09 +0100
 
-perf record: Fix buffer overrun bug in tracepoint_id_to_path()
+x86: Move is_ia32_task to asm/thread_info.h from asm/compat.h
 
-This patch fixes a buffer overrun bug in
-tracepoint_id_to_path(). The bug manisfested itself as a memory
-error reported by perf record. I ran into it with perf sched:
+is_ia32_task() is useful even in !CONFIG_COMPAT cases - utrace will
+use it for example. Hence move it to a more generic file: asm/thread_info.h
 
- $ perf sched rec noploop 2 noploop for 2 seconds
- [ perf record: Woken up 14 times to write data ]
- [ perf record: Captured and wrote 42.701 MB perf.data (~1865622 samples) ]
- Fatal: No memory to alloc tracepoints list
+Also now is_ia32_task() returns true if CONFIG_X86_32 is defined.
 
-It turned out that tracepoint_id_to_path() was reading the
-tracepoint id using read() but the buffer was not large enough
-to include the \n terminator for id with 4 digits or more.
-
-The patch fixes the problem by extending the buffer to a more
-reasonable size covering all possible id length include \n
-terminator. Note that atoll() stops at the first non digit
-character, thus it is not necessary to clear the buffer between
-each read.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: fweisbec@gmail.com
-Cc: dsahern@gmail.com
-Link: http://lkml.kernel.org/r/20120313155102.GA6465@quad
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Cc: Linux-mm <linux-mm@kvack.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20120313140303.17134.1401.sendpatchset@srdronam.in.ibm.com
+[ Performed minor cleanup ]
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/util/parse-events.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/compat.h      |    9 ---------
+ arch/x86/include/asm/thread_info.h |   12 ++++++++++++
+ 2 files changed, 12 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index b029296..c7a6f6f 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -165,7 +165,7 @@ struct tracepoint_path *tracepoint_id_to_path(u64 config)
- 	struct tracepoint_path *path = NULL;
- 	DIR *sys_dir, *evt_dir;
- 	struct dirent *sys_next, *evt_next, sys_dirent, evt_dirent;
--	char id_buf[4];
-+	char id_buf[24];
- 	int fd;
- 	u64 id;
- 	char evt_path[MAXPATHLEN];
+diff --git a/arch/x86/include/asm/compat.h b/arch/x86/include/asm/compat.h
+index 355edc0..d680579 100644
+--- a/arch/x86/include/asm/compat.h
++++ b/arch/x86/include/asm/compat.h
+@@ -235,15 +235,6 @@ static inline void __user *arch_compat_alloc_user_space(long len)
+ 	return (void __user *)round_down(sp - len, 16);
+ }
+ 
+-static inline bool is_ia32_task(void)
+-{
+-#ifdef CONFIG_IA32_EMULATION
+-	if (current_thread_info()->status & TS_COMPAT)
+-		return true;
+-#endif
+-	return false;
+-}
+-
+ static inline bool is_x32_task(void)
+ {
+ #ifdef CONFIG_X86_X32_ABI
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index af1db7e..ad6df8c 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -266,6 +266,18 @@ static inline void set_restore_sigmask(void)
+ 	ti->status |= TS_RESTORE_SIGMASK;
+ 	set_bit(TIF_SIGPENDING, (unsigned long *)&ti->flags);
+ }
++
++static inline bool is_ia32_task(void)
++{
++#ifdef CONFIG_X86_32
++	return true;
++#endif
++#ifdef CONFIG_IA32_EMULATION
++	if (current_thread_info()->status & TS_COMPAT)
++		return true;
++#endif
++	return false;
++}
+ #endif	/* !__ASSEMBLY__ */
+ 
+ #ifndef __ASSEMBLY__
