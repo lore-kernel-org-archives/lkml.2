@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759098Ab2CMAYR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:24:17 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48547 "EHLO
+	id S965350Ab2CMAkG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:40:06 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48586 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759052Ab2CMAYO (ORCPT
+	with ESMTP id S1759093Ab2CMAYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:24:14 -0400
+	Mon, 12 Mar 2012 20:24:17 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Maxim Levitsky <maximlevitsky@gmail.com>,
-        David Brownell <david-b@pacbell.net>,
-        Alan Stern <stern@rowland.harvard.edu>, <linux-mmc@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Edgar Hucek <gimli@dark-green.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 146/196] mmc: fix all hangs related to mmc/sd card insert/removal during suspend/resume
-Date: Mon, 12 Mar 2012 20:20:59 -0400
-Message-Id: <1331598109-31424-101-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 132/196] hwmon: (applesmc) Add MacBookAir3,1(3,2) support
+Date: Mon, 12 Mar 2012 20:20:45 -0400
+Message-Id: <1331598109-31424-87-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -26,228 +24,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Maxim Levitsky <maximlevitsky@gmail.com>
+From: Edgar Hucek <gimli@dark-green.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e upstream.
+commit 132af03233b493101a53010383b5abb5b9ff1e51 upstream.
 
-If you don't use CONFIG_MMC_UNSAFE_RESUME, as soon as you attempt to
-suspend, the card will be removed, therefore this patch doesn't change the
-behavior of this option.
+This patch add support for the MacBookAir3,1 and MacBookAir3,2 to the
+applesmc driver.
 
-However the removal will be done by pm notifier, which runs while
-userspace is still not frozen and thus can freely use del_gendisk, without
-the risk of deadlock which would happen otherwise.
-
-Card detect workqueue is now disabled while userspace is frozen, Therefore
-if you do use CONFIG_MMC_UNSAFE_RESUME, and remove the card during
-suspend, the removal will be detected as soon as userspace is unfrozen,
-again at the moment it is safe to call del_gendisk.
-
-Tested with and without CONFIG_MMC_UNSAFE_RESUME with suspend and hibernate.
-
-[akpm@linux-foundation.org: clean up function prototype]
-[akpm@linux-foundation.org: fix CONFIG_PM-n linkage, small cleanups]
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: David Brownell <david-b@pacbell.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: <linux-mmc@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[rydberg@euromail.se: minor cleanup]
+Signed-off-by: Edgar Hucek <gimli@dark-green.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/mmc/core/core.c  |   83 +++++++++++++++++++++++++++++++---------------
- drivers/mmc/core/host.c  |    4 +++
- include/linux/mmc/host.h |    3 ++
- 3 files changed, 64 insertions(+), 26 deletions(-)
+ drivers/hwmon/applesmc.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 3168ebd..3e22f98 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1057,6 +1057,17 @@ void mmc_rescan(struct work_struct *work)
- 		container_of(work, struct mmc_host, detect.work);
- 	u32 ocr;
- 	int err;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&host->lock, flags);
-+
-+	if (host->rescan_disable) {
-+		spin_unlock_irqrestore(&host->lock, flags);
-+		return;
-+	}
-+
-+	spin_unlock_irqrestore(&host->lock, flags);
-+
+diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
+index 57c0331..7765a6b 100644
+--- a/drivers/hwmon/applesmc.c
++++ b/drivers/hwmon/applesmc.c
+@@ -162,6 +162,10 @@ static const char *temperature_sensors_sets[][41] = {
+ /* Set 22: MacBook Pro 7,1 */
+ 	{ "TB0T", "TB1T", "TB2T", "TC0D", "TC0P", "TN0D", "TN0P", "TN0S",
+ 	  "TN1D", "TN1F", "TN1G", "TN1S", "Th1H", "Ts0P", "Ts0S", NULL },
++/* Set 23: MacBook Air 3,1 */
++	{ "TB0T", "TB1T", "TB2T", "TC0D", "TC0E", "TC0P", "TC1E", "TCZ3",
++	  "TCZ4", "TCZ5", "TG0E", "TG1E", "TG2E", "TGZ3", "TGZ4", "TGZ5",
++	  "TH0F", "TH0O", "TM0P" },
+ };
  
- 	mmc_bus_get(host);
+ /* List of keys used to read/write fan speeds */
+@@ -1385,11 +1389,17 @@ static __initdata struct dmi_match_data applesmc_dmi_data[] = {
+ 	{ .accelerometer = 1, .light = 1, .temperature_set = 21 },
+ /* MacBook Pro 7,1: accelerometer, backlight and temperature set 22 */
+ 	{ .accelerometer = 1, .light = 1, .temperature_set = 22 },
++/* MacBook Air 3,1: accelerometer, backlight and temperature set 23 */
++	{ .accelerometer = 0, .light = 0, .temperature_set = 23 },
+ };
  
-@@ -1267,19 +1278,6 @@ int mmc_suspend_host(struct mmc_host *host, pm_message_t state)
- 	if (host->bus_ops && !host->bus_dead) {
- 		if (host->bus_ops->suspend)
- 			err = host->bus_ops->suspend(host);
--		if (err == -ENOSYS || !host->bus_ops->resume) {
--			/*
--			 * We simply "remove" the card in this case.
--			 * It will be redetected on resume.
--			 */
--			if (host->bus_ops->remove)
--				host->bus_ops->remove(host);
--			mmc_claim_host(host);
--			mmc_detach_bus(host);
--			mmc_release_host(host);
--			host->pm_flags = 0;
--			err = 0;
--		}
- 	}
- 	mmc_bus_put(host);
- 
-@@ -1311,28 +1309,61 @@ int mmc_resume_host(struct mmc_host *host)
- 			printk(KERN_WARNING "%s: error %d during resume "
- 					    "(card was removed?)\n",
- 					    mmc_hostname(host), err);
--			if (host->bus_ops->remove)
--				host->bus_ops->remove(host);
--			mmc_claim_host(host);
--			mmc_detach_bus(host);
--			mmc_release_host(host);
--			/* no need to bother upper layers */
- 			err = 0;
- 		}
- 	}
- 	mmc_bus_put(host);
- 
--	/*
--	 * We add a slight delay here so that resume can progress
--	 * in parallel.
--	 */
--	mmc_detect_change(host, 1);
--
- 	return err;
- }
--
- EXPORT_SYMBOL(mmc_resume_host);
- 
-+/* Do the card removal on suspend if card is assumed removeable
-+ * Do that in pm notifier while userspace isn't yet frozen, so we will be able
-+   to sync the card.
-+*/
-+int mmc_pm_notify(struct notifier_block *notify_block,
-+					unsigned long mode, void *unused)
-+{
-+	struct mmc_host *host = container_of(
-+		notify_block, struct mmc_host, pm_notify);
-+	unsigned long flags;
-+
-+
-+	switch (mode) {
-+	case PM_HIBERNATION_PREPARE:
-+	case PM_SUSPEND_PREPARE:
-+
-+		spin_lock_irqsave(&host->lock, flags);
-+		host->rescan_disable = 1;
-+		spin_unlock_irqrestore(&host->lock, flags);
-+		cancel_delayed_work_sync(&host->detect);
-+
-+		if (!host->bus_ops || host->bus_ops->suspend)
-+			break;
-+
-+		mmc_claim_host(host);
-+
-+		if (host->bus_ops->remove)
-+			host->bus_ops->remove(host);
-+
-+		mmc_detach_bus(host);
-+		mmc_release_host(host);
-+		host->pm_flags = 0;
-+		break;
-+
-+	case PM_POST_SUSPEND:
-+	case PM_POST_HIBERNATION:
-+
-+		spin_lock_irqsave(&host->lock, flags);
-+		host->rescan_disable = 0;
-+		spin_unlock_irqrestore(&host->lock, flags);
-+		mmc_detect_change(host, 0);
-+
-+	}
-+
-+	return 0;
-+}
- #endif
- 
- static int __init mmc_init(void)
-diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-index 4735390..0efe631 100644
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -17,6 +17,7 @@
- #include <linux/pagemap.h>
- #include <linux/leds.h>
- #include <linux/slab.h>
-+#include <linux/suspend.h>
- 
- #include <linux/mmc/host.h>
- 
-@@ -85,6 +86,7 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
- 	init_waitqueue_head(&host->wq);
- 	INIT_DELAYED_WORK(&host->detect, mmc_rescan);
- 	INIT_DELAYED_WORK_DEFERRABLE(&host->disable, mmc_host_deeper_disable);
-+	host->pm_notify.notifier_call = mmc_pm_notify;
- 
- 	/*
- 	 * By default, hosts do not support SGIO or large requests.
-@@ -133,6 +135,7 @@ int mmc_add_host(struct mmc_host *host)
- #endif
- 
- 	mmc_start_host(host);
-+	register_pm_notifier(&host->pm_notify);
- 
- 	return 0;
- }
-@@ -149,6 +152,7 @@ EXPORT_SYMBOL(mmc_add_host);
-  */
- void mmc_remove_host(struct mmc_host *host)
- {
-+	unregister_pm_notifier(&host->pm_notify);
- 	mmc_stop_host(host);
- 
- #ifdef CONFIG_DEBUG_FS
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 43eaf5c..18d9eb3 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -121,6 +121,7 @@ struct mmc_host {
- 	unsigned int		f_min;
- 	unsigned int		f_max;
- 	u32			ocr_avail;
-+	struct notifier_block	pm_notify;
- 
- #define MMC_VDD_165_195		0x00000080	/* VDD voltage 1.65 - 1.95 */
- #define MMC_VDD_20_21		0x00000100	/* VDD voltage 2.0 ~ 2.1 */
-@@ -180,6 +181,7 @@ struct mmc_host {
- 
- 	/* Only used with MMC_CAP_DISABLE */
- 	int			enabled;	/* host is enabled */
-+	int			rescan_disable;	/* disable card detection */
- 	int			nesting_cnt;	/* "enable" nesting count */
- 	int			en_dis_recurs;	/* detect recursion */
- 	unsigned int		disable_delay;	/* disable delay in msecs */
-@@ -254,6 +256,7 @@ int mmc_card_can_sleep(struct mmc_host *host);
- int mmc_host_enable(struct mmc_host *host);
- int mmc_host_disable(struct mmc_host *host);
- int mmc_host_lazy_disable(struct mmc_host *host);
-+int mmc_pm_notify(struct notifier_block *notify_block, unsigned long, void *);
- 
- static inline void mmc_set_disable_delay(struct mmc_host *host,
- 					 unsigned int disable_delay)
+ /* Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
+  * So we need to put "Apple MacBook Pro" before "Apple MacBook". */
+ static __initdata struct dmi_system_id applesmc_whitelist[] = {
++	{ applesmc_dmi_match, "Apple MacBook Air 3", {
++	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
++	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir3") },
++		&applesmc_dmi_data[23]},
+ 	{ applesmc_dmi_match, "Apple MacBook Air 2", {
+ 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
+ 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir2") },
 -- 
 1.7.9.3
 
