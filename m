@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758347Ab2CMATZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:19:25 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46886 "EHLO
+	id S1758364Ab2CMATl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:19:41 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46884 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932315Ab2CMASX (ORCPT
+	with ESMTP id S932308Ab2CMASW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:18:23 -0400
+	Mon, 12 Mar 2012 20:18:22 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        Peter Huewe <huewe.external.infineon@googlemail.com>,
-        Peter Huewe <huewe.external@infineon.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
+        Patrick McHardy <kaber@trash.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 039/196] char/tpm: Fix unitialized usage of data buffer
-Date: Mon, 12 Mar 2012 20:12:47 -0400
-Message-Id: <1331597724-31358-40-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 040/196] netfilter: ipt_CLUSTERIP: fix buffer overflow
+Date: Mon, 12 Mar 2012 20:12:48 -0400
+Message-Id: <1331597724-31358-41-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,43 +22,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <huewe.external.infineon@googlemail.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 1309d7afbed112f0e8e90be9af975550caa0076b upstream.
+commit 961ed183a9fd080cf306c659b8736007e44065a5 upstream.
 
-This patch fixes information leakage to the userspace by initializing
-the data buffer to zero.
+'buffer' string is copied from userspace.  It is not checked whether it is
+zero terminated.  This may lead to overflow inside of simple_strtoul().
+Changli Gao suggested to copy not more than user supplied 'size' bytes.
 
-Reported-by: Peter Huewe <huewe.external@infineon.com>
-Signed-off-by: Peter Huewe <huewe.external@infineon.com>
-Signed-off-by: Marcel Selhorst <m.selhorst@sirrix.com>
-[ Also removed the silly "* sizeof(u8)".  If that isn't 1, we have way
-  deeper problems than a simple multiplication can fix.   - Linus ]
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+It was introduced before the git epoch.  Files "ipt_CLUSTERIP/*" are
+root writable only by default, however, on some setups permissions might be
+relaxed to e.g. network admin user.
 
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Acked-by: Changli Gao <xiaosuo@gmail.com>
+Signed-off-by: Patrick McHardy <kaber@trash.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/char/tpm/tpm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/netfilter/ipt_CLUSTERIP.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 6ab5381..7f95fec 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -956,7 +956,7 @@ int tpm_open(struct inode *inode, struct file *file)
- 		return -EBUSY;
- 	}
+diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+index ab82840..e8bd977 100644
+--- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
++++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+@@ -663,8 +663,11 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
+ 	char buffer[PROC_WRITELEN+1];
+ 	unsigned long nodenum;
  
--	chip->data_buffer = kmalloc(TPM_BUFSIZE * sizeof(u8), GFP_KERNEL);
-+	chip->data_buffer = kzalloc(TPM_BUFSIZE, GFP_KERNEL);
- 	if (chip->data_buffer == NULL) {
- 		clear_bit(0, &chip->is_open);
- 		put_device(chip->dev);
+-	if (copy_from_user(buffer, input, PROC_WRITELEN))
++	if (size > PROC_WRITELEN)
++		return -EIO;
++	if (copy_from_user(buffer, input, size))
+ 		return -EFAULT;
++	buffer[size] = 0;
+ 
+ 	if (*buffer == '+') {
+ 		nodenum = simple_strtoul(buffer+1, NULL, 10);
 -- 
 1.7.9.3
 
