@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758633Ab2CMFg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:36:58 -0400
-Received: from mail-vx0-f202.google.com ([209.85.220.202]:56070 "EHLO
-	mail-vx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754937Ab2CMFg5 (ORCPT
+	id S1758847Ab2CMFjE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:39:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49439 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757951Ab2CMFjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:36:57 -0400
-From: Avery Pennarun <apenwarr@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Fabio M. Di Nitto" <fdinitto@redhat.com>,
-        Avery Pennarun <apenwarr@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Olaf Hering <olaf@aepfle.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Yinghai LU <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 3/5] mm: nobootmem: implement reserve_bootmem() in terms of memblock.
-Date: Tue, 13 Mar 2012 01:36:39 -0400
-Message-Id: <1331617001-20906-4-git-send-email-apenwarr@gmail.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
-References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
+	Tue, 13 Mar 2012 01:39:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <1331555916.3539.88.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
+	<tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
+	<CAE9FiQWFpsZotawqPD4738jTayB=KOGo0W9+AT2go3GYk1v_sQ@mail.gmail.com>
+	<4F45B35D.1010702@zytor.com>
+	<CAE9FiQUbyYYN5orG_RyVm=P-8wNh=YsET1VzGojpFTfJPueHqA@mail.gmail.com>
+	<4F471651.3080609@zytor.com>
+	<4F4C3BA2.1070708@kernel.org>
+	<1331116250.3539.35.camel@mfleming-mobl1.ger.corp.intel.com>
+	<CAE9FiQUoRMA_PYnOEt0ZUYXLq=hNZtDuLifT=+R72HtrwfF6AA@mail.gmail.com>
+	<1331206127.3539.69.camel@mfleming-mobl1.ger.corp.intel.com>
+	<CAE9FiQVZVNARgs0rzgRpRdbSPydCXoeDat=4DLMNFcyBQuqwng@mail.gmail.com>
+	<1331555916.3539.88.camel@mfleming-mobl1.ger.corp.intel.com>
+Date: Mon, 12 Mar 2012 22:39:00 -0700
+X-Google-Sender-Auth: L7FtWDoMzd8ys5D4YR7-uAMYZBQ
+Message-ID: <CAE9FiQXA4+Ubh-6QZv5bouZchR6XZjBSGwR1ox-vug01xiGveA@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix
+ CONFIG_X86_32 oops
+From: Yinghai Lu <yinghai@kernel.org>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: "H. Peter Anvin" <hpa@kernel.org>, mingo@redhat.com, mjg@redhat.com,
+        linux-kernel@vger.kernel.org, keithp@keithp.com, rui.zhang@intel.com,
+        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There was an implementation for it in mm/bootmem.c, but it was left out of
-nobootmem.c, and we can easily write a memblock implementation.  That way
-code (eg.  printk) that wants to reserve memory early on can just always
-call bootmem on all platforms.
+On Mon, Mar 12, 2012 at 5:38 AM, Matt Fleming <matt.fleming@intel.com> wrote:
 
-Signed-off-by: Avery Pennarun <apenwarr@gmail.com>
----
- mm/nobootmem.c |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+> Have you tested my patch? Have you hit this bug or is it just from code
+> inspection. I'm starting to feel a bit silly now because I can't see the
+> problem you're describing.
 
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 24f0fc1..2c269da 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -193,6 +193,29 @@ void __init free_bootmem(unsigned long addr, unsigned long size)
- 	memblock_free(addr, size);
- }
- 
-+/**
-+ * reserve_bootmem - mark a page range as reserved
-+ * @addr: starting address of the range
-+ * @size: size of the range in bytes
-+ * @flags: reservation flags (see linux/bootmem.h)
-+ *
-+ * Partial pages will be reserved.
-+ *
-+ * The range must be contiguous but may span node boundaries.
-+ */
-+int __init reserve_bootmem(unsigned long addr, unsigned long size,
-+			    int flags)
-+{
-+	if (flags & BOOTMEM_EXCLUSIVE) {
-+		phys_addr_t m = memblock_find_in_range(addr, addr + size,
-+					size, PAGE_SIZE);
-+		if (m != addr)
-+			return -EBUSY;
-+	}
-+	memblock_reserve(addr, size);
-+	return 0;
-+}
-+
- static void * __init ___alloc_bootmem_nopanic(unsigned long size,
- 					unsigned long align,
- 					unsigned long goal,
--- 
-1.7.7.3
+from code inspection.
 
+your new init_memory_mapping() will only map mem under max_low_pfn ?
+
+and before that calling for x86_64, max_low_pfn is not updated to max_pfn yet.
+
++       max_pfn_mapped = init_memory_mapping();
+
+ #ifdef CONFIG_X86_64
+       if (max_pfn > max_low_pfn) {
+-               max_pfn_mapped = init_memory_mapping(1UL<<32,
+-                                                    max_pfn<<PAGE_SHIFT);
+               /* can we preseve max_low_pfn ?*/
+               max_low_pfn = max_pfn;
+       }
+
+Please do find one system with more than 4G to test the code.
+
+Thanks
+
+Yinghai
