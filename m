@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759584Ab2CMFsa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:48:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35363 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758509Ab2CMFs2 convert rfc822-to-8bit (ORCPT
+	id S1759618Ab2CMFtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:49:14 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55488 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759187Ab2CMFtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:48:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6uBpEYrZPBxwrg_B8j7F9XAyDUvKTS4=++xze5KVmx1g@mail.gmail.com>
-References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
-	<1331362837-10740-11-git-send-email-yinghai@kernel.org>
-	<CAErSpo6uBpEYrZPBxwrg_B8j7F9XAyDUvKTS4=++xze5KVmx1g@mail.gmail.com>
-Date: Mon, 12 Mar 2012 22:48:27 -0700
-X-Google-Sender-Auth: R9Qf-64Lv9q3vcMmCtjaCau02jU
-Message-ID: <CAE9FiQXaDgBRrZ5dCxz9mjrzCAwH_rHrUSQGYQnHc5k7aXnU8Q@mail.gmail.com>
-Subject: Re: [PATCH v2 10/37] PCI, sysfs: create rescan_bridge under
- /sys/.../pci/devices/... for pci bridges
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Mar 2012 01:49:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 13 Mar 2012 14:47:36 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v4 3/3] memcg: avoid THP split in task migration
+Message-Id: <20120313144736.e4a39634.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1331591456-20769-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1331591456-20769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1331591456-20769-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 7:55 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
->> Current code will create rescan for every pci device under parent bus.
->> that is not right. the device is already there, there is no reason to rescan it.
->
-> "The device" (not "the device").
+On Mon, 12 Mar 2012 18:30:56 -0400
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 
-ok
+> Currently we can't do task migration among memory cgroups without THP split,
+> which means processes heavily using THP experience large overhead in task
+> migration. This patch introduces the code for moving charge of THP and makes
+> THP more valuable.
+> 
+> Changes from v3:
+> - use enum mc_target_type and MC_TARGET_* explicitly
+> - replace lengthy name is_target_thp_for_mc() with get_mctgt_type_thp()
+> - drop cond_resched()
+> - drop mapcount check of page sharing (Hugh and KAMEZAWA-san are preparing
+>   patches to change the behavior of moving charge of shared pages, so this
+>   patch keeps up with the change to avoid potential conflict.)
+> 
+> Changes from v2:
+> - add move_anon() and mapcount check
+> 
+> Changes from v1:
+> - rename is_target_huge_pmd_for_mc() to is_target_thp_for_mc()
+> - remove pmd_present() check (it's buggy when pmd_trans_huge(pmd) is true)
+> - is_target_thp_for_mc() calls get_page() only when checks are passed
+> - unlock page table lock if !mc.precharge
+> - compare return value of is_target_thp_for_mc() explicitly to MC_TARGET_TYPE
+> - clean up &walk->mm->page_table_lock to &vma->vm_mm->page_table_lock
+> - add comment about why race with split_huge_page() does not happen
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Acked-by: Hillf Danton <dhillf@gmail.com>
 
->
->> We could have rescan for pci bridges. less confusing.
->>
->> Need to move rescan attr to pci dev bridge attribute group.
->> And We should rescan bridge's secondary bus instead of primary bus.
->
-> "And we" (not "And We").
+Thank you.
 
-ok
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
->
-> I think the idea of this patch makes sense.
->
-> You might want to consider having this actually read the bridge config
-> again.  That way, if the user manually changed the secondary bus
-> number or the bridge windows using setpci or something, this rescan
-> could use that new config if possible.
 
-yes, in the following patches, change that to
-pci_rescan_bus_bridge_resize()
-
-and
-
-will be
-unsigned int __ref pci_rescan_bus_bridge_resize(struct pci_dev *bridge)
-{
-        unsigned int max = 0;
-        int pass;
-        struct pci_bus *bus = bridge->bus;
-
-        for (pass = 0; pass < 2; pass++)
-                max = pci_scan_bridge(bus, bridge, max, pass);
-
-        pci_assign_unassigned_bridge_resources(bridge);
-
-        pci_bus_add_single_device(bridge);
-
-at last pci_scan_bridge will check the bus register in the bridge.
-
->
-> I still hate the fact that we will have three different rescan files
-> (four if you count /sys/bus/pci/rescan), but I don't have a solution
-> to offer:
->    device/rescan
->    device/rescan_bridge
->    bus/rescan
-
-looks like we only need
-/sys/devices/pci.../device/rescan_bridge
-/sys/bus/pci/bus/rescan
-
-device rescan and bus rescan should be removed.
-
-Yinghai
