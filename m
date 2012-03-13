@@ -1,50 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759159Ab2CMIDM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:03:12 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48566 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751638Ab2CMIDH (ORCPT
+	id S1759993Ab2CMIEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:04:20 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:57064 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757951Ab2CMIEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:03:07 -0400
-Message-ID: <1331625781.3932.3.camel@phoenix>
-Subject: [PATCH] regulator: max8925: Use DIV_ROUND_UP in
- max8925_set_dvm_voltage
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Tue, 13 Mar 2012 16:03:01 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Mar 2012 04:04:14 -0400
+Date: Tue, 13 Mar 2012 01:04:06 -0700 (PDT)
+Message-Id: <20120313.010406.769202674785007195.davem@davemloft.net>
+To: santoshprasadnayak@gmail.com
+Cc: sony.chacko@qlogic.com, rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 3/3 v3] netxen: qlogic ethernet : Fix endian bug.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1331624093-12598-1-git-send-email-santoshprasadnayak@gmail.com>
+References: <1331624093-12598-1-git-send-email-santoshprasadnayak@gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 13 Mar 2012 01:04:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use DIV_ROUND_UP macro for better readability.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8925-regulator.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+You didn't even compile test this.
 
-diff --git a/drivers/regulator/max8925-regulator.c b/drivers/regulator/max8925-regulator.c
-index cc290d3..eb045f1 100644
---- a/drivers/regulator/max8925-regulator.c
-+++ b/drivers/regulator/max8925-regulator.c
-@@ -140,7 +140,7 @@ static int max8925_set_dvm_voltage(struct regulator_dev *rdev, int uV)
- 	if (uV < SD1_DVM_VMIN || uV > SD1_DVM_VMAX)
- 		return -EINVAL;
- 
--	data = (uV - SD1_DVM_VMIN + SD1_DVM_STEP - 1) / SD1_DVM_STEP;
-+	data = DIV_ROUND_UP(uV - SD1_DVM_VMIN, SD1_DVM_STEP);
- 	data <<= SD1_DVM_SHIFT;
- 	mask = 3 << SD1_DVM_SHIFT;
- 
--- 
-1.7.5.4
+> -	if (*mac == cpu_to_le64(~0ULL)) {
+> +	if (*mac == ~0ULL)) {
 
-
+This is unacceptable, I'm ignoring you for at least a week.
 
