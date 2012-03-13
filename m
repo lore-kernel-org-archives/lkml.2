@@ -1,103 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759575Ab2CMDky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 23:40:54 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:39887 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757366Ab2CMDkw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 23:40:52 -0400
-Message-ID: <026393583fec46a9d4401604e596b164.squirrel@webmail.greenhost.nl>
-In-Reply-To: <1331587715-26069-1-git-send-email-wad@chromium.org>
-References: <1331587715-26069-1-git-send-email-wad@chromium.org>
-Date: Tue, 13 Mar 2012 04:40:50 +0100
-Subject: Re: [PATCH v14 01/13] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Will Drewry" <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, "Will Drewry" <wad@chromium.org>
-User-Agent: SquirrelMail/1.4.22
+	id S1759590Ab2CMDlD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 23:41:03 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:33282 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759578Ab2CMDk7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 23:40:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: -0.6
-X-Scan-Signature: d58e29c6f4e42f76447094ef3ccb23d2
+In-Reply-To: <1331362837-10740-35-git-send-email-yinghai@kernel.org>
+References: <1331362837-10740-1-git-send-email-yinghai@kernel.org> <1331362837-10740-35-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 12 Mar 2012 21:40:38 -0600
+Message-ID: <CAErSpo5nz0QN4y6P0AoWvKMUUQOQpKgGijwUFEmqPc6NewGW_Q@mail.gmail.com>
+Subject: Re: [PATCH v2 34/37] x86, PCI: Add arch version pci_root_rescan()
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, March 12, 2012 22:28, Will Drewry wrote:
-> Introduces a new BPF ancillary instruction that all LD calls will be
-> mapped through when skb_run_filter() is being used for seccomp BPF.  The
-> rewriting will be done using a secondary chk_filter function that is run
-> after skb_chk_filter.
+On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> It will call acpi version pci_root_rescan and legacy pci_root_rescan.
 >
-> The code change is guarded by CONFIG_SECCOMP_FILTER which is added,
-> along with the seccomp_bpf_load() function later in this series.
->
-> This is based on http://lkml.org/lkml/2012/3/2/141
->
-> v14: First cut using a single additional instruction
-> ... v13: made bpf functions generic.
->
->
-> Suggested-by: Indan Zupancic <indan@nul.nu>
-> Signed-off-by: Will Drewry <wad@chromium.org>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 > ---
->  include/linux/filter.h |    1 +
->  net/core/filter.c      |    5 +++++
->  2 files changed, 6 insertions(+), 0 deletions(-)
+>  arch/x86/pci/common.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
 >
-> diff --git a/include/linux/filter.h b/include/linux/filter.h
-> index 8eeb205..aaa2e80 100644
-> --- a/include/linux/filter.h
-> +++ b/include/linux/filter.h
-> @@ -228,6 +228,7 @@ enum {
->  	BPF_S_ANC_HATYPE,
->  	BPF_S_ANC_RXHASH,
->  	BPF_S_ANC_CPU,
-> +	BPF_S_ANC_SECCOMP_LD_W,
->  };
+> diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+> index 2ebdc231..0ec860f 100644
+> --- a/arch/x86/pci/common.c
+> +++ b/arch/x86/pci/common.c
+> @@ -10,6 +10,7 @@
+>  #include <linux/init.h>
+>  #include <linux/dmi.h>
+>  #include <linux/slab.h>
+> +#include <linux/pci-acpi.h>
 >
->  #endif /* __KERNEL__ */
-> diff --git a/net/core/filter.c b/net/core/filter.c
-> index 5dea452..3000931 100644
-> --- a/net/core/filter.c
-> +++ b/net/core/filter.c
-> @@ -350,6 +350,11 @@ load_b:
->  				A = 0;
->  			continue;
->  		}
-> +#ifdef CONFIG_SECCOMP_FILTER
-> +		case BPF_S_ANC_SECCOMP_LD_W:
-> +			A = seccomp_bpf_load(fentry->k);
+>  #include <asm/acpi.h>
+>  #include <asm/segment.h>
+> @@ -661,6 +662,12 @@ struct pci_bus * __devinit pci_scan_bus_with_sysdata(int busno)
+>        return pci_scan_bus_on_node(busno, &pci_root_ops, -1);
+>  }
+>
+> +void arch_pci_root_rescan(void)
+> +{
+> +       acpi_pci_root_rescan();
+> +       pcibios_root_rescan();
 
-I think you forgot to declare seccomp_bpf_load() anywhere filter.c can find.
-That is, filter.c probably needs to include seccomp.h, or maybe better, add
-"extern u32 seccomp_bpf_load(int off);" to filter.h instead.
+I don't think we need this either.
 
-> +			continue;
-> +#endif
->  		default:
->  			WARN_RATELIMIT(1, "Unknown code:%u jt:%u tf:%u k:%u\n",
->  				       fentry->code, fentry->jt,
+We don't need pcibios_root_rescan() because there's no way to add or
+remove buses except via the normal ACPI hotplug mechanisms.  (Well,
+you did add sysfs ways to do it, but I don't like those either, and
+they certainly don't work for any kind of normal hotplug users might
+do.)
 
-Reviewed-by: Indan Zupancic <indan@nul.nu>
+We don't need acpi_pci_root_rescan(), because for actual host bridge
+add/remove, we will get ACPI notify events, and we can use the normal
+ways of handling those events.  For debug purposes, we can have a
+sysfs interface that kicks things off the same way a notify event
+would.
 
-Greetings,
-
-Indan
-
-
+> +}
+> +
+>  /*
+>  * NUMA info for PCI busses
+>  *
+> --
+> 1.7.7
+>
