@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759757Ab2CMWYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 18:24:21 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:47126 "EHLO mxout1.idt.com"
+	id S1760101Ab2CMWa2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 18:30:28 -0400
+Received: from mout6.freenet.de ([195.4.92.96]:34572 "EHLO mout6.freenet.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752769Ab2CMWYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 18:24:20 -0400
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>, chul.kim@idt.com,
-        mporter@kernel.crashing.org
-Subject: [PATCH] rapidio/tsi721: fix bug in register offset definitions
-Date: Tue, 13 Mar 2012 18:22:26 -0400
-Message-Id: <1331677346-15606-1-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.8.4
+	id S1752337Ab2CMWa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 18:30:27 -0400
+Message-ID: <4F5FC9EA.60500@01019freenet.de>
+Date: Tue, 13 Mar 2012 23:27:54 +0100
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Firefox/10.0.2 SeaMonkey/2.7.2
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Dave Jones <davej@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-kernel@vger.kernel.org, keithp@keithp.com
+Subject: Re: Corrupted files after suspend to disk
+References: <jj5qhh$5j5$1@ID-44327.news.uni-berlin.de> <20120312214914.GA8628@redhat.com> <4F5F0C59.3000400@01019freenet.de> <201203132252.06417.rjw@sisk.pl>
+In-Reply-To: <201203132252.06417.rjw@sisk.pl>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix indexed register offset definitions that use decimal (wrong) instead
-of hexadecimal (correct) notation for indexing multipliers.
+Rafael J. Wysocki schrieb:
+> On Tuesday, March 13, 2012, Andreas Hartmann wrote:
+>> Dave Jones wrote:
+>>> On Mon, Mar 12, 2012 at 02:24:00PM +0100, Andreas Hartmann wrote:
+>>>  
+>>>  > >>>>> This is happening to me as well. Something like 1 resume out of 5 goes
+>>>  > >>>>> wrong this very same way.
+>>>  > >>>>>
+>>>  > >>>>> This is thinkpad x200s.
+>>>  > >>>>>
+>>>  > >>>>> All the userspace is segfaulting all over the place (most frequently in
+>>>  > >>>>> libselinux for some reason).
+>>>  > >>>>>
+>>>  > >>>>> I am not able to verify the 'drop_caches' theory, as I can't invoke a
+>>>  > >>>>> single command that wouldn't crash.
+>>>  > >>>>
+>>>  > >>>> The question is how should we proceed?
+>>>  > >>>> I've reported this issue one year (!!!) ago.
+>>>  > >>>
+>>>  > >>> Hmm, 3.3-rcX seems to be the first version when it started to happen to
+>>>  > >>> me. I take it that you have seen this also with 3.2? 3.1?
+>>>  > >>
+>>>  > >> Quote from my very first email:
+>>>  > >> "I'm facing a very strange problem on my netbook (Lenovo Ideapad S10)
+>>>  > >> running Linux 2.6.37.4."
+>>>  > > 
+>>>  > > So we both seem to have Lenovos at least. I thus wanted to verify whether 
+>>>  > > the problem will trigger with thinkpad_acpi removed, but it oopsed while 
+>>>  > > rmmoding :) I will start looking into this right away.
+>>>  > > 
+>>>  > > Is your system using thinkpad_acpi as well?
+>>>  > 
+>>>  > I dont't think, that it is lenovo related as I'm having a MSI machine.
+>>>  > 
+>>>  > https://bugzilla.novell.com/show_bug.cgi?id=732908
+>>>  > 
+>>>  > Following the link, you are able to compare the used chips - maybe there
+>>>  > are some equal components?
+>>>
+>>> This looks like the i915 corruption problem mentioned in a few other threads.
+>>>
+>>> if you compare the hexdump of the good/bad files, you find that the corruption
+>>> happens in 8x 4 byte writes of either 0x00000000 or 0x00aaaaaa.
+>>>
+>>> KeithP clued me in last week that that looks like an ARGB pixel quad, so these
+>>> writes are likely 8 pixel strips.
+>>
+>> Thanks Dave. I disabled i915 (with nomodeset) and voila, the problem
+>> disappears. As I already know, that the problem isn't X-related (I saw
+>> it even without any X involved, only with runlevel 3 and nothing more),
+>> the problem seems to be now narrowed down to the relevant component.
+> 
+> I wonder what's the kernel command line you can reproduce the problem with?
 
-Incorrect definitions do not affect Tsi721 driver in its current default
-configuration because it uses only IDB queue 0. Loss of inbound doorbell
-functionality should be observed if queue other than 0 is used.
+It's the standard kernel command line of openSUSE:
+root=/dev/system/root resume=/dev/system/swap splash=silent quiet vga=791 3
 
-This patch is applicable to kernel version 3.2 and after.
+I added a complete dmesg output to
+https://bugzilla.novell.com/show_bug.cgi?id=732908
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
----
- drivers/rapidio/devices/tsi721.h |   30 +++++++++++++++---------------
- 1 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/rapidio/devices/tsi721.h b/drivers/rapidio/devices/tsi721.h
-index 822e54c..1c226b3 100644
---- a/drivers/rapidio/devices/tsi721.h
-+++ b/drivers/rapidio/devices/tsi721.h
-@@ -118,34 +118,34 @@
- 
- #define TSI721_IDB_ENTRY_SIZE	64
- 
--#define TSI721_IDQ_CTL(x)	(0x20000 + (x) * 1000)
-+#define TSI721_IDQ_CTL(x)	(0x20000 + (x) * 0x1000)
- #define TSI721_IDQ_SUSPEND	0x00000002
- #define TSI721_IDQ_INIT		0x00000001
- 
--#define TSI721_IDQ_STS(x)	(0x20004 + (x) * 1000)
-+#define TSI721_IDQ_STS(x)	(0x20004 + (x) * 0x1000)
- #define TSI721_IDQ_RUN		0x00200000
- 
--#define TSI721_IDQ_MASK(x)	(0x20008 + (x) * 1000)
-+#define TSI721_IDQ_MASK(x)	(0x20008 + (x) * 0x1000)
- #define TSI721_IDQ_MASK_MASK	0xffff0000
- #define TSI721_IDQ_MASK_PATT	0x0000ffff
- 
--#define TSI721_IDQ_RP(x)	(0x2000c + (x) * 1000)
-+#define TSI721_IDQ_RP(x)	(0x2000c + (x) * 0x1000)
- #define TSI721_IDQ_RP_PTR	0x0007ffff
- 
--#define TSI721_IDQ_WP(x)	(0x20010 + (x) * 1000)
-+#define TSI721_IDQ_WP(x)	(0x20010 + (x) * 0x1000)
- #define TSI721_IDQ_WP_PTR	0x0007ffff
- 
--#define TSI721_IDQ_BASEL(x)	(0x20014 + (x) * 1000)
-+#define TSI721_IDQ_BASEL(x)	(0x20014 + (x) * 0x1000)
- #define TSI721_IDQ_BASEL_ADDR	0xffffffc0
--#define TSI721_IDQ_BASEU(x)	(0x20018 + (x) * 1000)
--#define TSI721_IDQ_SIZE(x)	(0x2001c + (x) * 1000)
-+#define TSI721_IDQ_BASEU(x)	(0x20018 + (x) * 0x1000)
-+#define TSI721_IDQ_SIZE(x)	(0x2001c + (x) * 0x1000)
- #define TSI721_IDQ_SIZE_VAL(size)	(__fls(size) - 4)
- #define TSI721_IDQ_SIZE_MIN	512
- #define TSI721_IDQ_SIZE_MAX	(512 * 1024)
- 
--#define TSI721_SR_CHINT(x)	(0x20040 + (x) * 1000)
--#define TSI721_SR_CHINTE(x)	(0x20044 + (x) * 1000)
--#define TSI721_SR_CHINTSET(x)	(0x20048 + (x) * 1000)
-+#define TSI721_SR_CHINT(x)	(0x20040 + (x) * 0x1000)
-+#define TSI721_SR_CHINTE(x)	(0x20044 + (x) * 0x1000)
-+#define TSI721_SR_CHINTSET(x)	(0x20048 + (x) * 0x1000)
- #define TSI721_SR_CHINT_ODBOK	0x00000020
- #define TSI721_SR_CHINT_IDBQRCV	0x00000010
- #define TSI721_SR_CHINT_SUSP	0x00000008
-@@ -156,7 +156,7 @@
- 
- #define TSI721_IBWIN_NUM	8
- 
--#define TSI721_IBWINLB(x)	(0x29000 + (x) * 20)
-+#define TSI721_IBWINLB(x)	(0x29000 + (x) * 0x20)
- #define TSI721_IBWINLB_BA	0xfffff000
- #define TSI721_IBWINLB_WEN	0x00000001
- 
-@@ -187,13 +187,13 @@
-  */
- #define TSI721_OBWIN_NUM	TSI721_PC2SR_WINS
- 
--#define TSI721_OBWINLB(x)	(0x40000 + (x) * 20)
-+#define TSI721_OBWINLB(x)	(0x40000 + (x) * 0x20)
- #define TSI721_OBWINLB_BA	0xffff8000
- #define TSI721_OBWINLB_WEN	0x00000001
- 
--#define TSI721_OBWINUB(x)	(0x40004 + (x) * 20)
-+#define TSI721_OBWINUB(x)	(0x40004 + (x) * 0x20)
- 
--#define TSI721_OBWINSZ(x)	(0x40008 + (x) * 20)
-+#define TSI721_OBWINSZ(x)	(0x40008 + (x) * 0x20)
- #define TSI721_OBWINSZ_SIZE	0x00001f00
- #define TSI721_OBWIN_SIZE(size)	(__fls(size) - 15)
- 
--- 
-1.7.8.4
-
+Regards,
+Andreas Hartmann
