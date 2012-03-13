@@ -1,99 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922Ab2CMQ4e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 12:56:34 -0400
-Received: from mail.windriver.com ([147.11.1.11]:64691 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757684Ab2CMQ4a (ORCPT
+	id S1757992Ab2CMQ4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 12:56:50 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:20000 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755270Ab2CMQ4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 12:56:30 -0400
-Message-ID: <4F5F7C30.1020307@windriver.com>
-Date: Tue, 13 Mar 2012 12:56:16 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Tue, 13 Mar 2012 12:56:46 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArwBAKU/KE8Y9geI/2dsb2JhbAAMgVOCPbt0hkyFEoEHBJhchkY
+X-IronPort-AV: E=Sophos;i="4.73,1,1325480400"; 
+   d="scan'208";a="167819539"
+Message-ID: <4F5F7C4C.7080800@teksavvy.com>
+Date: Tue, 13 Mar 2012 12:56:44 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: =?UTF-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Fry, Donald H" <donald.h.fry@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Subject: Re: [34-longterm 098/196] iwlagn: Support new 5000 microcode.
-References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>	<1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>	<1331598109-31424-53-git-send-email-paul.gortmaker@windriver.com> <87k42olb91.fsf@nemi.mork.no>
-In-Reply-To: <87k42olb91.fsf@nemi.mork.no>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.224.146.65]
+To: "ANEZAKI, Akira" <fireblade1230@yahoo.co.jp>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        IDE/ATA development list <linux-ide@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>
+Subject: Fwd: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier
+ Sil3726
+References: <4F5ECD06.3000608@yahoo.co.jp>
+In-Reply-To: <4F5ECD06.3000608@yahoo.co.jp>
+X-Forwarded-Message-Id: <4F5ECD06.3000608@yahoo.co.jp>
+Content-Type: multipart/mixed;
+ boundary="------------090200030100050806080104"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-03-13 12:24 PM, Bjørn Mork wrote:
-> Paul Gortmaker <paul.gortmaker@windriver.com> writes:
-> 
->> From: "Fry, Donald H" <donald.h.fry@intel.com>
->>
->>                    -------------------
->>     This is a commit scheduled for the next v2.6.34 longterm release.
->>     If you see a problem with using this for longterm, please comment.
->>                    -------------------
->>
->> commit 41504cce240f791f1e16561db95728c5537fbad9 upstream.
->>
->> New iwlwifi-5000 microcode requires driver support for API version 5.
->>
->> Signed-off-by: Don Fry <donald.h.fry@intel.com>
->> Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->> ---
->>  drivers/net/wireless/iwlwifi/iwl-5000.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/net/wireless/iwlwifi/iwl-5000.c b/drivers/net/wireless/iwlwifi/iwl-5000.c
->> index d05fad4..dc191b8 100644
->> --- a/drivers/net/wireless/iwlwifi/iwl-5000.c
->> +++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
->> @@ -48,7 +48,7 @@
->>  #include "iwl-6000-hw.h"
->>  
->>  /* Highest firmware API version supported */
->> -#define IWL5000_UCODE_API_MAX 2
->> +#define IWL5000_UCODE_API_MAX 5
->>  #define IWL5150_UCODE_API_MAX 2
-> 
-> This looks like the patch which broke the driver in stable-2.6.32.y and
-> was later reverted by:
+This is a multi-part message in MIME format.
+--------------090200030100050806080104
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 
-Thanks for the heads up. I'll be sure to drop this.
+Sounds like a regression from 3.1 to 3.2.
+Copying linux-ide & Jeff.
 
-Paul.
---
+-------- Original Message --------
+Subject: libata-pmp patch for 3.2.x and later for eSATA Port Multiplier Sil3726
+Date: Tue, 13 Mar 2012 13:28:54 +0900
+From: ANEZAKI, Akira <fireblade1230@yahoo.co.jp>
+To: linux-kernel@vger.kernel.org
 
-> 
-> 
-> commit 2a96ae707525ef00a85bf374e56f0219c07eac5a
-> Author: Greg Kroah-Hartman <gregkh@suse.de>
-> Date:   Wed Jun 15 13:12:35 2011 -0700
-> 
->     Revert "iwlagn: Support new 5000 microcode."
->     
->     This reverts commit 6f63415fc1b690cb50c2ad48ba6e9e6e88e271b4.
->     
->     It turns out this is not what we want to have happen for the .32 and
->     .33-longterm kernels as it does not work properly at all.
->     
->     This was reported by Gentoo, Arch, and Canonical developers as causing
->     problems for their users:
->         https://bugs.archlinux.org/task/24302
->         http://bugs.gentoo.org/show_bug.cgi?id=359445
->         https://bugs.launchpad.net/ubuntu/+source/linux/+bug/796336
->     
->     Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
->     Cc: Gordon Malm <gengor@gentoo.org>
->     Cc: Don Fry <donald.h.fry@intel.com>
->     Cc: Wey-Yi Guy <wey-yi.w.guy@intel.com>
->     Cc: Stanislaw Gruszka <sgruszka@redhat.com>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> 
-> 
-> 
-> Bjørn
+Hi!
+
+I'm in trouble on a PC that has 6 eSATA port multiplier.
+
+>From kernel 3.2.x, kernel fails to boot when many HDDs are connected to
+many eSATA port multiplier with Sil3726.
+
+Kernel is repeating eSATA bus reset while booting and spend long time,
+and result into fail to boot with timeout. It causes that some HDDs
+cannot be seen from kernel on a PC that has 6 Sil3726 port multiplier.
+dmesg contains many reset messages while booting like this:
+   :
+> [   48.060454] ata6: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
+> [   48.061150] ata6.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
+> [   48.063158] ata6.00: hard resetting link
+> [   48.401020] ata6.00: SATA link up 3.0 Gbps (SStatus 123 SControl 320)
+> [   48.401080] ata6.01: hard resetting link
+> [   48.825741] ata6.01: softreset failed (SRST command error)
+> [   48.935499] ata6.01: failed to read SCR 0 (Emask=0x1)
+> [   48.935505] ata6.01: reset failed (errno=-85), retrying in 10 secs
+   :
+> [  294.950152] ata9: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
+> [  294.950453] ata9.15: Port Multiplier 1.1, 0x1095:0x3726 r23, 6 ports, feat 0x1/0x9
+> [  294.953382] ata9.00: hard resetting link
+> [  304.937981] ata9.00: softreset failed (timeout)
+> [  307.931302] ata9.15: qc timeout (cmd 0xe4)
+> [  307.931318] ata9.00: failed to read SCR 0 (Emask=0x5)
+> [  307.931322] ata9.00: reset failed, giving up
+> [  307.931327] ata9.15: hard resetting link
+> [  310.058635] ata9.15: SATA link up 3.0 Gbps (SStatus 123 SControl 0)
+> [  310.059016] ata9.00: hard resetting link
+> [  320.044490] ata9.00: softreset failed (timeout)
+> [  323.037851] ata9.15: qc timeout (cmd 0xe4)
+> [  323.037868] ata9.00: failed to read SCR 0 (Emask=0x5)
+> [  323.037872] ata9.00: reset failed, giving up
+   :
+> [  556.513676] systemd[1]: Job dev-disk-by\x2dlabel-WORK.device/start timed out.
+> [  556.513693] systemd[1]: Job fedora-autorelabel-mark.service/start failed with result 'dependency'.
+> [  556.513816] systemd[1]: Job fedora-autorelabel.service/start failed with result 'dependency'.
+> [  556.513833] systemd[1]: Job local-fs.target/start failed with result 'dependency'.
+> [  556.513846] systemd[1]: Triggering OnFailure= dependencies of local-fs.target.
+> [  556.515352] systemd[1]: Job mnt-work.mount/start failed with result 'dependency'.
+> [  556.515368] systemd[1]: Job dev-disk-by\x2dlabel-WORK.device/start failed with result 'timeout'.
+> [  556.851000] systemd[1]: Startup finished in 2s 212ms 906us (kernel) + 7min 44s 688ms 483us (initrd) + 1min 30s 977ms 147us (userspace) = 9min 17s 878ms 536us.
+
+When only one sentence in drivers/ata/libata-pmp.c only for Sil3726 back
+to that in kernel 3.1.x, this problem is not seen. I attached the patch
+file.
+
+This patch solves the problem on my PC but I can't understand ata
+subsystem. So I'm afraid of side effect.
+
+Can you consider this patch?
+
+Best Regards,
+ANEZAKI, Akira
+
+-------- Original Message --------
+Subject: [Bug 787468] boot fails by timeout while activating RAIDs with
+many HDDs
+Date: Mon, 12 Mar 2012 16:30:45 -0400
+From: bugzilla@redhat.com
+To: fireblade1230@yahoo.co.jp
+
+Please do not reply directly to this email. All additional
+comments should be made in the comments box of this bug.
+
+
+https://bugzilla.redhat.com/show_bug.cgi?id=787468
+
+--- Comment #20 from Dave Jones <davej@redhat.com> 2012-03-12 16:30:43
+EDT ---
+can you post this patch upstream to linux-kernel@vger.kernel.org ?
+if it is acceptable there, we will add it to the Fedora kernel.
+
+-- 
+Configure bugmail: https://bugzilla.redhat.com/userprefs.cgi?tab=email
+------- You are receiving this mail because: -------
+You are on the CC list for the bug.
+You reported the bug.
+
+
+--------------090200030100050806080104
+Content-Type: text/x-patch;
+ name="libata-pmp.c.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="libata-pmp.c.patch"
+
+--- a/drivers/ata/libata-pmp.c	2012-03-12 20:43:00.625871123 +0900
++++ b/drivers/ata/libata-pmp.c	2012-03-12 20:43:19.845080223 +0900
+@@ -391,7 +391,8 @@ static void sata_pmp_quirks(struct ata_p
+ 
+ 			/* Class code report is unreliable. */
+ 			if (link->pmp < 5)
+-				link->flags |= ATA_LFLAG_ASSUME_ATA;
++				link->flags |= ATA_LFLAG_NO_SRST |
++					       ATA_LFLAG_ASSUME_ATA;
+ 
+ 			/* port 5 is for SEMB device and it doesn't like SRST */
+ 			if (link->pmp == 5)
+
+
+--------------090200030100050806080104--
