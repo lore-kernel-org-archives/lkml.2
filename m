@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758372Ab2CMAT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:19:58 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46874 "EHLO
+	id S932263Ab2CMASR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:18:17 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46846 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289Ab2CMASS (ORCPT
+	with ESMTP id S932137Ab2CMASM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:18:18 -0400
+	Mon, 12 Mar 2012 20:18:12 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: stable-review@kernel.org, Arjan Mels <arjan.mels@gmx.net>,
+        Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>,
+        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 044/196] sound/oss: remove offset from load_patch callbacks
-Date: Mon, 12 Mar 2012 20:12:52 -0400
-Message-Id: <1331597724-31358-45-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 016/196] staging: usbip: bugfixes related to kthread conversion
+Date: Mon, 12 Mar 2012 20:12:24 -0400
+Message-Id: <1331597724-31358-17-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,167 +24,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Arjan Mels <arjan.mels@gmx.net>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit b769f49463711205d57286e64cf535ed4daf59e9 upstream.
+commit d2dd0b07c3e725d386d20294ec906f7ddef207fa upstream.
 
-Was: [PATCH] sound/oss/midi_synth: prevent underflow, use of
-uninitialized value, and signedness issue
+When doing a usb port reset do a queued reset instead to prevent a
+deadlock: the reset will cause the driver to unbind, causing the
+usb_driver_lock_for_reset to stall.
 
-The offset passed to midi_synth_load_patch() can be essentially
-arbitrary.  If it's greater than the header length, this will result in
-a copy_from_user(dst, src, negative_val).  While this will just return
--EFAULT on x86, on other architectures this may cause memory corruption.
-Additionally, the length field of the sysex_info structure may not be
-initialized prior to its use.  Finally, a signed comparison may result
-in an unintentionally large loop.
-
-On suggestion by Takashi Iwai, version two removes the offset argument
-from the load_patch callbacks entirely, which also resolves similar
-issues in opl3.  Compile tested only.
-
-v3 adjusts comments and hopefully gets copy offsets right.
-
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Arjan Mels <arjan.mels@gmx.net>
+Cc: Takahiro Hirofuchi <hirofuchi@users.sourceforge.net>
+Cc: Max Vozeler <max@vozeler.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/oss/dev_table.h  |    2 +-
- sound/oss/midi_synth.c |   30 +++++++++++++-----------------
- sound/oss/midi_synth.h |    2 +-
- sound/oss/opl3.c       |    8 ++------
- sound/oss/sequencer.c  |    2 +-
- 5 files changed, 18 insertions(+), 26 deletions(-)
+ drivers/staging/usbip/stub_rx.c |   40 +++++++++++++++------------------------
+ 1 file changed, 15 insertions(+), 25 deletions(-)
 
-diff --git a/sound/oss/dev_table.h b/sound/oss/dev_table.h
-index b7617be..0199a31 100644
---- a/sound/oss/dev_table.h
-+++ b/sound/oss/dev_table.h
-@@ -271,7 +271,7 @@ struct synth_operations
- 	void (*reset) (int dev);
- 	void (*hw_control) (int dev, unsigned char *event);
- 	int (*load_patch) (int dev, int format, const char __user *addr,
--	     int offs, int count, int pmgr_flag);
-+	     int count, int pmgr_flag);
- 	void (*aftertouch) (int dev, int voice, int pressure);
- 	void (*controller) (int dev, int voice, int ctrl_num, int value);
- 	void (*panning) (int dev, int voice, int value);
-diff --git a/sound/oss/midi_synth.c b/sound/oss/midi_synth.c
-index 3bc7104..11685f1 100644
---- a/sound/oss/midi_synth.c
-+++ b/sound/oss/midi_synth.c
-@@ -476,7 +476,7 @@ EXPORT_SYMBOL(midi_synth_hw_control);
+diff --git a/drivers/staging/usbip/stub_rx.c b/drivers/staging/usbip/stub_rx.c
+index bc26740..16a7df1 100644
+--- a/drivers/staging/usbip/stub_rx.c
++++ b/drivers/staging/usbip/stub_rx.c
+@@ -170,33 +170,23 @@ static int tweak_set_configuration_cmd(struct urb *urb)
  
- int
- midi_synth_load_patch(int dev, int format, const char __user *addr,
--		      int offs, int count, int pmgr_flag)
-+		      int count, int pmgr_flag)
+ static int tweak_reset_device_cmd(struct urb *urb)
  {
- 	int             orig_dev = synth_devs[dev]->midi_dev;
+-	struct usb_ctrlrequest *req;
+-	__u16 value;
+-	__u16 index;
+-	int ret;
+-
+-	req = (struct usb_ctrlrequest *) urb->setup_packet;
+-	value = le16_to_cpu(req->wValue);
+-	index = le16_to_cpu(req->wIndex);
+-
+-	usbip_uinfo("reset_device (port %d) to %s\n", index,
+-						dev_name(&urb->dev->dev));
++	struct stub_priv *priv = (struct stub_priv *) urb->context;
++	struct stub_device *sdev = priv->sdev;
  
-@@ -491,33 +491,29 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
- 	if (!prefix_cmd(orig_dev, 0xf0))
- 		return 0;
- 
-+	/* Invalid patch format */
- 	if (format != SYSEX_PATCH)
--	{
--/*		  printk("MIDI Error: Invalid patch format (key) 0x%x\n", format);*/
- 		  return -EINVAL;
+-	/* all interfaces should be owned by usbip driver, so just reset it.  */
+-	ret = usb_lock_device_for_reset(urb->dev, NULL);
+-	if (ret < 0) {
+-		dev_err(&urb->dev->dev, "lock for reset\n");
+-		return ret;
 -	}
-+
-+	/* Patch header too short */
- 	if (count < hdr_size)
--	{
--/*		printk("MIDI Error: Patch header too short\n");*/
- 		return -EINVAL;
--	}
-+
- 	count -= hdr_size;
+-
+-	/* try to reset the device */
+-	ret = usb_reset_device(urb->dev);
+-	if (ret < 0)
+-		dev_err(&urb->dev->dev, "device reset\n");
++	usbip_uinfo("reset_device %s\n", dev_name(&urb->dev->dev));
  
- 	/*
--	 * Copy the header from user space but ignore the first bytes which have
--	 * been transferred already.
-+	 * Copy the header from user space
- 	 */
- 
--	if(copy_from_user(&((char *) &sysex)[offs], &(addr)[offs], hdr_size - offs))
-+	if (copy_from_user(&sysex, addr, hdr_size))
- 		return -EFAULT;
-- 
-- 	if (count < sysex.len)
--	{
--/*		printk(KERN_WARNING "MIDI Warning: Sysex record too short (%d<%d)\n", count, (int) sysex.len);*/
-+
-+	/* Sysex record too short */
-+	if ((unsigned)count < (unsigned)sysex.len)
- 		sysex.len = count;
--	}
--  	left = sysex.len;
--  	src_offs = 0;
-+
-+	left = sysex.len;
-+	src_offs = 0;
- 
- 	for (i = 0; i < left && !signal_pending(current); i++)
- 	{
-diff --git a/sound/oss/midi_synth.h b/sound/oss/midi_synth.h
-index 6bc9d00..b64ddd6 100644
---- a/sound/oss/midi_synth.h
-+++ b/sound/oss/midi_synth.h
-@@ -8,7 +8,7 @@ int midi_synth_open (int dev, int mode);
- void midi_synth_close (int dev);
- void midi_synth_hw_control (int dev, unsigned char *event);
- int midi_synth_load_patch (int dev, int format, const char __user * addr,
--		 int offs, int count, int pmgr_flag);
-+		 int count, int pmgr_flag);
- void midi_synth_panning (int dev, int channel, int pressure);
- void midi_synth_aftertouch (int dev, int channel, int pressure);
- void midi_synth_controller (int dev, int channel, int ctrl_num, int value);
-diff --git a/sound/oss/opl3.c b/sound/oss/opl3.c
-index f4ffdff..407cd67 100644
---- a/sound/oss/opl3.c
-+++ b/sound/oss/opl3.c
-@@ -820,7 +820,7 @@ static void opl3_hw_control(int dev, unsigned char *event)
+-	usb_unlock_device(urb->dev);
+-
+-	return ret;
++	/*
++	 * usb_lock_device_for_reset caused a deadlock: it causes the driver
++	 * to unbind. In the shutdown the rx thread is signalled to shut down
++	 * but this thread is pending in the usb_lock_device_for_reset.
++	 *
++	 * Instead queue the reset.
++	 *
++	 * Unfortunatly an existing usbip connection will be dropped due to
++	 * driver unbinding.
++	 */
++	usb_queue_reset_device(sdev->interface);
++	return 0;
  }
  
- static int opl3_load_patch(int dev, int format, const char __user *addr,
--		int offs, int count, int pmgr_flag)
-+		int count, int pmgr_flag)
- {
- 	struct sbi_instrument ins;
- 
-@@ -830,11 +830,7 @@ static int opl3_load_patch(int dev, int format, const char __user *addr,
- 		return -EINVAL;
- 	}
- 
--	/*
--	 * What the fuck is going on here?  We leave junk in the beginning
--	 * of ins and then check the field pretty close to that beginning?
--	 */
--	if(copy_from_user(&((char *) &ins)[offs], addr + offs, sizeof(ins) - offs))
-+	if (copy_from_user(&ins, addr, sizeof(ins)))
- 		return -EFAULT;
- 
- 	if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR)
-diff --git a/sound/oss/sequencer.c b/sound/oss/sequencer.c
-index e85789e..a0072a9 100644
---- a/sound/oss/sequencer.c
-+++ b/sound/oss/sequencer.c
-@@ -241,7 +241,7 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
- 				return -ENXIO;
- 
- 			fmt = (*(short *) &event_rec[0]) & 0xffff;
--			err = synth_devs[dev]->load_patch(dev, fmt, buf, p + 4, c, 0);
-+			err = synth_devs[dev]->load_patch(dev, fmt, buf + p, c, 0);
- 			if (err < 0)
- 				return err;
- 
+ /*
 -- 
 1.7.9.3
 
