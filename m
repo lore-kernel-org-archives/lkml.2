@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab2CMHM5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 03:12:57 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:14829 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab2CMHM4 (ORCPT
+	id S1756474Ab2CMHOn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 03:14:43 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57002 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493Ab2CMHOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 03:12:56 -0400
-X-AuditID: cbfee61b-b7c62ae000000989-10-4f5ef376bf99
-Message-id: <4F5EF376.3060909@samsung.com>
-Date: Tue, 13 Mar 2012 16:12:54 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-MIME-version: 1.0
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>
-Subject: Re: [RESEND PATCH 1/2] MFD: MAX77693: add MAX77693 MFD driver
-References: <4F5EDB01.9070308@samsung.com>
- <D958900912E20642BCBC71664EFECE3E6DD2912D02@BGMAIL02.nvidia.com>
- <CAH9JG2VrNCPMHoy5pUyc7nTzv-B7ucXheMy7PBtVUfaebt=yUA@mail.gmail.com>
- <D958900912E20642BCBC71664EFECE3E6DD2912D10@BGMAIL02.nvidia.com>
-In-reply-to: <D958900912E20642BCBC71664EFECE3E6DD2912D10@BGMAIL02.nvidia.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 13 Mar 2012 03:14:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120312.235002.344576347742686103.davem@davemloft.net>
+References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
+ <20120312.225302.488696931454771146.davem@davemloft.net> <CAHqTa-3DiZhd_yoRTzp2Np0Rp=_zrfL7CbN_twu+ZZeu7f4ENg@mail.gmail.com>
+ <20120312.235002.344576347742686103.davem@davemloft.net>
+From: Avery Pennarun <apenwarr@gmail.com>
+Date: Tue, 13 Mar 2012 03:14:21 -0400
+Message-ID: <CAHqTa-3sMRJ0p7driNF+d=f_NZNCF-+TWnCSNO2efEdfv0ayVQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Persist printk buffer across reboots.
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, josh@joshtriplett.org,
+        paulmck@linux.vnet.ibm.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        fdinitto@redhat.com, hannes@cmpxchg.org, olaf@aepfle.de,
+        paul.gortmaker@windriver.com, tj@kernel.org, hpa@linux.intel.com,
+        yinghai@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2012 02:52 PM, Venu Byravarasu wrote:
->> So we decide to use legacy way. As regmap is not yet tested. So we
->> summit the current way and revise it later.
-> 
-> I was under the impression that regmap is stable now. Can you 
-> plz let me know, what kind of problems you are seeing with 
-> regmap? As I'm also planning to upstream a MFD using regmap 
-> very soon, this information will be useful.
+On Tue, Mar 13, 2012 at 2:50 AM, David Miller <davem@davemloft.net> wrote:
+> The idea is that you call prom_retain() before you take a look at what
+> physical memory is available in the kernel, and the firmware takes
+> this physical chunk out of those available memory lists upon
+> prom_retain() success.
 
-I had plan for using regmap for i2c read/write operation on later patch.
-But I haven't yet tested max77693 driver with regmap for i2c,
-so I posted max77693 mfd driver which was tested by using i2c legacy way.
+This sounds like exactly the API I would have wanted, however:
 
-Thank you,
-Chanwoo Choi
+1) It's only available in arch/sparc so I can't test my patch if I try
+to use it;
+2) There's nobody that calls it so it might not work;
+3) I don't understand the API so I'm not really confident that
+reserving memory this way will actually prevent it from being seen by
+the kernel.
+
+In short, I think I would screw it up.
+
+On the other hand, as written it seems like my code would also work on
+sparc, and would work with more than one kind of memory area if more
+than one module chose to use this technique.  (ie. Since the prober
+actually reserves memory, the next prober would necessarily reserve a
+different bit of memory, and as long as you're using the same kernel
+as before and you do all reservations before enabling interrupts, you
+should get consistent results.)
+
+I suppose I could move the actual probe-and-allocate code somewhere
+(bootmem.c?  memblock.c?) and add a 'name' parameter to it which is
+ignored in the generic implementation.  Then someone could write an
+arch-specific implementation.  Would that work?  If so, please
+recommend which file to put the generic implementation in :)
+
+Thanks,
+
+Avery
