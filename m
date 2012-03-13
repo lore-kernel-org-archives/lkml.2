@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758398Ab2CMAUB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:20:01 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46872 "EHLO
+	id S1758384Ab2CMAUA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:20:00 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46873 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932282Ab2CMASS (ORCPT
+	with ESMTP id S932288Ab2CMASS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Mar 2012 20:18:18 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
+Cc: stable-review@kernel.org, Kulikov Vasiliy <segooon@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 041/196] mfd: ab3100: world-writable debugfs *_priv files
-Date: Mon, 12 Mar 2012 20:12:49 -0400
-Message-Id: <1331597724-31358-42-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 045/196] sound: oss: midi_synth: check get_user() return value
+Date: Mon, 12 Mar 2012 20:12:53 -0400
+Message-Id: <1331597724-31358-46-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,47 +22,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasiliy Kulikov <segoon@openwall.com>
+From: Kulikov Vasiliy <segooon@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f8a0697722d12a201588225999cfc8bfcbc82781 upstream.
+commit b3390ceab95601afc12213c3ec5551d3bc7b638f upstream.
 
-Don't allow everybody to change device hardware registers.
+get_user() may fail, if so return -EFAULT.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/mfd/ab3100-core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/oss/midi_synth.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
-index e4ca590..4267a4d 100644
---- a/drivers/mfd/ab3100-core.c
-+++ b/drivers/mfd/ab3100-core.c
-@@ -580,7 +580,7 @@ static void ab3100_setup_debugfs(struct ab3100 *ab3100)
- 	ab3100_get_priv.ab3100 = ab3100;
- 	ab3100_get_priv.mode = false;
- 	ab3100_get_reg_file = debugfs_create_file("get_reg",
--				S_IWUGO, ab3100_dir, &ab3100_get_priv,
-+				S_IWUSR, ab3100_dir, &ab3100_get_priv,
- 				&ab3100_get_set_reg_fops);
- 	if (!ab3100_get_reg_file) {
- 		err = -ENOMEM;
-@@ -590,7 +590,7 @@ static void ab3100_setup_debugfs(struct ab3100 *ab3100)
- 	ab3100_set_priv.ab3100 = ab3100;
- 	ab3100_set_priv.mode = true;
- 	ab3100_set_reg_file = debugfs_create_file("set_reg",
--				S_IWUGO, ab3100_dir, &ab3100_set_priv,
-+				S_IWUSR, ab3100_dir, &ab3100_set_priv,
- 				&ab3100_get_set_reg_fops);
- 	if (!ab3100_set_reg_file) {
- 		err = -ENOMEM;
+diff --git a/sound/oss/midi_synth.c b/sound/oss/midi_synth.c
+index 11685f1..2292c23 100644
+--- a/sound/oss/midi_synth.c
++++ b/sound/oss/midi_synth.c
+@@ -519,7 +519,9 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
+ 	{
+ 		unsigned char   data;
+ 
+-		get_user(*(unsigned char *) &data, (unsigned char __user *) &((addr)[hdr_size + i]));
++		if (get_user(data,
++		    (unsigned char __user *)(addr + hdr_size + i)))
++			return -EFAULT;
+ 
+ 		eox_seen = (i > 0 && data & 0x80);	/* End of sysex */
+ 
 -- 
 1.7.9.3
 
