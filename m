@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758841Ab2CMMLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:11:00 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59104 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756109Ab2CMMK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 08:10:57 -0400
-Date: Tue, 13 Mar 2012 13:10:34 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL/NEXT] sched/arch: Introduce the
- finish_arch_post_lock_switch() scheduler callback
-Message-ID: <20120313121034.GA15543@elte.hu>
-References: <20120313083310.GA27560@flint.arm.linux.org.uk>
- <20120313083630.GA10131@elte.hu>
- <20120313084713.GB27560@flint.arm.linux.org.uk>
- <20120313085628.GB6991@elte.hu>
- <20120313090040.GE27560@flint.arm.linux.org.uk>
- <20120313092649.GA15406@elte.hu>
- <20120313095020.GA13220@flint.arm.linux.org.uk>
- <20120313101859.GA2626@elte.hu>
- <20120313112729.GA25835@flint.arm.linux.org.uk>
- <20120313115640.GA27378@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120313115640.GA27378@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1759592Ab2CMMLJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:11:09 -0400
+Received: from mail-lb0-f202.google.com ([209.85.217.202]:42166 "EHLO
+	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756109Ab2CMMLE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 08:11:04 -0400
+X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Mar 2012 08:11:03 EDT
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 15/20] Input: atmel_mxt_ts - optimize writing of object table entries
+Date: Tue, 13 Mar 2012 20:04:18 +0800
+Message-Id: <1331640263-18935-16-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
+References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Write each object using a single bulk i2c write transfer.
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c |   28 ++++++++++++++--------------
+ 1 files changed, 14 insertions(+), 14 deletions(-)
 
-> [...]
-> 
-> Having a patch applied to an old scheduler tree that is barely 
-> out of -rc1 and then pushing it out into linux-next at -rc8, 
-> without even checking how it integrates with upstream, barely 
-> a few days before the merge window is just plain stupid.
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index 9e1ce03..0277381 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -609,33 +609,33 @@ end:
+ static int mxt_check_reg_init(struct mxt_data *data)
+ {
+ 	const struct mxt_platform_data *pdata = data->pdata;
+-	struct mxt_object *object;
+ 	struct device *dev = &data->client->dev;
+-	int index = 0;
+-	int i, j, config_offset, config_size;
++	int i, offset;
++	int ret;
+ 
+ 	if (!pdata->config) {
+ 		dev_dbg(dev, "No cfg data defined, skipping reg init\n");
+ 		return 0;
+ 	}
+ 
+-	for (i = 0; i < data->info.object_num; i++) {
+-		object = data->object_table + i;
++	for (offset = 0, i = 0; i < data->info.object_num; i++) {
++		struct mxt_object *object = &data->object_table[i];
++		size_t config_size;
+ 
+ 		if (!mxt_object_writable(object->type))
+ 			continue;
+ 
+ 		config_size = object->size * object->instances;
+-		for (j = 0; j < config_size; j++) {
+-			config_offset = index + j;
+-			if (config_offset > pdata->config_length) {
+-				dev_err(dev, "Not enough config data!\n");
+-				return -EINVAL;
+-			}
+-			mxt_write_object(data, object->type, j,
+-					 pdata->config[config_offset]);
++		if (offset + config_size > pdata->config_length) {
++			dev_err(dev, "Not enough config data!\n");
++			return -EINVAL;
+ 		}
+-		index += config_size;
++
++		ret = mxt_write_reg(data->client, object->start_address,
++				    config_size, &pdata->config[offset]);
++		if (ret)
++			return ret;
++		offset += config_size;
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.7.3
 
-So, while I cannot know what Linus will think and do once he 
-gets such a conflict (my guess is that he'd just fix it up 
-silently - it's really trivial), I can tell you what the 
-conflict told *me*: that the communication channels between the 
-ARM tree and the scheduler tree are not in the best of shape.
-
-And that is what worried me enough to write a reply while 
-recognizing that PeterZ acked the patch - not the triviality of 
-the patch or the triviality of the conflict.
-
-And dammit, I have the right and the duty to be concerned about 
-a conflict in the scheduler code if I see it for the first time, 
-not just Linus. Conflicts aren't magically just for Linus to be 
-interested and act upon, they can occasionally be informative at 
-subsystem maintainer levels just as well - like here...
-
-What we should not do in terms of conflict avoidance are 
-*excessive* cross-subsystem merges: for example you 
-indiscriminately merging the totality of all pending scheduler 
-changes into the ARM tree and thus forcing Linus's hand in terms 
-of not being able to reject to pull the scheduler tree.
-
-But if I got it right, working together on a trivial, 
-well-isolated callback patch to make life easier is not frowned 
-upon by Linus at all ...
-
-Thanks,
-
-	Ingo
