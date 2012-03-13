@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757294Ab2CMQAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 12:00:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51640 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab2CMQA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 12:00:29 -0400
-Date: Tue, 13 Mar 2012 12:00:24 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shli@fusionio.com>
-Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, neilb@suse.de,
-        axboe@kernel.dk, Shaohua Li <shli@fusionio.com>
-Subject: Re: [patch 7/7] blk: use correct sectors limitation for discard
- request
-Message-ID: <20120313160024.GH29169@redhat.com>
-References: <20120312030412.375458948@fusionio.com>
- <20120312031306.030156009@fusionio.com>
+	id S1757380Ab2CMQAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 12:00:51 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:45052 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753579Ab2CMQAt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 12:00:49 -0400
+Date: Tue, 13 Mar 2012 20:00:44 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Matt Helsley <matthltc@us.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
+Message-ID: <20120313160044.GF1912@moon>
+References: <20120309152122.GA7802@redhat.com>
+ <20120309154224.GE13346@moon>
+ <20120309220244.GD19584@count0.beaverton.ibm.com>
+ <20120309223932.GB725@moon>
+ <20120309235901.GE19584@count0.beaverton.ibm.com>
+ <20120310074854.GA3065@moon>
+ <20120313024511.GF19584@count0.beaverton.ibm.com>
+ <20120313062625.GA1912@moon>
+ <20120313071812.GA6969@moon>
+ <20120313154337.GA25711@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120312031306.030156009@fusionio.com>
+In-Reply-To: <20120313154337.GA25711@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 11:04:19AM +0800, Shaohua Li wrote:
-> max_discard_sectors doesn't equal to max_sectors/max_hw_sectors. Without this,
-> discard request merge might be ignored.
+On Tue, Mar 13, 2012 at 04:43:37PM +0100, Oleg Nesterov wrote:
+> > +
+> > +	/*
+> > +	 * For security reason changing mm->exe_file
+> > +	 * is one-shot action.
+> > +	 */
+> > +	down_write(&mm->mmap_sem);
+> > +	if (likely(!mm->exe_file))
 > 
-> Signed-off-by: Shaohua Li <shli@fusionio.com>
-> ---
->  block/blk-merge.c      |    9 +++++++--
->  include/linux/blkdev.h |    5 +++++
->  2 files changed, 12 insertions(+), 2 deletions(-)
+> This means that the num_exe_file_vmas check at the start is not needed.
+> If you want it as a "fast-path" check, please fix the comment. Or just
+> remove it. Otherwise the code looks as if we have to check them both.
+
+Yes, I wanted a fast test first, while the second test will give
+one-shot condition and the second attempt to setup new exe_file
+will fail. OK, I'll update the comment block.
+
 > 
-> Index: linux/block/blk-merge.c
-> ===================================================================
-> --- linux.orig/block/blk-merge.c	2012-03-09 14:05:35.562062857 +0800
-> +++ linux/block/blk-merge.c	2012-03-09 14:07:55.432062246 +0800
-> @@ -228,13 +228,16 @@ no_merge:
->  int ll_back_merge_fn(struct request_queue *q, struct request *req,
->  		     struct bio *bio)
->  {
-> -	unsigned short max_sectors;
-> +	unsigned int max_sectors;
->  
->  	if (unlikely(req->cmd_type == REQ_TYPE_BLOCK_PC))
->  		max_sectors = queue_max_hw_sectors(q);
->  	else
->  		max_sectors = queue_max_sectors(q);
->  
-> +	if (unlikely(req->cmd_flags & REQ_DISCARD))
-> +		max_sectors = queue_max_discard_sectors(q);
-> +
+> Matt, is it really possible to hit mm->exe_file = NULL in
+> removed_exe_file_vma ? Unless I missed something, this check just
+> hides the potentional problem, no?
+> 
+> IOW, shouldn't it do
+> 
+> 	void removed_exe_file_vma(struct mm_struct *mm)
+> 	{
+> 		WARN_ON(!mm->exe_file);
+> 		WARN_ON(mm->num_exe_file_vmas <= 0);
+> 
 
-May be make above check an "else if" condition above instead of starting
-another "if" block.
+I guess if num_exe_file_vmas < 1 here we've a bug somewhere
+and should not decrement the counter at all.
 
-Thanks
-Vivek
+	Cyrill
