@@ -1,123 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758207Ab2CMBSn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 21:18:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20362 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754055Ab2CMBSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 21:18:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="128147762"
-Subject: Re: [PATCH V3] cpuidle: Add a sysfs entry to disable specific C
- state for debug purpose.
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: ShuoX Liu <shuox.liu@intel.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>
-In-Reply-To: <20120313004229.GA21111@khazad-dum.debian.net>
-References: <C6CB66606345BC4B80CBE69D22ABFBB1021C7F@SHSMSX101.ccr.corp.intel.com>
-	 <1330647453.1916.7.camel@ymzhang>
-	 <20120302142303.648285a7.akpm@linux-foundation.org>
-	 <C6CB66606345BC4B80CBE69D22ABFBB10220E1@SHSMSX101.ccr.corp.intel.com>
-	 <4F545A4E.8010801@linux.vnet.ibm.com> <4F5466C4.2090808@intel.com>
-	 <20120305101827.GA19408@khazad-dum.debian.net>
-	 <1330995854.1916.39.camel@ymzhang>
-	 <20120313004229.GA21111@khazad-dum.debian.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: UMG
-Date: Tue, 13 Mar 2012 09:18:00 +0800
-Message-ID: <1331601480.1916.149.camel@ymzhang>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758450Ab2CMB1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 21:27:40 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:54399 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab2CMB1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 21:27:38 -0400
+Date: Tue, 13 Mar 2012 10:27:34 +0900
+From: Simon Horman <horms@verge.net.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux-sh list <linux-sh@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cao Minh Hiep <hiepcm@gmail.com>
+Subject: Re: [PATCH 0/6] PM / Domains: System suspend fixes and "always on"
+ flag
+Message-ID: <20120313012731.GA9482@verge.net.au>
+References: <201203130123.16268.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201203130123.16268.rjw@sisk.pl>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 21:42 -0300, Henrique de Moraes Holschuh wrote:
-> On Tue, 06 Mar 2012, Yanmin Zhang wrote:
-> > On Mon, 2012-03-05 at 07:18 -0300, Henrique de Moraes Holschuh wrote:
-> > > On Mon, 05 Mar 2012, ShuoX Liu wrote:
-> > > > @@ -45,6 +46,7 @@ total 0
-> > > >  /sys/devices/system/cpu/cpu0/cpuidle/state1:
-> > > >  total 0
-> > > >  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-> > > > +-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
-> > > >  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
-> > > >  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
-> > > >  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-> > > 
-> > > ...
-> > > 
-> > > > diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-> > > > index 3fe41fe..1eae29a 100644
-> > > > --- a/drivers/cpuidle/sysfs.c
-> > > > +++ b/drivers/cpuidle/sysfs.c
-> > > > @@ -222,6 +222,9 @@ struct cpuidle_state_attr {
-> > > >  #define define_one_state_ro(_name, show) \
-> > > >  static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0444,
-> > > > show, NULL)
-> > > > 
-> > > > +#define define_one_state_rw(_name, show, store) \
-> > > > +static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0644,
-> > > > show, store)
-> > > > +
-> > > >  #define define_show_state_function(_name) \
-> > > >  static ssize_t show_state_##_name(struct cpuidle_state *state, \
-> > > >  			 struct cpuidle_state_usage *state_usage, char *buf) \
-> > > > @@ -229,6 +232,19 @@ static ssize_t show_state_##_name(struct
-> > > > cpuidle_state *state, \
-> > > >  	return sprintf(buf, "%u\n", state->_name);\
-> > > >  }
-> > > > 
-> > > > +#define define_store_state_function(_name) \
-> > > > +static ssize_t store_state_##_name(struct cpuidle_state *state, \
-> > > > +		const char *buf, size_t size) \
-> > > > +{ \
-> > > > +	int value; \
-> > > > +	sscanf(buf, "%d", &value); \
-> > > > +	if (value) \
-> > > > +		state->disable = 1; \
-> > > > +	else \
-> > > > +		state->disable = 0; \
-> > > > +	return size; \
-> > > > +}
-> > > 
-> > > Isn't this missing a check for capabilities?  Disabling cpuidle states is
-> > > not something random Joe (and IMHO that does mean random capability-
-> > > restricted Joe root) should be doing...
-> > Sorry. Could you elaborate it?
+On Tue, Mar 13, 2012 at 01:23:15AM +0100, Rafael J. Wysocki wrote:
+> Hi all,
 > 
-> Sure.  Should any user be able to disable a C state, therefore causing
-> the system to consume more power?
-Here we use the simple way to check access. Only root could change it.
+> The following patches fix system suspend/resume and hibernation device
+> callback routines in the generic PM domains code and add an "always on" flag
+> for devices allowing their drivers to protect them from surprise power
+> removals.
+> 
+> [1/6] - Fix system resume of devices involved in system wakeup.
+> [2/6] - Fix hibernation restore of devices.
+> [3/6] - Introduce "always on" flag for "special" devices in PM domains.
+> [4/6] - Make TMU clocksource driver use the "always on" flag.
+> [5/6] - Make CMT clocksource driver use the "always on" flag.
+> [6/6] - Make MTU2 clocksource driver use the "always on" flag.
+> 
+> All of them are v3.4 material if there are no objections.
 
-> 
-> I am pretty sure the answer is NO, in which case you should check for
-> the appropriate user credentials before you allow a write to these
-> "debug" controls to succeed.  "capability" here is one of the CAP_*
-> capabilities tested through capable(), which are supposed to limit even
-> root.
-We would add below check.
- 
-        if (!capable(CAP_SYS_ADMIN))
-                return -EPERM;
+Hi Rafael,
 
-> 
-> > > Also, maybe it would be best to use one of the lib helpers to parse that
-> > > value, so that it will be less annoying to userspace (trim blanks, complain
-> > > if there is trailing junk after trimming, etc)?
-> > We would use strict_strtol to parse the value in next version.
-> 
-> Thanks!
-> 
+I have tested that my Mackerel boots with the default config and each of
+these patches applied in turn. The tests were made on head of the
+linux-next branch of your linux-pm tree ("sh_mmcif / PM: Use PM QoS latency
+constraint") + the "sh-sci / PM: Avoid deadlocking runtime PM" patch at the
+link below.
 
+http://marc.info/?l=linux-sh&m=133073065924863&w=4
 
+Please let me know if there are other tests you would like run.
+
+All patches:
+
+Tested-by: Simon Horman <horms@verge.net.au>
