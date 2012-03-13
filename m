@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572Ab2CMBEY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 21:04:24 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46772 "EHLO
+	id S1759278Ab2CMBE6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 21:04:58 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46735 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758007Ab2CMAR5 (ORCPT
+	with ESMTP id S1758180Ab2CMARy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:17:57 -0400
+	Mon, 12 Mar 2012 20:17:54 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+Cc: stable-review@kernel.org, Clemens Ladisch <clemens@ladisch.de>,
+        Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 032/196] UBIFS: fix debugging failure in dbg_check_space_info
-Date: Mon, 12 Mar 2012 20:12:40 -0400
-Message-Id: <1331597724-31358-33-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 025/196] ALSA: ens1371: fix Creative Ectiva support
+Date: Mon, 12 Mar 2012 20:12:33 -0400
+Message-Id: <1331597724-31358-26-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -21,102 +22,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 7da6443aca9be29c6948dcbd636ad50154d0bc0c upstream.
+commit 6ebb8a4a43e34f999ab36f27f972f3cd751cda4f upstream.
 
-This patch fixes a debugging failure with which looks like this:
-UBIFS error (pid 32313): dbg_check_space_info: free space changed from 6019344 to 6022654
+To make the EV1938 chip work, add a magic bit and an extra delay.
 
-The reason for this failure is described in the comment this patch adds
-to the code. But in short - 'c->freeable_cnt' may be different before
-and after re-mounting, and this is normal. So the debugging code should
-make sure that free space calculations do not depend on 'c->freeable_cnt'.
-
-A similar issue has been reported here:
-http://lists.infradead.org/pipermail/linux-mtd/2011-April/034647.html
-
-This patch should fix it.
-
-For the -stable guys: this patch is only relevant for kernels 2.6.30
-onwards.
-
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Tested-by: Tino Schmidt <mailtinoshomepage@gmx.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/ubifs/debug.c |   41 ++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 36 insertions(+), 5 deletions(-)
+ sound/pci/ens1370.c |   23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ubifs/debug.c b/fs/ubifs/debug.c
-index c2a68ba..923d697 100644
---- a/fs/ubifs/debug.c
-+++ b/fs/ubifs/debug.c
-@@ -961,11 +961,39 @@ void dbg_dump_index(struct ubifs_info *c)
- void dbg_save_space_info(struct ubifs_info *c)
- {
- 	struct ubifs_debug_info *d = c->dbg;
--
--	ubifs_get_lp_stats(c, &d->saved_lst);
-+	int freeable_cnt;
+diff --git a/sound/pci/ens1370.c b/sound/pci/ens1370.c
+index c7fba53..d6a40e2 100644
+--- a/sound/pci/ens1370.c
++++ b/sound/pci/ens1370.c
+@@ -229,6 +229,7 @@ MODULE_PARM_DESC(lineio, "Line In to Rear Out (0 = auto, 1 = force).");
+ #define ES_REG_1371_CODEC 0x14	/* W/R: Codec Read/Write register address */
+ #define   ES_1371_CODEC_RDY	   (1<<31)	/* codec ready */
+ #define   ES_1371_CODEC_WIP	   (1<<30)	/* codec register access in progress */
++#define   EV_1938_CODEC_MAGIC	   (1<<26)
+ #define   ES_1371_CODEC_PIRD	   (1<<23)	/* codec read/write select register */
+ #define   ES_1371_CODEC_WRITE(a,d) ((((a)&0x7f)<<16)|(((d)&0xffff)<<0))
+ #define   ES_1371_CODEC_READS(a)   ((((a)&0x7f)<<16)|ES_1371_CODEC_PIRD)
+@@ -603,12 +604,18 @@ static void snd_es1370_codec_write(struct snd_ak4531 *ak4531,
  
- 	spin_lock(&c->space_lock);
-+	memcpy(&d->saved_lst, &c->lst, sizeof(struct ubifs_lp_stats));
+ #ifdef CHIP1371
+ 
++static inline bool is_ev1938(struct ensoniq *ensoniq)
++{
++	return ensoniq->pci->device == 0x8938;
++}
 +
-+	/*
-+	 * We use a dirty hack here and zero out @c->freeable_cnt, because it
-+	 * affects the free space calculations, and UBIFS might not know about
-+	 * all freeable eraseblocks. Indeed, we know about freeable eraseblocks
-+	 * only when we read their lprops, and we do this only lazily, upon the
-+	 * need. So at any given point of time @c->freeable_cnt might be not
-+	 * exactly accurate.
-+	 *
-+	 * Just one example about the issue we hit when we did not zero
-+	 * @c->freeable_cnt.
-+	 * 1. The file-system is mounted R/O, c->freeable_cnt is %0. We save the
-+	 *    amount of free space in @d->saved_free
-+	 * 2. We re-mount R/W, which makes UBIFS to read the "lsave"
-+	 *    information from flash, where we cache LEBs from various
-+	 *    categories ('ubifs_remount_fs()' -> 'ubifs_lpt_init()'
-+	 *    -> 'lpt_init_wr()' -> 'read_lsave()' -> 'ubifs_lpt_lookup()'
-+	 *    -> 'ubifs_get_pnode()' -> 'update_cats()'
-+	 *    -> 'ubifs_add_to_cat()').
-+	 * 3. Lsave contains a freeable eraseblock, and @c->freeable_cnt
-+	 *    becomes %1.
-+	 * 4. We calculate the amount of free space when the re-mount is
-+	 *    finished in 'dbg_check_space_info()' and it does not match
-+	 *    @d->saved_free.
-+	 */
-+	freeable_cnt = c->freeable_cnt;
-+	c->freeable_cnt = 0;
- 	d->saved_free = ubifs_get_free_space_nolock(c);
-+	c->freeable_cnt = freeable_cnt;
- 	spin_unlock(&c->space_lock);
- }
- 
-@@ -982,12 +1010,15 @@ int dbg_check_space_info(struct ubifs_info *c)
+ static void snd_es1371_codec_write(struct snd_ac97 *ac97,
+ 				   unsigned short reg, unsigned short val)
  {
- 	struct ubifs_debug_info *d = c->dbg;
- 	struct ubifs_lp_stats lst;
--	long long avail, free;
-+	long long free;
-+	int freeable_cnt;
+ 	struct ensoniq *ensoniq = ac97->private_data;
+-	unsigned int t, x;
++	unsigned int t, x, flag;
  
- 	spin_lock(&c->space_lock);
--	avail = ubifs_calc_available(c, c->min_idx_lebs);
-+	freeable_cnt = c->freeable_cnt;
-+	c->freeable_cnt = 0;
-+	free = ubifs_get_free_space_nolock(c);
-+	c->freeable_cnt = freeable_cnt;
- 	spin_unlock(&c->space_lock);
--	free = ubifs_get_free_space(c);
++	flag = is_ev1938(ensoniq) ? EV_1938_CODEC_MAGIC : 0;
+ 	mutex_lock(&ensoniq->src_mutex);
+ 	for (t = 0; t < POLL_COUNT; t++) {
+ 		if (!(inl(ES_REG(ensoniq, 1371_CODEC)) & ES_1371_CODEC_WIP)) {
+@@ -630,7 +637,8 @@ static void snd_es1371_codec_write(struct snd_ac97 *ac97,
+ 				    0x00010000)
+ 					break;
+ 			}
+-			outl(ES_1371_CODEC_WRITE(reg, val), ES_REG(ensoniq, 1371_CODEC));
++			outl(ES_1371_CODEC_WRITE(reg, val) | flag,
++			     ES_REG(ensoniq, 1371_CODEC));
+ 			/* restore SRC reg */
+ 			snd_es1371_wait_src_ready(ensoniq);
+ 			outl(x, ES_REG(ensoniq, 1371_SMPRATE));
+@@ -647,8 +655,9 @@ static unsigned short snd_es1371_codec_read(struct snd_ac97 *ac97,
+ 					    unsigned short reg)
+ {
+ 	struct ensoniq *ensoniq = ac97->private_data;
+-	unsigned int t, x, fail = 0;
++	unsigned int t, x, flag, fail = 0;
  
- 	if (free != d->saved_free) {
- 		ubifs_err("free space changed from %lld to %lld",
++	flag = is_ev1938(ensoniq) ? EV_1938_CODEC_MAGIC : 0;
+       __again:
+ 	mutex_lock(&ensoniq->src_mutex);
+ 	for (t = 0; t < POLL_COUNT; t++) {
+@@ -671,7 +680,8 @@ static unsigned short snd_es1371_codec_read(struct snd_ac97 *ac97,
+ 				    0x00010000)
+ 					break;
+ 			}
+-			outl(ES_1371_CODEC_READS(reg), ES_REG(ensoniq, 1371_CODEC));
++			outl(ES_1371_CODEC_READS(reg) | flag,
++			     ES_REG(ensoniq, 1371_CODEC));
+ 			/* restore SRC reg */
+ 			snd_es1371_wait_src_ready(ensoniq);
+ 			outl(x, ES_REG(ensoniq, 1371_SMPRATE));
+@@ -683,6 +693,11 @@ static unsigned short snd_es1371_codec_read(struct snd_ac97 *ac97,
+ 			/* now wait for the stinkin' data (RDY) */
+ 			for (t = 0; t < POLL_COUNT; t++) {
+ 				if ((x = inl(ES_REG(ensoniq, 1371_CODEC))) & ES_1371_CODEC_RDY) {
++					if (is_ev1938(ensoniq)) {
++						for (t = 0; t < 100; t++)
++							inl(ES_REG(ensoniq, CONTROL));
++						x = inl(ES_REG(ensoniq, 1371_CODEC));
++					}
+ 					mutex_unlock(&ensoniq->src_mutex);
+ 					return ES_1371_CODEC_READ(x);
+ 				}
 -- 
 1.7.9.3
 
