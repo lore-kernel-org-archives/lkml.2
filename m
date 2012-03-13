@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab2CMAGE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:06:04 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:53027 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756205Ab2CMAGC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:06:02 -0400
-Date: Mon, 12 Mar 2012 17:05:58 -0700 (PDT)
-Message-Id: <20120312.170558.584205292599435892.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next] net: ipv4: Standardize prefixes for message
- logging
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1331571812.13200.23.camel@joe2Laptop>
-References: <1331526971.13200.9.camel@joe2Laptop>
-	<20120311.234846.455580505379366792.davem@davemloft.net>
-	<1331571812.13200.23.camel@joe2Laptop>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 12 Mar 2012 17:05:59 -0700 (PDT)
+	id S1756599Ab2CMAG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:06:59 -0400
+Received: from home.keithp.com ([63.227.221.253]:47120 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751972Ab2CMAG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 20:06:58 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Yang Bai <hamo.by@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>, kernel@tesarici.cz
+Subject: Re: inode->i_wb_list corruption.
+In-Reply-To: <20120312232630.GA20287@redhat.com>
+References: <20120306185137.GA15881@redhat.com> <20120306210307.GC8781@quack.suse.cz> <20120307072608.GA24087@localhost> <20120307104240.GB18658@quack.suse.cz> <CAO_0yfNt2jgiTPZn5NkwBAjQZtk+377gG71d6QOuXQrDHjdkEg@mail.gmail.com> <20120309145713.GA21543@redhat.com> <20120309151951.GA30160@redhat.com> <CAO_0yfMYOOTvRg9=8_eYP09o0BpzSEk=8vqgNk_vV_u3-biAYA@mail.gmail.com> <20120309180015.GA3862@redhat.com> <868vj97d20.fsf@sumi.keithp.com> <20120312232630.GA20287@redhat.com>
+User-Agent: Notmuch/0.11.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Mon, 12 Mar 2012 17:06:52 -0700
+Message-ID: <861uoxmkir.fsf@sumi.keithp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Mon, 12 Mar 2012 10:03:32 -0700
+<#part sign=pgpmime>
+On Mon, 12 Mar 2012 19:26:30 -0400, Dave Jones <davej@redhat.com> wrote:
 
-> Add #define pr_fmt(fmt) as appropriate.
+> Thinking about how the GTT could contain stale pointers, I came up with this scenario:
 > 
-> Add "IPv4: ", "TCP: ", and "IPsec: " to appropriate files.
-> Standardize on "UDPLite: " for appropriate uses.
-> Some prefixes were previously "UDPLITE: " and "UDP-Lite: ".
-> 
-> Add KBUILD_MODNAME ": " to icmp and gre.
-> Remove embedded prefixes as appropriate.
-> 
-> Add missing "\n" to pr_info in gre.c.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> Before we begin the thaw, the initramfs sets up a framebuffer.
+> This causes the GTT to be setup.
 
-Looks good, and applied, but I left out this hunk:
+Yes. The frame buffer is allocated as regular kernel pages, of course.
 
-> diff --git a/net/ipv4/ipcomp.c b/net/ipv4/ipcomp.c
-> index 63b64c4..56d6768 100644
-> --- a/net/ipv4/ipcomp.c
-> +++ b/net/ipv4/ipcomp.c
-> @@ -13,6 +13,7 @@
->   *   - Compression stats.
->   *   - Adaptive compression.
->   */
-> +
->  #include <linux/module.h>
->  #include <linux/err.h>
->  #include <linux/rtnetlink.h>
+> - Thaw begins, hardware state still points to the GTT setup by the modesetting code.
+>   At this point, any graphics operations are going to cause writes through
+>   those translations. Bad news if we just wrote a bunch of thawed data
+>   there.
 
-As it seemed accidental, if not gratuitous.
+The question is what data could still be pending there; we're running
+just fbcon at that point, which uses only write-through
+access. Presumably, any fbdev writes will have been long-since finished
+once we start the new kernel.
+
+> - Thaw begins, and data is written over the GTT setup by the initramfs, but 
+>   the hardware registers still points at it, until thaw is complete, when we
+>   reprogram the GTT registers to their pre-hibernate values.
+
+I'm not sure how the new kernel could manage to do any writes through
+this though -- it shouldn't touch the frame buffer until it has thawed
+the video driver, right?
+
+> If we could somehow set modeset=0 automatically if we detect a hibernate
+> partition it would probably 'solve' it, but I suspect the real answer
+> would be to do GTT teardown before we do a thaw.
+
+We've got a ton of memory available in the 'stolen' area which the BIOS
+used as a frame buffer; we should be able to switch to that before the
+switch, if we decide that this is necessary.
+
+-- 
+keith.packard@intel.com
