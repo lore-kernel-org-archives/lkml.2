@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab2CMIUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:20:07 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:57225 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985Ab2CMIUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:20:03 -0400
-Date: Tue, 13 Mar 2012 01:16:33 -0700 (PDT)
-Message-Id: <20120313.011633.151968036751263435.davem@davemloft.net>
-To: apenwarr@gmail.com
-Cc: akpm@linux-foundation.org, josh@joshtriplett.org,
-        paulmck@linux.vnet.ibm.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        fdinitto@redhat.com, hannes@cmpxchg.org, olaf@aepfle.de,
-        paul.gortmaker@windriver.com, tj@kernel.org, hpa@linux.intel.com,
-        yinghai@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 0/5] Persist printk buffer across reboots.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAHqTa-2c7pOTicWO8stNJfVfep4gSPHwKdr3kv_Jk-oi=dU5bw@mail.gmail.com>
-References: <CAHqTa-3sMRJ0p7driNF+d=f_NZNCF-+TWnCSNO2efEdfv0ayVQ@mail.gmail.com>
-	<20120313.001842.1454669292182923878.davem@davemloft.net>
-	<CAHqTa-2c7pOTicWO8stNJfVfep4gSPHwKdr3kv_Jk-oi=dU5bw@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	id S1753388Ab2CMIVp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:21:45 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:58722 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604Ab2CMIVl convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:2>);
+	Tue, 13 Mar 2012 04:21:41 -0400
+Message-Id: <4F5F11A00200007800077DD4@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 13 Mar 2012 08:21:36 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: <mike.mcclurg@citrix.com>, <ke.yu@intel.com>, <kevin.tian@intel.com>,
+        <xen-devel@lists.xensource.com>, <davej@redhat.com>,
+        <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/acpi-processor: C and P-state driver that
+ uploads said data to hypervisor.
+References: <1331395500-28033-1-git-send-email-konrad.wilk@oracle.com>
+ <1331395500-28033-2-git-send-email-konrad.wilk@oracle.com>
+ <4F5DE5AD02000078000779CC@nat28.tlf.novell.com>
+ <20120312150729.GB4236@phenom.dumpdata.com>
+ <4F5E23CA0200007800077B90@nat28.tlf.novell.com>
+ <20120313033541.GB17536@phenom.dumpdata.com>
+In-Reply-To: <20120313033541.GB17536@phenom.dumpdata.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 13 Mar 2012 01:16:35 -0700 (PDT)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Avery Pennarun <apenwarr@gmail.com>
-Date: Tue, 13 Mar 2012 04:10:42 -0400
+>>> On 13.03.12 at 04:35, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> +static unsigned int __init get_max_acpi_id(void)
+> +{
+> +	struct xenpf_pcpuinfo *info;
+> +	struct xen_platform_op op = {
+> +		.cmd = XENPF_get_cpuinfo,
+> +		.interface_version = XENPF_INTERFACE_VERSION,
+> +	};
+> +	int ret = 0;
+> +	unsigned int i, max_apic_id, max_acpi_id = 0;
+> +
+> +	info = &op.u.pcpu_info;
+> +	info->xen_cpuid = 0;
+> +
+> +	ret = HYPERVISOR_dom0_op(&op);
+> +	if (ret)
+> +		return max_acpi_id;
+> +
+> +	/* The max_present is the same irregardless of the xen_cpuid */
+> +	max_apic_id = op.u.pcpu_info.max_present;
 
-> On Tue, Mar 13, 2012 at 3:18 AM, David Miller <davem@davemloft.net> wrote:
->> I'm only saying that you should design your stuff such that an
->> architecture with such features could easily hook into it using this
->> kind facility.
-> 
-> How about this?
+The 'apic' in the name here is confusing, as this isn't an APIC ID, but
+(Xen) ID of the last present CPU (i.e. one less than the maximum
+count).
 
-Function signature looks good.
+> +	for (i = 0; i <= max_apic_id; i++) {
+> +		info->xen_cpuid = i;
+> +		ret = HYPERVISOR_dom0_op(&op);
+> +		if (ret)
+> +			continue;
+> +		max_acpi_id = max(info->acpi_id, max_acpi_id);
+> +	}
+> +	pr_debug(DRV_NAME "Max ACPI ID: %u\n", max_acpi_id);
+> +	return max_acpi_id;
 
-But on a platform with firmware based memory retaining facilitites
-we're going to need to invoke this way before bootmem or memblocks are
-even setup, because the retain call influences the free memory lists
-that the firmware gives to us and those free memory lists are what we
-use to populate the memblock tables.
+Iirc hotplug CPUs may not be represented in MADT, and hence I'd
+suggest adding some slack here (e.g. doubling the value).
+
+> +}
+
+Now, if the whole thing could become a true extension to processor.ko,
+the fishy (and too weak in the 'm' case, as you noted yourself) Kconfig
+dependency on the cpufreq drivers could go away, since both
+acpi-cpufreq and powernow-k8 depend on ACPI_PROCESSOR. Which
+would at once put it on par with the XenoLinux placement (in terms of
+the point in time when it gets executed) of the code.
+
+Jan
+
