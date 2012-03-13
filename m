@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759682Ab2CMIgc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:36:32 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37113 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752294Ab2CMIg3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:36:29 -0400
+	id S1759806Ab2CMIgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:36:47 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43917 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759771Ab2CMIgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 04:36:43 -0400
+Date: Tue, 13 Mar 2012 09:36:30 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: linux-next: manual merge of the arm tree with Linus' tree
+Message-ID: <20120313083630.GA10131@elte.hu>
+References: <20120313110840.7b444deb6b1bb902c15f3cdf@canb.auug.org.au>
+ <20120313061622.GA24357@elte.hu>
+ <20120313083310.GA27560@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20120313082818.GA5421@gmail.com>
-References: <20120313024818.GA7125@barrios>
-	<1331620214-4893-1-git-send-email-wenqing.lz@taobao.com>
-	<20120313064832.GA4968@gmail.com>
-	<4F5EF563.5000700@openvz.org>
-	<CAFPAmTTPxGzrZrW+FR4B_MYDB372HyzdnioO0=CRwx0zQueRSQ@mail.gmail.com>
-	<CAFPAmTS-ExDtS7rpJoygc6MCwC10spapyThq7=5cCCGFbjZtqA@mail.gmail.com>
-	<20120313080535.GA5243@gmail.com>
-	<CAFPAmTSR_Lvsi2+Uid3a9RQK5bBnN3vD_cje6o02f-gBusCJHQ@mail.gmail.com>
-	<CAFPAmTQWsq5sjnTVYL5ark6=LSOmOwiRsCr7wqTp=4ymBAUdUQ@mail.gmail.com>
-	<20120313082818.GA5421@gmail.com>
-Date: Tue, 13 Mar 2012 14:06:28 +0530
-Message-ID: <CAFPAmTQ-7GiDfQkU5wKFfR5UVacrN-HrP5h_yNmAdK8tRO-xTA@mail.gmail.com>
-Subject: Re: Fwd: Control page reclaim granularity
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: minchan@kernel.org, riel@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        Zheng Liu <wenqing.lz@taobao.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120313083310.GA27560@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> Yes, I think so.  But it seems that there has some codes that are
-> possible to be abused.  For example, as I said previously, applications
-> can mmap a normal data file with PROT_EXEC flag.  Then this file gets a
-> high priority to keep in memory (commit: 8cab4754).  So my point is that
-> we cannot control applications how to use these mechanisms.  We just
-> provide them and let applications to choose how to use them.
-> :-)
->
 
-That's true, but we are not talking about higher priority here,
-because in extreme memory reclaim case
-even PROT_EXEC pages will be reclaimed.
+* Russell King <rmk@arm.linux.org.uk> wrote:
 
-But I understand your point. It might be okay to have this for all
-privileges applications.
+> On Tue, Mar 13, 2012 at 07:16:22AM +0100, Ingo Molnar wrote:
+> > 
+> > * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > 
+> > > Hi Russell,
+> > > 
+> > > Today's linux-next merge of the arm tree got a conflict in
+> > > kernel/sched/core.c between commit 8c79a045fd59 ("sched/events: Revert
+> > > trace_sched_stat_sleeptime()") from Linus' tree and commit 1cf00341547a
+> > > ("sched: Introduce the finish_arch_post_lock_switch() scheduler hook")
+> > > from the arm tree.
+> > > 
+> > > Just context changes.  I fixed it up (see below) and can carry the fix as
+> > > necessary.
+> > 
+> > This commit seems simple enough and has PeterZ's ack, but if 
+> > there are more scheduler patches coming in this area then 
+> > please send it to the scheduler tree first: we can create a 
+> > pullable, stable topic branch for it which the ARM tree can 
+> > then use.
+> > 
+> > That approach would also avoid conflicts as a side effect.
+> 
+> Please check your mailbox:
 
-The only problem that might happen might be in OOM because we will
-have to include selection points for
-these page-cache pages (proportionately) while finding the most
-expensive process to kill.
-( I'm talking about the page-cache pages which are not mapped to
-usermode page-tables at all. )
+I'm aware of that old thread, I'd just prefer to hear about your 
+plans patching the scheduler *before* you commit it to 
+linux-next ;-)
 
-If any usermode application reads in an extremely huge file, whose
-inode has been set to AS_UNEVICTABLE,
-we might want to kill those applications that read in those
-pages(proportionately) so that the guilty application
-can be killed.
+Please make sure none of these scheduler patches go to the ARM 
+tree without a proper Git space solution that involves the 
+scheduler folks.
+
+Thanks,
+
+	Ingo
