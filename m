@@ -1,183 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757956Ab2CMMIj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:08:39 -0400
-Received: from mail-fa0-f74.google.com ([209.85.161.74]:60836 "EHLO
-	mail-fa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab2CMMEb (ORCPT
+	id S1759521Ab2CMMKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:10:06 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51935 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758188Ab2CMMKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 08:04:31 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 04/20] Input: atmel_mxt_ts - refactor mxt_read/write_reg to take a length
-Date: Tue, 13 Mar 2012 20:04:07 +0800
-Message-Id: <1331640263-18935-5-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
-References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
+	Tue, 13 Mar 2012 08:10:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Eric Andersson <eric.andersson@unixphere.com>
+Subject: Re: [PATCHv2 1/3] misc: clean up bmp085 driver
+Date: Tue, 13 Mar 2012 12:04:42 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        alan@lxorguk.ukuu.org.uk, zhengguang.guo@bosch-sensortec.com,
+        peter.moeller@cn.bosch.com,
+        Stefan Nilsson <stefan.nilsson@unixphere.com>
+References: <1331068084-17911-1-git-send-email-eric.andersson@unixphere.com> <201203062120.47953.arnd@arndb.de> <20120312225301.GA16648@skinner.xfiles.lan>
+In-Reply-To: <20120312225301.GA16648@skinner.xfiles.lan>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203131204.43036.arnd@arndb.de>
+X-Provags-ID: V02:K0:dQ3sPSXYLLZnu+GSisqygvJHtz9t+ZHoKbES1vAIsgZ
+ sAUOVofCR8wVbn+dwF+xjD7JbKOqwTRwyFyPeO90fKr4LobRJC
+ M5AamVUDsfMWtIKzEx7UXTWd3DVDqK2hpjm1BDGYiuL8K1WY3D
+ ms/Puqm3KZxJZxoklGqQONnKgyB2a/dfUADL9xHGZvteLaPCO6
+ CGktXI1vgtoUMjdQttJKjxNgNKTH5DrC2cnGzPfrCc/hVDZpv6
+ FFyQLTQ0XR9Zc371OT6cXmdVmI/839Ma3ajfi6uaUpKANmQiMD
+ lSRLAOJUms7ltjSEDduPMoJd23xAzB3AtHVCc7Ypc19eWpNiql
+ 2MDvCrrgV3XQ2yOpzGIU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c bus requires 5 bytes to do a 1 byte read (1-byte i2c address + 2
-byte offset + 1-byte i2c address + 1 byte data), or 4 bytes to do a
-1-byte write (1 byte i2c address + 2 byte offset + 1 byte data).
+On Monday 12 March 2012, Eric Andersson wrote:
+> > > diff --git a/include/linux/i2c/bmp085.h b/include/linux/i2c/bmp085.h
+> > > new file mode 100644
+> > > index 0000000..e6fc752
+> > > --- /dev/null
+> > > +++ b/include/linux/i2c/bmp085.h
+> > 
+> > Since this file only adds platform_data, I think it should go into
+> > include/linux/platform_data/, not include/linux/i2c, and it should
+> > be in the same patch as the change to use the platform data when you
+> > split that out.
+> > 
+> > Also, which platforms are actually using this driver? I could
+> > not find any platform that defines a bmp085 platform_device. If this
+> > is for new ARM platforms, I would rather not add platform_data at
+> > all because those platforms will have to use device tree properties
+> > rather than platform_data to pass initialization data.
+> 
+> Platform device? This is a pressure sensor connected as a peripheral
+> device to the i2c bus. I don't think you will find any platform that
+> uses this "by default" in the tree.
+> 
+> Of course I can add of_get_property() calls, but what is actually the
+> long-term plan here for peripheral devices? Should they all abandon their
+> platform data in favor of devicetree? 
 
-By taking a length with reads and writes, the driver can amortize
-transaction overhead by performing larger transactions where appropriate.
+Yes, that is definitely the plan. The current method does not scale,
+because right now you have to modify the kernel sources any time you
+have a slightly different combination of devices in the system, which
+especially in cases of user-pluggable i2c devices is not a good
+design.
 
-This patch just sets up the new API.  Later patches refactor reads/writes
-to take advantage of the larger transactions.
+> How should the callbacks in platform data be handled, in my case
+> pdata->init_hw()?
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c |   47 +++++++++++++----------------
- 1 files changed, 21 insertions(+), 26 deletions(-)
+This depends a lot on what the individual callback does. In my experience,
+90% of these callbacks can and should just get removed because they
+are not necessary and the same functionality can be expressed by generalizing
+the setup procedure, e.g. by calling into the regulator, gpio, clock
+or pinmux frameworks from the device probe() function.
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index e18c698..defd4e1 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -397,8 +397,7 @@ static int mxt_fw_write(struct i2c_client *client,
- 	return 0;
- }
- 
--static int __mxt_read_reg(struct i2c_client *client,
--			       u16 reg, u16 len, void *val)
-+static int mxt_read_reg(struct i2c_client *client, u16 reg, u16 len, void *val)
- {
- 	struct i2c_msg xfer[2];
- 	u8 buf[2];
-@@ -419,28 +418,25 @@ static int __mxt_read_reg(struct i2c_client *client,
- 	xfer[1].buf = val;
- 
- 	if (i2c_transfer(client->adapter, xfer, 2) != 2) {
--		dev_err(&client->dev, "%s: i2c transfer failed\n", __func__);
-+		dev_err(&client->dev, "%s: i2c read failed\n", __func__);
- 		return -EIO;
- 	}
- 
- 	return 0;
- }
- 
--static int mxt_read_reg(struct i2c_client *client, u16 reg, u8 *val)
-+static int mxt_write_reg(struct i2c_client *client, u16 reg, u16 len,
-+			 const void *val)
- {
--	return __mxt_read_reg(client, reg, 1, val);
--}
--
--static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
--{
--	u8 buf[3];
-+	size_t count = 2 + len;		/* + 2-byte offset */
-+	u8 buf[count];
- 
- 	buf[0] = reg & 0xff;
- 	buf[1] = (reg >> 8) & 0xff;
--	buf[2] = val;
-+	memcpy(&buf[2], val, len);
- 
--	if (i2c_master_send(client, buf, 3) != 3) {
--		dev_err(&client->dev, "%s: i2c send failed\n", __func__);
-+	if (i2c_master_send(client, buf, count) != count) {
-+		dev_err(&client->dev, "%s: i2c write failed\n", __func__);
- 		return -EIO;
- 	}
- 
-@@ -450,8 +446,7 @@ static int mxt_write_reg(struct i2c_client *client, u16 reg, u8 val)
- static int mxt_read_object_table(struct i2c_client *client,
- 				      u16 reg, u8 *object_buf)
- {
--	return __mxt_read_reg(client, reg, MXT_OBJECT_SIZE,
--				   object_buf);
-+	return mxt_read_reg(client, reg, MXT_OBJECT_SIZE, object_buf);
- }
- 
- static struct mxt_object *
-@@ -481,8 +476,8 @@ static int mxt_read_message(struct mxt_data *data,
- 		return -EINVAL;
- 
- 	reg = object->start_address;
--	return __mxt_read_reg(data->client, reg,
--			sizeof(struct mxt_message), message);
-+	return mxt_read_reg(data->client, reg, sizeof(struct mxt_message),
-+			    message);
- }
- 
- static int mxt_read_object(struct mxt_data *data,
-@@ -496,7 +491,7 @@ static int mxt_read_object(struct mxt_data *data,
- 		return -EINVAL;
- 
- 	reg = object->start_address;
--	return __mxt_read_reg(data->client, reg + offset, 1, val);
-+	return mxt_read_reg(data->client, reg + offset, 1, val);
- }
- 
- static int mxt_write_object(struct mxt_data *data,
-@@ -510,7 +505,7 @@ static int mxt_write_object(struct mxt_data *data,
- 		return -EINVAL;
- 
- 	reg = object->start_address;
--	return mxt_write_reg(data->client, reg + offset, val);
-+	return mxt_write_reg(data->client, reg + offset, 1, &val);
- }
- 
- static void mxt_input_report(struct mxt_data *data, int single_id)
-@@ -757,27 +752,27 @@ static int mxt_get_info(struct mxt_data *data)
- 	int error;
- 	u8 val;
- 
--	error = mxt_read_reg(client, MXT_FAMILY_ID, &val);
-+	error = mxt_read_reg(client, MXT_FAMILY_ID, 1, &val);
- 	if (error)
- 		return error;
- 	info->family_id = val;
- 
--	error = mxt_read_reg(client, MXT_VARIANT_ID, &val);
-+	error = mxt_read_reg(client, MXT_VARIANT_ID, 1, &val);
- 	if (error)
- 		return error;
- 	info->variant_id = val;
- 
--	error = mxt_read_reg(client, MXT_VERSION, &val);
-+	error = mxt_read_reg(client, MXT_VERSION, 1, &val);
- 	if (error)
- 		return error;
- 	info->version = val;
- 
--	error = mxt_read_reg(client, MXT_BUILD, &val);
-+	error = mxt_read_reg(client, MXT_BUILD, 1, &val);
- 	if (error)
- 		return error;
- 	info->build = val;
- 
--	error = mxt_read_reg(client, MXT_OBJECT_NUM, &val);
-+	error = mxt_read_reg(client, MXT_OBJECT_NUM, 1, &val);
- 	if (error)
- 		return error;
- 	info->object_num = val;
-@@ -860,12 +855,12 @@ static int mxt_initialize(struct mxt_data *data)
- 	msleep(MXT_RESET_TIME);
- 
- 	/* Update matrix size at info struct */
--	error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, &val);
-+	error = mxt_read_reg(client, MXT_MATRIX_X_SIZE, 1, &val);
- 	if (error)
- 		return error;
- 	info->matrix_xsize = val;
- 
--	error = mxt_read_reg(client, MXT_MATRIX_Y_SIZE, &val);
-+	error = mxt_read_reg(client, MXT_MATRIX_Y_SIZE, 1, &val);
- 	if (error)
- 		return error;
- 	info->matrix_ysize = val;
--- 
-1.7.7.3
+In the few cases where this is not possible, some of the approaches
+I can think of (again, case by case) include:
+
+* educate the hardware designers so they do things in a more maintainable
+  way in the future, hope that the current design goes away.
+
+* add a special case in the driver using something like
+  if (machine_is_compatible("something,weird"))
+	do_weird_setup(dev);
+
+* use auxdata for the machine to supply a platform_data structure in
+  addition to the device tree.
+
+* Don't support the board in the mainline kernel, but require the
+  user to keep using a private patch (this is the status quo, because
+  right now they need a private patch to add the board file).
+
+	Arnd
 
