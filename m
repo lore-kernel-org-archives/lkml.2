@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964783Ab2CMMId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:08:33 -0400
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:48916 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab2CMMEb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 08:04:31 -0400
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Iiro Valkonen <iiro.valkonen@atmel.com>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 13/20] Input: atmel_mxt_ts - parse vector field of data packets
-Date: Tue, 13 Mar 2012 20:04:16 +0800
-Message-Id: <1331640263-18935-14-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
-References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
+	id S1758841Ab2CMMLA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:11:00 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59104 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756109Ab2CMMK5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 08:10:57 -0400
+Date: Tue, 13 Mar 2012 13:10:34 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL/NEXT] sched/arch: Introduce the
+ finish_arch_post_lock_switch() scheduler callback
+Message-ID: <20120313121034.GA15543@elte.hu>
+References: <20120313083310.GA27560@flint.arm.linux.org.uk>
+ <20120313083630.GA10131@elte.hu>
+ <20120313084713.GB27560@flint.arm.linux.org.uk>
+ <20120313085628.GB6991@elte.hu>
+ <20120313090040.GE27560@flint.arm.linux.org.uk>
+ <20120313092649.GA15406@elte.hu>
+ <20120313095020.GA13220@flint.arm.linux.org.uk>
+ <20120313101859.GA2626@elte.hu>
+ <20120313112729.GA25835@flint.arm.linux.org.uk>
+ <20120313115640.GA27378@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120313115640.GA27378@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The atmel_mxt_ts T9 data contains information orientation in its 'vector'
-field. Parse and debug print its contents, although its value isn't
-actually used yet.
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/input/touchscreen/atmel_mxt_ts.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index fa692e5..e05540d 100644
---- a/drivers/input/touchscreen/atmel_mxt_ts.c
-+++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -528,6 +528,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 	int y;
- 	int area;
- 	int amplitude;
-+	int vector1, vector2;
- 
- 	status = message->message[0];
- 	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
-@@ -540,8 +541,12 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 	area = message->message[4];
- 	amplitude = message->message[5];
- 
-+	/* The two vector components are 4-bit signed ints (2s complement) */
-+	vector1 = (signed)((signed char)message->message[6]) >> 4;
-+	vector2 = (signed)((signed char)(message->message[6] << 4)) >> 4;
-+
- 	dev_dbg(dev,
--		"[%d] %c%c%c%c%c%c%c%c x: %d y: %d area: %d amp: %d\n",
-+		"[%d] %c%c%c%c%c%c%c%c x: %d y: %d area: %d amp: %d vector: [%d,%d]\n",
- 		id,
- 		(status & MXT_DETECT) ? 'D' : '.',
- 		(status & MXT_PRESS) ? 'P' : '.',
-@@ -551,7 +556,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 		(status & MXT_AMP) ? 'A' : '.',
- 		(status & MXT_SUPPRESS) ? 'S' : '.',
- 		(status & MXT_UNGRIP) ? 'U' : '.',
--		x, y, area, amplitude);
-+		x, y, area, amplitude, vector1, vector2);
- 
- 	input_mt_slot(input_dev, id);
- 	input_mt_report_slot_state(input_dev, MT_TOOL_FINGER,
-@@ -563,6 +568,7 @@ static void mxt_input_touchevent(struct mxt_data *data,
- 		input_report_abs(input_dev, ABS_MT_PRESSURE, amplitude);
- 		/* TODO: This should really be sqrt(area) */
- 		input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, area);
-+		/* TODO: Use vector to report ORIENTATION & TOUCH_MINOR */
- 	}
- 
- 	input_mt_report_pointer_emulation(input_dev, false);
--- 
-1.7.7.3
+> [...]
+> 
+> Having a patch applied to an old scheduler tree that is barely 
+> out of -rc1 and then pushing it out into linux-next at -rc8, 
+> without even checking how it integrates with upstream, barely 
+> a few days before the merge window is just plain stupid.
 
+So, while I cannot know what Linus will think and do once he 
+gets such a conflict (my guess is that he'd just fix it up 
+silently - it's really trivial), I can tell you what the 
+conflict told *me*: that the communication channels between the 
+ARM tree and the scheduler tree are not in the best of shape.
+
+And that is what worried me enough to write a reply while 
+recognizing that PeterZ acked the patch - not the triviality of 
+the patch or the triviality of the conflict.
+
+And dammit, I have the right and the duty to be concerned about 
+a conflict in the scheduler code if I see it for the first time, 
+not just Linus. Conflicts aren't magically just for Linus to be 
+interested and act upon, they can occasionally be informative at 
+subsystem maintainer levels just as well - like here...
+
+What we should not do in terms of conflict avoidance are 
+*excessive* cross-subsystem merges: for example you 
+indiscriminately merging the totality of all pending scheduler 
+changes into the ARM tree and thus forcing Linus's hand in terms 
+of not being able to reject to pull the scheduler tree.
+
+But if I got it right, working together on a trivial, 
+well-isolated callback patch to make life easier is not frowned 
+upon by Linus at all ...
+
+Thanks,
+
+	Ingo
