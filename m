@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab2CMCmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 22:42:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38379 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab2CMCmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 22:42:39 -0400
-Message-ID: <1331606555.22608.6.camel@ul30vt>
-Subject: Re: [PATCH] PCI: Device specific reset function
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Tadeusz Struk <tadeusz.struk@intel.com>
-Cc: bhelgaas@google.com, jbarnes@virtuousgeek.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Date: Mon, 12 Mar 2012 20:42:35 -0600
-In-Reply-To: <4f5e2a73.YyO0Gu2m5JhSVsu6%tadeusz.struk@intel.com>
-References: <4f5e2a73.YyO0Gu2m5JhSVsu6%tadeusz.struk@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1753769Ab2CMCp1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 22:45:27 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44146 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab2CMCp0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 22:45:26 -0400
+Date: Tue, 13 Mar 2012 13:45:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: linux-next: manual merge of the isci tree with the scsi tree
+Message-Id: <20120313134512.848baf17f46729fa0fac195d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__13_Mar_2012_13_45_12_+1100_CjpdzR./uO+3k_.F"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 16:55 +0000, Tadeusz Struk wrote:
-> I have a use case where I need to cleanup resource allocated for Virtual
-> Functions after a guest OS that used it crashed. This cleanup needs to
-> be done before the VF is being FLRed. The only possible way to do this
-> seems to be by using pci_dev_specific_reset() function.
-> This patch adds specific reset function to the pci_driver struct.
-> 
-> Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
-> ---
->  drivers/pci/quirks.c |    4 ++++
->  include/linux/pci.h  |    1 +
->  2 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 6476547..13d224b 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -3081,8 +3081,12 @@ static const struct pci_dev_reset_methods pci_dev_reset_methods[] = {
->  
->  int pci_dev_specific_reset(struct pci_dev *dev, int probe)
->  {
-> +	struct pci_driver *drv = dev->driver;
->  	const struct pci_dev_reset_methods *i;
->  
-> +	if (drv && drv->reset)
-> +		return drv->reset(dev, probe);
-> +
+--Signature=_Tue__13_Mar_2012_13_45_12_+1100_CjpdzR./uO+3k_.F
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Isn't this exactly what the below code is for (pci_dev_reset_methods)?
-In the case of KVM device assignment, the device should be reset via
-this path if the guest crashes, but it may or may not be attached to
-pci-stub at the time.  I assume you're not adding a reset handler to
-pci-stub, so we'll pass through here and use FLR, violating the premise
-of the patch.  Thanks,
+Hi Dan,
 
-Alex
+Today's linux-next merge of the isci tree produced a large number of
+conflicts against the scsi.
 
->  	for (i = pci_dev_reset_methods; i->reset; i++) {
->  		if ((i->vendor == dev->vendor ||
->  		     i->vendor == (u16)PCI_ANY_ID) &&
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index a16b1df..2ccd838 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -560,6 +560,7 @@ struct pci_driver {
->  	int  (*resume_early) (struct pci_dev *dev);
->  	int  (*resume) (struct pci_dev *dev);	                /* Device woken up */
->  	void (*shutdown) (struct pci_dev *dev);
-> +	int  (*reset) (struct pci_dev *dev, int probe);
->  	struct pci_error_handlers *err_handler;
->  	struct device_driver	driver;
->  	struct pci_dynids dynids;
+ Merging isci/all
++CONFLICT (content): Merge conflict in include/scsi/sas_ata.h
+ CONFLICT (content): Merge conflict in include/scsi/libsas.h
++CONFLICT (content): Merge conflict in include/linux/libata.h
+ CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_scsi_host.c
++CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_internal.h
+ CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_init.c
+ CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_expander.c
++CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_event.c
+ CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_discover.c
++CONFLICT (content): Merge conflict in drivers/scsi/libsas/sas_ata.c
++CONFLICT (content): Merge conflict in drivers/scsi/isci/request.h
+ CONFLICT (content): Merge conflict in drivers/scsi/isci/registers.h
++CONFLICT (content): Merge conflict in drivers/scsi/isci/port.h
++CONFLICT (content): Merge conflict in drivers/scsi/isci/port.c
++CONFLICT (content): Merge conflict in drivers/scsi/isci/phy.c
+ CONFLICT (content): Merge conflict in drivers/scsi/isci/init.c
 
+Since you are feeding patches into the scsi tree (instaed of having you
+tree merged into the scsi tree), you should rebase your tree in the scsi
+tree after your patches have been accepted.  The above conflicts are
+(almost completely) caused by having the same patches in both trees with
+additional changes to those files in your tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Tue__13_Mar_2012_13_45_12_+1100_CjpdzR./uO+3k_.F
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPXrS4AAoJEECxmPOUX5FEZZMP/1j90zc8wCsFFsXXs8rCkfjd
+munvgrWBLhNClhVoFVu5Az2wiruoOFpVRwgMpfqlh9cOLKsKmaOgvpeSBm4HgQik
+c+xZNpHyniEiMfSVy/RF4p6v6X7lXMAvEPmn1O3ETSLg4jLZnPshyHEFHbZ+fWFI
+xb8oDWC1M1R/+p/J0BJ0E4GwhxaGZHIeSsU5RbO8u0Nd/SiMqrJPxBtiaYw4zNfr
+dAzVnF8DgL1pUJafON7xGY4czeLzU+fe0mZPyBFhlH69Kcjqlj1HzY3OeLiaHAI7
+f03AMQEw1IEfzaovcb+ifVUdQ/S6M0t/zFzpQmBYot7SAScZFfsV2M8sWgvlfpCh
+hBhWqIPBl+CN6x74BZwg0m3+OLyPKhIrQ6BIJt7EjofNkam1R4Xhp+0hiFEwJtXL
+vBYD24dLkdUw7jMzdrAKeOmW8FSL2hG52AIra6/qY+CTylDSZt/N1aG9Sgw02jjX
+/pOFfuRaafqHeXXyQFoTID6JxnZO/pM0cuXi0B6YUq9enN9D6YBxYXF5fPH4cPaI
+6plB9zH8lE9PG4Z6h9pIgaz3BjgQyYeUoeDNn7Wj7cXZdt+P09BfJpwaFtuK3DN+
+mjPxCavny6ks1f4PE5cmgkgaZhtKvAdCE8aqqtZqrYjPW5eQdrWn62qDHOiCrvtL
+llvyF86FLqaLGZjS6UBm
+=fxzU
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__13_Mar_2012_13_45_12_+1100_CjpdzR./uO+3k_.F--
