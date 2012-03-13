@@ -1,225 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758978Ab2CMRmo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 13:42:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37008 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758059Ab2CMRmm (ORCPT
+	id S1759034Ab2CMRpT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 13:45:19 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54612 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758667Ab2CMRpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 13:42:42 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v1 2/5] mmc: mxs-mmc: add dt probe support
-To: Dong Aisheng <b29396@freescale.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: s.hauer@pengutronix.de, shawn.guo@freescale.com, kernel@pengutronix.de,
-        rob.herring@calxeda.com, cjb@laptop.org, rdunlap@xenotime.net,
-        vinod.koul@linux.intel.com
-In-Reply-To: <1331628428-24017-3-git-send-email-b29396@freescale.com>
-References: <1331628428-24017-1-git-send-email-b29396@freescale.com> <1331628428-24017-3-git-send-email-b29396@freescale.com>
-Date: Tue, 13 Mar 2012 11:42:38 -0600
-Message-Id: <20120313174238.CE9133E053B@localhost>
+	Tue, 13 Mar 2012 13:45:17 -0400
+Message-ID: <4F5F879E.4030407@gmail.com>
+Date: Tue, 13 Mar 2012 12:45:02 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Sascha Hauer <s.hauer@pengutronix.de>, Dong Aisheng <b29396@freescale.com>
+CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        vinod.koul@linux.intel.com, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, rdunlap@xenotime.net, kernel@pengutronix.de,
+        cjb@laptop.org, shawn.guo@freescale.com
+Subject: Re: [PATCH v1 3/5] ARM: imx28evk: add mmc dt support
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com> <1331628428-24017-4-git-send-email-b29396@freescale.com> <4F5F5C22.1080506@gmail.com> <20120313165214.GO26642@pengutronix.de>
+In-Reply-To: <20120313165214.GO26642@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 16:47:05 +0800, Dong Aisheng <b29396@freescale.com> wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+On 03/13/2012 11:52 AM, Sascha Hauer wrote:
+> On Tue, Mar 13, 2012 at 09:39:30AM -0500, Rob Herring wrote:
+>> On 03/13/2012 03:47 AM, Dong Aisheng wrote:
+>>> From: Dong Aisheng <dong.aisheng@linaro.org>
+>>>
+>>> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+>>> ---
+>>>  arch/arm/boot/dts/imx28-evk.dts |   14 ++++++++++++++
+>>>  arch/arm/boot/dts/imx28.dtsi    |   33 +++++++++++++++++++++++++++++++++
+>>>  arch/arm/mach-mxs/imx28-dt.c    |    2 ++
+>>>  3 files changed, 49 insertions(+), 0 deletions(-)
+>>
+>> snip
+>>
+>>> diff --git a/arch/arm/mach-mxs/imx28-dt.c b/arch/arm/mach-mxs/imx28-dt.c
+>>> index 78d1129..429b88e 100644
+>>> --- a/arch/arm/mach-mxs/imx28-dt.c
+>>> +++ b/arch/arm/mach-mxs/imx28-dt.c
+>>> @@ -23,6 +23,8 @@ static const struct of_dev_auxdata imx28_auxdata_lookup[] __initconst = {
+>>>  	OF_DEV_AUXDATA("arm,pl011", MX28_DUART_BASE_ADDR, "duart", NULL),
+>>>  	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC0_BASE_ADDR, "imx28-fec.0", NULL),
+>>>  	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC1_BASE_ADDR, "imx28-fec.1", NULL),
+>>> +	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP0_BASE_ADDR, "mxs-mmc.0", NULL),
+>>> +	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP1_BASE_ADDR, "mxs-mmc.1", NULL),
+>>
+>> Why is this needed?
 > 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> ---
-> The patch is still using a private way for dma part binding
-> since the common dma binding is still under discussion.
-> http://www.spinics.net/lists/linux-omap/msg65528.html
-> 
-> Will update to use common dma binding when it hits mainline.
-> ---
->  .../devicetree/bindings/mmc/fsl-mxs-mmc.txt        |   23 ++++++
->  drivers/mmc/host/mxs-mmc.c                         |   82 +++++++++++++++++++-
->  2 files changed, 102 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt b/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt
-> new file mode 100644
-> index 0000000..adc1142
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt
-> @@ -0,0 +1,23 @@
-> +* FREESCALE MXS MMC peripheral
-> +
-> +Required properties:
-> +- compatible : Should be "fsl,<chip>-mmc"
-> +- reg : Should contain registers location and length
-> +- interrupts : Should contain interrupt.
-> +  The format is <irq_err irq_dma>.
-> +- dma_channel: Should contain the dma channel it uses
+> These are needed for the drivers which have still the mxs-mmc.* names
+> to find their clocks. Alternatively we could also add the appropriate
+> clocks to the clock file. Don't know if that's better though.
 
-Don't use '_' in property names.
+Ah, yes I should have known that... If clk lookup is all that's needed,
+I'd suggest adding the necessary clk lookups either here or in the clock
+code. Not much difference, but at least it removes the use of
+*_BASE_ADDR defines.
 
-The is a generic dma binding being drafted that uses a phandle to the dma
-controller and the ability to encode channel numbers.  You may want to take
-a look at it.
-
-> +
-> +Optional properties:
-> +- wp-gpios : Specify GPIOs for write protection
-> +- slot-4bit: Specify 4 bit mode support
-> +- slot-8bit: Specify 8 bit and 4 bit mode support
-> +
-> +Examples:
-> +mmc1: ssp@80010000 {
-> +	compatible = "fsl,imx28-mmc";
-> +	reg = <0x80010000 2000>;
-> +	/* <irq_err irq_dma> */
-> +	interrupts = <96 82>;
-> +	dma_channel = <0>;
-> +	slot-8bit;
-> +};
-> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-> index 382c835..6cf2d17 100644
-> --- a/drivers/mmc/host/mxs-mmc.c
-> +++ b/drivers/mmc/host/mxs-mmc.c
-> @@ -38,6 +38,10 @@
->  #include <linux/gpio.h>
->  #include <linux/regulator/consumer.h>
->  #include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/slab.h>
->  
->  #include <mach/mxs.h>
->  #include <mach/common.h>
-> @@ -673,17 +677,79 @@ static bool mxs_mmc_dma_filter(struct dma_chan *chan, void *param)
->  	return true;
->  }
->  
-> +#ifdef CONFIG_OF
-> +static struct resource * __devinit mxs_mmc_get_of_dmares(
-> +				struct platform_device *pdev)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct resource *dmares;
-> +	int ret;
-> +
-> +	if (!np)
-> +		return NULL;
-> +
-> +	dmares = kzalloc(sizeof(*dmares), GFP_KERNEL);
-
-devm_kzalloc()
-
-> +	dmares->flags = IORESOURCE_DMA;
-> +	ret = of_property_read_u32(np, "dma_channel", &dmares->start);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "unable to get dmares from dt\n");
-> +		return NULL;
-> +	}
-> +	dmares->end = dmares->start;
-> +
-> +	return dmares;
-> +}
-> +
-> +static int __devinit mxs_mmc_get_of_property(struct platform_device *pdev,
-> +				struct mxs_mmc_platform_data **ppdata)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct mxs_mmc_platform_data *pdata = *ppdata;
-> +
-> +	if (!np)
-> +		return -ENODEV;
-> +
-> +	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-
-Ditto
-
-Fix up those comments and you can add my:
-
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-> +
-> +	if (of_get_property(np, "slot-8bit", NULL))
-> +		pdata->flags |= SLOTF_8_BIT_CAPABLE;
-> +
-> +	if (of_get_property(np, "slot-4bit", NULL))
-> +		pdata->flags |= SLOTF_4_BIT_CAPABLE;
-> +
-> +	pdata->wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
-> +
-> +	dev_dbg(&pdev->dev, "wp-gpios %d flags %d\n", pdata->wp_gpio,
-> +		pdata->flags);
-> +
-> +	return 0;
-> +}
-> +#else
-> +static struct resource * __devinit mxs_mmc_get_of_dmares(
-> +				struct platform_device *pdev)
-> +{
-> +	return NULL;
-> +}
-> +static inline int mxs_mmc_get_of_property(struct platform_device *pdev,
-> +			struct mxs_mmc_platform_data *pdata)
-> +{
-> +	return -ENODEV;
-> +}
-> +#endif
-> +
->  static int mxs_mmc_probe(struct platform_device *pdev)
->  {
->  	struct mxs_mmc_host *host;
->  	struct mmc_host *mmc;
->  	struct resource *iores, *dmares, *r;
-> -	struct mxs_mmc_platform_data *pdata;
-> +	struct mxs_mmc_platform_data *pdata = NULL;
->  	int ret = 0, irq_err, irq_dma;
->  	dma_cap_mask_t mask;
->  
->  	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	dmares = platform_get_resource(pdev, IORESOURCE_DMA, 0);
-> +	dmares = mxs_mmc_get_of_dmares(pdev);
-> +	if (dmares == NULL)
-> +		dmares = platform_get_resource(pdev, IORESOURCE_DMA, 0);
->  	irq_err = platform_get_irq(pdev, 0);
->  	irq_dma = platform_get_irq(pdev, 1);
->  	if (!iores || !dmares || irq_err < 0 || irq_dma < 0)
-> @@ -740,7 +806,9 @@ static int mxs_mmc_probe(struct platform_device *pdev)
->  	mmc->caps = MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED |
->  		    MMC_CAP_SDIO_IRQ | MMC_CAP_NEEDS_POLL;
->  
-> -	pdata =	mmc_dev(host->mmc)->platform_data;
-> +	mxs_mmc_get_of_property(pdev, &pdata);
-> +	if (pdata == NULL)
-> +		pdata =	mmc_dev(host->mmc)->platform_data;
->  	if (pdata) {
->  		if (pdata->flags & SLOTF_8_BIT_CAPABLE)
->  			mmc->caps |= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
-> @@ -851,6 +919,13 @@ static const struct dev_pm_ops mxs_mmc_pm_ops = {
->  };
->  #endif
->  
-> +static const struct of_device_id mxs_mmc_dt_ids[] = {
-> +	{ .compatible = "fsl,imx23-mmc", .data = NULL, },
-> +	{ .compatible = "fsl,imx28-mmc", .data = NULL, },
-> +	{ /* sentinel */ }
-> +};
-> +MODULE_DEVICE_TABLE(of, mxs_mmc_dt_ids);
-> +
->  static struct platform_driver mxs_mmc_driver = {
->  	.probe		= mxs_mmc_probe,
->  	.remove		= mxs_mmc_remove,
-> @@ -860,6 +935,7 @@ static struct platform_driver mxs_mmc_driver = {
->  #ifdef CONFIG_PM
->  		.pm	= &mxs_mmc_pm_ops,
->  #endif
-> +		.of_match_table = mxs_mmc_dt_ids,
->  	},
->  };
->  
-> -- 
-> 1.7.0.4
-> 
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies,Ltd.
+Rob
