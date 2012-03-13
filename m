@@ -1,83 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab2CMFmA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:42:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54027 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab2CMFl6 (ORCPT
+	id S1759050Ab2CMFmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:42:20 -0400
+Received: from mail-ey0-f202.google.com ([209.85.215.202]:40802 "EHLO
+	mail-ey0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758924Ab2CMFmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:41:58 -0400
-Date: Tue, 13 Mar 2012 16:41:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the uprobes tree with the tip tree
-Message-Id: <20120313164150.6e64d11ee0c3e7aad49c0fbb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__13_Mar_2012_16_41_50_+1100_yL8HT5a5jFy1M7n8"
+	Tue, 13 Mar 2012 01:42:18 -0400
+From: Avery Pennarun <apenwarr@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Fabio M. Di Nitto" <fdinitto@redhat.com>,
+        Avery Pennarun <apenwarr@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Olaf Hering <olaf@aepfle.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Yinghai LU <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH 5/5] printk: CONFIG_PRINTK_PERSIST: persist printk buffer across reboots.
+Date: Tue, 13 Mar 2012 01:36:41 -0400
+Message-Id: <1331617001-20906-6-git-send-email-apenwarr@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
+References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Mar_2012_16_41_50_+1100_yL8HT5a5jFy1M7n8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Instead of using alloc_bootmem() when log_buf_len= is provided on the
+command line, use reserve_bootmem() instead to try to reserve the memory at
+a predictable physical address.  If we manage to get such an address, check
+whether it has a valid header from last time, and if so, keep the data in
+the existing buffer as if it had been printk'd as part of the current
+session.  You can then retrieve or clear it with dmesg.  Note: you must
+supply log_buf_len= on the kernel command line to activate this feature.
 
-Hi Srikar,
+If reserve_bootmem() doesn't work out, we fall back to the old
+alloc_bootmem() method.
 
-Today's linux-next merge of the uprobes tree got a conflict in
-arch/x86/kernel/cpu/perf_event_intel_ds.c between commit 3e702ff6d1ea
-("perf/x86: Add LBR software filter support for Intel CPUs") from the tip
-tree and commit 1e1e2cddc33d ("x86/trivial: use is_ia32_compat_task")
-from the uprobes tree.
+The nice thing about this feature is it allows us to capture and upload
+printk results after a crash and reboot, even if the system had hard crashed
+so there was no chance to do something like panic or kexec.  The last few
+messages before the crash might give a clue as to the crash.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Note: None of this is any use if your bootloader or BIOS wipes memory
+between reboots.  On embedded systems, you have somewhat more control over
+this.
 
-diff --cc arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 7f64df1,92e7dee4..0000000
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@@ -3,7 -3,7 +3,8 @@@
-  #include <linux/slab.h>
- =20
-  #include <asm/perf_event.h>
- +#include <asm/insn.h>
-+ #include <asm/compat.h>
- =20
-  #include "perf_event.h"
- =20
+Signed-off-by: Avery Pennarun <apenwarr@gmail.com>
+---
+ init/Kconfig    |   12 ++++++
+ kernel/printk.c |  106 ++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 109 insertions(+), 9 deletions(-)
 
---Signature=_Tue__13_Mar_2012_16_41_50_+1100_yL8HT5a5jFy1M7n8
-Content-Type: application/pgp-signature
+diff --git a/init/Kconfig b/init/Kconfig
+index 3f42cd6..d182c07 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1040,6 +1040,18 @@ config PRINTK
+ 	  very difficult to diagnose system problems, saying N here is
+ 	  strongly discouraged.
+ 
++config PRINTK_PERSIST
++	default n
++	bool "printk log persists across reboots" if PRINTK
++	help
++	  This option tries to keep the printk memory buffer in a well-known
++	  location in physical memory. It isn't cleared on reboot (unless RAM
++	  is wiped by your boot loader or BIOS) so if your system crashes
++	  or panics, you might get to examine all the log messages next time you
++	  boot. The persisted log messages show up in your 'dmesg' output.
++	  Note: you must supply the log_buf_len= kernel parameter to
++	  activate this feature.
++
+ config BUG
+ 	bool "BUG() support" if EXPERT
+ 	default y
+diff --git a/kernel/printk.c b/kernel/printk.c
+index bf96a7d..f9045d9 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -110,7 +110,12 @@ static DEFINE_RAW_SPINLOCK(logbuf_lock);
+  */
+ static unsigned log_start;	/* Index into log_buf: next char to be read by syslog() */
+ static unsigned con_start;	/* Index into log_buf: next char to be sent to consoles */
++
++#ifdef CONFIG_PRINTK_PERSIST
++#define log_end (logbits->_log_end)
++#else
+ static unsigned log_end;	/* Index into log_buf: most-recently-written-char + 1 */
++#endif
+ 
+ /*
+  * If exclusive_console is non-NULL then only this console is to be printed to.
+@@ -143,11 +148,93 @@ static int console_may_schedule;
+ 
+ #ifdef CONFIG_PRINTK
+ 
++static int saved_console_loglevel = -1;
+ static char __log_buf[__LOG_BUF_LEN];
+ static char *log_buf = __log_buf;
++
++#ifndef CONFIG_PRINTK_PERSIST
++
+ static int log_buf_len = __LOG_BUF_LEN;
+ static unsigned logged_chars; /* Number of chars produced since last read+clear operation */
+-static int saved_console_loglevel = -1;
++
++#else  /* CONFIG_PRINTK_PERSIST */
++
++struct logbits {
++	int magic; /* needed to verify the memory across reboots */
++	int _log_buf_len; /* leading _ so they aren't replaced by #define */
++	unsigned _logged_chars;
++	unsigned _log_end;
++};
++static struct logbits __logbits = {
++	._log_buf_len = __LOG_BUF_LEN,
++};
++static struct logbits *logbits = &__logbits;
++#define log_buf_len (logbits->_log_buf_len)
++#define logged_chars (logbits->_logged_chars)
++
++#define PERSIST_SEARCH_END 0xfe000000
++#define PERSIST_SEARCH_JUMP (16*1024*1024)
++#define PERSIST_MAGIC 0xbabb1e
++
++#endif /* CONFIG_PRINTK_PERSIST */
++
++/*
++ * size is a power of 2 so that the printk offset mask will work.  We'll add
++ * a bit more space to the end of the buffer for our extra data, but that
++ * won't change the alignment of the buffer itself.
++ */
++static __init char *log_buf_alloc(int early, unsigned long size,
++	unsigned *dest_offset)
++{
++#ifdef CONFIG_PRINTK_PERSIST
++	unsigned long where;
++	char *buf;
++	unsigned long full_size = size + sizeof(struct logbits);
++	struct logbits *new_logbits;
++
++	for (where = PERSIST_SEARCH_END - size;
++			where >= PERSIST_SEARCH_JUMP;
++			where -= PERSIST_SEARCH_JUMP) {
++		where &= ~(roundup_pow_of_two(size) - 1);
++		if (reserve_bootmem(where, full_size, BOOTMEM_EXCLUSIVE))
++			continue;
++
++		printk(KERN_INFO "printk_persist: memory reserved @ 0x%08lx\n",
++			where);
++		buf = phys_to_virt(where);
++		new_logbits = phys_to_virt(where + size);
++		if (new_logbits->magic != PERSIST_MAGIC ||
++				new_logbits->_log_buf_len != size ||
++				new_logbits->_logged_chars > size ||
++				new_logbits->_log_end > size * 2) {
++			printk(KERN_INFO "printk_persist: header invalid, "
++				"cleared.\n");
++			memset(buf, 0, full_size);
++			new_logbits->magic = PERSIST_MAGIC;
++			new_logbits->_log_buf_len = size;
++			new_logbits->_logged_chars = 0;
++			new_logbits->_log_end = 0;
++		} else {
++			printk(KERN_INFO "printk_persist: header valid; "
++				"logged=%d next=%d\n",
++				new_logbits->_logged_chars,
++				new_logbits->_log_end);
++		}
++		*dest_offset = new_logbits->_log_end;
++		new_logbits->_log_end = log_end;
++		new_logbits->_logged_chars += logged_chars;
++		logbits = new_logbits;
++		return buf;
++	}
++	goto error;
++
++error:
++	/* replace the buffer, but don't bother to swap struct logbits */
++	printk(KERN_ERR "printk_persist: failed to reserve bootmem "
++		"area. disabled.\n");
++#endif  /* CONFIG_PRINTK_PERSIST */
++	return alloc_bootmem_nopanic(size);
++}
+ 
+ #ifdef CONFIG_KEXEC
+ /*
+@@ -187,14 +274,14 @@ early_param("log_buf_len", log_buf_len_setup);
+ void __init setup_log_buf(int early)
+ {
+ 	unsigned long flags;
+-	unsigned start, dest_idx, offset;
++	unsigned start, dest_idx, dest_offset = 0, offset;
+ 	char *new_log_buf;
+ 	int free;
+ 
+ 	if (!new_log_buf_len)
+ 		return;
+ 
+-	new_log_buf = alloc_bootmem_nopanic(new_log_buf_len);
++	new_log_buf = log_buf_alloc(early, new_log_buf_len, &dest_offset);
+ 	if (unlikely(!new_log_buf)) {
+ 		pr_err("log_buf_len: %ld bytes not available\n",
+ 			new_log_buf_len);
+@@ -204,21 +291,22 @@ void __init setup_log_buf(int early)
+ 	raw_spin_lock_irqsave(&logbuf_lock, flags);
+ 	log_buf_len = new_log_buf_len;
+ 	log_buf = new_log_buf;
+-	new_log_buf_len = 0;
+ 	free = __LOG_BUF_LEN - log_end;
+ 
+ 	offset = start = min(con_start, log_start);
+-	dest_idx = 0;
++	dest_idx = dest_offset;
+ 	while (start != log_end) {
+ 		unsigned log_idx_mask = start & (__LOG_BUF_LEN - 1);
+ 
+-		log_buf[dest_idx] = __log_buf[log_idx_mask];
++		log_buf[dest_idx & (new_log_buf_len - 1)] =
++			__log_buf[log_idx_mask];
+ 		start++;
+ 		dest_idx++;
+ 	}
+-	log_start -= offset;
+-	con_start -= offset;
+-	log_end -= offset;
++	log_start += dest_offset - offset;
++	con_start += dest_offset - offset;
++	log_end += dest_offset - offset;
++	new_log_buf_len = 0;
+ 	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
+ 
+ 	pr_info("log_buf_len: %d\n", log_buf_len);
+-- 
+1.7.7.3
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPXt4eAAoJEECxmPOUX5FEkQ4P/2BgYiv0lxczJLsBKIiTs2mp
-XjBeAVURWhye5DZ24CCS6KABk8Gm96y2Dd9gE6kcJ3P9B9JNy0mcGYGv78SiiwEs
-nmiVfu6lf+EgRx/37CphH/fUMPx1q/w6pcF2wlHy3u9IzMrIQZINJNcFbb8e0/To
-Ku3h0UXkKnZvQqAkijnYagkmL6WnXRxGfmb555lQ8fyrooxUIDL7gE9PnN/S3S1n
-NGUbDQKiXmWkKQByvNtnUJIqFvz4WJIv6pfg9qg9r1a+/KgsNJqtlgBLWXV1WQUw
-juxFb26V3Vq0ViQyH4N4BKNyYKEoEUQM1d1IU7rAou8t1uG61ofwtO0uDqHsvIVq
-BB2vorpSgfXWMNCf7NPtgtlaeg7YvCBU0DGNMjxq2pYeOkQG9C1GL7mSlskp1MTn
-Ou7E7IbEWVFWPlEOVmPhpcMAop89UGXOw6O5UX01dmaGE8+qziEbDcWAPBMwkBPF
-t5M2Gxn1p3CuReUZ+sEyrbcktNbA7LOHG/54XDcBp8IvyjWESnfsDc2rdOqL2pBK
-ay/LULxFwsR94NEwcpBmrVuXgaIrqpHN8lAZEBDXvOOufg0Nq/fVAHD5nY/iy+7A
-fILVH/0hoX7b6GNVfpUl8IyXItO0Cw5zT4efc721Zp+96nPI+mVW76+0cYAr8sYJ
-EnB1b1PcD6C3Ak/Wgr2N
-=FwJL
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Mar_2012_16_41_50_+1100_yL8HT5a5jFy1M7n8--
