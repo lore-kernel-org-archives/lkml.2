@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab2CMQfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 12:35:10 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51657 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752604Ab2CMQe6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 12:34:58 -0400
-Message-ID: <1331656495.11405.4.camel@joe2Laptop>
-Subject: Re: [PATCH 1/4] jffs2: Convert most D1/D2 macros to jffs2_dbg
-From: Joe Perches <joe@perches.com>
-To: dedekind1@gmail.com
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 13 Mar 2012 09:34:55 -0700
-In-Reply-To: <1331642368.3595.31.camel@sauron.fi.intel.com>
-References: <cover.1329349881.git.joe@perches.com>
-	 <2d68e76db16d42f451370714f03ef952e0839692.1329349881.git.joe@perches.com>
-	 <1330965033.7220.16.camel@golum> <1330966615.3140.6.camel@joe2Laptop>
-	 <1331294012.29445.10.camel@sauron.fi.intel.com>
-	 <1331318968.13055.8.camel@joe2Laptop>
-	 <1331557935.12037.11.camel@sauron.fi.intel.com>
-	 <1331566415.13200.14.camel@joe2Laptop>
-	 <1331570150.12037.55.camel@sauron.fi.intel.com>
-	 <1331572270.13200.30.camel@joe2Laptop>
-	 <1331642368.3595.31.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755428Ab2CMQf5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 12:35:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59459 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab2CMQf4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 12:35:56 -0400
+Date: Tue, 13 Mar 2012 09:35:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ben Guthro <ben@guthro.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: 3.2.10 stable build failures?
+Message-ID: <20120313163551.GA3875@kroah.com>
+References: <CAOvdn6W+-w2wYdqLCMHUDJr0WDXn3ssBvWnvvZy7Ni_FG2C0jQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOvdn6W+-w2wYdqLCMHUDJr0WDXn3ssBvWnvvZy7Ni_FG2C0jQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-13 at 14:39 +0200, Artem Bityutskiy wrote:
-> On Mon, 2012-03-12 at 10:11 -0700, Joe Perches wrote:
-> > On Mon, 2012-03-12 at 18:35 +0200, Artem Bityutskiy wrote:
-> > > On Mon, 2012-03-12 at 08:33 -0700, Joe Perches wrote:
-> > > > I tentatively converted them to a bitmap
-> > > > and a single jffs2_dbg(mask, fmt, ...)
-> > > > but perhaps all of these could be deleted
-> > > > too.
-> > > I think it is better to convert them to jffs2_debug(). And I guess after
-> > > the change the "mask" parameter will go away?
-> > Mask would remain and perhaps become a module
-> > variable instead of a compile #define.
-> > What is jffs2_debug?
-> Sorry, I meant to suggest to just turn them all to jffs2_dbg() which you
-> introduced, without any bitmasks.
+On Tue, Mar 13, 2012 at 09:25:03AM -0400, Ben Guthro wrote:
+> Hello - I merged the 3.2.10 stable patch set that you pushed yesterday
+> into my tree, but am seeing build failures that
+> WM1811_JACKDET_MODE_MASK is undeclared.
+> 
+> This looks like it originated with the following commit:
+> 
+> commit 315e73b400c9a287a53efb5f857d308589674ac5
+> Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Date:   Mon Feb 20 21:32:32 2012 +0000
+> 
+>     mfd: Test for jack detection when deciding if wm8994 should suspend
+> 
+>     commit e7c248a049c2aac21bded0b0722caee6f0e57256 upstream.
+> 
+>     The jack detection on WM1811 is often required during system suspend, add
+>     it as another check when deciding if we should suspend.
+> 
+>     Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>     Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+>     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> 
+> 
+> I've grepped the entire 3.2.10 source tree for
+> WM1811_JACKDET_MODE_MASK - but have only found the occurence in the if
+> statement introduced in the above changeset
 
-These functions are conditionally compiled today.
+Ugh, you are right, thanks for pointing it out to me.  My .config I test
+with here didn't have that driver enabled, my appologies.
 
-Introducing a bitmask allows the same conditional
-compilation optimization.
+I'll go do a new release right now, reverting this patch.
 
-David?  as nominal maintainer, do you have an opinion?
+Mark, if you want this patch in 3.2, please rework it and resend it to
+me.
 
-btw: Artem, you are not listed in the MAINTAINERS
-entry for jffs2.  Should you be?
+thanks,
 
+greg k-h
