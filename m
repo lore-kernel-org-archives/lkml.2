@@ -1,39 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab2CMSSJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 14:18:09 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52904 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758692Ab2CMSSI (ORCPT
+	id S1759366Ab2CMST0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 14:19:26 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51794 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758729Ab2CMSTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 14:18:08 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 2/2] regulator: add device tree support for max8997
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-kernel@vger.kernel.org, k.lewandowsk@samsung.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, broonie@opensource.wolfsonmicro.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Rajendra Nayak <rnayak@ti.com>
-In-Reply-To: <CAJuYYwRAXyU7d7qhGUX-=qWUJ0M1KB3XCGPOnUxToP=0XOhzqg@mail.gmail.com>
-References: <1330000688-11226-1-git-send-email-thomas.abraham@linaro.org> <1330000688-11226-3-git-send-email-thomas.abraham@linaro.org> <20120313034306.16CF73E07E4@localhost> <CAJuYYwRAXyU7d7qhGUX-=qWUJ0M1KB3XCGPOnUxToP=0XOhzqg@mail.gmail.com>
-Date: Tue, 13 Mar 2012 12:18:03 -0600
-Message-Id: <20120313181803.B45073E053B@localhost>
+	Tue, 13 Mar 2012 14:19:24 -0400
+Date: Tue, 13 Mar 2012 22:19:18 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: dirk.brandewie@gmail.com
+Cc: linux-kernel@vger.kernel.org, dg77.kim@samsung.com,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        Jason.Wortham@maxim-ic.com, bruce.e.robertson@intel.com
+Subject: Re: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
+Message-ID: <20120313181918.GA15964@oksana.dev.rtsoft.ru>
+References: <1327425968-21195-1-git-send-email-dirk.brandewie@gmail.com>
+ <1327425968-21195-5-git-send-email-dirk.brandewie@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1327425968-21195-5-git-send-email-dirk.brandewie@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 12:14:42 +0530, Thomas Abraham <thomas.abraham@linaro.org> wrote:
-> On 13 March 2012 09:13, Grant Likely <grant.likely@secretlab.ca> wrote:
-> > On Thu, 23 Feb 2012 18:08:08 +0530, Thomas Abraham <thomas.abraham@linaro.org> wrote:
-> > Otherwise, the patch looks pretty good.  (although seeing the decode function
-> > has got me thinking that we need a much better way of decoding the dt data).
+On Tue, Jan 24, 2012 at 09:26:07AM -0800, dirk.brandewie@gmail.com wrote:
+> From: Bruce Robertson <bruce.e.robertson@intel.com>
 > 
-> The parsing function looks huge since there is lot of data to pick up
-> from the dt node.
+> The bottom three bits of the register are don't care bits.  The LSB
+> value is 625 uV.  Adjust the returned values appropriately
+> 
+> Signed-off-by: Bruce Robertson <bruce.e.robertson@intel.com>
+> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 
-Oh, I understand that you have to do it this way; I just think the core code
-should make it a lot easier.  :-)
+I guess this was fixed long ago by the following patch:
 
-g.
+commit cf7a8c03db792894f436db5f3ffc44d947b9b068
+Author: MyungJoo Ham <myungjoo.ham@samsung.com>
+Date:   Wed Aug 17 10:18:34 2011 +0900
+
+    max17042_battery: Bugfix of incorrect voltage register value interpretation
+
+    The calculation had error in getting voltage values from
+    MAX17042 registers. The least bit denotes 78.125uV (625/8).
+
+    Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+    Signed-off-by: Philip Rakity <prakity@marvell.com>
+    Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+    Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
