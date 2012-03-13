@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758855Ab2CMR1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 13:27:43 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:60642 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757547Ab2CMR1l (ORCPT
+	id S1758872Ab2CMR2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 13:28:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55460 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757547Ab2CMR2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 13:27:41 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=ISO-8859-1
-Date: Tue, 13 Mar 2012 18:27:38 +0100
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: Re: [PATCH 3/3] i2c-s3c2410: Add HDMIPHY quirk for S3C2440
-In-reply-to: <1331657679-31302-4-git-send-email-k.lewandowsk@samsung.com>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: ben-linux@fluff.org, thomas.abraham@linaro.org, m.szyprowski@samsung.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <4F5F838A.6030908@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216
- Thunderbird/10.0.2
-References: <1331657679-31302-1-git-send-email-k.lewandowsk@samsung.com>
- <1331657679-31302-4-git-send-email-k.lewandowsk@samsung.com>
+	Tue, 13 Mar 2012 13:28:11 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
+To: Zach Sadecki <zsadecki@itwatchdogs.com>,
+        Rob Herring <robherring2@gmail.com>
+Cc: Dong Aisheng <b29396@freescale.com>, vinod.koul@linux.intel.com,
+        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        rdunlap@xenotime.net, shawn.guo@freescale.com, kernel@pengutronix.de,
+        cjb@laptop.org, s.hauer@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <4F5F60DB.9090801@itwatchdogs.com>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com> <1331628428-24017-2-git-send-email-b29396@freescale.com> <4F5F5B3F.2000303@gmail.com> <4F5F60DB.9090801@itwatchdogs.com>
+Date: Tue, 13 Mar 2012 11:28:07 -0600
+Message-Id: <20120313172807.AC4763E053B@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Karol,
-Please refer to comments below,
+On Tue, 13 Mar 2012 09:59:39 -0500, Zach Sadecki <zsadecki@itwatchdogs.com> wrote:
+> On 03/13/2012 09:35 AM, Rob Herring wrote:
+> > +	ahb@80080000 {
+> > +		fec@800f0000 {
+> > Use generic names: ethernet@800f0000
+> Generic is good, but consistency is better, IMHO.  grepping existing dts 
+> files in 3.2.9 finds 6 instances of "fec@" and 0 instances of "ethernet@"
+> >> +			uart1: uart@80074000 {
+> > Use generic names: uart1: serial@...
+> Same comment here, but unfortunately there is already inconsistency in 
+> existing files...  25 instances of "serial@" and 35 instances of "uart@"
 
-Regards,
-Tomasz Stanislawski
+No, Rob is correct.  The generic names recommended practice is well
+established and documented.  Expand your grep search to include
+arch/powerpc/bot/dts/*.
 
-On 03/13/2012 05:54 PM, Karol Lewandowski wrote:
-> This patch adds support for s3c2440 I2C bus controller dedicated HDMIPHY device on
-> Exynos4 platform. Some quirks are introduced due to differences between HDMIPHY
-> and other I2C controllers on Exynos4.  These differences are:
-> - no GPIOs, HDMIPHY is inside the SoC and the controller is connected
->   internally
-> - due to unknown reason (probably HW bug in HDMIPHY and/or the controller) a
->   transfer fails to finish. The controller hangs after sending the last byte,
->   the workaround for this bug is resetting the controller after each transfer
-> 
-> Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
-> Tested-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  .../devicetree/bindings/i2c/samsung-i2c.txt        |   10 ++++-
->  drivers/i2c/busses/i2c-s3c2410.c                   |   36 ++++++++++++++++++++
->  2 files changed, 44 insertions(+), 2 deletions(-)
-> 
-[snip]
-> @@ -871,6 +896,14 @@ s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
->  		return;
->  
->  	pdata->bus_num = -1; /* i2c bus number is dynamically assigned */
-> +
-> +	if (s3c24xx_i2c_is_type(i2c, TYPE_S3C2440) &&
+See section 2.2.2 of ePAPR[1]
 
-I think that type checking should be removed because hdmiphy quirk is something
-orthogonal to the controller type.
+[1]https://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.1.pdf
 
-> +	    of_get_property(np, "samsung,i2c-quirk-hdmiphy", NULL))
-> +		i2c->type |= FLAG_HDMIPHY;
-> +
-> +	if (of_get_property(np, "samsung,i2c-no-gpio", NULL))
-> +		i2c->type |= FLAG_NO_GPIO;
-> +
->  	of_property_read_u32(np, "samsung,i2c-sda-delay", &pdata->sda_delay);
->  	of_property_read_u32(np, "samsung,i2c-slave-addr", &pdata->slave_addr);
->  	of_property_read_u32(np, "samsung,i2c-max-bus-freq",
-> @@ -1128,6 +1161,9 @@ static struct platform_device_id s3c24xx_driver_ids[] = {
->  	}, {
->  		.name		= "s3c2440-i2c",
->  		.driver_data	= TYPE_S3C2440,
-> +	}, {
-> +		.name		= "s3c2440-hdmiphy-i2c",
-> +		.driver_data	= TYPE_S3C2440 | FLAG_HDMIPHY | FLAG_NO_GPIO,
->  	}, { },
->  };
->  MODULE_DEVICE_TABLE(platform, s3c24xx_driver_ids);
-
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies,Ltd.
