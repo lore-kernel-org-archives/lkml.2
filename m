@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab2CMK4V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 06:56:21 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:45816
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753150Ab2CMK4U (ORCPT
+	id S1754908Ab2CMK7z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:59:55 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:55858 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab2CMK7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 06:56:20 -0400
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1202h1082kzz8275dhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Dong Aisheng <b29396@freescale.com>
-To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <davem@davemloft.net>, <timur@freescale.com>, <rdunlap@xenotime.net>,
-        <kernel@pengutronix.de>
-Subject: [PATCH 1/1] net: phylib: add error checking if no phy found
-Date: Tue, 13 Mar 2012 18:58:22 +0800
-Message-ID: <1331636302-18256-1-git-send-email-b29396@freescale.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 13 Mar 2012 06:59:53 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Trond.Myklebust@netapp.com,
+        sfrench@samba.org, sage@newdream.net, ericvh@gmail.com
+Subject: Re: [PATCH 00/25] vfs: atomic open RFC
+References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
+	<20120313095102.GA27480@infradead.org>
+Date: Tue, 13 Mar 2012 12:00:05 +0100
+In-Reply-To: <20120313095102.GA27480@infradead.org> (Christoph Hellwig's
+	message of "Tue, 13 Mar 2012 05:51:02 -0400")
+Message-ID: <87y5r49362.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dong Aisheng <dong.aisheng@linaro.org>
+Christoph Hellwig <hch@infradead.org> writes:
 
-Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
----
- drivers/net/phy/mdio_bus.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+> Do we really need the opendata structure?
+>
+> It seems like we could just pass a struct path instead of the dentry
+> passed directly and the vfsmount in it.  There should be no need to
+> preallocate the file before calling into ->atomic_open, as it's only
+> used to pass around f_flags - but we already pass that one to
+> ->atomic_open directly and might as well pass it on to finish_open and
+> allocate the file there.
 
-diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
-index 88cc5db..d8e044d 100644
---- a/drivers/net/phy/mdio_bus.c
-+++ b/drivers/net/phy/mdio_bus.c
-@@ -101,6 +101,7 @@ static struct class mdio_bus_class = {
- int mdiobus_register(struct mii_bus *bus)
- {
- 	int i, err;
-+	u32 phynum = 0;
- 
- 	if (NULL == bus || NULL == bus->name ||
- 			NULL == bus->read ||
-@@ -134,12 +135,20 @@ int mdiobus_register(struct mii_bus *bus)
- 			if (IS_ERR(phydev)) {
- 				err = PTR_ERR(phydev);
- 				goto error;
-+			} else if (phydev != NULL) {
-+				phynum++;
- 			}
- 		}
- 	}
- 
-+	if (!phynum) {
-+		err = -ENODEV;
-+		printk(KERN_ERR "%s: no phys found\n", bus->name);
-+		goto error;
-+	}
-+
- 	bus->state = MDIOBUS_REGISTERED;
--	pr_info("%s: probed\n", bus->name);
-+	pr_info("%s: %d phys probed\n", bus->name, phynum);
- 	return 0;
- 
- error:
--- 
-1.7.0.4
+We really don't want to get into the situation where the open fails
+after a successful create(*).  Which means the file needs to be allocated
+prior to calling ->atomic_open and needs to be passed to finish_open()
+toghether with the vfsmount and dentry.
+
+In the first version of the patch I set filp->f_path.mnt to nd->path.mnt
+and passed the half initialized filp to ->atomic_open.  But then decided
+that it's confusing for the filesystem code to deal with a half baked
+filp (does it need to be fput on error?  etc...)
+
+Doing it with an opaque opendata makes this cleaner I think.
+
+Thanks,
+Miklos
 
 
+(*)
+commit a1a5b3d93ca45613ec1d920fdb131b69b6553882
+Author: Peter Staubach <staubach@redhat.com>
+Date:   Tue Sep 13 01:25:12 2005 -0700
+
+    [PATCH] open returns ENFILE but creates file anyway
+    
+    When open(O_CREAT) is called and the error, ENFILE, is returned, the file
+    may be created anyway.  This is counter intuitive, against the SUS V3
+    specification, and may cause applications to misbehave if they are not
+    coded correctly to handle this semantic.  The SUS V3 specification
+    explicitly states "No files shall be created or modified if the function
+    returns -1.".
+    
+    The error, ENFILE, is used to indicate the system wide open file table is
+    full and no more file structs can be allocated.
+    
+    This is due to an ordering problem.  The entry in the directory is created
+    before the file struct is allocated.  If the allocation for the file struct
+    fails, then the system call must return an error, but the directory entry
+    was already created and can not be safely removed.
+    
+    The solution to this situation is relatively easy.  The file struct should
+    be allocated before the directory entry is created.  If the allocation
+    fails, then the error can be returned directly.  If the creation of the
+    directory entry fails, then the file struct can be easily freed.
