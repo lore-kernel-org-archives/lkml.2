@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab2CMN2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 09:28:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8310 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748Ab2CMN2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 09:28:30 -0400
-Message-ID: <4F5F4B79.5010801@redhat.com>
-Date: Tue, 13 Mar 2012 10:28:25 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1753453Ab2CMN3i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 09:29:38 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47601 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424Ab2CMN3g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 09:29:36 -0400
 MIME-Version: 1.0
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tile: remove a non-existing header
-References: <1331561930-14964-1-git-send-email-mchehab@redhat.com> <4F5E08C7.9070400@tilera.com> <4F5E0F78.3000308@redhat.com> <4F5E3DF9.2000806@tilera.com>
-In-Reply-To: <4F5E3DF9.2000806@tilera.com>
-X-Enigmail-Version: 1.3.5
+In-Reply-To: <20120313124738.GB10822@srcf.ucam.org>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	<20120312175130.GA18002@srcf.ucam.org>
+	<1331640592.3485.50.camel@debian.Gayathri>
+	<20120313124738.GB10822@srcf.ucam.org>
+Date: Tue, 13 Mar 2012 18:59:35 +0530
+Message-ID: <CABNxG=DswuqLOqe0qO0=tPdzZnX0paZ1JEcTv_vu-9GtyX25Lg@mail.gmail.com>
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: rpurdie@rpsys.net, FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 12-03-2012 15:18, Chris Metcalf escreveu:
-> (Cc's trimmed a bit.)
-> 
-> On 3/12/2012 11:00 AM, Mauro Carvalho Chehab wrote:
->> Em 12-03-2012 11:31, Chris Metcalf escreveu:
->>> On 3/12/2012 10:18 AM, Mauro Carvalho Chehab wrote:
->>>> While testing some API changes at the EDAC core, I've tested the EDAC
->>>> drivers compilation on all supported architectures, including Tilera.
->>>>
->>>> I noticed that Tilera upstream code has issues: it doesn't compile with
->>>> kernel 3.2:
->>>>
->>>> In file included from include/linux/linkage.h:5,
->>>>                  from include/linux/kernel.h:13,
->>>>                  from include/linux/sched.h:55,
->>>>                  from arch/tile/kernel/asm-offsets.c:19:
->>>> /home/mchehab/redhat/trees/work/new_edac/arch/tile/include/asm/linkage.h:18:22: error: feedback.h: No such file or directory
->>>> make[1]: *** [arch/tile/kernel/asm-offsets.s] Error 1
->>>>
->>>> Without it, it is not possible to compile anything on this archictecture
->>>> using this default configuration:
->>>> 	./arch/tile/configs/tilegx_defconfig
->>>>
->>>> Cc: stable@kernel.org
->>>> Signed-of-by: Mauro Carvalho Chehab <mchehab@redhat.com>
->>> Thank you, but nack.  The header is provided in the latest gcc tip code. 
->> Hmm... the gcc cross-compiler I've downloaded from Tilera site about one month
->> ago didn't have it (tilegx-unknown-linux-gnu-gcc (GCC) 4.4.6).
-> 
-> I've refreshed the toolchain pieces on the website, including the x86_64
-> cross-compiler, so please download the revised one next time you want to
-> try a build.  Thanks for your patience!
+I tried giving acpi_backlight = vendor . In that case hot key for
+brightness control is working. But i think  , it is not calculating
+the correct value for brightness because increasing brightness after
+maximum level gives blank screen .
 
-Thanks!
-Mauro
+ I also had tried 'acpi_backlight = acer_wmi' as the boot parameter
+earlier . In that case  , the driver cannot find any acpi_wmi device
+(showed error while booting).
 
+By ' ACPI interface' , I mean 'acpi_video0' inside the
+/sys/class/backlight. I havn't tried the /sys/class/backlight
+interface directly . I will try that also.
+
+Thanks ,
+
+Pradeep Subrahmanion.
+
+On Tue, Mar 13, 2012 at 6:17 PM, Matthew Garrett <mjg@redhat.com> wrote:
+>
+> On Tue, Mar 13, 2012 at 08:09:52AM -0400, Pradeep Subrahmanion wrote:
+> > Before taking this approach , I had a look at the WMI interface.But I found from acer-acpi site that , the 4730 series
+> > is using new WMI interface which needs to be reverse engineered.
+> > As far as  acpi interface is concerned , by default it is not at all causing any change in brightness.
+> > When 'acpi_osi=Linux' was added to the boot grub config , the brightness control with hot key started to work .
+> > But it was not changing to correct values. Increasing brightness after maximum level gives blank screen.
+>
+> That page was last updated in 2009. Have you tried the current acer-wmi
+> code? You'd probably need to pass backlight=vendor if there's a
+> non-working ACPI interface.
+>
+> When you say the ACPI interface doesn't work, what do you mean? Have you
+> tried using the /sys/class/backlight interface directly?
+>
+> --
+> Matthew Garrett | mjg59@srcf.ucam.org
