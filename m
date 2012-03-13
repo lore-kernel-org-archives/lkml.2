@@ -1,68 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759618Ab2CMFtO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:49:14 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55488 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759187Ab2CMFtM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:49:12 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 13 Mar 2012 14:47:36 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v4 3/3] memcg: avoid THP split in task migration
-Message-Id: <20120313144736.e4a39634.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1331591456-20769-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1331591456-20769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1331591456-20769-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1759603Ab2CMFvO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:51:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17844 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756444Ab2CMFvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 01:51:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="128261578"
+Message-ID: <4F5EE05A.1040800@intel.com>
+Date: Tue, 13 Mar 2012 07:51:22 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: "Mansoor, Illyas" <illyas.mansoor@intel.com>
+CC: "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: mmc: sdhci-pci: why no .shutdown() implemented
+References: <810586B7581CC8469141DADEBC3719120AECF8@BGSMSX102.gar.corp.intel.com> <4F5DF945.3010204@intel.com> <810586B7581CC8469141DADEBC3719120AF0A2@BGSMSX102.gar.corp.intel.com>
+In-Reply-To: <810586B7581CC8469141DADEBC3719120AF0A2@BGSMSX102.gar.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Mar 2012 18:30:56 -0400
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-
-> Currently we can't do task migration among memory cgroups without THP split,
-> which means processes heavily using THP experience large overhead in task
-> migration. This patch introduces the code for moving charge of THP and makes
-> THP more valuable.
+On 12/03/12 16:30, Mansoor, Illyas wrote:
+>>> On our platform we implemented a BUG in pci_set_power_state callback
+>>> when the shutdown Is in progress, and we caught sdhci-pci doing
+>>> pci_set_power_state(D0) when shutdown was Already in progress.
+>>>
+>>> My question, why doesn't sdhci-pci.c implement a .shutdown() callback
+>>> and close the device After doing sys_sync()?
+>>>
+>>> Is there some reason behind it not doing a graceful shutdown.
+>>
+>> In general, the kernel does not know how to do a graceful shutdown.  There may
+>> be any number of housekeeping activities that userspace wishes to do before
+>> shutting down.
 > 
-> Changes from v3:
-> - use enum mc_target_type and MC_TARGET_* explicitly
-> - replace lengthy name is_target_thp_for_mc() with get_mctgt_type_thp()
-> - drop cond_resched()
-> - drop mapcount check of page sharing (Hugh and KAMEZAWA-san are preparing
->   patches to change the behavior of moving charge of shared pages, so this
->   patch keeps up with the change to avoid potential conflict.)
-> 
-> Changes from v2:
-> - add move_anon() and mapcount check
-> 
-> Changes from v1:
-> - rename is_target_huge_pmd_for_mc() to is_target_thp_for_mc()
-> - remove pmd_present() check (it's buggy when pmd_trans_huge(pmd) is true)
-> - is_target_thp_for_mc() calls get_page() only when checks are passed
-> - unlock page table lock if !mc.precharge
-> - compare return value of is_target_thp_for_mc() explicitly to MC_TARGET_TYPE
-> - clean up &walk->mm->page_table_lock to &vma->vm_mm->page_table_lock
-> - add comment about why race with split_huge_page() does not happen
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Acked-by: Hillf Danton <dhillf@gmail.com>
+> I see some storage drivers do implement .shutdown() callbacks do you think
+> sdhci-pci
+> could also do the same?
 
-Thank you.
+Certainly.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> immansoo@immansoo-desktop:~/Linux_kernel/linux-stable/drivers/mmc$ find . -name
+> \*.c -exec grep \.shutdown -H {} \;
+> ./host/s3cmci.c:static void s3cmci_shutdown(struct platform_device *pdev)
+> ./host/s3cmci.c:        s3cmci_shutdown(pdev);
+> ./host/s3cmci.c:        .shutdown       = s3cmci_shutdown,
+> 
+>>
+>> If file systems are not getting sync'd that is a userspace problem, not a
+> kernel
+>> problem.
+> 
+> I agree the issue needs to be fixed in user-space, so it does not request
+> Storage device during shutdown. 
+> 
+> Shouldn't we also make sure we don't open a device during shutdown, that way we
+> make
+> sure at least we don't stay in device power'd up state during power-off.
+> 
+> It's not that the file system is not getting sync'd, but issue is bringing  up
+> the device
+> during shutdown, because once the shutdown starts there is no way to stop it
+> and the device may be left in undefined state.
 
+Power-off is not an undefined state.
+
+What exactly is the problem?
+
+> 
+> 
+>>
+>>>
+>>> I think it could cause corruption, since there is no guarantee when
+>>> the system will power-off/reboot/halt
+>>>
+>>> I just implemented a patch to fix this, if it's a good fix I'll submit.
+>>>
+>>> diff --git a/drivers/mmc/host/sdhci-pci.c
+>>> b/drivers/mmc/host/sdhci-pci.c index f5fe05c..e0818c9 100644
+>>> --- a/drivers/mmc/host/sdhci-pci.c
+>>> +++ b/drivers/mmc/host/sdhci-pci.c
+>>> @@ -23,6 +23,7 @@
+>>>  #include <linux/regulator/consumer.h>  #include <linux/pm_runtime.h>
+>>> #include <linux/async.h>
+>>> +#include <linux/syscalls.h>
+>>>
+>>>  #include <asm/scatterlist.h>
+>>>  #include <asm/io.h>
+>>> @@ -1342,6 +1343,34 @@ err:
+>>>         return ret;
+>>>  }
+>>>
+>>> +static void sdhci_pci_shutdown(struct pci_dev *pdev) {
+>>> +       int i;
+>>> +       struct sdhci_pci_chip *chip;
+>>> +
+>>> +       printk(KERN_INFO "%s: Syncing filesystems ... ", __func__);
+>>> +       sys_sync();
+>>> +       printk("done.\n");
+>>> +
+>>> +       pm_runtime_get_sync(&pdev->dev);
+>>> +
+>>> +       chip = pci_get_drvdata(pdev);
+>>> +
+>>> +       if (chip) {
+>>> +               for (i = 0;i < chip->num_slots; i++)
+>>> +                       sdhci_pci_remove_slot(chip->slots[i]);
+>>> +
+>>> +               pci_set_drvdata(pdev, NULL);
+>>> +               kfree(chip);
+>>> +       }
+>>> +
+>>> +       pci_disable_device(pdev);
+>>> +
+>>> +       pm_runtime_put_noidle(&pdev->dev);
+>>> +       pm_runtime_forbid(&pdev->dev);
+>>> +       pm_runtime_disable(&pdev->dev); }
+>>> +
+>>>  static void __devexit sdhci_pci_remove(struct pci_dev *pdev)  {
+>>>         int i;
+>>> @@ -1473,6 +1502,7 @@ static struct pci_driver sdhci_driver = {
+>>>         .id_table =     pci_ids,
+>>>         .probe =        sdhci_pci_probe,
+>>>         .remove =       __devexit_p(sdhci_pci_remove),
+>>> +       .shutdown =     sdhci_pci_shutdown,
+>>>
+>>>
+>>> -Illyas
+> 
 
