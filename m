@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757970Ab2CMKwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 06:52:14 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:52934 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757808Ab2CMKwL (ORCPT
+	id S1757143Ab2CMK4V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:56:21 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:45816
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753150Ab2CMK4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 06:52:11 -0400
+	Tue, 13 Mar 2012 06:56:20 -0400
+X-SpamScore: 3
+X-BigFish: VS3(zzzz1202h1082kzz8275dhz2dh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Dong Aisheng <b29396@freescale.com>
+To: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <davem@davemloft.net>, <timur@freescale.com>, <rdunlap@xenotime.net>,
+        <kernel@pengutronix.de>
+Subject: [PATCH 1/1] net: phylib: add error checking if no phy found
+Date: Tue, 13 Mar 2012 18:58:22 +0800
+Message-ID: <1331636302-18256-1-git-send-email-b29396@freescale.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAMHCuPUQSPgt8mP2FY7hxi8345ZbLYi9NNbo5P24CDpZp50=_A@mail.gmail.com>
-References: <1329905650-30161-1-git-send-email-amit.kachhap@linaro.org>
-	<1329905650-30161-3-git-send-email-amit.kachhap@linaro.org>
-	<CAMHCuPUOnftKYaGjEpA9rZFc1yjH3U-EkEEUWqcFapSKROTopQ@mail.gmail.com>
-	<CAK44p23nZ0kgdieasMkChV8B51Rjt=KrmypN+ksV+nym_e0Cqw@mail.gmail.com>
-	<CAMHCuPXSCZjiyW28aPPjO4zF0vgabZUrqtUK5nMXLwNzSWUjQA@mail.gmail.com>
-	<CAP245DUqz-N3nG+bc-3b=4YgYk3LMJTWk_wB7Db1ZBm0fBQOSQ@mail.gmail.com>
-	<CAMHCuPUQSPgt8mP2FY7hxi8345ZbLYi9NNbo5P24CDpZp50=_A@mail.gmail.com>
-Date: Tue, 13 Mar 2012 16:22:09 +0530
-Message-ID: <CAK44p224FTbnBXOo34TPgB2dKjT1x-rGbDB+kPitvNhoXy35Tg@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 2/4] thermal: Add generic cpufreq cooling implementation
-From: Amit Kachhap <amit.kachhap@linaro.org>
-To: Sundar <sunder.svit@gmail.com>
-Cc: Amit Kucheria <amit.kucheria@linaro.org>, len.brown@intel.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        mark.gross@intel.com, linux-pm@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 March 2012 15:44, Sundar <sunder.svit@gmail.com> wrote:
-> On Tue, Mar 13, 2012 at 3:30 PM, Amit Kucheria <amit.kucheria@linaro.org> wrote:
->> Sundar,
->
-> Hi Amit,
->
->> At the moment it doesn't. But there was some discussion around
->> creating something that will work with devfreq. This would allow
->> peripheral drivers to be plugged in as well. Amit is investigating
->> that at present.
->
-> What if we work towards a generic constraint framework which models
-> thermals as a performance constraint.
->
-> Drivers can register to this constraint; platform code can then decide
-> to issue restrictions either to the CPU or other power-hungry
-> peripherals based on the platform conditions.
->
-> That also allows to model CPU frequency as a generic constraint but
-> via an actual consumer, say the thermal driver.
+From: Dong Aisheng <dong.aisheng@linaro.org>
 
-Yes that should be helpful. Even the things your are suggesting are
-somewhat same with some patches submitted which sets cpufreq min/max
-constraint.
+Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+---
+ drivers/net/phy/mdio_bus.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
->
-> Cheers!
->
-> --
-> ---------
-> The views expressed in this email are personal and do not necessarily
-> echo my employers.
+diff --git a/drivers/net/phy/mdio_bus.c b/drivers/net/phy/mdio_bus.c
+index 88cc5db..d8e044d 100644
+--- a/drivers/net/phy/mdio_bus.c
++++ b/drivers/net/phy/mdio_bus.c
+@@ -101,6 +101,7 @@ static struct class mdio_bus_class = {
+ int mdiobus_register(struct mii_bus *bus)
+ {
+ 	int i, err;
++	u32 phynum = 0;
+ 
+ 	if (NULL == bus || NULL == bus->name ||
+ 			NULL == bus->read ||
+@@ -134,12 +135,20 @@ int mdiobus_register(struct mii_bus *bus)
+ 			if (IS_ERR(phydev)) {
+ 				err = PTR_ERR(phydev);
+ 				goto error;
++			} else if (phydev != NULL) {
++				phynum++;
+ 			}
+ 		}
+ 	}
+ 
++	if (!phynum) {
++		err = -ENODEV;
++		printk(KERN_ERR "%s: no phys found\n", bus->name);
++		goto error;
++	}
++
+ 	bus->state = MDIOBUS_REGISTERED;
+-	pr_info("%s: probed\n", bus->name);
++	pr_info("%s: %d phys probed\n", bus->name, phynum);
+ 	return 0;
+ 
+ error:
+-- 
+1.7.0.4
+
+
