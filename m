@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760601Ab2CMXNk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 19:13:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55116 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760201Ab2CMXNi (ORCPT
+	id S1760609Ab2CMXOb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 19:14:31 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7426 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760410Ab2CMXOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 19:13:38 -0400
-Date: Tue, 13 Mar 2012 23:13:36 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH] regulator: Check SET[1|2|3] GPIO settings earlier
-Message-ID: <20120313231335.GQ3177@opensource.wolfsonmicro.com>
-References: <1331607500.11322.3.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8G1nIWD3RY794FAy"
-Content-Disposition: inline
-In-Reply-To: <1331607500.11322.3.camel@phoenix>
-X-Cookie: You will be married within a year.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Mar 2012 19:14:30 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 13 Mar 2012 16:14:29 -0700
+Subject: Re: [PATCH] ASoC: max98095: add jack detection
+From: Rhyland Klein <rklein@nvidia.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Peter Hsiang <cdefgab1288@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120313230939.GO3177@opensource.wolfsonmicro.com>
+References: <1331667848-8168-1-git-send-email-rklein@nvidia.com>
+	 <20120313230939.GO3177@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Mar 2012 16:15:24 -0700
+Message-ID: <1331680524.9410.11.camel@rklein-linux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-03-13 at 16:09 -0700, Mark Brown wrote:
+> * PGP Signed by an unknown key
+> 
+> On Tue, Mar 13, 2012 at 12:44:08PM -0700, Rhyland Klein wrote:
+> 
+> > This change adds the logic to support using the jack detect mechanism built
+> > in to the codec to detect both when a jack was inserted and what type of
+> > jack is present.
+> 
+> This looks mostly good, a few things below.
+> 
+> > @@ -51,6 +52,9 @@ struct max98095_priv {
+> >  	u8 lin_state;
+> >  	unsigned int mic1pre;
+> >  	unsigned int mic2pre;
+> > +	int irq;
+> 
+> You can just get the irq from the I2C device.
 
---8G1nIWD3RY794FAy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, will do.
 
-On Tue, Mar 13, 2012 at 10:58:20AM +0800, Axel Lin wrote:
-> Unused GPIO is marked as -1, we need to check if one of the gpio is set to 0
-> here because gpio_is_valid considers 0 as a valid gpio.
+> 
+> > +	if (max98095->headphone_jack == max98095->mic_jack)
+> > +		snd_soc_jack_report(max98095->headphone_jack,
+> > +					hp_report | mic_report,
+> > +					SND_JACK_HEADSET);
+> > +	else {
+> 
+> Braces on both sides of the if for clarity.
 
-This will break existing boards, we need to manage the transfer more
-gracefully and complain if we're using a GPIO 0.  Though I'm not sure
-it's worth bothering, I hope no modern gpiolib implementation will do
-this.
+will do. 
 
---8G1nIWD3RY794FAy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> 
+> > +static irqreturn_t max98095_jack_handler(int irq, void *data)
+> > +{
+> > +	struct snd_soc_codec *codec = data;
+> > +	int ret;
+> > +
+> > +	ret = max98095_report_jack(codec);
+> > +
+> > +	return ret ? IRQ_NONE : IRQ_HANDLED;
+> 
+> There is no point in having a separate function here, this function has
+> no contents.  Just inline it.  Please also avoid the use of the ternery
+> operator.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+will do.
 
-iQIcBAEBAgAGBQJPX9SZAAoJEBus8iNuMP3dwHwQAIYYxD7oHmpW5kEF1nZfMARP
-IdbdZTB/qyKB3DAtdc+qgRnR+lNXqAAPtmPIzPOm/SKm9wFaopHonm6446JqsMkJ
-CpOJ3x920HpFbZxxKlLjtM3BDaioL9w7iy+7QitDXxPOOuBk32ajDCO1soZARy62
-m+RBnpqugweitsqYgCdGaU6v139CwGggFoH/mw1oz3N6eBmDN5RqwfQBkxbGgb0/
-QF58KvuAPhddAclav6zNaAozwZiuJw106Gj1wmY8Kk4XXmz9ZwxPye/jkyQdVbl6
-0EQO6bMcdpj/qg5XashBZ6T2fFXwZ+R5qzcOfYgCepD79SBQslmUNY/bYuzi/L6H
-iGEabAy+ZXBl0ioLLr74sc5CuRZJlgVyCNohFo9wzt622em++pd3KqNyQrhZdyow
-f3f2L/4UjZv/8TOMdnDBrqxcfPp++bOFqeeajTCEAKbl7TavzG3QL/w1X7EJ+P4W
-ZrmfxzGMxft2fymUnYo18oYQS9uX9xxKnFEq5mKNg1wCHsroqp2lxjBY8PRDFECy
-0j9HNiRlJxhrxPnrbWJ+QYSZabTE9skj6IIWkEYYqYkaKLsYDqSMIrL6p188+El/
-QlaKOj1XUgejBb8wMAMZYtar7St82wRr0Zmxn2DYHM5l6gtzqTIvfZvdkxl8zAO1
-Z5OdJb6CEgpRz4UCq6ec
-=ahoi
------END PGP SIGNATURE-----
+> 
+> > +	/* configure jack detection: slew is calculated as 4 * (delay + 1)
+> > +	 * The default is 24 (0x18) to get 100ms delay.
+> > +	 */
+> > +	ret = snd_soc_write(codec, M98095_08E_JACK_DC_SLEW,
+> > +				M98095_DEFAULT_SLEW_DELAY);
+> > +	if (ret < 0) {
+> > +		dev_err(codec->dev, "Failed to cfg auto detect %d\n", ret);
+> > +		return ret;
+> > +	}
+> 
+> Platform data?
 
---8G1nIWD3RY794FAy--
+As of now there isn't. But that does make sense to support. Will add.
+
+> 
+> > +	enable_irq(max98095->irq);
+> 
+> You shouldn't be fiddling around with enable_irq() and disable_irq().
+> Why are you doing this?
+
+this can be removed.
+
+> 
+> * Unknown Key
+> * 0x6E30FDDD
+
+Thanks for quick review,
+Rhyland
+
+
