@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758375Ab2CMWK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 18:10:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49666 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab2CMWK6 (ORCPT
+	id S1759666Ab2CMWMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 18:12:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37551 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756037Ab2CMWMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 18:10:58 -0400
-Date: Tue, 13 Mar 2012 15:10:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Avery Pennarun <apenwarr@gmail.com>, Josh Triplett <josh@joshtriplett.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Fabio M. Di Nitto" <fdinitto@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Olaf Hering <olaf@aepfle.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Yinghai LU <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 0/5] Persist printk buffer across reboots.
-Message-Id: <20120313151049.fa33d232.akpm@linux-foundation.org>
-In-Reply-To: <20120313170851.GA5218@fifo99.com>
-References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
-	<20120313170851.GA5218@fifo99.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Mar 2012 18:12:38 -0400
+Date: Tue, 13 Mar 2012 22:12:35 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        Peter Hsiang <cdefgab1288@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: max98095: add jack detection
+Message-ID: <20120313221235.GJ3177@opensource.wolfsonmicro.com>
+References: <1331667848-8168-1-git-send-email-rklein@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4LwthZj+AV2mq5CX"
+Content-Disposition: inline
+In-Reply-To: <1331667848-8168-1-git-send-email-rklein@nvidia.com>
+X-Cookie: You will be married within a year.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 10:08:51 -0700
-Daniel Walker <dwalker@fifo99.com> wrote:
 
-> On Tue, Mar 13, 2012 at 01:36:36AM -0400, Avery Pennarun wrote:
-> > The last patch in this series implements a new CONFIG_PRINTK_PERSIST option
-> > that, when enabled, puts the printk buffer in a well-defined memory location
-> > so that we can keep appending to it after a reboot.  The upshot is that,
-> > even after a kernel panic or non-panic hard lockup, on the next boot
-> > userspace will be able to grab the kernel messages leading up to it.  It
-> > could then upload the messages to a server (for example) to keep crash
-> > statistics.
-> 
-> There's currently driver/mtd/mtdoops.c, fs/pstore/, and
-> drivers/staging/android/ram_console.c that do similar things
-> as this. Did you investigate those for potentially modifying them to add
-> this functionality ? If so what issues did you find?
-> 
-> I have a arm MSM G1 with persistent memory at 0x16d00000 size 20000bytes..
-> It's fairly simple you just have to ioremap the memory, but then it's good
-> for writing.. Currently the android ram_console uses this. How would I
-> convert this area for use with your changes?
+--4LwthZj+AV2mq5CX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yes, and various local implementations which do things such as stuffing
-the log buffer into NVRAM as the kernel is crashing.
+On Tue, Mar 13, 2012 at 12:44:08PM -0700, Rhyland Klein wrote:
+> This change adds the logic to support using the jack detect mechanism built
+> in to the codec to detect both when a jack was inserted and what type of
+> jack is present.
 
-I do think we'd need some back-end driver arrangement which will permit
-the use of stores which aren't in addressible mamory.
+You send another identically titled patch of roughly the same size a
+few minutes ago - what's the difference between the two or is it just a
+resend?
 
-It's quite the can of worms, but definitely worth doing if we can get
-it approximately correct.
+--4LwthZj+AV2mq5CX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPX8ZMAAoJEBus8iNuMP3dfOAP/AgZ0Su1i4xSWenJijMNq/Qb
+ML9TyMgeE/g6CxzSvC4OIfSbr48pA8ddWEd9XhW8rxt+geCHwIMiIB6YCFFATYMD
+LyLNdN8wpwMCth7Ph5+X/0TBaLWAcBEpo7CbbEWWAvjzNRpebbd85i4C4f26pwew
+CpFOIwJ/Ee/YZejc1It2bBCcbyEPyja4Xai+7+0lK4xA8JUi5N+QnDfkCsF/f0Xq
+YzjCFlbTkWKQvEIP9e03lPyGrN6Ns3UpgkzOaXcHWVD0yfw4OszpOfEIscscBH9g
+FV3PPFklGfhhOf9a4wft7ZcTS1snsqunFRD+F2qQZRboRSdlyLK0mJe9ut2D8sWQ
+jDtibsuR0t3KFtaGhb93XYkXTmRKlnd3j5GcLP0429AH/tnHWvd8APIkH4YlIYVv
+Sn7WsgOpTCX7J5pJ2Wgc2HM00SQC+fG+rwkEZwWZ5pbPptvxkpM8HqLrrKfAR/Uo
+0oQWE+PGLJhTYD3k26T5X9qRMgWqvs+jv76ACeKrtuMfe5wKmi/NEEQt8qINk9qo
+UdS3EOIPfqs8XBcAm6+u5sw3l89CZhPILavcqVbn/RDyzsUgl5RNLOdYXjUGNVyZ
+zY97G4nq94RS2fLMhKPLUgHd0Adfw77fXlhLZDiAG3agVBf+2Cuq7t+lwSUEj/gi
+YH5wtcSXL38UiQv9SskJ
+=2GhC
+-----END PGP SIGNATURE-----
+
+--4LwthZj+AV2mq5CX--
