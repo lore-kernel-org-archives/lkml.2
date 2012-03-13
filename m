@@ -1,110 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760609Ab2CMXOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 19:14:31 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7426 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760410Ab2CMXOa (ORCPT
+	id S1760622Ab2CMXOs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 19:14:48 -0400
+Received: from nat.nue.novell.com ([195.135.221.2]:30310 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760410Ab2CMXOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 19:14:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 13 Mar 2012 16:14:29 -0700
-Subject: Re: [PATCH] ASoC: max98095: add jack detection
-From: Rhyland Klein <rklein@nvidia.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Peter Hsiang <cdefgab1288@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20120313230939.GO3177@opensource.wolfsonmicro.com>
-References: <1331667848-8168-1-git-send-email-rklein@nvidia.com>
-	 <20120313230939.GO3177@opensource.wolfsonmicro.com>
+	Tue, 13 Mar 2012 19:14:46 -0400
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: joeyli <jlee@suse.com>
+To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1331688294.2577.19.camel@debian.Gayathri>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	 <20120312175130.GA18002@srcf.ucam.org>
+	 <1331640592.3485.50.camel@debian.Gayathri>
+	 <20120313124738.GB10822@srcf.ucam.org>
+	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
+	 <20120313133458.GA11574@srcf.ucam.org>
+	 <1331688294.2577.19.camel@debian.Gayathri>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Mar 2012 16:15:24 -0700
-Message-ID: <1331680524.9410.11.camel@rklein-linux>
+Date: Wed, 14 Mar 2012 07:12:53 +0800
+Message-ID: <1331680373.10557.169.camel@linux-s257.site>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-13 at 16:09 -0700, Mark Brown wrote:
-> * PGP Signed by an unknown key
-> 
-> On Tue, Mar 13, 2012 at 12:44:08PM -0700, Rhyland Klein wrote:
-> 
-> > This change adds the logic to support using the jack detect mechanism built
-> > in to the codec to detect both when a jack was inserted and what type of
-> > jack is present.
-> 
-> This looks mostly good, a few things below.
-> 
-> > @@ -51,6 +52,9 @@ struct max98095_priv {
-> >  	u8 lin_state;
-> >  	unsigned int mic1pre;
-> >  	unsigned int mic2pre;
-> > +	int irq;
-> 
-> You can just get the irq from the I2C device.
+Hi Pradeep, 
 
-Right, will do.
-
+於 二，2012-03-13 於 21:24 -0400，Pradeep Subrahmanion 提到：
+> On Tue, 2012-03-13 at 13:34 +0000, Matthew Garrett wrote:
+> > On Tue, Mar 13, 2012 at 06:56:16PM +0530, Pradeep Subrahmanion wrote:
+> > > I tried giving acpi_backlight = vendor . In that case hot key for
+> > > brightness control is working. But i think  , it is not calculating the
+> > > correct value for brightness because increasing brightness after maximum
+> > > level gives blank screen .
+> > 
+> > Which backlight device appears then?
+> > 
 > 
-> > +	if (max98095->headphone_jack == max98095->mic_jack)
-> > +		snd_soc_jack_report(max98095->headphone_jack,
-> > +					hp_report | mic_report,
-> > +					SND_JACK_HEADSET);
-> > +	else {
+> 'intel_backlight' appears when i gave option acpi_backlight = vendor. Writing to /sys/class/backlight/intel_backlight/brightness
 > 
-> Braces on both sides of the if for clarity.
-
-will do. 
-
+> does not cause any change in brightness.
 > 
-> > +static irqreturn_t max98095_jack_handler(int irq, void *data)
-> > +{
-> > +	struct snd_soc_codec *codec = data;
-> > +	int ret;
-> > +
-> > +	ret = max98095_report_jack(codec);
-> > +
-> > +	return ret ? IRQ_NONE : IRQ_HANDLED;
+
+The above command not work, that means EC didn't change backlight
+value:
+
+Method (_BCM, 1, NotSerialized)
+{
+    Divide (Arg0, 0x0A, Local0, Local1)
+    Decrement (Local1)
+    Store (Local1, ^^^^LPC.EC0.BRTS)    <=== write backlight value to EC
+register
+}
+
+Per my understood, EC firmware should change brightness but didn't do
+that, another
+way is touch i915 register in _BCM.
+
+Acer machine provide a broken _BCM implementation and they didn't test
+it.
+
+> > > By ' ACPI interface' , I mean 'acpi_video0' inside the
+> > > /sys/class/backlight. I havn't tried the /sys/class/backlight interface
+> > > directly . I will try that also.
+> > 
+> > So writing values into /sys/class/backlight/acpi_video0/brightness does 
+> > nothing?
 > 
-> There is no point in having a separate function here, this function has
-> no contents.  Just inline it.  Please also avoid the use of the ternery
-> operator.
-
-will do.
-
 > 
-> > +	/* configure jack detection: slew is calculated as 4 * (delay + 1)
-> > +	 * The default is 24 (0x18) to get 100ms delay.
-> > +	 */
-> > +	ret = snd_soc_write(codec, M98095_08E_JACK_DC_SLEW,
-> > +				M98095_DEFAULT_SLEW_DELAY);
-> > +	if (ret < 0) {
-> > +		dev_err(codec->dev, "Failed to cfg auto detect %d\n", ret);
-> > +		return ret;
-> > +	}
+> No change in value when writing
+> to /sys/class/backlight/acpi_video0/brightness.
 > 
-> Platform data?
-
-As of now there isn't. But that does make sense to support. Will add.
-
+> Another thing is that when i did boot with acpi_backlight = 'acer_wmi' ,
+> in new kernel (3.3.0-rc7) , it shows following messages , 
 > 
-> > +	enable_irq(max98095->irq);
+> [    8.350825] wmi: Mapper loaded
+> [   10.363975] acer_wmi: Acer Laptop ACPI-WMI Extras
+> [   10.396186] acer_wmi: Function bitmap for Communication Device: 0x91
+> [   10.396385] acer_wmi: Brightness must be controlled by generic video
+> driver
 > 
-> You shouldn't be fiddling around with enable_irq() and disable_irq().
-> Why are you doing this?
-
-this can be removed.
-
+> Also there was no interface inside /sys/class/backlight for acer_wmi. 
 > 
-> * Unknown Key
-> * 0x6E30FDDD
 
-Thanks for quick review,
-Rhyland
+Yes, acer_wmi support backlight control with AMW0 interface, your
+machine didn't have AMW0 interface.
 
+Normally, backlight should control by standard acpi interface.
+
+> I also tried writing directly to Embedded controller register .But no
+> change.
+
+The machine has broken _BCM method, because EC should do something after
+_BCM changed EC register.
+
+> ----
+> 
+> Thanks , 
+> 
+> Pradeep Subrahmanion
+>   
+
+
+Thanks a lot!
+Joey Lee
 
