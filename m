@@ -1,84 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab2CMEru (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 00:47:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35223 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654Ab2CMErs (ORCPT
+	id S1756798Ab2CMEsh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 00:48:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27420 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755101Ab2CMEse convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 00:47:48 -0400
-Date: Mon, 12 Mar 2012 21:47:29 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-8e3fabfde445a872c8aec2296846badf24d7c8b4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        joe@perches.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        joe@perches.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1331056466.11248.327.camel@twins>
-References: <1331056466.11248.327.camel@twins>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Update yield() docs
-Git-Commit-ID: 8e3fabfde445a872c8aec2296846badf24d7c8b4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 13 Mar 2012 00:48:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="118088087"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Amit Kachhap <amit.kachhap@linaro.org>
+CC: "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mjg59@srcf.ucam.org" <mjg59@srcf.ucam.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "patches@linaro.org" <patches@linaro.org>
+Subject: RE: [PATCH 1/4] thermal: exynos: Add thermal interface support for
+ linux thermal layer
+Thread-Topic: [PATCH 1/4] thermal: exynos: Add thermal interface support for
+ linux thermal layer
+Thread-Index: AQHM+S325crfIhSomU2a5BXeXqw6HJZmfwxQgADUMQCAAGKN8A==
+Date: Tue, 13 Mar 2012 04:48:23 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5904C758@BGSMSX101.gar.corp.intel.com>
+References: <1330772767-16120-1-git-send-email-amit.kachhap@linaro.org>
+	<1330772767-16120-2-git-send-email-amit.kachhap@linaro.org>
+	<4D68720C2E767A4AA6A8796D42C8EB5904B13D@BGSMSX101.gar.corp.intel.com>
+ <CAK44p23NwjPe3Ku0tfFXCQzi+2fdgEipFf+oCVKk99sC9qVMBA@mail.gmail.com>
+In-Reply-To: <CAK44p23NwjPe3Ku0tfFXCQzi+2fdgEipFf+oCVKk99sC9qVMBA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 12 Mar 2012 21:47:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8e3fabfde445a872c8aec2296846badf24d7c8b4
-Gitweb:     http://git.kernel.org/tip/8e3fabfde445a872c8aec2296846badf24d7c8b4
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 6 Mar 2012 18:54:26 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 12 Mar 2012 20:43:17 +0100
+Hi Amit,
 
-sched: Update yield() docs
+[snip.]
 
-Suggested-by: Joe Perches <joe@perches.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1331056466.11248.327.camel@twins
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched/core.c |   20 ++++++++++++++++++--
- 1 files changed, 18 insertions(+), 2 deletions(-)
+> >> +
+> >> +     kobject_uevent(&th_zone->therm_dev->device.kobj, KOBJ_CHANGE);
+> >
+> > Wouldn't it make more sense to pass the trip point id also as an 'env'
+> > parameter ? This way, the user space can easily figure out which trip
+> > point has been crossed.
+> Its a good suggestion. I will check if some uevent property allows that.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 8781cec..47614a5 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4577,8 +4577,24 @@ EXPORT_SYMBOL(__cond_resched_softirq);
- /**
-  * yield - yield the current processor to other threads.
-  *
-- * This is a shortcut for kernel-space yielding - it marks the
-- * thread runnable and calls sys_sched_yield().
-+ * Do not ever use this function, there's a 99% chance you're doing it wrong.
-+ *
-+ * The scheduler is at all times free to pick the calling task as the most
-+ * eligible task to run, if removing the yield() call from your code breaks
-+ * it, its already broken.
-+ *
-+ * Typical broken usage is:
-+ *
-+ * while (!event)
-+ * 	yield();
-+ *
-+ * where one assumes that yield() will let 'the other' process run that will
-+ * make event true. If the current task is a SCHED_FIFO task that will never
-+ * happen. Never use yield() as a progress guarantee!!
-+ *
-+ * If you want to use yield() to wait for something, use wait_event().
-+ * If you want to use yield() to be 'nice' for others, use cond_resched().
-+ * If you still want to use yield(), do not!
-  */
- void __sched yield(void)
- {
+The kobject_uevent_env(...) call allows that. The third argument takes a
+char *envp[]. For example, We could pass "trip=0" to indicate the trip point.
+I should have mentioned this in my previous reply itself..missed it..
+
+Thanks,
+Durga
