@@ -1,180 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759267Ab2CMFqk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:46:40 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44745 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758175Ab2CMFqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:46:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 13 Mar 2012 14:45:01 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v4 1/3] memcg: clean up existing move charge code
-Message-Id: <20120313144501.d031f25d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1331591456-20769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1331591456-20769-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759531Ab2CMFq5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:46:57 -0400
+Received: from smtp12.mail.ru ([94.100.176.89]:34321 "EHLO smtp12.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759464Ab2CMFq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 01:46:56 -0400
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: Olof Johansson <olof@lixom.net>
+Cc: Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-tegra@vger.kernel.org, Andi <andi.shyti@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Dmitry Artamonow <mad_soft@inbox.ru>
+Subject: [PATCH] arm/tegra: pcie: fix return value of function
+Date: Tue, 13 Mar 2012 09:46:27 +0400
+Message-Id: <1331617587-10714-1-git-send-email-mad_soft@inbox.ru>
+X-Mailer: git-send-email 1.7.5.1.300.gc565c
+In-Reply-To: <CAOesGMi0aqCjLsJ5wWXwFVQL2T8wtUuE14rFZ9h7NKHXcWAoqQ@mail.gmail.com>
+References: <CAOesGMi0aqCjLsJ5wWXwFVQL2T8wtUuE14rFZ9h7NKHXcWAoqQ@mail.gmail.com>
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Mar 2012 18:30:54 -0400
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+In previous patch (arm/tegra: add timeout to PCIe PLL lock detection loop)
+tegra_pcie_enable_controller() function type has been changed from
+void to int, but the last return statement wasn't converted, so
+function returns undefined value. Fix it.
 
-> We'll introduce the thp variant of move charge code in later patches,
-> but before doing that let's start with refactoring existing code.
-> Here we replace lengthy function name is_target_pte_for_mc() with
-> shorter one in order to avoid ugly line breaks.
-> And for better readability, we explicitly use MC_TARGET_* instead of
-> simply using integers.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Also while at it, address couple of minor concerns raised by reviewers:
+use usleep_range for delay, and lower the value of timeout to 300ms
+to be consistent with Nvidia Vibrante kernel.
 
-Thanks.
+Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+---
+ arch/arm/mach-tegra/pcie.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Seems ok to me.
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.futjisu.com>
-
-Hmm. some nitpicks.
-
-> ---
->  mm/memcontrol.c |   20 ++++++++++----------
->  1 files changed, 10 insertions(+), 10 deletions(-)
-> 
-> diff --git linux-next-20120307.orig/mm/memcontrol.c linux-next-20120307/mm/memcontrol.c
-> index a288855..3d16618 100644
-> --- linux-next-20120307.orig/mm/memcontrol.c
-> +++ linux-next-20120307/mm/memcontrol.c
-> @@ -5069,7 +5069,7 @@ one_by_one:
->  }
->  
->  /**
-> - * is_target_pte_for_mc - check a pte whether it is valid for move charge
-> + * get_mctgt_type - get target type of moving charge
->   * @vma: the vma the pte to be checked belongs
->   * @addr: the address corresponding to the pte to be checked
->   * @ptent: the pte to be checked
-> @@ -5092,7 +5092,7 @@ union mc_target {
->  };
->  
->  enum mc_target_type {
-> -	MC_TARGET_NONE,	/* not used */
-> +	MC_TARGET_NONE, 
-
-How about
-
-	MC_TARGET_NONE = 0,
-
-Becasue you use 
-	if (get_mctgt_type()) 
-later.
-
-
-
->  	MC_TARGET_PAGE,
->  	MC_TARGET_SWAP,
->  };
-> @@ -5173,12 +5173,12 @@ static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
->  	return page;
->  }
->  
-> -static int is_target_pte_for_mc(struct vm_area_struct *vma,
-> +static enum mc_target_type get_mctgt_type(struct vm_area_struct *vma,
->  		unsigned long addr, pte_t ptent, union mc_target *target)
-
-I admit old name is too long. But...Hm...get_mctgt_type()...how about
-
-	move_charge_type() or
-	mctgt_type() or
-	mc_type() ?
-
-I don't have good sense of naming ;(
-
->  {
->  	struct page *page = NULL;
->  	struct page_cgroup *pc;
-> -	int ret = 0;
-> +	enum mc_target_type ret = MC_TARGET_NONE;
->  	swp_entry_t ent = { .val = 0 };
->  
->  	if (pte_present(ptent))
-> @@ -5189,7 +5189,7 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
->  		page = mc_handle_file_pte(vma, addr, ptent, &ent);
->  
->  	if (!page && !ent.val)
-> -		return 0;
-> +		return ret;
->  	if (page) {
->  		pc = lookup_page_cgroup(page);
->  		/*
-> @@ -5206,7 +5206,7 @@ static int is_target_pte_for_mc(struct vm_area_struct *vma,
->  			put_page(page);
->  	}
->  	/* There is a swap entry and a page doesn't exist or isn't charged */
-> -	if (ent.val && !ret &&
-> +	if (ent.val && ret != MC_TARGET_NONE &&
-
-If you do MC_TARGET_NONE = 0 in above, using !ret seems ok to me.
-
->  			css_id(&mc.from->css) == lookup_swap_cgroup_id(ent)) {
->  		ret = MC_TARGET_SWAP;
->  		if (target)
-> @@ -5227,7 +5227,7 @@ static int mem_cgroup_count_precharge_pte_range(pmd_t *pmd,
->  
->  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
->  	for (; addr != end; pte++, addr += PAGE_SIZE)
-> -		if (is_target_pte_for_mc(vma, addr, *pte, NULL))
-> +		if (get_mctgt_type(vma, addr, *pte, NULL))
->  			mc.precharge++;	/* increment precharge temporarily */
->  	pte_unmap_unlock(pte - 1, ptl);
->  	cond_resched();
-> @@ -5397,8 +5397,8 @@ retry:
->  		if (!mc.precharge)
->  			break;
->  
-> -		type = is_target_pte_for_mc(vma, addr, ptent, &target);
-> -		switch (type) {
-> +		target_type = get_mctgt_type(vma, addr, ptent, &target);
-> +		switch (target_type) {
-
-It 'target_type' is unused later
+diff --git a/arch/arm/mach-tegra/pcie.c b/arch/arm/mach-tegra/pcie.c
+index 7313059..54a816f 100644
+--- a/arch/arm/mach-tegra/pcie.c
++++ b/arch/arm/mach-tegra/pcie.c
+@@ -639,10 +639,10 @@ static int tegra_pcie_enable_controller(void)
+ 	pads_writel(0xfa5cfa5c, 0xc8);
  
-	switch(get_mctgt_type(vma, addr, ptent, &target))
-
-is ok ?
-
-Thanks,
--Kame
-
->  		case MC_TARGET_PAGE:
->  			page = target.page;
->  			if (isolate_lru_page(page))
-> @@ -5411,7 +5411,7 @@ retry:
->  				mc.moved_charge++;
->  			}
->  			putback_lru_page(page);
-> -put:			/* is_target_pte_for_mc() gets the page */
-> +put:			/* get_mctgt_type() gets the page */
->  			put_page(page);
->  			break;
->  		case MC_TARGET_SWAP:
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ 	/* Wait for the PLL to lock */
+-	timeout = 2000;
++	timeout = 300;
+ 	do {
+ 		val = pads_readl(PADS_PLL_CTL);
+-		mdelay(1);
++		usleep_range(1000, 1000);
+ 		if (--timeout == 0) {
+ 			pr_err("Tegra PCIe error: timeout waiting for PLL\n");
+ 			return -EBUSY;
+@@ -677,7 +677,7 @@ static int tegra_pcie_enable_controller(void)
+ 	/* Disable all execptions */
+ 	afi_writel(0, AFI_FPCI_ERROR_MASKS);
+ 
+-	return;
++	return 0;
+ }
+ 
+ static void tegra_pcie_xclk_clamp(bool clamp)
+-- 
+1.7.5.1.300.gc565c
 
