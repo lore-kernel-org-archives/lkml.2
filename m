@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab2CMMIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:08:31 -0400
-Received: from mail-gx0-f202.google.com ([209.85.161.202]:57209 "EHLO
-	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab2CMMEb (ORCPT
+	id S1755286Ab2CMMI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:08:28 -0400
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:64133 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab2CMMEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Mar 2012 08:04:31 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-kernel@vger.kernel.org
 Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 14/20] Input: atmel_mxt_ts - refactor reading object table
-Date: Tue, 13 Mar 2012 20:04:17 +0800
-Message-Id: <1331640263-18935-15-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 08/20] Input: atmel_mxt_ts - store actual size and instance
+Date: Tue, 13 Mar 2012 20:04:11 +0800
+Message-Id: <1331640263-18935-9-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
 References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
@@ -25,96 +25,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of reading each object separately, fetch the whole table in one
-large i2c transaction.  A 6 byte table object requires 10 bytes to read,
-so doing this dramatically reduces overhead.
+These two object table entry fields are reported 1 less than their value.
+So add 1 once, when building the object table, instead of every time
+these fields are accessed.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   50 ++++++++++++-----------------
- 1 files changed, 21 insertions(+), 29 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index e05540d..9e1ce03 100644
+index e988dc0..c422fad 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -460,14 +460,7 @@ static int mxt_write_reg(struct i2c_client *client, u16 reg, u16 len,
- 	return 0;
- }
- 
--static int mxt_read_object_table(struct i2c_client *client,
--				      u16 reg, u8 *object_buf)
--{
--	return mxt_read_reg(client, reg, MXT_OBJECT_SIZE, object_buf);
--}
--
--static struct mxt_object *
--mxt_get_object(struct mxt_data *data, u8 type)
-+static struct mxt_object *mxt_get_object(struct mxt_data *data, u8 type)
- {
+@@ -676,7 +676,7 @@ static int mxt_check_reg_init(struct mxt_data *data)
  	struct mxt_object *object;
- 	int i;
-@@ -755,25 +748,32 @@ static int mxt_get_info(struct mxt_data *data)
+ 	struct device *dev = &data->client->dev;
+ 	int index = 0;
+-	int i, j, config_offset;
++	int i, j, config_offset, config_size;
  
- static int mxt_get_object_table(struct mxt_data *data)
- {
-+	struct i2c_client *client = data->client;
-+	struct device *dev = &client->dev;
- 	int error;
- 	int i;
--	u16 reg;
- 	u8 reportid = 0;
--	u8 buf[MXT_OBJECT_SIZE];
-+	u8 buf[data->info.object_num][MXT_OBJECT_SIZE];
+ 	if (!pdata->config) {
+ 		dev_dbg(dev, "No cfg data defined, skipping reg init\n");
+@@ -689,9 +689,8 @@ static int mxt_check_reg_init(struct mxt_data *data)
+ 		if (!mxt_object_writable(object->type))
+ 			continue;
  
--	for (i = 0; i < data->info.object_num; i++) {
--		struct mxt_object *object = data->object_table + i;
-+	data->object_table = kcalloc(data->info.object_num,
-+				     sizeof(struct mxt_object), GFP_KERNEL);
-+	if (!data->object_table) {
-+		dev_err(dev, "Failed to allocate object table\n");
-+		return -ENOMEM;
-+	}
+-		for (j = 0;
+-		     j < (object->size + 1) * (object->instances + 1);
+-		     j++) {
++		config_size = object->size * object->instances;
++		for (j = 0; j < config_size; j++) {
+ 			config_offset = index + j;
+ 			if (config_offset > pdata->config_length) {
+ 				dev_err(dev, "Not enough config data!\n");
+@@ -700,7 +699,7 @@ static int mxt_check_reg_init(struct mxt_data *data)
+ 			mxt_write_object(data, object->type, j,
+ 					 pdata->config[config_offset]);
+ 		}
+-		index += (object->size + 1) * (object->instances + 1);
++		index += config_size;
+ 	}
  
--		reg = MXT_OBJECT_START + MXT_OBJECT_SIZE * i;
--		error = mxt_read_object_table(data->client, reg, buf);
--		if (error)
--			return error;
-+	error = mxt_read_reg(client, MXT_OBJECT_START, sizeof(buf), buf);
-+	if (error)
-+		return error;
-+
-+	for (i = 0; i < data->info.object_num; i++) {
-+		struct mxt_object *object = &data->object_table[i];
+ 	return 0;
+@@ -829,13 +828,12 @@ static int mxt_get_object_table(struct mxt_data *data)
  
--		object->type = buf[0];
--		object->start_address = (buf[2] << 8) | buf[1];
--		object->size = buf[3] + 1;
--		object->instances = buf[4] + 1;
--		object->num_report_ids = buf[5];
-+		object->type = buf[i][0];
-+		object->start_address = (buf[i][2] << 8) | buf[i][1];
-+		object->size = buf[i][3] + 1;
-+		object->instances = buf[i][4] + 1;
-+		object->num_report_ids = buf[i][5];
+ 		object->type = buf[0];
+ 		object->start_address = (buf[2] << 8) | buf[1];
+-		object->size = buf[3];
+-		object->instances = buf[4];
++		object->size = buf[3] + 1;
++		object->instances = buf[4] + 1;
+ 		object->num_report_ids = buf[5];
  
  		if (object->num_report_ids) {
- 			reportid += object->num_report_ids * object->instances;
-@@ -795,14 +795,6 @@ static int mxt_initialize(struct mxt_data *data)
- 	if (error)
- 		return error;
+-			reportid += object->num_report_ids *
+-					(object->instances + 1);
++			reportid += object->num_report_ids * object->instances;
+ 			object->max_reportid = reportid;
+ 		}
+ 	}
+@@ -950,7 +948,7 @@ static ssize_t mxt_object_show(struct device *dev,
+ 			continue;
+ 		}
  
--	data->object_table = kcalloc(info->object_num,
--				     sizeof(struct mxt_object),
--				     GFP_KERNEL);
--	if (!data->object_table) {
--		dev_err(&client->dev, "Failed to allocate memory\n");
--		return -ENOMEM;
--	}
--
- 	/* Get object table information */
- 	error = mxt_get_object_table(data);
- 	if (error)
+-		for (j = 0; j < object->size + 1; j++) {
++		for (j = 0; j < object->size; j++) {
+ 			error = mxt_read_object(data,
+ 						object->type, j, &val);
+ 			if (error)
 -- 
 1.7.7.3
 
