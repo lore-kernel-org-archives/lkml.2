@@ -1,82 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760207Ab2CMJjZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 05:39:25 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54893 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753092Ab2CMJjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 05:39:24 -0400
-Date: Tue, 13 Mar 2012 10:38:48 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
-Subject: Re: [PATCH] uprobes/core: handle breakpoint and signal step
- exception.
-Message-ID: <20120313093847.GA19473@elte.hu>
-References: <20120223110245.12459.7391.sendpatchset@srdronam.in.ibm.com>
- <20120227091212.GA7092@elte.hu>
- <20120308131824.GC13284@linux.vnet.ibm.com>
- <20120308134809.GB28488@elte.hu>
- <20120309062853.GD13284@linux.vnet.ibm.com>
- <20120309073348.GA15570@elte.hu>
- <20120313052016.GA27824@elte.hu>
- <20120313054242.GA1623@elte.hu>
- <20120313054744.GA27315@elte.hu>
- <20120313092433.GA21727@linux.vnet.ibm.com>
+	id S1760249Ab2CMJll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 05:41:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37767 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759774Ab2CMJlb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 05:41:31 -0400
+Date: Tue, 13 Mar 2012 02:40:51 -0700
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-73d63d038ee9f769f5e5b46792d227fe20e442c5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        jon@jondufresne.org, midgoon@gmail.com, jwboyer@redhat.com,
+        stable@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jwboyer@redhat.com, midgoon@gmail.com, jon@jondufresne.org,
+        stable@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1331577393.31585.94.camel@sbsiddha-desk.sc.intel.com>
+References: <1331577393.31585.94.camel@sbsiddha-desk.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/ioapic:
+  Add register level checks to detect bogus io-apic entries
+Git-Commit-ID: 73d63d038ee9f769f5e5b46792d227fe20e442c5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20120313092433.GA21727@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Mar 2012 02:40:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  73d63d038ee9f769f5e5b46792d227fe20e442c5
+Gitweb:     http://git.kernel.org/tip/73d63d038ee9f769f5e5b46792d227fe20e442c5
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Mon, 12 Mar 2012 11:36:33 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 13 Mar 2012 05:52:02 +0100
 
-* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+x86/ioapic: Add register level checks to detect bogus io-apic entries
 
-> * Ingo Molnar <mingo@elte.hu> [2012-03-13 06:47:44]:
-> 
-> > 
-> > * Ingo Molnar <mingo@elte.hu> wrote:
-> > 
-> > > To make it available to uprobes please move is_ia32_task() to 
-> > > processor.h and make it return 1 on i386 kernels. This should 
-> > > be a very simple patch - and that's all that is needed.
-> > 
-> > Side note: in general I don't mind making compat.h a bit more 
-> > generic (at all), but is_ia32_task() is really a generic x86 
-> > specific check that we can move to processor.h cleanly.
-> > 
-> > Some other effort should make compat.h bitness agnostic - 
-> > uprobes doesn't actually make use of the compat types and 
-> > facilities there, and it resulted in a nonsensical change like 
-> > making the alloc function generic ...
-> > 
-> 
-> Okay, Will move is_ia32_task() to processor.h and use it.
+With the recent changes to clear_IO_APIC_pin() which tries to
+clear remoteIRR bit explicitly, some of the users started to see
+"Unable to reset IRR for apic .." messages.
 
-thread_info.h might be a better place, because the TIF_ flags 
-are defined there.
+Close look shows that these are related to bogus IO-APIC entries
+which return's all 1's for their io-apic registers. And the
+above mentioned error messages are benign. But kernel should
+have ignored such io-apic's in the first place.
 
-Thanks,
+Check if register 0, 1, 2 of the listed io-apic are all 1's and
+ignore such io-apic.
 
-	Ingo
+Reported-by: Álvaro Castillo <midgoon@gmail.com>
+Tested-by: Jon Dufresne <jon@jondufresne.org>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: yinghai@kernel.org
+Cc: kernel-team@fedoraproject.org
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/1331577393.31585.94.camel@sbsiddha-desk.sc.intel.com
+[ Performed minor cleanup of affected code. ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/apic/io_apic.c |   40 ++++++++++++++++++++++++++++++++--------
+ 1 files changed, 32 insertions(+), 8 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index fb07275..6d10a66 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3967,18 +3967,36 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi)
+ static __init int bad_ioapic(unsigned long address)
+ {
+ 	if (nr_ioapics >= MAX_IO_APICS) {
+-		printk(KERN_WARNING "WARNING: Max # of I/O APICs (%d) exceeded "
+-		       "(found %d), skipping\n", MAX_IO_APICS, nr_ioapics);
++		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
++			MAX_IO_APICS, nr_ioapics);
+ 		return 1;
+ 	}
+ 	if (!address) {
+-		printk(KERN_WARNING "WARNING: Bogus (zero) I/O APIC address"
+-		       " found in table, skipping!\n");
++		pr_warn("WARNING: Bogus (zero) I/O APIC address found in table, skipping!\n");
+ 		return 1;
+ 	}
+ 	return 0;
+ }
+ 
++static __init int bad_ioapic_register(int idx)
++{
++	union IO_APIC_reg_00 reg_00;
++	union IO_APIC_reg_01 reg_01;
++	union IO_APIC_reg_02 reg_02;
++
++	reg_00.raw = io_apic_read(idx, 0);
++	reg_01.raw = io_apic_read(idx, 1);
++	reg_02.raw = io_apic_read(idx, 2);
++
++	if (reg_00.raw == -1 && reg_01.raw == -1 && reg_02.raw == -1) {
++		pr_warn("I/O APIC 0x%x registers return all ones, skipping!\n",
++			mpc_ioapic_addr(idx));
++		return 1;
++	}
++
++	return 0;
++}
++
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ {
+ 	int idx = 0;
+@@ -3995,6 +4013,12 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	ioapics[idx].mp_config.apicaddr = address;
+ 
+ 	set_fixmap_nocache(FIX_IO_APIC_BASE_0 + idx, address);
++
++	if (bad_ioapic_register(idx)) {
++		clear_fixmap(FIX_IO_APIC_BASE_0 + idx);
++		return;
++	}
++
+ 	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
+ 	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
+ 
+@@ -4015,10 +4039,10 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base)
+ 	if (gsi_cfg->gsi_end >= gsi_top)
+ 		gsi_top = gsi_cfg->gsi_end + 1;
+ 
+-	printk(KERN_INFO "IOAPIC[%d]: apic_id %d, version %d, address 0x%x, "
+-	       "GSI %d-%d\n", idx, mpc_ioapic_id(idx),
+-	       mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
+-	       gsi_cfg->gsi_base, gsi_cfg->gsi_end);
++	pr_info("IOAPIC[%d]: apic_id %d, version %d, address 0x%x, GSI %d-%d\n",
++		idx, mpc_ioapic_id(idx),
++		mpc_ioapic_ver(idx), mpc_ioapic_addr(idx),
++		gsi_cfg->gsi_base, gsi_cfg->gsi_end);
+ 
+ 	nr_ioapics++;
+ }
