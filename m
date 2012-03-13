@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab2CMMGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:06:09 -0400
-Received: from mail-fa0-f74.google.com ([209.85.161.74]:42881 "EHLO
-	mail-fa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752888Ab2CMMEc (ORCPT
+	id S1755273Ab2CMMGH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:06:07 -0400
+Received: from mail-yw0-f74.google.com ([209.85.213.74]:42616 "EHLO
+	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab2CMMEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Mar 2012 08:04:32 -0400
 From: Daniel Kurtz <djkurtz@chromium.org>
@@ -15,9 +15,9 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-kernel@vger.kernel.org
 Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
         Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 11/20] Input: atmel_mxt_ts - refactor mxt_object_show
-Date: Tue, 13 Mar 2012 20:04:14 +0800
-Message-Id: <1331640263-18935-12-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 17/20] Input: atmel_mxt_ts - use cached T9 reportid range in isr
+Date: Tue, 13 Mar 2012 20:04:20 +0800
+Message-Id: <1331640263-18935-18-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
 References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
@@ -25,101 +25,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Read each object with a single i2c transaction instead of byte-by-byte.
+Streamline interrupt processing by caching the T9 reportid range when
+first initializing the object table.
+
+Note: the cached T9 reportid's are initialized to 0, which is an invalid
+reportid.  Thus, the checks in the interrupt handler will always fail
+for devices that do not support the T9 object.
 
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/touchscreen/atmel_mxt_ts.c |   42 ++++++++++++-----------------
- 1 files changed, 17 insertions(+), 25 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   45 ++++++++++++++++-------------
+ 1 files changed, 25 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
-index ac8c50a..4363511 100644
+index 1a9ed26..88a474e 100644
 --- a/drivers/input/touchscreen/atmel_mxt_ts.c
 +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
-@@ -490,6 +490,13 @@ mxt_get_object(struct mxt_data *data, u8 type)
- 	return NULL;
- }
- 
-+static int mxt_read_object(struct mxt_data *data, struct mxt_object *object,
-+			   void *val)
-+{
-+	return mxt_read_reg(data->client, object->start_address, object->size,
-+			    val);
-+}
+@@ -249,6 +249,10 @@ struct mxt_data {
+ 	unsigned int irq;
+ 	unsigned int max_x;
+ 	unsigned int max_y;
 +
- static int mxt_read_message(struct mxt_data *data,
- 				 struct mxt_message *message)
- {
-@@ -505,20 +512,6 @@ static int mxt_read_message(struct mxt_data *data,
- 			    message);
++	/* Cached parameters from object table */
++	u8 T9_reportid_min;
++	u8 T9_reportid_max;
+ };
+ 
+ static bool mxt_object_readable(unsigned int type)
+@@ -512,7 +516,7 @@ static int mxt_write_object(struct mxt_data *data,
  }
  
--static int mxt_read_object(struct mxt_data *data,
--				u8 type, u8 offset, u8 *val)
--{
--	struct mxt_object *object;
--	u16 reg;
--
--	object = mxt_get_object(data, type);
--	if (!object)
--		return -EINVAL;
--
--	reg = object->start_address;
--	return mxt_read_reg(data->client, reg + offset, 1, val);
--}
--
- static int mxt_write_object(struct mxt_data *data,
- 				 u8 type, u8 offset, u8 val)
+ static void mxt_input_touchevent(struct mxt_data *data,
+-				 struct mxt_message *message, int id)
++				 struct mxt_message *message)
  {
-@@ -916,17 +909,16 @@ static void mxt_calc_resolution(struct mxt_data *data)
- }
+ 	struct device *dev = &data->client->dev;
+ 	struct input_dev *input_dev = data->input_dev;
+@@ -522,6 +526,9 @@ static void mxt_input_touchevent(struct mxt_data *data,
+ 	int area;
+ 	int amplitude;
+ 	int vector1, vector2;
++	int id;
++
++	id = message->reportid - data->T9_reportid_min;
  
- static ssize_t mxt_object_show(struct device *dev,
--				    struct device_attribute *attr, char *buf)
-+			       struct device_attribute *attr, char *buf)
+ 	status = message->message[0];
+ 	x = (message->message[1] << 4) | ((message->message[3] >> 4) & 0xf);
+@@ -572,12 +579,7 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
  {
- 	struct mxt_data *data = dev_get_drvdata(dev);
+ 	struct mxt_data *data = dev_id;
+ 	struct mxt_message message;
 -	struct mxt_object *object;
- 	int count = 0;
- 	int i, j;
- 	int error;
--	u8 val;
-+	u8 obuf[256];
+ 	struct device *dev = &data->client->dev;
+-	int id;
+-	u8 reportid;
+-	u8 max_reportid;
+-	u8 min_reportid;
  
- 	for (i = 0; i < data->info.object_num; i++) {
--		object = data->object_table + i;
-+		struct mxt_object *object = &data->object_table[i];
- 
- 		count += snprintf(buf + count, PAGE_SIZE - count,
- 				"Object[%d] (Type %d)\n",
-@@ -936,20 +928,20 @@ static ssize_t mxt_object_show(struct device *dev,
- 
- 		if (!mxt_object_readable(object->type)) {
- 			count += snprintf(buf + count, PAGE_SIZE - count,
--					"\n");
-+					  "\n");
- 			if (count >= PAGE_SIZE)
- 				return PAGE_SIZE - 1;
- 			continue;
+ 	do {
+ 		if (mxt_read_message(data, &message)) {
+@@ -585,22 +587,12 @@ static irqreturn_t mxt_interrupt(int irq, void *dev_id)
+ 			goto end;
  		}
  
--		for (j = 0; j < object->size; j++) {
--			error = mxt_read_object(data,
--						object->type, j, &val);
--			if (error)
--				return error;
-+		error = mxt_read_object(data, object, obuf);
-+		if (error)
-+			return error;
+-		reportid = message.reportid;
+-
+-		/* whether reportid is thing of MXT_TOUCH_MULTI_T9 */
+-		object = mxt_get_object(data, MXT_TOUCH_MULTI_T9);
+-		if (!object)
+-			goto end;
+-
+-		max_reportid = object->max_reportid;
+-		min_reportid = max_reportid - object->num_report_ids + 1;
+-		id = reportid - min_reportid;
+-
+-		if (reportid >= min_reportid && reportid <= max_reportid)
+-			mxt_input_touchevent(data, &message, id);
++		if (message.reportid >= data->T9_reportid_min &&
++		    message.reportid <= data->T9_reportid_max)
++			mxt_input_touchevent(data, &message);
+ 		else
+ 			mxt_dump_message(dev, &message);
+-	} while (reportid != 0xff);
++	} while (message.reportid != 0xff);
  
-+		for (j = 0; j < object->size; j++) {
- 			count += snprintf(buf + count, PAGE_SIZE - count,
--					"\t[%2d]: %02x (%d)\n", j, val, val);
-+					  "\t[%2d]: %02x (%d)\n", j, obuf[j],
-+					  obuf[j]);
- 			if (count >= PAGE_SIZE)
- 				return PAGE_SIZE - 1;
+ end:
+ 	return IRQ_HANDLED;
+@@ -744,6 +736,19 @@ static int mxt_get_object_table(struct mxt_data *data)
+ 			reportid += object->num_report_ids * object->instances;
+ 			object->max_reportid = reportid;
  		}
++
++		dev_info(dev, "Type %2d Start %3d Size %3d Max ReportID %3d Instances %2d\n",
++			 object->type, object->start_address, object->size,
++			 object->max_reportid, object->instances);
++
++		/* Save data for objects used when processing interrupts */
++		switch (object->type) {
++		case MXT_TOUCH_MULTI_T9:
++			data->T9_reportid_max = object->max_reportid;
++			data->T9_reportid_min = data->T9_reportid_max -
++						object->num_report_ids + 1;
++			break;
++		}
+ 	}
+ 
+ 	return 0;
 -- 
 1.7.7.3
 
