@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab2CMQjU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 12:39:20 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:50200 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab2CMQjS (ORCPT
+	id S1755562Ab2CMQnU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 12:43:20 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:44778 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab2CMQnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 12:39:18 -0400
-Date: Tue, 13 Mar 2012 09:39:14 -0700
-From: Tejun Heo <tj@kernel.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        gthelen@google.com, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Subject: Re: [RFC REPOST] cgroup: removing css reference drain wait during
- cgroup removal
-Message-ID: <20120313163914.GD7349@google.com>
-References: <20120312213155.GE23255@google.com>
- <20120312213343.GF23255@google.com>
- <20120313151148.f8004a00.kamezawa.hiroyu@jp.fujitsu.com>
+	Tue, 13 Mar 2012 12:43:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
+	:subject:in-reply-to:message-id:references:mime-version:
+	content-type; q=dns; s=newdream.net; b=qS+xPFw8PkWXYjSkH+wZfPBwH
+	6O/riNGIXlH51Y6mKiAAFa5VzQWxhk62U/DZbO10nP+mjcdUc15FHEnOoGR5+7LH
+	I8ovmUED6YKRIk14VDUvfZpK21uoBEOV/b1JAPG1nCaLFJfjH18IuUgCg9uHusjC
+	jbY/qqdm2fpPROHIko=
+Date: Tue, 13 Mar 2012 09:43:15 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Miklos Szeredi <miklos@szeredi.hu>
+cc: Christoph Hellwig <hch@infradead.org>, viro@ZenIV.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trond.Myklebust@netapp.com, sfrench@samba.org, ericvh@gmail.com
+Subject: Re: [PATCH 13/25] cifs: implement i_op->atomic_open() and
+ i_op->atomic_create()
+In-Reply-To: <878vj48vsr.fsf@tucsk.pomaz.szeredi.hu>
+Message-ID: <Pine.LNX.4.64.1203130936080.10527@cobra.newdream.net>
+References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
+ <1331155362-11132-14-git-send-email-miklos@szeredi.hu> <20120313120649.GB27171@infradead.org>
+ <878vj48vsr.fsf@tucsk.pomaz.szeredi.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120313151148.f8004a00.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, KAMEZAWA.
-
-On Tue, Mar 13, 2012 at 03:11:48PM +0900, KAMEZAWA Hiroyuki wrote:
-> The trouble for pre_destroy() is _not_ refcount, Memory cgroup has its own refcnt
-> and use it internally. The problem is 'charges'. It's not related to refcnt.
-
-Hmmm.... yeah, I'm not familiar with memcg internals at all.  For
-blkcg, refcnt matters but if it doesn't for memcg, great.
-
-> Cgroup is designed to exists with 'tasks'. But memory may not be related to any
-> task...just related to a cgroup.
+On Tue, 13 Mar 2012, Miklos Szeredi wrote:
+> Christoph Hellwig <hch@infradead.org> writes:
 > 
-> But ok, pre_destory() & rmdir() is complicated, I agree.
+> > On Wed, Mar 07, 2012 at 10:22:30PM +0100, Miklos Szeredi wrote:
+> >> From: Miklos Szeredi <mszeredi@suse.cz>
+> >> 
+> >> Replace CIFS's ->create operation with ->atomic_open and ->atomic_create.  Also
+> >> move the relevant code from ->lookup into the create function.
+> >> 
+> >> CIFS currently only does atomic open for O_CREAT, but it wants to do that as
+> >> early as possible, without first calling ->lookup, so it uses ->atomic_open,
+> >> just like NFS.
+> >
+> > Why does cifs need to set the created flag from inside ->atomic_open?
+> >
+> > It's different from everyone else in that respect.
 > 
-> Now, we prevent rmdir() if we can't move charges to its parent. If pre_destory()
-> shouldn't fail, I can think of some alternatives.
-> 
->  * move all charges to the parent and if it fails...move all charges to
->    root cgroup.
->    (drop_from_memory may not work well in swapless system.)
+> Apparently CIFS is the only one that can tell whether the file was
+> created or not.  If the flag is set then notify_create() is called.
+> Users of NFS doesn't seem to care, it's of dubious value anyway, but why
+> not use the info when available?
 
-I think this one is better and this shouldn't fail if hierarchical
-mode is in use, right?
+It also add MAY_OPEN to acc_mode... I take it that only matters if the 
+fs who set created = true looks for it in ->permission()?
 
-> I think.. if pre_destory() never fails, we don't need pre_destroy().
++       acc_mode = op->acc_mode;
++       if (created) {
++               fsnotify_create(dir, dentry);
++               acc_mode = MAY_OPEN;
++       }
 
-For memcg maybe, blkcg still needs it.
-
-> >   The last one seems more tricky.  On destruction of cgroup, the
-> >   charges are transferred to its parent and the parent may not have
-> >   enough room for that.  Greg told me that this should only be a
-> >   problem for !hierarchical case.  I think this can be dealt with by
-> >   dumping what's left over to root cgroup with a warning message.
-> 
-> I don't like warning ;) 
-
-I agree this isn't perfect but then again failing rmdir isn't perfect
-either and given that the condition can be wholly avoided in
-hierarchical mode, which should be the default anyway (is there any
-reason to keep flat mode except for backward compatibility?), I don't
-think the trade off is too bad.
-
-> I think we can do all in 'destroy()'.
-
-That would be even better.  I tried myself but that was a lot of code
-I didn't have much idea about.  If someone more familiar with memcg
-can write up such patch, I owe a beer. :)
-
-Thank you.
-
--- 
-tejun
+sage
