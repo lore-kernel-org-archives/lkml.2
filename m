@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760010Ab2CMIMr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:12:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42561 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757752Ab2CMIMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:12:43 -0400
-Date: Tue, 13 Mar 2012 09:12:36 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Kamil Grzebien <ciptok@gmail.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: Initializing iwl3945 error
-Message-ID: <20120313081235.GC15333@redhat.com>
-References: <CANHD2=rF6dBkLLkWAj8uS3nq0B1wCt7Uvu=HzO84UNz2kuiaFg@mail.gmail.com>
+	id S1760030Ab2CMIPa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:15:30 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:37868 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759087Ab2CMIP1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 04:15:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANHD2=rF6dBkLLkWAj8uS3nq0B1wCt7Uvu=HzO84UNz2kuiaFg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <CAJuYYwTKMWgits6xd0UUvRPwr40NwJfO2HncUOW9J=EZbFs8=Q@mail.gmail.com>
+References: <1330000688-11226-1-git-send-email-thomas.abraham@linaro.org>
+	<1330000688-11226-2-git-send-email-thomas.abraham@linaro.org>
+	<20120313032832.655983E07E4@localhost>
+	<CAJuYYwTKMWgits6xd0UUvRPwr40NwJfO2HncUOW9J=EZbFs8=Q@mail.gmail.com>
+Date: Tue, 13 Mar 2012 13:45:24 +0530
+Message-ID: <CAJuYYwSQ-HRBU31=nWyzwqEBxj9LeAMOLQQVcAdf89dO9U0-sQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] mfd: add irq domain support for max8997 interrupts
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, k.lewandowsk@samsung.com,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, broonie@opensource.wolfsonmicro.com,
+        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 11, 2012 at 05:43:26PM +0000, Kamil Grzebien wrote:
-> I've initialisation problem with my iwl3945 network card in Dell XPS
-> M1530 laptop. The issue is known and described in couple of bug
-> reports (eg. http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2143).
-> There are workarounds but I'd like to solve the problem permanently.
-> Basically when initializing I get:
-> 
-> iwl3945 0000:0b:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ
-> iwl3945 0000:0b:00.0: setting latency timer to 64
-> iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-> iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-> ....
-> iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-> iwl3945 0000:0b:00.0: bad EEPROM signature,EEPROM_GP=0x00000007
-> iwl3945 0000:0b:00.0: EEPROM not found, EEPROM_GP=0xffffffff
-It's worth to mansion that this problem happen after wakeup from suspend
-to ram.
+On 13 March 2012 11:35, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+> On 13 March 2012 08:58, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> On Thu, 23 Feb 2012 18:08:07 +0530, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+>>> Add irq domain support for max8997 interrupts. The reverse mapping method
+>>> used is linear mapping since the sub-drivers of max8997 such as regulator
+>>> and charger drivers can use the max8997 irq_domain to get the linux irq
+>>> number for max8997 interrupts. All uses of irq_base in platform data and
+>>> max8997 driver private data are removed.
+>>>
+>>> Cc: Grant Likely <grant.likely@secretlab.ca>
+>>> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+>>> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+>>> ---
+>>>  arch/arm/mach-exynos/mach-nuri.c    |    4 --
+>>>  arch/arm/mach-exynos/mach-origen.c  |    1 -
+>>>  drivers/mfd/max8997-irq.c           |   60 ++++++++++++++++++++--------------
+>>>  drivers/mfd/max8997.c               |    1 -
+>>>  include/linux/mfd/max8997-private.h |    4 ++-
+>>>  include/linux/mfd/max8997.h         |    1 -
+>>>  6 files changed, 38 insertions(+), 33 deletions(-)
 
-> 1. Driver can't initialize card as all ioread32/iowrite32 seems to not
-> do their job. All reads finalize with 0xffffffff.
-> 
-> However I can see that:
-> - pci_iomap(pdev, 0, 0) doesn't return error,
-> - pci_resource_start(pdev, 0) seems gives correct address (I can
-> compare it with the one I can see in /proc/iomem).
-> 
-> If I access the memory directly, not by mapping, I can write and read
-> pci memory but driver load fails anyway. I don't understand why can't
-> access using mapped memory.
-How do you access memory directly ?
+[...]
 
-> 2. If I check BASE_ADDRESS with setpci it doesn't give correct values:
-> 
-> # setpci -v -s 0b:00.0 BASE_ADDRESS_0 BASE_ADDRESS_1
-> 0000:0b:00.0 @10 = 00000000
-> 0000:0b:00.0 @14 = 00000000
-> 
-> Not sure if it's done by driver itself or it should point correct
-> values even if the driver wasn't fully loaded.
-> 
-> Have you got any idea of:
-> - why IO memory isn't accessible? what could cause that?
-> - how APIC could change the load process in this particular case? (if
-> I boot with noapic kernel option it usually works fine)
-Is this really noapic or maybe noacpi ? ACPI manage PCIe devices.
+>>
+>> Hahaha.  The max8997_irqs table is kind of overdone when the group and mask values
+>> can be arithmetically derived from the hwirq number..
+>
+> Yes, I agree. Each group could have maximum of 8 interrupts. Then,
+> data->hwirq % 8 will be the group number and data->hwirq & 7 would be
 
-> This issue is reproducible in 100% on my system when I turn on the
-> machine. It doesn't occur after some work on it. I'd be very happy to
-> get rid of the issue.
-> 
-> Could you point some ideas that might be worth checking in driver or
-> kernel please? I've tried couple of ideas but none worked for me.
+Typo here. group number = data->hwirq >> 3 and mask = data->hwirq & 7.
 
-Would be good to check if pcie bridge is configured correctly after
-suspend to ram. But I don't know how to do this, that's why we are
-on linux-pci mailing list :-)
-
-Note we have similar bug report, which was actual regression and
-that problem is already fixed by PCI patch:
-http://marc.info/?l=linux-kernel&m=132577331232330&w=2
-
-Stanislaw
-
+Thanks,
+Thomas.
