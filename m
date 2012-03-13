@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965168Ab2CMKYN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 06:24:13 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48945 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965103Ab2CMKYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 06:24:12 -0400
-Date: Tue, 13 Mar 2012 11:23:58 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHv2 3/3] simple_open: Automatically convert to simple_open()
-Message-ID: <20120313102358.GB1516@elte.hu>
-References: <1331631988-20527-1-git-send-email-sboyd@codeaurora.org>
- <1331631988-20527-4-git-send-email-sboyd@codeaurora.org>
+	id S1030354Ab2CMK0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:26:19 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55682 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965103Ab2CMK0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 06:26:17 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [GIT PULL] Renesas SoC updates for v3.4, take 2
+Date: Tue, 13 Mar 2012 10:26:08 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, Magnus Damm <magnus.damm@gmail.com>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Paul Mundt <lethal@linux-sh.org>
+References: <201203092155.04731.rjw@sisk.pl> <201203122353.30182.rjw@sisk.pl>
+In-Reply-To: <201203122353.30182.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331631988-20527-4-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203131026.08495.arnd@arndb.de>
+X-Provags-ID: V02:K0:YzkGc37OVUpRwFY5GiZfrjaNGR7uiJ8H0mzgQQUk3VL
+ 4DADBo+g3XIE1uhaxosTYN27sfHAdR5u6PT6R1DY6PwYGjqNTc
+ cjyBg0v2ielc5/VFtO2h8dHCG//0OCEBGXfJV0gvlz7NpKinj6
+ vztwy2YiWaTfad2Wyj76QBOl76R0pdHMnii6ZYqC5islBAURO0
+ Ik2znAav1DMlPSNzKeEchms6cCm7/w4WBmQXseAokL2qeIlNQc
+ mykOXeSQqe+V9JGTOaE8fRfUuP9nPgkACbBMcGjZgoQP6Hv3P3
+ iuR9j/Sk/2hSVWpjxrOAcbQyW9WFKpb8NoZNIxouQlLLnqE6uO
+ 3dL/WGSvX25jyXDYMAgA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Stephen Boyd <sboyd@codeaurora.org> wrote:
-
-> Many users of debugfs copy the implementation of default_open()
-> when they want to support a custom read/write function op. This
-> leads to a proliferation of the default_open() implementation
-> across the entire tree. Now that the common implementation has
-> been consolidated into libfs we can replace all the users of this
-> function with simple_open().
+On Monday 12 March 2012, Rafael J. Wysocki wrote:
+> Please pull Renesas SoC updates for v3.4 since commit
+> fde7d9049e55ab85a390be7f415d74c9f62dd0f9
 > 
-> This replacement was done with the following semantic patch:
+>     Linux 3.3-rc7
 > 
-> <smpl>
-> @ open @
-> identifier open_f != simple_open;
-> identifier i, f;
-> @@
-> -int open_f(struct inode *i, struct file *f)
-> -{
-> (
-> -if (i->i_private)
-> -f->private_data = i->i_private;
-> |
-> -f->private_data = i->i_private;
-> )
-> -return 0;
-> -}
+> with top-most commit 2854903ad1329d09d7ec35639fff0949e45d496d
 > 
-> @ has_open depends on open @
-> identifier fops;
-> identifier open.open_f;
-> @@
-> struct file_operations fops = {
-> ...
-> -.open = open_f,
-> +.open = simple_open,
-> ...
-> };
-> </smpl>
+>     ARM: mach-shmobile: default to no earlytimer
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Julia Lawall <Julia.Lawall@lip6.fr>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  arch/arm/mach-msm/smd_debug.c                   |    8 +----
->  arch/arm/plat-mxc/audmux-v2.c                   |    8 +----
->  arch/x86/kernel/kdebugfs.c                      |    9 +----
+> from the git repository at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/renesas.git soc
+> 
+> They include:
+> 
+> * The rename of shmobile struct clk_ops to struct sh_clk_ops to avoid
+>   possible future name space collision with common struct clk code.
+> 
+>   This also affects drivers that are shared with the sh architecture,
+>   so the branch containing this part of the material, clk_ops-rename,
+>   will be merged into the Paul Mundt's sh tree if necessary.
+> 
+> * Introduction of L2 Cache support for r8a7779.
+> 
+> * Conversion of the mach-shmobile subarch to properly use a per-SoC
+>   map_io and separate init_early callback for early serial console
+>   support on platforms where that is possible.
+> 
+> Magnus Damm is the author of all the changes.
+> 
 
-Acked-by: Ingo Molnar <mingo@elte.hu>
+Thanks for rebasing this, Olof will merge this soon. Note that the
+__io() issue has turned out to be more urgent than I first thought
+when we discussed it, so it would be good to apply the patch below
+on top of your series.
 
-Thanks,
+	Arnd
 
-	Ingo
+8<-----
+ARM: shmobile: remove additional __io() macro use
+
+setup-r8a7779.c has grown a new user of the __io() macro. Rob Herring's
+PIO cleanup series already gets rid of all other uses in shmobile, so
+we should ensure that this one gets removed as well.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/arch/arm/mach-shmobile/setup-r8a7779.c b/arch/arm/mach-shmobile/setup-r8a7779.c
+index ce57d90..9545d82 100644
+--- a/arch/arm/mach-shmobile/setup-r8a7779.c
++++ b/arch/arm/mach-shmobile/setup-r8a7779.c
+@@ -246,7 +246,7 @@ void __init r8a7779_add_standard_devices(void)
+ {
+ #ifdef CONFIG_CACHE_L2X0
+ 	/* Early BRESP enable, Shared attribute override enable, 64K*16way */
+-	l2x0_init(__io(0xf0100000), 0x40470000, 0x82000fff);
++	l2x0_init((void __iomem __force *)(0xf0100000), 0x40470000, 0x82000fff);
+ #endif
+ 	r8a7779_pm_init();
+ 
