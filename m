@@ -1,97 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030285Ab2CMAjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:39:11 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48611 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964927Ab2CMAYU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965019Ab2CMAjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:39:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40679 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964854Ab2CMAYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Mar 2012 20:24:20 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 148/196] b43: Fix warning at drivers/mmc/core/core.c:237 in mmc_wait_for_cmd
-Date: Mon, 12 Mar 2012 20:21:01 -0400
-Message-Id: <1331598109-31424-103-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.3
-In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
- <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Linux-sh list" <linux-sh@vger.kernel.org>
+Subject: [PATCH 2/6] PM / Domains: Fix hibernation restore of devices
+Date: Tue, 13 Mar 2012 01:24:59 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Cao Minh Hiep <hiepcm@gmail.com>
+References: <201203130123.16268.rjw@sisk.pl>
+In-Reply-To: <201203130123.16268.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203130124.59376.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+During resume from hibernation pm_genpd_restore_noirq() has to
+deal with software state left by pm_genpd_suspend_noirq() and
+unknown hardware state (the boot kernel may leave all PM domains and
+devices in arbitrary states).  For this reason, make it attempt to
+power cycle each domain when before resuming its first device to
+possibly get rid of any unwanted hardware state that may interfere
+with genpd_start_dev() later on.
 
-commit 9f2a0fac625bcef9c579bcf0b0c904ab1a56e7c4 upstream.
-
-On module removal, the sdio version of b43 generates the following warning:
-
-[  851.560519] ------------[ cut here ]------------
-[  851.560531] WARNING: at drivers/mmc/core/core.c:237 mmc_wait_for_cmd+0x88/0x90()
-[  851.560534] Hardware name: 20552PG
-[  851.560536] Modules linked in: b43(-) ssb mmc_block binfmt_misc rfcomm sco bnep ppdev l2cap ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_tcpudp iptable_filter ip_tables x_tables bridge stp kvm_intel kvm arc4 iwlagn snd_hda_codec_conexant snd_hda_intel snd_hda_codec iwlcore snd_hwdep snd_pcm thinkpad_acpi mac80211 snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq r852 joydev snd_timer sm_common pcmcia nand snd_seq_device cfg80211 sdhci_pci btusb psmouse tpm_tis yenta_socket nand_ids lp snd pcmcia_rsrc nand_ecc bluetooth sdhci tpm pcmcia_core parport mtd snd_page_alloc serio_raw tpm_bios soundcore nvram led_class sha256_generic aes_i586 aes_generic dm_crypt i915 drm_kms_helper drm ahci intel_agp i2c_algo_bit intel_gtt e1000e libahci video agpgart output
-[  851.560620] Pid: 2504, comm: rmmod Not tainted 2.6.36-titan0+ #1
-[  851.560622] Call Trace:
-[  851.560631]  [<c014a102>] warn_slowpath_common+0x72/0xa0
-[  851.560636]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
-[  851.560641]  [<c04d94c8>] ? mmc_wait_for_cmd+0x88/0x90
-[  851.560645]  [<c014a152>] warn_slowpath_null+0x22/0x30
-[  851.560649]  [<c04d94c8>] mmc_wait_for_cmd+0x88/0x90
-[  851.560655]  [<c0401585>] ? device_release+0x25/0x80
-[  851.560660]  [<c04df210>] mmc_io_rw_direct_host+0xa0/0x150
-[  851.560665]  [<c04df370>] mmc_io_rw_direct+0x30/0x40
-[  851.560669]  [<c04e06e7>] sdio_disable_func+0x37/0xa0
-[  851.560683]  [<f8dfcb80>] b43_sdio_remove+0x30/0x50 [b43]
-[  851.560687]  [<c04df8cc>] sdio_bus_remove+0x1c/0x60
-[  851.560692]  [<c016d39f>] ? blocking_notifier_call_chain+0x1f/0x30
-[  851.560697]  [<c0404991>] __device_release_driver+0x51/0xb0
-[  851.560701]  [<c0404a7f>] driver_detach+0x8f/0xa0
-[  851.560705]  [<c0403c83>] bus_remove_driver+0x63/0xa0
-[  851.560709]  [<c0405039>] driver_unregister+0x49/0x80
-[  851.560713]  [<c0405039>] ? driver_unregister+0x49/0x80
-[  851.560718]  [<c04dfad7>] sdio_unregister_driver+0x17/0x20
-[  851.560727]  [<f8dfcb42>] b43_sdio_exit+0x12/0x20 [b43]
-[  851.560734]  [<f8dfe76f>] b43_exit+0x17/0x3c [b43]
-[  851.560740]  [<c017fb8d>] sys_delete_module+0x13d/0x200
-[  851.560747]  [<c01fd7d2>] ? do_munmap+0x212/0x300
-[  851.560752]  [<c010311f>] sysenter_do_call+0x12/0x28
-[  851.560757] ---[ end trace 31e14488072d2f7d ]---
-[  851.560759] ------------[ cut here ]------------
-
-The warning is caused by b43 not claiming the device before calling
-sdio_disable_func().
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Arnd Hannemann <arnd@arndnet.de>
-Tested-by: Arnd Hannemann <arnd@arndnet.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/net/wireless/b43/sdio.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/base/power/domain.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/wireless/b43/sdio.c b/drivers/net/wireless/b43/sdio.c
-index 4e56b7b..8b18314 100644
---- a/drivers/net/wireless/b43/sdio.c
-+++ b/drivers/net/wireless/b43/sdio.c
-@@ -175,7 +175,9 @@ static void b43_sdio_remove(struct sdio_func *func)
- 	struct b43_sdio *sdio = sdio_get_drvdata(func);
+Index: linux/drivers/base/power/domain.c
+===================================================================
+--- linux.orig/drivers/base/power/domain.c
++++ linux/drivers/base/power/domain.c
+@@ -770,8 +770,10 @@ static int pm_genpd_prepare(struct devic
  
- 	ssb_bus_unregister(&sdio->ssb);
-+	sdio_claim_host(func);
- 	sdio_disable_func(func);
-+	sdio_release_host(func);
- 	kfree(sdio);
- 	sdio_set_drvdata(func, NULL);
+ 	genpd_acquire_lock(genpd);
+ 
+-	if (genpd->prepared_count++ == 0)
++	if (genpd->prepared_count++ == 0) {
++		genpd->suspended_count = 0;
+ 		genpd->suspend_power_off = genpd->status == GPD_STATE_POWER_OFF;
++	}
+ 
+ 	genpd_release_lock(genpd);
+ 
+@@ -1103,20 +1105,24 @@ static int pm_genpd_restore_noirq(struct
+ 	 * Since all of the "noirq" callbacks are executed sequentially, it is
+ 	 * guaranteed that this function will never run twice in parallel for
+ 	 * the same PM domain, so it is not necessary to use locking here.
++	 *
++	 * At this point suspended_count == 0 means this routing is being run
++	 * for the first time for the given domain in the present cycle.
+ 	 */
+-	genpd->status = GPD_STATE_POWER_OFF;
+-	if (genpd->suspend_power_off) {
++	if (genpd->suspended_count++ == 0) {
+ 		/*
+-		 * The boot kernel might put the domain into the power on state,
+-		 * so make sure it really is powered off.
++		 * The boot kernel might put the domain into arbitrary state,
++		 * so make sure it is powered off.
+ 		 */
++		genpd->status = GPD_STATE_POWER_OFF;
+ 		if (genpd->power_off)
+ 			genpd->power_off(genpd);
+-		return 0;
+ 	}
+ 
++	if (genpd->suspend_power_off)
++		return 0;
++
+ 	pm_genpd_poweron(genpd);
+-	genpd->suspended_count--;
+ 
+ 	return genpd_start_dev(genpd, dev);
  }
--- 
-1.7.9.3
+@@ -1623,7 +1629,6 @@ void pm_genpd_init(struct generic_pm_dom
+ 	genpd->poweroff_task = NULL;
+ 	genpd->resume_count = 0;
+ 	genpd->device_count = 0;
+-	genpd->suspended_count = 0;
+ 	genpd->max_off_time_ns = -1;
+ 	genpd->domain.ops.runtime_suspend = pm_genpd_runtime_suspend;
+ 	genpd->domain.ops.runtime_resume = pm_genpd_runtime_resume;
 
