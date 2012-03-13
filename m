@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758840Ab2CMAxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:53:01 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47946 "EHLO
+	id S1758860Ab2CMAxA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:53:00 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47978 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758799Ab2CMAW4 (ORCPT
+	with ESMTP id S1758808Ab2CMAXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:22:56 -0400
+	Mon, 12 Mar 2012 20:23:00 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: stable-review@kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        James Bottomley <James.Bottomley@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 085/196] ath: add missing regdomain pair 0x5c mapping
-Date: Mon, 12 Mar 2012 20:19:58 -0400
-Message-Id: <1331598109-31424-40-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 099/196] slub: fix panic with DISCONTIGMEM
+Date: Mon, 12 Mar 2012 20:20:12 -0400
+Message-Id: <1331598109-31424-54-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,48 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit bd39a274fb7b43374c797bafdb7f506598f36f77 upstream.
+commit 4a5fa3590f09999f6db41bc386bce40848fa9f63 upstream.
 
-Joe Culler reported a problem with his AR9170 device:
+Slub makes assumptions about page_to_nid() which are violated by
+DISCONTIGMEM and !NUMA.  This violation results in a panic because
+page_to_nid() can be non-zero for pages in the discontiguous ranges and
+this leads to a null return by get_node().  The assertion by the
+maintainer is that DISCONTIGMEM should only be allowed when NUMA is also
+defined.  However, at least six architectures: alpha, ia64, m32r, m68k,
+mips, parisc violate this.  The panic is a regression against slab, so
+just mark slub broken in the problem configuration to prevent users
+reporting these panics.
 
-> ath: EEPROM regdomain: 0x5c
-> ath: EEPROM indicates we should expect a direct regpair map
-> ath: invalid regulatory domain/country code 0x5c
-> ath: Invalid EEPROM contents
-
-It turned out that the regdomain 'APL7_FCCA' was not mapped yet.
-According to Luis R. Rodriguez [Atheros' engineer] APL7 maps to
-FCC_CTL and FCCA maps to FCC_CTL as well, so the attached patch
-should be correct.
-
-Reported-by: Joe Culler <joe.culler@gmail.com>
-Acked-by: Luis R. Rodriguez <lrodriguez@atheros.com>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/wireless/ath/regd_common.h |    1 +
+ init/Kconfig |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/ath/regd_common.h b/drivers/net/wireless/ath/regd_common.h
-index 248c670..5c2cfe6 100644
---- a/drivers/net/wireless/ath/regd_common.h
-+++ b/drivers/net/wireless/ath/regd_common.h
-@@ -195,6 +195,7 @@ static struct reg_dmn_pair_mapping regDomainPairs[] = {
- 	{APL9_WORLD, CTL_ETSI, CTL_ETSI},
+diff --git a/init/Kconfig b/init/Kconfig
+index 5fe94b8..04e486cf 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1052,6 +1052,7 @@ config SLAB
+ 	  per cpu and per node queues.
  
- 	{APL3_FCCA, CTL_FCC, CTL_FCC},
-+	{APL7_FCCA, CTL_FCC, CTL_FCC},
- 	{APL1_ETSIC, CTL_FCC, CTL_ETSI},
- 	{APL2_ETSIC, CTL_FCC, CTL_ETSI},
- 	{APL2_APLD, CTL_FCC, NO_CTL},
+ config SLUB
++	depends on BROKEN || NUMA || !DISCONTIGMEM
+ 	bool "SLUB (Unqueued Allocator)"
+ 	help
+ 	   SLUB is a slab allocator that minimizes cache line usage
 -- 
 1.7.9.3
 
