@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759534Ab2CMTed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 15:34:33 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49368 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759160Ab2CMTec (ORCPT
+	id S1759573Ab2CMTej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 15:34:39 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:9474 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759270Ab2CMTeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 15:34:32 -0400
-Message-ID: <4F5FA144.10000@wwwdotorg.org>
-Date: Tue, 13 Mar 2012 13:34:28 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Tue, 13 Mar 2012 15:34:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6648"; a="169830250"
+Date: Tue, 13 Mar 2012 12:34:32 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Shantanu Gupta <shans95g@gmail.com>
+Cc: Daniel Walker <dwalker@fifo99.com>, Ravi Kumar V <kumarrav@codeaurora.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH v3 2/2] DMAEngine: Add DMAEngine driver based on old MSM
+ DMA APIs
+Message-ID: <20120313193432.GA13046@codeaurora.org>
+References: <1331548364-27845-1-git-send-email-kumarrav@codeaurora.org>
+ <20120312201421.GA3459@fifo99.com>
+ <CAPDArRLs23VDJSWpX8xJsXfn+_SV2FcyzLYBF9UAxf=Rv9svGQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>, B29396@freescale.com,
-        s.hauer@pengutronix.de, dongas86@gmail.com, shawn.guo@linaro.org,
-        thomas.abraham@linaro.org, tony@atomide.com
-Subject: Re: [PATCH] dt: pinctrl: Document device tree binding
-References: <1331316873-20052-1-git-send-email-swarren@wwwdotorg.org> <CACRpkdY3BAD+w3X6ZLPpfkO2=yKFjbU=N11wPP4v7TfZqcy7Dg@mail.gmail.com>
-In-Reply-To: <CACRpkdY3BAD+w3X6ZLPpfkO2=yKFjbU=N11wPP4v7TfZqcy7Dg@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPDArRLs23VDJSWpX8xJsXfn+_SV2FcyzLYBF9UAxf=Rv9svGQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2012 03:14 AM, Linus Walleij wrote:
-> On Fri, Mar 9, 2012 at 7:14 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+On Tue, Mar 13, 2012 at 04:27:37PM +0530, Shantanu Gupta wrote:
+
+> Any info available(publicly) on so as to what all chipsets have this capability
+> ?
+
+The ADM hardware is in every currently available MSM that can run
+Linux.  It is being phased out, to be replaced by a new DMA system
+(SPS/BAM).  Fortunately, there are some chips (MSM8960) that have both
+ADM and SPS/BAM so there should be time to get those drivers in.
+
+At least as my memory serves me:
+
+  7201 - ADM
+  8250 - ADM
+  8660 - 2 ADMs, SPS/BAM
+  8960 - 1 ADM, SPS/BAM
+
+The ADM is mostly a regular DMA-type device.  Each channel can be
+associated with a rate-control channel, which is needed for some
+devices.  It also has a mode called "box mode", which works kind of
+like a self-repeating scatter list.  This mode is needed for some of
+the peripherals also on the MSM.
+
+David
+
+> On Tue, Mar 13, 2012 at 1:44 AM, Daniel Walker <dwalker@fifo99.com> wrote:
 > 
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
->> @@ -0,0 +1,118 @@
->> +== Introduction ==
->> +
->> +Hardware modules that control pin multiplexing or configuration parameters
->> +such as pull-up/down, tri-state, drive-strength etc are designated as pin
->> +controllers. Each pin controller must be represented as a node in device tree,
->> +just like any other hardware module.
+>     On Mon, Mar 12, 2012 at 04:02:44PM +0530, Ravi Kumar V wrote:
+>     > Add DMAEngine based driver using the old MSM DMA APIs internally.
 > 
-> Maybe put in a reference to Documentation/pinctrl.txt for in-depth
-> discussion? Also some stuff may be moved over there as generic
-> information. A lot of the text here does not seem to be about the
-> device tree ...
+>     What do you mean by this?
 > 
-> However maybe the use case is outside the Linux kernel too
-> and in that case I'm happy with it.
-
-Yes, the idea is that the bindings are OS-independent as much as
-possible. That's why it's a little redundant w.r.t. the existing Linux
-pinctrl documentation.
-
->> +For a client device to operate correctly, certain pin controllers must
->> +set up certain specific pin configurations. Some client devices need a
->> +single static pin configuration, e.g. set up during initialization. Others
->> +need to reconfigure pins at run-time, for example to tri-state pins when the
->> +device is inactive. Hence, each client device can define a set of named
->> +states. The number and names of those states is defined by the client device's
->> +own binding.
+>     > The benefit of this approach is that not all the drivers
+>     > have to get converted to DMAEngine APIs simultaneosly while
+>     > both the drivers can stay enabled in the kernel. The client
+>     > drivers using the old MSM APIs directly can now convert to
+>     > DMAEngine one by one.
 > 
-> Just so I understand: is "pin configuration" here strictly what we
-> handle in pinconf.c or does it include multiplexing (pinmux.c)?
+>     Which drivers?
+>    
+>     Daniel
+>     --
+>     To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+>     the body of a message to majordomo@vger.kernel.org
+>     More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> I guess it's not multiplexing, just making sure.
->
-> Maybe state explicitly that multiplexing is not part of pin config,
-> else someone will invariably get confused.
-
-No, it's intended to cover any aspect at all of pin control hardware,
-including muxing. I'm not sure why you would expect pin muxing /not/ to
-be represented by these bindings?
-
->> +Note that pin controllers themselves may also be client devices of themselves.
 > 
-> Insert something about this being known as config hogging.
 
-I think that's Linux-specific terminology, hence not appropriate for a
-generic document. (And as an aside, I don't really like the name
-"hogging", or even treating it as some kind of special-case).
-
-> The rest I barely understand so I leave it for the others to discuss...
-
-Hmm. That's unfortunate. It'd be very useful if you could fully digest
-this aspect of pinctrl.
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
