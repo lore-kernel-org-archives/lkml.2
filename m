@@ -1,21 +1,30 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1756141Ab2CMPYI (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Tue, 13 Mar 2012 11:24:08 -0400
-Received: from ic-mail-03.catv-kabelmedien.at ([80.241.16.45]:60678 "EHLO
-        ic-mail-03.catv-kabelmedien.at" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1756025Ab2CMPYF (ORCPT
+        id S1752325Ab2CMTva (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Tue, 13 Mar 2012 15:51:30 -0400
+Received: from bld14.srv.portugalmail.net ([195.170.168.142]:40253 "EHLO
+        bld14.srv.portugalmail.net" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1751607Ab2CMTv3 (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Tue, 13 Mar 2012 11:24:05 -0400
-To: linux-kernel@vger.kernel.org
+        Tue, 13 Mar 2012 15:51:29 -0400
+Date: Tue, 13 Mar 2012 19:50:38 +0000
+Message-ID: <20120313195038.Horde.Hh-1Gn4CivRPX6UOgpr0q8A@correio.portugalmail.pt>
+From: faith donald <faith.donald1@yahoo.com>
 Subject: hi
-From: carole <carole0859@hsghh.com>
-Reply-To: carole0859@hsghh.com
-Message-Id: <20120313151447.87BDEA2C9A8@ic-mail-03.catv-kabelmedien.at>
-Date: Tue, 13 Mar 2012 16:14:47 +0100 (CET)
+X-Portugalmail-Sender: love@portugalmail.pt
+User-Agent: Internet Messaging Program (IMP) H4 (5.0.19-git)
+Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+MIME-Version: 1.0
+Content-Disposition: inline
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
 
-I just couldn't find you online, here's the article I was telling you about: http://www.elmaelektro.cz/web/index.html ... for the last two weeks I have been trying this new weight-loss product .. you should try it too I have lost quite a bit of weight, 29.2 lbs to be precise
+-- 
+Good day dear how are you? i am faith by name its nice to meet you
+
+
+
+
