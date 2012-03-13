@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab2CMPgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 11:36:00 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49834 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754115Ab2CMPf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 11:35:59 -0400
-Date: Tue, 13 Mar 2012 16:35:25 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Oleg Nesterov <oleg@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/2] uprobes/core: Handle breakpoint and singlestep
- exception.
-Message-ID: <20120313153524.GB12193@elte.hu>
-References: <20120313140303.17134.1401.sendpatchset@srdronam.in.ibm.com>
- <20120313140313.17134.52012.sendpatchset@srdronam.in.ibm.com>
+	id S1756776Ab2CMPkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 11:40:18 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:64609 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756286Ab2CMPkQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 11:40:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120313140313.17134.52012.sendpatchset@srdronam.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
+In-Reply-To: <026393583fec46a9d4401604e596b164.squirrel@webmail.greenhost.nl>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+	<026393583fec46a9d4401604e596b164.squirrel@webmail.greenhost.nl>
+Date: Tue, 13 Mar 2012 10:40:11 -0500
+Message-ID: <CABqD9hZKny+7YOhUtNkcZ0-bfM10MpdoiuYu-9X8Wq99Qk-mQg@mail.gmail.com>
+Subject: Re: [PATCH v14 01/13] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
+From: Will Drewry <wad@chromium.org>
+To: Indan Zupancic <indan@nul.nu>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
+        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
+        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 12, 2012 at 10:40 PM, Indan Zupancic <indan@nul.nu> wrote:
+> Hello,
+>
+> On Mon, March 12, 2012 22:28, Will Drewry wrote:
+>> Introduces a new BPF ancillary instruction that all LD calls will be
+>> mapped through when skb_run_filter() is being used for seccomp BPF.  The
+>> rewriting will be done using a secondary chk_filter function that is run
+>> after skb_chk_filter.
+>>
+>> The code change is guarded by CONFIG_SECCOMP_FILTER which is added,
+>> along with the seccomp_bpf_load() function later in this series.
+>>
+>> This is based on http://lkml.org/lkml/2012/3/2/141
+>>
+>> v14: First cut using a single additional instruction
+>> ... v13: made bpf functions generic.
+>>
+>>
+>> Suggested-by: Indan Zupancic <indan@nul.nu>
+>> Signed-off-by: Will Drewry <wad@chromium.org>
+>> ---
+>>  include/linux/filter.h |    1 +
+>>  net/core/filter.c      |    5 +++++
+>>  2 files changed, 6 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/filter.h b/include/linux/filter.h
+>> index 8eeb205..aaa2e80 100644
+>> --- a/include/linux/filter.h
+>> +++ b/include/linux/filter.h
+>> @@ -228,6 +228,7 @@ enum {
+>>       BPF_S_ANC_HATYPE,
+>>       BPF_S_ANC_RXHASH,
+>>       BPF_S_ANC_CPU,
+>> +     BPF_S_ANC_SECCOMP_LD_W,
+>>  };
+>>
+>>  #endif /* __KERNEL__ */
+>> diff --git a/net/core/filter.c b/net/core/filter.c
+>> index 5dea452..3000931 100644
+>> --- a/net/core/filter.c
+>> +++ b/net/core/filter.c
+>> @@ -350,6 +350,11 @@ load_b:
+>>                               A = 0;
+>>                       continue;
+>>               }
+>> +#ifdef CONFIG_SECCOMP_FILTER
+>> +             case BPF_S_ANC_SECCOMP_LD_W:
+>> +                     A = seccomp_bpf_load(fentry->k);
+>
+> I think you forgot to declare seccomp_bpf_load() anywhere filter.c can find.
+> That is, filter.c probably needs to include seccomp.h, or maybe better, add
+> "extern u32 seccomp_bpf_load(int off);" to filter.h instead.
 
-* Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
+Doh, it should include seccomp.h.  Right now it gets that on accident
+via sched.h.  Since at this point in the patch series, the function
+doesn't exist, I'd prefer to just add seccomp.h explicitly.  I'll do
+that in the next version unless there is a clear problem.  (In
+practice, it is already pulled in.)
 
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 26a7a67..36508b9 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -67,6 +67,7 @@
->  #include <linux/oom.h>
->  #include <linux/khugepaged.h>
->  #include <linux/signalfd.h>
-> +#include <linux/uprobes.h>
->  
->  #include <asm/pgtable.h>
->  #include <asm/pgalloc.h>
-> @@ -731,6 +732,8 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
->  		exit_pi_state_list(tsk);
->  #endif
->  
-> +	uprobe_free_utask(tsk);
-> +
->  	/* Get rid of any cached register state */
->  	deactivate_mm(tsk, mm);
->  
-> @@ -1322,6 +1325,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->  	INIT_LIST_HEAD(&p->pi_state_list);
->  	p->pi_state_cache = NULL;
->  #endif
-> +#ifdef CONFIG_UPROBES
-> +	p->utask = NULL;
-> +	p->uprobe_srcu_id = -1;
-> +#endif
->  	/*
->  	 * sigaltstack should be cleared when sharing the same VM
->  	 */
 
-Hm, I suspect by looking at the first two hunks you can guess 
-how the third hunk should be done more cleanly?
+> Reviewed-by: Indan Zupancic <indan@nul.nu>
 
-Thanks,
-
-	Ingo
+Thanks!
+will
