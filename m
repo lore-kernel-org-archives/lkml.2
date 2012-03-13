@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759792Ab2CMVjT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 17:39:19 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41683 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759761Ab2CMVjR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 17:39:17 -0400
-Message-ID: <4F5FBE82.70501@gmail.com>
-Date: Tue, 13 Mar 2012 14:39:14 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH] usb: Don't make USB_ARCH_HAS_OHCI and USB_ARCH_HAS_EHCI
- depend on USB_SUPPORT.
-References: <1331578904-15561-1-git-send-email-ddaney.cavm@gmail.com> <20120313211758.GA10168@kroah.com>
-In-Reply-To: <20120313211758.GA10168@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1759783Ab2CMVkr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 17:40:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46659 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751871Ab2CMVkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 17:40:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="138287136"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] x86/mce two miscellaneous MCE fixes
+Date: Tue, 13 Mar 2012 14:40:45 -0700
+Message-Id: <4f5fbedd16019e0539@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2012 02:17 PM, Greg Kroah-Hartman wrote:
-> On Mon, Mar 12, 2012 at 12:01:44PM -0700, David Daney wrote:
->> From: David Daney<david.daney@cavium.com>
->>
->> The fact that an architecture/board has OHCI or EHCI does not depend on
->> the fact that the kernel is configured with USB_SUPPORT.
->
-> Why are you ignoring XHCI here as well?
+The following changes since commit b01543dfe67bb1d191998e90d20534dc354de059:
 
-Because it was not failing for my specific configuration.
+  Linux 3.3-rc4 (2012-02-18 15:53:33 -0800)
 
->  Shouldn't that fall under the
-> same rules as OHCI and EHCI (hint, they should...)
+are available in the git repository at:
 
-OK, makes sense, I will change it to do that too.
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git mce-for-tip
 
-New patch soon...
+for you to fetch changes up to fadd85f16a8ec3fee8af599e79a209682dc52348:
 
-David Daney
+  x86/mce: Fix return value of mce_chrdev_read() when erst is disabled (2012-02-22 13:14:16 -0800)
+
+----------------------------------------------------------------
+Two miscellaneous MCE fixes
+
+----------------------------------------------------------------
+Greg Kroah-Hartman (1):
+      x86/mce: Convert static array of pointers to per-cpu variables
+
+Naoya Horiguchi (1):
+      x86/mce: Fix return value of mce_chrdev_read() when erst is disabled
+
+ arch/x86/include/asm/mce.h           |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce.c     |   14 ++++++++++----
+ arch/x86/kernel/cpu/mcheck/mce_amd.c |    9 +++++----
+ 3 files changed, 16 insertions(+), 9 deletions(-)
