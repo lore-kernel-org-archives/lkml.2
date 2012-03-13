@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab2CMASU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:18:20 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46845 "EHLO
+	id S1758398Ab2CMAUB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:20:01 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46872 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932117Ab2CMASL (ORCPT
+	with ESMTP id S932282Ab2CMASS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:18:11 -0400
+	Mon, 12 Mar 2012 20:18:18 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        Marc-Antoine Perennou <Marc-Antoine@perennou.com>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>,
+Cc: stable-review@kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 037/196] Bluetooth: add support for Apple MacBook Pro 8,2
-Date: Mon, 12 Mar 2012 20:12:45 -0400
-Message-Id: <1331597724-31358-38-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 041/196] mfd: ab3100: world-writable debugfs *_priv files
+Date: Mon, 12 Mar 2012 20:12:49 -0400
+Message-Id: <1331597724-31358-42-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,38 +22,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 63a8588debd4dc72becb9e27add9343c76301c7d upstream.
+commit f8a0697722d12a201588225999cfc8bfcbc82781 upstream.
 
-Just adding the vendor details makes it work fine.
+Don't allow everybody to change device hardware registers.
 
-Signed-off-by: Marc-Antoine Perennou <Marc-Antoine@Perennou.com>
-Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/bluetooth/btusb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/mfd/ab3100-core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 6fcb971..c9e2dc8 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -62,6 +62,9 @@ static struct usb_device_id btusb_table[] = {
- 	/* Apple iMac11,1 */
- 	{ USB_DEVICE(0x05ac, 0x8215) },
- 
-+	/* Apple MacBookPro8,2 */
-+	{ USB_DEVICE(0x05ac, 0x821a) },
-+
- 	/* AVM BlueFRITZ! USB v2.0 */
- 	{ USB_DEVICE(0x057c, 0x3800) },
- 
+diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
+index e4ca590..4267a4d 100644
+--- a/drivers/mfd/ab3100-core.c
++++ b/drivers/mfd/ab3100-core.c
+@@ -580,7 +580,7 @@ static void ab3100_setup_debugfs(struct ab3100 *ab3100)
+ 	ab3100_get_priv.ab3100 = ab3100;
+ 	ab3100_get_priv.mode = false;
+ 	ab3100_get_reg_file = debugfs_create_file("get_reg",
+-				S_IWUGO, ab3100_dir, &ab3100_get_priv,
++				S_IWUSR, ab3100_dir, &ab3100_get_priv,
+ 				&ab3100_get_set_reg_fops);
+ 	if (!ab3100_get_reg_file) {
+ 		err = -ENOMEM;
+@@ -590,7 +590,7 @@ static void ab3100_setup_debugfs(struct ab3100 *ab3100)
+ 	ab3100_set_priv.ab3100 = ab3100;
+ 	ab3100_set_priv.mode = true;
+ 	ab3100_set_reg_file = debugfs_create_file("set_reg",
+-				S_IWUGO, ab3100_dir, &ab3100_set_priv,
++				S_IWUSR, ab3100_dir, &ab3100_set_priv,
+ 				&ab3100_get_set_reg_fops);
+ 	if (!ab3100_set_reg_file) {
+ 		err = -ENOMEM;
 -- 
 1.7.9.3
 
