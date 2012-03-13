@@ -1,51 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758928Ab2CMAq5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:46:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33370 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758976Ab2CMAqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:46:54 -0400
-Date: Tue, 13 Mar 2012 01:46:42 +0100
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Roland McGrath <roland@hack.frob.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Kushal Das <kdas@redhat.com>
-Subject: Re: Extending coredump note section to contain filenames
-Message-ID: <20120313004642.GA19090@host2.jankratochvil.net>
-References: <20120309172934.GA18173@host2.jankratochvil.net>
- <4F5DE6A4.2030303@redhat.com>
- <20120312165359.GA32400@host2.jankratochvil.net>
- <4F5E76CE.4030601@zytor.com>
- <20120312223144.GA9636@host2.jankratochvil.net>
- <4F5E91DE.80609@zytor.com>
- <20120313002725.GA17828@host2.jankratochvil.net>
- <4F5E956F.3070108@zytor.com>
- <20120313003639.GA18427@host2.jankratochvil.net>
- <4F5E97EA.6030001@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F5E97EA.6030001@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758963Ab2CMAXh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:23:37 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48185 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758928Ab2CMAX2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 20:23:28 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 115/196] Input: elantech - relax signature checks
+Date: Mon, 12 Mar 2012 20:20:28 -0400
+Message-Id: <1331598109-31424-70-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.9.3
+In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
+ <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 01:42:18 +0100, H. Peter Anvin wrote:
-> There is no 100% reliable solution possible -- you have no guarantee of
-> any kind that the library executable still exists.
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-I have guarantee that the library binary mapped in memory identified by
-build-id can be found out there in the could.  There is no other guarantee.
-And this guarantee fails with other solutions.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-If you say that it is _additional_ info to build-id then yes, one can always
-use build-id if everything else fails.  But then the non-build-id information
-is redundant and it can just lead to wrong toolchain solutions - which has
-already happened (Apport).
+commit a083632eaf6231162b33e40561cfec6a9c156945 upstream.
 
+Apparently there are Elantech touchpads that report non-zero in the 2nd byte
+of their signature. Adjust the detection routine so that if 2nd byte is
+zero and 3rd byte contains value that is not a valid report rate, we still
+assume that signature is valid.
 
-Regards,
-Jan
+Tested-by: Eric Piel <eric.piel@tremplin-utc.net>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/input/mouse/elantech.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
+index 112b4ee..4400369 100644
+--- a/drivers/input/mouse/elantech.c
++++ b/drivers/input/mouse/elantech.c
+@@ -575,6 +575,24 @@ static struct attribute_group elantech_attr_group = {
+ 	.attrs = elantech_attrs,
+ };
+ 
++static bool elantech_is_signature_valid(const unsigned char *param)
++{
++	static const unsigned char rates[] = { 200, 100, 80, 60, 40, 20, 10 };
++	int i;
++
++	if (param[0] == 0)
++		return false;
++
++	if (param[1] == 0)
++		return true;
++
++	for (i = 0; i < ARRAY_SIZE(rates); i++)
++		if (param[2] == rates[i])
++			return false;
++
++	return true;
++}
++
+ /*
+  * Use magic knock to detect Elantech touchpad
+  */
+@@ -618,7 +636,7 @@ int elantech_detect(struct psmouse *psmouse, bool set_properties)
+ 	pr_debug("elantech.c: Elantech version query result 0x%02x, 0x%02x, 0x%02x.\n",
+ 		 param[0], param[1], param[2]);
+ 
+-	if (param[0] == 0 || param[1] != 0) {
++	if (!elantech_is_signature_valid(param)) {
+ 		if (!force_elantech) {
+ 			pr_debug("elantech.c: Probably not a real Elantech touchpad. Aborting.\n");
+ 			return -1;
+-- 
+1.7.9.3
+
