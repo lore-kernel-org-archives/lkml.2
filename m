@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2CMUr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 16:47:29 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:41759 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab2CMUr1 (ORCPT
+	id S1755122Ab2CMUrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 16:47:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53805 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181Ab2CMUru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 16:47:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6648"; a="172162067"
-Date: Tue, 13 Mar 2012 13:47:10 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dave.martin@linaro.org, nicolas.pitre@linaro.org,
-        catalin.marinas@arm.com, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] arm: Add unwinding support for memset and memzero.
-Message-ID: <20120313204710.GA1772@codeaurora.org>
-References: <1331574027-28542-1-git-send-email-lauraa@codeaurora.org>
+	Tue, 13 Mar 2012 16:47:50 -0400
+Date: Tue, 13 Mar 2012 13:47:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Kautuk Consul <consul.kautuk@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Tejun Heo <tj@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] page_alloc: Remove argument to
+ find_zone_movable_pfns_for_nodes
+In-Reply-To: <1331652803-3092-1-git-send-email-consul.kautuk@gmail.com>
+Message-ID: <alpine.DEB.2.00.1203131345290.27008@chino.kir.corp.google.com>
+References: <1331652803-3092-1-git-send-email-consul.kautuk@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331574027-28542-1-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 10:40:27AM -0700, Laura Abbott wrote:
-> @@ -41,7 +43,7 @@ ENTRY(memset)
->  	blt	4f
+On Tue, 13 Mar 2012, Kautuk Consul wrote:
+
+> The find_zone_movable_pfns_for_nodes() function does not utiilize
+> the argument to it.
+> 
+
+It could, though, if we made it to do so.
+
+> Removing this argument from the function prototype as well as its
+> caller, i.e. free_area_init_nodes().
+> 
+
+Not sure if we'd ever want it or not for other purposes, but 
+find_zone_movable_pfns_for_nodes() could easily be made to use the passed 
+in array rather than zone_movable_pfn in file scope directly.  That seems 
+to be why it took an argument in the first place.
+
+> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+> ---
+>  mm/page_alloc.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 3171f4c..a368b9b 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -4509,7 +4509,7 @@ static unsigned long __init early_calculate_totalpages(void)
+>   * memory. When they don't, some nodes will have more kernelcore than
+>   * others
+>   */
+> -static void __init find_zone_movable_pfns_for_nodes(unsigned long *movable_pfn)
+> +static void __init find_zone_movable_pfns_for_nodes(void)
+>  {
+>  	int i, nid;
+>  	unsigned long usable_startpfn;
+> @@ -4701,7 +4701,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
 >  
->  #if ! CALGN(1)+0
-> -
-> +UNWIND(.save {lr})
->  /*
->   * We need an extra register for this loop - save the return address and
->   * use the LR
-
-Did you intend to remove these blank lines?
-
-David
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>  	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
+>  	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
+> -	find_zone_movable_pfns_for_nodes(zone_movable_pfn);
+> +	find_zone_movable_pfns_for_nodes();
+>  
+>  	/* Print out the zone ranges */
+>  	printk("Zone PFN ranges:\n");
