@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758896Ab2CMRbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 13:31:11 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:39102 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758650Ab2CMRbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 13:31:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:in-reply-to:message-id:references:date:mime-version
-	:content-type; q=dns; s=sasl; b=JNDdZqexnFIUTD4BeRAjIaUGhx/QaJgU
-	/X4HQNg8eNlhFoy+VkzHX7Xqr+gny8fVfurIujUBcOA5bbmVp5GnYLQi/L6UxrJ/
-	Vnd8ekfNsseVzDtf6cBOTZwjM6WOP+4+yB1C0dxg5sAe4GalolCPjdXI0PrFK7sV
-	DHTY6uRLTys=
-From: Junio C Hamano <gitster@pobox.com>
-To: Jonathan Nieder <jrnieder@gmail.com>, Thomas Rast <trast@student.ethz.ch>
-Cc: Willy Tarreau <w@1wt.eu>, Greg KH <greg@kroah.com>,
-        Ben Hutchings <ben@decadent.org.uk>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, <git@vger.kernel.org>
-Subject: Re: [PATCH] git-am: error out when seeing -b/--binary
-In-Reply-To: <87fwdcldqj.fsf@thomas.inf.ethz.ch> (Thomas Rast's message of
- "Tue, 13 Mar 2012 16:31:00 +0100")
-Message-ID: <7v62e8la9y.fsf@alter.siamese.dyndns.org>
-References: <20120312064855.GB16820@burratino>
- <20120312085820.GA11569@1wt.eu> <20120312152004.GB9380@kroah.com>
- <20120312152453.GB12405@1wt.eu> <87aa3l4vqq.fsf@thomas.inf.ethz.ch>
- <20120312165703.GB18791@burratino> <7vvcm9snko.fsf@alter.siamese.dyndns.org>
- <87399dpk48.fsf@thomas.inf.ethz.ch> <20120312215607.GB11362@burratino>
- <874ntto4t8.fsf@thomas.inf.ethz.ch> <20120312222227.GC11362@burratino>
- <87fwdcldqj.fsf@thomas.inf.ethz.ch>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-Date: Tue, 13 Mar 2012 10:31:03 -0700
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 4FBD02C8-6D32-11E1-8CC3-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+	id S1758891Ab2CMRcH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 13:32:07 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:48051 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758291Ab2CMRcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 13:32:06 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: sboyd@codeaurora.org
+Cc: kernel-janitors@vger.kernel.org, gregkh@linuxfoundation.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        mmarek@suse.cz
+Subject: [PATCH] scripts/coccinelle/api/simple_open.cocci: semantic patch for simple_open()
+Date: Tue, 13 Mar 2012 17:58:37 +0100
+Message-Id: <1331657917-4552-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Rast <trast@student.ethz.ch> writes:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> Jonathan Nieder <jrnieder@gmail.com> writes:
->
->> 	--binary)
->> 		: ;;
->> 	-b)
->> 		gettextln >&2 "The -b option (a no-op short for --binary) was removed in 1.7.10."
->> 		die "$(gettext "Please adjust your scripts.")"
->> 		;;
->>
->> Mentioning deprecation in 1.6.0 in the message left me uneasy because
->> we never actually did anything to actively deprecate the option; it
->> just has not been needed since 1.4.3 and we stopped advertising it in
->> the manpage in 1.6.0.  So I don't like the implication of "this is all
->> right because we told you so" --- on the contrary, it is "in practice
->> nobody seems to be using this option and we hope nobody will notice
->> when we take it away".
->
-> Hmm, I had an alternate patch ready in the morning, but Junio beat us to
-> it and applied the old one to master.
+Find instances of an open-coded simple_open() and replace them
+with calls to simple_open().
 
-I really don't think it is a good idea to avoid mentioning 1.6.0, at
-which we *removed* description of the option in our manual pages and
-from the "git am -h" help message. How much more active deprecation
-would a user want?
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Reported-by: Stephen Boyd <sboyd@codeaurora.org>
 
-To put it another way, think what your answer would be when somebody
-sees the message and says "eh? all of a sudden it was removed?".
-Wouldn't you tell him "At 1.6.0 we deprecated it and stopped
-advertising it"?  Why not give that answer upfront?
+---
+ scripts/coccinelle/api/simple_open.cocci |   70 +++++++++++++++++++++++++++++++
+ 1 file changed, 70 insertions(+)
 
-Especially when you think "in practice nobody seems to be using
-this" is true?
+diff --git a/scripts/coccinelle/api/simple_open.cocci b/scripts/coccinelle/api/simple_open.cocci
+new file mode 100644
+index 0000000..05962f7
+--- /dev/null
++++ b/scripts/coccinelle/api/simple_open.cocci
+@@ -0,0 +1,70 @@
++/// This removes an open coded simple_open() function
++/// and replaces file operations references to the function
++/// with simple_open() instead.
++///
++// Confidence: High
++// Comments:
++// Options: -no_includes -include_headers
++
++virtual patch
++virtual report
++
++@ open depends on patch @
++identifier open_f != simple_open;
++identifier i, f;
++@@
++-int open_f(struct inode *i, struct file *f)
++-{
++(
++-if (i->i_private)
++-f->private_data = i->i_private;
++|
++-f->private_data = i->i_private;
++)
++-return 0;
++-}
++
++@ has_open depends on open @
++identifier fops;
++identifier open.open_f;
++@@
++struct file_operations fops = {
++...,
++-.open = open_f,
+++.open = simple_open,
++...
++};
++
++@ openr depends on report @
++identifier open_f != simple_open;
++identifier i, f;
++position p;
++@@
++int open_f@p(struct inode *i, struct file *f)
++{
++(
++if (i->i_private)
++f->private_data = i->i_private;
++|
++f->private_data = i->i_private;
++)
++return 0;
++}
++
++@ has_openr depends on openr @
++identifier fops;
++identifier openr.open_f;
++position p;
++@@
++struct file_operations fops = {
++...,
++.open = open_f@p,
++...
++};
++
++@script:python@
++pf << openr.p;
++ps << has_openr.p;
++@@
++
++coccilib.report.print_report(pf[0],"WARNING opportunity for simple_open, see also structure on line %s"%(ps[0].line))
 
