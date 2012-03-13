@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757680Ab2CMREY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 13:04:24 -0400
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:34545 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755432Ab2CMREW (ORCPT
+	id S1758171Ab2CMRE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 13:04:58 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36814 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758062Ab2CMREv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 13:04:22 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Suleiman Souhlal <ssouhlal@FreeBSD.org>, <cgroups@vger.kernel.org>,
-        <suleiman@google.com>, <penberg@kernel.org>, <cl@linux.com>,
-        <yinghan@google.com>, <hughd@google.com>, <peterz@infradead.org>,
-        <dan.magenheimer@oracle.com>, <hannes@cmpxchg.org>, <mgorman@suse.de>,
-        <James.Bottomley@HansenPartnership.com>, <linux-mm@kvack.org>,
-        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
-        rientjes@google.com
-Subject: Re: [PATCH v2 02/13] memcg: Kernel memory accounting infrastructure.
-References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
-	<1331325556-16447-3-git-send-email-ssouhlal@FreeBSD.org>
-	<4F5C5E54.2020408@parallels.com>
-	<20120313152446.28b0d696.kamezawa.hiroyu@jp.fujitsu.com>
-	<4F5F236A.1070609@parallels.com>
-Date: Tue, 13 Mar 2012 10:00:58 -0700
-In-Reply-To: <4F5F236A.1070609@parallels.com> (Glauber Costa's message of
-	"Tue, 13 Mar 2012 14:37:30 +0400")
-Message-ID: <xr93d38g77w5.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 13 Mar 2012 13:04:51 -0400
+Message-ID: <4F5F7E2F.30305@gmail.com>
+Date: Wed, 14 Mar 2012 02:04:47 +0900
+From: Akio Idehara <zbe64533@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: mjg59@srcf.ucam.org
+CC: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Charles@schwieters.org, corentin.chary@gmail.com,
+        seth.forshee@canonical.com
+Subject: Re: [PATCH] toshiba_acpi: Add support for transflective LCD
+References: <4F3ECEED.9000206@gmail.com> <20120312141118.GB11375@srcf.ucam.org>
+In-Reply-To: <20120312141118.GB11375@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Glauber Costa <glommer@parallels.com> writes:
-> 2) For the kernel itself, we are mostly concerned that a malicious container may
-> pin into memory big amounts of kernel memory which is, ultimately,
-> unreclaimable. In particular, with overcommit allowed scenarios, you can fill
-> the whole physical memory (or at least a significant part) with those objects,
-> well beyond your softlimit allowance, making the creation of further containers
-> impossible.
-> With user memory, you can reclaim the cgroup back to its place. With kernel
-> memory, you can't.
+I also think it seems a good idea.  I'll try to make a new patch using your suggestion.
 
-In overcommit situations the page allocator starts failing even though
-memcg page can charge pages.  When page allocations fail the oom killer
-plays a role.  Page allocations can fail even without malicious usage of
-kernel memory (e.g. lots of mlock or anon without swap can fill a
-machine).  I assume that the kernel memory pinned the malicious
-containers will be freed or at least become reclaimable once the
-processes in malicious containers are killed (oom or otherwise).  We
-have been making use of the oom killer to save a system from
-irreconcilable overcommit situations.
+BTW, I have one question about disabling backlight interface.
+My toshiba laptop has three sysfs backlight interfaces,
+"acpi_video0", "intel_backlight" and "toshiba".
+Fedora16 is always using "acpi_video0" interface.
+If I add acpi_backlight=vendor in boot param,
+then Fedora16 uses "intel_backlight".
+# "toshiba" is lowest priority.
+So I want to know how to disable "intel_backlight" interface.
+Or enable "toshiba" interface only.
+
+Matthew Garrett wrote:
+
+> Is there any userspace that currently manipulates the bl_power field? 
+> I'm wondering whether this should actually just be implemented by adding 
+> an extra level to the backlight and having 0 change to transflective 
+> mode.
+> 
+
+
