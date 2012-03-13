@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755786Ab2CMGyT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 02:54:19 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:56385 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402Ab2CMGyQ (ORCPT
+	id S1754695Ab2CMHAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 03:00:14 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:41224 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750721Ab2CMHAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 02:54:16 -0400
-Date: Mon, 12 Mar 2012 23:50:02 -0700 (PDT)
-Message-Id: <20120312.235002.344576347742686103.davem@davemloft.net>
-To: apenwarr@gmail.com
-Cc: akpm@linux-foundation.org, josh@joshtriplett.org,
-        paulmck@linux.vnet.ibm.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        fdinitto@redhat.com, hannes@cmpxchg.org, olaf@aepfle.de,
-        paul.gortmaker@windriver.com, tj@kernel.org, hpa@linux.intel.com,
-        yinghai@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 0/5] Persist printk buffer across reboots.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAHqTa-3DiZhd_yoRTzp2Np0Rp=_zrfL7CbN_twu+ZZeu7f4ENg@mail.gmail.com>
-References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
-	<20120312.225302.488696931454771146.davem@davemloft.net>
-	<CAHqTa-3DiZhd_yoRTzp2Np0Rp=_zrfL7CbN_twu+ZZeu7f4ENg@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 12 Mar 2012 23:50:06 -0700 (PDT)
+	Tue, 13 Mar 2012 03:00:12 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lq3M7qFLaZ
+X-RZG-CLASS-ID: mo00
+Date: Tue, 13 Mar 2012 08:00:02 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [34-longterm 020/196] staging: hv: use sync_bitops when
+ interacting with the hypervisor
+Message-ID: <20120313070002.GA19629@aepfle.de>
+References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
+ <1331597724-31358-21-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1331597724-31358-21-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Avery Pennarun <apenwarr@gmail.com>
-Date: Tue, 13 Mar 2012 02:00:30 -0400
+On Mon, Mar 12, Paul Gortmaker wrote:
 
-> Sounds good to me.  Do you have any pointers?  Just use an
-> early_param?  If we see the early_param but we can't reserve the
-> requested address, should we fall back to probing or disable the
-> PRINTK_PERSIST mode entirely?
+> From: Olaf Hering <olaf@aepfle.de>
+> 
+>                    -------------------
+>     This is a commit scheduled for the next v2.6.34 longterm release.
+>     If you see a problem with using this for longterm, please comment.
+>                    -------------------
+> 
+> commit 22356585712d1ff08fbfed152edd8b386873b238 upstream.
 
-The interface is prom_retain() in f.e. arch/sparc/prom/misc_64.c
+Unless there is a happy user of the hv drivers in this old kernel, it
+makes no sense to backport just this one patch.
 
-You give it a string name, a size in bytes, and an alignment.  And you
-are given a physical address on success.  I'm pretty sure the string
-name you give is one of the keys it uses to look up the same piece of
-memory for you next time.  So you can have retained memory across soft
-resets not just for log buffers, but for other things too.
+I suggest to leave drivers/staging/hv alone in longterm releases, or
+backport the entire history of drivers/staging/hv up to 3.4.
 
-The idea is that you call prom_retain() before you take a look at what
-physical memory is available in the kernel, and the firmware takes
-this physical chunk out of those available memory lists upon
-prom_retain() success.
-
+Olaf
