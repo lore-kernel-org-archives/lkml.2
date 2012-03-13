@@ -1,153 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757347Ab2CMGF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 02:05:56 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:34919 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755873Ab2CMGFy convert rfc822-to-8bit (ORCPT
+	id S1758226Ab2CMGGq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 02:06:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55412 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168Ab2CMGGm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 02:05:54 -0400
+	Tue, 13 Mar 2012 02:06:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120313032832.655983E07E4@localhost>
-References: <1330000688-11226-1-git-send-email-thomas.abraham@linaro.org>
-	<1330000688-11226-2-git-send-email-thomas.abraham@linaro.org>
-	<20120313032832.655983E07E4@localhost>
-Date: Tue, 13 Mar 2012 11:35:53 +0530
-Message-ID: <CAJuYYwTKMWgits6xd0UUvRPwr40NwJfO2HncUOW9J=EZbFs8=Q@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] mfd: add irq domain support for max8997 interrupts
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, k.lewandowsk@samsung.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, broonie@opensource.wolfsonmicro.com,
-        myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
+In-Reply-To: <CAErSpo6g3pei2+oW0wLEpytBTh6wGTyzo28oVVzFECxZdta+FA@mail.gmail.com>
+References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
+	<1331362837-10740-25-git-send-email-yinghai@kernel.org>
+	<CAErSpo6g3pei2+oW0wLEpytBTh6wGTyzo28oVVzFECxZdta+FA@mail.gmail.com>
+Date: Mon, 12 Mar 2012 23:06:42 -0700
+X-Google-Sender-Auth: B9n7fEMFpgk4qoGHqlQ5iUL_GXQ
+Message-ID: <CAE9FiQWfYxD2OAmXF5UdQMkPt33xeoSu489N6KtU3k5VE3jUXw@mail.gmail.com>
+Subject: Re: [PATCH v2 24/37] PCI, ACPI: Add pci_root_hp hot removal
+ notification support.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 March 2012 08:58, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Thu, 23 Feb 2012 18:08:07 +0530, Thomas Abraham <thomas.abraham@linaro.org> wrote:
->> Add irq domain support for max8997 interrupts. The reverse mapping method
->> used is linear mapping since the sub-drivers of max8997 such as regulator
->> and charger drivers can use the max8997 irq_domain to get the linux irq
->> number for max8997 interrupts. All uses of irq_base in platform data and
->> max8997 driver private data are removed.
+On Mon, Mar 12, 2012 at 8:25 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> Add missing hot_remove support for root device.
 >>
->> Cc: Grant Likely <grant.likely@secretlab.ca>
->> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+>> How to use it?
+>> Find out root bus number to acpi root name mapping from dmesg or /sys
+>>
+>>  echo "\_SB.PCIB 3" > /proc/acpi/sci/notify
+>> to remove root bus
+>
+> Same comments as before: this is definitely NOT the way users should
+> use this.  If you want to do that for debugging the ACPI notification
+> path, fine, but the normal way is for the platform to generate this
+> notification.  I think the normal way for users to manually remove an
+> ACPI device should be something like:
+>
+>    echo 1 > /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/remove
+>
+> just like we do for PCI devices.
+
+notify way looks more like really physical hotadd/remove.
+
+pci bus/remove and other is not really, because when you are using
+/sys, you may still need to hold
+one reference to bus or device.
+
+>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> Cc: Len Brown <lenb@kernel.org>
+>> Cc: linux-acpi@vger.kernel.org
 >> ---
->>  arch/arm/mach-exynos/mach-nuri.c    |    4 --
->>  arch/arm/mach-exynos/mach-origen.c  |    1 -
->>  drivers/mfd/max8997-irq.c           |   60 ++++++++++++++++++++--------------
->>  drivers/mfd/max8997.c               |    1 -
->>  include/linux/mfd/max8997-private.h |    4 ++-
->>  include/linux/mfd/max8997.h         |    1 -
->>  6 files changed, 38 insertions(+), 33 deletions(-)
->
-> Nice patch.  Nice diffstat too.  Some comments below, but I'm happy with where
-> this is at.
->
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-Thank you Grant for reviewing this patch.
-
->
+>>  drivers/acpi/pci_root_hp.c |   61 ++++++++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 61 insertions(+), 0 deletions(-)
 >>
->> diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
->> index a6b9162..1e9ba12 100644
->> --- a/arch/arm/mach-exynos/mach-nuri.c
->> +++ b/arch/arm/mach-exynos/mach-nuri.c
->> @@ -1078,12 +1078,8 @@ static struct platform_device nuri_max8903_device = {
->>  static void __init nuri_power_init(void)
->>  {
->>       int gpio;
->> -     int irq_base = IRQ_GPIO_END + 1;
->>       int ta_en = 0;
->>
->> -     nuri_max8997_pdata.irq_base = irq_base;
->> -     irq_base += MAX8997_IRQ_NR;
->> -
->>       gpio = EXYNOS4_GPX0(7);
->>       gpio_request(gpio, "AP_PMIC_IRQ");
->>       s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
->> diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
->> index 02c242e..328dadb 100644
->> --- a/arch/arm/mach-exynos/mach-origen.c
->> +++ b/arch/arm/mach-exynos/mach-origen.c
->> @@ -424,7 +424,6 @@ static struct max8997_platform_data __initdata origen_max8997_pdata = {
->>       .buck1_gpiodvs  = false,
->>       .buck2_gpiodvs  = false,
->>       .buck5_gpiodvs  = false,
->> -     .irq_base       = IRQ_GPIO_END + 1,
->>
->>       .ignore_gpiodvs_side_effect = true,
->>       .buck125_default_idx = 0x0,
->> diff --git a/drivers/mfd/max8997-irq.c b/drivers/mfd/max8997-irq.c
->> index 09274cf..3d8c9d1 100644
->> --- a/drivers/mfd/max8997-irq.c
->> +++ b/drivers/mfd/max8997-irq.c
->> @@ -142,7 +142,8 @@ static void max8997_irq_sync_unlock(struct irq_data *data)
->>  static const inline struct max8997_irq_data *
->>  irq_to_max8997_irq(struct max8997_dev *max8997, int irq)
->>  {
->> -     return &max8997_irqs[irq - max8997->irq_base];
->> +     struct irq_data *data = irq_get_irq_data(irq);
->> +     return &max8997_irqs[data->hwirq];
->
-> Hahaha.  The max8997_irqs table is kind of overdone when the group and mask values
-> can be arithmetically derived from the hwirq number..
-
-Yes, I agree. Each group could have maximum of 8 interrupts. Then,
-data->hwirq % 8 will be the group number and data->hwirq & 7 would be
-the mask. The enum max8997_irq can then be adjusted to accommodate
-unused irq numbers.
-
->
-> This change is fine, but the driver could use some refactoring.  :-)
-
-Ok.
-
->
+>> diff --git a/drivers/acpi/pci_root_hp.c b/drivers/acpi/pci_root_hp.c
+>> index dc11e81..f5585f5 100644
+>> --- a/drivers/acpi/pci_root_hp.c
+>> +++ b/drivers/acpi/pci_root_hp.c
+>> @@ -73,6 +73,12 @@ static void add_acpi_root_bridge(acpi_handle handle)
+>>        list_add(&bridge->list, &acpi_root_bridge_list);
 >>  }
 >>
->>  static void max8997_irq_mask(struct irq_data *data)
->> @@ -182,7 +183,7 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
->>       u8 irq_reg[MAX8997_IRQ_GROUP_NR] = {};
->>       u8 irq_src;
->>       int ret;
->> -     int i;
->> +     int i, cur_irq;
+>> +static void remove_acpi_root_bridge(struct acpi_root_bridge *bridge)
+>> +{
+>> +       list_del(&bridge->list);
+>> +       kfree(bridge);
+>> +}
+>> +
+>>  struct acpi_root_hp_work {
+>>        struct work_struct work;
+>>        acpi_handle handle;
+>> @@ -142,6 +148,55 @@ static void handle_root_bridge_insertion(acpi_handle handle)
+>>                printk(KERN_ERR "cannot start bridge\n");
+>>  }
 >>
->>       ret = max8997_read_reg(max8997->i2c, MAX8997_REG_INTSRC, &irq_src);
->>       if (ret < 0) {
->> @@ -269,8 +270,10 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
->>
->>       /* Report */
->>       for (i = 0; i < MAX8997_IRQ_NR; i++) {
->> -             if (irq_reg[max8997_irqs[i].group] & max8997_irqs[i].mask)
->> -                     handle_nested_irq(max8997->irq_base + i);
->> +             if (irq_reg[max8997_irqs[i].group] & max8997_irqs[i].mask) {
->> +                     cur_irq = irq_find_mapping(max8997->irq_domain, i);
->> +                     handle_nested_irq(cur_irq);
->> +             }
+>> +static int acpi_root_evaluate_object(acpi_handle handle, char *cmd, int val)
+>> +{
+>> +       acpi_status status;
+>> +       struct acpi_object_list arg_list;
+>> +       union acpi_object arg;
+>> +
+>> +       arg_list.count = 1;
+>> +       arg_list.pointer = &arg;
+>> +       arg.type = ACPI_TYPE_INTEGER;
+>> +       arg.integer.value = val;
+>> +
+>> +       status = acpi_evaluate_object(handle, cmd, &arg_list, NULL);
+>> +       if (ACPI_FAILURE(status)) {
+>> +               printk(KERN_WARNING "%s: %s to %d failed\n",
+>> +                                __func__, cmd, val);
+>> +               return -1;
+>> +       }
+>> +
+>> +       return 0;
 >
-> Well, if you're using the linear mapping, then only actually allocated irqs will
-> have a mapping set up.  So the driver could simply do:
->
->        for (i = 0; i < MAX8997_IRQ_NR; i++) {
->                cur_irq = irq_find_mapping(max8997->irq_domain, i);
->                if (cur_irq)
->                        handle_nested_irq(cur_irq);
->        }
+> This function really has nothing to do with host bridges.  Are you
+> sure there's no generic function you can use instead?
 
-Thanks for the suggestion. I will include this change and repost this patch.
-
-Regards,
-Thomas.
-
-[...]
+seems not.
