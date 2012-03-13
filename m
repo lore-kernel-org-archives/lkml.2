@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965187Ab2CMAYq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:24:46 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48816 "EHLO
+	id S1030180Ab2CMAb1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:31:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48853 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965161Ab2CMAYn (ORCPT
+	with ESMTP id S965186Ab2CMAYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:24:43 -0400
+	Mon, 12 Mar 2012 20:24:46 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Andy Gospodarek <andy@greyhouse.net>,
+Cc: stable-review@kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 164/196] tehuti: Firmware filename is tehuti/bdx.bin
-Date: Mon, 12 Mar 2012 20:21:17 -0400
-Message-Id: <1331598109-31424-119-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 177/196] hydra: Fix regression caused during net_device_ops conversion
+Date: Mon, 12 Mar 2012 20:21:30 -0400
+Message-Id: <1331598109-31424-132-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,46 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 46814e08d80f87449b5adb3d549a3cae6f9f8148 upstream.
+commit 0b25e0157dfa236a0629c16c8ad6f222f633f682 upstream.
 
-My conversion of tehuti to use request_firmware() was confused about
-the filename of the firmware blob.  Change the driver to match the
-blob.
+Changeset 5618f0d1193d6b051da9b59b0e32ad24397f06a4 ("hydra: convert to
+net_device_ops") broke hydra by adding 8390.o to the link. That
+meant that lib8390.c was included twice, once in hydra.c and once in
+8390.c, subject to different macros. This patch reverts that by
+avoiding the wrappers in 8390.c.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Andy Gospodarek <andy@greyhouse.net>
+Fix based on commits 217cbfa856dc1cbc2890781626c4032d9e3ec59f ("mac8390:
+fix regression caused during net_device_ops conversion") and
+4e0168fa4842e27795a75b205a510f25b62181d9 ("mac8390: fix build with
+NET_POLL_CONTROLLER").
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/tehuti.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/Makefile |    2 +-
+ drivers/net/hydra.c  |   14 +++++++-------
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/tehuti.c b/drivers/net/tehuti.c
-index f549309..cf4529c 100644
---- a/drivers/net/tehuti.c
-+++ b/drivers/net/tehuti.c
-@@ -324,7 +324,7 @@ static int bdx_fw_load(struct bdx_priv *priv)
- 	ENTER;
- 	master = READ_REG(priv, regINIT_SEMAPHORE);
- 	if (!READ_REG(priv, regINIT_STATUS) && master) {
--		rc = request_firmware(&fw, "tehuti/firmware.bin", &priv->pdev->dev);
-+		rc = request_firmware(&fw, "tehuti/bdx.bin", &priv->pdev->dev);
- 		if (rc)
- 			goto out;
- 		bdx_tx_push_desc_safe(priv, (char *)fw->data, fw->size);
-@@ -2518,4 +2518,4 @@ module_exit(bdx_module_exit);
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR(DRIVER_AUTHOR);
- MODULE_DESCRIPTION(BDX_DRV_DESC);
--MODULE_FIRMWARE("tehuti/firmware.bin");
-+MODULE_FIRMWARE("tehuti/bdx.bin");
+diff --git a/drivers/net/Makefile b/drivers/net/Makefile
+index 9ae1951..1c60c32 100644
+--- a/drivers/net/Makefile
++++ b/drivers/net/Makefile
+@@ -225,7 +225,7 @@ obj-$(CONFIG_SGI_IOC3_ETH) += ioc3-eth.o
+ obj-$(CONFIG_DECLANCE) += declance.o
+ obj-$(CONFIG_ATARILANCE) += atarilance.o
+ obj-$(CONFIG_A2065) += a2065.o
+-obj-$(CONFIG_HYDRA) += hydra.o 8390.o
++obj-$(CONFIG_HYDRA) += hydra.o
+ obj-$(CONFIG_ARIADNE) += ariadne.o
+ obj-$(CONFIG_CS89x0) += cs89x0.o
+ obj-$(CONFIG_MACSONIC) += macsonic.o
+diff --git a/drivers/net/hydra.c b/drivers/net/hydra.c
+index 24724b4..4b6cb8a 100644
+--- a/drivers/net/hydra.c
++++ b/drivers/net/hydra.c
+@@ -97,15 +97,15 @@ static const struct net_device_ops hydra_netdev_ops = {
+ 	.ndo_open		= hydra_open,
+ 	.ndo_stop		= hydra_close,
+ 
+-	.ndo_start_xmit		= ei_start_xmit,
+-	.ndo_tx_timeout		= ei_tx_timeout,
+-	.ndo_get_stats		= ei_get_stats,
+-	.ndo_set_multicast_list = ei_set_multicast_list,
++	.ndo_start_xmit		= __ei_start_xmit,
++	.ndo_tx_timeout		= __ei_tx_timeout,
++	.ndo_get_stats		= __ei_get_stats,
++	.ndo_set_multicast_list = __ei_set_multicast_list,
+ 	.ndo_validate_addr	= eth_validate_addr,
+-	.ndo_set_mac_address 	= eth_mac_addr,
++	.ndo_set_mac_address	= eth_mac_addr,
+ 	.ndo_change_mtu		= eth_change_mtu,
+ #ifdef CONFIG_NET_POLL_CONTROLLER
+-	.ndo_poll_controller	= ei_poll,
++	.ndo_poll_controller	= __ei_poll,
+ #endif
+ };
+ 
+@@ -124,7 +124,7 @@ static int __devinit hydra_init(struct zorro_dev *z)
+ 	0x10, 0x12, 0x14, 0x16, 0x18, 0x1a, 0x1c, 0x1e,
+     };
+ 
+-    dev = alloc_ei_netdev();
++    dev = ____alloc_ei_netdev(0);
+     if (!dev)
+ 	return -ENOMEM;
+ 
 -- 
 1.7.9.3
 
