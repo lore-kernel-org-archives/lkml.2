@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab2CMMBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:01:40 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49389
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751228Ab2CMMBi (ORCPT
+	id S1752751Ab2CMMEe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:04:34 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:48916 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab2CMMEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 08:01:38 -0400
-Date: Tue, 13 Mar 2012 08:01:37 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Christoph Hellwig <hch@infradead.org>, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond.Myklebust@netapp.com, sfrench@samba.org, sage@newdream.net,
-        ericvh@gmail.com
-Subject: Re: [PATCH 00/25] vfs: atomic open RFC
-Message-ID: <20120313120137.GA21755@infradead.org>
-References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
- <20120313095102.GA27480@infradead.org>
- <87y5r49362.fsf@tucsk.pomaz.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y5r49362.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 13 Mar 2012 08:04:30 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 00/20] cleanup atmel_mxt_ts
+Date: Tue, 13 Mar 2012 20:04:03 +0800
+Message-Id: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 12:00:05PM +0100, Miklos Szeredi wrote:
-> > Do we really need the opendata structure?
-> >
-> > It seems like we could just pass a struct path instead of the dentry
-> > passed directly and the vfsmount in it.  There should be no need to
-> > preallocate the file before calling into ->atomic_open, as it's only
-> > used to pass around f_flags - but we already pass that one to
-> > ->atomic_open directly and might as well pass it on to finish_open and
-> > allocate the file there.
-> 
-> We really don't want to get into the situation where the open fails
-> after a successful create(*).  Which means the file needs to be allocated
-> prior to calling ->atomic_open and needs to be passed to finish_open()
-> toghether with the vfsmount and dentry.
-> 
-> In the first version of the patch I set filp->f_path.mnt to nd->path.mnt
-> and passed the half initialized filp to ->atomic_open.  But then decided
-> that it's confusing for the filesystem code to deal with a half baked
-> filp (does it need to be fput on error?  etc...)
-> 
-> Doing it with an opaque opendata makes this cleaner I think.
+This patchset cleans up the atmel_mxt_ts touchscreen driver.
+In particular, it addresses the following issues:
 
-Make sense.  Can you throw in another cleanup patch to really just make
-it a pass-through and not also use it as a boolean flag if open_flags
-should be obeyed?  This probably will change sematincs for the various
-filesystems, but given that they should behave the same way that's a
-good thing.
+1) sysfs
+   a) fw_update only by root
+   b) allow writing config
+   c) add backupnv to save config to device flash
+2) faster initialization
+   a) read/write sets of registers using i2c block transactions
+   b) fetch object table as a set of i2c reads, one per object
+   c) write config data as a set of i2c writes, one per object
+3) faster interrupt processing & initialization times
+   a) cache important values at init instead of computing in isr
+   b) don't read message checksum byte (which isn't even enabled in fw)
+   c) read num messages first, instead of looking for 0xFF reportid
+   d) read all pending message bytes in one i2c read transaction
+4) more correct MT-B support
+   a) send all (changed) contacts in a single EV_SYN/SYN_REPORT
+
+Daniel Kurtz (20):
+  Input: atmel_mxt_ts - use CONFIG_PM_SLEEP
+  Input: atmel_mxt_ts - only allow root to update firmware
+  Input: atmel_mxt_ts - verify object size in mxt_write_object
+  Input: atmel_mxt_ts - refactor mxt_read/write_reg to take a length
+  Input: atmel_mxt_ts - dump mxt_read/write_reg
+  Input: atmel_mxt_ts - allow writing to object sysfs entry
+  Input: atmel_mxt_ts - add backupnv sysfs entry
+  Input: atmel_mxt_ts - store actual size and instance
+  Input: atmel_mxt_ts - do not read extra (checksum) byte
+  Input: atmel_mxt_ts - dump each message on just 1 line
+  Input: atmel_mxt_ts - refactor mxt_object_show
+  Input: atmel_mxt_ts - simplify event reporting
+  Input: atmel_mxt_ts - parse vector field of data packets
+  Input: atmel_mxt_ts - refactor reading object table
+  Input: atmel_mxt_ts - optimize writing of object table entries
+  Input: atmel_mxt_ts - refactor get info
+  Input: atmel_mxt_ts - use cached T9 reportid range in isr
+  Input: atmel_mxt_ts - read num messages, then all messages
+  Input: atmel_mxt_ts - remove mxt_make_highchg and parse T6 report
+  Input: atmel_mxt_ts - send all MT-B slots in one input report
+
+ drivers/input/touchscreen/atmel_mxt_ts.c |  590 +++++++++++++++---------------
+ 1 files changed, 286 insertions(+), 304 deletions(-)
+
+-- 
+1.7.7.3
+
