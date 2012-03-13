@@ -1,271 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab2CMEgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 00:36:50 -0400
-Received: from charybdis-ext.suse.de ([195.135.221.2]:31690 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab2CMEgs (ORCPT
+	id S1754506Ab2CMEh2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 00:37:28 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62187 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab2CMEh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 00:36:48 -0400
-Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
-From: joeyli <jlee@suse.com>
-To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-Cc: rpurdie@rpsys.net, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-In-Reply-To: <1331644360.3319.6.camel@debian.Gayathri>
-References: <CABNxG=CU+bOWUauLYfcS2vtFqKvXA-9axgokNoYz+KuU1Mzztw@mail.gmail.com>
-	 <4F5D000E.8040104@gmx.de>  <1331608245.10557.149.camel@linux-s257.site>
-	 <1331644360.3319.6.camel@debian.Gayathri>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Mar 2012 12:35:10 +0800
-Message-ID: <1331613310.10557.159.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Tue, 13 Mar 2012 00:37:26 -0400
+Message-ID: <4F5ECF01.2000402@openvz.org>
+Date: Tue, 13 Mar 2012 08:37:21 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: Fwd: Control page reclaim granularity
+References: <4F5D95AF.1020108@openvz.org> <20120312081413.GA10923@gmail.com> <20120312134226.GA5120@barrios> <4F5E05AD.20200@openvz.org> <20120313024818.GA7125@barrios>
+In-Reply-To: <20120313024818.GA7125@barrios>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pradeep, 
+Minchan Kim wrote:
+> On Mon, Mar 12, 2012 at 06:18:21PM +0400, Konstantin Khlebnikov wrote:
+>> Minchan Kim wrote:
+>>> On Mon, Mar 12, 2012 at 04:14:14PM +0800, Zheng Liu wrote:
+>>>> On 03/12/2012 02:20 PM, Konstantin Khlebnikov wrote:
+>>>>> Minchan Kim wrote:
+>>>>>> On Mon, Mar 12, 2012 at 10:06:09AM +0800, Zheng Liu wrote:
+<CUT>
+>>>>>>
+>>>>>> Now problem is that
+>>>>>>
+>>>>>> 1. User want to keep pages which are used once in a while in memory.
+>>>>>> 2. Kernel want to reclaim them because they are surely reclaim target
+>>>>>>      pages in point of view by LRU.
+>>>>>>
+>>>>>> The most desriable approach is that user should use mlock to guarantee
+>>>>>> them in memory. But mlock is too big overhead and user doesn't want to
+>>>>>> keep
+>>>>>> memory all pages all at once.(Ie, he want demand paging when he need
+>>>>>> the page)
+>>>>>> Right?
+>>>>>>
+>>>>>> madvise, it's a just hint for kernel and kernel doesn't need to make
+>>>>>> sure madvise's behavior.
+>>>>>> In point of view, such inconsistency might not be a big problem.
+>>>>>>
+>>>>>> Big problem I think now is that user should use madvise(WILLNEED)
+>>>>>> periodically because such
+>>>>>> activation happens once when user calls madvise. If user doesn't use
+>>>>>> page frequently after
+>>>>>> user calls it, it ends up moving into inactive list and even could be
+>>>>>> reclaimed.
+>>>>>> It's not good. :-(
+>>>>>>
+>>>>>> Okay. How about adding new VM_WORKINGSET?
+>>>>>> And reclaimer would give one more round trip in active/inactive list
+>>>>>> erwhen reclaim happens
+>>>>>> if the page is referenced.
+>>>>>>
+>>>>>> Sigh. We have no room for new VM_FLAG in 32 bit.
+>>>>> p
+>>>>> It would be nice to mark struct address_space with this flag and export
+>>>>> AS_UNEVICTABLE somehow.
+>>>>> Maybe we can reuse file-locking engine for managing these bits =)
+>>>>
+>>>> Make sense to me.  We can mark this flag in struct address_space and check
+>>>> it in page_refereneced_file().  If this flag is set, it will be cleard and
+>>>
+>>> Disadvantage is that we could set reclaim granularity as per-inode.
+>>> I want to set it as per-vma, not per-inode.
+>>
+>> But with per-inode flag we can tune all files, not only memory-mapped.
+>
+> I don't oppose per-inode setting but I believe we need file range or mmapped vma,
+> still. One file may have different characteristic part, something is working set
+> something is streaming part.
+>
+>> See, attached patch. Currently I thinking about managing code,
+>> file-locking engine really fits perfectly =)
+>
+> file-locking engine?
+> You consider fcntl as interface for it?
+> What do you mean?
+>
 
-I think the following command doesn't work to you:
+If we set bits on inode we somehow account its users and clear AS_WORKINGSET and AS_UNEVICTABLE
+at last file close. We can use file-locking engine for locking inodes in memory -- file lock automatically
+release inode at last fput(). Maybe it's too tricky and we should add couple simple atomic counters to
+generic strict inode (like i_writecount/i_readcount) but in this case we will add new code on fast-path.
+So, looks like invention new kind of struct file_lock is best approach.
+I don't want implement range-locking for now, but I can do it if somebody really wants this.
 
-echo 5 > /sys/class/backlight/acpi_video0/brightness
-
-It the above command not work, that means EC didn't change backlight
-value:
-
-Method (_BCM, 1, NotSerialized)
-{
-    Divide (Arg0, 0x0A, Local0, Local1)
-    Decrement (Local1)
-    Store (Local1, ^^^^LPC.EC0.BRTS)	<=== write backlight value to EC register
-}
-
-Per my understood, EC firmware should change brightness but didn't do that, another
-way is touch i915 register in _BCM.
-
-Acer machine provide a broken _BCM implementation and they didn't test it.
-
-
-Thanks a lot!
-Joey Lee
-
-於 二，2012-03-13 於 09:12 -0400，Pradeep Subrahmanion 提到：
-> Hi Joey, 
-> 
-> yes , /sys/class/backlight/intel_backlight exists . I tried giving
-> acpi_backlight=vendor in grub config.Hot keys works like earlier.But
-> increasing brightness after maximum levels give blank screen(like
-> earlier). 
-> 
-> I have attached acpidump.
->  
-> ----
-> Thanks  , 
->  
-> Pradeep Subrahmanion
-> 
-> On Tue, 2012-03-13 at 11:10 +0800, joeyli wrote:
-> > Hi Pradeep, 
-> > 
-> > 於 日，2012-03-11 於 19:42 +0000，Florian Tobias Schandinat 提到：
-> > > Hi,
-> > > 
-> > > On 03/11/2012 06:21 PM, Pradeep Subrahmanion wrote:
-> > > > Hi ,
-> > > > 
-> > > >          Brightness control was not  working on Acer Aspire 4736 using
-> > > > default ACPI interface.  acer-acpi also do not support 4730 series since
-> > > > it uses new WMI interface.
-> > > > This driver adds brightness control by accessing the LBB PCI
-> > > > configuration register. This approach may also work on other laptops in
-> > > > 4730 series .But currently ,  it is only tested  for 
-> > > > Aspire 4736.  
-> > > > 
-> > 
-> > Pleae check does there have following interface?
-> > 
-> > /sys/class/backlight/intel_backlight
-> > 
-> > And,
-> > did you try kernel parameter "acpi_backlight=vendor", does it work to
-> > you?
-> > 
-> > Please attach acpidump: acpidump > acpidump.dat
-> > 
-> > 
-> > Thanks
-> > Joey Lee
-> > 
-> > > > From 893031c1e9bdefd9642b98825062b5df98af0d77 Mon Sep 17 00:00:00 2001
-> > > > From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com
-> > > > <mailto:subrahmanion.pradeep@gmail.com>>
-> > > > Date: Sun, 11 Mar 2012 23:11:23 -0400
-> > > > Subject: [PATCH] Added backlight driver for Acer Aspire 4736
-> > > > 
-> > > 
-> > > the commit message should be here, I think.
-> > > 
-> > > > 
-> > > > Signed-off-by: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com
-> > > > <mailto:subrahmanion.pradeep@gmail.com>>
-> > > 
-> > > Please resend this email in the correct format: As you can see in my
-> > > email the text version of your patch is severely screwed up and nobody
-> > > wants to even try converting a HTML format to a proper patch again,
-> > > probably most people won't even receive an email that has a HTML part as
-> > > their spam filter are going to handle it as spam. git send-email will
-> > > take care of it for you if you configure it for your account.
-> > > You should also cc Andrew Morton <akpm@linux-foundation.org> as he's the
-> > > one who handles backlight patches at the moment.
-> > > 
-> > > 
-> > > Best regards,
-> > > 
-> > > Florian Tobias Schandinat
-> > > 
-> > > > ---
-> > > >  drivers/video/backlight/acer4736_bl.c |  110
-> > > > +++++++++++++++++++++++++++++++++
-> > > >  1 files changed, 110 insertions(+), 0 deletions(-)
-> > > >  create mode 100644 drivers/video/backlight/acer4736_bl.c
-> > > > 
-> > > > diff --git a/drivers/video/backlight/acer4736_bl.c
-> > > > b/drivers/video/backlight/acer4736_bl.c
-> > > > new file mode 100644
-> > > > index 0000000..6fe2937
-> > > > --- /dev/null
-> > > > +++ b/drivers/video/backlight/acer4736_bl.c
-> > > > @@ -0,0 +1,110 @@
-> > > > +/*
-> > > > + * Backlight driver for Acer Aspire 4736
-> > > > + *
-> > > > + * Copyright (C) Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com
-> > > > <mailto:subrahmanion.pradeep@gmail.com>>
-> > > > + *
-> > > > + * This program is free software; you can redistribute it and/or modify
-> > > > + * it under the terms of the GNU General Public License version 2 as
-> > > > + * published by the Free Software Foundation.
-> > > > + *
-> > > > + * This driver uses LBB PCI configuration register to change the
-> > > > + * backlight brightness.
-> > > > + *
-> > > > + */
-> > > > +
-> > > > +#include <linux/module.h>
-> > > > +#include <linux/kernel.h>
-> > > > +#include <linux/init.h>
-> > > > +#include <linux/backlight.h>
-> > > > +#include <linux/err.h>
-> > > > +#include <linux/dmi.h>
-> > > > +#include <linux/io.h>
-> > > > +#include <linux/pci.h>
-> > > > +
-> > > > +static u8 max_brightness = 0xFF;
-> > > > +static u8 lbb_offset =  0xF4;
-> > > > +static unsigned int device_id = 0x2a42;
-> > > > +static unsigned int vendor_id = 0x8086;
-> > > > +
-> > > > +struct backlight_device *acer_backlight_device;
-> > > > +struct pci_dev *pdev;
-> > > > +
-> > > > +static int acer_dmi_match(const struct dmi_system_id *id)
-> > > > +{
-> > > > + printk(KERN_INFO "acer4736_bl: %s detected\n", id->ident);
-> > > > + return 1;
-> > > > +}
-> > > > +
-> > > > +static const struct dmi_system_id __initdata acer_device_table[] = {
-> > > > +{
-> > > > + .callback = acer_dmi_match,
-> > > > + .ident = "Aspire 4736",
-> > > > + .matches = {
-> > > > + DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-> > > > + DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 4736"),
-> > > > + },
-> > > > + },
-> > > > + {}
-> > > > +};
-> > > > +static int read_brightness(struct backlight_device *bd)
-> > > > +{
-> > > > + u8 result;
-> > > > + pci_read_config_byte(pdev, lbb_offset, &result);
-> > > > + return result;
-> > > > +}
-> > > > +
-> > > > +static int update_brightness(struct backlight_device *bd)
-> > > > +{
-> > > > + u8 intensity = bd->props.brightness;
-> > > > + if (intensity > max_brightness) {
-> > > > + printk(KERN_INFO "Acer4736_bl: Invalid parameter. Maximum value is %d"
-> > > > + , max_brightness);
-> > > > + return -1;
-> > > > + }
-> > > > + pci_write_config_byte(pdev, lbb_offset, intensity);
-> > > > + return 0;
-> > > > +}
-> > > > +static const struct  backlight_ops acer_backlight_ops = {
-> > > > + .get_brightness = read_brightness,
-> > > > + .update_status  = update_brightness,
-> > > > +};
-> > > > +
-> > > > +static int __init acer4736_bl_init(void)
-> > > > +{
-> > > > + struct backlight_properties props;
-> > > > + if (!dmi_check_system(acer_device_table))
-> > > > + return -ENODEV;
-> > > > +
-> > > > + pdev = pci_get_device(vendor_id, device_id, NULL);
-> > > > +
-> > > > + if (!pdev)
-> > > > + return -ENODEV;
-> > > > +
-> > > > + printk(KERN_INFO "Loading Acer 4736 backlight driver\n");
-> > > > + memset(&props, 0, sizeof(struct backlight_properties));
-> > > > + props.type = BACKLIGHT_RAW;
-> > > > + props.max_brightness = max_brightness;
-> > > > +
-> > > > + acer_backlight_device = backlight_device_register("acer_backlight",
-> > > > + NULL, NULL, &acer_backlight_ops, &props);
-> > > > + acer_backlight_device->props.max_brightness = max_brightness;
-> > > > + acer_backlight_device->props.brightness  =
-> > > > + read_brightness(acer_backlight_device);
-> > > > + backlight_update_status(acer_backlight_device);
-> > > > +
-> > > > + return 0;
-> > > > +}
-> > > > +
-> > > > +static void __exit acer4736_bl_exit(void)
-> > > > +{
-> > > > + pci_dev_put(pdev);
-> > > > + backlight_device_unregister(acer_backlight_device);
-> > > > +}
-> > > > +
-> > > > +module_init(acer4736_bl_init);
-> > > > +module_exit(acer4736_bl_exit);
-> > > > +
-> > > > +MODULE_AUTHOR("Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com
-> > > > <mailto:subrahmanion.pradeep@gmail.com>>");
-> > > > +MODULE_DESCRIPTION("Acer Aspire 4736 Backlight Driver");
-> > > > +MODULE_LICENSE("GPL");
-> > > > +MODULE_DEVICE_TABLE(dmi, acer_device_table);
-> > > > -- 
-> > > > 1.7.2.5
-> > > > 
-> > > > -------------  
-> > > > 
-> > > > Pradeep Subrahmanion
-> > > 
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> > > 
-> > 
-> > 
-> 
-
-
+Yes, we can use fcntl(), but fadvise() is much better.
