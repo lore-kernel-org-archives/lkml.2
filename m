@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758514Ab2CMAWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:22:14 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47519 "EHLO
+	id S1758488Ab2CMAWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:22:11 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47441 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758424Ab2CMAWM (ORCPT
+	with ESMTP id S1758258Ab2CMAWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:22:12 -0400
+	Mon, 12 Mar 2012 20:22:05 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        "Philip A. Prindeville" <philipp@redfish-solutions.com>,
+Cc: stable-review@kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 051/196] atm/solos-pci: Don't include frame pseudo-header on transmit hex-dump
-Date: Mon, 12 Mar 2012 20:19:24 -0400
-Message-Id: <1331598109-31424-6-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 047/196] gro: Reset dev pointer on reuse
+Date: Mon, 12 Mar 2012 20:19:20 -0400
+Message-Id: <1331598109-31424-2-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,60 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Philip A. Prindeville" <philipp@redfish-solutions.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 18b429e74eeafe42e947b1b0f9a760c7153a0b5c upstream.
+commit 66c46d741e2e60f0e8b625b80edb0ab820c46d7a upstream.
 
-Omit pkt_hdr preamble when dumping transmitted packet as hex-dump;
-we can pull this up because the frame has already been sent, and
-dumping it is the last thing we do with it before freeing it.
+On older kernels the VLAN code may zero skb->dev before dropping
+it and causing it to be reused by GRO.
 
-Also include the size, vpi, and vci in the debug as is done on
-receive.
+Unfortunately we didn't reset skb->dev in that case which causes
+the next GRO user to get a bogus skb->dev pointer.
 
-Use "port" consistently instead of "device" intermittently.
+This particular problem no longer happens with the current upstream
+kernel due to changes in VLAN processing.
 
-Signed-off-by: Philip Prindeville <philipp@redfish-solutions.com>
+However, for correctness we should still reset the skb->dev pointer
+in the GRO reuse function in case a future user does the same thing.
+
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/atm/solos-pci.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ net/core/dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
-index 3613422..6ba851b 100644
---- a/drivers/atm/solos-pci.c
-+++ b/drivers/atm/solos-pci.c
-@@ -695,7 +695,7 @@ void solos_bh(unsigned long card_arg)
- 					      size);
- 			}
- 			if (atmdebug) {
--				dev_info(&card->dev->dev, "Received: device %d\n", port);
-+				dev_info(&card->dev->dev, "Received: port %d\n", port);
- 				dev_info(&card->dev->dev, "size: %d VPI: %d VCI: %d\n",
- 					 size, le16_to_cpu(header->vpi),
- 					 le16_to_cpu(header->vci));
-@@ -1015,8 +1015,15 @@ static uint32_t fpga_tx(struct solos_card *card)
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 3095934..19a74f6 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2822,6 +2822,7 @@ void napi_reuse_skb(struct napi_struct *napi, struct sk_buff *skb)
+ {
+ 	__skb_pull(skb, skb_headlen(skb));
+ 	skb_reserve(skb, NET_IP_ALIGN - skb_headroom(skb));
++	skb->dev = napi->dev;
  
- 			/* Clean up and free oldskb now it's gone */
- 			if (atmdebug) {
-+				struct pkt_hdr *header = (void *)oldskb->data;
-+				int size = le16_to_cpu(header->size);
-+
-+				skb_pull(oldskb, sizeof(*header));
- 				dev_info(&card->dev->dev, "Transmitted: port %d\n",
- 					 port);
-+				dev_info(&card->dev->dev, "size: %d VPI: %d VCI: %d\n",
-+					 size, le16_to_cpu(header->vpi),
-+					 le16_to_cpu(header->vci));
- 				print_buffer(oldskb);
- 			}
- 
+ 	napi->skb = skb;
+ }
 -- 
 1.7.9.3
 
