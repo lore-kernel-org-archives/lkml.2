@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760300Ab2CMWoQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 18:44:16 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41043 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758573Ab2CMWoP (ORCPT
+	id S1760369Ab2CMWoZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 18:44:25 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:53752 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760312Ab2CMWoX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 18:44:15 -0400
-Date: Tue, 13 Mar 2012 15:44:11 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andrew Miller <amiller@amilx.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8187se: r8180_core.c: Fix spacing issue
-Message-ID: <20120313224411.GB12677@kroah.com>
-References: <1331441798-3507-1-git-send-email-amiller@amilx.com>
+	Tue, 13 Mar 2012 18:44:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331441798-3507-1-git-send-email-amiller@amilx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120313154945.GA7349@google.com>
+References: <20120312142226.GD17288@redhat.com>
+	<1331659266-21940-1-git-send-email-xtfeng@gmail.com>
+	<20120313142820.GF29169@redhat.com>
+	<20120313154945.GA7349@google.com>
+Date: Wed, 14 Mar 2012 06:44:22 +0800
+Message-ID: <CAJn8CcHk3Q1ke7839s+pKzkEeo6dGdNsZBHhEUek7c7=dp3y3w@mail.gmail.com>
+Subject: Re: [PATCH v2] block: fix ioc leak in put_io_context
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 10, 2012 at 11:56:38PM -0500, Andrew Miller wrote:
-> Fix spacing coding style issues
-> 
-> Signed-off-by: Andrew Miller <amiller@amilx.com>
-> ---
->  drivers/staging/rtl8187se/r8180_core.c |   46 +++++++++++++++++--------------
->  1 files changed, 25 insertions(+), 21 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
-> index 05f25eb..6a0c592 100644
-> --- a/drivers/staging/rtl8187se/r8180_core.c
-> +++ b/drivers/staging/rtl8187se/r8180_core.c
-> @@ -2617,28 +2617,32 @@ void watch_dog_adaptive(unsigned long data)
->  }
->  
->  static CHANNEL_LIST ChannelPlan[] = {
-> -	{{1,2,3,4,5,6,7,8,9,10,11,
-> -	36,40,44,48,52,56,60,64},19},		/* FCC */
-> -	{{1,2,3,4,5,6,7,8,9,10,11},11},		/* IC */
-> -	{{1,2,3,4,5,6,7,8,9,10,11,
-> -	12,13,36,40,44,48,52,56,60,64},21},	/* ETSI */
-> -	{{1,2,3,4,5,6,7,8,9,10,11,
-> -	12,13,36,40,44,48,52,56,60,64},21},	/* Spain. Change to ETSI. */
-> -	{{1,2,3,4,5,6,7,8,9,10,11,
-> -	12,13,36,40,44,48,52,56,60,64},21},	/* France. Change to ETSI. */
-> -	{{14,36,40,44,48,52,56,60,64},9},	/* MKK */
-> -	{{1,2,3,4,5,6,7,8,9,10,11,
-> -	12,13,14, 36,40,44,48,52,56,60,64},22}, /* MKK1 */
-> -	{{1,2,3,4,5,6,7,8,9,10,11,
-> -	12,13,36,40,44,48,52,56,60,64},21},	/* Israel. */
-> -	{{1,2,3,4,5,6,7,8,9,10,11,
-> -	12,13,34,38,42,46},17},			/* For 11a , TELEC */
-> -	{{1,2,3,4,5,6,7,8,9,10,11,
-> -	12,13,14},14},  /* For Global Domain. 1-11:active scan,
-> +	{{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-> +	36, 40, 44, 48, 52, 56, 60, 64}, 19},	/* FCC */
-> +	{{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}, 11}, /* IC */
-> +	{{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-> +	12, 13, 36, 40, 44, 48, 52, 56, 60, 64}, 21}, /* ETSI */
-> +	{{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-> +	12, 13, 36, 40, 44, 48, 52, 56, 60, 64}, 21}, /* Spain. Change
-> +						       * to ETSI. */
-> +	{{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-> +	12, 13, 36, 40, 44, 48, 52, 56, 60, 64}, 21}, /* France. Change
-> +						       * to ETSI. */
-> +	{{ 14, 36, 40, 44, 48, 52, 56, 60, 64}, 9}, /* MKK */
-> +	{{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-> +	12, 13, 14, 36, 40, 44, 48, 52, 56, 60, 64}, 22}, /* MKK1 */
-> +	{{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-> +	12, 13, 36, 40, 44, 48, 52, 56, 60, 64}, 21}, /* Israel. */
-> +	{{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-> +	12, 13, 34, 38, 42, 46}, 17},		/* For 11a , TELEC */
-> +	{{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-> +	12, 13, 14}, 14},  /* For Global Domain. 1-11:active scan,
+On Tue, Mar 13, 2012 at 11:49 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Tue, Mar 13, 2012 at 10:28:20AM -0400, Vivek Goyal wrote:
+>> On Tue, Mar 13, 2012 at 01:21:06PM -0400, Xiaotian Feng wrote:
+>> > diff --git a/block/blk-ioc.c b/block/blk-ioc.c
+>> > index 8b782a6..9690f27 100644
+>> > --- a/block/blk-ioc.c
+>> > +++ b/block/blk-ioc.c
+>> > @@ -145,6 +145,7 @@ static void ioc_release_fn(struct work_struct *work)
+>> >  void put_io_context(struct io_context *ioc)
+>> >  {
+>> >     unsigned long flags;
+>> > +   bool free_ioc = false;
+>> >
+>> >     if (ioc == NULL)
+>> >             return;
+>> > @@ -159,8 +160,13 @@ void put_io_context(struct io_context *ioc)
+>> >             spin_lock_irqsave(&ioc->lock, flags);
+>> >             if (!hlist_empty(&ioc->icq_list))
+>> >                     schedule_work(&ioc->release_work);
+>> > +           else
+>> > +                   free_ioc = true;
+>
+> Calling kmem_cache_free() here directly is probably better.
 
-That's easier to read?  Not to me, how about putting them each on one
-line?  Yes, that makes for longer lines, but it makes more sense, right?
+I did this on my first try, but I got a kernel warning with the
+following spin_unlock on ioc->lock :(
+We'll hit a use after free bug then...
 
-And what's with the first ' ' on each set of numbers?
-
->  			 * 12-14 passive scan. //+YJ, 080626 */
-> -	{{1,2,3,4,5,6,7,8,9,10,11,12,13},13} /* world wide 13: ch1~ch11 active
-> -					      * scan, ch12~13 passive //lzm
-> -					      * add 080826 */
-> +	{{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}, 13} /* world wide 13:
-> +							    * ch1~ch11 active
-> +					      		    * scan, ch12~13
-> +					      		    * passive //lzm
-> +					      		    * add 080826 */
-
-That makes the comment impossible to read.
-
-Please be smarter, this is to be done to make it easy for humans, not to
-just blindly follow a tool's "warnings".
-
-thanks,
-
-greg k-h
+>
+>> >             spin_unlock_irqrestore(&ioc->lock, flags);
+>> >     }
+>> > +
+>> > +   if (free_ioc)
+>> > +           kmem_cache_free(iocontext_cachep, ioc);
+>> >  }
+>> >  EXPORT_SYMBOL(put_io_context);
+>>
+>> This one looks good to me. Tejun?
+>>
+>> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+>
+> Acked-by: Tejun Heo <tj@kernel.org>
+>
+> Thanks.
+>
+> --
+> tejun
