@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758743Ab2CMRZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 13:25:23 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42925 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758691Ab2CMRZV (ORCPT
+	id S1758786Ab2CMRZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 13:25:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42815 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758691Ab2CMRZ5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 13:25:21 -0400
-Date: Tue, 13 Mar 2012 10:25:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-Cc: Chris Ball <cjb@laptop.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 3/3] mmc: sdhci-pci: allow 8-bit bus width for Intel PCH
-Message-ID: <20120313172514.GA28309@kroah.com>
-References: <1331659002-13743-1-git-send-email-alexander.stein@systec-electronic.com>
- <1331659002-13743-3-git-send-email-alexander.stein@systec-electronic.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331659002-13743-3-git-send-email-alexander.stein@systec-electronic.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Mar 2012 13:25:57 -0400
+Message-ID: <1331659537.18960.84.camel@twins>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Michal Schmidt <mschmidt@redhat.com>
+Date: Tue, 13 Mar 2012 18:25:37 +0100
+In-Reply-To: <20120313141032.GD29169@redhat.com>
+References: <20120221211938.GE12236@google.com>
+	 <20120312221050.GG23255@google.com> <1331590938.18960.57.camel@twins>
+	 <20120312222817.GI23255@google.com> <1331591568.18960.61.camel@twins>
+	 <20120312223944.GJ23255@google.com> <1331592241.18960.64.camel@twins>
+	 <20120312230416.GM23255@google.com> <20120313141032.GD29169@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 06:16:42PM +0100, Alexander Stein wrote:
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -2800,6 +2800,8 @@
->  #define PCI_DEVICE_ID_INTEL_82454NX     0x84cb
->  #define PCI_DEVICE_ID_INTEL_84460GX	0x84ea
->  #define PCI_DEVICE_ID_INTEL_IXP4XX	0x8500
-> +#define PCI_DEVICE_ID_INTEL_PCH_SDIO0	0x8809
-> +#define PCI_DEVICE_ID_INTEL_PCH_SDIO1	0x880a
->  #define PCI_DEVICE_ID_INTEL_IXP2800	0x9004
->  #define PCI_DEVICE_ID_INTEL_S21152BB	0xb152
+On Tue, 2012-03-13 at 10:10 -0400, Vivek Goyal wrote:
+> Implementing hierarchy is a pain and is expensive at run time. 
 
-Did you read the comment at the top of this file before adding your new
-device ids?
+Yeah, suck it up :-)
 
-If not, please do so, and redo your patch.
+I would really rather we mandate one implementation standard for
+controllers for the sake of consistency and uniformity. A direct result
+of doing away with the multiple hierarchy crap is that all controllers
+are co-mounted. Allowing differences like this just doesn't make any
+sense.
 
-thanks,
+So either we drop full hierarchy support from all controllers or we
+deprecate and remove all non-hierarchical controllers.
 
-greg k-h
+I'm fine with either, but I'm not fine with with the half-arsed
+solutions proposed here.
