@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab2CMNrl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 09:47:41 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.160]:53202 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab2CMNrj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 09:47:39 -0400
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lq3M7qFLaZ
-X-RZG-CLASS-ID: mo00
-Date: Tue, 13 Mar 2012 14:47:30 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [34-longterm 020/196] staging: hv: use sync_bitops when
- interacting with the hypervisor
-Message-ID: <20120313134730.GB15096@aepfle.de>
-References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
- <1331597724-31358-21-git-send-email-paul.gortmaker@windriver.com>
- <20120313070002.GA19629@aepfle.de>
- <4F5F4C86.5050501@windriver.com>
+	id S1754224Ab2CMNti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 09:49:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61468 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753331Ab2CMNth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 09:49:37 -0400
+Date: Tue, 13 Mar 2012 09:49:22 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Michal Schmidt <mschmidt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFD] cgroup: about multiple hierarchies
+Message-ID: <20120313134922.GB29169@redhat.com>
+References: <20120221211938.GE12236@google.com>
+ <20120312221050.GG23255@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F5F4C86.5050501@windriver.com>
-User-Agent: Mutt/1.5.21.rev5543 (2011-12-20)
+In-Reply-To: <20120312221050.GG23255@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, Paul Gortmaker wrote:
-
-> On 12-03-13 03:00 AM, Olaf Hering wrote:
-> > On Mon, Mar 12, Paul Gortmaker wrote:
-> > 
-> >> From: Olaf Hering <olaf@aepfle.de>
-> >>
-> >>                    -------------------
-> >>     This is a commit scheduled for the next v2.6.34 longterm release.
-> >>     If you see a problem with using this for longterm, please comment.
-> >>                    -------------------
-> >>
-> >> commit 22356585712d1ff08fbfed152edd8b386873b238 upstream.
-> > 
-> > Unless there is a happy user of the hv drivers in this old kernel, it
-> > makes no sense to backport just this one patch.
+On Mon, Mar 12, 2012 at 03:10:50PM -0700, Tejun Heo wrote:
+> Hello, guys.
 > 
-> There is no real way any of can tell just exactly who is using what
-> feature in what release.
+> Thanks a lot for the discussion and here are my take aways:
+> 
+> * At least to me, nobody seems to have strong enough justification for
+>   orthogonal multiple hierarchies, so, yeah, unless something else
+>   happens, I'm scheduling multiple hierarchy support for the chopping
+>   block.  This is a long term thing (think years), so no need to panic
+>   right now and as is life plans may change and fail to materialize,
+>   but I intend to at least move away from it.
 
-Sure.
-As it stands, the hv drivers in this version are not very stable, more
-backports are needed. So whoever is using .34 as a base will most likely
-have many more changes in his patchset.
+So everything will be under single hierarchy? How will we control that
+what controllers are active on what cgroups? Or all controllers are going
+to be active on all cgroups on that hierarchy. 
 
-If you want to apply this change, go ahead. I just wanted to point out
-the state of the drivers.
+That would be bad for IO cgroups where a better way to use it to isolate
+the trouble making workload and run rest in root or a common cgroup.
 
-Olaf
+Thanks
+Vivek
