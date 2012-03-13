@@ -1,80 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964814Ab2CMXHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 19:07:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24066 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760063Ab2CMXHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 19:07:06 -0400
-Date: Tue, 13 Mar 2012 20:04:12 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] KVM: Avoid checking huge page mappings in
- get_dirty_log()
-Message-ID: <20120313230412.GA12153@amt.cnet>
-References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
- <20120301193216.b14538bb.yoshikawa.takuya@oss.ntt.co.jp>
+	id S964845Ab2CMXJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 19:09:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42704 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760410Ab2CMXJm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 19:09:42 -0400
+Date: Tue, 13 Mar 2012 23:09:39 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        Peter Hsiang <cdefgab1288@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: max98095: add jack detection
+Message-ID: <20120313230939.GO3177@opensource.wolfsonmicro.com>
+References: <1331667848-8168-1-git-send-email-rklein@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1HuzLmPZrG5RH6bG"
 Content-Disposition: inline
-In-Reply-To: <20120301193216.b14538bb.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <1331667848-8168-1-git-send-email-rklein@nvidia.com>
+X-Cookie: You will be married within a year.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 01, 2012 at 07:32:16PM +0900, Takuya Yoshikawa wrote:
-> Dropped such mappings when we enabled dirty logging and we will never
-> create new ones until we stop the logging.
-> 
-> For this we introduce a new function which can be used to write protect
-> a range of PT level pages: although we do not need to care about a range
-> of pages at this point, the following patch will need this feature to
-> optimize the write protection of many pages.
-> 
-> Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-> ---
->  arch/x86/include/asm/kvm_host.h |    5 ++-
->  arch/x86/kvm/mmu.c              |   40 +++++++++++++++++++++++++++++---------
->  arch/x86/kvm/x86.c              |    8 ++----
->  3 files changed, 36 insertions(+), 17 deletions(-)
 
-This is a race with hugetlbfs which is not an issue ATM (it is 
-hidden by the removal of huge sptes in get_dirty).
+--1HuzLmPZrG5RH6bG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Tue, Mar 13, 2012 at 12:44:08PM -0700, Rhyland Klein wrote:
 
-guest fault                                     enable dirty logging
+> This change adds the logic to support using the jack detect mechanism built
+> in to the codec to detect both when a jack was inserted and what type of
+> jack is present.
 
-tdp_page_fault (all _page_fault functions)      kvm_set_memory_region
+This looks mostly good, a few things below.
 
+> @@ -51,6 +52,9 @@ struct max98095_priv {
+>  	u8 lin_state;
+>  	unsigned int mic1pre;
+>  	unsigned int mic2pre;
+> +	int irq;
 
-level = mapping_level(vcpu, gfn)
-(finds level == 2 or 3)
+You can just get the irq from the I2C device.
 
+> +	if (max98095->headphone_jack == max98095->mic_jack)
+> +		snd_soc_jack_report(max98095->headphone_jack,
+> +					hp_report | mic_report,
+> +					SND_JACK_HEADSET);
+> +	else {
 
-                                                rcu_assign_pointer(slot
-								   with 
-                                                                   ->dirty_bitmap)
-                                                synchronize_srcu_expedited()
-schedule()
-                                                kvm_arch_commit_memory_region()
-                                                spin_lock(mmu_lock)
-                                                kvm_mmu_slot_remove_write_access()
-						removes large sptes
-                                                spin_unlock(mmu_lock)
-spin_lock(mmu_lock)
-create large spte accordingly
-to level above
-spin_unlock(mmu_lock)
+Braces on both sides of the if for clarity.
 
-Not removing large sptes in get_dirty means this racy sptes could
-live from the start of migration to the end of it.
+> +static irqreturn_t max98095_jack_handler(int irq, void *data)
+> +{
+> +	struct snd_soc_codec *codec = data;
+> +	int ret;
+> +
+> +	ret = max98095_report_jack(codec);
+> +
+> +	return ret ? IRQ_NONE : IRQ_HANDLED;
 
-It can be fixed with a preceding patch that checks whether
-slot->dirty_bitmap value changes between mapping_level and after
-mmu_lock acquision, similarly to mmu_seq. Also please add a 
-WARN_ON in mmu_set_spte if(slot->dirty_bitmap && level > 1).
-And document it clearly.
+There is no point in having a separate function here, this function has
+no contents.  Just inline it.  Please also avoid the use of the ternery
+operator.
 
+> +	/* configure jack detection: slew is calculated as 4 * (delay + 1)
+> +	 * The default is 24 (0x18) to get 100ms delay.
+> +	 */
+> +	ret = snd_soc_write(codec, M98095_08E_JACK_DC_SLEW,
+> +				M98095_DEFAULT_SLEW_DELAY);
+> +	if (ret < 0) {
+> +		dev_err(codec->dev, "Failed to cfg auto detect %d\n", ret);
+> +		return ret;
+> +	}
 
+Platform data?
+
+> +	enable_irq(max98095->irq);
+
+You shouldn't be fiddling around with enable_irq() and disable_irq().
+Why are you doing this?
+
+--1HuzLmPZrG5RH6bG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPX9OtAAoJEBus8iNuMP3deCQP/RN1o6j/vjrZf43Y/Nw/iik9
+ja5uoUWE7K3AoF0gqIeEm2Qk7RI1lUiKPQiAMGXppJvSlMDr+2kWWJiKejxhGU5W
+GLkfDiUAHvfXT4m4r+GPYwTdQPyJF5kX3uQUEd13jEQHz2Mbq/I5646n1d5EQ2T0
+KVnCQGlIutqYj1p+j6eHTKS2u8fRwuw1WMJoJr03+VS3b3Uw9C2wu82LmvNN8O0x
+GMyiIhwwH/xwNasSeYzO85RKkB8nnmvNWhLK1oZKo6Wux6YWs+iKaBV0E+ZpXheV
+sjmvfLnoTXyycZjPxL6Xq6JJAba9yTKermG0kTK/BnFWbEh6FtFHsTE0ejPARjqg
+u25+CvtyzHAP0MVUlvgqbWw21fEN0VhtCdQiUCqkw5vnXEQJh4YOwE96gBHdl4Gh
+/1ZP5f1Wdbh2xIOLBmGzZCiGl1wM/oaegheNXje6h5u39iD6fc6wxKnCQz7a8moV
+jHRxH7o8n8Qs5rSfalXb/HY2P2on5gN3EvcowGftRIgBxbEISei/S9z5h0jUfRY4
+kMEPg7YYfmDvLr8V/yVViTLGiJBOZ9yeiT3yNMU3Q7C5R+kAN7iFK5yxnS+qwX4W
+uVJur8sLOJk2ymWxbKcfQU5WRG34mHA3UI6cBxVr5CdAL7ChuAbGNIY6s/ntqqQi
+wg28OGVf233EG78bk4bD
+=fepc
+-----END PGP SIGNATURE-----
+
+--1HuzLmPZrG5RH6bG--
