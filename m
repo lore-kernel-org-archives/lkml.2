@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964791Ab2CMAS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:18:27 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46887 "EHLO
+	id S1758327Ab2CMATE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:19:04 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46986 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab2CMASY (ORCPT
+	with ESMTP id S1758295Ab2CMATB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:18:24 -0400
+	Mon, 12 Mar 2012 20:19:01 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: stable-review@kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
+        Andy Sharp <andy.sharp@onstor.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 035/196] p54usb: IDs for two new devices
-Date: Mon, 12 Mar 2012 20:12:43 -0400
-Message-Id: <1331597724-31358-36-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 042/196] drivers/rtc/rtc-ds1511.c: world-writable sysfs nvram file
+Date: Mon, 12 Mar 2012 20:12:50 -0400
+Message-Id: <1331597724-31358-43-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,43 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 220107610c7c2c9703e09eb363e8ab31025b9315 upstream.
+commit 49d50fb1c28738ef6bad0c2b87d5355a1653fed5 upstream.
 
-Reported-by: Mark Davis [via p54/devices wiki]
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Don't allow everybogy to write to NVRAM.
+
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Andy Sharp <andy.sharp@onstor.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/wireless/p54/p54usb.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/rtc/rtc-ds1511.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/p54/p54usb.c b/drivers/net/wireless/p54/p54usb.c
-index 9a57d14..3317906d 100644
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -56,6 +56,7 @@ static struct usb_device_id p54u_table[] __devinitdata = {
- 	{USB_DEVICE(0x0846, 0x4210)},	/* Netgear WG121 the second ? */
- 	{USB_DEVICE(0x0846, 0x4220)},	/* Netgear WG111 */
- 	{USB_DEVICE(0x09aa, 0x1000)},	/* Spinnaker Proto board */
-+	{USB_DEVICE(0x0bf8, 0x1007)},	/* Fujitsu E-5400 USB */
- 	{USB_DEVICE(0x0cde, 0x0006)},	/* Medion 40900, Roper Europe */
- 	{USB_DEVICE(0x0db0, 0x6826)},	/* MSI UB54G (MS-6826) */
- 	{USB_DEVICE(0x107b, 0x55f2)},	/* Gateway WGU-210 (Gemtek) */
-@@ -68,6 +69,7 @@ static struct usb_device_id p54u_table[] __devinitdata = {
- 	{USB_DEVICE(0x1915, 0x2235)},	/* Linksys WUSB54G Portable OEM */
- 	{USB_DEVICE(0x2001, 0x3701)},	/* DLink DWL-G120 Spinnaker */
- 	{USB_DEVICE(0x2001, 0x3703)},	/* DLink DWL-G122 */
-+	{USB_DEVICE(0x2001, 0x3762)},	/* Conceptronic C54U */
- 	{USB_DEVICE(0x5041, 0x2234)},	/* Linksys WUSB54G */
- 	{USB_DEVICE(0x5041, 0x2235)},	/* Linksys WUSB54G Portable */
- 
+diff --git a/drivers/rtc/rtc-ds1511.c b/drivers/rtc/rtc-ds1511.c
+index 06b8566..fad05bd 100644
+--- a/drivers/rtc/rtc-ds1511.c
++++ b/drivers/rtc/rtc-ds1511.c
+@@ -483,7 +483,7 @@ ds1511_nvram_write(struct kobject *kobj, struct bin_attribute *bin_attr,
+ static struct bin_attribute ds1511_nvram_attr = {
+ 	.attr = {
+ 		.name = "nvram",
+-		.mode = S_IRUGO | S_IWUGO,
++		.mode = S_IRUGO | S_IWUSR,
+ 	},
+ 	.size = DS1511_RAM_MAX,
+ 	.read = ds1511_nvram_read,
 -- 
 1.7.9.3
 
