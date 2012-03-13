@@ -1,114 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760622Ab2CMXOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 19:14:48 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:30310 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760410Ab2CMXOq (ORCPT
+	id S1753900Ab2CMXQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 19:16:21 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51332 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab2CMXQT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 19:14:46 -0400
-Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
-From: joeyli <jlee@suse.com>
-To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
-        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1331688294.2577.19.camel@debian.Gayathri>
-References: <1331608337.2267.67.camel@debian.Gayathri>
-	 <20120312175130.GA18002@srcf.ucam.org>
-	 <1331640592.3485.50.camel@debian.Gayathri>
-	 <20120313124738.GB10822@srcf.ucam.org>
-	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
-	 <20120313133458.GA11574@srcf.ucam.org>
-	 <1331688294.2577.19.camel@debian.Gayathri>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Mar 2012 07:12:53 +0800
-Message-ID: <1331680373.10557.169.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Tue, 13 Mar 2012 19:16:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F5C602B.4050806@parallels.com>
+References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
+	<1331325556-16447-4-git-send-email-ssouhlal@FreeBSD.org>
+	<4F5C602B.4050806@parallels.com>
+Date: Tue, 13 Mar 2012 16:16:18 -0700
+Message-ID: <CABCjUKBUQ7QS-pJbzrN=8_AFj20uP+dgOH44AWfK4ZecpprybA@mail.gmail.com>
+Subject: Re: [PATCH v2 03/13] memcg: Uncharge all kmem when deleting a cgroup.
+From: Suleiman Souhlal <suleiman@google.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Suleiman Souhlal <ssouhlal@freebsd.org>, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, penberg@kernel.org, cl@linux.com,
+        yinghan@google.com, hughd@google.com, gthelen@google.com,
+        peterz@infradead.org, dan.magenheimer@oracle.com, hannes@cmpxchg.org,
+        mgorman@suse.de, James.Bottomley@hansenpartnership.com,
+        linux-mm@kvack.org, devel@openvz.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pradeep, 
+On Sun, Mar 11, 2012 at 12:19 AM, Glauber Costa <glommer@parallels.com> wrote:
+> On 03/10/2012 12:39 AM, Suleiman Souhlal wrote:
+>>
+>> Signed-off-by: Suleiman Souhlal<suleiman@google.com>
+>> ---
+>>  mm/memcontrol.c |   31 ++++++++++++++++++++++++++++++-
+>>  1 files changed, 30 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index e6fd558..6fbb438 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -382,6 +382,7 @@ static void mem_cgroup_get(struct mem_cgroup *memcg);
+>>  static void mem_cgroup_put(struct mem_cgroup *memcg);
+>>  static void memcg_kmem_init(struct mem_cgroup *memcg,
+>>      struct mem_cgroup *parent);
+>> +static void memcg_kmem_move(struct mem_cgroup *memcg);
+>>
+>>  static inline bool
+>>  mem_cgroup_test_flag(const struct mem_cgroup *memcg, enum memcg_flags
+>> flag)
+>> @@ -3700,6 +3701,7 @@ static int mem_cgroup_force_empty(struct mem_cgroup
+>> *memcg, bool free_all)
+>>        int ret;
+>>        int node, zid, shrink;
+>>        int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
+>> +       unsigned long usage;
+>>        struct cgroup *cgrp = memcg->css.cgroup;
+>>
+>>        css_get(&memcg->css);
+>> @@ -3719,6 +3721,8 @@ move_account:
+>>                /* This is for making all *used* pages to be on LRU. */
+>>                lru_add_drain_all();
+>>                drain_all_stock_sync(memcg);
+>> +               if (!free_all)
+>> +                       memcg_kmem_move(memcg);
+>
+> Any reason we're not moving kmem charges when free_all is set as well?
 
-æ–¼ äºŒï¼Œ2012-03-13 æ–¼ 21:24 -0400ï¼ŒPradeep Subrahmanion æåˆ°ï¼š
-> On Tue, 2012-03-13 at 13:34 +0000, Matthew Garrett wrote:
-> > On Tue, Mar 13, 2012 at 06:56:16PM +0530, Pradeep Subrahmanion wrote:
-> > > I tried giving acpi_backlight = vendor . In that case hot key for
-> > > brightness control is working. But i think  , it is not calculating the
-> > > correct value for brightness because increasing brightness after maximum
-> > > level gives blank screen .
-> > 
-> > Which backlight device appears then?
-> > 
-> 
-> 'intel_backlight' appears when i gave option acpi_backlight = vendor. Writing to /sys/class/backlight/intel_backlight/brightness
-> 
-> does not cause any change in brightness.
-> 
+Because the slab moving code expects to be synchronized with
+allocations (and itself). We can't call it when there are still tasks
+in the cgroup.
 
-The above command not work, that means EC didn't change backlight
-value:
-
-Method (_BCM, 1, NotSerialized)
-{
-    Divide (Arg0, 0x0A, Local0, Local1)
-    Decrement (Local1)
-    Store (Local1, ^^^^LPC.EC0.BRTS)    <=== write backlight value to EC
-register
-}
-
-Per my understood, EC firmware should change brightness but didn't do
-that, another
-way is touch i915 register in _BCM.
-
-Acer machine provide a broken _BCM implementation and they didn't test
-it.
-
-> > > By ' ACPI interface' , I mean 'acpi_video0' inside the
-> > > /sys/class/backlight. I havn't tried the /sys/class/backlight interface
-> > > directly . I will try that also.
-> > 
-> > So writing values into /sys/class/backlight/acpi_video0/brightness does 
-> > nothing?
-> 
-> 
-> No change in value when writing
-> to /sys/class/backlight/acpi_video0/brightness.
-> 
-> Another thing is that when i did boot with acpi_backlight = 'acer_wmi' ,
-> in new kernel (3.3.0-rc7) , it shows following messages , 
-> 
-> [    8.350825] wmi: Mapper loaded
-> [   10.363975] acer_wmi: Acer Laptop ACPI-WMI Extras
-> [   10.396186] acer_wmi: Function bitmap for Communication Device: 0x91
-> [   10.396385] acer_wmi: Brightness must be controlled by generic video
-> driver
-> 
-> Also there was no interface inside /sys/class/backlight for acer_wmi. 
-> 
-
-Yes, acer_wmi support backlight control with AMW0 interface, your
-machine didn't have AMW0 interface.
-
-Normally, backlight should control by standard acpi interface.
-
-> I also tried writing directly to Embedded controller register .But no
-> change.
-
-The machine has broken _BCM method, because EC should do something after
-_BCM changed EC register.
-
-> ----
-> 
-> Thanks , 
-> 
-> Pradeep Subrahmanion
->   
-
-
-Thanks a lot!
-Joey Lee
-
+-- Suleiman
