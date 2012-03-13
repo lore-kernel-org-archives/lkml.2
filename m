@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760056Ab2CMIuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:50:21 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48807 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759526Ab2CMIuS convert rfc822-to-8bit (ORCPT
+	id S1760058Ab2CMIvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:51:15 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33056 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756128Ab2CMIvM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:50:18 -0400
+	Tue, 13 Mar 2012 04:51:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120312150156.GF18973@amd.com>
-References: <017a01ccfdee$4e5e7a00$eb1b6e00$%cho@samsung.com>
-	<20120312150156.GF18973@amd.com>
-Date: Tue, 13 Mar 2012 17:50:16 +0900
-X-Google-Sender-Auth: MvH9SwJAKQXB4vrCi-RQZOw8pz0
-Message-ID: <CAHQjnOOCQb4G1aeFB0FQVBstXpaXmahnQO8+FoinPcQNZEieGg@mail.gmail.com>
-Subject: Re: [PATCH v11 3/3] iommu/exynos: Add iommu driver for Exynos Platforms
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        Subash Patel <subash.ramaswamy@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Younglak Kim <younglak1004.kim@samsung.com>,
-        iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <CACRpkdYvfzrdAC1vjT5WD4rk0ozpbXkPtkQpBVMv_WYhdkg7ag@mail.gmail.com>
+References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
+ <1331197863-25564-2-git-send-email-bryan.wu@canonical.com>
+ <20120308092913.GF14173@pengutronix.de> <CAK5ve-+L9gVBOp4RVe2pTUbBnrb-PEn7ERbWWkb=7A=4qOrdTQ@mail.gmail.com>
+ <CACRpkdYvfzrdAC1vjT5WD4rk0ozpbXkPtkQpBVMv_WYhdkg7ag@mail.gmail.com>
+From: Bryan Wu <bryan.wu@canonical.com>
+Date: Tue, 13 Mar 2012 16:50:51 +0800
+X-Google-Sender-Auth: RgFO_FmYmMqd95UPdQmvtDEL6ko
+Message-ID: <CAK5ve-+ZNoiS3qdQ6O543uSAO9L0rr2c=WwuXm-biAqfGfjc7w@mail.gmail.com>
+Subject: Re: [PATCH 2/3] led-triggers: use atomic kzalloc during led trigger registering
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Ming Lei <ming.lei@canonical.com>, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 12:01 AM, Joerg Roedel <joerg.roedel@amd.com> wrote:
-> On Fri, Mar 09, 2012 at 09:15:24PM +0900, Cho KyongHo wrote:
->> +/* We does not consider super section mapping (16MB) */
->> +struct iommu_client {
->> +     struct list_head node;
->> +     struct device *dev;
->> +};
->> +
->> +struct exynos_iommu_domain {
->> +     struct list_head clients; /* list of iommu_client */
->> +     unsigned long *pgtable; /* lv1 page table, 16KB */
->> +     short *lv2entcnt; /* free lv2 entry counter for each section */
->> +     spinlock_t lock; /* lock for this structure and attached iommu_client */
->> +     spinlock_t pgtablelock; /* lock for modifying page table @ pgtable */
->> +};
->> +
->> +struct sysmmu_drvdata {
->> +     struct device *sysmmu;
->> +     char *dbgname;
->> +     int nsfrs;
->> +     void __iomem **sfrbases;
->> +     struct clk *clk[2];
->> +     int activations;
->> +     rwlock_t lock;
->> +     struct iommu_domain *domain;
->> +     sysmmu_fault_handler_t fault_handler;
->> +     unsigned long pgtable;
->> +     struct iommu_client client;
->> +};
+On Tue, Mar 13, 2012 at 3:37 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> 2012/3/10 Bryan Wu <bryan.wu@canonical.com>:
+>> 2012/3/8 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+>>> On Thu, Mar 08, 2012 at 05:11:02PM +0800, Bryan Wu wrote:
+>>>> kzalloc might cause sleep and will generate some warning detected by lockdep,
+>>>> when call led_trigger_register_simple on each cpu cores in SMP. This patch fix
+>>>> this.
+>>> The obvious (and IMHO better) alternative is to call
+>>> led_trigger_register_simple from non-atomic context.
+>>>
+>>> For registering this should be OK, shouldn't it?
+>>>
+>> Thanks Uwe, it's my bad. I think I should not use on_each_cpu() API to
+>> run led_trigger_register_simple. on_each_cpu() will disable interrupt.
 >
-> Is there any reason why 'struct iommu_client' is a seperate data
-> structure? Otherwise it can be merged with 'truct sysmmu_drvdata'.
+> It might have been my mistake even so not your fault ... :-)
 >
 
-There is no reason to separate it.
-It is not cleanly refactored since patch version 10.
+No problem, man. I just simply replaced GFP_KERNEL with GFP_ATOMIC
+without thinking deeper.
 
->> +static void exynos_iommu_domain_destroy(struct iommu_domain *domain)
->> +{
->> +     struct exynos_iommu_domain *priv = domain->priv;
->> +     struct list_head *pos, *n;
->> +     unsigned long flags;
->> +     int i;
->> +
->> +     WARN_ON(!list_empty(&priv->clients));
->> +
->> +     spin_lock_irqsave(&priv->lock, flags);
->> +
->> +     list_for_each_safe(pos, n, &priv->clients) {
->> +             struct iommu_client *client;
->> +
->> +             client = list_entry(pos, struct iommu_client, node);
->> +             exynos_sysmmu_disable(client->dev);
->> +             kfree(client);
->> +     }
->
-> Why this kfree here? Aren't all iommu_clients just a part of another
-> data-structre?
-
-It is absolutely my fault. It must be removed.
-I have forgot to care about updating iommu_domain_destroy()
-when modifying exynos_iommu_attach/detach_device().
-
-Thank you.
-
-The problems will be soon fixed and I will post next patch tomorrow.
-
-Cho KyongHo/
+Best Regards,
+-- 
+Bryan Wu <bryan.wu@canonical.com>
+Kernel Developer    +86.138-1617-6545 Mobile
+Canonical Ltd.      www.canonical.com
+Ubuntu - Linux for human beings | www.ubuntu.com
