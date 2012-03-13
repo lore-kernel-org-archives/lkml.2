@@ -1,50 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab2CMMF3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:05:29 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:59682 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752325Ab2CMMFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 08:05:23 -0400
-Date: Tue, 13 Mar 2012 08:05:14 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: Suggest pr_<level> over printk(KERN_<LEVEL>
-Message-ID: <20120313120514.GA17538@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Joe Perches <joe@perches.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Andy Whitcroft <apw@shadowen.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20120302025554.GA13493@joana>
- <20120301.221643.881299898523907213.davem@davemloft.net>
- <20120301.222316.1877216960521396397.davem@davemloft.net>
- <20120301.222604.1508242694024394849.davem@davemloft.net>
- <1330661602.1939.13.camel@joe2Laptop>
- <1330666534.1939.19.camel@joe2Laptop>
- <1330667673.1939.22.camel@joe2Laptop>
- <1331619783.7100.8.camel@joe2Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331619783.7100.8.camel@joe2Laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1751087Ab2CMMGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:06:14 -0400
+Received: from mail-ee0-f74.google.com ([74.125.83.74]:50460 "EHLO
+	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752744Ab2CMMEc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 08:04:32 -0400
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Iiro Valkonen <iiro.valkonen@atmel.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH 07/20] Input: atmel_mxt_ts - add backupnv sysfs entry
+Date: Tue, 13 Mar 2012 20:04:10 +0800
+Message-Id: <1331640263-18935-8-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
+References: <1331640263-18935-1-git-send-email-djkurtz@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 11:23:03PM -0700, Joe Perches wrote:
-> Suggest the shorter pr_<level> instead of printk(KERN_<LEVEL>.
-> 
-> Prefer to use pr_<level> over bare printks.
-> Prefer to use pr_warn over pr_warning.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Writing to the object sysfs entry permits individual object table entries
+to be modified in the device RAM at run time.  To permanently save
+the settings, they must be written to Non-Volatile memory (NVM).
+This patch adds a write-only sysfs entry to allow userspace to save
+current settings to NVM, but restricts access to root.
 
-Is this even worth a warning?   I don't think so....
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+---
+ drivers/input/touchscreen/atmel_mxt_ts.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-   	     	     		  	- Ted
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index ac3dbb7..e988dc0 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -994,6 +994,23 @@ static ssize_t mxt_object_store(struct device *dev,
+ 	return count;
+ }
+ 
++static ssize_t mxt_backupnv_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t count)
++{
++	struct mxt_data *data = dev_get_drvdata(dev);
++	int ret;
++
++	/* Backup non-volatile memory */
++	ret = mxt_write_object(data, MXT_GEN_COMMAND_T6, MXT_COMMAND_BACKUPNV,
++			       MXT_BACKUP_VALUE);
++	if (ret)
++		return ret;
++	msleep(MXT_BACKUP_TIME);
++
++	return count;
++}
++
+ static int mxt_load_fw(struct device *dev, const char *fn)
+ {
+ 	struct mxt_data *data = dev_get_drvdata(dev);
+@@ -1099,11 +1116,13 @@ static ssize_t mxt_update_fw_store(struct device *dev,
+ 	return count;
+ }
+ 
++static DEVICE_ATTR(backupnv, S_IWUSR, NULL, mxt_backupnv_store);
+ static DEVICE_ATTR(object, S_IRUGO | S_IWUSR, mxt_object_show,
+ 		   mxt_object_store);
+ static DEVICE_ATTR(update_fw, S_IWUSR, NULL, mxt_update_fw_store);
+ 
+ static struct attribute *mxt_attrs[] = {
++	&dev_attr_backupnv.attr,
+ 	&dev_attr_object.attr,
+ 	&dev_attr_update_fw.attr,
+ 	NULL
+-- 
+1.7.7.3
+
