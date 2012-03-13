@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab2CMIp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:45:28 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:3738
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759905Ab2CMIpO (ORCPT
+	id S1760068Ab2CMIq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:46:58 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:42467 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759957Ab2CMIpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:45:14 -0400
+	Tue, 13 Mar 2012 04:45:23 -0400
 X-SpamScore: 3
-X-BigFish: VS3(zzzz1202h1082kzz8275ch8275dhz2dh2a8h668h839h)
+X-BigFish: VS3(zzzz1202h1082kzz8275dhz2dh2a8h668h839h)
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 From: Dong Aisheng <b29396@freescale.com>
 To: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
@@ -17,9 +17,9 @@ CC: <s.hauer@pengutronix.de>, <shawn.guo@freescale.com>,
         <kernel@pengutronix.de>, <grant.likely@secretlab.ca>,
         <rob.herring@calxeda.com>, <cjb@laptop.org>, <rdunlap@xenotime.net>,
         <vinod.koul@linux.intel.com>
-Subject: [PATCH v1 2/5] mmc: mxs-mmc: add dt probe support
-Date: Tue, 13 Mar 2012 16:47:05 +0800
-Message-ID: <1331628428-24017-3-git-send-email-b29396@freescale.com>
+Subject: [PATCH v1 5/5] ARM: mxs: add mxs dma dt support
+Date: Tue, 13 Mar 2012 16:47:08 +0800
+Message-ID: <1331628428-24017-6-git-send-email-b29396@freescale.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1331628428-24017-1-git-send-email-b29396@freescale.com>
 References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
@@ -32,177 +32,191 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dong Aisheng <dong.aisheng@linaro.org>
 
+Originally the dma device will be added by default via
+arch_initcall(mxs_add_mxs_dma);
+
+Now change to call it explicitly in board file to avoid conflict
+with device tree support.
+
 Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-
 ---
-The patch is still using a private way for dma part binding
-since the common dma binding is still under discussion.
-http://www.spinics.net/lists/linux-omap/msg65528.html
+ arch/arm/boot/dts/imx28.dtsi                    |   12 +++++++++++-
+ arch/arm/mach-mxs/devices-mx23.h                |    2 ++
+ arch/arm/mach-mxs/devices-mx28.h                |    2 ++
+ arch/arm/mach-mxs/devices/platform-dma.c        |    3 +--
+ arch/arm/mach-mxs/imx28-dt.c                    |    2 ++
+ arch/arm/mach-mxs/include/mach/devices-common.h |    3 +++
+ arch/arm/mach-mxs/mach-apx4devkit.c             |    1 +
+ arch/arm/mach-mxs/mach-m28evk.c                 |    1 +
+ arch/arm/mach-mxs/mach-mx23evk.c                |    1 +
+ arch/arm/mach-mxs/mach-mx28evk.c                |    1 +
+ arch/arm/mach-mxs/mach-stmp378x_devb.c          |    1 +
+ arch/arm/mach-mxs/mach-tx28.c                   |    1 +
+ 12 files changed, 27 insertions(+), 3 deletions(-)
 
-Will update to use common dma binding when it hits mainline.
----
- .../devicetree/bindings/mmc/fsl-mxs-mmc.txt        |   23 ++++++
- drivers/mmc/host/mxs-mmc.c                         |   82 +++++++++++++++++++-
- 2 files changed, 102 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt b/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt
-new file mode 100644
-index 0000000..adc1142
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt
-@@ -0,0 +1,23 @@
-+* FREESCALE MXS MMC peripheral
-+
-+Required properties:
-+- compatible : Should be "fsl,<chip>-mmc"
-+- reg : Should contain registers location and length
-+- interrupts : Should contain interrupt.
-+  The format is <irq_err irq_dma>.
-+- dma_channel: Should contain the dma channel it uses
-+
-+Optional properties:
-+- wp-gpios : Specify GPIOs for write protection
-+- slot-4bit: Specify 4 bit mode support
-+- slot-8bit: Specify 8 bit and 4 bit mode support
-+
-+Examples:
-+mmc1: ssp@80010000 {
-+	compatible = "fsl,imx28-mmc";
-+	reg = <0x80010000 2000>;
-+	/* <irq_err irq_dma> */
-+	interrupts = <96 82>;
-+	dma_channel = <0>;
-+	slot-8bit;
-+};
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index 382c835..6cf2d17 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -38,6 +38,10 @@
- #include <linux/gpio.h>
- #include <linux/regulator/consumer.h>
- #include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <linux/slab.h>
+diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
+index 71c7bfb..f0322e9 100644
+--- a/arch/arm/boot/dts/imx28.dtsi
++++ b/arch/arm/boot/dts/imx28.dtsi
+@@ -47,6 +47,11 @@
+ 				reg = <0x80000000 0x2000>;
+ 			};
  
- #include <mach/mxs.h>
- #include <mach/common.h>
-@@ -673,17 +677,79 @@ static bool mxs_mmc_dma_filter(struct dma_chan *chan, void *param)
- 	return true;
++			dma-apbh@80004000 {
++				compatible = "fsl,mxs-dma-apbh";
++				reg = <0x80004000 2000>;
++			};
++
+ 			ssp@80010000 {
+ 				compatible = "fsl,imx28-mmc";
+ 				reg = <0x80010000 2000>;
+@@ -79,7 +84,12 @@
+ 				dma_channel = <3>;
+ 				status = "disabled";
+ 			};
+-		};
++
++			dma-apbx@80024000 {
++				compatible = "fsl,mxs-dma-apbx";
++				reg = <0x80024000 2000>;
++			};
++                };
+ 
+ 		apbx@80040000 {
+ 			compatible = "simple-bus";
+diff --git a/arch/arm/mach-mxs/devices-mx23.h b/arch/arm/mach-mxs/devices-mx23.h
+index 3fa651d..721c91a 100644
+--- a/arch/arm/mach-mxs/devices-mx23.h
++++ b/arch/arm/mach-mxs/devices-mx23.h
+@@ -31,3 +31,5 @@ struct platform_device *__init mx23_add_mxsfb(
+ 		const struct mxsfb_platform_data *pdata);
+ 
+ struct platform_device *__init mx23_add_rtc_stmp3xxx(void);
++
++#define mx23_add_dma()	mxs_add_mxs_dma()
+diff --git a/arch/arm/mach-mxs/devices-mx28.h b/arch/arm/mach-mxs/devices-mx28.h
+index 4f50094..c0cfd4e 100644
+--- a/arch/arm/mach-mxs/devices-mx28.h
++++ b/arch/arm/mach-mxs/devices-mx28.h
+@@ -51,3 +51,5 @@ extern const struct mxs_saif_data mx28_saif_data[] __initconst;
+ 	mxs_add_saif(&mx28_saif_data[id], pdata)
+ 
+ struct platform_device *__init mx28_add_rtc_stmp3xxx(void);
++
++#define mx28_add_dma()	mxs_add_mxs_dma()
+diff --git a/arch/arm/mach-mxs/devices/platform-dma.c b/arch/arm/mach-mxs/devices/platform-dma.c
+index 6a0202b..57f851e 100644
+--- a/arch/arm/mach-mxs/devices/platform-dma.c
++++ b/arch/arm/mach-mxs/devices/platform-dma.c
+@@ -30,7 +30,7 @@ static struct platform_device *__init mxs_add_dma(const char *devid,
+ 				DMA_BIT_MASK(32));
  }
  
-+#ifdef CONFIG_OF
-+static struct resource * __devinit mxs_mmc_get_of_dmares(
-+				struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct resource *dmares;
-+	int ret;
-+
-+	if (!np)
-+		return NULL;
-+
-+	dmares = kzalloc(sizeof(*dmares), GFP_KERNEL);
-+	dmares->flags = IORESOURCE_DMA;
-+	ret = of_property_read_u32(np, "dma_channel", &dmares->start);
-+	if (ret) {
-+		dev_err(&pdev->dev, "unable to get dmares from dt\n");
-+		return NULL;
-+	}
-+	dmares->end = dmares->start;
-+
-+	return dmares;
-+}
-+
-+static int __devinit mxs_mmc_get_of_property(struct platform_device *pdev,
-+				struct mxs_mmc_platform_data **ppdata)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct mxs_mmc_platform_data *pdata = *ppdata;
-+
-+	if (!np)
-+		return -ENODEV;
-+
-+	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-+
-+	if (of_get_property(np, "slot-8bit", NULL))
-+		pdata->flags |= SLOTF_8_BIT_CAPABLE;
-+
-+	if (of_get_property(np, "slot-4bit", NULL))
-+		pdata->flags |= SLOTF_4_BIT_CAPABLE;
-+
-+	pdata->wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
-+
-+	dev_dbg(&pdev->dev, "wp-gpios %d flags %d\n", pdata->wp_gpio,
-+		pdata->flags);
-+
-+	return 0;
-+}
-+#else
-+static struct resource * __devinit mxs_mmc_get_of_dmares(
-+				struct platform_device *pdev)
-+{
-+	return NULL;
-+}
-+static inline int mxs_mmc_get_of_property(struct platform_device *pdev,
-+			struct mxs_mmc_platform_data *pdata)
-+{
-+	return -ENODEV;
-+}
-+#endif
-+
- static int mxs_mmc_probe(struct platform_device *pdev)
+-static int __init mxs_add_mxs_dma(void)
++int __init mxs_add_mxs_dma(void)
  {
- 	struct mxs_mmc_host *host;
- 	struct mmc_host *mmc;
- 	struct resource *iores, *dmares, *r;
--	struct mxs_mmc_platform_data *pdata;
-+	struct mxs_mmc_platform_data *pdata = NULL;
- 	int ret = 0, irq_err, irq_dma;
- 	dma_cap_mask_t mask;
+ 	char *apbh = "mxs-dma-apbh";
+ 	char *apbx = "mxs-dma-apbx";
+@@ -47,4 +47,3 @@ static int __init mxs_add_mxs_dma(void)
  
- 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	dmares = platform_get_resource(pdev, IORESOURCE_DMA, 0);
-+	dmares = mxs_mmc_get_of_dmares(pdev);
-+	if (dmares == NULL)
-+		dmares = platform_get_resource(pdev, IORESOURCE_DMA, 0);
- 	irq_err = platform_get_irq(pdev, 0);
- 	irq_dma = platform_get_irq(pdev, 1);
- 	if (!iores || !dmares || irq_err < 0 || irq_dma < 0)
-@@ -740,7 +806,9 @@ static int mxs_mmc_probe(struct platform_device *pdev)
- 	mmc->caps = MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED |
- 		    MMC_CAP_SDIO_IRQ | MMC_CAP_NEEDS_POLL;
- 
--	pdata =	mmc_dev(host->mmc)->platform_data;
-+	mxs_mmc_get_of_property(pdev, &pdata);
-+	if (pdata == NULL)
-+		pdata =	mmc_dev(host->mmc)->platform_data;
- 	if (pdata) {
- 		if (pdata->flags & SLOTF_8_BIT_CAPABLE)
- 			mmc->caps |= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
-@@ -851,6 +919,13 @@ static const struct dev_pm_ops mxs_mmc_pm_ops = {
+ 	return 0;
+ }
+-arch_initcall(mxs_add_mxs_dma);
+diff --git a/arch/arm/mach-mxs/imx28-dt.c b/arch/arm/mach-mxs/imx28-dt.c
+index 429b88e..1c4d317 100644
+--- a/arch/arm/mach-mxs/imx28-dt.c
++++ b/arch/arm/mach-mxs/imx28-dt.c
+@@ -25,6 +25,8 @@ static const struct of_dev_auxdata imx28_auxdata_lookup[] __initconst = {
+ 	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC1_BASE_ADDR, "imx28-fec.1", NULL),
+ 	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP0_BASE_ADDR, "mxs-mmc.0", NULL),
+ 	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP1_BASE_ADDR, "mxs-mmc.1", NULL),
++	OF_DEV_AUXDATA("fsl,mxs-dma-apbh", MX28_APBH_DMA_BASE_ADDR, "mxs-dma-apbh", NULL),
++	OF_DEV_AUXDATA("fsl,mxs-dma-apbx", MX28_APBX_DMA_BASE_ADDR, "mxs-dma-apbx", NULL),
+ 	{ /* sentinel */ }
  };
- #endif
  
-+static const struct of_device_id mxs_mmc_dt_ids[] = {
-+	{ .compatible = "fsl,imx23-mmc", .data = NULL, },
-+	{ .compatible = "fsl,imx28-mmc", .data = NULL, },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, mxs_mmc_dt_ids);
+diff --git a/arch/arm/mach-mxs/include/mach/devices-common.h b/arch/arm/mach-mxs/include/mach/devices-common.h
+index dc369c1..87939a2 100644
+--- a/arch/arm/mach-mxs/include/mach/devices-common.h
++++ b/arch/arm/mach-mxs/include/mach/devices-common.h
+@@ -106,3 +106,6 @@ struct mxs_saif_data {
+ struct platform_device *__init mxs_add_saif(
+ 		const struct mxs_saif_data *data,
+ 		const struct mxs_saif_platform_data *pdata);
 +
- static struct platform_driver mxs_mmc_driver = {
- 	.probe		= mxs_mmc_probe,
- 	.remove		= mxs_mmc_remove,
-@@ -860,6 +935,7 @@ static struct platform_driver mxs_mmc_driver = {
- #ifdef CONFIG_PM
- 		.pm	= &mxs_mmc_pm_ops,
- #endif
-+		.of_match_table = mxs_mmc_dt_ids,
- 	},
- };
++/* dma */
++int __init mxs_add_mxs_dma(void);
+diff --git a/arch/arm/mach-mxs/mach-apx4devkit.c b/arch/arm/mach-mxs/mach-apx4devkit.c
+index 48a7fab..92f47e9 100644
+--- a/arch/arm/mach-mxs/mach-apx4devkit.c
++++ b/arch/arm/mach-mxs/mach-apx4devkit.c
+@@ -210,6 +210,7 @@ static void __init apx4devkit_init(void)
+ 	mxs_iomux_setup_multiple_pads(apx4devkit_pads,
+ 			ARRAY_SIZE(apx4devkit_pads));
+ 
++	mx28_add_dma();
+ 	mx28_add_duart();
+ 	mx28_add_auart0();
+ 	mx28_add_auart1();
+diff --git a/arch/arm/mach-mxs/mach-m28evk.c b/arch/arm/mach-mxs/mach-m28evk.c
+index 06d7996..9a74ce6 100644
+--- a/arch/arm/mach-mxs/mach-m28evk.c
++++ b/arch/arm/mach-mxs/mach-m28evk.c
+@@ -321,6 +321,7 @@ static void __init m28evk_init(void)
+ {
+ 	mxs_iomux_setup_multiple_pads(m28evk_pads, ARRAY_SIZE(m28evk_pads));
+ 
++	mx28_add_dma();
+ 	mx28_add_duart();
+ 	mx28_add_auart0();
+ 	mx28_add_auart3();
+diff --git a/arch/arm/mach-mxs/mach-mx23evk.c b/arch/arm/mach-mxs/mach-mx23evk.c
+index 5ea1c57..cabc884 100644
+--- a/arch/arm/mach-mxs/mach-mx23evk.c
++++ b/arch/arm/mach-mxs/mach-mx23evk.c
+@@ -143,6 +143,7 @@ static void __init mx23evk_init(void)
+ 
+ 	mxs_iomux_setup_multiple_pads(mx23evk_pads, ARRAY_SIZE(mx23evk_pads));
+ 
++	mx23_add_dma();
+ 	mx23_add_duart();
+ 	mx23_add_auart0();
+ 
+diff --git a/arch/arm/mach-mxs/mach-mx28evk.c b/arch/arm/mach-mxs/mach-mx28evk.c
+index e386c14..4b645eb 100644
+--- a/arch/arm/mach-mxs/mach-mx28evk.c
++++ b/arch/arm/mach-mxs/mach-mx28evk.c
+@@ -415,6 +415,7 @@ static void __init mx28evk_init(void)
+ 
+ 	mxs_iomux_setup_multiple_pads(mx28evk_pads, ARRAY_SIZE(mx28evk_pads));
+ 
++	mx28_add_dma();
+ 	mx28_add_duart();
+ 	mx28_add_auart0();
+ 	mx28_add_auart3();
+diff --git a/arch/arm/mach-mxs/mach-stmp378x_devb.c b/arch/arm/mach-mxs/mach-stmp378x_devb.c
+index a626c07..a391b9e 100644
+--- a/arch/arm/mach-mxs/mach-stmp378x_devb.c
++++ b/arch/arm/mach-mxs/mach-stmp378x_devb.c
+@@ -88,6 +88,7 @@ static void __init stmp378x_dvb_init(void)
+ 	mxs_iomux_setup_multiple_pads(stmp378x_dvb_pads,
+ 			ARRAY_SIZE(stmp378x_dvb_pads));
+ 
++	mx23_add_dma();
+ 	mx23_add_duart();
+ 	mx23_add_auart0();
+ 	mx23_add_rtc_stmp3xxx();
+diff --git a/arch/arm/mach-mxs/mach-tx28.c b/arch/arm/mach-mxs/mach-tx28.c
+index 2c0862e..e17e262 100644
+--- a/arch/arm/mach-mxs/mach-tx28.c
++++ b/arch/arm/mach-mxs/mach-tx28.c
+@@ -149,6 +149,7 @@ static void __init tx28_stk5v3_init(void)
+ 	mxs_iomux_setup_multiple_pads(tx28_stk5v3_pads,
+ 			ARRAY_SIZE(tx28_stk5v3_pads));
+ 
++	mx28_add_dma();
+ 	mx28_add_duart(); /* UART1 */
+ 	mx28_add_auart(1); /* UART2 */
  
 -- 
 1.7.0.4
