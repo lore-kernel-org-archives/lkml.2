@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755361Ab2CMSic (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 14:38:32 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:39595 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753222Ab2CMSia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 14:38:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=Q1Gt8SFANch+dhjvwGAKDSHM8df2mDlW
-	6kq09uTZHN+lekUk6xvjlXXuYBelwIXhhCVVlMVcqDpTcE94/GPUk/4AALGBACKX
-	WDtzTrlhATdPwoAuA62yUz3P3TWK1aN1DiCHL9ixDMp6xBkgGN+Qrn9PY2uo2xHs
-	via8e6xn4gQ=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Jonathan Nieder <jrnieder@gmail.com>, Thomas Rast <trast@student.ethz.ch>,
-        Willy Tarreau <w@1wt.eu>, Greg KH <greg@kroah.com>,
-        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] git-am: officially deprecate -b/--binary
-References: <20120312152453.GB12405@1wt.eu>
- <87aa3l4vqq.fsf@thomas.inf.ethz.ch> <20120312165703.GB18791@burratino>
- <7vvcm9snko.fsf@alter.siamese.dyndns.org> <87399dpk48.fsf@thomas.inf.ethz.ch>
- <20120312215607.GB11362@burratino> <874ntto4t8.fsf@thomas.inf.ethz.ch>
- <20120312222227.GC11362@burratino> <87fwdcldqj.fsf@thomas.inf.ethz.ch>
- <7v62e8la9y.fsf@alter.siamese.dyndns.org> <20120313175158.GA6653@burratino>
- <7vipi8wect.fsf@alter.siamese.dyndns.org>
-Date: Tue, 13 Mar 2012 11:38:27 -0700
-In-Reply-To: <7vipi8wect.fsf@alter.siamese.dyndns.org> (Junio C. Hamano's
- message of "Tue, 13 Mar 2012 11:22:10 -0700")
-Message-ID: <7vsjhcuz18.fsf_-_@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1756207Ab2CMSnW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 14:43:22 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:46557 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754867Ab2CMSnU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 14:43:20 -0400
+Message-ID: <4F5F9531.60900@windriver.com>
+Date: Tue, 13 Mar 2012 14:42:57 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: BA1C2F8C-6D3B-11E1-B56D-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+To: Boris Ostrovsky <boris.ostrovsky@amd.com>
+CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        Joerg-Volker-Peetz <jvpeetz@web.de>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [34-longterm 181/196] x86, AMD: Fix ARAT feature setting again
+References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com> <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com> <1331598109-31424-136-git-send-email-paul.gortmaker@windriver.com> <4F5F51E2.1090304@amd.com>
+In-Reply-To: <4F5F51E2.1090304@amd.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have had these options as harmless no-op for more than 3 years without
-officially deprecating them.  Let's announce the deprecation and start
-warning against their use, but without failing the command just not yet,
-so that we can later repurpose the option if we want to in the future.
+On 12-03-13 09:55 AM, Boris Ostrovsky wrote:
+> On 03/12/12 20:21, Paul Gortmaker wrote:
+>> From: Borislav Petkov<borislav.petkov@amd.com>
+>>
+>>                     -------------------
+>>      This is a commit scheduled for the next v2.6.34 longterm release.
+>>      If you see a problem with using this for longterm, please comment.
+> 
+> 
+> Paul, please use e9cdd343a5e42c43bcda01e609fa23089e026470 instead of the 
+> one below.
 
-Signed-off-by: Junio C Hamano <gitster@pobox.com>
----
- Documentation/RelNotes/1.7.10.txt |    4 ++--
- git-am.sh                         |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Thanks, I'll make the exchange.
 
-diff --git a/Documentation/RelNotes/1.7.10.txt b/Documentation/RelNotes/1.7.10.txt
-index 65df74b..6286485 100644
---- a/Documentation/RelNotes/1.7.10.txt
-+++ b/Documentation/RelNotes/1.7.10.txt
-@@ -26,8 +26,8 @@ Compatibility Notes
-    Git v1.7.8 or newer.
- 
-  * The "--binary/-b" options to "git am" have been a no-op for quite a
--   while and was deprecated in mid 2008 (v1.6.0).  When you give these
--   options to "git am", it will now fail with an error.
-+   while and were deprecated in mid 2008 (v1.6.0).  When you give these
-+   options to "git am", it will now warn and ask you not to use them.
- 
- 
- Updates since v1.7.9
-diff --git a/git-am.sh b/git-am.sh
-index faae820..db6ade3 100755
---- a/git-am.sh
-+++ b/git-am.sh
-@@ -380,8 +380,8 @@ do
- 	-i|--interactive)
- 		interactive=t ;;
- 	-b|--binary)
--		echo >&2 "The -b/--binary option was deprecated in 1.6.0 and removed in 1.7.10."
--		die "Please adjust your scripts."
-+		echo >&2 "The $1 option was deprecated in 1.6.0 and will be removed."
-+		echo >&2 "Please do not use it anymore."
- 		;;
- 	-3|--3way)
- 		threeway=t ;;
+P.
+
+> 
+> -boris
+> 
+>>                     -------------------
+>>
+>> commit 14fb57dccb6e1defe9f89a66f548fcb24c374c1d upstream.
+>>
+>> Trying to enable the local APIC timer on early K8 revisions
+>> uncovers a number of other issues with it, in conjunction with
+>> the C1E enter path on AMD. Fixing those causes much more churn
+>> and troubles than the benefit of using that timer brings so
+>> don't enable it on K8 at all, falling back to the original
+>> functionality the kernel had wrt to that.
+>>
+>> Reported-and-bisected-by: Nick Bowler<nbowler@elliptictech.com>
+>> Cc: Boris Ostrovsky<Boris.Ostrovsky@amd.com>
+>> Cc: Andreas Herrmann<andreas.herrmann3@amd.com>
+>> Cc: Greg Kroah-Hartman<greg@kroah.com>
+>> Cc: Hans Rosenfeld<hans.rosenfeld@amd.com>
+>> Cc: Nick Bowler<nbowler@elliptictech.com>
+>> Cc: Joerg-Volker-Peetz<jvpeetz@web.de>
+>> Signed-off-by: Borislav Petkov<borislav.petkov@amd.com>
+>> Link: http://lkml.kernel.org/r/1305636919-31165-3-git-send-email-bp@amd64.org
+>> Signed-off-by: Ingo Molnar<mingo@elte.hu>
+>> Signed-off-by: Paul Gortmaker<paul.gortmaker@windriver.com>
+>> ---
+>>   arch/x86/kernel/cpu/amd.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+>> index d618dc1..76a7f76 100644
+>> --- a/arch/x86/kernel/cpu/amd.c
+>> +++ b/arch/x86/kernel/cpu/amd.c
+>> @@ -567,7 +567,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+>>   #endif
+>>
+>>   	/* As a rule processors have APIC timer running in deep C states */
+>> -	if (c->x86>= 0xf&&  !cpu_has_amd_erratum(amd_erratum_400))
+>> +	if (c->x86>  0xf&&  !cpu_has_amd_erratum(amd_erratum_400))
+>>   		set_cpu_cap(c, X86_FEATURE_ARAT);
+>>
+>>   	/*
+> 
+> 
