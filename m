@@ -1,104 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760569Ab2CMW6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 18:58:15 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37366 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760513Ab2CMW6L (ORCPT
+	id S1760581Ab2CMW6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 18:58:18 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:39083 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760513Ab2CMW6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 18:58:11 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH v2] usb: Don't make USB_ARCH_HAS_{XHCI,OHCI,EHCI} depend on USB_SUPPORT.
-Date: Tue, 13 Mar 2012 15:58:05 -0700
-Message-Id: <1331679485-6159-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Tue, 13 Mar 2012 18:58:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F5F1385.60406@numascale-asia.com>
+References: <4F5F1385.60406@numascale-asia.com>
+Date: Tue, 13 Mar 2012 15:58:15 -0700
+X-Google-Sender-Auth: 2McriozqIByIWrZLldBvM--Zsag
+Message-ID: <CAE9FiQWtHD41qoYSm+tzLROUyR_33bwyBgE882cop3vbEmSPhw@mail.gmail.com>
+Subject: Re: x2APIC and many-APIC systems...
+From: Yinghai Lu <yinghai@kernel.org>
+To: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Steffen Persvold <sp@numascale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Tue, Mar 13, 2012 at 2:29 AM, Daniel J Blueman
+<daniel@numascale-asia.com> wrote:
+> Ingo, Suresh,
+>
+> Commit a35fd28256e7736cc84af8931a16224f0bfaaf6c prevents x2APIC structures
+> being used from the ACPI MADT if the cores don't advertise the x2APIC
+> feature. Commit c284b42abadbb22083bfde24d308899c08d44ffa prevents onlining
+> cores with APIC ID >255 in non-x2APIC mode. Since NumaChip/NumaConnect uses
+> x2APIC structures to describe non-x2APIC systems (AMD Opteron) with lots of
+> APICs, we thus now can't boot all the cores.
+>
+> We are able to set the x2APIC bit in the processor feature flags, so get
+> caught by the second patch. Is there an appropriate approach to use in these
+> circumstances? Otherwise, would a patch that separates the APIC ID handover
+> and future x2APIC MSR access be appropriate?
+>
 
-The fact that an architecture/board has XHCI, OHCI or EHCI does not
-depend on the fact that the kernel is configured with USB_SUPPORT.
+add is_apicid_valid() in struct apic?
 
-Make the Kconfig reflect this fact thus avoiding ugly messages like:
-
-warning: (MIPS_ALCHEMY && CAVIUM_OCTEON_REFERENCE_BOARD && SOC_AR71XX && SOC_AR724X && SOC_AR913X && SOC_AR933X) selects USB_ARCH_HAS_EHCI which has unmet direct dependencies (USB_SUPPORT)
-
-Signed-off-by: David Daney <david.daney@cavium.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
----
-
-Changes from v1: Add USB_ARCH_HAS_XHCI to the set.
-
- drivers/usb/Kconfig |   42 +++++++++++++++++++++---------------------
- 1 files changed, 21 insertions(+), 21 deletions(-)
-
-diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-index 0b0afc8..e4405e0 100644
---- a/drivers/usb/Kconfig
-+++ b/drivers/usb/Kconfig
-@@ -10,27 +10,6 @@ menuconfig USB_SUPPORT
- 	  This option adds core support for Universal Serial Bus (USB).
- 	  You will also need drivers from the following menu to make use of it.
- 
--if USB_SUPPORT
--
--config USB_COMMON
--	tristate
--	default y
--	depends on USB || USB_GADGET
--
--# Host-side USB depends on having a host controller
--# NOTE:  dummy_hcd is always an option, but it's ignored here ...
--# NOTE:  SL-811 option should be board-specific ...
--config USB_ARCH_HAS_HCD
--	boolean
--	default y if USB_ARCH_HAS_OHCI
--	default y if USB_ARCH_HAS_EHCI
--	default y if USB_ARCH_HAS_XHCI
--	default y if PCMCIA && !M32R			# sl811_cs
--	default y if ARM				# SL-811
--	default y if BLACKFIN				# SL-811
--	default y if SUPERH				# r8a66597-hcd
--	default PCI
--
- # many non-PCI SOC chips embed OHCI
- config USB_ARCH_HAS_OHCI
- 	boolean
-@@ -84,6 +63,27 @@ config USB_ARCH_HAS_XHCI
- 	boolean
- 	default PCI
- 
-+if USB_SUPPORT
-+
-+config USB_COMMON
-+	tristate
-+	default y
-+	depends on USB || USB_GADGET
-+
-+# Host-side USB depends on having a host controller
-+# NOTE:  dummy_hcd is always an option, but it's ignored here ...
-+# NOTE:  SL-811 option should be board-specific ...
-+config USB_ARCH_HAS_HCD
-+	boolean
-+	default y if USB_ARCH_HAS_OHCI
-+	default y if USB_ARCH_HAS_EHCI
-+	default y if USB_ARCH_HAS_XHCI
-+	default y if PCMCIA && !M32R			# sl811_cs
-+	default y if ARM				# SL-811
-+	default y if BLACKFIN				# SL-811
-+	default y if SUPERH				# r8a66597-hcd
-+	default PCI
-+
- # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
- config USB
- 	tristate "Support for Host-side USB"
--- 
-1.7.2.3
-
+Yinghai
