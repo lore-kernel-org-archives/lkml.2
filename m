@@ -1,226 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759490Ab2CMDMZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 23:12:25 -0400
-Received: from nat.nue.novell.com ([195.135.221.2]:44047 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758368Ab2CMDMW (ORCPT
+	id S1759493Ab2CMDO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 23:14:28 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:65432 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab2CMDOZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 23:12:22 -0400
-Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
-From: joeyli <jlee@suse.com>
-To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-Cc: rpurdie@rpsys.net, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-In-Reply-To: <4F5D000E.8040104@gmx.de>
-References: <CABNxG=CU+bOWUauLYfcS2vtFqKvXA-9axgokNoYz+KuU1Mzztw@mail.gmail.com>
-	 <4F5D000E.8040104@gmx.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Mar 2012 11:10:45 +0800
-Message-ID: <1331608245.10557.149.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Mon, 12 Mar 2012 23:14:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1331362837-10740-23-git-send-email-yinghai@kernel.org>
+References: <1331362837-10740-1-git-send-email-yinghai@kernel.org> <1331362837-10740-23-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 12 Mar 2012 21:14:03 -0600
+Message-ID: <CAErSpo4=pL_y0q=1-4GMGenOmKmLFgtAbpYi3GNrErGVZqCcBg@mail.gmail.com>
+Subject: Re: [PATCH v2 22/37] PCI, acpiphp: remove hot-add support of pci host bridge
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pradeep, 
+On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> It causes confusing.
 
-æ–¼ æ—¥ï¼Œ2012-03-11 æ–¼ 19:42 +0000ï¼ŒFlorian Tobias Schandinat æåˆ°ï¼š
-> Hi,
-> 
-> On 03/11/2012 06:21 PM, Pradeep Subrahmanion wrote:
-> > Hi ,
-> > 
-> >          Brightness control was not  working on Acer Aspire 4736 using
-> > default ACPI interface.  acer-acpi also do not support 4730 series since
-> > it uses new WMI interface.
-> > This driver adds brightness control by accessing the LBB PCI
-> > configuration register. This approach may also work on other laptops in
-> > 4730 series .But currently ,  it is only tested  for 
-> > Aspire 4736.  
-> > 
+"causes confusion."
 
-Pleae check does there have following interface?
+> We may only need acpi hp for pci host bridge.
+>
+> Split host bridge hot-add support to another file, and keep acpiphp simple.
 
-/sys/class/backlight/intel_backlight
+I think it's a good thing to remove host bridge hotplug from acpiphp;
+thanks for doing that.
 
-And,
-did you try kernel parameter "acpi_backlight=vendor", does it work to
-you?
+However, I think you removed it here, but didn't add it elsewhere
+until a different patch.  That means we can't bisect across this.  It
+would be better to do the entire move in a single patch.
 
-Please attach acpidump: acpidump > acpidump.dat
-
-
-Thanks
-Joey Lee
-
-> > From 893031c1e9bdefd9642b98825062b5df98af0d77 Mon Sep 17 00:00:00 2001
-> > From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com
-> > <mailto:subrahmanion.pradeep@gmail.com>>
-> > Date: Sun, 11 Mar 2012 23:11:23 -0400
-> > Subject: [PATCH] Added backlight driver for Acer Aspire 4736
-> > 
-> 
-> the commit message should be here, I think.
-> 
-> > 
-> > Signed-off-by: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com
-> > <mailto:subrahmanion.pradeep@gmail.com>>
-> 
-> Please resend this email in the correct format: As you can see in my
-> email the text version of your patch is severely screwed up and nobody
-> wants to even try converting a HTML format to a proper patch again,
-> probably most people won't even receive an email that has a HTML part as
-> their spam filter are going to handle it as spam. git send-email will
-> take care of it for you if you configure it for your account.
-> You should also cc Andrew Morton <akpm@linux-foundation.org> as he's the
-> one who handles backlight patches at the moment.
-> 
-> 
-> Best regards,
-> 
-> Florian Tobias Schandinat
-> 
-> > ---
-> >  drivers/video/backlight/acer4736_bl.c |  110
-> > +++++++++++++++++++++++++++++++++
-> >  1 files changed, 110 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/video/backlight/acer4736_bl.c
-> > 
-> > diff --git a/drivers/video/backlight/acer4736_bl.c
-> > b/drivers/video/backlight/acer4736_bl.c
-> > new file mode 100644
-> > index 0000000..6fe2937
-> > --- /dev/null
-> > +++ b/drivers/video/backlight/acer4736_bl.c
-> > @@ -0,0 +1,110 @@
-> > +/*
-> > + * Backlight driver for Acer Aspire 4736
-> > + *
-> > + * Copyright (C) Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com
-> > <mailto:subrahmanion.pradeep@gmail.com>>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * This driver uses LBB PCI configuration register to change the
-> > + * backlight brightness.
-> > + *
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/init.h>
-> > +#include <linux/backlight.h>
-> > +#include <linux/err.h>
-> > +#include <linux/dmi.h>
-> > +#include <linux/io.h>
-> > +#include <linux/pci.h>
-> > +
-> > +static u8 max_brightness = 0xFF;
-> > +static u8 lbb_offset =  0xF4;
-> > +static unsigned int device_id = 0x2a42;
-> > +static unsigned int vendor_id = 0x8086;
-> > +
-> > +struct backlight_device *acer_backlight_device;
-> > +struct pci_dev *pdev;
-> > +
-> > +static int acer_dmi_match(const struct dmi_system_id *id)
-> > +{
-> > + printk(KERN_INFO "acer4736_bl: %s detected\n", id->ident);
-> > + return 1;
-> > +}
-> > +
-> > +static const struct dmi_system_id __initdata acer_device_table[] = {
-> > +{
-> > + .callback = acer_dmi_match,
-> > + .ident = "Aspire 4736",
-> > + .matches = {
-> > + DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-> > + DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 4736"),
-> > + },
-> > + },
-> > + {}
-> > +};
-> > +static int read_brightness(struct backlight_device *bd)
-> > +{
-> > + u8 result;
-> > + pci_read_config_byte(pdev, lbb_offset, &result);
-> > + return result;
-> > +}
-> > +
-> > +static int update_brightness(struct backlight_device *bd)
-> > +{
-> > + u8 intensity = bd->props.brightness;
-> > + if (intensity > max_brightness) {
-> > + printk(KERN_INFO "Acer4736_bl: Invalid parameter. Maximum value is %d"
-> > + , max_brightness);
-> > + return -1;
-> > + }
-> > + pci_write_config_byte(pdev, lbb_offset, intensity);
-> > + return 0;
-> > +}
-> > +static const struct  backlight_ops acer_backlight_ops = {
-> > + .get_brightness = read_brightness,
-> > + .update_status  = update_brightness,
-> > +};
-> > +
-> > +static int __init acer4736_bl_init(void)
-> > +{
-> > + struct backlight_properties props;
-> > + if (!dmi_check_system(acer_device_table))
-> > + return -ENODEV;
-> > +
-> > + pdev = pci_get_device(vendor_id, device_id, NULL);
-> > +
-> > + if (!pdev)
-> > + return -ENODEV;
-> > +
-> > + printk(KERN_INFO "Loading Acer 4736 backlight driver\n");
-> > + memset(&props, 0, sizeof(struct backlight_properties));
-> > + props.type = BACKLIGHT_RAW;
-> > + props.max_brightness = max_brightness;
-> > +
-> > + acer_backlight_device = backlight_device_register("acer_backlight",
-> > + NULL, NULL, &acer_backlight_ops, &props);
-> > + acer_backlight_device->props.max_brightness = max_brightness;
-> > + acer_backlight_device->props.brightness  =
-> > + read_brightness(acer_backlight_device);
-> > + backlight_update_status(acer_backlight_device);
-> > +
-> > + return 0;
-> > +}
-> > +
-> > +static void __exit acer4736_bl_exit(void)
-> > +{
-> > + pci_dev_put(pdev);
-> > + backlight_device_unregister(acer_backlight_device);
-> > +}
-> > +
-> > +module_init(acer4736_bl_init);
-> > +module_exit(acer4736_bl_exit);
-> > +
-> > +MODULE_AUTHOR("Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com
-> > <mailto:subrahmanion.pradeep@gmail.com>>");
-> > +MODULE_DESCRIPTION("Acer Aspire 4736 Backlight Driver");
-> > +MODULE_LICENSE("GPL");
-> > +MODULE_DEVICE_TABLE(dmi, acer_device_table);
-> > -- 
-> > 1.7.2.5
-> > 
-> > -------------  
-> > 
-> > Pradeep Subrahmanion
-> 
+> Also remove not used res_lock in the struct.
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/hotplug/acpiphp.h      |    9 +---
+>  drivers/pci/hotplug/acpiphp_glue.c |  104 +++++++-----------------------------
+>  2 files changed, 21 insertions(+), 92 deletions(-)
+>
+> diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
+> index 7722108..1a62e7b 100644
+> --- a/drivers/pci/hotplug/acpiphp.h
+> +++ b/drivers/pci/hotplug/acpiphp.h
+> @@ -79,18 +79,15 @@ struct acpiphp_bridge {
+>        /* Ejectable PCI-to-PCI bridge (PCI bridge and PCI function) */
+>        struct acpiphp_func *func;
+>
+> -       int type;
+>        int nr_slots;
+>
+>        u32 flags;
+>
+> -       /* This bus (host bridge) or Secondary bus (PCI-to-PCI bridge) */
+> +       /* Secondary bus (PCI-to-PCI bridge) */
+>        struct pci_bus *pci_bus;
+>
+>        /* PCI-to-PCI bridge device */
+>        struct pci_dev *pci_dev;
+> -
+> -       spinlock_t res_lock;
+>  };
+>
+>
+> @@ -148,10 +145,6 @@ struct acpiphp_attention_info
+>  /* PCI bus bridge HID */
+>  #define ACPI_PCI_HOST_HID              "PNP0A03"
+>
+> -/* PCI BRIDGE type */
+> -#define BRIDGE_TYPE_HOST               0
+> -#define BRIDGE_TYPE_P2P                        1
+> -
+>  /* ACPI _STA method value (ignore bit 4; battery present) */
+>  #define ACPI_STA_PRESENT               (0x00000001)
+>  #define ACPI_STA_ENABLED               (0x00000002)
+> diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+> index 10b2122..1ca82ae 100644
+> --- a/drivers/pci/hotplug/acpiphp_glue.c
+> +++ b/drivers/pci/hotplug/acpiphp_glue.c
+> @@ -283,7 +283,7 @@ static int detect_ejectable_slots(acpi_handle handle)
+>        return found;
+>  }
+>
+> -/* initialize miscellaneous stuff for both root and PCI-to-PCI bridge */
+> +/* initialize miscellaneous stuff for PCI-to-PCI bridge */
+>  static void init_bridge_misc(struct acpiphp_bridge *bridge)
+>  {
+>        acpi_status status;
+> @@ -300,25 +300,21 @@ static void init_bridge_misc(struct acpiphp_bridge *bridge)
+>        }
+>
+>        /* install notify handler */
+> -       if (bridge->type != BRIDGE_TYPE_HOST) {
+> -               if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
+> -                       status = acpi_remove_notify_handler(bridge->func->handle,
+> -                                               ACPI_SYSTEM_NOTIFY,
+> -                                               handle_hotplug_event_func);
+> -                       if (ACPI_FAILURE(status))
+> -                               err("failed to remove notify handler\n");
+> -               }
+> -               status = acpi_install_notify_handler(bridge->handle,
+> -                                            ACPI_SYSTEM_NOTIFY,
+> -                                            handle_hotplug_event_bridge,
+> -                                            bridge);
+> -
+> -               if (ACPI_FAILURE(status)) {
+> -                       err("failed to register interrupt notify handler\n");
+> -               }
+> +       if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
+> +               status = acpi_remove_notify_handler(bridge->func->handle,
+> +                                       ACPI_SYSTEM_NOTIFY,
+> +                                       handle_hotplug_event_func);
+> +               if (ACPI_FAILURE(status))
+> +                       err("failed to remove notify handler\n");
+>        }
+> -}
+> +       status = acpi_install_notify_handler(bridge->handle,
+> +                                    ACPI_SYSTEM_NOTIFY,
+> +                                    handle_hotplug_event_bridge,
+> +                                    bridge);
+>
+> +       if (ACPI_FAILURE(status))
+> +               err("failed to register interrupt notify handler\n");
+> +}
+>
+>  /* find acpiphp_func from acpiphp_bridge */
+>  static struct acpiphp_func *acpiphp_bridge_handle_to_function(acpi_handle handle)
+> @@ -375,28 +371,6 @@ static inline void config_p2p_bridge_flags(struct acpiphp_bridge *bridge)
+>        }
+>  }
+>
+> -
+> -/* allocate and initialize host bridge data structure */
+> -static void add_host_bridge(acpi_handle *handle)
+> -{
+> -       struct acpiphp_bridge *bridge;
+> -       struct acpi_pci_root *root = acpi_pci_find_root(handle);
+> -
+> -       bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
+> -       if (bridge == NULL)
+> -               return;
+> -
+> -       bridge->type = BRIDGE_TYPE_HOST;
+> -       bridge->handle = handle;
+> -
+> -       bridge->pci_bus = root->bus;
+> -
+> -       spin_lock_init(&bridge->res_lock);
+> -
+> -       init_bridge_misc(bridge);
+> -}
+> -
+> -
+>  /* allocate and initialize PCI-to-PCI bridge data structure */
+>  static void add_p2p_bridge(acpi_handle *handle)
+>  {
+> @@ -408,7 +382,6 @@ static void add_p2p_bridge(acpi_handle *handle)
+>                return;
+>        }
+>
+> -       bridge->type = BRIDGE_TYPE_P2P;
+>        bridge->handle = handle;
+>        config_p2p_bridge_flags(bridge);
+>
+> @@ -425,7 +398,6 @@ static void add_p2p_bridge(acpi_handle *handle)
+>         * (which we access during module unload).
+>         */
+>        get_device(&bridge->pci_bus->dev);
+> -       spin_lock_init(&bridge->res_lock);
+>
+>        init_bridge_misc(bridge);
+>        return;
+> @@ -485,12 +457,6 @@ static int add_bridge(acpi_handle handle)
+>                        return 0;
+>        }
+>
+> -       /* check if this bridge has ejectable slots */
+> -       if (detect_ejectable_slots(handle) > 0) {
+> -               dbg("found PCI host-bus bridge with hot-pluggable slots\n");
+> -               add_host_bridge(handle);
+> -       }
+> -
+>        /* search P2P bridges under this host bridge */
+>        status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
+>                                     find_p2p_bridge, NULL, NULL, NULL);
+> @@ -524,8 +490,7 @@ static void cleanup_bridge(struct acpiphp_bridge *bridge)
+>        if (ACPI_FAILURE(status))
+>                err("failed to remove notify handler\n");
+>
+> -       if ((bridge->type != BRIDGE_TYPE_HOST) &&
+> -           ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func)) {
+> +       if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
+>                status = acpi_install_notify_handler(bridge->func->handle,
+>                                                ACPI_SYSTEM_NOTIFY,
+>                                                handle_hotplug_event_func,
+> @@ -1078,15 +1043,10 @@ static void acpiphp_sanitize_bus(struct pci_bus *bus)
+>  static int acpiphp_configure_bridge (acpi_handle handle)
+>  {
+>        struct pci_bus *bus;
+> +       struct pci_dev *pdev = acpi_get_pci_dev(handle);
+>
+> -       if (acpi_is_root_bridge(handle)) {
+> -               struct acpi_pci_root *root = acpi_pci_find_root(handle);
+> -               bus = root->bus;
+> -       } else {
+> -               struct pci_dev *pdev = acpi_get_pci_dev(handle);
+> -               bus = pdev->subordinate;
+> -               pci_dev_put(pdev);
+> -       }
+> +       bus = pdev->subordinate;
+> +       pci_dev_put(pdev);
+>
+>        pci_bus_size_bridges(bus);
+>        pci_bus_assign_resources(bus);
+> @@ -1249,8 +1209,7 @@ static void _handle_hotplug_event_bridge(struct work_struct *work)
+>        case ACPI_NOTIFY_EJECT_REQUEST:
+>                /* request device eject */
+>                dbg("%s: Device eject notify on %s\n", __func__, objname);
+> -               if ((bridge->type != BRIDGE_TYPE_HOST) &&
+> -                   (bridge->flags & BRIDGE_HAS_EJ0)) {
+> +               if (bridge->flags & BRIDGE_HAS_EJ0) {
+>                        struct acpiphp_slot *slot;
+>                        slot = bridge->func->slot;
+>                        if (!acpiphp_disable_slot(slot))
+> @@ -1381,21 +1340,6 @@ static void handle_hotplug_event_func(acpi_handle handle, u32 type,
+>                              _handle_hotplug_event_func);
+>  }
+>
+> -static acpi_status
+> -find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
+> -{
+> -       int *count = (int *)context;
+> -
+> -       if (!acpi_is_root_bridge(handle))
+> -               return AE_OK;
+> -
+> -       (*count)++;
+> -       acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+> -                                   handle_hotplug_event_bridge, NULL);
+> -
+> -       return AE_OK ;
+> -}
+> -
+>  static struct acpi_pci_driver acpi_pci_hp_driver = {
+>        .add =          add_bridge,
+>        .remove =       remove_bridge,
+> @@ -1406,15 +1350,7 @@ static struct acpi_pci_driver acpi_pci_hp_driver = {
+>  */
+>  int __init acpiphp_glue_init(void)
+>  {
+> -       int num = 0;
+> -
+> -       acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+> -                       ACPI_UINT32_MAX, find_root_bridges, NULL, &num, NULL);
+> -
+> -       if (num <= 0)
+> -               return -1;
+> -       else
+> -               acpi_pci_register_driver(&acpi_pci_hp_driver);
+> +       acpi_pci_register_driver(&acpi_pci_hp_driver);
+>
+>        return 0;
+>  }
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+> 1.7.7
+>
