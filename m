@@ -1,133 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab2CMAq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:46:58 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48272 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758961Ab2CMAXh (ORCPT
+	id S1759139Ab2CMArN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:47:13 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:35535 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711Ab2CMArI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:23:37 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        =?UTF-8?q?=C3=89ric=20Piel?= <E.A.B.Piel@tudelft.nl>,
-        =?UTF-8?q?=C3=89ric=20Piel?= <eric.piel@tremplin-utc.net>,
-        Dmitry Torokhov <dtor@mail.ru>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 116/196] Input: elantech - discard the first 2 positions on some firmwares
-Date: Mon, 12 Mar 2012 20:20:29 -0400
-Message-Id: <1331598109-31424-71-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.9.3
-In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
- <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 12 Mar 2012 20:47:08 -0400
+X-AuditID: cbfee61b-b7c62ae000000989-81-4f5e990ad625
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: merez@codeaurora.org
+Cc: "'Namjae Jeon'" <linkinjeon@gmail.com>, linux-mmc@vger.kernel.org,
+        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org
+References: <4934441a17d25c3249556f7bf281b1be.squirrel@www.codeaurora.org>
+ <CAKYAXd_6OqQJ78mPJp11gRvGwwg88S_n_Auu=_HdP_ZXzCKrDg@mail.gmail.com>
+ <6669559e86c1d13b27e941ff2acf89d2.squirrel@www.codeaurora.org>
+ <CAKYAXd8HMrdB9mzgsz5XmMxkDE+gMce+CTEDFU4J67nusNtLOg@mail.gmail.com>
+ <cf2950fbeb4c500534be670cdd8cf85d.squirrel@www.codeaurora.org>
+ <000001ccfbf7$ac3e7510$04bb5f30$%jun@samsung.com>
+ <dbfd894b689405f525e17aa5373a2602.squirrel@www.codeaurora.org>
+In-reply-to: <dbfd894b689405f525e17aa5373a2602.squirrel@www.codeaurora.org>
+Subject: RE: [PATCH v5 2/2] mmc: core: Support packed command for eMMC4.5 device
+Date: Tue, 13 Mar 2012 09:47:05 +0900
+Message-id: <000301cd00b2$d08a84d0$719f8e70$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Acz/zxVxQ2M0Rg66SZ24XooUL6b1+QAESzUA
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ã‰ric Piel <E.A.B.Piel@tudelft.nl>
+Maya Erez <merez@codeaurora.org> wrote:
+> > Maya Erez <merez@codeaurora.org> wrote:
+> >> > Hi. Merez.
+> >> >
+> >> > Thanks a lot about your performance measurement.
+> >> >
+> >> > I think that your measurement is enough and correct and the firmware
+> >> > of mmc vender should be optimized or change properly rather than
+> >> > modifying the current patch.
+> >> >
+> >> > And currently we can use only write packed cmd by my suggestion.
+> >> >
+> >> > I would like to add my reviewd-by tag in updated patches also.
+> >> >
+> >> > Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+> >> >
+> >> > Thanks.
+> >>
+> >> I tend to disagree. Adding a massive amount of code that would be
+> >> disabled
+> >> can be risky. In case this code will not be in use it will not be
+> >> properly
+> >> tested and its reliability will be uncertain.
+> >>
+> > If you found something to be correct, please let me know that.
+> > It would be rightly appreciated.
+> >
+> > Best regards,
+> > Seungwon Jeon.
+> Hi Jeon,
+> 
+> The write packing code looks good to me.
+> However, the separation of read and write packing to different patches is
+> very important to us.
+> As I specified before, we decided to enable only the write packing. We
+> plan to thoroughly test the write packing (edge cases and error handling)
+> and will not test the read packing. Therefore we would like to have the
+> ability to get only the write packing code.
+As Namjae Jeon mentioned, how about this?
+I think only MMC_CAP2_PACKED_WR can be set for enabling the write packing easily.
+In my case, tested eMMC device is not optimized for packed read.
+So I couldn't confirm that this patch is effective in packed read.
+I think packed read as well as packed write of this patch conformed with the eMMC4.5 spec though.
+I wonder that your eMMC device has the good ability in both operations.
+It is difficult to decide the performance with excluding the device.
+Soon I will test it with the improved sample for packed read.
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+> In my previous comment I talked about the risk of mainlining  a “dead”
+> code. Every feature that is integrated is considered to be fully tested
+> and in the future it might be enabled, assuming that is was already
+> tested.
+Right! It is desirable and I hope that.
+Do you think this patch have the potential problem?
+As I also ask you, if you have tested and find something is incorrect, we can discuss that.
+It was submitted for that purpose.
 
-commit 7f29f17b57255b6395046805a98bc663ded63fb8 upstream.
+> Can you please specify how you tested the read and write packing? Did you
+> perform edge cases and error handling tests? Do you have test code that
+> can be shared?
+Basically, It has been tested with several I/O benchmark tool.
+Some misvalued I/O timing and wrong argument for packed command 
+was used for triggering the error case.
 
-According to the Dell/Ubuntu driver, what was previously observed as
-"jumpy cursor" corresponds to the hardware sending incorrect data for
-the first two reports of a one touch finger. So let's use the same
-workaround as in the other driver. Also, detect another firmware
-version with the same behaviour, as in the other driver.
-
-Signed-off-by: Ã‰ric Piel <eric.piel@tremplin-utc.net>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- drivers/input/mouse/elantech.c |   21 ++++++++++-----------
- drivers/input/mouse/elantech.h |    7 ++++---
- 2 files changed, 14 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/input/mouse/elantech.c b/drivers/input/mouse/elantech.c
-index 4400369..a0c19c2 100644
---- a/drivers/input/mouse/elantech.c
-+++ b/drivers/input/mouse/elantech.c
-@@ -183,7 +183,6 @@ static void elantech_report_absolute_v1(struct psmouse *psmouse)
- 	struct elantech_data *etd = psmouse->private;
- 	unsigned char *packet = psmouse->packet;
- 	int fingers;
--	static int old_fingers;
- 
- 	if (etd->fw_version < 0x020000) {
- 		/*
-@@ -201,10 +200,13 @@ static void elantech_report_absolute_v1(struct psmouse *psmouse)
- 	}
- 
- 	if (etd->jumpy_cursor) {
--		/* Discard packets that are likely to have bogus coordinates */
--		if (fingers > old_fingers) {
-+		if (fingers != 1) {
-+			etd->single_finger_reports = 0;
-+		} else if (etd->single_finger_reports < 2) {
-+			/* Discard first 2 reports of one finger, bogus */
-+			etd->single_finger_reports++;
- 			elantech_debug("elantech.c: discarding packet\n");
--			goto discard_packet_v1;
-+			return;
- 		}
- 	}
- 
-@@ -236,9 +238,6 @@ static void elantech_report_absolute_v1(struct psmouse *psmouse)
- 	}
- 
- 	input_sync(dev);
--
-- discard_packet_v1:
--	old_fingers = fingers;
- }
- 
- /*
-@@ -734,14 +733,14 @@ int elantech_init(struct psmouse *psmouse)
- 	etd->capabilities = param[0];
- 
- 	/*
--	 * This firmware seems to suffer from misreporting coordinates when
-+	 * This firmware suffers from misreporting coordinates when
- 	 * a touch action starts causing the mouse cursor or scrolled page
- 	 * to jump. Enable a workaround.
- 	 */
--	if (etd->fw_version == 0x020022) {
--		pr_info("elantech.c: firmware version 2.0.34 detected, "
-+	if (etd->fw_version == 0x020022 || etd->fw_version == 0x020600) {
-+		pr_info("elantech.c: firmware version 2.0.34/2.6.0 detected, "
- 			"enabling jumpy cursor workaround\n");
--		etd->jumpy_cursor = 1;
-+		etd->jumpy_cursor = true;
- 	}
- 
- 	if (elantech_set_absolute_mode(psmouse)) {
-diff --git a/drivers/input/mouse/elantech.h b/drivers/input/mouse/elantech.h
-index ac57bde..aa4aac5 100644
---- a/drivers/input/mouse/elantech.h
-+++ b/drivers/input/mouse/elantech.h
-@@ -100,10 +100,11 @@ struct elantech_data {
- 	unsigned char reg_26;
- 	unsigned char debug;
- 	unsigned char capabilities;
--	unsigned char paritycheck;
--	unsigned char jumpy_cursor;
-+	bool paritycheck;
-+	bool jumpy_cursor;
- 	unsigned char hw_version;
--	unsigned int  fw_version;
-+	unsigned int fw_version;
-+	unsigned int single_finger_reports;
- 	unsigned char parity[256];
- };
- 
--- 
-1.7.9.3
+Best regards,
+Seungwon Jeon.
+> 
+> Thanks,
+> Maya Erez
+> Consultant for Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
