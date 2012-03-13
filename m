@@ -1,74 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760461Ab2CMKix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 06:38:53 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43025 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759976Ab2CMKiw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 06:38:52 -0400
-Date: Tue, 13 Mar 2012 11:38:29 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        linaro-dev@lists.linaro.org, Saravana Kannan <skannan@codeaurora.org>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>, patches@linaro.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 3/3] clk: basic clock hardware types
-Message-ID: <20120313103829.GR3852@pengutronix.de>
-References: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
- <1331366064-1273-4-git-send-email-mturquette@linaro.org>
- <CAKGA1b=huAnG6tLoaGqoFoJnuEg-+rs8KLYVB1KF6_q73ot63A@mail.gmail.com>
+	id S1760521Ab2CMKjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:39:09 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:60252 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760490Ab2CMKjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 06:39:02 -0400
+Message-ID: <4F5F236A.1070609@parallels.com>
+Date: Tue, 13 Mar 2012 14:37:30 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKGA1b=huAnG6tLoaGqoFoJnuEg-+rs8KLYVB1KF6_q73ot63A@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:37:08 up 121 days, 18:24, 68 users,  load average: 0.00, 0.67,
- 0.85
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Suleiman Souhlal <ssouhlal@FreeBSD.org>, <cgroups@vger.kernel.org>,
+        <suleiman@google.com>, <penberg@kernel.org>, <cl@linux.com>,
+        <yinghan@google.com>, <hughd@google.com>, <gthelen@google.com>,
+        <peterz@infradead.org>, <dan.magenheimer@oracle.com>,
+        <hannes@cmpxchg.org>, <mgorman@suse.de>,
+        <James.Bottomley@HansenPartnership.com>, <linux-mm@kvack.org>,
+        <devel@openvz.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 02/13] memcg: Kernel memory accounting infrastructure.
+References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org> <1331325556-16447-3-git-send-email-ssouhlal@FreeBSD.org> <4F5C5E54.2020408@parallels.com> <20120313152446.28b0d696.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120313152446.28b0d696.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 10:50:09PM -0500, Matt Sealey wrote:
-> Hi Mike,
-> 
-> Can I suggest/we discuss that we support fractional (i.e. represented
-> by fixed point value with integer and fractional part) dividers in the
-> common divider clock case, simplistically just adding a divider
-> fractional width and shifting all the calculations by it (and fixing
-> the "maxdiv" calculation as in a fractional case width of the divider
-> area in the register is not an indicator of the actual maximum
-> divider)? (I guess for the standard integer divider case, it would be
-> continually shifting by 0 which might make the code a bit bigger, I
-> don't think that would truly be a concern though?)
+> After looking codes, I think we need to think
+> whether independent_kmem_limit is good or not....
+>
+> How about adding MEMCG_KMEM_ACCOUNT flag instead of this and use only
+> memcg->res/memcg->memsw rather than adding a new counter, memcg->kmem ?
+>
+> if MEMCG_KMEM_ACCOUNT is set     ->  slab is accoutned to mem->res/memsw.
+> if MEMCG_KMEM_ACCOUNT is not set ->  slab is never accounted.
+>
+> (I think On/Off switch is required..)
+>
+> Thanks,
+> -Kame
+>
 
-I have patches for this, see
+This has been discussed before, I can probably find it in the archives 
+if you want to go back and see it.
 
-git://git.pengutronix.de/git/imx/linux-2.6.git imx/work/imx-clkv6
+But in a nutshell:
 
-Sascha
+1) Supposing independent knob disappear (I will explain in item 2 why I 
+don't want it to), I don't thing a flag makes sense either. *If* we are 
+planning to enable/disable this, it might make more sense to put some 
+work on it, and allow particular slabs to be enabled/disabled by writing 
+to memory.kmem.slabinfo (-* would disable all, +* enable all, +kmalloc* 
+enable all kmalloc, etc).
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Alternatively, what we could do instead, is something similar to what 
+ended up being done for tcp, by request of the network people: if you 
+never touch the limit file, don't bother with it at all, and simply does 
+not account. With Suleiman's lazy allocation infrastructure, that should 
+actually be trivial. And then again, a flag is not necessary, because 
+writing to the limit file does the job, and also convey the meaning well 
+enough.
+
+2) For the kernel itself, we are mostly concerned that a malicious 
+container may pin into memory big amounts of kernel memory which is, 
+ultimately, unreclaimable. In particular, with overcommit allowed 
+scenarios, you can fill the whole physical memory (or at least a 
+significant part) with those objects, well beyond your softlimit 
+allowance, making the creation of further containers impossible.
+With user memory, you can reclaim the cgroup back to its place. With 
+kernel memory, you can't.
+
+In the particular example of 32-bit boxes, you can easily fill up a 
+large part of the available 1gb kernel memory with pinned memory and 
+render the whole system unresponsive.
+
+Never allowing the kernel memory to go beyond the soft limit was one of 
+the proposed alternatives. However, it may force you to establish a soft
+limit where one was not previously needed. Or, establish a low soft 
+limit when you really need a bigger one.
+
+All that said, while reading your message, thinking a bit, the following 
+crossed my mind:
+
+- We can account the slabs to memcg->res normally, and just store the
+   information that this is kernel memory into a percpu counter, as
+   I proposed recently.
+- The knob goes away, and becomes implicit: if you ever write anything
+   to memory.kmem.limit_in_bytes, we transfer that memory to a separate
+   kmem res_counter, and proceed from there. We can keep accounting to
+   memcg->res anyway, just that kernel memory will now have a separate
+   limit.
+- With this scheme, it may not be necessary to ever have a file
+   memory.kmem.soft_limit_in_bytes. Reclaim is always part of the normal
+   memcg reclaim.
+
+The outlined above would work for us, and make the whole scheme simpler, 
+I believe.
+
+What do you think ?
