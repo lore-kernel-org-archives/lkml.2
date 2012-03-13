@@ -1,180 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759362Ab2CMVar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 17:30:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43206 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755216Ab2CMVap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 17:30:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Linux-sh list" <linux-sh@vger.kernel.org>
-Subject: [Update][PATCH 3/6] PM / Domains: Introduce "always on" device flag
-Date: Tue, 13 Mar 2012 22:34:52 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>, Paul Mundt <lethal@linux-sh.org>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cao Minh Hiep <hiepcm@gmail.com>
-References: <201203130123.16268.rjw@sisk.pl> <201203130125.43385.rjw@sisk.pl>
-In-Reply-To: <201203130125.43385.rjw@sisk.pl>
+	id S1759508Ab2CMVdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 17:33:10 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:44189 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751853Ab2CMVdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 17:33:07 -0400
+Date: Tue, 13 Mar 2012 17:33:04 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Phillip Susi <phillsusi@gmail.com>
+Cc: Andreas Dilger <adilger@whamcloud.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120313213304.GB11969@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Phillip Susi <phillsusi@gmail.com>,
+	Andreas Dilger <adilger@whamcloud.com>,
+	Lukas Czerner <lczerner@redhat.com>,
+	Jacek Luczak <difrost.kernel@gmail.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
+ <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
+ <20120310044804.GB5652@thunk.org>
+ <4F5F9A97.5060404@ubuntu.com>
+ <20120313195339.GA24124@thunk.org>
+ <4F5FAC9C.9070607@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203132234.52298.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F5FAC9C.9070607@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Tue, Mar 13, 2012 at 04:22:52PM -0400, Phillip Susi wrote:
+> 
+> I think a format change would be preferable to runtime sorting.
 
-The TMU device on the Mackerel board belongs to the A4R power domain
-and loses power when the domain is turned off.  Unfortunately, the
-TMU driver is not prepared to cope with such situations and crashes
-the system when that happens.  To work around this problem introduce
-a new helper function, pm_genpd_dev_always_on(), allowing a device
-driver to mark its device as "always on" in case it belongs to a PM
-domain, which will make the generic PM domains core code avoid
-powering off the domain containing the device, both at run time and
-during system suspend.
+Are you volunteering to spearhead the design and coding of such a
+thing?  Run-time sorting is backwards compatible, and a heck of a lot
+easier to code and test...
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Tested-by: Simon Horman <horms@verge.net.au>
-Acked-by: Paul Mundt <lethal@linux-sh.org>
----
+The reality is we'd probably want to implement run-time sorting
+*anyway*, for the vast majority of people who don't want to convert to
+a new incompatible file system format.  (Even if you can do the
+conversion using e2fsck --- which is possible, but it would be even
+more code to write --- system administrators tend to be very
+conservative about such things, since they might need to boot an older
+kernel, or use a rescue CD that doesn't have an uptodate kernel or
+file system utilities, etc.)
 
-The only change with respect to the previous version is the hunk in
-pm_genpd_restore_noirq() which only affects hibernation.
+> So the index nodes contain the hash ranges for the leaf block, but
+> the leaf block only contains the regular directory entries, not a
+> hash for each name?  That would mean that adding or removing names
+> would require moving around the regular directory entries wouldn't
+> it?
 
-Thanks,
-Rafael
+They aren't sorted in the leaf block, so we only need to move around
+regular directory entries when we do a node split (and at the moment
+we don't support shrinking directories), so we don't have to worry the
+reverse case.
 
----
- drivers/base/power/domain.c |   37 +++++++++++++++++++++++++++++++------
- include/linux/pm_domain.h   |    3 +++
- 2 files changed, 34 insertions(+), 6 deletions(-)
+> I would think that hash collisions are rare enough that reading a
+> directory block you end up not needing once in a blue moon would be
+> chalked up under "who cares".  So just stick with hash, offset pairs
+> to map the hash to the normal directory entry.
 
-Index: linux/drivers/base/power/domain.c
-===================================================================
---- linux.orig/drivers/base/power/domain.c
-+++ linux/drivers/base/power/domain.c
-@@ -366,7 +366,7 @@ static int pm_genpd_poweroff(struct gene
- 	not_suspended = 0;
- 	list_for_each_entry(pdd, &genpd->dev_list, list_node)
- 		if (pdd->dev->driver && (!pm_runtime_suspended(pdd->dev)
--		    || pdd->dev->power.irq_safe))
-+		    || pdd->dev->power.irq_safe || to_gpd_data(pdd)->always_on))
- 			not_suspended++;
- 
- 	if (not_suspended > genpd->in_progress)
-@@ -503,6 +503,9 @@ static int pm_genpd_runtime_suspend(stru
- 
- 	might_sleep_if(!genpd->dev_irq_safe);
- 
-+	if (dev_gpd_data(dev)->always_on)
-+		return -EBUSY;
-+
- 	stop_ok = genpd->gov ? genpd->gov->stop_ok : NULL;
- 	if (stop_ok && !stop_ok(dev))
- 		return -EBUSY;
-@@ -859,7 +862,7 @@ static int pm_genpd_suspend_noirq(struct
- 	if (IS_ERR(genpd))
- 		return -EINVAL;
- 
--	if (genpd->suspend_power_off
-+	if (genpd->suspend_power_off || dev_gpd_data(dev)->always_on
- 	    || (dev->power.wakeup_path && genpd_dev_active_wakeup(genpd, dev)))
- 		return 0;
- 
-@@ -892,7 +895,7 @@ static int pm_genpd_resume_noirq(struct
- 	if (IS_ERR(genpd))
- 		return -EINVAL;
- 
--	if (genpd->suspend_power_off
-+	if (genpd->suspend_power_off || dev_gpd_data(dev)->always_on
- 	    || (dev->power.wakeup_path && genpd_dev_active_wakeup(genpd, dev)))
- 		return 0;
- 
-@@ -1012,7 +1015,8 @@ static int pm_genpd_freeze_noirq(struct
- 	if (IS_ERR(genpd))
- 		return -EINVAL;
- 
--	return genpd->suspend_power_off ? 0 : genpd_stop_dev(genpd, dev);
-+	return genpd->suspend_power_off || dev_gpd_data(dev)->always_on ?
-+		0 : genpd_stop_dev(genpd, dev);
- }
- 
- /**
-@@ -1032,7 +1036,8 @@ static int pm_genpd_thaw_noirq(struct de
- 	if (IS_ERR(genpd))
- 		return -EINVAL;
- 
--	return genpd->suspend_power_off ? 0 : genpd_start_dev(genpd, dev);
-+	return genpd->suspend_power_off || dev_gpd_data(dev)->always_on ?
-+		0 : genpd_start_dev(genpd, dev);
- }
- 
- /**
-@@ -1125,7 +1130,7 @@ static int pm_genpd_restore_noirq(struct
- 
- 	pm_genpd_poweron(genpd);
- 
--	return genpd_start_dev(genpd, dev);
-+	return dev_gpd_data(dev)->always_on ? 0 : genpd_start_dev(genpd, dev);
- }
- 
- /**
-@@ -1289,6 +1294,26 @@ int pm_genpd_remove_device(struct generi
- }
- 
- /**
-+ * pm_genpd_dev_always_on - Set/unset the "always on" flag for a given device.
-+ * @dev: Device to set/unset the flag for.
-+ * @val: The new value of the device's "always on" flag.
-+ */
-+void pm_genpd_dev_always_on(struct device *dev, bool val)
-+{
-+	struct pm_subsys_data *psd;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&dev->power.lock, flags);
-+
-+	psd = dev_to_psd(dev);
-+	if (psd && psd->domain_data)
-+		to_gpd_data(psd->domain_data)->always_on = val;
-+
-+	spin_unlock_irqrestore(&dev->power.lock, flags);
-+}
-+EXPORT_SYMBOL_GPL(pm_genpd_dev_always_on);
-+
-+/**
-  * pm_genpd_add_subdomain - Add a subdomain to an I/O PM domain.
-  * @genpd: Master PM domain to add the subdomain to.
-  * @subdomain: Subdomain to be added.
-Index: linux/include/linux/pm_domain.h
-===================================================================
---- linux.orig/include/linux/pm_domain.h
-+++ linux/include/linux/pm_domain.h
-@@ -97,6 +97,7 @@ struct generic_pm_domain_data {
- 	struct gpd_dev_ops ops;
- 	struct gpd_timing_data td;
- 	bool need_restore;
-+	bool always_on;
- };
- 
- #ifdef CONFIG_PM_GENERIC_DOMAINS
-@@ -125,6 +126,7 @@ static inline int pm_genpd_add_device(st
- 
- extern int pm_genpd_remove_device(struct generic_pm_domain *genpd,
- 				  struct device *dev);
-+extern void pm_genpd_dev_always_on(struct device *dev, bool val);
- extern int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
- 				  struct generic_pm_domain *new_subdomain);
- extern int pm_genpd_remove_subdomain(struct generic_pm_domain *genpd,
-@@ -167,6 +169,7 @@ static inline int pm_genpd_remove_device
- {
- 	return -ENOSYS;
- }
-+static inline void pm_genpd_dev_always_on(struct device *dev, bool val) {}
- static inline int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
- 					 struct generic_pm_domain *new_sd)
- {
+With a 64-bit hash, and if we were actually going to implement this as
+a new incompatible feature, you're probably right in terms of
+accepting the extra directory block search.
+
+We would still have to implement the case where hash collisions *do*
+exist, though, and make sure the right thing happens in that case.
+Even if the chance of that happening is 1 in 2**32, with enough
+deployed systems (i.e., every Android handset, etc.) it's going to
+happen in real life.
+
+					- Ted
+
+
+
+
