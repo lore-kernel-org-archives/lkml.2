@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310Ab2CMRNv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 13:13:51 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48473 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758266Ab2CMRNs (ORCPT
+	id S1758409Ab2CMRNz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 13:13:55 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:52911 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758333Ab2CMRNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 13:13:48 -0400
-Date: Tue, 13 Mar 2012 10:13:44 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Ben Guthro <ben@guthro.net>
-Subject: Re: Linux 3.2.11
-Message-ID: <20120313171344.GB18203@kroah.com>
-References: <20120313171333.GA18203@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120313171333.GA18203@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 13 Mar 2012 13:13:52 -0400
+Subject: Re: [PATCH v14 01/13] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+In-Reply-To: <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+	 <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Mar 2012 10:13:48 -0700
+Message-ID: <1331658828.4449.16.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index 1ddd6e9..4b76371 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 2
--SUBLEVEL = 10
-+SUBLEVEL = 11
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 9302d21..61894fc 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -252,20 +252,6 @@ static int wm8994_suspend(struct device *dev)
- 		break;
- 	}
- 
--	switch (wm8994->type) {
--	case WM1811:
--		ret = wm8994_reg_read(wm8994, WM8994_ANTIPOP_2);
--		if (ret < 0) {
--			dev_err(dev, "Failed to read jackdet: %d\n", ret);
--		} else if (ret & WM1811_JACKDET_MODE_MASK) {
--			dev_dbg(dev, "CODEC still active, ignoring suspend\n");
--			return 0;
--		}
--		break;
--	default:
--		break;
--	}
--
- 	/* Disable LDO pulldowns while the device is suspended if we
- 	 * don't know that something will be driving them. */
- 	if (!wm8994->ldo_ena_always_driven)
+On Tue, 2012-03-13 at 11:04 +0100, Indan Zupancic wrote:
+> Hello,
+> 
+> I made a quick pseudo-patch for BPF JIT support. As far as I can tell,
+> the actual code itself is very simple, just:
+> 
+
+> -	bpf_jit_compile(fp);
+> +	jit = bpf_jit_compile(fp->insns, fp->len, 1);
+> +	if (jit) {
+> +		fp->bpf_func = jit;
+> +		/* Free unused insns memory */
+> +		newfp = krealloc(fp, sizeof(*fp), GFP_KERNEL);
+> +		if (newfp)
+> +			fp = newfp;
+> +	}
+> 
+>  	old_fp = rcu_dereference_protected(sk->sk_filter,
+>  					   sock_owned_by_user(sk));
+
+Dont mix unrelated changes in a single patch.
+
+Current krealloc() doesnt alloc a new area if the current one is bigger
+than 'new_size', but this might change in next kernel versions.
+
+So this part of your patch does nothing.
+
+If it did, this kind of 'optimization' can actually be not good, because
+sizeof(*fp) is small enough (less than half cache line size) to trigger
+a possible false sharing issue. (other part of the cache line could be
+used to hold a often dirtied object)
+
+
+
