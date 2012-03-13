@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759003Ab2CMIdj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:33:39 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38330 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758369Ab2CMIdg (ORCPT
+	id S1759559Ab2CMIf3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:35:29 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:42955 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab2CMIfZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:33:36 -0400
-Date: Tue, 13 Mar 2012 08:33:10 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: linux-next: manual merge of the arm tree with Linus' tree
-Message-ID: <20120313083310.GA27560@flint.arm.linux.org.uk>
-References: <20120313110840.7b444deb6b1bb902c15f3cdf@canb.auug.org.au> <20120313061622.GA24357@elte.hu>
+	Tue, 13 Mar 2012 04:35:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120313061622.GA24357@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20120313.010406.769202674785007195.davem@davemloft.net>
+References: <1331624093-12598-1-git-send-email-santoshprasadnayak@gmail.com>
+	<20120313.010406.769202674785007195.davem@davemloft.net>
+Date: Tue, 13 Mar 2012 14:05:24 +0530
+Message-ID: <CAOD=uF6e_JKaEQbFV=78JmuMBSUOtP7L0cBZr2zSv+Zgwq==qQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3 v3] netxen: qlogic ethernet : Fix endian bug.
+From: santosh prasad nayak <santoshprasadnayak@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: sony.chacko@qlogic.com, rajesh.borundia@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 07:16:22AM +0100, Ingo Molnar wrote:
-> 
-> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> > Hi Russell,
-> > 
-> > Today's linux-next merge of the arm tree got a conflict in
-> > kernel/sched/core.c between commit 8c79a045fd59 ("sched/events: Revert
-> > trace_sched_stat_sleeptime()") from Linus' tree and commit 1cf00341547a
-> > ("sched: Introduce the finish_arch_post_lock_switch() scheduler hook")
-> > from the arm tree.
-> > 
-> > Just context changes.  I fixed it up (see below) and can carry the fix as
-> > necessary.
-> 
-> This commit seems simple enough and has PeterZ's ack, but if 
-> there are more scheduler patches coming in this area then please 
-> send it to the scheduler tree first: we can create a pullable, 
-> stable topic branch for it which the ARM tree can then use.
-> 
-> That approach would also avoid conflicts as a side effect.
+My mistake.
+Normally I compile before sending the patch. This time I forgot.
 
-Please check your mailbox:
+Sorry for the inconvenience.
 
-Date: Tue, 29 Nov 2011 12:22:27 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [RFC PATCH 1/6] sched: Introduce the finish_arch_post_lock_switch()
-        scheduler hook
 
-Date: Mon, 19 Dec 2011 14:57:48 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Frank Rowand <frank.rowand@am.sony.com>
-Subject: [RFC PATCH v2 1/6] sched: Introduce the finish_arch_post_lock_switch()
-        scheduler hook
+regards
+Santosh
 
-Date: Fri, 20 Jan 2012 17:42:27 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Frank Rowand <frank.rowand@am.sony.com>
-Subject: [PATCH v3 1/6] sched: Introduce the finish_arch_post_lock_switch()
-        scheduler hook
-
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+On Tue, Mar 13, 2012 at 1:34 PM, David Miller <davem@davemloft.net> wrote:
+>
+> You didn't even compile test this.
+>
+>> -     if (*mac == cpu_to_le64(~0ULL)) {
+>> +     if (*mac == ~0ULL)) {
+>
+> This is unacceptable, I'm ignoring you for at least a week.
+>
