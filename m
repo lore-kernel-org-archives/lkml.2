@@ -1,79 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030301Ab2CMKAi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 06:00:38 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:47427
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965083Ab2CMKAe convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 06:00:34 -0400
-X-SpamScore: -19
-X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4Rz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M0TIGQ-01-0NI-02
-X-M-MSG: 
-Date: Tue, 13 Mar 2012 11:00:24 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: KyongHo Cho <pullip.cho@samsung.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>,
-        Subash Patel <subash.ramaswamy@linaro.org>,
-        <linux-kernel@vger.kernel.org>,
-        Younglak Kim <younglak1004.kim@samsung.com>,
-        <iommu@lists.linux-foundation.org>,
-        <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v11 3/3] iommu/exynos: Add iommu driver for Exynos
- Platforms
-Message-ID: <20120313100024.GG18973@amd.com>
-References: <017a01ccfdee$4e5e7a00$eb1b6e00$%cho@samsung.com>
- <20120312150156.GF18973@amd.com>
- <CAHQjnOOCQb4G1aeFB0FQVBstXpaXmahnQO8+FoinPcQNZEieGg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <CAHQjnOOCQb4G1aeFB0FQVBstXpaXmahnQO8+FoinPcQNZEieGg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+	id S1760367Ab2CMKBu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 06:01:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52755 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756172Ab2CMKBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 06:01:48 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <201203130916.15118.arnd@arndb.de>
+References: <201203130916.15118.arnd@arndb.de> <20120312233602.13888.27659.stgit@warthog.procyon.org.uk> <20120312233747.13888.75605.stgit@warthog.procyon.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: dhowells@redhat.com, paul.gortmaker@windriver.com, hpa@zytor.com,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-hexagon@vger.kernel.org
+Subject: Re: [PATCH 10/35] Disintegrate asm/system.h for Hexagon [ver #2]
+Date: Tue, 13 Mar 2012 10:01:40 +0000
+Message-ID: <27808.1331632900@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 05:50:16PM +0900, KyongHo Cho wrote:
-> >> +struct sysmmu_drvdata {
-> >> +     struct device *sysmmu;
-> >> +     char *dbgname;
-> >> +     int nsfrs;
-> >> +     void __iomem **sfrbases;
-> >> +     struct clk *clk[2];
-> >> +     int activations;
-> >> +     rwlock_t lock;
-> >> +     struct iommu_domain *domain;
-> >> +     sysmmu_fault_handler_t fault_handler;
-> >> +     unsigned long pgtable;
-> >> +     struct iommu_client client;
-> >> +};
-> >
-> > Is there any reason why 'struct iommu_client' is a seperate data
-> > structure? Otherwise it can be merged with 'truct sysmmu_drvdata'.
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-Of course this doesn't need to be changed immediatly. I just asked if
-there was a specific reason for this seperation.
+> Looking at this example, it could easily use the asm-generic versions of
+> switch_to.h and barrier.h, but that would complicate the dependency chain
+> again.
 
-> The problems will be soon fixed and I will post next patch tomorrow.
+Yep.  The plan is to throw more patches on to the end of the series to
+consolidate those.
 
-Fine. Please also get the Acked-bys from the Exynos maintainer on
-patches 1 and 2 at least. I'll merge it then.
+In fact, I wonder if we still really need the switch_to() macro wrapper, or
+whether we could replace it with an function, inline or otherwise, that
+returns the macro's third argument.
 
-
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+David
