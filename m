@@ -1,81 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758814Ab2CMIcj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 04:32:39 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:40975 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803Ab2CMIcf (ORCPT
+	id S1759106Ab2CMIcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 04:32:53 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:45555 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758953Ab2CMIcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 04:32:35 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6647"; a="171943784"
-Message-ID: <4F5F0620.2020404@codeaurora.org>
-Date: Tue, 13 Mar 2012 01:32:32 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 13 Mar 2012 04:32:48 -0400
+Message-ID: <4F5F0623.6080702@linux.vnet.ibm.com>
+Date: Tue, 13 Mar 2012 14:02:35 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Avery Pennarun <apenwarr@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Fabio M. Di Nitto" <fdinitto@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Olaf Hering <olaf@aepfle.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Yinghai LU <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 0/5] Persist printk buffer across reboots.
-References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
-In-Reply-To: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Michal Hocko <mhocko@suse.cz>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] fix idle ticks in cpu summary line of /proc/stat
+References: <20120311182621.41674b39@de.ibm.com> <20120312121726.GA23608@tiehlicka.suse.cz> <20120312101739.26eb373e@de.ibm.com> <4F5E0CC1.6010102@linux.vnet.ibm.com> <20120312153906.GE3994@tiehlicka.suse.cz> <20120312164145.5110ed5c@de.ibm.com> <20120313080748.GA7754@tiehlicka.suse.cz>
+In-Reply-To: <20120313080748.GA7754@tiehlicka.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12031308-3864-0000-0000-000001CF5879
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/12/2012 10:36 PM, Avery Pennarun wrote:
-> The last patch in this series implements a new CONFIG_PRINTK_PERSIST option
-> that, when enabled, puts the printk buffer in a well-defined memory location
-> so that we can keep appending to it after a reboot.  The upshot is that,
-> even after a kernel panic or non-panic hard lockup, on the next boot
-> userspace will be able to grab the kernel messages leading up to it.  It
-> could then upload the messages to a server (for example) to keep crash
-> statistics.
->
-> The preceding patches in the series are mostly just things I fixed up while
-> working on that patch.
->
-> Some notes:
->
-> - I'm not totally sure of the locking or portability issues when calling
->    memblock or bootmem.  This all happens really early, and I *think*
->    interrupts are still disabled at that time, so it's probably okay.
->
-> - Tested this version on x86 (kvm) and it works with soft reboot (ie. reboot
->    -f).  Since some BIOSes wipe the memory during boot, you might not have
->    any luck.  It should be great on many embedded systems, though, including
->    the MIPS system I've tested a variant of this patch on.  (Our MIPS build
->    is based on a slightly older kernel so it's not 100% the same, but I think
->    this should behave identically.)
->
-> - The way we choose a well-defined memory location is slightly suspicious
->    (we just count down from the top of the address space) but I've tested it
->    pretty carefully, and it seems to be okay.
->
-> - In printk.c with CONFIG_PRINTK_PERSIST set, we're #defining words like
->    log_end.  It might be cleaner to replace all instances of log_end with
->    LOG_END to make this more clear.  This is also the reason the struct
->    logbits members start with _: because otherwise they conflict with the
->    macro.  Suggestions welcome.
+On 03/13/2012 01:37 PM, Michal Hocko wrote:
 
-Android has something similar called ram_console (see 
-staging/android/ram_console.c). The console is dumped to a ram buffer 
-that is reserved very early in platform setup code. Then when the phone 
-reboots you can cat /proc/last_kmsg to get the previous kernel message 
-for debugging. Can you use that code?
+> OK, so the updated version of the patch looks like this. I am sorry but
+> I had time to only compile test this...
+> ---
+> From d12247f14c5f8b00ae97a87442f62e49227a759b Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Mon, 12 Mar 2012 13:11:38 +0100
+> Subject: [PATCH] nohz: fix idle ticks in cpu summary line of /proc/stat
+> 
+> Git commit 09a1d34f8535ecf9 "nohz: Make idle/iowait counter update
+> conditional" introduced a bug in regard to cpu hotplug. The effect is
+> that the number of idle ticks in the cpu summary line in /proc/stat is
+> still counting ticks for offline cpus.
+> 
+> Reproduction is easy, just start a workload that keeps all cpus busy,
+> switch off one or more cpus and then watch the idle field in top.
+> On a dual-core with one cpu 100% busy and one offline cpu you will get
+> something like this:
+> 
+> %Cpu(s): 48.7 us,  1.3 sy,  0.0 ni, 50.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+> 
+> The problem is that an offline cpu still has ts->idle_active == 1.
+> To fix this we should make sure that the cpu is online when calling
+> get_cpu_idle_time_us and get_cpu_iowait_time_us.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  fs/proc/stat.c |   14 ++++++++++----
+>  1 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/proc/stat.c b/fs/proc/stat.c
+> index 121f77c..62bda24 100644
+> --- a/fs/proc/stat.c
+> +++ b/fs/proc/stat.c
+> @@ -24,10 +24,13 @@
+> 
+>  static u64 get_idle_time(int cpu)
+>  {
+> -	u64 idle, idle_time = get_cpu_idle_time_us(cpu, NULL);
+> +	u64 idle, idle_time = -1ULL;
+> +
+> +	if (cpu_online(cpu))
+> +		idle_time = get_cpu_idle_time_us(cpu, NULL);
+> 
+>  	if (idle_time == -1ULL) {
+> -		/* !NO_HZ so we can rely on cpustat.idle */
+> +		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+>  		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+>  		idle += arch_idle_time(cpu);
+>  	} else
+> @@ -38,10 +41,13 @@ static u64 get_idle_time(int cpu)
+> 
+>  static u64 get_iowait_time(int cpu)
+>  {
+> -	u64 iowait, iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+> +	u64 iowait, iowait_time = -1ULL;
+> +
+> +	if (cpu_online(cpu))
+> +		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+> 
+>  	if (iowait_time == -1ULL)
+> -		/* !NO_HZ so we can rely on cpustat.iowait */
+> +		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+>  		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+>  	else
+>  		iowait = usecs_to_cputime64(iowait_time);
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
+Yeah, this looks much better..
+
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+ 
+Regards,
+Srivatsa S. Bhat
 
