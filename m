@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471Ab2CMVPZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 17:15:25 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41851 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755726Ab2CMVPX (ORCPT
+	id S1756455Ab2CMVSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 17:18:05 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48302 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab2CMVSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 17:15:23 -0400
-Message-ID: <4F5FB8E8.7010102@gmail.com>
-Date: Tue, 13 Mar 2012 16:15:20 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 13 Mar 2012 17:18:02 -0400
+Date: Tue, 13 Mar 2012 14:17:58 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH] usb: Don't make USB_ARCH_HAS_OHCI and USB_ARCH_HAS_EHCI
+ depend on USB_SUPPORT.
+Message-ID: <20120313211758.GA10168@kroah.com>
+References: <1331578904-15561-1-git-send-email-ddaney.cavm@gmail.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: b29396@freescale.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] of: add NULL parameter check for of_device_is_available
-References: <1331638805-17136-1-git-send-email-b29396@freescale.com> <20120313.133419.2242081944811028058.davem@davemloft.net>
-In-Reply-To: <20120313.133419.2242081944811028058.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331578904-15561-1-git-send-email-ddaney.cavm@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2012 03:34 PM, David Miller wrote:
-> From: Dong Aisheng <b29396@freescale.com>
-> Date: Tue, 13 Mar 2012 19:40:05 +0800
+On Mon, Mar 12, 2012 at 12:01:44PM -0700, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
 > 
->> From: Dong Aisheng <dong.aisheng@linaro.org>
->>
->> This function will return 1 even the device node passed in
->> is NULL which is a little error-prone.
->> Change to return 0 if the device node passed in is NULL.
->>
->> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> 
-> I think this is a hard error and therefore BUG_ON(!device) is
-> more appropriate.
+> The fact that an architecture/board has OHCI or EHCI does not depend on
+> the fact that the kernel is configured with USB_SUPPORT.
 
-Shouldn't removing a node from the dts and adding 'status = "disabled";'
-to a node give the same behavior? Then you can do something like this:
+Why are you ignoring XHCI here as well?  Shouldn't that fall under the
+same rules as OHCI and EHCI (hint, they should...)
 
-if (of_device_is_available(of_find_compatible_node("blah")))
-	//foo
+thanks,
 
-Rob
+greg k-h
