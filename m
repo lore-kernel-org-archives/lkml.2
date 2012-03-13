@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab2CMQH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 12:07:27 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41043 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab2CMQHZ (ORCPT
+	id S1754247Ab2CMQJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 12:09:59 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45565 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684Ab2CMQJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 12:07:25 -0400
-Date: Tue, 13 Mar 2012 09:02:18 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-Message-ID: <20120313160218.GC7349@google.com>
-References: <20120221211938.GE12236@google.com>
- <20120312221050.GG23255@google.com>
- <20120313134922.GB29169@redhat.com>
+	Tue, 13 Mar 2012 12:09:57 -0400
+Date: Tue, 13 Mar 2012 09:09:51 -0700
+From: "'Greg KH'" <gregkh@linuxfoundation.org>
+To: Donald <donald@asix.com.tw>
+Cc: "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] x86: Fixed MCS7820 device attach problem
+Message-ID: <20120313160951.GA18810@kroah.com>
+References: <009c01cd00ee$924eb2e0$b6ec18a0$@com.tw>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120313134922.GB29169@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <009c01cd00ee$924eb2e0$b6ec18a0$@com.tw>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Mar 13, 2012 at 09:49:22AM -0400, Vivek Goyal wrote:
-> So everything will be under single hierarchy? How will we control that
-> what controllers are active on what cgroups? Or all controllers are going
-> to be active on all cgroups on that hierarchy. 
+On Tue, Mar 13, 2012 at 03:54:46PM +0800, Donald wrote:
+> A MCS7820 device supports two serial ports and a MCS7840 device supports
+> four serial ports. Both devices use the same driver, but the attach function
+> in driver was unable to correctly handle the port numbers for MCS7820
+> device. This problem has been fixed in this patch and this fix has been
+> verified on x86 Linux kernel 3.2.9 with both MCS7820 and MCS7840 devices.
 > 
-> That would be bad for IO cgroups where a better way to use it to isolate
-> the trouble making workload and run rest in root or a common cgroup.
+> Signed-off-by: Donald Lee <donald@asix.com.tw> 
+> 
+> --- 
+>  drivers/usb/serial/mos7840.c |   83
+> +++++++++++++++++++++++++++++------------- 
 
-Depending on active configs, I guess, or maybe we'll have active
-controllers mask which can also be used for single-level restriction
-for controllers which don't support full hierarchy.
+This is great, but your email client turned the tabs into spaces and
+line-wrapped the patch, and added trailing spaces on every line, making
+this impossible to apply :(
 
-Thanks.
+Care to read Documentation/email_clients.txt and resend it after fixing
+things up on your end?
 
--- 
-tejun
+And this isn't limited to x86, so you don't need that in the subject:
+line, it's a USB issue for all platforms.
+
+thanks,
+
+greg k-h
