@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759914Ab2CMHaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 03:30:46 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:63419 "EHLO mail.gnudd.com"
+	id S1759712Ab2CMHbA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 03:31:00 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:63421 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755647Ab2CMHao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 03:30:44 -0400
-Date: Tue, 13 Mar 2012 08:30:26 +0100
+	id S1754576Ab2CMHa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 03:30:58 -0400
+Date: Tue, 13 Mar 2012 08:30:38 +0100
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         Jesse Barnes <jbarnes@virtuousgeek.org>, Ingo Molnar <mingo@elte.hu>,
         Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
         Alan Cox <alan@linux.intel.com>
-Subject: [PATCH V4 1/3] x86: introduce CONFIG_X86_DEV_DMA_OPS
-Message-ID: <5965c5b1f828732b3599131fb21070aba6f1a386.1331622735.git.rubini@gnudd.com>
+Subject: [PATCH V4 2/3] x86: introduce CONFIG_X86_DMA_REMAP
+Message-ID: <6ee0095901fd5cb5a84997a8a4553e2e8caf0727.1331622735.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,70 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-32-bit x86 systems may need their own DMA operations, so add
-a new config option, which is turned on for 64-bit systems. This
-patch has no functional effect but it paves the way for supporting
-the STA2x11 I/O Hub and possibly other chips.
+The default functions phys_to_dma, dma_to_phys implement identity
+mapping as fast inline functions.  Some systems, however, may need a
+custom function to implement its own mapping between CPU addresses and
+device addresses. This new configuration option allows the functions
+to be external when needed (such as for the ConneXt device)
 
 Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
 Cc: Alan Cox <alan@linux.intel.com>
 ---
- arch/x86/Kconfig                   |    5 +++++
- arch/x86/include/asm/device.h      |    4 ++--
- arch/x86/include/asm/dma-mapping.h |    2 +-
- 3 files changed, 8 insertions(+), 3 deletions(-)
+ arch/x86/Kconfig                   |    3 +++
+ arch/x86/include/asm/dma-mapping.h |    7 +++++++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 03298e4..c06a8a3 100644
+index c06a8a3..9f6255b 100644
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
-@@ -12,6 +12,7 @@ config X86_32
- 
- config X86_64
- 	def_bool 64BIT
-+	select X86_DEV_DMA_OPS
- 
- ### Arch settings
- config X86
-@@ -2248,6 +2249,10 @@ config HAVE_TEXT_POKE_SMP
+@@ -2253,6 +2253,9 @@ config X86_DEV_DMA_OPS
  	bool
- 	select STOP_MACHINE if SMP
+ 	depends on X86_64
  
-+config X86_DEV_DMA_OPS
++config X86_DMA_REMAP
 +	bool
-+	depends on X86_64
 +
  source "net/Kconfig"
  
  source "drivers/Kconfig"
-diff --git a/arch/x86/include/asm/device.h b/arch/x86/include/asm/device.h
-index 63a2a03..93e1c55 100644
---- a/arch/x86/include/asm/device.h
-+++ b/arch/x86/include/asm/device.h
-@@ -5,8 +5,8 @@ struct dev_archdata {
- #ifdef CONFIG_ACPI
- 	void	*acpi_handle;
- #endif
--#ifdef CONFIG_X86_64
--struct dma_map_ops *dma_ops;
-+#ifdef CONFIG_X86_DEV_DMA_OPS
-+	struct dma_map_ops *dma_ops;
- #endif
- #if defined(CONFIG_INTEL_IOMMU) || defined(CONFIG_AMD_IOMMU)
- 	void *iommu; /* hook for IOMMU specific extension */
 diff --git a/arch/x86/include/asm/dma-mapping.h b/arch/x86/include/asm/dma-mapping.h
-index 4b4331d..09aa473 100644
+index 09aa473..61c0bd2 100644
 --- a/arch/x86/include/asm/dma-mapping.h
 +++ b/arch/x86/include/asm/dma-mapping.h
-@@ -30,7 +30,7 @@ extern struct dma_map_ops *dma_ops;
+@@ -62,6 +62,12 @@ extern void *dma_generic_alloc_coherent(struct device *dev, size_t size,
+ 					dma_addr_t *dma_addr, gfp_t flag,
+ 					struct dma_attrs *attrs);
  
- static inline struct dma_map_ops *get_dma_ops(struct device *dev)
++#ifdef CONFIG_X86_DMA_REMAP /* Platform code defines bridge-specific code */
++extern bool dma_capable(struct device *dev, dma_addr_t addr, size_t size);
++extern dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr);
++extern phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr);
++#else
++
+ static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
  {
--#ifdef CONFIG_X86_32
-+#ifndef CONFIG_X86_DEV_DMA_OPS
- 	return dma_ops;
- #else
- 	if (unlikely(!dev) || !dev->archdata.dma_ops)
+ 	if (!dev->dma_mask)
+@@ -79,6 +85,7 @@ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
+ {
+ 	return daddr;
+ }
++#endif /* CONFIG_X86_DMA_REMAP */
+ 
+ static inline void
+ dma_cache_sync(struct device *dev, void *vaddr, size_t size,
 -- 
 1.7.7.2
