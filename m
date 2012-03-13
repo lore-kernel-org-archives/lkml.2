@@ -1,121 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030258Ab2CMA0U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:26:20 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49107 "EHLO
+	id S1030237Ab2CMA0T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:26:19 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49112 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965297Ab2CMAZO (ORCPT
+	with ESMTP id S965073Ab2CMAZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:25:14 -0400
+	Mon, 12 Mar 2012 20:25:15 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "Benz, Michael" <Michael.Benz@lsi.com>,
-        James Bottomley <James.Bottomley@suse.de>,
+Cc: stable-review@kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
+        Vasiliy Kulikov <segooon@gmail.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 186/196] megaraid_sas: Sanity check user supplied length before passing it to dma_alloc_coherent()
-Date: Mon, 12 Mar 2012 20:21:39 -0400
-Message-Id: <1331598109-31424-141-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 188/196] taskstats: don't allow duplicate entries in listener mode
+Date: Mon, 12 Mar 2012 20:21:41 -0400
+Message-Id: <1331598109-31424-143-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
  <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 98cb7e4413d189cd2b54daf993a4667d9788c0bb upstream.
+commit 26c4caea9d697043cc5a458b96411b86d7f6babd upstream.
 
-The ioc->sgl[i].iov_len value is supplied by the ioctl caller, and can be
-zero in some cases.  Assume that's valid and continue without error.
+Currently a single process may register exit handlers unlimited times.
+It may lead to a bloated listeners chain and very slow process
+terminations.
 
-Fixes (multiple individual reports of the same problem for quite a while):
+Eg after 10KK sent TASKSTATS_CMD_ATTR_REGISTER_CPUMASKs ~300 Mb of
+kernel memory is stolen for the handlers chain and "time id" shows 2-7
+seconds instead of normal 0.003.  It makes it possible to exhaust all
+kernel memory and to eat much of CPU time by triggerring numerous exits
+on a single CPU.
 
-http://marc.info/?l=linux-ide&m=128941801715301
-http://bugs.debian.org/604627
-http://www.mail-archive.com/linux-poweredge@dell.com/msg02575.html
+The patch limits the number of times a single process may register
+itself on a single CPU to one.
 
-megasas: Failed to alloc kernel SGL buffer for IOCTL
+One little issue is kept unfixed - as taskstats_exit() is called before
+exit_files() in do_exit(), the orphaned listener entry (if it was not
+explicitly deregistered) is kept until the next someone's exit() and
+implicit deregistration in send_cpu_listeners().  So, if a process
+registered itself as a listener exits and the next spawned process gets
+the same pid, it would inherit taskstats attributes.
 
-and
-
-[   69.162538] ------------[ cut here ]------------
-[   69.162806] kernel BUG at /build/buildd/linux-2.6.32/lib/swiotlb.c:368!
-[   69.163134] invalid opcode: 0000 [#1] SMP
-[   69.163570] last sysfs file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
-[   69.163975] CPU 0
-[   69.164227] Modules linked in: fbcon tileblit font bitblit softcursor vga16fb vgastate ioatdma radeon ttm drm_kms_helper shpchp drm i2c_algo_bit lp parport floppy pata_jmicron megaraid_sas igb dca
-[   69.167419] Pid: 1206, comm: smartctl Tainted: G        W  2.6.32-25-server #45-Ubuntu X8DTN
-[   69.167843] RIP: 0010:[<ffffffff812c4dc5>]  [<ffffffff812c4dc5>] map_single+0x255/0x260
-[   69.168370] RSP: 0018:ffff88081c0ebc58  EFLAGS: 00010246
-[   69.168655] RAX: 000000000003bffc RBX: 00000000ffffffff RCX: 0000000000000002
-[   69.169000] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff88001dffe000
-[   69.169346] RBP: ffff88081c0ebcb8 R08: 0000000000000000 R09: ffff880000030840
-[   69.169691] R10: 0000000000100000 R11: 0000000000000000 R12: 0000000000000000
-[   69.170036] R13: 00000000ffffffff R14: 0000000000000001 R15: 0000000000200000
-[   69.170382] FS:  00007fb8de189720(0000) GS:ffff88001de00000(0000) knlGS:0000000000000000
-[   69.170794] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   69.171094] CR2: 00007fb8dd59237c CR3: 000000081a790000 CR4: 00000000000006f0
-[   69.171439] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   69.171784] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   69.172130] Process smartctl (pid: 1206, threadinfo ffff88081c0ea000, task ffff88081a760000)
-[   69.194513] Stack:
-[   69.205788]  0000000000000034 00000002817e3390 0000000000000000 ffff88081c0ebe00
-[   69.217739] <0> 0000000000000000 000000000003bffc 0000000000000000 0000000000000000
-[   69.241250] <0> 0000000000000000 00000000ffffffff ffff88081c5b4080 ffff88081c0ebe00
-[   69.277310] Call Trace:
-[   69.289278]  [<ffffffff812c52ac>] swiotlb_alloc_coherent+0xec/0x130
-[   69.301118]  [<ffffffff81038b31>] x86_swiotlb_alloc_coherent+0x61/0x70
-[   69.313045]  [<ffffffffa002d0ce>] megasas_mgmt_fw_ioctl+0x1ae/0x690 [megaraid_sas]
-[   69.336399]  [<ffffffffa002d748>] megasas_mgmt_ioctl_fw+0x198/0x240 [megaraid_sas]
-[   69.359346]  [<ffffffffa002f695>] megasas_mgmt_ioctl+0x35/0x50 [megaraid_sas]
-[   69.370902]  [<ffffffff81153b12>] vfs_ioctl+0x22/0xa0
-[   69.382322]  [<ffffffff8115da2a>] ? alloc_fd+0x10a/0x150
-[   69.393622]  [<ffffffff81153cb1>] do_vfs_ioctl+0x81/0x410
-[   69.404696]  [<ffffffff8155cc13>] ? do_page_fault+0x153/0x3b0
-[   69.415761]  [<ffffffff811540c1>] sys_ioctl+0x81/0xa0
-[   69.426640]  [<ffffffff810121b2>] system_call_fastpath+0x16/0x1b
-[   69.437491] Code: fe ff ff 48 8b 3d 74 38 76 00 41 bf 00 00 20 00 e8 51 f5 d7 ff 83 e0 ff 48 05 ff 07 00 00 48 c1 e8 0b 48 89 45 c8 e9 13 fe ff ff <0f> 0b eb fe 0f 1f 80 00 00 00 00 55 48 89 e5 48 83 ec 20 4c 89
-[   69.478216] RIP  [<ffffffff812c4dc5>] map_single+0x255/0x260
-[   69.489668]  RSP <ffff88081c0ebc58>
-[   69.500975] ---[ end trace 6a2181b634e2abc7 ]---
-
-[PG: in 34, file is megaraid_sas.c - not megaraid_sas_base.c]
-
-Reported-by: Bokhan Artem <aptem@ngs.ru>
-Reported by: Marc-Christian Petersen <m.c.p@gmx.de>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Cc: "Benz, Michael" <Michael.Benz@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Cc: Balbir Singh <bsingharora@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/scsi/megaraid/megaraid_sas.c |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/taskstats.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas.c b/drivers/scsi/megaraid/megaraid_sas.c
-index 99e4478..1d2e162 100644
---- a/drivers/scsi/megaraid/megaraid_sas.c
-+++ b/drivers/scsi/megaraid/megaraid_sas.c
-@@ -3669,6 +3669,9 @@ megasas_mgmt_fw_ioctl(struct megasas_instance *instance,
- 	 * For each user buffer, create a mirror buffer and copy in
- 	 */
- 	for (i = 0; i < ioc->sge_count; i++) {
-+		if (!ioc->sgl[i].iov_len)
-+			continue;
-+
- 		kbuff_arr[i] = dma_alloc_coherent(&instance->pdev->dev,
- 						    ioc->sgl[i].iov_len,
- 						    &buf_handle, GFP_KERNEL);
+diff --git a/kernel/taskstats.c b/kernel/taskstats.c
+index 11281d5..5e21645 100644
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -292,16 +292,18 @@ ret:
+ static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
+ {
+ 	struct listener_list *listeners;
+-	struct listener *s, *tmp;
++	struct listener *s, *tmp, *s2;
+ 	unsigned int cpu;
+ 
+ 	if (!cpumask_subset(mask, cpu_possible_mask))
+ 		return -EINVAL;
+ 
++	s = NULL;
+ 	if (isadd == REGISTER) {
+ 		for_each_cpu(cpu, mask) {
+-			s = kmalloc_node(sizeof(struct listener), GFP_KERNEL,
+-					 cpu_to_node(cpu));
++			if (!s)
++				s = kmalloc_node(sizeof(struct listener),
++						 GFP_KERNEL, cpu_to_node(cpu));
+ 			if (!s)
+ 				goto cleanup;
+ 			s->pid = pid;
+@@ -310,9 +312,16 @@ static int add_del_listener(pid_t pid, const struct cpumask *mask, int isadd)
+ 
+ 			listeners = &per_cpu(listener_array, cpu);
+ 			down_write(&listeners->sem);
++			list_for_each_entry_safe(s2, tmp, &listeners->list, list) {
++				if (s2->pid == pid)
++					goto next_cpu;
++			}
+ 			list_add(&s->list, &listeners->list);
++			s = NULL;
++next_cpu:
+ 			up_write(&listeners->sem);
+ 		}
++		kfree(s);
+ 		return 0;
+ 	}
+ 
 -- 
 1.7.9.3
 
