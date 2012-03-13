@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758957Ab2CMRcP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 13:32:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42956 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758352Ab2CMRcL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 13:32:11 -0400
-Message-ID: <1331659918.18960.87.camel@twins>
-Subject: Re: [RFD] cgroup: about multiple hierarchies
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <lennart@poettering.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Michal Schmidt <mschmidt@redhat.com>
-Date: Tue, 13 Mar 2012 18:31:58 +0100
-In-Reply-To: <1331659537.18960.84.camel@twins>
-References: <20120221211938.GE12236@google.com>
-	 <20120312221050.GG23255@google.com> <1331590938.18960.57.camel@twins>
-	 <20120312222817.GI23255@google.com> <1331591568.18960.61.camel@twins>
-	 <20120312223944.GJ23255@google.com> <1331592241.18960.64.camel@twins>
-	 <20120312230416.GM23255@google.com> <20120313141032.GD29169@redhat.com>
-	 <1331659537.18960.84.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S932078Ab2CMRdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 13:33:33 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:49260 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758059Ab2CMRdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 13:33:31 -0400
+Message-ID: <4F5F847C.3060505@parallels.com>
+Date: Tue, 13 Mar 2012 21:31:40 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Greg Thelen <gthelen@google.com>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Suleiman Souhlal <ssouhlal@FreeBSD.org>, <cgroups@vger.kernel.org>,
+        <suleiman@google.com>, <penberg@kernel.org>, <cl@linux.com>,
+        <yinghan@google.com>, <hughd@google.com>, <peterz@infradead.org>,
+        <dan.magenheimer@oracle.com>, <hannes@cmpxchg.org>, <mgorman@suse.de>,
+        <James.Bottomley@HansenPartnership.com>, <linux-mm@kvack.org>,
+        <devel@openvz.org>, <linux-kernel@vger.kernel.org>,
+        <rientjes@google.com>
+Subject: Re: [PATCH v2 02/13] memcg: Kernel memory accounting infrastructure.
+References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org> <1331325556-16447-3-git-send-email-ssouhlal@FreeBSD.org> <4F5C5E54.2020408@parallels.com> <20120313152446.28b0d696.kamezawa.hiroyu@jp.fujitsu.com> <4F5F236A.1070609@parallels.com> <xr93d38g77w5.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr93d38g77w5.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [188.255.67.70]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-13 at 18:25 +0100, Peter Zijlstra wrote:
-> On Tue, 2012-03-13 at 10:10 -0400, Vivek Goyal wrote:
-> > Implementing hierarchy is a pain and is expensive at run time. 
-> 
-> Yeah, suck it up :-)
-> 
-> I would really rather we mandate one implementation standard for
-> controllers for the sake of consistency and uniformity. A direct result
-> of doing away with the multiple hierarchy crap is that all controllers
-> are co-mounted. Allowing differences like this just doesn't make any
-> sense.
-> 
-> So either we drop full hierarchy support from all controllers or we
-> deprecate and remove all non-hierarchical controllers.
-> 
-> I'm fine with either, but I'm not fine with with the half-arsed
-> solutions proposed here.
+On 03/13/2012 09:00 PM, Greg Thelen wrote:
+> Glauber Costa<glommer@parallels.com>  writes:
+>> 2) For the kernel itself, we are mostly concerned that a malicious container may
+>> pin into memory big amounts of kernel memory which is, ultimately,
+>> unreclaimable. In particular, with overcommit allowed scenarios, you can fill
+>> the whole physical memory (or at least a significant part) with those objects,
+>> well beyond your softlimit allowance, making the creation of further containers
+>> impossible.
+>> With user memory, you can reclaim the cgroup back to its place. With kernel
+>> memory, you can't.
+>
+> In overcommit situations the page allocator starts failing even though
+> memcg page can charge pages.
+If you overcommit mem+swap, yes. If you overcommit mem, no: reclaim 
+happens first. And we don't have that option with pinned kernel memory.
 
-Note that before this whole discussion I was under the impressions it
-was mandated for a controller to be fully hierarchical. I'm very much
-surprised people were allowed to merge incomplete controllers like that.
-
+Of course you *can* run your system without swap, but the whole thing 
+exists exactly because there is a large enough # of ppl who wants to be 
+able to overcommit their physical memory, without failing allocations.
 
