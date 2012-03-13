@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759486Ab2CMFsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:48:05 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58866 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758509Ab2CMFsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:48:03 -0400
-Date: Tue, 13 Mar 2012 06:47:44 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>, Josh Stone <jistone@redhat.com>
-Subject: Re: [PATCH] uprobes/core: handle breakpoint and signal step
- exception.
-Message-ID: <20120313054744.GA27315@elte.hu>
-References: <20120223110245.12459.7391.sendpatchset@srdronam.in.ibm.com>
- <20120227091212.GA7092@elte.hu>
- <20120308131824.GC13284@linux.vnet.ibm.com>
- <20120308134809.GB28488@elte.hu>
- <20120309062853.GD13284@linux.vnet.ibm.com>
- <20120309073348.GA15570@elte.hu>
- <20120313052016.GA27824@elte.hu>
- <20120313054242.GA1623@elte.hu>
+	id S1759584Ab2CMFsa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:48:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35363 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758509Ab2CMFs2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 01:48:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120313054242.GA1623@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
-  0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <CAErSpo6uBpEYrZPBxwrg_B8j7F9XAyDUvKTS4=++xze5KVmx1g@mail.gmail.com>
+References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
+	<1331362837-10740-11-git-send-email-yinghai@kernel.org>
+	<CAErSpo6uBpEYrZPBxwrg_B8j7F9XAyDUvKTS4=++xze5KVmx1g@mail.gmail.com>
+Date: Mon, 12 Mar 2012 22:48:27 -0700
+X-Google-Sender-Auth: R9Qf-64Lv9q3vcMmCtjaCau02jU
+Message-ID: <CAE9FiQXaDgBRrZ5dCxz9mjrzCAwH_rHrUSQGYQnHc5k7aXnU8Q@mail.gmail.com>
+Subject: Re: [PATCH v2 10/37] PCI, sysfs: create rescan_bridge under
+ /sys/.../pci/devices/... for pci bridges
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 12, 2012 at 7:55 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> Current code will create rescan for every pci device under parent bus.
+>> that is not right. the device is already there, there is no reason to rescan it.
+>
+> "The device" (not "the device").
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+ok
 
-> To make it available to uprobes please move is_ia32_task() to 
-> processor.h and make it return 1 on i386 kernels. This should 
-> be a very simple patch - and that's all that is needed.
+>
+>> We could have rescan for pci bridges. less confusing.
+>>
+>> Need to move rescan attr to pci dev bridge attribute group.
+>> And We should rescan bridge's secondary bus instead of primary bus.
+>
+> "And we" (not "And We").
 
-Side note: in general I don't mind making compat.h a bit more 
-generic (at all), but is_ia32_task() is really a generic x86 
-specific check that we can move to processor.h cleanly.
+ok
 
-Some other effort should make compat.h bitness agnostic - 
-uprobes doesn't actually make use of the compat types and 
-facilities there, and it resulted in a nonsensical change like 
-making the alloc function generic ...
+>
+> I think the idea of this patch makes sense.
+>
+> You might want to consider having this actually read the bridge config
+> again.  That way, if the user manually changed the secondary bus
+> number or the bridge windows using setpci or something, this rescan
+> could use that new config if possible.
 
-Thanks,
+yes, in the following patches, change that to
+pci_rescan_bus_bridge_resize()
 
-	Ingo
+and
+
+will be
+unsigned int __ref pci_rescan_bus_bridge_resize(struct pci_dev *bridge)
+{
+        unsigned int max = 0;
+        int pass;
+        struct pci_bus *bus = bridge->bus;
+
+        for (pass = 0; pass < 2; pass++)
+                max = pci_scan_bridge(bus, bridge, max, pass);
+
+        pci_assign_unassigned_bridge_resources(bridge);
+
+        pci_bus_add_single_device(bridge);
+
+at last pci_scan_bridge will check the bus register in the bridge.
+
+>
+> I still hate the fact that we will have three different rescan files
+> (four if you count /sys/bus/pci/rescan), but I don't have a solution
+> to offer:
+>    device/rescan
+>    device/rescan_bridge
+>    bus/rescan
+
+looks like we only need
+/sys/devices/pci.../device/rescan_bridge
+/sys/bus/pci/bus/rescan
+
+device rescan and bus rescan should be removed.
+
+Yinghai
