@@ -1,82 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314Ab2CMUUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 16:20:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44661 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab2CMUUI (ORCPT
+	id S1752971Ab2CMUW5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 16:22:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33356 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab2CMUWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 16:20:08 -0400
-Date: Tue, 13 Mar 2012 15:19:53 -0500 (CDT)
-From: Manoj Iyer <manoj.iyer@canonical.com>
-X-X-Sender: manjo@lazy
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Matthew Garrett <mjg@redhat.com>
-cc: Manoj Iyer <manoj.iyer@canonical.com>, Ike Pan <ike.pan@canonical.com>,
-        Yves-Alexis Perez <corsac@debian.org>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org,
-        Dennis Chua <dennis.chua@canonical.com>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        James Ferguson <james.ferguson@canonical.com>
-Subject: Re: [ibm-acpi-devel] [PATCH] thinkpad-acpi: recognize Lenovo as
- version string in newer V-series BIOS
-In-Reply-To: <20120313200744.GA3260@khazad-dum.debian.net>
-Message-ID: <alpine.DEB.2.02.1203131518260.4292@lazy>
-References: <1331335944-4662-1-git-send-email-manoj.iyer@canonical.com> <1331335944-4662-2-git-send-email-manoj.iyer@canonical.com> <20120310042844.GA14972@khazad-dum.debian.net> <1331387907.2833.33.camel@scapa> <20120310160609.GA6254@khazad-dum.debian.net>
- <alpine.DEB.2.02.1203121558340.3458@lazy> <20120312230213.GA20690@khazad-dum.debian.net> <alpine.DEB.2.02.1203121852500.6421@lazy> <alpine.DEB.2.02.1203131046540.4292@lazy> <20120313200744.GA3260@khazad-dum.debian.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 13 Mar 2012 16:22:55 -0400
+Message-ID: <4F5FAC9C.9070607@gmail.com>
+Date: Tue, 13 Mar 2012 16:22:52 -0400
+From: Phillip Susi <phillsusi@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: "Ted Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@whamcloud.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: getdents - ext4 vs btrfs performance
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com> <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com> <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com> <20120310044804.GB5652@thunk.org> <4F5F9A97.5060404@ubuntu.com> <20120313195339.GA24124@thunk.org>
+In-Reply-To: <20120313195339.GA24124@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012, Henrique de Moraes Holschuh wrote:
+On 3/13/2012 3:53 PM, Ted Ts'o wrote:
+> Because that would be a format change.
 
-> On Tue, 13 Mar 2012, Manoj Iyer wrote:
->> On Mon, 12 Mar 2012, Manoj Iyer wrote:
->>>>> I am trying to get this patched module tested on other thinkpad and
->>>>> ideapads that we have to see if there are any regression or other
->>>>> issues. So, please let me know if this something worth supporting.
->>>>
->>>> Yes, it looks like it is worth supporting alright.
->>>
->>> ok great. So, as I said earlier I will try and get this patched module tested
->>> on other ideapads to make sure we are not breaking existing systems.
->>> Unfortunately the systems are with our Taiwan engineers and will take a
->>> couple of days for them to get back with results.
->>
->> The patch was tested by the following people on ThinkPads, V480, and
->> ideapads, and found to work as expected. I am informed that it does not
->> break existing thinkpads, and it fixes issues mentioned on the V480. Can
->> you please add the following tested-by when you apply the patch to your
->> tree?
->>
->> Tested-by: James Ferguson <james.ferguson@canonical.com>
->> Tested-by: Dennis Chua <dennis.chua@canonical.com>
->> Tested-by: Ike Pan <ike.pan@canonical.com>
->
-> Very well,
->
-> Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
->
-> Matthew, can you please pick it?
+I think a format change would be preferable to runtime sorting.
 
-Looks like I fat fingered the list, Matthew got dropped from the cc list 
-when I pasted @canonical.com addresses. Sorry Matthew.
+> What we have today is not a hash table; it's a hashed tree, where we
+> use a fixed-length key for the tree based on the hash of the file
+> name.  Currently the leaf nodes of the tree are the directory blocks
+> themselves; that is, the lowest level of the index blocks tells you to
+> look at directory block N, where that directory contains the directory
+> indexes for those file names which are in a particular range (say,
+> between 0x2325777A and 0x2325801).
 
->
-> --
->  "One disk to rule them all, One disk to find them. One disk to bring
->  them all and in the darkness grind them. In the Land of Redmond
->  where the shadows lie." -- The Silicon Valley Tarot
->  Henrique Holschuh
->
->
+So the index nodes contain the hash ranges for the leaf block, but the 
+leaf block only contains the regular directory entries, not a hash for 
+each name?  That would mean that adding or removing names would require 
+moving around the regular directory entries wouldn't it?
 
---
-====================
-Manoj Iyer
-Ubuntu/Canonical
-Hardware Enablement
-====================
+> If we aren't going to change the ordering of the directory directory,
+> that means we would need to change things so the leaf nodes contain
+> the actual directory file names themselves, so that we know whether or
+> not we've hit the correct entry or not before we go to read in a
+> specific directory block (otherwise, you'd have problems dealing with
+> hash collisions).  But in that case, instead of storing the pointer to
+> the directory entry, since the bulk of the size of a directory entry
+> is the filename itself, you might as well store the inode number in
+> the tree itself, and be done with it.
+
+I would think that hash collisions are rare enough that reading a 
+directory block you end up not needing once in a blue moon would be 
+chalked up under "who cares".  So just stick with hash, offset pairs to 
+map the hash to the normal directory entry.
+
