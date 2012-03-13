@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759412Ab2CMC6G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 22:58:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44882 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541Ab2CMC6E (ORCPT
+	id S1759446Ab2CMC6a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 22:58:30 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60992 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754541Ab2CMC63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 22:58:04 -0400
-Date: Tue, 13 Mar 2012 11:57:57 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan@kernel.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        kosaki.motohiro@jp.fujitsu.com
-Subject: Re: Control page reclaim granularity
-Message-ID: <20120313025756.GC7125@barrios>
-References: <20120308073412.GA6975@gmail.com>
- <20120308093514.GA28856@barrios>
- <4F5E0E5C.8040508@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F5E0E5C.8040508@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 12 Mar 2012 22:58:29 -0400
+Message-ID: <1331607500.11322.3.camel@phoenix>
+Subject: [PATCH] regulator: Check SET[1|2|3] GPIO settings earlier
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@smasung.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Tue, 13 Mar 2012 10:58:20 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 10:55:24AM -0400, Rik van Riel wrote:
-> On 03/08/2012 04:35 AM, Minchan Kim wrote:
-> >On Thu, Mar 08, 2012 at 03:34:13PM +0800, Zheng Liu wrote:
-> >>Hi list,
-> >>
-> >>Recently we encounter a problem about page reclaim.  I abstract it in here.
-> >>The problem is that there are two different file types.  One is small index
-> >>file, and another is large data file.  The index file is mmaped into memory,
-> >>and application hope that they can be kept in memory and don't be reclaimed
-> >>too frequently.  The data file is manipulted by read/write, and they should
-> >>be reclaimed more frequently than the index file.
-> 
-> They should indeed be.  The data pages should not get promoted
-> to the active list unless they get referenced twice while on
-> the inactive list.
-> 
-> Mmaped pages, on the other hand, get promoted to the active
-> list after just one reference.
+Unused GPIO is marked as -1, we need to check if one of the gpio is set to 0
+here because gpio_is_valid considers 0 as a valid gpio.
 
-As I look the code, mmaped page doesn't get promoted by one reference.
-It will get promoted by second-round trip or touched by several mapping
-when first round trip.
+Since we need to check the GPIOs anyway, check them altogether earlier makes
+the code cleaner.
 
-                if (referenced_page || referenced_ptes > 1) 
-		        return PAGEREF_ACTIVATE;
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max8998.c |   32 +++++++-------------------------
+ 1 files changed, 7 insertions(+), 25 deletions(-)
 
-> 
-> Also, as long as the inactive file list is larger than the
-> active file list, we do not reclaim active file pages at
-> all.
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index 5890265..67140fa 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -695,6 +695,13 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
++	/* Unused GPIO is marked as -1 */
++	if (!pdata->buck1_set1 || !pdata->buck1_set2 || !pdata->buck2_set3) {
++		dev_err(&pdev->dev,
++		    "MAX8998 SET1/SET2/SET3 GPIO must not be defined as 0 !\n");
++		return -EINVAL;
++	}
++
+ 	max8998 = kzalloc(sizeof(struct max8998_data), GFP_KERNEL);
+ 	if (!max8998)
+ 		return -ENOMEM;
+@@ -716,27 +723,9 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+ 	max8998->buck1_idx = pdata->buck1_default_idx;
+ 	max8998->buck2_idx = pdata->buck2_default_idx;
+ 
+-	/* NOTE: */
+-	/* For unused GPIO NOT marked as -1 (thereof equal to 0)  WARN_ON */
+-	/* will be displayed */
+-
+ 	/* Check if MAX8998 voltage selection GPIOs are defined */
+ 	if (gpio_is_valid(pdata->buck1_set1) &&
+ 	    gpio_is_valid(pdata->buck1_set2)) {
+-		/* Check if SET1 is not equal to 0 */
+-		if (!pdata->buck1_set1) {
+-			printk(KERN_ERR "MAX8998 SET1 GPIO defined as 0 !\n");
+-			WARN_ON(!pdata->buck1_set1);
+-			ret = -EIO;
+-			goto err_free_mem;
+-		}
+-		/* Check if SET2 is not equal to 0 */
+-		if (!pdata->buck1_set2) {
+-			printk(KERN_ERR "MAX8998 SET2 GPIO defined as 0 !\n");
+-			WARN_ON(!pdata->buck1_set2);
+-			ret = -EIO;
+-			goto err_free_mem;
+-		}
+ 
+ 		gpio_request(pdata->buck1_set1, "MAX8998 BUCK1_SET1");
+ 		gpio_direction_output(pdata->buck1_set1,
+@@ -796,13 +785,6 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (gpio_is_valid(pdata->buck2_set3)) {
+-		/* Check if SET3 is not equal to 0 */
+-		if (!pdata->buck2_set3) {
+-			printk(KERN_ERR "MAX8998 SET3 GPIO defined as 0 !\n");
+-			WARN_ON(!pdata->buck2_set3);
+-			ret = -EIO;
+-			goto err_free_mem;
+-		}
+ 		gpio_request(pdata->buck2_set3, "MAX8998 BUCK2_SET3");
+ 		gpio_direction_output(pdata->buck2_set3,
+ 				      max8998->buck2_idx & 0x1);
+-- 
+1.7.5.4
 
-True.
 
-> 
-> >I  think it's a regression since 2.6.28.
-> >Before we were trying to keep mapped pages in memory(See calc_reclaim_mapped).
-> >But we removed that routine when we applied split lru page replacement.
-> >Rik, KOSAKI. What's the rationale?
-> 
-> One main reason is scalability.  We have to treat pages
-> in such a way that we do not have to search through
-> gigabytes of memory to find a few eviction candidates
-> to place on the inactive list - where they could get
-> reused and stopped from eviction again.
 
-Okay. Thanks, Rik.
-Then, another question.
-Why did we handle mmaped page specially at that time?
-Just out of curiosity.
-
-> 
-> -- 
-> All rights reversed
