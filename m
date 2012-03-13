@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758848Ab2CMAyF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:54:05 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47921 "EHLO
+	id S1759268Ab2CMAyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:54:43 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47876 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758791Ab2CMAWx (ORCPT
+	with ESMTP id S1758764Ab2CMAWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:22:53 -0400
+	Mon, 12 Mar 2012 20:22:49 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+Cc: stable-review@kernel.org, Liu Yuan <tailai.ly@taobao.com>,
+        Jens Axboe <jaxboe@fusionio.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 093/196] ASoC: Fix output PGA enabling in wm_hubs CODECs
-Date: Mon, 12 Mar 2012 20:20:06 -0400
-Message-Id: <1331598109-31424-48-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 086/196] block, blk-sysfs: Fix an err return path in blk_register_queue()
+Date: Mon, 12 Mar 2012 20:19:59 -0400
+Message-Id: <1331598109-31424-41-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,56 +23,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Liu Yuan <tailai.ly@taobao.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 39cca168bdfaef9d0c496ec27f292445d6184946 upstream.
+commit ed5302d3c25006a9edc7a7fbea97a30483f89ef7 upstream.
 
-The output PGA was not being powered up in headphone and speaker paths,
-removing the ability to offer volume control and mute with the output
-PGA.
+We do not call blk_trace_remove_sysfs() in err return path
+if kobject_add() fails. This path fixes it.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Liu Yuan <tailai.ly@taobao.com>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/soc/codecs/wm_hubs.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ block/blk-sysfs.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/wm_hubs.c b/sound/soc/codecs/wm_hubs.c
-index e1f225a..db6122f 100644
---- a/sound/soc/codecs/wm_hubs.c
-+++ b/sound/soc/codecs/wm_hubs.c
-@@ -701,12 +701,12 @@ static const struct snd_soc_dapm_route analogue_routes[] = {
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index d246654..3eede79 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -502,8 +502,10 @@ int blk_register_queue(struct gendisk *disk)
+ 		return ret;
  
- 	{ "SPKL", "Input Switch", "MIXINL" },
- 	{ "SPKL", "IN1LP Switch", "IN1LP" },
--	{ "SPKL", "Output Switch", "Left Output Mixer" },
-+	{ "SPKL", "Output Switch", "Left Output PGA" },
- 	{ "SPKL", NULL, "TOCLK" },
+ 	ret = kobject_add(&q->kobj, kobject_get(&dev->kobj), "%s", "queue");
+-	if (ret < 0)
++	if (ret < 0) {
++		blk_trace_remove_sysfs(dev);
+ 		return ret;
++	}
  
- 	{ "SPKR", "Input Switch", "MIXINR" },
- 	{ "SPKR", "IN1RP Switch", "IN1RP" },
--	{ "SPKR", "Output Switch", "Right Output Mixer" },
-+	{ "SPKR", "Output Switch", "Right Output PGA" },
- 	{ "SPKR", NULL, "TOCLK" },
+ 	kobject_uevent(&q->kobj, KOBJ_ADD);
  
- 	{ "SPKL Boost", "Direct Voice Switch", "Direct Voice" },
-@@ -728,8 +728,8 @@ static const struct snd_soc_dapm_route analogue_routes[] = {
- 	{ "SPKOUTRP", NULL, "SPKR Driver" },
- 	{ "SPKOUTRN", NULL, "SPKR Driver" },
- 
--	{ "Left Headphone Mux", "Mixer", "Left Output Mixer" },
--	{ "Right Headphone Mux", "Mixer", "Right Output Mixer" },
-+	{ "Left Headphone Mux", "Mixer", "Left Output PGA" },
-+	{ "Right Headphone Mux", "Mixer", "Right Output PGA" },
- 
- 	{ "Headphone PGA", NULL, "Left Headphone Mux" },
- 	{ "Headphone PGA", NULL, "Right Headphone Mux" },
 -- 
 1.7.9.3
 
