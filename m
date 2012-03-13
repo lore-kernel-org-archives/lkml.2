@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758495Ab2CMBEW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 21:04:22 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46771 "EHLO
+	id S1758572Ab2CMBEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 21:04:24 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46772 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757697Ab2CMAR5 (ORCPT
+	with ESMTP id S1758007Ab2CMAR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Mar 2012 20:17:57 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Li Zefan <lizf@cn.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>,
+Cc: stable-review@kernel.org, Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 027/196] Btrfs: Fix uninitialized root flags for subvolumes
-Date: Mon, 12 Mar 2012 20:12:35 -0400
-Message-Id: <1331597724-31358-28-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 032/196] UBIFS: fix debugging failure in dbg_check_space_info
+Date: Mon, 12 Mar 2012 20:12:40 -0400
+Message-Id: <1331597724-31358-33-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,129 +21,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 08fe4db170b4193603d9d31f40ebaf652d07ac9c upstream.
+commit 7da6443aca9be29c6948dcbd636ad50154d0bc0c upstream.
 
-root_item->flags and root_item->byte_limit are not initialized when
-a subvolume is created. This bug is not revealed until we added
-readonly snapshot support - now you mount a btrfs filesystem and you
-may find the subvolumes in it are readonly.
+This patch fixes a debugging failure with which looks like this:
+UBIFS error (pid 32313): dbg_check_space_info: free space changed from 6019344 to 6022654
 
-To work around this problem, we steal a bit from root_item->inode_item->flags,
-and use it to indicate if those fields have been properly initialized.
-When we read a tree root from disk, we check if the bit is set, and if
-not we'll set the flag and initialize the two fields of the root item.
+The reason for this failure is described in the comment this patch adds
+to the code. But in short - 'c->freeable_cnt' may be different before
+and after re-mounting, and this is normal. So the debugging code should
+make sure that free space calculations do not depend on 'c->freeable_cnt'.
 
-Reported-by: Andreas Philipp <philipp.andreas@gmail.com>
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-Tested-by: Andreas Philipp <philipp.andreas@gmail.com>
-Signed-off-by: Chris Mason <chris.mason@oracle.com>
+A similar issue has been reported here:
+http://lists.infradead.org/pipermail/linux-mtd/2011-April/034647.html
+
+This patch should fix it.
+
+For the -stable guys: this patch is only relevant for kernels 2.6.30
+onwards.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/btrfs/ctree.h       |    4 ++++
- fs/btrfs/disk-io.c     |    4 +++-
- fs/btrfs/ioctl.c       |    4 ++++
- fs/btrfs/root-tree.c   |   18 ++++++++++++++++++
- fs/btrfs/transaction.c |    1 +
- 5 files changed, 30 insertions(+), 1 deletion(-)
+ fs/ubifs/debug.c |   41 ++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 36 insertions(+), 5 deletions(-)
 
-diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index 746a724..a79a910 100644
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -1184,6 +1184,8 @@ struct btrfs_root {
- #define BTRFS_INODE_NOATIME		(1 << 9)
- #define BTRFS_INODE_DIRSYNC		(1 << 10)
+diff --git a/fs/ubifs/debug.c b/fs/ubifs/debug.c
+index c2a68ba..923d697 100644
+--- a/fs/ubifs/debug.c
++++ b/fs/ubifs/debug.c
+@@ -961,11 +961,39 @@ void dbg_dump_index(struct ubifs_info *c)
+ void dbg_save_space_info(struct ubifs_info *c)
+ {
+ 	struct ubifs_debug_info *d = c->dbg;
+-
+-	ubifs_get_lp_stats(c, &d->saved_lst);
++	int freeable_cnt;
  
-+#define BTRFS_INODE_ROOT_ITEM_INIT	(1 << 31)
+ 	spin_lock(&c->space_lock);
++	memcpy(&d->saved_lst, &c->lst, sizeof(struct ubifs_lp_stats));
 +
- /* some macros to generate set/get funcs for the struct fields.  This
-  * assumes there is a lefoo_to_cpu for every type, so lets make a simple
-  * one for u8:
-@@ -2185,6 +2187,8 @@ int btrfs_find_dead_roots(struct btrfs_root *root, u64 objectid);
- int btrfs_find_orphan_roots(struct btrfs_root *tree_root);
- int btrfs_set_root_node(struct btrfs_root_item *item,
- 			struct extent_buffer *node);
-+void btrfs_check_and_init_root_item(struct btrfs_root_item *item);
-+
- /* dir-item.c */
- int btrfs_insert_dir_item(struct btrfs_trans_handle *trans,
- 			  struct btrfs_root *root, const char *name,
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index feca041..fa46c2d 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -1146,8 +1146,10 @@ struct btrfs_root *btrfs_read_fs_root_no_radix(struct btrfs_root *tree_root,
- 	root->commit_root = btrfs_root_node(root);
- 	BUG_ON(!root->node);
- out:
--	if (location->objectid != BTRFS_TREE_LOG_OBJECTID)
-+	if (location->objectid != BTRFS_TREE_LOG_OBJECTID) {
- 		root->ref_cows = 1;
-+		btrfs_check_and_init_root_item(&root->root_item);
-+	}
- 
- 	return root;
++	/*
++	 * We use a dirty hack here and zero out @c->freeable_cnt, because it
++	 * affects the free space calculations, and UBIFS might not know about
++	 * all freeable eraseblocks. Indeed, we know about freeable eraseblocks
++	 * only when we read their lprops, and we do this only lazily, upon the
++	 * need. So at any given point of time @c->freeable_cnt might be not
++	 * exactly accurate.
++	 *
++	 * Just one example about the issue we hit when we did not zero
++	 * @c->freeable_cnt.
++	 * 1. The file-system is mounted R/O, c->freeable_cnt is %0. We save the
++	 *    amount of free space in @d->saved_free
++	 * 2. We re-mount R/W, which makes UBIFS to read the "lsave"
++	 *    information from flash, where we cache LEBs from various
++	 *    categories ('ubifs_remount_fs()' -> 'ubifs_lpt_init()'
++	 *    -> 'lpt_init_wr()' -> 'read_lsave()' -> 'ubifs_lpt_lookup()'
++	 *    -> 'ubifs_get_pnode()' -> 'update_cats()'
++	 *    -> 'ubifs_add_to_cat()').
++	 * 3. Lsave contains a freeable eraseblock, and @c->freeable_cnt
++	 *    becomes %1.
++	 * 4. We calculate the amount of free space when the re-mount is
++	 *    finished in 'dbg_check_space_info()' and it does not match
++	 *    @d->saved_free.
++	 */
++	freeable_cnt = c->freeable_cnt;
++	c->freeable_cnt = 0;
+ 	d->saved_free = ubifs_get_free_space_nolock(c);
++	c->freeable_cnt = freeable_cnt;
+ 	spin_unlock(&c->space_lock);
  }
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index e9d0535..e624555 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -286,6 +286,10 @@ static noinline int create_subvol(struct btrfs_root *root,
- 	inode_item->nbytes = cpu_to_le64(root->leafsize);
- 	inode_item->mode = cpu_to_le32(S_IFDIR | 0755);
  
-+	root_item.flags = 0;
-+	root_item.byte_limit = 0;
-+	inode_item->flags = cpu_to_le64(BTRFS_INODE_ROOT_ITEM_INIT);
-+
- 	btrfs_set_root_bytenr(&root_item, leaf->start);
- 	btrfs_set_root_generation(&root_item, trans->transid);
- 	btrfs_set_root_level(&root_item, 0);
-diff --git a/fs/btrfs/root-tree.c b/fs/btrfs/root-tree.c
-index 67fa2d2..3174255 100644
---- a/fs/btrfs/root-tree.c
-+++ b/fs/btrfs/root-tree.c
-@@ -459,3 +459,21 @@ again:
- 	btrfs_free_path(path);
- 	return 0;
- }
-+
-+/*
-+ * Old btrfs forgets to init root_item->flags and root_item->byte_limit
-+ * for subvolumes. To work around this problem, we steal a bit from
-+ * root_item->inode_item->flags, and use it to indicate if those fields
-+ * have been properly initialized.
-+ */
-+void btrfs_check_and_init_root_item(struct btrfs_root_item *root_item)
-+{
-+	u64 inode_flags = le64_to_cpu(root_item->inode.flags);
-+
-+	if (!(inode_flags & BTRFS_INODE_ROOT_ITEM_INIT)) {
-+		inode_flags |= BTRFS_INODE_ROOT_ITEM_INIT;
-+		root_item->inode.flags = cpu_to_le64(inode_flags);
-+		root_item->flags = 0;
-+		root_item->byte_limit = 0;
-+	}
-+}
-diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
-index 2cb1160..5110e70 100644
---- a/fs/btrfs/transaction.c
-+++ b/fs/btrfs/transaction.c
-@@ -805,6 +805,7 @@ static noinline int create_pending_snapshot(struct btrfs_trans_handle *trans,
- 	record_root_in_trans(trans, root);
- 	btrfs_set_root_last_snapshot(&root->root_item, trans->transid);
- 	memcpy(new_root_item, &root->root_item, sizeof(*new_root_item));
-+	btrfs_check_and_init_root_item(new_root_item);
+@@ -982,12 +1010,15 @@ int dbg_check_space_info(struct ubifs_info *c)
+ {
+ 	struct ubifs_debug_info *d = c->dbg;
+ 	struct ubifs_lp_stats lst;
+-	long long avail, free;
++	long long free;
++	int freeable_cnt;
  
- 	old = btrfs_lock_root_node(root);
- 	btrfs_cow_block(trans, root, old, NULL, 0, &old);
+ 	spin_lock(&c->space_lock);
+-	avail = ubifs_calc_available(c, c->min_idx_lebs);
++	freeable_cnt = c->freeable_cnt;
++	c->freeable_cnt = 0;
++	free = ubifs_get_free_space_nolock(c);
++	c->freeable_cnt = freeable_cnt;
+ 	spin_unlock(&c->space_lock);
+-	free = ubifs_get_free_space(c);
+ 
+ 	if (free != d->saved_free) {
+ 		ubifs_err("free space changed from %lld to %lld",
 -- 
 1.7.9.3
 
