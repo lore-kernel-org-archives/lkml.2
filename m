@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231Ab2CMARz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:17:55 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46692 "EHLO
+	id S932098Ab2CMASG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:18:06 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46782 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758007Ab2CMARr (ORCPT
+	with ESMTP id S1757642Ab2CMAR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:17:47 -0400
+	Mon, 12 Mar 2012 20:17:59 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Olaf Hering <olaf@aepfle.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 020/196] staging: hv: use sync_bitops when interacting with the hypervisor
-Date: Mon, 12 Mar 2012 20:12:28 -0400
-Message-Id: <1331597724-31358-21-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 023/196] nilfs2: fix data loss in mmap page write for hole blocks
+Date: Mon, 12 Mar 2012 20:12:31 -0400
+Message-Id: <1331597724-31358-24-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,117 +21,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olaf Hering <olaf@aepfle.de>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 22356585712d1ff08fbfed152edd8b386873b238 upstream.
+commit 34094537943113467faee98fe67c8a3d3f9a0a8b upstream.
 
-Locking is required when tweaking bits located in a shared page, use the
-sync_ version of bitops. Without this change vmbus_on_event() will miss
-events and as a result, vmbus_isr() will not schedule the receive tasklet.
+>From the result of a function test of mmap, mmap write to shared pages
+turned out to be broken for hole blocks.  It doesn't write out filled
+blocks and the data will be lost after umount.  This is due to a bug
+that the target file is not queued for log writer when filling hole
+blocks.
 
-Signed-off-by: Olaf Hering <olaf@aepfle.de>
-Acked-by: Haiyang Zhang <haiyangz@microsoft.com>
-Acked-by: Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Also, nilfs_page_mkwrite function exits normal code path even after
+successfully filled hole blocks due to a change of block_page_mkwrite
+function; just after nilfs was merged into the mainline,
+block_page_mkwrite() started to return VM_FAULT_LOCKED instead of zero
+by the patch "mm: close page_mkwrite races" (commit:
+b827e496c893de0c).  The current nilfs_page_mkwrite() is not handling
+this value properly.
+
+This corrects nilfs_page_mkwrite() and will resolve the data loss
+problem in mmap write.
+
+[This should be applied to every kernel since 2.6.30 but a fix is
+ needed for 2.6.37 and prior kernels]
+
+[PG: add sb as 1st arg to nilfs_set_file_dirty() as per 34 codebase]
+
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/staging/hv/Channel.c      |    8 ++++----
- drivers/staging/hv/Connection.c   |    4 ++--
- drivers/staging/hv/Vmbus.c        |    2 +-
- drivers/staging/hv/VmbusPrivate.h |    1 +
- 4 files changed, 8 insertions(+), 7 deletions(-)
+ fs/nilfs2/file.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/hv/Channel.c b/drivers/staging/hv/Channel.c
-index e69e9ee..d0b435e 100644
---- a/drivers/staging/hv/Channel.c
-+++ b/drivers/staging/hv/Channel.c
-@@ -76,14 +76,14 @@ static void VmbusChannelSetEvent(struct vmbus_channel *Channel)
+diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
+index 30292df..584e0b0 100644
+--- a/fs/nilfs2/file.c
++++ b/fs/nilfs2/file.c
+@@ -72,10 +72,9 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	/*
+ 	 * check to see if the page is mapped already (no holes)
+ 	 */
+-	if (PageMappedToDisk(page)) {
+-		unlock_page(page);
++	if (PageMappedToDisk(page))
+ 		goto mapped;
+-	}
++
+ 	if (page_has_buffers(page)) {
+ 		struct buffer_head *bh, *head;
+ 		int fully_mapped = 1;
+@@ -90,7 +89,6 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
  
- 	if (Channel->OfferMsg.MonitorAllocated) {
- 		/* Each u32 represents 32 channels */
--		set_bit(Channel->OfferMsg.ChildRelId & 31,
-+		sync_set_bit(Channel->OfferMsg.ChildRelId & 31,
- 			(unsigned long *) gVmbusConnection.SendInterruptPage +
- 			(Channel->OfferMsg.ChildRelId >> 5));
- 
- 		monitorPage = gVmbusConnection.MonitorPages;
- 		monitorPage++; /* Get the child to parent monitor page */
- 
--		set_bit(Channel->MonitorBit,
-+		sync_set_bit(Channel->MonitorBit,
- 			(unsigned long *)&monitorPage->TriggerGroup
- 					[Channel->MonitorGroup].Pending);
- 
-@@ -103,7 +103,7 @@ static void VmbusChannelClearEvent(struct vmbus_channel *channel)
- 
- 	if (Channel->OfferMsg.MonitorAllocated) {
- 		/* Each u32 represents 32 channels */
--		clear_bit(Channel->OfferMsg.ChildRelId & 31,
-+		sync_clear_bit(Channel->OfferMsg.ChildRelId & 31,
- 			  (unsigned long *)gVmbusConnection.SendInterruptPage +
- 			  (Channel->OfferMsg.ChildRelId >> 5));
- 
-@@ -111,7 +111,7 @@ static void VmbusChannelClearEvent(struct vmbus_channel *channel)
- 			(struct hv_monitor_page *)gVmbusConnection.MonitorPages;
- 		monitorPage++; /* Get the child to parent monitor page */
- 
--		clear_bit(Channel->MonitorBit,
-+		sync_clear_bit(Channel->MonitorBit,
- 			  (unsigned long *)&monitorPage->TriggerGroup
- 					[Channel->MonitorGroup].Pending);
+ 		if (fully_mapped) {
+ 			SetPageMappedToDisk(page);
+-			unlock_page(page);
+ 			goto mapped;
+ 		}
  	}
-diff --git a/drivers/staging/hv/Connection.c b/drivers/staging/hv/Connection.c
-index e0ea9cf..e39d422 100644
---- a/drivers/staging/hv/Connection.c
-+++ b/drivers/staging/hv/Connection.c
-@@ -285,7 +285,7 @@ void VmbusOnEvents(void)
- 		for (dword = 0; dword < maxdword; dword++) {
- 			if (recvInterruptPage[dword]) {
- 				for (bit = 0; bit < 32; bit++) {
--					if (test_and_clear_bit(bit, (unsigned long *)&recvInterruptPage[dword])) {
-+					if (sync_test_and_clear_bit(bit, (unsigned long *)&recvInterruptPage[dword])) {
- 						relid = (dword << 5) + bit;
- 						DPRINT_DBG(VMBUS, "event detected for relid - %d", relid);
+@@ -105,16 +103,18 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 		return VM_FAULT_SIGBUS;
  
-@@ -330,7 +330,7 @@ int VmbusSetEvent(u32 childRelId)
- 	DPRINT_ENTER(VMBUS);
- 
- 	/* Each u32 represents 32 channels */
--	set_bit(childRelId & 31,
-+	sync_set_bit(childRelId & 31,
- 		(unsigned long *)gVmbusConnection.SendInterruptPage +
- 		(childRelId >> 5));
- 
-diff --git a/drivers/staging/hv/Vmbus.c b/drivers/staging/hv/Vmbus.c
-index 2f84bf7..0680868 100644
---- a/drivers/staging/hv/Vmbus.c
-+++ b/drivers/staging/hv/Vmbus.c
-@@ -255,7 +255,7 @@ static int VmbusOnISR(struct hv_driver *drv)
- 	event = (union hv_synic_event_flags *)page_addr + VMBUS_MESSAGE_SINT;
- 
- 	/* Since we are a child, we only need to check bit 0 */
--	if (test_and_clear_bit(0, (unsigned long *) &event->Flags32[0])) {
-+	if (sync_test_and_clear_bit(0, (unsigned long *) &event->Flags32[0])) {
- 		DPRINT_DBG(VMBUS, "received event %d", event->Flags32[0]);
- 		ret |= 0x2;
+ 	ret = block_page_mkwrite(vma, vmf, nilfs_get_block);
+-	if (unlikely(ret)) {
++	if (ret != VM_FAULT_LOCKED) {
+ 		nilfs_transaction_abort(inode->i_sb);
+ 		return ret;
  	}
-diff --git a/drivers/staging/hv/VmbusPrivate.h b/drivers/staging/hv/VmbusPrivate.h
-index 05ad2c9..5a37cce 100644
---- a/drivers/staging/hv/VmbusPrivate.h
-+++ b/drivers/staging/hv/VmbusPrivate.h
-@@ -32,6 +32,7 @@
- #include "ChannelInterface.h"
- #include "RingBuffer.h"
- #include <linux/list.h>
-+#include <asm/sync_bitops.h>
++	nilfs_set_file_dirty(NILFS_SB(inode->i_sb), inode,
++		1 << (PAGE_SHIFT - inode->i_blkbits));
+ 	nilfs_transaction_commit(inode->i_sb);
  
+  mapped:
+ 	SetPageChecked(page);
+ 	wait_on_page_writeback(page);
+-	return 0;
++	return VM_FAULT_LOCKED;
+ }
  
- /*
+ static const struct vm_operations_struct nilfs_file_vm_ops = {
 -- 
 1.7.9.3
 
