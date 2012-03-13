@@ -1,166 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab2CMGnO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 02:43:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46803 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab2CMGnL (ORCPT
+	id S1753707Ab2CMGnr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 02:43:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38997 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab2CMGnq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 02:43:11 -0400
-Date: Tue, 13 Mar 2012 14:48:32 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: minchan@kernel.org
-Cc: khlebnikov@openvz.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        riel@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: Fwd: Control page reclaim granularity
-Message-ID: <20120313064832.GA4968@gmail.com>
-Mail-Followup-To: minchan@kernel.org, khlebnikov@openvz.org,
-	linux-mm@kvack.org, linux-kernel@vger.kernel.org, riel@redhat.com,
-	kosaki.motohiro@jp.fujitsu.com, Zheng Liu <wenqing.lz@taobao.com>
-References: <20120313024818.GA7125@barrios>
- <1331620214-4893-1-git-send-email-wenqing.lz@taobao.com>
+	Tue, 13 Mar 2012 02:43:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="76798095"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
+Thread-Topic: [PATCH] Fix the race between smp_call_function and CPU booting
+Thread-Index: AQHNADMe8jfAhS12dUCWb8Li45vgkJZnxtew
+Date: Tue, 13 Mar 2012 06:43:42 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A054D6A@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
+ <1331544767.18960.23.camel@twins>
+In-Reply-To: <1331544767.18960.23.camel@twins>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331620214-4893-1-git-send-email-wenqing.lz@taobao.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, please forgive me.  This patch has a defect.  When one page is
-scaned and flag is clear, all other's flags also are clear too.
 
-Regards,
-Zheng
 
-On Tue, Mar 13, 2012 at 02:30:14PM +0800, Zheng Liu wrote:
-> This only a first trivial try.  If this flag is set, reclaimer just give this
-> page one more round trip rather than promote it into active list.  Any comments
-> or advices are welcomed.
+> -----Original Message-----
+> From: Peter Zijlstra [mailto:peterz@infradead.org]
+> Sent: Monday, March 12, 2012 5:33 PM
+> To: Liu, Chuansheng
+> Cc: linux-kernel@vger.kernel.org; Yanmin Zhang; tglx@linutronix.de
+> Subject: Re: [PATCH] Fix the race between smp_call_function and CPU booting
 > 
-> Regards,
-> Zheng
+> On Mon, 2012-03-12 at 09:27 +0000, Liu, Chuansheng wrote:
+> > From: liu chuansheng <chuansheng.liu@intel.com>
+> > Subject: [PATCH] Fix the race between smp_call_function and CPU
+> > booting
+> >
+> > When system is waking up from suspend state, sometimes the
+> > smp_call_function is called which will cause deadlock specially on the
+> > platform which just has two CPUs.
+> >
+> > CPU0:                                           CPU1:
+> > pm_suspend -->
+> > suspend_devices_and_enter -->
+> > enable_nonboot_cpus -->
+> > _cpu_up -->
+> > __cpu_up -->
+> > native_cpu_up
+> >                                                 start_secondary
+> >                                                         -- set
+> cpu online
+> >                                                         --
+> waiting for the active state new thread call:
+> > smp_call_function -->
+> > smp_call_function_many -->
+> > smp_call_function_single -->
+> >    -- csd_lock
+> >    -- generic_exec_single -->
+> >    -- arch_send_call_function_single_ipi
+> >    -- csd_lock_wait
+> >
+> > At this time, both CPUs are blocked. Normally the CPU0 will set the
+> > CPU1 with active state after finished the _cpu_up calling, but CPU1
+> > can not handle the IPI due to the corresponding irq is still disabled,
+> > which will be enabled after waiting for the active state.
+> >
+> > The solution is just to send smp call to active cpus instead of online
+> > cpus.
 > 
-> [PATCH] mm: per-inode mmaped page reclaim
-> 
-> From: Zheng Liu <wenqing.lz@taobao.com>
-> 
-> In some cases, user wants to control mmaped page reclaim granularity.  A new
-> flag is added into struct address_space to give the page one more round trip.
-> AS_WORKINGSET flag cannot be added in vma->vm_flags because this flag has no
-> room for a new flag in 32 bit.  Now user can call madvise(2) to set this flag
-> for a file.  If this flag is set, all pages will be given one more round trip
-> when reclaimer tries to shrink pages.
-> 
-> Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
-> ---
->  include/asm-generic/mman-common.h |    2 ++
->  include/linux/pagemap.h           |   16 ++++++++++++++++
->  mm/madvise.c                      |    8 ++++++++
->  mm/vmscan.c                       |   15 +++++++++++++++
->  4 files changed, 41 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/asm-generic/mman-common.h b/include/asm-generic/mman-common.h
-> index 787abbb..7d26c9b 100644
-> --- a/include/asm-generic/mman-common.h
-> +++ b/include/asm-generic/mman-common.h
-> @@ -48,6 +48,8 @@
->  #define MADV_HUGEPAGE	14		/* Worth backing with hugepages */
->  #define MADV_NOHUGEPAGE	15		/* Not worth backing with hugepages */
->  
-> +#define MADV_WORKINGSET 16		/* give one more round trip */
-> +
->  /* compatibility flags */
->  #define MAP_FILE	0
->  
-> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-> index cfaaa69..80532a0 100644
-> --- a/include/linux/pagemap.h
-> +++ b/include/linux/pagemap.h
-> @@ -24,6 +24,7 @@ enum mapping_flags {
->  	AS_ENOSPC	= __GFP_BITS_SHIFT + 1,	/* ENOSPC on async write */
->  	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
->  	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
-> +	AS_WORKINGSET	= __GFP_BITS_SHIFT + 4, /* give one more round trip */
->  };
->  
->  static inline void mapping_set_error(struct address_space *mapping, int error)
-> @@ -36,6 +37,21 @@ static inline void mapping_set_error(struct address_space *mapping, int error)
->  	}
->  }
->  
-> +static inline void mapping_set_workingset(struct address_space *mapping)
-> +{
-> +	set_bit(AS_WORKINGSET, &mapping->flags);
-> +}
-> +
-> +static inline void mapping_clear_workingset(struct address_space *mapping)
-> +{
-> +	clear_bit(AS_WORKINGSET, &mapping->flags);
-> +}
-> +
-> +static inline int mapping_test_workingset(struct address_space *mapping)
-> +{
-> +	return mapping && test_bit(AS_WORKINGSET, &mapping->flags);
-> +}
-> +
->  static inline void mapping_set_unevictable(struct address_space *mapping)
->  {
->  	set_bit(AS_UNEVICTABLE, &mapping->flags);
-> diff --git a/mm/madvise.c b/mm/madvise.c
-> index 74bf193..8ca6c9b 100644
-> --- a/mm/madvise.c
-> +++ b/mm/madvise.c
-> @@ -77,6 +77,14 @@ static long madvise_behavior(struct vm_area_struct * vma,
->  		if (error)
->  			goto out;
->  		break;
-> +	case MADV_WORKINGSET:
-> +		if (vma->vm_file && vma->vm_file->f_mapping) {
-> +			mapping_set_workingset(vma->vm_file->f_mapping);
-> +		} else {
-> +			error = -EPERM;
-> +			goto out;
-> +		}
-> +		break;
->  	}
->  
->  	if (new_flags == vma->vm_flags) {
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index c52b235..51f745b 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -721,6 +721,15 @@ static enum page_references page_check_references(struct page *page,
->  	if (vm_flags & VM_LOCKED)
->  		return PAGEREF_RECLAIM;
->  
-> +	/*
-> +	 * give this page one more round trip because workingset
-> +	 * flag is set.
-> +	 */
-> +	if (mapping_test_workingset(page_mapping(page))) {
-> +		mapping_clear_workingset(page_mapping(page));
-> +		return PAGEREF_KEEP;
-> +	}
-> +
->  	if (referenced_ptes) {
->  		if (PageAnon(page))
->  			return PAGEREF_ACTIVATE;
-> @@ -1737,6 +1746,12 @@ static void shrink_active_list(unsigned long nr_to_scan,
->  			continue;
->  		}
->  
-> +		if (mapping_test_workingset(page_mapping(page))) {
-> +			mapping_clear_workingset(page_mapping(page));
-> +			list_add(&page->lru, &l_active);
-> +			continue;
-> +		}
-> +
->  		if (page_referenced(page, 0, mz->mem_cgroup, &vm_flags)) {
->  			nr_rotated += hpage_nr_pages(page);
->  			/*
-> -- 
-> 1.7.4.1
-> 
+> Wouldn't http://lkml.org/lkml/2011/12/15/255 also solve that?
+Yes, the patch in http://lkml.org/lkml/2011/12/15/255 also solve it. But it moved the action of setting active state into the start_secondary thru cpu_notifier starting,
+If so, more simpler solution is calling set_cpu_active directly in function start_secondary, do not need register cpu_online/cpu_starting cpu_notifier in function migration_init at all.
+
