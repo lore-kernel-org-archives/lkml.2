@@ -1,48 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759081Ab2CMAm1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:42:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33199 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759062Ab2CMAmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:42:25 -0400
-Message-ID: <4F5E97EA.6030001@zytor.com>
-Date: Mon, 12 Mar 2012 17:42:18 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S965014Ab2CMAmh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:42:37 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:59571 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758927Ab2CMAme (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 20:42:34 -0400
+X-Sasl-enc: 4yLGdGEuA15fZr1vmXtUBLc2U8+lgHWs/twbPVaWRPLO 1331599352
+Date: Mon, 12 Mar 2012 21:42:29 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Cc: ShuoX Liu <shuox.liu@intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Subject: Re: [PATCH V3] cpuidle: Add a sysfs entry to disable specific C
+ state for debug purpose.
+Message-ID: <20120313004229.GA21111@khazad-dum.debian.net>
+References: <C6CB66606345BC4B80CBE69D22ABFBB1021C7F@SHSMSX101.ccr.corp.intel.com>
+ <1330647453.1916.7.camel@ymzhang>
+ <20120302142303.648285a7.akpm@linux-foundation.org>
+ <C6CB66606345BC4B80CBE69D22ABFBB10220E1@SHSMSX101.ccr.corp.intel.com>
+ <4F545A4E.8010801@linux.vnet.ibm.com>
+ <4F5466C4.2090808@intel.com>
+ <20120305101827.GA19408@khazad-dum.debian.net>
+ <1330995854.1916.39.camel@ymzhang>
 MIME-Version: 1.0
-To: Jan Kratochvil <jan.kratochvil@redhat.com>
-CC: Denys Vlasenko <dvlasenk@redhat.com>,
-        Roland McGrath <roland@hack.frob.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Kushal Das <kdas@redhat.com>
-Subject: Re: Extending coredump note section to contain filenames
-References: <4F5A3A4D.1020008@redhat.com> <20120309172934.GA18173@host2.jankratochvil.net> <4F5DE6A4.2030303@redhat.com> <20120312165359.GA32400@host2.jankratochvil.net> <4F5E76CE.4030601@zytor.com> <20120312223144.GA9636@host2.jankratochvil.net> <4F5E91DE.80609@zytor.com> <20120313002725.GA17828@host2.jankratochvil.net> <4F5E956F.3070108@zytor.com> <20120313003639.GA18427@host2.jankratochvil.net>
-In-Reply-To: <20120313003639.GA18427@host2.jankratochvil.net>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330995854.1916.39.camel@ymzhang>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2012 05:36 PM, Jan Kratochvil wrote:
-> On Tue, 13 Mar 2012 01:31:43 +0100, H. Peter Anvin wrote:
->> This is basically providing the dso_list and executable information.
->> Several of the other things you list above (cmdline, environ, pid,
->> reason, maps) are already part of a core file.
-> 
-> dso_list and executable identification (their build-id) are also part of the
-> core file.  It is only filesystem defect it can map filename -> content but it
-> cannot map build-id -> content.  There are many indexing solutions for it,
-> including slocate, when you have started to talk about not 100% reliable
-> solutions.
+On Tue, 06 Mar 2012, Yanmin Zhang wrote:
+> On Mon, 2012-03-05 at 07:18 -0300, Henrique de Moraes Holschuh wrote:
+> > On Mon, 05 Mar 2012, ShuoX Liu wrote:
+> > > @@ -45,6 +46,7 @@ total 0
+> > >  /sys/devices/system/cpu/cpu0/cpuidle/state1:
+> > >  total 0
+> > >  -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
+> > > +-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
+> > >  -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
+> > >  -r--r--r-- 1 root root 4096 Feb  8 10:42 name
+> > >  -r--r--r-- 1 root root 4096 Feb  8 10:42 power
+> > 
+> > ...
+> > 
+> > > diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+> > > index 3fe41fe..1eae29a 100644
+> > > --- a/drivers/cpuidle/sysfs.c
+> > > +++ b/drivers/cpuidle/sysfs.c
+> > > @@ -222,6 +222,9 @@ struct cpuidle_state_attr {
+> > >  #define define_one_state_ro(_name, show) \
+> > >  static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0444,
+> > > show, NULL)
+> > > 
+> > > +#define define_one_state_rw(_name, show, store) \
+> > > +static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0644,
+> > > show, store)
+> > > +
+> > >  #define define_show_state_function(_name) \
+> > >  static ssize_t show_state_##_name(struct cpuidle_state *state, \
+> > >  			 struct cpuidle_state_usage *state_usage, char *buf) \
+> > > @@ -229,6 +232,19 @@ static ssize_t show_state_##_name(struct
+> > > cpuidle_state *state, \
+> > >  	return sprintf(buf, "%u\n", state->_name);\
+> > >  }
+> > > 
+> > > +#define define_store_state_function(_name) \
+> > > +static ssize_t store_state_##_name(struct cpuidle_state *state, \
+> > > +		const char *buf, size_t size) \
+> > > +{ \
+> > > +	int value; \
+> > > +	sscanf(buf, "%d", &value); \
+> > > +	if (value) \
+> > > +		state->disable = 1; \
+> > > +	else \
+> > > +		state->disable = 0; \
+> > > +	return size; \
+> > > +}
+> > 
+> > Isn't this missing a check for capabilities?  Disabling cpuidle states is
+> > not something random Joe (and IMHO that does mean random capability-
+> > restricted Joe root) should be doing...
+> Sorry. Could you elaborate it?
 
-There is no 100% reliable solution possible -- you have no guarantee of
-any kind that the library executable still exists.
+Sure.  Should any user be able to disable a C state, therefore causing
+the system to consume more power?
 
-	-hpa
+I am pretty sure the answer is NO, in which case you should check for
+the appropriate user credentials before you allow a write to these
+"debug" controls to succeed.  "capability" here is one of the CAP_*
+capabilities tested through capable(), which are supposed to limit even
+root.
+
+> > Also, maybe it would be best to use one of the lib helpers to parse that
+> > value, so that it will be less annoying to userspace (trim blanks, complain
+> > if there is trailing junk after trimming, etc)?
+> We would use strict_strtol to parse the value in next version.
+
+Thanks!
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
