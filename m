@@ -1,152 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759819Ab2CMGZA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 02:25:00 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45424 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab2CMGY6 (ORCPT
+	id S1759829Ab2CMG0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 02:26:30 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59531 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758834Ab2CMG02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 02:24:58 -0400
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-To: minchan@kernel.org
-Cc: khlebnikov@openvz.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        riel@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        Zheng Liu <wenqing.lz@taobao.com>
-Subject: Re: Fwd: Control page reclaim granularity
-Date: Tue, 13 Mar 2012 14:30:14 +0800
-Message-Id: <1331620214-4893-1-git-send-email-wenqing.lz@taobao.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <20120313024818.GA7125@barrios>
-References: <20120313024818.GA7125@barrios>
+	Tue, 13 Mar 2012 02:26:28 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 13 Mar 2012 15:24:46 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Suleiman Souhlal <ssouhlal@FreeBSD.org>, <cgroups@vger.kernel.org>,
+        <suleiman@google.com>, <penberg@kernel.org>, <cl@linux.com>,
+        <yinghan@google.com>, <hughd@google.com>, <gthelen@google.com>,
+        <peterz@infradead.org>, <dan.magenheimer@oracle.com>,
+        <hannes@cmpxchg.org>, <mgorman@suse.de>,
+        <James.Bottomley@HansenPartnership.com>, <linux-mm@kvack.org>,
+        <devel@openvz.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 02/13] memcg: Kernel memory accounting
+ infrastructure.
+Message-Id: <20120313152446.28b0d696.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4F5C5E54.2020408@parallels.com>
+References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
+	<1331325556-16447-3-git-send-email-ssouhlal@FreeBSD.org>
+	<4F5C5E54.2020408@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This only a first trivial try.  If this flag is set, reclaimer just give this
-page one more round trip rather than promote it into active list.  Any comments
-or advices are welcomed.
+On Sun, 11 Mar 2012 12:12:04 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
-Regards,
-Zheng
+> On 03/10/2012 12:39 AM, Suleiman Souhlal wrote:
+> > Enabled with CONFIG_CGROUP_MEM_RES_CTLR_KMEM.
+> >
+> > Adds the following files:
+> >      - memory.kmem.independent_kmem_limit
+> >      - memory.kmem.usage_in_bytes
+> >      - memory.kmem.limit_in_bytes
+> >
+> > Signed-off-by: Suleiman Souhlal<suleiman@google.com>
+> > ---
+> >   mm/memcontrol.c |  136 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+> >   1 files changed, 135 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 37ad2cb..e6fd558 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -220,6 +220,10 @@ enum memcg_flags {
+> >   				 */
+> >   	MEMCG_MEMSW_IS_MINIMUM,	/* Set when res.limit == memsw.limit */
+> >   	MEMCG_OOM_KILL_DISABLE,	/* OOM-Killer disable */
+> > +	MEMCG_INDEPENDENT_KMEM_LIMIT,	/*
+> > +					 * kernel memory is not counted in
+> > +					 * memory.usage_in_bytes
+> > +					 */
+> >   };
 
-[PATCH] mm: per-inode mmaped page reclaim
 
-From: Zheng Liu <wenqing.lz@taobao.com>
+After looking codes, I think we need to think
+whether independent_kmem_limit is good or not....
 
-In some cases, user wants to control mmaped page reclaim granularity.  A new
-flag is added into struct address_space to give the page one more round trip.
-AS_WORKINGSET flag cannot be added in vma->vm_flags because this flag has no
-room for a new flag in 32 bit.  Now user can call madvise(2) to set this flag
-for a file.  If this flag is set, all pages will be given one more round trip
-when reclaimer tries to shrink pages.
+How about adding MEMCG_KMEM_ACCOUNT flag instead of this and use only
+memcg->res/memcg->memsw rather than adding a new counter, memcg->kmem ?
 
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
----
- include/asm-generic/mman-common.h |    2 ++
- include/linux/pagemap.h           |   16 ++++++++++++++++
- mm/madvise.c                      |    8 ++++++++
- mm/vmscan.c                       |   15 +++++++++++++++
- 4 files changed, 41 insertions(+), 0 deletions(-)
+if MEMCG_KMEM_ACCOUNT is set     -> slab is accoutned to mem->res/memsw.
+if MEMCG_KMEM_ACCOUNT is not set -> slab is never accounted.
 
-diff --git a/include/asm-generic/mman-common.h b/include/asm-generic/mman-common.h
-index 787abbb..7d26c9b 100644
---- a/include/asm-generic/mman-common.h
-+++ b/include/asm-generic/mman-common.h
-@@ -48,6 +48,8 @@
- #define MADV_HUGEPAGE	14		/* Worth backing with hugepages */
- #define MADV_NOHUGEPAGE	15		/* Not worth backing with hugepages */
- 
-+#define MADV_WORKINGSET 16		/* give one more round trip */
-+
- /* compatibility flags */
- #define MAP_FILE	0
- 
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index cfaaa69..80532a0 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -24,6 +24,7 @@ enum mapping_flags {
- 	AS_ENOSPC	= __GFP_BITS_SHIFT + 1,	/* ENOSPC on async write */
- 	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
- 	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
-+	AS_WORKINGSET	= __GFP_BITS_SHIFT + 4, /* give one more round trip */
- };
- 
- static inline void mapping_set_error(struct address_space *mapping, int error)
-@@ -36,6 +37,21 @@ static inline void mapping_set_error(struct address_space *mapping, int error)
- 	}
- }
- 
-+static inline void mapping_set_workingset(struct address_space *mapping)
-+{
-+	set_bit(AS_WORKINGSET, &mapping->flags);
-+}
-+
-+static inline void mapping_clear_workingset(struct address_space *mapping)
-+{
-+	clear_bit(AS_WORKINGSET, &mapping->flags);
-+}
-+
-+static inline int mapping_test_workingset(struct address_space *mapping)
-+{
-+	return mapping && test_bit(AS_WORKINGSET, &mapping->flags);
-+}
-+
- static inline void mapping_set_unevictable(struct address_space *mapping)
- {
- 	set_bit(AS_UNEVICTABLE, &mapping->flags);
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 74bf193..8ca6c9b 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -77,6 +77,14 @@ static long madvise_behavior(struct vm_area_struct * vma,
- 		if (error)
- 			goto out;
- 		break;
-+	case MADV_WORKINGSET:
-+		if (vma->vm_file && vma->vm_file->f_mapping) {
-+			mapping_set_workingset(vma->vm_file->f_mapping);
-+		} else {
-+			error = -EPERM;
-+			goto out;
-+		}
-+		break;
- 	}
- 
- 	if (new_flags == vma->vm_flags) {
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index c52b235..51f745b 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -721,6 +721,15 @@ static enum page_references page_check_references(struct page *page,
- 	if (vm_flags & VM_LOCKED)
- 		return PAGEREF_RECLAIM;
- 
-+	/*
-+	 * give this page one more round trip because workingset
-+	 * flag is set.
-+	 */
-+	if (mapping_test_workingset(page_mapping(page))) {
-+		mapping_clear_workingset(page_mapping(page));
-+		return PAGEREF_KEEP;
-+	}
-+
- 	if (referenced_ptes) {
- 		if (PageAnon(page))
- 			return PAGEREF_ACTIVATE;
-@@ -1737,6 +1746,12 @@ static void shrink_active_list(unsigned long nr_to_scan,
- 			continue;
- 		}
- 
-+		if (mapping_test_workingset(page_mapping(page))) {
-+			mapping_clear_workingset(page_mapping(page));
-+			list_add(&page->lru, &l_active);
-+			continue;
-+		}
-+
- 		if (page_referenced(page, 0, mz->mem_cgroup, &vm_flags)) {
- 			nr_rotated += hpage_nr_pages(page);
- 			/*
--- 
-1.7.4.1
+(I think On/Off switch is required..)
+
+Thanks,
+-Kame
 
