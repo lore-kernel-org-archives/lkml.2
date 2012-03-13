@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759625Ab2CMVdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 17:33:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49261 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab2CMVdS (ORCPT
+	id S1759448Ab2CMVeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 17:34:25 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51871 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751853Ab2CMVeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 17:33:18 -0400
-Date: Tue, 13 Mar 2012 14:33:16 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V3 2/8] memcg: Add HugeTLB extension
-Message-Id: <20120313143316.0ef74d0e.akpm@linux-foundation.org>
-In-Reply-To: <1331622432-24683-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1331622432-24683-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 13 Mar 2012 17:34:24 -0400
+X-Sasl-enc: 3aDuR8vQCMlm3HoLRMHQ0GXN6wMB1f/tL/uiIneJqmpx 1331674463
+Message-ID: <1331674435.8346.29.camel@lenny>
+Subject: Re: suppress page allocation failure warnings from sys_listxattr
+From: Colin Walters <walters@verbum.org>
+To: Dave Jones <davej@redhat.com>
+Cc: viro@zeniv.linux.org.uk, Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 13 Mar 2012 17:33:55 -0400
+In-Reply-To: <20120313182220.GA11500@redhat.com>
+References: <20120313182220.GA11500@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 12:37:06 +0530
-"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+On Tue, 2012-03-13 at 14:22 -0400, Dave Jones wrote:
+> This size is user controllable, and so it's trivial for someone to trigger a
+> stream of order:4 page allocation errors.
 
-> +static int mem_cgroup_hugetlb_usage(struct mem_cgroup *memcg)
-> +{
-> +	int idx;
-> +	for (idx = 0; idx < hugetlb_max_hstate; idx++) {
-> +		if (memcg->hugepage[idx].usage > 0)
-> +			return memcg->hugepage[idx].usage;
-> +	}
-> +	return 0;
-> +}
+I spent some time today struggling with an order:4 allocation failure
+(my application uses CLONE_NEWNET to make an empty network stack for
+software builds, and apparently one of the netfilter caches requires
+this).
 
-Please document the function?  Had you done this, I might have been
-able to work out why the function bales out on the first used hugepage
-size, but I can't :(
+But is that the general principle, that we just add GFP_NOWARN if the
+allocation size is trivially user controllable?  I guess examples like
+fs/pipe.c:pipe_set_size() agree with you, but it feels kind of like
+it's papering over the problem...
 
-This could have used for_each_hstate(), had that macro been better
-designed (or updated).
 
-Upon return this function coerces an unsigned long long into an "int". 
-We decided last week that more than 2^32 hugepages was not
-inconceivable, so I guess that's a bug.
 
