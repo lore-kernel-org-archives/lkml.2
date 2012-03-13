@@ -1,66 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760274Ab2CMJnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 05:43:24 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:46424 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759363Ab2CMJnV (ORCPT
+	id S1760271Ab2CMJnt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 05:43:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37827 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760220Ab2CMJnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 05:43:21 -0400
-X-Sasl-enc: VYZoK0pcz5D2dn7ROw4UjXDru+9B4AJZmzR3EkmvlEEA 1331631800
-Message-ID: <4F5F1776.4020904@ladisch.de>
-Date: Tue, 13 Mar 2012 10:46:30 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 13 Mar 2012 05:43:46 -0400
+Date: Tue, 13 Mar 2012 02:43:15 -0700
+From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Message-ID: <tip-5cb4ac3a583d4ee18c8682ab857e093c4a0d0895@git.kernel.org>
+Cc: mingo@redhat.com, torvalds@linux-foundation.org, peterz@infradead.org,
+        rostedt@goodmis.org, jkenisto@linux.vnet.ibm.com, tglx@linutronix.de,
+        oleg@redhat.com, linux-mm@kvack.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, hch@infradead.org,
+        ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
+        srikar@linux.vnet.ibm.com, mingo@elte.hu
+Reply-To: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        andi@firstfloor.org, torvalds@linux-foundation.org,
+        peterz@infradead.org, hch@infradead.org, ananth@in.ibm.com,
+        masami.hiramatsu.pt@hitachi.com, acme@infradead.org,
+        rostedt@goodmis.org, jkenisto@linux.vnet.ibm.com,
+        srikar@linux.vnet.ibm.com, tglx@linutronix.de, oleg@redhat.com,
+        linux-mm@kvack.org, mingo@elte.hu
+In-Reply-To: <20120312092545.5379.91251.sendpatchset@srdronam.in.ibm.com>
+References: <20120312092545.5379.91251.sendpatchset@srdronam.in.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/uprobes] uprobes/core: Rename bkpt to swbp
+Git-Commit-ID: 5cb4ac3a583d4ee18c8682ab857e093c4a0d0895
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Ondrej Zary <linux@rainbow-software.org>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] Triple implementation of WM8766 and quadruple WM8776!
-References: <201203122241.12234.linux@rainbow-software.org>
-In-Reply-To: <201203122241.12234.linux@rainbow-software.org>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Mar 2012 02:43:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ondrej Zary wrote:
-> I'm trying do implement support for Philips PSC724 Ultimate Edge card, which
-> is based on VT1722 + WM8776 + WM8766 chips. Found that the best file to base
-> my work on is sound/pci/ice1712/se.c (as SE-200PCI card contains both WM8776
-> and WM8766 chips).
->
-> While doing this, found that there are three implementations of WM8766 codec
-> control, two of them in the same driver(!):
-> sound/pci/ice1712/se.c
-> sound/pci/ice1712/prodigy_hifi.c
-> sound/pci/oxygen/xonar_wm87x6.c (+sound/pci/oxygen/wm8766.h)
->
-> And WM8776 status is even worse, there are four implementations, again two
-> being in the same driver:
-> sound/pci/ice1712/se.c
-> sound/pci/ice1712/maya44.c
-> sound/pci/oxygen/xonar_wm87x6.c (+sound/pci/oxygen/wm8776.h)
-> sound/soc/codecs/wm8776.c (this one being official and stand-alone module but
-> it does not seem to be usable as a part of sound card driver)
+Commit-ID:  5cb4ac3a583d4ee18c8682ab857e093c4a0d0895
+Gitweb:     http://git.kernel.org/tip/5cb4ac3a583d4ee18c8682ab857e093c4a0d0895
+Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+AuthorDate: Mon, 12 Mar 2012 14:55:45 +0530
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 13 Mar 2012 06:22:21 +0100
 
-The ALSA SoC framework differentiates between three kinds of drivers:
-codec, platform (controllers like the VT1722), and machine (in your
-case, the wiring on the PSC724).  When I wrote the oxygen driver,
-I didn't use ASoC because it didn't support multiple codecs per card
-at that time (now it does).
+uprobes/core: Rename bkpt to swbp
 
-I'd suggest to use ASoC, except that ice1724 is not an ASoC platform
-driver, so you'd have to duplicate it.
+bkpt doesnt seem to be a correct abbrevation for breakpoint.
+Choice was between bp and breakpoint. Since bp can refer to
+things other than breakpoint, use swbp to refer to breakpoints.
 
-All the non-ASoC drivers mix codec and machine drivers in the same file.
-In the long term, ice1712 and oxygen should be converted to use ASoC,
-but that would be a lot of effort if regressions are to be avoided.
+This is pure cleanup, no functional change intended.
 
-I'd suggest to move the common parts of the three ice1712 drivers into
-separate files.  You could make the interface of those files similar to
-ASoC codec drivers to make later porting easier.
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+Cc: Linux-mm <linux-mm@kvack.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20120312092545.5379.91251.sendpatchset@srdronam.in.ibm.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/uprobes.h |    4 ++--
+ include/linux/uprobes.h        |    4 ++--
+ kernel/events/uprobes.c        |   34 +++++++++++++++++-----------------
+ 3 files changed, 21 insertions(+), 21 deletions(-)
 
-
-Regards,
-Clemens
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index 384f1be..0500391 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -28,8 +28,8 @@ typedef u8 uprobe_opcode_t;
+ #define MAX_UINSN_BYTES			  16
+ #define UPROBE_XOL_SLOT_BYTES		 128	/* to keep it cache aligned */
+ 
+-#define UPROBE_BKPT_INSN		0xcc
+-#define UPROBE_BKPT_INSN_SIZE		   1
++#define UPROBE_SWBP_INSN		0xcc
++#define UPROBE_SWBP_INSN_SIZE		   1
+ 
+ struct arch_uprobe {
+ 	u16				fixups;
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 5869918..eac525f 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -52,9 +52,9 @@ struct uprobe_consumer {
+ };
+ 
+ #ifdef CONFIG_UPROBES
+-extern int __weak set_bkpt(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
++extern int __weak set_swbp(struct arch_uprobe *aup, struct mm_struct *mm, unsigned long vaddr);
+ extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm,  unsigned long vaddr, bool verify);
+-extern bool __weak is_bkpt_insn(uprobe_opcode_t *insn);
++extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
+ extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern int uprobe_mmap(struct vm_area_struct *vma);
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 9c5ddff..e56e56a 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -170,14 +170,14 @@ out:
+ }
+ 
+ /**
+- * is_bkpt_insn - check if instruction is breakpoint instruction.
++ * is_swbp_insn - check if instruction is breakpoint instruction.
+  * @insn: instruction to be checked.
+- * Default implementation of is_bkpt_insn
++ * Default implementation of is_swbp_insn
+  * Returns true if @insn is a breakpoint instruction.
+  */
+-bool __weak is_bkpt_insn(uprobe_opcode_t *insn)
++bool __weak is_swbp_insn(uprobe_opcode_t *insn)
+ {
+-	return *insn == UPROBE_BKPT_INSN;
++	return *insn == UPROBE_SWBP_INSN;
+ }
+ 
+ /*
+@@ -227,7 +227,7 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	 * adding probes in write mapped pages since the breakpoints
+ 	 * might end up in the file copy.
+ 	 */
+-	if (!valid_vma(vma, is_bkpt_insn(&opcode)))
++	if (!valid_vma(vma, is_swbp_insn(&opcode)))
+ 		goto put_out;
+ 
+ 	uprobe = container_of(auprobe, struct uprobe, arch);
+@@ -259,8 +259,8 @@ static int write_opcode(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 
+ 	/* poke the new insn in, ASSUMES we don't cross page boundary */
+ 	vaddr &= ~PAGE_MASK;
+-	BUG_ON(vaddr + UPROBE_BKPT_INSN_SIZE > PAGE_SIZE);
+-	memcpy(vaddr_new + vaddr, &opcode, UPROBE_BKPT_INSN_SIZE);
++	BUG_ON(vaddr + UPROBE_SWBP_INSN_SIZE > PAGE_SIZE);
++	memcpy(vaddr_new + vaddr, &opcode, UPROBE_SWBP_INSN_SIZE);
+ 
+ 	kunmap_atomic(vaddr_new);
+ 	kunmap_atomic(vaddr_old);
+@@ -308,7 +308,7 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
+ 	lock_page(page);
+ 	vaddr_new = kmap_atomic(page);
+ 	vaddr &= ~PAGE_MASK;
+-	memcpy(opcode, vaddr_new + vaddr, UPROBE_BKPT_INSN_SIZE);
++	memcpy(opcode, vaddr_new + vaddr, UPROBE_SWBP_INSN_SIZE);
+ 	kunmap_atomic(vaddr_new);
+ 	unlock_page(page);
+ 
+@@ -317,7 +317,7 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
+ 	return 0;
+ }
+ 
+-static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
++static int is_swbp_at_addr(struct mm_struct *mm, unsigned long vaddr)
+ {
+ 	uprobe_opcode_t opcode;
+ 	int result;
+@@ -326,14 +326,14 @@ static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
+ 	if (result)
+ 		return result;
+ 
+-	if (is_bkpt_insn(&opcode))
++	if (is_swbp_insn(&opcode))
+ 		return 1;
+ 
+ 	return 0;
+ }
+ 
+ /**
+- * set_bkpt - store breakpoint at a given address.
++ * set_swbp - store breakpoint at a given address.
+  * @auprobe: arch specific probepoint information.
+  * @mm: the probed process address space.
+  * @vaddr: the virtual address to insert the opcode.
+@@ -341,18 +341,18 @@ static int is_bkpt_at_addr(struct mm_struct *mm, unsigned long vaddr)
+  * For mm @mm, store the breakpoint instruction at @vaddr.
+  * Return 0 (success) or a negative errno.
+  */
+-int __weak set_bkpt(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr)
++int __weak set_swbp(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long vaddr)
+ {
+ 	int result;
+ 
+-	result = is_bkpt_at_addr(mm, vaddr);
++	result = is_swbp_at_addr(mm, vaddr);
+ 	if (result == 1)
+ 		return -EEXIST;
+ 
+ 	if (result)
+ 		return result;
+ 
+-	return write_opcode(auprobe, mm, vaddr, UPROBE_BKPT_INSN);
++	return write_opcode(auprobe, mm, vaddr, UPROBE_SWBP_INSN);
+ }
+ 
+ /**
+@@ -371,7 +371,7 @@ set_orig_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long v
+ 	if (verify) {
+ 		int result;
+ 
+-		result = is_bkpt_at_addr(mm, vaddr);
++		result = is_swbp_at_addr(mm, vaddr);
+ 		if (!result)
+ 			return -EINVAL;
+ 
+@@ -642,7 +642,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 		if (ret)
+ 			return ret;
+ 
+-		if (is_bkpt_insn((uprobe_opcode_t *)uprobe->arch.insn))
++		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
+ 			return -EEXIST;
+ 
+ 		ret = arch_uprobes_analyze_insn(&uprobe->arch, mm);
+@@ -651,7 +651,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 
+ 		uprobe->flags |= UPROBE_COPY_INSN;
+ 	}
+-	ret = set_bkpt(&uprobe->arch, mm, addr);
++	ret = set_swbp(&uprobe->arch, mm, addr);
+ 
+ 	return ret;
+ }
