@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964999Ab2CMJ3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 05:29:47 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:62953 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756585Ab2CMJ3p (ORCPT
+	id S1760189Ab2CMJdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 05:33:10 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48713
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759363Ab2CMJdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 05:29:45 -0400
-Message-ID: <4F5F1385.60406@numascale-asia.com>
-Date: Tue, 13 Mar 2012 17:29:41 +0800
-From: Daniel J Blueman <daniel@numascale-asia.com>
-Organization: Numascale Asia
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 13 Mar 2012 05:33:09 -0400
+Date: Tue, 13 Mar 2012 05:33:02 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hch@infradead.org,
+        Trond.Myklebust@netapp.com, sfrench@samba.org, sage@newdream.net,
+        ericvh@gmail.com, mszeredi@suse.cz
+Subject: Re: [PATCH 05/25] vfs: add filesystem flags for atomic_open
+Message-ID: <20120313093302.GA11797@infradead.org>
+References: <1331155362-11132-1-git-send-email-miklos@szeredi.hu>
+ <1331155362-11132-6-git-send-email-miklos@szeredi.hu>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, Steffen Persvold <sp@numascale.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: x2APIC and many-APIC systems...
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331155362-11132-6-git-send-email-miklos@szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, Suresh,
+On Wed, Mar 07, 2012 at 10:22:22PM +0100, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> Allow filesystem to select which cases it wants to perform atomic_open.
 
-Commit a35fd28256e7736cc84af8931a16224f0bfaaf6c prevents x2APIC 
-structures being used from the ACPI MADT if the cores don't advertise 
-the x2APIC feature. Commit c284b42abadbb22083bfde24d308899c08d44ffa 
-prevents onlining cores with APIC ID >255 in non-x2APIC mode. Since 
-NumaChip/NumaConnect uses x2APIC structures to describe non-x2APIC 
-systems (AMD Opteron) with lots of APICs, we thus now can't boot all the 
-cores.
+Given that atomic_open is allowed to return a NULL filp and fall back to
+the traditional open I don't think this is needed - it can be much
+cleaner handled by the fs just returning NULL for that case.
 
-We are able to set the x2APIC bit in the processor feature flags, so get 
-caught by the second patch. Is there an appropriate approach to use in 
-these circumstances? Otherwise, would a patch that separates the APIC ID 
-handover and future x2APIC MSR access be appropriate?
-
-Many thanks,
-   Daniel
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale Asia
