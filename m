@@ -1,153 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab2CMB5m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 21:57:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:15186 "EHLO mga14.intel.com"
+	id S1758781Ab2CMCJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 22:09:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:13788 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754582Ab2CMB5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 21:57:40 -0400
+	id S1755341Ab2CMCJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 22:09:16 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="76719701"
-Subject: [PATCH v2] libata: disable runtime pm for hotpluggable port
-From: Lin Ming <ming.m.lin@intel.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        jslaby@suse.cz, cwillu@cwillu.com, jackdachef@gmail.com,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Mar 2012 09:57:37 +0800
-Message-ID: <1331603857.3436.24.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="117092281"
+Message-ID: <4F5EABFD.3090705@intel.com>
+Date: Tue, 13 Mar 2012 10:07:57 +0800
+From: ShuoX Liu <shuox.liu@intel.com>
+Reply-To: shuox.liu@intel.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Valentin, Eduardo" <eduardo.valentin@ti.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "Brown, Len" <len.brown@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        "Kleen, Andi" <andi.kleen@intel.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] cpuidle: Move cpuidle sysfs entry of each cpu to
+ debugfs.
+References: <4F5466C4.2090808@intel.com> <20120305101827.GA19408@khazad-dum.debian.net> <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com> <1330998885.1916.89.camel@ymzhang> <20120306052236.GA19416@kroah.com> <1331013078.1916.103.camel@ymzhang> <20120306143935.GA23346@kroah.com> <1331082051.1916.124.camel@ymzhang> <20120308180106.GD26516@kroah.com> <4F5DBFA8.3080300@intel.com> <20120312172258.GA29938@kroah.com>
+In-Reply-To: <20120312172258.GA29938@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, hotplug doesn't work if port is already runtime suspended.
-For now, we simply disable runtime pm for hotpluggable port.
-Later, we should add runtime pm support for hotpluggable port too.
+On 2012年03月13日 01:22, Greg KH wrote:
 
-Bug report:
-https://lkml.org/lkml/2012/2/19/70
+> On Mon, Mar 12, 2012 at 05:19:36PM +0800, ShuoX Liu wrote:
+>> I created a series to do this.
+>>
+>> [PATCH 1/3] cpuidle: Move cpuidle sysfs entry of each cpu to debugfs.
+>> [PATCH 2/3] cpuidle: Add a debugfs entry to disable specific C state
+>> for debug purpose.
+>> [PATCH 3/3] cpupower: Update the cpupower tool for new debugfs
+>> entries of cpuidle.
+>>
+>> Below are patches.
+> 
+> The patch is line-wrapped and can not be applied :(
 
-v2:
-- Use bit 2 and 3 for flags ATA_FLAG_EXTERNAL and ATA_FLAG_PLUGGABLE.
+Sorry that i made a mistake. I sent email with fresh email-client which
+has the text-wrapping default. I will configure it.
+I will send the patch in good format when needed.
 
-TODO: add similar hotpluggable port check for controllers other than
-AHCI.
+>> --- /dev/null
+>> +++ b/drivers/cpuidle/debugfs.c
+>> @@ -0,0 +1,176 @@
+>> +/*
+>> + * debugfs.c - debugfs support
+>> + *
+>> + * (C) 2006-2007 Shaohua Li <shaohua.li@intel.com>
+>> + * (C) 2012 ShuoX Liu <shuox.liu@intel.com>
+>> + *
+>> + * This code is licenced under the GPL.
+> 
+> What version of the GPL?
 
-Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
-Reported-and-tested-by: cwillu@cwillu.com
-Reported-and-tested-by: jackdachef@gmail.com
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/ata/ahci.c             |    3 +++
- drivers/ata/ahci.h             |    3 +++
- drivers/ata/libahci.c          |   20 ++++++++++++++++++++
- drivers/ata/libata-transport.c |    6 ++++--
- include/linux/libata.h         |    2 ++
- 5 files changed, 32 insertions(+), 2 deletions(-)
+GPLv2
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index d07bf03..02e93ff 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1145,6 +1145,9 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	if (hpriv->cap & HOST_CAP_PMP)
- 		pi.flags |= ATA_FLAG_PMP;
- 
-+	if (hpriv->cap & HOST_CAP_SXS)
-+		pi.flags |= ATA_FLAG_EXTERNAL;
-+
- 	ahci_set_em_messages(hpriv, &pi);
- 
- 	if (ahci_broken_system_poweroff(pdev)) {
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index b175000..92f7172 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -172,6 +172,9 @@ enum {
- 	PORT_CMD_ALPE		= (1 << 26), /* Aggressive Link PM enable */
- 	PORT_CMD_ATAPI		= (1 << 24), /* Device is ATAPI */
- 	PORT_CMD_FBSCP		= (1 << 22), /* FBS Capable Port */
-+	PORT_CMD_ESP		= (1 << 21), /* External SATA Port */
-+	PORT_CMD_MPSP		= (1 << 19), /* Mechanical Presence Switch Attached to Port */
-+	PORT_CMD_HPCP		= (1 << 18), /* Hot Plug Capable Port */
- 	PORT_CMD_PMP		= (1 << 17), /* PMP attached */
- 	PORT_CMD_LIST_ON	= (1 << 15), /* cmd list DMA engine running */
- 	PORT_CMD_FIS_ON		= (1 << 14), /* FIS DMA engine running */
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index a72bfd0..7d72d3c 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1097,6 +1097,23 @@ static void ahci_port_init(struct device *dev, struct ata_port *ap,
- 	writel(1 << port_no, mmio + HOST_IRQ_STAT);
- }
- 
-+static bool ahci_port_pluggable(struct ata_port *ap)
-+{
-+	void __iomem *port_mmio = ahci_port_base(ap);
-+	u32 cmd;
-+
-+	cmd = readl(port_mmio + PORT_CMD);
-+
-+	if ((ap->flags & ATA_FLAG_EXTERNAL) &&
-+	    (cmd & PORT_CMD_ESP))
-+		return true;
-+
-+	if (cmd & (PORT_CMD_MPSP | PORT_CMD_HPCP))
-+		return true;
-+
-+	return false;
-+}
-+
- void ahci_init_controller(struct ata_host *host)
- {
- 	struct ahci_host_priv *hpriv = host->private_data;
-@@ -1112,6 +1129,9 @@ void ahci_init_controller(struct ata_host *host)
- 		if (ata_port_is_dummy(ap))
- 			continue;
- 
-+		if (ahci_port_pluggable(ap))
-+			ap->flags |= ATA_FLAG_PLUGGABLE;
-+
- 		ahci_port_init(host->dev, ap, i, mmio, port_mmio);
- 	}
- 
-diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
-index 74aaee3..a7166b9 100644
---- a/drivers/ata/libata-transport.c
-+++ b/drivers/ata/libata-transport.c
-@@ -292,8 +292,10 @@ int ata_tport_add(struct device *parent,
- 	}
- 
- 	device_enable_async_suspend(dev);
--	pm_runtime_set_active(dev);
--	pm_runtime_enable(dev);
-+	if (!(ap->flags & ATA_FLAG_PLUGGABLE)) {
-+		pm_runtime_set_active(dev);
-+		pm_runtime_enable(dev);
-+	}
- 
- 	transport_add_device(dev);
- 	transport_configure_device(dev);
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index cafc09a..f46961d 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -187,6 +187,8 @@ enum {
- 	ATA_FLAG_SLAVE_POSS	= (1 << 0), /* host supports slave dev */
- 					    /* (doesn't imply presence) */
- 	ATA_FLAG_SATA		= (1 << 1),
-+	ATA_FLAG_EXTERNAL	= (1 << 2), /* Controller supports external SATA */
-+	ATA_FLAG_PLUGGABLE	= (1 << 3), /* Port is hotpluggable */
- 	ATA_FLAG_NO_ATAPI	= (1 << 6), /* No ATAPI support */
- 	ATA_FLAG_PIO_DMA	= (1 << 7), /* PIO cmds via DMA */
- 	ATA_FLAG_PIO_LBA48	= (1 << 8), /* Host DMA engine is LBA28 only */
--- 
-1.7.2.5
+> 
+> thanks,
+> 
+> greg k-h
 
 
-
+thanks,
+Shuo
