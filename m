@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964903Ab2CMXWx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 19:22:53 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:43975 "EHLO
+	id S964826Ab2CMXWv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 19:22:51 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:43974 "EHLO
 	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753544Ab2CMXWr (ORCPT
+	with ESMTP id S1752051Ab2CMXWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Mar 2012 19:22:47 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: davej@redhat.com, cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
         JBeulich@suse.com
-Subject: [PATCH] mechanism to disable built in cpu frequency drivers/governors. (v1)
-Date: Tue, 13 Mar 2012 19:18:38 -0400
-Message-Id: <1331680720-18268-1-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/2] xen/cpufreq: Disable the cpu frequency scaling drivers from loading.
+Date: Tue, 13 Mar 2012 19:18:40 -0400
+Message-Id: <1331680720-18268-3-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.5
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A02020B.4F5FD6C2.000E,ss=1,re=0.000,fgs=0
+In-Reply-To: <1331680720-18268-1-git-send-email-konrad.wilk@oracle.com>
+References: <1331680720-18268-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A020201.4F5FD6C2.00B7,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The purpose of these patches is two-fold:
- 1) Remove weird performance issues encountered in the field where the
-    Linux kernel cpufreq scaling drivers would change the P-states while the
-    Xen hypervisor would do the same.
- 2) Provide a runtime knob from within the kernel to disable the cpu frequency
-    API (akin to the behavior of "#CONFIG_CPU_CPUFREQ is not set").
+By using the functionality provided by "[CPUFREQ]: provide
+disable_cpuidle() function to disable the API."
 
-The patches are based on the mechanism that Len Brown came up for the cpuidle
-drivers - where there is a disable_cpuidle() call. His patches also provided
-a module parameter - but I wasn't sure whether that is something you would want.
-(for reference, Len's patch is d91ee5863b71e8c90eaf6035bff3078a85e2e7b5)
+Under the Xen hypervisor we do not want the initial domain to exercise
+the cpufreq scaling drivers. This is b/c the Xen hypervisor is
+in charge of doing this as well and we can end up with both the
+Linux kernel and the hypervisor trying to change the P-states
+leading to weird performance issues.
 
-The other way of disabling the cpufreq scaling drivers from being invoked
-is by thwarting the cpufreq drivers from loading by influencing their startup
-checks.  For powernow-k8 that is easy - disallow the RDMSR (and that is currently
-happening). For acpi-cpufreq I am not sure what could be done - the calls it
-makes are to the ACPI libraries which we need for other uses.
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/setup.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Another solution I thought off was to provide a cpufreq governor that would
-be a nop, and hence end up not calling the cpufreq scaling drivers. But that
-just seems heavy-handed and I am not sure how the decision of when to load it
-(and set it) would be done.
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index e03c636..4461e0a 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -420,6 +420,7 @@ void __init xen_arch_setup(void)
+ 	boot_cpu_data.hlt_works_ok = 1;
+ #endif
+ 	disable_cpuidle();
++	disable_cpufreq();
+ 	boot_option_idle_override = IDLE_HALT;
+ 	WARN_ON(set_pm_idle_to_default());
+ 	fiddle_vdso();
+-- 
+1.7.9.48.g85da4d
 
- arch/x86/xen/setup.c      |    1 +
- drivers/cpufreq/cpufreq.c |   24 ++++++++++++++++++++++++
- include/linux/cpufreq.h   |    2 ++
- 3 files changed, 27 insertions(+), 0 deletions(-)
