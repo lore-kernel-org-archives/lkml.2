@@ -1,134 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759387Ab2CMSUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 14:20:10 -0400
-Received: from relay03ant.iops.be ([212.53.5.218]:56442 "EHLO
-	relay03ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758679Ab2CMSUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 14:20:08 -0400
-X-Greylist: delayed 585 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Mar 2012 14:20:07 EDT
-Message-ID: <4F5F8D82.2040704@acm.org>
-Date: Tue, 13 Mar 2012 18:10:10 +0000
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120215 Thunderbird/10.0.2
+	id S1759402Ab2CMSWO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 14:22:14 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:64435 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758733Ab2CMSWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 14:22:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=dCPwn+DNsD2oL/sORcJ0ED4VGuVhEeXc
+	pwEDd/QiR/cQKCtSMFZxRi2vIlWHaq+4+0wLRTAchqffA6Pc1HlRfeKkLwdI4RkQ
+	VmbcgP/E2GE8uy21EwP8kuVxsNwL0XjB5mF0Ca+igR7iccynY8cEkrVaDi9+hET5
+	Um/ftjugYqY=
+From: Junio C Hamano <gitster@pobox.com>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: Thomas Rast <trast@student.ethz.ch>, Willy Tarreau <w@1wt.eu>,
+        Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        git@vger.kernel.org
+Subject: Re: [PATCH] git-am: error out when seeing -b/--binary
+References: <20120312152453.GB12405@1wt.eu>
+ <87aa3l4vqq.fsf@thomas.inf.ethz.ch> <20120312165703.GB18791@burratino>
+ <7vvcm9snko.fsf@alter.siamese.dyndns.org> <87399dpk48.fsf@thomas.inf.ethz.ch>
+ <20120312215607.GB11362@burratino> <874ntto4t8.fsf@thomas.inf.ethz.ch>
+ <20120312222227.GC11362@burratino> <87fwdcldqj.fsf@thomas.inf.ethz.ch>
+ <7v62e8la9y.fsf@alter.siamese.dyndns.org> <20120313175158.GA6653@burratino>
+Date: Tue, 13 Mar 2012 11:22:10 -0700
+In-Reply-To: <20120313175158.GA6653@burratino> (Jonathan Nieder's message of
+ "Tue, 13 Mar 2012 12:51:58 -0500")
+Message-ID: <7vipi8wect.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-CC: Stefan Richter <stefanr@s5r6.in-berlin.de>, jbottomley@parallels.com,
-        linux-scsi@vger.kernel.org, Huajun Li <huajun.li.lee@gmail.com>,
-        Axel Theilmann <theilmann@pre-sense.de>, linux-kernel@vger.kernel.org
-Subject: Re: Yet another hot unplug NULL pointer dereference (was Re: status
- of oops in sd_revalidate_disk?)
-References: <4EE8E419.8010000@pre-sense.de> <CA+v9cxZFUC45WD0=+8mvH2Tq_xvX3PgaW4ttzPep0jqvqab_6w@mail.gmail.com> <20111225215804.03ef9402@stein> <4F3A46DD.8030305@ce.jp.nec.com>
-In-Reply-To: <4F3A46DD.8030305@ce.jp.nec.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 73AB9580-6D39-11E1-8F14-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/14/12 11:34, Jun'ichi Nomura wrote:
-> While scsi_device is propery refcounted object,
-> q->queuedata is set to NULL by scsi_remove_device() asynchronously.
-> So every reader of scsi_device's q->queuedata should always check it.
->
-> Though I don't have a machine to actually test it,
-> the following patch should remove such places.
->
-> Index: linux-3.3/drivers/scsi/scsi_lib.c
-> ===================================================================
-> --- linux-3.3.orig/drivers/scsi/scsi_lib.c	2012-02-01 06:31:54.000000000 +0900
-> +++ linux-3.3/drivers/scsi/scsi_lib.c	2012-02-14 19:12:57.641216402 +0900
-> @@ -1214,10 +1214,8 @@ int scsi_prep_state_check(struct scsi_de
->  }
->  EXPORT_SYMBOL(scsi_prep_state_check);
->  
-> -int scsi_prep_return(struct request_queue *q, struct request *req, int ret)
-> +int scsi_prep_return(struct request_queue *q, struct scsi_device *sdev, struct request *req, int ret)
->  {
-> -	struct scsi_device *sdev = q->queuedata;
-> -
->  	switch (ret) {
->  	case BLKPREP_KILL:
->  		req->errors = DID_NO_CONNECT << 16;
-> @@ -1251,9 +1249,11 @@ int scsi_prep_fn(struct request_queue *q
->  	struct scsi_device *sdev = q->queuedata;
->  	int ret = BLKPREP_KILL;
->  
-> +	if (!sdev)
-> +		return ret;
->  	if (req->cmd_type == REQ_TYPE_BLOCK_PC)
->  		ret = scsi_setup_blk_pc_cmnd(sdev, req);
-> -	return scsi_prep_return(q, req, ret);
-> +	return scsi_prep_return(q, sdev, req, ret);
->  }
->  EXPORT_SYMBOL(scsi_prep_fn);
->  
-> Index: linux-3.3/drivers/scsi/sd.c
-> ===================================================================
-> --- linux-3.3.orig/drivers/scsi/sd.c	2012-02-13 13:02:14.000000000 +0900
-> +++ linux-3.3/drivers/scsi/sd.c	2012-02-14 19:15:18.224212107 +0900
-> @@ -653,6 +653,9 @@ static int sd_prep_fn(struct request_que
->  	int ret, host_dif;
->  	unsigned char protect;
->  
-> +	if (!sdp)
-> +		return BLKPREP_KILL;
-> +
->  	/*
->  	 * Discard request come in as REQ_TYPE_FS but we turn them into
->  	 * block PC requests to make life easier.
-> @@ -905,7 +908,7 @@ static int sd_prep_fn(struct request_que
->  	 */
->  	ret = BLKPREP_OK;
->   out:
-> -	return scsi_prep_return(q, rq, ret);
-> +	return scsi_prep_return(q, sdp, rq, ret);
->  }
->  
->  /**
-> Index: linux-3.3/drivers/scsi/sr.c
-> ===================================================================
-> --- linux-3.3.orig/drivers/scsi/sr.c	2012-02-01 06:31:54.000000000 +0900
-> +++ linux-3.3/drivers/scsi/sr.c	2012-02-14 19:15:59.001211143 +0900
-> @@ -372,6 +372,9 @@ static int sr_prep_fn(struct request_que
->  	struct scsi_device *sdp = q->queuedata;
->  	int ret;
->  
-> +	if (!sdp)
-> +		return BLKPREP_KILL;
-> +
->  	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
->  		ret = scsi_setup_blk_pc_cmnd(sdp, rq);
->  		goto out;
-> @@ -503,7 +506,7 @@ static int sr_prep_fn(struct request_que
->  	 */
->  	ret = BLKPREP_OK;
->   out:
-> -	return scsi_prep_return(q, rq, ret);
-> +	return scsi_prep_return(q, sdp, rq, ret);
->  }
->  
->  static int sr_block_open(struct block_device *bdev, fmode_t mode)
-> Index: linux-3.3/include/scsi/scsi_driver.h
-> ===================================================================
-> --- linux-3.3.orig/include/scsi/scsi_driver.h	2012-02-01 06:31:54.000000000 +0900
-> +++ linux-3.3/include/scsi/scsi_driver.h	2012-02-14 19:16:47.478209843 +0900
-> @@ -31,7 +31,7 @@ extern int scsi_register_interface(struc
->  int scsi_setup_blk_pc_cmnd(struct scsi_device *sdev, struct request *req);
->  int scsi_setup_fs_cmnd(struct scsi_device *sdev, struct request *req);
->  int scsi_prep_state_check(struct scsi_device *sdev, struct request *req);
-> -int scsi_prep_return(struct request_queue *q, struct request *req, int ret);
-> +int scsi_prep_return(struct request_queue *q, struct scsi_device *sdev, struct request *req, int ret);
->  int scsi_prep_fn(struct request_queue *, struct request *);
->  
->  #endif /* _SCSI_SCSI_DRIVER_H */
+Jonathan Nieder <jrnieder@gmail.com> writes:
 
-Now that I've had some more time to think about this: has anyone
-considered to hold a reference on the SCSI host instead of the SCSI
-device as long as sd_probe_async() is active ? If sd_prep_fn() can ever
-see a NULL queuedata pointer then that means that
-scsi_host_dev_release() can get invoked while sd_prep_fn() is running.
-That doesn't look correct to me.
+>> I really don't think it is a good idea to avoid mentioning 1.6.0, at
+>> which we *removed* description of the option in our manual pages and
+>> from the "git am -h" help message. How much more active deprecation
+>> would a user want?
+>
+> A warning when the option is used or a mention in the release notes.
 
-Bart.
+Ok, then we should probably instead do these two starting at 1.7.10 ("the
+official deprecation date"), and then start erroring out on "-b" three
+cycles after that.
