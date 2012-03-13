@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab2CMOjh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 10:39:37 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:65094 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753592Ab2CMOjf (ORCPT
+	id S1755031Ab2CMOlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 10:41:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58861 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab2CMOlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 10:39:35 -0400
-Message-ID: <4F5F5C22.1080506@gmail.com>
-Date: Tue, 13 Mar 2012 09:39:30 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 13 Mar 2012 10:41:10 -0400
+Message-ID: <4F5F5C51.20404@kernel.dk>
+Date: Tue, 13 Mar 2012 15:40:17 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-To: Dong Aisheng <b29396@freescale.com>
-CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vinod.koul@linux.intel.com, s.hauer@pengutronix.de,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca,
-        rdunlap@xenotime.net, kernel@pengutronix.de, cjb@laptop.org,
-        shawn.guo@freescale.com
-Subject: Re: [PATCH v1 3/5] ARM: imx28evk: add mmc dt support
-References: <1331628428-24017-1-git-send-email-b29396@freescale.com> <1331628428-24017-4-git-send-email-b29396@freescale.com>
-In-Reply-To: <1331628428-24017-4-git-send-email-b29396@freescale.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Xiaotian Feng <xtfeng@gmail.com>, tj@kernel.org,
+        linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>
+Subject: Re: [PATCH v2] block: fix ioc leak in put_io_context
+References: <20120312142226.GD17288@redhat.com> <1331659266-21940-1-git-send-email-xtfeng@gmail.com> <20120313142820.GF29169@redhat.com>
+In-Reply-To: <20120313142820.GF29169@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2012 03:47 AM, Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+On 03/13/2012 03:28 PM, Vivek Goyal wrote:
+> On Tue, Mar 13, 2012 at 01:21:06PM -0400, Xiaotian Feng wrote:
+>>     When put_io_context is called, if ioc->icq_list is empty and refcount
+>>     is 1, kernel will not free the ioc.
+>>
+>>     This is caught by following kmemleak:
+>>
+>>     unreferenced object 0xffff880036349fe0 (size 216):
+>>       comm "sh", pid 2137, jiffies 4294931140 (age 290579.412s)
+>>       hex dump (first 32 bytes):
+>>         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+>>         01 00 01 00 ad 4e ad de ff ff ff ff 00 00 00 00  .....N..........
+>>       backtrace:
+>>         [<ffffffff8169f926>] kmemleak_alloc+0x26/0x50
+>>         [<ffffffff81195a9c>] kmem_cache_alloc_node+0x1cc/0x2a0
+>>         [<ffffffff81356b67>] create_io_context_slowpath+0x27/0x130
+>>         [<ffffffff81356d2b>] get_task_io_context+0xbb/0xf0
+>>         [<ffffffff81055f0e>] copy_process+0x188e/0x18b0
+>>         [<ffffffff8105609b>] do_fork+0x11b/0x420
+>>         [<ffffffff810247f8>] sys_clone+0x28/0x30
+>>         [<ffffffff816d3373>] stub_clone+0x13/0x20
+>>         [<ffffffffffffffff>] 0xffffffffffffffff
+>>
+>>     ioc should be freed if ioc->icq_list is empty.
+>> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+>> ---
+>>  block/blk-ioc.c |    6 ++++++
+>>  1 files changed, 6 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/block/blk-ioc.c b/block/blk-ioc.c
+>> index 8b782a6..9690f27 100644
+>> --- a/block/blk-ioc.c
+>> +++ b/block/blk-ioc.c
+>> @@ -145,6 +145,7 @@ static void ioc_release_fn(struct work_struct *work)
+>>  void put_io_context(struct io_context *ioc)
+>>  {
+>>  	unsigned long flags;
+>> +	bool free_ioc = false;
+>>  
+>>  	if (ioc == NULL)
+>>  		return;
+>> @@ -159,8 +160,13 @@ void put_io_context(struct io_context *ioc)
+>>  		spin_lock_irqsave(&ioc->lock, flags);
+>>  		if (!hlist_empty(&ioc->icq_list))
+>>  			schedule_work(&ioc->release_work);
+>> +		else
+>> +			free_ioc = true;
+>>  		spin_unlock_irqrestore(&ioc->lock, flags);
+>>  	}
+>> +
+>> +	if (free_ioc)
+>> +		kmem_cache_free(iocontext_cachep, ioc);
+>>  }
+>>  EXPORT_SYMBOL(put_io_context);
 > 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> ---
->  arch/arm/boot/dts/imx28-evk.dts |   14 ++++++++++++++
->  arch/arm/boot/dts/imx28.dtsi    |   33 +++++++++++++++++++++++++++++++++
->  arch/arm/mach-mxs/imx28-dt.c    |    2 ++
->  3 files changed, 49 insertions(+), 0 deletions(-)
+> This one looks good to me. Tejun?
 
-snip
+It's definitely a leak. I have applied it.
 
-> diff --git a/arch/arm/mach-mxs/imx28-dt.c b/arch/arm/mach-mxs/imx28-dt.c
-> index 78d1129..429b88e 100644
-> --- a/arch/arm/mach-mxs/imx28-dt.c
-> +++ b/arch/arm/mach-mxs/imx28-dt.c
-> @@ -23,6 +23,8 @@ static const struct of_dev_auxdata imx28_auxdata_lookup[] __initconst = {
->  	OF_DEV_AUXDATA("arm,pl011", MX28_DUART_BASE_ADDR, "duart", NULL),
->  	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC0_BASE_ADDR, "imx28-fec.0", NULL),
->  	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC1_BASE_ADDR, "imx28-fec.1", NULL),
-> +	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP0_BASE_ADDR, "mxs-mmc.0", NULL),
-> +	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP1_BASE_ADDR, "mxs-mmc.1", NULL),
-
-Why is this needed?
-
->  	{ /* sentinel */ }
->  };
->  
+-- 
+Jens Axboe
 
