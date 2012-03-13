@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965300Ab2CMA15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:27:57 -0400
-Received: from mail.windriver.com ([147.11.1.11]:49042 "EHLO
+	id S1030249Ab2CMA2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:28:44 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49008 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965283Ab2CMAZE (ORCPT
+	with ESMTP id S965271Ab2CMAZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:25:04 -0400
+	Mon, 12 Mar 2012 20:25:03 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Shan Wei <shanwei@cn.fujitsu.com>,
+Cc: stable-review@kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 191/196] ipv6: udp: fix the wrong headroom check
-Date: Mon, 12 Mar 2012 20:21:44 -0400
-Message-Id: <1331598109-31424-146-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 189/196] inet_diag: fix inet_diag_bc_audit()
+Date: Mon, 12 Mar 2012 20:21:42 -0400
+Message-Id: <1331598109-31424-144-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,46 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shan Wei <shanwei@cn.fujitsu.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit a9cf73ea7ff78f52662c8658d93c226effbbedde upstream.
+commit eeb1497277d6b1a0a34ed36b97e18f2bd7d6de0d upstream.
 
-At this point, skb->data points to skb_transport_header.
-So, headroom check is wrong.
+A malicious user or buggy application can inject code and trigger an
+infinite loop in inet_diag_bc_audit()
 
-For some case:bridge(UFO is on) + eth device(UFO is off),
-there is no enough headroom for IPv6 frag head.
-But headroom check is always false.
+Also make sure each instruction is aligned on 4 bytes boundary, to avoid
+unaligned accesses.
 
-This will bring about data be moved to there prior to skb->head,
-when adding IPv6 frag header to skb.
-
-Signed-off-by: Shan Wei <shanwei@cn.fujitsu.com>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Reported-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/ipv6/udp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv4/inet_diag.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index be5e5a1..402a61c 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -1314,7 +1314,7 @@ static struct sk_buff *udp6_ufo_fragment(struct sk_buff *skb, int features)
- 	skb->ip_summed = CHECKSUM_NONE;
+diff --git a/net/ipv4/inet_diag.c b/net/ipv4/inet_diag.c
+index 7403b9b..99366cb 100644
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -437,7 +437,7 @@ static int valid_cc(const void *bc, int len, int cc)
+ 			return 0;
+ 		if (cc == len)
+ 			return 1;
+-		if (op->yes < 4)
++		if (op->yes < 4 || op->yes & 3)
+ 			return 0;
+ 		len -= op->yes;
+ 		bc  += op->yes;
+@@ -447,11 +447,11 @@ static int valid_cc(const void *bc, int len, int cc)
  
- 	/* Check if there is enough headroom to insert fragment header. */
--	if ((skb_headroom(skb) < frag_hdr_sz) &&
-+	if ((skb_mac_header(skb) < skb->head + frag_hdr_sz) &&
- 	    pskb_expand_head(skb, frag_hdr_sz, 0, GFP_ATOMIC))
- 		goto out;
+ static int inet_diag_bc_audit(const void *bytecode, int bytecode_len)
+ {
+-	const unsigned char *bc = bytecode;
++	const void *bc = bytecode;
+ 	int  len = bytecode_len;
  
+ 	while (len > 0) {
+-		struct inet_diag_bc_op *op = (struct inet_diag_bc_op *)bc;
++		const struct inet_diag_bc_op *op = bc;
+ 
+ //printk("BC: %d %d %d {%d} / %d\n", op->code, op->yes, op->no, op[1].no, len);
+ 		switch (op->code) {
+@@ -462,22 +462,20 @@ static int inet_diag_bc_audit(const void *bytecode, int bytecode_len)
+ 		case INET_DIAG_BC_S_LE:
+ 		case INET_DIAG_BC_D_GE:
+ 		case INET_DIAG_BC_D_LE:
+-			if (op->yes < 4 || op->yes > len + 4)
+-				return -EINVAL;
+ 		case INET_DIAG_BC_JMP:
+-			if (op->no < 4 || op->no > len + 4)
++			if (op->no < 4 || op->no > len + 4 || op->no & 3)
+ 				return -EINVAL;
+ 			if (op->no < len &&
+ 			    !valid_cc(bytecode, bytecode_len, len - op->no))
+ 				return -EINVAL;
+ 			break;
+ 		case INET_DIAG_BC_NOP:
+-			if (op->yes < 4 || op->yes > len + 4)
+-				return -EINVAL;
+ 			break;
+ 		default:
+ 			return -EINVAL;
+ 		}
++		if (op->yes < 4 || op->yes > len + 4 || op->yes & 3)
++			return -EINVAL;
+ 		bc  += op->yes;
+ 		len -= op->yes;
+ 	}
 -- 
 1.7.9.3
 
