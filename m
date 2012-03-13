@@ -1,93 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964920Ab2CMFBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 01:01:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41765 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752372Ab2CMFBN (ORCPT
+	id S1758446Ab2CMFHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 01:07:41 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45268 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757185Ab2CMFHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 01:01:13 -0400
-Date: Tue, 13 Mar 2012 16:01:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Subject: linux-next: manual merge of the devicetree tree with the powerpc
- tree
-Message-Id: <20120313160100.c8cc3fd2b3d1f485ef7e7954@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__13_Mar_2012_16_01_00_+1100_zyfs5ewjJ2IaWld+"
+	Tue, 13 Mar 2012 01:07:39 -0400
+X-AuditID: 9c93016f-b7c68ae000000b77-c4-4f5ed6161e26
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf report: Fix calculation of the symbol column width
+Date: Tue, 13 Mar 2012 14:09:29 +0900
+Message-Id: <1331615369-23324-1-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.9
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Mar_2012_16_01_00_+1100_zyfs5ewjJ2IaWld+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The calculation of each column width is determining longest string or
+number in the data (including header). However printing symbol column
+doesn't honor the width. This is fine if symbol column is printed at
+last (default behavior), but if user changes the order using -s option
+the output will be messed up:
 
-Hi Grant,
+ $ perf report -s sym,dso,comm
+ ...
+ # Overhead  Symbol     Shared Object  Command
+ # ........  ......  ................  .......
+ #
+     99.96%  [.] main  noploop           noploop
+      0.03%  [.] memset  ld-2.12.1.so      noploop
+      0.00%  [.] 0x7ff751107b70    [unknown]          :18961
+      0.00%  [.] _start  ld-2.12.1.so      noploop
 
-Today's linux-next merge of the devicetree tree got a conflict in
-include/linux/of.h between commit eb740b5f3e65 ("powerpc/eeh: Introduce
-EEH device") from the powerpc tree and commit 0f22dd395fc4 ("of: Only
-compile OF_DYNAMIC on PowerPC pseries and iseries") from the devicetree
-tree.
+Also, the symbol column adds 4 characters which represents the cpu mode
+before the symbol and the width of unresolved symbols were not counted.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+In addition, if user gave -v option it would print raw ip value and
+symbol origin character before the symbol name. After all of these
+concerns are addressed, the end result will look like this:
 
-diff --cc include/linux/of.h
-index bdb1c07,533603e..0000000
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@@ -75,14 -72,10 +75,17 @@@ struct of_phandle_args=20
-  	uint32_t args[MAX_PHANDLE_ARGS];
-  };
- =20
- +#if defined(CONFIG_EEH)
- +static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
- +{
- +	return dn->edev;
- +}
- +#endif
- +
-- #if defined(CONFIG_SPARC) || !defined(CONFIG_OF)
-+ #ifdef CONFIG_OF_DYNAMIC
-+ extern struct device_node *of_node_get(struct device_node *node);
-+ extern void of_node_put(struct device_node *node);
-+ #else /* CONFIG_OF_DYNAMIC */
-  /* Dummy ref counting routines - to be implemented later */
-  static inline struct device_node *of_node_get(struct device_node *node)
-  {
+ $ perf report -s sym,dso,comm
+ ...
+ # Overhead              Symbol  Shared Object  Command
+ # ........  ..................  .............  .......
+ #
+     99.96%  [.] main            noploop        noploop
+      0.03%  [.] memset          ld-2.12.1.so   noploop
+      0.00%  [.] 0x7ff751107b70  [unknown]       :18961
+      0.00%  [.] _start          ld-2.12.1.so   noploop
 
---Signature=_Tue__13_Mar_2012_16_01_00_+1100_zyfs5ewjJ2IaWld+
-Content-Type: application/pgp-signature
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+---
+ tools/perf/util/hist.c |   27 ++++++++++++++++++++-------
+ tools/perf/util/sort.c |   14 ++++++++------
+ 2 files changed, 28 insertions(+), 13 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 6f505d1abac7..2f5f8ff16e7e 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -54,16 +54,25 @@ static void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+ {
+ 	u16 len;
+ 
+-	if (h->ms.sym)
+-		hists__new_col_len(hists, HISTC_SYMBOL, h->ms.sym->namelen);
++	if (h->ms.sym) {
++		len = h->ms.sym->namelen;
++		if (!sort_dso.elide)
++			len += 4;
++		hists__new_col_len(hists, HISTC_SYMBOL, len);
++	}
+ 	else {
+-		const unsigned int unresolved_col_width = BITS_PER_LONG / 4;
+-
+-		if (hists__col_len(hists, HISTC_DSO) < unresolved_col_width &&
++		char buf[BITS_PER_LONG / 4 + 3];
++		len = snprintf(buf, BITS_PER_LONG / 4 + 2, "%#llx",
++			       (unsigned long long)h->ip);
++		if (!sort_dso.elide)
++			len += 4;
++		hists__new_col_len(hists, HISTC_SYMBOL, len);
++
++		len = strlen("[unknown]");
++		if (hists__col_len(hists, HISTC_DSO) < len &&
+ 		    !symbol_conf.col_width_list_str && !symbol_conf.field_sep &&
+ 		    !symbol_conf.dso_list)
+-			hists__set_col_len(hists, HISTC_DSO,
+-					   unresolved_col_width);
++			hists__set_col_len(hists, HISTC_DSO, len);
+ 	}
+ 
+ 	len = thread__comm_len(h->thread);
+@@ -984,6 +993,8 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+ 		}
+ 		if (!hists__new_col_len(hists, se->se_width_idx, width))
+ 			width = hists__col_len(hists, se->se_width_idx);
++		if (verbose && se->se_width_idx == HISTC_SYMBOL)
++			width += BITS_PER_LONG / 4 + 2 + 3;
+ 		fprintf(fp, "  %*s", width, se->se_header);
+ 	}
+ 
+@@ -1016,6 +1027,8 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+ 		width = hists__col_len(hists, se->se_width_idx);
+ 		if (width == 0)
+ 			width = strlen(se->se_header);
++		if (verbose && se->se_width_idx == HISTC_SYMBOL)
++			width += BITS_PER_LONG / 4 + 2 + 3;
+ 		for (i = 0; i < width; i++)
+ 			fprintf(fp, ".");
+ 	}
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 16da30d8d765..806752870b9c 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -167,25 +167,27 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
+ }
+ 
+ static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
+-				    size_t size, unsigned int width __used)
++				    size_t size, unsigned int width)
+ {
+ 	size_t ret = 0;
+ 
+ 	if (verbose) {
+ 		char o = self->ms.map ? dso__symtab_origin(self->ms.map->dso) : '!';
+ 		ret += repsep_snprintf(bf, size, "%-#*llx %c ",
+-				       BITS_PER_LONG / 4, self->ip, o);
++				       BITS_PER_LONG / 4 + 2, self->ip, o);
+ 	}
+ 
+-	if (!sort_dso.elide)
++	if (!sort_dso.elide) {
+ 		ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", self->level);
++		width -= 4;
++	}
+ 
+ 	if (self->ms.sym)
+-		ret += repsep_snprintf(bf + ret, size - ret, "%s",
++		ret += repsep_snprintf(bf + ret, size - ret, "%-*s", width,
+ 				       self->ms.sym->name);
+ 	else
+-		ret += repsep_snprintf(bf + ret, size - ret, "%-#*llx",
+-				       BITS_PER_LONG / 4, self->ip);
++		ret += repsep_snprintf(bf + ret, size - ret, "%-#*llx", width,
++				       self->ip);
+ 
+ 	return ret;
+ }
+-- 
+1.7.9
 
-iQIcBAEBCAAGBQJPXtSMAAoJEECxmPOUX5FElNgP/0FT0pYxw7Y7rDxKxfjXPeWz
-3zJ7xzzoUk9tzbIeCVlHaKjtXu1aUiHk3zGEAEYSyu7mKru7BW7SQa4SVXJy1oU5
-NxzzAtqa5cbqmNoM/KvV0E5/4AUnK42WaG3lUCVjUaN0b206RDzLTdOJ4mSzt/TN
-LBZ/eIuV9OhSPNLcIWwnIbdtrwtcNmGcch8Ut56lWnuQpStCFJWj1Z+lL1Fo4x4v
-oJjfG0hYadWuuWZpqT8nJDOW3uvJlGDYcOMbXpu4/luXm/jHqnYc0ZrHf4/48+Gw
-zpl1Hi7lptRAiYYMTEQXvqQC76GJ0V8UUK7yMS3Jmj/Gg6VhAZD9popB6ePnbir0
-TrzjnCxjAA/69cCEN5/bR7jTly1UfbgsbF8CDczpZQBHNRoAsXepKgfdI43VL478
-KlqrUJ+Iw+OxJ6/wT2MazdRNpvyURwlutvfWvqwzI4+heNcS/rnFnFrRho1uM4BP
-gPcqTy+dQZ5V7iywfJrD7NHkrTeED1jIjo8Shh/G3XwZnLkZUu+t+8YBTzhPkyT1
-PyjisHHqBWuzO4M3LVqyloduFRgs6kjAnJMqFaVO+KIEP4Fhx5UvkiPQt2BcxucU
-JIHAXv+FFBHOys0N4W+NhuRp9oEkb+QTTTeR5EUsFYgndcV/rj/gvE5/UrfsvYLR
-0DulTl2+GYR00vx/+lnP
-=is3p
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Mar_2012_16_01_00_+1100_zyfs5ewjJ2IaWld+--
