@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964995Ab2CMAYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 20:24:24 -0400
-Received: from mail.windriver.com ([147.11.1.11]:48613 "EHLO
+	id S965153Ab2CMAiQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 20:38:16 -0400
+Received: from mail.windriver.com ([147.11.1.11]:48628 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964948Ab2CMAYV (ORCPT
+	with ESMTP id S964983Ab2CMAYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 20:24:21 -0400
+	Mon, 12 Mar 2012 20:24:23 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Kyle McMartin <kyle@mcmartin.ca>,
-        Ingo Molnar <mingo@elte.hu>, Kyle McMartin <kyle@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: stable-review@kernel.org, Mike Christie <michaelc@cs.wisc.edu>,
+        James Bottomley <James.Bottomley@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 144/196] perf symbols: allow forcing use of cplus_demangle
-Date: Mon, 12 Mar 2012 20:20:57 -0400
-Message-Id: <1331598109-31424-99-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 150/196] scsi_dh_emc: request flag cleanup
+Date: Mon, 12 Mar 2012 20:21:03 -0400
+Message-Id: <1331598109-31424-105-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.9.3
 In-Reply-To: <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,45 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyle McMartin <kyle@mcmartin.ca>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d11c7addfe0fa501cb54c824c0fac3481d527433 upstream.
+commit 5738d4449c1baf05e8345684d12371f76296473d upstream.
 
-For Fedora, I want to force perf to link against libiberty.a for
-cplus_demangle, rather than libbfd.a for bfd_demangle due to licensing insanity
-on binutils. (libiberty is LGPL2, libbfd is GPL3.)
+blk_get_request sets the cmd_flags, so we should not and do not
+need to set them. If we did set them to a different value then
+it can cause a oops in the elevator code.
 
-If we just rely on autodetection, we'll end up with libbfd linked against us,
-since they're both in binutils-static in the buildroot.
-
-Cc: Ingo Molnar <mingo@elte.hu>
-LKML-Reference: <20100510204335.GA7565@bombadil.infradead.org>
-Signed-off-by: Kyle McMartin <kyle@redhat.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- tools/perf/Makefile |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/device_handler/scsi_dh_emc.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index bc0f670..429bace 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -541,6 +541,9 @@ endif
- 
- ifdef NO_DEMANGLE
- 	BASIC_CFLAGS += -DNO_DEMANGLE
-+else ifdef HAVE_CPLUS_DEMANGLE
-+	EXTLIBS += -liberty
-+	BASIC_CFLAGS += -DHAVE_CPLUS_DEMANGLE
- else
- 	has_bfd := $(shell sh -c "(echo '\#include <bfd.h>'; echo 'int main(void) { bfd_demangle(0, 0, 0); return 0; }') | $(CC) -x c - $(ALL_CFLAGS) -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) -lbfd "$(QUIET_STDERR)" && echo y")
- 
+diff --git a/drivers/scsi/device_handler/scsi_dh_emc.c b/drivers/scsi/device_handler/scsi_dh_emc.c
+index e8a0bc3..6faf472 100644
+--- a/drivers/scsi/device_handler/scsi_dh_emc.c
++++ b/drivers/scsi/device_handler/scsi_dh_emc.c
+@@ -285,13 +285,11 @@ static struct request *get_req(struct scsi_device *sdev, int cmd,
+ 	switch (cmd) {
+ 	case MODE_SELECT:
+ 		len = sizeof(short_trespass);
+-		rq->cmd_flags |= REQ_RW;
+ 		rq->cmd[1] = 0x10;
+ 		rq->cmd[4] = len;
+ 		break;
+ 	case MODE_SELECT_10:
+ 		len = sizeof(long_trespass);
+-		rq->cmd_flags |= REQ_RW;
+ 		rq->cmd[1] = 0x10;
+ 		rq->cmd[8] = len;
+ 		break;
 -- 
 1.7.9.3
 
