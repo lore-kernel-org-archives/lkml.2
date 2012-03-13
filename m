@@ -1,298 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab2CMMgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 08:36:13 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:18939
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752129Ab2CMMgL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 08:36:11 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zz936eK1432N98dKc8kzz1202hzz8275bh84d07hz2dh2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: Re: [PATCH] LEDS: LED module for DA9052/53 PMIC v2
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: <rpurdie@rpsys.net>, <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <Dajun.Chen@diasemi.com>
-In-Reply-To: <1329916149.24042.7.camel@dhruva>
-References: <1329916149.24042.7.camel@dhruva>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Mar 2012 17:56:00 +0530
-Message-ID: <1331641560.7058.1.camel@dhruva>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+	id S1752596Ab2CMMg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 08:36:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:56419 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752410Ab2CMMgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 08:36:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="128416977"
+Message-ID: <1331642368.3595.31.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 1/4] jffs2: Convert most D1/D2 macros to jffs2_dbg
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joe Perches <joe@perches.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 13 Mar 2012 14:39:28 +0200
+In-Reply-To: <1331572270.13200.30.camel@joe2Laptop>
+References: <cover.1329349881.git.joe@perches.com>
+	 <2d68e76db16d42f451370714f03ef952e0839692.1329349881.git.joe@perches.com>
+	 <1330965033.7220.16.camel@golum> <1330966615.3140.6.camel@joe2Laptop>
+	 <1331294012.29445.10.camel@sauron.fi.intel.com>
+	 <1331318968.13055.8.camel@joe2Laptop>
+	 <1331557935.12037.11.camel@sauron.fi.intel.com>
+	 <1331566415.13200.14.camel@joe2Laptop>
+	 <1331570150.12037.55.camel@sauron.fi.intel.com>
+	 <1331572270.13200.30.camel@joe2Laptop>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-fYOsaZgv7ryuBzSawbPD"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any update on below patch?
-On Wed, 2012-02-22 at 18:39 +0530, Ashish Jangam wrote:
-> LED Driver for Dialog Semiconductor DA9052/53 PMICs.
-> 
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> ---
->  drivers/leds/Kconfig       |    8 ++
->  drivers/leds/Makefile      |    1 +
->  drivers/leds/leds-da9052.c |  214 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 223 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/leds/leds-da9052.c
-> 
-> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> index e2ac190..b826f88 100644
-> --- a/drivers/leds/Kconfig
-> +++ b/drivers/leds/Kconfig
-> @@ -266,6 +266,14 @@ config LEDS_DA903X
->  	  This option enables support for on-chip LED drivers found
->  	  on Dialog Semiconductor DA9030/DA9034 PMICs.
->  
-> +config LEDS_DA9052
-> +	tristate "Dialog DA9052/DA9053 LEDS"
-> +	depends on LEDS_CLASS
-> +	depends on PMIC_DA9052
-> +	help
-> +	  This option enables support for on-chip LED drivers found
-> +	  on Dialog Semiconductor DA9052-BC and DA9053-AA/Bx PMICs.
-> +
->  config LEDS_DAC124S085
->  	tristate "LED Support for DAC124S085 SPI DAC"
->  	depends on LEDS_CLASS
-> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> index fa0f428..479048f 100644
-> --- a/drivers/leds/Makefile
-> +++ b/drivers/leds/Makefile
-> @@ -32,6 +32,7 @@ obj-$(CONFIG_LEDS_FSG)			+= leds-fsg.o
->  obj-$(CONFIG_LEDS_PCA955X)		+= leds-pca955x.o
->  obj-$(CONFIG_LEDS_PCA9633)		+= leds-pca9633.o
->  obj-$(CONFIG_LEDS_DA903X)		+= leds-da903x.o
-> +obj-$(CONFIG_LEDS_DA9052)		+= leds-da9052.o
->  obj-$(CONFIG_LEDS_WM831X_STATUS)	+= leds-wm831x-status.o
->  obj-$(CONFIG_LEDS_WM8350)		+= leds-wm8350.o
->  obj-$(CONFIG_LEDS_PWM)			+= leds-pwm.o
-> diff --git a/drivers/leds/leds-da9052.c b/drivers/leds/leds-da9052.c
-> new file mode 100644
-> index 0000000..15281b4
-> --- /dev/null
-> +++ b/drivers/leds/leds-da9052.c
-> @@ -0,0 +1,214 @@
-> +/*
-> + * LED Driver for Dialog DA9052 PMICs.
-> + *
-> + * Copyright(c) 2012 Dialog Semiconductor Ltd.
-> + *
-> + * Author: David Dajun Chen <dchen@diasemi.com>
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/leds.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/slab.h>
-> +
-> +#include <linux/mfd/da9052/reg.h>
-> +#include <linux/mfd/da9052/da9052.h>
-> +#include <linux/mfd/da9052/pdata.h>
-> +
-> +#define DA9052_OPENDRAIN_OUTPUT	2
-> +#define DA9052_SET_HIGH_LVL_OUTPUT	(1 << 3)
-> +#define DA9052_MASK_UPPER_NIBBLE	0xF0
-> +#define DA9052_MASK_LOWER_NIBBLE	0x0F
-> +#define DA9052_NIBBLE_SHIFT		4
-> +#define DA9052_MAX_BRIGHTNESS		0x5f
-> +
-> +struct da9052_led {
-> +	struct led_classdev cdev;
-> +	struct work_struct work;
-> +	struct da9052 *da9052;
-> +	unsigned char led_index;
-> +	unsigned char id;
-> +	int brightness;
-> +};
-> +
-> +unsigned char led_reg[] = {
-> +	DA9052_LED_CONT_4_REG,
-> +	DA9052_LED_CONT_5_REG,
-> +};
-> +
-> +static int da9052_set_led_brightness(struct da9052_led *led)
-> +{
-> +	u8 val;
-> +	int error;
-> +
-> +	val = (led->brightness & 0x7f) | DA9052_LED_CONT_DIM;
-> +
-> +	error = da9052_reg_write(led->da9052, led_reg[led->led_index], val);
-> +	if (error < 0)
-> +		dev_err(led->da9052->dev, "Failed to set led brightness, %d\n",
-> +			error);
-> +	return error;
-> +}
-> +
-> +static void da9052_led_work(struct work_struct *work)
-> +{
-> +	struct da9052_led *led = container_of(work, struct da9052_led, work);
-> +
-> +	da9052_set_led_brightness(led);
-> +}
-> +
-> +static void da9052_led_set(struct led_classdev *led_cdev,
-> +			   enum led_brightness value)
-> +{
-> +	struct da9052_led *led;
-> +
-> +	led = container_of(led_cdev, struct da9052_led, cdev);
-> +	led->brightness = value;
-> +	schedule_work(&led->work);
-> +}
-> +
-> +static int da9052_configure_leds(struct da9052 *da9052)
-> +{
-> +	int error;
-> +	unsigned char register_value = DA9052_OPENDRAIN_OUTPUT
-> +				       | DA9052_SET_HIGH_LVL_OUTPUT;
-> +
-> +	error = da9052_reg_update(da9052, DA9052_GPIO_14_15_REG,
-> +				  DA9052_MASK_LOWER_NIBBLE,
-> +				  register_value);
-> +
-> +	if (error < 0) {
-> +		dev_err(da9052->dev, "Failed to write GPIO 14-15 reg, %d\n",
-> +			error);
-> +		return error;
-> +	}
-> +
-> +	error = da9052_reg_update(da9052, DA9052_GPIO_14_15_REG,
-> +				  DA9052_MASK_UPPER_NIBBLE,
-> +				  register_value << DA9052_NIBBLE_SHIFT);
-> +	if (error < 0)
-> +		dev_err(da9052->dev, "Failed to write GPIO 14-15 reg, %d\n",
-> +			error);
-> +
-> +	return error;
-> +}
-> +
-> +static int __devinit da9052_led_probe(struct platform_device *pdev)
-> +{
-> +	struct da9052_pdata *pdata;
-> +	struct da9052 *da9052;
-> +	struct led_platform_data *pled;
-> +	struct da9052_led *led = NULL;
-> +	int error = -ENODEV;
-> +	int i;
-> +
-> +	da9052 = dev_get_drvdata(pdev->dev.parent);
-> +	pdata = da9052->dev->platform_data;
-> +	if (pdata == NULL) {
-> +		dev_err(&pdev->dev, "No platform data\n");
-> +		goto err;
-> +	}
-> +
-> +	pled = pdata->pled;
-> +	if (pled == NULL) {
-> +		dev_err(&pdev->dev, "No platform data for LED\n");
-> +		goto err;
-> +	}
-> +
-> +	led = devm_kzalloc(&pdev->dev,
-> +			   sizeof(struct da9052_led) * pled->num_leds,
-> +			   GFP_KERNEL);
-> +	if (led == NULL) {
-> +		dev_err(&pdev->dev, "Failed to alloc memory\n");
-> +		error = -ENOMEM;
-> +		goto err;
-> +	}
-> +
-> +	for (i = 0; i < pled->num_leds; i++) {
-> +		led[i].cdev.name = pled->leds[i].name;
-> +		led[i].cdev.brightness_set = da9052_led_set;
-> +		led[i].cdev.brightness = LED_OFF;
-> +		led[i].cdev.max_brightness = DA9052_MAX_BRIGHTNESS;
-> +		led[i].brightness = LED_OFF;
-> +		led[i].led_index = pled->leds[i].flags;
-> +		led[i].da9052 = dev_get_drvdata(pdev->dev.parent);
-> +		INIT_WORK(&led[i].work, da9052_led_work);
-> +
-> +		error = led_classdev_register(pdev->dev.parent, &led[i].cdev);
-> +		if (error) {
-> +			dev_err(&pdev->dev, "Failed to register led %d\n",
-> +				led[i].led_index);
-> +			goto err_register;
-> +		}
-> +
-> +		error = da9052_set_led_brightness(&led[i]);
-> +		if (error) {
-> +			dev_err(&pdev->dev, "Unable to init led %d\n",
-> +				led[i].led_index);
-> +			continue;
-> +		}
-> +	}
-> +	error = da9052_configure_leds(led->da9052);
-> +	if (error) {
-> +		dev_err(&pdev->dev, "Failed to configure GPIO LED%d\n", error);
-> +		goto err_register;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, led);
-> +
-> +	return 0;
-> +
-> +err_register:
-> +	for (i = i - 1; i >= 0; i--) {
-> +		led_classdev_unregister(&led[i].cdev);
-> +		cancel_work_sync(&led[i].work);
-> +	}
-> +err:
-> +	return error;
-> +}
-> +
-> +static int __devexit da9052_led_remove(struct platform_device *pdev)
-> +{
-> +	struct da9052_led *led = platform_get_drvdata(pdev);
-> +	struct da9052_pdata *pdata;
-> +	struct da9052 *da9052;
-> +	struct led_platform_data *pled;
-> +	int i;
-> +
-> +	da9052 = dev_get_drvdata(pdev->dev.parent);
-> +	pdata = da9052->dev->platform_data;
-> +	pled = pdata->pled;
-> +
-> +	for (i = 0; i < pled->num_leds; i++) {
-> +		led[i].brightness = 0;
-> +		da9052_set_led_brightness(&led[i]);
-> +		led_classdev_unregister(&led[i].cdev);
-> +		cancel_work_sync(&led[i].work);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver da9052_led_driver = {
-> +	.driver		= {
-> +		.name	= "da9052-leds",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +	.probe		= da9052_led_probe,
-> +	.remove		= __devexit_p(da9052_led_remove),
-> +};
-> +
-> +module_platform_driver(da9052_led_driver);
-> +
-> +MODULE_AUTHOR("Dialog Semiconductor Ltd <dchen@diasemi.com>");
-> +MODULE_DESCRIPTION("LED driver for Dialog DA9052 PMIC");
-> +MODULE_LICENSE("GPL");
-> 
 
+--=-fYOsaZgv7ryuBzSawbPD
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Mon, 2012-03-12 at 10:11 -0700, Joe Perches wrote:
+> On Mon, 2012-03-12 at 18:35 +0200, Artem Bityutskiy wrote:
+> > On Mon, 2012-03-12 at 08:33 -0700, Joe Perches wrote:
+> > > I tentatively converted them to a bitmap
+> > > and a single jffs2_dbg(mask, fmt, ...)
+> > > but perhaps all of these could be deleted
+> > > too.
+> >=20
+> > I think it is better to convert them to jffs2_debug(). And I guess afte=
+r
+> > the change the "mask" parameter will go away?
+>=20
+> Mask would remain and perhaps become a module
+> variable instead of a compile #define.
+>=20
+> What is jffs2_debug?
+
+Sorry, I meant to suggest to just turn them all to jffs2_dbg() which you
+introduced, without any bitmasks.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-fYOsaZgv7ryuBzSawbPD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPX0AAAAoJECmIfjd9wqK02nMQAJAMxDVYKKC4tw2P6qZT15DO
+iTuzPOER7yiTn0nmhs7WZfR4Fk1yrRWcNFXDV/CLeD+SwVk0FFPJt1Tqfey/rhFj
+uLVNCi0taf1pBBU6S5vWxAxhW5G3MtzJ4UTUpJhJR9kgidicyce9y8bwiEgMO1hg
+0NknF4eU64SAO0SfdbUS9f681mA+9ExkCs7Gk4eEMhWvgH8BUcb4JGkDpQ0uB59n
+c3VyN71lBtGOulb4PtqTL6DvIik/Vd8jAuTRkMVu+JKdPXsZpfNhjMUjehXAp7T/
+OXNGQXqDxIFxcIgFb5lwl+Q2rs2zRn3B+k3ye20Trn7wImC9giPpjr15xBGjbMn7
+iahWb8QIDumR5+a9ZdyFIIIm0E2hIGXPcfnb+dkoO0x+iLpdzoxkXefEYlHXiGV/
+6SQUu2lHCp3fik3NxANEWt5PkSywmPDI41Us7dMCh+yrlJMsFEGzpWCIHaOR4twP
+3n/QEcSgZEkTYga688R98+8HRkd2+j6kDrcTemX9KGcoIRFycIX5r/vY8Yh9KqcQ
+bytVa+feXRSUb59Y86sGLyDQHPFbIJK6HVetBRsYeeFFrxmvbGMpSVaeppSdII3F
+gt1tFqIuAPt3Rz+NPQXSh4guxd47SKu6o/1Y4F4Q9gKrFBTpblEOgeglHnHROf2H
+rlPrSz1pcWFEIQ9I7LI2
+=Uv5g
+-----END PGP SIGNATURE-----
+
+--=-fYOsaZgv7ryuBzSawbPD--
 
