@@ -1,405 +1,1004 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964883Ab2CMDto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Mar 2012 23:49:44 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64735 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759579Ab2CMDtm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Mar 2012 23:49:42 -0400
+	id S1759643Ab2CMD55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Mar 2012 23:57:57 -0400
+Received: from exprod7og114.obsmtp.com ([64.18.2.215]:46911 "EHLO
+	exprod7og114.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759616Ab2CMD5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Mar 2012 23:57:55 -0400
+X-Greylist: delayed 443 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Mar 2012 23:57:53 EDT
 MIME-Version: 1.0
-In-Reply-To: <1331488109-13466-5-git-send-email-jiang.liu@huawei.com>
-References: <1331488109-13466-1-git-send-email-jiang.liu@huawei.com> <1331488109-13466-5-git-send-email-jiang.liu@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 12 Mar 2012 21:49:20 -0600
-Message-ID: <CAErSpo7u=_H=c0UBte7fuQAML4KWErDhsmZ+E8LTzW7OPWzpXA@mail.gmail.com>
-Subject: Re: [RFC PATCH 4/5] PCI: Introduce hotplug-safe pci bus searching interfaces
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Jiang Liu <jiang.liu@huawei.com>, Ashok Raj <ashok.raj@intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Youquan Song <youquan.song@intel.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chenkeping@huawei.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+In-Reply-To: <1331366064-1273-4-git-send-email-mturquette@linaro.org>
+References: <1331366064-1273-1-git-send-email-mturquette@linaro.org> <1331366064-1273-4-git-send-email-mturquette@linaro.org>
+From: Matt Sealey <matt@genesi-usa.com>
+Date: Mon, 12 Mar 2012 22:50:09 -0500
+Message-ID: <CAKGA1b=huAnG6tLoaGqoFoJnuEg-+rs8KLYVB1KF6_q73ot63A@mail.gmail.com>
+Subject: Re: [PATCH v6 3/3] clk: basic clock hardware types
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        linaro-dev@lists.linaro.org, Saravana Kannan <skannan@codeaurora.org>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, patches@linaro.org,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2D3wP8C018125
 
-On Sun, Mar 11, 2012 at 11:48 AM, Jiang Liu <liuj97@gmail.com> wrote:
-> By design, pci_find_bus() and pci_find_next_bus() should be used at boot
-> time only. But currently these two interfaces have been used at runtime
-> by other components. With the introduction of pci root bus hotplug,
-> the situation becomes more serious. So introduce several hotplug-safe pci
-> bus searching interfaces to be used at runtime. �The new interfaces use
-> rculist instead of the pci_bus_sem to protect themselves from dynamic changes.
-> The proposed interfaces are straight-forward replacement of the old ones:
-> pci_bus_get()/put(), pci_get_bus(), pci_get_next_bus() and pci_bus_present().
-> And the old interface may be deprecated or marked as __init in future.
+Hi Mike,
 
-This looks like a lot of work to fix something that shouldn't need to
-be fixed.  I don't think we should be doing any of this blind probing
-at hotplug-time.  If we do blind probing at all, it should only be
-done at boot-time.
+Can I suggest/we discuss that we support fractional (i.e. represented
+by fixed point value with integer and fractional part) dividers in the
+common divider clock case, simplistically just adding a divider
+fractional width and shifting all the calculations by it (and fixing
+the "maxdiv" calculation as in a fractional case width of the divider
+area in the register is not an indicator of the actual maximum
+divider)? (I guess for the standard integer divider case, it would be
+continually shifting by 0 which might make the code a bit bigger, I
+don't think that would truly be a concern though?)
 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Is there a particular reason why this case also cannot support set_parent?
+
+I have a use case here (i.MX51/53/6 IPU DI output "pixel" clock) which
+could be handled by this code if only those two were solved, it would
+save reimplementing the whole thing as a special case. I am at a loss
+to think of another particular case in any other SoC where there is a
+fractional divider on a clock where it might come in handy, though, I
+thought maybe someone could speak up and give an example that would
+come in handy for them (I can think of Marvel PXA and OMAP DSS display
+units having the exact same need which could be implemented using the
+clock API rather than opencoded inside the framebuffer drivers, but
+whether anyone actually cares about that is another matter
+entirely...)
+
+-- 
+Matt Sealey <matt@genesi-usa.com>
+Product Development Analyst, Genesi USA, Inc.
+
+
+
+On Sat, Mar 10, 2012 at 1:54 AM, Mike Turquette <mturquette@linaro.org> wrote:
+> Many platforms support simple gateable clocks, fixed-rate clocks,
+> adjustable divider clocks and multi-parent multiplexer clocks.
+>
+> This patch introduces basic clock types for the above-mentioned hardware
+> which share some common characteristics.
+>
+> Based on original work by Jeremy Kerr and contribution by Jamie Iles.
+> Dividers and multiplexor clocks originally contributed by Richard Zhao &
+> Sascha Hauer.
+>
+> Signed-off-by: Mike Turquette <mturquette@linaro.org>
+> Signed-off-by: Mike Turquette <mturquette@ti.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Arnd Bergman <arnd.bergmann@linaro.org>
+> Cc: Paul Walmsley <paul@pwsan.com>
+> Cc: Shawn Guo <shawn.guo@freescale.com>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Jamie Iles <jamie@jamieiles.com>
+> Cc: Richard Zhao <richard.zhao@linaro.org>
+> Cc: Saravana Kannan <skannan@codeaurora.org>
+> Cc: Magnus Damm <magnus.damm@gmail.com>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Linus Walleij <linus.walleij@stericsson.com>
+> Cc: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Amit Kucheria <amit.kucheria@linaro.org>
+> Cc: Deepak Saxena <dsaxena@linaro.org>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Andrew Lunn <andrew@lunn.ch>
 > ---
-> �drivers/pci/bus.c � �| � 20 ++++++-
-> �drivers/pci/probe.c �| � �5 +-
-> �drivers/pci/remove.c | � �5 +-
-> �drivers/pci/search.c | �165 ++++++++++++++++++++++++++++++++++++++++++--------
-> �include/linux/pci.h �| � �8 +++
-> �5 files changed, 173 insertions(+), 30 deletions(-)
+> Changes since v5:
+>  * standardized the hw-specific locking in the basic clock types
+>  * export the individual ops for each basic clock type
+>  * improve registration for single-parent basic clocks (thanks Sascha)
+>  * fixed bugs in gate clock's static initializers (thanks Andrew)
 >
-> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-> index 1eb7944..0543d47 100644
-> --- a/drivers/pci/bus.c
-> +++ b/drivers/pci/bus.c
-> @@ -15,6 +15,7 @@
-> �#include <linux/proc_fs.h>
-> �#include <linux/init.h>
-> �#include <linux/slab.h>
-> +#include <linux/rculist.h>
+>  drivers/clk/Makefile         |    3 +-
+>  drivers/clk/clk-divider.c    |  204 ++++++++++++++++++++++++++++++++++++++++++
+>  drivers/clk/clk-fixed-rate.c |   82 +++++++++++++++++
+>  drivers/clk/clk-gate.c       |  157 ++++++++++++++++++++++++++++++++
+>  drivers/clk/clk-mux.c        |  123 +++++++++++++++++++++++++
+>  include/linux/clk-private.h  |  124 +++++++++++++++++++++++++
+>  include/linux/clk-provider.h |  127 ++++++++++++++++++++++++++
+>  7 files changed, 819 insertions(+), 1 deletions(-)
+>  create mode 100644 drivers/clk/clk-divider.c
+>  create mode 100644 drivers/clk/clk-fixed-rate.c
+>  create mode 100644 drivers/clk/clk-gate.c
+>  create mode 100644 drivers/clk/clk-mux.c
 >
-> �#include "pci.h"
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index ff362c4..1f736bc 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -1,3 +1,4 @@
 >
-> @@ -238,7 +239,7 @@ void pci_bus_add_devices(const struct pci_bus *bus)
-> � � � � � � � � � � � �continue;
-> � � � � � � � �if (list_empty(&child->node)) {
-> � � � � � � � � � � � �down_write(&pci_bus_sem);
-> - � � � � � � � � � � � list_add_tail(&child->node, &dev->bus->children);
-> + � � � � � � � � � � � list_add_tail_rcu(&child->node, &dev->bus->children);
-> � � � � � � � � � � � �up_write(&pci_bus_sem);
-> � � � � � � � �}
-> � � � � � � � �pci_bus_add_devices(child);
-> @@ -277,7 +278,7 @@ void pci_bus_add_single_device(struct pci_dev *dev)
-> � � � �if (child) {
-> � � � � � � � �if (list_empty(&child->node)) {
-> � � � � � � � � � � � �down_write(&pci_bus_sem);
-> - � � � � � � � � � � � list_add_tail(&child->node, &dev->bus->children);
-> + � � � � � � � � � � � list_add_tail_rcu(&child->node, &dev->bus->children);
-> � � � � � � � � � � � �up_write(&pci_bus_sem);
-> � � � � � � � �}
-> � � � � � � � �pci_bus_add_devices(child);
-> @@ -364,6 +365,21 @@ void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
-> �}
-> �EXPORT_SYMBOL_GPL(pci_walk_bus);
->
-> +struct pci_bus *pci_bus_get(struct pci_bus *bus)
-> +{
-> + � � � if (bus)
-> + � � � � � � � get_device(&bus->dev);
-> + � � � return bus;
-> +}
-> +EXPORT_SYMBOL(pci_bus_get);
-> +
-> +void pci_bus_put(struct pci_bus *bus)
-> +{
-> + � � � if (bus)
-> + � � � � � � � put_device(&bus->dev);
-> +}
-> +EXPORT_SYMBOL(pci_bus_put);
-> +
-> �EXPORT_SYMBOL(pci_bus_alloc_resource);
-> �EXPORT_SYMBOL_GPL(pci_bus_add_device);
-> �EXPORT_SYMBOL(pci_bus_add_devices);
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 0ca213c..273c387 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -10,6 +10,7 @@
-> �#include <linux/module.h>
-> �#include <linux/cpumask.h>
-> �#include <linux/pci-aspm.h>
-> +#include <linux/rculist.h>
-> �#include "pci.h"
->
-> �#define CARDBUS_LATENCY_TIMER �176 � � /* secondary latency timer */
-> @@ -633,7 +634,7 @@ struct pci_bus *__ref pci_add_new_bus(struct pci_bus *parent, struct pci_dev *de
-> � � � �child = pci_alloc_child_bus(parent, dev, busnr);
-> � � � �if (child) {
-> � � � � � � � �down_write(&pci_bus_sem);
-> - � � � � � � � list_add_tail(&child->node, &parent->children);
-> + � � � � � � � list_add_tail_rcu(&child->node, &parent->children);
-> � � � � � � � �up_write(&pci_bus_sem);
-> � � � �}
-> � � � �return child;
-> @@ -1889,7 +1890,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> � � � �}
->
-> � � � �down_write(&pci_bus_sem);
-> - � � � list_add_tail(&b->node, &pci_root_buses);
-> + � � � list_add_tail_rcu(&b->node, &pci_root_buses);
-> � � � �up_write(&pci_bus_sem);
->
-> � � � �return b;
-> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-> index 25f368e..120bee9 100644
-> --- a/drivers/pci/remove.c
-> +++ b/drivers/pci/remove.c
-> @@ -1,6 +1,7 @@
-> �#include <linux/pci.h>
-> �#include <linux/module.h>
-> �#include <linux/pci-aspm.h>
-> +#include <linux/rculist.h>
-> �#include "pci.h"
->
-> �static void pci_free_resources(struct pci_dev *dev)
-> @@ -67,9 +68,11 @@ void pci_remove_bus(struct pci_bus *pci_bus)
-> � � � �pci_proc_detach_bus(pci_bus);
->
-> � � � �down_write(&pci_bus_sem);
-> - � � � list_del(&pci_bus->node);
-> + � � � list_del_rcu(&pci_bus->node);
-> � � � �pci_bus_release_busn_res(pci_bus);
-> � � � �up_write(&pci_bus_sem);
-> + � � � synchronize_rcu();
-> +
-> � � � �if (pci_bus->is_added || pci_is_root_bus(pci_bus)) {
-> � � � � � � � �pci_remove_legacy_files(pci_bus);
-> � � � � � � � �device_unregister(&pci_bus->dev);
-> diff --git a/drivers/pci/search.c b/drivers/pci/search.c
-> index b572730..de31957 100644
-> --- a/drivers/pci/search.c
-> +++ b/drivers/pci/search.c
-> @@ -12,6 +12,7 @@
-> �#include <linux/slab.h>
-> �#include <linux/module.h>
-> �#include <linux/interrupt.h>
-> +#include <linux/rculist.h>
-> �#include "pci.h"
->
-> �DECLARE_RWSEM(pci_bus_sem);
-> @@ -52,20 +53,63 @@ pci_find_upstream_pcie_bridge(struct pci_dev *pdev)
->
-> �static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
-> �{
-> - � � � struct pci_bus* child;
-> - � � � struct list_head *tmp;
-> + � � � struct pci_bus *child;
-> + � � � struct pci_bus *tmp_bus;
->
-> � � � �if(bus->number == busnr)
-> � � � � � � � �return bus;
->
-> - � � � list_for_each(tmp, &bus->children) {
-> - � � � � � � � child = pci_do_find_bus(pci_bus_b(tmp), busnr);
-> - � � � � � � � if(child)
-> - � � � � � � � � � � � return child;
-> + � � � list_for_each_entry_rcu(child, &bus->children, node) {
-> + � � � � � � � tmp_bus = pci_do_find_bus(child, busnr);
-> + � � � � � � � if(tmp_bus)
-> + � � � � � � � � � � � return tmp_bus;
-> � � � �}
-> � � � �return NULL;
-> �}
->
-> +static struct pci_bus *__pci_find_bus(int domain, int busnr)
-> +{
-> + � � � struct pci_bus *bus;
-> + � � � struct pci_bus *tmp_bus;
-> +
-> + � � � list_for_each_entry_rcu(bus, &pci_root_buses, node) {
-> + � � � � � � � if (pci_domain_nr(bus) != domain)
-> + � � � � � � � � � � � continue;
-> + � � � � � � � tmp_bus = pci_do_find_bus(bus, busnr);
-> + � � � � � � � if (tmp_bus)
-> + � � � � � � � � � � � return tmp_bus;
-> + � � � }
-> +
-> + � � � return NULL;
-> +}
-> +
-> +static struct pci_bus *__pci_find_next_bus(const struct pci_bus *from)
-> +{
-> + � � � struct list_head *n;
-> + � � � struct pci_bus *b = NULL;
-> +
-> + � � � /* First search, start from the pci root bus list */
-> + � � � if (from == NULL) {
-> + � � � � � � � n = rcu_dereference(list_next_rcu(&pci_root_buses));
-> + � � � � � � � if (n != &pci_root_buses)
-> + � � � � � � � � � � � b = pci_bus_b(n);
-> + � � � /* Continue on the pci root bus list */
-> + � � � } else if (pci_is_root_bus((struct pci_bus *)from)) {
-> + � � � � � � � n = rcu_dereference(list_next_rcu(&from->node));
-> + � � � � � � � if (n != &pci_root_buses)
-> + � � � � � � � � � � � b = pci_bus_b(n);
-> + � � � /* Continue on other non pci root bus list */
-> + � � � } else {
-> + � � � � � � � struct pci_bus *parent = from->self->bus;
-> +
-> + � � � � � � � n = rcu_dereference(list_next_rcu(&from->node));
-> + � � � � � � � if (n != &parent->children)
-> + � � � � � � � � � � � b = pci_bus_b(n);
-> + � � � }
-> +
-> + � � � return b;
-> +}
-> +
-> �/**
-> �* pci_find_bus - locate PCI bus from a given domain and bus number
-> �* @domain: number of PCI domain to search
-> @@ -74,20 +118,19 @@ static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
-> �* Given a PCI bus number and domain number, the desired PCI bus is located
-> �* in the global list of PCI buses. �If the bus is found, a pointer to its
-> �* data structure is returned. �If no bus is found, %NULL is returned.
+>  obj-$(CONFIG_CLKDEV_LOOKUP)    += clkdev.o
+> -obj-$(CONFIG_COMMON_CLK)       += clk.o
+> +obj-$(CONFIG_COMMON_CLK)       += clk.o clk-fixed-rate.o clk-gate.o \
+> +                                  clk-mux.o clk-divider.o
+> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+> new file mode 100644
+> index 0000000..c0c4e0b
+> --- /dev/null
+> +++ b/drivers/clk/clk-divider.c
+> @@ -0,0 +1,204 @@
+> +/*
+> + * Copyright (C) 2011 Sascha Hauer, Pengutronix <s.hauer@pengutronix.de>
+> + * Copyright (C) 2011 Richard Zhao, Linaro <richard.zhao@linaro.org>
+> + * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
 > + *
-> + * TODO: By design, this function should only be called at boot time.
-> + * So either mark it as __init or deprecate it.
-> �*/
-> �struct pci_bus * pci_find_bus(int domain, int busnr)
-> �{
-> - � � � struct pci_bus *bus = NULL;
-> - � � � struct pci_bus *tmp_bus;
-> + � � � struct pci_bus *bus;
->
-> - � � � while ((bus = pci_find_next_bus(bus)) != NULL) �{
-> - � � � � � � � if (pci_domain_nr(bus) != domain)
-> - � � � � � � � � � � � continue;
-> - � � � � � � � tmp_bus = pci_do_find_bus(bus, busnr);
-> - � � � � � � � if (tmp_bus)
-> - � � � � � � � � � � � return tmp_bus;
-> - � � � }
-> - � � � return NULL;
-> + � � � rcu_read_lock();
-> + � � � bus = __pci_find_bus(domain, busnr);
-> + � � � rcu_read_unlock();
-> +
-> + � � � return bus;
-> �}
->
-> �/**
-> @@ -98,21 +141,93 @@ struct pci_bus * pci_find_bus(int domain, int busnr)
-> �* initiated by passing %NULL as the @from argument. �Otherwise if
-> �* @from is not %NULL, searches continue from next device on the
-> �* global list.
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
 > + *
-> + * TODO: By design, this function should only be called at boot time.
-> + * So either mark it as __init or deprecate it.
-> �*/
-> �struct pci_bus *
-> �pci_find_next_bus(const struct pci_bus *from)
-> �{
-> - � � � struct list_head *n;
-> - � � � struct pci_bus *b = NULL;
-> + � � � struct pci_bus *bus;
->
-> - � � � WARN_ON(in_interrupt());
-> - � � � down_read(&pci_bus_sem);
-> - � � � n = from ? from->node.next : pci_root_buses.next;
-> - � � � if (n != &pci_root_buses)
-> - � � � � � � � b = pci_bus_b(n);
-> - � � � up_read(&pci_bus_sem);
-> - � � � return b;
-> + � � � rcu_read_lock();
-> + � � � bus = __pci_find_next_bus(from);
-> + � � � rcu_read_unlock();
+> + * Adjustable divider clock implementation
+> + */
 > +
-> + � � � return bus;
+> +#include <linux/clk-provider.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/io.h>
+> +#include <linux/err.h>
+> +#include <linux/string.h>
+> +
+> +/*
+> + * DOC: basic adjustable divider clock that cannot gate
+> + *
+> + * Traits of this clock:
+> + * prepare - clk_prepare only ensures that parents are prepared
+> + * enable - clk_enable only ensures that parents are enabled
+> + * rate - rate is adjustable.  clk->rate = parent->rate / divisor
+> + * parent - fixed parent.  No clk_set_parent support
+> + */
+> +
+> +#define to_clk_divider(_hw) container_of(_hw, struct clk_divider, hw)
+> +
+> +static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
+> +               unsigned long parent_rate)
+> +{
+> +       struct clk_divider *divider = to_clk_divider(hw);
+> +       unsigned int div;
+> +       unsigned long flags = 0;
+> +
+> +       if (divider->lock)
+> +               spin_lock_irqsave(divider->lock, flags);
+> +
+> +       div = readl(divider->reg) >> divider->shift;
+> +       div &= (1 << divider->width) - 1;
+> +
+> +       if (divider->lock)
+> +               spin_unlock_irqrestore(divider->lock, flags);
+> +
+> +       if (!(divider->flags & CLK_DIVIDER_ONE_BASED))
+> +               div++;
+> +
+> +       return parent_rate / div;
 > +}
+> +EXPORT_SYMBOL_GPL(clk_divider_recalc_rate);
+> +
+> +static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+> +               unsigned long *best_parent_rate)
+> +{
+> +       struct clk_divider *divider = to_clk_divider(hw);
+> +       int i, bestdiv = 0;
+> +       unsigned long parent_rate, best = 0, now, maxdiv;
+> +
+> +       maxdiv = (1 << divider->width);
+> +
+> +       if (divider->flags & CLK_DIVIDER_ONE_BASED)
+> +               maxdiv--;
+> +
+> +       if (!(__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT)) {
+> +               parent_rate = __clk_get_rate(__clk_get_parent(hw->clk));
+> +               bestdiv = parent_rate / rate;
+> +               bestdiv = bestdiv == 0 ? 1 : bestdiv;
+> +               bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
+> +               goto out;
+> +       }
+> +
+> +       /*
+> +        * The maximum divider we can use without overflowing
+> +        * unsigned long in rate * i below
+> +        */
+> +       maxdiv = min(ULONG_MAX / rate, maxdiv);
+> +
+> +       for (i = 1; i <= maxdiv; i++) {
+> +               int div;
+> +               parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
+> +                               rate * i);
+> +               div = parent_rate / rate;
+> +               div = div > maxdiv ? maxdiv : div;
+> +               div = div < 1 ? 1 : div;
+> +               now = parent_rate / div;
+> +
+> +               if (now <= rate && now >= best) {
+> +                       bestdiv = div;
+> +                       best = now;
+> +                       *best_parent_rate = parent_rate;
+> +               }
+> +       }
+> +
+> +       if (!bestdiv) {
+> +               bestdiv = (1 << divider->width);
+> +               parent_rate = __clk_round_rate(__clk_get_parent(hw->clk), 1);
+> +       } else {
+> +               parent_rate = best * bestdiv;
+> +       }
+> +
+> +out:
+> +       if (best_parent_rate)
+> +               *best_parent_rate = parent_rate;
+> +
+> +       return bestdiv;
+> +}
+> +
+> +static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
+> +                               unsigned long *prate)
+> +{
+> +       unsigned long best_parent_rate;
+> +       int div = clk_divider_bestdiv(hw, rate, &best_parent_rate);
+> +       if (prate) {
+> +               if (best_parent_rate == __clk_get_rate(
+> +                                       __clk_get_parent(hw->clk)))
+> +                       *prate = 0;
+> +               else
+> +                       *prate = best_parent_rate;
+> +       }
+> +
+> +       return best_parent_rate / div;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_divider_round_rate);
+> +
+> +static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate)
+> +{
+> +       unsigned long best_parent_rate;
+> +       struct clk_divider *divider = to_clk_divider(hw);
+> +       unsigned int div;
+> +       unsigned long flags = 0;
+> +       u32 val;
+> +
+> +       div = clk_divider_bestdiv(hw, rate, &best_parent_rate);
+> +
+> +       if (divider->lock)
+> +               spin_lock_irqsave(divider->lock, flags);
+> +
+> +       if (!(divider->flags & CLK_DIVIDER_ONE_BASED))
+> +               div--;
+> +
+> +       val = readl(divider->reg);
+> +       val &= ~(((1 << divider->width) - 1) << divider->shift);
+> +       val |= div << divider->shift;
+> +       writel(val, divider->reg);
+> +
+> +       if (divider->lock)
+> +               spin_unlock_irqrestore(divider->lock, flags);
+> +
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_divider_set_rate);
+> +
+> +struct clk_ops clk_divider_ops = {
+> +       .recalc_rate = clk_divider_recalc_rate,
+> +       .round_rate = clk_divider_round_rate,
+> +       .set_rate = clk_divider_set_rate,
+> +};
+> +EXPORT_SYMBOL_GPL(clk_divider_ops);
+> +
+> +struct clk *clk_register_divider(struct device *dev, const char *name,
+> +               const char *parent_name, unsigned long flags,
+> +               void __iomem *reg, u8 shift, u8 width,
+> +               u8 clk_divider_flags, spinlock_t *lock)
+> +{
+> +       struct clk_divider *div;
+> +       struct clk *clk;
+> +
+> +       div = kzalloc(sizeof(struct clk_divider), GFP_KERNEL);
+> +
+> +       if (!div) {
+> +               pr_err("%s: could not allocate divider clk\n", __func__);
+> +               return NULL;
+> +       }
+> +
+> +       /* struct clk_divider assignments */
+> +       div->reg = reg;
+> +       div->shift = shift;
+> +       div->width = width;
+> +       div->flags = clk_divider_flags;
+> +       div->lock = lock;
+> +
+> +       if (parent_name) {
+> +               div->parent[0] = kstrdup(parent_name, GFP_KERNEL);
+> +               if (!div->parent[0])
+> +                       goto out;
+> +       }
+> +
+> +       clk = clk_register(dev, name,
+> +                       &clk_divider_ops, &div->hw,
+> +                       div->parent,
+> +                       (parent_name ? 1 : 0),
+> +                       flags);
+> +       if (clk)
+> +               return clk;
+> +
+> +out:
+> +       kfree(div->parent[0]);
+> +       kfree(div);
+> +
+> +       return NULL;
+> +}
+> diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
+> new file mode 100644
+> index 0000000..90c79fb
+> --- /dev/null
+> +++ b/drivers/clk/clk-fixed-rate.c
+> @@ -0,0 +1,82 @@
+> +/*
+> + * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
+> + * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * Fixed rate clock implementation
+> + */
+> +
+> +#include <linux/clk-provider.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/io.h>
+> +#include <linux/err.h>
+> +
+> +/*
+> + * DOC: basic fixed-rate clock that cannot gate
+> + *
+> + * Traits of this clock:
+> + * prepare - clk_(un)prepare only ensures parents are prepared
+> + * enable - clk_enable only ensures parents are enabled
+> + * rate - rate is always a fixed value.  No clk_set_rate support
+> + * parent - fixed parent.  No clk_set_parent support
+> + */
+> +
+> +#define to_clk_fixed_rate(_hw) container_of(_hw, struct clk_fixed_rate, hw)
+> +
+> +static unsigned long clk_fixed_rate_recalc_rate(struct clk_hw *hw,
+> +               unsigned long parent_rate)
+> +{
+> +       return to_clk_fixed_rate(hw)->fixed_rate;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_fixed_rate_recalc_rate);
+> +
+> +struct clk_ops clk_fixed_rate_ops = {
+> +       .recalc_rate = clk_fixed_rate_recalc_rate,
+> +};
+> +EXPORT_SYMBOL_GPL(clk_fixed_rate_ops);
+> +
+> +struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+> +               const char *parent_name, unsigned long flags,
+> +               unsigned long fixed_rate)
+> +{
+> +       struct clk_fixed_rate *fixed;
+> +       char **parent_names = NULL;
+> +       u8 len;
+> +
+> +       fixed = kzalloc(sizeof(struct clk_fixed_rate), GFP_KERNEL);
+> +
+> +       if (!fixed) {
+> +               pr_err("%s: could not allocate fixed clk\n", __func__);
+> +               return ERR_PTR(-ENOMEM);
+> +       }
+> +
+> +       /* struct clk_fixed_rate assignments */
+> +       fixed->fixed_rate = fixed_rate;
+> +
+> +       if (parent_name) {
+> +               parent_names = kmalloc(sizeof(char *), GFP_KERNEL);
+> +
+> +               if (! parent_names)
+> +                       goto out;
+> +
+> +               len = sizeof(char) * strlen(parent_name);
+> +
+> +               parent_names[0] = kmalloc(len, GFP_KERNEL);
+> +
+> +               if (!parent_names[0])
+> +                       goto out;
+> +
+> +               strncpy(parent_names[0], parent_name, len);
+> +       }
+> +
+> +out:
+> +       return clk_register(dev, name,
+> +                       &clk_fixed_rate_ops, &fixed->hw,
+> +                       parent_names,
+> +                       (parent_name ? 1 : 0),
+> +                       flags);
+> +}
+> diff --git a/drivers/clk/clk-gate.c b/drivers/clk/clk-gate.c
+> new file mode 100644
+> index 0000000..5d50efa
+> --- /dev/null
+> +++ b/drivers/clk/clk-gate.c
+> @@ -0,0 +1,157 @@
+> +/*
+> + * Copyright (C) 2010-2011 Canonical Ltd <jeremy.kerr@canonical.com>
+> + * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * Gated clock implementation
+> + */
+> +
+> +#include <linux/clk-provider.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/io.h>
+> +#include <linux/err.h>
+> +#include <linux/string.h>
 > +
 > +/**
-> + * pci_get_bus - locate PCI bus from a given domain and bus number
-> + * @domain: number of PCI domain to search
-> + * @busnr: number of desired PCI bus
+> + * DOC: basic gatable clock which can gate and ungate it's ouput
 > + *
-> + * Given a PCI bus number and domain number, the desired PCI bus is located
-> + * in the global list of PCI buses. If the bus is found, a pointer to its
-> + * data structure is returned, and the reference count to the bus is increased.
-> + * Otherwise, %NULL is returned.
+> + * Traits of this clock:
+> + * prepare - clk_(un)prepare only ensures parent is (un)prepared
+> + * enable - clk_enable and clk_disable are functional & control gating
+> + * rate - inherits rate from parent.  No clk_set_rate support
+> + * parent - fixed parent.  No clk_set_parent support
 > + */
-> +struct pci_bus *
-> +pci_get_bus(int domain, int busnr)
+> +
+> +#define to_clk_gate(_hw) container_of(_hw, struct clk_gate, hw)
+> +
+> +static void clk_gate_set_bit(struct clk_gate *gate)
 > +{
-> + � � � struct pci_bus *bus;
+> +       u32 reg;
+> +       unsigned long flags = 0;
 > +
-> + � � � rcu_read_lock();
-> + � � � bus = pci_bus_get(__pci_find_bus(domain, busnr));
-> + � � � rcu_read_unlock();
+> +       if (gate->lock)
+> +               spin_lock_irqsave(gate->lock, flags);
 > +
-> + � � � return bus;
+> +       reg = readl(gate->reg);
+> +       reg |= BIT(gate->bit_idx);
+> +       writel(reg, gate->reg);
+> +
+> +       if (gate->lock)
+> +               spin_unlock_irqrestore(gate->lock, flags);
 > +}
-> +EXPORT_SYMBOL(pci_get_bus);
+> +
+> +static void clk_gate_clear_bit(struct clk_gate *gate)
+> +{
+> +       u32 reg;
+> +       unsigned long flags = 0;
+> +
+> +       if (gate->lock)
+> +               spin_lock_irqsave(gate->lock, flags);
+> +
+> +       reg = readl(gate->reg);
+> +       reg &= ~BIT(gate->bit_idx);
+> +       writel(reg, gate->reg);
+> +
+> +       if (gate->lock)
+> +               spin_unlock_irqrestore(gate->lock, flags);
+> +}
+> +
+> +static int clk_gate_enable(struct clk_hw *hw)
+> +{
+> +       struct clk_gate *gate = to_clk_gate(hw);
+> +
+> +       if (gate->flags & CLK_GATE_SET_TO_DISABLE)
+> +               clk_gate_clear_bit(gate);
+> +       else
+> +               clk_gate_set_bit(gate);
+> +
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_gate_enable);
+> +
+> +static void clk_gate_disable(struct clk_hw *hw)
+> +{
+> +       struct clk_gate *gate = to_clk_gate(hw);
+> +
+> +       if (gate->flags & CLK_GATE_SET_TO_DISABLE)
+> +               clk_gate_set_bit(gate);
+> +       else
+> +               clk_gate_clear_bit(gate);
+> +}
+> +EXPORT_SYMBOL_GPL(clk_gate_disable);
+> +
+> +static int clk_gate_is_enabled(struct clk_hw *hw)
+> +{
+> +       u32 reg;
+> +       unsigned long flags = 0;
+> +       struct clk_gate *gate = to_clk_gate(hw);
+> +
+> +       if (gate->lock)
+> +               spin_lock_irqsave(gate->lock, flags);
+> +
+> +       reg = readl(gate->reg);
+> +
+> +       if (gate->lock)
+> +               spin_unlock_irqrestore(gate->lock, flags);
+> +
+> +       /* if a set bit disables this clk, flip it before masking */
+> +       if (gate->flags & CLK_GATE_SET_TO_DISABLE)
+> +               reg ^= BIT(gate->bit_idx);
+> +
+> +       reg &= BIT(gate->bit_idx);
+> +
+> +       return reg ? 1 : 0;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_gate_is_enabled);
+> +
+> +struct clk_ops clk_gate_ops = {
+> +       .enable = clk_gate_enable,
+> +       .disable = clk_gate_disable,
+> +       .is_enabled = clk_gate_is_enabled,
+> +};
+> +EXPORT_SYMBOL_GPL(clk_gate_ops);
+> +
+> +struct clk *clk_register_gate(struct device *dev, const char *name,
+> +               const char *parent_name, unsigned long flags,
+> +               void __iomem *reg, u8 bit_idx,
+> +               u8 clk_gate_flags, spinlock_t *lock)
+> +{
+> +       struct clk_gate *gate;
+> +       struct clk *clk;
+> +
+> +       gate = kzalloc(sizeof(struct clk_gate), GFP_KERNEL);
+> +
+> +       if (!gate) {
+> +               pr_err("%s: could not allocate gated clk\n", __func__);
+> +               return NULL;
+> +       }
+> +
+> +       /* struct clk_gate assignments */
+> +       gate->reg = reg;
+> +       gate->bit_idx = bit_idx;
+> +       gate->flags = clk_gate_flags;
+> +       gate->lock = lock;
+> +
+> +       if (parent_name) {
+> +               gate->parent[0] = kstrdup(parent_name, GFP_KERNEL);
+> +               if (!gate->parent[0])
+> +                       goto out;
+> +       }
+> +
+> +       clk = clk_register(dev, name,
+> +                       &clk_gate_ops, &gate->hw,
+> +                       gate->parent,
+> +                       (parent_name ? 1 : 0),
+> +                       flags);
+> +       if (clk)
+> +               return clk;
+> +out:
+> +       kfree(gate->parent[0]);
+> +       kfree(gate);
+> +
+> +       return NULL;
+> +}
+> diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
+> new file mode 100644
+> index 0000000..6fc0878
+> --- /dev/null
+> +++ b/drivers/clk/clk-mux.c
+> @@ -0,0 +1,123 @@
+> +/*
+> + * Copyright (C) 2011 Sascha Hauer, Pengutronix <s.hauer@pengutronix.de>
+> + * Copyright (C) 2011 Richard Zhao, Linaro <richard.zhao@linaro.org>
+> + * Copyright (C) 2011-2012 Mike Turquette, Linaro Ltd <mturquette@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * Simple multiplexer clock implementation
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/io.h>
+> +#include <linux/err.h>
+> +
+> +/*
+> + * DOC: basic adjustable multiplexer clock that cannot gate
+> + *
+> + * Traits of this clock:
+> + * prepare - clk_prepare only ensures that parents are prepared
+> + * enable - clk_enable only ensures that parents are enabled
+> + * rate - rate is only affected by parent switching.  No clk_set_rate support
+> + * parent - parent is adjustable through clk_set_parent
+> + */
+> +
+> +#define to_clk_mux(_hw) container_of(_hw, struct clk_mux, hw)
+> +
+> +static u8 clk_mux_get_parent(struct clk_hw *hw)
+> +{
+> +       struct clk_mux *mux = to_clk_mux(hw);
+> +       u32 val;
+> +       unsigned long flags = 0;
+> +
+> +       if (mux->lock)
+> +               spin_lock_irqsave(mux->lock, flags);
+> +
+> +       /*
+> +        * FIXME need a mux-specific flag to determine if val is bitwise or numeric
+> +        * e.g. sys_clkin_ck's clksel field is 3 bits wide, but ranges from 0x1
+> +        * to 0x7 (index starts at one)
+> +        * OTOH, pmd_trace_clk_mux_ck uses a separate bit for each clock, so
+> +        * val = 0x4 really means "bit 2, index starts at bit 0"
+> +        */
+> +       val = readl(mux->reg) >> mux->shift;
+> +       val &= (1 << mux->width) - 1;
+> +
+> +       if (mux->lock)
+> +               spin_unlock_irqrestore(mux->lock, flags);
+> +
+> +       if (val && (mux->flags & CLK_MUX_INDEX_BIT))
+> +               val = ffs(val) - 1;
+> +
+> +       if (val && (mux->flags & CLK_MUX_INDEX_ONE))
+> +               val--;
+> +
+> +       if (val >= __clk_get_num_parents(hw->clk))
+> +               return -EINVAL;
+> +
+> +       return val;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_mux_get_parent);
+> +
+> +static int clk_mux_set_parent(struct clk_hw *hw, u8 index)
+> +{
+> +       struct clk_mux *mux = to_clk_mux(hw);
+> +       u32 val;
+> +       unsigned long flags = 0;
+> +
+> +       if (mux->flags & CLK_MUX_INDEX_BIT)
+> +               index = (1 << ffs(index));
+> +
+> +       if (mux->flags & CLK_MUX_INDEX_ONE)
+> +               index++;
+> +
+> +       if (mux->lock)
+> +               spin_lock_irqsave(mux->lock, flags);
+> +
+> +       val = readl(mux->reg);
+> +       val &= ~(((1 << mux->width) - 1) << mux->shift);
+> +       val |= index << mux->shift;
+> +       writel(val, mux->reg);
+> +
+> +       if (mux->lock)
+> +               spin_unlock_irqrestore(mux->lock, flags);
+> +
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_mux_set_parent);
+> +
+> +struct clk_ops clk_mux_ops = {
+> +       .get_parent = clk_mux_get_parent,
+> +       .set_parent = clk_mux_set_parent,
+> +};
+> +EXPORT_SYMBOL_GPL(clk_mux_ops);
+> +
+> +struct clk *clk_register_mux(struct device *dev, const char *name,
+> +               char **parent_names, u8 num_parents, unsigned long flags,
+> +               void __iomem *reg, u8 shift, u8 width,
+> +               u8 clk_mux_flags, spinlock_t *lock)
+> +{
+> +       struct clk_mux *mux;
+> +
+> +       mux = kmalloc(sizeof(struct clk_mux), GFP_KERNEL);
+> +
+> +       if (!mux) {
+> +               pr_err("%s: could not allocate mux clk\n", __func__);
+> +               return ERR_PTR(-ENOMEM);
+> +       }
+> +
+> +       /* struct clk_mux assignments */
+> +       mux->reg = reg;
+> +       mux->shift = shift;
+> +       mux->width = width;
+> +       mux->flags = clk_mux_flags;
+> +       mux->lock = lock;
+> +
+> +       return clk_register(dev, name, &clk_mux_ops, &mux->hw,
+> +                       parent_names, num_parents, flags);
+> +}
+> diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+> index 33bf6a7..9d5c4b1 100644
+> --- a/include/linux/clk-private.h
+> +++ b/include/linux/clk-private.h
+> @@ -45,6 +45,130 @@ struct clk {
+>  #endif
+>  };
+>
+> +/*
+> + * DOC: Basic clock implementations common to many platforms
+> + *
+> + * Each basic clock hardware type is comprised of a structure describing the
+> + * clock hardware, implementations of the relevant callbacks in struct clk_ops,
+> + * unique flags for that hardware type, a registration function and an
+> + * alternative macro for static initialization
+> + */
+> +
+> +extern struct clk_ops clk_fixed_rate_ops;
+> +
+> +#define DEFINE_CLK_FIXED_RATE(_name, _flags, _rate,            \
+> +                               _fixed_rate_flags)              \
+> +       static struct clk _name;                                \
+> +       static char *_name##_parent_names[] = {};               \
+> +       static struct clk_fixed_rate _name##_hw = {             \
+> +               .hw = {                                         \
+> +                       .clk = &_name,                          \
+> +               },                                              \
+> +               .fixed_rate = _rate,                            \
+> +               .flags = _fixed_rate_flags,                     \
+> +       };                                                      \
+> +       static struct clk _name = {                             \
+> +               .name = #_name,                                 \
+> +               .ops = &clk_fixed_rate_ops,                     \
+> +               .hw = &_name##_hw.hw,                           \
+> +               .parent_names = _name##_parent_names,           \
+> +               .num_parents =                                  \
+> +                       ARRAY_SIZE(_name##_parent_names),       \
+> +               .flags = _flags,                                \
+> +       };
+> +
+> +extern struct clk_ops clk_gate_ops;
+> +
+> +#define DEFINE_CLK_GATE(_name, _parent_name, _parent_ptr,      \
+> +                               _flags, _reg, _bit_idx,         \
+> +                               _gate_flags, _lock)             \
+> +       static struct clk _name;                                \
+> +       static char *_name##_parent_names[] = {                 \
+> +               _parent_name,                                   \
+> +       };                                                      \
+> +       static struct clk *_name##_parents[] = {                \
+> +               _parent_ptr,                                    \
+> +       };                                                      \
+> +       static struct clk_gate _name##_hw = {                   \
+> +               .hw = {                                         \
+> +                       .clk = &_name,                          \
+> +               },                                              \
+> +               .reg = _reg,                                    \
+> +               .bit_idx = _bit_idx,                            \
+> +               .flags = _gate_flags,                           \
+> +               .lock = _lock,                                  \
+> +       };                                                      \
+> +       static struct clk _name = {                             \
+> +               .name = #_name,                                 \
+> +               .ops = &clk_gate_ops,                           \
+> +               .hw = &_name##_hw.hw,                           \
+> +               .parent_names = _name##_parent_names,           \
+> +               .num_parents =                                  \
+> +                       ARRAY_SIZE(_name##_parent_names),       \
+> +               .parents = _name##_parents,                     \
+> +               .flags = _flags,                                \
+> +       };
+> +
+> +extern struct clk_ops clk_divider_ops;
+> +
+> +#define DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,   \
+> +                               _flags, _reg, _shift, _width,   \
+> +                               _divider_flags, _lock)          \
+> +       static struct clk _name;                                \
+> +       static char *_name##_parent_names[] = {                 \
+> +               _parent_name,                                   \
+> +       };                                                      \
+> +       static struct clk *_name##_parents[] = {                \
+> +               _parent_ptr,                                    \
+> +       };                                                      \
+> +       static struct clk_divider _name##_hw = {                \
+> +               .hw = {                                         \
+> +                       .clk = &_name,                          \
+> +               },                                              \
+> +               .reg = _reg,                                    \
+> +               .shift = _shift,                                \
+> +               .width = _width,                                \
+> +               .flags = _divider_flags,                        \
+> +               .lock = _lock,                                  \
+> +       };                                                      \
+> +       static struct clk _name = {                             \
+> +               .name = #_name,                                 \
+> +               .ops = &clk_divider_ops,                        \
+> +               .hw = &_name##_hw.hw,                           \
+> +               .parent_names = _name##_parent_names,           \
+> +               .num_parents =                                  \
+> +                       ARRAY_SIZE(_name##_parent_names),       \
+> +               .parents = _name##_parents,                     \
+> +               .flags = _flags,                                \
+> +       };
+> +
+> +extern struct clk_ops clk_mux_ops;
+> +
+> +#define DEFINE_CLK_MUX(_name, _parent_names, _parents, _flags, \
+> +                               _reg, _shift, _width,           \
+> +                               _mux_flags, _lock)              \
+> +       static struct clk _name;                                \
+> +       static struct clk_mux _name##_hw = {                    \
+> +               .hw = {                                         \
+> +                       .clk = &_name,                          \
+> +               },                                              \
+> +               .reg = _reg,                                    \
+> +               .shift = _shift,                                \
+> +               .width = _width,                                \
+> +               .flags = _mux_flags,                            \
+> +               .lock = _lock,                                  \
+> +       };                                                      \
+> +       static struct clk _name = {                             \
+> +               .name = #_name,                                 \
+> +               .ops = &clk_mux_ops,                            \
+> +               .hw = &_name##_hw.hw,                           \
+> +               .parent_names = _parent_names,                  \
+> +               .num_parents =                                  \
+> +                       ARRAY_SIZE(_parent_names),              \
+> +               .parents = _parents,                            \
+> +               .flags = _flags,                                \
+> +       };
+> +
+>  /**
+>  * __clk_init - initialize the data structures in a struct clk
+>  * @dev:       device initializing this clk, placeholder for now
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index 09dea1f..853d526 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -129,6 +129,133 @@ struct clk_ops {
+>        void            (*init)(struct clk_hw *hw);
+>  };
+>
+> +/*
+> + * DOC: Basic clock implementations common to many platforms
+> + *
+> + * Each basic clock hardware type is comprised of a structure describing the
+> + * clock hardware, implementations of the relevant callbacks in struct clk_ops,
+> + * unique flags for that hardware type, a registration function and an
+> + * alternative macro for static initialization
+> + */
 > +
 > +/**
-> + * pci_get_next_bus - begin or continue searching for a PCI bus
-> + * @from: Previous PCI bus found, or %NULL for new search.
-> + *
-> + * Iterates through the list of known PCI busses. �A new search is
-> + * initiated by passing %NULL as the @from argument. �Otherwise if
-> + * @from is not %NULL, searches continue from next device on the
-> + * global list. If a bus is found, a pointer to its data structure
-> + * is returned, and the reference count to the bus is increased.
-> + * Otherwise, %NULL is returned.
-> + * The reference count for @from is always decremented if it is not %NULL.
+> + * struct clk_fixed_rate - fixed-rate clock
+> + * @hw:                handle between common and hardware-specific interfaces
+> + * @fixed_rate:        constant frequency of clock
 > + */
-> +struct pci_bus *
-> +pci_get_next_bus(struct pci_bus *from)
-> +{
-> + � � � struct pci_bus *bus;
+> +struct clk_fixed_rate {
+> +       struct          clk_hw hw;
+> +       unsigned long   fixed_rate;
+> +       u8              flags;
+> +};
 > +
-> + � � � rcu_read_lock();
-> + � � � bus = pci_bus_get(__pci_find_next_bus(from));
-> + � � � rcu_read_unlock();
-> +
-> + � � � return bus;
-> +}
-> +EXPORT_SYMBOL(pci_get_next_bus);
+> +struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+> +               const char *parent_name, unsigned long flags,
+> +               unsigned long fixed_rate);
 > +
 > +/**
-> + * pci_bus_present - Returns true if a bus with the (@domain, @busnr)
-> + * is present, false if not.
-> + * @domain: number of PCI domain to search
-> + * @busnr: number of desired PCI bus
+> + * struct clk_gate - gating clock
 > + *
-> + * Obvious fact: You do not have a reference to any bus that might be found
-> + * by this function, so if that bus is removed from the system right after
-> + * this function is finished, the value will be stale. �Use this function to
-> + * find buses that are usually built into a system, or for a general hint as
-> + * to if another device happens to be present at this specific moment in time.
+> + * @hw:                handle between common and hardware-specific interfaces
+> + * @reg:       register controlling gate
+> + * @bit_idx:   single bit controlling gate
+> + * @flags:     hardware-specific flags
+> + * @lock:      register lock
+> + *
+> + * Clock which can gate its output.  Implements .enable & .disable
+> + *
+> + * Flags:
+> + * CLK_GATE_SET_DISABLE - by default this clock sets the bit at bit_idx to
+> + *     enable the clock.  Setting this flag does the opposite: setting the bit
+> + *     disable the clock and clearing it enables the clock
 > + */
-> +bool pci_bus_present(int domain, int busnr)
-> +{
-> + � � � struct pci_bus *bus;
+> +struct clk_gate {
+> +       struct clk_hw hw;
+> +       void __iomem    *reg;
+> +       u8              bit_idx;
+> +       u8              flags;
+> +       spinlock_t      *lock;
+> +       char            *parent[1];
+> +};
 > +
-> + � � � rcu_read_lock();
-> + � � � bus = __pci_find_bus(domain, busnr);
-> + � � � rcu_read_unlock();
+> +#define CLK_GATE_SET_TO_DISABLE                BIT(0)
 > +
-> + � � � return !!bus;
-> �}
-> +EXPORT_SYMBOL(pci_bus_present);
->
-> �/**
-> �* pci_get_slot - locate PCI device for a given PCI slot
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index ec8c4cf..222bc88 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -731,6 +731,11 @@ int pci_find_ht_capability(struct pci_dev *dev, int ht_cap);
-> �int pci_find_next_ht_capability(struct pci_dev *dev, int pos, int ht_cap);
-> �struct pci_bus *pci_find_next_bus(const struct pci_bus *from);
->
-> +struct pci_bus *pci_bus_get(struct pci_bus *bus);
-> +void pci_bus_put(struct pci_bus *bus);
-> +struct pci_bus *pci_get_bus(int domain, int busnr);
-> +struct pci_bus *pci_get_next_bus(struct pci_bus *from);
-> +bool pci_bus_present(int domain, int busnr);
-> �struct pci_dev *pci_get_device(unsigned int vendor, unsigned int device,
-> � � � � � � � � � � � � � � � �struct pci_dev *from);
-> �struct pci_dev *pci_get_subsys(unsigned int vendor, unsigned int device,
-> @@ -1321,6 +1326,9 @@ static inline void pci_unblock_cfg_access(struct pci_dev *dev)
-> �static inline struct pci_bus *pci_find_next_bus(const struct pci_bus *from)
-> �{ return NULL; }
->
-> +static inline struct pci_bus *pci_get_next_bus(const struct pci_bus *from)
-> +{ return NULL; }
+> +struct clk *clk_register_gate(struct device *dev, const char *name,
+> +               const char *parent_name, unsigned long flags,
+> +               void __iomem *reg, u8 bit_idx,
+> +               u8 clk_gate_flags, spinlock_t *lock);
 > +
-> �static inline struct pci_dev *pci_get_slot(struct pci_bus *bus,
-> � � � � � � � � � � � � � � � � � � � � � � � �unsigned int devfn)
-> �{ return NULL; }
+> +/**
+> + * struct clk_divider - adjustable divider clock
+> + *
+> + * @hw:                handle between common and hardware-specific interfaces
+> + * @reg:       register containing the divider
+> + * @shift:     shift to the divider bit field
+> + * @width:     width of the divider bit field
+> + * @lock:      register lock
+> + *
+> + * Clock with an adjustable divider affecting its output frequency.  Implements
+> + * .recalc_rate, .set_rate and .round_rate
+> + *
+> + * Flags:
+> + * CLK_DIVIDER_ONE_BASED - by default the divisor is the value read from the
+> + *     register plus one.  If CLK_DIVIDER_ONE_BASED is set then the divider is
+> + *     the raw value read from the register, with the value of zero considered
+> + *     invalid
+> + * CLK_DIVIDER_POWER_OF_TWO - clock divisor is 2 raised to the value read from
+> + *     the hardware register
+> + */
+> +struct clk_divider {
+> +       struct clk_hw   hw;
+> +       void __iomem    *reg;
+> +       u8              shift;
+> +       u8              width;
+> +       u8              flags;
+> +       spinlock_t      *lock;
+> +       char            *parent[1];
+> +};
+> +
+> +#define CLK_DIVIDER_ONE_BASED          BIT(0)
+> +#define CLK_DIVIDER_POWER_OF_TWO       BIT(1)
+> +
+> +struct clk *clk_register_divider(struct device *dev, const char *name,
+> +               const char *parent_name, unsigned long flags,
+> +               void __iomem *reg, u8 shift, u8 width,
+> +               u8 clk_divider_flags, spinlock_t *lock);
+> +
+> +/**
+> + * struct clk_mux - multiplexer clock
+> + *
+> + * @hw:                handle between common and hardware-specific interfaces
+> + * @reg:       register controlling multiplexer
+> + * @shift:     shift to multiplexer bit field
+> + * @width:     width of mutliplexer bit field
+> + * @num_clks:  number of parent clocks
+> + * @lock:      register lock
+> + *
+> + * Clock with multiple selectable parents.  Implements .get_parent, .set_parent
+> + * and .recalc_rate
+> + *
+> + * Flags:
+> + * CLK_MUX_INDEX_ONE - register index starts at 1, not 0
+> + * CLK_MUX_INDEX_BITWISE - register index is a single bit (power of two)
+> + */
+> +struct clk_mux {
+> +       struct clk_hw   hw;
+> +       void __iomem    *reg;
+> +       u8              shift;
+> +       u8              width;
+> +       u8              flags;
+> +       spinlock_t      *lock;
+> +};
+> +
+> +#define CLK_MUX_INDEX_ONE              BIT(0)
+> +#define CLK_MUX_INDEX_BIT              BIT(1)
+> +
+> +struct clk *clk_register_mux(struct device *dev, const char *name,
+> +               char **parent_names, u8 num_parents, unsigned long flags,
+> +               void __iomem *reg, u8 shift, u8 width,
+> +               u8 clk_mux_flags, spinlock_t *lock);
+>
+>  /**
+>  * clk_register - allocate a new clock, register it and return an opaque cookie
 > --
 > 1.7.5.4
 >
+>
+> _______________________________________________
+> linaro-dev mailing list
+> linaro-dev@lists.linaro.org
+> http://lists.linaro.org/mailman/listinfo/linaro-dev
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
