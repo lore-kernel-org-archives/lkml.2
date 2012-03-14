@@ -1,48 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030894Ab2CNRVN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 13:21:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57555 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030435Ab2CNRVI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 13:21:08 -0400
-Date: Wed, 14 Mar 2012 17:21:02 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>
-Subject: Re: [RESEND PATCH 1/2] MFD: MAX77693: add MAX77693 MFD driver
-Message-ID: <20120314172101.GA13393@sirena.org.uk>
-References: <4F5EDB01.9070308@samsung.com>
- <D958900912E20642BCBC71664EFECE3E6DD2912D02@BGMAIL02.nvidia.com>
- <CAH9JG2VrNCPMHoy5pUyc7nTzv-B7ucXheMy7PBtVUfaebt=yUA@mail.gmail.com>
- <D958900912E20642BCBC71664EFECE3E6DD2912D10@BGMAIL02.nvidia.com>
+	id S1030939Ab2CNRVv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 13:21:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4454 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756209Ab2CNRVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 13:21:49 -0400
+Date: Wed, 14 Mar 2012 13:22:37 -0400
+From: Andy Gospodarek <gospo@redhat.com>
+To: Weiping Pan <panweiping3@gmail.com>
+Cc: Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
+        "open list:BONDING DRIVER" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net V2] bonding: send igmp report for its master
+Message-ID: <20120314172237.GA12372@quad.redhat.com>
+References: <f5d199e12d78dadcfb932e103984276d36b186e0.1331539261.git.panweiping3@gmail.com>
+ <f5d199e12d78dadcfb932e103984276d36b186e0.1331539261.git.panweiping3@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <D958900912E20642BCBC71664EFECE3E6DD2912D10@BGMAIL02.nvidia.com>
-X-Cookie: Be sure each item is properly endorsed.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <f5d199e12d78dadcfb932e103984276d36b186e0.1331539261.git.panweiping3@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 11:22:24AM +0530, Venu Byravarasu wrote:
-> > So we decide to use legacy way. As regmap is not yet tested. So we
-> > summit the current way and revise it later.
+On Wed, Mar 14, 2012 at 11:37:22AM +0800, Weiping Pan wrote:
+> Liang Zheng(lzheng@redhat.com) found that in the following topo,
+> bonding does not send igmp report when we trigger a fail-over of bonding.
+> 
+> eth0--
+>       |-- bond0 -- br0
+> eth1--
+> 
+> modprobe bonding mode=1 miimon=100 resend_igmp=10
+> ifconfig bond0 up
+> ifenslave bond0 eth0 eth1
+> 
+> brctl addbr br0
+> ifconfig br0 192.168.100.2/24 up
+> brctl addif br0 bond0
+> 
+> Add 192.168.100.2(br0) into a multicast group, like 224.10.10.10,
+> then trigger a fali-over in bonding.
+> You can see that parameter "resend_igmp" does not work.
+> 
+> The reason is that when we add br0 into a multicast group,
+> it does not propagate multicast knowledge down to its ports.
+> 
+> If we choose to propagate multicast knowledge down to all ports for bridge,
+> then we have to track every change that is done to bridge, and keep a backup
+> for all ports. It is hard to track, I think.
+> 
+> Instead I choose to modify bonding to send igmp report for its master.
+> 
+> Changelog:
+> V2: correct comments
+> 
+> Signed-off-by: Weiping Pan <panweiping3@gmail.com>
+> ---
+>  drivers/net/bonding/bond_main.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+> index 435984a..300c490 100644
+> --- a/drivers/net/bonding/bond_main.c
+> +++ b/drivers/net/bonding/bond_main.c
+> @@ -794,6 +794,14 @@ static void bond_resend_igmp_join_requests_delayed(struct work_struct *work)
+>  {
+>  	struct bonding *bond = container_of(work, struct bonding,
+>  					    mcast_work.work);
+> +	struct net_device *bond_dev, *master_dev = NULL;
+> +	bond_dev = bond->dev;
+> +	master_dev = bond_dev->master;
+> +
+> +	if (unlikely(master_dev)) {
+> +		__bond_resend_igmp_join_requests(master_dev);
+> +	}
+> +
+>  	bond_resend_igmp_join_requests(bond);
+>  }
+>  
 
-> I was under the impression that regmap is stable now. Can you 
-> plz let me know, what kind of problems you are seeing with 
-> regmap? As I'm also planning to upstream a MFD using regmap 
-> very soon, this information will be useful.
+This check and call to __bond_resend_igmp_join_requests  would be better
+in bond_resend_igmp_join_requests for 2 reasons:
 
-Yes, it should be very stable.  Personally my primary development
-systems have PMICs which use regmap and most of my work is on regmap
-based device so I'll probably notice if there's an issue.
+1.  bond_resend_igmp_join_requests already has a check for vlan devices.
+It seems logical to check for the bridging case there also.
+
+2.  Calling __bond_resend_igmp_join_requests will not work as expected
+when igmp_retrans>1 since no decrementing or rescheduling is done in
+__bond_resend_igmp_join_requests.
+
