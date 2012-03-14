@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab2CNK6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 06:58:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61684 "EHLO mx1.redhat.com"
+	id S1760846Ab2CNK71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 06:59:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42610 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753992Ab2CNK61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 06:58:27 -0400
-Date: Wed, 14 Mar 2012 12:58:17 +0200
-From: Gleb Natapov <gleb@redhat.com>
+	id S1753992Ab2CNK70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 06:59:26 -0400
+Date: Wed, 14 Mar 2012 10:59:14 +0000
+From: "Daniel P. Berrange" <berrange@redhat.com>
 To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Amit Shah <amit.shah@redhat.com>, Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
+Cc: Avi Kivity <avi@redhat.com>, Amit Shah <amit.shah@redhat.com>,
         kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
 Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-Message-ID: <20120314105817.GW2304@redhat.com>
+Message-ID: <20120314105914.GB2315@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
 References: <4F5DD0FD.9070904@redhat.com>
  <20120313091843.GB3800@redhat.com>
  <4F5F25BF.7060100@redhat.com>
@@ -25,83 +25,20 @@ References: <4F5DD0FD.9070904@redhat.com>
  <4F606A7C.9090900@cn.fujitsu.com>
  <20120314103755.GD2708@amit.redhat.com>
  <4F607857.50402@cn.fujitsu.com>
- <20120314105234.GV2304@redhat.com>
- <4F6079B7.1080507@cn.fujitsu.com>
+ <4F60788A.2070608@redhat.com>
+ <4F6079E7.7010608@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4F6079B7.1080507@cn.fujitsu.com>
+In-Reply-To: <4F6079E7.7010608@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 06:57:59PM +0800, Wen Congyang wrote:
-> At 03/14/2012 06:52 PM, Gleb Natapov Wrote:
-> > On Wed, Mar 14, 2012 at 06:52:07PM +0800, Wen Congyang wrote:
-> >> At 03/14/2012 06:37 PM, Amit Shah Wrote:
-> >>> On (Wed) 14 Mar 2012 [17:53:00], Wen Congyang wrote:
-> >>>> At 03/14/2012 05:24 PM, Avi Kivity Wrote:
-> >>>>> On 03/14/2012 10:29 AM, Wen Congyang wrote:
-> >>>>>> At 03/13/2012 06:47 PM, Avi Kivity Wrote:
-> >>>>>>> On 03/13/2012 11:18 AM, Daniel P. Berrange wrote:
-> >>>>>>>> On Mon, Mar 12, 2012 at 12:33:33PM +0200, Avi Kivity wrote:
-> >>>>>>>>> On 03/12/2012 11:04 AM, Wen Congyang wrote:
-> >>>>>>>>>> Do you have any other comments about this patch?
-> >>>>>>>>>>
-> >>>>>>>>>
-> >>>>>>>>> Not really, but I'm not 100% convinced the patch is worthwhile.  It's
-> >>>>>>>>> likely to only be used by Linux, which has kexec facilities, and you can
-> >>>>>>>>> put talk to management via virtio-serial and describe the crash in more
-> >>>>>>>>> details than a simple hypercall.
-> >>>>>>>>
-> >>>>>>>> As mentioned before, I don't think virtio-serial is a good fit for this.
-> >>>>>>>> We want something that is simple & guaranteed always available. Using
-> >>>>>>>> virtio-serial requires significant setup work on both the host and guest.
-> >>>>>>>
-> >>>>>>> So what?  It needs to be done anyway for the guest agent.
-> >>>>>>>
-> >>>>>>>> Many management application won't know to make a vioserial device available
-> >>>>>>>> to all guests they create. 
-> >>>>>>>
-> >>>>>>> Then they won't know to deal with the panic event either.
-> >>>>>>>
-> >>>>>>>> Most administrators won't even configure kexec,
-> >>>>>>>> let alone virtio serial on top of it. 
-> >>>>>>>
-> >>>>>>> It should be done by the OS vendor, not the individual admin.
-> >>>>>>>
-> >>>>>>>> The hypercall requires zero host
-> >>>>>>>> side config, and zero guest side config, which IMHO is what we need for
-> >>>>>>>> this feature.
-> >>>>>>>
-> >>>>>>> If it was this one feature, yes.  But we keep getting more and more
-> >>>>>>> features like that and we bloat the hypervisor.  There's a reason we
-> >>>>>>> have a host-to-guest channel, we should use it.
-> >>>>>>>
-> >>>>>>
-> >>>>>> I donot know how to use virtio-serial.
-> >>>>>
-> >>>>> I don't either, copying Amit.
-> >>>>>
-> >>>>>> I start vm like this:
-> >>>>>> qemu ...\
-> >>>>>>    -device virtio-serial \
-> >>>>>>   -chardev socket,path=/tmp/foo,server,nowait,id=foo \
-> >>>>>>   -device virtserialport,chardev=foo,name=port1 ...
-> >>>>>>
-> >>>>>> You said that there are too many channels. Does it mean /tmp/foo is a channel?
-> >>>>>
-> >>>>> Probably.
-> >>>>
-> >>>> Hmm, if we use virtio-serial, the guest kernel writes something into the channel when
-> >>>> the os is panicked. Is it right?
-> >>>
-> >>> Depends on how you want to use it.  It could be the kernel, or it
-> >>> could be a userspace program which monitors syslogs for panic
-> >>> information and passes on that info to the virtio-serial channel.
-> >>
-> >> When the kernel is panicked, we cannot use userspace program.
-> >>
+On Wed, Mar 14, 2012 at 06:58:47PM +0800, Wen Congyang wrote:
+> At 03/14/2012 06:52 PM, Avi Kivity Wrote:
+> > On 03/14/2012 12:52 PM, Wen Congyang wrote:
 > >>>
 > >>>> If so, is this channel visible to guest userspace? If the channle is visible to guest
 > >>>> userspace, the program running in userspace may write the same message to the channel.
@@ -113,11 +50,22 @@ On Wed, Mar 14, 2012 at 06:57:59PM +0800, Wen Congyang wrote:
 > >> We should also prevent root user writing message to this channel if it is
 > >> used for panicked notification.
 > >>
-> > Why? Root user can also call panic hypercall if he wishes so.
+> > 
+> > Why?  root can easily cause a panic.
+> > 
 > 
-> IIRC, the instruction vmcall needs to run on ring0. The root user is in ring3.
-> 
-And who will stop the root from loading kernel module?
- 
---
-			Gleb.
+> root user can write the same message to virtio-serial while the guest is running...
+
+Unless you are running a MAC policy which strictly confines the root
+account, root can cause a kernel panic regardless of virtio-serial
+permissions in the guest:
+
+  echo c > /proc/sysrq-trigger
+
+Regards,
+Daniel
+-- 
+|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
+|: http://libvirt.org              -o-             http://virt-manager.org :|
+|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
+|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
