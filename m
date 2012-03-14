@@ -1,211 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031100Ab2CNVqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 17:46:45 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:44923 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030902Ab2CNVqm (ORCPT
+	id S1031110Ab2CNVsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 17:48:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50470 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761437Ab2CNVsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 17:46:42 -0400
-From: Marc Reilly <marc@cpdesign.com.au>
-To: sameo@linux.intel.com
-Cc: linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-i2c@vger.kernel.org,
-        u.kleine-koenig@pengutronix.de, oskar@scara.com,
-        linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        Marc Reilly <marc@cpdesign.com.au>
-Subject: [PATCH v3 6/6] mfd: mc13xxx: Add i2c driver
-Date: Thu, 15 Mar 2012 07:43:10 +1100
-Message-Id: <1331757790-10583-7-git-send-email-marc@cpdesign.com.au>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1331757790-10583-1-git-send-email-marc@cpdesign.com.au>
-References: <1331757790-10583-1-git-send-email-marc@cpdesign.com.au>
+	Wed, 14 Mar 2012 17:48:47 -0400
+Date: Wed, 14 Mar 2012 14:43:36 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, hjl.tools@gmail.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hjl.tools@gmail.com
+In-Reply-To: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
+Git-Commit-ID: 31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 14 Mar 2012 14:43:42 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for mc13xxx family ICs connected via i2c.
+Commit-ID:  31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4
+Gitweb:     http://git.kernel.org/tip/31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Wed, 14 Mar 2012 14:27:52 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Wed, 14 Mar 2012 14:27:52 -0700
 
-Signed-off-by: Marc Reilly <marc@cpdesign.com.au>
+x32: Fix alignment fail in struct compat_siginfo
+
+Adding struct _sigchld_x32 caused a misalignment cascade in struct
+siginfo, because union _sifields is located on an 4-byte boundary
+(8-byte misaligned.)
+
+Adding new fields that are 8-byte aligned caused the intermediate
+structures to also be aligned to 8 bytes, thereby adding padding in
+unexpected places.
+
+Thus, change s64 to compat_s64 here, which makes it "misaligned on
+paper".  In reality these fields *are* actually aligned (there are 3
+preceeding ints outside the union and 3 inside struct _sigchld_x32),
+but because of the intervening union and struct it is not possible for
+gcc to avoid padding without breaking the ABI.
+
+Reported-and-tested-by: H. J. Lu <hjl.tools@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/1329696488-16970-1-git-send-email-hpa@zytor.com
 ---
- drivers/mfd/Kconfig       |    8 +++-
- drivers/mfd/Makefile      |    1 +
- drivers/mfd/mc13xxx-i2c.c |  128 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 136 insertions(+), 1 deletions(-)
- create mode 100644 drivers/mfd/mc13xxx-i2c.c
+ arch/x86/include/asm/ia32.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 501fee5..3a039ff 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -573,7 +573,7 @@ config MFD_MC13783
+diff --git a/arch/x86/include/asm/ia32.h b/arch/x86/include/asm/ia32.h
+index 7d0c185..ee52760 100644
+--- a/arch/x86/include/asm/ia32.h
++++ b/arch/x86/include/asm/ia32.h
+@@ -130,8 +130,8 @@ typedef struct compat_siginfo {
+ 			unsigned int _pid;	/* which child */
+ 			unsigned int _uid;	/* sender's uid */
+ 			int _status;		/* exit code */
+-			s64 _utime;
+-			s64 _stime;
++			compat_s64 _utime;
++			compat_s64 _stime;
+ 		} _sigchld_x32;
  
- config MFD_MC13XXX
- 	tristate "Support Freescale MC13783 and MC13892"
--	depends on SPI_MASTER
-+	depends on SPI_MASTER || I2C
- 	select MFD_CORE
- 	select MFD_MC13783
- 	help
-@@ -590,6 +590,12 @@ config MFD_MC13XXX_SPI
- 	help
- 	  Select this if your MC13xxx is connected via an SPI bus.
- 
-+config MFD_MC13XXX_I2C
-+	tristate "MC13xxx I2C interface" if I2C
-+	default I2C
-+	help
-+	  Select this if your MC13xxx is connected via an I2C bus.
-+
- endif
- 
- config ABX500_CORE
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 2dc66ed..6d4566f 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -54,6 +54,7 @@ obj-$(CONFIG_TWL6040_CORE)	+= twl6040-core.o twl6040-irq.o
- 
- obj-$(CONFIG_MFD_MC13XXX)	+= mc13xxx-core.o
- obj-$(CONFIG_MFD_MC13XXX_SPI)	+= mc13xxx-spi.o
-+obj-$(CONFIG_MFD_MC13XXX_I2C)	+= mc13xxx-i2c.o
- 
- obj-$(CONFIG_MFD_CORE)		+= mfd-core.o
- 
-diff --git a/drivers/mfd/mc13xxx-i2c.c b/drivers/mfd/mc13xxx-i2c.c
-new file mode 100644
-index 0000000..1fb89af
---- /dev/null
-+++ b/drivers/mfd/mc13xxx-i2c.c
-@@ -0,0 +1,128 @@
-+/*
-+ * Copyright 2009-2010 Creative Product Design
-+ * Marc Reilly marc@cpdesign.com.au
-+ *
-+ * This program is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU General Public License version 2 as published by the
-+ * Free Software Foundation.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mutex.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/mc13xxx.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
-+#include <linux/i2c.h>
-+#include <linux/err.h>
-+
-+#include "mc13xxx.h"
-+
-+static const struct i2c_device_id mc13xxx_i2c_device_id[] = {
-+	{
-+		.name = "mc13783",
-+		.driver_data = MC13XXX_ID_MC13783
-+	}, {
-+		.name = "mc13892",
-+		.driver_data = MC13XXX_ID_MC13892,
-+	}, {
-+		/* sentinel */
-+	}
-+};
-+MODULE_DEVICE_TABLE(i2c, mc13xxx_i2c_device_id);
-+
-+static const struct of_device_id mc13xxx_dt_ids[] = {
-+	{ .compatible = "fsl,mc13783", .data = (void *) MC13XXX_ID_MC13783, },
-+	{ .compatible = "fsl,mc13892", .data = (void *) MC13XXX_ID_MC13892, },
-+	{ /* sentinel */ }
-+};
-+MODULE_DEVICE_TABLE(of, mc13xxx_dt_ids);
-+
-+static struct regmap_config mc13xxx_regmap_i2c_config = {
-+	.reg_bits = 8,
-+	.val_bits = 24,
-+
-+	.max_register = MC13XXX_NUMREGS,
-+
-+	.cache_type = REGCACHE_NONE,
-+};
-+
-+static int mc13xxx_i2c_probe(struct i2c_client *client,
-+		const struct i2c_device_id *id)
-+{
-+	const struct of_device_id *of_id;
-+	struct i2c_driver *idrv = to_i2c_driver(client->dev.driver);
-+	struct mc13xxx *mc13xxx;
-+	struct mc13xxx_platform_data *pdata = dev_get_platdata(&client->dev);
-+	int ret;
-+
-+	of_id = of_match_device(mc13xxx_dt_ids, &client->dev);
-+	if (of_id)
-+		idrv->id_table =
-+			&mc13xxx_i2c_device_id[(enum mc13xxx_id) of_id->data];
-+
-+	mc13xxx = kzalloc(sizeof(*mc13xxx), GFP_KERNEL);
-+	if (!mc13xxx)
-+		return -ENOMEM;
-+
-+	dev_set_drvdata(&client->dev, mc13xxx);
-+
-+	mc13xxx->dev = &client->dev;
-+	mutex_init(&mc13xxx->lock);
-+
-+	mc13xxx->regmap = regmap_init_i2c(client, &mc13xxx_regmap_i2c_config);
-+	if (IS_ERR(mc13xxx->regmap)) {
-+		ret = PTR_ERR(mc13xxx->regmap);
-+		dev_err(mc13xxx->dev, "Failed to initialize register map: %d\n",
-+				ret);
-+		dev_set_drvdata(&client->dev, NULL);
-+		return ret;
-+	}
-+
-+	ret = mc13xxx_common_init(mc13xxx, pdata, client->irq);
-+
-+	if (ret == 0 && (id->driver_data != mc13xxx->ictype))
-+		dev_warn(mc13xxx->dev,
-+				"device id doesn't match auto detection!\n");
-+
-+	return ret;
-+}
-+
-+static int __devexit mc13xxx_i2c_remove(struct i2c_client *client)
-+{
-+	struct mc13xxx *mc13xxx = dev_get_drvdata(&client->dev);
-+
-+	mc13xxx_common_cleanup(mc13xxx);
-+
-+	return 0;
-+}
-+
-+static struct i2c_driver mc13xxx_i2c_driver = {
-+	.id_table = mc13xxx_i2c_device_id,
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = "mc13xxx",
-+		.of_match_table = mc13xxx_dt_ids,
-+	},
-+	.probe = mc13xxx_i2c_probe,
-+	.remove = __devexit_p(mc13xxx_i2c_remove),
-+};
-+
-+static int __init mc13xxx_i2c_init(void)
-+{
-+	return i2c_add_driver(&mc13xxx_i2c_driver);
-+}
-+subsys_initcall(mc13xxx_i2c_init);
-+
-+static void __exit mc13xxx_i2c_exit(void)
-+{
-+	i2c_del_driver(&mc13xxx_i2c_driver);
-+}
-+module_exit(mc13xxx_i2c_exit);
-+
-+MODULE_DESCRIPTION("i2c driver for Freescale MC13XXX PMIC");
-+MODULE_AUTHOR("Marc Reilly <marc@cpdesign.com.au");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.3.4
-
+ 		/* SIGILL, SIGFPE, SIGSEGV, SIGBUS */
