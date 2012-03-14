@@ -1,105 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025Ab2CNESS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 00:18:18 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48365 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab2CNESQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 00:18:16 -0400
-Message-ID: <4F601C02.8070909@gmail.com>
-Date: Wed, 14 Mar 2012 15:18:10 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+	id S1752245Ab2CNEVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 00:21:40 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:55090 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751341Ab2CNEVi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 00:21:38 -0400
+From: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
+To: Sathisha Nanjappa <sathisha.nanjappa@hp.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jejb@kernel.org>
+Date: Wed, 14 Mar 2012 09:51:30 +0530
+Subject: RE: [PATCH] mpt2sas: Corrected the constant in comparison to a
+ hexadecimal.
+Thread-Topic: [PATCH] mpt2sas: Corrected the constant in comparison to a
+ hexadecimal.
+Thread-Index: Ac0BS6ijvEs0vtv3TNuXAygqWnaqJgATicpQ
+Message-ID: <A6888A6805518E4EA4AF7072A28264A6067E731D0E@inbmail02.lsi.com>
+References: <1331665168-22561-1-git-send-email-sathisha.nanjappa@hp.com>
+ <1331665168-22561-2-git-send-email-sathisha.nanjappa@hp.com>
+In-Reply-To: <1331665168-22561-2-git-send-email-sathisha.nanjappa@hp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Andrew Miller <amiller@amilx.com>, gregkh@linuxfoundation.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8187se: r8180_core.c: Fix coding style issue
-References: <1331686689-6763-1-git-send-email-amiller@amilx.com> <1331688836.27389.13.camel@joe2Laptop>
-In-Reply-To: <1331688836.27389.13.camel@joe2Laptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/03/12 12:33, Joe Perches wrote:
+This patch seem to be fine. Please consider this patch as Acked-by: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
 
-> On Tue, 2012-03-13 at 20:58 -0400, Andrew Miller wrote:
->> Fix long line coding style issue
->> Signed-off-by: Andrew Miller <amiller@amilx.com>
-> 
-> Hi Andrew.
-> 
-> Please strive for clarity instead of just fixing
-> random 80 char warnings.
-> 
->> diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
-> []
->> @@ -1607,17 +1609,20 @@ void rtl8180_rx(struct net_device *dev)
->>  		/* printk("==========================>rx : RXAGC is %d,signalstrength is %d\n",RXAGC,stats.signalstrength); */
->>  		stats.rssi = priv->wstats.qual.qual = priv->SignalQuality;
->>  		stats.noise = priv->wstats.qual.noise = 100 - priv->wstats.qual.qual;
->> -		bHwError = (((*(priv->rxringtail)) & (0x00000fff)) == 4080) | (((*(priv->rxringtail)) & (0x04000000)) != 0)
->> -			| (((*(priv->rxringtail)) & (0x08000000)) != 0) | (((~(*(priv->rxringtail))) & (0x10000000)) != 0) | (((~(*(priv->rxringtail))) & (0x20000000)) != 0);
->> +		bHwError = (((*(priv->rxringtail)) & (0x00000fff)) == 4080) |
->> +			   (((*(priv->rxringtail)) & (0x04000000)) != 0) |
->> +			   (((*(priv->rxringtail)) & (0x08000000)) != 0) |
->> +			   (((~(*(priv->rxringtail))) & (0x10000000)) != 0) |
->> +			   (((~(*(priv->rxringtail))) & (0x20000000)) != 0);
-> 
-> Likely these | uses should be ||
-> 
->>  		bCRC = ((*(priv->rxringtail)) & (0x00002000)) >> 13;
->>  		bICV = ((*(priv->rxringtail)) & (0x00001000)) >> 12;
->>  		hdr = (struct ieee80211_hdr_4addr *)priv->rxbuffer->buf;
->>  		    fc = le16_to_cpu(hdr->frame_ctl);
->>  		type = WLAN_FC_GET_TYPE(fc);
->>  
->> -			if ((IEEE80211_FTYPE_CTL != type) &&
->> -				(eqMacAddr(priv->ieee80211->current_network.bssid, (fc & IEEE80211_FCTL_TODS) ? hdr->addr1 : (fc & IEEE80211_FCTL_FROMDS) ? hdr->addr2 : hdr->addr3))
->> -				 && (!bHwError) && (!bCRC) && (!bICV)) {
->> +			if ((IEEE80211_FTYPE_CTL != type) && (eqMacAddr(priv->ieee80211->current_network.bssid,
->> +			    (fc & IEEE80211_FCTL_TODS) ? hdr->addr1 : (fc & IEEE80211_FCTL_FROMDS) ? hdr->addr2 : hdr->addr3))
->> +			    && (!bHwError) && (!bCRC) && (!bICV)) {
-> 
-> This is difficult to read and could be better written
-> removing unnecessary parentheses and making the egMacAddr
-> clearer as a function/macro call:
-> 
-> 			if (IEEE80211_FTYPE_CTL != type &&
-> 			    eqMacAddr(priv->ieee80211->current_network.bssid,
-> 				      fc & IEEE80211_FCTL_TODS ? hdr->addr1 :
-> 				      fc & IEEE80211_FCTL_FROMDS ? hdr->addr2 :
-> 				      hdr->addr3) &&
-> 			    !bHwError &&
-> 			    !bCRC &&
-> 			    !bICV)
+Regards,
+Nagalakshmi
 
 
-That's still pretty nasty. Eight lines for an if expression! It took me
-a couple of glances to realise that there were only two arguments to
-eqMacAddr. If you add some temporary variables then you can make the
-code a lot more sane, without making it overly verbose:
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Sathisha Nanjappa
+Sent: Wednesday, March 14, 2012 12:29 AM
+To: linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+Cc: Sathisha Nanjappa
+Subject: [PATCH] mpt2sas: Corrected the constant in comparison to a hexadecimal.
 
-	u8 *addr, *bssid = priv->ieee80211->current_network.bssid;
+    Bugzilla 42142 - mpt2sas: Number specified in wrong base
+    https://bugzilla.kernel.org/show_bug.cgi?id=42142
 
-	if (fc & IEEE80211_FCTL_TODS)
-		addr = hdr->addr1;
-	else if (fc & IEEE80211_FCTL_FROMDS)
-		addr = hdr->addr2;
-	else
-		addr = hdr->addr3;
+Signed-off-by: Sathisha Nanjappa <sathisha.nanjappa@hp.com>
+---
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-	if (!bHwError && !bCRC && !bICV &&
-	    type != IEEE80211_FTYPE_CTL && eqMacAddr(bssid, addr)) {
-		...
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index 0b2c955..f9a1244 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -657,7 +657,7 @@ _base_sas_log_info(struct MPT2SAS_ADAPTER *ioc , u32 log_info)
+ 		return;
+ 
+ 	/* eat the loginfos associated with task aborts */
+-	if (ioc->ignore_loginfos && (log_info == 30050000 || log_info ==
++	if (ioc->ignore_loginfos && (log_info == 0x30050000 || log_info ==
+ 	    0x31140000 || log_info == 0x31130000))
+ 		return;
+ 
+-- 
+1.7.7.6
 
-Also note that the whole if block is indented one too many tab stops.
-Would be best to fix that in a separate patch though. If you fix that
-first, then you will have more horizontal space to re-organise the
-expression inside the if :-).
-
-~Ryan
-
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
