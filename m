@@ -1,49 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031208Ab2CNXFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:05:07 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:62306 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756981Ab2CNXCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:02:31 -0400
-From: jim.cromie@gmail.com
-To: jbaron@redhat.com, rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
-Subject: [PATCH 02/11] dynamic_debug: fix leading spaces
-Date: Wed, 14 Mar 2012 17:01:57 -0600
-Message-Id: <1331766126-11674-3-git-send-email-jim.cromie@gmail.com>
-X-Mailer: git-send-email 1.7.8.1
-In-Reply-To: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
-References: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
+	id S1031217Ab2CNXJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:09:39 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45437 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758999Ab2CNXJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 19:09:34 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available
+Date: Thu, 15 Mar 2012 00:13:45 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Saravana Kannan <skannan@codeaurora.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <4F60EFBB.5050703@codeaurora.org> <201203150004.17076.rjw@sisk.pl>
+In-Reply-To: <201203150004.17076.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203150013.45749.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Cromie <jim.cromie@gmail.com>
+On Thursday, March 15, 2012, Rafael J. Wysocki wrote:
+> On Wednesday, March 14, 2012, Stephen Boyd wrote:
+> > On 03/13/12 13:14, Rafael J. Wysocki wrote:
+> > > All of those use cases are in fact of the "wait for user space to be thawed
+> > > and then load the firmware" type, which I believe may be handled without
+> > > changing that code.
+> > >
+> > > Why don't you make your kthread freezable, for one example?
+> > >
+> > > Why don't you use a freezable workqueue instead?
+> > >
+> > 
+> > If we put it on the freezable workqueue or make it a freezable thread
+> > will it work?
+> 
+> That depends on what exactly you want to achieve, which isn't entirely clear
+> to me at this point.
+> 
+> > In my scenario a wakeup interrupt comes in that wakes us up from
+> > suspend. Within that wakeup handler a work item is scheduled to the
+> > freezable workqueue. That work item then calls request_firmware().
+> 
+> That should work.
+> 
+> > It looks like we call schedule() after thawing the workqueues and tasks
+> > so the work item could run before usermodehelpers are enabled and then
+> > request_firmware() would fail. Do we need something like this (ignore
+> > the fact that we call usermodhelper_enable() twice)?
+> > 
+> > diff --git a/kernel/power/process.c b/kernel/power/process.c
+> > index 7e42645..61bfa95 100644
+> > --- a/kernel/power/process.c
+> > +++ b/kernel/power/process.c
+> > @@ -187,6 +187,7 @@ void thaw_processes(void)
+> >         } while_each_thread(g, p);
+> >         read_unlock(&tasklist_lock);
+> >  
+> > +       usermodehelper_enable();
+> 
+> That would be a reasonable change.
+> 
+> >         schedule();
+> >         printk("done.\n");
+> >  }
+> > 
+> > 
+> > Is there a reason we disable usermodehelpers if
+> > CONFIG_SUSPEND_FREEZER=n?
+> 
+> Not really, but CONFIG_SUSPEND_FREEZER=n can only work reliably in a
+> very limited set of cases, so I don't think it's even worth making the
+> general code depend on it.
+> 
+> I'd actually prefer to remove CONFIG_SUSPEND_FREEZER altogether,
+> because it's not very useful nowadays (probably isn't useful at all).
+> 
+> > Should we do this instead so that
+> > usermodehelpers are only disabled if we freeze userspace? Also what is
+> > that schedule() call in thaw_kernel_threads() for? It looks like we'll
+> > call schedule between kernel thread thawing and userspace thawing.
+> 
+> Which is OK, I think.
 
-clean up some space-before-tabs problems.
+Moreover, thaw_kernel_threads() is _only_ called by (a) freeze_kernel_threads()
+on error and (b) user-space hibernate interface in kernel/power/user.c
+(and please read the comment in there describing what it's there for, which
+also explains why the schedule() call in there is necessary).
 
-Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
----
- include/linux/dynamic_debug.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+In all other cases, thaw_processes() is used to thaw kernel threads and user
+space at the same time, so I believe we don't need the changes you're proposing
+in that area.
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index 7e3c53a..bf1b0fc 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -17,8 +17,8 @@ struct _ddebug {
- 	const char *format;
- 	unsigned int lineno:18;
- 	/*
-- 	 * The flags field controls the behaviour at the callsite.
-- 	 * The bits here are changed dynamically when the user
-+	 * The flags field controls the behaviour at the callsite.
-+	 * The bits here are changed dynamically when the user
- 	 * writes commands to <debugfs>/dynamic_debug/control
- 	 */
- #define _DPRINTK_FLAGS_NONE	0
--- 
-1.7.7.6
-
+Thanks,
+Rafael
