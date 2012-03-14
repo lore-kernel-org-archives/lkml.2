@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761568Ab2CNVkz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 17:40:55 -0400
+	id S1761573Ab2CNVlS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 17:41:18 -0400
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:35760 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031026Ab2CNVkU (ORCPT
+	with ESMTP id S965237Ab2CNVkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 17:40:20 -0400
+	Wed, 14 Mar 2012 17:40:08 -0400
 From: Marc Reilly <marc@cpdesign.com.au>
 To: sameo@linux.intel.com
 Cc: linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org,
         u.kleine-koenig@pengutronix.de, oskar@scara.com,
         linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
         Marc Reilly <marc@cpdesign.com.au>
-Subject: [PATCH v3 4/6] mfd: mc13xxx-core: use regmap for register access
-Date: Thu, 15 Mar 2012 07:43:08 +1100
-Message-Id: <1331757790-10583-5-git-send-email-marc@cpdesign.com.au>
+Subject: [PATCH v3 2/6] regmap: Add support for device with 24 data bits.
+Date: Thu, 15 Mar 2012 07:43:06 +1100
+Message-Id: <1331757790-10583-3-git-send-email-marc@cpdesign.com.au>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1331757790-10583-1-git-send-email-marc@cpdesign.com.au>
 References: <1331757790-10583-1-git-send-email-marc@cpdesign.com.au>
@@ -24,210 +24,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change converts the mc13xxx core to use regmap rather than direct
-spi r/w.
-The spidev member of mc13xxx struct becomes redundant and is removed.
-Extra debugging aids are added to mc13xxx_reg_rmw.
-Mutex init is moved to before regmap init.
+Add support for devices with 24 data bits.
 
 Signed-off-by: Marc Reilly <marc@cpdesign.com.au>
 ---
- drivers/mfd/mc13xxx-core.c |  109 ++++++++++++-------------------------------
- 1 files changed, 31 insertions(+), 78 deletions(-)
+ drivers/base/regmap/regmap.c |   23 +++++++++++++++++++++++
+ 1 files changed, 23 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index 0753402..9804572 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -21,6 +21,8 @@
- #include <linux/of.h>
- #include <linux/of_device.h>
- #include <linux/of_gpio.h>
-+#include <linux/regmap.h>
-+#include <linux/err.h>
- 
- enum mc13xxx_id {
- 	MC13XXX_ID_MC13783,
-@@ -29,7 +31,7 @@ enum mc13xxx_id {
- };
- 
- struct mc13xxx {
--	struct spi_device *spidev;
-+	struct regmap *regmap;
- 
- 	struct device *dev;
- 	enum mc13xxx_id ictype;
-@@ -172,67 +174,6 @@ void mc13xxx_unlock(struct mc13xxx *mc13xxx)
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 62ef0df..880e3a0 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -122,6 +122,15 @@ static void regmap_format_16(void *buf, unsigned int val)
+ 	b[0] = cpu_to_be16(val);
  }
- EXPORT_SYMBOL(mc13xxx_unlock);
  
--#define MC13XXX_REGOFFSET_SHIFT 25
--static int mc13xxx_spi_reg_read(struct mc13xxx *mc13xxx,
--				unsigned int offset, u32 *val)
--{
--	struct spi_transfer t;
--	struct spi_message m;
--	int ret;
--
--	*val = offset << MC13XXX_REGOFFSET_SHIFT;
--
--	memset(&t, 0, sizeof(t));
--
--	t.tx_buf = val;
--	t.rx_buf = val;
--	t.len = sizeof(u32);
--
--	spi_message_init(&m);
--	spi_message_add_tail(&t, &m);
--
--	ret = spi_sync(mc13xxx->spidev, &m);
--
--	/* error in message.status implies error return from spi_sync */
--	BUG_ON(!ret && m.status);
--
--	if (ret)
--		return ret;
--
--	*val &= 0xffffff;
--
--	return 0;
--}
--
--static int mc13xxx_spi_reg_write(struct mc13xxx *mc13xxx, unsigned int offset,
--		u32 val)
--{
--	u32 buf;
--	struct spi_transfer t;
--	struct spi_message m;
--	int ret;
--
--	buf = 1 << 31 | offset << MC13XXX_REGOFFSET_SHIFT | val;
--
--	memset(&t, 0, sizeof(t));
--
--	t.tx_buf = &buf;
--	t.rx_buf = &buf;
--	t.len = sizeof(u32);
--
--	spi_message_init(&m);
--	spi_message_add_tail(&t, &m);
--
--	ret = spi_sync(mc13xxx->spidev, &m);
--
--	BUG_ON(!ret && m.status);
--
--	if (ret)
--		return ret;
--
--	return 0;
--}
--
- int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
++static void regmap_format_24(void *buf, unsigned int val)
++{
++	u8 *b = buf;
++
++	b[0] = val >> 16;
++	b[1] = val >> 8;
++	b[2] = val;
++}
++
+ static unsigned int regmap_parse_8(void *buf)
  {
- 	int ret;
-@@ -242,7 +183,7 @@ int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
- 	if (offset > MC13XXX_NUMREGS)
- 		return -EINVAL;
- 
--	ret = mc13xxx_spi_reg_read(mc13xxx, offset, val);
-+	ret = regmap_read(mc13xxx->regmap, offset, val);
- 	dev_vdbg(mc13xxx->dev, "[0x%02x] -> 0x%06x\n", offset, *val);
- 
- 	return ret;
-@@ -258,25 +199,19 @@ int mc13xxx_reg_write(struct mc13xxx *mc13xxx, unsigned int offset, u32 val)
- 	if (offset > MC13XXX_NUMREGS || val > 0xffffff)
- 		return -EINVAL;
- 
--	return mc13xxx_spi_reg_write(mc13xxx, offset, val);
-+	return regmap_write(mc13xxx->regmap, offset, val);
- }
- EXPORT_SYMBOL(mc13xxx_reg_write);
- 
- int mc13xxx_reg_rmw(struct mc13xxx *mc13xxx, unsigned int offset,
- 		u32 mask, u32 val)
- {
--	int ret;
--	u32 valread;
--
-+	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
- 	BUG_ON(val & ~mask);
-+	dev_vdbg(mc13xxx->dev, "[0x%02x] <- 0x%06x (mask: 0x%06x)\n",
-+			offset, val, mask);
- 
--	ret = mc13xxx_reg_read(mc13xxx, offset, &valread);
--	if (ret)
--		return ret;
--
--	valread = (valread & ~mask) | val;
--
--	return mc13xxx_reg_write(mc13xxx, offset, valread);
-+	return regmap_update_bits(mc13xxx->regmap, offset, mask, val);
- }
- EXPORT_SYMBOL(mc13xxx_reg_rmw);
- 
-@@ -752,6 +687,15 @@ static const struct of_device_id mc13xxx_dt_ids[] = {
- };
- MODULE_DEVICE_TABLE(of, mc13xxx_dt_ids);
- 
-+static struct regmap_config mc13xxx_regmap_spi_config = {
-+	.reg_bits = 7,
-+	.val_bits = 25,
-+
-+	.max_register = MC13XXX_NUMREGS,
-+
-+	.cache_type = REGCACHE_NONE,
-+};
-+
- static int mc13xxx_common_init(struct mc13xxx *mc13xxx,
- 		struct mc13xxx_platform_data *pdata, int irq);
- 
-@@ -776,10 +720,18 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
- 	dev_set_drvdata(&spi->dev, mc13xxx);
- 	spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
- 	spi->bits_per_word = 32;
--	spi_setup(spi);
- 
- 	mc13xxx->dev = &spi->dev;
--	mc13xxx->spidev = spi;
-+	mutex_init(&mc13xxx->lock);
-+
-+	mc13xxx->regmap = regmap_init_spi(spi, &mc13xxx_regmap_spi_config);
-+	if (IS_ERR(mc13xxx->regmap)) {
-+		ret = PTR_ERR(mc13xxx->regmap);
-+		dev_err(mc13xxx->dev, "Failed to initialize register map: %d\n",
-+				ret);
-+		dev_set_drvdata(&spi->dev, NULL);
-+		return ret;
-+	}
- 
- 	ret = mc13xxx_common_init(mc13xxx, pdata, spi->irq);
- 
-@@ -787,7 +739,7 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
- 		dev_set_drvdata(&spi->dev, NULL);
- 	} else {
- 		const struct spi_device_id *devid =
--			spi_get_device_id(mc13xxx->spidev);
-+			spi_get_device_id(spi);
- 		if (!devid || devid->driver_data != mc13xxx->ictype)
- 			dev_warn(mc13xxx->dev,
- 				"device id doesn't match auto detection!\n");
-@@ -801,7 +753,6 @@ static int mc13xxx_common_init(struct mc13xxx *mc13xxx,
- {
- 	int ret;
- 
--	mutex_init(&mc13xxx->lock);
- 	mc13xxx_lock(mc13xxx);
- 
- 	ret = mc13xxx_identify(mc13xxx);
-@@ -878,6 +829,8 @@ static void mc13xxx_common_cleanup(struct mc13xxx *mc13xxx)
- 
- 	mfd_remove_devices(mc13xxx->dev);
- 
-+	regmap_exit(mc13xxx->regmap);
-+
- 	kfree(mc13xxx);
+ 	u8 *b = buf;
+@@ -138,6 +147,16 @@ static unsigned int regmap_parse_16(void *buf)
+ 	return b[0];
  }
  
++static unsigned int regmap_parse_24(void *buf)
++{
++	u8 *b = buf;
++	unsigned int ret = b[2];
++	ret |= ((unsigned int)b[1]) << 8;
++	ret |= ((unsigned int)b[0]) << 16;
++
++	return ret;
++}
++
+ /**
+  * regmap_init(): Initialise register map
+  *
+@@ -240,6 +259,10 @@ struct regmap *regmap_init(struct device *dev,
+ 		map->format.format_val = regmap_format_16;
+ 		map->format.parse_val = regmap_parse_16;
+ 		break;
++	case 24:
++		map->format.format_val = regmap_format_24;
++		map->format.parse_val = regmap_parse_24;
++		break;
+ 	}
+ 
+ 	if (!map->format.format_write &&
 -- 
 1.7.3.4
 
