@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613Ab2CNFNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 01:13:13 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:53342 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab2CNFNJ (ORCPT
+	id S1755817Ab2CNF2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 01:28:08 -0400
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:44801 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755328Ab2CNF2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 01:13:09 -0400
-Message-ID: <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
-In-Reply-To: <1331658828.4449.16.camel@edumazet-glaptop>
-References: <1331587715-26069-1-git-send-email-wad@chromium.org>
-    <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
-    <1331658828.4449.16.camel@edumazet-glaptop>
-Date: Wed, 14 Mar 2012 06:12:52 +0100
-Subject: Re: [PATCH v14 01/13] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Eric Dumazet" <eric.dumazet@gmail.com>
-Cc: "Will Drewry" <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.1
-X-Scan-Signature: f4db13d1ab50da585241c80c5e12767b
+	Wed, 14 Mar 2012 01:28:07 -0400
+Date: Wed, 14 Mar 2012 14:34:32 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: avi@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] KVM: Avoid checking huge page mappings in
+ get_dirty_log()
+Message-Id: <20120314143432.c982e893.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20120313230412.GA12153@amt.cnet>
+References: <20120301193007.04b2db8e.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120301193216.b14538bb.yoshikawa.takuya@oss.ntt.co.jp>
+	<20120313230412.GA12153@amt.cnet>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-On Tue, March 13, 2012 18:13, Eric Dumazet wrote:
-> On Tue, 2012-03-13 at 11:04 +0100, Indan Zupancic wrote:
->> -	bpf_jit_compile(fp);
->> +	jit = bpf_jit_compile(fp->insns, fp->len, 1);
->> +	if (jit) {
->> +		fp->bpf_func = jit;
->> +		/* Free unused insns memory */
->> +		newfp = krealloc(fp, sizeof(*fp), GFP_KERNEL);
->> +		if (newfp)
->> +			fp = newfp;
->> +	}
->>
->>  	old_fp = rcu_dereference_protected(sk->sk_filter,
->>  					   sock_owned_by_user(sk));
->
-> Dont mix unrelated changes in a single patch.
+> guest fault                                     enable dirty logging
+> 
+> tdp_page_fault (all _page_fault functions)      kvm_set_memory_region
+> 
+> 
+> level = mapping_level(vcpu, gfn)
+> (finds level == 2 or 3)
+> 
+> 
+>                                                 rcu_assign_pointer(slot
+> 								   with 
+>                                                                    ->dirty_bitmap)
+>                                                 synchronize_srcu_expedited()
 
-I know, but it was just a quick proof-of-concept. It just showed
-a possible advantage of the API change for the current networking
-code. The real patch would be split into an API change, the memory
-freeing change, and the seccomp support.
+Isn't here still in the SRCU read-side critical section?
 
->
-> Current krealloc() doesnt alloc a new area if the current one is bigger
-> than 'new_size', but this might change in next kernel versions.
->
-> So this part of your patch does nothing.
+> schedule()
+>                                                 kvm_arch_commit_memory_region()
+>                                                 spin_lock(mmu_lock)
+>                                                 kvm_mmu_slot_remove_write_access()
+> 						removes large sptes
+>                                                 spin_unlock(mmu_lock)
+> spin_lock(mmu_lock)
+> create large spte accordingly
+> to level above
+> spin_unlock(mmu_lock)
+> 
 
-Problem is that 'old_size' can be up to 32kB in size and it would be nice
-if that memory could be released. If it isn't, then using JIT increases
-memory usage, while also not accounting it to the socket.
+If so, we cannot start kvm_arch_commit_memory_region() until the completion
+of the SRCU critical section and this race will not happen.
 
->
-> If it did, this kind of 'optimization' can actually be not good, because
-> sizeof(*fp) is small enough (less than half cache line size) to trigger
-> a possible false sharing issue. (other part of the cache line could be
-> used to hold a often dirtied object)
-
-It could avoid this by allocating at least a cache size. But this is a
-problem for all small kmalloc's, isn't it?
-
-What about something like the below:
-
-@@ -625,7 +639,18 @@ int sk_attach_filter(struct sock_fprog *fprog, struct sock *sk)
- 		return err;
- 	}
-
--	bpf_jit_compile(fp);
-+	jit = bpf_jit_compile(fp->insns, fp->len, 1);
-+	if (jit) {
-+		int size = max(cache_line_size(), sizeof(*fp));
-+		fp->bpf_func = jit;
-+		/* Free unused insns memory */
-+		newfp = kmalloc(size, GFP_KERNEL);
-+		if (newfp) {
-+			memcpy(newfp, fp, size);
-+			kfree(fp);
-+			fp = newfp;
-+		}
-+	}
-
- 	old_fp = rcu_dereference_protected(sk->sk_filter,
- 					   sock_owned_by_user(sk));
-
-Not sure whether to use cache_line_size() or just L1_CACHE_BYTES or
-something else.
-
-Greeings,
-
-Indan
-
-
+	Takuya
