@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030867Ab2CNOS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:18:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39841 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755960Ab2CNOSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:18:25 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] ARM: Fix missing linux/types.h #inclusion in
- asm/hardware/iop3xx.h
-To: linux@arm.linux.org.uk, paul.gortmaker@windriver.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Wed, 14 Mar 2012 14:18:08 +0000
-Message-ID: <20120314141808.2354.62573.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1030875Ab2CNOVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:21:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57763 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964781Ab2CNOVO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 10:21:14 -0400
+Date: Wed, 14 Mar 2012 14:21:10 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: lrg@ti.com, linux-kernel@vger.kernel.org, sameo@linux.intel.com,
+        sbkim01@gmail.com
+Subject: Re: [PATCH 2/2] regulator: Add support s5m8767 opmode operation
+Message-ID: <20120314142110.GR3133@opensource.wolfsonmicro.com>
+References: <06ad01ccfdd2$63ee8fc0$2bcbaf40$@com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dO6Thh8T/cwyDjv9"
+Content-Disposition: inline
+In-Reply-To: <06ad01ccfdd2$63ee8fc0$2bcbaf40$@com>
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch/arm/include/asm/hardware/iop3xx.h needs to include linux/types.h to avoid
-the following errors:
 
-In file included from arch/arm/plat-iop/restart.c:10:0:
-/data/fs/linux-2.6-fscache/arch/arm/include/asm/hardware/iop3xx.h:239:1: error: unknown type name 'u32'
-/data/fs/linux-2.6-fscache/arch/arm/include/asm/hardware/iop3xx.h: In function 'read_tmr0':
-/data/fs/linux-2.6-fscache/arch/arm/include/asm/hardware/iop3xx.h:241:2: error: unknown type name 'u32'
-/data/fs/linux-2.6-fscache/arch/arm/include/asm/hardware/iop3xx.h: At top level:
-/data/fs/linux-2.6-fscache/arch/arm/include/asm/hardware/iop3xx.h:246:31: error: unknown type name 'u32'
-...
+--dO6Thh8T/cwyDjv9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+On Fri, Mar 09, 2012 at 05:55:34PM +0900, Sangbeom Kim wrote:
 
- arch/arm/include/asm/hardware/iop3xx.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+> S5M8767A has 4 operation mode for BUCK/LDOs.
+> This patch can handle opmode for s5m8767a.
 
-diff --git a/arch/arm/include/asm/hardware/iop3xx.h b/arch/arm/include/asm/hardware/iop3xx.h
-index 077c323..2ff2c75 100644
---- a/arch/arm/include/asm/hardware/iop3xx.h
-+++ b/arch/arm/include/asm/hardware/iop3xx.h
-@@ -231,6 +231,9 @@ extern int iop3xx_get_init_atu(void);
- 
- 
- #ifndef __ASSEMBLY__
-+
-+#include <linux/types.h>
-+
- void iop3xx_map_io(void);
- void iop_init_cp6_handler(void);
- void iop_init_time(unsigned long tickrate);
+Applied this and the preceeding patch (which is fairly trivial platform
+data so could easily have been squashed into the second patch), thanks.
 
+--dO6Thh8T/cwyDjv9
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPYKkiAAoJEBus8iNuMP3d/dEP/2q6d10M0B9PM1sUZwAJeJ/i
+gjSGPPilr+PhiNMkwjSKtl321vqOGImuKg4FflvscmAsSBJCrJoFVB5Iih++24oA
+H63jzRsr7PbhaDQC9YVD44GsHpA6YVNqZdQ42w53YBst1D2w6j6AUVACT29j5QP/
+jac97w3DE1pghix3eJEAhTZnu9Bl1sku+MGJoxB+D5PORtHzUk/6OIym+SAbMHAY
+4/9cqKVfohd78Z1KvQ8rvDUttGcmXKm6sLmV2qgO+pKdSXOyHeYhoxayzq0LSbUw
+/1QP4xMjeW6cY4xUYO4gBGo1ELHhWqfXxg5aoj41slKjiyPEZKskQrwTzFCKbv0/
+ycZIhai6kAYFXLc97vpSnfo4ujIJTPa5bz5QBIyt9in3hDrRDA5fkHhuMhjxdHb7
+KkFKhSW6ZgCtFBY9JKE+vxFgt6S9Jvkb5XQH9umlTkseyE2w7lUJkJ3MFlyQOP/w
+P06GQuNJQlvdD8pC9BUEGsbk1qmLPfurhaMrj5yGuQ00RjBaPPQ4uqPulrJcgVNI
+MThBXDSE63HjkZFWbTExClLx5vFPY08aaPKHi0xRN6bkIa/Epg7s+MuUXQtYkeAc
+dgmPPxv8Iaa1giUXjSit1n7Zlfz8WMZBysWj3Q27oFljwjQO+TGlefaZ4eCwxF2S
+0HdKYgxqJ2kCNV552aVG
+=iHD3
+-----END PGP SIGNATURE-----
+
+--dO6Thh8T/cwyDjv9--
