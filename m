@@ -1,78 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030663Ab2CNDBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 23:01:17 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48400 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1030539Ab2CNDBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 23:01:15 -0400
-Message-ID: <1331694074.27389.42.camel@joe2Laptop>
-Subject: Re: [PATCH] checkpatch: Suggest pr_<level> over printk(KERN_<LEVEL>
-From: Joe Perches <joe@perches.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 13 Mar 2012 20:01:14 -0700
-In-Reply-To: <20120314024104.GE15379@thunk.org>
-References: <20120313120514.GA17538@thunk.org>
-	 <20120313145517.f4fcae46.akpm@linux-foundation.org>
-	 <20120313220144.GD11969@thunk.org>
-	 <20120313150316.6ae19b95.akpm@linux-foundation.org>
-	 <20120314003157.GA15379@thunk.org> <1331686026.24613.6.camel@joe2Laptop>
-	 <20120314010701.GB15379@thunk.org> <1331687831.27389.2.camel@joe2Laptop>
-	 <20120314021938.GD15379@thunk.org> <1331692311.27389.27.camel@joe2Laptop>
-	 <20120314024104.GE15379@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1030671Ab2CNDDK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 23:03:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34958 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030539Ab2CNDDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 23:03:07 -0400
+Date: Wed, 14 Mar 2012 14:00:52 +1100
+From: Dave Chinner <dchinner@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Dave Chinner <david@fromorbit.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, sandeen@redhat.com,
+        Kamal Mostafa <kamal@canonical.com>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
+Subject: Re: [PATCH 11/19] xfs: Convert to new freezing code
+Message-ID: <20120314030052.GF2706@devil.redhat.com>
+References: <1330963277-26336-1-git-send-email-jack@suse.cz>
+ <1330963277-26336-12-git-send-email-jack@suse.cz>
+ <20120308232041.GU3592@dastard>
+ <20120309142253.GB14159@quack.suse.cz>
+ <20120311224537.GV5091@dastard>
+ <20120312175551.GI5998@quack.suse.cz>
+ <20120312234817.GA5091@dastard>
+ <20120313213020.GE20451@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120313213020.GE20451@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-03-13 at 22:41 -0400, Ted Ts'o wrote:
-> On Tue, Mar 13, 2012 at 07:31:51PM -0700, Joe Perches wrote:
-> > Right now many fs ext4 messages are somewhat opaque
-> > without any reference to what kernel subsystem produced
-> > the message.
+On Tue, Mar 13, 2012 at 10:30:20PM +0100, Jan Kara wrote:
+> On Tue 13-03-12 10:48:17, Dave Chinner wrote:
+> > On Mon, Mar 12, 2012 at 06:55:51PM +0100, Jan Kara wrote:
+> > > On Mon 12-03-12 09:45:37, Dave Chinner wrote:
+> > > I just had to change some properties of the shell to
+> > > be usable for freezing as well. But the shell has to be maintained
+> > > regardless of how we decide to do freezing.
+> > > 
+> > > Also believe me that I've initially tried to fix the freezing without the
+> > > external shell. But it just isn't enough to prevent dirty inodes from being
+> > > created (e.g. from directory operations) while sync during freezing is
+> > > running.
 > > 
-> > For instance:
+> > Sure - the old mechanism was "freeze data" which only protected data
+> > modification paths, followed by "freeze trans" which protected
+> > metadata modification paths (like directory operations). You started
+> > by removing the metadata modification path protection - it is any
+> > wonder that those operations continued to dirty inodes until you
+> > expanded the "freeze data" shell to mean "freeze data and metadata"?
+>   That's just not true. Remember older versions of this patch set. Old
+> model is doing:
+>    freeze data
+>    sync
+>    freeze metadata (via freezing transations)
+> and it is broken mainly because while sync is running, new metadata are
+> dirtied and thus you end up with dirty metadata on a frozen filesystem.
+
+But that exactly the issue that the filesystem .freeze_fs
+method is supposed to handle.  It's supposed to finish the
+freeze process by finishing all outstanding metadata operations and
+cleaning all remaining dirty metadata. It still has to guarantee
+this regardless of the model used prior to this.
+
+> Forcing the journal commit in ->freeze_fs() pushes changes to disk but
+> inodes still remain dirty and actually, it can be too late for flusher
+> thread anyway because it can be already hanging trying to start a
+> transaction.
+
+If the changes are already in the journal, then there is no new
+transaction work needed to clean the VFS state.  Indeed, .freezefs
+needs to write back all dirty metadata objects that it is tracking
+internally in the journal so that a snapshot of the frozen image is
+consistent and can be mounted read-only without running recovery...
+
+> > It's like the hard shelli/soft center security model - it protects
+> > well from external attackers, but once they get inside, there's no
+> > protection. Indeed, there is zero protection from inside jobs, and
+> > thats where multiple layers of defense are needed.
 > > 
-> > fs/ext4/ialloc.c:		printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
+> > Your freeze changes provide us with a hard outer shell, but it's got
+> > a really, really soft center. We can't use the outer shell defenses
+> > deep inside the shell because of the locking orders that have been
+> > defined (freeze protection must be outermost), so we need another
+> > layer....
+>   I think there are two different issues. One is your complaint that
+> extending the shell to cover also internal sources of fs modification will
+> be too fragile if not done implicitely on transaction start.
+
+Most definitely. It means that we have to have freeze behaviour in
+mind whether doing any async/background work. That's usually the
+furthest think from people's minds when implementing stuff like
+background inode initialisation...
+
+> Another is a question whether we could reasonably fend off internal
+> modification using the current two counters. The MRU thread or ->release
+> can be easily handled with them (->release can be handled by the counter
+> ranking below mmap_sem). For shrinkers, I'm not that certain. Certainly the
+> outer counter won't work. The inner one with lock ranking just below
+> mmap_sem might work - depends on whether there are any XFS locks under
+> mmap_sem from within which we'd do GFP_KERNEL allocations. But here I agree
+> issues might be nasty enough to warrant another counter.
+
+Might be nasty? There's no question about it in my mind that it
+*would* be nasty....
+
+> This is connected with another somewhat related issue: Do we want shrinkers
+> to block on frozen filesystem? That could result in unrelated processes
+> blocking on frozen filesystem. I'd find it nicer if we just skipped
+> the writes if the filesystem is frozen as it seems to me
+> xfs_free_eofblocks() is somewhat optional. Is it true?
+
+Not really. It needs to be done on rw filesytems[*].
+
+Besides, this isn't really an XFS specific problem - the shrinkers
+need to operate on frozen filesystems. e.g. run a directory
+traversal of a frozen filesystem, and if you stop the shrinkers from
+running then the dcache/icache growth will run the system out of
+memory.
+
+Sure, blocking a shrinker can be considered antisocial, but if you
+can't free memory because it will dirty inodes on a frozen
+filesystem then it is better to block the shrinker until the
+filesytem is unfrozen than it is to allow the shrinker to fail and
+eventually OOM the machine. Freezing filesysetms is supposed to be a
+short term, workload-invisible operation. Kicking the OOM killer
+because you can't free inodes is far more antisocial than having
+those applications pause while the fs is frozen.
+
+[*] Right now we are discussing adding a new background/async worker
+that that does speculative preallocation removal to make it occur
+faster than it currently does. So skipping it is not really an
+option and this is exactly the sort of "new feature needs to
+consider how to deal with freeze" problem I'm talking about.
+
+> > > But in the end, if you guys really feel strongly about it and decide that
+> > > XFS wants to keep it's mechanism of freezing on transaction start, then I
+> > > won't stop you. Although it would mean XFS would have to have three
+> > > counters to protect freezing while other filesystems will need only two.
 > > 
-> > This is a somewhat senseless output in dmesg without
-> > any linkage to ext4.
-> > 
-> > Using pr_fmt and pr_debug as I sent a patch to do
-> > instead emits in dmesg:
-> > 
-> > EXT4-fs: group: etc...
-> > 
-> > Using subsystem prefixes makes it easy and consistent to
-> > grep dmesg.
-> 
-> That's a debug message which is never by anyone other than ext4
-> developers.  Your patch also hacked the Makefile to enable it by
-> default,
+> > There is two counters only to avoid lockdep problems because the
+> > different entry points to the outer shell have different locking
+> > orders. I fail to see why adding a third counter to provide an
+> > innermost freeze lock that retains the current level of protection
+> > is a big deal because all that it really needs to work is a
+> > different lock order.
+>   The two counters are needed to avoid deadlocks, not just because of
+> lockdep... The third counter can be added but per-cpu counters are not
+> exactly cheap (in terms of memory) so I don't want to add it without a good
+> reason. Lock ordering constraints in shrinkers might be this good reason.
 
-It's just an example and no it didn't.
-That output is still in an #ifdef EXT4FS_DEBUG
-block and is unchanged.
+An additional percpu counter is far, far cheaper than the cost of
+always needing to consider how not to break filesystem freezing for
+the forseeable future.
 
-What I did was #define DEBUG so pr_debug
-(and so dynamic_debug if desired as well)
-emits output to dmesg.
+> Also fitting the XFS transaction system to freezing was a bit ugly (because
+> you need to log a dummy transaction on a frozen filesystem
 
-+ccflags-$(CONFIG_EXT4_FS) := -DDEBUG
+Sure - that's to ensure the log is dirty so that open-but-unlinked
+inodes are handled correctly by recovery if the system crashes while the
+filesystem is frozen. But the last patch in your series would prevent
+freezing filesystems while there are open-but-unlinked files
+present, so all that grot could be removed.
 
-ext4 doesn't currently use any #ifdef DEBUG blocks.
+Indeed, when that patch goes to mainline, the XFS code for
+handling remount,ro and freeze can be made identical....
 
-> which also enabled some performance degrading code paths
-> (again, only enabled by developers who manually drop the #define in a
-> header file when they are trying to figure out some obscure failure
-> during the development process).  This is why I don't like people who
-> are wanking around in code they don't understand just to fix style
-> fixes, in the mistaken belief that it adds value.
+> and you have
+> things like xfs_trans_dup() which requires us to bump the counter even
+> though the filesystem is already in freezing process) so I'd be happier if
+> we could avoid it...
 
-cheers, Joe
+The only additional infrastructure that you need to provide is a
+"start_nested" operation for xfs_trans_dup() that increments the
+percpu counter. I don't think that's a difficult problem to solve.
 
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+dchinner@redhat.com
