@@ -1,95 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760942Ab2CNNFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 09:05:40 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45532 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757969Ab2CNNFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 09:05:37 -0400
-Message-ID: <1331730336.27389.70.camel@joe2Laptop>
-Subject: Re: [PATCH] checkpatch: Suggest pr_<level> over printk(KERN_<LEVEL>
-From: Joe Perches <joe@perches.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 14 Mar 2012 06:05:36 -0700
-In-Reply-To: <20120314123429.GG15379@thunk.org>
-References: <20120313220144.GD11969@thunk.org>
-	 <20120313150316.6ae19b95.akpm@linux-foundation.org>
-	 <20120314003157.GA15379@thunk.org> <1331686026.24613.6.camel@joe2Laptop>
-	 <20120314010701.GB15379@thunk.org> <1331687831.27389.2.camel@joe2Laptop>
-	 <20120314021938.GD15379@thunk.org> <1331692311.27389.27.camel@joe2Laptop>
-	 <20120314024104.GE15379@thunk.org> <1331694074.27389.42.camel@joe2Laptop>
-	 <20120314123429.GG15379@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S932391Ab2CNNFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 09:05:54 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57583 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757942Ab2CNNFj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 09:05:39 -0400
+Message-ID: <4F60979E.3060704@gmail.com>
+Date: Wed, 14 Mar 2012 08:05:34 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Dong Aisheng <aisheng.dong@freescale.com>
+CC: Dong Aisheng <b29396@freescale.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, vinod.koul@linux.intel.com,
+        s.hauer@pengutronix.de, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, rdunlap@xenotime.net, kernel@pengutronix.de,
+        cjb@laptop.org, shawn.guo@freescale.com
+Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com> <1331628428-24017-2-git-send-email-b29396@freescale.com> <4F5F5B3F.2000303@gmail.com> <20120314062354.GA8494@shlinux2.ap.freescale.net>
+In-Reply-To: <20120314062354.GA8494@shlinux2.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-14 at 08:34 -0400, Ted Ts'o wrote:
-> On Tue, Mar 13, 2012 at 08:01:14PM -0700, Joe Perches wrote:
-> > > That's a debug message which is never by anyone other than ext4
-> > > developers.  Your patch also hacked the Makefile to enable it by
-> > > default,
-> > 
-> > It's just an example and no it didn't.
-> > That output is still in an #ifdef EXT4FS_DEBUG
-> > block and is unchanged.
+On 03/14/2012 01:23 AM, Dong Aisheng wrote:
+> On Tue, Mar 13, 2012 at 09:35:43AM -0500, Rob Herring wrote:
+>> On 03/13/2012 03:47 AM, Dong Aisheng wrote:
+>>> From: Dong Aisheng <dong.aisheng@linaro.org>
+>>>
+>>> This patch includes basic dt support which can boot via nfs rootfs.
+>>>
+>>> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+>>> ---
+>>>  Documentation/devicetree/bindings/arm/fsl.txt |    4 +
+>>>  arch/arm/boot/dts/imx28-evk.dts               |   31 +++++++++
+>>>  arch/arm/boot/dts/imx28.dtsi                  |   88 +++++++++++++++++++++++++
+>>>  arch/arm/mach-mxs/Kconfig                     |    9 +++
+>>>  arch/arm/mach-mxs/Makefile                    |    1 +
+>>>  arch/arm/mach-mxs/imx28-dt.c                  |   67 +++++++++++++++++++
+>>>  6 files changed, 200 insertions(+), 0 deletions(-)
+> ....
+>>> +				interrupts = <47>;
+>>> +			};
+>>> +		};
+>>> +	};
+>>> +
+>>> +	ahb@80080000 {
+>>> +		compatible = "simple-bus";
+>>> +		#address-cells = <1>;
+>>> +		#size-cells = <1>;
+>>> +		reg = <0x80080000 0x80000>;
+>>> +		ranges;
+>>> +
+>>> +		fec@800f0000 {
+>>> +			compatible = "fsl,imx28-fec";
+>>> +			reg = <0x800f0000 0x4000>;
+>>
+>> This too IIRC.
+>>
+> The size is 16KB/0x4000 in iMX28 spec. :)
+
+Yes, but the module only uses <4KB. You waste virtual memory space by
+mapping all the unused area. It's not really an issue when you have
+<512MB of RAM, but does become an issue.
+
+
+>>> +			interrupts = <101>;
+>>> +			status = "disabled";
+>>> +		};
+>>> +
+>>> +		fec@800f4000 {
+>>> +			compatible = "fsl,imx28-fec";
+>>> +			reg = <0x800f4000 0x4000>;
+>>> +			interrupts = <102>;
+>>> +			status = "disabled";
+>>> +		};
+>>> +
+>>> +	};
+>>> +};
+>>> diff --git a/arch/arm/mach-mxs/Kconfig b/arch/arm/mach-mxs/Kconfig
+>>> index c57f996..6ab66af 100644
+>>> --- a/arch/arm/mach-mxs/Kconfig
+>>> +++ b/arch/arm/mach-mxs/Kconfig
+>>> @@ -17,6 +17,15 @@ config SOC_IMX28
+>>>  
+>>>  comment "MXS platforms:"
+>>>  
+>>> +config MACH_IMX28_DT
+>>
+>> Perhaps this should be more generic like MACH_MXS_DT to eventually
+>> support MX23 as well?
+>>
+> I just did like the imx ways.
+> But yes if we see the need when do imx23 dt support.
 > 
-> I looked at your patch, and nearly all of them were in debug code.  I
-> know, because in practice the messages that come up with any kind of
-> regularity are all properly prefixed.
-
-Not really, some are prefixed with EXT4-fs, others EXT4,
-some with colons, some without, some with no prefix,
-some with function names only.
-
-The idea is to be consistent and allow a mechanical
-comprehensive dmesg grep with "EXT4-fs:" or some
-other appropriate subsystem name.
-
-$ grep -rP --include=*.[ch] "\bprintk\s*\(\s*KERN_[A-Z]+\s*\"[^\":]*" fs/ext4/
-
->       http://patchwork.ozlabs.org/project/linux-ext4/list/
-
-Patchwork queues are pretty useless when patches entered
-do not have their status updated for long periods.
-
-The patch I sent in August 2011 shows "new" rather than
-have an appropriate status.
-
-There are patches in that queue from 2008 marked as "new"
-that will never be applied or looked at again.
-
-If you actually use patchwork, though it seems you don't,
-I think you should just mark every patch that's new as
-rejected and start over.
-
-> Very few other people review patches, and even patches that survive
-> review, I've found problems that could potentially lead to data loss
-> or system instability.  This is not like your average device driver,
-> where if the machine panics once a week, "oh well", and you reboot.
-> Linus would get very cranky if he lost data as a result of a bad patch
-> slipping through.  Hence, patches don't go in until after significant
-> review and testing.
+>>> +	bool "Support i.MX28 platforms from device tree"
+>>> +	select SOC_IMX28
+>>> +	select USE_OF
+>>> +	select MACH_MX28EVK
+>>
+>> This should not be selected here.
+>>
+> Like other imx soc dt board files, the imx28-dt.c may need to use some bits
+> like pinmux in mx28evk.c board file.
 > 
-> As a result, #1, patches that are don't add value, and are large,
-> simply won't get applied.  Period.  Avoiding the downside of lots of
-> people losing data is ****far**** more than your OCD wanting me to use
-> pr_warn(...) instead of printk(KERN_WARN, ...).
+> Yes, currently i can remove it since it is using uboot pinmux setting.
+> But when add other devices support which is not covered in u-boot like flexcan,
+> i may need to use non-dt board's pinmux setting.
+> So maybe we can keep it first and remove it when totally not dependent
+> on non-dt files.
 
-I believe it's less OCD than you do.
+Okay either way, but my vote would be add it as needed.
 
-Using a facility to prefix dmesg output consistently
-per subsystem adds value in my opinion.
+>>> + * The code contained herein is licensed under the GNU General Public
+>>> + * License. You may obtain a copy of the GNU General Public License
+>>> + * Version 2 or later at the following locations:
+>>> + *
+>>> + * http://www.opensource.org/licenses/gpl-license.html
+>>> + * http://www.gnu.org/copyleft/gpl.html
+>>> + */
+>>> +
+>>> +#include <linux/init.h>
+>>> +#include <linux/irqdomain.h>
+>>> +#include <linux/of_irq.h>
+>>> +#include <linux/of_platform.h>
+>>> +#include <asm/mach/arch.h>
+>>> +#include <asm/mach/time.h>
+>>> +#include <mach/common.h>
+>>> +#include <mach/mx28.h>
+>>> +
+>>> +static const struct of_dev_auxdata imx28_auxdata_lookup[] __initconst = {
+>>> +	OF_DEV_AUXDATA("arm,pl011", MX28_DUART_BASE_ADDR, "duart", NULL),
+>>> +	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC0_BASE_ADDR, "imx28-fec.0", NULL),
+>>> +	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC1_BASE_ADDR, "imx28-fec.1", NULL),
+>>
+>> Why do you need the old names?
+>>
+> To keep align with the old clocks.
+> See arch/arm/mach-mxs/clock-mx28.c:
+> _REGISTER_CLOCK("imx28-fec.0", NULL, fec_clk)
+> _REGISTER_CLOCK("imx28-fec.1", NULL, fec_clk)
+> Is there any better way to avoid this?
 
-> If you want your style patches to go in, break them into smaller
-> chunks, or I *will* ignore them.
+Yes, you can add more clock look-ups with the DT name.
 
-OK, I'll resubmit it as micropatches.
+Rob
 
-cheers, Joe
+> 
+>>> +	{ /* sentinel */ }
+>>> +};
+>>> +
+>>> +static void __init imx28_init(void)
+>>> +{
+>>> +	of_platform_populate(NULL, of_default_bus_match_table,
+>>> +			     imx28_auxdata_lookup, NULL);
+>>> +}
+>>> +
+>>> +static const struct of_device_id icoll_of_match[] __initconst = {
+>>> +	{ .compatible = "fsl,imx28-icoll", },
+>>> +	{},
+>>> +};
+>>> +
+>>> +static void __init imx28_dt_init_irq(void)
+>>> +{
+>>> +	irq_domain_generate_simple(icoll_of_match, MX28_ICOLL_BASE_ADDR, 0);
+>>
+>> Please do "proper" domain support for the interrupt controller and use
+>> of_irq_init.
+>>
+> Ok, i will see it.
+> 
+> For others, will fix them all.
+> Thanks for the review.
+> 
+> Regards
+> Dong Aisheng
+> 
 
