@@ -1,169 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030784Ab2CNOQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:16:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:54056 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030454Ab2CNOQw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:16:52 -0400
-Date: Wed, 14 Mar 2012 15:16:43 +0100
-From: "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>
-To: Dong Aisheng <aisheng.dong@freescale.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>
-Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
-Message-ID: <20120314141643.GP3852@pengutronix.de>
-References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
- <1331628428-24017-2-git-send-email-b29396@freescale.com>
- <20120313172351.97C5E3E053B@localhost>
- <20120314124512.GG1180@shlinux2.ap.freescale.net>
+	id S1030860Ab2CNORm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:17:42 -0400
+Received: from lulu.zabbo.net ([69.168.54.52]:54495 "EHLO lulu.zabbo.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752318Ab2CNORl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 10:17:41 -0400
+Message-ID: <4F60A881.3070607@zabbo.net>
+Date: Wed, 14 Mar 2012 10:17:37 -0400
+From: Zach Brown <zab@zabbo.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120314124512.GG1180@shlinux2.ap.freescale.net>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 15:15:42 up 122 days, 22:02, 75 users,  load average: 0.12, 0.09,
- 0.43
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: "Ted Ts'o" <tytso@mit.edu>, Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        Phillip Susi <phillsusi@gmail.com>,
+        Andreas Dilger <adilger@whamcloud.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: getdents - ext4 vs btrfs performance
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com> <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com> <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com> <20120310044804.GB5652@thunk.org> <4F5F9A97.5060404@ubuntu.com> <20120313195339.GA24124@thunk.org> <4F5FAC9C.9070607@gmail.com> <20120313213304.GB11969@thunk.org> <CAGBYx2ZQk+kobPj5ff0NKEfK_-kD0NK4WiNUruF=d443PV-NSw@mail.gmail.com> <20120314025108.GF15379@thunk.org>
+In-Reply-To: <20120314025108.GF15379@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 08:45:23PM +0800, Dong Aisheng wrote:
-> On Wed, Mar 14, 2012 at 01:23:51AM +0800, Grant Likely wrote:
-> > On Tue, 13 Mar 2012 16:47:04 +0800, Dong Aisheng <b29396@freescale.com> wrote:
-> > > From: Dong Aisheng <dong.aisheng@linaro.org>
-> > > 
-> > > This patch includes basic dt support which can boot via nfs rootfs.
-> > > 
-> > > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > > ---
-> > >  Documentation/devicetree/bindings/arm/fsl.txt |    4 +
-> > >  arch/arm/boot/dts/imx28-evk.dts               |   31 +++++++++
-> > >  arch/arm/boot/dts/imx28.dtsi                  |   88 +++++++++++++++++++++++++
-> > >  arch/arm/mach-mxs/Kconfig                     |    9 +++
-> > >  arch/arm/mach-mxs/Makefile                    |    1 +
-> > >  arch/arm/mach-mxs/imx28-dt.c                  |   67 +++++++++++++++++++
-> > >  6 files changed, 200 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/arm/fsl.txt b/Documentation/devicetree/bindings/arm/fsl.txt
-> > > index 54bddda..9f21faf 100644
-> > > --- a/Documentation/devicetree/bindings/arm/fsl.txt
-> > > +++ b/Documentation/devicetree/bindings/arm/fsl.txt
-> > > @@ -1,6 +1,10 @@
-> > >  Freescale i.MX Platforms Device Tree Bindings
-> > >  -----------------------------------------------
-> > >  
-> > > +i.MX28 Evaluation Kit
-> > > +Required root node properties:
-> > > +    - compatible = "fsl,imx28-evk", "fsl,imx28";
-> > > +
-> > >  i.MX51 Babbage Board
-> > >  Required root node properties:
-> > >      - compatible = "fsl,imx51-babbage", "fsl,imx51";
-> > > diff --git a/arch/arm/boot/dts/imx28-evk.dts b/arch/arm/boot/dts/imx28-evk.dts
-> > > new file mode 100644
-> > > index 0000000..9758dc4
-> > > --- /dev/null
-> > > +++ b/arch/arm/boot/dts/imx28-evk.dts
-> > > @@ -0,0 +1,31 @@
-> > > +/*
-> > > + * Copyright 2012 Freescale Semiconductor, Inc.
-> > > + *
-> > > + * The code contained herein is licensed under the GNU General Public
-> > > + * License. You may obtain a copy of the GNU General Public License
-> > > + * Version 2 or later at the following locations:
-> > > + *
-> > > + * http://www.opensource.org/licenses/gpl-license.html
-> > > + * http://www.gnu.org/copyleft/gpl.html
-> > > + */
-> > > +
-> > > +/dts-v1/;
-> > > +/include/ "imx28.dtsi"
-> > > +
-> > > +/ {
-> > > +	model = "Freescale i.MX28 Evaluation Kit";
-> > > +	compatible = "fsl,imx28-evk", "fsl,imx28";
-> > > +
-> > > +	memory {
-> > > +		device_type = "memory";
-> > > +		reg = <0x40000000 0x08000000>;
-> > > +	};
-> > > +
-> > > +	ahb@80080000 {
-> > > +		fec@800f0000 {
-> > > +			phy-mode = "rmii";
-> > > +			local-mac-address = [00 04 9F 01 7D 5B];
-> > 
-> > Generally a bad idea to put a specific mac address into the device tree.
-> > Better to fill it with zeros.  Otherwise all the dev boards will end up using
-> > the same value.
-> > 
-> Yes, this issue also exists on other platfroms like mx6q.
-> One way is to dynamically get mac address by reading otp register as non-dt does
-> like:
-> static int __init mx28evk_fec_get_mac(void)
-> {
->         int i;
->         u32 val;
->         const u32 *ocotp = mxs_get_ocotp();
-> 
->         if (!ocotp)
->                 return -ETIMEDOUT;
-> 
->         /*
->          * OCOTP only stores the last 4 octets for each mac address,
->          * so hard-code Freescale OUI (00:04:9f) here.
->          */
->         for (i = 0; i < 2; i++) {
->                 val = ocotp[i];
->                 mx28_fec_pdata[i].mac[0] = 0x00;
->                 mx28_fec_pdata[i].mac[1] = 0x04;
->                 mx28_fec_pdata[i].mac[2] = 0x9f;
->                 mx28_fec_pdata[i].mac[3] = (val >> 16) & 0xff;
->                 mx28_fec_pdata[i].mac[4] = (val >> 8) & 0xff;
->                 mx28_fec_pdata[i].mac[5] = (val >> 0) & 0xff;
->         }
-> 
->         return 0;
-> }
-> 
-> But it seems this needs pass mac address to fec driver via platforom data which is
-> not friendly to dt.
-> 
-> Another way may be changing fec driver to get the fixed part of mac address(first
-> two bytes) from device tree and read the left dynamical part from otp which i'm not
-> sure is better enough.
-> 
-> BTW, filling with zeros seems not work since it's invalid mac address.
 
-Yes, that's the idea of using this value...
+> We could do this if we have two b-trees, one indexed by filename and
+> one indexed by inode number, which is what JFS (and I believe btrfs)
+> does.
 
-Sascha
+Typically the inode number of the destination inode isn't used to index
+entries for a readdir tree because of (wait for it) hard links.  You end
+up right back where you started with multiple entries per key.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+A painful solution is to have the key in the readdir tree allocated by
+the tree itself -- count key populations in subtrees per child pointer
+and use that to find free keys.  You still have the problem of
+correlating entry keys and the location of inodes, but at least now you
+have a structure to navigate to try and do that.  You can also trivially
+re-use freed keys and have densely packed readdir keys that won't break
+32bit f_pos so quickly.
+
+btrfs just punts and has an incrementing 64bit counter per directory
+that determines a new entry's position in readdir.  Accompanied by the
+obligatory "will be smarter some day" comment :).
+
+- z
