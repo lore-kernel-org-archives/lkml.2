@@ -1,56 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761637Ab2CNWTP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 18:19:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51275 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761165Ab2CNWTK (ORCPT
+	id S1031097Ab2CNWVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 18:21:40 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:52724 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761299Ab2CNWVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 18:19:10 -0400
-Date: Wed, 14 Mar 2012 22:19:08 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davej@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] vfs namespace: Don't assume mount namespace has valid
- root
-Message-ID: <20120314221908.GM23916@ZenIV.linux.org.uk>
-References: <1331758710-16400-1-git-send-email-levinsasha928@gmail.com>
- <20120314201048.GI23916@ZenIV.linux.org.uk>
- <20120314205809.GJ23916@ZenIV.linux.org.uk>
- <CA+1xoqcvXsx1vpAB7Jg-dWGVaadbF4sC3Cr2s5itHfdiPFQerA@mail.gmail.com>
- <20120314213746.GK23916@ZenIV.linux.org.uk>
- <CA+1xoqcP-1rU79ZOD2t+cn8tr77Nxmhv0_MjuLcvp67Zb7FFKQ@mail.gmail.com>
+	Wed, 14 Mar 2012 18:21:38 -0400
+Date: Wed, 14 Mar 2012 15:21:08 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Matt Helsley <matthltc@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
+Message-ID: <20120314222108.GJ19584@count0.beaverton.ibm.com>
+References: <20120309235901.GE19584@count0.beaverton.ibm.com>
+ <20120310074854.GA3065@moon>
+ <20120313024511.GF19584@count0.beaverton.ibm.com>
+ <20120313062625.GA1912@moon>
+ <20120313071812.GA6969@moon>
+ <20120313154337.GA25711@redhat.com>
+ <20120313160044.GF1912@moon>
+ <20120313160420.GA18307@moon>
+ <20120314014106.GI19584@count0.beaverton.ibm.com>
+ <20120314054728.GA2778@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+1xoqcP-1rU79ZOD2t+cn8tr77Nxmhv0_MjuLcvp67Zb7FFKQ@mail.gmail.com>
+In-Reply-To: <20120314054728.GA2778@moon>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031422-7282-0000-0000-0000075DD544
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 12:00:52AM +0200, Sasha Levin wrote:
-
-> I'm running 3.3.0-rc6-next-20120309-sasha-00002-g8fd19a0.
+On Wed, Mar 14, 2012 at 09:47:28AM +0400, Cyrill Gorcunov wrote:
+> On Tue, Mar 13, 2012 at 06:41:06PM -0700, Matt Helsley wrote:
+> ...
+> > > +
+> > > +	exe_file = fget(fd);
+> > > +	if (!exe_file)
+> > > +		return -EBADF;
+> > > +
+> > > +	dentry = exe_file->f_path.dentry;
+> > > +
+> > > +	/*
+> > > +	 * Because the original mm->exe_file
+> > > +	 * points to executable file, make sure
+> > > +	 * this one is executable as well to not
+> > > +	 * break an overall picture.
+> > > +	 */
+> > > +	err = -EACCES;
+> > > +	if (!S_ISREG(dentry->d_inode->i_mode)	||
+> > > +	    exe_file->f_path.mnt->mnt_flags & MNT_NOEXEC)
+> > > +		goto exit;
+> > 
+> > You could factor out this portion of the access checking from open_exec()
+> > after the do_filp_open() in open_exec() and re-use it here. I know it's
+> > tiny helper but tying these two together might be good for
+> > maintenance later.
+> > 
 > 
-> I found that if I revert f8b88187 ("brlocks/lglocks: cleanups") it
-> seems that the problem is gone.
+> Matt, I really dont wanna touch code outside of prctl and this function
+> in particualar, at least in this patch, ie I can clean up and factor out
+> is on top of the patch, as a separate task.
 
-... along with this piece of offending commit:
-@@ -2249,10 +2250,9 @@ static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
-                kfree(new_ns);
-                return ERR_PTR(-ENOMEM);
-        }
--       new_ns->root = new;
--       br_write_lock(vfsmount_lock);
-+       br_write_lock(&vfsmount_lock);
-        list_add_tail(&new_ns->list, &new->mnt_list);
--       br_write_unlock(vfsmount_lock);
-+       br_write_unlock(&vfsmount_lock);
+OK, sounds fine.
 
-        /*
-         * Second pass: switch the tsk->fs->* elements and mark new vfsmounts
-@@ -2416,9 +2416,9 @@ bool is_path_reachable(struct mount *mnt, struct dentry *dentry,
+> 
+> > Should it check for some of the flags open_exec() uses? open_exec()
+> > passes:
+> > 
+> > 	O_LARGEFILE|O_RDONLY|__FMODE_EXEC
+> > 
+> > to do_filp_open(). I think a O_RDONLY check might be good. I don't
+> > think __FMODE_EXEC is something userspace can set so could be ignored.
+> > O_LARGEFILE might be important though.
+> 
+> Well, we're not going to read from this file, so it is not that important
+> at moment, so previously I've had
+> 
+> > +     if ((exe_file->f_flags & O_ACCMODE) != O_RDONLY)
+> > +             goto exit;
+> 
+> and Oleg pointed me
+> 
+>  | But the O_RDONLY check looks strange. We are not going to write
+>  | to this file, we only set the name (and that is why I think it
+>  | should be mm->exe_path). What is the point to check that the file
+>  | was opened without FMODE_WRITE? Even if there were any security
+>  | risk the apllication can open this file again with the different
+>  | flags.
+> 
+> so I dropped it. And I think the same applies to O_LARGEFILE. Sure
+> it's not a problem to bring it back but should we?
 
-IOW, Andi has hit delete one too many times...
+OK, sorry I must have missed that portion of the discussion. It all looks
+good to me.
+
+Cheers,
+	-Matt
+
