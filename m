@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761339Ab2CNTNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 15:13:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16450 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960Ab2CNTNu (ORCPT
+	id S1759454Ab2CNTRt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 15:17:49 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:42014 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab2CNTRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 15:13:50 -0400
-X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=VwQbUJbxAAAA:8 a=hQ80Mz0SuLl6dlAxL6IA:9 a=PUjeQqilurYA:10 a=gyGdbLRM2qocb3wN-0YA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1331752424.25686.672.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.0.24-rt41
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Wed, 14 Mar 2012 15:13:44 -0400
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-X1BR44aNwe6LMKR4/y6K"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
+	Wed, 14 Mar 2012 15:17:46 -0400
+Date: Wed, 14 Mar 2012 15:17:39 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
+        Phillip Susi <phillsusi@gmail.com>,
+        Andreas Dilger <adilger@whamcloud.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120314191739.GA19217@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Ted Ts'o <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
+	Phillip Susi <phillsusi@gmail.com>,
+	Andreas Dilger <adilger@whamcloud.com>,
+	Jacek Luczak <difrost.kernel@gmail.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
+ <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
+ <20120310044804.GB5652@thunk.org>
+ <4F5F9A97.5060404@ubuntu.com>
+ <20120313195339.GA24124@thunk.org>
+ <4F5FAC9C.9070607@gmail.com>
+ <20120313213304.GB11969@thunk.org>
+ <alpine.LFD.2.00.1203140825090.5379@dhcp-27-109.brq.redhat.com>
+ <20120314125002.GH15379@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120314125002.GH15379@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-CT-RefId: str=0001.0A090202.4F60EED7.0037,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 14, 2012 at 08:50:02AM -0400, Ted Ts'o wrote:
+> On Wed, Mar 14, 2012 at 09:12:02AM +0100, Lukas Czerner wrote:
+> > I kind of like the idea about having the separate btree with inode
+> > numbers for the directory reading, just because it does not affect
+> > allocation policy nor the write performance which is a good thing. Also
+> > it has been done before in btrfs and it works very well for them. The
+> > only downside (aside from format change) is the extra step when removing
+> > the directory entry, but the positives outperform the negatives.
+> 
+> Well, there will be extra (journaled!) block reads and writes involved
+> when adding or removing directory entries.  So the performance on
+> workloads that do a large number of directory adds and removed will
+> have to be impacted.  By how much is not obvious, but it will be
+> something which is measurable.
 
---=-X1BR44aNwe6LMKR4/y6K
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: quoted-printable
+Most of the difference in btrfs rm times comes from our double indexing.
+We store the directory name 3 times, once for each dir index and once
+in the inode backref.  But the inode backref doesn't generate seeks the
+same way the extra directory index does, so it is probably only 10% of
+the cost.
 
+We also delete file data crcs during rm, so if you're benchmarking
+things to see how much it will hurt, benchmark btrfs on zero length
+files.
 
-Dear RT Folks,
+In terms of other costs, most users of readdir will eventually wander
+off and stat or open the files in the dir.  With your current indexes, the stat
+reads the same directory blocks that readdir used.
 
-I'm pleased to announce the 3.0.24-rt41 stable release.
+With the double index, the stat reads the name index instead of the
+readdir index.  For the common case of normal directories, today's ext4
+will have the directory blocks in cache when stat is called.  Btrfs has
+to do extra reads to pull in the name index.
 
+Josef worked around this by prefilling a dentry during readdir with
+details on where to find the inode.
 
-This release is just an update to the new stable 3.0.24 version
-and no RT specific changes have been made.
+Either way, I'd definitely recommend sitting down with the xfs directory
+indexes and look at how they manage locality without the double
+indexing.  It's faster than btrfs and without the penalty.
 
+It's also worth mentioning that on an SSD, there is no benefit at all to
+the extra index.  So when the industry finally floods the markets with
+hybrid PCM shingled drives, this might all be moot.
 
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 90eba29b860d5b13089332ac1c6051f464658e4c
-
-
-Or to build 3.0.24-rt41 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.24.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.24-rt41.=
-patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
---=-X1BR44aNwe6LMKR4/y6K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPYO3oAAoJEIy3vGnGbaoAlzYP/Ah3Xyq8+kwk4an58AptaHqr
-NvtK/SA7QimJbT5Kb04ZPWpsunQTQavd0hoViRBJLJz0rHh9d0inOfqix4HSLx9r
-ln3GEp3yEyzFPBPeDJBJM8wmfwXGctfsYJ5bofYYMmu5Bg6vAprjZHGB41cp5FXs
-hD3INc4/PmzBu0nqP5lOh6VNrS108kcXOFBRnilzS+K6Z5osCCEbgqysuoqPHayo
-PEiuKKylCv8dSkbsvTo3rJmIbC46ZPEirLHk+MZNDVPrnZ/9asuvv8rGFBcV6+0E
-CqC8liEPS0V24gXUR7pD/+s2kwCM6UfzGWo8vfVO+7JjLSvwmsN0cEjn1c9ZeFIR
-f3lwIes74nfrOkGGzikE13O3F8bFKIQoFj4R1b6NCzDJDUVsjFKQ8gpUZE0Hrw++
-IR2gTa+Vo2TpvpHWRExzP2jmTDANuuHGiku2nfSt5MsSM18msYcOnibrva/xdGQc
-LO54ybBBnrJD39Zm+awzY9oUCSVPwbhAEgEarXdzmHEFAEf+sOCh1xKfZ89VgrEt
-02Z5JlNF6o+PAjG0TUcqwutUNbVablO1V63SzcYX0JiDISlKEnNCO0auIZn+SOJf
-b+BGJUJDOhE+RKwMbBErxr6An/+rnQn8sMVNwfQFZKP90mKZRfDd7tA1O8ZJI3y9
-nypPsTiQlHCVdfu8f9Ax
-=dRBT
------END PGP SIGNATURE-----
-
---=-X1BR44aNwe6LMKR4/y6K--
-
+-chris
