@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031230Ab2CNXnP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:43:15 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:36803 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965343Ab2CNXnO convert rfc822-to-8bit (ORCPT
+	id S1031261Ab2CNXnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:43:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33423 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031233Ab2CNXng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:43:14 -0400
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20120314140909.GN3133@opensource.wolfsonmicro.com>
-References: <1331077370.20711.2.camel@phoenix> <20120314140909.GN3133@opensource.wolfsonmicro.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, 15 Mar 2012 07:42:53 +0800
-Message-ID: <CAF+7xWnNjJbdG2G8RBG_n5KdzCLXNe0RpJ2F99gFoP+R+AMYDA@mail.gmail.com>
-Subject: Re: [PATCH RFC/RFT 1/2] regulator: Fix da9052 ldo regulator names
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Liam Girdwood <lrg@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Mar 2012 19:43:36 -0400
+Date: Wed, 14 Mar 2012 16:43:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V3 2/8] memcg: Add HugeTLB extension
+Message-Id: <20120314164334.5e35f3b6.akpm@linux-foundation.org>
+In-Reply-To: <87zkbj8ou9.fsf@linux.vnet.ibm.com>
+References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1331622432-24683-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20120313143316.0ef74d0e.akpm@linux-foundation.org>
+	<87zkbj8ou9.fsf@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Wed, Mar 07, 2012 at 07:42:50AM +0800, Axel Lin wrote:
->> The regulator name for LDOs are LDO4 ... LDO13 in current implementation.
->> The correct regulator name for LDOs should be LDO1 ... LDO10.
->
-> Can you please rebase this against -next?  I was going to apply but some
-> of your other fixes end up conflicting with this and the second change.
+On Wed, 14 Mar 2012 15:51:50 +0530
+"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-hi Mark,
+> On Tue, 13 Mar 2012 14:33:16 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Tue, 13 Mar 2012 12:37:06 +0530
+> > "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> > 
+> > > +static int mem_cgroup_hugetlb_usage(struct mem_cgroup *memcg)
+> > > +{
+> > > +	int idx;
+> > > +	for (idx = 0; idx < hugetlb_max_hstate; idx++) {
+> > > +		if (memcg->hugepage[idx].usage > 0)
+> > > +			return memcg->hugepage[idx].usage;
+> > > +	}
+> > > +	return 0;
+> > > +}
+> > 
+> > Please document the function?  Had you done this, I might have been
+> > able to work out why the function bales out on the first used hugepage
+> > size, but I can't :(
+> 
+> I guess the function is named wrongly. I will rename it to
+> mem_cgroup_have_hugetlb_usage() in the next iteration ? The function
+> will return (bool) 1 if it has any hugetlb resource usage.
+> 
+> > 
+> > This could have used for_each_hstate(), had that macro been better
+> > designed (or updated).
+> > 
+> 
+> Can you explain this ?. for_each_hstate allows to iterate over
+> different hstates. But here we need to look at different hugepage
+> rescounter in memcg. I can still use for_each_hstate() and find the
+> hstate index (h - hstates) and use that to index memcg rescounter
+> array. But that would make it more complex ?
 
-These two patches can be cleanly apply to -next branch.
+If the for_each_hstate() macro took an additional arg which holds the
+base address of the array, that macro could have been used here.
 
-I found the root of the conflict is because below commits are NOT in
-your topic/drivers branch.
-( they are in for-next branch ).
-commit 4adf9beda5 regulator: Fix mask parameter in da9052_reg_update calls
-commit 7b95765 regulator: Set n_voltages for da9052 regulators
-commit 93651218 regulator: da9052: Ensure the selected voltage falls
-within the specified range
-
-If you have above commits in topic/drivers branch first, the you can
-cleanly apply below patches.
-regulator: Fix da9052 ldo regulator names
-regulator: Refactor to use one da9052_ldo_ops/da9052_dcdc_ops for all LDOs/DCDCs
-
-I'm not sure if I should re-generate these 2 patches against
-topic/drivers branch because
-you will have conflict when merge them to for-next branch then.
-
-Regards,
-Axel
+Or perhaps not - I didn't look too closely ;)  It isn't important.
