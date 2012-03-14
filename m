@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031326Ab2CNX7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:59:32 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44759 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031186Ab2CNX73 (ORCPT
+	id S1031337Ab2CNX7r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:59:47 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38966 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031241Ab2CNX7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:59:29 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 0/2] time: Fix races at clocksource switch time
-Date: Wed, 14 Mar 2012 16:58:54 -0700
-Message-Id: <1331769536-4602-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031423-3270-0000-0000-000004CC020E
+	Wed, 14 Mar 2012 19:59:12 -0400
+Date: Thu, 15 Mar 2012 10:59:01 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Walle <michael@walle.cc>
+Subject: linux-next: build failure after merge of the final tree (arm-soc
+ tree related)
+Message-Id: <20120315105901.7b10c9f4de9374a613436988@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__15_Mar_2012_10_59_01_+1100_U5VFoU_AFfkY1o5U"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In testing some recent timekeeping changes, I found some problem
-when changing clocksources.
+--Signature=_Thu__15_Mar_2012_10_59_01_+1100_U5VFoU_AFfkY1o5U
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-These two patches close races at clocksource switch time. One I sent out
-earlier, and have reworked to integrate Thomas' comments.
+Hi all,
 
-These two patches, along with Thomas' recent cleanup patches ontop can
-be found here:
-	git://git.linaro.org/people/jstultz/linux.git fortglx/3.4/time
+After merging the final tree, today's linux-next build (powerpc
+allmodconfig) failed like this:
 
-CC: Andy Lutomirski <luto@amacapital.net>
-CC: Thomas Gleixner <tglx@linutronix.de>
+drivers/ata/sata_mv.c:4185:1: error: '__mod_of_device_table' aliased to und=
+efined symbol 'mvsdio_dt_ids'
 
-John Stultz (2):
-  time: x86: Fix race switching from vsyscall to non-vsyscall clock
-  time: Fix change_clocksource locking
+Caused by commit f1e1e148c5cb ("ARM: kirkwood: sata_mv: add device tree
+binding").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- arch/x86/vdso/vclock_gettime.c |   63 ++++++++++++++++++++++++----------------
- kernel/time/timekeeping.c      |    7 ++++
- 2 files changed, 45 insertions(+), 25 deletions(-)
+--Signature=_Thu__15_Mar_2012_10_59_01_+1100_U5VFoU_AFfkY1o5U
+Content-Type: application/pgp-signature
 
--- 
-1.7.3.2.146.gca209
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPYTDFAAoJEECxmPOUX5FEBGIQAIvorg+dCoOegf47h/iQoyu4
+PV0gngbzTTMIO0lWL7jnQxbqne2ZhkwtbwDCW4A3R+FDLj7U6Prw0Mtlrr25acX2
+T3U9/6qchLuVw6M2bGflyXHKsQBdEnDP5vTb4ZzoFA+LHnuFzTOH9jqvnkGSIdBD
+ESP6/h4ZtC7h2GKVPM4njnHOHCgo53Q/opg79CsqZ+UO3T37cMFRhlYiJ5ZFWfwX
+DKGDBV3pL3S1MVe+vPKvyKnZGavn44QOdSPwD7sjrpZ2+Iz2M6Qu8+ske8WuDhoN
+/uUCeOA0UOTAbNPP8NnjD9DqmvMm9hI8xlDvyYc4K/VPgySWT1kdvUov/AcayqG7
+anR6HXuyf3SX3jYym3iUfuBCEOZDQYqpIq2DdWM8WkJc5w2uftm5oZez/plBlLkE
+fwXg7Ed/0/YLlWm5OhoPjml3tRriev05r2wASH3w7lvVS4Hm6r1ndp5rXt/dYvqU
+tnQ5xSb/FUWjzpKtCBQskVvvzlpoGZuL/eZG8Nv4mxGg0fPj63e+dwEyd8ME+AlG
+N2H2IyBdOQNF7DYYSbV9t0+cxNrKzs/Eqqx23Kdr9equVy9wP4yHPwmKX61O9gh3
+w4v1dVRf0z4QZc/KiK5oQjWPuGuxpUu4avuqST5R9GGB4r/DYhQu1S+/5Bes9fa7
+/lYP/ck+m/VVkL11nPKE
+=f0Su
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__15_Mar_2012_10_59_01_+1100_U5VFoU_AFfkY1o5U--
