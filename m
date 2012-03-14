@@ -1,42 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760922Ab2CNQa2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 12:30:28 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:34378 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759450Ab2CNQaZ (ORCPT
+	id S1030659Ab2CNQhl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 12:37:41 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:27581 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932180Ab2CNQhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 12:30:25 -0400
-Date: Wed, 14 Mar 2012 12:26:15 -0400
+	Wed, 14 Mar 2012 12:37:21 -0400
+Date: Wed, 14 Mar 2012 12:33:08 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Dave Jones <davej@redhat.com>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org, JBeulich@suse.com
-Subject: Re: [PATCH 1/2] [CPUFREQ]: provide disable_cpufreq() function to
- disable the API.
-Message-ID: <20120314162615.GD16960@phenom.dumpdata.com>
-References: <1331680720-18268-1-git-send-email-konrad.wilk@oracle.com>
- <1331680720-18268-2-git-send-email-konrad.wilk@oracle.com>
- <20120314142543.GB2371@redhat.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel <xen-devel@lists.xen.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xenbus: don't free other end details too early
+Message-ID: <20120314163308.GE16960@phenom.dumpdata.com>
+References: <4F5501D30200007800076707@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120314142543.GB2371@redhat.com>
+In-Reply-To: <4F5501D30200007800076707@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090206.4F60C79C.0077,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4F60C93B.00AF,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 10:25:43AM -0400, Dave Jones wrote:
-> On Tue, Mar 13, 2012 at 07:18:39PM -0400, Konrad Rzeszutek Wilk wrote:
->  > useful for disabling cpufreq altogether. The cpu frequency
->  > scaling drivers and cpu frequency governors will fail to register.
-> 
-> looks good to me. Are you ok with me taking 1/2 through cpufreq.git, and
-> then you pushing the xen bit yourself ?
+On Mon, Mar 05, 2012 at 05:11:31PM +0000, Jan Beulich wrote:
+> The individual drivers' remove functions could legitimately attempt to
+> access this information (for logging messages if nothing else). Note
+> that I did not in fact observe a problem anywhere, but I came across
+> this while looking into the reasons for what turned out to need the
+> fix at https://lkml.org/lkml/2012/3/5/336 to vsprintf().
 
-No trouble! Thanks!
-> (or I could take them both if it makes things easier)
+applied.
 > 
-> 	Dave
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> 
+> ---
+>  drivers/xen/xenbus/xenbus_probe.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> --- 3.3-rc6/drivers/xen/xenbus/xenbus_probe.c
+> +++ 3.3-rc6-xenbus-remove-details/drivers/xen/xenbus/xenbus_probe.c
+> @@ -257,11 +257,12 @@ int xenbus_dev_remove(struct device *_de
+>  	DPRINTK("%s", dev->nodename);
+>  
+>  	free_otherend_watch(dev);
+> -	free_otherend_details(dev);
+>  
+>  	if (drv->remove)
+>  		drv->remove(dev);
+>  
+> +	free_otherend_details(dev);
+> +
+>  	xenbus_switch_state(dev, XenbusStateClosed);
+>  	return 0;
+>  }
+> 
+> 
+> 
+
+> The individual drivers' remove functions could legitimately attempt to
+> access this information (for logging messages if nothing else). Note
+> that I did not in fact observe a problem anywhere, but I came across
+> this while looking into the reasons for what turned out to need the
+> fix at https://lkml.org/lkml/2012/3/5/336 to vsprintf().
+> 
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> 
+> ---
+>  drivers/xen/xenbus/xenbus_probe.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> --- 3.3-rc6/drivers/xen/xenbus/xenbus_probe.c
+> +++ 3.3-rc6-xenbus-remove-details/drivers/xen/xenbus/xenbus_probe.c
+> @@ -257,11 +257,12 @@ int xenbus_dev_remove(struct device *_de
+>  	DPRINTK("%s", dev->nodename);
+>  
+>  	free_otherend_watch(dev);
+> -	free_otherend_details(dev);
+>  
+>  	if (drv->remove)
+>  		drv->remove(dev);
+>  
+> +	free_otherend_details(dev);
+> +
+>  	xenbus_switch_state(dev, XenbusStateClosed);
+>  	return 0;
+>  }
+
