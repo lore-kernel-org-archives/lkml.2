@@ -1,272 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760126Ab2CNI4Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 04:56:25 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7752 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759332Ab2CNI4U (ORCPT
+	id S1760163Ab2CNI6W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 04:58:22 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:32638 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759893Ab2CNI6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 04:56:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 14 Mar 2012 01:56:19 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: dmitry.torokhov@gmail.com, grant.likely@secretlab.ca,
-        linus.walleij@stericsson.com, david@protonic.nl, tklauser@distanz.ch,
-        alexander.stein@informatik.tu-chemnitz.de
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldewangan@nvidia.com
-Subject: [PATCH V1] input: keyboard: gpio: Support for interrupt only key
-Date: Wed, 14 Mar 2012 14:22:03 +0530
-Message-Id: <1331715123-15099-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 14 Mar 2012 04:58:19 -0400
+X-AuditID: cbfee60f-b7bd0ae00000422c-c1-4f605da9f823
+Date: Wed, 14 Mar 2012 08:58:17 +0000 (GMT)
+From: PINTU KUMAR <pintu.k@samsung.com>
+Subject: Re: Re: [INFO] : Hibernation and Resume between 2 similar devices
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, PINTU KUMAR <pintu.k@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Reply-to: pintu.k@samsung.com
+MIME-version: 1.0
+X-MTR: 20120314085629793@pintu.k
+Msgkey: 20120314085629793@pintu.k
+X-EPLocale: en_US.windows-1252
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120314042844821@pintu.k
+X-ParentMTR: 20120314042844821@pintu.k
+Content-type: text/plain; charset=windows-1252
+MIME-version: 1.0
+Message-id: <18908289.140021331715496168.JavaMail.weblogic@epml27>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2E8wTFn027081
 
-Some of key in system generates interrupt only when it
-pressed like power-on key or onkey. These keys do not
-actually mapped as gpio in system.
-Supporting the key pressed event on such keys which are
-not actually gpio keys but generates interrupt only.
+------- Original Message -------
+Sender : Rafael J. Wysocki<rjw@sisk.pl> 
+Date   : Mar 14, 2012 01:36 (GMT+05:00)
+Title  : Re: [INFO] : Hibernation and Resume between 2 similar devices
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-When I pushed the new driver for interrupt key, the suggestion came
-to include this functionality in the gpio-key driver. I added require
-changed in gpio-keys.c to support interrupt key only.
+On Tuesday, March 13, 2012, PINTU KUMAR wrote:
+> Dear All,
+> 
+> I am just curious to know if it is possible to "Hibernate in one device" and "Resume the hibernated image from another similar device".
 
- drivers/input/keyboard/gpio_keys.c |  117 +++++++++++++++++++++++++++++++++--
- include/linux/gpio_keys.h          |    3 +-
- 2 files changed, 112 insertions(+), 8 deletions(-)
+Not out of the box (you'd need to hack the kernel for that to work I think,
+at least on x86) and the devices would need to be _exactly_ identical.
+Moreover, if there is read-write mass storage in them, the filesystems on
+both would have to be exactly identical as well (including metadata and data
+layout etc.).
 
-diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index ed1ed46..d38ddfd 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -28,6 +28,7 @@
- #include <linux/gpio.h>
- #include <linux/of_platform.h>
- #include <linux/of_gpio.h>
-+#include <linux/spinlock.h>
- 
- struct gpio_button_data {
- 	struct gpio_keys_button *button;
-@@ -36,6 +37,8 @@ struct gpio_button_data {
- 	struct work_struct work;
- 	int timer_debounce;	/* in msecs */
- 	bool disabled;
-+	spinlock_t lock;
-+	bool key_pressed;
- };
- 
- struct gpio_keys_drvdata {
-@@ -95,6 +98,13 @@ static inline int get_n_events_by_type(int type)
- 	return (type == EV_KEY) ? KEY_CNT : SW_CNT;
- }
- 
-+static int button_irq(struct gpio_keys_button *button)
-+{
-+	if (gpio_is_valid(button->gpio))
-+		return gpio_to_irq(button->gpio);
-+	return button->irq;
-+}
-+
- /**
-  * gpio_keys_disable_button() - disables given GPIO button
-  * @bdata: button data for button to be disabled
-@@ -111,10 +121,11 @@ static inline int get_n_events_by_type(int type)
- static void gpio_keys_disable_button(struct gpio_button_data *bdata)
- {
- 	if (!bdata->disabled) {
-+		int irq = button_irq(bdata->button);
- 		/*
- 		 * Disable IRQ and possible debouncing timer.
- 		 */
--		disable_irq(gpio_to_irq(bdata->button->gpio));
-+		disable_irq(irq);
- 		if (bdata->timer_debounce)
- 			del_timer_sync(&bdata->timer);
- 
-@@ -135,7 +146,8 @@ static void gpio_keys_disable_button(struct gpio_button_data *bdata)
- static void gpio_keys_enable_button(struct gpio_button_data *bdata)
- {
- 	if (bdata->disabled) {
--		enable_irq(gpio_to_irq(bdata->button->gpio));
-+		int irq = button_irq(bdata->button);
-+		enable_irq(irq);
- 		bdata->disabled = false;
- 	}
- }
-@@ -325,8 +337,12 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
- 	struct gpio_keys_button *button = bdata->button;
- 	struct input_dev *input = bdata->input;
- 	unsigned int type = button->type ?: EV_KEY;
--	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
-+	int state;
- 
-+	if (!gpio_is_valid(button->gpio))
-+		return;
-+
-+	state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
- 	if (type == EV_ABS) {
- 		if (state)
- 			input_event(input, type, button->code, button->value);
-@@ -367,6 +383,85 @@ static irqreturn_t gpio_keys_isr(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
-+static void interrupt_keys_timer(unsigned long _data)
-+{
-+	struct gpio_button_data *bdata = (struct gpio_button_data *)_data;
-+	struct gpio_keys_button *button = bdata->button;
-+	struct input_dev *input = bdata->input;
-+	unsigned int type = button->type ?: EV_KEY;
-+	unsigned long iflags;
-+
-+	spin_lock_irqsave(&bdata->lock, iflags);
-+	if (bdata->key_pressed) {
-+		input_event(input, type, button->code, 0);
-+		input_sync(input);
-+		bdata->key_pressed = false;
-+	}
-+	spin_unlock_irqrestore(&bdata->lock, iflags);
-+}
-+
-+static irqreturn_t interrupt_keys_isr(int irq, void *dev_id)
-+{
-+	struct gpio_button_data *bdata = dev_id;
-+	struct gpio_keys_button *button = bdata->button;
-+	struct input_dev *input = bdata->input;
-+	int type = button->type ?: EV_KEY;
-+	unsigned long iflags;
-+
-+	BUG_ON(irq != button->irq);
-+
-+	spin_lock_irqsave(&bdata->lock, iflags);
-+	if (!bdata->key_pressed) {
-+		input_event(input, type, button->code, 1);
-+		input_sync(input);
-+		if (!bdata->timer_debounce) {
-+			input_event(input, type, button->code, 0);
-+			input_sync(input);
-+			spin_unlock_irqrestore(&bdata->lock, iflags);
-+			return IRQ_HANDLED;
-+		}
-+		bdata->key_pressed = true;
-+	}
-+
-+	spin_unlock_irqrestore(&bdata->lock, iflags);
-+	if (bdata->timer_debounce)
-+		mod_timer(&bdata->timer,
-+			jiffies + msecs_to_jiffies(bdata->timer_debounce));
-+	return IRQ_HANDLED;
-+}
-+
-+static int __devinit interrupt_keys_setup_key(struct platform_device *pdev,
-+					 struct gpio_button_data *bdata,
-+					 struct gpio_keys_button *button)
-+{
-+	const char *desc = button->desc ? button->desc : "gpio_keys";
-+	struct device *dev = &pdev->dev;
-+	unsigned long irqflags = 0;
-+	int irq, error;
-+
-+	if (button->debounce_interval) {
-+		setup_timer(&bdata->timer, interrupt_keys_timer,
-+						(unsigned long)bdata);
-+		bdata->timer_debounce = button->debounce_interval;
-+	}
-+	spin_lock_init(&bdata->lock);
-+	irq = button->irq;
-+	if (irq <= 0) {
-+		dev_err(dev, "%s(): Invalid irq number %d\n", __func__, irq);
-+		return -EINVAL;
-+	}
-+	bdata->key_pressed = false;
-+	if (!button->can_disable)
-+		irqflags |= IRQF_SHARED;
-+
-+	error = request_threaded_irq(irq, NULL, interrupt_keys_isr,
-+					irqflags, desc, bdata);
-+	if (error < 0)
-+		dev_err(dev, "Unable to claim irq %d; error %d\n",
-+				irq, error);
-+	return error;
-+}
-+
- static int __devinit gpio_keys_setup_key(struct platform_device *pdev,
- 					 struct gpio_button_data *bdata,
- 					 struct gpio_keys_button *button)
-@@ -376,6 +471,9 @@ static int __devinit gpio_keys_setup_key(struct platform_device *pdev,
- 	unsigned long irqflags;
- 	int irq, error;
- 
-+	if (!gpio_is_valid(button->gpio))
-+		return interrupt_keys_setup_key(pdev, bdata, button);
-+
- 	setup_timer(&bdata->timer, gpio_keys_timer, (unsigned long)bdata);
- 	INIT_WORK(&bdata->work, gpio_keys_work_func);
- 
-@@ -643,9 +741,12 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
- 	sysfs_remove_group(&pdev->dev.kobj, &gpio_keys_attr_group);
-  fail2:
- 	while (--i >= 0) {
--		free_irq(gpio_to_irq(pdata->buttons[i].gpio), &ddata->data[i]);
-+		int irq = button_irq(&pdata->buttons[i]);
-+		free_irq(irq, &ddata->data[i]);
- 		if (ddata->data[i].timer_debounce)
- 			del_timer_sync(&ddata->data[i].timer);
-+		if (!gpio_is_valid(pdata->buttons[i].gpio))
-+			continue;
- 		cancel_work_sync(&ddata->data[i].work);
- 		gpio_free(pdata->buttons[i].gpio);
- 	}
-@@ -672,10 +773,12 @@ static int __devexit gpio_keys_remove(struct platform_device *pdev)
- 	device_init_wakeup(&pdev->dev, 0);
- 
- 	for (i = 0; i < ddata->n_buttons; i++) {
--		int irq = gpio_to_irq(ddata->data[i].button->gpio);
-+		int irq = button_irq(ddata->data[i].button);
- 		free_irq(irq, &ddata->data[i]);
- 		if (ddata->data[i].timer_debounce)
- 			del_timer_sync(&ddata->data[i].timer);
-+		if (!gpio_is_valid(ddata->data[i].button->gpio))
-+			continue;
- 		cancel_work_sync(&ddata->data[i].work);
- 		gpio_free(ddata->data[i].button->gpio);
- 	}
-@@ -705,7 +808,7 @@ static int gpio_keys_suspend(struct device *dev)
- 		for (i = 0; i < ddata->n_buttons; i++) {
- 			struct gpio_keys_button *button = ddata->data[i].button;
- 			if (button->wakeup) {
--				int irq = gpio_to_irq(button->gpio);
-+				int irq = button_irq(button);
- 				enable_irq_wake(irq);
- 			}
- 		}
-@@ -723,7 +826,7 @@ static int gpio_keys_resume(struct device *dev)
- 
- 		struct gpio_keys_button *button = ddata->data[i].button;
- 		if (button->wakeup && device_may_wakeup(dev)) {
--			int irq = gpio_to_irq(button->gpio);
-+			int irq = button_irq(button);
- 			disable_irq_wake(irq);
- 		}
- 
-diff --git a/include/linux/gpio_keys.h b/include/linux/gpio_keys.h
-index 004ff33..dddcc95 100644
---- a/include/linux/gpio_keys.h
-+++ b/include/linux/gpio_keys.h
-@@ -6,7 +6,8 @@ struct device;
- struct gpio_keys_button {
- 	/* Configuration parameters */
- 	unsigned int code;	/* input event code (KEY_*, SW_*) */
--	int gpio;
-+	int gpio;		/* -1 if this key does not support gpio */
-+	int irq;		/* Irq number in case of interrupt keys */
- 	int active_low;
- 	const char *desc;
- 	unsigned int type;	/* input event type (EV_KEY, EV_SW, EV_ABS) */
--- 
-1.7.1.1
+[Pintu]
+I wanted to try this on arm based Linux mobile phone.
+I have 2 exactly similar mobile phone.
+Here exactly means: 
+hardware is same, kernel version is same, platform is same, filesystem is same.
+The only difference could be some user space application state.
+Hmmm.....the metadata and data layout within file system....this is were the confusion is.
+Suppose in "Device 1" during hibernation, I have a file say "file1.txt" opened whose inode number is say "123456".
+This opened state of file1.txt will be captured in hibernation image.
+Now assume that same "file1.txt" is also present (not opened) in "Device2" but whose inode number is say "567890".
+Now if I reboot "Device 2" and try to resume from hibernated image of "Device 1", what would happen to "file1.txt" ??
+And similarly other senarios.......
+Will resume work, at least partially. Like discard whatever is not relevant to "Device 2" and continue to load others.
 
+
+> Suppose, I have 2 exactly similar device (Laptop or mobile phone) with me.
+> At one time I will be working on only one device at a time.
+> Suppose I started my work on "Device 1"  with few opened application and later I wanted to switch to "Device 2" which is exactly similar to Device 1.
+> I thought to hibernate (suspend to disk) the Device 1 and store the hibernated image as a swap file and later transfer to sd card.
+> Then take of the sd card from Device 1 and put it into Device 2.
+> Copy the swap file from sd card to Device 2 in some swap partition.
+> Then reboot the Device 2 to Resume from this swap file.
+> I will get back my Device 1 content in Device 2.
+> 
+> Hope this is possible ?
+
+It may be possible to make it kind of work, but I wouldn't recommend it to
+anyone.
+
+[Pintu]
+if this can be possible we can derive many use cases.
+Till now we heard about hibernating and resuming from same device. And also people uses it rarely.
+With the Tizen coming up (supporting multiple devices) we can think about it.
+Also if "cloud" is integrated with kernel in _future_ we can save all our work from one device in cloud and restore our work from cloud in another device.
+I think that make sense.
+
+
+Thanks,
+Rafael
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
