@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab2CNEOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 00:14:54 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50688 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab2CNEOx (ORCPT
+	id S1752025Ab2CNESS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 00:18:18 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48365 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab2CNESQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 00:14:53 -0400
-Date: Wed, 14 Mar 2012 15:14:44 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the uprobes tree with the tip tree
-Message-Id: <20120314151444.a34eef495739e13506ac5b1a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__14_Mar_2012_15_14_44_+1100_ZivQB+cPZ3KTEjIn"
+	Wed, 14 Mar 2012 00:18:16 -0400
+Message-ID: <4F601C02.8070909@gmail.com>
+Date: Wed, 14 Mar 2012 15:18:10 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Andrew Miller <amiller@amilx.com>, gregkh@linuxfoundation.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8187se: r8180_core.c: Fix coding style issue
+References: <1331686689-6763-1-git-send-email-amiller@amilx.com> <1331688836.27389.13.camel@joe2Laptop>
+In-Reply-To: <1331688836.27389.13.camel@joe2Laptop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__14_Mar_2012_15_14_44_+1100_ZivQB+cPZ3KTEjIn
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 14/03/12 12:33, Joe Perches wrote:
 
-Hi Srikar,
+> On Tue, 2012-03-13 at 20:58 -0400, Andrew Miller wrote:
+>> Fix long line coding style issue
+>> Signed-off-by: Andrew Miller <amiller@amilx.com>
+> 
+> Hi Andrew.
+> 
+> Please strive for clarity instead of just fixing
+> random 80 char warnings.
+> 
+>> diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
+> []
+>> @@ -1607,17 +1609,20 @@ void rtl8180_rx(struct net_device *dev)
+>>  		/* printk("==========================>rx : RXAGC is %d,signalstrength is %d\n",RXAGC,stats.signalstrength); */
+>>  		stats.rssi = priv->wstats.qual.qual = priv->SignalQuality;
+>>  		stats.noise = priv->wstats.qual.noise = 100 - priv->wstats.qual.qual;
+>> -		bHwError = (((*(priv->rxringtail)) & (0x00000fff)) == 4080) | (((*(priv->rxringtail)) & (0x04000000)) != 0)
+>> -			| (((*(priv->rxringtail)) & (0x08000000)) != 0) | (((~(*(priv->rxringtail))) & (0x10000000)) != 0) | (((~(*(priv->rxringtail))) & (0x20000000)) != 0);
+>> +		bHwError = (((*(priv->rxringtail)) & (0x00000fff)) == 4080) |
+>> +			   (((*(priv->rxringtail)) & (0x04000000)) != 0) |
+>> +			   (((*(priv->rxringtail)) & (0x08000000)) != 0) |
+>> +			   (((~(*(priv->rxringtail))) & (0x10000000)) != 0) |
+>> +			   (((~(*(priv->rxringtail))) & (0x20000000)) != 0);
+> 
+> Likely these | uses should be ||
+> 
+>>  		bCRC = ((*(priv->rxringtail)) & (0x00002000)) >> 13;
+>>  		bICV = ((*(priv->rxringtail)) & (0x00001000)) >> 12;
+>>  		hdr = (struct ieee80211_hdr_4addr *)priv->rxbuffer->buf;
+>>  		    fc = le16_to_cpu(hdr->frame_ctl);
+>>  		type = WLAN_FC_GET_TYPE(fc);
+>>  
+>> -			if ((IEEE80211_FTYPE_CTL != type) &&
+>> -				(eqMacAddr(priv->ieee80211->current_network.bssid, (fc & IEEE80211_FCTL_TODS) ? hdr->addr1 : (fc & IEEE80211_FCTL_FROMDS) ? hdr->addr2 : hdr->addr3))
+>> -				 && (!bHwError) && (!bCRC) && (!bICV)) {
+>> +			if ((IEEE80211_FTYPE_CTL != type) && (eqMacAddr(priv->ieee80211->current_network.bssid,
+>> +			    (fc & IEEE80211_FCTL_TODS) ? hdr->addr1 : (fc & IEEE80211_FCTL_FROMDS) ? hdr->addr2 : hdr->addr3))
+>> +			    && (!bHwError) && (!bCRC) && (!bICV)) {
+> 
+> This is difficult to read and could be better written
+> removing unnecessary parentheses and making the egMacAddr
+> clearer as a function/macro call:
+> 
+> 			if (IEEE80211_FTYPE_CTL != type &&
+> 			    eqMacAddr(priv->ieee80211->current_network.bssid,
+> 				      fc & IEEE80211_FCTL_TODS ? hdr->addr1 :
+> 				      fc & IEEE80211_FCTL_FROMDS ? hdr->addr2 :
+> 				      hdr->addr3) &&
+> 			    !bHwError &&
+> 			    !bCRC &&
+> 			    !bICV)
 
-The linux-next merge of the uprobes tree gets several conflicts against
-the tip tree because the same patches appear in both threes and there are
-further changes to some files in the uprobes tree.
 
-Merging uprobes/for-next (1fe509b uprobes/core: Handle breakpoint and singl=
-estep exception.)
-CONFLICT (add/add): Merge conflict in kernel/events/uprobes.c
-CONFLICT (content): Merge conflict in kernel/events/Makefile
-CONFLICT (add/add): Merge conflict in include/linux/uprobes.h
-CONFLICT (add/add): Merge conflict in arch/x86/kernel/uprobes.c
-CONFLICT (add/add): Merge conflict in arch/x86/include/asm/uprobes.h
+That's still pretty nasty. Eight lines for an if expression! It took me
+a couple of glances to realise that there were only two arguments to
+eqMacAddr. If you add some temporary variables then you can make the
+code a lot more sane, without making it overly verbose:
 
-The easiest way to remove these conflicts would be for you to rebase the
-uprobes tree onto the perl/uprobes branch of the tip tree (I assume that
-all the uprobes code will eventually be merged to Linus via the tip tree)
-or a subset of that branch that is the common set of patches.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+	u8 *addr, *bssid = priv->ieee80211->current_network.bssid;
 
---Signature=_Wed__14_Mar_2012_15_14_44_+1100_ZivQB+cPZ3KTEjIn
-Content-Type: application/pgp-signature
+	if (fc & IEEE80211_FCTL_TODS)
+		addr = hdr->addr1;
+	else if (fc & IEEE80211_FCTL_FROMDS)
+		addr = hdr->addr2;
+	else
+		addr = hdr->addr3;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+	if (!bHwError && !bCRC && !bICV &&
+	    type != IEEE80211_FTYPE_CTL && eqMacAddr(bssid, addr)) {
+		...
 
-iQIcBAEBCAAGBQJPYBs0AAoJEECxmPOUX5FEbvUP/2K2TCk6qeWTfjtvmne+DVUp
-Teab0R8Ja0riHD5k2BIN8gUlootSIywV5Fy6ekvmZaF+3EtZaLGlMg1o51Tm3oiX
-RaBqfdmeATE9/H/Mxj4ZdMudwzHmc8Iruz/plIPh2BRtIb3auUtDtBtRvjGCyiZe
-ZoBephATvL6n+TRy8h24Qex/7macgkN/QFoImLe29gZ32xBXEISc7mw14Rx+YWy/
-IF6ddXLGjIuXWvAAgn2drGsDqm7Ugo4IDsSXfPmh7nwbav2Urhp/j25Ps3E0cgn7
-fffUceT1QTzeJoQVTua5xUi1brhiW7aNdXV7vGDEOAiM615654CiL87SUBZvZWmJ
-Pdv//sOl+g3o4KJObOWoBqauyPi3YF+/pBidgX+TIxWzuFST7zDLYre74aFvGk4r
-vSt9eGYq+lUAwZDHWLu5Ma4y1GpMgNISGQ7t7ah8vh5Bt33V9HwwwSAjh0c0tagD
-jw90YFz0kV1MQhLxW13OhUnJnpOaRUsuDWesr+/iK3JBzigAn+Adq5SrGDAnwgZJ
-dfl3xUx27QuH9e6w+UmdIEsNv6vhvSWHEm65wbzAzwYkAVTbWroOr0rhxu7RZlfk
-fl5ao7eOu6uCSCX+PZ0u1Nybg7F0KC8wCD4xIIXwK+UeWFnI668f2Tfta/Ys4G9L
-ywcb5lsVk8jvPA5020vW
-=SuYb
------END PGP SIGNATURE-----
+Also note that the whole if block is indented one too many tab stops.
+Would be best to fix that in a separate patch though. If you fix that
+first, then you will have more horizontal space to re-organise the
+expression inside the if :-).
 
---Signature=_Wed__14_Mar_2012_15_14_44_+1100_ZivQB+cPZ3KTEjIn--
+~Ryan
+
