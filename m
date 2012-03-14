@@ -1,164 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab2CNWy4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 18:54:56 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:40074 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab2CNWyx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 18:54:53 -0400
+	id S932287Ab2CNW6z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 18:58:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7257 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751219Ab2CNW6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 18:58:51 -0400
+Message-ID: <4F611991.9040604@redhat.com>
+Date: Wed, 14 Mar 2012 19:20:01 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <1331603857.3436.24.camel@minggr>
-References: <1331603857.3436.24.camel@minggr>
-Date: Wed, 14 Mar 2012 23:49:39 +0100
-Message-ID: <CAG-aW06hebVsVrFZvTMMuS6v6VNGf65H8h1X3eMaNXZo_QmbBQ@mail.gmail.com>
-Subject: Re: [PATCH v2] libata: disable runtime pm for hotpluggable port
-From: Matt <jackdachef@gmail.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, jslaby@suse.cz, cwillu@cwillu.com,
-        Sergei Shtylyov <sshtylyov@mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Add a per-dimm structure
+References: <1331120438-27523-1-git-send-email-mchehab@redhat.com> <20120313233217.GB31106@kroah.com> <4F60F2E4.7060707@redhat.com> <20120314204355.GA10187@kroah.com>
+In-Reply-To: <20120314204355.GA10187@kroah.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 2:57 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> Currently, hotplug doesn't work if port is already runtime suspended.
-> For now, we simply disable runtime pm for hotpluggable port.
-> Later, we should add runtime pm support for hotpluggable port too.
->
-> Bug report:
-> https://lkml.org/lkml/2012/2/19/70
->
-> v2:
-> - Use bit 2 and 3 for flags ATA_FLAG_EXTERNAL and ATA_FLAG_PLUGGABLE.
->
-> TODO: add similar hotpluggable port check for controllers other than
-> AHCI.
->
-> Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
-> Reported-and-tested-by: cwillu@cwillu.com
-> Reported-and-tested-by: jackdachef@gmail.com
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
->  drivers/ata/ahci.c             |    3 +++
->  drivers/ata/ahci.h             |    3 +++
->  drivers/ata/libahci.c          |   20 ++++++++++++++++++++
->  drivers/ata/libata-transport.c |    6 ++++--
->  include/linux/libata.h         |    2 ++
->  5 files changed, 32 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-> index d07bf03..02e93ff 100644
-> --- a/drivers/ata/ahci.c
-> +++ b/drivers/ata/ahci.c
-> @@ -1145,6 +1145,9 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
->        if (hpriv->cap & HOST_CAP_PMP)
->                pi.flags |= ATA_FLAG_PMP;
->
-> +       if (hpriv->cap & HOST_CAP_SXS)
-> +               pi.flags |= ATA_FLAG_EXTERNAL;
-> +
->        ahci_set_em_messages(hpriv, &pi);
->
->        if (ahci_broken_system_poweroff(pdev)) {
-> diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-> index b175000..92f7172 100644
-> --- a/drivers/ata/ahci.h
-> +++ b/drivers/ata/ahci.h
-> @@ -172,6 +172,9 @@ enum {
->        PORT_CMD_ALPE           = (1 << 26), /* Aggressive Link PM enable */
->        PORT_CMD_ATAPI          = (1 << 24), /* Device is ATAPI */
->        PORT_CMD_FBSCP          = (1 << 22), /* FBS Capable Port */
-> +       PORT_CMD_ESP            = (1 << 21), /* External SATA Port */
-> +       PORT_CMD_MPSP           = (1 << 19), /* Mechanical Presence Switch Attached to Port */
-> +       PORT_CMD_HPCP           = (1 << 18), /* Hot Plug Capable Port */
->        PORT_CMD_PMP            = (1 << 17), /* PMP attached */
->        PORT_CMD_LIST_ON        = (1 << 15), /* cmd list DMA engine running */
->        PORT_CMD_FIS_ON         = (1 << 14), /* FIS DMA engine running */
-> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-> index a72bfd0..7d72d3c 100644
-> --- a/drivers/ata/libahci.c
-> +++ b/drivers/ata/libahci.c
-> @@ -1097,6 +1097,23 @@ static void ahci_port_init(struct device *dev, struct ata_port *ap,
->        writel(1 << port_no, mmio + HOST_IRQ_STAT);
->  }
->
-> +static bool ahci_port_pluggable(struct ata_port *ap)
-> +{
-> +       void __iomem *port_mmio = ahci_port_base(ap);
-> +       u32 cmd;
-> +
-> +       cmd = readl(port_mmio + PORT_CMD);
-> +
-> +       if ((ap->flags & ATA_FLAG_EXTERNAL) &&
-> +           (cmd & PORT_CMD_ESP))
-> +               return true;
-> +
-> +       if (cmd & (PORT_CMD_MPSP | PORT_CMD_HPCP))
-> +               return true;
-> +
-> +       return false;
-> +}
-> +
->  void ahci_init_controller(struct ata_host *host)
->  {
->        struct ahci_host_priv *hpriv = host->private_data;
-> @@ -1112,6 +1129,9 @@ void ahci_init_controller(struct ata_host *host)
->                if (ata_port_is_dummy(ap))
->                        continue;
->
-> +               if (ahci_port_pluggable(ap))
-> +                       ap->flags |= ATA_FLAG_PLUGGABLE;
-> +
->                ahci_port_init(host->dev, ap, i, mmio, port_mmio);
->        }
->
-> diff --git a/drivers/ata/libata-transport.c b/drivers/ata/libata-transport.c
-> index 74aaee3..a7166b9 100644
-> --- a/drivers/ata/libata-transport.c
-> +++ b/drivers/ata/libata-transport.c
-> @@ -292,8 +292,10 @@ int ata_tport_add(struct device *parent,
->        }
->
->        device_enable_async_suspend(dev);
-> -       pm_runtime_set_active(dev);
-> -       pm_runtime_enable(dev);
-> +       if (!(ap->flags & ATA_FLAG_PLUGGABLE)) {
-> +               pm_runtime_set_active(dev);
-> +               pm_runtime_enable(dev);
-> +       }
->
->        transport_add_device(dev);
->        transport_configure_device(dev);
-> diff --git a/include/linux/libata.h b/include/linux/libata.h
-> index cafc09a..f46961d 100644
-> --- a/include/linux/libata.h
-> +++ b/include/linux/libata.h
-> @@ -187,6 +187,8 @@ enum {
->        ATA_FLAG_SLAVE_POSS     = (1 << 0), /* host supports slave dev */
->                                            /* (doesn't imply presence) */
->        ATA_FLAG_SATA           = (1 << 1),
-> +       ATA_FLAG_EXTERNAL       = (1 << 2), /* Controller supports external SATA */
-> +       ATA_FLAG_PLUGGABLE      = (1 << 3), /* Port is hotpluggable */
->        ATA_FLAG_NO_ATAPI       = (1 << 6), /* No ATAPI support */
->        ATA_FLAG_PIO_DMA        = (1 << 7), /* PIO cmds via DMA */
->        ATA_FLAG_PIO_LBA48      = (1 << 8), /* Host DMA engine is LBA28 only */
-> --
-> 1.7.2.5
->
->
->
+Em 14-03-2012 17:43, Greg KH a:
+> On Wed, Mar 14, 2012 at 04:35:00PM -0300, Mauro Carvalho Chehab wrote:
+>> Em 13-03-2012 20:32, Greg KH escreveu:
+>>> On Wed, Mar 07, 2012 at 08:40:32AM -0300, Mauro Carvalho Chehab wrote:
+>>>> Prepare the internal structures to represent the memory properties per dimm, 
+>>>> instead of per csrow. 
+>>>>
+>>>> This is needed for modern controllers with more than 2 channels, as the memories 
+>>>> at the same slot number but on different channels (or channel pairs) may be 
+>>>> different.
+>>>>
+>>>> Mauro Carvalho Chehab (6):
+>>>>   edac: Create a dimm struct and move the labels into it
+>>>>   edac: Add per dimm's sysfs nodes
+>>>
+>>> You need Documentation/ABI entries for these new sysfs files.
+>>
+>> Sure. I'll provide it on the final patchset.
+>>
+>> Boris suggested some alternatives for the error counter sysfs nodes, but the 
+>> discussion ended by diverging into an implementation detail of hiding the UE
+>> error nodes, without any consensus about the sysfs structure for it.
+>>
+>> At the current patchset, the error counter nodes are all under
+>> 	sys/devices/system/edac/mc/mc?/
+>>
+>> He thinks that a multi-layer struct should be created inside that directory
+>> (it could have 2 or 3 levels of directories, depending on how the memory is
+>> organized at the memory controller), instead of having a large number of files
+>> there.
+> 
+> Why create subdirs?  If those subdirectories are not real devices,
+> showing a real hierarchy, then do not create them as userspace will get
+> very confused very quickly.
 
-Hi Lin Ming,
+Yes, I think so. 
 
-thanks for CCing on the updated patch
+That's the sysfs structure proposed on those patchsets:
 
-I just finished testing it with 3.3-rc7 and it works as advertised
+The error counter registers for corrected errors (CE) and uncorrected 
+errors (UE) will be like:
+
+/sys/devices/system/edac/
+â””â”€â”€ mc
+    â”œâ”€â”€ mc0
+    â”‚   â”œâ”€â”€ ce_csrow[0-i]
+    â”‚   â”œâ”€â”€ ce_csrow[0-i]_channel[0-j]
+...
+    â”‚   â”œâ”€â”€ ce_count
+    â”‚   â”œâ”€â”€ ce_noinfo_count
+...
+    â”‚   â”œâ”€â”€ ue_csrow[0-i]
+    â”‚   â”œâ”€â”€ ue_csrow[0-i]_channel[0-j]
+...
+    â”œâ”€â”€ ue_count
+    â””â”€â”€ ue_noinfo_count
+
+The actual names for the error counters will depend on how the memory
+controller addresses the memory. Currently, there are 3 possibilities:
+
+	- csrow/channel - for drivers where the memory is addressed by rank;
+	- channel/slot - for devices where the memory controller can properly
+			 identify a DIMM slot;
+	- branch/channel/slot - for FB-DIMM memory controllers with more
+				than 2 channels, as those memory controllers
+				group each channel pair into a branch.
+
+This basically reflects the hierarchy used by the memory controller in
+order to see the memory chips.
+
+When an error occurs, the driver increments the pertinent counters.
+For example, a CE error on a dimm located at csrow 3 channel 1 will
+increment:
+	ce_csrow3_channel1
+	ce_csrow3
+	ce_count
+
+On several cases, it is not possible to point to a single DIMM or rank. On
+such case, only the higher hierarchy counters will be incremented. For
+example, an Uncorrected Error at csrow3 with a 128 cacheline will
+increment only:
+	ce_csrow3
+	ce_count
+
+As the ECC chipkill algorithm in general is not able to tell if the error
+happened at the rank located at channel 0 or channel 1.
+
+The special ce_noinfo_count/ue_noinfo_count counters are there signalize
+that an error occurred but the driver couldn't get the error location.
+
+The ce_count/ue_count/ue_noinfo_count/ce_noinfo_count are part of the
+current API. That's why I added the other counters there, and used a
+nomenclature close to the existing one.
 
 
-Kind Regards
+The per-rank/per-dimm memory struct that contains the memory information 
+(size, type, location, etc), and it will be like:
 
-Matt
+/sys/devices/system/edac/
+â””â”€â”€ mc
+    â”œâ”€â”€ mc0
+    â”‚   â”œâ”€â”€ (rank|dimm)[0-n]
+    â”‚   â”‚   â”œâ”€â”€ dimm_dev_type
+    â”‚   â”‚   â”œâ”€â”€ dimm_edac_mode
+    â”‚   â”‚   â”œâ”€â”€ dimm_label
+    â”‚   â”‚   â”œâ”€â”€ dimm_location
+    â”‚   â”‚   â”œâ”€â”€ dimm_mem_type
+    â”‚   â”‚   â””â”€â”€ dimm_size
+
+There are a few other nodes that are untouched by this patchset and
+will remain there:
+
+/sys/devices/system/edac/
+â””â”€â”€ mc
+    â”œâ”€â”€ mc0
+    â”‚   â”œâ”€â”€ device -> ../../../../pci0000:00/0000:00:18.2
+    â”‚   â”œâ”€â”€ reset_counters
+    â”‚   â”œâ”€â”€ sdram_scrub_rate
+    â”‚   â”œâ”€â”€ seconds_since_reset
+    â”‚   â””â”€â”€ size_mb
+
+(there are also a few driver-specific sysfs nodes - most due to error injection,
+ and, on some devices, device nodes for erros on the PCI bus - none of them
+ touched on those series)
+
+And finally, the nodes that are redundant and, IMO, should be deprecated on some
+future kernel version:
+
+/sys/devices/system/edac
+â”œâ”€â”€ mc
+â”‚   â”œâ”€â”€ mc0
+â”‚   â”‚   â”œâ”€â”€ csrow[0-i]
+â”‚   â”‚   â”‚   â”œâ”€â”€ ce_count
+â”‚   â”‚   â”‚   â”œâ”€â”€ ch0_ce_count
+â”‚   â”‚   â”‚   â”œâ”€â”€ ch0_dimm_label
+...
+â”‚   â”‚   â”‚   â”œâ”€â”€ ch[j]_ce_count
+â”‚   â”‚   â”‚   â”œâ”€â”€ ch[j]_dimm_label
+â”‚   â”‚   â”‚   â”œâ”€â”€ dev_type
+â”‚   â”‚   â”‚   â”œâ”€â”€ edac_mode
+â”‚   â”‚   â”‚   â”œâ”€â”€ mem_type
+â”‚   â”‚   â”‚   â”œâ”€â”€ size_mb
+â”‚   â”‚   â”‚   â””â”€â”€ ue_count
+...
+
+On the above:
+	/csrow3/ch1_ce_count
+is equivalent to: 
+	/ce_csrow3_channel1
+
+and
+	/csrow3/ce_count
+is equivalent to:
+	/ce_csrow3
+
+> Easy rule to remember, never mix "raw" kobjects and 'struct device',
+> which is what you would be doing here, right?  We can handle many
+> hundreds of thousands of files and devices in a single directory, no
+> problem.
+
+No. They're all generated with raw kobjects, using kobject_init_and_add() or
+sysfs_create_file() calls.
+
+>> Anyway, before adding unnedded complexity, I'd like to hear more comments from 
+>> the others before writing a complex patch to create such structure.
+>>
+>> So, maybe I could just add what it was there as ABI/testing, and give more
+>> time for kernel and userspace developers to work with it and provide us a better
+>> feedback.
+> 
+> That's a nice dream, it usually never happens until a few kernel
+> releases, after people have already written tools that rely on the
+> existing structure :)
+
+:)
+
+Well, on the test tools I wrote to test the patches, it is a way easier to
+parse the error counters on just one directory, than to write a shell script
+that would navigate on a complex multi-directory layer with 2 or 3 levels.
+
+> Feel free to cc: me on any of these patches if you want some review of
+> the sysfs layout and usage.
+
+Thanks! I'll do it on my next submission.
+
+Thanks,
+Mauro
