@@ -1,145 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761334Ab2CNRgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 13:36:32 -0400
-Received: from intmgw001.ash2.facebook.com ([66.220.155.178]:64603 "EHLO
-	intmgw003.ash2.facebook.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761256Ab2CNRg1 (ORCPT
+	id S1761346Ab2CNRgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 13:36:54 -0400
+Received: from mail.southpole.se ([193.12.106.18]:44681 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761118Ab2CNRgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 13:36:27 -0400
-Date: Wed, 14 Mar 2012 10:36:23 -0700
-From: Arun Sharma <asharma@fb.com>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Tom Zanussi <tzanussi@gmail.com>, linux-perf-users@vger.kernel.org
-Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v3)
-Message-ID: <20120314173623.GA6525@dev3310.snc6.facebook.com>
-References: <1331664395-30631-1-git-send-email-asharma@fb.com>
- <4F60078D.10905@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F60078D.10905@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 14 Mar 2012 13:36:51 -0400
+Message-ID: <1331746607.5104.93.camel@jerome.southpole.se>
+Subject: Re: [ORLinux] [PATCH 17/35] Make asm-generic/cmpxchg.h #include
+ asm-generic/cmpxchg-local.h [ver #2]
+From: Jonas Bonn <jonas@southpole.se>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux@openrisc.net, linux-kernel@vger.kernel.org,
+        paul.gortmaker@windriver.com, hpa@zytor.com,
+        torvalds@linux-foundation.org
+Date: Wed, 14 Mar 2012 18:36:47 +0100
+In-Reply-To: <21309.1331744879@redhat.com>
+References: <1331738610.5104.84.camel@jerome.southpole.se>
+	 <1331736182.5104.74.camel@jerome.southpole.se>
+	 <CACM3HyHaFqVBaALMNB9dTE+7JrT1qD0jrYtV2PzwTskv8sW4Hg@mail.gmail.com>
+	 <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
+	 <20120312233858.13888.34822.stgit@warthog.procyon.org.uk>
+	 <201203130900.41993.arnd@arndb.de> <11556.1331723400@redhat.com>
+	 <18016.1331738258@redhat.com>  <21309.1331744879@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Assp-Version: 2.1.1(11364) on assp.southpole.se
+X-Assp-Client-SSL: yes
+X-Assp-ID: assp.southpole.se 46608-07152
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 11:50:53AM +0900, Namhyung Kim wrote:
-> Hi Arun,
-> [...]
 
-Thanks for reviewing. Please take a look at this incremental patch.
-I'll mail the v4 patch next.
+On Wed, 2012-03-14 at 17:07 +0000, David Howells wrote:
+> Jonas Bonn <jonas@southpole.se> wrote:
+> 
+> > > > The error I get while building (if asm/system.h is included) is a
+> > > > circular dependency that I don't see that I can easily resolve:
+> > > 
+> > > How do I get an openrisc toolchain?
+> > 
+> > http://openrisc.net/toolchain-build.html
+> > 
+> > What distro are you on?  I might be able to send you a binary version if
+> > you prefer...
+> 
+> I'd like to add it to my spec file to build the complete clutch of binutils
+> and gcc RPMs for Fedora.
+> 
+> I originally tried --target=openrisc-elf, but whilst that is supported by
+> binutils, it doesn't seem to be supported by gcc.
+> 
 
- -Arun
+That openrisc-elf target in upstream binutils is ancient and has not
+worked for years... it really should be pulled out of binutils
+altogether.  The current toolchain bits are unfortunately not part of
+the upstream toolchain components.
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index aa4acde..2b824a5 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -465,7 +465,8 @@ int callchain_get(struct callchain_cursor *cursor,
- {
- 	struct callchain_cursor_node *node = cursor->curr;
- 
--	if (node == NULL) return -1;
-+	if (node == NULL)
-+		return -1;
- 
- 	al->map = node->map;
- 	al->sym = node->sym;
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 9d703ec..f3200ea 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -79,7 +79,6 @@ static void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
- static void hist_entry__add_cpumode_period(struct hist_entry *he,
- 					   unsigned int cpumode, u64 period)
- {
--	he->period_self += period;
- 	switch (cpumode) {
- 	case PERF_RECORD_MISC_KERNEL:
- 		he->period_sys += period;
-@@ -213,7 +212,6 @@ static struct hist_entry *___hists__add_entry(struct hists *hists,
- 		.ip	= al->addr,
- 		.level	= al->level,
- 		.period	= period,
--		.period_self = period,
- 		.parent = sym_parent,
- 		.filtered = symbol__parent_filter(sym_parent),
- 	};
-@@ -280,13 +278,11 @@ static struct hist_entry *__hists__add_entry_inclusive(struct hists *hists,
- 
- 		new_cursor.first = iter.curr;
- 		new_cursor.nr = cursor->nr - i;
--		if (i != 0)
--			he->period_self -= period;
--		else
-+		if (i == 0) {
-+			he->period_self += period;
- 			orig_he = he;
--		err = callchain_append(he->callchain,
--				       &new_cursor,
--				       period);
-+		}
-+		err = callchain_append(he->callchain, &new_cursor, period);
- 		if (err)
- 			return NULL;
- 		callchain_cursor_advance(&iter);
-@@ -306,6 +302,7 @@ static struct hist_entry *__hists__add_entry_single(struct hists *hists,
- 	he = ___hists__add_entry(hists, al, sym_parent, period);
- 	if (he == NULL)
- 		return NULL;
-+	he->period_self += period;
- 	if (symbol_conf.use_callchain) {
- 		err = callchain_append(he->callchain, cursor, period);
- 		if (err)
-@@ -322,7 +319,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
- {
- 	struct hist_entry *he;
- 
--	if (sort__first_dimension == SORT_INCLUSIVE)
-+	if (sort__has_inclusive && symbol_conf.use_callchain)
- 		he = __hists__add_entry_inclusive(hists, al, parent,
- 						  cursor, period);
- 	else
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index f7c93d9..9033a62 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -8,6 +8,7 @@ const char	default_sort_order[] = "comm,dso,symbol";
- const char	*sort_order = default_sort_order;
- int		sort__need_collapse = 0;
- int		sort__has_parent = 0;
-+int		sort__has_inclusive = 0;
- 
- enum sort_type	sort__first_dimension;
- 
-@@ -291,6 +292,9 @@ int sort_dimension__add(const char *tok)
- 			sort__has_parent = 1;
- 		}
- 
-+		if (sd->entry == &sort_sym_inclusive)
-+			sort__has_inclusive = 1;
-+
- 		if (sd->taken)
- 			return 0;
- 
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index efb145f..97f67d5 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -31,6 +31,7 @@ extern const char *parent_pattern;
- extern const char default_sort_order[];
- extern int sort__need_collapse;
- extern int sort__has_parent;
-+extern int sort__has_inclusive;
- extern char *field_sep;
- extern struct sort_entry sort_comm;
- extern struct sort_entry sort_dso;
+> According to your URL above, I should be using --target=or32-linux, but
+> binutils claims not to support that:
+> 
+> 	*** ld does not support target or32-unknown-linux-gnu
+> 
+
+or32-linux is supported in the toolchain from openrisc.net.  Likewise
+or32-elf... follow the instructions (the easy ones should work) on the
+link I sent you -- the submodules in the "toolchain" repo are from the
+openrisc git repo and contain everything that is needed.
+
+/Jonas
+
