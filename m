@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756458Ab2CNAMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:12:31 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43533 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753754Ab2CNAM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:12:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Olof Johansson <olof@lixom.net>
-Subject: Re: [GIT PULL] Renesas SoC updates for v3.4, take 2
-Date: Wed, 14 Mar 2012 01:16:40 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>, Paul Mundt <lethal@linux-sh.org>
-References: <201203092155.04731.rjw@sisk.pl> <201203132242.07283.rjw@sisk.pl> <CAOesGMi9uQyS=ATE+wXZY8hP-1+-uZhW2B-Y3zV9fOEBCYUFVw@mail.gmail.com>
-In-Reply-To: <CAOesGMi9uQyS=ATE+wXZY8hP-1+-uZhW2B-Y3zV9fOEBCYUFVw@mail.gmail.com>
+	id S1756611Ab2CNAO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:14:58 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:58425 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754203Ab2CNAO4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 20:14:56 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203140116.40344.rjw@sisk.pl>
+In-Reply-To: <201203140110.40671.rjw@sisk.pl>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203132042.07794.rjw@sisk.pl>
+ <CAPXgP11fWf-0Jkk=d6G+d=sQa-hoX3jUM+K6K4rGYhh0dv1u_w@mail.gmail.com> <201203140110.40671.rjw@sisk.pl>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 14 Mar 2012 01:14:35 +0100
+Message-ID: <CAPXgP118s+DuLaATKOq7w=F82GB=8PkwUJDichffXA-Er6Zqvw@mail.gmail.com>
+Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when
+ helper is not yet available
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 14, 2012, Olof Johansson wrote:
-> On Tue, Mar 13, 2012 at 2:42 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Tuesday, March 13, 2012, Rafael J. Wysocki wrote:
-> >> On Tuesday, March 13, 2012, Arnd Bergmann wrote:
-> >> > On Tuesday 13 March 2012, Rafael J. Wysocki wrote:
-> >> > > > Note that the __io() issue has turned out to be more urgent than I first
-> >> > > > thought when we discussed it, so it would be good to apply the patch below
-> >> > > > on top of your series.
-> >> > >
-> >> > > Do you want me to apply it now or will you do that in your tree?
-> >> >
-> >> > Doesn't matter to me, as long as one of you applies it ;-)
-> >>
-> >> OK, so I will add it to the soc branch in the Renesas tree.
-> >
-> > Applied and pushed back the updated tree.
-> 
-> Seems like you applied the patch but without the subject line,
+On Wed, Mar 14, 2012 at 01:10, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, March 14, 2012, Kay Sievers wrote:
 
-I didn't notice that, sorry.
+>> It is relevant in the sense that the firmware loader should not even
+>> know that a uevent *can* cause a usermodehelper exec() if it runs in
+>> legacy mode. The firmware loader just has no business in fiddling with
+>> the details of driver core legacy stuff. I don't think his warning
+>> makes much sense.
+>
+> But that warning actually triggers for drivers that attempt to use
+> request_firmware() during system resume, even though /sbin/hotplug isn't
+> used any more.
+>
+> usermodehelper_is_disabled() means "we are in the middle of system power
+> transition" rather than anything else (I agree it should be called
+> suspend_in_progress() or something similar these days).
 
-> so now git thinks the whole first paragraph is the patch subject. That's a
-> bit messy and I'd prefer if you could fix it up.
+Yeah it's certainly useful to disable the exec() during suspend calls,
+much more than using the exec() inhibit flag for the firmware loader
+to throw a warning about suspend issues.
 
-I've just replaced the broken commit with a new fixed one.
+Such confusing hacks need at least a comment, that makes this very obvious. :)
 
-> Do you have downstream users of your tree that you'll mess up if you
-> rebase the last commit though? Alternatively I can take everything on
-> the branch but the last patch and apply it myself, but that will still
-> cause trouble for your downstream developers once things go upstream
-> and come down.
-
-Hopefully, no one has pulled from the tree yet. :-)
-
-Thanks,
-Rafael
+Kay
