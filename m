@@ -1,55 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760765Ab2CNKaV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 06:30:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53846 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760447Ab2CNKaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 06:30:17 -0400
-Message-ID: <4F607325.6050607@redhat.com>
-Date: Wed, 14 Mar 2012 12:29:57 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: "Daniel P. Berrange" <berrange@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Amit Shah <amit.shah@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F58943E.1050402@redhat.com> <4F595B31.9090301@cn.fujitsu.com> <4F5DBC26.7060204@cn.fujitsu.com> <4F5DD0FD.9070904@redhat.com> <20120313091843.GB3800@redhat.com> <4F5F25BF.7060100@redhat.com> <4F6056FE.3020202@cn.fujitsu.com> <4F6063C8.8010005@redhat.com> <4F606A7C.9090900@cn.fujitsu.com> <4F606DCC.3020908@redhat.com> <4F60726E.3090807@cn.fujitsu.com>
-In-Reply-To: <4F60726E.3090807@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1030767Ab2CNKbp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 06:31:45 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:48760 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030747Ab2CNKbm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 06:31:42 -0400
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
+To: sfr@canb.auug.org.au, grant.likely@secretlab.ca, benh@kernel.crashing.org
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, paulus@samba.org,
+        linuxppc-dev@lists.ozlabs.org, Gavin Shan <shangw@linux.vnet.ibm.com>
+Subject: [PATCH] EEH: remove eeh device from OF node
+Date: Wed, 14 Mar 2012 18:31:26 +0800
+Message-Id: <1331721086-4314-1-git-send-email-shangw@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+x-cbid: 12031400-9264-0000-0000-0000010DCEEB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2012 12:26 PM, Wen Congyang wrote:
-> >> If so, is this channel visible to guest userspace? If the channle is visible to guest
-> >> userspace, the program running in userspace may write the same message to the channel.
-> >>
-> > 
-> > Surely there's some kind of access control on channels.
->
-> The virtio-serial depends on more things than touching the hypervisor. So I think touching
-> the hypervisor is more reliable than using virtio-serial device, and it is very simple and
-> easy to use.
->
-> If we pass something from guest userspace to host, we can use virtio-serial. But If we pass
-> something from guest kernelspace to host, I still prefer to touch the hypervisor.
+Originally, the PCI sensitive OF node is tracing the eeh device
+through struct device_node::edev. However, it was regarded as
+bad idea.
 
-There's no argument that it's easier.  My concern is different, we're
-adding more and more stuff to the hypervisor because it's easier, which
-bloats it.  Every time we do it we add to compatibility and security
-problems.
+The patch removes struct device_node::edev. In addition, the
+global list of eeh devices is introduced, and do retrival of
+eeh device according to the given OF node through the global
+list.
 
-The panic notification is *really* simple, so I don't expect it to cause
-a lot of problems.  But still, if it's possible not to change the
-hypervisor, we must make an effort in that direction.
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+---
+ arch/powerpc/include/asm/eeh.h           |    7 +++++++
+ arch/powerpc/platforms/pseries/eeh_dev.c |   29 ++++++++++++++++++++++++++++-
+ include/linux/of.h                       |   10 ----------
+ 3 files changed, 35 insertions(+), 11 deletions(-)
 
+diff --git a/arch/powerpc/include/asm/eeh.h b/arch/powerpc/include/asm/eeh.h
+index d60f998..591e0a1 100644
+--- a/arch/powerpc/include/asm/eeh.h
++++ b/arch/powerpc/include/asm/eeh.h
+@@ -56,6 +56,7 @@ struct eeh_dev {
+ 	struct pci_controller *phb;	/* Associated PHB		*/
+ 	struct device_node *dn;		/* Associated device node	*/
+ 	struct pci_dev *pdev;		/* Associated PCI device	*/
++	struct list_head list;		/* Form the global link list	*/
+ };
+ 
+ static inline struct device_node *eeh_dev_to_of_node(struct eeh_dev *edev)
+@@ -115,6 +116,7 @@ extern int eeh_subsystem_enabled;
+  */
+ #define EEH_MAX_ALLOWED_FREEZES 5
+ 
++struct eeh_dev *eeh_dev_from_of_node(struct device_node *dn);
+ void * __devinit eeh_dev_init(struct device_node *dn, void *data);
+ void __devinit eeh_dev_phb_init_dynamic(struct pci_controller *phb);
+ void __init eeh_dev_phb_init(void);
+@@ -132,6 +134,11 @@ void eeh_add_device_tree_early(struct device_node *);
+ void eeh_add_device_tree_late(struct pci_bus *);
+ void eeh_remove_bus_device(struct pci_dev *);
+ 
++static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
++{
++	return eeh_dev_from_of_node(dn);
++}
++
+ /**
+  * EEH_POSSIBLE_ERROR() -- test for possible MMIO failure.
+  *
+diff --git a/arch/powerpc/platforms/pseries/eeh_dev.c b/arch/powerpc/platforms/pseries/eeh_dev.c
+index f3aed7d..925d3a3 100644
+--- a/arch/powerpc/platforms/pseries/eeh_dev.c
++++ b/arch/powerpc/platforms/pseries/eeh_dev.c
+@@ -34,6 +34,7 @@
+ #include <linux/export.h>
+ #include <linux/gfp.h>
+ #include <linux/init.h>
++#include <linux/list.h>
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
+ #include <linux/string.h>
+@@ -41,6 +42,30 @@
+ #include <asm/pci-bridge.h>
+ #include <asm/ppc-pci.h>
+ 
++/* eeh device list */
++static LIST_HEAD(eeh_dev_list);
++
++/**
++ * eeh_dev_from_of_node - Retrieve EEH device according to OF node
++ * @dn: OF node
++ *
++ * All existing eeh devices have been put into the global list.
++ * In addition, the eeh device is tracing the corresponding
++ * OF node. The function is used to retrieve the corresponding
++ * eeh device according to the given OF node.
++ */
++struct eeh_dev *eeh_dev_from_of_node(struct device_node *dn)
++{
++	struct eeh_dev *edev = NULL;
++
++	list_for_each_entry(edev, &eeh_dev_list, list) {
++		if (edev->dn && edev->dn == dn)
++			return edev;
++	}
++
++	return NULL;
++}
++
+ /**
+  * eeh_dev_init - Create EEH device according to OF node
+  * @dn: device node
+@@ -62,10 +87,12 @@ void * __devinit eeh_dev_init(struct device_node *dn, void *data)
+ 	}
+ 
+ 	/* Associate EEH device with OF node */
+-	dn->edev  = edev;
+ 	edev->dn  = dn;
+ 	edev->phb = phb;
+ 
++	/* Add to global list */
++	list_add_tail(&edev->list, &eeh_dev_list);
++
+ 	return NULL;
+ }
+ 
+diff --git a/include/linux/of.h b/include/linux/of.h
+index 3e710d8..a75a831 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -58,9 +58,6 @@ struct device_node {
+ 	struct	kref kref;
+ 	unsigned long _flags;
+ 	void	*data;
+-#if defined(CONFIG_EEH)
+-	struct eeh_dev *edev;
+-#endif
+ #if defined(CONFIG_SPARC)
+ 	char	*path_component_name;
+ 	unsigned int unique_id;
+@@ -75,13 +72,6 @@ struct of_phandle_args {
+ 	uint32_t args[MAX_PHANDLE_ARGS];
+ };
+ 
+-#if defined(CONFIG_EEH)
+-static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
+-{
+-	return dn->edev;
+-}
+-#endif
+-
+ #if defined(CONFIG_SPARC) || !defined(CONFIG_OF)
+ /* Dummy ref counting routines - to be implemented later */
+ static inline struct device_node *of_node_get(struct device_node *node)
 -- 
-error compiling committee.c: too many arguments to function
+1.7.5.4
 
