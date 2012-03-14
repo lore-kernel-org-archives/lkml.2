@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760188Ab2CNI7R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 04:59:17 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44226 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760088Ab2CNI7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 04:59:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Olof Johansson <olof@lixom.net>
-Subject: Re: [GIT PULL] Renesas SoC updates for v3.4, take 2
-Date: Wed, 14 Mar 2012 10:03:22 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "Linux-sh list" <linux-sh@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>, Paul Mundt <lethal@linux-sh.org>
-References: <201203092155.04731.rjw@sisk.pl> <201203140116.40344.rjw@sisk.pl> <CAOesGMgsRDgiyfNTdC9KCPd4BJ-EsPK6=noVp=EVx-TMT7Hv7A@mail.gmail.com>
-In-Reply-To: <CAOesGMgsRDgiyfNTdC9KCPd4BJ-EsPK6=noVp=EVx-TMT7Hv7A@mail.gmail.com>
+	id S1760193Ab2CNJBK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 05:01:10 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43684 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759495Ab2CNJBB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 05:01:01 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203141003.22901.rjw@sisk.pl>
+In-Reply-To: <20120313161138.cbeb594d.akpm@linux-foundation.org>
+References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
+	<1331197863-25564-3-git-send-email-bryan.wu@canonical.com>
+	<20120313161138.cbeb594d.akpm@linux-foundation.org>
+Date: Wed, 14 Mar 2012 10:01:00 +0100
+Message-ID: <CACRpkdYMgRsJaKSNhChWvZGj497pgGYWTh26oSCXSYjYr8_JxA@mail.gmail.com>
+Subject: Re: [PATCH 3/3] led-triggers: create a trigger for CPU activity
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Bryan Wu <bryan.wu@canonical.com>, rpurdie@rpsys.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 14, 2012, Olof Johansson wrote:
-> On Tue, Mar 13, 2012 at 5:16 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, March 14, 2012, Olof Johansson wrote:
-> >> On Tue, Mar 13, 2012 at 2:42 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > On Tuesday, March 13, 2012, Rafael J. Wysocki wrote:
-> >> >> On Tuesday, March 13, 2012, Arnd Bergmann wrote:
-> >> >> > On Tuesday 13 March 2012, Rafael J. Wysocki wrote:
-> >> >> > > > Note that the __io() issue has turned out to be more urgent than I first
-> >> >> > > > thought when we discussed it, so it would be good to apply the patch below
-> >> >> > > > on top of your series.
-> >> >> > >
-> >> >> > > Do you want me to apply it now or will you do that in your tree?
-> >> >> >
-> >> >> > Doesn't matter to me, as long as one of you applies it ;-)
-> >> >>
-> >> >> OK, so I will add it to the soc branch in the Renesas tree.
-> >> >
-> >> > Applied and pushed back the updated tree.
-> >>
-> >> Seems like you applied the patch but without the subject line,
-> >
-> > I didn't notice that, sorry.
-> >
-> >> so now git thinks the whole first paragraph is the patch subject. That's a
-> >> bit messy and I'd prefer if you could fix it up.
-> >
-> > I've just replaced the broken commit with a new fixed one.
-> >
-> >> Do you have downstream users of your tree that you'll mess up if you
-> >> rebase the last commit though? Alternatively I can take everything on
-> >> the branch but the last patch and apply it myself, but that will still
-> >> cause trouble for your downstream developers once things go upstream
-> >> and come down.
-> >
-> > Hopefully, no one has pulled from the tree yet. :-)
-> 
-> Cool. Pulled into next/soc. Thanks!!
+On Wed, Mar 14, 2012 at 12:11 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Thu,  8 Mar 2012 17:11:03 +0800
+> Bryan Wu <bryan.wu@canonical.com> wrote:
+>
+>> Attempting to consolidate the ARM LED code, this removes the
+>> custom RealView LED trigger code to turn LEDs on and off in
+>> response to CPU activity and replace it with a standard trigger.
+>>
+>> (bryan.wu@canonical.com:
+>> It moves arch/arm/kernel/leds.c syscore stubs into this trigger.
+>> It also provides ledtrig_cpu trigger event stub in <linux/leds.h>.
+>> Although it was inspired by ARM work, it can be used in other arch.)
+>
+> The patch doesn't "remove" or "move" anything.  It wholly consists of
+> additions.  Confused.
+>
+>> Cc: Richard Purdie <rpurdie@rpsys.net>
+>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+>> Reviewed-by: Jamie Iles <jamie@jamieiles.com>
+>> Tested-by: Jochen Friedrich <jochen@scram.de>
+>
+> The authorship is a bit unclear.  You're the primary author, yes?
 
-Great, thanks a lot!
+It's based on a patch I wrote ages ago, but I don't care much.
+Since Bryan's been driving it since, let's say Bryan wrote it.
+Just remove the signoff if it's confusing.
 
-Rafael
+Linus Walleij
