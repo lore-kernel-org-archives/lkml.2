@@ -1,141 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab2CNHk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 03:40:59 -0400
-Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:58084 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752653Ab2CNHkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 03:40:55 -0400
-Date: Wed, 14 Mar 2012 08:28:39 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vinod.koul@linux.intel.com, s.hauer@pengutronix.de,
-        rob.herring@calxeda.com, rdunlap@xenotime.net, kernel@pengutronix.de,
-        cjb@laptop.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH v1 3/5] ARM: imx28evk: add mmc dt support
-Message-ID: <20120314072839.GH18320@game.jcrosoft.org>
-References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
- <1331628428-24017-4-git-send-email-b29396@freescale.com>
+	id S1755533Ab2CNHmN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 03:42:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50481 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751758Ab2CNHmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 03:42:12 -0400
+X-IronPort-AV: E=Sophos;i="4.73,582,1325433600"; 
+   d="scan'208";a="4532031"
+Message-ID: <4F604CFA.9010302@cn.fujitsu.com>
+Date: Wed, 14 Mar 2012 15:47:06 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331628428-24017-4-git-send-email-b29396@freescale.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 5435563275613612903
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrfeejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: 0
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrfeejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+To: paulmck@linux.vnet.ibm.com
+CC: Lai Jiangshan <eag0628@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, fweisbec@gmail.com, patches@linaro.org
+Subject: Re: [RFC PATCH 5/5 single-thread-version] implement per-domain single-thread
+ state machine call_srcu()
+References: <1331023359-6987-1-git-send-email-laijs@cn.fujitsu.com> <1331027858-7648-1-git-send-email-laijs@cn.fujitsu.com> <1331027858-7648-4-git-send-email-laijs@cn.fujitsu.com> <4F56DBDA.1020608@cn.fujitsu.com> <20120308203533.GN2348@linux.vnet.ibm.com> <CACvQF534RJcu8-yKcByqthifUHCLsggGXuRPAKqf7mZMXT3taA@mail.gmail.com> <20120312180321.GG2471@linux.vnet.ibm.com>
+In-Reply-To: <20120312180321.GG2471@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-14 15:40:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-14 15:40:08,
+	Serialize complete at 2012-03-14 15:40:08
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:47 Tue 13 Mar     , Dong Aisheng wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+On 03/13/2012 02:03 AM, Paul E. McKenney wrote:
+
+>>
+>> In mb()-based srcu, synchronize_srcu() is very fast,
+>> synchronize_srcu_expedited() makes less sense than before.
 > 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> ---
->  arch/arm/boot/dts/imx28-evk.dts |   14 ++++++++++++++
->  arch/arm/boot/dts/imx28.dtsi    |   33 +++++++++++++++++++++++++++++++++
->  arch/arm/mach-mxs/imx28-dt.c    |    2 ++
->  3 files changed, 49 insertions(+), 0 deletions(-)
+> I am worried about expedited callbacks getting backed up behind
+> non-expedited callbacks (especially given Peter's point about per-VMA
+> SRCU callbacks) and behind other workqueue uses.
 > 
-> diff --git a/arch/arm/boot/dts/imx28-evk.dts b/arch/arm/boot/dts/imx28-evk.dts
-> index 9758dc4..61350ab 100644
-> --- a/arch/arm/boot/dts/imx28-evk.dts
-> +++ b/arch/arm/boot/dts/imx28-evk.dts
-> @@ -21,6 +21,20 @@
->  		reg = <0x40000000 0x08000000>;
->  	};
->  
-> +        apb@80000000 {
-> +                apbh@80000000 {
-> +			mmc1: ssp@80010000 {
-> +				slot-8bit;
-> +				status = "okay";
-> +			};
-> +
-> +			mmc2: ssp@80012000 {
-> +				slot-8bit;
-> +				status = "okay";
-> +			};
-> +		};
-> +	};
-> +
->  	ahb@80080000 {
->  		fec@800f0000 {
->  			phy-mode = "rmii";
-> diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
-> index acf0dab..71c7bfb 100644
-> --- a/arch/arm/boot/dts/imx28.dtsi
-> +++ b/arch/arm/boot/dts/imx28.dtsi
-> @@ -46,6 +46,39 @@
->  				#interrupt-cells = <1>;
->  				reg = <0x80000000 0x2000>;
->  			};
-> +
-> +			ssp@80010000 {
-> +				compatible = "fsl,imx28-mmc";
-> +				reg = <0x80010000 2000>;
-> +				/* <irq_err irq_dma> */
-> +				interrupts = <96 82>;
-> +				dma_channel = <0>;
-> +				status = "disabled";
-> +			};
-> +
-> +			ssp@80012000 {
-> +				compatible = "fsl,imx28-mmc";
-> +				reg = <0x80012000 2000>;
-> +				interrupts = <97 83>;
-> +				dma_channel = <1>;
-> +				status = "disabled";
-> +			};
-> +
-> +			ssp@80014000 {
-> +				compatible = "fsl,imx28-mmc";
-> +				reg = <0x80014000 2000>;
-> +				interrupts = <98 84>;
-> +				dma_channel = <2>;
-> +				status = "disabled";
-> +			};
-> +
-> +			ssp@80016000 {
-> +				compatible = "fsl,imx28-mmc";
-> +				reg = <0x80016000 2000>;
-> +				interrupts = <99 85>;
-> +				dma_channel = <3>;
-> +				status = "disabled";
-> +			};
->  		};
->  
->  		apbx@80040000 {
-> diff --git a/arch/arm/mach-mxs/imx28-dt.c b/arch/arm/mach-mxs/imx28-dt.c
-> index 78d1129..429b88e 100644
-> --- a/arch/arm/mach-mxs/imx28-dt.c
-> +++ b/arch/arm/mach-mxs/imx28-dt.c
-> @@ -23,6 +23,8 @@ static const struct of_dev_auxdata imx28_auxdata_lookup[] __initconst = {
->  	OF_DEV_AUXDATA("arm,pl011", MX28_DUART_BASE_ADDR, "duart", NULL),
->  	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC0_BASE_ADDR, "imx28-fec.0", NULL),
->  	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC1_BASE_ADDR, "imx28-fec.1", NULL),
-> +	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP0_BASE_ADDR, "mxs-mmc.0", NULL),
-> +	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP1_BASE_ADDR, "mxs-mmc.1", NULL),
-do we really need to continue to add OF_DEV_AUXDATA
+>> But when wait_srcu_gp() is move back here, I will use
+>> a bigger "trycount" for synchronize_srcu_expedited().
+>>
+>> And any problem for srcu_advance_batches()?
+> 
+> I prefer the use of "return" that you and Peter discussed later.
+> 
+> What sort of testing are you doing?
+>
 
-instead add a clkdev entry
+rcutorture in my box for several days on my daily used machine.
 
-IIRC OF_DEV_AUXDATA was a temporary solution, we need to stop to use it more
-and more
+What would you prefer for next round of patches, single-thread or per-cpu?
+I will send them soon.
+(per-cpu approach will be also "batches, in-sleepable, reuse rcu_head"....)
 
-Best Reards,
-J.
+I prefer the single-thread approach until high-callback-rate-per-domain-era
+comes, but I don't know how long when it comes. Peter?
+
+Thanks,
+Lai
