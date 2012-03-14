@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030952Ab2CNO22 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:28:28 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43382 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030854Ab2CNO2Y (ORCPT
+	id S1030996Ab2CNOal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:30:41 -0400
+Received: from 124-248-200-65.sunnyvision.com ([124.248.200.65]:50833 "EHLO
+	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1030977Ab2CNOaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:28:24 -0400
-Message-ID: <4F60AB04.1000706@gmail.com>
-Date: Wed, 14 Mar 2012 10:28:20 -0400
-From: Phillip Susi <phillsusi@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@whamcloud.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: getdents - ext4 vs btrfs performance
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com> <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com> <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com> <20120310044804.GB5652@thunk.org> <4F5F9A97.5060404@ubuntu.com> <20120313195339.GA24124@thunk.org> <4F5FAC9C.9070607@gmail.com> <20120313213304.GB11969@thunk.org>
-In-Reply-To: <20120313213304.GB11969@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Mar 2012 10:30:39 -0400
+X-Greylist: delayed 4120 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Mar 2012 10:30:38 EDT
+X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 8A7525435E
+X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 0EAE84FAD7
+Message-ID: <6qLvb@tcts1.seed.net.tw>
+From: boris@cloudluca.com
+Subject: Server Rental Service in HK
+X-Mailer: YWxuqzBuXBMEgbNl
+Content-Type: text/plain;
+X-Priority: 3
+X-MSMail-Priority: Normal
+Date: Wed, 14 Mar 2012 20:45:42 +0800 (HKT)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q2EEUn1B028657
 
-On 3/13/2012 5:33 PM, Ted Ts'o wrote:
-> Are you volunteering to spearhead the design and coding of such a
-> thing?  Run-time sorting is backwards compatible, and a heck of a lot
-> easier to code and test...
+Dear All,
 
-Do you really think it is that much easier?  Even if it is easier, it is 
-still an ugly kludge.  It would be much better to fix the underlying 
-problem rather than try to paper over it.
+We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
 
-> The reality is we'd probably want to implement run-time sorting
-> *anyway*, for the vast majority of people who don't want to convert to
-> a new incompatible file system format.  (Even if you can do the
-> conversion using e2fsck --- which is possible, but it would be even
-> more code to write --- system administrators tend to be very
-> conservative about such things, since they might need to boot an older
-> kernel, or use a rescue CD that doesn't have an uptodate kernel or
-> file system utilities, etc.)
+Dell? PowerEdge? EnterpriseRack Mount Server
+-Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
+-8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
+-500GB, 3.5", 6Gbps SAS x 2
+-Raid 1 Mirroring Protection
+-Remote KVM (iDRAC6 Enterprise)
 
-The same argument could have been made against the current htree 
-implementation when it was added.  I think it carries just as little 
-weight now as it did then.  People who care about the added performance 
-the new feature provides can use it, those who don't, won't.  Eventually 
-it will become ubiquitous.
+Dell(TM) PowerEdge(TM) R410 Rack Mount Server
+-Intel(R) Quad Core E5606 Xeon(R) CPU, 2.13GHz, 4M Cache, 4.86 GT/s QPI
+-4GB Memory (2x2GB), 1333MHz Dual Ranked RDIMMs Fully-Buffered
+-500GB 7.2K RPM SATAII 3.5" Hard Drive x 2
+-iDRAC6 Enterprise or Express (Remote KVM Management)
 
-> We would still have to implement the case where hash collisions *do*
-> exist, though, and make sure the right thing happens in that case.
-> Even if the chance of that happening is 1 in 2**32, with enough
-> deployed systems (i.e., every Android handset, etc.) it's going to
-> happen in real life.
+Every Dedicated Server Hosting Solution Also Includes: 
+ 
+Software Specification 
+- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
+- Full root-level access 
+- Data Center Facilities 
+- Shared Local & International Bandwidth 
+- 2 IP Addresses Allocation 
+- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
+- FM200¡§based fire suppression system 
+- 24x7 CRAC Air Conditioning and Humidity Control 
+- 24x7 Security Control 
+- 24x7 Remote Hand Service 
 
-Sure it will happen, but if we read one extra block 1 in 4 billion 
-times, nobody is going to notice.
+Pls send us email for further information.Thanks,
+
+Boris 
+boris@cloudluca.com
+
+If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
+
 
