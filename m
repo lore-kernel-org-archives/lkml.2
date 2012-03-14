@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761424Ab2CNSFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 14:05:20 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:33986 "HELO
-	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1761330Ab2CNSFS (ORCPT
+	id S1030743Ab2CNSI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 14:08:26 -0400
+Received: from smtp1.onthe.net.au ([203.22.196.249]:54619 "EHLO
+	smtp1.onthe.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761298Ab2CNSIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 14:05:18 -0400
-To: linux-scsi@vger.kernel.org, JBottomley@parallels.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3 v5] mpt2sas: use pci_dev->revision
-Cc: akpm@linux-foundation.org
-Content-Disposition: inline
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Organization: MontaVista Software Inc.
-Date: Wed, 14 Mar 2012 22:04:30 +0300
+	Wed, 14 Mar 2012 14:08:25 -0400
+Date: Thu, 15 Mar 2012 05:08:22 +1100
+From: Chris Dunlop <chris@onthe.net.au>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>,
+        Kashyap Desai <kashyap.desai@lsi.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sathisha.nanjappa@hp.com
+Subject: Re: [PATCH] mpt2sas: Fix hex/decimal typo in _base_sas_log_info()
+Message-ID: <20120314180822.GA29954@onthe.net.au>
+References: <20120314035610.GA21520@onthe.net.au>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203142204.31032.sshtylyov@ru.mvista.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120314035610.GA21520@onthe.net.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver reads PCI revision ID from the PCI configuration register while it's
-already stored by PCI subsystem in the 'revision' field of 'struct pci_dev'...
+On Wed, Mar 14, 2012 at 02:56:10PM +1100, Chris Dunlop wrote:
+> The log_info constant is supposed to be IOP_LOGINFO_CODE_TASK_TERMINATED
+> (see drivers/message/fusion/lsi/mpi_log_sas.h) rather than the
+> non-sensical 0x1CA86D0.
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Oops, I see Sathisha Nanjappa has already submitted this fix:
 
----
-The patch is refreshed against the recent Linus' tree.
+http://article.gmane.org/gmane.linux.scsi/73446
 
- drivers/scsi/mpt2sas/mpt2sas_base.c |    4 +---
- drivers/scsi/mpt2sas/mpt2sas_ctl.c  |    4 +---
- 2 files changed, 2 insertions(+), 6 deletions(-)
 
-Index: linux-2.6/drivers/scsi/mpt2sas/mpt2sas_base.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ linux-2.6/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -2060,12 +2060,10 @@ _base_display_ioc_capabilities(struct MP
- {
- 	int i = 0;
- 	char desc[16];
--	u8 revision;
- 	u32 iounit_pg1_flags;
- 	u32 bios_version;
- 
- 	bios_version = le32_to_cpu(ioc->bios_pg3.BiosVersion);
--	pci_read_config_byte(ioc->pdev, PCI_CLASS_REVISION, &revision);
- 	strncpy(desc, ioc->manu_pg0.ChipName, 16);
- 	printk(MPT2SAS_INFO_FMT "%s: FWVersion(%02d.%02d.%02d.%02d), "
- 	   "ChipRevision(0x%02x), BiosVersion(%02d.%02d.%02d.%02d)\n",
-@@ -2074,7 +2072,7 @@ _base_display_ioc_capabilities(struct MP
- 	   (ioc->facts.FWVersion.Word & 0x00FF0000) >> 16,
- 	   (ioc->facts.FWVersion.Word & 0x0000FF00) >> 8,
- 	   ioc->facts.FWVersion.Word & 0x000000FF,
--	   revision,
-+	   ioc->pdev->revision,
- 	   (bios_version & 0xFF000000) >> 24,
- 	   (bios_version & 0x00FF0000) >> 16,
- 	   (bios_version & 0x0000FF00) >> 8,
-Index: linux-2.6/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-+++ linux-2.6/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-@@ -1026,7 +1026,6 @@ _ctl_getiocinfo(void __user *arg)
- {
- 	struct mpt2_ioctl_iocinfo karg;
- 	struct MPT2SAS_ADAPTER *ioc;
--	u8 revision;
- 
- 	if (copy_from_user(&karg, arg, sizeof(karg))) {
- 		printk(KERN_ERR "failure at %s:%d/%s()!\n",
-@@ -1046,8 +1045,7 @@ _ctl_getiocinfo(void __user *arg)
- 		karg.adapter_type = MPT2_IOCTL_INTERFACE_SAS2;
- 	if (ioc->pfacts)
- 		karg.port_number = ioc->pfacts[0].PortNumber;
--	pci_read_config_byte(ioc->pdev, PCI_CLASS_REVISION, &revision);
--	karg.hw_rev = revision;
-+	karg.hw_rev = ioc->pdev->revision;
- 	karg.pci_id = ioc->pdev->device;
- 	karg.subsystem_device = ioc->pdev->subsystem_device;
- 	karg.subsystem_vendor = ioc->pdev->subsystem_vendor;
+> Signed-off-by: Chris Dunlop <chris@onthe.net.au>
+> ---
+>  drivers/scsi/mpt2sas/mpt2sas_base.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+> index a78036f..224ed29 100644
+> --- a/drivers/scsi/mpt2sas/mpt2sas_base.c
+> +++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+> @@ -657,7 +657,7 @@ _base_sas_log_info(struct MPT2SAS_ADAPTER *ioc , u32 log_info)
+>  		return;
+>  
+>  	/* eat the loginfos associated with task aborts */
+> -	if (ioc->ignore_loginfos && (log_info == 30050000 || log_info ==
+> +	if (ioc->ignore_loginfos && (log_info == 0x30050000 || log_info ==
+>  	    0x31140000 || log_info == 0x31130000))
+>  		return;
+>  
+> -- 
+> 1.7.0.4
+> 
