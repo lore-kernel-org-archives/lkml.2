@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760839Ab2CNQ2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 12:28:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8449 "EHLO
+	id S1760021Ab2CNQ2B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 12:28:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15021 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755655Ab2CNQ1K (ORCPT
+	with ESMTP id S1756048Ab2CNQ1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Mar 2012 12:27:10 -0400
-X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=2T7vlW5cG-QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=UOuEXLYGAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=RGrtQqOvj_poEzIjHo8A:9 a=QEXdDO2ut3YA:10 a=KDHgVdQ1CmEA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=cfys0rgo-HAX9PftGDYA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=Wf+OmjdX c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=oTqng68SrWMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=y9qxmDDzVTqUmOHzw3gA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=WtEbjksQnbuKWQ758DcA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120314162708.250921795@goodmis.org>
+Message-Id: <20120314162708.960391639@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Wed, 14 Mar 2012 12:26:31 -0400
+Date: Wed, 14 Mar 2012 12:26:33 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Gerlando Falauto <gerlando.falauto@keymile.com>
-Subject: [PATCH 2/6] tracing: Do not select FRAME_POINTER on PPC
+        Rajesh Bhagat <rajesh.lnx@gmail.com>
+Subject: [PATCH 4/6] ftrace: Fix function_graph for archs that test ftrace_trace_function
 References: <20120314162629.118638243@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Do-not-select-FRAME_POINTER-on-PPC.patch
+Content-Disposition: inline; filename=0004-ftrace-Fix-function_graph-for-archs-that-test-ftrace.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,44 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
+From: Rajesh Bhagat <rajesh.lnx@gmail.com>
 
-On PowerPC, FUNCTION_TRACER selects FRAME_POINTER, even
-though the architecture does not support it.
+When CONFIG_DYNAMIC_FTRACE is not set, some archs (ARM) test
+the variable function_trace_function to determine if it should
+call the function tracer. If it is not set to ftrace_stub, then
+it will call the function and return, and not call the function
+graph tracer.
 
-This causes the following warning:
-warning: (LOCKDEP && FAULT_INJECTION_STACKTRACE_FILTER && LATENCYTOP && FUN=
-CTION_TRACER && KMEMCHECK) selects FRAME_POINTER which has unmet direct dep=
-endencies (DEBUG_KERNEL && (CRIS || M68K || FRV || UML || AVR32 || SUPERH |=
-| BLACKFIN || MN10300) || ARCH_WANT_FRAME_POINTERS)
+But some of these archs (ARM) do not have the assembly code
+to test if function tracing is enabled or not (quick stop of tracing)
+and it calls the helper routine ftrace_test_stop_func() instead.
 
-So remove the warning by adding the extra condition
-"if !PPC" to FUNCTION_TRACER for FRAME_POINTER selection
+If function tracer is enabled and then disabled, the variable
+ftrace_trace_function is still set to the helper routine
+ftrace_test_stop_func(), and not to ftrace_stub. This will
+prevent the function graph tracer from ever running.
 
-Link: http://lkml.kernel.org/r/1330330101-8618-1-git-send-email-gerlando.fa=
-lauto@keymile.com
+Output before patch
+/debug/tracing # echo function > current_tracer
+/debug/tracing # echo function_graph > current_tracer
+/debug/tracing # cat trace
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Gerlando Falauto <gerlando.falauto@keymile.com>
+Output after patch
+/debug/tracing # echo function > current_tracer
+/debug/tracing # echo function_graph > current_tracer
+/debug/tracing # cat trace
+0) ! 253.375 us | } /* irq_enter */
+0) | generic_handle_irq() {
+0) | handle_fasteoi_irq() {
+0) 9.208 us | _raw_spin_lock();
+0) | handle_irq_event() {
+0) | handle_irq_event_percpu() {
+
+Signed-off-by: Rajesh Bhagat <rajesh.lnx@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ kernel/trace/ftrace.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index cd31345..a1d2849 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -141,7 +141,7 @@ if FTRACE
- config FUNCTION_TRACER
- 	bool "Kernel Function Tracer"
- 	depends on HAVE_FUNCTION_TRACER
--	select FRAME_POINTER if !ARM_UNWIND && !S390 && !MICROBLAZE
-+	select FRAME_POINTER if !ARM_UNWIND && !PPC && !S390 && !MICROBLAZE
- 	select KALLSYMS
- 	select GENERIC_TRACER
- 	select CONTEXT_SWITCH_TRACER
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 867bd1d..0fa92f6 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -249,7 +249,8 @@ static void update_ftrace_function(void)
+ #else
+ 	__ftrace_trace_function =3D func;
+ #endif
+-	ftrace_trace_function =3D ftrace_test_stop_func;
++	ftrace_trace_function =3D
++		(func =3D=3D ftrace_stub) ? func : ftrace_test_stop_func;
+ #endif
+ }
+=20
 --=20
 1.7.8.3
 
@@ -81,19 +94,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPYMbcAAoJEIy3vGnGbaoAvcQP/A0bOgkx6LwTbsoZMSo0xJmf
-nfzrXfsD8wDci9+fmiYBrJa2ZSVMHI9d/1HTXrSwJTLZbnqWyS1Mxu5yLR3HTgZA
-HMLnKWhroQZ+rFKOdrmryTkGIEht4JJsPEQvbsx+7QTI1v5NYLjuzEfkwBIhsOU9
-WlkBPw+/fHeYYHP2hp+tZWPM/iIYxmsQc7uoGHSB3Tdu815nlFIzdjsZ39E9vviE
-FsbpsZ6k7gxOutWnQ+FBy0m1wSn/L8ileEZhhbdvTq1d0vVmFmz5Dxd+mfYLKiNd
-vLs1i/VMOyXWY/Gu7yNmjAVJWyTHNz1j5b37xZCJf6MIGiyfiovciWQuA4BKAK1o
-JmJQljT3ZBLcYyLoEdnPVphYTL6jmZCR25Jv31PWA3F1VXuxdw08+KeHYZ54Yg4D
-bs61qssnPnPgKi5Hyc2qU6f8N/uAZnlJ51omRs2Vt84goqsDldS7vIzHvruq0Tdj
-HQq8zTAQcKWY9i2uQmlzd7XL6zRCRjHOJ3gV3Y0LSWVgAHPFycPG7zUiVcoeJC4l
-dlFffXgV1mVcqKgmX8UdvuJzPMHxZw0Lk7kU06zankv+BVFp0AmU0vwd8cdAYQKx
-5R5pizadoCYuwEDkYa0c0I1lx7H5yqMISZeVRqEMaGtjpXNQUzFIgYY+SQT//VcY
-M5N1mIR7aabVknydteLG
-=AVF2
+iQIcBAABAgAGBQJPYMbdAAoJEIy3vGnGbaoAkwwQANvg94GSVwjkT7iw+M9aBg4C
+RqGpU3Vhg+VPitwJH60QoOB2ENKf43WDqzF8PFbgf0ruAr9MMYWS5/utAr7iLIVZ
+PLueALkq6xWe6xf8TB7evR5m+cibeORdVFXRplyDcFr214moGa2l5c5SnORefXV6
+Xo/MCmEGNVFbTthO6rDVa/WoaWl44r/AMx9M2ol4DntgjmKrHqhMR8bMnLFzafWD
+I/LojKGmP3xO8Vu7buox4eS3netzQ6/9IEGiFOL8jKrK+SqjMYAfC2Ve9w8yp9bW
+BnEH7MfmMZMmmJNXRI9FwcuRRttTGZA39ddpvE6fJZkfXNbP5g0tAhCllR7mb6KU
+VQ0XM0+8Gn+ybxX6nOjtqhc6IdxBm/guReNwIu1pN7PP5aS4UyD60RucJE5bL2qA
+u4605g7MRFQNn6xOP5o0muhNvTbgTd5xsTt3tRa+93EWKV5uMOizwfD98Py/I4h1
+r6Q2aS9KqGb4U05dzpYe7ot6vB9jeSU5jep+2WaA1JmjV+/Ir6R6xeFGQPJM2Ih8
+ZKl6NTkPF/4kPpOnm+mjLcX4tfVjKT36bhE93ybdDRoN9vbF499mW1HAkN3WSVDH
+zwKyc5psNJ7DmJeFcpNxuD/o5itgz0/WKeMqnfZMDD6gID7dcCNfk+Pc6/bBr3JA
+M6INSZT6Ug66Zkq2HdLO
+=NQyJ
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
