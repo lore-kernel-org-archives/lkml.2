@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761250Ab2CNRHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 13:07:13 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:59180 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755831Ab2CNRHK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 13:07:10 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18xqMxElrUxDPqWcydKB/N/4ke/RCjfYAV7W+YjkT
-	AzJf/6Prz08Qqk
-Message-ID: <1331744826.31111.27.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have been
- online
-From: Mike Galbraith <efault@gmx.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org
-Date: Wed, 14 Mar 2012 18:07:06 +0100
-In-Reply-To: <20120314151717.GA2435@linux.vnet.ibm.com>
-References: <20120314002414.GA21561@linux.vnet.ibm.com>
-	 <1331717099.5752.15.camel@marge.simpson.net>
-	 <1331728841.7465.7.camel@marge.simpson.net>
-	 <20120314130801.GA11722@sgi.com> <20120314151717.GA2435@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1761114Ab2CNRIT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 13:08:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49345 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756602Ab2CNRIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 13:08:15 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1331738610.5104.84.camel@jerome.southpole.se>
+References: <1331738610.5104.84.camel@jerome.southpole.se> <1331736182.5104.74.camel@jerome.southpole.se> <CACM3HyHaFqVBaALMNB9dTE+7JrT1qD0jrYtV2PzwTskv8sW4Hg@mail.gmail.com> <20120312233602.13888.27659.stgit@warthog.procyon.org.uk> <20120312233858.13888.34822.stgit@warthog.procyon.org.uk> <201203130900.41993.arnd@arndb.de> <11556.1331723400@redhat.com> <18016.1331738258@redhat.com> 
+To: Jonas Bonn <jonas@southpole.se>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux@openrisc.net,
+        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        hpa@zytor.com, torvalds@linux-foundation.org
+Subject: Re: [ORLinux] [PATCH 17/35] Make asm-generic/cmpxchg.h #include asm-generic/cmpxchg-local.h [ver #2]
+Date: Wed, 14 Mar 2012 17:07:59 +0000
+Message-ID: <21309.1331744879@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-14 at 08:17 -0700, Paul E. McKenney wrote:
+Jonas Bonn <jonas@southpole.se> wrote:
 
-> And thank you both for the testing!!!
+> > > The error I get while building (if asm/system.h is included) is a
+> > > circular dependency that I don't see that I can easily resolve:
+> > 
+> > How do I get an openrisc toolchain?
+> 
+> http://openrisc.net/toolchain-build.html
+> 
+> What distro are you on?  I might be able to send you a binary version if
+> you prefer...
 
-Try to beat RCU into submission with rocks and sticks, or test patch
-from RCU expert... not a hard choice.  I will most happily test ;-)
+I'd like to add it to my spec file to build the complete clutch of binutils
+and gcc RPMs for Fedora.
 
--Mike 
+I originally tried --target=openrisc-elf, but whilst that is supported by
+binutils, it doesn't seem to be supported by gcc.
 
+According to your URL above, I should be using --target=or32-linux, but
+binutils claims not to support that:
+
+	*** ld does not support target or32-unknown-linux-gnu
+
+Also neither or32-linux-elf nor or32-unknown-linux-elf work.
+
+David
