@@ -1,164 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760278Ab2CNJ3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 05:29:50 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44283 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759677Ab2CNJ3r convert rfc822-to-8bit (ORCPT
+	id S1030728Ab2CNJaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 05:30:05 -0400
+Received: from 1.mo2.mail-out.ovh.net ([46.105.63.121]:49612 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759677Ab2CNJaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 05:29:47 -0400
+	Wed, 14 Mar 2012 05:30:01 -0400
+Date: Wed, 14 Mar 2012 09:52:52 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH v1 2/5] mmc: mxs-mmc: add dt probe support
+Message-ID: <20120314085252.GK18320@game.jcrosoft.org>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
+ <1331628428-24017-3-git-send-email-b29396@freescale.com>
+ <20120314072343.GG18320@game.jcrosoft.org>
+ <20120314080939.GA1180@shlinux2.ap.freescale.net>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1203140825090.5379@dhcp-27-109.brq.redhat.com>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
-	<alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
-	<BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
-	<20120310044804.GB5652@thunk.org>
-	<4F5F9A97.5060404@ubuntu.com>
-	<20120313195339.GA24124@thunk.org>
-	<4F5FAC9C.9070607@gmail.com>
-	<20120313213304.GB11969@thunk.org>
-	<alpine.LFD.2.00.1203140825090.5379@dhcp-27-109.brq.redhat.com>
-Date: Wed, 14 Mar 2012 17:29:46 +0800
-Message-ID: <CAGBYx2Y8NwAiT5M1ZvPbuYspUGVDGy-H+ZPCL0aQ+AjJ6rphYw@mail.gmail.com>
-Subject: Re: getdents - ext4 vs btrfs performance
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Phillip Susi <phillsusi@gmail.com>,
-        Andreas Dilger <adilger@whamcloud.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120314080939.GA1180@shlinux2.ap.freescale.net>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 6858137808734497773
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrfeejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucffohhmrghinhepshhpihhnihgtshdrnhgvthenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrfeejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucffohhmrghinhepshhpihhnihgtshdrnhgvthenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 4:12 PM, Lukas Czerner <lczerner@redhat.com> wrote:
-> On Tue, 13 Mar 2012, Ted Ts'o wrote:
->
->> On Tue, Mar 13, 2012 at 04:22:52PM -0400, Phillip Susi wrote:
->> >
->> > I think a format change would be preferable to runtime sorting.
->>
->> Are you volunteering to spearhead the design and coding of such a
->> thing?  Run-time sorting is backwards compatible, and a heck of a lot
->> easier to code and test...
->
-> Actually I am in the process of creating some projects for the local
-> universities and this certainly sounds like something that some student
-> can do. I have already put that into the proposal, so we might have
-> someone looking into this in the near future. Since the problem has been
-> there since forever, I think that it's not that critical to solve it
-> right away.
->
-> I kind of like the idea about having the separate btree with inode
-> numbers for the directory reading, just because it does not affect
-> allocation policy nor the write performance which is a good thing. Also
-> it has been done before in btrfs and it works very well for them. The
-> only downside (aside from format change) is the extra step when removing
-> the directory entry, but the positives outperform the negatives.
->
->
-> Maybe this might be even done in a way which does not require format
-> change. We can have new inode flag (say EXT4_INUM_INDEX_FL) which will
-> tell us that there is a inode number btree to use on directory reads.
-> Then the pointer to the root of that tree would be stored at the end of
-> the root block of the hree (of course if there is still some space for
-> it) and the rest is easy.
-dx_root takes 32 bytes from 60 bytes of i_data.  The beginning of
-dx_entries is controlled by info_length, that is, dx_root->info +
-dx_root->info->info_length.   It seems that we can put the new tree
-root behind dx_root and add the length of the new tree root to
-info_length.  Then the old code can handle new filesystem and new code
-can handle old filesystem because of the flag you described above.
+On 16:09 Wed 14 Mar     , Dong Aisheng wrote:
+> On Wed, Mar 14, 2012 at 03:23:43PM +0800, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> > On 16:47 Tue 13 Mar     , Dong Aisheng wrote:
+> > > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > > 
+> > > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > > 
+> > > ---
+> > > The patch is still using a private way for dma part binding
+> > > since the common dma binding is still under discussion.
+> > > http://www.spinics.net/lists/linux-omap/msg65528.html
+> > > 
+> > > Will update to use common dma binding when it hits mainline.
+> > > ---
+> > >  .../devicetree/bindings/mmc/fsl-mxs-mmc.txt        |   23 ++++++
+> > >  drivers/mmc/host/mxs-mmc.c                         |   82 +++++++++++++++++++-
+> > >  2 files changed, 102 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt b/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt
+> > > new file mode 100644
+> > > index 0000000..adc1142
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt
+> > > @@ -0,0 +1,23 @@
+> > > +* FREESCALE MXS MMC peripheral
+> > > +
+> > > +Required properties:
+> > > +- compatible : Should be "fsl,<chip>-mmc"
+> > > +- reg : Should contain registers location and length
+> > > +- interrupts : Should contain interrupt.
+> > > +  The format is <irq_err irq_dma>.
+> > > +- dma_channel: Should contain the dma channel it uses
+> > > +
+> > > +Optional properties:
+> > > +- wp-gpios : Specify GPIOs for write protection
+> > > +- slot-4bit: Specify 4 bit mode support
+> > > +- slot-8bit: Specify 8 bit and 4 bit mode support
+> > > +
+> > > +Examples:
+> > > +mmc1: ssp@80010000 {
+> > > +	compatible = "fsl,imx28-mmc";
+> > > +	reg = <0x80010000 2000>;
+> > > +	/* <irq_err irq_dma> */
+> > > +	interrupts = <96 82>;
+> > > +	dma_channel = <0>;
+> > > +	slot-8bit;
+> > > +};
+> > > diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+> > > index 382c835..6cf2d17 100644
+> > > --- a/drivers/mmc/host/mxs-mmc.c
+> > > +++ b/drivers/mmc/host/mxs-mmc.c
+> > > @@ -38,6 +38,10 @@
+> > >  #include <linux/gpio.h>
+> > >  #include <linux/regulator/consumer.h>
+> > >  #include <linux/module.h>
+> > > +#include <linux/of.h>
+> > > +#include <linux/of_device.h>
+> > > +#include <linux/of_gpio.h>
+> > > +#include <linux/slab.h>
+> > >  
+> > >  #include <mach/mxs.h>
+> > >  #include <mach/common.h>
+> > > @@ -673,17 +677,79 @@ static bool mxs_mmc_dma_filter(struct dma_chan *chan, void *param)
+> > >  	return true;
+> > >  }
+> > >  
+> > > +#ifdef CONFIG_OF
+> > > +static struct resource * __devinit mxs_mmc_get_of_dmares(
+> > > +				struct platform_device *pdev)
+> > > +{
+> > > +	struct device_node *np = pdev->dev.of_node;
+> > > +	struct resource *dmares;
+> > > +	int ret;
+> > > +
+> > > +	if (!np)
+> > > +		return NULL;
+> > > +
+> > > +	dmares = kzalloc(sizeof(*dmares), GFP_KERNEL);
+> > > +	dmares->flags = IORESOURCE_DMA;
+> > > +	ret = of_property_read_u32(np, "dma_channel", &dmares->start);
+> > > +	if (ret) {
+> > > +		dev_err(&pdev->dev, "unable to get dmares from dt\n");
+> > > +		return NULL;
+> > > +	}
+> > > +	dmares->end = dmares->start;
+> > > +
+> > > +	return dmares;
+> > > +}
+> > > +
+> > > +static int __devinit mxs_mmc_get_of_property(struct platform_device *pdev,
+> > > +				struct mxs_mmc_platform_data **ppdata)
+> > > +{
+> > > +	struct device_node *np = pdev->dev.of_node;
+> > > +	struct mxs_mmc_platform_data *pdata = *ppdata;
+> > > +
+> > > +	if (!np)
+> > > +		return -ENODEV;
+> > > +
+> > > +	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
+> > > +
+> > > +	if (of_get_property(np, "slot-8bit", NULL))
+> > > +		pdata->flags |= SLOTF_8_BIT_CAPABLE;
+> > > +
+> > > +	if (of_get_property(np, "slot-4bit", NULL))
+> > > +		pdata->flags |= SLOTF_4_BIT_CAPABLE;
+> > it will conflit if both binding are set use a number instead
+> > 
+> Hmm, i did not see conflict, can you explain more?
+> The "slot-8bit" includes the support for 4bit.(see binding doc)
+> Even user define them two property in dt by mistake, it does not cause conflict.
+> See:
+> if (pdata) {
+> 	if (pdata->flags & SLOTF_8_BIT_CAPABLE)
+> 		mmc->caps |= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
+> 	if (pdata->flags & SLOTF_4_BIT_CAPABLE)
+> 		mmc->caps |= MMC_CAP_4_BIT_DATA;
+> }
 
-If no one attempts to do it ,  I can do it as a google summer of code project.
+this is mmc specifc sohould have a generic binding
 
-Yongqiang.
->
-> So If we mount the old file system with the new code, there will not be
-> the flag, but with newly added directories it could be used anyway. Also
-> e2fsck could easily add the inumber tree into the directory if it is
-> missing.
->
-> If we mount the new file system with the old code (the one which does
-> not know about this feature), everything would stay the same and we
-> would not touch the inumber tree at all. Of course there is a
-> possibility that we would rewrite the end of the root htree, overwriting
-> the pointer to the inumber tree and effectively losing one block. We
-> would not actually care that we rewrote this information because we
-> do not actually need it, so the only downside is the one block lost,
-> which is not that bad I guess.
->
-> Now, we have rewritten the pointer to the inumber tree and we're going
-> to mount it with the new code again. It would expect the the inumber
-> tree to be there, but not blindly. Some king of magic information would
-> have to be stored in the inumber root pointer so we can be sure that it
-> really is what we're looking for and if it is not there, well then we do
-> not care and walk the directory in the old way. And we can alway create
-> the inumber tree in the new directory. And again e2fsck should be able
-> to fix that for us as well.
->
-> So that is just an idea, I have not looked at the actual code to see it
-> it would be really possible, but it certainly seems like so. Am I
-> missing something ?
->
->
-> Anyway, if there is going to be a format change I agree that having
-> solution for those who are not comfortable with the format change is
-> equally as important. But maybe there will be better solution which does
-> not require the format change.
->
-> Thanks!
-> -Lukas
->
->>
->> The reality is we'd probably want to implement run-time sorting
->> *anyway*, for the vast majority of people who don't want to convert to
->> a new incompatible file system format.  (Even if you can do the
->> conversion using e2fsck --- which is possible, but it would be even
->> more code to write --- system administrators tend to be very
->> conservative about such things, since they might need to boot an older
->> kernel, or use a rescue CD that doesn't have an uptodate kernel or
->> file system utilities, etc.)
->>
->> > So the index nodes contain the hash ranges for the leaf block, but
->> > the leaf block only contains the regular directory entries, not a
->> > hash for each name?  That would mean that adding or removing names
->> > would require moving around the regular directory entries wouldn't
->> > it?
->>
->> They aren't sorted in the leaf block, so we only need to move around
->> regular directory entries when we do a node split (and at the moment
->> we don't support shrinking directories), so we don't have to worry the
->> reverse case.
->>
->> > I would think that hash collisions are rare enough that reading a
->> > directory block you end up not needing once in a blue moon would be
->> > chalked up under "who cares".  So just stick with hash, offset pairs
->> > to map the hash to the normal directory entry.
->>
->> With a 64-bit hash, and if we were actually going to implement this as
->> a new incompatible feature, you're probably right in terms of
->> accepting the extra directory block search.
->>
->> We would still have to implement the case where hash collisions *do*
->> exist, though, and make sure the right thing happens in that case.
->> Even if the chance of that happening is 1 in 2**32, with enough
->> deployed systems (i.e., every Android handset, etc.) it's going to
->> happen in real life.
->>
->>                                       - Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
-Best Wishes
-Yongqiang Yang
+Best Regards,
+J.
