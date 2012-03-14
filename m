@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030245Ab2CNCAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 22:00:52 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:61639 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965170Ab2CNCAu (ORCPT
+	id S1030273Ab2CNCBR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 22:01:17 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:36902 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965170Ab2CNCBP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 22:00:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPXgP13D9haan4SdxhxzzKUaw=FV1JgP0weKmezK8tJBip4QXA@mail.gmail.com>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203132042.07794.rjw@sisk.pl>
- <CAPXgP11fWf-0Jkk=d6G+d=sQa-hoX3jUM+K6K4rGYhh0dv1u_w@mail.gmail.com>
- <201203140110.40671.rjw@sisk.pl> <CAPXgP118s+DuLaATKOq7w=F82GB=8PkwUJDichffXA-Er6Zqvw@mail.gmail.com>
- <CA+55aFxq=GWof-ExXjeC2nwUBcGi46SKwcvc2iccfymbbyXbfA@mail.gmail.com>
- <CAPXgP11ZKT-ZNBLdPQWotFayz9m7pKcNHDBPWxcp_2-ja+SAcQ@mail.gmail.com>
- <CA+55aFyG6utURVkVbAXF_T+BcA94af=c+oDBAwWZOyNwgiQ+5g@mail.gmail.com> <CAPXgP13D9haan4SdxhxzzKUaw=FV1JgP0weKmezK8tJBip4QXA@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 14 Mar 2012 03:00:30 +0100
-Message-ID: <CAPXgP12HMUSdhg660PRX30YO2e2NU-kyjYHgR=AB+dm2TkrJeg@mail.gmail.com>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when
- helper is not yet available
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 Mar 2012 22:01:15 -0400
+X-AuditID: cbfee60c-b7c83ae000001e65-8c-4f5ffbe4297b
+Date: Wed, 14 Mar 2012 02:01:09 +0000 (GMT)
+From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
+Subject: Re: Re: [PATCH 5/5] max17042: Change capacity property to use reported
+ SOC register
+To: Anton Vorontsov <cbouatmailru@gmail.com>,
+        "dirk.brandewie@gmail.com" <dirk.brandewie@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        "Jason.Wortham@maxim-ic.com" <Jason.Wortham@maxim-ic.com>,
+        "bruce.e.robertson@intel.com" <bruce.e.robertson@intel.com>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120314015711115@myungjoo.ham
+Msgkey: 20120314015711115@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120314015711115@myungjoo.ham
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <11735275.125381331690467424.JavaMail.weblogic@epml04>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2E21MSw025299
 
-On Wed, Mar 14, 2012 at 02:55, Kay Sievers <kay@vrfy.org> wrote:
-> On Wed, Mar 14, 2012 at 02:51, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Tue, Mar 13, 2012 at 6:43 PM, Kay Sievers <kay@vrfy.org> wrote:
->>>
->>> usermodehelper_is_disabled() is a flag from kmod which is all about
->>> exec(). That flag should not be used to decide if a firmware request
->>> can be issued by a driver and queued up or not.
->>
->> Sorry, you're wrong. And Rafael *told* you why you are wrong, and you
->> ignored him and talked about "exec" some more.
->>
->> So go back and read Rafael's email. The point is, you are focusing too
->> much on the name (which Rafael talked about and said is misleading).
->>
->> But it's not the name that matters, it's the concept. Loading firmware
->> during the suspend process is broken (read Rafael's email about
->> suggested renaming).
->>
->> AND IT HAS NOTHING TO DO WITH EXEC. It doesn't matter *how* you load
->> it. You could load it by reading a file directly from disk, AND IT
->> WOULD STILL BE WRONG FOR THE EXACT SAME DAMN REASON.
->>
->> I outlined that reason too. The filesystem may not be up and running yet.
->>
->> Get it?
->>
->> So please, read the emails. People actually *agree* that the name may
->> be a bit misleading, but instead of harping on bogus issues, just read
->> the emails from people like Rafael about it.
->>
->> So STOP with this idiocy already. It has nothing to do with exec.
->> Seriously. Get that through your head already.
->
-> I do NOT talk about exec, I talk about a REQUEST which can be QUEUED
-> just fine, but which the kernel refuses to QUEUE, even when it will
-> not harm anything. That check and warning is wrong.
+Anton Vorontsov<cbouatmailru@gmail.com>, 2012-03-14 03:34 (GMT+09:00)
+> On Tue, Jan 24, 2012 at 09:26:08AM -0800, dirk.brandewie@gmail.com wrote:
+> > From: Dirk Brandewie 
+> > 
+> > The SOC register (0dh) reports the state of charge before empty
+> > compensation adjustments are applied.  The max value reported by this
+> > register will decrease as the battery ages.
+> > 
+> > Use the RepSOC register (06h) to report the capacity of the
+> > battery. RepSOC contains a filtered version of the battery capacity
+> > after empty compensation adjustments have been applied.
+> > 
+> > Reported-by: Gary Keyes 
+> > 
+> > Signed-off-by: Dirk Brandewie 
+> > ---
+> >  drivers/power/max17042_battery.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
+> > index 6e96b58..2194278 100644
+> > --- a/drivers/power/max17042_battery.c
+> > +++ b/drivers/power/max17042_battery.c
+> > @@ -160,7 +160,7 @@ static int max17042_get_property(struct power_supply *psy,
+> >   break;
+> >   case POWER_SUPPLY_PROP_CAPACITY:
+> >   val->intval = max17042_read_reg(chip->client,
+> > - MAX17042_SOC) / 256;
+> > + MAX17042_RepSOC) / 256;
+> 
+> Applied. But I don't get it: PROP_CAPACITY should report
+> percents! And it looks that it reports something very
+> different.
 
-In simpler words: request_firmware() does nothing but queue up an
-asynchrounous uevent in a socket, that always workls, there is no need
-to refuse that in the kernel and throw any warning at that point in
-time.
+The 8 most significant bits show values in percents. The least 8 bits show 1/256 percents.
 
-Kay
+> 
+> Also, if you look down the file, you'll see this:
+> 
+>         case POWER_SUPPLY_PROP_CHARGE_FULL:
+
+I've just sent a patch to correct this problem: "max17042: fix CHARGE_FULL representation."
+
+
+
+Cheers!
+MyungJoo
+
+--
+MyungJoo Ham (ÇÔ¸íÁÖ), PHD
+System S/W Lab, S/W Platform Team, Software Center
+Samsung Electronics
+Cell: +82-10-6714-2858
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
