@@ -1,195 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760888Ab2CNQ6Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 12:58:25 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:43060 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756688Ab2CNQ6X (ORCPT
+	id S1761122Ab2CNQ7B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 12:59:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59646 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757955Ab2CNQ66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 12:58:23 -0400
-Date: Wed, 14 Mar 2012 09:56:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dimitri Sivanich <sivanich@sgi.com>
-Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have been
- online
-Message-ID: <20120314165657.GA19117@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20120314002414.GA21561@linux.vnet.ibm.com>
- <1331717099.5752.15.camel@marge.simpson.net>
- <1331728841.7465.7.camel@marge.simpson.net>
- <20120314130801.GA11722@sgi.com>
- <20120314151717.GA2435@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120314151717.GA2435@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031416-1780-0000-0000-000003F661C0
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000256; HX=3.00000185; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00121989; UDB=6.00029369; UTC=2012-03-14
- 16:58:22
+	Wed, 14 Mar 2012 12:58:58 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Anton Blanchard <anton@samba.org>, Eric B Munson <emunson@mgebm.net>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>, stable@kernel.org
+Subject: [PATCH 2/3] perf tools: Use scnprintf where applicable
+Date: Wed, 14 Mar 2012 13:58:41 -0300
+Message-Id: <1331744322-18917-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1331744322-18917-1-git-send-email-acme@infradead.org>
+References: <1331744322-18917-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 08:17:17AM -0700, Paul E. McKenney wrote:
-> On Wed, Mar 14, 2012 at 08:08:01AM -0500, Dimitri Sivanich wrote:
-> > On Wed, Mar 14, 2012 at 01:40:41PM +0100, Mike Galbraith wrote:
-> > > On Wed, 2012-03-14 at 10:24 +0100, Mike Galbraith wrote: 
-> > > > On Tue, 2012-03-13 at 17:24 -0700, Paul E. McKenney wrote: 
-> > > > > The following builds, but is only very lightly tested.  Probably full
-> > > > > of bug, especially when exercising CPU hotplug.
-> > > > 
-> > > > You didn't say RFT, but...
-> > > > 
-> > > > To beat on this in a rotund 3.0 kernel, the equivalent patch would be
-> > > > the below?  My box may well answer that before you can.. hope not ;-)
-> > > 
-> > > (Darn, it did.  Box says boot stall with virgin patch in tip too though.
-> > > Wedging it straight into 3.0 was perhaps a tad premature;)
-> > 
-> > I saw the same thing with 3.3.0-rc7+ and virgin patch on UV.  Boots fine without the patch.
-> 
-> Right...  Bozo here forgot to set the kernel parameters for large-system
-> emulation during testing.  Apologies for the busted patch, will fix.
-> 
-> And thank you both for the testing!!!
-> 
-> Hey, at least I labeled it "RFC".  ;-)
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Does the following work better?  It does pass my fake-big-system tests
-(more testing in the works).
+Several places were expecting that the value returned was the number of
+characters printed, not what would be printed if there was space.
 
-							Thanx, Paul
+Fix it by using the scnprintf and vscnprintf variants we inherited from
+the kernel sources.
 
-------------------------------------------------------------------------
+Some corner cases where the number of printed characters were not
+accounted were fixed too.
 
-rcu: Limit GP initialization to CPUs that have been online
+Reported-by: Anton Blanchard <anton@samba.org>
+Cc: Anton Blanchard <anton@samba.org>
+Cc: Eric B Munson <emunson@mgebm.net>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Cc: stable@kernel.org
+Link: http://lkml.kernel.org/n/tip-kwxo2eh29cxmd8ilixi2005x@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/arch/powerpc/util/header.c |    2 +-
+ tools/perf/arch/x86/util/header.c     |    2 +-
+ tools/perf/util/color.c               |    9 +++++----
+ tools/perf/util/header.c              |    4 ++--
+ tools/perf/util/hist.c                |   30 +++++++++++++++---------------
+ tools/perf/util/strbuf.c              |    7 ++++---
+ tools/perf/util/ui/browsers/hists.c   |   12 ++++++------
+ tools/perf/util/ui/helpline.c         |    2 +-
+ 8 files changed, 35 insertions(+), 33 deletions(-)
 
-The current grace-period initialization initializes all leaf rcu_node
-structures, even those corresponding to CPUs that have never been online.
-This is harmless in many configurations, but results in 200-microsecond
-latency spikes for kernels built with NR_CPUS=4096.
-
-This commit therefore keeps track of the largest-numbered CPU that has
-ever been online, and limits grace-period initialization to rcu_node
-structures corresponding to that CPU and to smaller-numbered CPUs.
-
-Reported-by: Dimitri Sivanich <sivanich@sgi.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index c3b05ef..5688443 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -91,6 +91,8 @@ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+diff --git a/tools/perf/arch/powerpc/util/header.c b/tools/perf/arch/powerpc/util/header.c
+index eba80c2..2f7073d 100644
+--- a/tools/perf/arch/powerpc/util/header.c
++++ b/tools/perf/arch/powerpc/util/header.c
+@@ -25,7 +25,7 @@ get_cpuid(char *buffer, size_t sz)
  
- static struct rcu_state *rcu_state;
+ 	pvr = mfspr(SPRN_PVR);
  
-+int rcu_max_cpu __read_mostly;	/* Largest # CPU that has ever been online. */
-+
- /*
-  * The rcu_scheduler_active variable transitions from zero to one just
-  * before the first task is spawned.  So when this variable is zero, RCU
-@@ -1129,8 +1131,9 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
- 	__releases(rcu_get_root(rsp)->lock)
- {
- 	unsigned long gp_duration;
--	struct rcu_node *rnp = rcu_get_root(rsp);
- 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
-+	struct rcu_node *rnp;
-+	struct rcu_node *rnp_root = rcu_get_root(rsp);
+-	nb = snprintf(buffer, sz, "%lu,%lu$", PVR_VER(pvr), PVR_REV(pvr));
++	nb = scnprintf(buffer, sz, "%lu,%lu$", PVR_VER(pvr), PVR_REV(pvr));
  
- 	WARN_ON_ONCE(!rcu_gp_in_progress(rsp));
+ 	/* look for end marker to ensure the entire data fit */
+ 	if (strchr(buffer, '$')) {
+diff --git a/tools/perf/arch/x86/util/header.c b/tools/perf/arch/x86/util/header.c
+index f940060..146d12a 100644
+--- a/tools/perf/arch/x86/util/header.c
++++ b/tools/perf/arch/x86/util/header.c
+@@ -48,7 +48,7 @@ get_cpuid(char *buffer, size_t sz)
+ 		if (family >= 0x6)
+ 			model += ((a >> 16) & 0xf) << 4;
+ 	}
+-	nb = snprintf(buffer, sz, "%s,%u,%u,%u$", vendor, family, model, step);
++	nb = scnprintf(buffer, sz, "%s,%u,%u,%u$", vendor, family, model, step);
  
-@@ -1159,26 +1162,28 @@ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
- 	 * completed.
- 	 */
- 	if (*rdp->nxttail[RCU_WAIT_TAIL] == NULL) {
--		raw_spin_unlock(&rnp->lock);	 /* irqs remain disabled. */
+ 	/* look for end marker to ensure the entire data fit */
+ 	if (strchr(buffer, '$')) {
+diff --git a/tools/perf/util/color.c b/tools/perf/util/color.c
+index 521c38a..11e46da 100644
+--- a/tools/perf/util/color.c
++++ b/tools/perf/util/color.c
+@@ -1,3 +1,4 @@
++#include <linux/kernel.h>
+ #include "cache.h"
+ #include "color.h"
  
- 		/*
- 		 * Propagate new ->completed value to rcu_node structures
- 		 * so that other CPUs don't have to wait until the start
- 		 * of the next grace period to process their callbacks.
-+		 * We must hold the root rcu_node structure's ->lock
-+		 * across rcu_for_each_node_breadth_first() in order to
-+		 * synchronize with CPUs coming online for the first time.
- 		 */
- 		rcu_for_each_node_breadth_first(rsp, rnp) {
-+			raw_spin_unlock(&rnp_root->lock); /* remain disabled. */
- 			raw_spin_lock(&rnp->lock); /* irqs already disabled. */
- 			rnp->completed = rsp->gpnum;
- 			raw_spin_unlock(&rnp->lock); /* irqs remain disabled. */
-+			raw_spin_lock(&rnp_root->lock); /* already disabled. */
- 		}
--		rnp = rcu_get_root(rsp);
--		raw_spin_lock(&rnp->lock); /* irqs already disabled. */
+@@ -182,12 +183,12 @@ static int __color_vsnprintf(char *bf, size_t size, const char *color,
  	}
  
- 	rsp->completed = rsp->gpnum;  /* Declare the grace period complete. */
- 	trace_rcu_grace_period(rsp->name, rsp->completed, "end");
- 	rsp->fqs_state = RCU_GP_IDLE;
--	rcu_start_gp(rsp, flags);  /* releases root node's rnp->lock. */
-+	rcu_start_gp(rsp, flags);  /* releases root node's ->lock. */
+ 	if (perf_use_color_default && *color)
+-		r += snprintf(bf, size, "%s", color);
+-	r += vsnprintf(bf + r, size - r, fmt, args);
++		r += scnprintf(bf, size, "%s", color);
++	r += vscnprintf(bf + r, size - r, fmt, args);
+ 	if (perf_use_color_default && *color)
+-		r += snprintf(bf + r, size - r, "%s", PERF_COLOR_RESET);
++		r += scnprintf(bf + r, size - r, "%s", PERF_COLOR_RESET);
+ 	if (trail)
+-		r += snprintf(bf + r, size - r, "%s", trail);
++		r += scnprintf(bf + r, size - r, "%s", trail);
+ 	return r;
  }
  
- /*
-@@ -2440,6 +2445,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
- 	unsigned long mask;
- 	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
- 	struct rcu_node *rnp = rcu_get_root(rsp);
-+	struct rcu_node *rnp_init;
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index ecd7f4d..14bb035 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -280,7 +280,7 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+ 	if (realname == NULL || filename == NULL || linkname == NULL)
+ 		goto out_free;
  
- 	/* Set up local state, ensuring consistent view of global state. */
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
-@@ -2462,6 +2468,16 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
- 	/* Exclude any attempts to start a new GP on large systems. */
- 	raw_spin_lock(&rsp->onofflock);		/* irqs already disabled. */
+-	len = snprintf(filename, size, "%s%s%s",
++	len = scnprintf(filename, size, "%s%s%s",
+ 		       debugdir, is_kallsyms ? "/" : "", realname);
+ 	if (mkdir_p(filename, 0755))
+ 		goto out_free;
+@@ -295,7 +295,7 @@ int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
+ 			goto out_free;
+ 	}
  
-+	/* Initialize any rcu_node structures that will see their first use. */
-+	raw_spin_lock(&rnp->lock);		/* irqs already disabled. */
-+	for (rnp_init = per_cpu_ptr(rsp->rda, rcu_max_cpu)->mynode + 1;
-+	     rnp_init <= rdp->mynode;
-+	     rnp_init++) {
-+		rnp_init->gpnum = rsp->gpnum;
-+		rnp_init->completed = rsp->completed;
-+	}
-+	raw_spin_unlock(&rnp->lock);		/* irqs remain disabled. */
-+
- 	/* Add CPU to rcu_node bitmasks. */
- 	rnp = rdp->mynode;
- 	mask = rdp->grpmask;
-@@ -2495,6 +2511,8 @@ static void __cpuinit rcu_prepare_cpu(int cpu)
- 	rcu_init_percpu_data(cpu, &rcu_sched_state, 0);
- 	rcu_init_percpu_data(cpu, &rcu_bh_state, 0);
- 	rcu_preempt_init_percpu_data(cpu);
-+	if (cpu > rcu_max_cpu)
-+		rcu_max_cpu = cpu;
+-	len = snprintf(linkname, size, "%s/.build-id/%.2s",
++	len = scnprintf(linkname, size, "%s/.build-id/%.2s",
+ 		       debugdir, sbuild_id);
+ 
+ 	if (access(linkname, X_OK) && mkdir_p(linkname, 0755))
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 6f505d1..e11e482 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -768,7 +768,7 @@ static int hist_entry__pcnt_snprintf(struct hist_entry *he, char *s,
+ 						     sep ? "%.2f" : "   %6.2f%%",
+ 						     (period * 100.0) / total);
+ 		else
+-			ret = snprintf(s, size, sep ? "%.2f" : "   %6.2f%%",
++			ret = scnprintf(s, size, sep ? "%.2f" : "   %6.2f%%",
+ 				       (period * 100.0) / total);
+ 		if (symbol_conf.show_cpu_utilization) {
+ 			ret += percent_color_snprintf(s + ret, size - ret,
+@@ -791,20 +791,20 @@ static int hist_entry__pcnt_snprintf(struct hist_entry *he, char *s,
+ 			}
+ 		}
+ 	} else
+-		ret = snprintf(s, size, sep ? "%" PRIu64 : "%12" PRIu64 " ", period);
++		ret = scnprintf(s, size, sep ? "%" PRIu64 : "%12" PRIu64 " ", period);
+ 
+ 	if (symbol_conf.show_nr_samples) {
+ 		if (sep)
+-			ret += snprintf(s + ret, size - ret, "%c%" PRIu64, *sep, nr_events);
++			ret += scnprintf(s + ret, size - ret, "%c%" PRIu64, *sep, nr_events);
+ 		else
+-			ret += snprintf(s + ret, size - ret, "%11" PRIu64, nr_events);
++			ret += scnprintf(s + ret, size - ret, "%11" PRIu64, nr_events);
+ 	}
+ 
+ 	if (symbol_conf.show_total_period) {
+ 		if (sep)
+-			ret += snprintf(s + ret, size - ret, "%c%" PRIu64, *sep, period);
++			ret += scnprintf(s + ret, size - ret, "%c%" PRIu64, *sep, period);
+ 		else
+-			ret += snprintf(s + ret, size - ret, " %12" PRIu64, period);
++			ret += scnprintf(s + ret, size - ret, " %12" PRIu64, period);
+ 	}
+ 
+ 	if (pair_hists) {
+@@ -819,25 +819,25 @@ static int hist_entry__pcnt_snprintf(struct hist_entry *he, char *s,
+ 		diff = new_percent - old_percent;
+ 
+ 		if (fabs(diff) >= 0.01)
+-			snprintf(bf, sizeof(bf), "%+4.2F%%", diff);
++			ret += scnprintf(bf, sizeof(bf), "%+4.2F%%", diff);
+ 		else
+-			snprintf(bf, sizeof(bf), " ");
++			ret += scnprintf(bf, sizeof(bf), " ");
+ 
+ 		if (sep)
+-			ret += snprintf(s + ret, size - ret, "%c%s", *sep, bf);
++			ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
+ 		else
+-			ret += snprintf(s + ret, size - ret, "%11.11s", bf);
++			ret += scnprintf(s + ret, size - ret, "%11.11s", bf);
+ 
+ 		if (show_displacement) {
+ 			if (displacement)
+-				snprintf(bf, sizeof(bf), "%+4ld", displacement);
++				ret += scnprintf(bf, sizeof(bf), "%+4ld", displacement);
+ 			else
+-				snprintf(bf, sizeof(bf), " ");
++				ret += scnprintf(bf, sizeof(bf), " ");
+ 
+ 			if (sep)
+-				ret += snprintf(s + ret, size - ret, "%c%s", *sep, bf);
++				ret += scnprintf(s + ret, size - ret, "%c%s", *sep, bf);
+ 			else
+-				ret += snprintf(s + ret, size - ret, "%6.6s", bf);
++				ret += scnprintf(s + ret, size - ret, "%6.6s", bf);
+ 		}
+ 	}
+ 
+@@ -855,7 +855,7 @@ int hist_entry__snprintf(struct hist_entry *he, char *s, size_t size,
+ 		if (se->elide)
+ 			continue;
+ 
+-		ret += snprintf(s + ret, size - ret, "%s", sep ?: "  ");
++		ret += scnprintf(s + ret, size - ret, "%s", sep ?: "  ");
+ 		ret += se->se_snprintf(he, s + ret, size - ret,
+ 				       hists__col_len(hists, se->se_width_idx));
+ 	}
+diff --git a/tools/perf/util/strbuf.c b/tools/perf/util/strbuf.c
+index 92e0685..2eeb51b 100644
+--- a/tools/perf/util/strbuf.c
++++ b/tools/perf/util/strbuf.c
+@@ -1,4 +1,5 @@
+ #include "cache.h"
++#include <linux/kernel.h>
+ 
+ int prefixcmp(const char *str, const char *prefix)
+ {
+@@ -89,14 +90,14 @@ void strbuf_addf(struct strbuf *sb, const char *fmt, ...)
+ 	if (!strbuf_avail(sb))
+ 		strbuf_grow(sb, 64);
+ 	va_start(ap, fmt);
+-	len = vsnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
++	len = vscnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
+ 	va_end(ap);
+ 	if (len < 0)
+-		die("your vsnprintf is broken");
++		die("your vscnprintf is broken");
+ 	if (len > strbuf_avail(sb)) {
+ 		strbuf_grow(sb, len);
+ 		va_start(ap, fmt);
+-		len = vsnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
++		len = vscnprintf(sb->buf + sb->len, sb->alloc - sb->len, fmt, ap);
+ 		va_end(ap);
+ 		if (len > strbuf_avail(sb)) {
+ 			die("this should not happen, your snprintf is broken");
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index e81aef1..bb9197c 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -837,15 +837,15 @@ static int hists__browser_title(struct hists *self, char *bf, size_t size,
+ 	unsigned long nr_events = self->stats.nr_events[PERF_RECORD_SAMPLE];
+ 
+ 	nr_events = convert_unit(nr_events, &unit);
+-	printed = snprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
++	printed = scnprintf(bf, size, "Events: %lu%c %s", nr_events, unit, ev_name);
+ 
+ 	if (thread)
+-		printed += snprintf(bf + printed, size - printed,
++		printed += scnprintf(bf + printed, size - printed,
+ 				    ", Thread: %s(%d)",
+ 				    (thread->comm_set ? thread->comm : ""),
+ 				    thread->pid);
+ 	if (dso)
+-		printed += snprintf(bf + printed, size - printed,
++		printed += scnprintf(bf + printed, size - printed,
+ 				    ", DSO: %s", dso->short_name);
+ 	return printed;
  }
+@@ -1095,7 +1095,7 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
+ 						       HE_COLORSET_NORMAL);
  
- /*
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 1e49c56..afdf410 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -192,11 +192,13 @@ struct rcu_node {
+ 	nr_events = convert_unit(nr_events, &unit);
+-	printed = snprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
++	printed = scnprintf(bf, sizeof(bf), "%lu%c%s%s", nr_events,
+ 			   unit, unit == ' ' ? "" : " ", ev_name);
+ 	slsmg_printf("%s", bf);
  
- /*
-  * Do a full breadth-first scan of the rcu_node structures for the
-- * specified rcu_state structure.
-+ * specified rcu_state structure.  The caller must hold either the
-+ * ->onofflock or the root rcu_node structure's ->lock.
-  */
-+extern int rcu_max_cpu;
- #define rcu_for_each_node_breadth_first(rsp, rnp) \
- 	for ((rnp) = &(rsp)->node[0]; \
--	     (rnp) < &(rsp)->node[NUM_RCU_NODES]; (rnp)++)
-+	     (rnp) <= per_cpu_ptr((rsp)->rda, rcu_max_cpu)->mynode; (rnp)++)
+@@ -1105,8 +1105,8 @@ static void perf_evsel_menu__write(struct ui_browser *browser,
+ 		if (!current_entry)
+ 			ui_browser__set_color(browser, HE_COLORSET_TOP);
+ 		nr_events = convert_unit(nr_events, &unit);
+-		snprintf(bf, sizeof(bf), ": %ld%c%schunks LOST!", nr_events,
+-			 unit, unit == ' ' ? "" : " ");
++		printed += scnprintf(bf, sizeof(bf), ": %ld%c%schunks LOST!",
++				     nr_events, unit, unit == ' ' ? "" : " ");
+ 		warn = bf;
+ 	}
  
- /*
-  * Do a breadth-first scan of the non-leaf rcu_node structures for the
+diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
+index 4f48f59..2f950c2 100644
+--- a/tools/perf/util/ui/helpline.c
++++ b/tools/perf/util/ui/helpline.c
+@@ -64,7 +64,7 @@ int ui_helpline__show_help(const char *format, va_list ap)
+ 	static int backlog;
+ 
+ 	pthread_mutex_lock(&ui__lock);
+-	ret = vsnprintf(ui_helpline__last_msg + backlog,
++	ret = vscnprintf(ui_helpline__last_msg + backlog,
+ 			sizeof(ui_helpline__last_msg) - backlog, format, ap);
+ 	backlog += ret;
+ 
+-- 
+1.7.9.2.358.g22243
 
