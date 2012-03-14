@@ -1,64 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030561Ab2CNCa6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 22:30:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23031 "EHLO
+	id S1030582Ab2CNCbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 22:31:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11079 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030457Ab2CNC3r (ORCPT
+	with ESMTP id S965220Ab2CNC3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 22:29:47 -0400
-X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=7iRz-qJHzJMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=0oKUSnA67OczS7GyBKYA:9 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Tue, 13 Mar 2012 22:29:46 -0400
+X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=UBy9sU4F98IA:10 a=jKm9YQqc6X8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=D_SbEOMbAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=fG8-Mj_-lBnnC3uReX4A:9 a=dmx_9mhqMpjeWviT1Z8A:7 a=Zh68SRI7RUMA:10 a=7KbvKZvEaC0A:10 a=jeBq3FmKZ4MA:10 a=1NfmFJPeYUVMg-w3:21 a=oNGDuToNrpIyRgYX:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120314022945.771027206@goodmis.org>
+Message-Id: <20120314022944.774990460@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Tue, 13 Mar 2012 22:27:04 -0400
+Date: Tue, 13 Mar 2012 22:27:00 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, stable-rt@vger.kernel.org
-Subject: [PATCH RT 6/7] net: Use cpu_chill() instead of cpu_relax()
+        John Kacur <jkacur@redhat.com>, Carsten Emde <cbe@osadl.org>,
+        stable-rt@vger.kernel.org
+Subject: [PATCH RT 2/7] softirq: Check preemption after reenabling interrupts
 References: <20120314022658.783312660@goodmis.org>
-Content-Disposition: inline; filename=0006-net-Use-cpu_chill-instead-of-cpu_relax.patch
+Content-Disposition: inline; filename=0002-softirq-Check-preemption-after-reenabling-interrupts.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-Retry loops on RT might loop forever when the modifying side was
-preempted. Use cpu_chill() instead of cpu_relax() to let the system
-make progress.
+raise_softirq_irqoff() disables interrupts and wakes the softirq
+daemon, but after reenabling interrupts there is no preemption check,
+so the execution of the softirq thread might be delayed arbitrarily.
 
+In principle we could add that check to local_irq_enable/restore, but
+that's overkill as the rasie_softirq_irqoff() sections are the only
+ones which show this behaviour.
+
+Reported-by: Carsten Emde <cbe@osadl.org>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: stable-rt@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/rds/ib_rdma.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ block/blk-iopoll.c      |    3 +++
+ block/blk-softirq.c     |    3 +++
+ include/linux/preempt.h |    3 +++
+ net/core/dev.c          |    6 ++++++
+ 4 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/net/rds/ib_rdma.c b/net/rds/ib_rdma.c
-index 819c35a..256ad87 100644
---- a/net/rds/ib_rdma.c
-+++ b/net/rds/ib_rdma.c
-@@ -33,6 +33,7 @@
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/rculist.h>
-+#include <linux/delay.h>
+diff --git a/block/blk-iopoll.c b/block/blk-iopoll.c
+index 58916af..f7ca9b4 100644
+--- a/block/blk-iopoll.c
++++ b/block/blk-iopoll.c
+@@ -38,6 +38,7 @@ void blk_iopoll_sched(struct blk_iopoll *iop)
+ 	list_add_tail(&iop->list, &__get_cpu_var(blk_cpu_iopoll));
+ 	__raise_softirq_irqoff(BLOCK_IOPOLL_SOFTIRQ);
+ 	local_irq_restore(flags);
++	preempt_check_resched_rt();
+ }
+ EXPORT_SYMBOL(blk_iopoll_sched);
  
- #include "rds.h"
- #include "ib.h"
-@@ -294,7 +295,7 @@ static inline void wait_clean_list_grace(void)
- 	for_each_online_cpu(cpu) {
- 		flag = &per_cpu(clean_list_grace, cpu);
- 		while (test_bit(CLEAN_LIST_BUSY_BIT, flag))
--			cpu_relax();
-+			cpu_chill();
- 	}
+@@ -135,6 +136,7 @@ static void blk_iopoll_softirq(struct softirq_action *h)
+ 		__raise_softirq_irqoff(BLOCK_IOPOLL_SOFTIRQ);
+ 
+ 	local_irq_enable();
++	preempt_check_resched_rt();
  }
  
+ /**
+@@ -204,6 +206,7 @@ static int __cpuinit blk_iopoll_cpu_notify(struct notifier_block *self,
+ 				 &__get_cpu_var(blk_cpu_iopoll));
+ 		__raise_softirq_irqoff(BLOCK_IOPOLL_SOFTIRQ);
+ 		local_irq_enable();
++		preempt_check_resched_rt();
+ 	}
+ 
+ 	return NOTIFY_OK;
+diff --git a/block/blk-softirq.c b/block/blk-softirq.c
+index ee9c216..0206963 100644
+--- a/block/blk-softirq.c
++++ b/block/blk-softirq.c
+@@ -50,6 +50,7 @@ static void trigger_softirq(void *data)
+ 		raise_softirq_irqoff(BLOCK_SOFTIRQ);
+ 
+ 	local_irq_restore(flags);
++	preempt_check_resched_rt();
+ }
+ 
+ /*
+@@ -92,6 +93,7 @@ static int __cpuinit blk_cpu_notify(struct notifier_block *self,
+ 				 &__get_cpu_var(blk_cpu_done));
+ 		raise_softirq_irqoff(BLOCK_SOFTIRQ);
+ 		local_irq_enable();
++		preempt_check_resched_rt();
+ 	}
+ 
+ 	return NOTIFY_OK;
+@@ -139,6 +141,7 @@ do_local:
+ 		goto do_local;
+ 
+ 	local_irq_restore(flags);
++	preempt_check_resched_rt();
+ }
+ 
+ /**
+diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+index 7a2bbbb..11412d7 100644
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -41,8 +41,10 @@ do { \
+ 
+ #ifndef CONFIG_PREEMPT_RT_BASE
+ # define preempt_enable_no_resched()	__preempt_enable_no_resched()
++# define preempt_check_resched_rt()	do { } while (0)
+ #else
+ # define preempt_enable_no_resched()	preempt_enable()
++# define preempt_check_resched_rt()	preempt_check_resched()
+ #endif
+ 
+ #define preempt_check_resched() \
+@@ -93,6 +95,7 @@ do { \
+ #define preempt_enable_no_resched()	do { } while (0)
+ #define preempt_enable()		do { } while (0)
+ #define preempt_check_resched()		do { } while (0)
++#define preempt_check_resched_rt()	do { } while (0)
+ 
+ #define preempt_disable_notrace()		do { } while (0)
+ #define preempt_enable_no_resched_notrace()	do { } while (0)
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 7606d18..b250c1d 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1705,6 +1705,7 @@ static inline void __netif_reschedule(struct Qdisc *q)
+ 	sd->output_queue_tailp = &q->next_sched;
+ 	raise_softirq_irqoff(NET_TX_SOFTIRQ);
+ 	local_irq_restore(flags);
++	preempt_check_resched_rt();
+ }
+ 
+ void __netif_schedule(struct Qdisc *q)
+@@ -1726,6 +1727,7 @@ void dev_kfree_skb_irq(struct sk_buff *skb)
+ 		sd->completion_queue = skb;
+ 		raise_softirq_irqoff(NET_TX_SOFTIRQ);
+ 		local_irq_restore(flags);
++		preempt_check_resched_rt();
+ 	}
+ }
+ EXPORT_SYMBOL(dev_kfree_skb_irq);
+@@ -2837,6 +2839,7 @@ enqueue:
+ 	rps_unlock(sd);
+ 
+ 	local_irq_restore(flags);
++	preempt_check_resched_rt();
+ 
+ 	atomic_long_inc(&skb->dev->rx_dropped);
+ 	kfree_skb(skb);
+@@ -3659,6 +3662,7 @@ static void net_rps_action_and_irq_enable(struct softnet_data *sd)
+ 	} else
+ #endif
+ 		local_irq_enable();
++	preempt_check_resched_rt();
+ }
+ 
+ static int process_backlog(struct napi_struct *napi, int quota)
+@@ -3731,6 +3735,7 @@ void __napi_schedule(struct napi_struct *n)
+ 	local_irq_save(flags);
+ 	____napi_schedule(&__get_cpu_var(softnet_data), n);
+ 	local_irq_restore(flags);
++	preempt_check_resched_rt();
+ }
+ EXPORT_SYMBOL(__napi_schedule);
+ 
+@@ -6233,6 +6238,7 @@ static int dev_cpu_callback(struct notifier_block *nfb,
+ 
+ 	raise_softirq_irqoff(NET_TX_SOFTIRQ);
+ 	local_irq_enable();
++	preempt_check_resched_rt();
+ 
+ 	/* Process offline CPU's input_pkt_queue */
+ 	while ((skb = __skb_dequeue(&oldsd->process_queue))) {
 -- 
 1.7.8.3
 
