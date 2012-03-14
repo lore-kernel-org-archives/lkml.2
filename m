@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761573Ab2CNVlS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 17:41:18 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:35760 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965237Ab2CNVkI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 17:40:08 -0400
-From: Marc Reilly <marc@cpdesign.com.au>
-To: sameo@linux.intel.com
-Cc: linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-i2c@vger.kernel.org,
-        u.kleine-koenig@pengutronix.de, oskar@scara.com,
-        linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
-        Marc Reilly <marc@cpdesign.com.au>
-Subject: [PATCH v3 2/6] regmap: Add support for device with 24 data bits.
-Date: Thu, 15 Mar 2012 07:43:06 +1100
-Message-Id: <1331757790-10583-3-git-send-email-marc@cpdesign.com.au>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1331757790-10583-1-git-send-email-marc@cpdesign.com.au>
-References: <1331757790-10583-1-git-send-email-marc@cpdesign.com.au>
+	id S1031043Ab2CNVpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 17:45:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22554 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964781Ab2CNVpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 17:45:40 -0400
+Message-ID: <4F611169.2020205@redhat.com>
+Date: Wed, 14 Mar 2012 17:45:13 -0400
+From: Doug Ledford <dledford@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Amerigo Wang <amwang@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        "\"Eric W. Biederman\" (commit_signer:2/9=22%)" 
+	<ebiederm@xmission.com>,
+        "Joe Korty (commit_signer:2/9=22%)" <joe.korty@ccur.com>,
+        "David Howells (commit_signer:2/9=22%)" <dhowells@redhat.com>
+Subject: Re: [resend][PATCH 1/3] mqueue: revert bump up DFLT_*MAX
+References: <1323470163-8723-1-git-send-email-kosaki.motohiro@gmail.com> <4EEE3124.7070605@gmail.com> <20111218103836.258eedb8.akpm@linux-foundation.org> <4F610D81.3020300@redhat.com> <20120314143832.286b497e.akpm@linux-foundation.org>
+In-Reply-To: <20120314143832.286b497e.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigF3A0BD48CDE484153EB41375"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for devices with 24 data bits.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigF3A0BD48CDE484153EB41375
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Marc Reilly <marc@cpdesign.com.au>
----
- drivers/base/regmap/regmap.c |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+On 03/14/2012 05:38 PM, Andrew Morton wrote:
+> On Wed, 14 Mar 2012 17:28:33 -0400
+> Doug Ledford <dledford@redhat.com> wrote:
+>=20
+>> This has obviously fallen through the cracks.
+>=20
+> It sure has.  Please dig out whatever is the currently favored
+> patchset, refresh, retest and resend, with changelogging which fully
+> covers the reasoning and decision process?
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 62ef0df..880e3a0 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -122,6 +122,15 @@ static void regmap_format_16(void *buf, unsigned int val)
- 	b[0] = cpu_to_be16(val);
- }
- 
-+static void regmap_format_24(void *buf, unsigned int val)
-+{
-+	u8 *b = buf;
-+
-+	b[0] = val >> 16;
-+	b[1] = val >> 8;
-+	b[2] = val;
-+}
-+
- static unsigned int regmap_parse_8(void *buf)
- {
- 	u8 *b = buf;
-@@ -138,6 +147,16 @@ static unsigned int regmap_parse_16(void *buf)
- 	return b[0];
- }
- 
-+static unsigned int regmap_parse_24(void *buf)
-+{
-+	u8 *b = buf;
-+	unsigned int ret = b[2];
-+	ret |= ((unsigned int)b[1]) << 8;
-+	ret |= ((unsigned int)b[0]) << 16;
-+
-+	return ret;
-+}
-+
- /**
-  * regmap_init(): Initialise register map
-  *
-@@ -240,6 +259,10 @@ struct regmap *regmap_init(struct device *dev,
- 		map->format.format_val = regmap_format_16;
- 		map->format.parse_val = regmap_parse_16;
- 		break;
-+	case 24:
-+		map->format.format_val = regmap_format_24;
-+		map->format.parse_val = regmap_parse_24;
-+		break;
- 	}
- 
- 	if (!map->format.format_write &&
--- 
-1.7.3.4
+OK, completely redoing patch set then against current Linus tree.
 
+Motohiro, would you be so kind as to resend my your patches that went on
+top of mine and I'll create a complete patch set?
+
+>> so that if there are any apps out there that have been coded to expect=
+
+>> this behavior, then there is a workaround path for them until they get=
+
+>> coded
+>=20
+> We'll be especially interested in the implications of this part.
+
+Certainly.
+
+--=20
+Doug Ledford <dledford@redhat.com>
+              GPG KeyID: 0E572FDD
+	      http://people.redhat.com/dledford
+
+
+
+--------------enigF3A0BD48CDE484153EB41375
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBAgAGBQJPYRFpAAoJELgmozMOVy/d8cAQAKW/umN/3ukoqG6pOBATI2Xw
+a48WMoATMHiz26uI8F/Ukyb0L40vCmrSPXsr3BUvyPqc3POsZbyeLzEMsMy/QyqL
+FvyfOBD+mEVZNcEWDLXin4v3P0YJ1v30qv+Plgh2HIbfxFkEreKq3spr8UH5Y/FH
+g9vdqE4eXN5jaePlTC3SeY8co+7VFRj/AOT930XQOtB2qyE+SzfRBWW5VpZG0ofF
+Vs3cZX9rH1aGUN3hlyiHZqHm4sQdt/H1DGPwUYEM5PFjQdoQUtssadH8Fp0JwehY
+sucpvFpaCdpQAneVTMvNs4L9f1l5yEVWgE3TwptvGIVeEPTH+6JUrLGw+As50J5b
+w6MTcnAUWGEzjpzuOK1F+eUAj9SfzejUQv56MtHY3e1YqPGNrt2TpLsW+COBBlhD
+Iv/iV8XN/fSI9yrGfdGfM/3nToxfEmNuVWZxASQcgfRGyKa08jFa7Y8iPKJq2eWu
+E9LqJLoSLxsz6rL4UlyCg3ssDh0xe9CYKAVj5o1lq4gUcIUTx0naoRBrugJg72JP
+VBviDhoxntVfcm8VIjhlh/vaPJDcXtqXpynH4OyJf3JlQ94yPPpqJNk0RamdDb2o
+5tCX55NCJwi/vbzsmG57IsK1/Zl7pjI2lNV3WrXUMKG/euCnR8fo4+xO61uP3JZU
+TaZ4dd/Elp7wZ7Fs4lxF
+=Ju7l
+-----END PGP SIGNATURE-----
+
+--------------enigF3A0BD48CDE484153EB41375--
