@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab2CNAnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:43:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42252 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759826Ab2CNAns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:43:48 -0400
-Message-ID: <4F5FE9AD.7000204@zytor.com>
-Date: Tue, 13 Mar 2012 17:43:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1760046Ab2CNAod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:44:33 -0400
+Received: from atlanta.tchmachines.com ([208.76.86.11]:60050 "EHLO
+	atlanta.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757646Ab2CNAoc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 20:44:32 -0400
+Date: Tue, 13 Mar 2012 20:44:30 -0400
+From: Leonid Petrov <user1@lpetrov.net>
+Reply-To: Leonid Petrov <user1@lpetrov.net>
+To: linux-kernel@vger.kernel.org
+Subject: Re: Re: USB 3.0 card, chipset VIA VL800 + external harddrive @ 
+ 3.3.0-rc7 = no luck
+Message-ID: <4F5FE9EE.nailF3F1R9TBB@lpetrov.net>
+User-Agent: nail 11.6.2 (mod) 2007.09.22
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michal Januszewski <spock@gentoo.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, x86@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] x86: export 'pcibios_enabled'
-References: <20120313204114.e160849af7dbe5a4b4e5c0ad@canb.auug.org.au> <4F5FAE63.3090908@xenotime.net>
-In-Reply-To: <4F5FAE63.3090908@xenotime.net>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - atlanta.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - pethome.astrogeo.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/13/2012 01:30 PM, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Export 'pcibios_enabled' so that when uvesafb is built as a
-> loadable module (on X86_32), the build will succeed.
-> 
-> ERROR: "pcibios_enabled" [drivers/video/uvesafb.ko] undefined!
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> Cc:	Michal Januszewski <spock@gentoo.org>
-> Cc:	Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-> Cc:	linux-fbdev@vger.kernel.org
-> Cc:	x86@kernel.org
-> ---
-> Applies to mainline; found in linux-next.
-> 
->  arch/x86/pci/pcbios.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-next-20120313.orig/arch/x86/pci/pcbios.c
-> +++ linux-next-20120313/arch/x86/pci/pcbios.c
-> @@ -27,6 +27,7 @@
->  #define PCIBIOS_HW_TYPE2_SPEC		0x20
->  
->  int pcibios_enabled;
-> +EXPORT_SYMBOL(pcibios_enabled);
->  
->  /* According to the BIOS specification at:
->   * http://members.datafast.net.au/dft0802/specs/bios21.pdf, we could
+> Are you sure you have a USB 3.0 cable?
 
-I would think this should be EXPORT_SYMBOL_GPL()... this seems like a
-symbol with a very high likelihood to be abused in strange ways.
+  Yes, I am. This is the cable that came with the USB-3.0
+external drive with USB 3.0 logo. Unless Seagate...
 
-	-hpa
+   I inserted in the USB 3.0 ports my USB-2.0 stick and
+USB-2.0 Epson scanner -- /var/log/messages showed no response.
 
+> And this would be best to be asked on the linux-usb@vger.kernel.org
+
+  I will.
+
+Leonid
