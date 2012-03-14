@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473Ab2CNK7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 06:59:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44241 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760868Ab2CNK7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 06:59:45 -0400
-Date: Wed, 14 Mar 2012 12:59:36 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-Message-ID: <20120314105936.GX2304@redhat.com>
-References: <4F5DD0FD.9070904@redhat.com>
- <20120313091843.GB3800@redhat.com>
- <4F5F25BF.7060100@redhat.com>
- <4F6056FE.3020202@cn.fujitsu.com>
- <4F6063C8.8010005@redhat.com>
- <4F606A7C.9090900@cn.fujitsu.com>
- <20120314103755.GD2708@amit.redhat.com>
- <4F607857.50402@cn.fujitsu.com>
- <4F60788A.2070608@redhat.com>
- <4F6079E7.7010608@cn.fujitsu.com>
+	id S932489Ab2CNLAL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 07:00:11 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:34685 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932083Ab2CNLAG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 07:00:06 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19qJCRuZVJqSJFU7EwUQ14FhZtHQN8mex0725Zuek
+	tkSIJnmJuw5UsW
+Message-ID: <4F607A18.8080004@gmx.de>
+Date: Wed, 14 Mar 2012 10:59:36 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120207 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6079E7.7010608@cn.fujitsu.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Michal Januszewski <spock@gentoo.org>, linux-fbdev@vger.kernel.org,
+        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Wang YanQing <udknight@gmail.com>
+Subject: Re: [PATCH] x86: export 'pcibios_enabled'
+References: <20120313204114.e160849af7dbe5a4b4e5c0ad@canb.auug.org.au>	<4F5FAE63.3090908@xenotime.net>	<4F5FE9AD.7000204@zytor.com> <20120314092955.2250a782@pyramind.ukuu.org.uk>
+In-Reply-To: <20120314092955.2250a782@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 06:58:47PM +0800, Wen Congyang wrote:
-> At 03/14/2012 06:52 PM, Avi Kivity Wrote:
-> > On 03/14/2012 12:52 PM, Wen Congyang wrote:
-> >>>
-> >>>> If so, is this channel visible to guest userspace? If the channle is visible to guest
-> >>>> userspace, the program running in userspace may write the same message to the channel.
-> >>>
-> >>> Access control is via permissions.  You can have udev scripts assign
-> >>> whatever uid and gid to the port of your interest.  By default, all
-> >>> ports are only accessible to the root user.
-> >>
-> >> We should also prevent root user writing message to this channel if it is
-> >> used for panicked notification.
-> >>
-> > 
-> > Why?  root can easily cause a panic.
-> > 
-> 
-> root user can write the same message to virtio-serial while the guest is running...
-> 
-So what?
+[CC'ing Wang YanQing, the author of the patch requiring it]
 
---
-			Gleb.
+On 03/14/2012 09:29 AM, Alan Cox wrote:
+>>>  
+>>>  int pcibios_enabled;
+>>> +EXPORT_SYMBOL(pcibios_enabled);
+>>>  
+>>>  /* According to the BIOS specification at:
+>>>   * http://members.datafast.net.au/dft0802/specs/bios21.pdf, we could
+>>
+>> I would think this should be EXPORT_SYMBOL_GPL()... this seems like a
+>> symbol with a very high likelihood to be abused in strange ways.
+> 
+> We don't need to expose it anyway
+> 
+> uvesafb could look for any PCI vga class device - which I suspect is
+> what it *should* be doing ?
+
+Would this really change depending on whether the page is NX-protected
+or not?
+Your suggestion sounds like it is about detecting whether there is any
+graphic chip present or not while the patch is about fixing an oops
+caused by NX-protection of the BIOS.
+
+
+Best regards,
+
+Florian Tobias Schandinat
