@@ -1,134 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab2CNFxB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 01:53:01 -0400
-Received: from charybdis-ext.suse.de ([195.135.221.2]:24122 "EHLO
-	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152Ab2CNFw7 (ORCPT
+	id S1030272Ab2CNFzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 01:55:47 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55680 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755861Ab2CNFzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 01:52:59 -0400
-Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
-From: joeyli <jlee@suse.com>
-To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
-        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1331692996.3052.8.camel@debian.Gayathri>
-References: <1331608337.2267.67.camel@debian.Gayathri>
-	 <20120312175130.GA18002@srcf.ucam.org>
-	 <1331640592.3485.50.camel@debian.Gayathri>
-	 <20120313124738.GB10822@srcf.ucam.org>
-	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
-	 <20120313133458.GA11574@srcf.ucam.org>
-	 <1331688294.2577.19.camel@debian.Gayathri>
-	 <1331680373.10557.169.camel@linux-s257.site>
-	 <1331692996.3052.8.camel@debian.Gayathri>
+	Wed, 14 Mar 2012 01:55:41 -0400
+Message-ID: <1331704535.2456.37.camel@edumazet-laptop>
+Subject: Re: [PATCH v14 01/13] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Indan Zupancic <indan@nul.nu>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
+        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
+        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
+        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
+        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Date: Tue, 13 Mar 2012 22:55:35 -0700
+In-Reply-To: <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+	 <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
+	 <1331658828.4449.16.camel@edumazet-glaptop>
+	 <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Mar 2012 13:51:18 +0800
-Message-ID: <1331704278.10557.190.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 三，2012-03-14 於 08:13 +0530，Pradeep Subrahmanion 提到：
-> Hi Joey , 
+Le mercredi 14 mars 2012 à 06:12 +0100, Indan Zupancic a écrit :
+
+> Problem is that 'old_size' can be up to 32kB in size and it would be nice
+> if that memory could be released. If it isn't, then using JIT increases
+> memory usage, while also not accounting it to the socket.
 > 
-> > Per my understood, EC firmware should change brightness but didn't do
-> > that, another
-> > way is touch i915 register in _BCM.
+
+It is accounted for, since jit size is in relation with standard filter
+size. Check sock_kmalloc()
+
+Fact we can have a litle underestimation was already the case without
+jit, since kmalloc() does a roundup to next power of two.
+
+I dont think this discussion has anything to do with SECCOMP anyway.
+
+These accounting dont need to be 100% precise, we only want a limit to
+prevent rogue users from using all kernel memory.
+
+> >
+> > If it did, this kind of 'optimization' can actually be not good, because
+> > sizeof(*fp) is small enough (less than half cache line size) to trigger
+> > a possible false sharing issue. (other part of the cache line could be
+> > used to hold a often dirtied object)
 > 
->   how do we do this ? you mean change the _BCM implementation ? 
+> It could avoid this by allocating at least a cache size. But this is a
+> problem for all small kmalloc's, isn't it?
 
-"BIOS guy" should do something like this:
+Its a problem that was already met on several critical paths :
 
- Method (AINT, 2, NotSerialized)
-{
-...
-        If (LEqual (Arg0, One))
-        {
-            Store (Divide (Multiply (Arg1, 0xFF), 0x64, ), BCLP)
-            Or (BCLP, 0x80000000, BCLP)		<=== touch BCLP register
-            Store (0x02, ASLC)
-        }
-
-    Method (_BCM, 1, NotSerialized)
-    {
-        If (LAnd (LGreaterEqual (Arg0, Zero), LLessEqual (Arg0, 0x64)))
-        {
-            AINT (One, Arg0)     <=== call AINT method
-            Store (Arg0, BRTL)
-        }
-    }
+# find net|xargs grep -n L1_CACHE_BYTES
+net/core/dev_addr_lists.c:51:	if (alloc_size < L1_CACHE_BYTES)
+net/core/dev_addr_lists.c:52:		alloc_size = L1_CACHE_BYTES;
+net/core/net-sysfs.c:586:	    RPS_MAP_SIZE(cpumask_weight(mask)), L1_CACHE_BYTES),
+net/core/net-sysfs.c:1111:	    XPS_DEV_MAPS_SIZE, L1_CACHE_BYTES), GFP_KERNEL);
+net/ipv6/ip6_fib.c:1612:	size = max_t(size_t, size, L1_CACHE_BYTES);
+net/ipv4/fib_frontend.c:1049:	size = max_t(size_t, size, L1_CACHE_BYTES);
 
 
-Just for reference, they should do that when EC didn't wire to
-backlight. 
-
-> > 
-> > Acer machine provide a broken _BCM implementation and they didn't test
-> > it.
-> > 
-> > > > > By ' ACPI interface' , I mean 'acpi_video0' inside the
-> > > > > /sys/class/backlight. I havn't tried the /sys/class/backlight interface
-> > > > > directly . I will try that also.
-> > > > 
-> > > > So writing values into /sys/class/backlight/acpi_video0/brightness does 
-> > > > nothing?
-> > > 
-> > > 
-> > > No change in value when writing
-> > > to /sys/class/backlight/acpi_video0/brightness.
-> > > 
-> > > Another thing is that when i did boot with acpi_backlight = 'acer_wmi' ,
-> > > in new kernel (3.3.0-rc7) , it shows following messages , 
-> > > 
-> > > [    8.350825] wmi: Mapper loaded
-> > > [   10.363975] acer_wmi: Acer Laptop ACPI-WMI Extras
-> > > [   10.396186] acer_wmi: Function bitmap for Communication Device: 0x91
-> > > [   10.396385] acer_wmi: Brightness must be controlled by generic video
-> > > driver
-> > > 
-> > > Also there was no interface inside /sys/class/backlight for acer_wmi. 
-> > > 
-> > 
-> > Yes, acer_wmi support backlight control with AMW0 interface, your
-> > machine didn't have AMW0 interface.
-> > 
-> > Normally, backlight should control by standard acpi interface.
-> > 
-> > > I also tried writing directly to Embedded controller register .But no
-> > > change.
-> > 
-> > The machine has broken _BCM method, because EC should do something after
-> > _BCM changed EC register.
-> 
-> Thanks , 
-> 
-> Pradeep Subrahmanion
-
-Why they didn't find _BCM not work?
-
-My guess is:
-
-Because the backlight control is through WDDM driver on Windows platform
-but not through standard ACPI method _BCM. They only test Windows
-platform, so, they didn't find _BCM broken.
-
-And, they also didn't really follow Microsoft WDDM spec:
-
- http://msdn.microsoft.com/en-us/windows/hardware/gg487382.aspx
-
-Per spec,
-ODM should keep _BCM works fine for any other OS didn't support WDDM
-driver, but they didn't.
-
-At last year, I told Acer PM one time for this issue, they said will
-check but finally didn't response me.
-
-
-Thanks
-Joey Lee
 
