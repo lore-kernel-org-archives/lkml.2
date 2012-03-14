@@ -1,83 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761585Ab2CNWJB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 18:09:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37382 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761503Ab2CNWJA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 18:09:00 -0400
-Date: Wed, 14 Mar 2012 23:08:53 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        Carsten Emde <C.Emde@osadl.org>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [REGRESSION][PATCH] mqueue: Ignore the validity of abs_timeout
- parameter when message can be performed immediately
-In-Reply-To: <20120314144601.ccc50a68.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.02.1203142250500.2466@ionos>
-References: <20120302164234.4938.38390934@jp.panasonic.com> <20120314144601.ccc50a68.akpm@linux-foundation.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1761591Ab2CNWN6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 18:13:58 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:39737 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761522Ab2CNWNy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 18:13:54 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <alpine.LFD.2.02.1203142218320.2466@ionos>
+References: <1330763341-3437-1-git-send-email-mturquette@linaro.org>
+ <1330763341-3437-4-git-send-email-mturquette@linaro.org> <20120313112447.GA29317@pengutronix.de>
+ <CAJOA=zMTY+4dU9VUa-TkEbdE-WJd7V4tCG-af6vgq0CPN6rWpg@mail.gmail.com>
+ <20120314084857.GL3852@pengutronix.de> <CAJOA=zMsCuZgmp1Hm0dq=EVoX6Zj62XQVqR=6GzDntSD5HnHzg@mail.gmail.com>
+ <alpine.LFD.2.02.1203142218320.2466@ionos>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Wed, 14 Mar 2012 15:13:28 -0700
+Message-ID: <CAJOA=zNj8eC+h-S9KqwuAEiGFZMAn2h0TNTR6nund4qM7Z97ug@mail.gmail.com>
+Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        linaro-dev@lists.linaro.org, Grant Likely <grant.likely@secretlab.ca>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Arnd Bergman <arnd.bergmann@linaro.org>, patches@linaro.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Mar 2012, Andrew Morton wrote:
+On Wed, Mar 14, 2012 at 2:28 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Wed, 14 Mar 2012, Turquette, Mike wrote:
+>
+> Could you folks please trim your replies? It's annoying to page down a
+> gazillion of lines to find the gist.
 
-> On Fri, 02 Mar 2012 16:42:35 +0900
-> Akira Takeuchi <takeuchi.akr@jp.panasonic.com> wrote:
-> 
-> > This patch fixes up the regression problem of mq_timed{send,receive} syscall.
-> > 
-> > When a message of mqueue can be performed immediately,
-> > the validity of abs_timeout parameter should not be checked.
-> > 
-> > According to the manpage of mq_timedreceive:
-> >     Under no circumstance shall the operation fail with a timeout
-> >     if a message can be removed from the message queue immediately.
-> >     The validity of the abstime parameter need not be checked
-> >     if a message can be removed from the message queue immediately.
+Sure.  My mailer does this for me so I forget to do it sometimes...
 
-Those POSIX spec folks definitely have a seriously distorted
-relationship to timers and timekeeping.
+>> On Wed, Mar 14, 2012 at 1:48 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+>> >> Also, do you forsee needing hole in parent_names for any reason other
+>> >> than described above?
+>> >
+>> > I need it only for the case where a some values in the mux are marked as
+>> > reserved in the datasheet or we simply do not have the corresponding
+>> > clock in our tree (yet). We could also say that NULL pointers are not
+>> > allowed in parent arrays, but instead "orphan" or "dummy" should be
+>> > used. Then __clk_init should check for NULL pointers to make this clear.
+>>
+>> I've added a WARN in __clk_init if any entries in .parent_names are
+>> NULL.  I think it best to populate it with "dummy", or maybe a
+>> platform-specific name if it helps you during development.
+>
+> There is no guarantee that the selection of a parent can be mapped
+> linear to register values.
 
-So the caller knows upfront when he needs to provide a valid timespec
-and when not. So the users of mq_.... are into crystal ball
-programming or what?
+Agreed.  I have always viewed .parent_names as only a list of the
+names of all possible parents, nothing more.  And of course its array
+indexing should line up with struct clk **parents.
 
-> > On 2.6.35+ kernel, mq_timed{send,receive} returns EINVAL incorrectly,
-> > in this situation.
-> > 
-> > I found this problem during the OPTS testcase
-> > "conformance/interfaces/mq_timedreceive/10-2":
-> > 
-> >     # ./10-2.test
-> >     FAIL: the validity of abs_timeout is checked
-> >     Test FAILED
-> 
-> Are you able to identify the commit which caused this regression?  I'm
-> guessing
-> 
-> commit 9ca7d8e6834c40a99622bbe4a88aaf64313ae43c
-> Author:     Carsten Emde <C.Emde@osadl.org>
-> AuthorDate: Fri Apr 2 22:40:20 2010 +0200
-> Commit:     Thomas Gleixner <tglx@linutronix.de>
-> CommitDate: Tue Apr 6 21:50:03 2010 +0200
-> 
->     mqueue: Convert message queue timeout to use hrtimers                       
+> So the right way to deal with it is to have an array of valid names
+> with no holes and NULL pointers allowed and have a mapping from the
+> array index to the register value.
 
-Right, because nobody imagined that the specification would be as
-asinine.
+This is essentially what the .set_rate callback does.  It takes as
+input "u8 index" and peforms the hardware specific magic to select the
+correct parent clock.  This might be a register write using that exact
+same index, or it might be a single-bit register write using that
+index as the shift value, or it might translate that index into the
+data sent to an i2c device (where the address would be stored in
+struct clk_foo), etc etc.
 
-I'll pick it up and add a stable tag.
+We both agree that .parent_names must contain valid names and should
+not have holes.  What I don't understand is if you are saying that we
+should allow NULL ptrs as names; that seems contradictory but I want
+to make sure I'm reading you correctly.
 
-Sigh,
+Thanks,
+Mike
 
-	tglx
+> That makes the core code robust and allows to handle all corner cases
+> including reserved bits, not implemented clocks and weird register
+> layouts.
+>
+> Thanks,
+>
+>        tglx
