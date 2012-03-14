@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760705Ab2CNKNf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 06:13:35 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:25766 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760403Ab2CNKNd (ORCPT
+	id S1760717Ab2CNKUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 06:20:54 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:51677
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1760682Ab2CNKUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 06:13:33 -0400
-Message-ID: <4F606F13.1040704@siemens.com>
-Date: Wed, 14 Mar 2012 11:12:35 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Eric B Munson <emunson@mgebm.net>
-CC: avi@redhat.com, mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, mtosatti@redhat.com, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, x86@kernel.org,
+	Wed, 14 Mar 2012 06:20:50 -0400
+Date: Wed, 14 Mar 2012 11:20:46 +0100 (CET)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4 V16] Add functions to check if the host has stopped
- the vm
-References: <1331408248-6781-1-git-send-email-emunson@mgebm.net> <1331408248-6781-3-git-send-email-emunson@mgebm.net>
-In-Reply-To: <1331408248-6781-3-git-send-email-emunson@mgebm.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: Re: [patch] Adding Secure Deletion to UBIFS
+In-Reply-To: <1331559361.12037.29.camel@sauron.fi.intel.com>
+Message-ID: <alpine.DEB.2.00.1203141117430.14300@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1202091615540.26924@eristoteles.iwoars.net>  <1330536308.3545.158.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1203011434220.2462@eristoteles.iwoars.net>  <1331278562.22872.18.camel@sauron.fi.intel.com> 
+ <alpine.DEB.2.00.1203091959570.25737@eristoteles.iwoars.net>  <1331559053.12037.25.camel@sauron.fi.intel.com> <1331559361.12037.29.camel@sauron.fi.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-03-10 20:37, Eric B Munson wrote:
-> When a host stops or suspends a VM it will set a flag to show this.  The
-> watchdog will use these functions to determine if a softlockup is real, or the
-> result of a suspended VM.
-> 
+For removing the key scheme notion, is it correct to remove:
+UBIFS_KEY_MAX_LEN and UBIFS_SK_, UBIFS_S_KEY_BLOCK_BITS, ... and replace
+it with a fixed UBIFS_KEY_LEN (and other values), thus also ignoring
+key_fmt in key_max_inode_size and simply use a fixed key scheme? Or should
+I simply reduce MAX_LEN to 8 but still allow multiple bit assignments
+within those 8 bytes via selecting a different key_fmt.
 
-...
+Cheers,
+Joel Reardon
 
-> diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-> index f8492da..4ba090c 100644
-> --- a/arch/x86/kernel/kvmclock.c
-> +++ b/arch/x86/kernel/kvmclock.c
-> @@ -22,6 +22,7 @@
->  #include <asm/msr.h>
->  #include <asm/apic.h>
->  #include <linux/percpu.h>
-> +#include <linux/hardirq.h>
->  
->  #include <asm/x86_init.h>
->  #include <asm/reboot.h>
-> @@ -114,6 +115,26 @@ static void kvm_get_preset_lpj(void)
->  	preset_lpj = lpj;
->  }
->  
-> +bool kvm_check_and_clear_guest_paused(void)
-> +{
-> +	bool ret = false;
-> +	struct pvclock_vcpu_time_info *src;
-> +
-> +	/*
-> +	 * per_cpu() is safe here because this function is only called from
-> +	 * timer functions where preemption is already disabled.
-> +	 */
-> +	WARN_ON(!in_atomic());
-> +	src = &__get_cpu_var(hv_clock);
-> +	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
-> +		__this_cpu_and(hv_clock.flags, ~PVCLOCK_GUEST_STOPPED);
-> +		ret = true;
-> +	}
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
 
-Which module is going to use this? I failed to find it, but I may have
-missed something.
 
-The actual reason for this reply: this patches causes a compiler warning
-here, likely due to lacking include for EXPORT_SYMBOL_GPL:
+On Mon, 12 Mar 2012, Artem Bityutskiy wrote:
 
-  CC      arch/x86/kernel/kvmclock.o
-/data/linux-kvm/arch/x86/kernel/kvmclock.c:136:1: warning: data
-definition has no type or storage class
-/data/linux-kvm/arch/x86/kernel/kvmclock.c:136:1: warning: type defaults
-to ‘int’ in declaration of ‘EXPORT_SYMBOL_GPL’
-/data/linux-kvm/arch/x86/kernel/kvmclock.c:136:1: warning: parameter
-names (without types) in function declaration
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+> On Mon, 2012-03-12 at 15:30 +0200, Artem Bityutskiy wrote:
+> > >  Btw, when I was
+> > > developing it I used the last 8 bytes from the key as the key position,
+> > > because the key was 16 bytes but only 8 were used. Could you comment on
+> > > the last 8 bytes of ubifs keys?
+> >
+> > I think you can use them. But is it possible to kill these things from
+> > the data nodes themselves? We can always find it by looking up the index
+> > by the data node key, right?
+>
+> Joel, but please, send small patches, preparation patches, etc. Do not
+> disappear for several months and do not come back with another big
+> patch. Tell about your intentions in advance.
+>
+> E.g., if you decide to start using those unused 8 bytes - first do small
+> preparations like removing the notion of "key scheme" which we
+> provisioned but never used (from comments as well). Clean-up the "space"
+> for yourself. Then start using them for your purposes. As I said, as
+> soon as I get the first patch I like, I'll create a separate branch in
+> the UBIFS git tree for your work.
+>
+> Thanks!
+>
+> --
+> Best Regards,
+> Artem Bityutskiy
+>
+>
