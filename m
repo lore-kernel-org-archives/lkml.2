@@ -1,65 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030219Ab2CNBvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 21:51:36 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34254 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964778Ab2CNBvc (ORCPT
+	id S965188Ab2CNByL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 21:54:11 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42616 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965037Ab2CNByH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 21:51:32 -0400
+	Tue, 13 Mar 2012 21:54:07 -0400
+Date: Wed, 14 Mar 2012 09:53:56 +0800
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
+To: Grant Likely <grant.likely@secretlab.ca>, benh@kernel.crashing.org
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the devicetree tree with the powerpc
+ tree
+Message-ID: <20120314015356.GA4028@shangw>
+Reply-To: Gavin Shan <shangw@linux.vnet.ibm.com>
+References: <20120313160100.c8cc3fd2b3d1f485ef7e7954@canb.auug.org.au>
+ <20120313182612.0546D3E053B@localhost>
 MIME-Version: 1.0
-In-Reply-To: <CAPXgP11ZKT-ZNBLdPQWotFayz9m7pKcNHDBPWxcp_2-ja+SAcQ@mail.gmail.com>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203132042.07794.rjw@sisk.pl>
- <CAPXgP11fWf-0Jkk=d6G+d=sQa-hoX3jUM+K6K4rGYhh0dv1u_w@mail.gmail.com>
- <201203140110.40671.rjw@sisk.pl> <CAPXgP118s+DuLaATKOq7w=F82GB=8PkwUJDichffXA-Er6Zqvw@mail.gmail.com>
- <CA+55aFxq=GWof-ExXjeC2nwUBcGi46SKwcvc2iccfymbbyXbfA@mail.gmail.com> <CAPXgP11ZKT-ZNBLdPQWotFayz9m7pKcNHDBPWxcp_2-ja+SAcQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 13 Mar 2012 18:51:11 -0700
-X-Google-Sender-Auth: qXUtvjEe8dbki9jGyeIwIAafkw8
-Message-ID: <CA+55aFyG6utURVkVbAXF_T+BcA94af=c+oDBAwWZOyNwgiQ+5g@mail.gmail.com>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when
- helper is not yet available
-To: Kay Sievers <kay@vrfy.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120313182612.0546D3E053B@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12031315-5140-0000-0000-000000E40C6D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 6:43 PM, Kay Sievers <kay@vrfy.org> wrote:
->
-> usermodehelper_is_disabled() is a flag from kmod which is all about
-> exec(). That flag should not be used to decide if a firmware request
-> can be issued by a driver and queued up or not.
+Hi Grant,
 
-Sorry, you're wrong. And Rafael *told* you why you are wrong, and you
-ignored him and talked about "exec" some more.
+> > 
+> > Today's linux-next merge of the devicetree tree got a conflict in
+> > include/linux/of.h between commit eb740b5f3e65 ("powerpc/eeh: Introduce
+> > EEH device") from the powerpc tree and commit 0f22dd395fc4 ("of: Only
+> > compile OF_DYNAMIC on PowerPC pseries and iseries") from the devicetree
+> > tree.
+> > 
+> > Just context changes.  I fixed it up (see below) and can carry the fix as
+> > necessary.
+> > -- 
+> > Cheers,
+> > Stephen Rothwell                    sfr@canb.auug.org.au
+> > 
+> > diff --cc include/linux/of.h
+> > index bdb1c07,533603e..0000000
+> > --- a/include/linux/of.h
+> > +++ b/include/linux/of.h
+> > @@@ -75,14 -72,10 +75,17 @@@ struct of_phandle_args 
+> >   	uint32_t args[MAX_PHANDLE_ARGS];
+> >   };
+> >   
+> >  +#if defined(CONFIG_EEH)
+> >  +static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
+> >  +{
+> >  +	return dn->edev;
+> >  +}
+> >  +#endif
+> 
+> Ben, What is this?  I don't want the eeh_dev pointer in struct device_node.  Up to
+> now we've avoided putting any reverse references into device_nodes.  For everything
+> else we use a reverse lookup, particularly for devices, to avoid growing the
+> device_node for each new type of lookup.
+> 
 
-So go back and read Rafael's email. The point is, you are focusing too
-much on the name (which Rafael talked about and said is misleading).
+It's used to trace the EEH device. When EEH (Enhanced Error Hanlding) is enabled,
+EEH device will be created against PCI sensitive OF node to trace the EEH state
+accordingly. Since you don't want see this in struct device_node, we have to change
+struct eeh_dev for a little bit to so that all struct eeh_dev instances will form
+a global list and we can search eeh_dev according to the given device_node through
+the global list. 
 
-But it's not the name that matters, it's the concept. Loading firmware
-during the suspend process is broken (read Rafael's email about
-suggested renaming).
+I don't know the policy or rule here for much. I think we can have 2 options.
 
-AND IT HAS NOTHING TO DO WITH EXEC. It doesn't matter *how* you load
-it. You could load it by reading a file directly from disk, AND IT
-WOULD STILL BE WRONG FOR THE EXACT SAME DAMN REASON.
+1. Keep the code as being, and fix it later.
+2. Fix it now.
 
-I outlined that reason too. The filesystem may not be up and running yet.
+Thanks,
+Gavin
 
-Get it?
-
-So please, read the emails. People actually *agree* that the name may
-be a bit misleading, but instead of harping on bogus issues, just read
-the emails from people like Rafael about it.
-
-So STOP with this idiocy already. It has nothing to do with exec.
-Seriously. Get that through your head already.
-
-           Linus
