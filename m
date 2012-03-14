@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030847Ab2CNNWT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 09:22:19 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40991 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030816Ab2CNNWR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 09:22:17 -0400
+	id S1030850Ab2CNN0F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 09:26:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3817 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756854Ab2CNN0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 09:26:01 -0400
+Date: Wed, 14 Mar 2012 15:25:52 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Amit Shah <amit.shah@redhat.com>
+Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
+Message-ID: <20120314132552.GC2304@redhat.com>
+References: <4F606A7C.9090900@cn.fujitsu.com>
+ <4F606DCC.3020908@redhat.com>
+ <4F60726E.3090807@cn.fujitsu.com>
+ <4F607325.6050607@redhat.com>
+ <20120314104608.GU2304@redhat.com>
+ <4F607789.4010109@redhat.com>
+ <4F607CE4.2060809@cn.fujitsu.com>
+ <4F609822.7050502@redhat.com>
+ <20120314131415.GB2304@redhat.com>
+ <4F609A15.5020902@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1331694008.2293.10.camel@firefly>
-References: <1331694008.2293.10.camel@firefly>
-Date: Wed, 14 Mar 2012 09:22:17 -0400
-Message-ID: <CA+5PVA64+mwTTWwC9bDqd8ksCmNgn-n-9XyAD+ogL3UA2GiRyw@mail.gmail.com>
-Subject: Re: Oops with kernel 3.3-rc7
-From: Josh Boyer <jwboyer@gmail.com>
-To: "Nathan A. Mourey II" <nmoureyii@ne.rr.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F609A15.5020902@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 11:00 PM, Nathan A. Mourey II
-<nmoureyii@ne.rr.com> wrote:
-> Hello All,
->        I have had another oops to report.  I am using btrfs as my root file
-> system.  It was originally ext4 that I converted to btrfs.  I also
-> had /home on a separate partition but deleted it and extended my root
-> partition then grew the root file system with "btrfs filesystem resize"
-> My /boot partition is ext2.  Please feel free to email me with any
-> questions.
->
-> TIA -- Nate
->
-> [   12.678120] hub 4-0:1.0: port 1, status 0100, change 0000, 12 Mb/s
-> [   12.678126] usb 4-1: USB disconnect, device number 2
-> [   12.678130] usb 4-1: unregistering device
-> [   12.678134] usb 4-1: unregistering interface 4-1:1.0
-> [   12.680983] scsi 3:0:0:2: killing request
-> [   12.681625] BUG: unable to handle kernel NULL pointer dereference at 00000004
-> [   12.682009] IP: [<c1425553>] sd_revalidate_disk+0x13/0x1fa0
-> [   12.682717] *pde = 00000000
-> [   12.683765] Oops: 0000 [#1] SMP
-> [   12.684850] Modules linked in: ehci_hcd
-> [   12.684850]
-> [   12.684850] Pid: 1120, comm: blkid Not tainted 3.3.0-rc7 #1 HP Pavilion 061 DM170A-ABA A350N/'P4SD-LA'
-> [   12.684850] EIP: 0060:[<c1425553>] EFLAGS: 00010292 CPU: 0
-> [   12.684850] EIP is at sd_revalidate_disk+0x13/0x1fa0
+On Wed, Mar 14, 2012 at 03:16:05PM +0200, Avi Kivity wrote:
+> On 03/14/2012 03:14 PM, Gleb Natapov wrote:
+> > On Wed, Mar 14, 2012 at 03:07:46PM +0200, Avi Kivity wrote:
+> > > On 03/14/2012 01:11 PM, Wen Congyang wrote:
+> > > > > 
+> > > > > I don't think we want to use the driver.  Instead, have a small piece of
+> > > > > code that resets the device and pushes out a string (the panic message?)
+> > > > > without any interrupts etc.
+> > > > > 
+> > > > > It's still going to be less reliable than a hypercall, I agree.
+> > > >
+> > > > Do you still want to use complicated and less reliable way?
+> > > 
+> > > Are you willing to try it out and see how complicated it really is?
+> > > 
+> > > While it's more complicated, it's also more flexible.  You can
+> > > communicate the panic message, whether the guest is attempting a kdump
+> > > and its own recovery or whether it wants the host to do it, etc., you
+> > > can communicate less severe failures like oopses.
+> > > 
+> > hypercall can take arguments to achieve the same.
+> 
+> It has to be designed in advance; and every time we notice something's
+> missing we have to update the host kernel.
+> 
 
-There have been patches submitted to fix this already.  I believe we're
-waiting on Jens to push them to Linus.  You can find them here:
+We and in the designed stage now. Not to late to design something flexible
+:) Panic hypercall can take GPA of a buffer where host puts panic info
+as a parameter.  This buffer can be read by QEMU and passed to management.
 
-http://git.kernel.org/?p=linux/kernel/git/axboe/linux-block.git;a=shortlog;h=refs/heads/for-linus
+> > > > I think the other ones prefer to touch the hypervisor.
+> > > 
+> > > I understand the sentiment.  Your patches are simple and easy.  But my
+> > > feeling is that the kernel has become too complicated already and I'm
+> > > looking for ways to limit changes.
+> > > 
+> > Using virtio-serial will not reduce kernel complexity. Quite contrary
+> > since code that will use virtio-serial will be more complicated.
+> 
+> The host kernel is unmodified though.
+> 
+Yes, this is trade-off between complexity in hypervisor and a guest
+kernel. But in the end we use the same kernel for both.
 
-Jens, is there some reason you haven't pushed those yet?
-
-josh
+--
+			Gleb.
