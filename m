@@ -1,118 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760272Ab2CNA75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:59:57 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39406 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759272Ab2CNA7z (ORCPT
+	id S1760297Ab2CNBE7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 21:04:59 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43959 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760109Ab2CNBE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:59:55 -0400
-From: Andrew Miller <amiller@amilx.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        amiller@amilx.com
-Subject: [PATCH] Staging: rtl8187se: r8180_core.c: Fix coding style issue
-Date: Tue, 13 Mar 2012 20:58:09 -0400
-Message-Id: <1331686689-6763-1-git-send-email-amiller@amilx.com>
-X-Mailer: git-send-email 1.7.7.6
+	Tue, 13 Mar 2012 21:04:58 -0400
+Date: Wed, 14 Mar 2012 05:04:54 +0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Arun Murthy <arun.murthy@stericsson.com>
+Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        karl.komierowski@stericsson.com, johan.palsson@stericsson.com,
+        linus.walleij@linaro.org
+Subject: [PATCH 1/6] ab8500_charger: Convert to the new USB OTG calls
+Message-ID: <20120314010454.GA10798@oksana.dev.rtsoft.ru>
+References: <20120314005901.GB1778@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120314005901.GB1778@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix long line coding style issue
+This patch fixes the following build errors:
 
-Signed-off-by: Andrew Miller <amiller@amilx.com>
+ab8500_charger.c: In function 'ab8500_charger_remove':
+ab8500_charger.c:2519:2: error: implicit declaration of function 'otg_unregister_notifier' [-Werror=implicit-function-declaration]
+ab8500_charger.c:2520:2: error: implicit declaration of function 'otg_put_transceiver' [-Werror=implicit-function-declaration]
+ab8500_charger.c: In function 'ab8500_charger_probe':
+ab8500_charger.c:2688:2: error: implicit declaration of function 'otg_get_transceiver' [-Werror=implicit-function-declaration]
+ab8500_charger.c:2688:10: warning: assignment makes pointer from integer without a cast [enabled by default]
+ab8500_charger.c:2695:2: error: implicit declaration of function 'otg_register_notifier' [-Werror=implicit-function-declaration]
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- drivers/staging/rtl8187se/r8180_core.c |   32 ++++++++++++++++++++------------
- 1 files changed, 20 insertions(+), 12 deletions(-)
+ drivers/power/ab8500_charger.c |   24 ++++++++++++------------
+ 1 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
-index 04c2391..9ef78f0 100644
---- a/drivers/staging/rtl8187se/r8180_core.c
-+++ b/drivers/staging/rtl8187se/r8180_core.c
-@@ -1392,11 +1392,13 @@ void PerformUndecoratedSignalSmoothing8185(struct r8180_priv *priv,
- 	priv->bCurCCKPkt = bCckRate;
+diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
+index bbc541a..a7217d6 100644
+--- a/drivers/power/ab8500_charger.c
++++ b/drivers/power/ab8500_charger.c
+@@ -240,7 +240,7 @@ struct ab8500_charger {
+ 	struct work_struct usb_state_changed_work;
+ 	struct work_struct check_main_thermal_prot_work;
+ 	struct work_struct check_usb_thermal_prot_work;
+-	struct otg_transceiver *otg;
++	struct usb_phy *usb_phy;
+ 	struct notifier_block nb;
+ };
  
- 	if (priv->UndecoratedSmoothedSS >= 0)
--		priv->UndecoratedSmoothedSS = ((priv->UndecoratedSmoothedSS * 5) + (priv->SignalStrength * 10)) / 6;
-+		priv->UndecoratedSmoothedSS = ((priv->UndecoratedSmoothedSS * 5) +
-+					      (priv->SignalStrength * 10)) / 6;
- 	else
- 		priv->UndecoratedSmoothedSS = priv->SignalStrength * 10;
+@@ -2516,8 +2516,8 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
+ 	if (ret < 0)
+ 		dev_err(di->dev, "%s mask and set failed\n", __func__);
  
--	priv->UndercorateSmoothedRxPower = ((priv->UndercorateSmoothedRxPower * 50) + (priv->RxPower * 11)) / 60;
-+	priv->UndercorateSmoothedRxPower = ((priv->UndercorateSmoothedRxPower * 50) +
-+	                                   (priv->RxPower * 11)) / 60;
+-	otg_unregister_notifier(di->otg, &di->nb);
+-	otg_put_transceiver(di->otg);
++	usb_unregister_notifier(di->usb_phy, &di->nb);
++	usb_put_transceiver(di->usb_phy);
  
- 	if (bCckRate)
- 		priv->CurCCKRSSI = priv->RSSI;
-@@ -1607,17 +1609,20 @@ void rtl8180_rx(struct net_device *dev)
- 		/* printk("==========================>rx : RXAGC is %d,signalstrength is %d\n",RXAGC,stats.signalstrength); */
- 		stats.rssi = priv->wstats.qual.qual = priv->SignalQuality;
- 		stats.noise = priv->wstats.qual.noise = 100 - priv->wstats.qual.qual;
--		bHwError = (((*(priv->rxringtail)) & (0x00000fff)) == 4080) | (((*(priv->rxringtail)) & (0x04000000)) != 0)
--			| (((*(priv->rxringtail)) & (0x08000000)) != 0) | (((~(*(priv->rxringtail))) & (0x10000000)) != 0) | (((~(*(priv->rxringtail))) & (0x20000000)) != 0);
-+		bHwError = (((*(priv->rxringtail)) & (0x00000fff)) == 4080) |
-+			   (((*(priv->rxringtail)) & (0x04000000)) != 0) |
-+			   (((*(priv->rxringtail)) & (0x08000000)) != 0) |
-+			   (((~(*(priv->rxringtail))) & (0x10000000)) != 0) |
-+			   (((~(*(priv->rxringtail))) & (0x20000000)) != 0);
- 		bCRC = ((*(priv->rxringtail)) & (0x00002000)) >> 13;
- 		bICV = ((*(priv->rxringtail)) & (0x00001000)) >> 12;
- 		hdr = (struct ieee80211_hdr_4addr *)priv->rxbuffer->buf;
- 		    fc = le16_to_cpu(hdr->frame_ctl);
- 		type = WLAN_FC_GET_TYPE(fc);
- 
--			if ((IEEE80211_FTYPE_CTL != type) &&
--				(eqMacAddr(priv->ieee80211->current_network.bssid, (fc & IEEE80211_FCTL_TODS) ? hdr->addr1 : (fc & IEEE80211_FCTL_FROMDS) ? hdr->addr2 : hdr->addr3))
--				 && (!bHwError) && (!bCRC) && (!bICV)) {
-+			if ((IEEE80211_FTYPE_CTL != type) && (eqMacAddr(priv->ieee80211->current_network.bssid,
-+			    (fc & IEEE80211_FCTL_TODS) ? hdr->addr1 : (fc & IEEE80211_FCTL_FROMDS) ? hdr->addr2 : hdr->addr3))
-+			    && (!bHwError) && (!bCRC) && (!bICV)) {
- 				/* Perform signal smoothing for dynamic
- 				 * mechanism on demand. This is different
- 				 * with PerformSignalSmoothing8185 in smoothing
-@@ -2112,7 +2117,7 @@ short rtl8180_tx(struct net_device *dev, u8* txbuf, int len, int priority,
- 		/* Use short preamble or not */
- 		if (priv->ieee80211->current_network.capability&WLAN_CAPABILITY_SHORT_PREAMBLE)
- 			if (priv->plcp_preamble_mode == 1 && rate != 0)	/*  short mode now, not long! */
--			; /* *tail |= (1<<16); */				/* enable short preamble mode. */
-+			; /* *tail |= (1<<16); */			/* enable short preamble mode. */
- 
- 		if (bCTSEnable)
- 			*tail |= (1<<18);
-@@ -2325,8 +2330,9 @@ void rtl8180_hw_sleep(struct net_device *dev, u32 th, u32 tl)
- 		u32 tmp = (tl > rb) ? (tl-rb) : (rb-tl);
- 
- 		priv->DozePeriodInPast2Sec += jiffies_to_msecs(tmp);
--
--		queue_delayed_work(priv->ieee80211->wq, &priv->ieee80211->hw_wakeup_wq, tmp); /* as tl may be less than rb */
-+		
-+		/* as tl may be less than rb */
-+		queue_delayed_work(priv->ieee80211->wq, &priv->ieee80211->hw_wakeup_wq, tmp);
+ 	/* Delete the work queue */
+ 	destroy_workqueue(di->charger_wq);
+@@ -2685,17 +2685,17 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+ 		goto free_ac;
  	}
- 	/* 
- 	 * If we suspect the TimerInt is gone beyond tl
-@@ -3227,7 +3233,8 @@ void LeisurePSEnter(struct r8180_priv *priv)
- {
- 	if (priv->bLeisurePs) {
- 		if (priv->ieee80211->ps == IEEE80211_PS_DISABLED)
--			MgntActSet_802_11_PowerSaveMode(priv, IEEE80211_PS_MBCAST|IEEE80211_PS_UNICAST); /* IEEE80211_PS_ENABLE */
-+			/* IEEE80211_PS_ENABLE */
-+			MgntActSet_802_11_PowerSaveMode(priv, IEEE80211_PS_MBCAST|IEEE80211_PS_UNICAST);
- 	}
- }
  
-@@ -3299,7 +3306,8 @@ void rtl8180_watch_dog(struct net_device *dev)
- 	u16 SlotIndex = 0;
- 	u16 i = 0;
- 	if (priv->ieee80211->actscanning == false) {
--		if ((priv->ieee80211->iw_mode != IW_MODE_ADHOC) && (priv->ieee80211->state == IEEE80211_NOLINK) && (priv->ieee80211->beinretry == false) && (priv->eRFPowerState == eRfOn))
-+		if ((priv->ieee80211->iw_mode != IW_MODE_ADHOC) && (priv->ieee80211->state ==
-+		    IEEE80211_NOLINK) && (priv->ieee80211->beinretry == false) && (priv->eRFPowerState == eRfOn))
- 			IPSEnter(dev);
+-	di->otg = otg_get_transceiver();
+-	if (!di->otg) {
+-		dev_err(di->dev, "failed to get otg transceiver\n");
++	di->usb_phy = usb_get_transceiver();
++	if (!di->usb_phy) {
++		dev_err(di->dev, "failed to get usb transceiver\n");
+ 		ret = -EINVAL;
+ 		goto free_usb;
  	}
- 	/* YJ,add,080828,for link state check */
+ 	di->nb.notifier_call = ab8500_charger_usb_notifier_call;
+-	ret = otg_register_notifier(di->otg, &di->nb);
++	ret = usb_register_notifier(di->usb_phy, &di->nb);
+ 	if (ret) {
+-		dev_err(di->dev, "failed to register otg notifier\n");
+-		goto put_otg_transceiver;
++		dev_err(di->dev, "failed to register usb notifier\n");
++		goto put_usb_phy;
+ 	}
+ 
+ 	/* Identify the connected charger types during startup */
+@@ -2736,15 +2736,15 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
+ 	return ret;
+ 
+ free_irq:
+-	otg_unregister_notifier(di->otg, &di->nb);
++	usb_unregister_notifier(di->usb_phy, &di->nb);
+ 
+ 	/* We also have to free all successfully registered irqs */
+ 	for (i = i - 1; i >= 0; i--) {
+ 		irq = platform_get_irq_byname(pdev, ab8500_charger_irq[i].name);
+ 		free_irq(irq, di);
+ 	}
+-put_otg_transceiver:
+-	otg_put_transceiver(di->otg);
++put_usb_phy:
++	usb_put_transceiver(di->usb_phy);
+ free_usb:
+ 	power_supply_unregister(&di->usb_chg.psy);
+ free_ac:
 -- 
-1.7.7.6
+1.7.9
 
