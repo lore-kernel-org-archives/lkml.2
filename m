@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030882Ab2CNOXx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:23:53 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:50385 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756527Ab2CNOXu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:23:50 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Colin Cross <ccross@android.com>
-Cc: Len Brown <len.brown@intel.com>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>, linux-tegra@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [linux-pm] [PATCH 0/3] coupled cpuidle state support
-Organization: Texas Instruments, Inc.
-References: <1324426147-16735-1-git-send-email-ccross@android.com>
-	<4F1929E9.7070707@linaro.org> <8762e8kqi6.fsf@ti.com>
-	<CAMbhsRRZ+xt179RN32-+eBWngbRow=MpKV1XcLvG-sHGF6VOJA@mail.gmail.com>
-	<CAMbhsRRD2bdkcUZvScb-cF05e=R3h69bNVaTPFX4jBKBBOjuMg@mail.gmail.com>
-Date: Wed, 14 Mar 2012 07:23:59 -0700
-In-Reply-To: <CAMbhsRRD2bdkcUZvScb-cF05e=R3h69bNVaTPFX4jBKBBOjuMg@mail.gmail.com>
-	(Colin Cross's message of "Tue, 13 Mar 2012 17:47:20 -0700")
-Message-ID: <87mx7jjm68.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1030897Ab2CNOZX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:25:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37075 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030522Ab2CNOZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 10:25:22 -0400
+Date: Wed, 14 Mar 2012 15:25:19 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcg: count pte references from every member of
+ the reclaimed hierarchy
+Message-ID: <20120314142519.GF4434@tiehlicka.suse.cz>
+References: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
+ <1330438489-21909-2-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330438489-21909-2-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Colin Cross <ccross@android.com> writes:
-
-> On Tue, Mar 13, 2012 at 5:28 PM, Colin Cross <ccross@android.com> wrote:
->> On Tue, Mar 13, 2012 at 4:52 PM, Kevin Hilman <khilman@ti.com> wrote:
-
+On Tue 28-02-12 15:14:49, Johannes Weiner wrote:
 [...]
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index b4622fb..21004df 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1044,17 +1044,23 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
+>   * Checks whether given mem is same or in the root_mem_cgroup's
+>   * hierarchy subtree
+>   */
+> -static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> -		struct mem_cgroup *memcg)
+> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> +				  struct mem_cgroup *memcg)
+>  {
+> -	bool ret;
+> -
+>  	if (root_memcg == memcg)
+>  		return true;
+>  	if (!root_memcg->use_hierarchy)
+>  		return false;
+> +	return css_is_ancestor(&memcg->css, &root_memcg->css);
+> +}
+> +
+> +static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> +				       struct mem_cgroup *memcg)
+> +{
+> +	bool ret;
+> +
+>  	rcu_read_lock();
+> -	ret = css_is_ancestor(&memcg->css, &root_memcg->css);
+> +	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
+>  	rcu_read_unlock();
+>  	return ret;
+>  }
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index c631234..120646e 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -708,7 +708,8 @@ static enum page_references page_check_references(struct page *page,
+>  	int referenced_ptes, referenced_page;
+>  	unsigned long vm_flags;
+>  
+> -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
+> +	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
+> +					  &vm_flags);
+>  	referenced_page = TestClearPageReferenced(page);
 
->>>
->>> Checking the ready_count seemed like an easy way to do this, but did you
->>> have any other mechanisms in mind for CPUs to communicate that they've
->>> exited/aborted?
->>
->> Why not set a flag from CPU1 when it exits the low power state, and
->> have CPU0 spin on the powerdomain register or the flag?  You can then
->> use the parallel barrier function to ensure both cpus have seen the
->> flag and reset it to 0 before returning.
->
-> I realized the parallel barrier helper was not included in the patch
-> set I posted, it will be in the next patch set.  
+Maybe a stupid question but isn't target_mem_cgroup NULL in the global
+reclaim case? And we doesn't handle that in __mem_cgroup_same_or_subtree...
 
-Do you have an ETA for the next patchset?  I'll be glad to give it a
-spin on OMAP4.
-
-> Short version, no caller to cpuidle_coupled_parallel_barrier will
-> return before all cpus in the coupled set have called it.  It allows
-> you to resynchronize the cpus after an abort to ensure they have all
-> seen the abort flag before clearing it and returning, leaving
-> everything in the correct state for the next idle attempt.
-
-OK, this sounds like it will work well for what I need.
-
-Kevin
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
