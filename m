@@ -1,55 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab2CNAO6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:14:58 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:58425 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203Ab2CNAO4 (ORCPT
+	id S1756992Ab2CNARU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:17:20 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42548 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754203Ab2CNART (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:14:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <201203140110.40671.rjw@sisk.pl>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203132042.07794.rjw@sisk.pl>
- <CAPXgP11fWf-0Jkk=d6G+d=sQa-hoX3jUM+K6K4rGYhh0dv1u_w@mail.gmail.com> <201203140110.40671.rjw@sisk.pl>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 14 Mar 2012 01:14:35 +0100
-Message-ID: <CAPXgP118s+DuLaATKOq7w=F82GB=8PkwUJDichffXA-Er6Zqvw@mail.gmail.com>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when
- helper is not yet available
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 Mar 2012 20:17:19 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Mar 2012 09:15:26 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Suleiman Souhlal <ssouhlal@FreeBSD.org>, <cgroups@vger.kernel.org>,
+        <suleiman@google.com>, <penberg@kernel.org>, <cl@linux.com>,
+        <yinghan@google.com>, <hughd@google.com>, <gthelen@google.com>,
+        <peterz@infradead.org>, <dan.magenheimer@oracle.com>,
+        <hannes@cmpxchg.org>, <mgorman@suse.de>,
+        <James.Bottomley@HansenPartnership.com>, <linux-mm@kvack.org>,
+        <devel@openvz.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 02/13] memcg: Kernel memory accounting
+ infrastructure.
+Message-Id: <20120314091526.3c079693.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4F5F236A.1070609@parallels.com>
+References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
+	<1331325556-16447-3-git-send-email-ssouhlal@FreeBSD.org>
+	<4F5C5E54.2020408@parallels.com>
+	<20120313152446.28b0d696.kamezawa.hiroyu@jp.fujitsu.com>
+	<4F5F236A.1070609@parallels.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 01:10, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Wednesday, March 14, 2012, Kay Sievers wrote:
+On Tue, 13 Mar 2012 14:37:30 +0400
+Glauber Costa <glommer@parallels.com> wrote:
 
->> It is relevant in the sense that the firmware loader should not even
->> know that a uevent *can* cause a usermodehelper exec() if it runs in
->> legacy mode. The firmware loader just has no business in fiddling with
->> the details of driver core legacy stuff. I don't think his warning
->> makes much sense.
->
-> But that warning actually triggers for drivers that attempt to use
-> request_firmware() during system resume, even though /sbin/hotplug isn't
-> used any more.
->
-> usermodehelper_is_disabled() means "we are in the middle of system power
-> transition" rather than anything else (I agree it should be called
-> suspend_in_progress() or something similar these days).
+> > After looking codes, I think we need to think
+> > whether independent_kmem_limit is good or not....
+> >
+> > How about adding MEMCG_KMEM_ACCOUNT flag instead of this and use only
+> > memcg->res/memcg->memsw rather than adding a new counter, memcg->kmem ?
+> >
+> > if MEMCG_KMEM_ACCOUNT is set     ->  slab is accoutned to mem->res/memsw.
+> > if MEMCG_KMEM_ACCOUNT is not set ->  slab is never accounted.
+> >
+> > (I think On/Off switch is required..)
+> >
+> > Thanks,
+> > -Kame
+> >
+> 
+> This has been discussed before, I can probably find it in the archives 
+> if you want to go back and see it.
+> 
 
-Yeah it's certainly useful to disable the exec() during suspend calls,
-much more than using the exec() inhibit flag for the firmware loader
-to throw a warning about suspend issues.
+Yes. IIUC, we agreed to have independet kmem limit. I just want to think it
+again because there are too many proposals and it seems I'm in confusion.
 
-Such confusing hacks need at least a comment, that makes this very obvious. :)
+As far as I see, there are ongoing works as
+ - kmem limit by 2 guys.
+ - hugetlb limit
+ - per lru locking (by 2 guys)
+ - page cgroup diet (by me, but stops now.)
+ - drity-ratio and writeback 
+ - Tejun's proposal to remove pre_destroy()
+ - moving shared resource
 
-Kay
+I'm thinking what is a simple plan and implementation. 
+Most of series consists of 10+ patches...
+
+Thank you for your help of clarification.
+
+
+
+> But in a nutshell:
+> 
+> 1) Supposing independent knob disappear (I will explain in item 2 why I 
+> don't want it to), I don't thing a flag makes sense either. *If* we are 
+> planning to enable/disable this, it might make more sense to put some 
+> work on it, and allow particular slabs to be enabled/disabled by writing 
+> to memory.kmem.slabinfo (-* would disable all, +* enable all, +kmalloc* 
+> enable all kmalloc, etc).
+> 
+seems interesting.
+
+> Alternatively, what we could do instead, is something similar to what 
+> ended up being done for tcp, by request of the network people: if you 
+> never touch the limit file, don't bother with it at all, and simply does 
+> not account. With Suleiman's lazy allocation infrastructure, that should 
+> actually be trivial. And then again, a flag is not necessary, because 
+> writing to the limit file does the job, and also convey the meaning well 
+> enough.
+> 
+
+Hm.
+
+> 2) For the kernel itself, we are mostly concerned that a malicious 
+> container may pin into memory big amounts of kernel memory which is, 
+> ultimately, unreclaimable. 
+
+Yes. This is a big problem both to memcg and the whole system.
+
+In my experience, 2000 process shares a 10GB shared memory and eats up
+big memory ;(
+
+
+
+> In particular, with overcommit allowed 
+> scenarios, you can fill the whole physical memory (or at least a 
+> significant part) with those objects, well beyond your softlimit 
+> allowance, making the creation of further containers impossible.
+> With user memory, you can reclaim the cgroup back to its place. With 
+> kernel memory, you can't.
+> 
+Agreed.
+
+> In the particular example of 32-bit boxes, you can easily fill up a 
+> large part of the available 1gb kernel memory with pinned memory and 
+> render the whole system unresponsive.
+> 
+> Never allowing the kernel memory to go beyond the soft limit was one of 
+> the proposed alternatives. However, it may force you to establish a soft
+> limit where one was not previously needed. Or, establish a low soft 
+> limit when you really need a bigger one.
+> 
+> All that said, while reading your message, thinking a bit, the following 
+> crossed my mind:
+> 
+> - We can account the slabs to memcg->res normally, and just store the
+>    information that this is kernel memory into a percpu counter, as
+>    I proposed recently.
+
+Ok, then user can see the amount of kernel memory.
+
+
+> - The knob goes away, and becomes implicit: if you ever write anything
+>    to memory.kmem.limit_in_bytes, we transfer that memory to a separate
+>    kmem res_counter, and proceed from there. We can keep accounting to
+>    memcg->res anyway, just that kernel memory will now have a separate
+>    limit.
+
+Okay, then,
+
+	kmem_limit < memory.limit < memsw.limit
+
+...seems reasonable to me.
+This means, user can specify 'ratio' of kmem in memory.limit.
+
+More consideration will be interesting.
+
+ - We can show the amount of reclaimable kmem by some means ?
+ - What happens when a new cgroup created ?
+ - Should we have 'ratio' interface in kernel level ?
+ - What happens at task moving ?
+ - Should we allow per-slab accounting knob in /sys/kernel/slab/xxx ?
+   or somewhere ?
+ - Should we show per-memcg usage in /sys/kernel/slab/xxx ?
+ - Should we have force_empty for kmem (as last resort) ?
+
+With any implementation, my concern is
+ - overhead/performance.
+ - unreclaimable kmem
+ - shared kmem between cgroups.
+
+
+> - With this scheme, it may not be necessary to ever have a file
+>    memory.kmem.soft_limit_in_bytes. Reclaim is always part of the normal
+>    memcg reclaim.
+> 
+Good.
+
+> The outlined above would work for us, and make the whole scheme simpler, 
+> I believe.
+> 
+> What do you think ?
+
+It sounds interesting to me.
+
+Thanks,
+-Kame
+
+
+
+
+
+
+
+
+
+
+
