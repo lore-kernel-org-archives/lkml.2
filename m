@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759454Ab2CNTRt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 15:17:49 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:42014 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab2CNTRq (ORCPT
+	id S1759384Ab2CNTUY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 15:20:24 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57971 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754940Ab2CNTUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 15:17:46 -0400
-Date: Wed, 14 Mar 2012 15:17:39 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
-        Phillip Susi <phillsusi@gmail.com>,
-        Andreas Dilger <adilger@whamcloud.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: getdents - ext4 vs btrfs performance
-Message-ID: <20120314191739.GA19217@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Ted Ts'o <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
-	Phillip Susi <phillsusi@gmail.com>,
-	Andreas Dilger <adilger@whamcloud.com>,
-	Jacek Luczak <difrost.kernel@gmail.com>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
- <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
- <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
- <20120310044804.GB5652@thunk.org>
- <4F5F9A97.5060404@ubuntu.com>
- <20120313195339.GA24124@thunk.org>
- <4F5FAC9C.9070607@gmail.com>
- <20120313213304.GB11969@thunk.org>
- <alpine.LFD.2.00.1203140825090.5379@dhcp-27-109.brq.redhat.com>
- <20120314125002.GH15379@thunk.org>
+	Wed, 14 Mar 2012 15:20:23 -0400
+Date: Wed, 14 Mar 2012 12:19:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Anca Emanuel <anca.emanuel@gmail.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linaro-sched-sig@lists.linaro.org, Mike Galbraith <efault@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 00/14] sched: entity load-tracking re-work
+Message-ID: <20120314191940.GC2435@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
+ <20120312103927.GB25134@e103034-lin.cambridge.arm.com>
+ <20120313164403.GJ2349@linux.vnet.ibm.com>
+ <CAJL_dMtfs8nu+1YD86iZqf_ozbvPMAjc58JF=J4+aH9dD_GD5w@mail.gmail.com>
+ <20120314090327.GA3213@matterhorn1>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120314125002.GH15379@thunk.org>
+In-Reply-To: <20120314090327.GA3213@matterhorn1>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-CT-RefId: str=0001.0A090202.4F60EED7.0037,ss=1,re=0.000,fgs=0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031419-6148-0000-0000-00000440830B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 08:50:02AM -0400, Ted Ts'o wrote:
-> On Wed, Mar 14, 2012 at 09:12:02AM +0100, Lukas Czerner wrote:
-> > I kind of like the idea about having the separate btree with inode
-> > numbers for the directory reading, just because it does not affect
-> > allocation policy nor the write performance which is a good thing. Also
-> > it has been done before in btrfs and it works very well for them. The
-> > only downside (aside from format change) is the extra step when removing
-> > the directory entry, but the positives outperform the negatives.
+On Wed, Mar 14, 2012 at 11:03:27AM +0200, Amit Kucheria wrote:
+> On 12 Mar 13, Anca Emanuel wrote:
+> > @Paul E. McKenney: ups, that was some special pgp code ?
+> > 
 > 
-> Well, there will be extra (journaled!) block reads and writes involved
-> when adding or removing directory entries.  So the performance on
-> workloads that do a large number of directory adds and removed will
-> have to be impacted.  By how much is not obvious, but it will be
-> something which is measurable.
+> It does look gibberish in the gmail interface. Mutt seems to have no problems.
 
-Most of the difference in btrfs rm times comes from our double indexing.
-We store the directory name 3 times, once for each dir index and once
-in the inode backref.  But the inode backref doesn't generate seeks the
-same way the extra directory index does, so it is probably only 10% of
-the cost.
+Perhaps this demonstrates that gmail is a more intelligent (and more
+judgmental) than is mutt.  Me, I will stick with mutt.  ;-)
 
-We also delete file data crcs during rm, so if you're benchmarking
-things to see how much it will hurt, benchmark btrfs on zero length
-files.
+							Thanx, Paul
 
-In terms of other costs, most users of readdir will eventually wander
-off and stat or open the files in the dir.  With your current indexes, the stat
-reads the same directory blocks that readdir used.
-
-With the double index, the stat reads the name index instead of the
-readdir index.  For the common case of normal directories, today's ext4
-will have the directory blocks in cache when stat is called.  Btrfs has
-to do extra reads to pull in the name index.
-
-Josef worked around this by prefilling a dentry during readdir with
-details on where to find the inode.
-
-Either way, I'd definitely recommend sitting down with the xfs directory
-indexes and look at how they manage locality without the double
-indexing.  It's faster than btrfs and without the penalty.
-
-It's also worth mentioning that on an SSD, there is no benefit at all to
-the extra index.  So when the industry finally floods the markets with
-hybrid PCM shingled drives, this might all be moot.
-
--chris
