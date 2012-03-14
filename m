@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031093Ab2CNXRa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:17:30 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:13945 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab2CNXR1 (ORCPT
+	id S1031161Ab2CNXRh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:17:37 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:34545 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030752Ab2CNXRa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:17:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6649"; a="170248624"
-Message-ID: <4F612706.4060407@codeaurora.org>
-Date: Wed, 14 Mar 2012 16:17:26 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 14 Mar 2012 19:17:30 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Saravana Kannan <skannan@codeaurora.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper
- is not yet available
-References: <201203032122.36745.chunkeey@googlemail.com> <4F60EFBB.5050703@codeaurora.org> <201203150004.17076.rjw@sisk.pl> <201203150013.45749.rjw@sisk.pl>
-In-Reply-To: <201203150013.45749.rjw@sisk.pl>
+In-Reply-To: <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org>
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+	<tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org>
+Date: Wed, 14 Mar 2012 16:17:29 -0700
+Message-ID: <CAMe9rOpGgs9hR31Jxk8ycMNnEoCzUV2_xTeeE+uaEFgz5AEEwQ@mail.gmail.com>
+Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
+From: "H.J. Lu" <hjl.tools@gmail.com>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hjl.tools@gmail.com
+Cc: linux-tip-commits@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/12 16:13, Rafael J. Wysocki wrote:
-> On Thursday, March 15, 2012, Rafael J. Wysocki wrote:
->> On Wednesday, March 14, 2012, Stephen Boyd wrote:
->>> On 03/13/12 13:14, Rafael J. Wysocki wrote:
->>>> All of those use cases are in fact of the "wait for user space to be thawed
->>>> and then load the firmware" type, which I believe may be handled without
->>>> changing that code.
->>>>
->>>> Why don't you make your kthread freezable, for one example?
->>>>
->>>> Why don't you use a freezable workqueue instead?
->>>>
->>> If we put it on the freezable workqueue or make it a freezable thread
->>> will it work?
->> That depends on what exactly you want to achieve, which isn't entirely clear
->> to me at this point.
->>
->>> In my scenario a wakeup interrupt comes in that wakes us up from
->>> suspend. Within that wakeup handler a work item is scheduled to the
->>> freezable workqueue. That work item then calls request_firmware().
->> That should work.
->>
->>> It looks like we call schedule() after thawing the workqueues and tasks
->>> so the work item could run before usermodehelpers are enabled and then
->>> request_firmware() would fail. Do we need something like this (ignore
->>> the fact that we call usermodhelper_enable() twice)?
->>>
->>> diff --git a/kernel/power/process.c b/kernel/power/process.c
->>> index 7e42645..61bfa95 100644
->>> --- a/kernel/power/process.c
->>> +++ b/kernel/power/process.c
->>> @@ -187,6 +187,7 @@ void thaw_processes(void)
->>>         } while_each_thread(g, p);
->>>         read_unlock(&tasklist_lock);
->>>  
->>> +       usermodehelper_enable();
->> That would be a reasonable change.
->>
->>>         schedule();
->>>         printk("done.\n");
->>>  }
->>>
->>>
->>> Is there a reason we disable usermodehelpers if
->>> CONFIG_SUSPEND_FREEZER=n?
->> Not really, but CONFIG_SUSPEND_FREEZER=n can only work reliably in a
->> very limited set of cases, so I don't think it's even worth making the
->> general code depend on it.
->>
->> I'd actually prefer to remove CONFIG_SUSPEND_FREEZER altogether,
->> because it's not very useful nowadays (probably isn't useful at all).
->>
->>> Should we do this instead so that
->>> usermodehelpers are only disabled if we freeze userspace? Also what is
->>> that schedule() call in thaw_kernel_threads() for? It looks like we'll
->>> call schedule between kernel thread thawing and userspace thawing.
->> Which is OK, I think.
-> Moreover, thaw_kernel_threads() is _only_ called by (a) freeze_kernel_threads()
-> on error and (b) user-space hibernate interface in kernel/power/user.c
-> (and please read the comment in there describing what it's there for, which
-> also explains why the schedule() call in there is necessary).
+On Wed, Mar 14, 2012 at 2:43 PM, tip-bot for H. Peter Anvin
+<hpa@zytor.com> wrote:
+> Commit-ID:  31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4
+> Gitweb:     http://git.kernel.org/tip/31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4
+> Author:     H. Peter Anvin <hpa@zytor.com>
+> AuthorDate: Wed, 14 Mar 2012 14:27:52 -0700
+> Committer:  H. Peter Anvin <hpa@zytor.com>
+> CommitDate: Wed, 14 Mar 2012 14:27:52 -0700
+>
+> x32: Fix alignment fail in struct compat_siginfo
+>
+> Adding struct _sigchld_x32 caused a misalignment cascade in struct
+> siginfo, because union _sifields is located on an 4-byte boundary
+> (8-byte misaligned.)
+>
+> Adding new fields that are 8-byte aligned caused the intermediate
+> structures to also be aligned to 8 bytes, thereby adding padding in
+> unexpected places.
+>
+> Thus, change s64 to compat_s64 here, which makes it "misaligned on
+> paper".  In reality these fields *are* actually aligned (there are 3
+> preceeding ints outside the union and 3 inside struct _sigchld_x32),
+> but because of the intervening union and struct it is not possible for
+> gcc to avoid padding without breaking the ABI.
+>
 
-Exactly. So in case (a) when the error occurs we'll have this call flow:
-
-usermodehelpers_disable()
-suspend_freeze_processes()
-    freeze_processes()
-    freeze_kernel_threads()
-        try_to_freeze_tasks() <-- returns error
-        thaw_kernel_threads()
-            schedule()
-    thaw_processes()
-usermodehelpers_enable()
-
-Shouldn't we schedule only after we thaw all processes (not just tasks)?
-Otherwise we may run a kernel thread before userspace is thawed?
+Just for the record, although the offsets of _utime and _stime are
+multiple of 8 bytes, struct siginfo is only aligned at 4 bytes.  So
+the addresses of  _utime and _stime may not be 8byte aligned.
+But misaligned int64 load/store are OK for x86-64.
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+H.J.
