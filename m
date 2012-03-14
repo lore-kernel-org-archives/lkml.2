@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030781Ab2CNNIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 09:08:07 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:46910 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964930Ab2CNNIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 09:08:04 -0400
-Date: Wed, 14 Mar 2012 08:08:01 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have
- been online
-Message-ID: <20120314130801.GA11722@sgi.com>
-References: <20120314002414.GA21561@linux.vnet.ibm.com>
- <1331717099.5752.15.camel@marge.simpson.net>
- <1331728841.7465.7.camel@marge.simpson.net>
+	id S1761035Ab2CNNLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 09:11:40 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:47920 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758018Ab2CNNLj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 09:11:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331728841.7465.7.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 14 Mar 2012 18:41:37 +0530
+Message-ID: <CAJ8eaTxpHUrSYJYA=ph49tb02UQt9+NPL85pmqmi1btJ4LJSEA@mail.gmail.com>
+Subject: kernel 3.0.22 ARM unaligned access issue
+From: naveen yadav <yad.naveen@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 01:40:41PM +0100, Mike Galbraith wrote:
-> On Wed, 2012-03-14 at 10:24 +0100, Mike Galbraith wrote: 
-> > On Tue, 2012-03-13 at 17:24 -0700, Paul E. McKenney wrote: 
-> > > The following builds, but is only very lightly tested.  Probably full
-> > > of bug, especially when exercising CPU hotplug.
-> > 
-> > You didn't say RFT, but...
-> > 
-> > To beat on this in a rotund 3.0 kernel, the equivalent patch would be
-> > the below?  My box may well answer that before you can.. hope not ;-)
-> 
-> (Darn, it did.  Box says boot stall with virgin patch in tip too though.
-> Wedging it straight into 3.0 was perhaps a tad premature;)
+Hi all,
 
-I saw the same thing with 3.3.0-rc7+ and virgin patch on UV.  Boots fine without the patch.
+I am running one simple program, unaligned access on ARM cortex A9 on
+3.0.22 kernel.
+CONFIG_DISABLE_UNALIGNED_ACCESS=y
+CONFIG_ALIGNMENT_TRAP=y
+But I am surprise that program run well,and control does not come to
+do_alignment(). for user fault.
+what may be reason ?
+Test Code:
+#include<stdio.h>
+#include<malloc.h>
+    int main ( )
+    {
+        char *data;
+        short *sp1, *sp2;
+        int *ip;
+        data = (char *)malloc(16);;
+        sp1 = (short*)(data+3);
+        sp2 = (short*)(data+5);
+        ip = (int*)(data+7);
+        *sp1=10;
+        *sp2=20;
+        *ip=30;
+        fprintf(stderr, "%d %d %d\n", *sp1, *sp2, *ip);
+        return 0;
+    }
+
+on kernel 3.0.22
+./a.out
+10 20 30
