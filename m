@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab2CNI3F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 04:29:05 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:5772
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932159Ab2CNI24 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 04:28:56 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 14 Mar 2012 16:30:47 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Huang Shijie-B32955 <B32955@freescale.com>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        Guo Shawn-R65073 <r65073@freescale.com>
-Subject: Re: [PATCH v1 5/5] ARM: mxs: add mxs dma dt support
-Message-ID: <20120314083046.GD1180@shlinux2.ap.freescale.net>
-References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
- <1331628428-24017-6-git-send-email-b29396@freescale.com>
- <4F604F9F.1070801@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4F604F9F.1070801@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	id S932404Ab2CNIaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 04:30:05 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38348 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932102Ab2CNI37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 04:29:59 -0400
+Message-ID: <1331713762.3105.121.camel@pasglop>
+Subject: Re: linux-next: manual merge of the devicetree tree with the
+ powerpc tree
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 14 Mar 2012 19:29:22 +1100
+In-Reply-To: <20120314015356.GA4028@shangw>
+References: <20120313160100.c8cc3fd2b3d1f485ef7e7954@canb.auug.org.au>
+	 <20120313182612.0546D3E053B@localhost> <20120314015356.GA4028@shangw>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 03:58:23PM +0800, Huang Shijie-B32955 wrote:
-> Hi,
-> > +			dma-apbh@80004000 {
-> > +				compatible = "fsl,mxs-dma-apbh";
-> > +				reg =<0x80004000 2000>;
-> > +			};
-> > +
-> Why you do not add the `interrupt` for the it?
-> the gpmi-nand needs to parse the interrupt out.
+On Wed, 2012-03-14 at 09:53 +0800, Gavin Shan wrote:
+> >  +#if defined(CONFIG_EEH)
+> > >  +static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
+> > >  +{
+> > >  +  return dn->edev;
+> > >  +}
+> > >  +#endif
+> > 
+> > Ben, What is this?  I don't want the eeh_dev pointer in struct device_node.  Up to
+> > now we've avoided putting any reverse references into device_nodes.  For everything
+> > else we use a reverse lookup, particularly for devices, to avoid growing the
+> > device_node for each new type of lookup.
+> > 
 > 
-The non-dt way also does not have interrupt resource for dma device.
-It seems the channel interrupt resource is handled in each client device.
-I'm not familiar with gpmi-nand, but I guess you may need to handle
-it in gpmi driver, just like mxs-mmc driver.
+> It's used to trace the EEH device. When EEH (Enhanced Error Hanlding) is enabled,
+> EEH device will be created against PCI sensitive OF node to trace the EEH state
+> accordingly. Since you don't want see this in struct device_node, we have to change
+> struct eeh_dev for a little bit to so that all struct eeh_dev instances will form
+> a global list and we can search eeh_dev according to the given device_node through
+> the global list. 
+> 
+> I don't know the policy or rule here for much. I think we can have 2 options.
+> 
+> 1. Keep the code as being, and fix it later.
+> 2. Fix it now. 
 
-Regards
-Dong Aisheng
+My bad, it's a mis-review, I thought it was still in pci_dn, I din't
+catch Gavin moving it to device-node.
+
+Yes, Gavin, we need to do something else, a chained list we walk or
+something like that. For the "fast path" which is when we have a pci_dev
+around, we can either add it to dev_archdata or hijack the pci-dev
+platform_data (I don't think anything uses it, Grant, do you know of
+anything ?)
+
+The patches are already in -next and I won't rebase, so we need to fix
+it on top of the existing patches. Gavin, can you make a patch that puts
+it back into pci_dn to begin with, then we can contemplate what better
+long term solution we have ?
+
+Cheers,
+Ben.
+
 
