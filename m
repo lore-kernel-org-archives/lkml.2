@@ -1,157 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030530Ab2CNGTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 02:19:20 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47281 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030314Ab2CNGTO convert rfc822-to-8bit (ORCPT
+	id S1030356Ab2CNGWN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 02:22:13 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:40397
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932335Ab2CNGWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 02:19:14 -0400
+	Wed, 14 Mar 2012 02:22:09 -0400
+X-SpamScore: -16
+X-BigFish: VS-16(zzbb2dI9371I1432N98dK1447Mzz1202hzz8275dhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 14 Mar 2012 14:23:55 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Rob Herring <robherring2@gmail.com>
+CC: Dong Aisheng <b29396@freescale.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <vinod.koul@linux.intel.com>,
+        <s.hauer@pengutronix.de>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <rdunlap@xenotime.net>,
+        <kernel@pengutronix.de>, <cjb@laptop.org>, <shawn.guo@freescale.com>
+Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
+Message-ID: <20120314062354.GA8494@shlinux2.ap.freescale.net>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
+ <1331628428-24017-2-git-send-email-b29396@freescale.com>
+ <4F5F5B3F.2000303@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAB5soqGtXR_UyF6kaP9efwma=YBw99=A7OMN-MpD3QbnriVpfg@mail.gmail.com>
-References: <CAB5soqGtXR_UyF6kaP9efwma=YBw99=A7OMN-MpD3QbnriVpfg@mail.gmail.com>
-Date: Wed, 14 Mar 2012 14:19:13 +0800
-Message-ID: <CAB5soqHPthgE_+AYqEbVin8G3O_fznjf_=muuVpOuJn4R4apng@mail.gmail.com>
-Subject: 6to4 tunnel does NOT accept packet whose next-hop with 0x2002 prefix
-From: Bin Tang <tb.bingel@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4F5F5B3F.2000303@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-
-Sorry to bother you!
-
-I found the source codes of net/ipv6/sit.c about 6to4 tunnel only
-accepted packet with:
-1> destination-address with 0x2002 as prefix
-or
-2> ip-address of next-hop is an IPv4-Compatible IPv6 address
-
-and did NOT accept the packet whose ip-address of next-hop with 0x2002 prefix.
-
-I'm wondering is this a bug for Linux kernel, because refer to
-RFC4291, IPv4-Compatible IPv6 address
- is deprecated, so under most cases, the next-hop will be with 0x2002
-prefix for the 6to4 tunnel.
-
-Q: Can we change the code  to support to accept packet whose
-ip-address of next-hop with
-   0x2002 prefix?
-
-The related source codes are as the followings:
-
-http://lxr.linux.no/linux+v2.6.32/net/ipv6/sit.c#L597
-
-******************************************************
- 597  if (!dst)
- 598     dst = try_6to4(&iph6->daddr);  <<<<<<<< Note (1)
-
- 599
- 600  if (!dst) {
- 601     struct neighbour *neigh = NULL;
- 602
- 603     if (skb_dst(skb))
- 604        neigh = skb_dst(skb)->neighbour;
-.....
- 612       addr6 = (struct in6_addr*)&neigh->primary_key;
-
-+          dst = try_6to4(addr6);  <<<<<< add this line to check if
-next-hop with 0x2002 prefix
-+          if (!dst) {
-
- 613       addr_type = ipv6_addr_type(addr6);
+On Tue, Mar 13, 2012 at 09:35:43AM -0500, Rob Herring wrote:
+> On 03/13/2012 03:47 AM, Dong Aisheng wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
+> > 
+> > This patch includes basic dt support which can boot via nfs rootfs.
+> > 
+> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > ---
+> >  Documentation/devicetree/bindings/arm/fsl.txt |    4 +
+> >  arch/arm/boot/dts/imx28-evk.dts               |   31 +++++++++
+> >  arch/arm/boot/dts/imx28.dtsi                  |   88 +++++++++++++++++++++++++
+> >  arch/arm/mach-mxs/Kconfig                     |    9 +++
+> >  arch/arm/mach-mxs/Makefile                    |    1 +
+> >  arch/arm/mach-mxs/imx28-dt.c                  |   67 +++++++++++++++++++
+> >  6 files changed, 200 insertions(+), 0 deletions(-)
 ....
- 620       if ((addr_type & IPV6_ADDR_COMPATv4) == 0) <<<<< Note (2)
- 621         goto tx_error_icmp;   <<<<<<< Note (3)
+> > +				interrupts = <47>;
+> > +			};
+> > +		};
+> > +	};
+> > +
+> > +	ahb@80080000 {
+> > +		compatible = "simple-bus";
+> > +		#address-cells = <1>;
+> > +		#size-cells = <1>;
+> > +		reg = <0x80080000 0x80000>;
+> > +		ranges;
+> > +
+> > +		fec@800f0000 {
+> > +			compatible = "fsl,imx28-fec";
+> > +			reg = <0x800f0000 0x4000>;
+> 
+> This too IIRC.
+> 
+The size is 16KB/0x4000 in iMX28 spec. :)
 
- 622
- 623         dst = addr6->s6_addr32[3];
- 624  }
-+     }
-******************************************************
+> > +			interrupts = <101>;
+> > +			status = "disabled";
+> > +		};
+> > +
+> > +		fec@800f4000 {
+> > +			compatible = "fsl,imx28-fec";
+> > +			reg = <0x800f4000 0x4000>;
+> > +			interrupts = <102>;
+> > +			status = "disabled";
+> > +		};
+> > +
+> > +	};
+> > +};
+> > diff --git a/arch/arm/mach-mxs/Kconfig b/arch/arm/mach-mxs/Kconfig
+> > index c57f996..6ab66af 100644
+> > --- a/arch/arm/mach-mxs/Kconfig
+> > +++ b/arch/arm/mach-mxs/Kconfig
+> > @@ -17,6 +17,15 @@ config SOC_IMX28
+> >  
+> >  comment "MXS platforms:"
+> >  
+> > +config MACH_IMX28_DT
+> 
+> Perhaps this should be more generic like MACH_MXS_DT to eventually
+> support MX23 as well?
+> 
+I just did like the imx ways.
+But yes if we see the need when do imx23 dt support.
 
-Refer to Note(1):
-The destination address of packet on tunnel interface should be
-prefixed with "0x2002"
+> > +	bool "Support i.MX28 platforms from device tree"
+> > +	select SOC_IMX28
+> > +	select USE_OF
+> > +	select MACH_MX28EVK
+> 
+> This should not be selected here.
+> 
+Like other imx soc dt board files, the imx28-dt.c may need to use some bits
+like pinmux in mx28evk.c board file.
 
-or [Refer to Note(2)] :
-the address of its nexthop should be an IPv4-Compatible IPv6
-Address(such as ::ipv4-addr).
-otherwise, it will return from (Note (3)).
+Yes, currently i can remove it since it is using uboot pinmux setting.
+But when add other devices support which is not covered in u-boot like flexcan,
+i may need to use non-dt board's pinmux setting.
+So maybe we can keep it first and remove it when totally not dependent
+on non-dt files.
 
-Let me take an example:
+> > + * The code contained herein is licensed under the GNU General Public
+> > + * License. You may obtain a copy of the GNU General Public License
+> > + * Version 2 or later at the following locations:
+> > + *
+> > + * http://www.opensource.org/licenses/gpl-license.html
+> > + * http://www.gnu.org/copyleft/gpl.html
+> > + */
+> > +
+> > +#include <linux/init.h>
+> > +#include <linux/irqdomain.h>
+> > +#include <linux/of_irq.h>
+> > +#include <linux/of_platform.h>
+> > +#include <asm/mach/arch.h>
+> > +#include <asm/mach/time.h>
+> > +#include <mach/common.h>
+> > +#include <mach/mx28.h>
+> > +
+> > +static const struct of_dev_auxdata imx28_auxdata_lookup[] __initconst = {
+> > +	OF_DEV_AUXDATA("arm,pl011", MX28_DUART_BASE_ADDR, "duart", NULL),
+> > +	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC0_BASE_ADDR, "imx28-fec.0", NULL),
+> > +	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC1_BASE_ADDR, "imx28-fec.1", NULL),
+> 
+> Why do you need the old names?
+> 
+To keep align with the old clocks.
+See arch/arm/mach-mxs/clock-mx28.c:
+_REGISTER_CLOCK("imx28-fec.0", NULL, fec_clk)
+_REGISTER_CLOCK("imx28-fec.1", NULL, fec_clk)
+Is there any better way to avoid this?
 
-******************************************************
+> > +	{ /* sentinel */ }
+> > +};
+> > +
+> > +static void __init imx28_init(void)
+> > +{
+> > +	of_platform_populate(NULL, of_default_bus_match_table,
+> > +			     imx28_auxdata_lookup, NULL);
+> > +}
+> > +
+> > +static const struct of_device_id icoll_of_match[] __initconst = {
+> > +	{ .compatible = "fsl,imx28-icoll", },
+> > +	{},
+> > +};
+> > +
+> > +static void __init imx28_dt_init_irq(void)
+> > +{
+> > +	irq_domain_generate_simple(icoll_of_match, MX28_ICOLL_BASE_ADDR, 0);
+> 
+> Please do "proper" domain support for the interrupt controller and use
+> of_irq_init.
+> 
+Ok, i will see it.
 
-1. Setup 6to4 tunnel
+For others, will fix them all.
+Thanks for the review.
 
-bingel@binHTC:~$ sudo /sbin/ip tunnel add tun6to4 mode sit ttl 128 remote any
-local 10.67.9.23
-bingel@binHTC:~$ sudo /sbin/ip link set dev tun6to4 up
-bingel@binHTC:~$ sudo /sbin/ip -6 addr add 2002:a43:917::1/16 dev tun6to4
+Regards
+Dong Aisheng
 
-
-2. Add route (next-hop is with 2002 prefix)
-bingel@binHTC:~$ sudo /sbin/ip -6 route add 2000::/3 via 2002:c058:6301::1 dev
-tun6to4 metric 1
-
-
-3. open session and tcpdump the eth0 interface
-bingel@binHTC:~$ sudo tcpdump -i eth0 | grep IP6
-tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-listening on eth0, link-type EN10MB (Ethernet), capture size 96 bytes
-<<<<< no output when we did step 4
-
-4. ping6 ipv6.google.com
-bingel@binHTC:~$ sudo ping6 ipv6.google.com
-PING ipv6.google.com(2404:6800:8005::68) 56 data bytes
->From 2002:a43:917::1 icmp_seq=1 Destination unreachable: Address unreachable
->From 2002:a43:917::1 icmp_seq=2 Destination unreachable: Address unreachable
->From 2002:a43:917::1 icmp_seq=3 Destination unreachable: Address unreachable
->From 2002:a43:917::1 icmp_seq=4 Destination unreachable: Address unreachable
->From 2002:a43:917::1 icmp_seq=5 Destination unreachable: Address unreachable
->From 2002:a43:917::1 icmp_seq=6 Destination unreachable: Address unreachable
-
-
-5. Change route to an IPv4 compatible IPv6 address
-<<<< first delete the previous route
-bingel@binHTC:~$ sudo /sbin/ip -6 route del 2000::/3 via 2002:c058:6301::1 dev
-tun6to4 metric 1
-<<<<< add new route with nexthop using IPv4 compatible address
-bingel@binHTC:~$ sudo /sbin/ip -6 route add 2000::/3 via ::192.88.99.1 dev
-tun6to4 metric 1
-
-6. open another session and tcpdump the eth0 interface
-bingel@binHTC:~$ sudo tcpdump -i eth0 | grep IP6
-tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-listening on eth0, link-type EN10MB (Ethernet), capture size 96 bytes
-14:05:46.759000 IP binHTC > 192.88.99.1: IP6 2002:a43:917::1 >
-2404:6800:8005::68: ICMP6, echo request, seq 1, length 64
-14:05:47.767683 IP binHTC > 192.88.99.1: IP6 2002:a43:917::1 >
-2404:6800:8005::68: ICMP6, echo request, seq 2, length 64
-14:05:48.775663 IP binHTC > 192.88.99.1: IP6 2002:a43:917::1 >
-2404:6800:8005::68: ICMP6, echo request, seq 3, length 64
-<<<<< Dumped the packets when we did step 7
-
-7. ping6 ipv6.google.com
-bingel@binHTC:~$ sudo ping6 ipv6.google.com -c 3
-PING ipv6.google.com(2404:6800:8005::68) 56 data bytes
-
---- ipv6.google.com ping statistics ---
-3 packets transmitted, 0 received, 100% packet loss, time 2016ms
-
-bingel@binHTC:~$
-
-******************************************************
-
-Looking forward to your replies!
-
-Thanks!
-
-Best Wished!
---------------------
-   Bin Tang
