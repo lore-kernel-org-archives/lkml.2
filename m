@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030433Ab2CNCVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 22:21:44 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50750 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030336Ab2CNCVe (ORCPT
+	id S1030444Ab2CNCWD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 22:22:03 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60034 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030393Ab2CNCV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 22:21:34 -0400
+	Tue, 13 Mar 2012 22:21:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F5FFCC1.2030702@linux.intel.com>
-References: <1324426147-16735-1-git-send-email-ccross@android.com>
-	<4F1929E9.7070707@linaro.org>
-	<8762e8kqi6.fsf@ti.com>
-	<4F5FFCC1.2030702@linux.intel.com>
-Date: Tue, 13 Mar 2012 19:21:33 -0700
-X-Google-Sender-Auth: Bpwo_MytoyuCwS6ttghs_OLQHh0
-Message-ID: <CAMbhsRSrS-gwu20Ba5=n_LNUwDh3p+5bQPOymGJ9x5O2Fn28kA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] coupled cpuidle state support
-From: Colin Cross <ccross@android.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Kevin Hilman <khilman@ti.com>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
+In-Reply-To: <20120313151049.fa33d232.akpm@linux-foundation.org>
+References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
+ <20120313170851.GA5218@fifo99.com> <20120313151049.fa33d232.akpm@linux-foundation.org>
+From: Avery Pennarun <apenwarr@gmail.com>
+Date: Tue, 13 Mar 2012 22:21:37 -0400
+Message-ID: <CAHqTa-1e9k5W8LJ39+3rmrDrRVdrSuXiqigDFcY8ToXU+Kdz0w@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Persist printk buffer across reboots.
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Daniel Walker <dwalker@fifo99.com>, Josh Triplett <josh@joshtriplett.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Fabio M. Di Nitto" <fdinitto@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Olaf Hering <olaf@aepfle.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Yinghai LU <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 7:04 PM, Arjan van de Ven <arjan@linux.intel.com> wrote:
-> On 3/13/2012 4:52 PM, Kevin Hilman wrote:
->> Checking the ready_count seemed like an easy way to do this, but did you
->> have any other mechanisms in mind for CPUs to communicate that they've
->> exited/aborted?
+On Tue, Mar 13, 2012 at 6:10 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 13 Mar 2012 10:08:51 -0700
+> Daniel Walker <dwalker@fifo99.com> wrote:
+>> There's currently driver/mtd/mtdoops.c, fs/pstore/, and
+>> drivers/staging/android/ram_console.c that do similar things
+>> as this. Did you investigate those for potentially modifying them to add
+>> this functionality ? If so what issues did you find?
+>>
+>> I have a arm MSM G1 with persistent memory at 0x16d00000 size 20000bytes..
+>> It's fairly simple you just have to ioremap the memory, but then it's good
+>> for writing.. Currently the android ram_console uses this. How would I
+>> convert this area for use with your changes?
 >
-> this indeed is the tricky part (which I warned about earlier);
-> I've spent quite a lot of time (weeks) to get this provably working for
-> an Intel system with similar requirements... and it's extremely unfunny,
-> and needed firmware support to close some of the race conditions.
+> Yes, and various local implementations which do things such as stuffing
+> the log buffer into NVRAM as the kernel is crashing.
+>
+> I do think we'd need some back-end driver arrangement which will permit
+> the use of stores which aren't in addressible mamory.
+>
+> It's quite the can of worms, but definitely worth doing if we can get
+> it approximately correct.
 
-As long as you can tell from cpu0 that cpu1 has succesfully entered
-the low power state, this should be easy, and the
-coupled_cpuidle_parallel_barrier helper should make it even easier.
-This series just allows the exact same sequence of transitions used by
-hotplug cpufreq governors to happen from the idle thread:
+So okay, it seems there are a lot of competing ideas around.  In my
+defense, I had looked at a couple of them (certainly not the full
+variety represented in this thread) and the approach in my patch does
+have a few advantages, I think:
 
-1. cpu0 forces cpu1 offline.  From a wakeup perspective, this is
-exactly like hotplug removing cpu1.  Unlike hotplug, the state of cpu1
-has to be saved, and the scheduler is not told that the cpu is gone.
-Instead of using the IPI signalling that hotplug uses, we call the
-same function on both cpus, and one cpu runs the equivalent of
-platform_cpu_kill, and the other the equivalent of platform_cpu_die.
-Wakeup events that are only targeted at cpu1 will need to be
-temporarily migrated to cpu0.
-2. If the hotplug is successful, cpu0 goes to a low power state, the
-same way it would when the hotplug cpufreq governor had removed cpu1.
-3. cpu0 wakes up, because all wakeup events are pointed at it.
-4. After restoring its own state, cpu0 brings cpu1 back online,
-exactly like hotplug online would, except that the boot vector has to
-point to a cpu_resume handler instead of secondary start.
+1. It's extremely small and simple and easy to see when it's correct,
+regardless of your platform (and even if your platform does or doesn't
+have bootloader-level memory reservations - for example it works on
+x86 with kvm).
 
-> I sure hope that hardware with these requirements is on the way out...
-> it's not very OS friendly.
+2. It does not increase the code size or slowness of the post-init
+kernel.  (There's one new __init function, but no new runtime code
+except a couple of extra pointer dereferences.)
 
-Even hardware that was designed not not have these requirements
-sometimes has bugs that require this kind of sequencing.  OMAP4430
-should theoretically support idle without sequencing, but OMAP4460
-introduced a ROM code bug that requires sequencing again (turning on
-cpu1 corrupts the interrupt controller, so cpu0 has to be waiting with
-interrupts off to run a workaround whenever cpu1 turns on).
+3. It doesn't introduce any new APIs; there's just good old dmesg,
+whose history now goes back farther.  (/proc/kmsg is unaffected, ie.
+it still only shows history since boot, so klogd won't do anything
+weird.)
 
-Out of curiosity, what Intel hardware needs this?
+4. It captures much more than just panics.  I don't know why people
+put so much stock in catching panics; about half the problems I've had
+to deal with are hard-lockups, not panics, and any solution that only
+works with panics doesn't help me much.  (Also, trying to do useful
+work after a panic doesn't even work every time, but "do nothing on
+panic and I'll pick it up later" does.)  So things like mtdoops or
+ramoops or kexec are not a complete solution IMHO.  For example, one
+method I've used already for tracking down a hard lockup is to print
+short status messages at LOG_DEBUG level (ie. not to the visible
+console, but it goes in the buffer) at regular intervals inside the
+driver that is crashing, and use a very large printk buffer.  Then,
+after a crash and reset, the collection of status messages from a
+variety of test devices in the field can be uploaded to a single place
+and analyzed en masse, even if there was never a crash.
+
+So that's my justification for writing this in the first place.  I'm
+certainly not opposed to all those other methods if they make people
+happy, but I was hoping to make a patch so simple and unproblematic
+that it could actually get into the official kernel.
+
+Now, the big downside of my approach is that we're just taking our
+chances that the bootloader and early kernel boot won't eat our
+buffer.  That's pretty inelegant (albeit not a problem for my use
+case), so David Miller's suggestion to make it extensible by the
+platform layer seems like a fine idea to me.  It seems like, say, the
+ioremap'd nvram areas and other things people have suggested should
+all be doable as long as the extension API is defined correctly.  I
+would appreciate some more concrete suggestions on where to stick in a
+hook to get memory allocated as soon as possible, so it works with eg.
+prom_retain().
+
+On the other hand, if the kernel maintainers don't really want the
+patch and you think I should replace it with one of the several
+overengineered not-yet-in-kernel-anyway megastructure memory
+reservation systems, I don't think I'm going to bother; continuing to
+apply my nice simple patch to our modified kernel is pretty easy and
+will work the way I want (specifically, no performance/memsize
+overhead).
+
+Anyway, concrete pointers for how to link very early into
+prom_retain() are very welcome, if you think this patch series is not
+an evolutionary dead end.  I could just poke at it, but I have a
+feeling someone here already knows exactly where I need to insert the
+right call to make it work.
+
+Have fun,
+
+Avery
