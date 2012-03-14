@@ -1,159 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760414Ab2CNXTN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:19:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33268 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757296Ab2CNXTJ (ORCPT
+	id S1760552Ab2CNXTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:19:43 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:46098 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755737Ab2CNXTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:19:09 -0400
-Date: Wed, 14 Mar 2012 16:19:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH] watchdog: Make sure the watchdog thread gets CPU on
- loaded system
-Message-Id: <20120314161906.e53359d3.akpm@linux-foundation.org>
-In-Reply-To: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
-References: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Mar 2012 19:19:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <4F60FD0A.5090103@numascale.com>
+References: <1331680589.18900.76.camel@sbsiddha-desk.sc.intel.com>
+	<1331709454-27966-1-git-send-email-daniel@numascale-asia.com>
+	<CAE9FiQX_o8GXqi1A+LTE4pseb81d1Aj5zR49NBvJiyAx24yYfw@mail.gmail.com>
+	<4F60FD0A.5090103@numascale.com>
+Date: Wed, 14 Mar 2012 16:19:40 -0700
+X-Google-Sender-Auth: 0O_6GUwNKUB9ft_KgzgNZh-fYig
+Message-ID: <CAE9FiQXC7T7JQRfiry8nHaRYN3ggy9vfzc2jDUzar80hv6pEvw@mail.gmail.com>
+Subject: Re: [PATCH] Move APIC ID validity check into platform APIC code
+From: Yinghai Lu <yinghai@kernel.org>
+To: Steffen Persvold <sp@numascale.com>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Mar 2012 16:38:45 -0400
-Don Zickus <dzickus@redhat.com> wrote:
+On Wed, Mar 14, 2012 at 1:18 PM, Steffen Persvold <sp@numascale.com> wrote:
+> which, as you can see, checks against "x2apic_mode".
+>
+> My question is; Is checking for "x2apic_mode" going to do the trick in the
+> arch/x86/kernel/acpi/boot.c::acpi_parse_x2apic() ?
 
-> From: Michal Hocko <mhocko@suse.cz>
+no, it is too early.
 
-This changelog is awful.
+at that time, only x2apic pre-enabled system have that x2apic_mode set.
 
-> If the system is loaded while hotplugging a CPU we might end up with a bogus
-> hardlockup detection. This has been seen during LTP pounder test executed
-> in parallel with hotplug test.
-> 
-> The main problem is that enable_watchdog (called when CPU is brought up)
+>
+> If the answer is yes, the patch is going to be very simple. But we can't
+> verify that the code in arch/x86/kernel/acpi/boot.c::acpi_parse_x2apic()
+> actually triggers for the case you wanted it to trigger for because then it
+> will check against "x2apic_mode" and not "cpu_has_x2apic".
 
-You mean watchdog_enable().
+when kernel, found pre-enabled x2apic, can not use x2apic for some
+reason (like x2apic)
+it will clear x2apic in cpu feature bit.
 
-> registers perf event which periodically checks per-cpu counter
-> (hrtimer_interrupts), updated from a hrtimer callback, but the hrtimer is fired
+for other case like x2apic capable cpus and not preenabled,
+but not have dmar table, that feature is not cleared if the not apic id > 255.
 
-s/fired/started/
+So we have default apic_id_valid only check cpu_has_x2apic instead of
+x2apic_mode instead.
+and use it in boot.c
 
-> from the kernel thread.
-
-"the kernel thread" being kernel/watchdog.c:watchdog()
-
-> This means that while we already do check for the hard lockup the kernel thread
-
-Who is "we" and where in the kernel does this check occur?
-
-"the kernel thread" is still kernel/watchdog.c:watchdog().
-
-> might be sitting on the runqueue with zillions of tasks
-
-What causes these "zillions of tasks"?  Are they userspace tasks? 
-They're preventing the watchdog() function from being called in a
-timely fashion, I assume?
-
-> so there is nobody to
-> update the value we rely on and so we KABOOM.
-
-Who is "we" and what is "the value"?
-
-etcetera.  It is maddeningly inaccurate, vague and handwavy for someone
-who is actually trying to understand what you're trying to tell us.
-
-> Let's fix this by boosting the watchdog thread priority before we wake it up
-> rather than when it's already running.
-> This still doesn't handle a case where we have the same amount of high prio
-> FIFO tasks but that doesn't seem to be common.
-
-Even a single FIFO thread could starve the watchdog() thread.
-
-> The current implementation
-> doesn't handle that case anyway so this is not worse at least.
-
-Right.  But this isn't specific to the startup case, is it?  A spinning
-SCHED_FIFO thread could cause watchdog() to get starved of CPU for an
-arbitrarily long time, triggering a false(?) lockup detection?  Or did
-we do something to prevent that case?  I assume we did - it would be
-pretty bad if this were to happen.
-
-> Unfortunately, we cannot start perf counter from the watchdog thread because we
-> could miss a real lock up and also we cannot start the hrtimer watchdog_enable
-> because we there is no way (at least I don't know any) to start a hrtimer from
-> a different CPU.
-> 
-> [fix compile issue with param -dcz]
-> 
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Mandeep Singh Baines <msb@chromium.org>
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> ---
->  kernel/watchdog.c |    7 +++----
->  1 files changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index d117262..6618cde 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -321,11 +321,9 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->   */
->  static int watchdog(void *unused)
->  {
-> -	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
-> +	struct sched_param param = { .sched_priority = 0 };
->  	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
->  
-> -	sched_setscheduler(current, SCHED_FIFO, &param);
-> -
->  	/* initialize timestamp */
->  	__touch_watchdog();
->  
-> @@ -350,7 +348,6 @@ static int watchdog(void *unused)
->  		set_current_state(TASK_INTERRUPTIBLE);
->  	}
->  	__set_current_state(TASK_RUNNING);
-> -	param.sched_priority = 0;
->  	sched_setscheduler(current, SCHED_NORMAL, &param);
->  	return 0;
->  }
-
-Why did watchdog() reset the scheduling policy seven instructions
-before exiting?  Seems pointless.
-
-> @@ -439,6 +436,7 @@ static int watchdog_enable(int cpu)
->  
->  	/* create the watchdog thread */
->  	if (!p) {
-> +		struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
->  		p = kthread_create_on_node(watchdog, NULL, cpu_to_node(cpu), "watchdog/%d", cpu);
->  		if (IS_ERR(p)) {
->  			printk(KERN_ERR "softlockup watchdog for %i failed\n", cpu);
-> @@ -450,6 +448,7 @@ static int watchdog_enable(int cpu)
->  			}
->  			goto out;
->  		}
-> +		sched_setscheduler(p, SCHED_FIFO, &param);
->  		kthread_bind(p, cpu);
->  		per_cpu(watchdog_touch_ts, cpu) = 0;
->  		per_cpu(softlockup_watchdog, cpu) = p;
-
-It's pretty silly that kthread_create_on_node() sets the scheduling
-policy and priority and then the caller immediately resets it.  There
-should be a version of kthread_create_on_node() whcih takes these as
-arguments.
-
-Oh well, despite all that the patch looks OK to me, after using
-whiteout all over the changelog.
-
+Yinghai
