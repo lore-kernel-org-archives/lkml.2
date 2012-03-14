@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761154Ab2CNRwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 13:52:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36407 "EHLO mga09.intel.com"
+	id S1761342Ab2CNRx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 13:53:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51063 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756688Ab2CNRws convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 13:52:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="121010904"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: Adalbert Dawid <dawid@rinux.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "x86@kernel.org" <x86@kernel.org>
-Subject: RE: Kernel Panic with Rawtherapee (mce related)
-Thread-Topic: Kernel Panic with Rawtherapee (mce related)
-Thread-Index: AQHNAfJ8aeq5R/7dC0Geu08XqQtP/ZZqaDgA//+nNZA=
-Date: Wed, 14 Mar 2012 17:51:45 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F15B64BF0@ORSMSX103.amr.corp.intel.com>
-References: <1331678930.11814.16.camel@erde.fritz.box>
- <4F60B0E3.6020503@linux.vnet.ibm.com> <20120314155906.GA25286@aftab>
-In-Reply-To: <20120314155906.GA25286@aftab>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1761104Ab2CNRx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 13:53:58 -0400
+Date: Wed, 14 Mar 2012 18:53:55 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcg: count pte references from every member of
+ the reclaimed hierarchy
+Message-ID: <20120314175355.GI4434@tiehlicka.suse.cz>
+References: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
+ <1330438489-21909-2-git-send-email-hannes@cmpxchg.org>
+ <20120314142519.GF4434@tiehlicka.suse.cz>
+ <20120314162129.GA1709@cmpxchg.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120314162129.GA1709@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You're getting a bunch of machine checks, the last one of them being
-> fatal (Process Context Corrupt bit is set) causing the machine to panic.
+On Wed 14-03-12 17:21:29, Johannes Weiner wrote:
+> On Wed, Mar 14, 2012 at 03:25:19PM +0100, Michal Hocko wrote:
+> > On Tue 28-02-12 15:14:49, Johannes Weiner wrote:
+> > [...]
+> > > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > > index b4622fb..21004df 100644
+> > > --- a/mm/memcontrol.c
+> > > +++ b/mm/memcontrol.c
+> > > @@ -1044,17 +1044,23 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
+> > >   * Checks whether given mem is same or in the root_mem_cgroup's
+> > >   * hierarchy subtree
+> > >   */
+> > > -static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> > > -		struct mem_cgroup *memcg)
+> > > +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> > > +				  struct mem_cgroup *memcg)
+> > >  {
+> > > -	bool ret;
+> > > -
+> > >  	if (root_memcg == memcg)
+> > >  		return true;
+> > >  	if (!root_memcg->use_hierarchy)
+> > >  		return false;
+> > > +	return css_is_ancestor(&memcg->css, &root_memcg->css);
+> > > +}
+> > > +
+> > > +static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> > > +				       struct mem_cgroup *memcg)
+> > > +{
+> > > +	bool ret;
+> > > +
+> > >  	rcu_read_lock();
+> > > -	ret = css_is_ancestor(&memcg->css, &root_memcg->css);
+> > > +	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
+> > >  	rcu_read_unlock();
+> > >  	return ret;
+> > >  }
+> > > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > > index c631234..120646e 100644
+> > > --- a/mm/vmscan.c
+> > > +++ b/mm/vmscan.c
+> > > @@ -708,7 +708,8 @@ static enum page_references page_check_references(struct page *page,
+> > >  	int referenced_ptes, referenced_page;
+> > >  	unsigned long vm_flags;
+> > >  
+> > > -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
+> > > +	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
+> > > +					  &vm_flags);
+> > >  	referenced_page = TestClearPageReferenced(page);
+> > 
+> > Maybe a stupid question but isn't target_mem_cgroup NULL in the global
+> > reclaim case? And we doesn't handle that in __mem_cgroup_same_or_subtree...
+> 
+> It's intentional, page_referenced() does not call into same_or_subtree
+> if the group is NULL.  As a result, no references are filtered, they
+> all matter in the global reclaim case.
 
-PCC is set in all of them
+You are right of course. Sorry I am probably still in the vacation
+mode...
 
-> Tony will probably be able to help you further in decoding what exactly
-> those MC0_STATUS and MC5_STATUS values mean
-
-Bank 5 ends in 0400 - which means "Internal timer error". Bank 0 has 0800
-which is a bus/interconnect error where this processor was the source of
-a memory transaction.
-
-That's where the facts end - speculation begins here ...
-
-Since this is repeatable under load - it's possible that a page table got
-corrupted and you are trying to access some non-existent memory location?
-Do all traces for this panic involve *_tlb_* functions?
-
-Or perhaps you have a cooling problem - and when stressed your cpu or
-memory is getting too hot?
-
--Tony
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
