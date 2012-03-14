@@ -1,88 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab2CNHgg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 03:36:36 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54254
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752938Ab2CNHgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 03:36:35 -0400
-Date: Wed, 14 Mar 2012 03:36:29 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] radix-tree: iterating general cleanup
-Message-ID: <20120314073629.GA17016@infradead.org>
-References: <20120207074905.29797.60353.stgit@zurg>
+	id S1755227Ab2CNHi6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 03:38:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:52404 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752034Ab2CNHiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 03:38:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="128780695"
+Message-ID: <4F604B16.606@intel.com>
+Date: Wed, 14 Mar 2012 09:39:02 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120207074905.29797.60353.stgit@zurg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: Chris Ball <cjb@laptop.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/3] mmc: sdhci: check interrupt flags in ISR again
+References: <1331659002-13743-1-git-send-email-alexander.stein@systec-electronic.com> <1331659002-13743-2-git-send-email-alexander.stein@systec-electronic.com>
+In-Reply-To: <1331659002-13743-2-git-send-email-alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any updates on this series?
-
-On Tue, Feb 07, 2012 at 11:54:56AM +0400, Konstantin Khlebnikov wrote:
-> This patchset implements common radix-tree iteration routine and
-> reworks page-cache lookup functions with using it.
+On 13/03/12 19:16, Alexander Stein wrote:
+> When using MSI it is possible that a new MSI is sent while an earlier
+> MSI is currently handled. In this case SDHCI_INT_STATUS only contains
+> SDHCI_INT_RESPONSE and the ISR would not be called again. But at the end
+> of the ISR SDHCI_INT_DATA_END is now also pending which would be ignored.
 > 
-> radix_tree_gang_lookup_*slot() now mostly unused (the last user somethere in
-> drivers/sh/intc/virq.c), but they are exported, we cannot remove them for now.
+> Fix this by rereading the interrupt flags in the ISR until no interrupt
+> we care is pending.
 > 
-> Also there some shmem-related radix-tree hacks can be reworked,
-> radix_tree_locate_item() can be removed. I already have a few extra patches.
-> 
-> And as usual my lovely bloat-o-meter:
-> 
-> add/remove: 4/3 grow/shrink: 4/4 up/down: 1232/-964 (268)
-> function                                     old     new   delta
-> radix_tree_next_chunk                          -     499    +499
-> static.shmem_find_get_pages_and_swap           -     404    +404
-> find_get_pages_tag                           354     488    +134
-> find_get_pages                               362     438     +76
-> find_get_pages_contig                        345     407     +62
-> __kstrtab_radix_tree_next_chunk                -      22     +22
-> shmem_truncate_range                        1633    1652     +19
-> __ksymtab_radix_tree_next_chunk                -      16     +16
-> radix_tree_gang_lookup_tag_slot              208     180     -28
-> radix_tree_gang_lookup_tag                   247     207     -40
-> radix_tree_gang_lookup_slot                  204     162     -42
-> radix_tree_gang_lookup                       231     160     -71
-> __lookup                                     217       -    -217
-> __lookup_tag                                 242       -    -242
-> shmem_find_get_pages_and_swap                324       -    -324
-> 
+> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
 > ---
+>  drivers/mmc/host/sdhci.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
 > 
-> Konstantin Khlebnikov (4):
->       bitops: implement "optimized" __find_next_bit()
->       radix-tree: introduce bit-optimized iterator
->       radix-tree: rewrite gang lookup with using iterator
->       radix-tree: use iterators in find_get_pages* functions
-> 
-> 
->  include/asm-generic/bitops/find.h |   36 +++
->  include/linux/radix-tree.h        |  129 +++++++++++
->  lib/radix-tree.c                  |  422 +++++++++++++------------------------
->  mm/filemap.c                      |   75 ++++---
->  mm/shmem.c                        |   23 +-
->  5 files changed, 375 insertions(+), 310 deletions(-)
-> 
-> -- 
-> Signature
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
----end quoted text---
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 8d66706..654ab32 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -2268,6 +2268,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+>  	irqreturn_t result;
+>  	struct sdhci_host *host = dev_id;
+>  	u32 intmask;
+> +	u32 intmask_unhandled;
+>  	int cardint = 0;
+>  
+>  	spin_lock(&host->lock);
+> @@ -2286,6 +2287,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+>  		goto out;
+>  	}
+>  
+> +again:
+>  	DBG("*** %s got interrupt: 0x%08x\n",
+>  		mmc_hostname(host->mmc), intmask);
+>  
+> @@ -2336,6 +2338,14 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+>  		sdhci_writel(host, SDHCI_INT_BUS_POWER, SDHCI_INT_STATUS);
+>  	}
+>  
+> +	intmask_unhandled = intmask;
+> +
+> +	intmask = sdhci_readl(host, SDHCI_INT_STATUS);
+> +
+> +	/* Do interrupt handling again if we got new flags */
+> +	if (intmask & ~intmask_unhandled)
+> +		goto again;
+> +
+>  	intmask &= ~SDHCI_INT_BUS_POWER;
+>  
+>  	if (intmask & SDHCI_INT_CARD_INT)
+
+Why not just replace mmiowb() i.e.
+
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 8d66706..da8a101 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2353,7 +2353,9 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+
+        result = IRQ_HANDLED;
+
+-       mmiowb();
++       intmask = sdhci_readl(host, SDHCI_INT_STATUS);
++       if (intmask)
++               goto again;
+ out:
+        spin_unlock(&host->lock);
+
+
+But maybe it would be safer limiting the number of loops i.e.
+
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 8d66706..d88247d 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2268,7 +2268,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+        irqreturn_t result;
+        struct sdhci_host *host = dev_id;
+        u32 intmask;
+-       int cardint = 0;
++       int cardint = 0, max_loops = 16;
+
+        spin_lock(&host->lock);
+
+@@ -2353,7 +2353,9 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+
+        result = IRQ_HANDLED;
+
+-       mmiowb();
++       intmask = sdhci_readl(host, SDHCI_INT_STATUS);
++       if (intmask && --max_loops)
++               goto again;
+ out:
+        spin_unlock(&host->lock);
+
+
