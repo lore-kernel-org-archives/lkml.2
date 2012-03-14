@@ -1,94 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031043Ab2CNVpl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 17:45:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964781Ab2CNVpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 17:45:40 -0400
-Message-ID: <4F611169.2020205@redhat.com>
-Date: Wed, 14 Mar 2012 17:45:13 -0400
-From: Doug Ledford <dledford@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Amerigo Wang <amwang@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        "\"Eric W. Biederman\" (commit_signer:2/9=22%)" 
-	<ebiederm@xmission.com>,
-        "Joe Korty (commit_signer:2/9=22%)" <joe.korty@ccur.com>,
-        "David Howells (commit_signer:2/9=22%)" <dhowells@redhat.com>
-Subject: Re: [resend][PATCH 1/3] mqueue: revert bump up DFLT_*MAX
-References: <1323470163-8723-1-git-send-email-kosaki.motohiro@gmail.com> <4EEE3124.7070605@gmail.com> <20111218103836.258eedb8.akpm@linux-foundation.org> <4F610D81.3020300@redhat.com> <20120314143832.286b497e.akpm@linux-foundation.org>
-In-Reply-To: <20120314143832.286b497e.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.3.5
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigF3A0BD48CDE484153EB41375"
+	id S1031088Ab2CNVqG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 17:46:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60901 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030902Ab2CNVqC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 17:46:02 -0400
+Date: Wed, 14 Mar 2012 14:46:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        Carsten Emde <C.Emde@osadl.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [REGRESSION][PATCH] mqueue: Ignore the validity of abs_timeout
+ parameter when message can be performed immediately
+Message-Id: <20120314144601.ccc50a68.akpm@linux-foundation.org>
+In-Reply-To: <20120302164234.4938.38390934@jp.panasonic.com>
+References: <20120302164234.4938.38390934@jp.panasonic.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigF3A0BD48CDE484153EB41375
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, 02 Mar 2012 16:42:35 +0900
+Akira Takeuchi <takeuchi.akr@jp.panasonic.com> wrote:
 
-On 03/14/2012 05:38 PM, Andrew Morton wrote:
-> On Wed, 14 Mar 2012 17:28:33 -0400
-> Doug Ledford <dledford@redhat.com> wrote:
->=20
->> This has obviously fallen through the cracks.
->=20
-> It sure has.  Please dig out whatever is the currently favored
-> patchset, refresh, retest and resend, with changelogging which fully
-> covers the reasoning and decision process?
+> This patch fixes up the regression problem of mq_timed{send,receive} syscall.
+> 
+> When a message of mqueue can be performed immediately,
+> the validity of abs_timeout parameter should not be checked.
+> 
+> According to the manpage of mq_timedreceive:
+>     Under no circumstance shall the operation fail with a timeout
+>     if a message can be removed from the message queue immediately.
+>     The validity of the abstime parameter need not be checked
+>     if a message can be removed from the message queue immediately.
+> 
+> On 2.6.35+ kernel, mq_timed{send,receive} returns EINVAL incorrectly,
+> in this situation.
+> 
+> I found this problem during the OPTS testcase
+> "conformance/interfaces/mq_timedreceive/10-2":
+> 
+>     # ./10-2.test
+>     FAIL: the validity of abs_timeout is checked
+>     Test FAILED
 
-OK, completely redoing patch set then against current Linus tree.
+Are you able to identify the commit which caused this regression?  I'm
+guessing
 
-Motohiro, would you be so kind as to resend my your patches that went on
-top of mine and I'll create a complete patch set?
+commit 9ca7d8e6834c40a99622bbe4a88aaf64313ae43c
+Author:     Carsten Emde <C.Emde@osadl.org>
+AuthorDate: Fri Apr 2 22:40:20 2010 +0200
+Commit:     Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue Apr 6 21:50:03 2010 +0200
 
->> so that if there are any apps out there that have been coded to expect=
-
->> this behavior, then there is a workaround path for them until they get=
-
->> coded
->=20
-> We'll be especially interested in the implications of this part.
-
-Certainly.
-
---=20
-Doug Ledford <dledford@redhat.com>
-              GPG KeyID: 0E572FDD
-	      http://people.redhat.com/dledford
+    mqueue: Convert message queue timeout to use hrtimers                       
 
 
-
---------------enigF3A0BD48CDE484153EB41375
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJPYRFpAAoJELgmozMOVy/d8cAQAKW/umN/3ukoqG6pOBATI2Xw
-a48WMoATMHiz26uI8F/Ukyb0L40vCmrSPXsr3BUvyPqc3POsZbyeLzEMsMy/QyqL
-FvyfOBD+mEVZNcEWDLXin4v3P0YJ1v30qv+Plgh2HIbfxFkEreKq3spr8UH5Y/FH
-g9vdqE4eXN5jaePlTC3SeY8co+7VFRj/AOT930XQOtB2qyE+SzfRBWW5VpZG0ofF
-Vs3cZX9rH1aGUN3hlyiHZqHm4sQdt/H1DGPwUYEM5PFjQdoQUtssadH8Fp0JwehY
-sucpvFpaCdpQAneVTMvNs4L9f1l5yEVWgE3TwptvGIVeEPTH+6JUrLGw+As50J5b
-w6MTcnAUWGEzjpzuOK1F+eUAj9SfzejUQv56MtHY3e1YqPGNrt2TpLsW+COBBlhD
-Iv/iV8XN/fSI9yrGfdGfM/3nToxfEmNuVWZxASQcgfRGyKa08jFa7Y8iPKJq2eWu
-E9LqJLoSLxsz6rL4UlyCg3ssDh0xe9CYKAVj5o1lq4gUcIUTx0naoRBrugJg72JP
-VBviDhoxntVfcm8VIjhlh/vaPJDcXtqXpynH4OyJf3JlQ94yPPpqJNk0RamdDb2o
-5tCX55NCJwi/vbzsmG57IsK1/Zl7pjI2lNV3WrXUMKG/euCnR8fo4+xO61uP3JZU
-TaZ4dd/Elp7wZ7Fs4lxF
-=Ju7l
------END PGP SIGNATURE-----
-
---------------enigF3A0BD48CDE484153EB41375--
+> Signed-off-by: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>
+> Signed-off-by: Kiyoshi Owada <owada.kiyoshi@jp.panasonic.com>
+> ---
+>  ipc/mqueue.c |   31 +++++++++++++++++++++++++++----
+>  1 files changed, 27 insertions(+), 4 deletions(-)
+> 
+> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+> index 86ee272..7cd4411 100644
+> --- a/ipc/mqueue.c
+> +++ b/ipc/mqueue.c
+> @@ -861,14 +861,22 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqdes, const char __user *, u_msg_ptr,
+>  	struct msg_msg *msg_ptr;
+>  	struct mqueue_inode_info *info;
+>  	ktime_t expires, *timeout = NULL;
+> +	int timeout_param_error = 0;
+>  	struct timespec ts;
+>  	int ret;
+>  
+>  	if (u_abs_timeout) {
+>  		int res = prepare_timeout(u_abs_timeout, &expires, &ts);
+>  		if (res)
+> -			return res;
+> -		timeout = &expires;
+> +			/*
+> +			 * The validity of the abs_timeout parameter need not be
+> +			 * checked when there is sufficient room in the queue.
+> +			 * So, do not return here, even if the parameter is
+> +			 * invalid.
+> +			 */
+> +			timeout_param_error = res;
+> +		else
+> +			timeout = &expires;
+>  	}
+>  
+>  	if (unlikely(msg_prio >= (unsigned long) MQ_PRIO_MAX))
+> @@ -916,6 +924,9 @@ SYSCALL_DEFINE5(mq_timedsend, mqd_t, mqdes, const char __user *, u_msg_ptr,
+>  		if (filp->f_flags & O_NONBLOCK) {
+>  			spin_unlock(&info->lock);
+>  			ret = -EAGAIN;
+> +		} else if (unlikely(timeout_param_error)) {
+> +			spin_unlock(&info->lock);
+> +			ret = timeout_param_error;
+>  		} else {
+>  			wait.task = current;
+>  			wait.msg = (void *) msg_ptr;
+> @@ -955,13 +966,21 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
+>  	struct mqueue_inode_info *info;
+>  	struct ext_wait_queue wait;
+>  	ktime_t expires, *timeout = NULL;
+> +	int timeout_param_error = 0;
+>  	struct timespec ts;
+>  
+>  	if (u_abs_timeout) {
+>  		int res = prepare_timeout(u_abs_timeout, &expires, &ts);
+>  		if (res)
+> -			return res;
+> -		timeout = &expires;
+> +			/*
+> +			 * The validity of the abs_timeout parameter need not be
+> +			 * checked if a message can be removed from the message
+> +			 * queue immediately. So, do not return here, even if
+> +			 * the parameter is invalid.
+> +			 */
+> +			timeout_param_error = res;
+> +		else
+> +			timeout = &expires;
+>  	}
+>  
+>  	audit_mq_sendrecv(mqdes, msg_len, 0, timeout ? &ts : NULL);
+> @@ -996,6 +1015,10 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
+>  		if (filp->f_flags & O_NONBLOCK) {
+>  			spin_unlock(&info->lock);
+>  			ret = -EAGAIN;
+> +		} else if (unlikely(timeout_param_error)) {
+> +			spin_unlock(&info->lock);
+> +			ret = timeout_param_error;
+> +			msg_ptr = NULL; /* just for shutting up warning */
+>  		} else {
+>  			wait.task = current;
+>  			wait.state = STATE_NONE;
+> -- 
+> 1.7.4.1
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
