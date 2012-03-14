@@ -1,120 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab2CNAE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:04:29 -0400
-Received: from antispam01.maxim-ic.com ([205.153.101.182]:47532 "EHLO
-	antispam01.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442Ab2CNAE2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:04:28 -0400
-X-ASG-Debug-ID: 1331683467-02ae986f8e1612e0001-xx1T2L
-X-Barracuda-Envelope-From: Jason.Wortham@maxim-ic.com
-From: Jason Wortham <Jason.Wortham@maxim-ic.com>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: bruce robertson <bruce.e.robertson@intel.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dg77.kim@samsung.com" <dg77.kim@samsung.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>
-Date: Tue, 13 Mar 2012 17:04:25 -0700
-Subject: RE: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
-Thread-Topic: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
-X-ASG-Orig-Subj: RE: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
-Thread-Index: Ac0BbPR8p1o8HsY7SYC9QlF4Xzje5wACNurQ
-Message-ID: <26513DAD5DB1304EAC06B61C2DD20C270DB5ECE589@ITSVLEX06.it.maxim-ic.internal>
-References: <1327425968-21195-1-git-send-email-dirk.brandewie@gmail.com>
- <1327425968-21195-5-git-send-email-dirk.brandewie@gmail.com>
- <20120313181918.GA15964@oksana.dev.rtsoft.ru> <m3pqcg5i8y.fsf@intel.com>
- <26513DAD5DB1304EAC06B61C2DD20C270DB5ECE32F@ITSVLEX06.it.maxim-ic.internal>
- <4F5FD151.104@gmail.com>
-In-Reply-To: <4F5FD151.104@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754838Ab2CNAGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:06:32 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43510 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753725Ab2CNAGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 20:06:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available
+Date: Wed, 14 Mar 2012 01:10:40 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203132042.07794.rjw@sisk.pl> <CAPXgP11fWf-0Jkk=d6G+d=sQa-hoX3jUM+K6K4rGYhh0dv1u_w@mail.gmail.com>
+In-Reply-To: <CAPXgP11fWf-0Jkk=d6G+d=sQa-hoX3jUM+K6K4rGYhh0dv1u_w@mail.gmail.com>
 MIME-Version: 1.0
-X-Barracuda-Connect: maxdalex02.maxim-ic.internal[10.16.15.104]
-X-Barracuda-Start-Time: 1331683467
-X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.02
-X-Barracuda-Spam-Status: No, SCORE=0.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=THREAD_INDEX, THREAD_TOPIC
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.91131
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.01 THREAD_INDEX           thread-index: AcO7Y8iR61tzADqsRmmc5wNiFHEOig==
-	0.01 THREAD_TOPIC           Thread-Topic: ...(Japanese Subject)...
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203140110.40671.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, the datasheet is written that way as a commitment about the hardware ADC accuracy/resolution.  However, the ADC performs a set of 8x samples, and as a result will have an average which provides some additional "fake" resolution.  Even though this extra resolution isn't strong in an analog way, it's still useful information.
+On Wednesday, March 14, 2012, Kay Sievers wrote:
+> On Tue, Mar 13, 2012 at 20:42, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Sunday, March 11, 2012, Kay Sievers wrote:
+> >> On Sat, Mar 10, 2012 at 00:36, Greg KH <gregkh@linuxfoundation.org> wrote:
+> 
+> >> > What does uevent have to do with things here?
+> >>
+> >> I don't think that the firmware loader should care about the
+> >> usermodehelper at all, and that stuff fiddling should just be removed
+> >> from the firmware class.
+> >
+> > It's there to warn people that their drivers do stupid things like
+> > loading frimware during system resume, which is guaranteed not to work.
+> >
+> > IOW, it's there very much on purpose.
+> 
+> Using the /sbin/hotplug is no case that needs any warning. It' such a
+> broken model these days, that firmware loading is the least problem
+> that occurs with it.
+> 
+> >> Forking /sbin/hotplug is disabled by default, it is a broken concept,
+> >> and it cannot work reliably on today's systems.
+> >>
+> >> Firmware is not loaded by /sbin/hotplug since many years, but by udev
+> >> or whatever service handles uevents, like ueventd on android.
+> >
+> > Which I'm not sure why is relevant here.
+> 
+> It is relevant in the sense that the firmware loader should not even
+> know that a uevent *can* cause a usermodehelper exec() if it runs in
+> legacy mode. The firmware loader just has no business in fiddling with
+> the details of driver core legacy stuff. I don't think his warning
+> makes much sense.
 
-But I guess I'm really splitting hairs here since it's such a small resolution.
+But that warning actually triggers for drivers that attempt to use
+request_firmware() during system resume, even though /sbin/hotplug isn't
+used any more.
 
---Jason
+usermodehelper_is_disabled() means "we are in the middle of system power
+transition" rather than anything else (I agree it should be called
+suspend_in_progress() or something similar these days).
 
------Original Message-----
-From: Dirk Brandewie [mailto:dirk.brandewie@gmail.com] 
-Sent: Tuesday, March 13, 2012 3:59 PM
-To: Jason Wortham
-Cc: bruce robertson; Anton Vorontsov; dirk.brandewie@gmail.com; linux-kernel@vger.kernel.org; dg77.kim@samsung.com; kyungmin.park@samsung.com; myungjoo.ham@samsung.com
-Subject: Re: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
-
-On 03/13/2012 02:04 PM, Jason Wortham wrote:
-> The bottom 3 bits are still functional bits and aren't required to be masked.  Arguably these bits are below the hardware accuracy of the ADC, however, they still provide some averaging information.
->
-
-The datasheet for the 17042 shows the bottom three bits as don't care that
-was the reason for the mask.
-
-If Jason says it is still accurate without the mask I am fine with it.
-
---Dirk
-> --Jason
->
-> -----Original Message-----
-> From: bruce robertson [mailto:bruce.e.robertson@intel.com]
-> Sent: Tuesday, March 13, 2012 2:00 PM
-> To: Anton Vorontsov
-> Cc: dirk.brandewie@gmail.com; linux-kernel@vger.kernel.org; dg77.kim@samsung.com; kyungmin.park@samsung.com; myungjoo.ham@samsung.com; Jason Wortham
-> Subject: Re: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
->
-> Anton Vorontsov<cbouatmailru@gmail.com>  writes:
->
->> On Tue, Jan 24, 2012 at 09:26:07AM -0800, dirk.brandewie@gmail.com wrote:
->>> From: Bruce Robertson<bruce.e.robertson@intel.com>
->>>
->>> The bottom three bits of the register are don't care bits.  The LSB
->>> value is 625 uV.  Adjust the returned values appropriately
->>>
->>> Signed-off-by: Bruce Robertson<bruce.e.robertson@intel.com>
->>> Signed-off-by: Dirk Brandewie<dirk.brandewie@gmail.com>
->>> Acked-by: MyungJoo Ham<myungjoo.ham@samsung.com>
->>
->> I guess this was fixed long ago by the following patch:
->>
->> commit cf7a8c03db792894f436db5f3ffc44d947b9b068
->> Author: MyungJoo Ham<myungjoo.ham@samsung.com>
->> Date:   Wed Aug 17 10:18:34 2011 +0900
->>
->>      max17042_battery: Bugfix of incorrect voltage register value interpretation
->>
->>      The calculation had error in getting voltage values from
->>      MAX17042 registers. The least bit denotes 78.125uV (625/8).
->
-> The multipliers I see in the patch are 83 making the voltages somewhat
-> high and the low 3 bits are not masked off. I'm probably misreading the code.
->
->>
->>      Signed-off-by: MyungJoo Ham<myungjoo.ham@samsung.com>
->>      Signed-off-by: Philip Rakity<prakity@marvell.com>
->>      Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
->>      Signed-off-by: Anton Vorontsov<cbouatmailru@gmail.com>
->>
->> Thanks,
-
+Thanks,
+Rafael
