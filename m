@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965061Ab2CNAyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:54:39 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51464 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964928Ab2CNAyh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:54:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPXgP118s+DuLaATKOq7w=F82GB=8PkwUJDichffXA-Er6Zqvw@mail.gmail.com>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203132042.07794.rjw@sisk.pl>
- <CAPXgP11fWf-0Jkk=d6G+d=sQa-hoX3jUM+K6K4rGYhh0dv1u_w@mail.gmail.com>
- <201203140110.40671.rjw@sisk.pl> <CAPXgP118s+DuLaATKOq7w=F82GB=8PkwUJDichffXA-Er6Zqvw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 13 Mar 2012 17:54:16 -0700
-X-Google-Sender-Auth: 7Zoq8jx6NGLkiY3zGwihQcF79Mo
-Message-ID: <CA+55aFxq=GWof-ExXjeC2nwUBcGi46SKwcvc2iccfymbbyXbfA@mail.gmail.com>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when
- helper is not yet available
-To: Kay Sievers <kay@vrfy.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S965094Ab2CNAzl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:55:41 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42066 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964928Ab2CNAzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 20:55:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="118542572"
+Subject: Re: [linux-pm] [PATCH V3] cpuidle: Add a sysfs entry to disable
+ specific C state for debug purpose.
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Brown, Len" <len.brown@intel.com>, ShuoX Liu <shuox.liu@intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        "H. Peter Anvin" <hpa@zytor.com>, andi.kleen@intel.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20120313192949.GA8568@kroah.com>
+References: <4F5466C4.2090808@intel.com>
+	 <20120305101827.GA19408@khazad-dum.debian.net>
+	 <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com>
+	 <1330998885.1916.89.camel@ymzhang> <20120306052236.GA19416@kroah.com>
+	 <1331013078.1916.103.camel@ymzhang> <20120306143935.GA23346@kroah.com>
+	 <20120312181151.GE14020@sirena.org.uk> <20120312192936.GC24873@kroah.com>
+	 <1331602594.1916.155.camel@ymzhang>  <20120313192949.GA8568@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: UMG
+Date: Wed, 14 Mar 2012 08:55:00 +0800
+Message-ID: <1331686500.1916.172.camel@ymzhang>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 5:14 PM, Kay Sievers <kay@vrfy.org> wrote:
->
-> Yeah it's certainly useful to disable the exec() during suspend calls,
-> much more than using the exec() inhibit flag for the firmware loader
-> to throw a warning about suspend issues.
+On Tue, 2012-03-13 at 12:29 -0700, Greg KH wrote:
+> On Tue, Mar 13, 2012 at 09:36:34AM +0800, Yanmin Zhang wrote:
+> > On Mon, 2012-03-12 at 12:29 -0700, Greg KH wrote:
+> > > On Mon, Mar 12, 2012 at 06:11:51PM +0000, Mark Brown wrote:
+> > > > On Tue, Mar 06, 2012 at 06:39:35AM -0800, Greg KH wrote:
+> > > > 
+> > > > > Do you know of any tools using these files?  I have never heard of them,
+> > > > > and I was told we should move these files years ago.  So I don't think
+> > > > > there should be any api issues.
+> > > > 
+> > > > powertop uses them.
+> > > 
+> > > Ok, then we can't move them all.
+> > > 
+> > > We should then just move the ones that have multiple lines, as I'm
+> > > pretty sure powertop doesn't use them, right?
+> > All sys files under cpu/cpuXXX/cpuidle have single line. If we move
+> > some files to debugfs and keep others under sysfs, users might be confused.
+> > 
+> > Should we go back to the 1st version which just adds the new entry to
+> > sysfs?
+> 
+> Wait, I thought this whole thing started when we wanted to move the
+> files that had multiple lines out of sysfs?
+No. Liu Shuo's patch adds a new entry under cpu/cpuXXX/cpuidle and users
+can disable specific C state.
+A gentleman raised that if we should move it to debugfs, then you suggested
+to move all files under cpu/cpuXXX/cpuidle to debugfs.
 
-Kay, just stop confusing the issue already.
+> 
+> If none of these do, and they all are being used by tools already, then
+> fine, they should stay.
+Agree.
 
-It has *nothing* to do with exec. It has *nothing* to do with
-/sbin/hotplug. Stop repeating that stupid mantra. It's totally and
-utterly irrelevant.
+> 
+> But for some reason, I thought there was a problem here.  Perhaps that
+> was in the cpufreq code?
+I checked cpufreq quickly. Every file has single-line, but some have
+multiple-fields.
 
-You can't load firmware while the system is suspended. End of story.
-You can't load it using /sbin/hotplug, you can't load it with dbus,
-you cannot load it FULL STOP.
+We would send a new patch based on sysfs as the new entry has
+single line.
 
-The filesystem you'd want to load it from may simply not be ready yet.
 
-This has nothing to do with exec or anything else. It's very simple:
-you cannot load firmware while the system isn't yet fully up.
-Seriously.
-
-You need to wait to load the firmware until everything is all done,
-and things work.
-
-Or you should - preferably - just have preloaded the damn thing.
-
-           Linus
