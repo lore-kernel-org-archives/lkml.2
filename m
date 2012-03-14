@@ -1,142 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369Ab2CNGRM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 02:17:12 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53646 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932210Ab2CNGRK convert rfc822-to-8bit (ORCPT
+	id S1030324Ab2CNGR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 02:17:27 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51925 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932372Ab2CNGRO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 02:17:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1331704278.10557.190.camel@linux-s257.site>
-References: <1331608337.2267.67.camel@debian.Gayathri>
-	<20120312175130.GA18002@srcf.ucam.org>
-	<1331640592.3485.50.camel@debian.Gayathri>
-	<20120313124738.GB10822@srcf.ucam.org>
-	<CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
-	<20120313133458.GA11574@srcf.ucam.org>
-	<1331688294.2577.19.camel@debian.Gayathri>
-	<1331680373.10557.169.camel@linux-s257.site>
-	<1331692996.3052.8.camel@debian.Gayathri>
-	<1331704278.10557.190.camel@linux-s257.site>
-Date: Wed, 14 Mar 2012 11:47:09 +0530
-Message-ID: <CABNxG=D3y2GQqS1XN=+B0QRScXpufBkPQtP5-SSNEjSavhtW7g@mail.gmail.com>
-Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
-From: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
-To: joeyli <jlee@suse.com>
-Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
-        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=Big5
+	Wed, 14 Mar 2012 02:17:14 -0400
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Gupta, Ajay Kumar" <ajay.gupta@ti.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>
+Subject: RE: [PATCH] arm:da850: register musb device
+Thread-Topic: [PATCH] arm:da850: register musb device
+Thread-Index: AQHNAS0Ch7YKKgWwqkyyPVMdUjshLZZoGeKAgAE16cA=
+Date: Wed, 14 Mar 2012 06:16:54 +0000
+Message-ID: <A73F36158E33644199EB82C5EC81C7BC3178406C@DBDE01.ent.ti.com>
+References: <1331651015-32586-1-git-send-email-prakash.pm@ti.com>
+ <4F5F7F91.8010301@mvista.com>
+In-Reply-To: <4F5F7F91.8010301@mvista.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.162.24]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 11:21 AM, joeyli <jlee@suse.com> wrote:
-> 於 三，2012-03-14 於 08:13 +0530，Pradeep Subrahmanion 提到：
->> Hi Joey ,
->>
->> > Per my understood, EC firmware should change brightness but didn't do
->> > that, another
->> > way is touch i915 register in _BCM.
->>
->>   how do we do this ? you mean change the _BCM implementation ?
->
-> "BIOS guy" should do something like this:
->
->  Method (AINT, 2, NotSerialized)
-> {
-> ...
->        If (LEqual (Arg0, One))
->        {
->            Store (Divide (Multiply (Arg1, 0xFF), 0x64, ), BCLP)
->            Or (BCLP, 0x80000000, BCLP)         <=== touch BCLP register
->            Store (0x02, ASLC)
->        }
->
->    Method (_BCM, 1, NotSerialized)
->    {
->        If (LAnd (LGreaterEqual (Arg0, Zero), LLessEqual (Arg0, 0x64)))
->        {
->            AINT (One, Arg0)     <=== call AINT method
->            Store (Arg0, BRTL)
->        }
->    }
->
->
-> Just for reference, they should do that when EC didn't wire to
-> backlight.
->
->> >
->> > Acer machine provide a broken _BCM implementation and they didn't test
->> > it.
->> >
->> > > > > By ' ACPI interface' , I mean 'acpi_video0' inside the
->> > > > > /sys/class/backlight. I havn't tried the /sys/class/backlight interface
->> > > > > directly . I will try that also.
->> > > >
->> > > > So writing values into /sys/class/backlight/acpi_video0/brightness does
->> > > > nothing?
->> > >
->> > >
->> > > No change in value when writing
->> > > to /sys/class/backlight/acpi_video0/brightness.
->> > >
->> > > Another thing is that when i did boot with acpi_backlight = 'acer_wmi' ,
->> > > in new kernel (3.3.0-rc7) , it shows following messages ,
->> > >
->> > > [    8.350825] wmi: Mapper loaded
->> > > [   10.363975] acer_wmi: Acer Laptop ACPI-WMI Extras
->> > > [   10.396186] acer_wmi: Function bitmap for Communication Device: 0x91
->> > > [   10.396385] acer_wmi: Brightness must be controlled by generic video
->> > > driver
->> > >
->> > > Also there was no interface inside /sys/class/backlight for acer_wmi.
->> > >
->> >
->> > Yes, acer_wmi support backlight control with AMW0 interface, your
->> > machine didn't have AMW0 interface.
->> >
->> > Normally, backlight should control by standard acpi interface.
->> >
->> > > I also tried writing directly to Embedded controller register .But no
->> > > change.
->> >
->> > The machine has broken _BCM method, because EC should do something after
->> > _BCM changed EC register.
->>
->> Thanks ,
->>
->> Pradeep Subrahmanion
->
-> Why they didn't find _BCM not work?
->
-> My guess is:
->
-> Because the backlight control is through WDDM driver on Windows platform
-> but not through standard ACPI method _BCM. They only test Windows
-> platform, so, they didn't find _BCM broken.
->
-> And, they also didn't really follow Microsoft WDDM spec:
->
->  http://msdn.microsoft.com/en-us/windows/hardware/gg487382.aspx
->
-> Per spec,
-> ODM should keep _BCM works fine for any other OS didn't support WDDM
-> driver, but they didn't.
->
-> At last year, I told Acer PM one time for this issue, they said will
-> check but finally didn't response me.
->
+Hi Sergei,
 
->
-> Thanks
-> Joey Lee
->
+On Tue, Mar 13, 2012 at 22:40:41, Sergei Shtylyov wrote:
+> On 03/13/2012 06:03 PM, Manjunathappa, Prakash wrote:
+> 
+> > Properly set up the OTG mode thru the CFGCHIP2 register, enable the
+> > USB0_DRVVBUS pin,
+> 
+>     I don't see where you are enabling it.
+> 
 
-So touching the PCI LBB register is the only feasible solution now
-(even though it may not be a clean  method) ?
+Yes, I will correct the message.
+
+> > and finally register the MUSB platform device.
+> >
+> > Signed-off-by: Ajay Kumar Gupta<ajay.gupta@ti.com>
+> > Signed-off-by: Manjunathappa, Prakash<prakash.pm@ti.com>
+> > ---
+> > Patche are on top below posted patches:
+> > http://www.spinics.net/lists/linux-usb/msg59656.html
+> 
+> >   arch/arm/mach-davinci/board-da850-evm.c |   12 ++++++++++++
+> >   arch/arm/mach-davinci/usb.c             |    9 +++++++++
+> >   2 files changed, 21 insertions(+), 0 deletions(-)
+> 
+> > diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+> > index 178d178..539e12c 100644
+> > --- a/arch/arm/mach-davinci/board-da850-evm.c
+> > +++ b/arch/arm/mach-davinci/board-da850-evm.c
+> > @@ -787,6 +787,18 @@ static __init void da850_evm_usb_init(void)
+> >   	 */
+> >   	cfgchip2&= ~CFGCHIP2_USB1PHYCLKMUX;
+> >   	cfgchip2 |=  CFGCHIP2_USB2PHYCLKMUX;
+> > +	/*
+> > +	 * We have to override VBUS/ID signals when MUSB is configured into the
+> > +	 * host-only mode -- ID pin will float if no cable is connected, so the
+> > +	 * controller won't be able to drive VBUS thinking that it's a B-device.
+> > +	 * Otherwise, we want to use the OTG mode and enable VBUS comparators.
+> > +	 */
+> > +	cfgchip2 &= ~CFGCHIP2_OTGMODE;
+> > +#if CONFIG_USB_MUSB_DA8XX
+> 
+>     This #ifdef doesn't make sense. It will make driver always work in host mode.
+> 
+
+I will change it to support OTG.
+
+> > +	cfgchip2 |=  CFGCHIP2_FORCE_HOST;
+> > +#else
+> > +	cfgchip2 |=  CFGCHIP2_SESENDEN | CFGCHIP2_VBDTCTEN;
+> 
+>     This is what you need to leave. The driver should always work in OTG mode now.
+> 
+
+Correct, I will fix this.
+
+> > +#endif
+> >
+> >   	__raw_writel(cfgchip2, DA8XX_SYSCFG0_VIRT(DA8XX_CFGCHIP2_REG));
+> >
+> > diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
+> > index 25c3520..a941dc5 100644
+> > --- a/arch/arm/mach-davinci/usb.c
+> > +++ b/arch/arm/mach-davinci/usb.c
+> > @@ -284,6 +284,15 @@ void __init da8xx_board_usb_init(const short pins[],
+> >   		goto usb11_setup_fail;
+> >   	}
+> >
+> > +	/*
+> > +	 * TPS2065 switch @ 5V supplies 1 A (sustains 1.5 A),
+> > +	 * with the power on to power good time of 3 ms.
+> > +	 */
+> > +	ret = da8xx_register_usb20(1000, 3);
+> > +	if (ret)
+> > +		pr_warning("%s: USB 2.0 registration failed: %d\n",
+> > +			   __func__, ret);
+> 
+>     Er, why this code is moved there? And how will this work on DA830 -- try to 
+> register MUSB twice? Place this in the board file please where it belongs.
+> 
+
+Yes, I will revert this change.
 
 Thanks,
-Pradeep Subrahmanion
+Prakash
+
+> WBR, Sergei
+> 
+
