@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030316Ab2CNCIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 22:08:24 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38425 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965196Ab2CNCIX (ORCPT
+	id S1030344Ab2CNCKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 22:10:17 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46655 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030183Ab2CNCKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 22:08:23 -0400
-From: Jesse Gross <jesse@nicira.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Pravin B Shelar <pshelar@nicira.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Justin Pettit <jpettit@nicira.com>
-Subject: [PATCH] proc-ns: Use d_set_d_op() API to set dentry ops in proc_ns_instantiate().
-Date: Tue, 13 Mar 2012 19:08:17 -0700
-Message-Id: <1331690897-26496-1-git-send-email-jesse@nicira.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 13 Mar 2012 22:10:16 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Mar 2012 11:08:44 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: seq_put_decimal_ull() et al
+Message-Id: <20120314110844.d1654724.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120314093156.2bc3d3c5.kamezawa.hiroyu@jp.fujitsu.com>
+References: <CACVxJT_UWzpVo1Jfbf5Z2A-s16QjEv05MiNSY_EGihKTPuMyxg@mail.gmail.com>
+	<20120314093156.2bc3d3c5.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pravin B Shelar <pshelar@nicira.com>
+On Wed, 14 Mar 2012 09:31:56 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Use d_set_d_op() so that DCACHE_OP_* flags are set correctly which fixes ns
-cleanup path i.e. `ip netns delete `.
+> On Tue, 13 Mar 2012 15:35:54 +0200
+> Alexey Dobriyan <adobriyan@gmail.com> wrote:
+> 
+> > > Subject:    + procfs-add-num_to_str-to-speed-up-proc-stat-fix-2.patch added to -mm tree
+> > 
+> > I think the fix is to create proper binary interface for exporting
+> > interrupt counts.
+> > Programs can parse raw data equally well if programming language is
+> > even minimally reasonable
+> > (POSIX shell may not qualify, though).
+> 
+> Ok, please try with all tool-chain updates.
+> procps, top, sar, and more ?
+> 
+One concern is maintainance of 2 files of the same data.
 
-This issue exists back to 3.0.
-
-CC: Eric W. Biederman <ebiederm@xmission.com>
-Reported-by: Justin Pettit <jpettit@nicira.com>
-Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
-Signed-off-by: Jesse Gross <jesse@nicira.com>
----
- fs/proc/namespaces.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
-index 27da860..3551f1f 100644
---- a/fs/proc/namespaces.c
-+++ b/fs/proc/namespaces.c
-@@ -53,7 +53,7 @@ static struct dentry *proc_ns_instantiate(struct inode *dir,
- 	ei->ns_ops    = ns_ops;
- 	ei->ns	      = ns;
- 
--	dentry->d_op = &pid_dentry_operations;
-+	d_set_d_op(dentry, &pid_dentry_operations);
- 	d_add(dentry, inode);
- 	/* Close the race of the process dying before we return the dentry */
- 	if (pid_revalidate(dentry, NULL))
--- 
-1.7.5.4
+Thanks,
+-Kame
 
