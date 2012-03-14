@@ -1,114 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759984Ab2CNAhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:37:20 -0400
-Received: from antispam01.maxim-ic.com ([205.153.101.182]:49668 "EHLO
-	antispam01.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758586Ab2CNAhP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:37:15 -0400
-X-ASG-Debug-ID: 1331685433-02ae98701c161d60001-xx1T2L
-X-Barracuda-Envelope-From: Jason.Wortham@maxim-ic.com
-From: Jason Wortham <Jason.Wortham@maxim-ic.com>
-To: bruce robertson <bruce.e.robertson@intel.com>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-        "dirk.brandewie@gmail.com" <dirk.brandewie@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dg77.kim@samsung.com" <dg77.kim@samsung.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>
-Date: Tue, 13 Mar 2012 17:37:12 -0700
-Subject: RE: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
-Thread-Topic: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
-X-ASG-Orig-Subj: RE: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
-Thread-Index: Ac0Bb7Ge7xVdyJypQNy8vW31BSeHQAACrmGQ
-Message-ID: <26513DAD5DB1304EAC06B61C2DD20C270DB5ECE5F6@ITSVLEX06.it.maxim-ic.internal>
-References: <1327425968-21195-1-git-send-email-dirk.brandewie@gmail.com>
-	<1327425968-21195-5-git-send-email-dirk.brandewie@gmail.com>
-	<20120313181918.GA15964@oksana.dev.rtsoft.ru>	<m3pqcg5i8y.fsf@intel.com>
-	<26513DAD5DB1304EAC06B61C2DD20C270DB5ECE32F@ITSVLEX06.it.maxim-ic.internal>
- <m3fwdcxf7z.fsf@intel.com>
-In-Reply-To: <m3fwdcxf7z.fsf@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S964866Ab2CNAhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:37:34 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:37430 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759925Ab2CNAha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 20:37:30 -0400
+Date: Tue, 13 Mar 2012 17:36:42 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Matt Helsley <matthltc@us.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
+Message-ID: <20120314003642.GH19584@count0.beaverton.ibm.com>
+References: <20120309152122.GA7802@redhat.com>
+ <20120309154224.GE13346@moon>
+ <20120309220244.GD19584@count0.beaverton.ibm.com>
+ <20120309223932.GB725@moon>
+ <20120309235901.GE19584@count0.beaverton.ibm.com>
+ <20120310074854.GA3065@moon>
+ <20120313024511.GF19584@count0.beaverton.ibm.com>
+ <20120313062625.GA1912@moon>
+ <20120313071812.GA6969@moon>
+ <20120313154337.GA25711@redhat.com>
 MIME-Version: 1.0
-X-Barracuda-Connect: maxdalex02.maxim-ic.internal[10.16.15.104]
-X-Barracuda-Start-Time: 1331685433
-X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.02
-X-Barracuda-Spam-Status: No, SCORE=0.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=THREAD_INDEX, THREAD_TOPIC
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.91133
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.01 THREAD_INDEX           thread-index: AcO7Y8iR61tzADqsRmmc5wNiFHEOig==
-	0.01 THREAD_TOPIC           Thread-Topic: ...(Japanese Subject)...
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120313154337.GA25711@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031400-3534-0000-0000-0000069372CE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not sure where 83 comes from.  The LSB is 78.125uV, or bit D3 is 625uV.  I think 83uV and 664uV are incorrect.
+On Tue, Mar 13, 2012 at 04:43:37PM +0100, Oleg Nesterov wrote:
+> 
+> Matt, is it really possible to hit mm->exe_file = NULL in
+> removed_exe_file_vma ? Unless I missed something, this check just
+> hides the potentional problem, no?
+> 
+> IOW, shouldn't it do
+> 
+> 	void removed_exe_file_vma(struct mm_struct *mm)
+> 	{
+> 		WARN_ON(!mm->exe_file);
+> 		WARN_ON(mm->num_exe_file_vmas <= 0);
+> 
+> 		if (!--mm->num_exe_file_vmas) {
+> 			fput(mm->exe_file);
+> 			mm->exe_file = NULL;
+> 		}
+> 	}
+> 
+> ?
 
---Jason
+I think you're spot-on about hiding the problem. I'm not sure the
+WARN_ON() would be welcome in the mm's VMA paths though.
+Also, it's a nit but I'd keep the decrement out of the condition like in
+the original.
 
------Original Message-----
-From: bruce robertson [mailto:bruce.e.robertson@intel.com] 
-Sent: Tuesday, March 13, 2012 4:18 PM
-To: Jason Wortham
-Cc: Anton Vorontsov; dirk.brandewie@gmail.com; linux-kernel@vger.kernel.org; dg77.kim@samsung.com; kyungmin.park@samsung.com; myungjoo.ham@samsung.com
-Subject: Re: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
+Cheers,
+	-Matt
 
-Jason Wortham <Jason.Wortham@maxim-ic.com> writes:
-
-> The bottom 3 bits are still functional bits and aren't required to be masked.  Arguably these bits are below the hardware accuracy of the ADC, however, they still provide some averaging information.
-
-About the multiplier. why are the multipliers 83? 83*8==664 uV.
-
->
-> --Jason
->
-> -----Original Message-----
-> From: bruce robertson [mailto:bruce.e.robertson@intel.com] 
-> Sent: Tuesday, March 13, 2012 2:00 PM
-> To: Anton Vorontsov
-> Cc: dirk.brandewie@gmail.com; linux-kernel@vger.kernel.org; dg77.kim@samsung.com; kyungmin.park@samsung.com; myungjoo.ham@samsung.com; Jason Wortham
-> Subject: Re: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
->
-> Anton Vorontsov <cbouatmailru@gmail.com> writes:
->
->> On Tue, Jan 24, 2012 at 09:26:07AM -0800, dirk.brandewie@gmail.com wrote:
->>> From: Bruce Robertson <bruce.e.robertson@intel.com>
->>> 
->>> The bottom three bits of the register are don't care bits.  The LSB
->>> value is 625 uV.  Adjust the returned values appropriately
->>> 
->>> Signed-off-by: Bruce Robertson <bruce.e.robertson@intel.com>
->>> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
->>> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->>
->> I guess this was fixed long ago by the following patch:
->>
->> commit cf7a8c03db792894f436db5f3ffc44d947b9b068
->> Author: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Date:   Wed Aug 17 10:18:34 2011 +0900
->>
->>     max17042_battery: Bugfix of incorrect voltage register value interpretation
->>
->>     The calculation had error in getting voltage values from
->>     MAX17042 registers. The least bit denotes 78.125uV (625/8).
->
-> The multipliers I see in the patch are 83 making the voltages somewhat
-> high and the low 3 bits are not masked off. I'm probably misreading the code.
->
->>
->>     Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->>     Signed-off-by: Philip Rakity <prakity@marvell.com>
->>     Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->>     Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
->>
->> Thanks,
