@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030620Ab2CNOGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:06:48 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:59624 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184Ab2CNOGq (ORCPT
+	id S1030654Ab2CNOJX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:09:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53279 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752638Ab2CNOJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:06:46 -0400
-Message-ID: <4F60A5E5.1070709@windriver.com>
-Date: Wed, 14 Mar 2012 10:06:29 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
+	Wed, 14 Mar 2012 10:09:22 -0400
+Date: Wed, 14 Mar 2012 14:09:10 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFC/RFT 1/2] regulator: Fix da9052 ldo regulator names
+Message-ID: <20120314140909.GN3133@opensource.wolfsonmicro.com>
+References: <1331077370.20711.2.camel@phoenix>
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@amd.com>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        Joerg-Volker-Peetz <jvpeetz@web.de>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [34-longterm 181/196] x86, AMD: Fix ARAT feature setting again
-References: <1331597724-31358-1-git-send-email-paul.gortmaker@windriver.com> <1331598109-31424-1-git-send-email-paul.gortmaker@windriver.com> <1331598109-31424-136-git-send-email-paul.gortmaker@windriver.com> <4F5F51E2.1090304@amd.com>
-In-Reply-To: <4F5F51E2.1090304@amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="95CBLwa+io9O2zXc"
+Content-Disposition: inline
+In-Reply-To: <1331077370.20711.2.camel@phoenix>
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-03-13 09:55 AM, Boris Ostrovsky wrote:
-> On 03/12/12 20:21, Paul Gortmaker wrote:
->> From: Borislav Petkov<borislav.petkov@amd.com>
->>
->>                     -------------------
->>      This is a commit scheduled for the next v2.6.34 longterm release.
->>      If you see a problem with using this for longterm, please comment.
-> 
-> 
-> Paul, please use e9cdd343a5e42c43bcda01e609fa23089e026470 instead of the 
-> one below.
 
-It turns out that the e9cdd wants to apply on top of (vs instead of) the
-14fb57dccb commit.
+--95CBLwa+io9O2zXc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-So I will queue it directly after the 14fb57dcc commit.
+On Wed, Mar 07, 2012 at 07:42:50AM +0800, Axel Lin wrote:
+> The regulator name for LDOs are LDO4 ... LDO13 in current implementation.
+> The correct regulator name for LDOs should be LDO1 ... LDO10.
 
-Thanks,
-Paul.
+Can you please rebase this against -next?  I was going to apply but some
+of your other fixes end up conflicting with this and the second change.
 
-> 
-> -boris
-> 
->>                     -------------------
->>
->> commit 14fb57dccb6e1defe9f89a66f548fcb24c374c1d upstream.
->>
->> Trying to enable the local APIC timer on early K8 revisions
->> uncovers a number of other issues with it, in conjunction with
->> the C1E enter path on AMD. Fixing those causes much more churn
->> and troubles than the benefit of using that timer brings so
->> don't enable it on K8 at all, falling back to the original
->> functionality the kernel had wrt to that.
->>
->> Reported-and-bisected-by: Nick Bowler<nbowler@elliptictech.com>
->> Cc: Boris Ostrovsky<Boris.Ostrovsky@amd.com>
->> Cc: Andreas Herrmann<andreas.herrmann3@amd.com>
->> Cc: Greg Kroah-Hartman<greg@kroah.com>
->> Cc: Hans Rosenfeld<hans.rosenfeld@amd.com>
->> Cc: Nick Bowler<nbowler@elliptictech.com>
->> Cc: Joerg-Volker-Peetz<jvpeetz@web.de>
->> Signed-off-by: Borislav Petkov<borislav.petkov@amd.com>
->> Link: http://lkml.kernel.org/r/1305636919-31165-3-git-send-email-bp@amd64.org
->> Signed-off-by: Ingo Molnar<mingo@elte.hu>
->> Signed-off-by: Paul Gortmaker<paul.gortmaker@windriver.com>
->> ---
->>   arch/x86/kernel/cpu/amd.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
->> index d618dc1..76a7f76 100644
->> --- a/arch/x86/kernel/cpu/amd.c
->> +++ b/arch/x86/kernel/cpu/amd.c
->> @@ -567,7 +567,7 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
->>   #endif
->>
->>   	/* As a rule processors have APIC timer running in deep C states */
->> -	if (c->x86>= 0xf&&  !cpu_has_amd_erratum(amd_erratum_400))
->> +	if (c->x86>  0xf&&  !cpu_has_amd_erratum(amd_erratum_400))
->>   		set_cpu_cap(c, X86_FEATURE_ARAT);
->>
->>   	/*
-> 
-> 
+--95CBLwa+io9O2zXc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPYKZ9AAoJEBus8iNuMP3db2oP/2c3PdFIhHZKGswFy/dSgqq0
+x30TQIL6S863X7Imaup6xri/KTveJDp70Zi3BKz6f4WtAXFpq91jFqna+Vdl7Fsd
+oA7YrodY9utsKh4LWiosYz0rE0Ot3hXrsGQZTVxrXjiJ7O4jhQ242unEc6c5R8aO
+mP7InPDjaar9kfv6NSUixyGS3JCKsbi62uW/ML/5EoyaNREIL3asmdTOHA2+2aUs
+VIl+vzsJ3VGDpt0yB1hhMwaEjZ+SQGe7iP4CoDU96Iuuncc4UCCwqh6Zikvz0YxV
+iwVZ6soszHHeK+bfpGA90/Pr18ZO3XKOk98Zy09BNDuc4EMWQ3nuAg6Ik9jcYYmf
+y42WoA/XOebyvHgmnFtJXoyXuZQtaZzoBSHFKD0Ssb2AuAtbScHBOabrdx6xHoZw
+tU5c0mYvWKNLimtkldpm3mw87tAKdcGdsp3rAgFIxFQAqC1fAkMua3kFkIqUkctk
+N8zbJmaPohhs70IBKY8ui8su3C3GD/81RLUXNkvqhsHRlzCI8z5YlRsy/xbRPQSX
+8y0XLEJU3GcCmu/vRsm2K6kTMpY+q0tJNHLQl/UMgenGsZ1YiJM9sqKst4aZKEvp
+xMZg3lO4kzL3yL5hmSaQxUmX0jU64ycQwoB4/3DRuJPv0jzMfqFybcXT7MDq8nc8
+Qx0dgUcaVDMek6Sen6eh
+=ZgJ2
+-----END PGP SIGNATURE-----
+
+--95CBLwa+io9O2zXc--
