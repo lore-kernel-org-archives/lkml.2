@@ -1,49 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096Ab2CNA3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:29:55 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:32121 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756817Ab2CNA3x (ORCPT
+	id S1759093Ab2CNAaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:30:10 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44453 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758453Ab2CNAaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:29:53 -0400
-Date: Tue, 13 Mar 2012 20:24:42 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: "lenb@kernel.org" <lenb@kernel.org>, "Brown, Len" <len.brown@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "keir.xen@gmail.com" <keir.xen@gmail.com>,
-        Jan Beulich <JBeulich@suse.com>, "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [PATCH 2/2] RFC: Xen pad logic
-Message-ID: <20120314002442.GC20363@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC82923350AD0A6@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923350AD0A6@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090209.4F5FE63C.0026,ss=1,re=0.000,fgs=0
+	Tue, 13 Mar 2012 20:30:08 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Mar 2012 09:28:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        gthelen@google.com, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Subject: Re: [RFC REPOST] cgroup: removing css reference drain wait during
+ cgroup removal
+Message-Id: <20120314092828.3321731c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120313163914.GD7349@google.com>
+References: <20120312213155.GE23255@google.com>
+	<20120312213343.GF23255@google.com>
+	<20120313151148.f8004a00.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120313163914.GD7349@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static struct acpi_driver xen_acpi_pad_driver = {
-> +	.name = "processor_aggregator",
-> +	.class = ACPI_PROCESSOR_AGGREGATOR_CLASS,
-> +	.ids = xen_pad_device_ids,
-> +	.ops = {
-> +		.add = xen_acpi_pad_add,
-> +		.remove = xen_acpi_pad_remove,
-> +	},
-> +};
-> +
-> +static int __init xen_acpi_pad_init(void)
-> +{
-> +	return acpi_bus_register_driver(&xen_acpi_pad_driver);
+On Tue, 13 Mar 2012 09:39:14 -0700
+Tejun Heo <tj@kernel.org> wrote:
 
-If the acpi_bus_register_driver function could work with multiple
-acpi_drivers that define the same class (and have some priority) would
-this be easier?
+> Hello, KAMEZAWA.
+> 
+> On Tue, Mar 13, 2012 at 03:11:48PM +0900, KAMEZAWA Hiroyuki wrote:
+> > The trouble for pre_destroy() is _not_ refcount, Memory cgroup has its own refcnt
+> > and use it internally. The problem is 'charges'. It's not related to refcnt.
+> 
+> Hmmm.... yeah, I'm not familiar with memcg internals at all.  For
+> blkcg, refcnt matters but if it doesn't for memcg, great.
+> 
+> > Cgroup is designed to exists with 'tasks'. But memory may not be related to any
+> > task...just related to a cgroup.
+> > 
+> > But ok, pre_destory() & rmdir() is complicated, I agree.
+> > 
+> > Now, we prevent rmdir() if we can't move charges to its parent. If pre_destory()
+> > shouldn't fail, I can think of some alternatives.
+> > 
+> >  * move all charges to the parent and if it fails...move all charges to
+> >    root cgroup.
+> >    (drop_from_memory may not work well in swapless system.)
+> 
+> I think this one is better and this shouldn't fail if hierarchical
+> mode is in use, right?
+> 
+
+Right.
+
+
+> > I think.. if pre_destory() never fails, we don't need pre_destroy().
+> 
+> For memcg maybe, blkcg still needs it.
+> 
+> > >   The last one seems more tricky.  On destruction of cgroup, the
+> > >   charges are transferred to its parent and the parent may not have
+> > >   enough room for that.  Greg told me that this should only be a
+> > >   problem for !hierarchical case.  I think this can be dealt with by
+> > >   dumping what's left over to root cgroup with a warning message.
+> > 
+> > I don't like warning ;) 
+> 
+> I agree this isn't perfect but then again failing rmdir isn't perfect
+> either and given that the condition can be wholly avoided in
+> hierarchical mode, which should be the default anyway (is there any
+> reason to keep flat mode except for backward compatibility?), I don't
+> think the trade off is too bad.
+> 
+
+One reason is 'performance'. You can see performance trouble when you
+creates deep tree of memcgs in hierarchy mode. The deeper memcg tree,
+the more res_coutners will be shared.
+
+For example, libvirt creates cgroup tree as
+
+	/cgroup/memory/libvirt/qemu/GuestXXX/....
+        /cgroup/memory/libvirt/lxc/GuestXXX/...
+
+No one don't want to count up 4 res_coutner, which is very very heavy,
+for handling independent workloads of "Guest".
+
+IIUC, in general, even in the processes are in a tree, in major case
+of servers, their workloads are independent.
+I think FLAT mode is the dafault. 'heararchical' is a crazy thing which
+cannot be managed.
+
+
+Thanks,
+-Kame
+
