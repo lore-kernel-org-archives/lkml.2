@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760297Ab2CNBE7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 21:04:59 -0400
+	id S1760399Ab2CNBFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 21:05:10 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:43959 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760109Ab2CNBE6 (ORCPT
+	with ESMTP id S1760323Ab2CNBFG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 21:04:58 -0400
-Date: Wed, 14 Mar 2012 05:04:54 +0400
+	Tue, 13 Mar 2012 21:05:06 -0400
+Date: Wed, 14 Mar 2012 05:05:04 +0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Arun Murthy <arun.murthy@stericsson.com>
 Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org,
         karl.komierowski@stericsson.com, johan.palsson@stericsson.com,
         linus.walleij@linaro.org
-Subject: [PATCH 1/6] ab8500_charger: Convert to the new USB OTG calls
-Message-ID: <20120314010454.GA10798@oksana.dev.rtsoft.ru>
+Subject: [PATCH 2/6] ab8500_btemp: Get rid of 'enum adc_therm'
+Message-ID: <20120314010504.GB10798@oksana.dev.rtsoft.ru>
 References: <20120314005901.GB1778@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -25,88 +25,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following build errors:
+This is the same as abx500_adc_therm, but when the former is used,
+the following warning flood pops up:
 
-ab8500_charger.c: In function 'ab8500_charger_remove':
-ab8500_charger.c:2519:2: error: implicit declaration of function 'otg_unregister_notifier' [-Werror=implicit-function-declaration]
-ab8500_charger.c:2520:2: error: implicit declaration of function 'otg_put_transceiver' [-Werror=implicit-function-declaration]
-ab8500_charger.c: In function 'ab8500_charger_probe':
-ab8500_charger.c:2688:2: error: implicit declaration of function 'otg_get_transceiver' [-Werror=implicit-function-declaration]
-ab8500_charger.c:2688:10: warning: assignment makes pointer from integer without a cast [enabled by default]
-ab8500_charger.c:2695:2: error: implicit declaration of function 'otg_register_notifier' [-Werror=implicit-function-declaration]
+drivers/power/ab8500_btemp.c: In function 'ab8500_btemp_batctrl_volt_to_res':
+ab8500_btemp.c:150:25: warning: comparison between 'enum abx500_adc_therm' and 'enum adc_therm' [-Wenum-compare]
+ab8500_btemp.c: In function 'ab8500_btemp_curr_source_enable':
+ab8500_btemp.c:212:25: warning: comparison between 'enum abx500_adc_therm' and 'enum adc_therm' [-Wenum-compare]
+ab8500_btemp.c:244:32: warning: comparison between 'enum abx500_adc_therm' and 'enum adc_therm' [-Wenum-compare]
+ab8500_btemp.c: In function 'ab8500_btemp_measure_temp':
+ab8500_btemp.c:462:25: warning: comparison between 'enum abx500_adc_therm' and 'enum adc_therm' [-Wenum-compare]
+ab8500_btemp.c: In function 'ab8500_btemp_id':
+ab8500_btemp.c:528:121: warning: comparison between 'enum abx500_adc_therm' and 'enum adc_therm' [-Wenum-compare]
+ab8500_btemp.c:551:25: warning: comparison between 'enum abx500_adc_therm' and 'enum adc_therm' [-Wenum-compare]
+
+This patch fixes the issue by switching the driver to use more
+namespace-friendly enum.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- drivers/power/ab8500_charger.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+ drivers/power/ab8500_btemp.c         |   13 +++++++------
+ include/linux/mfd/abx500/ab8500-bm.h |   15 ++-------------
+ 2 files changed, 9 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-index bbc541a..a7217d6 100644
---- a/drivers/power/ab8500_charger.c
-+++ b/drivers/power/ab8500_charger.c
-@@ -240,7 +240,7 @@ struct ab8500_charger {
- 	struct work_struct usb_state_changed_work;
- 	struct work_struct check_main_thermal_prot_work;
- 	struct work_struct check_usb_thermal_prot_work;
--	struct otg_transceiver *otg;
-+	struct usb_phy *usb_phy;
- 	struct notifier_block nb;
- };
- 
-@@ -2516,8 +2516,8 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
- 	if (ret < 0)
- 		dev_err(di->dev, "%s mask and set failed\n", __func__);
- 
--	otg_unregister_notifier(di->otg, &di->nb);
--	otg_put_transceiver(di->otg);
-+	usb_unregister_notifier(di->usb_phy, &di->nb);
-+	usb_put_transceiver(di->usb_phy);
- 
- 	/* Delete the work queue */
- 	destroy_workqueue(di->charger_wq);
-@@ -2685,17 +2685,17 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
- 		goto free_ac;
+diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+index 443bc7d..d8bb993 100644
+--- a/drivers/power/ab8500_btemp.c
++++ b/drivers/power/ab8500_btemp.c
+@@ -147,7 +147,7 @@ static int ab8500_btemp_batctrl_volt_to_res(struct ab8500_btemp *di,
+ 		return (450000 * (v_batctrl)) / (1800 - v_batctrl);
  	}
  
--	di->otg = otg_get_transceiver();
--	if (!di->otg) {
--		dev_err(di->dev, "failed to get otg transceiver\n");
-+	di->usb_phy = usb_get_transceiver();
-+	if (!di->usb_phy) {
-+		dev_err(di->dev, "failed to get usb transceiver\n");
- 		ret = -EINVAL;
- 		goto free_usb;
- 	}
- 	di->nb.notifier_call = ab8500_charger_usb_notifier_call;
--	ret = otg_register_notifier(di->otg, &di->nb);
-+	ret = usb_register_notifier(di->usb_phy, &di->nb);
- 	if (ret) {
--		dev_err(di->dev, "failed to register otg notifier\n");
--		goto put_otg_transceiver;
-+		dev_err(di->dev, "failed to register usb notifier\n");
-+		goto put_usb_phy;
- 	}
+-	if (di->bat->adc_therm == ADC_THERM_BATCTRL) {
++	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL) {
+ 		/*
+ 		 * If the battery has internal NTC, we use the current
+ 		 * source to calculate the resistance, 7uA or 20uA
+@@ -209,7 +209,7 @@ static int ab8500_btemp_curr_source_enable(struct ab8500_btemp *di,
+ 		return 0;
  
- 	/* Identify the connected charger types during startup */
-@@ -2736,15 +2736,15 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
- 	return ret;
+ 	/* Only do this for batteries with internal NTC */
+-	if (di->bat->adc_therm == ADC_THERM_BATCTRL && enable) {
++	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL && enable) {
+ 		if (di->curr_source == BTEMP_BATCTRL_CURR_SRC_7UA)
+ 			curr = BAT_CTRL_7U_ENA;
+ 		else
+@@ -241,7 +241,7 @@ static int ab8500_btemp_curr_source_enable(struct ab8500_btemp *di,
+ 				__func__);
+ 			goto disable_curr_source;
+ 		}
+-	} else if (di->bat->adc_therm == ADC_THERM_BATCTRL && !enable) {
++	} else if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL && !enable) {
+ 		dev_dbg(di->dev, "Disable BATCTRL curr source\n");
  
- free_irq:
--	otg_unregister_notifier(di->otg, &di->nb);
-+	usb_unregister_notifier(di->usb_phy, &di->nb);
+ 		/* Write 0 to the curr bits */
+@@ -459,7 +459,7 @@ static int ab8500_btemp_measure_temp(struct ab8500_btemp *di)
  
- 	/* We also have to free all successfully registered irqs */
- 	for (i = i - 1; i >= 0; i--) {
- 		irq = platform_get_irq_byname(pdev, ab8500_charger_irq[i].name);
- 		free_irq(irq, di);
+ 	id = di->bat->batt_id;
+ 
+-	if (di->bat->adc_therm == ADC_THERM_BATCTRL &&
++	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL &&
+ 			id != BATTERY_UNKNOWN) {
+ 
+ 		rbat = ab8500_btemp_get_batctrl_res(di);
+@@ -528,7 +528,7 @@ static int ab8500_btemp_id(struct ab8500_btemp *di)
+ 			dev_dbg(di->dev, "Battery detected on %s"
+ 				" low %d < res %d < high: %d"
+ 				" index: %d\n",
+-				di->bat->adc_therm == ADC_THERM_BATCTRL ?
++				di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL ?
+ 				"BATCTRL" : "BATTEMP",
+ 				di->bat->bat_type[i].resis_low, res,
+ 				di->bat->bat_type[i].resis_high, i);
+@@ -548,7 +548,8 @@ static int ab8500_btemp_id(struct ab8500_btemp *di)
+ 	 * We only have to change current source if the
+ 	 * detected type is Type 1, else we use the 7uA source
+ 	 */
+-	if (di->bat->adc_therm == ADC_THERM_BATCTRL && di->bat->batt_id == 1) {
++	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL &&
++			di->bat->batt_id == 1) {
+ 		dev_dbg(di->dev, "Set BATCTRL current source to 20uA\n");
+ 		di->curr_source = BTEMP_BATCTRL_CURR_SRC_20UA;
  	}
--put_otg_transceiver:
--	otg_put_transceiver(di->otg);
-+put_usb_phy:
-+	usb_put_transceiver(di->usb_phy);
- free_usb:
- 	power_supply_unregister(&di->usb_chg.psy);
- free_ac:
+diff --git a/include/linux/mfd/abx500/ab8500-bm.h b/include/linux/mfd/abx500/ab8500-bm.h
+index 4b7342c..f61b7b9 100644
+--- a/include/linux/mfd/abx500/ab8500-bm.h
++++ b/include/linux/mfd/abx500/ab8500-bm.h
+@@ -9,6 +9,7 @@
+ #define _AB8500_BM_H
+ 
+ #include <linux/kernel.h>
++#include <linux/mfd/abx500.h>
+ 
+ /*
+  * System control 2 register offsets.
+@@ -231,18 +232,6 @@
+ /* Battery type */
+ #define BATTERY_UNKNOWN			00
+ 
+-/*
+- * ADC for the battery thermistor.
+- * When using the ADC_THERM_BATCTRL the battery ID resistor is combined with
+- * a NTC resistor to both identify the battery and to measure its temperature.
+- * Different phone manufactures uses different techniques to both identify the
+- * battery and to read its temperature.
+- */
+-enum adc_therm {
+-	ADC_THERM_BATCTRL,
+-	ADC_THERM_BATTEMP,
+-};
+-
+ /**
+  * struct res_to_temp - defines one point in a temp to res curve. To
+  * be used in battery packs that combines the identification resistor with a
+@@ -464,7 +453,7 @@ struct ab8500_bm_data {
+ 	bool no_maintenance;
+ 	bool chg_unknown_bat;
+ 	bool enable_overshoot;
+-	enum adc_therm adc_therm;
++	enum abx500_adc_therm adc_therm;
+ 	int fg_res;
+ 	int n_btypes;
+ 	int batt_id;
 -- 
 1.7.9
 
