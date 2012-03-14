@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760142Ab2CNQC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 12:02:27 -0400
-Received: from mail-fa0-f46.google.com ([209.85.161.46]:59621 "EHLO
-	mail-fa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760005Ab2CNQC0 convert rfc822-to-8bit (ORCPT
+	id S1756276Ab2CNQHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 12:07:05 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57420 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753674Ab2CNQHC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 12:02:26 -0400
+	Wed, 14 Mar 2012 12:07:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAC9WiBgxrNBqRMx_2-FGcY1mGroi=mRxGV31idunkhUTwCNskg@mail.gmail.com>
+In-Reply-To: <CAC9WiBhaLiMqNRa33TOj1boTmFBh5DgjN6+8AmQbBYUgy=CGNg@mail.gmail.com>
 References: <CAC9WiBiZ9oOaDaYjow-ZryZ8i=7uLixTAfm48YKVpbwQfLfayQ@mail.gmail.com>
-	<20120314154339.GB25000@redhat.com>
-	<CAC9WiBgxrNBqRMx_2-FGcY1mGroi=mRxGV31idunkhUTwCNskg@mail.gmail.com>
-Date: Wed, 14 Mar 2012 12:02:24 -0400
-Message-ID: <CA+5PVA6wrcxFUEoRFBLj9+2u0MeAAi5TDXDVB-M4QV0a65K4Hg@mail.gmail.com>
+	<CA+5PVA6y4gpf28zweFgC_Up+dcHtKcf9=YJ7TjUGKRsJo8FMsw@mail.gmail.com>
+	<CAC9WiBhaLiMqNRa33TOj1boTmFBh5DgjN6+8AmQbBYUgy=CGNg@mail.gmail.com>
+Date: Wed, 14 Mar 2012 17:07:01 +0100
+Message-ID: <CAC9WiBgHpe344FOh8BZb-OjRSq4P8Zhy+4n6hJnfctS0xqrXAg@mail.gmail.com>
 Subject: Re: Getting oops with 3.2.10 when removing a SD card
-From: Josh Boyer <jwboyer@gmail.com>
-To: Francis Moreau <francis.moro@gmail.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+From: Francis Moreau <francis.moro@gmail.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 11:50 AM, Francis Moreau <francis.moro@gmail.com> wrote:
-> On Wed, Mar 14, 2012 at 4:43 PM, Dave Jones <davej@redhat.com> wrote:
->> On Wed, Mar 14, 2012 at 04:38:04PM +0100, Francis Moreau wrote:
->>  > Hi,
->>  >
->>  > I'm getting this oops (pretty often) after writing to a SD card and
->>  > removing the card.
->>  >
->>  > Could anyone have a look please ?
+On Wed, Mar 14, 2012 at 4:49 PM, Francis Moreau <francis.moro@gmail.com> wrote:
+> On Wed, Mar 14, 2012 at 4:43 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+>> On Wed, Mar 14, 2012 at 11:38 AM, Francis Moreau <francis.moro@gmail.com> wrote:
+>>> Hi,
+>>>
+>>> I'm getting this oops (pretty often) after writing to a SD card and
+>>> removing the card.
+>>>
+>>> Here's the oops:
+>>>
+>>> [17610.371580] usb 1-1.6: new high-speed USB device number 14 using ehci_hcd
+>>> [17610.469928] usb 1-1.6: New USB device found, idVendor=0bda, idProduct=0159
+>>> [17610.469935] usb 1-1.6: New USB device strings: Mfr=1, Product=2,
+>>> SerialNumber=3
+>>> [17610.469939] usb 1-1.6: Product: USB2.0-CRW
+>>> [17610.469942] usb 1-1.6: Manufacturer: Generic
+>>> [17610.469946] usb 1-1.6: SerialNumber: 20071114173400000
+>>> [17610.485966] scsi16 : usb-storage 1-1.6:1.0
+>>> [17611.489253] scsi 16:0:0:0: Direct-Access     Generic- Multi-Card
+>>>   1.00 PQ: 0 ANSI: 0 CCS
+>>> [17611.489556] sd 16:0:0:0: Attached scsi generic sg2 type 0
+>>> [17612.177470] sd 16:0:0:0: [sdb] 7744512 512-byte logical blocks:
+>>> (3.96 GB/3.69 GiB)
+>>> [17612.178347] sd 16:0:0:0: [sdb] Write Protect is off
+>>> [17612.178355] sd 16:0:0:0: [sdb] Mode Sense: 03 00 00 00
+>>> [17612.179333] sd 16:0:0:0: [sdb] No Caching mode page present
+>>> [17612.179338] sd 16:0:0:0: [sdb] Assuming drive cache: write through
+>>> [17612.182988] sd 16:0:0:0: [sdb] No Caching mode page present
+>>> [17612.182993] sd 16:0:0:0: [sdb] Assuming drive cache: write through
+>>> [17612.214565]  sdb: sdb1
+>>> [17612.218666] sd 16:0:0:0: [sdb] No Caching mode page present
+>>> [17612.218672] sd 16:0:0:0: [sdb] Assuming drive cache: write through
+>>> [17612.218677] sd 16:0:0:0: [sdb] Attached SCSI removable disk
+>>> [17620.408767] usb 1-1.6: USB disconnect, device number 14
+>>> [17620.410224] scsi 16:0:0:0: killing request
+>>> [17620.410512] BUG: unable to handle kernel NULL pointer dereference
+>>> at 0000000000000008
+>>> [17620.411480] IP: [<ffffffffa01e08ef>] sd_revalidate_disk+0x3f/0x1a10 [sd_mod]
+>>> [17620.411501] PGD 286a3067 PUD aef9f067 PMD 0
+>>> [17620.411507] Oops: 0000 [#1] SMP
+>>> [17620.411512] CPU 0
 >>
->> Should be fixed by this patch that has been around for a while now.
+>> There's a patch to fix this that will hopefully be pulled into Linus' tree
+>> today.  It should work it's way back to 3.2-stable after that.
 >>
 >
-> Why isn't it mainlined then ?
+> Could you just point out the patch (including the tree shipping it) so
+> I can use/test it ?
+>
 
-Because it's been sitting in the subsystem maintainer's tree for a while.
-He sent a pull request to Linus earlier today to get it included in 3.3.
+maybe this one:
 
-josh
+ block: Fix NULL pointer dereference in sd_revalidate_disk
+
+or perhaps this one:
+
+ block: fix __blkdev_get and add_disk race condition
+
+I'm asking because my SD card is almost unusable now: after 3 or 4
+insertion/remove, I get the oops.
+
+-- 
+Francis
