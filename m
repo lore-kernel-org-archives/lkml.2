@@ -1,111 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760752Ab2CNKZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 06:25:05 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:24075 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760523Ab2CNKZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 06:25:02 -0400
-X-IronPort-AV: E=Sophos;i="4.73,583,1325433600"; 
-   d="scan'208";a="4533654"
-Message-ID: <4F60726E.3090807@cn.fujitsu.com>
-Date: Wed, 14 Mar 2012 18:26:54 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S1760755Ab2CNK0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 06:26:09 -0400
+Received: from dwdmx5.dwd.de ([141.38.3.242]:44884 "EHLO dwdmx5.dwd.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760574Ab2CNK0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 06:26:06 -0400
+Date: Wed, 14 Mar 2012 10:25:58 +0000 (GMT)
+From: Holger Kiehl <Holger.Kiehl@dwd.de>
+X-X-Sender: kiehl@diagnostix.dwd.de
+To: Shaohua Li <shli@kernel.org>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "neilb@suse.de" <neilb@suse.de>, "axboe@kernel.dk" <axboe@kernel.dk>
+Subject: Re: [patch 0/7] Add TRIM support for raid linear/0/1/10
+In-Reply-To: <CANejiEW=a1piMYvSYM5GmtxKsWYpZj+kjnmNsNUDmW9ydDBjBw@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1203140839590.28358@diagnostix.dwd.de>
+References: <20120312030412.375458948@fusionio.com> <alpine.LRH.2.02.1203121806120.23719@diagnostix.dwd.de> <4F5EFEB6.4060402@kernel.org> <alpine.LRH.2.02.1203131213480.15848@diagnostix.dwd.de> <CANejiEWYCxY_hLwgyN08_cXC64c82irkNPytTjOpYyER7pTGow@mail.gmail.com>
+ <alpine.LRH.2.02.1203131521190.29286@diagnostix.dwd.de> <CANejiEW=a1piMYvSYM5GmtxKsWYpZj+kjnmNsNUDmW9ydDBjBw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: "Daniel P. Berrange" <berrange@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Amit Shah <amit.shah@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-References: <4F58664D.1070800@cn.fujitsu.com> <4F58943E.1050402@redhat.com> <4F595B31.9090301@cn.fujitsu.com> <4F5DBC26.7060204@cn.fujitsu.com> <4F5DD0FD.9070904@redhat.com> <20120313091843.GB3800@redhat.com> <4F5F25BF.7060100@redhat.com> <4F6056FE.3020202@cn.fujitsu.com> <4F6063C8.8010005@redhat.com> <4F606A7C.9090900@cn.fujitsu.com> <4F606DCC.3020908@redhat.com>
-In-Reply-To: <4F606DCC.3020908@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-14 18:22:58,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-03-14 18:22:58,
-	Serialize complete at 2012-03-14 18:22:58
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 03/14/2012 06:07 PM, Avi Kivity Wrote:
-> On 03/14/2012 11:53 AM, Wen Congyang wrote:
->> At 03/14/2012 05:24 PM, Avi Kivity Wrote:
->>> On 03/14/2012 10:29 AM, Wen Congyang wrote:
->>>> At 03/13/2012 06:47 PM, Avi Kivity Wrote:
->>>>> On 03/13/2012 11:18 AM, Daniel P. Berrange wrote:
->>>>>> On Mon, Mar 12, 2012 at 12:33:33PM +0200, Avi Kivity wrote:
->>>>>>> On 03/12/2012 11:04 AM, Wen Congyang wrote:
->>>>>>>> Do you have any other comments about this patch?
->>>>>>>>
->>>>>>>
->>>>>>> Not really, but I'm not 100% convinced the patch is worthwhile.  It's
->>>>>>> likely to only be used by Linux, which has kexec facilities, and you can
->>>>>>> put talk to management via virtio-serial and describe the crash in more
->>>>>>> details than a simple hypercall.
->>>>>>
->>>>>> As mentioned before, I don't think virtio-serial is a good fit for this.
->>>>>> We want something that is simple & guaranteed always available. Using
->>>>>> virtio-serial requires significant setup work on both the host and guest.
->>>>>
->>>>> So what?  It needs to be done anyway for the guest agent.
->>>>>
->>>>>> Many management application won't know to make a vioserial device available
->>>>>> to all guests they create. 
->>>>>
->>>>> Then they won't know to deal with the panic event either.
->>>>>
->>>>>> Most administrators won't even configure kexec,
->>>>>> let alone virtio serial on top of it. 
->>>>>
->>>>> It should be done by the OS vendor, not the individual admin.
->>>>>
->>>>>> The hypercall requires zero host
->>>>>> side config, and zero guest side config, which IMHO is what we need for
->>>>>> this feature.
->>>>>
->>>>> If it was this one feature, yes.  But we keep getting more and more
->>>>> features like that and we bloat the hypervisor.  There's a reason we
->>>>> have a host-to-guest channel, we should use it.
->>>>>
->>>>
->>>> I donot know how to use virtio-serial.
->>>
->>> I don't either, copying Amit.
->>>
->>>> I start vm like this:
->>>> qemu ...\
->>>>    -device virtio-serial \
->>>>   -chardev socket,path=/tmp/foo,server,nowait,id=foo \
->>>>   -device virtserialport,chardev=foo,name=port1 ...
->>>>
->>>> You said that there are too many channels. Does it mean /tmp/foo is a channel?
->>>
->>> Probably.
+On Wed, 14 Mar 2012, Shaohua Li wrote:
+
+> 2012/3/13 Holger Kiehl <Holger.Kiehl@dwd.de>:
+>> On Tue, 13 Mar 2012, Shaohua Li wrote:
 >>
->> Hmm, if we use virtio-serial, the guest kernel writes something into the channel when
->> the os is panicked. Is it right?
-> 
-> Right.
-> 
->> If so, is this channel visible to guest userspace? If the channle is visible to guest
->> userspace, the program running in userspace may write the same message to the channel.
+>>> Thanks for testing. This is very wield, the req->__data_len is wrong.
+>>> Is this a clean build?
+>>>
+>> I just downloaded linux-3.3-rc7.tar.bz2 from kernel.org and applied
+>> your patches again. The result is the same.
 >>
-> 
-> Surely there's some kind of access control on channels.
+>> Am I the only one experiencing these problems?
+> Martin Petersen pointed out scsi layer doesn't support discard merge, which
+> might be the reason you see the error message (my drive isn't a scsi device).
+> can you please try attached patch?
+>
+Thanks! After this patch the error messages are away.
 
-The virtio-serial depends on more things than touching the hypervisor. So I think touching
-the hypervisor is more reliable than using virtio-serial device, and it is very simple and
-easy to use.
+However, when the system boots it takes a very long time to boot:
 
-If we pass something from guest userspace to host, we can use virtio-serial. But If we pass
-something from guest kernelspace to host, I still prefer to touch the hypervisor.
+    [   16.527389] EXT4-fs (md0): mounted filesystem with ordered data mode. Opts: discard,commit=2400,journal_async_commit
+    [   24.218410] EXT4-fs (md2): mounted filesystem with ordered data mode. Opts: discard,commit=600,journal_async_commit
+    [   69.823138] udevd[474]: timeout '/sbin/blkid -o udev -p /dev/md0'
+    [   70.824197] udevd[474]: timeout: killing '/sbin/blkid -o udev -p /dev/md0' [866]
+    [   70.826823] udevd[474]: '/sbin/blkid -o udev -p /dev/md0' [866] terminated by signal 9 (Killed)
+    [   70.829290] udevd[474]: timeout 'udisks-part-id /dev/md0'
+    [   74.942625] udevd[475]: timeout '/sbin/blkid -o udev -p /dev/md2'
+    [   75.947158] udevd[475]: timeout: killing '/sbin/blkid -o udev -p /dev/md2' [874]
+    [   75.949734] udevd[475]: '/sbin/blkid -o udev -p /dev/md2' [874] terminated by signal 9 (Killed)
+    [   75.951945] udevd[475]: timeout 'udisks-part-id /dev/md2'
+    [   79.023741] rmmod[886]: ERROR: Module scsi_wait_scan does not exist in /proc/modules
+    [   96.005919] systemd[1]: dev-md3.swap activation timed out. Stopping.
+    [  127.292002] Adding 9434108k swap on /dev/md3.  Priority:0 extents:1 across:9434108k
 
-Thanks
-Wen Congyang
+During another boot I saw this additional message:
+
+    [   11.988732] scsi_verify_blk_ioctl: 930 callbacks suppressed
+
+The strange thing is that after boot I tried to enter the command
+'/sbin/blkid -o udev -p /dev/md0' and it works without any problems
+(time for this is 0m0.001s). So I also tried booting without discard
+option, but the result is the same.
+
+Otherwise I observed no problems. Even running some more extensive
+benchmark testing showed no problems. Only the performance drop is
+dramatic. In my own benchmark where thousand of files get copied around
+via FTP the performance drops from 4000 files per second to 520 when
+mounting the filesystem with discard option. Also during the benchmark
+any access to the disk can take very very long if discard is enabled.
+
+Next, I will try this patch on a system without SATA/SCSI disks.
+
+Regards,
+Holger
