@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030386Ab2CNXDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:03:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37560 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965338Ab2CNXCu (ORCPT
+	id S965362Ab2CNXD3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:03:29 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:34736 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965326Ab2CNXCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:02:50 -0400
-Date: Thu, 15 Mar 2012 00:02:47 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        Carsten Emde <C.Emde@osadl.org>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [REGRESSION][PATCH] mqueue: Ignore the validity of abs_timeout
- parameter when message can be performed immediately
-In-Reply-To: <20120314144601.ccc50a68.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.02.1203142346190.2466@ionos>
-References: <20120302164234.4938.38390934@jp.panasonic.com> <20120314144601.ccc50a68.akpm@linux-foundation.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 14 Mar 2012 19:02:47 -0400
+From: jim.cromie@gmail.com
+To: jbaron@redhat.com, rusty@rustcorp.com.au
+Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 11/11] dynamic_debug: init with core_initcall, not arch_initcall
+Date: Wed, 14 Mar 2012 17:02:06 -0600
+Message-Id: <1331766126-11674-12-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.8.1
+In-Reply-To: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
+References: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B1;2601;0cOn Wed, 14 Mar 2012, Andrew Morton wrote:
-> On Fri, 02 Mar 2012 16:42:35 +0900
-> Akira Takeuchi <takeuchi.akr@jp.panasonic.com> wrote:
-> > @@ -996,6 +1015,10 @@ SYSCALL_DEFINE5(mq_timedreceive, mqd_t, mqdes, char __user *, u_msg_ptr,
-> >  		if (filp->f_flags & O_NONBLOCK) {
-> >  			spin_unlock(&info->lock);
-> >  			ret = -EAGAIN;
-> > +		} else if (unlikely(timeout_param_error)) {
-> > +			spin_unlock(&info->lock);
-> > +			ret = timeout_param_error;
-> > +			msg_ptr = NULL; /* just for shutting up warning */
+From: Jim Cromie <jim.cromie@gmail.com>
 
-Huch? We are not "just" shutting up some warning because the compiler
-is yelling at us. No, either we initialize the variable upfront to
-NULL or we skip the whole return path by going to fput directly.
+Initializing dynamic_debug earlier makes pr_debug useful earlier
+in boot process.  For example:
 
-Duh, that code is convoluted enough already.
+    dyndbg=" module params +p"
 
-Thanks,
+will enable parameter processing for initcall levels after core.
+Note that this is too late to enable params processing for builtin
+modules, which is a significant limitation, but its still
+potentially useful.
 
-	tglx
+RFC: This works for me on a 64 bit desktop and i586 SBC, but is
+untested on other arches.  I presume there is or was a reason
+it was done with arch_initcall, maybe the constraints have changed.
+
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ lib/dynamic_debug.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 8fcead5..747245d 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -1009,7 +1009,7 @@ out_free:
+ 	return 0;
+ }
+ /* Allow early initialization for boot messages via boot param */
+-arch_initcall(dynamic_debug_init);
++core_initcall(dynamic_debug_init);
+ 
+ /* Debugfs setup must be done later */
+ module_init(dynamic_debug_init_debugfs);
+-- 
+1.7.7.6
 
