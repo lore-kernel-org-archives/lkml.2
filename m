@@ -1,65 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030946Ab2CNSKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 14:10:53 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:49852 "HELO
-	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1030887Ab2CNSKv (ORCPT
+	id S1031029Ab2CNSO6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 14:14:58 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:48311 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030974Ab2CNSOv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 14:10:51 -0400
-To: linux-scsi@vger.kernel.org, JBottomley@parallels.com
-Subject: [PATCH 3/3 v4] qla4xxx: use pci_dev->revision
-Cc: ravi.anand@qlogic.com, vikas.chaudhary@qlogic.com, iscsi-driver@qlogic.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Disposition: inline
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Organization: MontaVista Software Inc.
-Date: Wed, 14 Mar 2012 22:10:03 +0300
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203142210.03891.sshtylyov@ru.mvista.com>
+	Wed, 14 Mar 2012 14:14:51 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: JBeulich@suse.com, linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: xen-devel@lists.xensource.com
+Subject: [PATCH] minor fixes to xen-blkback (v1).
+Date: Wed, 14 Mar 2012 14:10:29 -0400
+Message-Id: <1331748631-4022-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.5
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090208.4F60E012.0086,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f4f5df23bf72208d0c2f1d8be629839924c2f4c2 ([SCSI] qla4xxx: Added support
-for ISP82XX) added code to read the PCI revision ID from the PCI configuration
-register while it's already stored by PCI subsystem in the 'revision' field of
-'struct pci_dev'...
+One of the patches I had already posted - just redid it per Jan's suggestion.
+The other patch is based on Jan suggestion.
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Acked-by: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+If there are no conerns I have put them in the usual branch:
 
----
-The patch is refreshed against the recent Linus' tree.
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.4
 
- drivers/scsi/qla4xxx/ql4_os.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+and will send out shortly a git pull.
 
-Index: linux-2.6/drivers/scsi/qla4xxx/ql4_os.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/qla4xxx/ql4_os.c
-+++ linux-2.6/drivers/scsi/qla4xxx/ql4_os.c
-@@ -2962,7 +2962,6 @@ static void qla4xxx_free_adapter(struct 
- int qla4_8xxx_iospace_config(struct scsi_qla_host *ha)
- {
- 	int status = 0;
--	uint8_t revision_id;
- 	unsigned long mem_base, mem_len, db_base, db_len;
- 	struct pci_dev *pdev = ha->pdev;
- 
-@@ -2974,10 +2973,9 @@ int qla4_8xxx_iospace_config(struct scsi
- 		goto iospace_error_exit;
- 	}
- 
--	pci_read_config_byte(pdev, PCI_REVISION_ID, &revision_id);
- 	DEBUG2(printk(KERN_INFO "%s: revision-id=%d\n",
--	    __func__, revision_id));
--	ha->revision_id = revision_id;
-+	    __func__, pdev->revision));
-+	ha->revision_id = pdev->revision;
- 
- 	/* remap phys address */
- 	mem_base = pci_resource_start(pdev, 0); /* 0 is for BAR 0 */
+ drivers/block/xen-blkback/blkback.c |   19 +++-----
+ drivers/block/xen-blkback/common.h  |    6 ---
+ drivers/block/xen-blkback/xenbus.c  |   83 +++++++++++++---------------------
+ 3 files changed, 40 insertions(+), 68 deletions(-)
+
