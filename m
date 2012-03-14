@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761224Ab2CNRCn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 13:02:43 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:34900 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1761199Ab2CNRCj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 13:02:39 -0400
-Message-ID: <4F60CF2F.5050505@xenotime.net>
-Date: Wed, 14 Mar 2012 10:02:39 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1761245Ab2CNRC4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 13:02:56 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:36845 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760291Ab2CNRCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 13:02:51 -0400
+Date: Wed, 14 Mar 2012 13:02:47 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: Phillip Susi <phillsusi@gmail.com>, Andreas Dilger <adilger@whamcloud.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120314170247.GC28042@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Lukas Czerner <lczerner@redhat.com>,
+	Phillip Susi <phillsusi@gmail.com>,
+	Andreas Dilger <adilger@whamcloud.com>,
+	Jacek Luczak <difrost.kernel@gmail.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
+ <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
+ <20120310044804.GB5652@thunk.org>
+ <4F5F9A97.5060404@ubuntu.com>
+ <20120313195339.GA24124@thunk.org>
+ <4F5FAC9C.9070607@gmail.com>
+ <20120313213304.GB11969@thunk.org>
+ <alpine.LFD.2.00.1203140825090.5379@dhcp-27-109.brq.redhat.com>
+ <20120314125002.GH15379@thunk.org>
+ <alpine.LFD.2.00.1203141507220.14894@dhcp-27-109.brq.redhat.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Chris Kelly <ckelly@ozmodevices.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH -next] staging: ozwpan depends on NET
-References: <20120314181921.59451eca117c276461f7dc28@canb.auug.org.au>
-In-Reply-To: <20120314181921.59451eca117c276461f7dc28@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1203141507220.14894@dhcp-27-109.brq.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Wed, Mar 14, 2012 at 03:34:13PM +0100, Lukas Czerner wrote:
+> > 
+> > You can make it be a RO_COMPAT change instead of an INCOMPAT change,
+> > yes.
+> 
+> Does it have to be RO_COMPAT change though ? Since this would be both
+> forward and backward compatible.
 
-Fix build errors:  add depends on NET.
+The challenge is how do you notice if the file system is mounted on an
+older kernel, which then inserts a directory entry without updating
+the secondary tree.  The older kernel won't know about the new inode
+flag, so it can't clear the flag when it modifies the directory.
 
-ERROR: "skb_clone" [drivers/staging/ozwpan/ozwpan.ko] undefined!
-ERROR: "dev_get_by_name" [drivers/staging/ozwpan/ozwpan.ko] undefined!
-ERROR: "dev_remove_pack" [drivers/staging/ozwpan/ozwpan.ko] undefined!
-ERROR: "init_net" [drivers/staging/ozwpan/ozwpan.ko] undefined!
-ERROR: "__alloc_skb" [drivers/staging/ozwpan/ozwpan.ko] undefined!
-ERROR: "kfree_skb" [drivers/staging/ozwpan/ozwpan.ko] undefined!
-ERROR: "dev_add_pack" [drivers/staging/ozwpan/ozwpan.ko] undefined!
-ERROR: "consume_skb" [drivers/staging/ozwpan/ozwpan.ko] undefined!
-ERROR: "dev_queue_xmit" [drivers/staging/ozwpan/ozwpan.ko] undefined!
-ERROR: "skb_put" [drivers/staging/ozwpan/ozwpan.ko] undefined!
+We were able to get away with making the original htree feature
+read/write compatible because the design for it was anticipated far in
+advance, and because it was before the days of enterprise kernels that
+had to be supported for seven years.  So we added code into ext3 to
+clear the the htree flag whenever the directory was modified something
+like two years before the htree code made its appearance, and back
+then we decided that was fair to assume no one would be using a kernel
+that old, or be jumping back and forth between an ancient kernel and a
+modern kernel with htree enabled.  Yes, that was playing a bit fast
+and loose, but early on in the kernel history, we could do that.  It's
+not something I would do today.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Chris Kelly <ckelly@ozmodevices.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/ozwpan/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The bigger deal is that as Zach pointed out, we can't just index it by
+inode number because we have to worry about hard links.  Which means
+we need either an explicit counter field added to the directory entry,
+or some kind of new offset field.  That we can't just shoehorn in and
+retain backwards compatibility.
 
---- linux-next-20120314.orig/drivers/staging/ozwpan/Kconfig
-+++ linux-next-20120314/drivers/staging/ozwpan/Kconfig
-@@ -1,6 +1,6 @@
- config USB_WPAN_HCD
- 	tristate "USB over WiFi Host Controller"
--	depends on USB
-+	depends on USB && NET
- 	help
- 	  A driver for USB Host Controllers that are compatible with
- 	  Ozmo Devices USB over WiFi technology.
+And once we break backwards compatibility, we might as well look at
+the full design space and see what is the most optimal.
+
+    	 	      	      	      	  - Ted
