@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760163Ab2CNI6W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 04:58:22 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:32638 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759893Ab2CNI6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 04:58:19 -0400
-X-AuditID: cbfee60f-b7bd0ae00000422c-c1-4f605da9f823
-Date: Wed, 14 Mar 2012 08:58:17 +0000 (GMT)
-From: PINTU KUMAR <pintu.k@samsung.com>
-Subject: Re: Re: [INFO] : Hibernation and Resume between 2 similar devices
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, PINTU KUMAR <pintu.k@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Reply-to: pintu.k@samsung.com
-MIME-version: 1.0
-X-MTR: 20120314085629793@pintu.k
-Msgkey: 20120314085629793@pintu.k
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20120314042844821@pintu.k
-X-ParentMTR: 20120314042844821@pintu.k
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <18908289.140021331715496168.JavaMail.weblogic@epml27>
-X-Brightmail-Tracker: AAAAAA==
+	id S1760188Ab2CNI7R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 04:59:17 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44226 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760088Ab2CNI7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 04:59:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Olof Johansson <olof@lixom.net>
+Subject: Re: [GIT PULL] Renesas SoC updates for v3.4, take 2
+Date: Wed, 14 Mar 2012 10:03:22 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Paul Mundt <lethal@linux-sh.org>
+References: <201203092155.04731.rjw@sisk.pl> <201203140116.40344.rjw@sisk.pl> <CAOesGMgsRDgiyfNTdC9KCPd4BJ-EsPK6=noVp=EVx-TMT7Hv7A@mail.gmail.com>
+In-Reply-To: <CAOesGMgsRDgiyfNTdC9KCPd4BJ-EsPK6=noVp=EVx-TMT7Hv7A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203141003.22901.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2E8wTFn027081
 
-------- Original Message -------
-Sender : Rafael J. Wysocki<rjw@sisk.pl> 
-Date   : Mar 14, 2012 01:36 (GMT+05:00)
-Title  : Re: [INFO] : Hibernation and Resume between 2 similar devices
-
-On Tuesday, March 13, 2012, PINTU KUMAR wrote:
-> Dear All,
+On Wednesday, March 14, 2012, Olof Johansson wrote:
+> On Tue, Mar 13, 2012 at 5:16 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Wednesday, March 14, 2012, Olof Johansson wrote:
+> >> On Tue, Mar 13, 2012 at 2:42 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > On Tuesday, March 13, 2012, Rafael J. Wysocki wrote:
+> >> >> On Tuesday, March 13, 2012, Arnd Bergmann wrote:
+> >> >> > On Tuesday 13 March 2012, Rafael J. Wysocki wrote:
+> >> >> > > > Note that the __io() issue has turned out to be more urgent than I first
+> >> >> > > > thought when we discussed it, so it would be good to apply the patch below
+> >> >> > > > on top of your series.
+> >> >> > >
+> >> >> > > Do you want me to apply it now or will you do that in your tree?
+> >> >> >
+> >> >> > Doesn't matter to me, as long as one of you applies it ;-)
+> >> >>
+> >> >> OK, so I will add it to the soc branch in the Renesas tree.
+> >> >
+> >> > Applied and pushed back the updated tree.
+> >>
+> >> Seems like you applied the patch but without the subject line,
+> >
+> > I didn't notice that, sorry.
+> >
+> >> so now git thinks the whole first paragraph is the patch subject. That's a
+> >> bit messy and I'd prefer if you could fix it up.
+> >
+> > I've just replaced the broken commit with a new fixed one.
+> >
+> >> Do you have downstream users of your tree that you'll mess up if you
+> >> rebase the last commit though? Alternatively I can take everything on
+> >> the branch but the last patch and apply it myself, but that will still
+> >> cause trouble for your downstream developers once things go upstream
+> >> and come down.
+> >
+> > Hopefully, no one has pulled from the tree yet. :-)
 > 
-> I am just curious to know if it is possible to "Hibernate in one device" and "Resume the hibernated image from another similar device".
+> Cool. Pulled into next/soc. Thanks!!
 
-Not out of the box (you'd need to hack the kernel for that to work I think,
-at least on x86) and the devices would need to be _exactly_ identical.
-Moreover, if there is read-write mass storage in them, the filesystems on
-both would have to be exactly identical as well (including metadata and data
-layout etc.).
+Great, thanks a lot!
 
-[Pintu]
-I wanted to try this on arm based Linux mobile phone.
-I have 2 exactly similar mobile phone.
-Here exactly means: 
-hardware is same, kernel version is same, platform is same, filesystem is same.
-The only difference could be some user space application state.
-Hmmm.....the metadata and data layout within file system....this is were the confusion is.
-Suppose in "Device 1" during hibernation, I have a file say "file1.txt" opened whose inode number is say "123456".
-This opened state of file1.txt will be captured in hibernation image.
-Now assume that same "file1.txt" is also present (not opened) in "Device2" but whose inode number is say "567890".
-Now if I reboot "Device 2" and try to resume from hibernated image of "Device 1", what would happen to "file1.txt" ??
-And similarly other senarios.......
-Will resume work, at least partially. Like discard whatever is not relevant to "Device 2" and continue to load others.
-
-
-> Suppose, I have 2 exactly similar device (Laptop or mobile phone) with me.
-> At one time I will be working on only one device at a time.
-> Suppose I started my work on "Device 1"  with few opened application and later I wanted to switch to "Device 2" which is exactly similar to Device 1.
-> I thought to hibernate (suspend to disk) the Device 1 and store the hibernated image as a swap file and later transfer to sd card.
-> Then take of the sd card from Device 1 and put it into Device 2.
-> Copy the swap file from sd card to Device 2 in some swap partition.
-> Then reboot the Device 2 to Resume from this swap file.
-> I will get back my Device 1 content in Device 2.
-> 
-> Hope this is possible ?
-
-It may be possible to make it kind of work, but I wouldn't recommend it to
-anyone.
-
-[Pintu]
-if this can be possible we can derive many use cases.
-Till now we heard about hibernating and resuming from same device. And also people uses it rarely.
-With the Tizen coming up (supporting multiple devices) we can think about it.
-Also if "cloud" is integrated with kernel in _future_ we can save all our work from one device in cloud and restore our work from cloud in another device.
-I think that make sense.
-
-
-Thanks,
 Rafael
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
