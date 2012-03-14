@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761435Ab2CNXv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:51:56 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:10046 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760795Ab2CNXvz (ORCPT
+	id S1031255Ab2CNX5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:57:09 -0400
+Received: from HSI-KBW-46-237-235-162.hsi.kabel-badenwuerttemberg.de ([46.237.235.162]:38316
+	"EHLO rack0slot8.osadl.org" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1031176Ab2CNX5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:51:55 -0400
-Date: Thu, 15 Mar 2012 00:50:49 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: dri-devel@lists.freedesktop.org, Francisco Jerez <currojerez@riseup.net>,
-        Emil Velikov <emil.l.velikov@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>, David Airlie <airlied@linux.ie>
-Subject: [PATCH] nouveau: kfree() gracefully handles NULL pointers, testing
- is redundant
-Message-ID: <alpine.LNX.2.00.1203150048360.22671@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 14 Mar 2012 19:57:04 -0400
+X-Greylist: delayed 491 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Mar 2012 19:57:04 EDT
+Message-Id: <20120314233544.629616190@osadl.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 15 Mar 2012 00:35:44 +0100
+From: Carsten Emde <C.Emde@osadl.org>
+To: David Airlie <airlied@linux.ie>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [V2 PATCH 0/2] Provide workarounds to use DRM/KMS with broken graphics hardware
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove redundant NULL checks before kfree() in
-drivers/gpu/drm/nouveau/nvc0_graph.c
+This is V2 of a patchset to use DRM/KMS with broken graphics hardware.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/gpu/drm/nouveau/nvc0_graph.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+As a major change from V1, generic EDID data are now built-in into the
+drm_kms_helper module as proposed by Alan. To help people building
+their own EDID data and to understand how the binary EDID blobs in
+drivers/gpu/drm/drm_edid_load.c have been created, the entire material
+went into the Documentation tree as suggested by Valdis. Finally, David
+showed a much better way to explicitly disable and enable a particular
+connector, so patch 02/03 could go.
 
-diff --git a/drivers/gpu/drm/nouveau/nvc0_graph.c b/drivers/gpu/drm/nouveau/nvc0_graph.c
-index 8ee3963..e9eca29 100644
---- a/drivers/gpu/drm/nouveau/nvc0_graph.c
-+++ b/drivers/gpu/drm/nouveau/nvc0_graph.c
-@@ -755,10 +755,8 @@ nvc0_graph_create_fw(struct drm_device *dev, const char *fwname,
- static void
- nvc0_graph_destroy_fw(struct nvc0_graph_fuc *fuc)
- {
--	if (fuc->data) {
--		kfree(fuc->data);
--		fuc->data = NULL;
--	}
-+	kfree(fuc->data);
-+	fuc->data = NULL;
- }
- 
- static void
-@@ -778,8 +776,7 @@ nvc0_graph_destroy(struct drm_device *dev, int engine)
- 	nouveau_gpuobj_ref(NULL, &priv->unk4188b8);
- 	nouveau_gpuobj_ref(NULL, &priv->unk4188b4);
- 
--	if (priv->grctx_vals)
--		kfree(priv->grctx_vals);
-+	kfree(priv->grctx_vals);
- 
- 	NVOBJ_ENGINE_DEL(dev, GR);
- 	kfree(priv);
--- 
-1.7.9.4
+The two remaining patches
+- introduce a mechanism to define or load EDID data instead of letting the
+controller probe for it,
+- add a parameter to the i915 module to invert the sense of the backlight
+brightness variable for broken controllers that require this.
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+	-Carsten.
 
