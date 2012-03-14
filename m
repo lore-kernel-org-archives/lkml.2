@@ -1,118 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab2CNLUm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 07:20:42 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:57664 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab2CNLUg (ORCPT
+	id S1755644Ab2CNLZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 07:25:50 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34953 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752633Ab2CNLZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 07:20:36 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V3 5/8] hugetlbfs: Add memcg control files for hugetlbfs
-In-Reply-To: <20120313144233.49026e6a.akpm@linux-foundation.org>
-References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331622432-24683-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120313144233.49026e6a.akpm@linux-foundation.org>
-User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 14 Mar 2012 16:40:58 +0530
-Message-ID: <87lin38mkd.fsf@linux.vnet.ibm.com>
+	Wed, 14 Mar 2012 07:25:48 -0400
+Date: Wed, 14 Mar 2012 12:25:43 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        David Herrmann <dh.herrmann@googlemail.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 0/3] bluetooth: bug fixes for 3.3
+Message-ID: <20120314112543.GA5136@localhost>
+References: <1331307806-21761-1-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-x-cbid: 12031411-8256-0000-0000-000001A22D9D
+Content-Disposition: inline
+In-Reply-To: <1331307806-21761-1-git-send-email-jhovold@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 14:42:33 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Tue, 13 Mar 2012 12:37:09 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> 
-> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> > 
-> > This add control files for hugetlbfs in memcg
-> > 
-> > ...
-> >
-> > --- a/include/linux/hugetlb.h
-> > +++ b/include/linux/hugetlb.h
-> > @@ -220,6 +221,10 @@ struct hstate {
-> >  	unsigned int nr_huge_pages_node[MAX_NUMNODES];
-> >  	unsigned int free_huge_pages_node[MAX_NUMNODES];
-> >  	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
-> > +	/* cgroup control files */
-> > +	struct cftype cgroup_limit_file;
-> > +	struct cftype cgroup_usage_file;
-> > +	struct cftype cgroup_max_usage_file;
-> >  	char name[HSTATE_NAME_LEN];
-> >  };
-> 
-> We don't need all these in here if, for example, cgroups is disabled?
+Hi Marcel and Gustavo,
 
-Will fix.
+On Fri, Mar 09, 2012 at 04:43:23PM +0100, Johan Hovold wrote:
+> This is a revised series which also contains a minimal fix to the memory leak
+> discovered by David Hermann upon which the first NULL-pointer-dereference fix
+> also depends.
+> 
+> These patches need to get to Linus ASAP as the problems are present in 3.3-rc6
+> as well as earlier kernels and thus should be backported to the stable trees as
+> well.
 
-> 
-> > ...
-> >
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -1817,6 +1817,36 @@ static int __init hugetlb_init(void)
-> >  }
-> >  module_init(hugetlb_init);
-> >  
-> > +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
-> > +int register_hugetlb_memcg_files(struct cgroup *cgroup,
-> > +				 struct cgroup_subsys *ss)
-> > +{
-> > +	int ret = 0;
-> > +	struct hstate *h;
-> > +
-> > +	for_each_hstate(h) {
-> > +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_limit_file);
-> > +		if (ret)
-> > +			return ret;
-> > +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_usage_file);
-> > +		if (ret)
-> > +			return ret;
-> > +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_max_usage_file);
-> > +		if (ret)
-> > +			return ret;
-> > +
-> > +	}
-> > +	return ret;
-> > +}
-> > +/* mm/memcontrol.c because mem_cgroup_read/write is not availabel outside */
-> 
-> Comment has a spelling mistake.
+Any chance to get these into 3.3? Otherwise, is it possible to rebase
+bluetooth-next on top of these so that Greg can get them into 3.3.1 (and
+the other stable trees) once bluetooth-next is merged?
 
-Will fix
+All three bugs can be used to crash any kernel with HCI-UART support and
+can probably be used for exploits as they are extremely easy to trigger
+reliably.
 
-> 
-> > +int mem_cgroup_hugetlb_file_init(struct hstate *h, int idx);
-> 
-> 
-> No, please put it in a header file.  Always.  Where both callers and
-> the implementation see the same propotype.
-> 
-> > +#else
-> > +static int mem_cgroup_hugetlb_file_init(struct hstate *h, int idx)
-> > +{
-> > +	return 0;
-> > +}
-> > +#endif
-> 
-> So this will go into the same header file.
-> 
-
-I was not sure whether i want to put mem_cgroup_hugetlb_file_init in
-linux/memcontrol.h . Ideally i want to have that in mm/hugetlb.c and in
-linux/hugetlb.h. That would require me to make mem_cgroup_read and
-others non static and move few #defines to memcontrol.h. That would
-involve larger code movement which i didn't want to do. ? What do you
-suggest ? Just move mem_cgroup_hugetlb_file_init to memcontrol.h ?
-
-
--aneesh
-
+Thanks,
+Johan
