@@ -1,177 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759393Ab2CNINd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 04:13:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60778 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758815Ab2CNIN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 04:13:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="128789283"
-Message-ID: <4F60532E.4070103@intel.com>
-Date: Wed, 14 Mar 2012 10:13:34 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1030182Ab2CNIRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 04:17:48 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:17985 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab2CNIRp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 04:17:45 -0400
+Date: Wed, 14 Mar 2012 11:19:10 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] arch/unicore32/kernel/dma.c: ensure arguments to
+ request_irq and free_irq are compatible
+Message-ID: <20120314081910.GC3163@mwanda>
+References: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1331494587-12196-8-git-send-email-Julia.Lawall@lip6.fr>
+ <1331513926.2048.58.camel@epip-laptop>
+ <alpine.DEB.2.02.1203120625570.2066@localhost6.localdomain6>
+ <1331622633.2048.87.camel@epip-laptop>
+ <alpine.DEB.2.02.1203130921250.1974@localhost6.localdomain6>
+ <1331712444.2389.36.camel@epip-laptop>
 MIME-Version: 1.0
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-CC: Chris Ball <cjb@laptop.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/3] mmc: sdhci: check interrupt flags in ISR again
-References: <1331659002-13743-1-git-send-email-alexander.stein@systec-electronic.com> <1331659002-13743-2-git-send-email-alexander.stein@systec-electronic.com> <4F604B16.606@intel.com> <1994979.AaWWmIIAYQ@ws-stein>
-In-Reply-To: <1994979.AaWWmIIAYQ@ws-stein>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lCAWRPmW1mITcIfM"
+Content-Disposition: inline
+In-Reply-To: <1331712444.2389.36.camel@epip-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4F6053F7.00D1,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/03/12 09:53, Alexander Stein wrote:
-> Hello,
-> 
-> Am Mittwoch, 14. März 2012, 09:39:02 schrieb Adrian Hunter:
->> On 13/03/12 19:16, Alexander Stein wrote:
->>> When using MSI it is possible that a new MSI is sent while an earlier
->>> MSI is currently handled. In this case SDHCI_INT_STATUS only contains
->>> SDHCI_INT_RESPONSE and the ISR would not be called again. But at the end
->>> of the ISR SDHCI_INT_DATA_END is now also pending which would be
->>> ignored.
->>>
->>> Fix this by rereading the interrupt flags in the ISR until no interrupt
->>> we care is pending.
->>>
->>> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
->> [...]
->>> @@ -2336,6 +2338,14 @@ static irqreturn_t sdhci_irq(int irq, void
->>> *dev_id)> 
->>>  		sdhci_writel(host, SDHCI_INT_BUS_POWER, SDHCI_INT_STATUS);
->>>  	
->>>  	}
->>>
->>> +	intmask_unhandled = intmask;
->>> +
->>> +	intmask = sdhci_readl(host, SDHCI_INT_STATUS);
->>> +
->>> +	/* Do interrupt handling again if we got new flags */
->>> +	if (intmask & ~intmask_unhandled)
->>> +		goto again;
->>> +
->>>
->>>  	intmask &= ~SDHCI_INT_BUS_POWER;
->>>  	
->>>  	if (intmask & SDHCI_INT_CARD_INT)
->>
->> Why not just replace mmiowb() i.e.
->>
->>
->> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
->> index 8d66706..da8a101 100644
->> --- a/drivers/mmc/host/sdhci.c
->> +++ b/drivers/mmc/host/sdhci.c
->> @@ -2353,7 +2353,9 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
->>
->>         result = IRQ_HANDLED;
->>
->> -       mmiowb();
->> +       intmask = sdhci_readl(host, SDHCI_INT_STATUS);
->> +       if (intmask)
->> +               goto again;
->>  out:
->>         spin_unlock(&host->lock);
->>
-> 
-> Well, I chose this way to only printk the error once. With your suggestion it 
-> might be printed in each loop, dunno how often/fast these IRQ stats are set 
-> again after clearing. This would end in an endless loop if error flags are set 
-> again fast enough, but see below.
-> But in general I like this approach.
-> 
->> But maybe it would be safer limiting the number of loops i.e.
->>
->>
->> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
->> index 8d66706..d88247d 100644
->> --- a/drivers/mmc/host/sdhci.c
->> +++ b/drivers/mmc/host/sdhci.c
->> @@ -2268,7 +2268,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
->>         irqreturn_t result;
->>         struct sdhci_host *host = dev_id;
->>         u32 intmask;
->> -       int cardint = 0;
->> +       int cardint = 0, max_loops = 16;
->>
->>         spin_lock(&host->lock);
->>
->> @@ -2353,7 +2353,9 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
->>
->>         result = IRQ_HANDLED;
->>
->> -       mmiowb();
->> +       intmask = sdhci_readl(host, SDHCI_INT_STATUS);
->> +       if (intmask && --max_loops)
->> +               goto again;
->>  out:
->>         spin_unlock(&host->lock);
-> 
-> The actual problem I saw was a CMD6 command with an R1b response where the IRQ 
-> for the 'not busy' event was sent during ISR for the response. So I think 
-> normally this should only occur once.
-> Regarding error flags I masked the unhandled flags out in order to print an 
-> error only once, even if they might be set again in the next loop. With a 
-> simple check on intmask they might occur up to 16 times in the kernel log.
-> IMHO it makes no sense to repeatedly print errors about interrupt flags we 
-> don't handle.
-> 
-> Suggestions to get a more clean way?
 
-I don't know about clean, but there is this:
+--lCAWRPmW1mITcIfM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, Mar 14, 2012 at 04:07:24PM +0800, Guan Xuetao wrote:
+> puv3_init_dma() is called ONCE when initializing.
+> In logical, if request_irq(IRQ_DMAERR, *) failed, free_irq(IRQ_DMA, *)
+> is unnecessary, and dma device/driver can keep on working.
+> The patch could be:
+>   	ret = request_irq(IRQ_DMAERR, dma_err_handler, 0, "DMAERR", NULL);
+>   	if (ret) {
+>   		printk(KERN_CRIT "Can't register IRQ for DMAERR\n");
+>  -		free_irq(IRQ_DMA, "DMA");
+>   		return ret;
+>   	}
+
+It seems like you should remove the error return as well?
+
+regards,
+dan carpenter
 
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 8d66706..e0909da 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2267,8 +2267,8 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
- {
-        irqreturn_t result;
-        struct sdhci_host *host = dev_id;
--       u32 intmask;
--       int cardint = 0;
-+       u32 intmask, unexpected = 0;
-+       int cardint = 0, max_loops = 16;
+--lCAWRPmW1mITcIfM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-        spin_lock(&host->lock);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-@@ -2344,19 +2344,24 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
-        intmask &= ~SDHCI_INT_CARD_INT;
+iQIcBAEBAgAGBQJPYFR+AAoJEOnZkXI/YHqRvWQP/i6s9o7enfw/EwsnK3ek2yR/
+Pi1gyNCcxWvAyzEOis/KiW+qzy2KRbXIMvf0r+vHD6/Aq9o/W7YIjOu6HluBZtsa
+ffLDFx4UpVXsiFeGcivnB3Ae5EBAS20K+Z1HwLDGyNfFnK+hl4F0upPqF+/1aFYs
+pAiToS3WUWv7sI5d5Zi+Ck/Bh9dlfLoOfq+T75UMJptn/2AIJwEHVGCBr908vbD3
+BT4ac7wrxnf22g580wSkr44wJcZR5lTUwJAuPbOEqbXkM3UFZbzPtaSofr1Z8lEb
+jI3Am7nmNnSwsbzGEbtKCXhm9bzvHfrGpBOjPuWbm37SsFtSH0YQ2/H/wnCuHOxi
+ZyoWXkjyOkOGzDwnuFr9ekYMrqK+x9EMMl927ZwLKQ5DJXrmYPTIKu/c0S+hk2Z/
+nrfVfkeRT2AUbm33177s8DXCgjnCZi5nkBLMGh5/ZCpORGKeAPlh4ZhZkzmRIuoh
+L2aKnv9JvlROAiqiOAjJ3Eji6Gj+GkVoqBU6/EJQurypCmyT3TbDh5WuSH1U7rKe
+FfwWGvb/4x3HDEdTs61l8aN02vDVRFgEWm9uQhNR6nMca1vnf6cWs2itvXaM1bYB
+eYQc3vYjSQ9WEsnvVdA+bHTFfedlRj6udMuuWG/EgvTzsVbrMnX7v11syC8KOnD0
+vrxctvknmhwW3VDQXlDi
+=1HYn
+-----END PGP SIGNATURE-----
 
-        if (intmask) {
--               pr_err("%s: Unexpected interrupt 0x%08x.\n",
--                       mmc_hostname(host->mmc), intmask);
--               sdhci_dumpregs(host);
--
-+               unexpected |= intmask;
-                sdhci_writel(host, intmask, SDHCI_INT_STATUS);
-        }
-
-        result = IRQ_HANDLED;
-
--       mmiowb();
-+       intmask = sdhci_readl(host, SDHCI_INT_STATUS);
-+       if (intmask && --max_loops)
-+               goto again;
- out:
-        spin_unlock(&host->lock);
-
-+       if (unexpected) {
-+               pr_err("%s: Unexpected interrupt 0x%08x.\n",
-+                       mmc_hostname(host->mmc), unexpected);
-+               sdhci_dumpregs(host);
-+       }
-+
-        /*
-         * We have to delay this as it calls back into the driver.
-         */
+--lCAWRPmW1mITcIfM--
