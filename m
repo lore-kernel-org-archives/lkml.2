@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030789Ab2CNNjz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 09:39:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46177 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752988Ab2CNNjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 09:39:51 -0400
-Subject: RE: [Linux-c6x-dev] [PATCH 06/35] Disintegrate asm/system.h for C6X
- [ver #2]
-From: Mark Salter <msalter@redhat.com>
-To: "Jacquiot, Aurelien" <a-jacquiot@ti.com>
-Cc: David Howells <dhowells@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
-Date: Wed, 14 Mar 2012 09:39:45 -0400
-In-Reply-To: <553CFBBAF1315044BC4CD328C97B0B1C17FA0A76@DNCE02.ent.ti.com>
-References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
-	 <20120312233706.13888.5678.stgit@warthog.procyon.org.uk>
-	 <1331728169.2167.2.camel@deneb.redhat.com>
-	 <553CFBBAF1315044BC4CD328C97B0B1C17FA0A76@DNCE02.ent.ti.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1331732387.2167.9.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1030838Ab2CNNp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 09:45:27 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:48337 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964984Ab2CNNpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 09:45:25 -0400
+Date: Wed, 14 Mar 2012 09:45:20 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch: Suggest pr_<level> over printk(KERN_<LEVEL>
+Message-ID: <20120314134520.GA26524@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Joe Perches <joe@perches.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andy Whitcroft <apw@shadowen.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20120314003157.GA15379@thunk.org>
+ <1331686026.24613.6.camel@joe2Laptop>
+ <20120314010701.GB15379@thunk.org>
+ <1331687831.27389.2.camel@joe2Laptop>
+ <20120314021938.GD15379@thunk.org>
+ <1331692311.27389.27.camel@joe2Laptop>
+ <20120314024104.GE15379@thunk.org>
+ <1331694074.27389.42.camel@joe2Laptop>
+ <20120314123429.GG15379@thunk.org>
+ <1331730336.27389.70.camel@joe2Laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331730336.27389.70.camel@joe2Laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-14 at 13:29 +0000, Jacquiot, Aurelien wrote:
-> Mark,
+On Wed, Mar 14, 2012 at 06:05:36AM -0700, Joe Perches wrote:
+> Patchwork queues are pretty useless when patches entered
+> do not have their status updated for long periods.
 > 
-> Are you sure about the #define _ASM_C6X_BARRIER_H in exec.h?
-> _ASM_C6X_EXEC_H sounds better...
+> The patch I sent in August 2011 shows "new" rather than
+> have an appropriate status.
+> 
+> If you actually use patchwork, though it seems you don't,
+> I think you should just mark every patch that's new as
+> rejected and start over.
 
-Thanks! Copy and paste mistake. FYI, I plan on getting rid of the
-C6X version and using the generic version once it is available.
+I use it, but not in the way you think I should be using it.  Your not
+getting to your will on other kernel developers is what this thread is
+all all about, ultimately.
 
+I don't get to work on ext4 full time, and so every minute I put on it
+has to not a be a waste of time.  This includes updating status
+messages for patches that aren't obviously not applicable, or
+superceded, but rather something that I might get to look at later.
 
-
+	    	       		      	      - Ted
