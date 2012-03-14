@@ -1,128 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab2CNHfN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 03:35:13 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2810 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab2CNHfK (ORCPT
+	id S1755397Ab2CNHgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 03:36:04 -0400
+Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:37006 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754184Ab2CNHgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 03:35:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 14 Mar 2012 00:35:09 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: lrg@ti.com, broonie@opensource.wolfsonmicro.com, axel.lin@gmail.com
-Cc: linux-kernel@vger.kernel.org, ldewangan@nvidia.com
-Subject: [PATCH V2] regulator: tps65910: Provide settling time for DCDC voltage change
-Date: Wed, 14 Mar 2012 13:00:58 +0530
-Message-Id: <1331710258-9459-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Wed, 14 Mar 2012 03:36:00 -0400
+Date: Wed, 14 Mar 2012 08:23:43 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        vinod.koul@linux.intel.com, s.hauer@pengutronix.de,
+        rob.herring@calxeda.com, rdunlap@xenotime.net, kernel@pengutronix.de,
+        cjb@laptop.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH v1 2/5] mmc: mxs-mmc: add dt probe support
+Message-ID: <20120314072343.GG18320@game.jcrosoft.org>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
+ <1331628428-24017-3-git-send-email-b29396@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331628428-24017-3-git-send-email-b29396@freescale.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 5352246683862215527
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrfeejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehsphhinhhitghsrdhnvghtnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrfeejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecuffhomhgrihhnpehsphhinhhitghsrdhnvghtnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Settling time is require when there is dcdc rail's voltage change.
-Returning proper delay time for dcdc voltage change to settle down
-the output voltage to new value.
+On 16:47 Tue 13 Mar     , Dong Aisheng wrote:
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> 
+> ---
+> The patch is still using a private way for dma part binding
+> since the common dma binding is still under discussion.
+> http://www.spinics.net/lists/linux-omap/msg65528.html
+> 
+> Will update to use common dma binding when it hits mainline.
+> ---
+>  .../devicetree/bindings/mmc/fsl-mxs-mmc.txt        |   23 ++++++
+>  drivers/mmc/host/mxs-mmc.c                         |   82 +++++++++++++++++++-
+>  2 files changed, 102 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt b/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt
+> new file mode 100644
+> index 0000000..adc1142
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt
+> @@ -0,0 +1,23 @@
+> +* FREESCALE MXS MMC peripheral
+> +
+> +Required properties:
+> +- compatible : Should be "fsl,<chip>-mmc"
+> +- reg : Should contain registers location and length
+> +- interrupts : Should contain interrupt.
+> +  The format is <irq_err irq_dma>.
+> +- dma_channel: Should contain the dma channel it uses
+> +
+> +Optional properties:
+> +- wp-gpios : Specify GPIOs for write protection
+> +- slot-4bit: Specify 4 bit mode support
+> +- slot-8bit: Specify 8 bit and 4 bit mode support
+> +
+> +Examples:
+> +mmc1: ssp@80010000 {
+> +	compatible = "fsl,imx28-mmc";
+> +	reg = <0x80010000 2000>;
+> +	/* <irq_err irq_dma> */
+> +	interrupts = <96 82>;
+> +	dma_channel = <0>;
+> +	slot-8bit;
+> +};
+> diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+> index 382c835..6cf2d17 100644
+> --- a/drivers/mmc/host/mxs-mmc.c
+> +++ b/drivers/mmc/host/mxs-mmc.c
+> @@ -38,6 +38,10 @@
+>  #include <linux/gpio.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/slab.h>
+>  
+>  #include <mach/mxs.h>
+>  #include <mach/common.h>
+> @@ -673,17 +677,79 @@ static bool mxs_mmc_dma_filter(struct dma_chan *chan, void *param)
+>  	return true;
+>  }
+>  
+> +#ifdef CONFIG_OF
+> +static struct resource * __devinit mxs_mmc_get_of_dmares(
+> +				struct platform_device *pdev)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct resource *dmares;
+> +	int ret;
+> +
+> +	if (!np)
+> +		return NULL;
+> +
+> +	dmares = kzalloc(sizeof(*dmares), GFP_KERNEL);
+> +	dmares->flags = IORESOURCE_DMA;
+> +	ret = of_property_read_u32(np, "dma_channel", &dmares->start);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "unable to get dmares from dt\n");
+> +		return NULL;
+> +	}
+> +	dmares->end = dmares->start;
+> +
+> +	return dmares;
+> +}
+> +
+> +static int __devinit mxs_mmc_get_of_property(struct platform_device *pdev,
+> +				struct mxs_mmc_platform_data **ppdata)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct mxs_mmc_platform_data *pdata = *ppdata;
+> +
+> +	if (!np)
+> +		return -ENODEV;
+> +
+> +	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
+> +
+> +	if (of_get_property(np, "slot-8bit", NULL))
+> +		pdata->flags |= SLOTF_8_BIT_CAPABLE;
+> +
+> +	if (of_get_property(np, "slot-4bit", NULL))
+> +		pdata->flags |= SLOTF_4_BIT_CAPABLE;
+it will conflit if both binding are set use a number instead
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-This change was already sent on series of patch set
-[0/3 Settling time for rails on/voltage change] 
-but there was merge conflict.
-Resending the patch after rebasing driver from Mark's tree topic/driver
-and resolving merge conflict issue.
-
- drivers/regulator/tps65910-regulator.c |   45 ++++++++++++++++++++++---------
- 1 files changed, 32 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/regulator/tps65910-regulator.c b/drivers/regulator/tps65910-regulator.c
-index f28f41a..3d1370f 100644
---- a/drivers/regulator/tps65910-regulator.c
-+++ b/drivers/regulator/tps65910-regulator.c
-@@ -561,10 +561,10 @@ static unsigned int tps65910_get_mode(struct regulator_dev *dev)
- 		return REGULATOR_MODE_NORMAL;
- }
- 
--static int tps65910_get_voltage_dcdc(struct regulator_dev *dev)
-+static int tps65910_get_voltage_dcdc_sel(struct regulator_dev *dev)
- {
- 	struct tps65910_reg *pmic = rdev_get_drvdata(dev);
--	int id = rdev_get_id(dev), voltage = 0;
-+	int id = rdev_get_id(dev);
- 	int opvsel = 0, srvsel = 0, vselmax = 0, mult = 0, sr = 0;
- 
- 	switch (id) {
-@@ -608,9 +608,7 @@ static int tps65910_get_voltage_dcdc(struct regulator_dev *dev)
- 			srvsel = 3;
- 		if (srvsel > vselmax)
- 			srvsel = vselmax;
--		srvsel -= 3;
--
--		voltage = (srvsel * VDD1_2_OFFSET + VDD1_2_MIN_VOLT) * 100;
-+		return srvsel - 3;
- 	} else {
- 
- 		/* normalise to valid range*/
-@@ -618,14 +616,9 @@ static int tps65910_get_voltage_dcdc(struct regulator_dev *dev)
- 			opvsel = 3;
- 		if (opvsel > vselmax)
- 			opvsel = vselmax;
--		opvsel -= 3;
--
--		voltage = (opvsel * VDD1_2_OFFSET + VDD1_2_MIN_VOLT) * 100;
-+		return opvsel - 3;
- 	}
--
--	voltage *= mult;
--
--	return voltage;
-+	return -EINVAL;
- }
- 
- static int tps65910_get_voltage(struct regulator_dev *dev)
-@@ -894,6 +887,31 @@ static int tps65911_list_voltage(struct regulator_dev *dev, unsigned selector)
- 	return (LDO_MIN_VOLT + selector * step_mv) * 1000;
- }
- 
-+static int tps65910_set_voltage_dcdc_time_sel(struct regulator_dev *dev,
-+		unsigned int old_selector, unsigned int new_selector)
-+{
-+	int id = rdev_get_id(dev);
-+	int old_volt, new_volt;
-+
-+	old_volt = tps65910_list_voltage_dcdc(dev, old_selector);
-+	if (old_volt < 0)
-+		return old_volt;
-+
-+	new_volt = tps65910_list_voltage_dcdc(dev, new_selector);
-+	if (new_volt < 0)
-+		return new_volt;
-+
-+	/* VDD1 and VDD2 are 12.5mV/us, VDDCTRL is 100mV/20us */
-+	switch (id) {
-+	case TPS65910_REG_VDD1:
-+	case TPS65910_REG_VDD2:
-+		return DIV_ROUND_UP(abs(old_volt - new_volt), 12500);
-+	case TPS65911_REG_VDDCTRL:
-+		return DIV_ROUND_UP(abs(old_volt - new_volt), 5000);
-+	}
-+	return -EINVAL;
-+}
-+
- /* Regulator ops (except VRTC) */
- static struct regulator_ops tps65910_ops_dcdc = {
- 	.is_enabled		= tps65910_is_enabled,
-@@ -902,8 +920,9 @@ static struct regulator_ops tps65910_ops_dcdc = {
- 	.enable_time		= tps65910_enable_time,
- 	.set_mode		= tps65910_set_mode,
- 	.get_mode		= tps65910_get_mode,
--	.get_voltage		= tps65910_get_voltage_dcdc,
-+	.get_voltage_sel	= tps65910_get_voltage_dcdc_sel,
- 	.set_voltage_sel	= tps65910_set_voltage_dcdc_sel,
-+	.set_voltage_time_sel	= tps65910_set_voltage_dcdc_time_sel,
- 	.list_voltage		= tps65910_list_voltage_dcdc,
- };
- 
--- 
-1.7.1.1
-
+Best Regards,
+J.
