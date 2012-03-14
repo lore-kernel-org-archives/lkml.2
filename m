@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758856Ab2CNHt2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 03:49:28 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51211 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756080Ab2CNHtZ (ORCPT
+	id S1758934Ab2CNHuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 03:50:06 -0400
+Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:55014 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756080Ab2CNHuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 03:49:25 -0400
-Message-ID: <4F604D81.1060607@openvz.org>
-Date: Wed, 14 Mar 2012 11:49:21 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+	Wed, 14 Mar 2012 03:50:02 -0400
+Date: Wed, 14 Mar 2012 08:30:35 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Dong Aisheng <b29396@freescale.com>,
+        vinod.koul@linux.intel.com, devicetree-discuss@lists.ozlabs.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, rdunlap@xenotime.net, kernel@pengutronix.de,
+        cjb@laptop.org, linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH v1 3/5] ARM: imx28evk: add mmc dt support
+Message-ID: <20120314073035.GI18320@game.jcrosoft.org>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
+ <1331628428-24017-4-git-send-email-b29396@freescale.com>
+ <4F5F5C22.1080506@gmail.com>
+ <20120313165214.GO26642@pengutronix.de>
+ <4F5F879E.4030407@gmail.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] radix-tree: iterating general cleanup
-References: <20120207074905.29797.60353.stgit@zurg> <20120314073629.GA17016@infradead.org>
-In-Reply-To: <20120314073629.GA17016@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F5F879E.4030407@gmail.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 5468214373213842396
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrfeejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeegvddrfeejucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmnecuhfhrohhmpeflvggrnhdqvehhrhhishhtohhphhgvucfrnfetiffpkffqnfdqggfknffnteftffcuoehplhgrghhnihhojhesjhgtrhhoshhofhhtrdgtohhmqeenucfjughrpeffhffvuffkfhggtggujggfsehttdfttddtredv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig wrote:
-> Any updates on this series?
+On 12:45 Tue 13 Mar     , Rob Herring wrote:
+> On 03/13/2012 11:52 AM, Sascha Hauer wrote:
+> > On Tue, Mar 13, 2012 at 09:39:30AM -0500, Rob Herring wrote:
+> >> On 03/13/2012 03:47 AM, Dong Aisheng wrote:
+> >>> From: Dong Aisheng <dong.aisheng@linaro.org>
+> >>>
+> >>> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> >>> ---
+> >>>  arch/arm/boot/dts/imx28-evk.dts |   14 ++++++++++++++
+> >>>  arch/arm/boot/dts/imx28.dtsi    |   33 +++++++++++++++++++++++++++++++++
+> >>>  arch/arm/mach-mxs/imx28-dt.c    |    2 ++
+> >>>  3 files changed, 49 insertions(+), 0 deletions(-)
+> >>
+> >> snip
+> >>
+> >>> diff --git a/arch/arm/mach-mxs/imx28-dt.c b/arch/arm/mach-mxs/imx28-dt.c
+> >>> index 78d1129..429b88e 100644
+> >>> --- a/arch/arm/mach-mxs/imx28-dt.c
+> >>> +++ b/arch/arm/mach-mxs/imx28-dt.c
+> >>> @@ -23,6 +23,8 @@ static const struct of_dev_auxdata imx28_auxdata_lookup[] __initconst = {
+> >>>  	OF_DEV_AUXDATA("arm,pl011", MX28_DUART_BASE_ADDR, "duart", NULL),
+> >>>  	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC0_BASE_ADDR, "imx28-fec.0", NULL),
+> >>>  	OF_DEV_AUXDATA("fsl,imx28-fec", MX28_ENET_MAC1_BASE_ADDR, "imx28-fec.1", NULL),
+> >>> +	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP0_BASE_ADDR, "mxs-mmc.0", NULL),
+> >>> +	OF_DEV_AUXDATA("fsl,imx28-mmc", MX28_SSP1_BASE_ADDR, "mxs-mmc.1", NULL),
+> >>
+> >> Why is this needed?
+> > 
+> > These are needed for the drivers which have still the mxs-mmc.* names
+> > to find their clocks. Alternatively we could also add the appropriate
+> > clocks to the clock file. Don't know if that's better though.
+> 
+> Ah, yes I should have known that... If clk lookup is all that's needed,
+> I'd suggest adding the necessary clk lookups either here or in the clock
+> code. Not much difference, but at least it removes the use of
+> *_BASE_ADDR defines.
+Agreed we do this on AT91
 
-I had sent "[PATCH v2 0/3] radix-tree: general iterator" February 10, there is no more updates after that.
-I just checked v2 on top "next-20120314" -- looks like all ok.
-
->
-> On Tue, Feb 07, 2012 at 11:54:56AM +0400, Konstantin Khlebnikov wrote:
->> This patchset implements common radix-tree iteration routine and
->> reworks page-cache lookup functions with using it.
->>
->> radix_tree_gang_lookup_*slot() now mostly unused (the last user somethere in
->> drivers/sh/intc/virq.c), but they are exported, we cannot remove them for now.
->>
->> Also there some shmem-related radix-tree hacks can be reworked,
->> radix_tree_locate_item() can be removed. I already have a few extra patches.
->>
->> And as usual my lovely bloat-o-meter:
->>
->> add/remove: 4/3 grow/shrink: 4/4 up/down: 1232/-964 (268)
->> function                                     old     new   delta
->> radix_tree_next_chunk                          -     499    +499
->> static.shmem_find_get_pages_and_swap           -     404    +404
->> find_get_pages_tag                           354     488    +134
->> find_get_pages                               362     438     +76
->> find_get_pages_contig                        345     407     +62
->> __kstrtab_radix_tree_next_chunk                -      22     +22
->> shmem_truncate_range                        1633    1652     +19
->> __ksymtab_radix_tree_next_chunk                -      16     +16
->> radix_tree_gang_lookup_tag_slot              208     180     -28
->> radix_tree_gang_lookup_tag                   247     207     -40
->> radix_tree_gang_lookup_slot                  204     162     -42
->> radix_tree_gang_lookup                       231     160     -71
->> __lookup                                     217       -    -217
->> __lookup_tag                                 242       -    -242
->> shmem_find_get_pages_and_swap                324       -    -324
->>
->> ---
->>
->> Konstantin Khlebnikov (4):
->>        bitops: implement "optimized" __find_next_bit()
->>        radix-tree: introduce bit-optimized iterator
->>        radix-tree: rewrite gang lookup with using iterator
->>        radix-tree: use iterators in find_get_pages* functions
->>
->>
->>   include/asm-generic/bitops/find.h |   36 +++
->>   include/linux/radix-tree.h        |  129 +++++++++++
->>   lib/radix-tree.c                  |  422 +++++++++++++------------------------
->>   mm/filemap.c                      |   75 ++++---
->>   mm/shmem.c                        |   23 +-
->>   5 files changed, 375 insertions(+), 310 deletions(-)
->>
->> --
->> Signature
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
->> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
-> ---end quoted text---
-
+Best Regards,
+J.
