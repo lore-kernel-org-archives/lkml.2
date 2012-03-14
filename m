@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab2CNLUL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 07:20:11 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43707 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab2CNLUI (ORCPT
+	id S1754892Ab2CNLUm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 07:20:42 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:57664 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946Ab2CNLUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 07:20:08 -0400
-Date: Wed, 14 Mar 2012 11:21:37 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michal Januszewski <spock@gentoo.org>, linux-fbdev@vger.kernel.org,
-        x86@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Wang YanQing <udknight@gmail.com>
-Subject: Re: [PATCH] x86: export 'pcibios_enabled'
-Message-ID: <20120314112137.68fa4f70@pyramind.ukuu.org.uk>
-In-Reply-To: <4F607A18.8080004@gmx.de>
-References: <20120313204114.e160849af7dbe5a4b4e5c0ad@canb.auug.org.au>
-	<4F5FAE63.3090908@xenotime.net>
-	<4F5FE9AD.7000204@zytor.com>
-	<20120314092955.2250a782@pyramind.ukuu.org.uk>
-	<4F607A18.8080004@gmx.de>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Mar 2012 07:20:36 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V3 5/8] hugetlbfs: Add memcg control files for hugetlbfs
+In-Reply-To: <20120313144233.49026e6a.akpm@linux-foundation.org>
+References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331622432-24683-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120313144233.49026e6a.akpm@linux-foundation.org>
+User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 14 Mar 2012 16:40:58 +0530
+Message-ID: <87lin38mkd.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12031411-8256-0000-0000-000001A22D9D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > uvesafb could look for any PCI vga class device - which I suspect is
-> > what it *should* be doing ?
+On Tue, 13 Mar 2012 14:42:33 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Tue, 13 Mar 2012 12:37:09 +0530
+> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 > 
-> Would this really change depending on whether the page is NX-protected
-> or not?
-> Your suggestion sounds like it is about detecting whether there is any
-> graphic chip present or not while the patch is about fixing an oops
-> caused by NX-protection of the BIOS.
+> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> > 
+> > This add control files for hugetlbfs in memcg
+> > 
+> > ...
+> >
+> > --- a/include/linux/hugetlb.h
+> > +++ b/include/linux/hugetlb.h
+> > @@ -220,6 +221,10 @@ struct hstate {
+> >  	unsigned int nr_huge_pages_node[MAX_NUMNODES];
+> >  	unsigned int free_huge_pages_node[MAX_NUMNODES];
+> >  	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
+> > +	/* cgroup control files */
+> > +	struct cftype cgroup_limit_file;
+> > +	struct cftype cgroup_usage_file;
+> > +	struct cftype cgroup_max_usage_file;
+> >  	char name[HSTATE_NAME_LEN];
+> >  };
+> 
+> We don't need all these in here if, for example, cgroups is disabled?
 
-Right yes.. I misunderstood what you are trying to do. I'd assumed you
-wanted to find the ROM and thus set it to the right mapping mode.
+Will fix.
 
-You can use set_memory_x() to mark memory executable (and _nx to set it back).
+> 
+> > ...
+> >
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -1817,6 +1817,36 @@ static int __init hugetlb_init(void)
+> >  }
+> >  module_init(hugetlb_init);
+> >  
+> > +#ifdef CONFIG_MEM_RES_CTLR_HUGETLB
+> > +int register_hugetlb_memcg_files(struct cgroup *cgroup,
+> > +				 struct cgroup_subsys *ss)
+> > +{
+> > +	int ret = 0;
+> > +	struct hstate *h;
+> > +
+> > +	for_each_hstate(h) {
+> > +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_limit_file);
+> > +		if (ret)
+> > +			return ret;
+> > +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_usage_file);
+> > +		if (ret)
+> > +			return ret;
+> > +		ret = cgroup_add_file(cgroup, ss, &h->cgroup_max_usage_file);
+> > +		if (ret)
+> > +			return ret;
+> > +
+> > +	}
+> > +	return ret;
+> > +}
+> > +/* mm/memcontrol.c because mem_cgroup_read/write is not availabel outside */
+> 
+> Comment has a spelling mistake.
 
-If you really need to know if NX is being used then the check
+Will fix
 
-	if (__supported_pte_mask & PTE_NX)
+> 
+> > +int mem_cgroup_hugetlb_file_init(struct hstate *h, int idx);
+> 
+> 
+> No, please put it in a header file.  Always.  Where both callers and
+> the implementation see the same propotype.
+> 
+> > +#else
+> > +static int mem_cgroup_hugetlb_file_init(struct hstate *h, int idx)
+> > +{
+> > +	return 0;
+> > +}
+> > +#endif
+> 
+> So this will go into the same header file.
+> 
 
-will do the trick and the variable is exported.
+I was not sure whether i want to put mem_cgroup_hugetlb_file_init in
+linux/memcontrol.h . Ideally i want to have that in mm/hugetlb.c and in
+linux/hugetlb.h. That would require me to make mem_cgroup_read and
+others non static and move few #defines to memcontrol.h. That would
+involve larger code movement which i didn't want to do. ? What do you
+suggest ? Just move mem_cgroup_hugetlb_file_init to memcontrol.h ?
 
-I'd suggest however you wrap that in a cpu_has_nx() type macro somewhere
-in the arch headers.
 
-If you go poking around pcibios values you are going to get burned if
-someone is ever bored enough to make NX and PCIBIOS work together
-differently.
+-aneesh
 
-Alan
