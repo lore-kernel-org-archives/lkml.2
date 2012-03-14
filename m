@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab2CNVMN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 17:12:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48660 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932188Ab2CNVMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 17:12:08 -0400
+	id S932559Ab2CNVNN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 17:13:13 -0400
+Received: from dwdmx5.dwd.de ([141.38.3.242]:48884 "EHLO dwdmx5.dwd.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932188Ab2CNVNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 17:13:09 -0400
+Date: Wed, 14 Mar 2012 21:13:02 +0000 (GMT)
+From: Holger Kiehl <Holger.Kiehl@dwd.de>
+X-X-Sender: kiehl@diagnostix.dwd.de
+To: Shaohua Li <shli@kernel.org>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "neilb@suse.de" <neilb@suse.de>, "axboe@kernel.dk" <axboe@kernel.dk>
+Subject: Re: [patch 0/7] Add TRIM support for raid linear/0/1/10
+In-Reply-To: <CANejiEXP9ORKTfE4O9khaHSp-Y8yOQU1LLUD5Q5pBJOGR+A-aA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1203142101290.6232@diagnostix.dwd.de>
+References: <20120312030412.375458948@fusionio.com> <alpine.LRH.2.02.1203121806120.23719@diagnostix.dwd.de> <4F5EFEB6.4060402@kernel.org> <alpine.LRH.2.02.1203131213480.15848@diagnostix.dwd.de> <CANejiEWYCxY_hLwgyN08_cXC64c82irkNPytTjOpYyER7pTGow@mail.gmail.com>
+ <alpine.LRH.2.02.1203131521190.29286@diagnostix.dwd.de> <CANejiEW=a1piMYvSYM5GmtxKsWYpZj+kjnmNsNUDmW9ydDBjBw@mail.gmail.com> <alpine.LRH.2.02.1203140839590.28358@diagnostix.dwd.de> <CANejiEXP9ORKTfE4O9khaHSp-Y8yOQU1LLUD5Q5pBJOGR+A-aA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1331647629-11550-1-git-send-email-jiang.liu@huawei.com>
-References: <1331647629-11550-1-git-send-email-jiang.liu@huawei.com>
-Date: Wed, 14 Mar 2012 14:12:06 -0700
-Message-ID: <CA+8MBbLsA8OysJNFMN4a0p6Yj3qmmawvtE0pGtcnAJpULjNi+A@mail.gmail.com>
-Subject: Re: [PATCH] IA64: fix ISA IRQ trigger model and polarity setting
-From: Tony Luck <tony.luck@gmail.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Liu Jiang <jiang.liu@huawei.com>, linux-ia64@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>, chenkeping@huawei.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> When handling Interrupt Source Override in MADT table, the default
-> ISA IRQ trigger model and poliarity should be edge-rising.
-> Current IA64 implmentation doesn't follow the specification and
-> set default ISA IRQ trigger model as level-low. With that wrong
-> configuration and when system runs out of interrupt vectors,
-> it will cause vector sharing among edge triggered ISA IRQ and
-> level triggered PCI IRQ, then interrupt storm. So change the code
-> to follow the specification.
+On Wed, 14 Mar 2012, Shaohua Li wrote:
 
-I chased the reference in ACPI to the MPS spec:
- http://www.intel.com/design/pentium/datashts/24201606.pdf
+> Maybe the discard runs slow with small size request in the disk.
+> please drop patch "blk: add plug for blkdev_issue_discard" and try again. Since
+> we can't do merge, the plug just introduces latency.
+>
+Tried again without the patch applied, but there is only a very small
+performance increase (520->600 agains 4000 fps without discard).
 
-Which says in table 4-10 "for example. EISA is active-low for
-level triggered interrupt" and "for example, EISA is edge-triggered".
+The benchmark creates lots of small files (2 KiB) and deletes them again.
 
-It looks to me that if MADT says "high", we should set high, if it says
-"low" we should set low. Ditto for trigger vs. level. But if we see the
-value "0" - then we have more work to do to determine what the
-bus we are on uses for its default.
+> if it doesn't help, please capture a blktrace when you do the benchmark and
+> send it to me.
+>
+Ok, I will do this tomorrow. Need some sleep :-)
 
-Did you find some other specification that gives a better explanation?
-Or did I miss something - can we only get to this routine for ISA?
+Thanks for your work on supporting discard in MD!
 
-You've tested this patch - and it works for you - but is there a risk
-that it will break someone else?
-
--Tony
+Regards,
+Holger
