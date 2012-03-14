@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543Ab2CNE3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 00:29:51 -0400
-Received: from ozlabs.org ([203.10.76.45]:33389 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860Ab2CNE3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 00:29:49 -0400
-Date: Wed, 14 Mar 2012 15:29:44 +1100
-From: Tony Breeds <tony@bakeyournoodle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <rmk@arm.linux.org.uk>
-Subject: Re: arm build failures (Was: linux-next: triage for March 13, 2012)
-Message-ID: <20120314042944.GB26084@thor.bakeyournoodle.com>
-Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-	Paul Gortmaker <paul.gortmaker@windriver.com>,
-	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Russell King <rmk@arm.linux.org.uk>
-References: <20120313234707.GB7050@windriver.com>
- <20120314114115.24e59318bdac705fec61bd89@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="TakKZr9L6Hm6aLOc"
-Content-Disposition: inline
-In-Reply-To: <20120314114115.24e59318bdac705fec61bd89@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752637Ab2CNEbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 00:31:16 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:55198 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab2CNEbN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 00:31:13 -0400
+Date: Wed, 14 Mar 2012 15:31:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: build failure after merge of the uprobes tree
+Message-Id: <20120314153106.0090c309e7503a7052f11ad0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__14_Mar_2012_15_31_06_+1100_Myt3BkOAidrm25j="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---TakKZr9L6Hm6aLOc
-Content-Type: text/plain; charset=utf-8
+--Signature=_Wed__14_Mar_2012_15_31_06_+1100_Myt3BkOAidrm25j=
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Mar 14, 2012 at 11:41:15AM +1100, Stephen Rothwell wrote:
-> On Tue, 13 Mar 2012 19:47:07 -0400 Paul Gortmaker <paul.gortmaker@windriv=
-er.com> wrote:
-> >
-> > ARM:netx_defconfig,pnx4008_defconfig=20
-> > 	when:	Mar 14, 02:43
-> > 	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
-> > 	status:=09
-> > 	fix:=09
-> > 	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
->=20
-> This is this:
->=20
-> net/core/pktgen.c:682:2775: error: can't find a register in class 'GENERA=
-L_REGS' while reloading 'asm'
-> net/core/pktgen.c:682:3153: error: can't find a register in class 'GENERA=
-L_REGS' while reloading 'asm'
-> net/core/pktgen.c:682:2775: error: 'asm' operand has impossible constrain=
-ts
-> net/core/pktgen.c:682:3153: error: 'asm' operand has impossible constrain=
-ts
->=20
-> Which is a do_div() call.  The relevant code does not appear to have
-> changed, so this may well be a result of our toolchain changing from
-> "arm-linux-gcc (GCC) 4.4.0, GNU ld (GNU Binutils) 2.19.1" to
-> "arm-unknown-linux-gnueabi-gcc (GCC) 4.6.3, GNU ld (GNU Binutils) 2.22".
+Hi Srikar,
 
-Just for reference I build that code with:
-arm-unknown-linux-gnueabi-gcc (GCC) 4.5.2, GNU ld (GNU Binutils) 2.21
-and it was fine so I don't think it's to do with the switch from=20
-arm-linux-gcc to arm-unknown-linux-gnueabi-gcc[1]
+After merging the uprobes tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-Yours Tony
+In file included from include/linux/compat.h:18:0,
+                 from arch/x86/include/asm/ia32.h:7,
+                 from arch/x86/include/asm/sigframe.h:17,
+                 from arch/x86/kernel/asm-offsets.c:16:
+arch/x86/include/asm/compat.h:238:20: error: redefinition of 'is_ia32_task'
+arch/x86/include/asm/thread_info.h:272:20: note: previous definition of 'is=
+_ia32_task' was here
 
-[1] This switchwas done as a result off the discussion at: http://lists.inf=
-radead.org/pipermail/linux-arm-kernel/2010-November/030627.html
+Caused by commit 081c056eccf3 ("x86: Move is_ia32_task to
+asm/thread_info.h from asm/compat.h") which added the function to
+asm/thread_info.h but did not remove it from asm/compat.h.  The version
+of this patch that is in the tip tree is correct (but that is not in
+tip's auto-latest branch (and hence linux-next) today).
 
---TakKZr9L6Hm6aLOc
+I would have used the uprobes tree from next-20130309, but trying that
+produced a large number of conflicts, so I just dropped the uprobes tree
+for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__14_Mar_2012_15_31_06_+1100_Myt3BkOAidrm25j=
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPYB64AAoJEEsCiJRY75GKWloQAKdMFZKdAHMesGvhdNuPTJsV
-+a43EiT6q6Azu5Y4B1OIfj5cxtvTPkjh/17jZS8wziIEFVhbX4dlqQtxVPeNZcga
-46hxsZ1XbAAbGwwKWyXKJ1XfHuTNzo7omDTABO1jWUZ9Mk78clYy97VjqkYKTWka
-zs+Y2nnwPYs1cmjqnWoct1pzPhanCf4XjhzT3ETZ6otd0B1eVUhLqumQ0bMepNA7
-apUI3fD9G9NTjcihQs9GuocYnmDHMLw41uAbVN3UpRLnumGUkf+K0dZ9gwwwA+br
-yVoPjlxHUrrMxldAaHxkqnFSKQQ5u1w9b3O4jiPjRBj4HwKXEqYiJAyth+1TcNDT
-cK8Bkj8I2AYJ/fHI/48aeeuvs+Pah/WuWFjG3sSvCC1ba8d2y21PGyFgveH5mIf6
-W1mp0qwE8W/IUloNhnd/3vRt/RbbjJNwgXv/45hfIVXP+i9ZX7JqA186NW6/bkam
-o5D/DoO8ID+u2RVuHPM0lhSFuf7tqZ1F6uRIyIAdo2UThyhfQDo2HwWoy7gqz9ZR
-YkGKzXr2hr50n0vL6mp2qeJaE5IE5JjuBVvB/bGScVS4k5bPQ4IcmodbGSZY6bqx
-VaMN4ZrUEjFlMCFpeQXXgOWW9veAXM/xMUYstUXNd5Fvsz1oe8IlLVJpE9QZYWCp
-k8mXQFp/qBus9oLZREQy
-=qtr7
+iQIcBAEBCAAGBQJPYB8KAAoJEECxmPOUX5FETCkP/j9YOkhnF7XlVHBBpyQMBVPB
+C6tzqVBvHtrVQwcioQdKibClrcIIE2anqJDQAJJh5zdqNLcRc66MECcWdOPOMRNF
+6XeqLKTTxc0T7JL4/hXNDWyCp35e2cNXKOh+Yvu+Qqz0N+A6xVGV55DxS8zyC6sp
+lx3YpKIylh//3M62As8oMZTd3C1mGApJJChAOYvZoeQzAvpFfTY/1r5zVLcr/QFH
+G3dlUlWZX6E4olL5zGIA26WjsBDc/zJZGo8/u3Ovq8cbXRgGSZq338a3Fb2Ik9Dv
+vM/RpWKsB0Y55dTmkDuyKV+Tgqv0QltWBV8u0xYesOytbDA1B99EOdQ7dlEDN5Om
+bcHhAAPqIu6rHUB8fausRs53d28A1EZdoK+9SKvQt4K7knHIVAJaA9+NkWYOomw1
+E09EshN9mXHBI2Jv9uk3KcYwMSFc8u2HjSgQ6qf3k8nhcIH7BLcoCsAgyXyzXWUQ
+eTBSGYnz56zx9N/5FcVXbef2DxO5X4PTJqacEj//hDLVt7FhF54dMtssAAuiAGS1
+MQIEMscBz9G1spJr/OoAQm9nlgb3DBgusAKpZQzAiBdEVl9erKThdLLfkrKyK2YU
+7yE7BgPv8pvTAOE8b+I0kRR4lQ06gvkSaRmN6hmwGH3vYodEQjYEgIZSHefGkYkB
++lR8JGD68AmFlu/lbxpS
+=bdOo
 -----END PGP SIGNATURE-----
 
---TakKZr9L6Hm6aLOc--
+--Signature=_Wed__14_Mar_2012_15_31_06_+1100_Myt3BkOAidrm25j=--
