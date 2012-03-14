@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab2CNQVs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 12:21:48 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:56332 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756076Ab2CNQVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 12:21:45 -0400
-Date: Wed, 14 Mar 2012 17:21:29 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: count pte references from every member of
- the reclaimed hierarchy
-Message-ID: <20120314162129.GA1709@cmpxchg.org>
-References: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
- <1330438489-21909-2-git-send-email-hannes@cmpxchg.org>
- <20120314142519.GF4434@tiehlicka.suse.cz>
+	id S1758918Ab2CNQYv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 12:24:51 -0400
+Received: from smtp-out-225.synserver.de ([212.40.185.225]:1056 "EHLO
+	smtp-out-225.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756467Ab2CNQYu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 12:24:50 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 28259
+Message-ID: <4F60C6CF.4090608@metafoo.de>
+Date: Wed, 14 Mar 2012 17:26:55 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120314142519.GF4434@tiehlicka.suse.cz>
+To: Ravi Kumar V <kumarrav@codeaurora.org>
+CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <dan.j.williams@intel.com>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org
+Subject: Re: [PATCH v3 2/2] DMAEngine: Add DMAEngine driver based on old MSM
+ DMA APIs
+References: <1331548364-27845-1-git-send-email-kumarrav@codeaurora.org>
+In-Reply-To: <1331548364-27845-1-git-send-email-kumarrav@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 03:25:19PM +0100, Michal Hocko wrote:
-> On Tue 28-02-12 15:14:49, Johannes Weiner wrote:
 > [...]
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index b4622fb..21004df 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -1044,17 +1044,23 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
-> >   * Checks whether given mem is same or in the root_mem_cgroup's
-> >   * hierarchy subtree
-> >   */
-> > -static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> > -		struct mem_cgroup *memcg)
-> > +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> > +				  struct mem_cgroup *memcg)
-> >  {
-> > -	bool ret;
-> > -
-> >  	if (root_memcg == memcg)
-> >  		return true;
-> >  	if (!root_memcg->use_hierarchy)
-> >  		return false;
-> > +	return css_is_ancestor(&memcg->css, &root_memcg->css);
-> > +}
-> > +
-> > +static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> > +				       struct mem_cgroup *memcg)
-> > +{
-> > +	bool ret;
-> > +
-> >  	rcu_read_lock();
-> > -	ret = css_is_ancestor(&memcg->css, &root_memcg->css);
-> > +	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
-> >  	rcu_read_unlock();
-> >  	return ret;
-> >  }
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index c631234..120646e 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -708,7 +708,8 @@ static enum page_references page_check_references(struct page *page,
-> >  	int referenced_ptes, referenced_page;
-> >  	unsigned long vm_flags;
-> >  
-> > -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
-> > +	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
-> > +					  &vm_flags);
-> >  	referenced_page = TestClearPageReferenced(page);
-> 
-> Maybe a stupid question but isn't target_mem_cgroup NULL in the global
-> reclaim case? And we doesn't handle that in __mem_cgroup_same_or_subtree...
+> +
+> +struct dma_async_tx_descriptor *msm_dma_prep_interleaved(struct dma_chan *dchan,
+> +					struct dma_interleaved_template *xt,
+> +					unsigned long flags, void *context)
+> +{
+> +
+> +	struct msm_dma_chan *chan;
+> +	struct msm_dma_desc_sw *new;
+> +	struct adm_box_cmd_t *box_cmd_vaddr;
+> +	u32 *cmd_cntrl = context;
+> +
+> +	if (!dchan)
+> +		return ERR_PTR(-EINVAL);
 
-It's intentional, page_referenced() does not call into same_or_subtree
-if the group is NULL.  As a result, no references are filtered, they
-all matter in the global reclaim case.
+This is supposed to return either NULL or a valid descriptor.
+
+> +
+> +	if (!xt)
+> +		return ERR_PTR(-EINVAL);
+> [...
+
