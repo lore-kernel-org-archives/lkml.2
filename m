@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030972Ab2CNTw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 15:52:56 -0400
-Received: from mail-yw0-f52.google.com ([209.85.213.52]:33777 "EHLO
-	mail-yw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030724Ab2CNTwz (ORCPT
+	id S932517Ab2CNTzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 15:55:47 -0400
+Received: from stats.peacock.arvixe.com ([174.122.104.67]:57096 "EHLO
+	peacock.arvixe.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932475Ab2CNTzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 15:52:55 -0400
-X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Mar 2012 15:52:54 EDT
-From: =?UTF-8?q?Diego=20Elio=20Petten=C3=B2?= <flameeyes@flameeyes.eu>
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Diego=20Elio=20Petten=C3=B2?= <flameeyes@flameeyes.eu>,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH] watchdog: it87_wdt: Add support for IT8728F watchdog.
-Date: Wed, 14 Mar 2012 20:49:04 +0100
-Message-Id: <1331754544-14902-1-git-send-email-flameeyes@flameeyes.eu>
-X-Mailer: git-send-email 1.7.8.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 14 Mar 2012 15:55:45 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=firszt.eu;
+	h=Received:From:To:Cc:Subject:Date:Message-Id:X-Mailer;
+	b=c2YrKdvyVagu68Mt3eWiXEz2deaCTSqM0+Est3aLvNuQaky3Er1STvMbQDweLeciL8+mi/HKCVIV3SUUQIP03UsyQLVEIKfMsWggwNpY5NtSfP5e+coH9d3ZYv2QNAHq;
+From: Przemo Firszt <przemo@firszt.eu>
+To: jkosina@suse.cz, pinglinux@gmail.com, chris@cnpbagwell.com,
+        killertofu@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linuxwacom-devel@lists.sourceforge.net,
+        Przemo Firszt <przemo@firszt.eu>
+Subject: [PATCH 1/2] HID: wacom: Replace __set_bit with input_set_capability
+Date: Wed, 14 Mar 2012 19:55:03 +0000
+Message-Id: <1331754904-8927-1-git-send-email-przemo@firszt.eu>
+X-Mailer: git-send-email 1.7.6.4
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - peacock.arvixe.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - firszt.eu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This works the same way IT8721F works, but it supports WDT_PWROK
-(checked on the datasheet).
+It's a trivial patch. It's doesn't change the functionality as the helper
+input_set_capability does the same thing.
 
-CC: Wim Van Sebroeck <wim@iguana.be>
-Signed-off-by: Diego Elio Pettenò <flameeyes@flameeyes.eu>
+Signed-off-by: Przemo Firszt <przemo@firszt.eu>
 ---
- drivers/watchdog/Kconfig    |    2 +-
- drivers/watchdog/it87_wdt.c |    4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/hid/hid-wacom.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 123b60c..40eb9f8 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -602,7 +602,7 @@ config IT87_WDT
- 	depends on X86 && EXPERIMENTAL
- 	---help---
- 	  This is the driver for the hardware watchdog on the ITE IT8702,
--	  IT8712, IT8716, IT8718, IT8720, IT8721, IT8726 Super I/O chips.
-+	  IT8712, IT8716, IT8718, IT8720, IT8721, IT8726, IT8728 Super I/O chips.
- 	  This watchdog simply watches your kernel to make sure it doesn't
- 	  freeze, and if it does, it reboots your computer after a certain
- 	  amount of time.
-diff --git a/drivers/watchdog/it87_wdt.c b/drivers/watchdog/it87_wdt.c
-index a2d9a12..060a9ce 100644
---- a/drivers/watchdog/it87_wdt.c
-+++ b/drivers/watchdog/it87_wdt.c
-@@ -84,6 +84,7 @@
- #define IT8720_ID	0x8720
- #define IT8721_ID	0x8721
- #define IT8726_ID	0x8726	/* the data sheet suggest wrongly 0x8716 */
-+#define IT8728_ID	0x8728
+diff --git a/drivers/hid/hid-wacom.c b/drivers/hid/hid-wacom.c
+index 5c25036..d04e2aa 100644
+--- a/drivers/hid/hid-wacom.c
++++ b/drivers/hid/hid-wacom.c
+@@ -492,9 +492,7 @@ static int wacom_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+ 	__set_bit(BTN_MIDDLE, input->keybit);
  
- /* GPIO Configuration Registers LDN=0x07 */
- #define WDTCTRL		0x71
-@@ -95,7 +96,7 @@
- #define WDT_CIRINT	0x80
- #define WDT_MOUSEINT	0x40
- #define WDT_KYBINT	0x20
--#define WDT_GAMEPORT	0x10 /* not in it8718, it8720, it8721 */
-+#define WDT_GAMEPORT	0x10 /* not in it8718, it8720, it8721, it8728 */
- #define WDT_FORCE	0x02
- #define WDT_ZERO	0x01
+ 	/* Pad */
+-	input->evbit[0] |= BIT(EV_MSC);
+-
+-	__set_bit(MSC_SERIAL, input->mscbit);
++	input_set_capability(input, EV_MSC, MSC_SERIAL);
  
-@@ -617,6 +618,7 @@ static int __init it87_wdt_init(void)
- 	case IT8718_ID:
- 	case IT8720_ID:
- 	case IT8721_ID:
-+	case IT8728_ID:
- 		max_units = 65535;
- 		try_gameport = 0;
- 		break;
+ 	__set_bit(BTN_0, input->keybit);
+ 	__set_bit(BTN_1, input->keybit);
 -- 
-1.7.8.5
+1.7.6.4
 
