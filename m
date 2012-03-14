@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761376Ab2CNRhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 13:37:16 -0400
-Received: from lulu.zabbo.net ([69.168.54.52]:50101 "EHLO lulu.zabbo.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761118Ab2CNRhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 13:37:10 -0400
-Message-ID: <4F60D743.50209@zabbo.net>
-Date: Wed, 14 Mar 2012 13:37:07 -0400
-From: Zach Brown <zab@zabbo.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1761231Ab2CNRiT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 13:38:19 -0400
+Received: from smtp-out-225.synserver.de ([212.40.185.225]:1177 "EHLO
+	smtp-out-225.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760123Ab2CNRiR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 13:38:17 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 8975
+Message-ID: <4F60D804.30804@metafoo.de>
+Date: Wed, 14 Mar 2012 18:40:20 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Yongqiang Yang <xiaoqiangnk@gmail.com>,
-        Phillip Susi <phillsusi@gmail.com>,
-        Andreas Dilger <adilger@whamcloud.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: getdents - ext4 vs btrfs performance
-References: <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com> <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com> <20120310044804.GB5652@thunk.org> <4F5F9A97.5060404@ubuntu.com> <20120313195339.GA24124@thunk.org> <4F5FAC9C.9070607@gmail.com> <20120313213304.GB11969@thunk.org> <CAGBYx2ZQk+kobPj5ff0NKEfK_-kD0NK4WiNUruF=d443PV-NSw@mail.gmail.com> <20120314025108.GF15379@thunk.org> <4F60A881.3070607@zabbo.net> <20120314164804.GA28042@thunk.org>
-In-Reply-To: <20120314164804.GA28042@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org, qi.wang@intel.com,
+        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        yong.y.wang@intel.com, kok.howg.ewe@intel.com,
+        Liam Girdwood <lrg@ti.com>, joel.clark@intel.com
+Subject: Re: [alsa-devel] [PATCH v6] sound/soc/codecs: add LAPIS	Semiconductor
+ ML26124
+References: <1329976011-2251-1-git-send-email-tomoya.rohm@gmail.com>	<20120229235147.GM8295@opensource.wolfsonmicro.com>	<CANKRQngOkGTPM9AWEaHoaNQCyN65B_ESB24ctcT_DiEen050fg@mail.gmail.com>	<20120302125819.GE3230@opensource.wolfsonmicro.com>	<CANKRQngoDf_U8U7txG0AT1TKmSeq2FfqwjWD7EEiLROWzn+f5Q@mail.gmail.com>	<20120306100012.GC19635@opensource.wolfsonmicro.com>	<CANKRQniUnEPawXZHcPH9kG0hDiaZ-eJ_vOQrCefB0ntCu98D6g@mail.gmail.com>	<20120306121222.GK19635@opensource.wolfsonmicro.com>	<CANKRQnjFB8G5iRKZLQok+qnQrPXf7vcRGto_OyL+1=VNBTnetw@mail.gmail.com>	<20120307114811.GF3107@opensource.wolfsonmicro.com> <CANKRQnh2JqhZBYLP=U_isgthh2pFT89_qBeypda1ciUJzoRXYw@mail.gmail.com>
+In-Reply-To: <CANKRQnh2JqhZBYLP=U_isgthh2pFT89_qBeypda1ciUJzoRXYw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2012 12:48 PM, Ted Ts'o wrote:
-> On Wed, Mar 14, 2012 at 10:17:37AM -0400, Zach Brown wrote:
->>
->>> We could do this if we have two b-trees, one indexed by filename and
->>> one indexed by inode number, which is what JFS (and I believe btrfs)
->>> does.
->>
->> Typically the inode number of the destination inode isn't used to index
->> entries for a readdir tree because of (wait for it) hard links.  You end
->> up right back where you started with multiple entries per key.
->
-> One thing that might work is to have a 16-bit extra field in the
-> directory entry that gives an signed offset to the inode number so
-> that such that inode+offset is a unique value within the btree sorted
-> by inode+offset number.  Since this tree is only used for returning
-> entries in an optimal (or as close to optimal as can be arranged)
-> order, we could get away with that.
+On 03/08/2012 03:24 AM, Tomoya MORINAGA wrote:
+> On Wed, Mar 7, 2012 at 8:48 PM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+>>> If possible, I want to use framework features. However, I judged it is
+>>> not possible.
+>>> Let me confirm again.
+>>> As I said before, all ML26124 registers need to be accessed by
+>>> different address when read and write.
+>>> Like below
+>>> R       W
+>>> $00h $01h Sampling setting
+>>> $02h $03h PLL setting
+>>> ...
+>>> Even so, can I use framework features ?
+>> No, in which case (to repeat what I said previously) you need to make
+>> the code *much* clearer so the reader can understand what it is doing
+>> and why it's having to open code this stuff.
+> 
+> 
+> thanks.
 
-Yeah, at least that's nice and simple.  Personally, I'm always nervous
-when we build in new limits like this.  Some joker somewhere always
-manages to push up against them.
+If this is for all registers, how does stuff like DAPM work, which uses the
+framework internal update_bits function?
 
-But such is life.  Maybe it's the right thing in the ext* design space.
-The fixed number of possible inodes certainly makes it easier to pack
-more inode offsets into the telldir cookie.
-
-- z
+If it's the case that the write address is always read address + 1 you can
+still use the framework if you set write_flag_mask to 0x01 in your regmap
+config. In my opinion it even makes sense to shift all the register numbers
+to the left by one and use a 7/9 instead of a 8/8 addr/reg layout. This will
+reduce the amount of memory wasted due to holes in the register cache.
