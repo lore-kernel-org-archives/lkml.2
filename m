@@ -1,119 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab2CNG45 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 02:56:57 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:50768 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229Ab2CNG4z (ORCPT
+	id S1757399Ab2CNHFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 03:05:21 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60087 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755028Ab2CNHFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 02:56:55 -0400
-Date: Wed, 14 Mar 2012 09:59:04 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: RCU stalls in linux-next
-Message-ID: <20120314065904.GA3220@mwanda>
-References: <20120313134822.GA5158@elgon.mountain>
- <20120313143327.GA2349@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="opJtzjQTFsWo+cga"
-Content-Disposition: inline
-In-Reply-To: <20120313143327.GA2349@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F604132.007B,ss=1,re=0.000,fgs=0
+	Wed, 14 Mar 2012 03:05:19 -0400
+Date: Wed, 14 Mar 2012 18:05:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (sound tree
+ related)
+Message-Id: <20120314180508.e0fd932c329317ab078c140f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__14_Mar_2012_18_05_08_+1100_p5VJVekR+/KKzG_S"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---opJtzjQTFsWo+cga
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Wed__14_Mar_2012_18_05_08_+1100_p5VJVekR+/KKzG_S
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I get these on my netbook as well if I run it for long enough.  I
-just read email on that and do the occasional git pull.
+Hi all,
 
-regards,
-dan carpenter
+After merging the final tree, today's linux-next build (i386 defconfig)
+failed like this:
 
-[ 3906.306118] eth0: no IPv6 routers present
-[58395.111474] apt-get used greatest stack depth: 4032 bytes left
-[231179.224907] apt-get used greatest stack depth: 3632 bytes left
-[491541.321011] INFO: rcu_sched self-detected stall on CPU { 0}  (t=60000 jiffies)
-[491541.321011] Pid: 576, comm: kswapd0 Not tainted 3.3.0-rc4-next-20120222+ #129
-[491541.321011] Call Trace:
-[491541.321011]  <IRQ>  [<ffffffff810ab6ea>] __rcu_pending+0x19a/0x4d0
-[491541.321011]  [<ffffffff8106b1dc>] ? trigger_load_balance+0x5c/0x2e0
-[491541.321011]  [<ffffffff810abd50>] rcu_check_callbacks+0xb0/0x1a0
-[491541.321011]  [<ffffffff81043f73>] update_process_times+0x43/0x80
-[491541.321011]  [<ffffffff8107e8cf>] tick_sched_timer+0x5f/0xb0
-[491541.321011]  [<ffffffff81058c58>] __run_hrtimer+0x78/0x1d0
-[491541.321011]  [<ffffffff8107e870>] ? tick_nohz_handler+0xf0/0xf0
-[491541.321011]  [<ffffffff8103baa1>] ? __do_softirq+0xf1/0x210
-[491541.321011]  [<ffffffff81059583>] hrtimer_interrupt+0xe3/0x200
-[491541.321011]  [<ffffffff8170880c>] ? call_softirq+0x1c/0x30
-[491541.321011]  [<ffffffff8101f564>] smp_apic_timer_interrupt+0x64/0xa0
-[491541.321011]  [<ffffffff81707ecb>] apic_timer_interrupt+0x6b/0x70
-[491541.321011]  <EOI>  [<ffffffff810d8203>] ? zone_watermark_ok_safe+0xe3/0x170
-[491541.321011]  [<ffffffff810e6de8>] balance_pgdat+0x1a8/0x690
-[491541.321011]  [<ffffffff810e7438>] kswapd+0x168/0x3f0
-[491541.321011]  [<ffffffff816fea26>] ? __schedule+0x3a6/0x750
-[491541.321011]  [<ffffffff810553a0>] ? add_wait_queue+0x60/0x60
-[491541.321011]  [<ffffffff810e72d0>] ? balance_pgdat+0x690/0x690
-[491541.321011]  [<ffffffff8105496e>] kthread+0x8e/0xa0
-[491541.321011]  [<ffffffff81708714>] kernel_thread_helper+0x4/0x10
-[491541.321011]  [<ffffffff810548e0>] ? kthread_freezable_should_stop+0x70/0x70
-[491541.321011]  [<ffffffff81708710>] ? gs_change+0xb/0xb
-[491721.324004] INFO: rcu_sched self-detected stall on CPU { 0}  (t=240003 jiffies)
-[491721.324004] Pid: 576, comm: kswapd0 Not tainted 3.3.0-rc4-next-20120222+ #129
-[491721.324004] Call Trace:
-[491721.324004]  <IRQ>  [<ffffffff810ab6ea>] __rcu_pending+0x19a/0x4d0
-[491721.324004]  [<ffffffff8106b1dc>] ? trigger_load_balance+0x5c/0x2e0
-[491721.324004]  [<ffffffff810abd50>] rcu_check_callbacks+0xb0/0x1a0
-[491721.324004]  [<ffffffff81043f73>] update_process_times+0x43/0x80
-[491721.324004]  [<ffffffff8107e8cf>] tick_sched_timer+0x5f/0xb0
-[491721.324004]  [<ffffffff81058c58>] __run_hrtimer+0x78/0x1d0
-[491721.324004]  [<ffffffff8107e870>] ? tick_nohz_handler+0xf0/0xf0
-[491721.324004]  [<ffffffff8103baa1>] ? __do_softirq+0xf1/0x210
-[491721.324004]  [<ffffffff81059583>] hrtimer_interrupt+0xe3/0x200
-[491721.324004]  [<ffffffff8170880c>] ? call_softirq+0x1c/0x30
-[491721.324004]  [<ffffffff8101f564>] smp_apic_timer_interrupt+0x64/0xa0
-[491721.324004]  [<ffffffff81707ecb>] apic_timer_interrupt+0x6b/0x70
-[491721.324004]  <EOI>  [<ffffffff810d812d>] ? zone_watermark_ok_safe+0xd/0x170
-[491721.324004]  [<ffffffff810e6de8>] balance_pgdat+0x1a8/0x690
-[491721.324004]  [<ffffffff810e7438>] kswapd+0x168/0x3f0
-[491721.324004]  [<ffffffff816fea26>] ? __schedule+0x3a6/0x750
-[491721.324004]  [<ffffffff810553a0>] ? add_wait_queue+0x60/0x60
-[491721.324004]  [<ffffffff810e72d0>] ? balance_pgdat+0x690/0x690
-[491721.324004]  [<ffffffff8105496e>] kthread+0x8e/0xa0
-[491721.324004]  [<ffffffff81708714>] kernel_thread_helper+0x4/0x10
-[491721.324004]  [<ffffffff810548e0>] ? kthread_freezable_should_stop+0x70/0x70
-[491721.324004]  [<ffffffff81708710>] ? gs_change+0xb/0xb
-[491901.327003] INFO: rcu_sched self-detected stall on CPU { 0}  (t=420006 jiffies)
+sound/pci/hda/patch_sigmatel.c: In function 'stac92xx_update_led_status':
+sound/pci/hda/patch_sigmatel.c:5075:3: error: implicit declaration of funct=
+ion 'stac_vrefout_set' [-Werror=3Dimplicit-function-declaration]
 
+Caused by commit 2faa3bf15ba6 ("ALSA: hda - Rewrite the mute-LED hook
+with vmaster hook in patch_sigmatel.c").  CONFIG_SND_HDA_POWER_SAVE is
+not set for this build.
 
---opJtzjQTFsWo+cga
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I reverted that commit for today (and commits d2f344b5e0a9 "ALSA: hda -
+Add "Mute-LED Mode" enum control" and f29735cbef4e "ALSA: hda - Add
+expose_enum_ctl flag to snd_hda_add_vmaster_hook()" which conflict with
+the revert).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__14_Mar_2012_18_05_08_+1100_p5VJVekR+/KKzG_S
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPYEG3AAoJEOnZkXI/YHqRY+IP/jwWYrSLL37SY4UBaijc9pto
-3OzVyaNqpdQ6Dt/y6iGRnPnmOkQclco4HdEwDDdImFvxifWr8fLp61p1Q0EZk9V0
-anuICWVPRCE/51328+FEUnsNJaEG6UWgqRaTw1df27xpnlIsXPSQd6WwRkgzDzFc
-WZxJSf8130nnmWGhlAZ9qypoFlJ2d6Rl8bSyFFC1XJn4R5RtAaQMAp4o//g/xBuW
-EqN9CSD7Z0GSD9Mys1TEoRm9MuZxvzqSGRsRO+84w7P6eBO3qw9hIOQsYKMBfLRC
-gIgPtK7fxf24mAgLFz2P2hUMA7ncNr7QbuZKRbM+EPSRQzp8Z6VTp+IFODW1qX9m
-Jy/WypB5G/5x/vYyj86PqZ6VR8llDXpPRKxaYD9jb6IymJ8fX5CLKQEiz8j/h3UI
-v2ZMxNMiGufnVkH0VJudtCd5a1pLIlp4iSq9FUb5iyAruWAi2YQ8aOjfuWMY7TQA
-LYnnPXg97ThxdP8Z+G3LqhCQT3jp7TvZr/C5lmgGOTE3MLgA+Jt7XvxYea1cVcQh
-QBaP49vzDMuhN2cmGNiVUUBA9NGOZ270XpOxNItC7+QxUW/poU/5ik+FCH0l0OwJ
-R22G7QtZnXAe7jHQ05+wIj7KIHjxbxEDD+YUPMZMTlA7uLPr5a7nFljbOmoRDENX
-EBTyDrLZRG4ZHYREk/Yc
-=cX9e
+iQIcBAEBCAAGBQJPYEMkAAoJEECxmPOUX5FEKTAP/AxYHvTgmayMYpSOVGzec51+
+UnLHNTxq1Tq/DU+sAfm0BU0HqhTSPyD/5R9GyUEd9tb2j8fINoK2YHwUo6IkgZDI
+mpqwlCH7HCSf8CuWQAqXDHgnLuVKRKHnDgdZkwPFR1RFlwgGLVrAdBPMRqRWUYpA
+UN+dmIQhFzF7Vhl/OyV8F8tbbCTeTZ4ixnCcl4WD1Ingo/IygEgj+4L/vgxLlJ4N
+2TPckqfzCyIzV4YfiCWIgBH460mOBibEHPr4aStMKPWfi7uG4hwPB67gElTRNPNe
+ePyEwoGFViWOwxQGtUDDsVj/VY6mYknPoqgpqUDccgfjMU3UxvJzLXPWH+LKg/NA
+zb4utYfhC0l3gpCOKWilC5RQrZOADQ9wKKDsw1ySK49p94Y9516toLWi3/LiLCYd
+JvXqB2yFUcQYz+4BIWZm1H3AGkCSteYOyuptDiQzgSEKPiniwC0Q+TZlnwl6oUPr
+obu3HHUjgGRYART+3c7XC4r9769oCjhArspF77VY32uDvYCFRcK3teMvMuYm8P0f
+d+iYlxJ0macEG/QCwAVh1zrDL0PV4Th++uGA+RJlrwFvVRcysj9bOYaz60nRVJah
+1ZqCFASJDo28gZHk/U2c3LkXqZEWtl2+LPoU/6GMP5ovhtUoUNzplxqgPD+7kQvB
+UFbymlqZ7rE7BJiEhMMU
+=Imz+
 -----END PGP SIGNATURE-----
 
---opJtzjQTFsWo+cga--
+--Signature=_Wed__14_Mar_2012_18_05_08_+1100_p5VJVekR+/KKzG_S--
