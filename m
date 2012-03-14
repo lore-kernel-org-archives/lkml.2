@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760008Ab2CNTIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 15:08:07 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:7416 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756031Ab2CNTIA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 15:08:00 -0400
-Message-ID: <4F60EC8C.1040400@tilera.com>
-Date: Wed, 14 Mar 2012 15:07:56 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	id S1760453Ab2CNTJH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 15:09:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4020 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760125Ab2CNTJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 15:09:04 -0400
+Date: Wed, 14 Mar 2012 19:55:10 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Djalal Harouni <tixxdz@opendz.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Kees Cook <keescook@chromium.org>, Solar Designer <solar@openwall.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephen Wilson <wilsons@start.ca>,
+        "Jason A. Donenfeld" <Jason@zx2c4.com>,
+        Roland McGrath <roland@hack.frob.com>
+Subject: [PATCH 0/1] (Was: self_exec_id/parent_exec_id && CLONE_PARENT)
+Message-ID: <20120314185510.GA14172@redhat.com>
+References: <1331421919-15499-1-git-send-email-tixxdz@opendz.org> <1331421919-15499-2-git-send-email-tixxdz@opendz.org> <20120311172512.GA2729@redhat.com> <20120311174953.GB2729@redhat.com> <CA+55aFx43nZmhRg5Qv5x-4BdgcM-y80ECrgC8mCWc0RqU+_8rQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: <torvalds@linux-foundation.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <stable@kernel.org>
-Subject: Re: [PATCH] tile: remove a non-existing header
-References: <1331561930-14964-1-git-send-email-mchehab@redhat.com>
-In-Reply-To: <1331561930-14964-1-git-send-email-mchehab@redhat.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx43nZmhRg5Qv5x-4BdgcM-y80ECrgC8mCWc0RqU+_8rQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/12/2012 10:18 AM, Mauro Carvalho Chehab wrote:
-> Btw, the ./arch/tile/configs/tilepro_defconfig doesn't compile even
-> with this fix. It fails at arch/tile/include/asm/atomic_64.h because
-> atomic64_t is never defined, but it is used there and on other places.
+On 03/11, Linus Torvalds wrote:
+>
+> On Sun, Mar 11, 2012 at 10:49 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > I am also asking because the change above looks like the fix to me.
+> > The child must not control its ->exit_signal, it is the parent who
+> > decides which signal the child should use for notification.
+> >
+> > And to me, clone(CLONE_PARENT | SIGXXX) looks like a violation of
+> > rule above.
+>
+> SIGXXX is for doing things like AIO with threads, but it would never
+> be used together with CLONE_PARENT, that would be odd and wrong.
+>
+> So I think we could disallow that - or at least try. See if anybody
+> notices, and if it breaks anything.
+>
+> The rule about the Linux ABI is not that the ABI is set in stone. It's
+> that we can't break any existing binaries. And *maybe* there are users
+> of CLONE_PARENT and special signals, but it sounds unlikely and would
+> probably confuse real programs. So feel free to just try it (early in
+> the 3.4 merge window - not at this point, though).
 
-I suspect you may be trying to use tilepro_defconfig with ARCH=tilegx. 
-It's only valid for ARCH=tilepro, just like tilegx_defconfig is only valid
-for ARCH=tilegx.  There's some #ifdefs that are supposed to catch this (in
-asm-offsets.c) but it's coming too late.  I'll move it so it's before all
-the #includes so at least it will be the first error that you see!
+OK, nobody seems to object.
 
-> Also, while the edac_tile driver seems to be for both Tile GX and Tilepro
-> sub-archs, it is not included on tilegx_defconfig. It would make sense
-> to add it there, in order to make easier for people to test/use the
-> EDAC drivers.
+Andrew, could you take this patch?
 
-Fixed now in Linus' tree.
+As for self_exec_id/parent_exec_id, this needs cleanups and fixes
+in any case. But perhaps we can kill them after this change.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Oleg.
 
