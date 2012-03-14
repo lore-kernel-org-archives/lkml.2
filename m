@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761126Ab2CNUTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 16:19:51 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39431 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857Ab2CNUTs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 16:19:48 -0400
-Date: Thu, 15 Mar 2012 07:19:34 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: Tree for Mar 14 (printk)
-Message-Id: <20120315071934.77f0af64a4c633c545d68ea4@canb.auug.org.au>
-In-Reply-To: <4F60BFA6.2030804@xenotime.net>
-References: <20120314181921.59451eca117c276461f7dc28@canb.auug.org.au>
-	<4F60BFA6.2030804@xenotime.net>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1760243Ab2CNUTr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 16:19:47 -0400
+Received: from rinux.net ([85.214.141.182]:50154 "EHLO rinux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932403Ab2CNUTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 16:19:32 -0400
+Message-ID: <1331756331.5315.19.camel@erde.fritz.box>
+Subject: RE: Kernel Panic with Rawtherapee (mce related)
+From: Adalbert Dawid <dawid@rinux.net>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "x86@kernel.org" <x86@kernel.org>
+Date: Wed, 14 Mar 2012 21:18:51 +0100
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F15B64BF0@ORSMSX103.amr.corp.intel.com>
+References: <1331678930.11814.16.camel@erde.fritz.box>
+	 <4F60B0E3.6020503@linux.vnet.ibm.com> <20120314155906.GA25286@aftab>
+	 <3908561D78D1C84285E8C5FCA982C28F15B64BF0@ORSMSX103.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__15_Mar_2012_07_19_34_+1100_fhMTTBxpi6gmRjqP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Mar_2012_07_19_34_+1100_fhMTTBxpi6gmRjqP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thank you for the quick reply.
 
-On Wed, 14 Mar 2012 08:56:22 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
-e:
->
-> on x86_64:
->=20
-> kernel/printk.c:1230:5: error: redefinition of 'printk_sched'
-> include/linux/printk.h:136:5: note: previous definition of 'printk_sched'=
- was here
+On Wed, 2012-03-14 at 17:51 +0000, Luck, Tony wrote:
+> > You're getting a bunch of machine checks, the last one of them being
+> > fatal (Process Context Corrupt bit is set) causing the machine to panic.
+> 
+> PCC is set in all of them
+> 
+> > Tony will probably be able to help you further in decoding what exactly
+> > those MC0_STATUS and MC5_STATUS values mean
+> 
+> Bank 5 ends in 0400 - which means "Internal timer error". Bank 0 has 0800
+> which is a bus/interconnect error where this processor was the source of
+> a memory transaction.
+> 
+> That's where the facts end - speculation begins here ...
+> 
+> Since this is repeatable under load - it's possible that a page table got
+> corrupted and you are trying to access some non-existent memory location?
+> Do all traces for this panic involve *_tlb_* functions?
 
-Caused by commit 3ccf3e830615 ("printk/sched: Introduce special
-printk_sched() for those awkward moments") from the tip tree.  The
-declaration in include/linux/printk.h has alternatives determined by
-CONFIG_PRINTK, but the definition in kernel/printk.c is not so
-protected ...
+Since the screenshot I had posted is the only one I have been able to
+capture, I don't know. I will try to provoke the crash by setting the
+machine under load utilizing rawtherapee and will post results in case
+of success. Cpuburn did not manage to crash the machine in a (shortish)
+test I did a few days ago.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-\
+It would be very helpful to disable the "reboot in 30 seconds" timeout.
+Is that possible somehow?
 
---Signature=_Thu__15_Mar_2012_07_19_34_+1100_fhMTTBxpi6gmRjqP
-Content-Type: application/pgp-signature
+> Or perhaps you have a cooling problem - and when stressed your cpu or
+> memory is getting too hot?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+I do not believe this is true as the cpu fan plus two case fans are
+running fine and the sensors display cpu tempratures <60°C, even under
+load.
 
-iQIcBAEBCAAGBQJPYP1WAAoJEECxmPOUX5FEqBIP/iu2tO45UnLFm04wfqII5NcT
-yjc72hhQmQRlhko/n2dOMcfdgMYrSj2s2u6Zh6FGPDibEmYxUcZU/8kxnV4m9p72
-IBCMSG9bQ0gvmmy3QqguMErHkkSepWolfKKbM0pKkKjpdD+6fHO9KdI4S7QJlbbO
-JWhXvIu4vjuanlJq0XGW3vyFNMaCMqiApmbW7wnscdrgvW7lstQIJf+0FuTJ2gUX
-kRlVjTCfgGs8O7Sk9N0ZtiF73Xo8taKGrw1y3u9ruCiOFe8b+Gedt1ogbETfI7GF
-C0BlP7HuVQfNunWR8iXClxIwyrWfrawf3YvSePqrcbN1xOwnRed0cJEq+P+opweN
-bxgJZT0Q8rHeOOonS5D7HCV9tk8uj6WoT4rjMpBwblOuZCOPoSBuSo3LKOA2U4gO
-e2XKNM2VGFwxt0xn2UkqWBV7EyniYGhoghvv4q6Y5AXu7VJeyNf20iCdTUKEsCuP
-dglFzRN+OLd72n2ZXQ3G18yjQxU/UeTl9BXzR+518Y56N6ZNCTh2jHGglYMa4UCJ
-jgsMkTLOivRg3CcdvAGxrDRBqFVsj2y+szsKpl1V8JFQfCgK6xylpL88wdP5Z8sy
-mdp5OsBvTT4+26IbZpBb8sY66yUMfQlfeb5GxdMRJ8+blO0DSC6zPvTh9+u16T5n
-QY4UmKdfRegElH50BGSo
-=9Aei
------END PGP SIGNATURE-----
+Up to now, it has always been rawtherapee that crashed the machine. This
+is why I thought it might possibly be some special cpu feature (an SSE
+command or something) that happens to be broken in my cpu and that is
+triggered only by rawtherapee and not by any other software. What is
+your opinion on this theory? 
 
---Signature=_Thu__15_Mar_2012_07_19_34_+1100_fhMTTBxpi6gmRjqP--
+> -Tony
+> 
+
+
