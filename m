@@ -1,85 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761245Ab2CNRC4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 13:02:56 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:36845 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760291Ab2CNRCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 13:02:51 -0400
-Date: Wed, 14 Mar 2012 13:02:47 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: Phillip Susi <phillsusi@gmail.com>, Andreas Dilger <adilger@whamcloud.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: getdents - ext4 vs btrfs performance
-Message-ID: <20120314170247.GC28042@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Lukas Czerner <lczerner@redhat.com>,
-	Phillip Susi <phillsusi@gmail.com>,
-	Andreas Dilger <adilger@whamcloud.com>,
-	Jacek Luczak <difrost.kernel@gmail.com>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-References: <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
- <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
- <20120310044804.GB5652@thunk.org>
- <4F5F9A97.5060404@ubuntu.com>
- <20120313195339.GA24124@thunk.org>
- <4F5FAC9C.9070607@gmail.com>
- <20120313213304.GB11969@thunk.org>
- <alpine.LFD.2.00.1203140825090.5379@dhcp-27-109.brq.redhat.com>
- <20120314125002.GH15379@thunk.org>
- <alpine.LFD.2.00.1203141507220.14894@dhcp-27-109.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1203141507220.14894@dhcp-27-109.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1761250Ab2CNRHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 13:07:13 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:59180 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755831Ab2CNRHK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 13:07:10 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18xqMxElrUxDPqWcydKB/N/4ke/RCjfYAV7W+YjkT
+	AzJf/6Prz08Qqk
+Message-ID: <1331744826.31111.27.camel@marge.simpson.net>
+Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have been
+ online
+From: Mike Galbraith <efault@gmx.de>
+To: paulmck@linux.vnet.ibm.com
+Cc: Dimitri Sivanich <sivanich@sgi.com>, linux-kernel@vger.kernel.org
+Date: Wed, 14 Mar 2012 18:07:06 +0100
+In-Reply-To: <20120314151717.GA2435@linux.vnet.ibm.com>
+References: <20120314002414.GA21561@linux.vnet.ibm.com>
+	 <1331717099.5752.15.camel@marge.simpson.net>
+	 <1331728841.7465.7.camel@marge.simpson.net>
+	 <20120314130801.GA11722@sgi.com> <20120314151717.GA2435@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 03:34:13PM +0100, Lukas Czerner wrote:
-> > 
-> > You can make it be a RO_COMPAT change instead of an INCOMPAT change,
-> > yes.
-> 
-> Does it have to be RO_COMPAT change though ? Since this would be both
-> forward and backward compatible.
+On Wed, 2012-03-14 at 08:17 -0700, Paul E. McKenney wrote:
 
-The challenge is how do you notice if the file system is mounted on an
-older kernel, which then inserts a directory entry without updating
-the secondary tree.  The older kernel won't know about the new inode
-flag, so it can't clear the flag when it modifies the directory.
+> And thank you both for the testing!!!
 
-We were able to get away with making the original htree feature
-read/write compatible because the design for it was anticipated far in
-advance, and because it was before the days of enterprise kernels that
-had to be supported for seven years.  So we added code into ext3 to
-clear the the htree flag whenever the directory was modified something
-like two years before the htree code made its appearance, and back
-then we decided that was fair to assume no one would be using a kernel
-that old, or be jumping back and forth between an ancient kernel and a
-modern kernel with htree enabled.  Yes, that was playing a bit fast
-and loose, but early on in the kernel history, we could do that.  It's
-not something I would do today.
+Try to beat RCU into submission with rocks and sticks, or test patch
+from RCU expert... not a hard choice.  I will most happily test ;-)
 
-The bigger deal is that as Zach pointed out, we can't just index it by
-inode number because we have to worry about hard links.  Which means
-we need either an explicit counter field added to the directory entry,
-or some kind of new offset field.  That we can't just shoehorn in and
-retain backwards compatibility.
+-Mike 
 
-And once we break backwards compatibility, we might as well look at
-the full design space and see what is the most optimal.
-
-    	 	      	      	      	  - Ted
