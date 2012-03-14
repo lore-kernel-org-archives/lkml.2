@@ -1,59 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031161Ab2CNXRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:17:37 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:34545 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030752Ab2CNXRa convert rfc822-to-8bit (ORCPT
+	id S1760414Ab2CNXTN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:19:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33268 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757296Ab2CNXTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:17:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org>
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
-	<tip-31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4@git.kernel.org>
-Date: Wed, 14 Mar 2012 16:17:29 -0700
-Message-ID: <CAMe9rOpGgs9hR31Jxk8ycMNnEoCzUV2_xTeeE+uaEFgz5AEEwQ@mail.gmail.com>
-Subject: Re: [tip:x86/x32] x32: Fix alignment fail in struct compat_siginfo
-From: "H.J. Lu" <hjl.tools@gmail.com>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hjl.tools@gmail.com
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Mar 2012 19:19:09 -0400
+Date: Wed, 14 Mar 2012 16:19:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH] watchdog: Make sure the watchdog thread gets CPU on
+ loaded system
+Message-Id: <20120314161906.e53359d3.akpm@linux-foundation.org>
+In-Reply-To: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
+References: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 2:43 PM, tip-bot for H. Peter Anvin
-<hpa@zytor.com> wrote:
-> Commit-ID:  31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4
-> Gitweb:     http://git.kernel.org/tip/31796ac4e8f0e88f5c10f1ad6dab8f19bebe44a4
-> Author:     H. Peter Anvin <hpa@zytor.com>
-> AuthorDate: Wed, 14 Mar 2012 14:27:52 -0700
-> Committer:  H. Peter Anvin <hpa@zytor.com>
-> CommitDate: Wed, 14 Mar 2012 14:27:52 -0700
->
-> x32: Fix alignment fail in struct compat_siginfo
->
-> Adding struct _sigchld_x32 caused a misalignment cascade in struct
-> siginfo, because union _sifields is located on an 4-byte boundary
-> (8-byte misaligned.)
->
-> Adding new fields that are 8-byte aligned caused the intermediate
-> structures to also be aligned to 8 bytes, thereby adding padding in
-> unexpected places.
->
-> Thus, change s64 to compat_s64 here, which makes it "misaligned on
-> paper".  In reality these fields *are* actually aligned (there are 3
-> preceeding ints outside the union and 3 inside struct _sigchld_x32),
-> but because of the intervening union and struct it is not possible for
-> gcc to avoid padding without breaking the ABI.
->
+On Wed, 14 Mar 2012 16:38:45 -0400
+Don Zickus <dzickus@redhat.com> wrote:
 
-Just for the record, although the offsets of _utime and _stime are
-multiple of 8 bytes, struct siginfo is only aligned at 4 bytes.  So
-the addresses of  _utime and _stime may not be 8byte aligned.
-But misaligned int64 load/store are OK for x86-64.
+> From: Michal Hocko <mhocko@suse.cz>
 
--- 
-H.J.
+This changelog is awful.
+
+> If the system is loaded while hotplugging a CPU we might end up with a bogus
+> hardlockup detection. This has been seen during LTP pounder test executed
+> in parallel with hotplug test.
+> 
+> The main problem is that enable_watchdog (called when CPU is brought up)
+
+You mean watchdog_enable().
+
+> registers perf event which periodically checks per-cpu counter
+> (hrtimer_interrupts), updated from a hrtimer callback, but the hrtimer is fired
+
+s/fired/started/
+
+> from the kernel thread.
+
+"the kernel thread" being kernel/watchdog.c:watchdog()
+
+> This means that while we already do check for the hard lockup the kernel thread
+
+Who is "we" and where in the kernel does this check occur?
+
+"the kernel thread" is still kernel/watchdog.c:watchdog().
+
+> might be sitting on the runqueue with zillions of tasks
+
+What causes these "zillions of tasks"?  Are they userspace tasks? 
+They're preventing the watchdog() function from being called in a
+timely fashion, I assume?
+
+> so there is nobody to
+> update the value we rely on and so we KABOOM.
+
+Who is "we" and what is "the value"?
+
+etcetera.  It is maddeningly inaccurate, vague and handwavy for someone
+who is actually trying to understand what you're trying to tell us.
+
+> Let's fix this by boosting the watchdog thread priority before we wake it up
+> rather than when it's already running.
+> This still doesn't handle a case where we have the same amount of high prio
+> FIFO tasks but that doesn't seem to be common.
+
+Even a single FIFO thread could starve the watchdog() thread.
+
+> The current implementation
+> doesn't handle that case anyway so this is not worse at least.
+
+Right.  But this isn't specific to the startup case, is it?  A spinning
+SCHED_FIFO thread could cause watchdog() to get starved of CPU for an
+arbitrarily long time, triggering a false(?) lockup detection?  Or did
+we do something to prevent that case?  I assume we did - it would be
+pretty bad if this were to happen.
+
+> Unfortunately, we cannot start perf counter from the watchdog thread because we
+> could miss a real lock up and also we cannot start the hrtimer watchdog_enable
+> because we there is no way (at least I don't know any) to start a hrtimer from
+> a different CPU.
+> 
+> [fix compile issue with param -dcz]
+> 
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Mandeep Singh Baines <msb@chromium.org>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  kernel/watchdog.c |    7 +++----
+>  1 files changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index d117262..6618cde 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -321,11 +321,9 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>   */
+>  static int watchdog(void *unused)
+>  {
+> -	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+> +	struct sched_param param = { .sched_priority = 0 };
+>  	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+>  
+> -	sched_setscheduler(current, SCHED_FIFO, &param);
+> -
+>  	/* initialize timestamp */
+>  	__touch_watchdog();
+>  
+> @@ -350,7 +348,6 @@ static int watchdog(void *unused)
+>  		set_current_state(TASK_INTERRUPTIBLE);
+>  	}
+>  	__set_current_state(TASK_RUNNING);
+> -	param.sched_priority = 0;
+>  	sched_setscheduler(current, SCHED_NORMAL, &param);
+>  	return 0;
+>  }
+
+Why did watchdog() reset the scheduling policy seven instructions
+before exiting?  Seems pointless.
+
+> @@ -439,6 +436,7 @@ static int watchdog_enable(int cpu)
+>  
+>  	/* create the watchdog thread */
+>  	if (!p) {
+> +		struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+>  		p = kthread_create_on_node(watchdog, NULL, cpu_to_node(cpu), "watchdog/%d", cpu);
+>  		if (IS_ERR(p)) {
+>  			printk(KERN_ERR "softlockup watchdog for %i failed\n", cpu);
+> @@ -450,6 +448,7 @@ static int watchdog_enable(int cpu)
+>  			}
+>  			goto out;
+>  		}
+> +		sched_setscheduler(p, SCHED_FIFO, &param);
+>  		kthread_bind(p, cpu);
+>  		per_cpu(watchdog_touch_ts, cpu) = 0;
+>  		per_cpu(softlockup_watchdog, cpu) = p;
+
+It's pretty silly that kthread_create_on_node() sets the scheduling
+policy and priority and then the caller immediately resets it.  There
+should be a version of kthread_create_on_node() whcih takes these as
+arguments.
+
+Oh well, despite all that the patch looks OK to me, after using
+whiteout all over the changelog.
+
