@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760493Ab2CNKCq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 06:02:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48486 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760435Ab2CNKCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 06:02:43 -0400
-Date: Wed, 14 Mar 2012 11:02:41 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bob Liu <lliubbo@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] page_cgroup: fix horrid swap accounting regression
-Message-ID: <20120314100240.GB4434@tiehlicka.suse.cz>
-References: <alpine.LSU.2.00.1203052046410.24068@eggly.anvils>
+	id S1030754Ab2CNKF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 06:05:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:14938 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1030712Ab2CNKFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 06:05:55 -0400
+X-IronPort-AV: E=Sophos;i="4.73,583,1325433600"; 
+   d="scan'208";a="4533497"
+Message-ID: <4F606A7C.9090900@cn.fujitsu.com>
+Date: Wed, 14 Mar 2012 17:53:00 +0800
+From: Wen Congyang <wency@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1203052046410.24068@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Avi Kivity <avi@redhat.com>
+CC: "Daniel P. Berrange" <berrange@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Amit Shah <amit.shah@redhat.com>
+Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
+References: <4F58664D.1070800@cn.fujitsu.com> <4F58943E.1050402@redhat.com> <4F595B31.9090301@cn.fujitsu.com> <4F5DBC26.7060204@cn.fujitsu.com> <4F5DD0FD.9070904@redhat.com> <20120313091843.GB3800@redhat.com> <4F5F25BF.7060100@redhat.com> <4F6056FE.3020202@cn.fujitsu.com> <4F6063C8.8010005@redhat.com>
+In-Reply-To: <4F6063C8.8010005@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-14 17:49:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-14 18:03:51,
+	Serialize complete at 2012-03-14 18:03:51
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 05-03-12 20:52:55, Hugh Dickins wrote:
-> Why is memcg's swap accounting so broken?  Insane counts, wrong ownership,
-> unfreeable structures, which later get freed and then accessed after free.
+At 03/14/2012 05:24 PM, Avi Kivity Wrote:
+> On 03/14/2012 10:29 AM, Wen Congyang wrote:
+>> At 03/13/2012 06:47 PM, Avi Kivity Wrote:
+>>> On 03/13/2012 11:18 AM, Daniel P. Berrange wrote:
+>>>> On Mon, Mar 12, 2012 at 12:33:33PM +0200, Avi Kivity wrote:
+>>>>> On 03/12/2012 11:04 AM, Wen Congyang wrote:
+>>>>>> Do you have any other comments about this patch?
+>>>>>>
+>>>>>
+>>>>> Not really, but I'm not 100% convinced the patch is worthwhile.  It's
+>>>>> likely to only be used by Linux, which has kexec facilities, and you can
+>>>>> put talk to management via virtio-serial and describe the crash in more
+>>>>> details than a simple hypercall.
+>>>>
+>>>> As mentioned before, I don't think virtio-serial is a good fit for this.
+>>>> We want something that is simple & guaranteed always available. Using
+>>>> virtio-serial requires significant setup work on both the host and guest.
+>>>
+>>> So what?  It needs to be done anyway for the guest agent.
+>>>
+>>>> Many management application won't know to make a vioserial device available
+>>>> to all guests they create. 
+>>>
+>>> Then they won't know to deal with the panic event either.
+>>>
+>>>> Most administrators won't even configure kexec,
+>>>> let alone virtio serial on top of it. 
+>>>
+>>> It should be done by the OS vendor, not the individual admin.
+>>>
+>>>> The hypercall requires zero host
+>>>> side config, and zero guest side config, which IMHO is what we need for
+>>>> this feature.
+>>>
+>>> If it was this one feature, yes.  But we keep getting more and more
+>>> features like that and we bloat the hypervisor.  There's a reason we
+>>> have a host-to-guest channel, we should use it.
+>>>
+>>
+>> I donot know how to use virtio-serial.
 > 
-> Turns out to be a tiny a little 3.3-rc1 regression in 9fb4b7cc0724
-> "page_cgroup: add helper function to get swap_cgroup": the helper
-> function (actually named lookup_swap_cgroup()) returns an address
-> using void* arithmetic, but the structure in question is a short.
+> I don't either, copying Amit.
 > 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
-
-Thanks, this one looks really nasty.
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
+>> I start vm like this:
+>> qemu ...\
+>>    -device virtio-serial \
+>>   -chardev socket,path=/tmp/foo,server,nowait,id=foo \
+>>   -device virtserialport,chardev=foo,name=port1 ...
+>>
+>> You said that there are too many channels. Does it mean /tmp/foo is a channel?
 > 
->  mm/page_cgroup.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> --- 3.3-rc6/mm/page_cgroup.c	2012-01-20 08:42:35.320020840 -0800
-> +++ linux/mm/page_cgroup.c	2012-03-05 19:51:13.535372098 -0800
-> @@ -379,13 +379,15 @@ static struct swap_cgroup *lookup_swap_c
->  	pgoff_t offset = swp_offset(ent);
->  	struct swap_cgroup_ctrl *ctrl;
->  	struct page *mappage;
-> +	struct swap_cgroup *sc;
->  
->  	ctrl = &swap_cgroup_ctrl[swp_type(ent)];
->  	if (ctrlp)
->  		*ctrlp = ctrl;
->  
->  	mappage = ctrl->map[offset / SC_PER_PAGE];
-> -	return page_address(mappage) + offset % SC_PER_PAGE;
-> +	sc = page_address(mappage);
-> +	return sc + offset % SC_PER_PAGE;
->  }
->  
->  /**
+> Probably.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Hmm, if we use virtio-serial, the guest kernel writes something into the channel when
+the os is panicked. Is it right?
+
+If so, is this channel visible to guest userspace? If the channle is visible to guest
+userspace, the program running in userspace may write the same message to the channel.
+
+Thanks
+Wen Congyang
+
+> 
+
