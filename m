@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030272Ab2CNFzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 01:55:47 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55680 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861Ab2CNFzl (ORCPT
+	id S932361Ab2CNF7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 01:59:12 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:36897 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199Ab2CNF7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 01:55:41 -0400
-Message-ID: <1331704535.2456.37.camel@edumazet-laptop>
-Subject: Re: [PATCH v14 01/13] sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, netdev@vger.kernel.org,
-        x86@kernel.org, arnd@arndb.de, davem@davemloft.net, hpa@zytor.com,
-        mingo@redhat.com, oleg@redhat.com, peterz@infradead.org,
-        rdunlap@xenotime.net, mcgrathr@chromium.org, tglx@linutronix.de,
-        luto@mit.edu, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org
-Date: Tue, 13 Mar 2012 22:55:35 -0700
-In-Reply-To: <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
-References: <1331587715-26069-1-git-send-email-wad@chromium.org>
-	 <0c55cb258e0b5bbd615923ee2a9f06b9.squirrel@webmail.greenhost.nl>
-	 <1331658828.4449.16.camel@edumazet-glaptop>
-	 <3e4fc1efb5d7dbe0dd966e3192e84645.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Wed, 14 Mar 2012 01:59:08 -0400
+Date: Tue, 13 Mar 2012 22:59:06 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>
+cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch -next 1/2] drivers, samsung-laptop: fix initialization of
+ sabi_data in sabi_set_commandb
+Message-ID: <alpine.DEB.2.00.1203132258160.5229@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-357468266-1331704722=:5229"
+Content-ID: <alpine.DEB.2.00.1203132259050.5229@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 14 mars 2012 à 06:12 +0100, Indan Zupancic a écrit :
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Problem is that 'old_size' can be up to 32kB in size and it would be nice
-> if that memory could be released. If it isn't, then using JIT increases
-> memory usage, while also not accounting it to the socket.
-> 
+--397155492-357468266-1331704722=:5229
+Content-Type: TEXT/PLAIN; CHARSET=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.00.1203132259051.5229@chino.kir.corp.google.com>
 
-It is accounted for, since jit size is in relation with standard filter
-size. Check sock_kmalloc()
+Fields d0, d1, d2, and d3 are members of an anonymous struct inside an
+anonymous union inside struct sabi_data.  Initialization must be done by
+wrapping the anonymous union and structs with brackets to avoid a build
+error:
 
-Fact we can have a litle underestimation was already the case without
-jit, since kmalloc() does a roundup to next power of two.
+drivers/platform/x86/samsung-laptop.c: In function ‘sabi_set_commandb’:
+drivers/platform/x86/samsung-laptop.c:433: error: unknown field ‘d0’ specified in initializer
+drivers/platform/x86/samsung-laptop.c:433: warning: missing braces around initializer
+drivers/platform/x86/samsung-laptop.c:433: warning: (near initialization for ‘in.<anonymous>’)
+...
 
-I dont think this discussion has anything to do with SECCOMP anyway.
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ drivers/platform/x86/samsung-laptop.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-These accounting dont need to be 100% precise, we only want a limit to
-prevent rogue users from using all kernel memory.
-
-> >
-> > If it did, this kind of 'optimization' can actually be not good, because
-> > sizeof(*fp) is small enough (less than half cache line size) to trigger
-> > a possible false sharing issue. (other part of the cache line could be
-> > used to hold a often dirtied object)
-> 
-> It could avoid this by allocating at least a cache size. But this is a
-> problem for all small kmalloc's, isn't it?
-
-Its a problem that was already met on several critical paths :
-
-# find net|xargs grep -n L1_CACHE_BYTES
-net/core/dev_addr_lists.c:51:	if (alloc_size < L1_CACHE_BYTES)
-net/core/dev_addr_lists.c:52:		alloc_size = L1_CACHE_BYTES;
-net/core/net-sysfs.c:586:	    RPS_MAP_SIZE(cpumask_weight(mask)), L1_CACHE_BYTES),
-net/core/net-sysfs.c:1111:	    XPS_DEV_MAPS_SIZE, L1_CACHE_BYTES), GFP_KERNEL);
-net/ipv6/ip6_fib.c:1612:	size = max_t(size_t, size, L1_CACHE_BYTES);
-net/ipv4/fib_frontend.c:1049:	size = max_t(size_t, size, L1_CACHE_BYTES);
-
-
-
+diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -430,7 +430,7 @@ exit:
+ static int sabi_set_commandb(struct samsung_laptop *samsung,
+ 			     u16 command, u8 data)
+ {
+-	struct sabi_data in = { .d0 = 0, .d1 = 0, .d2 = 0, .d3 = 0 };
++	struct sabi_data in = { { { .d0 = 0, .d1 = 0, .d2 = 0, .d3 = 0 } } };
+ 
+ 	in.data[0] = data;
+ 	return sabi_command(samsung, command, &in, NULL);
+--397155492-357468266-1331704722=:5229--
