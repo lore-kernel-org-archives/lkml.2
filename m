@@ -1,121 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030480Ab2CNCZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 22:25:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56149 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759917Ab2CNCZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 22:25:30 -0400
-Date: Wed, 14 Mar 2012 13:25:22 +1100
-From: NeilBrown <neilb@suse.de>
-To: Shaohua Li <shli@fusionio.com>
-Cc: Holger Kiehl <Holger.Kiehl@dwd.de>, <linux-kernel@vger.kernel.org>,
-        <linux-raid@vger.kernel.org>, <axboe@kernel.dk>
-Subject: Re: [patch 0/7] Add TRIM support for raid linear/0/1/10
-Message-ID: <20120314132522.4e1107a4@notabene.brown>
-In-Reply-To: <4F5EA8E9.5010502@fusionio.com>
-References: <20120312030412.375458948@fusionio.com>
-	<alpine.LRH.2.02.1203121806120.23719@diagnostix.dwd.de>
-	<4F5EA8E9.5010502@fusionio.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/P/JjT4W4/q5v0Cz/=eWOBX9"; protocol="application/pgp-signature"
+	id S1030452Ab2CNC3Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 22:29:25 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:61964 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965217Ab2CNC3X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 22:29:23 -0400
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: patches@linaro.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org,
+        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        Nancy Chen <Nancy.Chen@freescale.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Subject: [PATCH v13] Regulator: Add Anatop regulator driver
+Date: Wed, 14 Mar 2012 10:29:12 +0800
+Message-Id: <1331692152-9256-1-git-send-email-paul.liu@linaro.org>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/P/JjT4W4/q5v0Cz/=eWOBX9
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
 
-On Tue, 13 Mar 2012 09:54:49 +0800 Shaohua Li <shli@fusionio.com> wrote:
+Anatop is an integrated regulator inside i.MX6 SoC.
+There are 3 digital regulators which controls PU, CORE (ARM), and SOC.
+And 3 analog regulators which controls 1P1, 2P5, 3P0 (USB).
+This patch adds the Anatop regulator driver.
 
-> On 3/13/12 2:22 AM, Holger Kiehl wrote:
-> >  Hello,
-> >
-> >  On Mon, 12 Mar 2012, Shaohua Li wrote:
-> >
-> > > The patches add TRIM support for raid linear/0/1/10. I'll add TRIM=20
-> support for
-> > > raid 4/5/6 later. The implementation is pretty straightforward and
-> > > self-explained.
-> > >
-> >  First, thanks for this patch!
-> >
-> >  I have applied those patches against 3.3.0-rc7 and during boot the ker=
-nel
-> >  reports a lot of the following:
-> >
-> >  Mar 12 18:56:00 c3po kernel: [ 7.611045] md/raid0:md3: make_request=20
-> bug: can't convert block across chunks or bigger than 512k 18861064 512
-> >  Mar 12 18:56:00 c3po kernel: [ 7.611047] md/raid0:md3: make_request=20
-> bug: can't convert block across chunks or bigger than 512k 18862088 512
-> >  Mar 12 18:56:00 c3po kernel: [ 7.611049] md/raid0:md3: make_request=20
-> bug: can't convert block across chunks or bigger than 512k 18863112 512
-> >  Mar 12 18:56:00 c3po kernel: [ 7.611052] md/raid0:md3: make_request=20
-> bug: can't convert block across chunks or bigger than 512k 18864136 512
-> >  Mar 12 18:56:00 c3po kernel: [ 7.611054] md/raid0:md3: make_request=20
-> bug: can't convert block across chunks or bigger than 512k 18865160 512
-> >  Mar 12 18:56:00 c3po kernel: [ 7.611056] md/raid0:md3: make_request=20
-> bug: can't convert block across chunks or bigger than 512k 18866184 512
-> Thanks for testing. Looks I fixed a sanity check in bio.c but there are
-> similar check in raid0/10 which I forgot to fix. Below patch should fix i=
-t.
-> please try.
->=20
->=20
-> Subject: md: fix sanity check
->=20
-> discard bio hasn't data attached and such bio can be split, don't consider
-> this is illegial.
->=20
-> Signed-off-by: Shaohua Li <shli@fusionio.com>
-> ---
->   drivers/md/raid0.c  |    2 +-
->   drivers/md/raid10.c |    2 +-
->   2 files changed, 2 insertions(+), 2 deletions(-)
->=20
-> Index: linux/drivers/md/raid0.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux.orig/drivers/md/raid0.c    2012-03-13 09:37:58.759976786 +0800
-> +++ linux/drivers/md/raid0.c    2012-03-13 09:42:35.389975584 +0800
-> @@ -496,7 +496,7 @@ static void raid0_make_request(struct md
->           sector_t sector =3D bio->bi_sector;
->           struct bio_pair *bp;
->           /* Sanity check -- queue functions should prevent this=20
-> happening */
-> -        if (bio->bi_vcnt !=3D 1 ||
-> +        if ((bio->bi_vcnt !=3D 1 && bio->bi_vcnt !=3D0) ||
+Signed-off-by: Nancy Chen <Nancy.Chen@freescale.com>
+Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Reviewed-by: Axel Lin <axel.lin@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+---
+ drivers/regulator/Kconfig            |    8 +
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/anatop-regulator.c |  241 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 250 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/anatop-regulator.c
 
-oh .. and there is the fix I mentioned that you would need :-)
-Thanks,
-NeilBrown
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index c733df5..a229de9 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -102,6 +102,14 @@ config REGULATOR_DA9052
+ 	  This driver supports the voltage regulators of DA9052-BC and
+ 	  DA9053-AA/Bx PMIC.
+ 
++config REGULATOR_ANATOP
++	tristate "Freescale i.MX on-chip ANATOP LDO regulators"
++	depends on MFD_ANATOP
++	help
++	  Say y here to support Freescale i.MX on-chip ANATOP LDOs
++	  regulators. It is recommended that this option be
++	  enabled on i.MX6 platform.
++
+ config REGULATOR_MC13XXX_CORE
+ 	tristate
+ 
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index cf0934b..ab06474 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -15,6 +15,7 @@ obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
+ obj-$(CONFIG_REGULATOR_AB3100) += ab3100.o
+ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
+ obj-$(CONFIG_REGULATOR_AD5398) += ad5398.o
++obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
+ obj-$(CONFIG_REGULATOR_BQ24022) += bq24022.o
+ obj-$(CONFIG_REGULATOR_DA903X)	+= da903x.o
+ obj-$(CONFIG_REGULATOR_DA9052)	+= da9052-regulator.o
+diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
+new file mode 100644
+index 0000000..17499a5
+--- /dev/null
++++ b/drivers/regulator/anatop-regulator.c
+@@ -0,0 +1,241 @@
++/*
++ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <linux/slab.h>
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/mfd/anatop.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/of_regulator.h>
++
++struct anatop_regulator {
++	const char *name;
++	u32 control_reg;
++	struct anatop *mfd;
++	int vol_bit_shift;
++	int vol_bit_width;
++	int min_bit_val;
++	int min_voltage;
++	int max_voltage;
++	struct regulator_desc rdesc;
++	struct regulator_init_data *initdata;
++};
++
++static int anatop_set_voltage(struct regulator_dev *reg, int min_uV,
++				  int max_uV, unsigned *selector)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++	u32 val, sel;
++	int uv;
++
++	uv = min_uV;
++	dev_dbg(&reg->dev, "%s: uv %d, min %d, max %d\n", __func__,
++		uv, anatop_reg->min_voltage,
++		anatop_reg->max_voltage);
++
++	if (uv < anatop_reg->min_voltage) {
++		if (max_uV > anatop_reg->min_voltage)
++			uv = anatop_reg->min_voltage;
++		else
++			return -EINVAL;
++	}
++
++	if (!anatop_reg->control_reg)
++		return -ENOTSUPP;
++
++	sel = DIV_ROUND_UP(uv - anatop_reg->min_voltage, 25000);
++	if (sel * 25000 + anatop_reg->min_voltage > anatop_reg->max_voltage)
++		return -EINVAL;
++	val = anatop_reg->min_bit_val + sel;
++	*selector = sel;
++	dev_dbg(&reg->dev, "%s: calculated val %d\n", __func__, val);
++	anatop_set_bits(anatop_reg->mfd,
++			anatop_reg->control_reg,
++			anatop_reg->vol_bit_shift,
++			anatop_reg->vol_bit_width,
++			val);
++
++	return 0;
++}
++
++static int anatop_get_voltage_sel(struct regulator_dev *reg)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++	u32 val;
++
++	if (!anatop_reg->control_reg)
++		return -ENOTSUPP;
++
++	val = anatop_get_bits(anatop_reg->mfd,
++			      anatop_reg->control_reg,
++			      anatop_reg->vol_bit_shift,
++			      anatop_reg->vol_bit_width);
++
++	return val - anatop_reg->min_bit_val;
++}
++
++static int anatop_list_voltage(struct regulator_dev *reg, unsigned selector)
++{
++	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
++	int uv;
++
++	uv = anatop_reg->min_voltage + selector * 25000;
++	dev_dbg(&reg->dev, "vddio = %d, selector = %u\n", uv, selector);
++
++	return uv;
++}
++
++static struct regulator_ops anatop_rops = {
++	.set_voltage     = anatop_set_voltage,
++	.get_voltage_sel = anatop_get_voltage_sel,
++	.list_voltage    = anatop_list_voltage,
++};
++
++static int __devinit anatop_regulator_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
++	struct regulator_desc *rdesc;
++	struct regulator_dev *rdev;
++	struct anatop_regulator *sreg;
++	struct regulator_init_data *initdata;
++	struct anatop *anatopmfd = dev_get_drvdata(pdev->dev.parent);
++	int ret = 0;
++
++	initdata = of_get_regulator_init_data(dev, np);
++	sreg = devm_kzalloc(dev, sizeof(*sreg), GFP_KERNEL);
++	if (!sreg)
++		return -ENOMEM;
++	sreg->initdata = initdata;
++	sreg->name = kstrdup(of_get_property(np, "regulator-name", NULL),
++			     GFP_KERNEL);
++	rdesc = &sreg->rdesc;
++	memset(rdesc, 0, sizeof(*rdesc));
++	rdesc->name = sreg->name;
++	rdesc->ops = &anatop_rops;
++	rdesc->type = REGULATOR_VOLTAGE;
++	rdesc->owner = THIS_MODULE;
++	sreg->mfd = anatopmfd;
++	ret = of_property_read_u32(np, "reg", &sreg->control_reg);
++	if (ret) {
++		dev_err(dev, "no reg property set\n");
++		goto anatop_probe_end;
++	}
++	ret = of_property_read_u32(np, "anatop-vol-bit-width",
++				   &sreg->vol_bit_width);
++	if (ret) {
++		dev_err(dev, "no anatop-vol-bit-width property set\n");
++		goto anatop_probe_end;
++	}
++	ret = of_property_read_u32(np, "anatop-vol-bit-shift",
++				   &sreg->vol_bit_shift);
++	if (ret) {
++		dev_err(dev, "no anatop-vol-bit-shift property set\n");
++		goto anatop_probe_end;
++	}
++	ret = of_property_read_u32(np, "anatop-min-bit-val",
++				   &sreg->min_bit_val);
++	if (ret) {
++		dev_err(dev, "no anatop-min-bit-val property set\n");
++		goto anatop_probe_end;
++	}
++	ret = of_property_read_u32(np, "anatop-min-voltage",
++				   &sreg->min_voltage);
++	if (ret) {
++		dev_err(dev, "no anatop-min-voltage property set\n");
++		goto anatop_probe_end;
++	}
++	ret = of_property_read_u32(np, "anatop-max-voltage",
++				   &sreg->max_voltage);
++	if (ret) {
++		dev_err(dev, "no anatop-max-voltage property set\n");
++		goto anatop_probe_end;
++	}
++
++	rdesc->n_voltages = (sreg->max_voltage - sreg->min_voltage)
++		/ 25000 + 1;
++
++	/* register regulator */
++	rdev = regulator_register(rdesc, dev,
++				  initdata, sreg, pdev->dev.of_node);
++	if (IS_ERR(rdev)) {
++		dev_err(dev, "failed to register %s\n",
++			rdesc->name);
++		ret = PTR_ERR(rdev);
++		goto anatop_probe_end;
++	}
++
++	platform_set_drvdata(pdev, rdev);
++
++anatop_probe_end:
++	if (ret)
++		kfree(sreg->name);
++
++	return ret;
++}
++
++static int __devexit anatop_regulator_remove(struct platform_device *pdev)
++{
++	struct regulator_dev *rdev = platform_get_drvdata(pdev);
++	struct anatop_regulator *sreg = rdev_get_drvdata(rdev);
++	const char *name = sreg->name;
++
++	regulator_unregister(rdev);
++	kfree(name);
++
++	return 0;
++}
++
++static struct of_device_id __devinitdata of_anatop_regulator_match_tbl[] = {
++	{ .compatible = "fsl,anatop-regulator", },
++	{ /* end */ }
++};
++
++static struct platform_driver anatop_regulator = {
++	.driver = {
++		.name	= "anatop_regulator",
++		.owner  = THIS_MODULE,
++		.of_match_table = of_anatop_regulator_match_tbl,
++	},
++	.probe	= anatop_regulator_probe,
++	.remove	= anatop_regulator_remove,
++};
++
++static int __init anatop_regulator_init(void)
++{
++	return platform_driver_register(&anatop_regulator);
++}
++postcore_initcall(anatop_regulator_init);
++
++static void __exit anatop_regulator_exit(void)
++{
++	platform_driver_unregister(&anatop_regulator);
++}
++module_exit(anatop_regulator_exit);
++
++MODULE_AUTHOR("Nancy Chen <Nancy.Chen@freescale.com>, "
++	      "Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
++MODULE_DESCRIPTION("ANATOP Regulator driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.7.9.1
 
-
-
---Sig_/P/JjT4W4/q5v0Cz/=eWOBX9
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT2ABkjnsnt1WYoG5AQI0vA//dQbXACHnY6d2k9ErY5c93UFZQXOmZVIk
-C7Op+GjHn/hIfQQsNYfcqcVGSgiws+/mdSmxchw0laf7rRDQt7UEWbZ3CGjJBBcS
-Y3QXi188UNpJkdptaySfl+0cptqDZ7SrUKNSi1sZqowVXoMPFJlWDzrzwh4KaMTw
-4cJHS+qnGfg/N9Kdt4zPwBpMzHLRTy1gMc1rvkbfwm/UO0hRIDCXWILiDs05GaEC
-73bfGaLCL83f6mKRUg82n02H5B+Q67eTuYRiVdbIXYngV7gIWCfvLQugOK+UF1Ja
-3ogEqokL73vNT69on1E15XBMuh30P5J6NA9MhqjR9ZmS4dc1+MwsZmqjt4emjhKD
-lNGqIUMPDnJU8q20S3CPLkTVXtUsaMabsmVAkWdMYZbF97mzHK1pAkbE4ZxL14Ky
-8hyCWmcuGpCrTLZiyPEru5Or0Qb+b6UpcY8+60BasBds0oxClOV0esTME66GhjvW
-u4NqHuvKp6y8+3iuQVGlKtIAbp/O6fMiRlbmYL+fOnQwY/TavCkGLoJCpY2Q/dsM
-v61ccIGrDqDCUzIUBCwOCzFtKL9X4qfNlfaPJoilUenQ0/zONds52V7BLjPhl2oD
-csvXQecsKjO9aZkwNvJoQUTGznM6NG18vTPMLPatQnNE66RriIcAu4HQmh3UhbWt
-6Gedp7h08fI=
-=fBFx
------END PGP SIGNATURE-----
-
---Sig_/P/JjT4W4/q5v0Cz/=eWOBX9--
