@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759373Ab2CNSan (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 14:30:43 -0400
-Received: from home.keithp.com ([63.227.221.253]:60397 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758184Ab2CNSaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 14:30:09 -0400
-From: "Keith Packard" <keithp@keithp.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "drivers\, Intel" <Intel-gfx@lists.freedesktop.org>,
-        dri-devel@lists.freedesktop.org
-Subject: [PULL] drm-intel-fixes
-User-Agent: Notmuch/0.11.1 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 14 Mar 2012 11:30:02 -0700
-Message-ID: <86haxravdh.fsf@sumi.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+	id S1757896Ab2CNSaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 14:30:06 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:52899 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755156Ab2CNSaA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 14:30:00 -0400
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-pm@lists.linux-foundation.org,
+        Kevin Hilman <khilman@ti.com>, Len Brown <len.brown@intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Colin Cross <ccross@android.com>
+Subject: [PATCHv2 2/5] cpuidle: fix error handling in __cpuidle_register_device
+Date: Wed, 14 Mar 2012 11:29:51 -0700
+Message-Id: <1331749794-8056-3-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1331749794-8056-1-git-send-email-ccross@android.com>
+References: <1331749794-8056-1-git-send-email-ccross@android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Fix the error handling in __cpuidle_register_device to include
+the missing list_del.  Move it to a label, which will simplify
+the error handling when coupled states are added.
 
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ drivers/cpuidle/cpuidle.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-Jesse sent me a couple of trivial sprite plane fixes.
+v2:
+   * fix after rename of sys_dev to cpu_dev
+   * reorder error path to reverse of probe path
 
-The following changes since commit 91982b58d35720b75b894c60e1e3133daa455b53:
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 1453830..aacf2f0 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -319,13 +319,18 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
+ 
+ 	per_cpu(cpuidle_devices, dev->cpu) = dev;
+ 	list_add(&dev->device_list, &cpuidle_detected_devices);
+-	if ((ret = cpuidle_add_sysfs(cpu_dev))) {
+-		module_put(cpuidle_driver->owner);
+-		return ret;
+-	}
++	ret = cpuidle_add_sysfs(cpu_dev);
++	if (ret)
++		goto err_sysfs;
+ 
+ 	dev->registered = 1;
+ 	return 0;
++
++err_sysfs:
++	list_del(&dev->device_list);
++	per_cpu(cpuidle_devices, dev->cpu) = NULL;
++	module_put(cpuidle_driver->owner);
++	return ret;
+ }
+ 
+ /**
+-- 
+1.7.9.2
 
-  drm/gma500: Fix Cedarview boot failures in 3.3-rc (2012-03-05 14:08:31 +0=
-000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/keithp/linux drm-intel-fixes
-
-for you to fetch changes up to b250da79a0c972ef7f6d58ebd1083cab066e6c82:
-
-  drm/i915: support 32 bit BGR formats in sprite planes (2012-03-07 10:52:1=
-3 -0800)
-
-=2D---------------------------------------------------------------
-Jesse Barnes (2):
-      drm/i915: fix color order for BGR formats on SNB
-      drm/i915: support 32 bit BGR formats in sprite planes
-
- drivers/gpu/drm/i915/i915_reg.h      |    2 +-
- drivers/gpu/drm/i915/intel_display.c |    1 +
- drivers/gpu/drm/i915/intel_sprite.c  |    6 +++---
- 3 files changed, 5 insertions(+), 4 deletions(-)
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBT2DjqjYtFsjWk68qAQjx6w/+Ipw1AGG7ZbZkNYI1/HUeciNxPwXrTPYG
-HEl7xQENC6xGOUeokz9zhXDOGANHqZ7Rils8TCUB6ysp6H6BunizdomKemKB50p9
-qjksL1hMbZ1G4qKFal52Ah3+zeBjsplQbgH0yu69niV5IkS7bzw+//VqvvjbFLFU
-CCyRmlD5dKjTSmjKfWSf7yH8Hg+n9VhD/yrlSexSCUWHW+/b6IFh8+KVDS51kb0c
-4kbfxk9+W6+W3i+mGgiabooH9apSmeyuqzaGMOslUvVH7otsgHFJfBJTAC5rROxP
-l+DvEvOj1hSgWHB+ggzZtdGHdY/KU9j4jY5/5sTgL6ysF+BmoNrwxqGlhPBVsG2A
-rIKLrDCOwfO7qXYxH5fCtX+dMoG8TyYaE76dd+iwY82d9U1kIBiP6+MI2qrK+K9Z
-Of29jW4BQfAMT0hKlqCIqbZ6Jk9mmxfDRjoBevdVlyD5WPUULw4ZvyIdmTTeXcot
-x5yXcGy6vGJPn+Wit+Ucropl2oKPJnVqzxPszm5KkgogkPLMoSt1niMA1EiDFjQV
-yjYQ8I8REzpdYTnuUZNYQ9YrlayjxqHq7BducEGgnpWwgkxjqAUx299w4U5A1wbr
-C/wJnFl3Ta8LCS+FuYMcI6VoYhZ3z/iac0Cwtk+UgFn/MTd9xG5ZRuPqU5XLR1iE
-dPeN99svevU=
-=VTAo
------END PGP SIGNATURE-----
---=-=-=--
