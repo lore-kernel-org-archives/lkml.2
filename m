@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761257Ab2CNR3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 13:29:03 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42425 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761202Ab2CNR26 (ORCPT
+	id S1761285Ab2CNR32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 13:29:28 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35769 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756182Ab2CNR3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 13:28:58 -0400
-Date: Wed, 14 Mar 2012 10:29:00 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Colin Cross <ccross@android.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V2 2/3] pinctrl: allow concurrent gpio and mux function
- ownership of pins
-Message-ID: <20120314172900.GB14853@quad.lixom.net>
-References: <1330993336-9538-1-git-send-email-swarren@nvidia.com>
- <1330993336-9538-2-git-send-email-swarren@nvidia.com>
- <CACRpkdYdSaNsrr34o2Cc4vS12ee9oY7FG0pxB92mefHZKwdEpA@mail.gmail.com>
- <4F5E3F63.5080506@wwwdotorg.org>
- <CACRpkdYsD2LCNoox6ztHTP76X8a_qxjiZFO4ou=BgZ4oE0qHtg@mail.gmail.com>
+	Wed, 14 Mar 2012 13:29:25 -0400
+Date: Wed, 14 Mar 2012 17:29:15 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Karol Lewandowski <k.lewandowsk@samsung.com>
+Cc: ben-linux@fluff.org, thomas.abraham@linaro.org, m.szyprowski@samsung.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
+        t.stanislaws@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH 2/3] i2c-s3c2410: Rework device type handling
+Message-ID: <20120314172915.GB13393@sirena.org.uk>
+References: <1331657679-31302-1-git-send-email-k.lewandowsk@samsung.com>
+ <1331657679-31302-3-git-send-email-k.lewandowsk@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACRpkdYsD2LCNoox6ztHTP76X8a_qxjiZFO4ou=BgZ4oE0qHtg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1331657679-31302-3-git-send-email-k.lewandowsk@samsung.com>
+X-Cookie: Be sure each item is properly endorsed.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 12, 2012 at 10:42:48PM +0100, Linus Walleij wrote:
-> On Mon, Mar 12, 2012 at 7:24 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> 
-> > Linus, now that Grant has ack'd and applied the documentation change
-> > behind this, could you take this one patch into the pinctrl tree.
-> 
-> Of course, applied.
-> 
-> > I assume it's 3.5 material.
-> 
-> No it goes in now, we can't have documentation that is misleading...
-> Besides, I like it.
+On Tue, Mar 13, 2012 at 05:54:38PM +0100, Karol Lewandowski wrote:
 
-Oops, this reply didn't show before I hit reply on the other one.
+>  - replace s3c24xx_i2c_type enum with plain unsigned int that can
+>    hold not only device type but also hw revision-specific quirks
 
-Stephen, that makes things easy for you if you still need time to sort things
-out on the tegra side, since 3.4-rc1 can be the base for that work.
-
-
--Olof
+Would it not be clearer to just have explicit flags for the quirks (eg,
+as a set of bitfield flags)?
