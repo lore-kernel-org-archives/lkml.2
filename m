@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab2CNHMg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 03:12:36 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40928 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856Ab2CNHMd convert rfc822-to-8bit (ORCPT
+	id S1030343Ab2CNHNO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 03:13:14 -0400
+Received: from mga12.intel.com ([143.182.124.36]:10148 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752288Ab2CNHNI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 03:12:33 -0400
+	Wed, 14 Mar 2012 03:13:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1203132258460.5229@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1203132258160.5229@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1203132258460.5229@chino.kir.corp.google.com>
-Date: Wed, 14 Mar 2012 08:12:32 +0100
-Message-ID: <CAHR064hOBPToe6XzyKV6dfXM0sXgMcGWtM-+xyezsUQe1JzXtg@mail.gmail.com>
-Subject: Re: [patch -next 2/2] drivers, samsung-laptop: fix usage of isalnum
-From: Corentin Chary <corentin.chary@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120313144152.5bd633a5ea6e496c059a9465@canb.auug.org.au>
+References: <20120313134512.848baf17f46729fa0fac195d@canb.auug.org.au>
+	<CABE8wwtNcA4QcJyLC6zipjygjAYa6o=bwPyz6xS9A=PLiU+2kg@mail.gmail.com>
+	<20120313144152.5bd633a5ea6e496c059a9465@canb.auug.org.au>
+Date: Wed, 14 Mar 2012 00:13:06 -0700
+Message-ID: <CABE8wwsET4BaS39r-+5_cshQ_WJDQMHWCcUsQjmcsqGU6a+R-A@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the isci tree with the scsi tree
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 6:59 AM, David Rientjes <rientjes@google.com> wrote:
-> linux/ctype.h is needed for isalnum() to avoid a build error:
+On Mon, Mar 12, 2012 at 8:41 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Dan,
 >
-> drivers/platform/x86/samsung-laptop.c: In function ‘samsung_sabi_diag’:
-> drivers/platform/x86/samsung-laptop.c:1306: error: implicit declaration of function ‘isalnum’
+> On Mon, 12 Mar 2012 19:50:33 -0700 "Williams, Dan J" <dan.j.williams@intel.com> wrote:
+>>
+>> I was wondering why it had not happened prior to this point... �in any
 >
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  drivers/platform/x86/samsung-laptop.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
-> --- a/drivers/platform/x86/samsung-laptop.c
-> +++ b/drivers/platform/x86/samsung-laptop.c
-> @@ -25,6 +25,7 @@
->  #include <linux/acpi.h>
->  #include <linux/seq_file.h>
->  #include <linux/debugfs.h>
-> +#include <linux/ctype.h>
->
->  /*
->  * This driver is needed because a number of Samsung laptops do not hook
+> It had, I just put up with it the first time :-)
 
-Acked-by: Corentin Chary <corentincj@iksaif.net>
+Ok, all fixed up now, and I'll be quicker to respin when scsi-misc
+picks up the next round of patches.
 
--- 
-Corentin Chary
-http://xf.iksaif.net
+Thanks for carrying this.
+
+--
+Dan
