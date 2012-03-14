@@ -1,59 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab2CNH00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 03:26:26 -0400
-Received: from webbox1416.server-home.net ([77.236.96.61]:44219 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752222Ab2CNH0X convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 03:26:23 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Chris Ball <cjb@laptop.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 3/3] mmc: sdhci-pci: allow 8-bit bus width for Intel PCH
-Date: Wed, 14 Mar 2012 08:26:07 +0100
-Message-ID: <2073158.vCQHRDAdga@ws-stein>
-User-Agent: KMail/4.7.4 (Linux/3.2.1-gentoo-r2; KDE/4.7.4; x86_64; ; )
-In-Reply-To: <CANKRQniUQNJmf=H-pY3Wha4qWGh9OJR9GfdTUhMw_t7ZFSnPzA@mail.gmail.com>
-References: <1331659002-13743-1-git-send-email-alexander.stein@systec-electronic.com> <1331659002-13743-3-git-send-email-alexander.stein@systec-electronic.com> <CANKRQniUQNJmf=H-pY3Wha4qWGh9OJR9GfdTUhMw_t7ZFSnPzA@mail.gmail.com>
+	id S1752605Ab2CNHaY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 03:30:24 -0400
+Received: from asix.com.tw ([113.196.140.82]:52115 "EHLO asix.com.tw"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751754Ab2CNHaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 03:30:22 -0400
+From: "Donald" <donald@asix.com.tw>
+To: "'Greg KH'" <gregkh@linuxfoundation.org>,
+        "'open list:USB SUBSYSTEM'" <linux-usb@vger.kernel.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] Fixed MCS7820 device attach problem
+Date: Wed, 14 Mar 2012 15:26:33 +0800
+Message-ID: <001801cd01b3$cb9d2660$62d77320$@com.tw>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac0Bs8gJ+2rcOal5QPyXjNm4GQsl+Q==
+Content-Language: zh-tw
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tomoya,
+Thanks to Greg's reply and nice reminder, I am re-submitting this patch and
+if there is still any email client issue please let me know, thanks.
 
-Am Mittwoch, 14. März 2012, 10:17:35 schrieb Tomoya MORINAGA:
-> Hi Alexander
-> 
-> As a matter of interest,
-> do you mean that current MMC of eg20t on Linux doesn't support 8-bit access?
+Donald 
 
-We have a board with an 8-bit connected eMMC and Linux only used 4-bit wide 
-bus access. After some research IMO the device is only matched to the default 
-PCI id class
-> PCI_DEVICE_CLASS((PCI_CLASS_SYSTEM_SDHCI << 8), 0xFFFF00)
+Patch Description:
+A MCS7820 device supports two serial ports and a MCS7840 device supports
+four serial ports. Both devices use the same driver, but the attach function
+in driver was unable to correctly handle the port numbers for MCS7820
+device. This problem has been fixed in this patch and this fix has been
+verified on x86 Linux kernel 3.2.9 with both MCS7820 and MCS7840 devices.
 
-AFAICS it's the same issue with the Medfield eMMC where 8-bit bus support is 
-added in 0d013bcf5c272faea1f8e7a5ef3cb2e98103d5cb
-This also states the default is 4-bit bus width which I saw before.
+Signed-off-by: Donald Lee <donald@asix.com.tw>
+---
+ drivers/usb/serial/mos7840.c |   83
++++++++++++++++++++++++++++++-------------
+ 1 files changed, 57 insertions(+), 26 deletions(-)
 
-Regards,
-Alexander
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index c72abd5..e4885b6 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -174,6 +174,7 @@
+ 
+ #define CLK_MULTI_REGISTER         ((__u16)(0x02))
+ #define CLK_START_VALUE_REGISTER   ((__u16)(0x03))
++#define GPIO_REGISTER              ((__u16)(0x07))
+ 
+ #define SERIAL_LCR_DLAB            ((__u16)(0x0080))
+ 
+@@ -1103,14 +1104,25 @@ static int mos7840_open(struct tty_struct *tty,
+struct usb_serial_port *port)
+ 	mos7840_port->read_urb = port->read_urb;
+ 
+ 	/* set up our bulk in urb */
+-
+-	usb_fill_bulk_urb(mos7840_port->read_urb,
+-			  serial->dev,
+-			  usb_rcvbulkpipe(serial->dev,
+-					  port->bulk_in_endpointAddress),
+-			  port->bulk_in_buffer,
+-			  mos7840_port->read_urb->transfer_buffer_length,
+-			  mos7840_bulk_in_callback, mos7840_port);
++	if ((serial->num_ports == 2)
++		&& ((((__u16)port->number -
++			(__u16)(port->serial->minor)) % 2) != 0)) {
++		usb_fill_bulk_urb(mos7840_port->read_urb,
++			serial->dev,
++			usb_rcvbulkpipe(serial->dev,
++				(port->bulk_in_endpointAddress) + 2),
++			port->bulk_in_buffer,
++			mos7840_port->read_urb->transfer_buffer_length,
++			mos7840_bulk_in_callback, mos7840_port);
++	} else {
++		usb_fill_bulk_urb(mos7840_port->read_urb,
++			serial->dev,
++			usb_rcvbulkpipe(serial->dev,
++				port->bulk_in_endpointAddress),
++			port->bulk_in_buffer,
++			mos7840_port->read_urb->transfer_buffer_length,
++			mos7840_bulk_in_callback, mos7840_port);
++	}
+ 
+ 	dbg("mos7840_open: bulkin endpoint is %d",
+ 	    port->bulk_in_endpointAddress);
+@@ -1521,13 +1533,25 @@ static int mos7840_write(struct tty_struct *tty,
+struct usb_serial_port *port,
+ 	memcpy(urb->transfer_buffer, current_position, transfer_size);
+ 
+ 	/* fill urb with data and submit  */
+-	usb_fill_bulk_urb(urb,
+-			  serial->dev,
+-			  usb_sndbulkpipe(serial->dev,
+-					  port->bulk_out_endpointAddress),
+-			  urb->transfer_buffer,
+-			  transfer_size,
+-			  mos7840_bulk_out_data_callback, mos7840_port);
++	if ((serial->num_ports == 2)
++		&& ((((__u16)port->number -
++			(__u16)(port->serial->minor)) % 2) != 0)) {
++		usb_fill_bulk_urb(urb,
++			serial->dev,
++			usb_sndbulkpipe(serial->dev,
++				(port->bulk_out_endpointAddress) + 2),
++			urb->transfer_buffer,
++			transfer_size,
++			mos7840_bulk_out_data_callback, mos7840_port);
++	} else {
++		usb_fill_bulk_urb(urb,
++			serial->dev,
++			usb_sndbulkpipe(serial->dev,
++				port->bulk_out_endpointAddress),
++			urb->transfer_buffer,
++			transfer_size,
++			mos7840_bulk_out_data_callback, mos7840_port);
++	}
+ 
+ 	data1 = urb->transfer_buffer;
+ 	dbg("bulkout endpoint is %d", port->bulk_out_endpointAddress);
+@@ -1840,7 +1864,7 @@ static int mos7840_send_cmd_write_baud_rate(struct
+moschip_port *mos7840_port,
+ 
+ 	} else {
+ #ifdef HW_flow_control
+-		/ *setting h/w flow control bit to 0 */
++		/* setting h/w flow control bit to 0 */
+ 		Data = 0xb;
+ 		mos7840_port->shadowMCR = Data;
+ 		status = mos7840_set_uart_reg(port, MODEM_CONTROL_REGISTER,
+@@ -2309,19 +2333,26 @@ static int mos7840_ioctl(struct tty_struct *tty,
+ 
+ static int mos7840_calc_num_ports(struct usb_serial *serial)
+ {
+-	int mos7840_num_ports = 0;
+-
+-	dbg("numberofendpoints: cur %d, alt %d",
+-	    (int)serial->interface->cur_altsetting->desc.bNumEndpoints,
+-	    (int)serial->interface->altsetting->desc.bNumEndpoints);
+-	if (serial->interface->cur_altsetting->desc.bNumEndpoints == 5) {
+-		mos7840_num_ports = serial->num_ports = 2;
+-	} else if (serial->interface->cur_altsetting->desc.bNumEndpoints ==
+9) {
++	__u16 Data = 0x00;
++	int ret = 0;
++	int mos7840_num_ports;
++
++	ret = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++		MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, &Data,
++		VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
++
++	if ((Data&0x01) == 0) {
++		mos7840_num_ports = 2;
++		serial->num_bulk_in = 2;
++		serial->num_bulk_out = 2;
++		serial->num_ports = 2;
++	} else {
++		mos7840_num_ports = 4;
+ 		serial->num_bulk_in = 4;
+ 		serial->num_bulk_out = 4;
+-		mos7840_num_ports = serial->num_ports = 4;
++		serial->num_ports = 4;
+ 	}
+-	dbg ("mos7840_num_ports = %d", mos7840_num_ports);
++
+ 	return mos7840_num_ports;
+ }
+ 
 -- 
-Dipl.-Inf. Alexander Stein
+1.7.7.6
 
-SYS TEC electronic GmbH
-August-Bebel-Str. 29
-D-07973 Greiz
 
-Tel: +49-3661-6279-0, Fax: +49-3661-6279-99
-eMail:    Alexander.Stein@systec-electronic.com
-Internet: http://www.systec-electronic.com
 
-Managing Director: Dipl.-Phys. Siegmar Schmidt
-Commercial registry: Amtsgericht Jena, HRB 205563
