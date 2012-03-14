@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab2CNPXh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 11:23:37 -0400
-Received: from mail.southpole.se ([193.12.106.18]:55713 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab2CNPXd (ORCPT
+	id S1755306Ab2CNPYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 11:24:00 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:40876 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563Ab2CNPX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 11:23:33 -0400
-Message-ID: <1331738610.5104.84.camel@jerome.southpole.se>
-Subject: Re: [ORLinux] [PATCH 17/35] Make asm-generic/cmpxchg.h #include
- asm-generic/cmpxchg-local.h [ver #2]
-From: Jonas Bonn <jonas@southpole.se>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux@openrisc.net, linux-kernel@vger.kernel.org,
-        paul.gortmaker@windriver.com, hpa@zytor.com,
-        torvalds@linux-foundation.org
-Date: Wed, 14 Mar 2012 16:23:30 +0100
-In-Reply-To: <18016.1331738258@redhat.com>
-References: <1331736182.5104.74.camel@jerome.southpole.se>
-	 <CACM3HyHaFqVBaALMNB9dTE+7JrT1qD0jrYtV2PzwTskv8sW4Hg@mail.gmail.com>
-	 <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
-	 <20120312233858.13888.34822.stgit@warthog.procyon.org.uk>
-	 <201203130900.41993.arnd@arndb.de> <11556.1331723400@redhat.com>
-	  <18016.1331738258@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Assp-Version: 2.1.1(11364) on assp.southpole.se
-X-Assp-Client-SSL: yes
-X-Assp-ID: assp.southpole.se 38610-08253
+	Wed, 14 Mar 2012 11:23:58 -0400
+Date: Wed, 14 Mar 2012 08:17:17 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dimitri Sivanich <sivanich@sgi.com>
+Cc: Mike Galbraith <efault@gmx.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have been
+ online
+Message-ID: <20120314151717.GA2435@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120314002414.GA21561@linux.vnet.ibm.com>
+ <1331717099.5752.15.camel@marge.simpson.net>
+ <1331728841.7465.7.camel@marge.simpson.net>
+ <20120314130801.GA11722@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120314130801.GA11722@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12031415-3352-0000-0000-00000350F0B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Wed, 2012-03-14 at 15:17 +0000, David Howells wrote:
-> Jonas Bonn <jonas@southpole.se> wrote:
+On Wed, Mar 14, 2012 at 08:08:01AM -0500, Dimitri Sivanich wrote:
+> On Wed, Mar 14, 2012 at 01:40:41PM +0100, Mike Galbraith wrote:
+> > On Wed, 2012-03-14 at 10:24 +0100, Mike Galbraith wrote: 
+> > > On Tue, 2012-03-13 at 17:24 -0700, Paul E. McKenney wrote: 
+> > > > The following builds, but is only very lightly tested.  Probably full
+> > > > of bug, especially when exercising CPU hotplug.
+> > > 
+> > > You didn't say RFT, but...
+> > > 
+> > > To beat on this in a rotund 3.0 kernel, the equivalent patch would be
+> > > the below?  My box may well answer that before you can.. hope not ;-)
+> > 
+> > (Darn, it did.  Box says boot stall with virgin patch in tip too though.
+> > Wedging it straight into 3.0 was perhaps a tad premature;)
 > 
-> > Am I right in thinking that OpenRISC is the only architecture the
-> > depends on the changes in asm-generic?
-> 
-> I'm not sure.  I think c6x does too to some extent.
+> I saw the same thing with 3.3.0-rc7+ and virgin patch on UV.  Boots fine without the patch.
 
+Right...  Bozo here forgot to set the kernel parameters for large-system
+emulation during testing.  Apologies for the busted patch, will fix.
 
-> > The error I get while building (if asm/system.h is included) is a
-> > circular dependency that I don't see that I can easily resolve:
-> 
-> How do I get an openrisc toolchain?
+And thank you both for the testing!!!
 
-http://openrisc.net/toolchain-build.html
+Hey, at least I labeled it "RFC".  ;-)
 
-What distro are you on?  I might be able to send you a binary version if
-you prefer...
-
-/Jonas
-
-> 
-> David
-
+							Thanx, Paul
 
