@@ -1,128 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab2CNLOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 07:14:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52592 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750857Ab2CNLOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 07:14:00 -0400
-Date: Wed, 14 Mar 2012 12:13:57 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: hugetlb: defer freeing pages when gathering surplus
- pages
-Message-ID: <20120314111357.GD4434@tiehlicka.suse.cz>
-References: <CAJd=RBATj97k5UESDFx82bzt0K4OquhBoDkfjPBPacdmdfJE8g@mail.gmail.com>
+	id S1754456Ab2CNLOc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 07:14:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45519 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab2CNLOb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 07:14:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBATj97k5UESDFx82bzt0K4OquhBoDkfjPBPacdmdfJE8g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LRH.2.02.1203140839590.28358@diagnostix.dwd.de>
+References: <20120312030412.375458948@fusionio.com>
+	<alpine.LRH.2.02.1203121806120.23719@diagnostix.dwd.de>
+	<4F5EFEB6.4060402@kernel.org>
+	<alpine.LRH.2.02.1203131213480.15848@diagnostix.dwd.de>
+	<CANejiEWYCxY_hLwgyN08_cXC64c82irkNPytTjOpYyER7pTGow@mail.gmail.com>
+	<alpine.LRH.2.02.1203131521190.29286@diagnostix.dwd.de>
+	<CANejiEW=a1piMYvSYM5GmtxKsWYpZj+kjnmNsNUDmW9ydDBjBw@mail.gmail.com>
+	<alpine.LRH.2.02.1203140839590.28358@diagnostix.dwd.de>
+Date: Wed, 14 Mar 2012 19:14:30 +0800
+X-Google-Sender-Auth: nmMFT-DHZMCVz3HOr5Itd-QVVt0
+Message-ID: <CANejiEXP9ORKTfE4O9khaHSp-Y8yOQU1LLUD5Q5pBJOGR+A-aA@mail.gmail.com>
+Subject: Re: [patch 0/7] Add TRIM support for raid linear/0/1/10
+From: Shaohua Li <shli@kernel.org>
+To: Holger Kiehl <Holger.Kiehl@dwd.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
+        "neilb@suse.de" <neilb@suse.de>, "axboe@kernel.dk" <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Sorry for the late reply but I was away from email for quite sometime]
+2012/3/14 Holger Kiehl <Holger.Kiehl@dwd.de>:
+> On Wed, 14 Mar 2012, Shaohua Li wrote:
+>
+>> 2012/3/13 Holger Kiehl <Holger.Kiehl@dwd.de>:
+>>>
+>>> On Tue, 13 Mar 2012, Shaohua Li wrote:
+>>>
+>>>> Thanks for testing. This is very wield, the req->__data_len is wrong.
+>>>> Is this a clean build?
+>>>>
+>>> I just downloaded linux-3.3-rc7.tar.bz2 from kernel.org and applied
+>>> your patches again. The result is the same.
+>>>
+>>> Am I the only one experiencing these problems?
+>>
+>> Martin Petersen pointed out scsi layer doesn't support discard merge,
+>> which
+>> might be the reason you see the error message (my drive isn't a scsi
+>> device).
+>> can you please try attached patch?
+>>
+> Thanks! After this patch the error messages are away.
+>
+> However, when the system boots it takes a very long time to boot:
+>
+>   [   16.527389] EXT4-fs (md0): mounted filesystem with ordered data mode.
+> Opts: discard,commit=2400,journal_async_commit
+>   [   24.218410] EXT4-fs (md2): mounted filesystem with ordered data mode.
+> Opts: discard,commit=600,journal_async_commit
+>   [   69.823138] udevd[474]: timeout '/sbin/blkid -o udev -p /dev/md0'
+>   [   70.824197] udevd[474]: timeout: killing '/sbin/blkid -o udev -p
+> /dev/md0' [866]
+>   [   70.826823] udevd[474]: '/sbin/blkid -o udev -p /dev/md0' [866]
+> terminated by signal 9 (Killed)
+>   [   70.829290] udevd[474]: timeout 'udisks-part-id /dev/md0'
+>   [   74.942625] udevd[475]: timeout '/sbin/blkid -o udev -p /dev/md2'
+>   [   75.947158] udevd[475]: timeout: killing '/sbin/blkid -o udev -p
+> /dev/md2' [874]
+>   [   75.949734] udevd[475]: '/sbin/blkid -o udev -p /dev/md2' [874]
+> terminated by signal 9 (Killed)
+>   [   75.951945] udevd[475]: timeout 'udisks-part-id /dev/md2'
+>   [   79.023741] rmmod[886]: ERROR: Module scsi_wait_scan does not exist in
+> /proc/modules
+>   [   96.005919] systemd[1]: dev-md3.swap activation timed out. Stopping.
+>   [  127.292002] Adding 9434108k swap on /dev/md3.  Priority:0 extents:1
+> across:9434108k
+>
+> During another boot I saw this additional message:
+>
+>   [   11.988732] scsi_verify_blk_ioctl: 930 callbacks suppressed
+>
+> The strange thing is that after boot I tried to enter the command
+> '/sbin/blkid -o udev -p /dev/md0' and it works without any problems
+> (time for this is 0m0.001s). So I also tried booting without discard
+> option, but the result is the same.
+>
+> Otherwise I observed no problems. Even running some more extensive
+> benchmark testing showed no problems. Only the performance drop is
+> dramatic. In my own benchmark where thousand of files get copied around
+> via FTP the performance drops from 4000 files per second to 520 when
+> mounting the filesystem with discard option. Also during the benchmark
+> any access to the disk can take very very long if discard is enabled.
+>
+> Next, I will try this patch on a system without SATA/SCSI disks.
+Maybe the discard runs slow with small size request in the disk.
+please drop patch "blk: add plug for blkdev_issue_discard" and try again. Since
+we can't do merge, the plug just introduces latency.
+if it doesn't help, please capture a blktrace when you do the benchmark and
+send it to me.
 
-On Tue 14-02-12 20:53:51, Hillf Danton wrote:
-> When gathering surplus pages, the number of needed pages is recomputed after
-> reacquiring hugetlb lock to catch changes in resv_huge_pages and
-> free_huge_pages. Plus it is recomputed with the number of newly allocated
-> pages involved.
-> 
-> Thus freeing pages could be deferred a bit to see if the final page request is
-> satisfied, though pages could be allocated less than needed.
-
-The patch looks OK but I am missing a word why we need it. I guess
-your primary motivation is that we want to reduce false positives when
-we fail to allocate surplus pages while somebody freed some in the
-background.
-What is the workload that you observed such a behavior? Or is this just
-from the code review?
-
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
-> 
-> --- a/mm/hugetlb.c	Tue Feb 14 20:10:46 2012
-> +++ b/mm/hugetlb.c	Tue Feb 14 20:19:42 2012
-> @@ -852,6 +852,7 @@ static int gather_surplus_pages(struct h
->  	struct page *page, *tmp;
->  	int ret, i;
->  	int needed, allocated;
-> +	bool alloc_ok = true;
-> 
->  	needed = (h->resv_huge_pages + delta) - h->free_huge_pages;
->  	if (needed <= 0) {
-> @@ -867,17 +868,13 @@ retry:
->  	spin_unlock(&hugetlb_lock);
->  	for (i = 0; i < needed; i++) {
->  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
-> -		if (!page)
-> -			/*
-> -			 * We were not able to allocate enough pages to
-> -			 * satisfy the entire reservation so we free what
-> -			 * we've allocated so far.
-> -			 */
-> -			goto free;
-> -
-> +		if (!page) {
-> +			alloc_ok = false;
-> +			break;
-> +		}
->  		list_add(&page->lru, &surplus_list);
->  	}
-> -	allocated += needed;
-> +	allocated += i;
-> 
->  	/*
->  	 * After retaking hugetlb_lock, we need to recalculate 'needed'
-> @@ -886,9 +883,16 @@ retry:
->  	spin_lock(&hugetlb_lock);
->  	needed = (h->resv_huge_pages + delta) -
->  			(h->free_huge_pages + allocated);
-> -	if (needed > 0)
-> -		goto retry;
-> -
-> +	if (needed > 0) {
-> +		if (alloc_ok)
-> +			goto retry;
-> +		/*
-> +		 * We were not able to allocate enough pages to
-> +		 * satisfy the entire reservation so we free what
-> +		 * we've allocated so far.
-> +		 */
-> +		goto free;
-> +	}
->  	/*
->  	 * The surplus_list now contains _at_least_ the number of extra pages
->  	 * needed to accommodate the reservation.  Add the appropriate number
-> @@ -914,10 +918,10 @@ retry:
->  		VM_BUG_ON(page_count(page));
->  		enqueue_huge_page(h, page);
->  	}
-> +free:
->  	spin_unlock(&hugetlb_lock);
-> 
->  	/* Free unnecessary surplus pages to the buddy allocator */
-> -free:
->  	if (!list_empty(&surplus_list)) {
->  		list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
->  			list_del(&page->lru);
-> --
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Thanks,
+Shaohua
