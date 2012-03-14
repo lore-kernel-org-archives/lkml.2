@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759558Ab2CNIkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 04:40:52 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:42315
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751907Ab2CNIks (ORCPT
+	id S1759622Ab2CNIlQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 04:41:16 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:33440 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030705Ab2CNIlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 04:40:48 -0400
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1202h1082kzzz2dh2a8h668h839hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4F605A29.6080009@freescale.com>
-Date: Wed, 14 Mar 2012 16:43:21 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	Wed, 14 Mar 2012 04:41:10 -0400
+X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Mar 2012 04:41:10 EDT
+From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <syrjala@sci.fi>
+To: linux-i2c@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        khali@linux-fr.org, ben-linux@fluff.org,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <syrjala@sci.fi>
+Subject: [PATCH] i2c-algo-bit: Fix spurious SCL timeouts under heavy load
+Date: Wed, 14 Mar 2012 10:32:52 +0200
+Message-Id: <1331713973-7711-1-git-send-email-syrjala@sci.fi>
+X-Mailer: git-send-email 1.7.3.4
 MIME-Version: 1.0
-To: Dong Aisheng <aisheng.dong@freescale.com>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        Guo Shawn-R65073 <r65073@freescale.com>
-Subject: Re: [PATCH v1 5/5] ARM: mxs: add mxs dma dt support
-References: <1331628428-24017-1-git-send-email-b29396@freescale.com> <1331628428-24017-6-git-send-email-b29396@freescale.com> <4F604F9F.1070801@freescale.com> <20120314083046.GD1180@shlinux2.ap.freescale.net>
-In-Reply-To: <20120314083046.GD1180@shlinux2.ap.freescale.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Aisheng:
-> The non-dt way also does not have interrupt resource for dma device.
-> It seems the channel interrupt resource is handled in each client device.
-> I'm not familiar with gpmi-nand, but I guess you may need to handle
-> it in gpmi driver, just like mxs-mmc driver.
->
-ok, got it.
+When the system is under heavy load, there can be a significant delay
+between the getscl() and time_after() calls inside sclhi(). That delay
+may cause the time_after() check to trigger after SCL has gone high,
+causing sclhi() to return -ETIMEDOUT.
 
-thanks
-Huang Shijie
+To fix the problem, double check that SCL is still low after the
+timeout has been reached, before deciding to return -ETIMEDOUT.
 
+Signed-off-by: Ville Syrjälä <syrjala@sci.fi>
+---
+I can easily reproduce these spurious timeouts on my HP-compaq nc6000
+laptop with the radeon kms driver. It's enough to have a -j2 kernel
+build running, and simultaneosly issue xrandr commands in a
+terminal. Calling xrandr will cause the driver to re-read the EDID
+from the display. A significant number of the EDID reads will fail.
+With this fix I have yet to see any failed EDID reads.
+
+ drivers/i2c/algos/i2c-algo-bit.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/i2c/algos/i2c-algo-bit.c b/drivers/i2c/algos/i2c-algo-bit.c
+index 525c734..d25112e 100644
+--- a/drivers/i2c/algos/i2c-algo-bit.c
++++ b/drivers/i2c/algos/i2c-algo-bit.c
+@@ -104,9 +104,11 @@ static int sclhi(struct i2c_algo_bit_data *adap)
+ 		 * are processing data internally.
+ 		 */
+ 		if (time_after(jiffies, start + adap->timeout))
+-			return -ETIMEDOUT;
++			break;
+ 		cond_resched();
+ 	}
++	if (!getscl(adap))
++		return -ETIMEDOUT;
+ #ifdef DEBUG
+ 	if (jiffies != start && i2c_debug >= 3)
+ 		pr_debug("i2c-algo-bit: needed %ld jiffies for SCL to go "
+-- 
+1.7.3.4
 
