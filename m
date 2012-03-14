@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030654Ab2CNOJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:09:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53279 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752638Ab2CNOJW (ORCPT
+	id S1030822Ab2CNOJp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:09:45 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:20563 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1030673Ab2CNOJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:09:22 -0400
-Date: Wed, 14 Mar 2012 14:09:10 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFC/RFT 1/2] regulator: Fix da9052 ldo regulator names
-Message-ID: <20120314140909.GN3133@opensource.wolfsonmicro.com>
-References: <1331077370.20711.2.camel@phoenix>
+	Wed, 14 Mar 2012 10:09:43 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: x5kIafYVM1kF3qlv020uZriy.mIb21eDRTQGO5nYCnZGeiQ
+ _TdkyD8gWKzz3Cbx9GG4IcI_FArmp3rCh_NOAhpwCATTpP_xZvoM_6abdkh6
+ gr3ZC3jF4R2MkPFKNpbk5RBBYzXeLGZQhAKMiE2jua_Mf8xUaPk2kLntdLUO
+ t5I20xL9MXQdWLCvG.vCUE_CQajdZHPLaLPceWTSMC5Rm5OBUuOjgreDzYQU
+ kEwANQ6OkM8v0c1Pao6wHR2e0BRLNYTU.WXXenzTyqP_6WHfqAOm9eQyHZsC
+ QVsgi7SaUABgh_bQffURJROWQPjT1MzqrRu5SQd0laxWxZCtXLNTl.ZkowOD
+ ThNIGeRu4cUYJP23bqmY.nkYiH68s2fFqk.eoZfkN..y_Ji5dN_pZzuRbBaW
+ B
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 14 Mar 2012 09:09:39 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andi Kleen <ak@linux.intel.com>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: fix vmstat_update to keep scheduling itself on all
+ cores
+In-Reply-To: <CAOtvUMdVrjUHLx2jZ2xbpBoDBMCX8sdCASEkmXCtBrU-gQ3EhQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1203140908010.5485@router.home>
+References: <CAOtvUMdVrjUHLx2jZ2xbpBoDBMCX8sdCASEkmXCtBrU-gQ3EhQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="95CBLwa+io9O2zXc"
-Content-Disposition: inline
-In-Reply-To: <1331077370.20711.2.camel@phoenix>
-X-Cookie: It's all in the mind, ya know.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 14 Mar 2012, Gilad Ben-Yossef wrote:
 
---95CBLwa+io9O2zXc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> We set up per-cpu work structures for vmstat and schedule them on
+> each cpu when they go online only to re-schedule them on the general
+> work queue when they first run.
 
-On Wed, Mar 07, 2012 at 07:42:50AM +0800, Axel Lin wrote:
-> The regulator name for LDOs are LDO4 ... LDO13 in current implementation.
-> The correct regulator name for LDOs should be LDO1 ... LDO10.
+schedule_delayed_work queues on the current cpu unless the
+WQ_UNBOUND flag is set. Which is not set for vmstat_work.
 
-Can you please rebase this against -next?  I was going to apply but some
-of your other fixes end up conflicting with this and the second change.
-
---95CBLwa+io9O2zXc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPYKZ9AAoJEBus8iNuMP3db2oP/2c3PdFIhHZKGswFy/dSgqq0
-x30TQIL6S863X7Imaup6xri/KTveJDp70Zi3BKz6f4WtAXFpq91jFqna+Vdl7Fsd
-oA7YrodY9utsKh4LWiosYz0rE0Ot3hXrsGQZTVxrXjiJ7O4jhQ242unEc6c5R8aO
-mP7InPDjaar9kfv6NSUixyGS3JCKsbi62uW/ML/5EoyaNREIL3asmdTOHA2+2aUs
-VIl+vzsJ3VGDpt0yB1hhMwaEjZ+SQGe7iP4CoDU96Iuuncc4UCCwqh6Zikvz0YxV
-iwVZ6soszHHeK+bfpGA90/Pr18ZO3XKOk98Zy09BNDuc4EMWQ3nuAg6Ik9jcYYmf
-y42WoA/XOebyvHgmnFtJXoyXuZQtaZzoBSHFKD0Ssb2AuAtbScHBOabrdx6xHoZw
-tU5c0mYvWKNLimtkldpm3mw87tAKdcGdsp3rAgFIxFQAqC1fAkMua3kFkIqUkctk
-N8zbJmaPohhs70IBKY8ui8su3C3GD/81RLUXNkvqhsHRlzCI8z5YlRsy/xbRPQSX
-8y0XLEJU3GcCmu/vRsm2K6kTMpY+q0tJNHLQl/UMgenGsZ1YiJM9sqKst4aZKEvp
-xMZg3lO4kzL3yL5hmSaQxUmX0jU64ycQwoB4/3DRuJPv0jzMfqFybcXT7MDq8nc8
-Qx0dgUcaVDMek6Sen6eh
-=ZgJ2
------END PGP SIGNATURE-----
-
---95CBLwa+io9O2zXc--
