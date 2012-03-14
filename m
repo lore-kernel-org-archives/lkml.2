@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456Ab2CNJbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 05:31:47 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:47674 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932065Ab2CNJbo (ORCPT
+	id S1759135Ab2CNJna (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 05:43:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53123 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585Ab2CNJn3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 05:31:44 -0400
-Date: Wed, 14 Mar 2012 20:31:43 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] padata fixes
-Message-ID: <20120314093143.GC2847@gondor.apana.org.au>
-References: <20120309061828.GI15404@secunet.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120309061828.GI15404@secunet.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 14 Mar 2012 05:43:29 -0400
+Message-ID: <1331718197.18960.106.camel@twins>
+Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Date: Wed, 14 Mar 2012 10:43:17 +0100
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
+	 <1331546307.18960.26.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
+	 <1331654251.18960.78.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 09, 2012 at 07:18:28AM +0100, Steffen Klassert wrote:
-> This patchset fixes two races that I found when I tested padata
-> in combination with pcrypt ablkcipher algorithms (still unpublished)
-> and dm-crypt. The mainline codebase seems not to trigger them, however
-> we need to fix these races before I can push the pcrypt ablkcipher
-> extensions.
+On Wed, 2012-03-14 at 06:27 +0000, Liu, Chuansheng wrote:
+> On the unplug case, after set the CPU to !active, we do not need IPI
+> handling for the corresponding
+> CPU before it is set to offline. I did not find any impact that
+> limiting the smp_call_function
+> just after CPU is active. 
 
-Since these don't trigger in mainline I've applied them to cryptodev.
+Have a look at Alpha, it's flush_tlb_mm() can use smp_call_function(),
+in the !active,online case you very much still need to tlb flush that
+cpu.
 
-Thanks!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+The fact that it works on a limited use case on x86 doesn't say anything
+much at all.
