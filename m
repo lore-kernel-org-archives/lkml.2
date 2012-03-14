@@ -1,83 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932630Ab2CNWc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 18:32:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31107 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932403Ab2CNWcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 18:32:54 -0400
-Message-ID: <4F611C8F.4030100@redhat.com>
-Date: Wed, 14 Mar 2012 19:32:47 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Chris Metcalf <cmetcalf@tilera.com>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+	id S932622Ab2CNWdm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 18:33:42 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40168 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759929Ab2CNWdg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 18:33:36 -0400
+Date: Wed, 14 Mar 2012 23:33:09 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tile_edac: Fix the memory controller ID
-References: <1331560917-14071-1-git-send-email-mchehab@redhat.com> <4F60ED44.70808@tilera.com>
-In-Reply-To: <4F60ED44.70808@tilera.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] edac: Add a sysfs node to test the EDAC error report
+ facility
+Message-ID: <20120314223309.GB27602@aftab>
+References: <1331122101-28382-1-git-send-email-mchehab@redhat.com>
+ <20120313233138.GA31106@kroah.com>
+ <4F60F0D7.70505@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F60F0D7.70505@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 14-03-2012 16:11, Chris Metcalf escreveu:
-> On 3/12/2012 10:02 AM, Mauro Carvalho Chehab wrote:
->> Fix a regression introduced by changeset 7b03829a8ba4:
->>
->> -       mci = edac_mc_alloc(sizeof(struct tile_edac_priv),
->> -               TILE_EDAC_NR_CSROWS, TILE_EDAC_NR_CHANS, pdev->id);
->> +       mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, false,
->> +                           sizeof(struct tile_edac_priv));
->>
->> The pdev->id is missing.
->>
->> Compile-tested only. Btw, in order to compile it, I had to:
->>
->> 1) comment a header at arch/tile/include/asm/linkage.h:
->>
->> 	-#include <feedback.h>
->> 	+//#include <feedback.h>
->>
->> 2) Use the ./arch/tile/configs/tilegx_defconfig . the tilepro_defconfig
->>    is broken;
->>
->> 3) manually enable the EDAC module on it.
->>
->> Somebody has to fix it ;)
->>
->> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+On Wed, Mar 14, 2012 at 04:26:15PM -0300, Mauro Carvalho Chehab wrote:
+> > Then please move it to debugfs, where debugging stuff belongs.
 > 
-> You might amend the commit message based on our conversation, but otherwise:
-> 
-> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-> 
-> Thanks for fixing up the tile EDAC driver, BTW :-)
+> There are other edac error injection tools at sysfs. That's why I opted to keep
+> it there - plus, I was too lazy[1] to learn about the debugfs bits at the time I
+> wrote it, and adding a single node to sysfs were very trivial ;)
 
-Thanks for the ack!
+I have to agree with Greg here, all debug-related stuff (error injection
+being somewhat related) should go to debugfs.
 
-Btw, I've introduced the bug, on this changeset:
-	http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-edac.git;a=commit;h=3b6909be050f03366322b0d5b45d38eedee77574
+Thanks.
 
-So, it is my moral duty to fix it ;)
+-- 
+Regards/Gruss,
+Boris.
 
-Btw, I'd appreciate if you could test the EDAC driver on tile after that
-series. It makes the edac core more flexible to represent the location of
-the broken memory on the way the memory controller works, in order to
-put its fingers at the Field Repleaceable Unit (FRU) - like a DIMM stick.
-It should be easy (and it probably makes sense on embedded hardware) to
-add there a way to report each DRAM memory is broken.
-
-The entire series is at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git hw_events_v7
-
-Thank you!
-Mauro
-
-Thanks,
-Mauro
-> 
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
