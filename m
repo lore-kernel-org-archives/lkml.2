@@ -1,106 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab2CNLOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 07:14:32 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45519 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab2CNLOb convert rfc822-to-8bit (ORCPT
+	id S1754752Ab2CNLPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 07:15:19 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:44021 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753138Ab2CNLPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 07:14:31 -0400
+	Wed, 14 Mar 2012 07:15:14 -0400
+Date: Wed, 14 Mar 2012 11:15:04 +0000
+From: Dave Martin <dave.martin@linaro.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nicolas.pitre@linaro.org, catalin.marinas@arm.com,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH] arm: Add unwinding support for memset and memzero.
+Message-ID: <20120314111504.GA2033@linaro.org>
+References: <1331574027-28542-1-git-send-email-lauraa@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1203140839590.28358@diagnostix.dwd.de>
-References: <20120312030412.375458948@fusionio.com>
-	<alpine.LRH.2.02.1203121806120.23719@diagnostix.dwd.de>
-	<4F5EFEB6.4060402@kernel.org>
-	<alpine.LRH.2.02.1203131213480.15848@diagnostix.dwd.de>
-	<CANejiEWYCxY_hLwgyN08_cXC64c82irkNPytTjOpYyER7pTGow@mail.gmail.com>
-	<alpine.LRH.2.02.1203131521190.29286@diagnostix.dwd.de>
-	<CANejiEW=a1piMYvSYM5GmtxKsWYpZj+kjnmNsNUDmW9ydDBjBw@mail.gmail.com>
-	<alpine.LRH.2.02.1203140839590.28358@diagnostix.dwd.de>
-Date: Wed, 14 Mar 2012 19:14:30 +0800
-X-Google-Sender-Auth: nmMFT-DHZMCVz3HOr5Itd-QVVt0
-Message-ID: <CANejiEXP9ORKTfE4O9khaHSp-Y8yOQU1LLUD5Q5pBJOGR+A-aA@mail.gmail.com>
-Subject: Re: [patch 0/7] Add TRIM support for raid linear/0/1/10
-From: Shaohua Li <shli@kernel.org>
-To: Holger Kiehl <Holger.Kiehl@dwd.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "neilb@suse.de" <neilb@suse.de>, "axboe@kernel.dk" <axboe@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331574027-28542-1-git-send-email-lauraa@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/3/14 Holger Kiehl <Holger.Kiehl@dwd.de>:
-> On Wed, 14 Mar 2012, Shaohua Li wrote:
->
->> 2012/3/13 Holger Kiehl <Holger.Kiehl@dwd.de>:
->>>
->>> On Tue, 13 Mar 2012, Shaohua Li wrote:
->>>
->>>> Thanks for testing. This is very wield, the req->__data_len is wrong.
->>>> Is this a clean build?
->>>>
->>> I just downloaded linux-3.3-rc7.tar.bz2 from kernel.org and applied
->>> your patches again. The result is the same.
->>>
->>> Am I the only one experiencing these problems?
->>
->> Martin Petersen pointed out scsi layer doesn't support discard merge,
->> which
->> might be the reason you see the error message (my drive isn't a scsi
->> device).
->> can you please try attached patch?
->>
-> Thanks! After this patch the error messages are away.
->
-> However, when the system boots it takes a very long time to boot:
->
->   [   16.527389] EXT4-fs (md0): mounted filesystem with ordered data mode.
-> Opts: discard,commit=2400,journal_async_commit
->   [   24.218410] EXT4-fs (md2): mounted filesystem with ordered data mode.
-> Opts: discard,commit=600,journal_async_commit
->   [   69.823138] udevd[474]: timeout '/sbin/blkid -o udev -p /dev/md0'
->   [   70.824197] udevd[474]: timeout: killing '/sbin/blkid -o udev -p
-> /dev/md0' [866]
->   [   70.826823] udevd[474]: '/sbin/blkid -o udev -p /dev/md0' [866]
-> terminated by signal 9 (Killed)
->   [   70.829290] udevd[474]: timeout 'udisks-part-id /dev/md0'
->   [   74.942625] udevd[475]: timeout '/sbin/blkid -o udev -p /dev/md2'
->   [   75.947158] udevd[475]: timeout: killing '/sbin/blkid -o udev -p
-> /dev/md2' [874]
->   [   75.949734] udevd[475]: '/sbin/blkid -o udev -p /dev/md2' [874]
-> terminated by signal 9 (Killed)
->   [   75.951945] udevd[475]: timeout 'udisks-part-id /dev/md2'
->   [   79.023741] rmmod[886]: ERROR: Module scsi_wait_scan does not exist in
-> /proc/modules
->   [   96.005919] systemd[1]: dev-md3.swap activation timed out. Stopping.
->   [  127.292002] Adding 9434108k swap on /dev/md3.  Priority:0 extents:1
-> across:9434108k
->
-> During another boot I saw this additional message:
->
->   [   11.988732] scsi_verify_blk_ioctl: 930 callbacks suppressed
->
-> The strange thing is that after boot I tried to enter the command
-> '/sbin/blkid -o udev -p /dev/md0' and it works without any problems
-> (time for this is 0m0.001s). So I also tried booting without discard
-> option, but the result is the same.
->
-> Otherwise I observed no problems. Even running some more extensive
-> benchmark testing showed no problems. Only the performance drop is
-> dramatic. In my own benchmark where thousand of files get copied around
-> via FTP the performance drops from 4000 files per second to 520 when
-> mounting the filesystem with discard option. Also during the benchmark
-> any access to the disk can take very very long if discard is enabled.
->
-> Next, I will try this patch on a system without SATA/SCSI disks.
-Maybe the discard runs slow with small size request in the disk.
-please drop patch "blk: add plug for blkdev_issue_discard" and try again. Since
-we can't do merge, the plug just introduces latency.
-if it doesn't help, please capture a blktrace when you do the benchmark and
-send it to me.
+On Mon, Mar 12, 2012 at 10:40:27AM -0700, Laura Abbott wrote:
+> Both memset and memzero lack unwinding annoations. If
+> an abort occurs trying to access the pointer, the backtrace
+> is incomplete. Add unwinding annotations to both functions
+> so we can actually get a useful backtrace.
+> 
+> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+> ---
+>  arch/arm/lib/memset.S  |    7 +++++--
+>  arch/arm/lib/memzero.S |    7 +++++--
+>  2 files changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
+> index 650d592..4379912 100644
+> --- a/arch/arm/lib/memset.S
+> +++ b/arch/arm/lib/memset.S
+> @@ -11,6 +11,7 @@
+>   */
+>  #include <linux/linkage.h>
+>  #include <asm/assembler.h>
+> +#include <asm/unwind.h>
+>  
+>  	.text
+>  	.align	5
+> @@ -29,6 +30,7 @@
+>   */
+>  
+>  ENTRY(memset)
+> +UNWIND(.fnstart)
+>  	ands	r3, r0, #3		@ 1 unaligned?
+>  	bne	1b			@ 1
+>  /*
+> @@ -41,7 +43,7 @@ ENTRY(memset)
+>  	blt	4f
+>  
+>  #if ! CALGN(1)+0
+> -
+> +UNWIND(.save {lr})
+>  /*
+>   * We need an extra register for this loop - save the return address and
+>   * use the LR
+> @@ -68,7 +70,7 @@ ENTRY(memset)
+>  	ldr	lr, [sp], #4
+>  
+>  #else
+> -
+> +UNWIND(.save {r4, r5, r6, r7, lr})
 
-Thanks,
-Shaohua
+For functions like this, the unwinding requirements are different
+depending on where we are in the function.  But the unwinder annotations
+don't remember exact instruction locations; only the extent of the
+whole unwind block is recorded, along with the sequence (but not
+location) of unwinder directives.
+
+As is, the unwinding may be wrong depending on which part of the function
+is executing when the fault occurs.
+
+It may be possible to split the function into multiple unwind blocks,
+e.g.:
+
+ENTRY(somefunc)
+UNWIND(.fnstart)
+
+UNWIND(.save {r4,lr})
+	stfmd	sp!, {r4,lr}
+
+	/* check something */
+
+	blt	_the_other_way
+	/* maybe carry out our job this way */
+
+	ldmfd	sp!, {r4,lr}
+UNWIND(.fnend)
+
+_the_other_way:
+UNWIND(.fnstart)
+UNWIND(.save {r4,lr})
+UNWIND(.save {r5-r8})
+	stmfd	sp!, {r5-r8}	/* !! */
+
+	/* carry out our job the other way */
+
+	ldmfd	sp!, {r5-r8}
+	ldmfd	sp!, {r4,pc}	/* !! */
+UNWIND(.fnend)
+
+
+This is still not exactly right (it's hard to be exactly right,
+since the unwind tables are not meant for handling asynchronous
+unwinding), but unwinding should be correct for the main bits of code
+where most time is spent and/or faults are most likely (the "carry out
+our job" comments).
+
+You'd have to experiment to see whether the backtracer does something
+sensible with unwind tables like this.  It might need tweaking to
+find the correct function symbol if a fault occurs in the second
+unwind block for example ... that perhaps it will already do the
+right thing.
+
+Cheers
+---Dave
+
