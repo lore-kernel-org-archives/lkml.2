@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031198Ab2CNXit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:38:49 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:12857 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760715Ab2CNXiq (ORCPT
+	id S1760831Ab2CNXjS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:39:18 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:27382 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760715Ab2CNXjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:38:46 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6649"; a="170252571"
-Message-ID: <4F612C05.8010301@codeaurora.org>
-Date: Wed, 14 Mar 2012 16:38:45 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 14 Mar 2012 19:39:14 -0400
+From: "Nanjappa, Sathisha (MCXS, Cupertino)" <sathisha.nanjappa@hp.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] mpt2sas: Corrected the constant in comparison to a
+ hexadecimal.
+Thread-Topic: [PATCH] mpt2sas: Corrected the constant in comparison to a
+ hexadecimal.
+Thread-Index: AQHNAb0kYPKk1kFKbUOL9EWnl0kcTpZqbNNg
+Date: Wed, 14 Mar 2012 23:36:51 +0000
+Message-ID: <C8A4A375313D4E4DA64F2CB1D0490B0A44730306@G9W0735.americas.hpqcorp.net>
+References: <1331665168-22561-1-git-send-email-sathisha.nanjappa@hp.com>
+	 <1331665168-22561-2-git-send-email-sathisha.nanjappa@hp.com>
+ <1331714014.8688.3.camel@dabdike>
+In-Reply-To: <1331714014.8688.3.camel@dabdike>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.216.12.11]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Saravana Kannan <skannan@codeaurora.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper
- is not yet available
-References: <201203032122.36745.chunkeey@googlemail.com> <201203150013.45749.rjw@sisk.pl> <4F612706.4060407@codeaurora.org> <201203150034.08863.rjw@sisk.pl>
-In-Reply-To: <201203150034.08863.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2ENdQS5031800
 
-On 03/14/12 16:34, Rafael J. Wysocki wrote:
-> On Thursday, March 15, 2012, Stephen Boyd wrote:
->> On 03/14/12 16:13, Rafael J. Wysocki wrote:
->>> On Thursday, March 15, 2012, Rafael J. Wysocki wrote:
->>>
->>>> Which is OK, I think.
->>> Moreover, thaw_kernel_threads() is _only_ called by (a) freeze_kernel_threads()
->>> on error and (b) user-space hibernate interface in kernel/power/user.c
->>> (and please read the comment in there describing what it's there for, which
->>> also explains why the schedule() call in there is necessary).
->> Exactly. So in case (a) when the error occurs we'll have this call flow:
->>
->> usermodehelpers_disable()
->> suspend_freeze_processes()
->>     freeze_processes()
->>     freeze_kernel_threads()
->>         try_to_freeze_tasks() <-- returns error
->>         thaw_kernel_threads()
->>             schedule()
->>     thaw_processes()
->> usermodehelpers_enable()
->>
->> Shouldn't we schedule only after we thaw all processes (not just tasks)?
->> Otherwise we may run a kernel thread before userspace is thawed?
-> Yes, we may, but that isn't wrong, is it?
->
-> Only a few kernel threads are freezable, so definitely kernel threads
-> can run while user space is frozen.
+> 
+> On Tue, 2012-03-13 at 11:59 -0700, Sathisha Nanjappa wrote:
+> > Bugzilla 42142 - mpt2sas: Number specified in wrong base
+> >     https://bugzilla.kernel.org/show_bug.cgi?id=42142
+> 
+> From: James Bottomley
+> Sent: Wednesday, March 14, 2012 1:34 AM
+> Do you have a better description ... like what is the user
+> visible effect of correcting the constant?
 >
 
-Yes but if someone calls request_firmware() from a kthread then they
-will hit the same problem where the thread runs and requests the
-firmware and usermodehelpers are still disabled. Currently my code is
-written with kthreads and that thread makes the request firmware call,
-so this doesn't seem far fetched (although in my case I can probably fix
-it). It looks like before 379e0be (PM / Freezer: Thaw only kernel
-threads if freezing of kernel threads fails, 2012-02-03) schedule wasn't
-called until userspace was thawed. It looks like that patch was about
-hibernation and not suspend?
+Does this look better:
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+"This fix ensures that the IOP_LOGINFO_CODE_TASK_TERMINATED
+messages do not clutter the sas_log_info messages."
 
+Thanks,
+-Satish.
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
