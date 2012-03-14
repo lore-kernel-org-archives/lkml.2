@@ -1,44 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760991Ab2CNMks (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 08:40:48 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:33380 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1760962Ab2CNMkp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 08:40:45 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX197icpoZlB7YXpJNJgw/7i5XNjupg9jdpJBRyrXOQ
-	k4u8CstPoJtyGp
-Message-ID: <1331728841.7465.7.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have been
- online
-From: Mike Galbraith <efault@gmx.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: sivanich@sgi.com, linux-kernel@vger.kernel.org
-Date: Wed, 14 Mar 2012 13:40:41 +0100
-In-Reply-To: <1331717099.5752.15.camel@marge.simpson.net>
-References: <20120314002414.GA21561@linux.vnet.ibm.com>
-	 <1331717099.5752.15.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1761004Ab2CNMlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 08:41:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57845 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760963Ab2CNMly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 08:41:54 -0400
+Date: Wed, 14 Mar 2012 13:41:50 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/2] kernel: cgroup: push rcu read locking from
+ css_is_ancestor() to callsite
+Message-ID: <20120314124150.GE4434@tiehlicka.suse.cz>
+References: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-14 at 10:24 +0100, Mike Galbraith wrote: 
-> On Tue, 2012-03-13 at 17:24 -0700, Paul E. McKenney wrote: 
-> > The following builds, but is only very lightly tested.  Probably full
-> > of bug, especially when exercising CPU hotplug.
+On Tue 28-02-12 15:14:48, Johannes Weiner wrote:
+> Library functions should not grab locks when the callsites can do it,
+> even if the lock nests like the rcu read-side lock does.
 > 
-> You didn't say RFT, but...
+> Push the rcu_read_lock() from css_is_ancestor() to its single user,
+> mem_cgroup_same_or_subtree() in preparation for another user that may
+> already hold the rcu read-side lock.
 > 
-> To beat on this in a rotund 3.0 kernel, the equivalent patch would be
-> the below?  My box may well answer that before you can.. hope not ;-)
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-(Darn, it did.  Box says boot stall with virgin patch in tip too though.
-Wedging it straight into 3.0 was perhaps a tad premature;)
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
+> ---
+>  kernel/cgroup.c |   20 ++++++++++----------
+>  mm/memcontrol.c |   14 +++++++++-----
+>  2 files changed, 19 insertions(+), 15 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 4be474d..9003bd8 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -4841,7 +4841,7 @@ EXPORT_SYMBOL_GPL(css_depth);
+>   * @root: the css supporsed to be an ancestor of the child.
+>   *
+>   * Returns true if "root" is an ancestor of "child" in its hierarchy. Because
+> - * this function reads css->id, this use rcu_dereference() and rcu_read_lock().
+> + * this function reads css->id, the caller must hold rcu_read_lock().
+>   * But, considering usual usage, the csses should be valid objects after test.
+>   * Assuming that the caller will do some action to the child if this returns
+>   * returns true, the caller must take "child";s reference count.
+> @@ -4853,18 +4853,18 @@ bool css_is_ancestor(struct cgroup_subsys_state *child,
+>  {
+>  	struct css_id *child_id;
+>  	struct css_id *root_id;
+> -	bool ret = true;
+>  
+> -	rcu_read_lock();
+>  	child_id  = rcu_dereference(child->id);
+> +	if (!child_id)
+> +		return false;
+>  	root_id = rcu_dereference(root->id);
+> -	if (!child_id
+> -	    || !root_id
+> -	    || (child_id->depth < root_id->depth)
+> -	    || (child_id->stack[root_id->depth] != root_id->id))
+> -		ret = false;
+> -	rcu_read_unlock();
+> -	return ret;
+> +	if (!root_id)
+> +		return false;
+> +	if (child_id->depth < root_id->depth)
+> +		return false;
+> +	if (child_id->stack[root_id->depth] != root_id->id)
+> +		return false;
+> +	return true;
+>  }
+>  
+>  void free_css_id(struct cgroup_subsys *ss, struct cgroup_subsys_state *css)
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index e4be95a..b4622fb 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1047,12 +1047,16 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
+>  static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+>  		struct mem_cgroup *memcg)
+>  {
+> -	if (root_memcg != memcg) {
+> -		return (root_memcg->use_hierarchy &&
+> -			css_is_ancestor(&memcg->css, &root_memcg->css));
+> -	}
+> +	bool ret;
+>  
+> -	return true;
+> +	if (root_memcg == memcg)
+> +		return true;
+> +	if (!root_memcg->use_hierarchy)
+> +		return false;
+> +	rcu_read_lock();
+> +	ret = css_is_ancestor(&memcg->css, &root_memcg->css);
+> +	rcu_read_unlock();
+> +	return ret;
+>  }
+>  
+>  int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg)
+> -- 
+> 1.7.7.6
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
