@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030860Ab2CNORm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:17:42 -0400
-Received: from lulu.zabbo.net ([69.168.54.52]:54495 "EHLO lulu.zabbo.net"
+	id S1030867Ab2CNOS2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:18:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39841 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752318Ab2CNORl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:17:41 -0400
-Message-ID: <4F60A881.3070607@zabbo.net>
-Date: Wed, 14 Mar 2012 10:17:37 -0400
-From: Zach Brown <zab@zabbo.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1755960Ab2CNOSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 10:18:25 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] ARM: Fix missing linux/types.h #inclusion in
+ asm/hardware/iop3xx.h
+To: linux@arm.linux.org.uk, paul.gortmaker@windriver.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Wed, 14 Mar 2012 14:18:08 +0000
+Message-ID: <20120314141808.2354.62573.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Yongqiang Yang <xiaoqiangnk@gmail.com>,
-        Phillip Susi <phillsusi@gmail.com>,
-        Andreas Dilger <adilger@whamcloud.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: getdents - ext4 vs btrfs performance
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com> <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com> <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com> <20120310044804.GB5652@thunk.org> <4F5F9A97.5060404@ubuntu.com> <20120313195339.GA24124@thunk.org> <4F5FAC9C.9070607@gmail.com> <20120313213304.GB11969@thunk.org> <CAGBYx2ZQk+kobPj5ff0NKEfK_-kD0NK4WiNUruF=d443PV-NSw@mail.gmail.com> <20120314025108.GF15379@thunk.org>
-In-Reply-To: <20120314025108.GF15379@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+arch/arm/include/asm/hardware/iop3xx.h needs to include linux/types.h to avoid
+the following errors:
 
-> We could do this if we have two b-trees, one indexed by filename and
-> one indexed by inode number, which is what JFS (and I believe btrfs)
-> does.
+In file included from arch/arm/plat-iop/restart.c:10:0:
+/data/fs/linux-2.6-fscache/arch/arm/include/asm/hardware/iop3xx.h:239:1: error: unknown type name 'u32'
+/data/fs/linux-2.6-fscache/arch/arm/include/asm/hardware/iop3xx.h: In function 'read_tmr0':
+/data/fs/linux-2.6-fscache/arch/arm/include/asm/hardware/iop3xx.h:241:2: error: unknown type name 'u32'
+/data/fs/linux-2.6-fscache/arch/arm/include/asm/hardware/iop3xx.h: At top level:
+/data/fs/linux-2.6-fscache/arch/arm/include/asm/hardware/iop3xx.h:246:31: error: unknown type name 'u32'
+...
 
-Typically the inode number of the destination inode isn't used to index
-entries for a readdir tree because of (wait for it) hard links.  You end
-up right back where you started with multiple entries per key.
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-A painful solution is to have the key in the readdir tree allocated by
-the tree itself -- count key populations in subtrees per child pointer
-and use that to find free keys.  You still have the problem of
-correlating entry keys and the location of inodes, but at least now you
-have a structure to navigate to try and do that.  You can also trivially
-re-use freed keys and have densely packed readdir keys that won't break
-32bit f_pos so quickly.
+ arch/arm/include/asm/hardware/iop3xx.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-btrfs just punts and has an incrementing 64bit counter per directory
-that determines a new entry's position in readdir.  Accompanied by the
-obligatory "will be smarter some day" comment :).
+diff --git a/arch/arm/include/asm/hardware/iop3xx.h b/arch/arm/include/asm/hardware/iop3xx.h
+index 077c323..2ff2c75 100644
+--- a/arch/arm/include/asm/hardware/iop3xx.h
++++ b/arch/arm/include/asm/hardware/iop3xx.h
+@@ -231,6 +231,9 @@ extern int iop3xx_get_init_atu(void);
+ 
+ 
+ #ifndef __ASSEMBLY__
++
++#include <linux/types.h>
++
+ void iop3xx_map_io(void);
+ void iop_init_cp6_handler(void);
+ void iop_init_time(unsigned long tickrate);
 
-- z
