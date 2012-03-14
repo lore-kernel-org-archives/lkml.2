@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab2CNJSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 05:18:51 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:30138 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760081Ab2CNJSr (ORCPT
+	id S932452Ab2CNJXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 05:23:53 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:11985 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932065Ab2CNJXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 05:18:47 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6648"; a="169995181"
-Message-ID: <4F606270.1020709@codeaurora.org>
-Date: Wed, 14 Mar 2012 14:48:40 +0530
-From: Ravi Kumar V <kumarrav@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 14 Mar 2012 05:23:50 -0400
+X-IronPort-AV: E=Sophos;i="4.73,583,1325458800"; 
+   d="scan'208";a="149275019"
+Date: Wed, 14 Mar 2012 10:23:47 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>
+cc: Dan Carpenter <dan.carpenter@oracle.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] arch/unicore32/kernel/dma.c: ensure arguments to
+ request_irq and free_irq are compatible
+In-Reply-To: <1331714575.2389.47.camel@epip-laptop>
+Message-ID: <alpine.DEB.2.02.1203140957020.2146@localhost6.localdomain6>
+References: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>  <1331494587-12196-8-git-send-email-Julia.Lawall@lip6.fr>  <1331513926.2048.58.camel@epip-laptop>  <alpine.DEB.2.02.1203120625570.2066@localhost6.localdomain6>  <1331622633.2048.87.camel@epip-laptop>
+  <alpine.DEB.2.02.1203130921250.1974@localhost6.localdomain6>  <1331712444.2389.36.camel@epip-laptop> <20120314081910.GC3163@mwanda> <1331714575.2389.47.camel@epip-laptop>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Dan Williams <dan.j.williams@intel.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH v3 1/2] dmaengine: Add support for per xfer specific privatedata
-References: <1331548336-27802-1-git-send-email-kumarrav@codeaurora.org> <1331569796.1727.9.camel@vkoul-udesk3>
-In-Reply-To: <1331569796.1727.9.camel@vkoul-udesk3>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/12/2012 9:59 PM, Vinod Koul wrote:
-> On Mon, 2012-03-12 at 16:02 +0530, Ravi Kumar V wrote:
->> Add new argument to DMA SG and Interleave mode for passing
->> per transfer specific private data, using this it enables the
->> dma devices which needs to pass the parameters which changes per
->> each transfer.
+
+
+On Wed, 14 Mar 2012, Guan Xuetao wrote:
+
+> On Wed, 2012-03-14 at 11:19 +0300, Dan Carpenter wrote:
+>> On Wed, Mar 14, 2012 at 04:07:24PM +0800, Guan Xuetao wrote:
+>>> puv3_init_dma() is called ONCE when initializing.
+>>> In logical, if request_irq(IRQ_DMAERR, *) failed, free_irq(IRQ_DMA, *)
+>>> is unnecessary, and dma device/driver can keep on working.
+>>> The patch could be:
+>>>   	ret = request_irq(IRQ_DMAERR, dma_err_handler, 0, "DMAERR", NULL);
+>>>   	if (ret) {
+>>>   		printk(KERN_CRIT "Can't register IRQ for DMAERR\n");
+>>>  -		free_irq(IRQ_DMA, "DMA");
+>>>   		return ret;
+>>>   	}
 >>
->> Signed-off-by: Ravi Kumar V<kumarrav@codeaurora.org>
->> ---
->>   include/linux/dmaengine.h |    4 ++--
->>   1 files changed, 2 insertions(+), 2 deletions(-)
+>> It seems like you should remove the error return as well?
 >>
->> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
->> index 679b349..b8f0495 100644
->> --- a/include/linux/dmaengine.h
->> +++ b/include/linux/dmaengine.h
->> @@ -570,7 +570,7 @@ struct dma_device {
->>   		struct dma_chan *chan,
->>   		struct scatterlist *dst_sg, unsigned int dst_nents,
->>   		struct scatterlist *src_sg, unsigned int src_nents,
->> -		unsigned long flags);
->> +		unsigned long flags, void *context);
-> Please follow the related discussion we had. Alexandre had already
-> posted updated and this needs to follow.
-> Also this way you break the existing drivers which use this API, not
-> sure why you posted without fixing them?
->
-I have gone through the discussion in
-https://lkml.org/lkml/2012/2/6/300
-As per my understanding
-1.we need to add new transaction types DMA_SG_EXT & DMA_INTERLEAVE_EXT.
-2.Add context parameter to existing API's.
-3.Typecast the context parameter with architecture specific structure 
-there by restricting client drivers to pass only arch specific parameter.
-4.Fix existing code and client drivers for using new API.
-
-My suggestion is instead of adding context parameter in existing API's, 
-how it would be if we can add a new API for each DMA transaction types 
-available in dmaengine for passing transaction specific parameter?
-so that existing clients and dma drivers will not be disturbed.
-
->>   	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
->>   		struct dma_chan *chan, struct scatterlist *sgl,
->> @@ -581,7 +581,7 @@ struct dma_device {
->>   		size_t period_len, enum dma_transfer_direction direction);
->>   	struct dma_async_tx_descriptor *(*device_prep_interleaved_dma)(
->>   		struct dma_chan *chan, struct dma_interleaved_template *xt,
->> -		unsigned long flags);
->> +		unsigned long flags, void *context);
->>   	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->>   		unsigned long arg);
+>> regards,
+>> dan carpenter
 >>
->
->
+> The error return value will only generate an extra warning message, and
+> have no side-effect.
 
+The whole thing seems a little strange.  I guess your point is that the 
+call site never looks at the return value?  Wouldn't it be better to make 
+there be no return value in that case?  If there is a return value, some 
+calling context in the future might take that into account and then the 
+lack of a free_irq would be a memory leak.  Also if the first request_irq 
+can never fail, perhaps that should be made explicit by not testing the 
+return value?
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+julia
