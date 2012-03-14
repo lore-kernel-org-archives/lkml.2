@@ -1,76 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031073Ab2CNV2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 17:28:38 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37156 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031060Ab2CNV2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 17:28:31 -0400
-Date: Wed, 14 Mar 2012 22:28:15 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Turquette, Mike" <mturquette@ti.com>
-cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        linaro-dev@lists.linaro.org, Grant Likely <grant.likely@secretlab.ca>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Arnd Bergman <arnd.bergmann@linaro.org>, patches@linaro.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, Paul Walmsley <paul@pwsan.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Subject: Re: [PATCH v5 3/4] clk: introduce the common clock framework
-In-Reply-To: <CAJOA=zMsCuZgmp1Hm0dq=EVoX6Zj62XQVqR=6GzDntSD5HnHzg@mail.gmail.com>
-Message-ID: <alpine.LFD.2.02.1203142218320.2466@ionos>
-References: <1330763341-3437-1-git-send-email-mturquette@linaro.org> <1330763341-3437-4-git-send-email-mturquette@linaro.org> <20120313112447.GA29317@pengutronix.de> <CAJOA=zMTY+4dU9VUa-TkEbdE-WJd7V4tCG-af6vgq0CPN6rWpg@mail.gmail.com> <20120314084857.GL3852@pengutronix.de>
- <CAJOA=zMsCuZgmp1Hm0dq=EVoX6Zj62XQVqR=6GzDntSD5HnHzg@mail.gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1031065Ab2CNV3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 17:29:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65496 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030964Ab2CNV3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 17:29:18 -0400
+Message-ID: <4F610D81.3020300@redhat.com>
+Date: Wed, 14 Mar 2012 17:28:33 -0400
+From: Doug Ledford <dledford@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Amerigo Wang <amwang@redhat.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
+        Jiri Slaby <jslaby@suse.cz>,
+        "\"Eric W. Biederman\" (commit_signer:2/9=22%)" 
+	<ebiederm@xmission.com>,
+        "Joe Korty (commit_signer:2/9=22%)" <joe.korty@ccur.com>,
+        "David Howells (commit_signer:2/9=22%)" <dhowells@redhat.com>
+Subject: Re: [resend][PATCH 1/3] mqueue: revert bump up DFLT_*MAX
+References: <1323470163-8723-1-git-send-email-kosaki.motohiro@gmail.com> <4EEE3124.7070605@gmail.com> <20111218103836.258eedb8.akpm@linux-foundation.org>
+In-Reply-To: <20111218103836.258eedb8.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.3.5
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig2167723106F7BE4365CED7F1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Mar 2012, Turquette, Mike wrote:
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig2167723106F7BE4365CED7F1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Could you folks please trim your replies? It's annoying to page down a
-gazillion of lines to find the gist.
+On 12/18/2011 01:38 PM, Andrew Morton wrote:
+> On Sun, 18 Dec 2011 13:29:56 -0500 KOSAKI Motohiro <kosaki.motohiro@gma=
+il.com> wrote:
+>=20
+>> (12/9/11 5:35 PM), kosaki.motohiro@gmail.com wrote:
+>>> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+>>>
+>>> Mqueue limitation is slightly naieve parameter likes other ipcs
+>>> because unprivileged user can consume kernel memory by using ipcs.
+>>>
+>>> Thus, too aggressive raise bring us security issue. Example,
+>>> current setting allow evil unprivileged user use 256GB (=3D 256
+>>> * 1024 * 1024*1024) and it's enough large to system will belome
+>>> unresponsive. Don't do that.
+>>>
+>>> Instead, every admin should adjust the knobs for their own systems.
+>>>
+>>> Signed-off-by: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+>>> Acked-by: Doug Ledford<dledford@redhat.com>
+>>> Acked-by: Joe Korty<joe.korty@ccur.com>
+>>> Cc: Amerigo Wang<amwang@redhat.com>
+>>> Cc: Serge E. Hallyn<serue@us.ibm.com>
+>>> Cc: Jiri Slaby<jslaby@suse.cz>
+>>
+>> Andrew, can you please pick up this series into your tree? because you=
+r
+>> tree have related Doug mqueue patch series.
+>=20
+> Soon.  I need to go back and read the email trail regarding Doug's patc=
+hes.
 
-> On Wed, Mar 14, 2012 at 1:48 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> >> Also, do you forsee needing hole in parent_names for any reason other
-> >> than described above?
-> >
-> > I need it only for the case where a some values in the mux are marked as
-> > reserved in the datasheet or we simply do not have the corresponding
-> > clock in our tree (yet). We could also say that NULL pointers are not
-> > allowed in parent arrays, but instead "orphan" or "dummy" should be
-> > used. Then __clk_init should check for NULL pointers to make this clear.
-> 
-> I've added a WARN in __clk_init if any entries in .parent_names are
-> NULL.  I think it best to populate it with "dummy", or maybe a
-> platform-specific name if it helps you during development.
+This has obviously fallen through the cracks.  Can we please see if we
+can get this put to bed.
 
-There is no guarantee that the selection of a parent can be mapped
-linear to register values.
+Andrew, long and short of the story on this entire patch set is:
 
-So the right way to deal with it is to have an array of valid names
-with no holes and NULL pointers allowed and have a mapping from the
-array index to the register value.
+A) Current Linus kernel is broken in regards to customer needs, maximums
+are too low.
+B) My patch set upped maximums and also upped the default maximums on
+the system, but inadvertently also upped the default mqueue size the
+original patch that my entire patch set is more or less reverting tied
+maximums and defaults together.  This broke some apps that didn't pass
+an attr struct to open as it caused a default sized mqueue to exceed a
+non-root RLIMIT for message queue bytes.
+C) My next patches brought defaults back down by decoupling defaults
+from maximums.  This then broke some apps again that wanted to be able
+to fiddle with the maximum settings in /proc and have that modify the
+default value for an app that didn't pass an attr struct (fortunately,
+all of these apps appear to be nothing more than regression test suites
+at the moment where the people writing the suite used a combination of
+setting the maximum size in proc, then running a test program that
+created a default queue and checking it, then re-running with different
+sizes in /proc, etc).
+D) Motohiro and I argued for some time over this behavior until we both
+agreed that apps can not be written to rely upon the maximum setting of
+the system wide mqueue limits as their default queue size as this is
+fundamentally unfriendly behavior to any multi-application OS (the
+situation of two apps both needing specific, different queue sizes, and
+both expecting to get them by default by twiddling values in /proc is
+simply not supportable).  In the end, we agreed that the best approach
+to solve the problem was to leave the defaults decoupled from the
+maximums, but add a default knob in /proc so that if there are any apps
+out there that have been coded to expect this behavior, then there is a
+workaround path for them until they get coded to use an attr struct on
+open instead of relying on values twiddled in /proc.  This is what
+Motohiro's patch set does as well as a few other cleanups.
 
-That makes the core code robust and allows to handle all corner cases
-including reserved bits, not implemented clocks and weird register
-layouts.
+Hopefully that clears things up, and given the unsupportability of the
+current design in Linus' kernel (changing maximums changes defaults for
+all apps and encourages poor programming choices) we can move this
+forward please.
 
-Thanks,
+--=20
+Doug Ledford <dledford@redhat.com>
+              GPG KeyID: 0E572FDD
+	      http://people.redhat.com/dledford
 
-	tglx
+
+
+--------------enig2167723106F7BE4365CED7F1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBAgAGBQJPYQ2BAAoJELgmozMOVy/dnCcQAMH5FzotoFrapO/Aho1rkrty
+xFk361X+Jp8JagbBQFCLJMuX/t0mSIk5lSG2zlndsROPzKSP8JNEm8Ro4pZvOD7P
+PjR3LfzkJJHVjMrhnNUqtfpPlNDpYWG3fFDyEWtxDlIlyAYUVFJe6QKXrBPi04dM
+Z1uozy7x9dvS2pF2F6D02Q/2DxthJdq0BDGVFoqhYvZWA7ivSzA/zIAK+QVb2zZ4
+nrgMpY+zOhouzRilAlcqn4CmKsJV7y4dRAG8uXfw0aFhJ7ETxLfSgGnMshB9w8iG
+uUGf/OR6O9O8kgQJkWEHUnqkQb6SsinXz4Nzxv2eiAJaqe+W78myL0KS6Q9SYyYg
+WogLS8uMhkrKKgk34hdjHTYWvbWOIwkhRbO5Yd2ZC7j0vu2diSW8Y+qCogJMf8gW
+X4cuUmYxYceaxay78k96UQWxRVRafglgrf/ERfpytxc2vm0OG2hw0KaS1p5RogGY
+A6vTz+B69wvbqjfoEvMxi9UAwbFOMXBhfnx0wi215GbBlXHTShREa9Vexub+5Ojm
+wK9nnJQqq9oBEwQS1f2BQp6lfqpTwgs61rBLcZzyDcJkJtM0ltWzArwNEQhv23rn
+0zQxR4ZJtJ4ORNROgqlAa8g7vSed6WBZZbAOvewR8v8woQ0Vl3d2oRl7hQCpPYLd
+4PxPUzXLTrICazOLDknT
+=1C/S
+-----END PGP SIGNATURE-----
+
+--------------enig2167723106F7BE4365CED7F1--
