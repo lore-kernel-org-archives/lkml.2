@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759168Ab2CNUHY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 16:07:24 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:32800 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755489Ab2CNUHX (ORCPT
+	id S1030512Ab2CNUKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 16:10:51 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49769 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759621Ab2CNUKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 16:07:23 -0400
-Message-ID: <4F60FA76.2070204@gmail.com>
-Date: Wed, 14 Mar 2012 14:07:18 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 14 Mar 2012 16:10:50 -0400
+Date: Wed, 14 Mar 2012 20:10:48 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com
+Subject: Re: [PATCH] vfs namespace: Don't assume mount namespace has valid
+ root
+Message-ID: <20120314201048.GI23916@ZenIV.linux.org.uk>
+References: <1331758710-16400-1-git-send-email-levinsasha928@gmail.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] perf tools: Fix ordering with unstable tsc
-References: <20120206132546.GA30854@quad> <1329583837-7469-1-git-send-email-fweisbec@gmail.com> <20120314195535.GB13246@infradead.org>
-In-Reply-To: <20120314195535.GB13246@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331758710-16400-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/14/12 1:55 PM, Arnaldo Carvalho de Melo wrote:
-> Shouldn't we try to robustify this checking against HEADER_NRCPUS (if
-> present)?
->
-> I just tried to see how to find that info, but unfortunately it just
-> prints it when calling perf_header__fprintf_info, it can be made to
-> work.
->
-> I need to work on storing those values in a struct accessible thru
-> perf_session or perf_evlist, so that I can show that info on the TUI,
-> perhaps at that time I can robustify this way.
+On Wed, Mar 14, 2012 at 04:58:30PM -0400, Sasha Levin wrote:
+> This patch fixes the assumption that a mnt namespace will always have a valid
+> root object.
 
-Xiao added a design for retrieving data for the features in the proposed 
-kvm-events tool. See the header.c changes in 
-http://thread.gmane.org/gmane.linux.kernel/1262482
+It's not an assumption, it's an invariant that should hold unless you have
+run into a bug somewhere.
 
-David
+Instances of struct mnt_namespace should *all* come from alloc_mnt_ns().
+There are only two callers - dup_mnt_namespace() and create_mnt_ns().
+The latter will assign non-NULL vfsmount to ->root or die NULL pointer
+dereference in
+                mnt->mnt_ns = new_ns;
+The former will either assign non-NULL to ->root or kfree() mnt_namespace
+before anyone can see it.
+
+And nothing should modify ->root after that assignment for as long as
+the instance of struct mnt_namespace is allocated.
+
+Mind explaining how have you managed to get mnt_namespace with NULL ->root
+passed to dup_mnt_ns()?
