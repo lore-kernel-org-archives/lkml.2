@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030444Ab2CNCWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 22:22:03 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60034 "EHLO
+	id S1030465Ab2CNCXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 22:23:41 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:42460 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030393Ab2CNCV6 (ORCPT
+	with ESMTP id S1760347Ab2CNCXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 22:21:58 -0400
+	Tue, 13 Mar 2012 22:23:39 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120313151049.fa33d232.akpm@linux-foundation.org>
+In-Reply-To: <CAE9FiQVkn_jHhdFfDg_zvJJuZci+kvOd6NSfL4aSc_GP=hiOWw@mail.gmail.com>
 References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
- <20120313170851.GA5218@fifo99.com> <20120313151049.fa33d232.akpm@linux-foundation.org>
+ <1331617001-20906-5-git-send-email-apenwarr@gmail.com> <CAE9FiQUakjaxE3fTm1w3SuuE-cAXAg2fePmEdwmjomAgp88Psg@mail.gmail.com>
+ <CAHqTa-0b1DBDNYzDQ6UHHCivF9S-H3zvZWH0KZ21OQ8gQq6WYg@mail.gmail.com> <CAE9FiQVkn_jHhdFfDg_zvJJuZci+kvOd6NSfL4aSc_GP=hiOWw@mail.gmail.com>
 From: Avery Pennarun <apenwarr@gmail.com>
-Date: Tue, 13 Mar 2012 22:21:37 -0400
-Message-ID: <CAHqTa-1e9k5W8LJ39+3rmrDrRVdrSuXiqigDFcY8ToXU+Kdz0w@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Persist printk buffer across reboots.
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Walker <dwalker@fifo99.com>, Josh Triplett <josh@joshtriplett.org>,
+Date: Tue, 13 Mar 2012 22:23:18 -0400
+Message-ID: <CAHqTa-3p1sS1QvT3bg4UAo9G8Hq+-PJsSxBAz_P8pf+tdEOq4Q@mail.gmail.com>
+Subject: Re: [PATCH 4/5] printk: use alloc_bootmem() instead of memblock_alloc().
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -24,100 +26,23 @@ Cc: Daniel Walker <dwalker@fifo99.com>, Josh Triplett <josh@joshtriplett.org>,
         Johannes Weiner <hannes@cmpxchg.org>, Olaf Hering <olaf@aepfle.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Yinghai LU <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 6:10 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 13 Mar 2012 10:08:51 -0700
-> Daniel Walker <dwalker@fifo99.com> wrote:
->> There's currently driver/mtd/mtdoops.c, fs/pstore/, and
->> drivers/staging/android/ram_console.c that do similar things
->> as this. Did you investigate those for potentially modifying them to add
->> this functionality ? If so what issues did you find?
->>
->> I have a arm MSM G1 with persistent memory at 0x16d00000 size 20000bytes..
->> It's fairly simple you just have to ioremap the memory, but then it's good
->> for writing.. Currently the android ram_console uses this. How would I
->> convert this area for use with your changes?
->
-> Yes, and various local implementations which do things such as stuffing
-> the log buffer into NVRAM as the kernel is crashing.
->
-> I do think we'd need some back-end driver arrangement which will permit
-> the use of stores which aren't in addressible mamory.
->
-> It's quite the can of worms, but definitely worth doing if we can get
-> it approximately correct.
+On Tue, Mar 13, 2012 at 5:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Now you put back bootmem calling early, will cause confusion.
+[...]
+> we should use adding memblock_alloc calling instead... go backward...
 
-So okay, it seems there are a lot of competing ideas around.  In my
-defense, I had looked at a couple of them (certainly not the full
-variety represented in this thread) and the approach in my patch does
-have a few advantages, I think:
+Okay, I'm convinced.  I've updated my series so CONFIG_PRINTK_PERSIST
+only works with HAVE_MEMBLOCK, and I've removed the patch to
+unconditionally call bootmem in the existing non-PRINTK_PERSIST case.
 
-1. It's extremely small and simple and easy to see when it's correct,
-regardless of your platform (and even if your platform does or doesn't
-have bootloader-level memory reservations - for example it works on
-x86 with kvm).
+(I'll upload the patches later once the other threads play out.)
 
-2. It does not increase the code size or slowness of the post-init
-kernel.  (There's one new __init function, but no new runtime code
-except a couple of extra pointer dereferences.)
-
-3. It doesn't introduce any new APIs; there's just good old dmesg,
-whose history now goes back farther.  (/proc/kmsg is unaffected, ie.
-it still only shows history since boot, so klogd won't do anything
-weird.)
-
-4. It captures much more than just panics.  I don't know why people
-put so much stock in catching panics; about half the problems I've had
-to deal with are hard-lockups, not panics, and any solution that only
-works with panics doesn't help me much.  (Also, trying to do useful
-work after a panic doesn't even work every time, but "do nothing on
-panic and I'll pick it up later" does.)  So things like mtdoops or
-ramoops or kexec are not a complete solution IMHO.  For example, one
-method I've used already for tracking down a hard lockup is to print
-short status messages at LOG_DEBUG level (ie. not to the visible
-console, but it goes in the buffer) at regular intervals inside the
-driver that is crashing, and use a very large printk buffer.  Then,
-after a crash and reset, the collection of status messages from a
-variety of test devices in the field can be uploaded to a single place
-and analyzed en masse, even if there was never a crash.
-
-So that's my justification for writing this in the first place.  I'm
-certainly not opposed to all those other methods if they make people
-happy, but I was hoping to make a patch so simple and unproblematic
-that it could actually get into the official kernel.
-
-Now, the big downside of my approach is that we're just taking our
-chances that the bootloader and early kernel boot won't eat our
-buffer.  That's pretty inelegant (albeit not a problem for my use
-case), so David Miller's suggestion to make it extensible by the
-platform layer seems like a fine idea to me.  It seems like, say, the
-ioremap'd nvram areas and other things people have suggested should
-all be doable as long as the extension API is defined correctly.  I
-would appreciate some more concrete suggestions on where to stick in a
-hook to get memory allocated as soon as possible, so it works with eg.
-prom_retain().
-
-On the other hand, if the kernel maintainers don't really want the
-patch and you think I should replace it with one of the several
-overengineered not-yet-in-kernel-anyway megastructure memory
-reservation systems, I don't think I'm going to bother; continuing to
-apply my nice simple patch to our modified kernel is pretty easy and
-will work the way I want (specifically, no performance/memsize
-overhead).
-
-Anyway, concrete pointers for how to link very early into
-prom_retain() are very welcome, if you think this patch series is not
-an evolutionary dead end.  I could just poke at it, but I have a
-feeling someone here already knows exactly where I need to insert the
-right call to make it work.
-
-Have fun,
+Thanks for the quick feedback!
 
 Avery
