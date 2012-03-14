@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965075Ab2CNAxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:53:18 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:37868 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932287Ab2CNAxQ (ORCPT
+	id S965061Ab2CNAyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:54:39 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51464 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964928Ab2CNAyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:53:16 -0400
-Date: Tue, 13 Mar 2012 17:53:12 -0700 (PDT)
-Message-Id: <20120313.175312.248147811152254607.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 13 Mar 2012 17:53:14 -0700 (PDT)
+	Tue, 13 Mar 2012 20:54:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPXgP118s+DuLaATKOq7w=F82GB=8PkwUJDichffXA-Er6Zqvw@mail.gmail.com>
+References: <201203032122.36745.chunkeey@googlemail.com> <201203132042.07794.rjw@sisk.pl>
+ <CAPXgP11fWf-0Jkk=d6G+d=sQa-hoX3jUM+K6K4rGYhh0dv1u_w@mail.gmail.com>
+ <201203140110.40671.rjw@sisk.pl> <CAPXgP118s+DuLaATKOq7w=F82GB=8PkwUJDichffXA-Er6Zqvw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 13 Mar 2012 17:54:16 -0700
+X-Google-Sender-Auth: 7Zoq8jx6NGLkiY3zGwihQcF79Mo
+Message-ID: <CA+55aFxq=GWof-ExXjeC2nwUBcGi46SKwcvc2iccfymbbyXbfA@mail.gmail.com>
+Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when
+ helper is not yet available
+To: Kay Sievers <kay@vrfy.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@linuxfoundation.org>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 13, 2012 at 5:14 PM, Kay Sievers <kay@vrfy.org> wrote:
+>
+> Yeah it's certainly useful to disable the exec() during suspend calls,
+> much more than using the exec() inhibit flag for the firmware loader
+> to throw a warning about suspend issues.
 
-The most important bit here is the TCP syncookies issue, which seems
-to have been busted for some time.  That fix has been verified in
-production by the reporter.
+Kay, just stop confusing the issue already.
 
-1) Persistent TUN devices erroneously hold on to the network
-   namespace in such a way that it cannot be shutdown.  Fix
-   from Stanislav Kinsbursky with help from Eric Dumazet.
+It has *nothing* to do with exec. It has *nothing* to do with
+/sbin/hotplug. Stop repeating that stupid mantra. It's totally and
+utterly irrelevant.
 
-2) TCP SYN cookies have been broken for a while due to how the route
-   lookup flow key is managed, connections can be delayed by as much
-   as 20 seconds due to this bug.  Fix from Eric Dumazet.
+You can't load firmware while the system is suspended. End of story.
+You can't load it using /sbin/hotplug, you can't load it with dbus,
+you cannot load it FULL STOP.
 
-3) Missing jiffies.h include in lib/dynamic_queue_limits.c can break
-   the build, from Tom Herbert.
+The filesystem you'd want to load it from may simply not be ready yet.
 
-4) Add USB device ID for Sitecom LN-031, from Joerg Neikes.
+This has nothing to do with exec or anything else. It's very simple:
+you cannot load firmware while the system isn't yet fully up.
+Seriously.
 
-5) Fix OOPS in delayed workqueue in iwlegacy, from Stanislaw Gruszka.
+You need to wait to load the firmware until everything is all done,
+and things work.
 
-6) rt2x00 TX queue can be disabled forever due to races, fix by
-   synchronizing pause/unpause with a lock.  Also from Stanislaw
-   Gruszka.
+Or you should - preferably - just have preloaded the damn thing.
 
-7) Statistics and endian fix in bnx2x driver from Yuval Mintz,
-   Eilon Greenstein, and Ariel Elior.
-
-Please pull, thanks a lot.
-
-The following changes since commit 2f1c2b8155865ba3c2909f468ac8be60f52ed56b:
-
-  Merge branch 'for_linus' of git://cavan.codon.org.uk/platform-drivers-x86 (2012-03-12 22:59:34 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-Ariel Elior (1):
-      bnx2x: added cpu_to_le16 when preparing ramrod's data
-
-Eric Dumazet (1):
-      tcp: fix syncookie regression
-
-Joerg Neikes (1):
-      usb: asix: Patch for Sitecom LN-031
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Stanislav Kinsbursky (1):
-      tun: don't hold network namespace by tun sockets
-
-Stanislaw Gruszka (2):
-      iwl3945: fix possible il->txq NULL pointer dereference in delayed works
-      rt2x00: fix random stalls
-
-Tom Herbert (1):
-      dql: Fix undefined jiffies
-
-Yuval Mintz (3):
-      bnx2x: pfc statistics counts pfc events twice
-      bnx2x: dcb bit indices flags used as bits
-      bnx2x: FCoE statistics id fixed
-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c   |    2 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h   |   12 ++++++--
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c   |    8 +++--
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c    |    2 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c |   12 --------
- drivers/net/tun.c                                 |   15 ++++++++--
- drivers/net/usb/asix.c                            |    4 +++
- drivers/net/wireless/iwlegacy/3945-mac.c          |    2 +-
- drivers/net/wireless/iwlegacy/3945.c              |    7 +++--
- drivers/net/wireless/rt2x00/rt2x00dev.c           |    6 +++-
- drivers/net/wireless/rt2x00/rt2x00mac.c           |    9 ++++++
- drivers/net/wireless/rt2x00/rt2x00queue.c         |    3 ++
- lib/dynamic_queue_limits.c                        |    1 +
- net/ipv4/syncookies.c                             |   30 +++++++++++---------
- net/ipv4/tcp_ipv4.c                               |   10 +++++--
- 15 files changed, 78 insertions(+), 45 deletions(-)
+           Linus
