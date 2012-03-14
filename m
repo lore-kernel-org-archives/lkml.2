@@ -1,30 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760291Ab2CNUBQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 16:01:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49776 "EHLO
+	id S964910Ab2CNUBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 16:01:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49779 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758348Ab2CNUBK (ORCPT
+	with ESMTP id S1758667Ab2CNUBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 16:01:10 -0400
-Date: Wed, 14 Mar 2012 12:59:19 -0700
-From: tip-bot for Anton Blanchard <anton@samba.org>
-Message-ID: <tip-b832796caa1fda8516464a003c8c7cc547bc20c2@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        anton@samba.org, hpa@zytor.com, mingo@redhat.com,
-        yanmin_zhang@linux.intel.com, peterz@infradead.org, emunson@mgebm.net,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+	Wed, 14 Mar 2012 16:01:19 -0400
+Date: Wed, 14 Mar 2012 13:00:55 -0700
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Message-ID: <tip-jctwg64le1w47tuaoeyftsg9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
         mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, anton@samba.org, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        yanmin_zhang@linux.intel.com, emunson@mgebm.net, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20120307114249.44275ca3@kryten>
-References: <20120307114249.44275ca3@kryten>
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, mingo@elte.hu
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools:
-  Incorrect use of snprintf results in SEGV
-Git-Commit-ID: b832796caa1fda8516464a003c8c7cc547bc20c2
+Subject: [tip:perf/urgent] perf tools, x86:
+  Build perf on older user-space as well
+Git-Commit-ID: eae7a755ee81129370c8f555b0d5672e6673735d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,73 +28,92 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 14 Mar 2012 12:59:25 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 14 Mar 2012 13:01:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b832796caa1fda8516464a003c8c7cc547bc20c2
-Gitweb:     http://git.kernel.org/tip/b832796caa1fda8516464a003c8c7cc547bc20c2
-Author:     Anton Blanchard <anton@samba.org>
-AuthorDate: Wed, 7 Mar 2012 11:42:49 +1100
+Commit-ID:  eae7a755ee81129370c8f555b0d5672e6673735d
+Gitweb:     http://git.kernel.org/tip/eae7a755ee81129370c8f555b0d5672e6673735d
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Wed, 14 Mar 2012 12:42:34 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 14 Mar 2012 12:36:19 -0300
+CommitDate: Wed, 14 Mar 2012 12:42:34 -0300
 
-perf tools: Incorrect use of snprintf results in SEGV
+perf tools, x86: Build perf on older user-space as well
 
-I have a workload where perf top scribbles over the stack and we SEGV.
-What makes it interesting is that an snprintf is causing this.
+On ancient systems I get this build failure:
 
-The workload is a c++ gem that has method names over 3000 characters
-long, but snprintf is designed to avoid overrunning buffers. So what
-went wrong?
+  util/../../../arch/x86/include/asm/unistd.h:67:29: error: asm/unistd_64.h: No such file or directory
+  In file included from util/cache.h:7,
+                   from builtin-test.c:8:
+  util/../perf.h: In function ‘sys_perf_event_open’:In file included from util/../perf.h:16
+  perf.h:170: error: ‘__NR_perf_event_open’ undeclared (first use in this function)
 
-The problem is we assume snprintf returns the number of characters
-written:
+The reason is that this old system does not have the split
+unistd.h headers yet, from which to pick up the syscall
+definitions.
 
-    ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", self->level);
-...
-    ret += repsep_snprintf(bf + ret, size - ret, "%s", self->ms.sym->name);
+Add the syscall numbers to the already existing i386 and x86_64
+blocks in perf.h, and also provide empty include file stubs.
 
-Unfortunately this is not how snprintf works. snprintf returns the
-number of characters that would have been written if there was enough
-space. In the above case, if the first snprintf returns a value larger
-than size, we pass a negative size into the second snprintf and happily
-scribble over the stack. If you have 3000 character c++ methods thats a
-lot of stack to trample.
+With this patch perf builds and works fine on 5 years old
+user-space as well.
 
-This patch fixes repsep_snprintf by clamping the value at size - 1 which
-is the maximum snprintf can write before adding the NULL terminator.
-
-I get the sinking feeling that there are a lot of other uses of snprintf
-that have this same bug, we should audit them all.
-
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Eric B Munson <emunson@mgebm.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Cc: stable@kernel.org
-Link: http://lkml.kernel.org/r/20120307114249.44275ca3@kryten
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Link: http://lkml.kernel.org/n/tip-jctwg64le1w47tuaoeyftsg9@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/sort.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ tools/perf/Makefile                                |    2 ++
+ tools/perf/perf.h                                  |    6 ++++++
+ .../perf/util/include/asm/unistd_32.h              |    0
+ .../perf/util/include/asm/unistd_64.h              |    0
+ 4 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 16da30d..076c9d4 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -33,6 +33,9 @@ static int repsep_snprintf(char *bf, size_t size, const char *fmt, ...)
- 		}
- 	}
- 	va_end(ap);
-+
-+	if (n >= (int)size)
-+		return size - 1;
- 	return n;
- }
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 7c12650..8a4b9bc 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -249,6 +249,8 @@ LIB_H += util/include/asm/uaccess.h
+ LIB_H += util/include/dwarf-regs.h
+ LIB_H += util/include/asm/dwarf2.h
+ LIB_H += util/include/asm/cpufeature.h
++LIB_H += util/include/asm/unistd_32.h
++LIB_H += util/include/asm/unistd_64.h
+ LIB_H += perf.h
+ LIB_H += util/annotate.h
+ LIB_H += util/cache.h
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 16e7d20..3afa39a 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -10,6 +10,9 @@ void get_term_dimensions(struct winsize *ws);
+ #define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
+ #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
+ #define CPUINFO_PROC	"model name"
++#ifndef __NR_perf_event_open
++# define __NR_perf_event_open 336
++#endif
+ #endif
  
+ #if defined(__x86_64__)
+@@ -17,6 +20,9 @@ void get_term_dimensions(struct winsize *ws);
+ #define rmb()		asm volatile("lfence" ::: "memory")
+ #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
+ #define CPUINFO_PROC	"model name"
++#ifndef __NR_perf_event_open
++# define __NR_perf_event_open 298
++#endif
+ #endif
+ 
+ #ifdef __powerpc__
+diff --git a/arch/microblaze/include/asm/auxvec.h b/tools/perf/util/include/asm/unistd_32.h
+similarity index 100%
+copy from arch/microblaze/include/asm/auxvec.h
+copy to tools/perf/util/include/asm/unistd_32.h
+diff --git a/arch/microblaze/include/asm/auxvec.h b/tools/perf/util/include/asm/unistd_64.h
+similarity index 100%
+copy from arch/microblaze/include/asm/auxvec.h
+copy to tools/perf/util/include/asm/unistd_64.h
