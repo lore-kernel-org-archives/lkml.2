@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031133Ab2CNVwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 17:52:36 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:52389 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031118Ab2CNVwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 17:52:33 -0400
-Date: Wed, 14 Mar 2012 14:52:28 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Lennart Poettering <mzxreary@0pointer.de>
-Subject: [PATCH] cgroup: deprecate remount option changes and "name=" mount
- option
-Message-ID: <20120314215228.GI7349@google.com>
+	id S1031137Ab2CNVxl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 17:53:41 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43718 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031036Ab2CNVxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 17:53:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="138949233"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Adalbert Dawid <dawid@rinux.net>
+CC: Borislav Petkov <bp@amd64.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "x86@kernel.org" <x86@kernel.org>
+Subject: RE: Kernel Panic with Rawtherapee (mce related)
+Thread-Topic: Kernel Panic with Rawtherapee (mce related)
+Thread-Index: AQHNAfJ8aeq5R/7dC0Geu08XqQtP/ZZqaDgA//+nNZCAAKFdgP//o10g
+Date: Wed, 14 Mar 2012 21:53:34 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F15B64D0A@ORSMSX103.amr.corp.intel.com>
+References: <1331678930.11814.16.camel@erde.fritz.box>
+	 <4F60B0E3.6020503@linux.vnet.ibm.com> <20120314155906.GA25286@aftab>
+	 <3908561D78D1C84285E8C5FCA982C28F15B64BF0@ORSMSX103.amr.corp.intel.com>
+ <1331756331.5315.19.camel@erde.fritz.box>
+In-Reply-To: <1331756331.5315.19.camel@erde.fritz.box>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2ELrmXo031277
 
-This patch removes the following features.
+> It would be very helpful to disable the "reboot in 30 seconds" timeout.
+> Is that possible somehow?
 
-* Rebinding subsys by remount: Never reached useful state - only works
-  on empty hierarchies.
+# echo 0 > /proc/sys/kernel/panic
 
-* release_agent update by remount: release_agent itself will be
-  replaced with conventional fsnotify notification.
+[A non-zero value is the number of seconds before rebooting. zero means don't reboot]
 
-* "name=" mount option: This has been broken for years before Li fixed
-  it recently.  It has very marginal usefulness (plain bind mount can
-  mostly replace it) and is quite unusual.  Take the chance and mark
-  for deprecation.
+> Up to now, it has always been rawtherapee that crashed the machine. This
+> is why I thought it might possibly be some special cpu feature (an SSE
+> command or something) that happens to be broken in my cpu and that is
+> triggered only by rawtherapee and not by any other software. What is
+> your opinion on this theory?
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Lennart Poettering <mzxreary@0pointer.de>
----
-If you want these to survive, now is the time to scream. :)
+Can you set up a serial console for this system?  Seeing the kernel
+log leading up to the machine checks might also give some clues (e.g.
+perhaps rawtherapee is running the system out of memory right before
+the crash).
 
-Thanks.
+-Tony
 
- Documentation/feature-removal-schedule.txt |   12 ++++++++++++
- kernel/cgroup.c                            |   10 ++++++++++
- 2 files changed, 22 insertions(+)
-
-Index: work/Documentation/feature-removal-schedule.txt
-===================================================================
---- work.orig/Documentation/feature-removal-schedule.txt
-+++ work/Documentation/feature-removal-schedule.txt
-@@ -510,3 +510,15 @@ Why:	The pci_scan_bus_parented() interfa
- 	convert to using pci_scan_root_bus() so they can supply a list of
- 	bus resources when the bus is created.
- Who:	Bjorn Helgaas <bhelgaas@google.com>
-+
-+----------------------------
-+
-+What:	cgroup option updates via remount, and "name=" mount option
-+When:	March 2013
-+Why:	Remount currently allows changing bound subsystems and
-+	release_agent.  Rebinding is hardly useful as it only works
-+	when the hierarchy is empty and release_agent itself should be
-+	replaced with conventional fsnotify.  "name=" option allows
-+	mounting existing hierarchy by its name, which isn't useful
-+	and has been broken for years without anyone noticing.
-+Who:	Tejun Heo <tj@kernel.org>
-Index: work/kernel/cgroup.c
-===================================================================
---- work.orig/kernel/cgroup.c
-+++ work/kernel/cgroup.c
-@@ -1146,6 +1146,11 @@ static int parse_cgroupfs_options(char *
- 		}
- 		if (!strncmp(token, "name=", 5)) {
- 			const char *name = token + 5;
-+
-+			/* See feature-removal-schedule.txt */
-+			pr_warning("cgroup: name= option is deprecated (pid=%d comm=%s name=%s)\n",
-+				   task_tgid_nr(current), current->comm, name);
-+
- 			/* Can't specify an empty name */
- 			if (!strlen(name))
- 				return -EINVAL;
-@@ -1294,6 +1299,11 @@ static int cgroup_remount(struct super_b
- 	if (ret)
- 		goto out_unlock;
- 
-+	/* See feature-removal-schedule.txt */
-+	if (opts.subsys_bits != root->actual_subsys_bits || opts.release_agent)
-+		pr_warning("cgroup: option changes via remount are deprecated (pid=%d comm=%s)\n",
-+			   task_tgid_nr(current), current->comm);
-+
- 	/* Don't allow flags or name to change at remount */
- 	if (opts.flags != root->flags ||
- 	    (opts.name && strcmp(opts.name, root->name))) {
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
