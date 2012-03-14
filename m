@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab2CNFiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 01:38:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60269 "EHLO
+	id S1755912Ab2CNFlI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 01:41:08 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55653 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480Ab2CNFiJ (ORCPT
+	with ESMTP id S1755337Ab2CNFlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 01:38:09 -0400
-Date: Wed, 14 Mar 2012 13:38:16 +0800
+	Wed, 14 Mar 2012 01:41:06 -0400
+Date: Wed, 14 Mar 2012 13:41:20 +0800
 From: Shawn Guo <shawn.guo@linaro.org>
 To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Zach Sadecki <zsadecki@itwatchdogs.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Dong Aisheng <b29396@freescale.com>, vinod.koul@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        rdunlap@xenotime.net, shawn.guo@freescale.com, kernel@pengutronix.de,
-        cjb@laptop.org, s.hauer@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org
+Cc: Dong Aisheng <b29396@freescale.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, s.hauer@pengutronix.de,
+        shawn.guo@freescale.com, kernel@pengutronix.de,
+        rob.herring@calxeda.com, cjb@laptop.org, rdunlap@xenotime.net,
+        vinod.koul@linux.intel.com
 Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
-Message-ID: <20120314053814.GC21337@S2101-09.ap.freescale.net>
+Message-ID: <20120314054116.GD21337@S2101-09.ap.freescale.net>
 References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
  <1331628428-24017-2-git-send-email-b29396@freescale.com>
- <4F5F5B3F.2000303@gmail.com>
- <4F5F60DB.9090801@itwatchdogs.com>
- <20120313172807.AC4763E053B@localhost>
+ <20120313172351.97C5E3E053B@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120313172807.AC4763E053B@localhost>
+In-Reply-To: <20120313172351.97C5E3E053B@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 11:28:07AM -0600, Grant Likely wrote:
-> On Tue, 13 Mar 2012 09:59:39 -0500, Zach Sadecki <zsadecki@itwatchdogs.com> wrote:
-> > On 03/13/2012 09:35 AM, Rob Herring wrote:
-> > > +	ahb@80080000 {
-> > > +		fec@800f0000 {
-> > > Use generic names: ethernet@800f0000
-> > Generic is good, but consistency is better, IMHO.  grepping existing dts 
-> > files in 3.2.9 finds 6 instances of "fec@" and 0 instances of "ethernet@"
-> > >> +			uart1: uart@80074000 {
-> > > Use generic names: uart1: serial@...
-> > Same comment here, but unfortunately there is already inconsistency in 
-> > existing files...  25 instances of "serial@" and 35 instances of "uart@"
+On Tue, Mar 13, 2012 at 11:23:51AM -0600, Grant Likely wrote:
+...
+> > +	apb@80000000 {
+> > +		compatible = "simple-bus";
+> > +		#address-cells = <1>;
+> > +		#size-cells = <1>;
+> > +		reg = <0x80000000 0x80000>;
+> > +		ranges;
+> > +
+> > +		apbh@80000000 {
+> > +			compatible = "simple-bus";
+> > +			#address-cells = <1>;
+> > +			#size-cells = <1>;
+> > +			reg = <0x80000000 0x3c900>;
+> > +			ranges;
+> > +
+> > +			icoll: interrupt-controller@80000000 {
+> > +				compatible = "fsl,imx28-icoll";
+> > +				interrupt-controller;
+> > +				#interrupt-cells = <1>;
+> > +				reg = <0x80000000 0x2000>;
+> > +			};
+> > +		};
+> > +
+> > +		apbx@80040000 {
+> > +			compatible = "simple-bus";
+> > +			#address-cells = <1>;
+> > +			#size-cells = <1>;
+> > +			reg = <0x80040000 0x40000>;
+> > +			ranges;
+> > +
+> > +			uart1: uart@80074000 {
+> > +				compatible = "arm,pl011", "arm,primecell";
+> > +				reg = <0x80074000 0x2000>;
+> > +				interrupts = <47>;
+> > +			};
+> > +		};
 > 
-> No, Rob is correct.  The generic names recommended practice is well
-> established and documented.  Expand your grep search to include
-> arch/powerpc/bot/dts/*.
+> What is the purpose of the apbh and apbx busses?  Will more device nodes
+> get added to them later, or does each only contain a single device?
 > 
-> See section 2.2.2 of ePAPR[1]
-> 
-> [1]https://www.power.org/resources/downloads/Power_ePAPR_APPROVED_v1.1.pdf
-> 
-I will probably need to patch imx5 and imx6 dts files with the
-inconsistency fixed.
+Since our ultimate goal is to convert mach-mxs over to device tree,
+I would also suggest we have all the hardware blocks defined in dts
+from the beginning.
 
 -- 
 Regards,
