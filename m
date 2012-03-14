@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750927Ab2CNEEB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 00:04:01 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:37591 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750797Ab2CNEEA (ORCPT
+	id S1751522Ab2CNEOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 00:14:54 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50688 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab2CNEOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 00:04:00 -0400
-From: Arun MURTHY <arun.murthy@stericsson.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Karl KOMIEROWSKI <karl.komierowski@stericsson.com>,
-        Johan BJORNSTEDT <johan.bjornstedt@stericsson.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
-Date: Wed, 14 Mar 2012 05:03:25 +0100
-Subject: RE: [PATCH 1/6] ab8500_charger: Convert to the new USB OTG calls
-Thread-Topic: [PATCH 1/6] ab8500_charger: Convert to the new USB OTG calls
-Thread-Index: Ac0BfnqIxFOewCn6RUqzhSdtAhQ5/wAGKN3w
-Message-ID: <F45880696056844FA6A73F415B568C69589ECE9761@EXDCVYMBSTM006.EQ1STM.local>
-References: <20120314005901.GB1778@oksana.dev.rtsoft.ru>
- <20120314010454.GA10798@oksana.dev.rtsoft.ru>
-In-Reply-To: <20120314010454.GA10798@oksana.dev.rtsoft.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 14 Mar 2012 00:14:53 -0400
+Date: Wed, 14 Mar 2012 15:14:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the uprobes tree with the tip tree
+Message-Id: <20120314151444.a34eef495739e13506ac5b1a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__14_Mar_2012_15_14_44_+1100_ZivQB+cPZ3KTEjIn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2E448D2025943
 
+--Signature=_Wed__14_Mar_2012_15_14_44_+1100_ZivQB+cPZ3KTEjIn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> This patch fixes the following build errors:
-> 
-> ab8500_charger.c: In function 'ab8500_charger_remove':
-> ab8500_charger.c:2519:2: error: implicit declaration of function
-> 'otg_unregister_notifier' [-Werror=implicit-function-declaration]
-> ab8500_charger.c:2520:2: error: implicit declaration of function
-> 'otg_put_transceiver' [-Werror=implicit-function-declaration]
-> ab8500_charger.c: In function 'ab8500_charger_probe':
-> ab8500_charger.c:2688:2: error: implicit declaration of function
-> 'otg_get_transceiver' [-Werror=implicit-function-declaration]
-> ab8500_charger.c:2688:10: warning: assignment makes pointer from
-> integer without a cast [enabled by default]
-> ab8500_charger.c:2695:2: error: implicit declaration of function
-> 'otg_register_notifier' [-Werror=implicit-function-declaration]
-> 
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-> ---
+Hi Srikar,
 
-Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+The linux-next merge of the uprobes tree gets several conflicts against
+the tip tree because the same patches appear in both threes and there are
+further changes to some files in the uprobes tree.
+
+Merging uprobes/for-next (1fe509b uprobes/core: Handle breakpoint and singl=
+estep exception.)
+CONFLICT (add/add): Merge conflict in kernel/events/uprobes.c
+CONFLICT (content): Merge conflict in kernel/events/Makefile
+CONFLICT (add/add): Merge conflict in include/linux/uprobes.h
+CONFLICT (add/add): Merge conflict in arch/x86/kernel/uprobes.c
+CONFLICT (add/add): Merge conflict in arch/x86/include/asm/uprobes.h
+
+The easiest way to remove these conflicts would be for you to rebase the
+uprobes tree onto the perl/uprobes branch of the tip tree (I assume that
+all the uprobes code will eventually be merged to Linus via the tip tree)
+or a subset of that branch that is the common set of patches.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__14_Mar_2012_15_14_44_+1100_ZivQB+cPZ3KTEjIn
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPYBs0AAoJEECxmPOUX5FEbvUP/2K2TCk6qeWTfjtvmne+DVUp
+Teab0R8Ja0riHD5k2BIN8gUlootSIywV5Fy6ekvmZaF+3EtZaLGlMg1o51Tm3oiX
+RaBqfdmeATE9/H/Mxj4ZdMudwzHmc8Iruz/plIPh2BRtIb3auUtDtBtRvjGCyiZe
+ZoBephATvL6n+TRy8h24Qex/7macgkN/QFoImLe29gZ32xBXEISc7mw14Rx+YWy/
+IF6ddXLGjIuXWvAAgn2drGsDqm7Ugo4IDsSXfPmh7nwbav2Urhp/j25Ps3E0cgn7
+fffUceT1QTzeJoQVTua5xUi1brhiW7aNdXV7vGDEOAiM615654CiL87SUBZvZWmJ
+Pdv//sOl+g3o4KJObOWoBqauyPi3YF+/pBidgX+TIxWzuFST7zDLYre74aFvGk4r
+vSt9eGYq+lUAwZDHWLu5Ma4y1GpMgNISGQ7t7ah8vh5Bt33V9HwwwSAjh0c0tagD
+jw90YFz0kV1MQhLxW13OhUnJnpOaRUsuDWesr+/iK3JBzigAn+Adq5SrGDAnwgZJ
+dfl3xUx27QuH9e6w+UmdIEsNv6vhvSWHEm65wbzAzwYkAVTbWroOr0rhxu7RZlfk
+fl5ao7eOu6uCSCX+PZ0u1Nybg7F0KC8wCD4xIIXwK+UeWFnI668f2Tfta/Ys4G9L
+ywcb5lsVk8jvPA5020vW
+=SuYb
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__14_Mar_2012_15_14_44_+1100_ZivQB+cPZ3KTEjIn--
