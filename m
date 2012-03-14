@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030587Ab2CNOA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:00:59 -0400
-Received: from nm29-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.166]:47433 "HELO
-	nm29-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752638Ab2CNOA4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:00:56 -0400
-X-Greylist: delayed 319 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Mar 2012 10:00:55 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 156174.62628.bm@omp1005.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=VFFono7ngozaOGME212J+1QnIap1WdedQHUjyy3RqnJmr+gnQ/cN3iIF9bBb5iX1sHMyO9XIsBQ/csTYVcl3w/LTxjLi5pyiWBiUDcc5h9bdImMTE2PjoRHzBYxnjseJBtVJEJ3x2w5dYaD/vhrPHnfiewjq2dTbjkVWkLtV6Po=;
-X-YMail-OSG: tAV3NJwVM1lADk0.5hUsR8OcvH21qQbjORxk6QrMAipcq40
- wwICiDC4LHc.KSq2FoEUN3Taixj51fuQ_byQq2GCZtOzLREtqw5m5oi8H.Ws
- upSFP8qygJ0ioQfTrPZEcGDkcGu9HOtSyL1MBwotzNwHno7JXDew65qi7DL_
- 42vYwLmgKBmROuGXd8ansEiFGiTYGS4rGYoIKVSFxlrz0To3K0Xs.cs.a6WG
- P8uD7n7oHWVUoJEygiiwlA_J3XEYbik6qIXyPGL7_9xu00v.JjgANnzoRZR_
- mXaIu8rZSw_g317MRX136vpba5O86gjX2HotmzrKkDU2dLkQP1jWjR3XG0Yn
- 21GDardCm83USljCpK7R7Uv28IP0Uo9nnt1mbNDvSet3sTwjKVf1XAYxhm5o
- y6o9O0nHEKhlQJD.R.JfCKy5Sn4TLizqS67ZEsYlR_1mRHLEAXV7RSsxvW2C
- JFOHaXeckHapgFEiavO9K2VpOjS3CBYM-
-X-Mailer: YahooMailWebService/0.8.116.338427
-Message-ID: <1331733335.28753.YahooMailNeo@web162004.mail.bf1.yahoo.com>
-Date: Wed, 14 Mar 2012 06:55:35 -0700 (PDT)
-From: PINTU KUMAR <pintu_agarwal@yahoo.com>
-Reply-To: PINTU KUMAR <pintu_agarwal@yahoo.com>
-Subject: [HELP]: How to use ION memory manager from user space ?
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755813Ab2CNOGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:06:18 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38871 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753797Ab2CNOGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 10:06:17 -0400
+Message-ID: <1331733975.27389.80.camel@joe2Laptop>
+Subject: Re: [PATCH] checkpatch: Suggest pr_<level> over printk(KERN_<LEVEL>
+From: Joe Perches <joe@perches.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 14 Mar 2012 07:06:15 -0700
+In-Reply-To: <20120314134520.GA26524@thunk.org>
+References: <20120314003157.GA15379@thunk.org>
+	 <1331686026.24613.6.camel@joe2Laptop> <20120314010701.GB15379@thunk.org>
+	 <1331687831.27389.2.camel@joe2Laptop> <20120314021938.GD15379@thunk.org>
+	 <1331692311.27389.27.camel@joe2Laptop> <20120314024104.GE15379@thunk.org>
+	 <1331694074.27389.42.camel@joe2Laptop> <20120314123429.GG15379@thunk.org>
+	 <1331730336.27389.70.camel@joe2Laptop> <20120314134520.GA26524@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear All,
- 
-I need a sample user space program that uses ION memory manager to allocate memory.
+On Wed, 2012-03-14 at 08:34 -0400, Ted Ts'o wrote:
+> Look, the reason why I care about patch noise is because I have a huge
+> patch backlog.  Take a look at this:
+>       http://patchwork.ozlabs.org/project/linux-ext4/list/
 
-That is to use /dev/ion and use ION ioctl calls to allocate and share memory from user space.
- 
-I enabled ION memory manager in kernel but I could not find any test program to test ION.
- 
-If anybody knows about any test program/utility for testing ION manager. Please let me know.
- 
- 
-Thanks,
-Pintu
+On Wed, 2012-03-14 at 09:45 -0400, Ted Ts'o wrote:
+> On Wed, Mar 14, 2012 at 06:05:36AM -0700, Joe Perches wrote:
+> > If you actually use patchwork, though it seems you don't,
+> > I think you should just mark every patch that's new as
+> > rejected and start over.
+> I use it, but not in the way you think I should be using it.
+
+Given the information in the link you sent,
+it's not possible for anyone but you to
+assess your patch backlog.
+
+cheers, Joe
+
