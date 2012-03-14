@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031153Ab2CNWO2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 18:14:28 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54669 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030915Ab2CNWOV (ORCPT
+	id S1761604Ab2CNWPG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 18:15:06 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40433 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761579Ab2CNWPE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 18:14:21 -0400
+	Wed, 14 Mar 2012 18:15:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <4F608579.5090109@parallels.com>
-References: <1331325556-16447-1-git-send-email-ssouhlal@FreeBSD.org>
-	<1331325556-16447-7-git-send-email-ssouhlal@FreeBSD.org>
-	<4F5C8414.5090800@parallels.com>
-	<CABCjUKCioWO-F7k=hVs_18B3uyL4zG3-krPFDh++YAnmejKKdg@mail.gmail.com>
-	<4F608579.5090109@parallels.com>
-Date: Wed, 14 Mar 2012 15:08:13 -0700
-Message-ID: <CABCjUKCktPzzZDXMRejDXGXtta=pH5LGHRGU-SjJPuYNkxjH0g@mail.gmail.com>
-Subject: Re: [PATCH v2 06/13] slab: Add kmem_cache_gfp_flags() helper function.
-From: Suleiman Souhlal <suleiman@google.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Suleiman Souhlal <ssouhlal@freebsd.org>, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, penberg@kernel.org, cl@linux.com,
-        yinghan@google.com, hughd@google.com, gthelen@google.com,
-        peterz@infradead.org, dan.magenheimer@oracle.com, hannes@cmpxchg.org,
-        mgorman@suse.de, James.Bottomley@hansenpartnership.com,
-        linux-mm@kvack.org, devel@openvz.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+In-Reply-To: <1331757790-10583-7-git-send-email-marc@cpdesign.com.au>
+References: <1331757790-10583-1-git-send-email-marc@cpdesign.com.au>
+	<1331757790-10583-7-git-send-email-marc@cpdesign.com.au>
+Date: Wed, 14 Mar 2012 19:15:01 -0300
+Message-ID: <CAOMZO5BVObpszMd4_dDr3NHw9-oXh9wY_T48UA2vMWozdUyukw@mail.gmail.com>
+Subject: Re: [PATCH v3 6/6] mfd: mc13xxx: Add i2c driver
+From: Fabio Estevam <festevam@gmail.com>
+To: Marc Reilly <marc@cpdesign.com.au>
+Cc: sameo@linux.intel.com, linux-arm-kernel@lists.infradead.org,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, u.kleine-koenig@pengutronix.de,
+        spi-devel-general@lists.sourceforge.net, oskar@scara.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 4:48 AM, Glauber Costa <glommer@parallels.com> wrote:
-> So what?
-> That function is only called from slab.c anyway. Let slab call it
-> mem_cgroup_get_kmem_cache(cachep, flags | cachep->allocflags);
-> and slub
-> mem_cgroup_get_kmem_cache(cachep, flags | cachep->gfpflags);
+Hi Marc,
 
-Ok, I will do that.
-I felt like it was better to do it in a single place, instead of doing
-it at all the callers.
+On Wed, Mar 14, 2012 at 5:43 PM, Marc Reilly <marc@cpdesign.com.au> wrote:
 
--- Suleiman
+> +
+> +static const struct i2c_device_id mc13xxx_i2c_device_id[] = {
+> +       {
+> +               .name = "mc13783",
+> +               .driver_data = MC13XXX_ID_MC13783
+
+mc13783 does not have i2c interface.
