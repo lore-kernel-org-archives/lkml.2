@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758797Ab2CNHrH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 03:47:07 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:58621 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756080Ab2CNHrD convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:2>);
-	Wed, 14 Mar 2012 03:47:03 -0400
-Message-Id: <4F605B030200007800078327@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 14 Mar 2012 07:46:59 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <davej@redhat.com>, <cpufreq@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mechanism to disable built in cpu frequency
- drivers/governors. (v1)
-References: <1331680720-18268-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1331680720-18268-1-git-send-email-konrad.wilk@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1758856Ab2CNHt2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 03:49:28 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51211 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756080Ab2CNHtZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 03:49:25 -0400
+Message-ID: <4F604D81.1060607@openvz.org>
+Date: Wed, 14 Mar 2012 11:49:21 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120217 Firefox/10.0.2 Iceape/2.7.2
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] radix-tree: iterating general cleanup
+References: <20120207074905.29797.60353.stgit@zurg> <20120314073629.GA17016@infradead.org>
+In-Reply-To: <20120314073629.GA17016@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 14.03.12 at 00:18, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> The purpose of these patches is two-fold:
->  1) Remove weird performance issues encountered in the field where the
->     Linux kernel cpufreq scaling drivers would change the P-states while the
->     Xen hypervisor would do the same.
->  2) Provide a runtime knob from within the kernel to disable the cpu 
-> frequency
->     API (akin to the behavior of "#CONFIG_CPU_CPUFREQ is not set").
+Christoph Hellwig wrote:
+> Any updates on this series?
 
-Acked-by: Jan Beulich <jbeulich@suse.com>
+I had sent "[PATCH v2 0/3] radix-tree: general iterator" February 10, there is no more updates after that.
+I just checked v2 on top "next-20120314" -- looks like all ok.
 
-(Albeit I'd recommend using 'bool' for the variable and function return
-types in the first patch.)
-
-> The patches are based on the mechanism that Len Brown came up for the 
-> cpuidle
-> drivers - where there is a disable_cpuidle() call. His patches also provided
-> a module parameter - but I wasn't sure whether that is something you would 
-> want.
-> (for reference, Len's patch is d91ee5863b71e8c90eaf6035bff3078a85e2e7b5)
-> 
-> The other way of disabling the cpufreq scaling drivers from being invoked
-> is by thwarting the cpufreq drivers from loading by influencing their 
-> startup
-> checks.  For powernow-k8 that is easy - disallow the RDMSR (and that is 
-> currently
-> happening). For acpi-cpufreq I am not sure what could be done - the calls it
-> makes are to the ACPI libraries which we need for other uses.
-> 
-> Another solution I thought off was to provide a cpufreq governor that would
-> be a nop, and hence end up not calling the cpufreq scaling drivers. But that
-> just seems heavy-handed and I am not sure how the decision of when to load it
-> (and set it) would be done.
-> 
->  arch/x86/xen/setup.c      |    1 +
->  drivers/cpufreq/cpufreq.c |   24 ++++++++++++++++++++++++
->  include/linux/cpufreq.h   |    2 ++
->  3 files changed, 27 insertions(+), 0 deletions(-)
-
-
+>
+> On Tue, Feb 07, 2012 at 11:54:56AM +0400, Konstantin Khlebnikov wrote:
+>> This patchset implements common radix-tree iteration routine and
+>> reworks page-cache lookup functions with using it.
+>>
+>> radix_tree_gang_lookup_*slot() now mostly unused (the last user somethere in
+>> drivers/sh/intc/virq.c), but they are exported, we cannot remove them for now.
+>>
+>> Also there some shmem-related radix-tree hacks can be reworked,
+>> radix_tree_locate_item() can be removed. I already have a few extra patches.
+>>
+>> And as usual my lovely bloat-o-meter:
+>>
+>> add/remove: 4/3 grow/shrink: 4/4 up/down: 1232/-964 (268)
+>> function                                     old     new   delta
+>> radix_tree_next_chunk                          -     499    +499
+>> static.shmem_find_get_pages_and_swap           -     404    +404
+>> find_get_pages_tag                           354     488    +134
+>> find_get_pages                               362     438     +76
+>> find_get_pages_contig                        345     407     +62
+>> __kstrtab_radix_tree_next_chunk                -      22     +22
+>> shmem_truncate_range                        1633    1652     +19
+>> __ksymtab_radix_tree_next_chunk                -      16     +16
+>> radix_tree_gang_lookup_tag_slot              208     180     -28
+>> radix_tree_gang_lookup_tag                   247     207     -40
+>> radix_tree_gang_lookup_slot                  204     162     -42
+>> radix_tree_gang_lookup                       231     160     -71
+>> __lookup                                     217       -    -217
+>> __lookup_tag                                 242       -    -242
+>> shmem_find_get_pages_and_swap                324       -    -324
+>>
+>> ---
+>>
+>> Konstantin Khlebnikov (4):
+>>        bitops: implement "optimized" __find_next_bit()
+>>        radix-tree: introduce bit-optimized iterator
+>>        radix-tree: rewrite gang lookup with using iterator
+>>        radix-tree: use iterators in find_get_pages* functions
+>>
+>>
+>>   include/asm-generic/bitops/find.h |   36 +++
+>>   include/linux/radix-tree.h        |  129 +++++++++++
+>>   lib/radix-tree.c                  |  422 +++++++++++++------------------------
+>>   mm/filemap.c                      |   75 ++++---
+>>   mm/shmem.c                        |   23 +-
+>>   5 files changed, 375 insertions(+), 310 deletions(-)
+>>
+>> --
+>> Signature
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+>> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+> ---end quoted text---
 
