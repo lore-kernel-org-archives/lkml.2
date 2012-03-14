@@ -1,61 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760295Ab2CNXPO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:15:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45461 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754907Ab2CNXPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:15:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available
-Date: Thu, 15 Mar 2012 00:19:22 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <201203032122.36745.chunkeey@googlemail.com> <4F60EFBB.5050703@codeaurora.org> <201203150004.17076.rjw@sisk.pl>
-In-Reply-To: <201203150004.17076.rjw@sisk.pl>
+	id S1030282Ab2CNXRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:17:15 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:33145 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756189Ab2CNXRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 19:17:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
+	p/pvmujSWF6nM0+28fjn5cygjylUoC0B3M+R+f8e9BvECQ+NjUS1BcJDksqhgfe9
+	yXcRxqD1igxlX36vYehV1L+9PeVMOVoDTyGwJ+vLvm0xEltByQR7raZqQhRLHQfi
+	PVFioNuIMwAK3Te9pOQSQrXwNYj2rDw87ZUWFsqfG9A=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.10-rc1
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 14 Mar 2012 16:17:10 -0700
+Message-ID: <7v1uouojrd.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203150019.22379.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: D41F2D30-6E2B-11E1-B0C5-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 15, 2012, Rafael J. Wysocki wrote:
-> On Wednesday, March 14, 2012, Stephen Boyd wrote:
-> > On 03/13/12 13:14, Rafael J. Wysocki wrote:
-> > > All of those use cases are in fact of the "wait for user space to be thawed
-> > > and then load the firmware" type, which I believe may be handled without
-> > > changing that code.
-> > >
-> > > Why don't you make your kthread freezable, for one example?
-> > >
-> > > Why don't you use a freezable workqueue instead?
-> > >
-> > 
-> > If we put it on the freezable workqueue or make it a freezable thread
-> > will it work?
-> 
-> That depends on what exactly you want to achieve, which isn't entirely clear
-> to me at this point.
-> 
-> > In my scenario a wakeup interrupt comes in that wakes us up from
-> > suspend. Within that wakeup handler a work item is scheduled to the
-> > freezable workqueue. That work item then calls request_firmware().
-> 
-> That should work.
+A release candidate Git 1.7.10-rc1 is now available for testing at
+the usual places.
 
-I would consider using suspend/resume notifiers, however.
+The release tarballs are found at:
 
-Thanks,
-Rafael
+    http://code.google.com/p/git-core/downloads/list
+
+and their SHA-1 checksums are:
+
+6080456a4410c65d43e79f22b5ea1b1c200b6823  git-1.7.10.rc1.tar.gz
+6f5106ee2bfb6d813a8b5a20d9caf069ea0110b4  git-htmldocs-1.7.10.rc1.tar.gz
+617a1d178c9736365ef5451d45c6f0a469c071cc  git-manpages-1.7.10.rc1.tar.gz
+
+Also the following public repositories all have a copy of the v1.7.10.rc1
+tag and the master branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+----------------------------------------------------------------
+
+Changes since v1.7.10-rc0 are as follows:
+
+Alex Zepeda (1):
+      verify-tag: Parse GPG configuration options.
+
+Jakub Narebski (1):
+      gitweb: Fix fixed string (non-regexp) project search
+
+Jens Lehmann (3):
+      submodules: always use a relative path to gitdir
+      submodules: always use a relative path from gitdir to work tree
+      submodules: refactor computation of relative gitdir path
+
+Jiang Xin (3):
+      l10n: Update zh_CN translation for 1.7.9.2
+      l10n: Update git.pot (1 new message)
+      l10n: Update zh_CN translation for 1.7.10-rc0
+
+Johannes Sixt (1):
+      submodules: fix ambiguous absolute paths under Windows
+
+Junio C Hamano (7):
+      Update draft release notes to 1.7.10
+      t0204: clarify the "observe undefined behaviour" test
+      i18n: fix auto detection of gettext scheme for shell scripts
+      Git 1.7.9.4
+      Update draft release notes to 1.7.10 before -rc1
+      am: officially deprecate -b/--binary option
+      Git 1.7.10-rc1
+
+Karsten Blees (1):
+      fix deletion of .git/objects sub-directories in git-prune/repack
+
+Martin Stenberg (1):
+      config: report errors at the EOL with correct line number
+
+Peter Krefting (2):
+      po/sv.po: add Swedish translation
+      Update Swedish translation (732t0f0u).
+
+Phil Hord (1):
+      rerere: Document 'rerere remaining'
+
+Thomas Rast (4):
+      perf: load test-lib-functions from the correct directory
+      perf: export some important test-lib variables
+      p4000: use -3000 when promising -3000
+      git-am: error out when seeing -b/--binary
+
+Thynson (7):
+      l10n: Improve zh_CN translation for lines insertion and deletion.
+      l10n: Improve zh_CN translation for msg about branch deletion deny
+      l10n: Improve zh_CN translation for empty cherry-pick msg.
+      l10n: Improve zh_CN translation for msg that make empty commit when amend.
+      l10n: Improve commit msg for zh_CN translation
+      l10n: Improve zh_CN trans for msg that cannot fast-forward
+      l10n: Improve zh_CN translation for msg "not something we can merge"
+
+Vincent van Ravesteijn (3):
+      Documentation/git-branch: cleanups
+      Documentation/git-branch: fix a typo
+      Documentation/git-branch: add default for --contains
+
