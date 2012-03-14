@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab2CNLRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 07:17:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42329 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753114Ab2CNLRQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 07:17:16 -0400
-Date: Wed, 14 Mar 2012 11:17:03 +0000
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, Amit Shah <amit.shah@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+	id S1755477Ab2CNLR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 07:17:29 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50059 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589Ab2CNLRX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 07:17:23 -0400
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Dong Aisheng <aisheng.dong@freescale.com>
+Subject: Re: [PATCH v1 2/5] mmc: mxs-mmc: add dt probe support
+Date: Wed, 14 Mar 2012 12:17:19 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-1-amd64; KDE/4.7.4; x86_64; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Dong Aisheng-B29396" <B29396@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-Message-ID: <20120314111703.GC2315@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <4F5F25BF.7060100@redhat.com>
- <4F6056FE.3020202@cn.fujitsu.com>
- <4F6063C8.8010005@redhat.com>
- <4F606A7C.9090900@cn.fujitsu.com>
- <20120314103755.GD2708@amit.redhat.com>
- <4F607857.50402@cn.fujitsu.com>
- <4F60788A.2070608@redhat.com>
- <4F6079E7.7010608@cn.fujitsu.com>
- <20120314105914.GB2315@redhat.com>
- <4F607BCA.5090506@cn.fujitsu.com>
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "Guo Shawn-R65073" <r65073@freescale.com>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com> <201203140809.22676.marek.vasut@gmail.com> <20120314072603.GC8494@shlinux2.ap.freescale.net>
+In-Reply-To: <20120314072603.GC8494@shlinux2.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4F607BCA.5090506@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203141217.19842.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 07:06:50PM +0800, Wen Congyang wrote:
-> At 03/14/2012 06:59 PM, Daniel P. Berrange Wrote:
-> > On Wed, Mar 14, 2012 at 06:58:47PM +0800, Wen Congyang wrote:
-> >> At 03/14/2012 06:52 PM, Avi Kivity Wrote:
-> >>> On 03/14/2012 12:52 PM, Wen Congyang wrote:
-> >>>>>
-> >>>>>> If so, is this channel visible to guest userspace? If the channle is visible to guest
-> >>>>>> userspace, the program running in userspace may write the same message to the channel.
-> >>>>>
-> >>>>> Access control is via permissions.  You can have udev scripts assign
-> >>>>> whatever uid and gid to the port of your interest.  By default, all
-> >>>>> ports are only accessible to the root user.
-> >>>>
-> >>>> We should also prevent root user writing message to this channel if it is
-> >>>> used for panicked notification.
-> >>>>
-> >>>
-> >>> Why?  root can easily cause a panic.
-> >>>
-> >>
-> >> root user can write the same message to virtio-serial while the guest is running...
+Dear Dong Aisheng,
+
+> On Wed, Mar 14, 2012 at 08:09:22AM +0100, Marek Vasut wrote:
+> > Dear Dong Aisheng,
 > > 
-> > Unless you are running a MAC policy which strictly confines the root
-> > account, root can cause a kernel panic regardless of virtio-serial
-> > permissions in the guest:
+> > > On Wed, Mar 14, 2012 at 01:58:25PM +0800, Marek Vasut wrote:
+> > > > Dear Dong Aisheng,
+> > > > 
+> > > > > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > > 
+> > > ........
+> > > 
+> > > > > +static const struct of_device_id mxs_mmc_dt_ids[] = {
+> > > > > +	{ .compatible = "fsl,imx23-mmc", .data = NULL, },
+> > > > > +	{ .compatible = "fsl,imx28-mmc", .data = NULL, },
+> > > > 
+> > > > Do you really need two distinct ones here?
+> > > 
+> > > Hmm, my original purpose is to put soc difference data in .data
+> > > to remove cpu_is_* function calls in the driver later.
+> > > Do you think if any issue?
 > > 
-> >   echo c > /proc/sysrq-trigger
+> > Well, what's the difference between the interfaces on mx233 and mx28? Is
+> > it something that can't be encoded otherwise? I think they're not so
+> > different.
 > 
-> Yes, root user can cause a kernel panic. But if he writes the same message to virtio-serial,
-> the host will see the guest is panicked while the guest is not panicked. The host is cheated.
+> Not much difference except the one register offset and ip version.
+> See:
+> #define SSP_VERSION_LATEST      4
+> #define ssp_is_old()            (host->version < SSP_VERSION_LATEST)
+> ..
+> #define HW_SSP_VERSION (cpu_is_mx23() ? 0x110 : 0x130)
+> The ip version can be handled in driver, but for offset...
+> it depends on cpu_is_* macro.
+> Putting the HW_SSP_VERSION offset difference in .data can eliminate the
+> need of cpu_is_*.
+> 
+> Despite of that, since they're two devices,
+> i guess it's ok to put two compatible string there, right?
+> Or you thought just put one as below?
+> { .compatible = "fsl,mxs-mmc", .data = NULL, },
+> 
+No, I understand now /wrt the register layout.
 
-The host mgmt layer must *ALWAYS* expect that any information originating
-from the guest is bogus. It must never trust the guest info. So regardless
-of the implementation, you have to expect that the guest might have lied
-to you about it being crashed. The same is true even of Xen's panic notifier.
-
-So if an application is automatically triggering core dumps based on this
-panic notification, it needs to be aware that the guest can lie and take
-steps to avoid the guest causing a DOS attack on the host. Most likely
-by rate limiting the frequency of core dumps per guest, and/or setting a
-max core dump storage quota per guest.
-
-Regards,
-Daniel
--- 
-|: http://berrange.com      -o-    http://www.flickr.com/photos/dberrange/ :|
-|: http://libvirt.org              -o-             http://virt-manager.org :|
-|: http://autobuild.org       -o-         http://search.cpan.org/~danberr/ :|
-|: http://entangle-photo.org       -o-       http://live.gnome.org/gtk-vnc :|
+Best regards,
+Marek Vasut
