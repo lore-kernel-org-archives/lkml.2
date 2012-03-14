@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965301Ab2CNXAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:00:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45398 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964793Ab2CNXAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:00:05 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when helper is not yet available
-Date: Thu, 15 Mar 2012 00:04:16 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: Saravana Kannan <skannan@codeaurora.org>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203132114.57828.rjw@sisk.pl> <4F60EFBB.5050703@codeaurora.org>
-In-Reply-To: <4F60EFBB.5050703@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203150004.17076.rjw@sisk.pl>
+	id S1755888Ab2CNXC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:02:29 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:62306 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430Ab2CNXC2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 19:02:28 -0400
+From: jim.cromie@gmail.com
+To: jbaron@redhat.com, rusty@rustcorp.com.au
+Cc: linux-kernel@vger.kernel.org
+Subject: [00/11] pr_debug during module initialization
+Date: Wed, 14 Mar 2012 17:01:55 -0600
+Message-Id: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
+X-Mailer: git-send-email 1.7.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 14, 2012, Stephen Boyd wrote:
-> On 03/13/12 13:14, Rafael J. Wysocki wrote:
-> > All of those use cases are in fact of the "wait for user space to be thawed
-> > and then load the firmware" type, which I believe may be handled without
-> > changing that code.
-> >
-> > Why don't you make your kthread freezable, for one example?
-> >
-> > Why don't you use a freezable workqueue instead?
-> >
-> 
-> If we put it on the freezable workqueue or make it a freezable thread
-> will it work?
 
-That depends on what exactly you want to achieve, which isn't entirely clear
-to me at this point.
+This is 3rd revision of the dyndbg modinit patches, previously sent
+Dec 11.  Patches 1-17/25 sent then were added to driver-core-next,
+this set reworks the remainder.
 
-> In my scenario a wakeup interrupt comes in that wakes us up from
-> suspend. Within that wakeup handler a work item is scheduled to the
-> freezable workqueue. That work item then calls request_firmware().
+It implements the "fake" module param approach proposed by
+Thomas Renninger, back in https://lkml.org/lkml/2010/9/15/397
 
-That should work.
+This set is on top of linux-next, since that includes Pawel Moll's
+initcall-level params patch.  Im not using this feature, but I didnt
+know that when I started.
 
-> It looks like we call schedule() after thawing the workqueues and tasks
-> so the work item could run before usermodehelpers are enabled and then
-> request_firmware() would fail. Do we need something like this (ignore
-> the fact that we call usermodhelper_enable() twice)?
-> 
-> diff --git a/kernel/power/process.c b/kernel/power/process.c
-> index 7e42645..61bfa95 100644
-> --- a/kernel/power/process.c
-> +++ b/kernel/power/process.c
-> @@ -187,6 +187,7 @@ void thaw_processes(void)
->         } while_each_thread(g, p);
->         read_unlock(&tasklist_lock);
->  
-> +       usermodehelper_enable();
+Rusty Russell did a partial review of 2nd rev (sent off-list), here:
+http://thread.gmane.org/gmane.linux.kernel/1262934
+This revision incorporates my understanding of his feedback.
 
-That would be a reasonable change.
+Core of patchset is 2 callbacks, called from parse_args:
 
->         schedule();
->         printk("done.\n");
->  }
-> 
-> 
-> Is there a reason we disable usermodehelpers if
-> CONFIG_SUSPEND_FREEZER=n?
+For builtin modules, dynamic_debug_init() calls parse_args(...,
+&ddebug_dyndbg_boot_param_cb) to handle dyndbg and $module.dyndbg
+params.  For loadable modules, load_module() calls parse_args(...,
+&ddebug_dyndbg_module_param_cb) to handle dyndbg args given by
+modprobe.  Both callbacks call ddebug_exec_queries() to activate the
+specified pr_debug callsites.
 
-Not really, but CONFIG_SUSPEND_FREEZER=n can only work reliably in a
-very limited set of cases, so I don't think it's even worth making the
-general code depend on it.
+0001-init-trivial-tweaks-to-initcall_levels.patch
+This adds pr_info for each initcall-level, yielding 7 lines in dmesg
+like:
+  initlevel:6=device, 172 registered initcalls
 
-I'd actually prefer to remove CONFIG_SUSPEND_FREEZER altogether,
-because it's not very useful nowadays (probably isn't useful at all).
+I dropped the pr_debug added in 2nd rev, which was noisy and not
+useful, init_debug provides similar info and more.  This patch is
+decoration only, and can be dropped.
 
-> Should we do this instead so that
-> usermodehelpers are only disabled if we freeze userspace? Also what is
-> that schedule() call in thaw_kernel_threads() for? It looks like we'll
-> call schedule between kernel thread thawing and userspace thawing.
+0002-dynamic_debug-fix-leading-spaces.patch
+whitespace
 
-Which is OK, I think.
+0003-dynamic_debug-replace-if-verbose-pr_info-with-macro-.patch
+I should have done this previously.  Ive disregarded a complaint about
+wrapping complex macro args in (), since theres plenty of similar code
+in include/*
 
-> I pushed out the schedule() call to the callers so that we don't call
-> schedule() until userspace is thawed.
+0004-dynamic_debug-change-ddebug_query-core-param-to-dynd.patch
+Change "ddebug_query" to "dyndbg", to match new $module.dyndbg added
+by this patchset.
 
-Why did you do that?
+0005-params-add-param-name-to-parse_one-s-pr_debug.patch
+Current message doesnt ID the param name being handled.
 
-Rafael
+0006-params-add-3rd-arg-to-option-handler-callback-signat.patch
+Add "doing" to lower levels of param handling callchain, supplying it
+to callback added next.
+
+0007-dynamic_debug-make-dynamic-debug-work-during-module-.patch
+main patch of set.
+
+0008-pnp-if-CONFIG_DYNAMIC_DEBUG-use-pnp.dyndbg-instead-o.patch
+Adjust pnp for CONFIG_PNP_DEBUG_MESSAGES.  Unchanged since Dec 11th
+
+0009-dynamic_debug-add-modname-arg-to-exec_query-callchai.patch
+This allows parsing $modname.dyndbg=" func foo +p ; func bar +p"
+without repeating "module $modname" 2x in the value
+
+0010-dynamic_debug-update-Documentation-Kconfig.debug.patch
+This gets a checkpatch complaint because of long lines in which I
+tweaked flags.  I chose to disregard this cuz the lines show real
+output for ~out-of-tree code.
+
+0011-dynamic_debug-init-with-core_initcall-not-arch_initc.patch
+This works-for-me, but may be broken on some arches I dont have to
+test on.  I dont know why original design used arch_initcall, perhaps
+constraints have changed.  I also tested with early_initcall, that
+also worked.
+
