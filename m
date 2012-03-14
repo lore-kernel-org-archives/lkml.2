@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030593Ab2CNMgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 08:36:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14459 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760910Ab2CNMgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 08:36:01 -0400
-Subject: Re: [PATCH 34/35] Remove all #inclusions of asm/system.h [ver #2]
-From: Mark Salter <msalter@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: paul.gortmaker@windriver.com, hpa@zytor.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        arnd@arndb.de
-Date: Wed, 14 Mar 2012 08:35:57 -0400
-In-Reply-To: <20120312234153.13888.99296.stgit@warthog.procyon.org.uk>
-References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
-	 <20120312234153.13888.99296.stgit@warthog.procyon.org.uk>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1331728558.2167.5.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1760959Ab2CNMgo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 08:36:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34111 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760910Ab2CNMgh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 08:36:37 -0400
+Date: Wed, 14 Mar 2012 12:36:35 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Fabio Estevam <festevam@gmail.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the sound-asoc
+ tree
+Message-ID: <20120314123635.GG3133@opensource.wolfsonmicro.com>
+References: <20120314170628.4b0b5688441624a7a080d7cd@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zGQnqpIoxlsbsOfg"
+Content-Disposition: inline
+In-Reply-To: <20120314170628.4b0b5688441624a7a080d7cd@canb.auug.org.au>
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-03-12 at 23:41 +0000, David Howells wrote:
-> Remove all #inclusions of asm/system.h preparatory to splitting and
-> killing
-> it.  Performed with the following command:
-> 
-> perl -p -i -e 's!^#\s*include\s*<asm/system[.]h>.*\n!!' `grep -Irl '^#
-> \s*include\s*<asm/system[.]h>' *`
 
-I needed the following to clean up C6X build errors from this one:
+--zGQnqpIoxlsbsOfg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
-index 6ec0ba4..1ced641 100644
---- a/include/asm-generic/atomic.h
-+++ b/include/asm-generic/atomic.h
-@@ -15,6 +15,8 @@
- #ifndef __ASM_GENERIC_ATOMIC_H
- #define __ASM_GENERIC_ATOMIC_H
- 
-+#include <asm/cmpxchg.h>
-+
- #ifdef CONFIG_SMP
- /* Force people to define core atomics */
- # if !defined(atomic_add_return) || !defined(atomic_sub_return) || \
-diff --git a/arch/c6x/kernel/irq.c b/arch/c6x/kernel/irq.c
-index 0929e4b..f8a5af2 100644
---- a/arch/c6x/kernel/irq.c
-+++ b/arch/c6x/kernel/irq.c
-@@ -27,6 +27,7 @@
- #include <linux/kernel_stat.h>
- 
- #include <asm/megamod-pic.h>
-+#include <asm/special_insns.h>
- 
- unsigned long irq_err_count;
- 
-diff --git a/arch/c6x/kernel/setup.c b/arch/c6x/kernel/setup.c
-index 0c07921..ce46186 100644
---- a/arch/c6x/kernel/setup.c
-+++ b/arch/c6x/kernel/setup.c
-@@ -34,6 +34,7 @@
- #include <asm/dscr.h>
- #include <asm/clock.h>
- #include <asm/soc.h>
-+#include <asm/special_insns.h>
- 
- static const char *c6x_soc_name;
- 
-diff --git a/arch/c6x/kernel/time.c b/arch/c6x/kernel/time.c
-index 4c9f136..356ee84 100644
---- a/arch/c6x/kernel/time.c
-+++ b/arch/c6x/kernel/time.c
-@@ -20,6 +20,7 @@
- #include <linux/timex.h>
- #include <linux/profile.h>
- 
-+#include <asm/special_insns.h>
- #include <asm/timer64.h>
- 
- static u32 sched_clock_multiplier;
-diff --git a/arch/c6x/kernel/traps.c b/arch/c6x/kernel/traps.c
-index f50e3ed..1be74e5 100644
---- a/arch/c6x/kernel/traps.c
-+++ b/arch/c6x/kernel/traps.c
-@@ -14,6 +14,7 @@
- #include <linux/bug.h>
- 
- #include <asm/soc.h>
-+#include <asm/special_insns.h>
- #include <asm/traps.h>
- 
- int (*c6x_nmi_handler)(struct pt_regs *regs);
-diff --git a/arch/c6x/platforms/timer64.c b/arch/c6x/platforms/timer64.c
-index 03c03c2..3c73d74 100644
---- a/arch/c6x/platforms/timer64.c
-+++ b/arch/c6x/platforms/timer64.c
-@@ -15,6 +15,7 @@
- #include <linux/of_address.h>
- #include <asm/soc.h>
- #include <asm/dscr.h>
-+#include <asm/special_insns.h>
- #include <asm/timer64.h>
- 
- struct timer_regs {
+On Wed, Mar 14, 2012 at 05:06:28PM +1100, Stephen Rothwell wrote:
 
+> I fixed it up (see below) and can carry the fix as necessary.
 
+Looks good, thanks.
+
+--zGQnqpIoxlsbsOfg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPYJDMAAoJEBus8iNuMP3daF0P/0zWEC1LvXaoSQ9+fSh5V2uW
+DOgnrSfAqk1cUZf8a5a8IpnBIIjHSfSicFGPCMUi+ctuMfezCOoUmFLT1czWdLY0
+IW65HlTeKgDvFuR6O7e3eWBmiazYRrl4c0meuxy1ZMzJTpn2Es3xDa1mrx6h0EFz
+r50Cr/+hJPUSruh/IP5mD4Zw+4ipQo1UC+tPIaMkChoMZoI3fRia3qdl/hCX580B
+YX1TYOrqS6LgvSydjM25FBI9c1a+kT/BaB6PCsjaFRSXqUzLv/toFGe24bszlVYF
+5oK5Osoe0tGP6A6sTPVdQ7HHz0u8T79GvKe5Qr3iUxuMwo0JRZT8YEY2p7PPch31
+7fBjhPrmly7bINVqD4JgDbrGcKqCMn7bxYtVeBFfea+dTOuo2f0joqE485XK7hz8
+EU8BL3LuGMRcQbMBQinaVrddt6VnNMio8GplA59mdYGEV57gvty7iPHmeVQX3EBR
+i4Tm/vZYPzIRe5ytIq0c+Xxc1457/wQ98WaH73Dib2nmkF3S/10a778FliFibmoh
+q1Y8jY5SvO6Tur2k+3UWzh5xqrw4N/O7AQmqD6dtujW5B7kx91oGvhv+PmAEPqFZ
+9G0jkAaMHMocFJu3cDVXnd4DyslmwPB0aonrxCBn7ABrD9fuxsKvLWgRk1nrEtgy
+/a1HXh808JgGIde0ZzvN
+=DOgD
+-----END PGP SIGNATURE-----
+
+--zGQnqpIoxlsbsOfg--
