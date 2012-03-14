@@ -1,183 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759650Ab2CNAhB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:37:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30767 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759739Ab2CNAg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:36:57 -0400
-Date: Tue, 13 Mar 2012 21:22:55 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: avi@redhat.com, mingo@redhat.com, hpa@zytor.com, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, kvm@vger.kernel.org, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4 V16] Avoid soft lockup message when KVM is stopped by
- host
-Message-ID: <20120314002255.GC15362@amt.cnet>
-References: <1331408248-6781-1-git-send-email-emunson@mgebm.net>
+	id S1759984Ab2CNAhU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:37:20 -0400
+Received: from antispam01.maxim-ic.com ([205.153.101.182]:49668 "EHLO
+	antispam01.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758586Ab2CNAhP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 20:37:15 -0400
+X-ASG-Debug-ID: 1331685433-02ae98701c161d60001-xx1T2L
+X-Barracuda-Envelope-From: Jason.Wortham@maxim-ic.com
+From: Jason Wortham <Jason.Wortham@maxim-ic.com>
+To: bruce robertson <bruce.e.robertson@intel.com>
+CC: Anton Vorontsov <cbouatmailru@gmail.com>,
+        "dirk.brandewie@gmail.com" <dirk.brandewie@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dg77.kim@samsung.com" <dg77.kim@samsung.com>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>
+Date: Tue, 13 Mar 2012 17:37:12 -0700
+Subject: RE: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
+Thread-Topic: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
+X-ASG-Orig-Subj: RE: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
+Thread-Index: Ac0Bb7Ge7xVdyJypQNy8vW31BSeHQAACrmGQ
+Message-ID: <26513DAD5DB1304EAC06B61C2DD20C270DB5ECE5F6@ITSVLEX06.it.maxim-ic.internal>
+References: <1327425968-21195-1-git-send-email-dirk.brandewie@gmail.com>
+	<1327425968-21195-5-git-send-email-dirk.brandewie@gmail.com>
+	<20120313181918.GA15964@oksana.dev.rtsoft.ru>	<m3pqcg5i8y.fsf@intel.com>
+	<26513DAD5DB1304EAC06B61C2DD20C270DB5ECE32F@ITSVLEX06.it.maxim-ic.internal>
+ <m3fwdcxf7z.fsf@intel.com>
+In-Reply-To: <m3fwdcxf7z.fsf@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331408248-6781-1-git-send-email-emunson@mgebm.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Barracuda-Connect: maxdalex02.maxim-ic.internal[10.16.15.104]
+X-Barracuda-Start-Time: 1331685433
+X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.02
+X-Barracuda-Spam-Status: No, SCORE=0.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=THREAD_INDEX, THREAD_TOPIC
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.91133
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.01 THREAD_INDEX           thread-index: AcO7Y8iR61tzADqsRmmc5wNiFHEOig==
+	0.01 THREAD_TOPIC           Thread-Topic: ...(Japanese Subject)...
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I'm not sure where 83 comes from.  The LSB is 78.125uV, or bit D3 is 625uV.  I think 83uV and 664uV are incorrect.
 
-Applied, thanks.
+--Jason
 
-On Sat, Mar 10, 2012 at 02:37:24PM -0500, Eric B Munson wrote:
-> Changes from V15:
-> Add arch/*/include/asm/kvm_para.h that includes the asm-generic version
-> 
-> Changes from V14:
-> Update documentation for the pvclock api
-> 
-> Changes from V13:
-> Expand on KVM_KVMCLOCK_CTRL ioctl documentation
-> 
-> Changes from V12:
-> Re-add missing kvm.c code after rebase
-> Rename CAP to KVM_CAP_KVMCLOCK_CTRL
-> Rename ioctl to KVM_KVMCLOCK_CTRL
-> 
-> Changes from V11:
-> Re-add asm-generic stub
-> Correct api.txt typo
-> add kvm_make_request() call after setting PVCLOCK_GUEST_STOPPED
-> 
-> Changes from V10:
-> Return ioctl to per vcpu instead of per vm
-> 
-> Changes from V9:
-> Use kvm_for_each_vcpu to iterate online vcpu's
-> 
-> Changes from V8:
-> Make KVM_GUEST_PAUSED a per vm ioctl instead of per vcpu
-> 
-> Changes from V7:
-> Define KVM_CAP_GUEST_PAUSED and support check
-> Call mark_page_dirty () after setting PVCLOCK_GUEST_STOPPED
-> 
-> Changes from V6:
-> Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
-> 
-> Changes from V5:
-> Collapse generic check_and_clear_guest_stopped into patch 2
-> Include check_and_clear_guest_stopped defintion to ia64, s390, and powerpc
-> Change check_and_clear_guest_stopped to use __get_cpu_var instead of taking the
->  cpuid arg.
-> Protect check_and_clear_guest_stopped declaration with CONFIG_KVM_CLOCK check
-> 
-> Changes from V4:
-> Rename KVM_GUEST_PAUSED to KVMCLOCK_GUEST_PAUSED
-> Add description of KVMCLOCK_GUEST_PAUSED ioctl to api.txt
-> 
-> Changes from V3:
-> Include CC's on patch 3
-> Drop clear flag ioctl and have the watchdog clear the flag when it is reset
-> 
-> Changes from V2:
-> A new kvm functions defined in kvm_para.h, the only change to pvclock is the
-> initial flag definition
-> 
-> Changes from V1:
-> (Thanks Marcelo)
-> Host code has all been moved to arch/x86/kvm/x86.c
-> KVM_PAUSE_GUEST was renamed to KVM_GUEST_PAUSED
-> 
-> When a guest kernel is stopped by the host hypervisor it can look like a soft
-> lockup to the guest kernel.  This false warning can mask later soft lockup
-> warnings which may be real.  This patch series adds a method for a host
-> hypervisor to communicate to a guest kernel that it is being stopped.  The
-> final patch in the series has the watchdog check this flag when it goes to
-> issue a soft lockup warning and skip the warning if the guest knows it was
-> stopped.
-> 
-> It was attempted to solve this in Qemu, but the side effects of saving and
-> restoring the clock and tsc for each vcpu put the wall clock of the guest behind
-> by the amount of time of the pause.  This forces a guest to have ntp running
-> in order to keep the wall clock accurate.
-> 
-> Cc: mingo@redhat.com
-> Cc: hpa@zytor.com
-> Cc: ryanh@linux.vnet.ibm.com
-> Cc: aliguori@us.ibm.com
-> Cc: mtosatti@redhat.com
-> Cc: kvm@vger.kernel.org
-> Cc: linux-arch@vger.kernel.org
-> Cc: x86@kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> 
-> Eric B Munson (4):
->   Add flag to indicate that a vm was stopped by the host
->   Add functions to check if the host has stopped the vm
->   Add ioctl for KVM_KVMCLOCK_CTRL
->   Add check for suspended vm in softlockup detector
-> 
->  Documentation/virtual/kvm/api.txt      |   20 ++++++++++++++++++++
->  Documentation/virtual/kvm/msr.txt      |    4 ++++
->  arch/alpha/include/asm/kvm_para.h      |    1 +
->  arch/arm/include/asm/kvm_para.h        |    1 +
->  arch/avr32/include/asm/kvm_para.h      |    1 +
->  arch/blackfin/include/asm/kvm_para.h   |    1 +
->  arch/c6x/include/asm/kvm_para.h        |    1 +
->  arch/frv/include/asm/kvm_para.h        |    1 +
->  arch/h8300/include/asm/kvm_para.h      |    1 +
->  arch/hexagon/include/asm/kvm_para.h    |    1 +
->  arch/ia64/include/asm/kvm_para.h       |    5 +++++
->  arch/m68k/include/asm/kvm_para.h       |    1 +
->  arch/microblaze/include/asm/kvm_para.h |    1 +
->  arch/mips/include/asm/kvm_para.h       |    1 +
->  arch/mn10300/include/asm/kvm_para.h    |    1 +
->  arch/openrisc/include/asm/kvm_para.h   |    1 +
->  arch/parisc/include/asm/kvm_para.h     |    1 +
->  arch/powerpc/include/asm/kvm_para.h    |    5 +++++
->  arch/s390/include/asm/kvm_para.h       |    5 +++++
->  arch/score/include/asm/kvm_para.h      |    1 +
->  arch/sh/include/asm/kvm_para.h         |    1 +
->  arch/sparc/include/asm/kvm_para.h      |    1 +
->  arch/tile/include/asm/kvm_para.h       |    1 +
->  arch/um/include/asm/kvm_para.h         |    1 +
->  arch/unicore32/include/asm/kvm_para.h  |    1 +
->  arch/x86/include/asm/kvm_para.h        |    8 ++++++++
->  arch/x86/include/asm/pvclock-abi.h     |    1 +
->  arch/x86/kernel/kvmclock.c             |   21 +++++++++++++++++++++
->  arch/x86/kvm/x86.c                     |   22 ++++++++++++++++++++++
->  arch/xtensa/include/asm/kvm_para.h     |    1 +
->  include/asm-generic/kvm_para.h         |   14 ++++++++++++++
->  include/linux/kvm.h                    |    3 +++
->  kernel/watchdog.c                      |   12 ++++++++++++
->  33 files changed, 141 insertions(+), 0 deletions(-)
->  create mode 100644 arch/alpha/include/asm/kvm_para.h
->  create mode 100644 arch/arm/include/asm/kvm_para.h
->  create mode 100644 arch/avr32/include/asm/kvm_para.h
->  create mode 100644 arch/blackfin/include/asm/kvm_para.h
->  create mode 100644 arch/c6x/include/asm/kvm_para.h
->  create mode 100644 arch/frv/include/asm/kvm_para.h
->  create mode 100644 arch/h8300/include/asm/kvm_para.h
->  create mode 100644 arch/hexagon/include/asm/kvm_para.h
->  create mode 100644 arch/m68k/include/asm/kvm_para.h
->  create mode 100644 arch/microblaze/include/asm/kvm_para.h
->  create mode 100644 arch/mips/include/asm/kvm_para.h
->  create mode 100644 arch/mn10300/include/asm/kvm_para.h
->  create mode 100644 arch/openrisc/include/asm/kvm_para.h
->  create mode 100644 arch/parisc/include/asm/kvm_para.h
->  create mode 100644 arch/score/include/asm/kvm_para.h
->  create mode 100644 arch/sh/include/asm/kvm_para.h
->  create mode 100644 arch/sparc/include/asm/kvm_para.h
->  create mode 100644 arch/tile/include/asm/kvm_para.h
->  create mode 100644 arch/um/include/asm/kvm_para.h
->  create mode 100644 arch/unicore32/include/asm/kvm_para.h
->  create mode 100644 arch/xtensa/include/asm/kvm_para.h
->  create mode 100644 include/asm-generic/kvm_para.h
-> 
-> -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-----Original Message-----
+From: bruce robertson [mailto:bruce.e.robertson@intel.com] 
+Sent: Tuesday, March 13, 2012 4:18 PM
+To: Jason Wortham
+Cc: Anton Vorontsov; dirk.brandewie@gmail.com; linux-kernel@vger.kernel.org; dg77.kim@samsung.com; kyungmin.park@samsung.com; myungjoo.ham@samsung.com
+Subject: Re: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
+
+Jason Wortham <Jason.Wortham@maxim-ic.com> writes:
+
+> The bottom 3 bits are still functional bits and aren't required to be masked.  Arguably these bits are below the hardware accuracy of the ADC, however, they still provide some averaging information.
+
+About the multiplier. why are the multipliers 83? 83*8==664 uV.
+
+>
+> --Jason
+>
+> -----Original Message-----
+> From: bruce robertson [mailto:bruce.e.robertson@intel.com] 
+> Sent: Tuesday, March 13, 2012 2:00 PM
+> To: Anton Vorontsov
+> Cc: dirk.brandewie@gmail.com; linux-kernel@vger.kernel.org; dg77.kim@samsung.com; kyungmin.park@samsung.com; myungjoo.ham@samsung.com; Jason Wortham
+> Subject: Re: [PATCH 4/5] max17042: Fix value scaling for VCELL and avgVCELL
+>
+> Anton Vorontsov <cbouatmailru@gmail.com> writes:
+>
+>> On Tue, Jan 24, 2012 at 09:26:07AM -0800, dirk.brandewie@gmail.com wrote:
+>>> From: Bruce Robertson <bruce.e.robertson@intel.com>
+>>> 
+>>> The bottom three bits of the register are don't care bits.  The LSB
+>>> value is 625 uV.  Adjust the returned values appropriately
+>>> 
+>>> Signed-off-by: Bruce Robertson <bruce.e.robertson@intel.com>
+>>> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+>>> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+>>
+>> I guess this was fixed long ago by the following patch:
+>>
+>> commit cf7a8c03db792894f436db5f3ffc44d947b9b068
+>> Author: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Date:   Wed Aug 17 10:18:34 2011 +0900
+>>
+>>     max17042_battery: Bugfix of incorrect voltage register value interpretation
+>>
+>>     The calculation had error in getting voltage values from
+>>     MAX17042 registers. The least bit denotes 78.125uV (625/8).
+>
+> The multipliers I see in the patch are 83 making the voltages somewhat
+> high and the low 3 bits are not masked off. I'm probably misreading the code.
+>
+>>
+>>     Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+>>     Signed-off-by: Philip Rakity <prakity@marvell.com>
+>>     Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>     Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+>>
+>> Thanks,
