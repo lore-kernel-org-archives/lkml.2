@@ -1,58 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760831Ab2CNXjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:39:18 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:27382 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760715Ab2CNXjO (ORCPT
+	id S1760944Ab2CNXje (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:39:34 -0400
+Received: from mail.windriver.com ([147.11.1.11]:39728 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030189Ab2CNXj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:39:14 -0400
-From: "Nanjappa, Sathisha (MCXS, Cupertino)" <sathisha.nanjappa@hp.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] mpt2sas: Corrected the constant in comparison to a
- hexadecimal.
-Thread-Topic: [PATCH] mpt2sas: Corrected the constant in comparison to a
- hexadecimal.
-Thread-Index: AQHNAb0kYPKk1kFKbUOL9EWnl0kcTpZqbNNg
-Date: Wed, 14 Mar 2012 23:36:51 +0000
-Message-ID: <C8A4A375313D4E4DA64F2CB1D0490B0A44730306@G9W0735.americas.hpqcorp.net>
-References: <1331665168-22561-1-git-send-email-sathisha.nanjappa@hp.com>
-	 <1331665168-22561-2-git-send-email-sathisha.nanjappa@hp.com>
- <1331714014.8688.3.camel@dabdike>
-In-Reply-To: <1331714014.8688.3.camel@dabdike>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.216.12.11]
-Content-Type: text/plain; charset="utf-8"
+	Wed, 14 Mar 2012 19:39:29 -0400
+Date: Wed, 14 Mar 2012 19:39:27 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <linux-next@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: linux-next: triage for March 14, 2012
+Message-ID: <20120314233926.GA22887@windriver.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2ENdQS5031800
 
-> 
-> On Tue, 2012-03-13 at 11:59 -0700, Sathisha Nanjappa wrote:
-> > Bugzilla 42142 - mpt2sas: Number specified in wrong base
-> >     https://bugzilla.kernel.org/show_bug.cgi?id=42142
-> 
-> From: James Bottomley
-> Sent: Wednesday, March 14, 2012 1:34 AM
-> Do you have a better description ... like what is the user
-> visible effect of correcting the constant?
->
+New breakage since last report:
+	ARM:u8500_defconfig
+		mach-ux500/timer.c: 'IRQ_LOCALTIMER' undeclared
 
-Does this look better:
+Randconfig fails that may or may not be new (by their very nature):
+	powerpc: nfs4xdr.c:3443:27: error: 'nfs_debug' undeclared
+		( http://kisskb.ellerman.id.au/kisskb/buildresult/5871973/ )
+	i386: media/radio/radio/radio-isa.c radio-typhoon.c:  implicit
+	      declaration of functions 'kfree' 'kzalloc'
+		( http://kisskb.ellerman.id.au/kisskb/buildresult/5871851/ )
 
-"This fix ensures that the IOP_LOGINFO_CODE_TASK_TERMINATED
-messages do not clutter the sas_log_info messages."
-
-Thanks,
--Satish.
+Builds that are fixed since last report:
+	sparc:defconfig,allnoconfig
+	mips:cavium-octeon_defconfig
 
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Note: The randconfig fails are only listed once and not tracked
+in the below listing.
+
+            ------------------------------------------------
+
+Latest results at:
+	http://kisskb.ellerman.id.au/kisskb/branch/9/
+
+Failures as of March 14th, 2012:
+===============================
+
+ARM:u8500_defconfig
+	when:	Mar 14, 08:53
+	why:	mach-ux500/timer.c: 'IRQ_LOCALTIMER' undeclared
+	status:
+	fix:
+	ref:
+	
+ARM:mxs_defconfig
+	when:	Mar 14, 00:19
+	why:	Inconsistent kallsyms data This is a bug - please report
+	status: UFO bug keeps appearing at random
+	fix:	
+	ref:	https://lkml.org/lkml/2011/8/2/233
+	ref:	https://lkml.org/lkml/2011/10/8/70
+
+ARM:eseries_pxa_defconfig (no member named 'native_hotplug')
+	when:	Mar 14, 05:15
+	why:	tmio_mmc_pio.c:: 'struct tmio_mmc_host' has no member named 'native_hotplug'
+	status:	
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869552/
+
+ARM:netx_defconfig,pnx4008_defconfig 
+	when:	Mar 14, 02:43
+	why:	net/core/pktgen.c: can't find a register in class 'GENERAL_REGS'
+	status:	
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5869486/
+	ref:	https://lkml.org/lkml/2012/3/13/670
+
+ARM:cam60_defconfig
+	when:	Feb 23, 16:47
+	why:	trace_entries.h: 'perf_ftrace_event_register' undeclared
+	status:	S. Rostedt has a patch somewhere.
+	fix:	
+	ref:	irc (#linux-rt)
+
+ARM:collie_defconfig
+	when:	Feb 14, 19:10
+	why:	locomolcd.c: error: 'sa1100fb_lcd_power' undeclared
+	status:	fixed (PaulG) - pending integration
+	fix:	http://marc.info/?l=linux-next&m=133105157730749&w=2
+	ref:
+
+ARM:imx_v4_v5_defconfig
+	when:	Mar 9
+	why:	clkdev.c: undefined reference to `vb2_dma_contig_memops'
+	status:	
+	fix:	
+	ref:	
+
+ARM:iop32x_defconfig,iop33x_defconfig
+	when:	Nov 23, 13:42
+	why:	restart.c: implicit declaration of function 'soft_restart'
+	status:	fixed (PaulG) - pending integration
+	fix:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081461.html
+	fix:	https://lkml.org/lkml/2012/3/14/253
+	ref:
+
+ARM:ixp4xx_defconfig
+	when:	Oct 26, 01:40
+	why:	gpio.h: implicit declaration of function '__gpio_get_value'
+	status:	fixed (Imre Kaloz) - but possibly needs rework?
+	fix:	https://lkml.org/lkml/2012/2/8/288
+	ref:	https://lkml.org/lkml/2012/2/8/287
+
+ARM:magician_defconfig
+	when:	Feb 13, 19:10
+	why:	magician.c: unknown field 'dev' specified in initializer
+	status:	fixed (PaulG) - pending integration
+	fix:
+	ref:	http://marc.info/?l=linux-next&m=133106325903524&w=2
+
+ARM:em_x270_defconfig
+	when:	Feb 14, 01:15
+	why:	em-x270.c: unknown field 'dev' specified in initializer
+	status:	 fixed (PaulG) - pending integration
+	fix:	http://www.spinics.net/lists/arm-kernel/msg164012.html
+	ref:	http://www.spinics.net/lists/arm-kernel/msg163135.html
+
+ARM:raumfeld_defconfig
+	when:	Nov 23, 09:36
+	why:	eeti_ts.c: implicit declaration of function 'irq_to_gpio'
+	status:	perhaps broken since 2010?  See ref below.
+	fix:	
+	ref:	http://www.gossamer-threads.com/lists/linux/kernel/1291618?do=post_view_threaded#1291618
+
+ARM:omap2plus_defconfig
+	when:	Feb 16, 00:23
+	why:	control.c:238: error: 'OMAP343X_CTRL_BASE' undeclared
+	status:	PaulG did hack-n-slash, but at best a WIP, needs additonal reverts
+	fix:	http://www.spinics.net/lists/arm-kernel/msg163120.html
+	ref:	http://www.spinics.net/lists/arm-kernel/msg163262.html
+
+ARM:orion5x_defconfig
+	when:	Mar 9, 22:38
+	why:	mv_cesa.c:1144: error: implicit declaration of function 'of_match_ptr'
+	status:	fixed (PaulG), waiting integration
+	fix:	http://marc.info/?l=linux-next&m=133132317502799&w=2
+	ref:	
+
+ARM:at91x40_defconfig
+	when:	Feb 28, 07:38 	
+	why:	super.c:(.text+0x3ffd8): undefined reference to `vm_is_stack'
+	status:	WIP, fix from PaulG + follow on from 
+	fix:	http://marc.info/?l=linux-next&m=133096554131691&w=2
+	ref:	http://marc.info/?l=linux-next&m=133104723928617&w=2
+
+ARM:s3c2410_defconfig 
+	when:	Mar 7, 22:59
+	why:	s3c244x.c: expected declaration or statement at end of input
+	status:	bad commit introduces truncated file; pending integration.
+	fix:
+	ref:	http://marc.info/?l=linux-next&m=133123680904853&w=2
+
+ARM:arm-allnoconfig
+	when:	forever
+	why:	not supported
+	status:	nothing pending, but patches accepted
+	fix:	n/a
+	ref:	https://lkml.org/lkml/2009/4/30/105
+	ref:	http://lists.infradead.org/pipermail/linux-arm-kernel/2012-January/081218.html
+----------------
+
+AVR32:allnoconfig
+	when:	May 26 2010, 20:49
+	why:	at32_map_usart: undefined reference to `atmel_default_console_device'
+	status:
+	fix:
+	ref:
+---------------
+
+bfin:***all-builds***
+	when:	Jan 20, 22:13
+	why:	undefined reference to `vm_is_stack'
+	status:	WIP, fix from PaulG + follow on from Siddhesh Poyarekar
+	fix:	http://marc.info/?l=linux-next&m=133096554131691&w=2
+	ref:	http://marc.info/?l=linux-next&m=133104723928617&w=2
+---------------
+
+cris:***all-builds***
+	when:	Mar 25, 22:05
+	why:	include/linux/types.h:25: error expected ... before 'ino_t'
+	status:	
+	fix:	
+	ref:	
+----------------
+
+crisv32:***all-builds***
+	when:	Mar 25, 22:05
+	why:	include/linux/types.h:25: error expected ... before 'ino_t'
+	status:	
+	fix:	
+	ref:	
+----------------
+
+i386:allmodconfig
+	when:	Mar 8, 20:41
+	why:	ERROR: "__udivdi3" [drivers/media/dvb/frontends/rtl2830.ko] undefined!
+	status:	looks fixed, pending integration
+	fix:
+	ref:	http://www.spinics.net/lists/linux-media/msg45093.html
+----------------
+
+m68k:allmodconfig
+	when:	Mar 9, 00:38
+	why:	ERROR: "__udivdi3" [drivers/media/dvb/frontends/rtl2830.ko] undefined!
+	status:	looks fixed, pending integration
+	fix:
+	ref:	http://www.spinics.net/lists/linux-media/msg45093.html
+----------------
+
+mips:allmodconfig
+	when:
+	why:	driver_pci_host.c: implicit declaration of function 'pcibios_enable_device'
+	status:
+	fix:
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5807000/
+----------------
+
+parisc:allmodconfig
+	when:
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+
+parisc64:a500_defconfig 
+	when:
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+------------------
+
+powerpc:allyesconfig
+	when:	May 18 2009, 22:11
+	why:	fat ass kernel with everything simply won't link
+	status:	need to fix build config to ignore the final link
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5806793/
+
+powerpc:allmodconfig
+	when:	Mar 8, 22:28
+	why:	section .text overlaps section .kernel.dtb
+	status:	need to fix build config to ignore the final link
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/buildresult/5818877/
+
+powerpc:mpc885_ads_defconfig
+	when:	Mar 8, 19:45
+	why:	fs/nfs/inode.c:1063: undefined reference to `crc32_le'
+	status:	odd - PaulG tried to reproduce it but failed.
+	fix:
+	ref:
+------------------
+
+sh4:***all-builds***
+	when:	Feb 24, 17:38
+	why:	include/linux/log2.h: implicit declaration of function 'fls'
+	status:	reported by PaulG, WIP by David Howells 
+	fix:
+	ref:	https://lkml.org/lkml/2012/2/29/409
+	ref:	https://lkml.org/lkml/2012/3/6/228
+------------------
+
+um:um-defconfig
+	when:	Sep 16 2010, 01:28
+	why:	os-Linux/start_up.c: error: 'PTRACE_SETOPTIONS' undeclared
+	status:	clearly broken forever, so does anyone care?
+	fix:	
+	ref:	http://kisskb.ellerman.id.au/kisskb/target/2979/
+------------------
+
+sparc[64]:allmodconfig
+	when:	Mar 14
+	why:	sata_mv.c: '__mod_of_device_table' aliased to undefined symbol
+	status:
+	fix:
+	ref:	http://www.spinics.net/lists/sparclinux/msg09199.html
+
