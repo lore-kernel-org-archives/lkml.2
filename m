@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab2CNUTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 16:19:33 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:60205 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857Ab2CNUTa (ORCPT
+	id S1761126Ab2CNUTv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 16:19:51 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39431 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857Ab2CNUTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 16:19:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6648"; a="172502987"
-Date: Wed, 14 Mar 2012 13:19:29 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: Ravi Kumar V <kumarrav@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Vinod Koul <vinod.koul@intel.com>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
-        gregkh@linuxfoundation.org, Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 2/2] DMAEngine: Add DMAEngine driver based on old MSM
- DMA APIs
-Message-ID: <20120314201929.GA17259@codeaurora.org>
-References: <1331548364-27845-1-git-send-email-kumarrav@codeaurora.org>
- <20120312201421.GA3459@fifo99.com>
- <4F5F41AF.1090907@codeaurora.org>
- <20120314150533.GA8757@fifo99.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120314150533.GA8757@fifo99.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 14 Mar 2012 16:19:48 -0400
+Date: Thu, 15 Mar 2012 07:19:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: Tree for Mar 14 (printk)
+Message-Id: <20120315071934.77f0af64a4c633c545d68ea4@canb.auug.org.au>
+In-Reply-To: <4F60BFA6.2030804@xenotime.net>
+References: <20120314181921.59451eca117c276461f7dc28@canb.auug.org.au>
+	<4F60BFA6.2030804@xenotime.net>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__15_Mar_2012_07_19_34_+1100_fhMTTBxpi6gmRjqP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 08:05:53AM -0700, Daniel Walker wrote:
-> On Tue, Mar 13, 2012 at 06:16:39PM +0530, Ravi Kumar V wrote:
-> > On 3/13/2012 1:44 AM, Daniel Walker wrote:
-> > >On Mon, Mar 12, 2012 at 04:02:44PM +0530, Ravi Kumar V wrote:
-> > >>Add DMAEngine based driver using the old MSM DMA APIs internally.
-> > >
-> > >What do you mean by this?
-> > >
-> > There is a MSM DMA driver in arch/arm/mach-msm/ which is not in
-> > dmaengine framework standards, but that driver is been used by
-> > client drivers nand, eMMC and serial drivers. Now if we implement
-> > the whole dma driver using dmaengine framework then nand, eMMC like
-> > drivers will be failed as they are using old dma driver API's, so
-> > instead of implementing new driver from scratch we are keeping the
-> > old dma API's as it is and using those API's in new dmaengine
-> > framework.So that we can convert clients drivers to use dma engine
-> > framework.
-> 
-> Did you investigate converting the drivers (nand, eMMC, serial) ? It
-> seems like there would be a 1:1 mapping between the API's , so it might
-> only be a find->replace operation.
+--Signature=_Thu__15_Mar_2012_07_19_34_+1100_fhMTTBxpi6gmRjqP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Only at a very superficial level--they both do DMA.  The ADM driver
-wants its scatterlists constructed manually by the caller (in DMA-able
-memory) and just the pointer handed over.  The drivers will have to be
-converted to use the abstracted scatterlists that dmaengine wants.
-Drivers like msm_sdcc are currently fairly intimitely tied to flow
-that is specific to ADM.  The msm_sdcc driver also needs use of the
-ADM's "box" mode, which has to be made to work with DMAEngine as well.
+On Wed, 14 Mar 2012 08:56:22 -0700 Randy Dunlap <rdunlap@xenotime.net> wrot=
+e:
+>
+> on x86_64:
+>=20
+> kernel/printk.c:1230:5: error: redefinition of 'printk_sched'
+> include/linux/printk.h:136:5: note: previous definition of 'printk_sched'=
+ was here
 
-Providing both APIs is really the only practical way to get this in
-without having to rewrite several other drivers.
+Caused by commit 3ccf3e830615 ("printk/sched: Introduce special
+printk_sched() for those awkward moments") from the tip tree.  The
+declaration in include/linux/printk.h has alternatives determined by
+CONFIG_PRINTK, but the definition in kernel/printk.c is not so
+protected ...
 
-The nand driver (which doesn't seem to have made it in yet,
-https://lkml.org/lkml/2011/2/28/570) is much worse.  About half of the
-code is constructing ADM specific command blocks.  I'm not even sure
-it will be practical to even migrate that driver to DMAEngine, since
-the nand controller hardware is so intimately tied to the functioning
-of the ADM.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+\
 
-David
+--Signature=_Thu__15_Mar_2012_07_19_34_+1100_fhMTTBxpi6gmRjqP
+Content-Type: application/pgp-signature
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPYP1WAAoJEECxmPOUX5FEqBIP/iu2tO45UnLFm04wfqII5NcT
+yjc72hhQmQRlhko/n2dOMcfdgMYrSj2s2u6Zh6FGPDibEmYxUcZU/8kxnV4m9p72
+IBCMSG9bQ0gvmmy3QqguMErHkkSepWolfKKbM0pKkKjpdD+6fHO9KdI4S7QJlbbO
+JWhXvIu4vjuanlJq0XGW3vyFNMaCMqiApmbW7wnscdrgvW7lstQIJf+0FuTJ2gUX
+kRlVjTCfgGs8O7Sk9N0ZtiF73Xo8taKGrw1y3u9ruCiOFe8b+Gedt1ogbETfI7GF
+C0BlP7HuVQfNunWR8iXClxIwyrWfrawf3YvSePqrcbN1xOwnRed0cJEq+P+opweN
+bxgJZT0Q8rHeOOonS5D7HCV9tk8uj6WoT4rjMpBwblOuZCOPoSBuSo3LKOA2U4gO
+e2XKNM2VGFwxt0xn2UkqWBV7EyniYGhoghvv4q6Y5AXu7VJeyNf20iCdTUKEsCuP
+dglFzRN+OLd72n2ZXQ3G18yjQxU/UeTl9BXzR+518Y56N6ZNCTh2jHGglYMa4UCJ
+jgsMkTLOivRg3CcdvAGxrDRBqFVsj2y+szsKpl1V8JFQfCgK6xylpL88wdP5Z8sy
+mdp5OsBvTT4+26IbZpBb8sY66yUMfQlfeb5GxdMRJ8+blO0DSC6zPvTh9+u16T5n
+QY4UmKdfRegElH50BGSo
+=9Aei
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__15_Mar_2012_07_19_34_+1100_fhMTTBxpi6gmRjqP--
