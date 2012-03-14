@@ -1,89 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276Ab2CNQHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 12:07:05 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57420 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753674Ab2CNQHC convert rfc822-to-8bit (ORCPT
+	id S1757013Ab2CNQHp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 12:07:45 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:33420 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753086Ab2CNQHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 12:07:02 -0400
+	Wed, 14 Mar 2012 12:07:43 -0400
+Date: Wed, 14 Mar 2012 12:03:27 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: axboe@kernel.dk, xen-devel@lists.xensource.com,
+        Li Dongyang <lidongyang@suse.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/blkback: Squash the discard support for 'file' and
+ 'phy' type.
+Message-ID: <20120314160327.GC16960@phenom.dumpdata.com>
+References: <1331679128-27646-1-git-send-email-konrad.wilk@oracle.com>
+ <4F60777502000078000783B6@nat28.tlf.novell.com>
 MIME-Version: 1.0
-In-Reply-To: <CAC9WiBhaLiMqNRa33TOj1boTmFBh5DgjN6+8AmQbBYUgy=CGNg@mail.gmail.com>
-References: <CAC9WiBiZ9oOaDaYjow-ZryZ8i=7uLixTAfm48YKVpbwQfLfayQ@mail.gmail.com>
-	<CA+5PVA6y4gpf28zweFgC_Up+dcHtKcf9=YJ7TjUGKRsJo8FMsw@mail.gmail.com>
-	<CAC9WiBhaLiMqNRa33TOj1boTmFBh5DgjN6+8AmQbBYUgy=CGNg@mail.gmail.com>
-Date: Wed, 14 Mar 2012 17:07:01 +0100
-Message-ID: <CAC9WiBgHpe344FOh8BZb-OjRSq4P8Zhy+4n6hJnfctS0xqrXAg@mail.gmail.com>
-Subject: Re: Getting oops with 3.2.10 when removing a SD card
-From: Francis Moreau <francis.moro@gmail.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F60777502000078000783B6@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090204.4F60C244.00CA,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 4:49 PM, Francis Moreau <francis.moro@gmail.com> wrote:
-> On Wed, Mar 14, 2012 at 4:43 PM, Josh Boyer <jwboyer@gmail.com> wrote:
->> On Wed, Mar 14, 2012 at 11:38 AM, Francis Moreau <francis.moro@gmail.com> wrote:
->>> Hi,
->>>
->>> I'm getting this oops (pretty often) after writing to a SD card and
->>> removing the card.
->>>
->>> Here's the oops:
->>>
->>> [17610.371580] usb 1-1.6: new high-speed USB device number 14 using ehci_hcd
->>> [17610.469928] usb 1-1.6: New USB device found, idVendor=0bda, idProduct=0159
->>> [17610.469935] usb 1-1.6: New USB device strings: Mfr=1, Product=2,
->>> SerialNumber=3
->>> [17610.469939] usb 1-1.6: Product: USB2.0-CRW
->>> [17610.469942] usb 1-1.6: Manufacturer: Generic
->>> [17610.469946] usb 1-1.6: SerialNumber: 20071114173400000
->>> [17610.485966] scsi16 : usb-storage 1-1.6:1.0
->>> [17611.489253] scsi 16:0:0:0: Direct-Access     Generic- Multi-Card
->>>   1.00 PQ: 0 ANSI: 0 CCS
->>> [17611.489556] sd 16:0:0:0: Attached scsi generic sg2 type 0
->>> [17612.177470] sd 16:0:0:0: [sdb] 7744512 512-byte logical blocks:
->>> (3.96 GB/3.69 GiB)
->>> [17612.178347] sd 16:0:0:0: [sdb] Write Protect is off
->>> [17612.178355] sd 16:0:0:0: [sdb] Mode Sense: 03 00 00 00
->>> [17612.179333] sd 16:0:0:0: [sdb] No Caching mode page present
->>> [17612.179338] sd 16:0:0:0: [sdb] Assuming drive cache: write through
->>> [17612.182988] sd 16:0:0:0: [sdb] No Caching mode page present
->>> [17612.182993] sd 16:0:0:0: [sdb] Assuming drive cache: write through
->>> [17612.214565]  sdb: sdb1
->>> [17612.218666] sd 16:0:0:0: [sdb] No Caching mode page present
->>> [17612.218672] sd 16:0:0:0: [sdb] Assuming drive cache: write through
->>> [17612.218677] sd 16:0:0:0: [sdb] Attached SCSI removable disk
->>> [17620.408767] usb 1-1.6: USB disconnect, device number 14
->>> [17620.410224] scsi 16:0:0:0: killing request
->>> [17620.410512] BUG: unable to handle kernel NULL pointer dereference
->>> at 0000000000000008
->>> [17620.411480] IP: [<ffffffffa01e08ef>] sd_revalidate_disk+0x3f/0x1a10 [sd_mod]
->>> [17620.411501] PGD 286a3067 PUD aef9f067 PMD 0
->>> [17620.411507] Oops: 0000 [#1] SMP
->>> [17620.411512] CPU 0
->>
->> There's a patch to fix this that will hopefully be pulled into Linus' tree
->> today.  It should work it's way back to 3.2-stable after that.
->>
->
-> Could you just point out the patch (including the tree shipping it) so
-> I can use/test it ?
->
+On Wed, Mar 14, 2012 at 09:48:21AM +0000, Jan Beulich wrote:
+> >>> On 13.03.12 at 23:52, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > The only reason for the distinction was for the special case of
+> > 'file' (which is assumed to be loopback device), was to reach inside
+> > the loopback device, find the underlaying file, and call fallocate on it.
+> > Fortunately "xen-blkback: convert hole punching to discard request on
+> > loop devices" removes that use-case and we now based the discard
+> > support based on blk_queue_discard(q) and extract all appropriate
+> > parameters from the 'struct request_queue'.
+> > 
+> > CC: Li Dongyang <lidongyang@novell.com>
+> > CC: Jan Beulich <JBeulich@suse.com>
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> Acked-by: Jan Beulich <jbeulich@suse.com>
+> 
+> (with a few minor remarks below)
+> 
+> > --- a/drivers/block/xen-blkback/blkback.c
+> > +++ b/drivers/block/xen-blkback/blkback.c
+> > @@ -419,21 +419,17 @@ static int dispatch_discard_io(struct xen_blkif *blkif,
+> >  	int err = 0;
+> >  	int status = BLKIF_RSP_OKAY;
+> >  	struct block_device *bdev = blkif->vbd.bdev;
+> > -
+> > +	unsigned long secure = 0;
+> 
+> Mind keeping the blank line and dropping the pointless initializer (which
+> future gcc is likely going to be warning about)?
 
-maybe this one:
+<nods>
+> 
+> >  	blkif->st_ds_req++;
+> >  
+> >  	xen_blkif_get(blkif);
+> > -	if (blkif->blk_backend_type == BLKIF_BACKEND_PHY ||
+> > -	    blkif->blk_backend_type == BLKIF_BACKEND_FILE) {
+> > -		unsigned long secure = (blkif->vbd.discard_secure &&
+> > -			(req->u.discard.flag & BLKIF_DISCARD_SECURE)) ?
+> > -			BLKDEV_DISCARD_SECURE : 0;
+> > -		err = blkdev_issue_discard(bdev,
+> > -				req->u.discard.sector_number,
+> > -				req->u.discard.nr_sectors,
+> > -				GFP_KERNEL, secure);
+> > -	} else
+> > -		err = -EOPNOTSUPP;
+> > +	secure = (blkif->vbd.discard_secure &&
+> > +		 (req->u.discard.flag & BLKIF_DISCARD_SECURE)) ?
+> > +		 BLKDEV_DISCARD_SECURE : 0;
+> > +
+> > +	err = blkdev_issue_discard(bdev, req->u.discard.sector_number,
+> > +				   req->u.discard.nr_sectors,
+> > +				   GFP_KERNEL, secure);
+> >  
+> >  	if (err == -EOPNOTSUPP) {
+> >  		pr_debug(DRV_PFX "discard op failed, not supported\n");
+> > --- a/drivers/block/xen-blkback/xenbus.c
+> > +++ b/drivers/block/xen-blkback/xenbus.c
+> > @@ -393,52 +393,37 @@ int xen_blkbk_discard(struct xenbus_transaction xbt, 
+> > struct backend_info *be)
+> >  	char *type;
+> >  	int err;
+> >  	int state = 0;
+> > +	struct block_device *bdev = be->blkif->vbd.bdev;
+> > +	struct request_queue *q = bdev_get_queue(bdev);
+> >  
+> > -	type = xenbus_read(XBT_NIL, dev->nodename, "type", NULL);
+> > -	if (!IS_ERR(type)) {
+> > -		if (strncmp(type, "file", 4) == 0) {
+> > -			state = 1;
+> > -			blkif->blk_backend_type = BLKIF_BACKEND_FILE;
+> > +	if (blk_queue_discard(q)) {
+> > +		err = xenbus_printf(xbt, dev->nodename,
+> > +			"discard-granularity", "%u",
+> > +			q->limits.discard_granularity);
+> > +		if (err) {
+> > +			xenbus_dev_fatal(dev, err,
+> > +				"writing discard-granularity");
+> > +			goto kfree;
+> 
+> Unrelated to the patch here, but failure to write any sort of extension
+> data shouldn't be considered fatal - the backend can well work without
+> these, and it should be left to the frontend to decide whether it wants
+> to live without the unavailable extensions.
 
- block: Fix NULL pointer dereference in sd_revalidate_disk
+<nods>. Let me whip up another patch that removes these 'fatal' cases
+and is based on this one.
 
-or perhaps this one:
-
- block: fix __blkdev_get and add_disk race condition
-
-I'm asking because my SD card is almost unusable now: after 3 or 4
-insertion/remove, I get the oops.
-
--- 
-Francis
+> 
+> Jan
+> 
+> > +		}
+> > +		err = xenbus_printf(xbt, dev->nodename,
+> > +			"discard-alignment", "%u",
+> > +			q->limits.discard_alignment);
+> > +		if (err) {
+> > +			xenbus_dev_fatal(dev, err,
+> > +				"writing discard-alignment");
+> > +			goto kfree;
+> >  		}
+> > -		if (strncmp(type, "phy", 3) == 0) {
+> > -			struct block_device *bdev = be->blkif->vbd.bdev;
+> > -			struct request_queue *q = bdev_get_queue(bdev);
+> > -			if (blk_queue_discard(q)) {
+> > -				err = xenbus_printf(xbt, dev->nodename,
+> > -					"discard-granularity", "%u",
+> > -					q->limits.discard_granularity);
+> > -				if (err) {
+> > -					xenbus_dev_fatal(dev, err,
+> > -						"writing discard-granularity");
+> > -					goto kfree;
+> > -				}
+> > -				err = xenbus_printf(xbt, dev->nodename,
+> > -					"discard-alignment", "%u",
+> > -					q->limits.discard_alignment);
+> > -				if (err) {
+> > -					xenbus_dev_fatal(dev, err,
+> > -						"writing discard-alignment");
+> > -					goto kfree;
+> > -				}
+> > -				state = 1;
+> > -				blkif->blk_backend_type = BLKIF_BACKEND_PHY;
+> > -			}
+> > -			/* Optional. */
+> > -			err = xenbus_printf(xbt, dev->nodename,
+> > -				"discard-secure", "%d",
+> > -				blkif->vbd.discard_secure);
+> > -			if (err) {
+> > -				xenbus_dev_fatal(dev, err,
+> > +		state = 1;
+> > +		/* Optional. */
+> > +		err = xenbus_printf(xbt, dev->nodename,
+> > +				    "discard-secure", "%d",
+> > +				    blkif->vbd.discard_secure);
+> > +		if (err) {
+> > +			xenbus_dev_fatal(dev, err,
+> >  					"writting discard-secure");
+> > -				goto kfree;
+> > -			}
+> > +			goto kfree;
+> >  		}
+> > -	} else {
+> > -		err = PTR_ERR(type);
+> > -		xenbus_dev_fatal(dev, err, "reading type");
+> > -		goto out;
+> >  	}
+> > -
+> >  	err = xenbus_printf(xbt, dev->nodename, "feature-discard",
+> >  			    "%d", state);
+> >  	if (err)
+> 
