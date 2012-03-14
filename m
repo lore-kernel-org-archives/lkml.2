@@ -1,128 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab2CNHi6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 03:38:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52404 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab2CNHiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 03:38:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="128780695"
-Message-ID: <4F604B16.606@intel.com>
-Date: Wed, 14 Mar 2012 09:39:02 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-CC: Chris Ball <cjb@laptop.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/3] mmc: sdhci: check interrupt flags in ISR again
-References: <1331659002-13743-1-git-send-email-alexander.stein@systec-electronic.com> <1331659002-13743-2-git-send-email-alexander.stein@systec-electronic.com>
-In-Reply-To: <1331659002-13743-2-git-send-email-alexander.stein@systec-electronic.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756433Ab2CNHjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 03:39:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56737 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754961Ab2CNHjH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 03:39:07 -0400
+Date: Wed, 14 Mar 2012 18:38:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: linux-next: manual merge of the isci tree with the scsi tree
+Message-Id: <20120314183845.252d1cc2d01e30ceaff47848@canb.auug.org.au>
+In-Reply-To: <CABE8wwsET4BaS39r-+5_cshQ_WJDQMHWCcUsQjmcsqGU6a+R-A@mail.gmail.com>
+References: <20120313134512.848baf17f46729fa0fac195d@canb.auug.org.au>
+	<CABE8wwtNcA4QcJyLC6zipjygjAYa6o=bwPyz6xS9A=PLiU+2kg@mail.gmail.com>
+	<20120313144152.5bd633a5ea6e496c059a9465@canb.auug.org.au>
+	<CABE8wwsET4BaS39r-+5_cshQ_WJDQMHWCcUsQjmcsqGU6a+R-A@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__14_Mar_2012_18_38_45_+1100_5A.TC/T+q=iJQBxD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/03/12 19:16, Alexander Stein wrote:
-> When using MSI it is possible that a new MSI is sent while an earlier
-> MSI is currently handled. In this case SDHCI_INT_STATUS only contains
-> SDHCI_INT_RESPONSE and the ISR would not be called again. But at the end
-> of the ISR SDHCI_INT_DATA_END is now also pending which would be ignored.
-> 
-> Fix this by rereading the interrupt flags in the ISR until no interrupt
-> we care is pending.
-> 
-> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-> ---
->  drivers/mmc/host/sdhci.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 8d66706..654ab32 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -2268,6 +2268,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
->  	irqreturn_t result;
->  	struct sdhci_host *host = dev_id;
->  	u32 intmask;
-> +	u32 intmask_unhandled;
->  	int cardint = 0;
->  
->  	spin_lock(&host->lock);
-> @@ -2286,6 +2287,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
->  		goto out;
->  	}
->  
-> +again:
->  	DBG("*** %s got interrupt: 0x%08x\n",
->  		mmc_hostname(host->mmc), intmask);
->  
-> @@ -2336,6 +2338,14 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
->  		sdhci_writel(host, SDHCI_INT_BUS_POWER, SDHCI_INT_STATUS);
->  	}
->  
-> +	intmask_unhandled = intmask;
-> +
-> +	intmask = sdhci_readl(host, SDHCI_INT_STATUS);
-> +
-> +	/* Do interrupt handling again if we got new flags */
-> +	if (intmask & ~intmask_unhandled)
-> +		goto again;
-> +
->  	intmask &= ~SDHCI_INT_BUS_POWER;
->  
->  	if (intmask & SDHCI_INT_CARD_INT)
+--Signature=_Wed__14_Mar_2012_18_38_45_+1100_5A.TC/T+q=iJQBxD
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Why not just replace mmiowb() i.e.
+hi Dan,
 
+On Wed, 14 Mar 2012 00:13:06 -0700 "Williams, Dan J" <dan.j.williams@intel.=
+com> wrote:
+>
+> On Mon, Mar 12, 2012 at 8:41 PM, Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+> > Hi Dan,
+> >
+> > On Mon, 12 Mar 2012 19:50:33 -0700 "Williams, Dan J" <dan.j.williams@in=
+tel.com> wrote:
+> >>
+> >> I was wondering why it had not happened prior to this point... =C2=A0i=
+n any
+> >
+> > It had, I just put up with it the first time :-)
+>=20
+> Ok, all fixed up now, and I'll be quicker to respin when scsi-misc
+> picks up the next round of patches.
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 8d66706..da8a101 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2353,7 +2353,9 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+Great, thanks.
 
-        result = IRQ_HANDLED;
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--       mmiowb();
-+       intmask = sdhci_readl(host, SDHCI_INT_STATUS);
-+       if (intmask)
-+               goto again;
- out:
-        spin_unlock(&host->lock);
+--Signature=_Wed__14_Mar_2012_18_38_45_+1100_5A.TC/T+q=iJQBxD
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-But maybe it would be safer limiting the number of loops i.e.
+iQIcBAEBCAAGBQJPYEsFAAoJEECxmPOUX5FEeyQQAIOKnAtxWTLUHZ0APyyDB+2m
+OS1vMGYJo8XMKU26PD/44nNA1OlD3fflhCALzXQqfJWKtfd2cRMfxqR7MCx1k6WX
+CoR++9Gz+SdqadkDyKlXGuL+l1pJ9khxKZr+6WfC4CkfN8O2aQfD+9hkNNWm3KXQ
+7CeH2lENyb9+CJIyjaFeNyMt56Jb4UNgMPuJTQ3g+PJt2zlRWTPZ1KYbSY3HMFIj
++i51LQVC8GkcM0aqNbIj2Ea95vclJi9p3NkcDxJPk/mUaYk8HUohXipPn7qXNsU3
+mtgwcIqxD5gU4urZCLvLz+66btGdPKKgYVjF0+WBw/w2rB9TcxijeNgh2BVcLThY
+pqVRlV6xO+CV3ZShz85Eqr5yTczPRYBWmhwGtA0/qhMz8clJYDzCYD7yH+P9dgoL
+PIupuFoUiNCNlZ+yeyi1oPzQ+aGWNO7xyxwEUu60jXsCUE2YIstoBqZsQ8UN/iGX
+RHJi7OE9g+DSJB5hrFiJ8wynT/a0QWT4Fdoi+ke6USzT6nzJ26gFMkyKf2GgfNoP
+4B5EqunLJLTOCMZ3pewsH0My+YQrFUhRACoGtU/ULt3PSLvT+I7ZHb4JT06SkJyi
+HaB2w7SrgOshx0osy63P/gzxUacTPCH2zooGA9hYbGnIDhjEoK+DdiDRMX+10cOD
+3fgUWF54w8TWJd1lz8Sj
+=gE3+
+-----END PGP SIGNATURE-----
 
-
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 8d66706..d88247d 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2268,7 +2268,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
-        irqreturn_t result;
-        struct sdhci_host *host = dev_id;
-        u32 intmask;
--       int cardint = 0;
-+       int cardint = 0, max_loops = 16;
-
-        spin_lock(&host->lock);
-
-@@ -2353,7 +2353,9 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
-
-        result = IRQ_HANDLED;
-
--       mmiowb();
-+       intmask = sdhci_readl(host, SDHCI_INT_STATUS);
-+       if (intmask && --max_loops)
-+               goto again;
- out:
-        spin_unlock(&host->lock);
-
-
+--Signature=_Wed__14_Mar_2012_18_38_45_+1100_5A.TC/T+q=iJQBxD--
