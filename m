@@ -1,136 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256Ab2CNIMW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 04:12:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58599 "EHLO mx1.redhat.com"
+	id S1759393Ab2CNINd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 04:13:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60778 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754131Ab2CNIMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 04:12:09 -0400
-Date: Wed, 14 Mar 2012 09:12:02 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
-To: "Ted Ts'o" <tytso@mit.edu>
-cc: Phillip Susi <phillsusi@gmail.com>, Andreas Dilger <adilger@whamcloud.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        Jacek Luczak <difrost.kernel@gmail.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: getdents - ext4 vs btrfs performance
-In-Reply-To: <20120313213304.GB11969@thunk.org>
-Message-ID: <alpine.LFD.2.00.1203140825090.5379@dhcp-27-109.brq.redhat.com>
-References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com> <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com> <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com> <20120310044804.GB5652@thunk.org> <4F5F9A97.5060404@ubuntu.com>
- <20120313195339.GA24124@thunk.org> <4F5FAC9C.9070607@gmail.com> <20120313213304.GB11969@thunk.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758815Ab2CNIN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 04:13:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="128789283"
+Message-ID: <4F60532E.4070103@intel.com>
+Date: Wed, 14 Mar 2012 10:13:34 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: Chris Ball <cjb@laptop.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/3] mmc: sdhci: check interrupt flags in ISR again
+References: <1331659002-13743-1-git-send-email-alexander.stein@systec-electronic.com> <1331659002-13743-2-git-send-email-alexander.stein@systec-electronic.com> <4F604B16.606@intel.com> <1994979.AaWWmIIAYQ@ws-stein>
+In-Reply-To: <1994979.AaWWmIIAYQ@ws-stein>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012, Ted Ts'o wrote:
-
-> On Tue, Mar 13, 2012 at 04:22:52PM -0400, Phillip Susi wrote:
-> > 
-> > I think a format change would be preferable to runtime sorting.
+On 14/03/12 09:53, Alexander Stein wrote:
+> Hello,
 > 
-> Are you volunteering to spearhead the design and coding of such a
-> thing?  Run-time sorting is backwards compatible, and a heck of a lot
-> easier to code and test...
-
-Actually I am in the process of creating some projects for the local
-universities and this certainly sounds like something that some student
-can do. I have already put that into the proposal, so we might have
-someone looking into this in the near future. Since the problem has been
-there since forever, I think that it's not that critical to solve it
-right away.
-
-I kind of like the idea about having the separate btree with inode
-numbers for the directory reading, just because it does not affect
-allocation policy nor the write performance which is a good thing. Also
-it has been done before in btrfs and it works very well for them. The
-only downside (aside from format change) is the extra step when removing
-the directory entry, but the positives outperform the negatives.
-
-
-Maybe this might be even done in a way which does not require format
-change. We can have new inode flag (say EXT4_INUM_INDEX_FL) which will
-tell us that there is a inode number btree to use on directory reads.
-Then the pointer to the root of that tree would be stored at the end of
-the root block of the hree (of course if there is still some space for
-it) and the rest is easy.
-
-So If we mount the old file system with the new code, there will not be
-the flag, but with newly added directories it could be used anyway. Also
-e2fsck could easily add the inumber tree into the directory if it is
-missing.
-
-If we mount the new file system with the old code (the one which does
-not know about this feature), everything would stay the same and we
-would not touch the inumber tree at all. Of course there is a
-possibility that we would rewrite the end of the root htree, overwriting
-the pointer to the inumber tree and effectively losing one block. We
-would not actually care that we rewrote this information because we
-do not actually need it, so the only downside is the one block lost,
-which is not that bad I guess.
-
-Now, we have rewritten the pointer to the inumber tree and we're going
-to mount it with the new code again. It would expect the the inumber
-tree to be there, but not blindly. Some king of magic information would
-have to be stored in the inumber root pointer so we can be sure that it
-really is what we're looking for and if it is not there, well then we do
-not care and walk the directory in the old way. And we can alway create
-the inumber tree in the new directory. And again e2fsck should be able
-to fix that for us as well.
-
-So that is just an idea, I have not looked at the actual code to see it
-it would be really possible, but it certainly seems like so. Am I
-missing something ?
-
-
-Anyway, if there is going to be a format change I agree that having
-solution for those who are not comfortable with the format change is
-equally as important. But maybe there will be better solution which does
-not require the format change.
-
-Thanks!
--Lukas
-
+> Am Mittwoch, 14. März 2012, 09:39:02 schrieb Adrian Hunter:
+>> On 13/03/12 19:16, Alexander Stein wrote:
+>>> When using MSI it is possible that a new MSI is sent while an earlier
+>>> MSI is currently handled. In this case SDHCI_INT_STATUS only contains
+>>> SDHCI_INT_RESPONSE and the ISR would not be called again. But at the end
+>>> of the ISR SDHCI_INT_DATA_END is now also pending which would be
+>>> ignored.
+>>>
+>>> Fix this by rereading the interrupt flags in the ISR until no interrupt
+>>> we care is pending.
+>>>
+>>> Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+>> [...]
+>>> @@ -2336,6 +2338,14 @@ static irqreturn_t sdhci_irq(int irq, void
+>>> *dev_id)> 
+>>>  		sdhci_writel(host, SDHCI_INT_BUS_POWER, SDHCI_INT_STATUS);
+>>>  	
+>>>  	}
+>>>
+>>> +	intmask_unhandled = intmask;
+>>> +
+>>> +	intmask = sdhci_readl(host, SDHCI_INT_STATUS);
+>>> +
+>>> +	/* Do interrupt handling again if we got new flags */
+>>> +	if (intmask & ~intmask_unhandled)
+>>> +		goto again;
+>>> +
+>>>
+>>>  	intmask &= ~SDHCI_INT_BUS_POWER;
+>>>  	
+>>>  	if (intmask & SDHCI_INT_CARD_INT)
+>>
+>> Why not just replace mmiowb() i.e.
+>>
+>>
+>> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+>> index 8d66706..da8a101 100644
+>> --- a/drivers/mmc/host/sdhci.c
+>> +++ b/drivers/mmc/host/sdhci.c
+>> @@ -2353,7 +2353,9 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+>>
+>>         result = IRQ_HANDLED;
+>>
+>> -       mmiowb();
+>> +       intmask = sdhci_readl(host, SDHCI_INT_STATUS);
+>> +       if (intmask)
+>> +               goto again;
+>>  out:
+>>         spin_unlock(&host->lock);
+>>
 > 
-> The reality is we'd probably want to implement run-time sorting
-> *anyway*, for the vast majority of people who don't want to convert to
-> a new incompatible file system format.  (Even if you can do the
-> conversion using e2fsck --- which is possible, but it would be even
-> more code to write --- system administrators tend to be very
-> conservative about such things, since they might need to boot an older
-> kernel, or use a rescue CD that doesn't have an uptodate kernel or
-> file system utilities, etc.)
+> Well, I chose this way to only printk the error once. With your suggestion it 
+> might be printed in each loop, dunno how often/fast these IRQ stats are set 
+> again after clearing. This would end in an endless loop if error flags are set 
+> again fast enough, but see below.
+> But in general I like this approach.
 > 
-> > So the index nodes contain the hash ranges for the leaf block, but
-> > the leaf block only contains the regular directory entries, not a
-> > hash for each name?  That would mean that adding or removing names
-> > would require moving around the regular directory entries wouldn't
-> > it?
+>> But maybe it would be safer limiting the number of loops i.e.
+>>
+>>
+>> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+>> index 8d66706..d88247d 100644
+>> --- a/drivers/mmc/host/sdhci.c
+>> +++ b/drivers/mmc/host/sdhci.c
+>> @@ -2268,7 +2268,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+>>         irqreturn_t result;
+>>         struct sdhci_host *host = dev_id;
+>>         u32 intmask;
+>> -       int cardint = 0;
+>> +       int cardint = 0, max_loops = 16;
+>>
+>>         spin_lock(&host->lock);
+>>
+>> @@ -2353,7 +2353,9 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+>>
+>>         result = IRQ_HANDLED;
+>>
+>> -       mmiowb();
+>> +       intmask = sdhci_readl(host, SDHCI_INT_STATUS);
+>> +       if (intmask && --max_loops)
+>> +               goto again;
+>>  out:
+>>         spin_unlock(&host->lock);
 > 
-> They aren't sorted in the leaf block, so we only need to move around
-> regular directory entries when we do a node split (and at the moment
-> we don't support shrinking directories), so we don't have to worry the
-> reverse case.
+> The actual problem I saw was a CMD6 command with an R1b response where the IRQ 
+> for the 'not busy' event was sent during ISR for the response. So I think 
+> normally this should only occur once.
+> Regarding error flags I masked the unhandled flags out in order to print an 
+> error only once, even if they might be set again in the next loop. With a 
+> simple check on intmask they might occur up to 16 times in the kernel log.
+> IMHO it makes no sense to repeatedly print errors about interrupt flags we 
+> don't handle.
 > 
-> > I would think that hash collisions are rare enough that reading a
-> > directory block you end up not needing once in a blue moon would be
-> > chalked up under "who cares".  So just stick with hash, offset pairs
-> > to map the hash to the normal directory entry.
-> 
-> With a 64-bit hash, and if we were actually going to implement this as
-> a new incompatible feature, you're probably right in terms of
-> accepting the extra directory block search.
-> 
-> We would still have to implement the case where hash collisions *do*
-> exist, though, and make sure the right thing happens in that case.
-> Even if the chance of that happening is 1 in 2**32, with enough
-> deployed systems (i.e., every Android handset, etc.) it's going to
-> happen in real life.
-> 
-> 					- Ted
+> Suggestions to get a more clean way?
+
+I don't know about clean, but there is this:
+
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 8d66706..e0909da 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2267,8 +2267,8 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+ {
+        irqreturn_t result;
+        struct sdhci_host *host = dev_id;
+-       u32 intmask;
+-       int cardint = 0;
++       u32 intmask, unexpected = 0;
++       int cardint = 0, max_loops = 16;
+
+        spin_lock(&host->lock);
+
+@@ -2344,19 +2344,24 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+        intmask &= ~SDHCI_INT_CARD_INT;
+
+        if (intmask) {
+-               pr_err("%s: Unexpected interrupt 0x%08x.\n",
+-                       mmc_hostname(host->mmc), intmask);
+-               sdhci_dumpregs(host);
+-
++               unexpected |= intmask;
+                sdhci_writel(host, intmask, SDHCI_INT_STATUS);
+        }
+
+        result = IRQ_HANDLED;
+
+-       mmiowb();
++       intmask = sdhci_readl(host, SDHCI_INT_STATUS);
++       if (intmask && --max_loops)
++               goto again;
+ out:
+        spin_unlock(&host->lock);
+
++       if (unexpected) {
++               pr_err("%s: Unexpected interrupt 0x%08x.\n",
++                       mmc_hostname(host->mmc), unexpected);
++               sdhci_dumpregs(host);
++       }
++
+        /*
+         * We have to delay this as it calls back into the driver.
+         */
