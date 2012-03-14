@@ -1,85 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419Ab2CNJC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 05:02:26 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:47068 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759495Ab2CNJCW (ORCPT
+	id S932427Ab2CNJDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 05:03:34 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63013 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932382Ab2CNJDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 05:02:22 -0400
-Date: Wed, 14 Mar 2012 17:02:07 +0800
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: manual merge of the devicetree tree with the powerpc
- tree
-Message-ID: <20120314090207.GA31112@shangw>
-Reply-To: Gavin Shan <shangw@linux.vnet.ibm.com>
-References: <20120313160100.c8cc3fd2b3d1f485ef7e7954@canb.auug.org.au>
- <20120313182612.0546D3E053B@localhost>
- <20120314015356.GA4028@shangw>
- <1331713762.3105.121.camel@pasglop>
+	Wed, 14 Mar 2012 05:03:32 -0400
+Date: Wed, 14 Mar 2012 11:03:27 +0200
+From: Amit Kucheria <amit.kucheria@linaro.org>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linaro-sched-sig@lists.linaro.org, Mike Galbraith <efault@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 00/14] sched: entity load-tracking re-work
+Message-ID: <20120314090327.GA3213@matterhorn1>
+Mail-Followup-To: Anca Emanuel <anca.emanuel@gmail.com>,
+	paulmck@linux.vnet.ibm.com, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	linaro-sched-sig@lists.linaro.org, Mike Galbraith <efault@gmx.de>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+	Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
+	Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
+ <20120312103927.GB25134@e103034-lin.cambridge.arm.com>
+ <20120313164403.GJ2349@linux.vnet.ibm.com>
+ <CAJL_dMtfs8nu+1YD86iZqf_ozbvPMAjc58JF=J4+aH9dD_GD5w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1331713762.3105.121.camel@pasglop>
+In-Reply-To: <CAJL_dMtfs8nu+1YD86iZqf_ozbvPMAjc58JF=J4+aH9dD_GD5w@mail.gmail.com>
+X-URL: http://www.verdurent.com/
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12031409-2674-0000-0000-000003ADFA95
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> >  +#if defined(CONFIG_EEH)
->> > >  +static inline struct eeh_dev *of_node_to_eeh_dev(struct device_node *dn)
->> > >  +{
->> > >  +  return dn->edev;
->> > >  +}
->> > >  +#endif
->> > 
->> > Ben, What is this?  I don't want the eeh_dev pointer in struct device_node.  Up to
->> > now we've avoided putting any reverse references into device_nodes.  For everything
->> > else we use a reverse lookup, particularly for devices, to avoid growing the
->> > device_node for each new type of lookup.
->> > 
->> 
->> It's used to trace the EEH device. When EEH (Enhanced Error Hanlding) is enabled,
->> EEH device will be created against PCI sensitive OF node to trace the EEH state
->> accordingly. Since you don't want see this in struct device_node, we have to change
->> struct eeh_dev for a little bit to so that all struct eeh_dev instances will form
->> a global list and we can search eeh_dev according to the given device_node through
->> the global list. 
->> 
->> I don't know the policy or rule here for much. I think we can have 2 options.
->> 
->> 1. Keep the code as being, and fix it later.
->> 2. Fix it now. 
->
->My bad, it's a mis-review, I thought it was still in pci_dn, I din't
->catch Gavin moving it to device-node.
->
->Yes, Gavin, we need to do something else, a chained list we walk or
->something like that. For the "fast path" which is when we have a pci_dev
->around, we can either add it to dev_archdata or hijack the pci-dev
->platform_data (I don't think anything uses it, Grant, do you know of
->anything ?)
->
+On 12 Mar 13, Anca Emanuel wrote:
+> @Paul E. McKenney: ups, that was some special pgp code ?
+> 
 
-Yes, Ben. I'll come up another patch on top of -next. It's supposed
-to introduce global list for newly created eeh_dev and retrieve
-the corresponding eeh_dev according to the given device_node through
-it.
+It does look gibberish in the gmail interface. Mutt seems to have no problems.
 
->The patches are already in -next and I won't rebase, so we need to fix
->it on top of the existing patches. Gavin, can you make a patch that puts
->it back into pci_dn to begin with, then we can contemplate what better
->long term solution we have ?
->
-
-I've had something more in my private git tree regarding this. I'll
-talk with you for your comments ;-)
-
-Thanks,
-Gavin
-
+/Amit
