@@ -1,251 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759883Ab2CNDZI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 23:25:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:46254 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758899Ab2CNDZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 23:25:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="118590623"
-Message-ID: <4F600F78.2060902@intel.com>
-Date: Wed, 14 Mar 2012 11:24:40 +0800
-From: ShuoX Liu <shuox.liu@intel.com>
-Reply-To: shuox.liu@intel.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Brown, Len" <len.brown@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "H. Peter Anvin" <hpa@zytor.com>, andi.kleen@intel.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [linux-pm] [PATCH v4] cpuidle: Add a sysfs entry to disable specific
- C state for debug purpose.
-References: <CAGF5oy_BUytjeDa8Oc62pRabaEqwqKCFuVJuzLd-XNZg34ne2w@mail.gmail.com> <1330998885.1916.89.camel@ymzhang> <20120306052236.GA19416@kroah.com> <1331013078.1916.103.camel@ymzhang> <20120306143935.GA23346@kroah.com> <20120312181151.GE14020@sirena.org.uk> <20120312192936.GC24873@kroah.com> <1331602594.1916.155.camel@ymzhang> <20120313192949.GA8568@kroah.com> <1331686500.1916.172.camel@ymzhang> <20120314024619.GC22955@kroah.com>
-In-Reply-To: <20120314024619.GC22955@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754001Ab2CNDqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 23:46:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:45570 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab2CNDqn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 23:46:43 -0400
+Date: Wed, 14 Mar 2012 14:46:33 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: linux-next: manual merge of the tip tree with the s390 tree
+Message-Id: <20120314144633.947d650e8b2904625df53416@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__14_Mar_2012_14_46_33_+1100_Bg0ow0f52Y7+54xT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ShuoX Liu <shuox.liu@intel.com>
+--Signature=_Wed__14_Mar_2012_14_46_33_+1100_Bg0ow0f52Y7+54xT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Some C states of new CPU might be not good. One reason is BIOS might configure
-them incorrectly. To help developers root cause it quickly, the patch adds a
-new sysfs entry, so developers could disable specific C state manually.
+Hi all,
 
-In addition, C state might have much impact on performance tuning, as it takes
-much time to enter/exit C states, which might delay interrupt processing. With
-the new debug option, developers could check if a deep C state could  impact
-performance and how much impact it could cause.
+Today's linux-next merge of the tip tree got a conflict in
+arch/s390/kernel/smp.c between commit 8b646bd75908 ("[S390] rework smp
+code") from the s390 tree and commit 5fbd036b552f ("sched: Cleanup
+cpu_active madness") from the tip tree.
 
-Also add this option in Documentation/cpuidle/sysfs.txt.
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
-Reviewed-by: Yanmin Zhang <yanmin_zhang@intel.com>
-Reviewed-and-Tested-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
----
-Thanks for all comments in previous mails. Here is the new patch.
+diff --cc arch/s390/kernel/smp.c
+index 64ebbcb,b0e28c4..0000000
+--- a/arch/s390/kernel/smp.c
++++ b/arch/s390/kernel/smp.c
+@@@ -714,12 -544,12 +714,6 @@@ static void __cpuinit smp_start_seconda
+  	ipi_call_lock();
+  	set_cpu_online(smp_processor_id(), true);
+  	ipi_call_unlock();
+- 	/*
+- 	 * Wait until the cpu which brought this one up marked it
+- 	 * active before enabling interrupts.
+- 	 */
+- 	while (!cpumask_test_cpu(smp_processor_id(), cpu_active_mask))
+- 		cpu_relax();
+ -	__ctl_clear_bit(0, 28); /* Disable lowcore protection */
+ -	S390_lowcore.restart_psw.mask =3D
+ -		PSW_DEFAULT_KEY | PSW_MASK_BASE | PSW_MASK_EA | PSW_MASK_BA;
+ -	S390_lowcore.restart_psw.addr =3D
+ -		PSW_ADDR_AMODE | (unsigned long) psw_restart_int_handler;
+ -	__ctl_set_bit(0, 28); /* Enable lowcore protection */
+  	local_irq_enable();
+  	/* cpu_idle will call schedule for us */
+  	cpu_idle();
 
----
- Documentation/cpuidle/sysfs.txt  |    5 +++++
- drivers/cpuidle/cpuidle.c        |    1 +
- drivers/cpuidle/governors/menu.c |    5 ++++-
- drivers/cpuidle/sysfs.c          |   37 +++++++++++++++++++++++++++++++++++++
- include/linux/cpuidle.h          |    1 +
- 5 files changed, 48 insertions(+), 1 deletions(-)
+--Signature=_Wed__14_Mar_2012_14_46_33_+1100_Bg0ow0f52Y7+54xT
+Content-Type: application/pgp-signature
 
-diff --git a/Documentation/cpuidle/sysfs.txt b/Documentation/cpuidle/sysfs.txt
-index 50d7b16..9d28a34 100644
---- a/Documentation/cpuidle/sysfs.txt
-+++ b/Documentation/cpuidle/sysfs.txt
-@@ -36,6 +36,7 @@ drwxr-xr-x 2 root root 0 Feb  8 10:42 state3
- /sys/devices/system/cpu/cpu0/cpuidle/state0:
- total 0
- -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-+-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
- -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
- -r--r--r-- 1 root root 4096 Feb  8 10:42 name
- -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-@@ -45,6 +46,7 @@ total 0
- /sys/devices/system/cpu/cpu0/cpuidle/state1:
- total 0
- -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-+-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
- -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
- -r--r--r-- 1 root root 4096 Feb  8 10:42 name
- -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-@@ -54,6 +56,7 @@ total 0
- /sys/devices/system/cpu/cpu0/cpuidle/state2:
- total 0
- -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-+-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
- -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
- -r--r--r-- 1 root root 4096 Feb  8 10:42 name
- -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-@@ -63,6 +66,7 @@ total 0
- /sys/devices/system/cpu/cpu0/cpuidle/state3:
- total 0
- -r--r--r-- 1 root root 4096 Feb  8 10:42 desc
-+-rw-r--r-- 1 root root 4096 Feb  8 10:42 disable
- -r--r--r-- 1 root root 4096 Feb  8 10:42 latency
- -r--r--r-- 1 root root 4096 Feb  8 10:42 name
- -r--r--r-- 1 root root 4096 Feb  8 10:42 power
-@@ -72,6 +76,7 @@ total 0
- 
- 
- * desc : Small description about the idle state (string)
-+* disable : Option to disable this idle state (bool)
- * latency : Latency to exit out of this idle state (in microseconds)
- * name : Name of the idle state (string)
- * power : Power consumed while in this idle state (in milliwatts)
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index 59f4261..7d66d3e 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -197,6 +197,7 @@ static void poll_idle_init(struct cpuidle_driver *drv)
- 	state->power_usage = -1;
- 	state->flags = 0;
- 	state->enter = poll_idle;
-+	state->disable = 0;
- }
- #else
- static void poll_idle_init(struct cpuidle_driver *drv) {}
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index ad09526..5c17ca1 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -280,7 +280,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	 * We want to default to C1 (hlt), not to busy polling
- 	 * unless the timer is happening really really soon.
- 	 */
--	if (data->expected_us > 5)
-+	if (data->expected_us > 5 &&
-+		drv->states[CPUIDLE_DRIVER_STATE_START].disable == 0)
- 		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
- 
- 	/*
-@@ -290,6 +291,8 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
- 	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
- 		struct cpuidle_state *s = &drv->states[i];
- 
-+		if (s->disable)
-+			continue;
- 		if (s->target_residency > data->predicted_us)
- 			continue;
- 		if (s->exit_latency > latency_req)
-diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-index 3fe41fe..f0fe0f5 100644
---- a/drivers/cpuidle/sysfs.c
-+++ b/drivers/cpuidle/sysfs.c
-@@ -11,6 +11,7 @@
- #include <linux/sysfs.h>
- #include <linux/slab.h>
- #include <linux/cpu.h>
-+#include <linux/capability.h>
- 
- #include "cpuidle.h"
- 
-@@ -222,6 +223,9 @@ struct cpuidle_state_attr {
- #define define_one_state_ro(_name, show) \
- static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0444, show, NULL)
- 
-+#define define_one_state_rw(_name, show, store) \
-+static struct cpuidle_state_attr attr_##_name = __ATTR(_name, 0644, show, store)
-+
- #define define_show_state_function(_name) \
- static ssize_t show_state_##_name(struct cpuidle_state *state, \
- 			 struct cpuidle_state_usage *state_usage, char *buf) \
-@@ -229,6 +233,21 @@ static ssize_t show_state_##_name(struct cpuidle_state *state, \
- 	return sprintf(buf, "%u\n", state->_name);\
- }
- 
-+#define define_store_state_function(_name) \
-+static ssize_t store_state_##_name(struct cpuidle_state *state, \
-+		const char *buf, size_t size) \
-+{ \
-+	long value; \
-+	if (!capable(CAP_SYS_ADMIN)) \
-+		return -EPERM; \
-+	kstrtol(buf, 0, &value); \
-+	if (value) \
-+		state->disable = 1; \
-+	else \
-+		state->disable = 0; \
-+	return size; \
-+}
-+
- #define define_show_state_ull_function(_name) \
- static ssize_t show_state_##_name(struct cpuidle_state *state, \
- 			struct cpuidle_state_usage *state_usage, char *buf) \
-@@ -251,6 +270,8 @@ define_show_state_ull_function(usage)
- define_show_state_ull_function(time)
- define_show_state_str_function(name)
- define_show_state_str_function(desc)
-+define_show_state_function(disable)
-+define_store_state_function(disable)
- 
- define_one_state_ro(name, show_state_name);
- define_one_state_ro(desc, show_state_desc);
-@@ -258,6 +279,7 @@ define_one_state_ro(latency, show_state_exit_latency);
- define_one_state_ro(power, show_state_power_usage);
- define_one_state_ro(usage, show_state_usage);
- define_one_state_ro(time, show_state_time);
-+define_one_state_rw(disable, show_state_disable, store_state_disable);
- 
- static struct attribute *cpuidle_state_default_attrs[] = {
- 	&attr_name.attr,
-@@ -266,6 +288,7 @@ static struct attribute *cpuidle_state_default_attrs[] = {
- 	&attr_power.attr,
- 	&attr_usage.attr,
- 	&attr_time.attr,
-+	&attr_disable.attr,
- 	NULL
- };
- 
-@@ -287,8 +310,22 @@ static ssize_t cpuidle_state_show(struct kobject * kobj,
- 	return ret;
- }
- 
-+static ssize_t cpuidle_state_store(struct kobject *kobj,
-+	struct attribute *attr, const char *buf, size_t size)
-+{
-+	int ret = -EIO;
-+	struct cpuidle_state *state = kobj_to_state(kobj);
-+	struct cpuidle_state_attr *cattr = attr_to_stateattr(attr);
-+
-+	if (cattr->store)
-+		ret = cattr->store(state, buf, size);
-+
-+	return ret;
-+}
-+
- static const struct sysfs_ops cpuidle_state_sysfs_ops = {
- 	.show = cpuidle_state_show,
-+	.store = cpuidle_state_store,
- };
- 
- static void cpuidle_state_sysfs_release(struct kobject *kobj)
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index 712abcc..eb150a5 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -45,6 +45,7 @@ struct cpuidle_state {
- 	unsigned int	exit_latency; /* in US */
- 	unsigned int	power_usage; /* in mW */
- 	unsigned int	target_residency; /* in US */
-+	unsigned int    disable;
- 
- 	int (*enter)	(struct cpuidle_device *dev,
- 			struct cpuidle_driver *drv,
--- 
-1.7.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPYBSZAAoJEECxmPOUX5FENpoP/Ar0QIYNOoNxnDpmWw1emPJW
+qn3DjbSQN84xXtdopyjS59dlfJahvCm1PkbkrJygiJCu8CN8KdAaWxlQAoVIhPOs
+sS6QqN5X0ySxbSgUaG4r7/fkOlETIAfyc019qvWmDMmy/1uc6dnbPBUojjyLiFLB
+yDfCP1iV3wanZsXfN3klwkAP7gUSzkCKaUJArzNYm3dlaz/h5yhtmDU+EsRvaQKm
+PTlRTGwbvdDX2aBP+0wMqVXnhU8tPzU4M3fvJNLbJnNWl8a0Fjhrs6sScA8nFM90
+hyhyxeUUT7DiCdThhjEg4yUfIJcV3vaI3AeZKzA+vFpXNrTeSAjlSl7r5V9YI4g3
+WwechzPmO9tQrWxIDtIvsISHrUq8LWSrOz5aD5pprsE1QMNXDNjxNfXmS/DpH5Tr
+gizRbTACcLsXEDd6Rhqh1AUQGqSDOEHJvF3spmu9k65yoHYE7a1Knmy83sBWZZHF
+yT1xVr3bgtdiZNx1C5ahzV1qci+bd3ZX9V8GY9jqnWa46t5YCa0KTz9vT0MTWDYG
+/XZ+S0Y+rr3WieDksRpoZIc7PUn1q5Ed6Z6hknkBOnZoN0w92BTtf1gLWIqbrPNq
+z0yLNs7nsMYp6TJPMMB7NVC+p7Kqe5r2xEmJtiR9ujvSS0XRrF0DbJsdOtmYrpd3
+rWDkPALSCySgFqw37xd8
+=/3s/
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__14_Mar_2012_14_46_33_+1100_Bg0ow0f52Y7+54xT--
