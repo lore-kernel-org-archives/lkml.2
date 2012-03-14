@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768Ab2CNPOl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 11:14:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2587 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752649Ab2CNPOk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 11:14:40 -0400
-X-Authority-Analysis: v=2.0 cv=d9t3OGfE c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=mPAfQOb7mL0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=vJ7kqOu9oBQ1AYStUT4A:9 a=cTIZWZ_8NEKN72llUIEA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1331738077.25686.668.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RT 0/7] [ANNOUNCE] 3.0.23-rt40-rc1
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Karsten Wiese <fzuuzf@googlemail.com>
-Cc: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Wed, 14 Mar 2012 11:14:37 -0400
-In-Reply-To: <201203141352.10145.fzuuzf@googlemail.com>
-References: <20120314022658.783312660@goodmis.org>
-	 <201203141352.10145.fzuuzf@googlemail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1752974Ab2CNPR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 11:17:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14367 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752273Ab2CNPRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 11:17:54 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1331736182.5104.74.camel@jerome.southpole.se>
+References: <1331736182.5104.74.camel@jerome.southpole.se> <CACM3HyHaFqVBaALMNB9dTE+7JrT1qD0jrYtV2PzwTskv8sW4Hg@mail.gmail.com> <20120312233602.13888.27659.stgit@warthog.procyon.org.uk> <20120312233858.13888.34822.stgit@warthog.procyon.org.uk> <201203130900.41993.arnd@arndb.de> <11556.1331723400@redhat.com> 
+To: Jonas Bonn <jonas@southpole.se>
+Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, linux@openrisc.net,
+        linux-kernel@vger.kernel.org, paul.gortmaker@windriver.com,
+        hpa@zytor.com, torvalds@linux-foundation.org
+Subject: Re: [ORLinux] [PATCH 17/35] Make asm-generic/cmpxchg.h #include asm-generic/cmpxchg-local.h [ver #2]
+Date: Wed, 14 Mar 2012 15:17:38 +0000
+Message-ID: <18016.1331738258@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-14 at 13:52 +0100, Karsten Wiese wrote:
-> Am Mittwoch 14 März 2012 schrieb Steven Rostedt:
-> 
-> 
-> > Changes from 3.0.23-rt39:
-> > 
-> > ---
-> > 
-> > 
-> > Steven Rostedt (2):
-> >       Revert "ACPI: Convert embedded controller lock to raw spinlock"
-> >       Linux 3.0.23-rt40-rc1
-> 
-> 
-> How about also reverting the commit that has changed acpi_gbl_gpe_lock to a
-> raw spinlock?
+Jonas Bonn <jonas@southpole.se> wrote:
 
-Hmm, you're right, I missed that.
+> Am I right in thinking that OpenRISC is the only architecture the
+> depends on the changes in asm-generic?
 
-It's harder to find things removed from Thomas's series than it is to
-add new stuff :-/
+I'm not sure.  I think c6x does too to some extent.
 
-As I'm ready to push this, I'll do the removal after updating to 3.0.24.
+> The error I get while building (if asm/system.h is included) is a
+> circular dependency that I don't see that I can easily resolve:
 
--- Steve
+How do I get an openrisc toolchain?
 
-
+David
