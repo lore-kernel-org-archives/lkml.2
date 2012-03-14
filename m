@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503Ab2CNNGH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 09:06:07 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:33732 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932360Ab2CNNGF (ORCPT
+	id S1030624Ab2CNNH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 09:07:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57400 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757627Ab2CNNHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 09:06:05 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V3 0/8] memcg: Add memcg extension to control HugeTLB allocation
-In-Reply-To: <20120313144930.284228c4.akpm@linux-foundation.org>
-References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120313144930.284228c4.akpm@linux-foundation.org>
-User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 14 Mar 2012 18:31:09 +0530
-Message-ID: <87fwdb8hgq.fsf@linux.vnet.ibm.com>
+	Wed, 14 Mar 2012 09:07:24 -0400
+Date: Wed, 14 Mar 2012 13:07:22 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: [GIT PULL] regulator fixes for 3.3
+Message-ID: <20120314130722.GK3133@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12031413-9574-0000-0000-000001CC1D44
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pN9MePJoZbRKbUk1"
+Content-Disposition: inline
+X-Cookie: It's all in the mind, ya know.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 14:49:30 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Tue, 13 Mar 2012 12:37:04 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> 
-> > This patchset implements a memory controller extension to control
-> > HugeTLB allocations.
-> 
-> Well, why?  What are the use cases?  Who is asking for this?  Why do
-> they need it and how will they use it?  etcetera.
-> 
-> Please explain, with some care, why you think we should add this
-> feature to the kernel.  So that others can assess whether the value it
-> adds is worth the cost of adding and maintaining it.
-> 
 
-The goal is to control how many HugeTLB pages a group of task can
-allocate. It can be looked at as an extension of the existing quota
-interface which limits the number of HugeTLB pages per hugetlbfs
-superblock. HPC job scheduler requires jobs to specify their resource
-requirements in the job file. Once their requirements can be met,
-job schedulers like (SLURM) will schedule the job. We need to make sure
-that the jobs won't consume more resources than requested. If they do
-we should error out or kill the application.
+--pN9MePJoZbRKbUk1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--aneesh
+The following changes since commit fde7d9049e55ab85a390be7f415d74c9f62dd0f9:
 
+  Linux 3.3-rc7 (2012-03-10 13:49:52 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/for-linus
+
+for you to fetch changes up to 9365121869a15da99d6091802f11a82d59024d62:
+
+  regulator: da9052: Ensure the selected voltage falls within the specified range (2012-03-11 20:39:10 +0000)
+
+----------------------------------------------------------------
+Another small batch of driver specific bug fixes, a couple more errors
+in the da9052 driver and a bad return value in the tps6524x driver.
+----------------------------------------------------------------
+
+Axel Lin (3):
+      regulator: Fix setting selector in tps6524x set_voltage function
+      regulator: Set n_voltages for da9052 regulators
+      regulator: da9052: Ensure the selected voltage falls within the specified range
+
+ drivers/regulator/da9052-regulator.c   |   12 ++++++++----
+ drivers/regulator/tps6524x-regulator.c |    2 +-
+ 2 files changed, 9 insertions(+), 5 deletions(-)
+
+--pN9MePJoZbRKbUk1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPYJf1AAoJEBus8iNuMP3dSYcP/1W+5LSqI86ovOlzNeJSbUWM
+4lZjzsu2HuY1seBdfk8tT3rjPd5SFajVWtQVqk01s7Ev5DQ0w7+q218Ilzzj/Eu7
+2ZXrnvfQFn7jfq9utmb+DcYAgCUaBACAdxhAUNYhA49d27cTHg/xBES/26dPFbe2
+YsRYpn22W++li6YQx17qT1J5KhIYh0cDdXbM7uGKsWtMVe33W3qHE/1mO7ncvKO9
+/sjNzQiNbQh8c2zS6k+HLdHPMMApxndT8o/XBqBTmq7HLQBClMdAmjnY7EX7mOUq
+pDvUBpBaaHYmqeb3WFw6XId7/UhooaIuwAkQ6TMGztiUL2Gq3jidV06uRfCkNpn0
+8lZdH5t0L5R4cQOvYWV9M1T5n9GEseXLE6dQcPXedZmruwvHT4NoHLarRZRJBdUg
+vLNvarI3uGPGgvQ6NmuF9Y5SZry4GXciFsq1e4Zb97pT7k3LgzyvjToU+wHnCpDy
+ycODWoLX6a6TZ3Zw+jhxZYRJxoxYcy19OiSTaGtwfTvGVyHSp3891c6vhzdRA4vI
+PzAh6HEJU0qEqFlcAcK5zXhRinjvJwerlFiI9K06oPy+GVgvKq3Rxefmxj2758C6
+5qo8XCrA8zAyaExNEZtDymtEctJLKV+g4z++PyTw+4EOjQmEuEKtOyqRddX0GXmc
+gYDlHSUScs/d1I14CaVr
+=tdmw
+-----END PGP SIGNATURE-----
+
+--pN9MePJoZbRKbUk1--
