@@ -1,90 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761022Ab2CNMmB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 08:42:01 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49747 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760963Ab2CNMl5 (ORCPT
+	id S1761015Ab2CNMnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 08:43:47 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:45118
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760877Ab2CNMno (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 08:41:57 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V3 7/8] memcg: move HugeTLB resource count to parent cgroup on memcg removal
-In-Reply-To: <20120313144705.020b6dde.akpm@linux-foundation.org>
-References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331622432-24683-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120313144705.020b6dde.akpm@linux-foundation.org>
-User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 14 Mar 2012 17:52:28 +0530
-Message-ID: <87ipi78j97.fsf@linux.vnet.ibm.com>
+	Wed, 14 Mar 2012 08:43:44 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 14 Mar 2012 20:45:23 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>
+Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
+Message-ID: <20120314124512.GG1180@shlinux2.ap.freescale.net>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
+ <1331628428-24017-2-git-send-email-b29396@freescale.com>
+ <20120313172351.97C5E3E053B@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12031412-4790-0000-0000-000001C76162
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120313172351.97C5E3E053B@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012 14:47:05 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Tue, 13 Mar 2012 12:37:11 +0530
-> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> 
-> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+On Wed, Mar 14, 2012 at 01:23:51AM +0800, Grant Likely wrote:
+> On Tue, 13 Mar 2012 16:47:04 +0800, Dong Aisheng <b29396@freescale.com> wrote:
+> > From: Dong Aisheng <dong.aisheng@linaro.org>
 > > 
-> > This add support for memcg removal with HugeTLB resource usage.
+> > This patch includes basic dt support which can boot via nfs rootfs.
 > > 
-> > ...
-> >
-> > +int hugetlb_force_memcg_empty(struct cgroup *cgroup)
-> 
-> It's useful to document things, you know.  For a major function like
-> this, a nice little description of why it exists, what its role is,
-> etc.  Programming is not just an act of telling a computer what to do:
-> it is also an act of telling other programmers what you wished the
-> computer to do.  Both are important, and the latter deserves care.
-> 
-
-
-Will do.
-
-> > +{
-> > +	struct hstate *h;
-> > +	struct page *page;
-> > +	int ret = 0, idx = 0;
+> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> > ---
+> >  Documentation/devicetree/bindings/arm/fsl.txt |    4 +
+> >  arch/arm/boot/dts/imx28-evk.dts               |   31 +++++++++
+> >  arch/arm/boot/dts/imx28.dtsi                  |   88 +++++++++++++++++++++++++
+> >  arch/arm/mach-mxs/Kconfig                     |    9 +++
+> >  arch/arm/mach-mxs/Makefile                    |    1 +
+> >  arch/arm/mach-mxs/imx28-dt.c                  |   67 +++++++++++++++++++
+> >  6 files changed, 200 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/arm/fsl.txt b/Documentation/devicetree/bindings/arm/fsl.txt
+> > index 54bddda..9f21faf 100644
+> > --- a/Documentation/devicetree/bindings/arm/fsl.txt
+> > +++ b/Documentation/devicetree/bindings/arm/fsl.txt
+> > @@ -1,6 +1,10 @@
+> >  Freescale i.MX Platforms Device Tree Bindings
+> >  -----------------------------------------------
+> >  
+> > +i.MX28 Evaluation Kit
+> > +Required root node properties:
+> > +    - compatible = "fsl,imx28-evk", "fsl,imx28";
 > > +
-> > +	do {
-> > +		if (cgroup_task_count(cgroup) || !list_empty(&cgroup->children))
-> > +			goto out;
-> > +		if (signal_pending(current)) {
-> > +			ret = -EINTR;
-> > +			goto out;
-> > +		}
+> >  i.MX51 Babbage Board
+> >  Required root node properties:
+> >      - compatible = "fsl,imx51-babbage", "fsl,imx51";
+> > diff --git a/arch/arm/boot/dts/imx28-evk.dts b/arch/arm/boot/dts/imx28-evk.dts
+> > new file mode 100644
+> > index 0000000..9758dc4
+> > --- /dev/null
+> > +++ b/arch/arm/boot/dts/imx28-evk.dts
+> > @@ -0,0 +1,31 @@
+> > +/*
+> > + * Copyright 2012 Freescale Semiconductor, Inc.
+> > + *
+> > + * The code contained herein is licensed under the GNU General Public
+> > + * License. You may obtain a copy of the GNU General Public License
+> > + * Version 2 or later at the following locations:
+> > + *
+> > + * http://www.opensource.org/licenses/gpl-license.html
+> > + * http://www.gnu.org/copyleft/gpl.html
+> > + */
+> > +
+> > +/dts-v1/;
+> > +/include/ "imx28.dtsi"
+> > +
+> > +/ {
+> > +	model = "Freescale i.MX28 Evaluation Kit";
+> > +	compatible = "fsl,imx28-evk", "fsl,imx28";
+> > +
+> > +	memory {
+> > +		device_type = "memory";
+> > +		reg = <0x40000000 0x08000000>;
+> > +	};
+> > +
+> > +	ahb@80080000 {
+> > +		fec@800f0000 {
+> > +			phy-mode = "rmii";
+> > +			local-mac-address = [00 04 9F 01 7D 5B];
 > 
-> Why is its behaviour altered by signal_pending()?  This seems broken.
-
-If the task that is doing a cgroup_rmdir got a signal we don't really
-need to loop till the hugetlb resource usage become zero. 
-
-
+> Generally a bad idea to put a specific mac address into the device tree.
+> Better to fill it with zeros.  Otherwise all the dev boards will end up using
+> the same value.
 > 
-> > +		for_each_hstate(h) {
-> > +			spin_lock(&hugetlb_lock);
-> > +			list_for_each_entry(page, &h->hugepage_activelist, lru) {
-> > +				ret = mem_cgroup_move_hugetlb_parent(idx, cgroup, page);
-> > +				if (ret) {
-> > +					spin_unlock(&hugetlb_lock);
-> > +					goto out;
-> > +				}
-> > +			}
-> > +			spin_unlock(&hugetlb_lock);
-> > +			idx++;
-> > +		}
-> > +		cond_resched();
-> > +	} while (mem_cgroup_hugetlb_usage(cgroup) > 0);
-> > +out:
-> > +	return ret;
-> > +}
+Yes, this issue also exists on other platfroms like mx6q.
+One way is to dynamically get mac address by reading otp register as non-dt does
+like:
+static int __init mx28evk_fec_get_mac(void)
+{
+        int i;
+        u32 val;
+        const u32 *ocotp = mxs_get_ocotp();
 
--aneesh
+        if (!ocotp)
+                return -ETIMEDOUT;
+
+        /*
+         * OCOTP only stores the last 4 octets for each mac address,
+         * so hard-code Freescale OUI (00:04:9f) here.
+         */
+        for (i = 0; i < 2; i++) {
+                val = ocotp[i];
+                mx28_fec_pdata[i].mac[0] = 0x00;
+                mx28_fec_pdata[i].mac[1] = 0x04;
+                mx28_fec_pdata[i].mac[2] = 0x9f;
+                mx28_fec_pdata[i].mac[3] = (val >> 16) & 0xff;
+                mx28_fec_pdata[i].mac[4] = (val >> 8) & 0xff;
+                mx28_fec_pdata[i].mac[5] = (val >> 0) & 0xff;
+        }
+
+        return 0;
+}
+
+But it seems this needs pass mac address to fec driver via platforom data which is
+not friendly to dt.
+
+Another way may be changing fec driver to get the fixed part of mac address(first
+two bytes) from device tree and read the left dynamical part from otp which i'm not
+sure is better enough.
+
+BTW, filling with zeros seems not work since it's invalid mac address.
+
+Regards
+Dong Aisheng
+
+
 
