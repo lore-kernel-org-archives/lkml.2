@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761546Ab2CNVif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 17:38:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60706 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758815Ab2CNVie (ORCPT
+	id S1031008Ab2CNVj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 17:39:57 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:35760 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758815Ab2CNVjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 17:38:34 -0400
-Date: Wed, 14 Mar 2012 14:38:32 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Doug Ledford <dledford@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Amerigo Wang <amwang@redhat.com>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "\"Eric W. Biederman\" (commit_signer:2/9=22%)" 
-	<ebiederm@xmission.com>,
-        "Joe Korty (commit_signer:2/9=22%)" <joe.korty@ccur.com>,
-        "David Howells (commit_signer:2/9=22%)" <dhowells@redhat.com>
-Subject: Re: [resend][PATCH 1/3] mqueue: revert bump up DFLT_*MAX
-Message-Id: <20120314143832.286b497e.akpm@linux-foundation.org>
-In-Reply-To: <4F610D81.3020300@redhat.com>
-References: <1323470163-8723-1-git-send-email-kosaki.motohiro@gmail.com>
-	<4EEE3124.7070605@gmail.com>
-	<20111218103836.258eedb8.akpm@linux-foundation.org>
-	<4F610D81.3020300@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Mar 2012 17:39:55 -0400
+From: Marc Reilly <marc@cpdesign.com.au>
+To: sameo@linux.intel.com
+Cc: linux-arm-kernel@lists.infradead.org,
+        spi-devel-general@lists.sourceforge.net, linux-i2c@vger.kernel.org,
+        u.kleine-koenig@pengutronix.de, oskar@scara.com,
+        linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com
+Subject: mc13xxx: add I2C support (now with regmap), V3
+Date: Thu, 15 Mar 2012 07:43:04 +1100
+Message-Id: <1331757790-10583-1-git-send-email-marc@cpdesign.com.au>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Mar 2012 17:28:33 -0400
-Doug Ledford <dledford@redhat.com> wrote:
+Hi,
 
-> This has obviously fallen through the cracks.
+This series (against mfd-2.6/for-next) changes the mc13xxx driver to use 
+regmap and adds I2C support. It generally goes about this the same way as 
+the previous 2 versions, but now uses regmap.
 
-It sure has.  Please dig out whatever is the currently favored
-patchset, refresh, retest and resend, with changelogging which fully
-covers the reasoning and decision process?
+I am unable to test SPI functionality, but the I2C stuff works. It would be
+great if someone could test the SPI side again.
 
-> so that if there are any apps out there that have been coded to expect
-> this behavior, then there is a workaround path for them until they get
-> coded
+The first 2 patches add required support to regmap for the mc13xxx register
+format(s), I've included them here for convenience.
+@Mark B: I also have some versions of these that apply against regmap/for-next.
 
-We'll be especially interested in the implications of this part.
+Cheers,
+Marc
+
 
