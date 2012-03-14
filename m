@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758295Ab2CNHnI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 03:43:08 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19571 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652Ab2CNHnF (ORCPT
+	id S1758597Ab2CNHnv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 03:43:51 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42232 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754961Ab2CNHnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 03:43:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 14 Mar 2012 00:43:04 -0700
-Message-ID: <4F604B12.202@nvidia.com>
-Date: Wed, 14 Mar 2012 13:08:58 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Wed, 14 Mar 2012 03:43:45 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "lrg@ti.com" <lrg@ti.com>, "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V1 2/2] regulator: tps65910: Provide settling time for
- DCDC voltage change
-References: <1331618721-26326-1-git-send-email-ldewangan@nvidia.com> <1331618721-26326-3-git-send-email-ldewangan@nvidia.com> <20120313232304.GX3177@opensource.wolfsonmicro.com>
-In-Reply-To: <20120313232304.GX3177@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120309174411.GI3852@pengutronix.de>
+References: <1331306449-28591-1-git-send-email-javier.martin@vista-silicon.com>
+	<20120309174411.GI3852@pengutronix.de>
+Date: Wed, 14 Mar 2012 08:43:45 +0100
+Message-ID: <CACKLOr0XzE0PZk=k5xQQvOA_5dfBk1mYDVyKCep36=3w7ugwWg@mail.gmail.com>
+Subject: Re: [PATCH v3 00/13] dmaengine: imx-dma: merge dma arch code into dmaengine.
+From: javier Martin <javier.martin@vista-silicon.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, vinod.koul@intel.com, linux@arm.linux.org.uk,
+        kernel@pengutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 March 2012 04:53 AM, Mark Brown wrote:
-> * PGP Signed by an unknown key
+On 9 March 2012 18:44, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Fri, Mar 09, 2012 at 04:20:36PM +0100, Javier Martin wrote:
+>> The following series have to be applied on top of the following patches:
+>> [PATCH v2 1/2] dmaengine: Add support for MEMCPY for imx-dma.
+>> [PATCH v3 2/2] dmaengine: Add support for multiple descriptors for imx-dma.
+>>
+>> As discussed with Vinod and Sascha, the file 'arch/arm/mach-imx/dma-v1.c'
+>> is deprecated and no new patches are accepted for it.
+>>
+>> This series merges this code into the imx-dma.c dmaengine driver.
 >
-> On Tue, Mar 13, 2012 at 11:35:21AM +0530, Laxman Dewangan wrote:
->> Settling time is require when there is dcdc rail's voltage change.
->> Returning proper delay time for dcdc voltage change to settle down
->> the output voltage to new value.
-> This one doesn't apply, can you check against current topic/drivers
-> please?  I suspect a collision with some of Axel's work.
+> Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+>
 
-Oops, I should wait for Axel's change to be in next. I resend this patch 
-after syncing my tree with your's tree topic/driver.
+Vinod,
+I think with Sascha's ack, this series is ready to be merged. It's
+quite important for us that it makes it for 3.4.
 
+Please, don't forget the following patch too, which is meant to be
+applied on top of this series:
+
+[PATCH] dmaengine: i.MX: Add support for interleaved transfers.
+
+Regards.
+-- 
+Javier Martin
+Vista Silicon S.L.
+CDTUC - FASE C - Oficina S-345
+Avda de los Castros s/n
+39005- Santander. Cantabria. Spain
++34 942 25 32 60
+www.vista-silicon.com
