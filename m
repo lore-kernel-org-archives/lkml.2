@@ -1,39 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030912Ab2CNOZy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:25:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42123 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030522Ab2CNOZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:25:52 -0400
-Date: Wed, 14 Mar 2012 10:25:43 -0400
-From: Dave Jones <davej@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org, JBeulich@suse.com
-Subject: Re: [PATCH 1/2] [CPUFREQ]: provide disable_cpufreq() function to
- disable the API.
-Message-ID: <20120314142543.GB2371@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
-	JBeulich@suse.com
-References: <1331680720-18268-1-git-send-email-konrad.wilk@oracle.com>
- <1331680720-18268-2-git-send-email-konrad.wilk@oracle.com>
+	id S1030952Ab2CNO22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:28:28 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43382 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030854Ab2CNO2Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 10:28:24 -0400
+Message-ID: <4F60AB04.1000706@gmail.com>
+Date: Wed, 14 Mar 2012 10:28:20 -0400
+From: Phillip Susi <phillsusi@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331680720-18268-2-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Ted Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@whamcloud.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: getdents - ext4 vs btrfs performance
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com> <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com> <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com> <20120310044804.GB5652@thunk.org> <4F5F9A97.5060404@ubuntu.com> <20120313195339.GA24124@thunk.org> <4F5FAC9C.9070607@gmail.com> <20120313213304.GB11969@thunk.org>
+In-Reply-To: <20120313213304.GB11969@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 07:18:39PM -0400, Konrad Rzeszutek Wilk wrote:
- > useful for disabling cpufreq altogether. The cpu frequency
- > scaling drivers and cpu frequency governors will fail to register.
+On 3/13/2012 5:33 PM, Ted Ts'o wrote:
+> Are you volunteering to spearhead the design and coding of such a
+> thing?  Run-time sorting is backwards compatible, and a heck of a lot
+> easier to code and test...
 
-looks good to me. Are you ok with me taking 1/2 through cpufreq.git, and
-then you pushing the xen bit yourself ?
-(or I could take them both if it makes things easier)
+Do you really think it is that much easier?  Even if it is easier, it is 
+still an ugly kludge.  It would be much better to fix the underlying 
+problem rather than try to paper over it.
 
-	Dave
+> The reality is we'd probably want to implement run-time sorting
+> *anyway*, for the vast majority of people who don't want to convert to
+> a new incompatible file system format.  (Even if you can do the
+> conversion using e2fsck --- which is possible, but it would be even
+> more code to write --- system administrators tend to be very
+> conservative about such things, since they might need to boot an older
+> kernel, or use a rescue CD that doesn't have an uptodate kernel or
+> file system utilities, etc.)
+
+The same argument could have been made against the current htree 
+implementation when it was added.  I think it carries just as little 
+weight now as it did then.  People who care about the added performance 
+the new feature provides can use it, those who don't, won't.  Eventually 
+it will become ubiquitous.
+
+> We would still have to implement the case where hash collisions *do*
+> exist, though, and make sure the right thing happens in that case.
+> Even if the chance of that happening is 1 in 2**32, with enough
+> deployed systems (i.e., every Android handset, etc.) it's going to
+> happen in real life.
+
+Sure it will happen, but if we read one extra block 1 in 4 billion 
+times, nobody is going to notice.
+
