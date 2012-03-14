@@ -1,203 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030730Ab2CNQj3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 12:39:29 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:41527 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018Ab2CNQj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 12:39:26 -0400
-Date: Wed, 14 Mar 2012 12:35:17 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org,
-        xen-devel <xen-devel@lists.xen.org>
-Subject: Re: [Xen-devel] [PATCH] xen: constify all instances of "struct
- attribute_group"
-Message-ID: <20120314163517.GF16960@phenom.dumpdata.com>
-References: <4F4786FD0200007800074A0C@nat28.tlf.novell.com>
- <20120226160230.GA2274@phenom.dumpdata.com>
- <4F4B4C9D0200007800074E09@nat28.tlf.novell.com>
+	id S1760469Ab2CNQsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 12:48:15 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:47127 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756141Ab2CNQsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 12:48:10 -0400
+Date: Wed, 14 Mar 2012 12:48:04 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Zach Brown <zab@zabbo.net>
+Cc: Yongqiang Yang <xiaoqiangnk@gmail.com>, Phillip Susi <phillsusi@gmail.com>,
+        Andreas Dilger <adilger@whamcloud.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120314164804.GA28042@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Zach Brown <zab@zabbo.net>,
+	Yongqiang Yang <xiaoqiangnk@gmail.com>,
+	Phillip Susi <phillsusi@gmail.com>,
+	Andreas Dilger <adilger@whamcloud.com>,
+	Lukas Czerner <lczerner@redhat.com>,
+	Jacek Luczak <difrost.kernel@gmail.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
+ <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
+ <20120310044804.GB5652@thunk.org>
+ <4F5F9A97.5060404@ubuntu.com>
+ <20120313195339.GA24124@thunk.org>
+ <4F5FAC9C.9070607@gmail.com>
+ <20120313213304.GB11969@thunk.org>
+ <CAGBYx2ZQk+kobPj5ff0NKEfK_-kD0NK4WiNUruF=d443PV-NSw@mail.gmail.com>
+ <20120314025108.GF15379@thunk.org>
+ <4F60A881.3070607@zabbo.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F4B4C9D0200007800074E09@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4F60C9B9.0088,ss=1,re=0.000,fgs=0
+In-Reply-To: <4F60A881.3070607@zabbo.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Feb 27, 2012 at 08:27:57AM +0000, Jan Beulich wrote:
-> >>> On 26.02.12 at 17:02, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > On Fri, Feb 24, 2012 at 11:47:57AM +0000, Jan Beulich wrote:
-> >> The functions these get passed to have been taking pointers to const
-> >> since at least 2.6.16.
-> > 
-> > What is this based on? I get:
+On Wed, Mar 14, 2012 at 10:17:37AM -0400, Zach Brown wrote:
 > 
-> Plain 3.3-rc4.
+> >We could do this if we have two b-trees, one indexed by filename and
+> >one indexed by inode number, which is what JFS (and I believe btrfs)
+> >does.
 > 
-> > HEAD is now at b01543d... Linux 3.3-rc4
-> > konrad@phenom:~/ssd/linux$ patch -p1 < /tmp/jan-1
-> > patching file drivers/xen/sys-hypervisor.c
-> > Hunk #1 FAILED at 97.
-> > Hunk #2 FAILED at 210.
-> > Hunk #3 FAILED at 340.
-> > 3 out of 3 hunks FAILED -- saving rejects to file 
-> > drivers/xen/sys-hypervisor.c.rej
-> > patching file drivers/xen/xen-balloon.c
-> > Hunk #1 FAILED at 207.
-> > 1 out of 1 hunk FAILED -- saving rejects to file drivers/xen/xen-balloon.c.rej
-> > patching file drivers/xen/xen-selfballoon.c
-> > Hunk #1 FAILED at 488.
-> > 1 out of 1 hunk FAILED -- saving rejects to file 
-> > drivers/xen/xen-selfballoon.c.rej
-> 
-> Is /tmp/jan-1 perhaps suffering whitespace corruption (which would
-> have happened at your end, as I can take the tail of your response,
-> remove the reply quotation, and apply it successfully), even though
-> I don't think we had problems of this kind in the past? I'll attach the
-> patch here, just in case.
+> Typically the inode number of the destination inode isn't used to index
+> entries for a readdir tree because of (wait for it) hard links.  You end
+> up right back where you started with multiple entries per key.
 
-Thanks. Used the attached patch and it applied nicely. 
-> 
-> Jan
-> 
-> >> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> >> 
-> >> ---
-> >>  drivers/xen/sys-hypervisor.c  |    6 +++---
-> >>  drivers/xen/xen-balloon.c     |    2 +-
-> >>  drivers/xen/xen-selfballoon.c |    2 +-
-> >>  3 files changed, 5 insertions(+), 5 deletions(-)
-> >> 
-> >> --- 3.3-rc4/drivers/xen/sys-hypervisor.c
-> >> +++ 3.3-rc4-xen-const-attribute_group/drivers/xen/sys-hypervisor.c
-> >> @@ -97,7 +97,7 @@ static struct attribute *version_attrs[]
-> >>  	NULL
-> >>  };
-> >>  
-> >> -static struct attribute_group version_group = {
-> >> +static const struct attribute_group version_group = {
-> >>  	.name = "version",
-> >>  	.attrs = version_attrs,
-> >>  };
-> >> @@ -210,7 +210,7 @@ static struct attribute *xen_compile_att
-> >>  	NULL
-> >>  };
-> >>  
-> >> -static struct attribute_group xen_compilation_group = {
-> >> +static const struct attribute_group xen_compilation_group = {
-> >>  	.name = "compilation",
-> >>  	.attrs = xen_compile_attrs,
-> >>  };
-> >> @@ -340,7 +340,7 @@ static struct attribute *xen_properties_
-> >>  	NULL
-> >>  };
-> >>  
-> >> -static struct attribute_group xen_properties_group = {
-> >> +static const struct attribute_group xen_properties_group = {
-> >>  	.name = "properties",
-> >>  	.attrs = xen_properties_attrs,
-> >>  };
-> >> --- 3.3-rc4/drivers/xen/xen-balloon.c
-> >> +++ 3.3-rc4-xen-const-attribute_group/drivers/xen/xen-balloon.c
-> >> @@ -207,7 +207,7 @@ static struct attribute *balloon_info_at
-> >>  	NULL
-> >>  };
-> >>  
-> >> -static struct attribute_group balloon_info_group = {
-> >> +static const struct attribute_group balloon_info_group = {
-> >>  	.name = "info",
-> >>  	.attrs = balloon_info_attrs
-> >>  };
-> >> --- 3.3-rc4/drivers/xen/xen-selfballoon.c
-> >> +++ 3.3-rc4-xen-const-attribute_group/drivers/xen/xen-selfballoon.c
-> >> @@ -488,7 +488,7 @@ static struct attribute *selfballoon_att
-> >>  	NULL
-> >>  };
-> >>  
-> >> -static struct attribute_group selfballoon_group = {
-> >> +static const struct attribute_group selfballoon_group = {
-> >>  	.name = "selfballoon",
-> >>  	.attrs = selfballoon_attrs
-> >>  };
-> >> 
-> >> 
-> 
-> 
-> 
+Well, if you are using 32-bit (or even 48-bit) inode numbers and a
+64-bit telldir cookie, it's possible to make the right thing happen.
+But yes, if you are using 32-bit inode numbers and a 32-bit telldir
+cookie, dealing with what happens when you have multiple hard links to
+the same inode in the same directory gets tricky.
 
-> xen: constify all instances of "struct attribute_group"
-> 
-> The functions these get passed to have been taking pointers to const
-> since at least 2.6.16.
-> 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> 
-> ---
->  drivers/xen/sys-hypervisor.c  |    6 +++---
->  drivers/xen/xen-balloon.c     |    2 +-
->  drivers/xen/xen-selfballoon.c |    2 +-
->  3 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> --- 3.3-rc4/drivers/xen/sys-hypervisor.c
-> +++ 3.3-rc4-xen-const-attribute_group/drivers/xen/sys-hypervisor.c
-> @@ -97,7 +97,7 @@ static struct attribute *version_attrs[]
->  	NULL
->  };
->  
-> -static struct attribute_group version_group = {
-> +static const struct attribute_group version_group = {
->  	.name = "version",
->  	.attrs = version_attrs,
->  };
-> @@ -210,7 +210,7 @@ static struct attribute *xen_compile_att
->  	NULL
->  };
->  
-> -static struct attribute_group xen_compilation_group = {
-> +static const struct attribute_group xen_compilation_group = {
->  	.name = "compilation",
->  	.attrs = xen_compile_attrs,
->  };
-> @@ -340,7 +340,7 @@ static struct attribute *xen_properties_
->  	NULL
->  };
->  
-> -static struct attribute_group xen_properties_group = {
-> +static const struct attribute_group xen_properties_group = {
->  	.name = "properties",
->  	.attrs = xen_properties_attrs,
->  };
-> --- 3.3-rc4/drivers/xen/xen-balloon.c
-> +++ 3.3-rc4-xen-const-attribute_group/drivers/xen/xen-balloon.c
-> @@ -207,7 +207,7 @@ static struct attribute *balloon_info_at
->  	NULL
->  };
->  
-> -static struct attribute_group balloon_info_group = {
-> +static const struct attribute_group balloon_info_group = {
->  	.name = "info",
->  	.attrs = balloon_info_attrs
->  };
-> --- 3.3-rc4/drivers/xen/xen-selfballoon.c
-> +++ 3.3-rc4-xen-const-attribute_group/drivers/xen/xen-selfballoon.c
-> @@ -488,7 +488,7 @@ static struct attribute *selfballoon_att
->  	NULL
->  };
->  
-> -static struct attribute_group selfballoon_group = {
-> +static const struct attribute_group selfballoon_group = {
->  	.name = "selfballoon",
->  	.attrs = selfballoon_attrs
->  };
+> A painful solution is to have the key in the readdir tree allocated by
+> the tree itself -- count key populations in subtrees per child pointer
+> and use that to find free keys.
 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+One thing that might work is to have a 16-bit extra field in the
+directory entry that gives an signed offset to the inode number so
+that such that inode+offset is a unique value within the btree sorted
+by inode+offset number.  Since this tree is only used for returning
+entries in an optimal (or as close to optimal as can be arranged)
+order, we could get away with that.
 
+				- Ted
