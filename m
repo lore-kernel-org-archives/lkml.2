@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030834Ab2CNNP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 09:15:29 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:51581 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030815Ab2CNNPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 09:15:24 -0400
-Message-ID: <1331730914.12069.2.camel@phoenix>
-Subject: [PATCH RFT] regulator: Fix setting new voltage in
- s5m8767_set_voltage
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Wed, 14 Mar 2012 21:15:14 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1761087Ab2CNNQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 09:16:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36183 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760970Ab2CNNQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 09:16:16 -0400
+Message-ID: <4F609A15.5020902@redhat.com>
+Date: Wed, 14 Mar 2012 15:16:05 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Amit Shah <amit.shah@redhat.com>
+Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
+References: <4F6056FE.3020202@cn.fujitsu.com> <4F6063C8.8010005@redhat.com> <4F606A7C.9090900@cn.fujitsu.com> <4F606DCC.3020908@redhat.com> <4F60726E.3090807@cn.fujitsu.com> <4F607325.6050607@redhat.com> <20120314104608.GU2304@redhat.com> <4F607789.4010109@redhat.com> <4F607CE4.2060809@cn.fujitsu.com> <4F609822.7050502@redhat.com> <20120314131415.GB2304@redhat.com>
+In-Reply-To: <20120314131415.GB2304@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code does not really update the register with new value, fix it.
+On 03/14/2012 03:14 PM, Gleb Natapov wrote:
+> On Wed, Mar 14, 2012 at 03:07:46PM +0200, Avi Kivity wrote:
+> > On 03/14/2012 01:11 PM, Wen Congyang wrote:
+> > > > 
+> > > > I don't think we want to use the driver.  Instead, have a small piece of
+> > > > code that resets the device and pushes out a string (the panic message?)
+> > > > without any interrupts etc.
+> > > > 
+> > > > It's still going to be less reliable than a hypercall, I agree.
+> > >
+> > > Do you still want to use complicated and less reliable way?
+> > 
+> > Are you willing to try it out and see how complicated it really is?
+> > 
+> > While it's more complicated, it's also more flexible.  You can
+> > communicate the panic message, whether the guest is attempting a kdump
+> > and its own recovery or whether it wants the host to do it, etc., you
+> > can communicate less severe failures like oopses.
+> > 
+> hypercall can take arguments to achieve the same.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-Hi Sangbeom,
-I don't have this hardware, can you test it?
-Thanks,
-Axel
- drivers/regulator/s5m8767.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+It has to be designed in advance; and every time we notice something's
+missing we have to update the host kernel.
 
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index 58447db..4ca2db0 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -311,8 +311,7 @@ static int s5m8767_set_voltage(struct regulator_dev *rdev,
- 	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
- 	const struct s5m_voltage_desc *desc;
- 	int reg_id = rdev_get_id(rdev);
--	int reg, mask, ret;
--	int i;
-+	int sel, reg, mask, ret;
- 	u8 val;
- 
- 	switch (reg_id) {
-@@ -333,19 +332,20 @@ static int s5m8767_set_voltage(struct regulator_dev *rdev,
- 
- 	desc = reg_voltage_map[reg_id];
- 
--	i = s5m8767_convert_voltage_to_sel(desc, min_uV, max_uV);
--	if (i < 0)
--		return i;
-+	sel = s5m8767_convert_voltage_to_sel(desc, min_uV, max_uV);
-+	if (sel < 0)
-+		return sel;
- 
- 	ret = s5m8767_get_voltage_register(rdev, &reg);
- 	if (ret)
- 		return ret;
- 
- 	s5m_reg_read(s5m8767->iodev, reg, &val);
--	val = val & mask;
-+	val &= ~mask;
-+	val |= sel;
- 
- 	ret = s5m_reg_write(s5m8767->iodev, reg, val);
--	*selector = i;
-+	*selector = sel;
- 
- 	return ret;
- }
+> > > I think the other ones prefer to touch the hypervisor.
+> > 
+> > I understand the sentiment.  Your patches are simple and easy.  But my
+> > feeling is that the kernel has become too complicated already and I'm
+> > looking for ways to limit changes.
+> > 
+> Using virtio-serial will not reduce kernel complexity. Quite contrary
+> since code that will use virtio-serial will be more complicated.
+
+The host kernel is unmodified though.
+
 -- 
-1.7.5.4
-
-
+error compiling committee.c: too many arguments to function
 
