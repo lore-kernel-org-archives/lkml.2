@@ -1,66 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030996Ab2CNOal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:30:41 -0400
-Received: from 124-248-200-65.sunnyvision.com ([124.248.200.65]:50833 "EHLO
-	teamb04.edmhongkong.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030977Ab2CNOaj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:30:39 -0400
-X-Greylist: delayed 4120 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Mar 2012 10:30:38 EDT
-X-DKIM: OpenDKIM Filter v2.4.1 teamb04.edmhongkong.com 8A7525435E
-X-DKIM: OpenDKIM Filter v2.4.1 smtp1.edmhongkong.com 0EAE84FAD7
-Message-ID: <6qLvb@tcts1.seed.net.tw>
-From: boris@cloudluca.com
-Subject: Server Rental Service in HK
-X-Mailer: YWxuqzBuXBMEgbNl
-Content-Type: text/plain;
-X-Priority: 3
-X-MSMail-Priority: Normal
-Date: Wed, 14 Mar 2012 20:45:42 +0800 (HKT)
-To: unlisted-recipients:; (no To-header on input)
+	id S965313Ab2CNOeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:34:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32050 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964940Ab2CNOeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 10:34:21 -0400
+Date: Wed, 14 Mar 2012 15:34:13 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: "Ted Ts'o" <tytso@mit.edu>
+cc: Lukas Czerner <lczerner@redhat.com>, Phillip Susi <phillsusi@gmail.com>,
+        Andreas Dilger <adilger@whamcloud.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: getdents - ext4 vs btrfs performance
+In-Reply-To: <20120314125002.GH15379@thunk.org>
+Message-ID: <alpine.LFD.2.00.1203141507220.14894@dhcp-27-109.brq.redhat.com>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com> <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com> <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com> <20120310044804.GB5652@thunk.org> <4F5F9A97.5060404@ubuntu.com>
+ <20120313195339.GA24124@thunk.org> <4F5FAC9C.9070607@gmail.com> <20120313213304.GB11969@thunk.org> <alpine.LFD.2.00.1203140825090.5379@dhcp-27-109.brq.redhat.com> <20120314125002.GH15379@thunk.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from Quoted-Printable to 8bit by nfs id q2EEUn1B028657
 
-Dear All,
+On Wed, 14 Mar 2012, Ted Ts'o wrote:
 
-We have our own datacenter in Hong Kong & provide email/application/web rental service to clients.We are APNIC member & provide clean IP to clients.
+> On Wed, Mar 14, 2012 at 09:12:02AM +0100, Lukas Czerner wrote:
+> > I kind of like the idea about having the separate btree with inode
+> > numbers for the directory reading, just because it does not affect
+> > allocation policy nor the write performance which is a good thing. Also
+> > it has been done before in btrfs and it works very well for them. The
+> > only downside (aside from format change) is the extra step when removing
+> > the directory entry, but the positives outperform the negatives.
+> 
+> Well, there will be extra (journaled!) block reads and writes involved
+> when adding or removing directory entries.  So the performance on
+> workloads that do a large number of directory adds and removed will
+> have to be impacted.  By how much is not obvious, but it will be
+> something which is measurable.
 
-Dell? PowerEdge? EnterpriseRack Mount Server
--Intel(R) Xeon(R) E3-1240 Processor (3.3GHz, 8M Cache, Turbo, 4C/8T, 80W)
--8GB RAM, 2x4GB, 1333MHz, DDR-3, Dual Ranked UDIMMs
--500GB, 3.5", 6Gbps SAS x 2
--Raid 1 Mirroring Protection
--Remote KVM (iDRAC6 Enterprise)
+Yes, it would have to be measured in various workloads.
 
-Dell(TM) PowerEdge(TM) R410 Rack Mount Server
--Intel(R) Quad Core E5606 Xeon(R) CPU, 2.13GHz, 4M Cache, 4.86 GT/s QPI
--4GB Memory (2x2GB), 1333MHz Dual Ranked RDIMMs Fully-Buffered
--500GB 7.2K RPM SATAII 3.5" Hard Drive x 2
--iDRAC6 Enterprise or Express (Remote KVM Management)
+> 
+> > Maybe this might be even done in a way which does not require format
+> > change. We can have new inode flag (say EXT4_INUM_INDEX_FL) which will
+> > tell us that there is a inode number btree to use on directory reads.
+> > Then the pointer to the root of that tree would be stored at the end of
+> > the root block of the hree (of course if there is still some space for
+> > it) and the rest is easy.
+> 
+> You can make it be a RO_COMPAT change instead of an INCOMPAT change,
+> yes.
 
-Every Dedicated Server Hosting Solution Also Includes: 
- 
-Software Specification 
-- CentOS / Fedora / Debian / FreeBSD / Ubuntu / Redhat Linux 
-- Full root-level access 
-- Data Center Facilities 
-- Shared Local & International Bandwidth 
-- 2 IP Addresses Allocation 
-- Un-interruptible Power Supply (UPS) backed up by private diesel generator 
-- FM200¡§based fire suppression system 
-- 24x7 CRAC Air Conditioning and Humidity Control 
-- 24x7 Security Control 
-- 24x7 Remote Hand Service 
+Does it have to be RO_COMPAT change though ? Since this would be both
+forward and backward compatible.
 
-Pls send us email for further information.Thanks,
+> 
+> And if you want to do it as simply as possible, we could just recycle
+> the current htree approach for the second tree, and simply store the
+> root in another set of directory blocks.  But by putting the index
+> nodes in the directory blocks, masquerading as deleted directories, it
+> means that readdir() has to cycle through them and ignore the index
+> blocks.
+> 
+> The alternate approach is to use physical block numbers instead of
+> logical block numbers for the index blocks, and to store it separately
+> from the blocks containing actual directory entries.  But if we do
+> that for the inumber tree, the next question that arise is maybe we
+> should do that for the hash tree as well --- and then once you upon
+> that can of worms, it gets a lot more complicated.
+> 
+> So the question that really arises here is how wide open do we want to
+> leave the design space, and whether we are optimizing for the best
+> possible layout change ignoring the amount of implementation work it
+> might require, or whether we keep things as simple as possible from a
+> code change perspective.
 
-Boris 
-boris@cloudluca.com
+What do you expect to gain by storing the index nodes outside the
+directory entries ? Only to avoid reading the index nodes of both trees
+when walking just one of it ? If I understand it correctly directory
+blocks are laid out sequentially so reading it in cold cache state would
+not pose much troubles I think. Nor the iteration through all of the
+index nodes. However it would have to be measured first.
 
-If you do not wish to further receive this event message, email "borislamsv2@gmail.com" to unsubscribe this message or remove your email from the list.
+> 
+> There are good arguments that can be made either way, and a lot
+> depends on the quality of the students you can recruit, the amount of
+> time they have, and how much review time it will take out of the core
+> team during the design and implementation phase.
 
+I am always hoping for the best :). We have had a good expedience with
+the students here, but you'll never know that in advance. They'll have
+the whole year to get through this, which is plenty of thine, but the
+question of course is whether they'll use that time wisely :). But
+anyway, I think it is definitely worth a try.
 
+Thanks!
+-Lukas
+
+> 
+> Regards,
+> 
+> 						- Ted
+> 
+
+-- 
