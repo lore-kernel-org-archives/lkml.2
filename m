@@ -1,122 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761004Ab2CNMlz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 08:41:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57845 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760963Ab2CNMly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 08:41:54 -0400
-Date: Wed, 14 Mar 2012 13:41:50 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/2] kernel: cgroup: push rcu read locking from
- css_is_ancestor() to callsite
-Message-ID: <20120314124150.GE4434@tiehlicka.suse.cz>
-References: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
+	id S1761022Ab2CNMmB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 08:42:01 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49747 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760963Ab2CNMl5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 08:41:57 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V3 7/8] memcg: move HugeTLB resource count to parent cgroup on memcg removal
+In-Reply-To: <20120313144705.020b6dde.akpm@linux-foundation.org>
+References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1331622432-24683-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20120313144705.020b6dde.akpm@linux-foundation.org>
+User-Agent: Notmuch/0.11.1+190~g31a336a (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 14 Mar 2012 17:52:28 +0530
+Message-ID: <87ipi78j97.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12031412-4790-0000-0000-000001C76162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 28-02-12 15:14:48, Johannes Weiner wrote:
-> Library functions should not grab locks when the callsites can do it,
-> even if the lock nests like the rcu read-side lock does.
+On Tue, 13 Mar 2012 14:47:05 -0700, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Tue, 13 Mar 2012 12:37:11 +0530
+> "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 > 
-> Push the rcu_read_lock() from css_is_ancestor() to its single user,
-> mem_cgroup_same_or_subtree() in preparation for another user that may
-> already hold the rcu read-side lock.
+> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> > 
+> > This add support for memcg removal with HugeTLB resource usage.
+> > 
+> > ...
+> >
+> > +int hugetlb_force_memcg_empty(struct cgroup *cgroup)
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-> ---
->  kernel/cgroup.c |   20 ++++++++++----------
->  mm/memcontrol.c |   14 +++++++++-----
->  2 files changed, 19 insertions(+), 15 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 4be474d..9003bd8 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -4841,7 +4841,7 @@ EXPORT_SYMBOL_GPL(css_depth);
->   * @root: the css supporsed to be an ancestor of the child.
->   *
->   * Returns true if "root" is an ancestor of "child" in its hierarchy. Because
-> - * this function reads css->id, this use rcu_dereference() and rcu_read_lock().
-> + * this function reads css->id, the caller must hold rcu_read_lock().
->   * But, considering usual usage, the csses should be valid objects after test.
->   * Assuming that the caller will do some action to the child if this returns
->   * returns true, the caller must take "child";s reference count.
-> @@ -4853,18 +4853,18 @@ bool css_is_ancestor(struct cgroup_subsys_state *child,
->  {
->  	struct css_id *child_id;
->  	struct css_id *root_id;
-> -	bool ret = true;
->  
-> -	rcu_read_lock();
->  	child_id  = rcu_dereference(child->id);
-> +	if (!child_id)
-> +		return false;
->  	root_id = rcu_dereference(root->id);
-> -	if (!child_id
-> -	    || !root_id
-> -	    || (child_id->depth < root_id->depth)
-> -	    || (child_id->stack[root_id->depth] != root_id->id))
-> -		ret = false;
-> -	rcu_read_unlock();
-> -	return ret;
-> +	if (!root_id)
-> +		return false;
-> +	if (child_id->depth < root_id->depth)
-> +		return false;
-> +	if (child_id->stack[root_id->depth] != root_id->id)
-> +		return false;
-> +	return true;
->  }
->  
->  void free_css_id(struct cgroup_subsys *ss, struct cgroup_subsys_state *css)
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index e4be95a..b4622fb 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1047,12 +1047,16 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
->  static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
->  		struct mem_cgroup *memcg)
->  {
-> -	if (root_memcg != memcg) {
-> -		return (root_memcg->use_hierarchy &&
-> -			css_is_ancestor(&memcg->css, &root_memcg->css));
-> -	}
-> +	bool ret;
->  
-> -	return true;
-> +	if (root_memcg == memcg)
-> +		return true;
-> +	if (!root_memcg->use_hierarchy)
-> +		return false;
-> +	rcu_read_lock();
-> +	ret = css_is_ancestor(&memcg->css, &root_memcg->css);
-> +	rcu_read_unlock();
-> +	return ret;
->  }
->  
->  int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg)
-> -- 
-> 1.7.7.6
+> It's useful to document things, you know.  For a major function like
+> this, a nice little description of why it exists, what its role is,
+> etc.  Programming is not just an act of telling a computer what to do:
+> it is also an act of telling other programmers what you wished the
+> computer to do.  Both are important, and the latter deserves care.
 > 
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+
+Will do.
+
+> > +{
+> > +	struct hstate *h;
+> > +	struct page *page;
+> > +	int ret = 0, idx = 0;
+> > +
+> > +	do {
+> > +		if (cgroup_task_count(cgroup) || !list_empty(&cgroup->children))
+> > +			goto out;
+> > +		if (signal_pending(current)) {
+> > +			ret = -EINTR;
+> > +			goto out;
+> > +		}
+> 
+> Why is its behaviour altered by signal_pending()?  This seems broken.
+
+If the task that is doing a cgroup_rmdir got a signal we don't really
+need to loop till the hugetlb resource usage become zero. 
+
+
+> 
+> > +		for_each_hstate(h) {
+> > +			spin_lock(&hugetlb_lock);
+> > +			list_for_each_entry(page, &h->hugepage_activelist, lru) {
+> > +				ret = mem_cgroup_move_hugetlb_parent(idx, cgroup, page);
+> > +				if (ret) {
+> > +					spin_unlock(&hugetlb_lock);
+> > +					goto out;
+> > +				}
+> > +			}
+> > +			spin_unlock(&hugetlb_lock);
+> > +			idx++;
+> > +		}
+> > +		cond_resched();
+> > +	} while (mem_cgroup_hugetlb_usage(cgroup) > 0);
+> > +out:
+> > +	return ret;
+> > +}
+
+-aneesh
+
