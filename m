@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757877Ab2CNOp1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 10:45:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54753 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752475Ab2CNOp0 (ORCPT
+	id S1758539Ab2CNOrm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 10:47:42 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:20061 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328Ab2CNOrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 10:45:26 -0400
-Date: Wed, 14 Mar 2012 14:45:24 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH v6] sound/soc/lapis: add machine driver for ML7213
- Carrier Board
-Message-ID: <20120314144524.GT3133@opensource.wolfsonmicro.com>
-References: <CANKRQngTNWMGswq3weD1s8O4irVEz+DCr1vzi2gnWaQcoq5SEw@mail.gmail.com>
- <1331275091-31700-1-git-send-email-tomoya.rohm@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9hshNW4m6zn79FF/"
-Content-Disposition: inline
-In-Reply-To: <1331275091-31700-1-git-send-email-tomoya.rohm@gmail.com>
-X-Cookie: It's all in the mind, ya know.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 14 Mar 2012 10:47:40 -0400
+X-AuditID: cbfee61a-b7b78ae000001ceb-a5-4f60af8a49cd
+Message-id: <4F60AF8E.7050900@samsung.com>
+Date: Wed, 14 Mar 2012 23:47:42 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216
+ Thunderbird/10.0.2
+MIME-version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, sameo@linux.intel.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com
+Subject: Re: [PATCH v3 2/2] input: add driver support for MAX8997-haptic
+References: <4F5DB459.9090701@samsung.com>
+ <20120314084652.GC3964@core.coreip.homeip.net>
+In-reply-to: <20120314084652.GC3964@core.coreip.homeip.net>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dmitry,
 
---9hshNW4m6zn79FF/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> This is not proper locking between playing effect and suspend. Now that
+> you are using workqueue you need to synchronize access with it, not with
+> play_effect method.
+> 
+> Does the following patch work for you?
+> 
 
-On Fri, Mar 09, 2012 at 03:38:11PM +0900, Tomoya MORINAGA wrote:
+Your patch is worked on TRATS board based on EXYNOS4210 but, you should
+apply following patch because 'chip->enabled' is used on
+max8997_haptic_configure() function to enable/disable haptic motor.
 
-> +	/* set codec DAI configuration */
-> +	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
-> +				 SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	/* set cpu DAI configuration */
-> +	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S |
-> +				 SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBM_CFM);
+diff --git a/drivers/haptic/max8997_haptic.c
+b/drivers/haptic/max8997_haptic.c
+index 806bcf3..0347404 100644
+--- a/drivers/haptic/max8997_haptic.c
++++ b/drivers/haptic/max8997_haptic.c
+@@ -182,11 +182,11 @@ static void max8997_haptic_enable(struct
+max8997_haptic *chip)
+ 	}
 
-This looks very broken, you're setting the two ends of the link to
-different configurations.  If this is needed it should be documented why.
+ 	if (!chip->enabled) {
++		chip->enabled = true;
+ 		regulator_enable(chip->regulator);
+ 		max8997_haptic_configure(chip);
+ 		if (chip->mode == MAX8997_EXTERNAL_MODE)
+ 			pwm_enable(chip->pwm);
+-		chip->enabled = true;
+ 	}
 
-Also, this should be set in the dai_link structure as data rather than
-set each time.
+ out:
+@@ -198,11 +198,11 @@ static void max8997_haptic_disable(struct
+max8997_haptic *chip)
+ 	mutex_lock(&chip->mutex);
 
---9hshNW4m6zn79FF/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ 	if (chip->enabled) {
++		chip->enabled = false;
+ 		max8997_haptic_configure(chip);
+ 		if (chip->mode == MAX8997_EXTERNAL_MODE)
+ 			pwm_disable(chip->pwm);
+ 		regulator_disable(chip->regulator);
+-		chip->enabled = false;
+ 	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+ 	mutex_unlock(&chip->mutex);
+-- 
+1.7.0.4
 
-iQIcBAEBAgAGBQJPYK6XAAoJEBus8iNuMP3dUegP/3c584uB/C3MMpEFcdB/Oy5g
-xl77tzaYuGQTXH5yLVa9MCntKG+pmO1gL1AG1VHb+jiFdhNeuBv8omIyWLFkkCV0
-rTW74+EQ2e0+vcGEZUOT4Y8sNxRZHrFFLJQSWNaAZflt9I9ydm6HliZuBpvt6hEW
-wJwJbgU0BOLX+7B8MGbAEcGbEdpyr+NIy2zAqdwiIdmZf5RhxFVJCKJimwbCeePC
-c17Al0KV2aCqrM35Xs6pz10aLikKGi0W837JY6mpOn3dqR6ssTrxLDJ1wm84E11e
-dtYzP5FM6NQVID0WgJY2GZ1Um5T1YmkAHEgTSjLDckPBU+EyNBqLUA7F4OplBcfV
-IN2Jn12kE5KtoIBkc2hfdPOI9KQV5cnSg4lt2iUUY8GUKcF9PVlES/0WkAzrBKJO
-xHfzidH1Gmgz4rIqAxiqe8Z/e2lvmJVaawfxyOwceEMaU74dkhq5BWTcTk8gFVRv
-rZnUJq+HUq/5gooh1IQsVWHxkhtcYVFuVCy3M0pqjRuGbqBPnaD6NT8hR/XASLVp
-+3eU+Mb/e8evCk4i0Ap6SEtx2q9F3ir2jA/TbeHzLU4N8ws6QReQyZ0iRSb70uze
-wyztsD5ayIf2MZBUdmFAG48kCmfu+W8juQYXiaBRqrY+chz/mfrR0FsIGQ8d21b7
-q22nO63zEAnO5x6PSn8R
-=z388
------END PGP SIGNATURE-----
-
---9hshNW4m6zn79FF/--
+Thank you,
+Chanwoo Choi
