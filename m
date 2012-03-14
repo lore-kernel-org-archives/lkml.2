@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761408Ab2CNSDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 14:03:00 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:33979 "HELO
+	id S1761424Ab2CNSFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 14:05:20 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:33986 "HELO
 	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1761394Ab2CNSC7 (ORCPT
+	with SMTP id S1761330Ab2CNSFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 14:02:59 -0400
-To: linux-scsi@vger.kernel.org, JBottomley@parallels.com
-Subject: [PATCH 1/3] atp870u: use pci_dev->revision
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+	Wed, 14 Mar 2012 14:05:18 -0400
+To: linux-scsi@vger.kernel.org, JBottomley@parallels.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3 v5] mpt2sas: use pci_dev->revision
+Cc: akpm@linux-foundation.org
 Content-Disposition: inline
 From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 Organization: MontaVista Software Inc.
-Date: Wed, 14 Mar 2012 22:02:11 +0300
+Date: Wed, 14 Mar 2012 22:04:30 +0300
 MIME-Version: 1.0
 Content-Type: text/plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203142202.11514.sshtylyov@ru.mvista.com>
+Message-Id: <201203142204.31032.sshtylyov@ru.mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver uses PCI_CLASS_REVISION instead of PCI_REVISION_ID, so it wasn't
-converted by commit 44c10138fd4bbc4b6d6bff0873c24902f2a9da65 (PCI: Change all
-drivers to use pci_device->revision).
+The driver reads PCI revision ID from the PCI configuration register while it's
+already stored by PCI subsystem in the 'revision' field of 'struct pci_dev'...
 
 Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
 ---
-The patch is against the current Linus' tree.
+The patch is refreshed against the recent Linus' tree.
 
- drivers/scsi/atp870u.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    4 +---
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c  |    4 +---
+ 2 files changed, 2 insertions(+), 6 deletions(-)
 
-Index: linux-2.6/drivers/scsi/atp870u.c
+Index: linux-2.6/drivers/scsi/mpt2sas/mpt2sas_base.c
 ===================================================================
---- linux-2.6.orig/drivers/scsi/atp870u.c
-+++ linux-2.6/drivers/scsi/atp870u.c
-@@ -2583,7 +2583,7 @@ static int atp870u_probe(struct pci_dev 
- 	 * this than via the PCI device table
- 	 */
- 	if (ent->device == PCI_DEVICE_ID_ARTOP_AEC7610) {
--		error = pci_read_config_byte(pdev, PCI_CLASS_REVISION, &atpdev->chip_ver);
-+		atpdev->chip_ver = pdev->revision;
- 		if (atpdev->chip_ver < 2)
- 			goto err_eio;
- 	}
-@@ -2602,7 +2602,7 @@ static int atp870u_probe(struct pci_dev 
- 	base_io &= 0xfffffff8;
+--- linux-2.6.orig/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ linux-2.6/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -2060,12 +2060,10 @@ _base_display_ioc_capabilities(struct MP
+ {
+ 	int i = 0;
+ 	char desc[16];
+-	u8 revision;
+ 	u32 iounit_pg1_flags;
+ 	u32 bios_version;
  
- 	if ((ent->device == ATP880_DEVID1)||(ent->device == ATP880_DEVID2)) {
--		error = pci_read_config_byte(pdev, PCI_CLASS_REVISION, &atpdev->chip_ver);
-+		atpdev->chip_ver = pdev->revision;
- 		pci_write_config_byte(pdev, PCI_LATENCY_TIMER, 0x80);//JCC082803
+ 	bios_version = le32_to_cpu(ioc->bios_pg3.BiosVersion);
+-	pci_read_config_byte(ioc->pdev, PCI_CLASS_REVISION, &revision);
+ 	strncpy(desc, ioc->manu_pg0.ChipName, 16);
+ 	printk(MPT2SAS_INFO_FMT "%s: FWVersion(%02d.%02d.%02d.%02d), "
+ 	   "ChipRevision(0x%02x), BiosVersion(%02d.%02d.%02d.%02d)\n",
+@@ -2074,7 +2072,7 @@ _base_display_ioc_capabilities(struct MP
+ 	   (ioc->facts.FWVersion.Word & 0x00FF0000) >> 16,
+ 	   (ioc->facts.FWVersion.Word & 0x0000FF00) >> 8,
+ 	   ioc->facts.FWVersion.Word & 0x000000FF,
+-	   revision,
++	   ioc->pdev->revision,
+ 	   (bios_version & 0xFF000000) >> 24,
+ 	   (bios_version & 0x00FF0000) >> 16,
+ 	   (bios_version & 0x0000FF00) >> 8,
+Index: linux-2.6/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+===================================================================
+--- linux-2.6.orig/drivers/scsi/mpt2sas/mpt2sas_ctl.c
++++ linux-2.6/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+@@ -1026,7 +1026,6 @@ _ctl_getiocinfo(void __user *arg)
+ {
+ 	struct mpt2_ioctl_iocinfo karg;
+ 	struct MPT2SAS_ADAPTER *ioc;
+-	u8 revision;
  
- 		host_id = inb(base_io + 0x39);
+ 	if (copy_from_user(&karg, arg, sizeof(karg))) {
+ 		printk(KERN_ERR "failure at %s:%d/%s()!\n",
+@@ -1046,8 +1045,7 @@ _ctl_getiocinfo(void __user *arg)
+ 		karg.adapter_type = MPT2_IOCTL_INTERFACE_SAS2;
+ 	if (ioc->pfacts)
+ 		karg.port_number = ioc->pfacts[0].PortNumber;
+-	pci_read_config_byte(ioc->pdev, PCI_CLASS_REVISION, &revision);
+-	karg.hw_rev = revision;
++	karg.hw_rev = ioc->pdev->revision;
+ 	karg.pci_id = ioc->pdev->device;
+ 	karg.subsystem_device = ioc->pdev->subsystem_device;
+ 	karg.subsystem_vendor = ioc->pdev->subsystem_vendor;
