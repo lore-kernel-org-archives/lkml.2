@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030810Ab2CNNIT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 09:08:19 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:46302 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757690Ab2CNNIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 09:08:14 -0400
+	id S1030781Ab2CNNIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 09:08:07 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:46910 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S964930Ab2CNNIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 09:08:04 -0400
+Date: Wed, 14 Mar 2012 08:08:01 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] rcu: Limit GP initialization to CPUs that have
+ been online
+Message-ID: <20120314130801.GA11722@sgi.com>
+References: <20120314002414.GA21561@linux.vnet.ibm.com>
+ <1331717099.5752.15.camel@marge.simpson.net>
+ <1331728841.7465.7.camel@marge.simpson.net>
 MIME-Version: 1.0
-In-Reply-To: <20120314111357.GD4434@tiehlicka.suse.cz>
-References: <CAJd=RBATj97k5UESDFx82bzt0K4OquhBoDkfjPBPacdmdfJE8g@mail.gmail.com>
-	<20120314111357.GD4434@tiehlicka.suse.cz>
-Date: Wed, 14 Mar 2012 21:08:13 +0800
-Message-ID: <CAJd=RBBd0vF1waARU5FQbomLQLAG5ekmiWg+WDpALke9SaGP1g@mail.gmail.com>
-Subject: Re: [PATCH] mm: hugetlb: defer freeing pages when gathering surplus pages
-From: Hillf Danton <dhillf@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331728841.7465.7.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 7:13 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> [Sorry for the late reply but I was away from email for quite sometime]
->
+On Wed, Mar 14, 2012 at 01:40:41PM +0100, Mike Galbraith wrote:
+> On Wed, 2012-03-14 at 10:24 +0100, Mike Galbraith wrote: 
+> > On Tue, 2012-03-13 at 17:24 -0700, Paul E. McKenney wrote: 
+> > > The following builds, but is only very lightly tested.  Probably full
+> > > of bug, especially when exercising CPU hotplug.
+> > 
+> > You didn't say RFT, but...
+> > 
+> > To beat on this in a rotund 3.0 kernel, the equivalent patch would be
+> > the below?  My box may well answer that before you can.. hope not ;-)
+> 
+> (Darn, it did.  Box says boot stall with virgin patch in tip too though.
+> Wedging it straight into 3.0 was perhaps a tad premature;)
 
-Nice to see you back:)
-
-> On Tue 14-02-12 20:53:51, Hillf Danton wrote:
->> When gathering surplus pages, the number of needed pages is recomputed after
->> reacquiring hugetlb lock to catch changes in resv_huge_pages and
->> free_huge_pages. Plus it is recomputed with the number of newly allocated
->> pages involved.
->>
->> Thus freeing pages could be deferred a bit to see if the final page request is
->> satisfied, though pages could be allocated less than needed.
->
-> The patch looks OK but I am missing a word why we need it. I guess
-
-False negative is removed as it should be.
-
-> your primary motivation is that we want to reduce false positives when
-> we fail to allocate surplus pages while somebody freed some in the
-> background.
-> What is the workload that you observed such a behavior? Or is this just
-> from the code review?
->
-The second.
-
--hd
+I saw the same thing with 3.3.0-rc7+ and virgin patch on UV.  Boots fine without the patch.
