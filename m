@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030405Ab2CNCVf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 22:21:35 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:34803 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759917Ab2CNCVc (ORCPT
+	id S1030433Ab2CNCVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 22:21:44 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50750 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030336Ab2CNCVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 22:21:32 -0400
+	Tue, 13 Mar 2012 22:21:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAPXgP13D9haan4SdxhxzzKUaw=FV1JgP0weKmezK8tJBip4QXA@mail.gmail.com>
-References: <201203032122.36745.chunkeey@googlemail.com> <201203132042.07794.rjw@sisk.pl>
- <CAPXgP11fWf-0Jkk=d6G+d=sQa-hoX3jUM+K6K4rGYhh0dv1u_w@mail.gmail.com>
- <201203140110.40671.rjw@sisk.pl> <CAPXgP118s+DuLaATKOq7w=F82GB=8PkwUJDichffXA-Er6Zqvw@mail.gmail.com>
- <CA+55aFxq=GWof-ExXjeC2nwUBcGi46SKwcvc2iccfymbbyXbfA@mail.gmail.com>
- <CAPXgP11ZKT-ZNBLdPQWotFayz9m7pKcNHDBPWxcp_2-ja+SAcQ@mail.gmail.com>
- <CA+55aFyG6utURVkVbAXF_T+BcA94af=c+oDBAwWZOyNwgiQ+5g@mail.gmail.com> <CAPXgP13D9haan4SdxhxzzKUaw=FV1JgP0weKmezK8tJBip4QXA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 13 Mar 2012 19:21:11 -0700
-X-Google-Sender-Auth: bA1RE72ZC5KEUPgIGG1dTH-AryU
-Message-ID: <CA+55aFx_sJS_KfhG4qBOT1V_Mv8x5dpXjMebjrXXXGx5yWqVpg@mail.gmail.com>
-Subject: Re: [PATCH] firmware loader: don't cancel _nowait requests when
- helper is not yet available
-To: Kay Sievers <kay@vrfy.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@linuxfoundation.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
+In-Reply-To: <4F5FFCC1.2030702@linux.intel.com>
+References: <1324426147-16735-1-git-send-email-ccross@android.com>
+	<4F1929E9.7070707@linaro.org>
+	<8762e8kqi6.fsf@ti.com>
+	<4F5FFCC1.2030702@linux.intel.com>
+Date: Tue, 13 Mar 2012 19:21:33 -0700
+X-Google-Sender-Auth: Bpwo_MytoyuCwS6ttghs_OLQHh0
+Message-ID: <CAMbhsRSrS-gwu20Ba5=n_LNUwDh3p+5bQPOymGJ9x5O2Fn28kA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] coupled cpuidle state support
+From: Colin Cross <ccross@android.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Kevin Hilman <khilman@ti.com>, Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 6:55 PM, Kay Sievers <kay@vrfy.org> wrote:
+On Tue, Mar 13, 2012 at 7:04 PM, Arjan van de Ven <arjan@linux.intel.com> wrote:
+> On 3/13/2012 4:52 PM, Kevin Hilman wrote:
+>> Checking the ready_count seemed like an easy way to do this, but did you
+>> have any other mechanisms in mind for CPUs to communicate that they've
+>> exited/aborted?
 >
-> I do NOT talk about exec, I talk about a REQUEST which can be QUEUED
-> just fine, but which the kernel refuses to QUEUE, even when it will
-> not harm anything. That check and warning is wrong.
+> this indeed is the tricky part (which I warned about earlier);
+> I've spent quite a lot of time (weeks) to get this provably working for
+> an Intel system with similar requirements... and it's extremely unfunny,
+> and needed firmware support to close some of the race conditions.
 
-No. request_firmware() is synchronous. People call it, and then use
-the loaded firmware immediately after success.
+As long as you can tell from cpu0 that cpu1 has succesfully entered
+the low power state, this should be easy, and the
+coupled_cpuidle_parallel_barrier helper should make it even easier.
+This series just allows the exact same sequence of transitions used by
+hotplug cpufreq governors to happen from the idle thread:
 
-And no, it's not at all clear that you can just say "we'll just wait".
-The device that wants the firmware may be something that can be
-brought up asynchronously (so "wait until everything is ok" can work),
-BUT IT IS NOT AT ALL GUARANTEED.
+1. cpu0 forces cpu1 offline.  From a wakeup perspective, this is
+exactly like hotplug removing cpu1.  Unlike hotplug, the state of cpu1
+has to be saved, and the scheduler is not told that the cpu is gone.
+Instead of using the IPI signalling that hotplug uses, we call the
+same function on both cpus, and one cpu runs the equivalent of
+platform_cpu_kill, and the other the equivalent of platform_cpu_die.
+Wakeup events that are only targeted at cpu1 will need to be
+temporarily migrated to cpu0.
+2. If the hotplug is successful, cpu0 goes to a low power state, the
+same way it would when the hotplug cpufreq governor had removed cpu1.
+3. cpu0 wakes up, because all wakeup events are pointed at it.
+4. After restoring its own state, cpu0 brings cpu1 back online,
+exactly like hotplug online would, except that the boot vector has to
+point to a cpu_resume handler instead of secondary start.
 
-Seriously, you don't know what you are talking about. We *used* to
-just wait, and have a thirty-second timeout etc instead of failing
-aggressively. It often worked.
+> I sure hope that hardware with these requirements is on the way out...
+> it's not very OS friendly.
 
-And then quite often it DID NOT WORK, and it caused 30-second delays
-at resume time (maybe it was 60s, I forget). Because it turns out that
-people were waiting for that device to get through its resume until
-the resume was completed. And the system wasn't up. Deadlock.
+Even hardware that was designed not not have these requirements
+sometimes has bugs that require this kind of sequencing.  OMAP4430
+should theoretically support idle without sequencing, but OMAP4460
+introduced a ROM code bug that requires sequencing again (turning on
+cpu1 corrupts the interrupt controller, so cpu0 has to be waiting with
+interrupts off to run a workaround whenever cpu1 turns on).
 
-So a 30-second "let's try delaying this" has been done. It didn't
-work. Stop arguing for it, when you clearly don't know what the
-problems were. The 30-second delay is when the user just says "resume
-didn't work" and has long since pressed the power button.
-
-So fail fast, fail hard. DO NOT REQUEST FIRMWARE WHILE THE SYSTEM IS SUSPENDED.
-
-It really is that simple. Your "let's just queue it up" is crap. Stop
-arguing for it, we used to do it, it "worked" much of the time, and
-when it didn't work it killed the system.
-
-Which is why it now fails with a big warning. EXACTLY SO THAT DRIVER
-WRITERS WOULD KNOW NOT TO DO THAT BROKEN THING.
-
-I'm shouting at you, because you are arguing from ignorance. Stop
-doing it. "Works most of the time" just isn't good enough. It needs to
-*always* work, and the way to do that is to just do firmware load when
-the system is up and running, not when it is suspended.
-
-If a driver is ok with being delayed for a firmware load, it should
-just do its resume *without* doing the firmware load at all, and
-schedule one serparately for later. But no, we can not just say "let's
-delay request_firmware()", because we used to do that and it was shown
-to not work.
-
-Comprende?
-
-              Linus
+Out of curiosity, what Intel hardware needs this?
