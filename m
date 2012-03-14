@@ -1,123 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2CNGkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 02:40:36 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:13539
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751785Ab2CNGkd (ORCPT
+	id S1753051Ab2CNGmY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 02:42:24 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:10191 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab2CNGmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 02:40:33 -0400
-X-SpamScore: -14
-X-BigFish: VS-14(zz1432N98dK1447Mzz1202hzz8275ch8275bh8275dhz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 14 Mar 2012 14:42:25 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+	Wed, 14 Mar 2012 02:42:22 -0400
+X-AuditID: cbfee60f-b7bd0ae00000422c-20-4f603dcda051
+Date: Wed, 14 Mar 2012 06:42:21 +0000 (GMT)
+From: PINTU KUMAR <pintu.k@samsung.com>
+Subject: Re: Re: [INFO] : Hibernation and Resume between 2 similar devices
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>
-Subject: Re: [PATCH v1 2/5] mmc: mxs-mmc: add dt probe support
-Message-ID: <20120314064224.GA25735@shlinux2.ap.freescale.net>
-References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
- <1331628428-24017-3-git-send-email-b29396@freescale.com>
- <20120313174238.CE9133E053B@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120313174238.CE9133E053B@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	<linux-arm-kernel@lists.infradead.org>
+Reply-to: pintu.k@samsung.com
+MIME-version: 1.0
+X-MTR: 20120314042844821@pintu.k
+Msgkey: 20120314042844821@pintu.k
+X-EPLocale: en_US.windows-1252
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120314042844821@pintu.k
+X-ParentMTR: 
+Content-type: text/plain; charset=windows-1252
+MIME-version: 1.0
+Message-id: <28768997.133231331707340650.JavaMail.weblogic@epml27>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q2E6gUco026421
 
-On Wed, Mar 14, 2012 at 01:42:38AM +0800, Grant Likely wrote:
-> On Tue, 13 Mar 2012 16:47:05 +0800, Dong Aisheng <b29396@freescale.com> wrote:
-> > From: Dong Aisheng <dong.aisheng@linaro.org>
-> > 
-> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > 
-> > ---
-> > The patch is still using a private way for dma part binding
-> > since the common dma binding is still under discussion.
-> > http://www.spinics.net/lists/linux-omap/msg65528.html
-> > 
-> > Will update to use common dma binding when it hits mainline.
-> > ---
-> >  .../devicetree/bindings/mmc/fsl-mxs-mmc.txt        |   23 ++++++
-> >  drivers/mmc/host/mxs-mmc.c                         |   82 +++++++++++++++++++-
-> >  2 files changed, 102 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt b/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt
-> > new file mode 100644
-> > index 0000000..adc1142
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/mmc/fsl-mxs-mmc.txt
-> > @@ -0,0 +1,23 @@
-> > +* FREESCALE MXS MMC peripheral
-> > +
-> > +Required properties:
-> > +- compatible : Should be "fsl,<chip>-mmc"
-> > +- reg : Should contain registers location and length
-> > +- interrupts : Should contain interrupt.
-> > +  The format is <irq_err irq_dma>.
-> > +- dma_channel: Should contain the dma channel it uses
-> 
-> Don't use '_' in property names.
-> 
-Yes, my mistake.
+------- Original Message -------
+Sender : Rafael J. Wysocki<rjw@sisk.pl> 
+Date   : Mar 14, 2012 01:36 (GMT+05:00)
+Title  : Re: [INFO] : Hibernation and Resume between 2 similar devices
 
-> The is a generic dma binding being drafted that uses a phandle to the dma
-> controller and the ability to encode channel numbers.  You may want to take
-> a look at it.
+On Tuesday, March 13, 2012, PINTU KUMAR wrote:
+> Dear All,
 > 
-I will look at it.
-Thanks for the reminder.
+> I am just curious to know if it is possible to "Hibernate in one device" and "Resume the hibernated image from another similar device".
 
-...
-> > +	dmares->flags = IORESOURCE_DMA;
-> > +	ret = of_property_read_u32(np, "dma_channel", &dmares->start);
-> > +	if (ret) {
-> > +		dev_err(&pdev->dev, "unable to get dmares from dt\n");
-> > +		return NULL;
-> > +	}
-> > +	dmares->end = dmares->start;
-> > +
-> > +	return dmares;
-> > +}
-> > +
-> > +static int __devinit mxs_mmc_get_of_property(struct platform_device *pdev,
-> > +				struct mxs_mmc_platform_data **ppdata)
-> > +{
-> > +	struct device_node *np = pdev->dev.of_node;
-> > +	struct mxs_mmc_platform_data *pdata = *ppdata;
-> > +
-> > +	if (!np)
-> > +		return -ENODEV;
-> > +
-> > +	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-> 
-> Ditto
-> 
-Got it.
+Not out of the box (you'd need to hack the kernel for that to work I think,
+at least on x86) and the devices would need to be _exactly_ identical.
+Moreover, if there is read-write mass storage in them, the filesystems on
+both would have to be exactly identical as well (including metadata and data
+layout etc.).
 
-> Fix up those comments and you can add my:
-> 
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> 
-Thanks.
+[Pintu]
+I wanted to try this on arm based Linux mobile phone.
+I have 2 exactly similar mobile phone.
+Here exactly means: 
+hardware is same, kernel version is same, platform is same, filesystem is same.
+The only difference could be some user space application state.
+Hmmm.....the metadata and data layout within file system....this is were the confusion is.
+Suppose in "Device 1" during hibernation, I have a file say "file1.txt" opened whose inode number is say "123456".
+This opened state of file1.txt will be captured in hibernation image.
+Now assume that same "file1.txt" is also present (not opened) in "Device2" but whose inode number is say "567890".
+Now if I reboot "Device 2" and try to resume from hibernated image of "Device 1", what would happen to "file1.txt" ??
+And similarly other senarios.......
+Will resume work, at least partially. Like discard whatever is not relevant to "Device 2" and continue to load others.
 
-Regards
-Dong Aisheng
 
+> Suppose, I have 2 exactly similar device (Laptop or mobile phone) with me.
+> At one time I will be working on only one device at a time.
+> Suppose I started my work on "Device 1"  with few opened application and later I wanted to switch to "Device 2" which is exactly similar to Device 1.
+> I thought to hibernate (suspend to disk) the Device 1 and store the hibernated image as a swap file and later transfer to sd card.
+> Then take of the sd card from Device 1 and put it into Device 2.
+> Copy the swap file from sd card to Device 2 in some swap partition.
+> Then reboot the Device 2 to Resume from this swap file.
+> I will get back my Device 1 content in Device 2.
+> 
+> Hope this is possible ?
+
+It may be possible to make it kind of work, but I wouldn't recommend it to
+anyone.
+
+[Pintu]
+if this can be possible we can derive many use cases.
+Till now we heard about hibernating and resuming from same device. And also people uses it rarely.
+With the Tizen coming up (supporting multiple devices) we can think about it.
+Also if "cloud" is integrated with kernel in _future_ we can save all our work from one device in cloud and restore our work from cloud in another device.
+I think that make sense.
+
+
+Thanks,
+Rafael
+<p>&nbsp;</p><p>&nbsp;</p>ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
