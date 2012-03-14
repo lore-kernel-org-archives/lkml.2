@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030777Ab2CNKiJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 06:38:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36372 "EHLO mx1.redhat.com"
+	id S965286Ab2CNKkS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 06:40:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20076 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760447Ab2CNKiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 06:38:06 -0400
-Date: Wed, 14 Mar 2012 16:07:55 +0530
+	id S1760469Ab2CNKkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 06:40:14 -0400
+Date: Wed, 14 Mar 2012 16:10:04 +0530
 From: Amit Shah <amit.shah@redhat.com>
 To: Wen Congyang <wency@cn.fujitsu.com>
 Cc: Avi Kivity <avi@redhat.com>, "Daniel P. Berrange" <berrange@redhat.com>,
@@ -15,7 +15,7 @@ Cc: Avi Kivity <avi@redhat.com>, "Daniel P. Berrange" <berrange@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
 Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-Message-ID: <20120314103755.GD2708@amit.redhat.com>
+Message-ID: <20120314104004.GE2708@amit.redhat.com>
 References: <4F58664D.1070800@cn.fujitsu.com>
  <4F58943E.1050402@redhat.com>
  <4F595B31.9090301@cn.fujitsu.com>
@@ -24,19 +24,19 @@ References: <4F58664D.1070800@cn.fujitsu.com>
  <20120313091843.GB3800@redhat.com>
  <4F5F25BF.7060100@redhat.com>
  <4F6056FE.3020202@cn.fujitsu.com>
- <4F6063C8.8010005@redhat.com>
- <4F606A7C.9090900@cn.fujitsu.com>
+ <20120314095114.GA4136@amit.redhat.com>
+ <4F606D38.2070107@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F606A7C.9090900@cn.fujitsu.com>
+In-Reply-To: <4F606D38.2070107@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 14 Mar 2012 [17:53:00], Wen Congyang wrote:
-> At 03/14/2012 05:24 PM, Avi Kivity Wrote:
-> > On 03/14/2012 10:29 AM, Wen Congyang wrote:
+On (Wed) 14 Mar 2012 [18:04:40], Wen Congyang wrote:
+> At 03/14/2012 05:51 PM, Amit Shah Wrote:
+> > On (Wed) 14 Mar 2012 [16:29:50], Wen Congyang wrote:
 > >> At 03/13/2012 06:47 PM, Avi Kivity Wrote:
 > >>> On 03/13/2012 11:18 AM, Daniel P. Berrange wrote:
 > >>>> On Mon, Mar 12, 2012 at 12:33:33PM +0200, Avi Kivity wrote:
@@ -75,31 +75,34 @@ On (Wed) 14 Mar 2012 [17:53:00], Wen Congyang wrote:
 > >>>
 > >>
 > >> I donot know how to use virtio-serial.
-> > 
-> > I don't either, copying Amit.
-> > 
+> >>
 > >> I start vm like this:
 > >> qemu ...\
 > >>    -device virtio-serial \
 > >>   -chardev socket,path=/tmp/foo,server,nowait,id=foo \
 > >>   -device virtserialport,chardev=foo,name=port1 ...
-> >>
-> >> You said that there are too many channels. Does it mean /tmp/foo is a channel?
 > > 
-> > Probably.
+> > This is sufficient.  On the host, you can open /tmp/foo using a custom
+> > program or nc (nc -U /tmp/foo).  On the guest, you can just open
+> > /dev/virtio-ports/port1 and read/write into it.
 > 
-> Hmm, if we use virtio-serial, the guest kernel writes something into the channel when
-> the os is panicked. Is it right?
+> I have two questions:
+> 1. does it OK to open this device when the guest is panicked?
 
-Depends on how you want to use it.  It could be the kernel, or it
-could be a userspace program which monitors syslogs for panic
-information and passes on that info to the virtio-serial channel.
+Depends on what kind of panic it is.  If the guest can continue
+operations inspite of the panic, it will be possible to write out the
+data.
 
-> If so, is this channel visible to guest userspace? If the channle is visible to guest
-> userspace, the program running in userspace may write the same message to the channel.
+> 2. how to prevent the userspace's program using this device?
 
-Access control is via permissions.  You can have udev scripts assign
-whatever uid and gid to the port of your interest.  By default, all
-ports are only accessible to the root user.
+Mentioned in previous reply.
+
+BTW: an in-kernel API for reading/writing to ports isn't implemented
+yet, because there's no user for it as of now.  If you want to write
+from the kernel to the host, there are trivial additions to the code
+necessary.
+
+(However, I think it's better to do the writing from userspace instead
+from the kernel itself).
 
 		Amit
