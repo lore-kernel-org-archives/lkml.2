@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622Ab2CNWdm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 18:33:42 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40168 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759929Ab2CNWdg (ORCPT
+	id S1760498Ab2CNWk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 18:40:56 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:34403 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab2CNWky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 18:33:36 -0400
-Date: Wed, 14 Mar 2012 23:33:09 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
+	Wed, 14 Mar 2012 18:40:54 -0400
+Date: Wed, 14 Mar 2012 15:40:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] edac: Add a sysfs node to test the EDAC error report
- facility
-Message-ID: <20120314223309.GB27602@aftab>
-References: <1331122101-28382-1-git-send-email-mchehab@redhat.com>
- <20120313233138.GA31106@kroah.com>
- <4F60F0D7.70505@redhat.com>
+Subject: Re: [PATCH 0/6] Add a per-dimm structure
+Message-ID: <20120314224050.GA32297@kroah.com>
+References: <1331120438-27523-1-git-send-email-mchehab@redhat.com>
+ <20120313233217.GB31106@kroah.com>
+ <4F60F2E4.7060707@redhat.com>
+ <20120314204355.GA10187@kroah.com>
+ <20120314223102.GA27602@aftab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F60F0D7.70505@redhat.com>
+In-Reply-To: <20120314223102.GA27602@aftab>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 04:26:15PM -0300, Mauro Carvalho Chehab wrote:
-> > Then please move it to debugfs, where debugging stuff belongs.
+On Wed, Mar 14, 2012 at 11:31:02PM +0100, Borislav Petkov wrote:
+> On Wed, Mar 14, 2012 at 01:43:55PM -0700, Greg KH wrote:
+> > > He thinks that a multi-layer struct should be created inside that directory
+> > > (it could have 2 or 3 levels of directories, depending on how the memory is
+> > > organized at the memory controller), instead of having a large number of files
+> > > there.
+> > 
+> > Why create subdirs?  If those subdirectories are not real devices,
+> > showing a real hierarchy, then do not create them as userspace will get
+> > very confused very quickly.
 > 
-> There are other edac error injection tools at sysfs. That's why I opted to keep
-> it there - plus, I was too lazy[1] to learn about the debugfs bits at the time I
-> wrote it, and adding a single node to sysfs were very trivial ;)
+> Why, IMO, we agreed on the following layout
+> 
+> rank0/
+> |-- dimm_dev_type
+> |-- dimm_edac_mode
+> |-- dimm_label
+> |-- dimm_location
+> |-- dimm_mem_type
+> |-- CE
+> |-- UE
+> `-- dimm_size
+> 
+> with CE being the correctable errors counter and UE be optional and only
+> present when it makes sense for the hardware.
+> 
+> This is not multi-layered, it is very easy to implement and mirrors all
+> possible memory controllers from the point of view of the single DIMM.
+> no? Or am I missing something...?
 
-I have to agree with Greg here, all debug-related stuff (error injection
-being somewhat related) should go to debugfs.
+Looks fine to me, assuming "rankX" is the dimm itself?
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+greg k-h
