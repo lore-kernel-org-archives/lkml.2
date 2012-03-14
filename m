@@ -1,155 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab2CNPnr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 11:43:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1287 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756249Ab2CNPnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 11:43:43 -0400
-Date: Wed, 14 Mar 2012 11:43:40 -0400
-From: Dave Jones <davej@redhat.com>
+	id S1756531Ab2CNPn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 11:43:59 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41381 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756401Ab2CNPn4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 11:43:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAC9WiBiZ9oOaDaYjow-ZryZ8i=7uLixTAfm48YKVpbwQfLfayQ@mail.gmail.com>
+References: <CAC9WiBiZ9oOaDaYjow-ZryZ8i=7uLixTAfm48YKVpbwQfLfayQ@mail.gmail.com>
+Date: Wed, 14 Mar 2012 11:43:54 -0400
+Message-ID: <CA+5PVA6y4gpf28zweFgC_Up+dcHtKcf9=YJ7TjUGKRsJo8FMsw@mail.gmail.com>
+Subject: Re: Getting oops with 3.2.10 when removing a SD card
+From: Josh Boyer <jwboyer@gmail.com>
 To: Francis Moreau <francis.moro@gmail.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Getting oops with 3.2.10 when removing a SD card
-Message-ID: <20120314154339.GB25000@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Francis Moreau <francis.moro@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <CAC9WiBiZ9oOaDaYjow-ZryZ8i=7uLixTAfm48YKVpbwQfLfayQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAC9WiBiZ9oOaDaYjow-ZryZ8i=7uLixTAfm48YKVpbwQfLfayQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 04:38:04PM +0100, Francis Moreau wrote:
- > Hi,
- > 
- > I'm getting this oops (pretty often) after writing to a SD card and
- > removing the card.
- > 
- > Could anyone have a look please ?
+On Wed, Mar 14, 2012 at 11:38 AM, Francis Moreau <francis.moro@gmail.com> wrote:
+> Hi,
+>
+> I'm getting this oops (pretty often) after writing to a SD card and
+> removing the card.
+>
+> Here's the oops:
+>
+> [17610.371580] usb 1-1.6: new high-speed USB device number 14 using ehci_hcd
+> [17610.469928] usb 1-1.6: New USB device found, idVendor=0bda, idProduct=0159
+> [17610.469935] usb 1-1.6: New USB device strings: Mfr=1, Product=2,
+> SerialNumber=3
+> [17610.469939] usb 1-1.6: Product: USB2.0-CRW
+> [17610.469942] usb 1-1.6: Manufacturer: Generic
+> [17610.469946] usb 1-1.6: SerialNumber: 20071114173400000
+> [17610.485966] scsi16 : usb-storage 1-1.6:1.0
+> [17611.489253] scsi 16:0:0:0: Direct-Access     Generic- Multi-Card
+>   1.00 PQ: 0 ANSI: 0 CCS
+> [17611.489556] sd 16:0:0:0: Attached scsi generic sg2 type 0
+> [17612.177470] sd 16:0:0:0: [sdb] 7744512 512-byte logical blocks:
+> (3.96 GB/3.69 GiB)
+> [17612.178347] sd 16:0:0:0: [sdb] Write Protect is off
+> [17612.178355] sd 16:0:0:0: [sdb] Mode Sense: 03 00 00 00
+> [17612.179333] sd 16:0:0:0: [sdb] No Caching mode page present
+> [17612.179338] sd 16:0:0:0: [sdb] Assuming drive cache: write through
+> [17612.182988] sd 16:0:0:0: [sdb] No Caching mode page present
+> [17612.182993] sd 16:0:0:0: [sdb] Assuming drive cache: write through
+> [17612.214565]  sdb: sdb1
+> [17612.218666] sd 16:0:0:0: [sdb] No Caching mode page present
+> [17612.218672] sd 16:0:0:0: [sdb] Assuming drive cache: write through
+> [17612.218677] sd 16:0:0:0: [sdb] Attached SCSI removable disk
+> [17620.408767] usb 1-1.6: USB disconnect, device number 14
+> [17620.410224] scsi 16:0:0:0: killing request
+> [17620.410512] BUG: unable to handle kernel NULL pointer dereference
+> at 0000000000000008
+> [17620.411480] IP: [<ffffffffa01e08ef>] sd_revalidate_disk+0x3f/0x1a10 [sd_mod]
+> [17620.411501] PGD 286a3067 PUD aef9f067 PMD 0
+> [17620.411507] Oops: 0000 [#1] SMP
+> [17620.411512] CPU 0
 
-Should be fixed by this patch that has been around for a while now.
+There's a patch to fix this that will hopefully be pulled into Linus' tree
+today.  It should work it's way back to 3.2-stable after that.
 
-	Dave
-
---- linux/fs/partitions/check.c~	2012-02-20 18:32:55.314253719 -0500
-+++ linux/fs/partitions/check.c	2012-02-20 18:34:46.509859745 -0500
-@@ -539,17 +539,11 @@ static bool disk_unlock_native_capacity(
- 	}
- }
- 
--int rescan_partitions(struct gendisk *disk, struct block_device *bdev)
-+static int drop_partitions(struct gendisk *disk, struct block_device *bdev)
- {
--	struct parsed_partitions *state = NULL;
- 	struct disk_part_iter piter;
- 	struct hd_struct *part;
--	int p, highest, res;
--rescan:
--	if (state && !IS_ERR(state)) {
--		kfree(state);
--		state = NULL;
--	}
-+	int res;
- 
- 	if (bdev->bd_part_count)
- 		return -EBUSY;
-@@ -562,6 +556,24 @@ rescan:
- 		delete_partition(disk, part->partno);
- 	disk_part_iter_exit(&piter);
- 
-+	return 0;
-+}
-+
-+int rescan_partitions(struct gendisk *disk, struct block_device *bdev)
-+{
-+	struct parsed_partitions *state = NULL;
-+	struct hd_struct *part;
-+	int p, highest, res;
-+rescan:
-+	if (state && !IS_ERR(state)) {
-+		kfree(state);
-+		state = NULL;
-+	}
-+
-+	res = drop_partitions(disk, bdev);
-+	if (res)
-+		return res;
-+
- 	if (disk->fops->revalidate_disk)
- 		disk->fops->revalidate_disk(disk);
- 	check_disk_size_change(disk, bdev);
-@@ -665,6 +677,26 @@ rescan:
- 	return 0;
- }
- 
-+int invalidate_partitions(struct gendisk *disk, struct block_device *bdev)
-+{
-+	int res;
-+
-+	if (!bdev->bd_invalidated)
-+		return 0;
-+
-+	res = drop_partitions(disk, bdev);
-+	if (res)
-+		return res;
-+
-+	set_capacity(disk, 0);
-+	check_disk_size_change(disk, bdev);
-+	bdev->bd_invalidated = 0;
-+	/* tell userspace that the media / partition table may have changed */
-+	kobject_uevent(&disk_to_dev(disk)->kobj, KOBJ_CHANGE);
-+
-+	return 0;
-+}
-+
- unsigned char *read_dev_sector(struct block_device *bdev, sector_t n, Sector *p)
- {
- 	struct address_space *mapping = bdev->bd_inode->i_mapping;
---- linux/include/linux/genhd.h~	2012-02-20 18:35:02.777802107 -0500
-+++ linux/include/linux/genhd.h	2012-02-20 18:35:13.873762792 -0500
-@@ -596,6 +596,7 @@ extern char *disk_name (struct gendisk *
- 
- extern int disk_expand_part_tbl(struct gendisk *disk, int target);
- extern int rescan_partitions(struct gendisk *disk, struct block_device *bdev);
-+extern int invalidate_partitions(struct gendisk *disk, struct block_device *bdev);
- extern struct hd_struct * __must_check add_partition(struct gendisk *disk,
- 						     int partno, sector_t start,
- 						     sector_t len, int flags,
---- linux/fs/block_dev.c~	2012-02-20 18:35:24.890723757 -0500
-+++ linux/fs/block_dev.c	2012-02-20 18:36:25.166510197 -0500
-@@ -1159,8 +1159,12 @@ static int __blkdev_get(struct block_dev
- 			 * The latter is necessary to prevent ghost
- 			 * partitions on a removed medium.
- 			 */
--			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
--				rescan_partitions(disk, bdev);
-+			if (bdev->bd_invalidated) {
-+				if (!ret)
-+					rescan_partitions(disk, bdev);
-+				else if (ret == -ENOMEDIUM)
-+					invalidate_partitions(disk, bdev);
-+			}
- 			if (ret)
- 				goto out_clear;
- 		} else {
-@@ -1190,8 +1194,12 @@ static int __blkdev_get(struct block_dev
- 			if (bdev->bd_disk->fops->open)
- 				ret = bdev->bd_disk->fops->open(bdev, mode);
- 			/* the same as first opener case, read comment there */
--			if (bdev->bd_invalidated && (!ret || ret == -ENOMEDIUM))
--				rescan_partitions(bdev->bd_disk, bdev);
-+			if (bdev->bd_invalidated) {
-+				if (!ret)
-+					rescan_partitions(bdev->bd_disk, bdev);
-+				else if (ret == -ENOMEDIUM)
-+					invalidate_partitions(bdev->bd_disk, bdev);
-+			}
- 			if (ret)
- 				goto out_unlock_bdev;
- 		}
+josh
