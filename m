@@ -1,163 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761372Ab2CNRye (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 13:54:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51101 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756182Ab2CNRyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 13:54:32 -0400
-Date: Wed, 14 Mar 2012 18:54:30 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcg: count pte references from every member of
- the reclaimed hierarchy
-Message-ID: <20120314175430.GJ4434@tiehlicka.suse.cz>
-References: <1330438489-21909-1-git-send-email-hannes@cmpxchg.org>
- <1330438489-21909-2-git-send-email-hannes@cmpxchg.org>
+	id S1761386Ab2CNR6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 13:58:15 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:41274 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761183Ab2CNR6O convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 13:58:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1330438489-21909-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1331709454-27966-1-git-send-email-daniel@numascale-asia.com>
+References: <1331680589.18900.76.camel@sbsiddha-desk.sc.intel.com>
+	<1331709454-27966-1-git-send-email-daniel@numascale-asia.com>
+Date: Wed, 14 Mar 2012 10:58:13 -0700
+X-Google-Sender-Auth: pA5UjjRkEBqfuLviQ_u0HmW_ox0
+Message-ID: <CAE9FiQX_o8GXqi1A+LTE4pseb81d1Aj5zR49NBvJiyAx24yYfw@mail.gmail.com>
+Subject: Re: [PATCH] Move APIC ID validity check into platform APIC code
+From: Yinghai Lu <yinghai@kernel.org>
+To: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, Steffen Persvold <sp@numascale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 28-02-12 15:14:49, Johannes Weiner wrote:
-> The rmap walker checking page table references has historically
-> ignored references from VMAs that were not part of the memcg that was
-> being reclaimed during memcg hard limit reclaim.
-> 
-> When transitioning global reclaim to memcg hierarchy reclaim, I missed
-> that bit and now references from outside a memcg are ignored even
-> during global reclaim.
-> 
-> Reverting back to traditional behaviour - count all references during
-> global reclaim and only mind references of the memcg being reclaimed
-> during limit reclaim would be one option.
-> 
-> However, the more generic idea is to ignore references exactly then
-> when they are outside the hierarchy that is currently under reclaim;
-> because only then will their reclamation be of any use to help the
-> pressure situation.  It makes no sense to ignore references from a
-> sibling memcg and then evict a page that will be immediately refaulted
-> by that sibling which contributes to the same usage of the common
-> ancestor under reclaim.
-> 
-> The solution: make the rmap walker ignore references from VMAs that
-> are not part of the hierarchy that is being reclaimed.
-> 
-> Flat limit reclaim will stay the same, hierarchical limit reclaim will
-> mind the references only to pages that the hierarchy owns.  Global
-> reclaim, since it reclaims from all memcgs, will be fixed to regard
-> all references.
-> 
-> Reported-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
+On Wed, Mar 14, 2012 at 12:17 AM, Daniel J Blueman
+<daniel@numascale-asia.com> wrote:
+> Move APIC ID validity check into platform APIC code, so it can be
+> overridden when needed. For NumaChip systems, always trust MADT,
+> as it's constructed with high APIC IDs.
+>
+> Behaviour verifies on standard x86 systems and on NumaChip systems
+> with this, and compile-tested with allyesconfig.
+>
+> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+> Reviewed-by: Steffen Persvold <sp@numascale.com>
+>
 > ---
->  include/linux/memcontrol.h |    6 +++++-
->  mm/memcontrol.c            |   16 +++++++++++-----
->  mm/vmscan.c                |    6 ++++--
->  3 files changed, 20 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 8537c5d..661b54a 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -78,6 +78,7 @@ extern void mem_cgroup_uncharge_page(struct page *page);
->  extern void mem_cgroup_uncharge_cache_page(struct page *page);
->  
->  extern void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask);
-> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *, struct mem_cgroup *);
->  int task_in_mem_cgroup(struct task_struct *task, const struct mem_cgroup *memcg);
->  
->  extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
-> @@ -88,10 +89,13 @@ static inline
->  int mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *cgroup)
->  {
->  	struct mem_cgroup *memcg;
-> +	int match;
-> +
->  	rcu_read_lock();
->  	memcg = mem_cgroup_from_task(rcu_dereference((mm)->owner));
-> +	match = __mem_cgroup_same_or_subtree(cgroup, memcg);
->  	rcu_read_unlock();
-> -	return cgroup == memcg;
-> +	return match;
->  }
->  
->  extern struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *memcg);
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index b4622fb..21004df 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1044,17 +1044,23 @@ struct lruvec *mem_cgroup_lru_move_lists(struct zone *zone,
->   * Checks whether given mem is same or in the root_mem_cgroup's
->   * hierarchy subtree
->   */
-> -static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> -		struct mem_cgroup *memcg)
-> +bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> +				  struct mem_cgroup *memcg)
->  {
-> -	bool ret;
-> -
->  	if (root_memcg == memcg)
->  		return true;
->  	if (!root_memcg->use_hierarchy)
->  		return false;
-> +	return css_is_ancestor(&memcg->css, &root_memcg->css);
+>  arch/x86/include/asm/apic.h           |    6 ++++++
+>  arch/x86/kernel/apic/apic_flat_64.c   |    2 ++
+>  arch/x86/kernel/apic/apic_noop.c      |    1 +
+>  arch/x86/kernel/apic/apic_numachip.c  |   10 +++++++++-
+>  arch/x86/kernel/apic/bigsmp_32.c      |    1 +
+>  arch/x86/kernel/apic/es7000_32.c      |    2 ++
+>  arch/x86/kernel/apic/numaq_32.c       |    1 +
+>  arch/x86/kernel/apic/probe_32.c       |    1 +
+>  arch/x86/kernel/apic/summit_32.c      |    1 +
+>  arch/x86/kernel/apic/x2apic_cluster.c |    1 +
+>  arch/x86/kernel/apic/x2apic_phys.c    |    1 +
+>  arch/x86/kernel/apic/x2apic_uv_x.c    |    1 +
+>  arch/x86/kernel/smpboot.c             |    2 +-
+>  13 files changed, 28 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+> index 3ab9bdd..a9371c9 100644
+> --- a/arch/x86/include/asm/apic.h
+> +++ b/arch/x86/include/asm/apic.h
+> @@ -288,6 +288,7 @@ struct apic {
+>
+>        int (*probe)(void);
+>        int (*acpi_madt_oem_check)(char *oem_id, char *oem_table_id);
+> +       int (*apic_id_valid)(int apicid);
+>        int (*apic_id_registered)(void);
+>
+>        u32 irq_delivery_mode;
+> @@ -532,6 +533,11 @@ static inline unsigned int read_apic_id(void)
+>        return apic->get_apic_id(reg);
+>  }
+>
+> +static inline int default_apic_id_valid(int apicid)
+> +{
+> +       return x2apic_mode || (apicid < 255);
 > +}
 > +
-> +static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
-> +				       struct mem_cgroup *memcg)
+>  extern void default_setup_apic_routing(void);
+>
+>  extern struct apic apic_noop;
+> diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
+> index 8c3cdde..359b689 100644
+> --- a/arch/x86/kernel/apic/apic_flat_64.c
+> +++ b/arch/x86/kernel/apic/apic_flat_64.c
+> @@ -180,6 +180,7 @@ static struct apic apic_flat =  {
+>        .name                           = "flat",
+>        .probe                          = flat_probe,
+>        .acpi_madt_oem_check            = flat_acpi_madt_oem_check,
+> +       .apic_id_valid                  = default_apic_id_valid,
+>        .apic_id_registered             = flat_apic_id_registered,
+>
+>        .irq_delivery_mode              = dest_LowestPrio,
+> @@ -337,6 +338,7 @@ static struct apic apic_physflat =  {
+>        .name                           = "physical flat",
+>        .probe                          = physflat_probe,
+>        .acpi_madt_oem_check            = physflat_acpi_madt_oem_check,
+> +       .apic_id_valid                  = default_apic_id_valid,
+>        .apic_id_registered             = flat_apic_id_registered,
+>
+>        .irq_delivery_mode              = dest_Fixed,
+> diff --git a/arch/x86/kernel/apic/apic_noop.c b/arch/x86/kernel/apic/apic_noop.c
+> index 775b82b..634ae6c 100644
+> --- a/arch/x86/kernel/apic/apic_noop.c
+> +++ b/arch/x86/kernel/apic/apic_noop.c
+> @@ -124,6 +124,7 @@ struct apic apic_noop = {
+>        .probe                          = noop_probe,
+>        .acpi_madt_oem_check            = NULL,
+>
+> +       .apic_id_valid                  = default_apic_id_valid,
+>        .apic_id_registered             = noop_apic_id_registered,
+>
+>        .irq_delivery_mode              = dest_LowestPrio,
+> diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+> index 09d3d8c..d9ea5f3 100644
+> --- a/arch/x86/kernel/apic/apic_numachip.c
+> +++ b/arch/x86/kernel/apic/apic_numachip.c
+> @@ -56,6 +56,12 @@ static unsigned int read_xapic_id(void)
+>        return get_apic_id(apic_read(APIC_ID));
+>  }
+>
+> +static int numachip_apic_id_valid(int apicid)
 > +{
-> +	bool ret;
+> +       /* Trust what bootloader passes in MADT */
+> +       return 1;
+> +}
 > +
->  	rcu_read_lock();
-> -	ret = css_is_ancestor(&memcg->css, &root_memcg->css);
-> +	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
->  	rcu_read_unlock();
->  	return ret;
->  }
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index c631234..120646e 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -708,7 +708,8 @@ static enum page_references page_check_references(struct page *page,
->  	int referenced_ptes, referenced_page;
->  	unsigned long vm_flags;
->  
-> -	referenced_ptes = page_referenced(page, 1, mz->mem_cgroup, &vm_flags);
-> +	referenced_ptes = page_referenced(page, 1, sc->target_mem_cgroup,
-> +					  &vm_flags);
->  	referenced_page = TestClearPageReferenced(page);
->  
->  	/* Lumpy reclaim - ignore references */
-> @@ -1710,7 +1711,8 @@ static void shrink_active_list(unsigned long nr_pages,
->  			continue;
->  		}
->  
-> -		if (page_referenced(page, 0, mz->mem_cgroup, &vm_flags)) {
-> +		if (page_referenced(page, 0, sc->target_mem_cgroup,
-> +				    &vm_flags)) {
->  			nr_rotated += hpage_nr_pages(page);
->  			/*
->  			 * Identify referenced, file-backed active pages and
-> -- 
-> 1.7.7.6
-> 
+>  static int numachip_apic_id_registered(void)
+>  {
+>        return physid_isset(read_xapic_id(), phys_cpu_present_map);
+> @@ -223,10 +229,11 @@ static int __init numachip_system_init(void)
+>  }
+>  early_initcall(numachip_system_init);
+>
+> -static int numachip_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+> +static int __cpuinit numachip_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+>  {
+>        if (!strncmp(oem_id, "NUMASC", 6)) {
+>                numachip_system = 1;
+> +               setup_force_cpu_cap(X86_FEATURE_X2APIC);
+>                return 1;
+>        }
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+can you check if you can update
+
+!cpu_has_x2apic && (apic_id >= 0xff) && enabled
+
+in arch/x86/kernel/acpi/boot.c::acpi_parse_x2apic()
+
+to use some kind of apic_id_valid()
+
+so you could avoid setting that feature bit.
+
+the checking in SRAT could be removed.
+
+Yinghai
