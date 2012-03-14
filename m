@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932587Ab2CNWbc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 18:31:32 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40140 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932403Ab2CNWb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 18:31:29 -0400
-Date: Wed, 14 Mar 2012 23:31:02 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Add a per-dimm structure
-Message-ID: <20120314223102.GA27602@aftab>
-References: <1331120438-27523-1-git-send-email-mchehab@redhat.com>
- <20120313233217.GB31106@kroah.com>
- <4F60F2E4.7060707@redhat.com>
- <20120314204355.GA10187@kroah.com>
+	id S932630Ab2CNWc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 18:32:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31107 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932403Ab2CNWcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 18:32:54 -0400
+Message-ID: <4F611C8F.4030100@redhat.com>
+Date: Wed, 14 Mar 2012 19:32:47 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120314204355.GA10187@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Metcalf <cmetcalf@tilera.com>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tile_edac: Fix the memory controller ID
+References: <1331560917-14071-1-git-send-email-mchehab@redhat.com> <4F60ED44.70808@tilera.com>
+In-Reply-To: <4F60ED44.70808@tilera.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 01:43:55PM -0700, Greg KH wrote:
-> > He thinks that a multi-layer struct should be created inside that directory
-> > (it could have 2 or 3 levels of directories, depending on how the memory is
-> > organized at the memory controller), instead of having a large number of files
-> > there.
+Em 14-03-2012 16:11, Chris Metcalf escreveu:
+> On 3/12/2012 10:02 AM, Mauro Carvalho Chehab wrote:
+>> Fix a regression introduced by changeset 7b03829a8ba4:
+>>
+>> -       mci = edac_mc_alloc(sizeof(struct tile_edac_priv),
+>> -               TILE_EDAC_NR_CSROWS, TILE_EDAC_NR_CHANS, pdev->id);
+>> +       mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, false,
+>> +                           sizeof(struct tile_edac_priv));
+>>
+>> The pdev->id is missing.
+>>
+>> Compile-tested only. Btw, in order to compile it, I had to:
+>>
+>> 1) comment a header at arch/tile/include/asm/linkage.h:
+>>
+>> 	-#include <feedback.h>
+>> 	+//#include <feedback.h>
+>>
+>> 2) Use the ./arch/tile/configs/tilegx_defconfig . the tilepro_defconfig
+>>    is broken;
+>>
+>> 3) manually enable the EDAC module on it.
+>>
+>> Somebody has to fix it ;)
+>>
+>> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 > 
-> Why create subdirs?  If those subdirectories are not real devices,
-> showing a real hierarchy, then do not create them as userspace will get
-> very confused very quickly.
+> You might amend the commit message based on our conversation, but otherwise:
+> 
+> Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+> 
+> Thanks for fixing up the tile EDAC driver, BTW :-)
 
-Why, IMO, we agreed on the following layout
+Thanks for the ack!
 
-rank0/
-|-- dimm_dev_type
-|-- dimm_edac_mode
-|-- dimm_label
-|-- dimm_location
-|-- dimm_mem_type
-|-- CE
-|-- UE
-`-- dimm_size
+Btw, I've introduced the bug, on this changeset:
+	http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-edac.git;a=commit;h=3b6909be050f03366322b0d5b45d38eedee77574
 
-with CE being the correctable errors counter and UE be optional and only
-present when it makes sense for the hardware.
+So, it is my moral duty to fix it ;)
 
-This is not multi-layered, it is very easy to implement and mirrors all
-possible memory controllers from the point of view of the single DIMM.
-no? Or am I missing something...?
+Btw, I'd appreciate if you could test the EDAC driver on tile after that
+series. It makes the edac core more flexible to represent the location of
+the broken memory on the way the memory controller works, in order to
+put its fingers at the Field Repleaceable Unit (FRU) - like a DIMM stick.
+It should be easy (and it probably makes sense on embedded hardware) to
+add there a way to report each DRAM memory is broken.
 
-Thanks.
+The entire series is at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git hw_events_v7
 
--- 
-Regards/Gruss,
-Boris.
+Thank you!
+Mauro
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Thanks,
+Mauro
+> 
+
