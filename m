@@ -1,483 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758137Ab2CNPvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 11:51:32 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24239 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756238Ab2CNPv1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 11:51:27 -0400
-X-Authority-Analysis: v=2.0 cv=M9vP2lMs c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=5SG0PmZfjMsA:10 a=VwQbUJbxAAAA:8 a=LfR_rfh0OyYqeNqDDeMA:9 a=4aMu4Sdd4tyVz_uCfWMA:7 a=PUjeQqilurYA:10 a=2x_47zPmX1kiumkL:21 a=fPpaouBYk7YUNv8G:21 a=r5VCLxTwKZWlqsq4VwQA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1331740278.25686.670.camel@gandalf.stny.rr.com>
-Subject: [ANNOUNCE] 3.0.23-rt40
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Wed, 14 Mar 2012 11:51:18 -0400
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-M0oEd2u0zFJZYUwOl8Zd"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
+	id S1758452Ab2CNPwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 11:52:08 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59635 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757925Ab2CNPwF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 11:52:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABqD9haMip5sKW92mDNXwsqL-U8NmUcuG9DN5202-V4xj0qz1g@mail.gmail.com>
+References: <1331587715-26069-1-git-send-email-wad@chromium.org>
+	<1331587715-26069-10-git-send-email-wad@chromium.org>
+	<34b2e80343549454d6c026237f248c86.squirrel@webmail.greenhost.nl>
+	<CABqD9haMip5sKW92mDNXwsqL-U8NmUcuG9DN5202-V4xj0qz1g@mail.gmail.com>
+Date: Wed, 14 Mar 2012 10:52:00 -0500
+Message-ID: <CABqD9haqYDo-rKcTN7uBBd-RqzxwjA7RW7sHMHnNvR8aWTYhJQ@mail.gmail.com>
+Subject: Re: [kernel-hardening] Re: [PATCH v14 10/13] ptrace,seccomp: Add
+ PTRACE_SECCOMP support
+From: Will Drewry <wad@chromium.org>
+To: kernel-hardening@lists.openwall.com
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, netdev@vger.kernel.org, x86@kernel.org,
+        arnd@arndb.de, davem@davemloft.net, hpa@zytor.com, mingo@redhat.com,
+        oleg@redhat.com, peterz@infradead.org, rdunlap@xenotime.net,
+        mcgrathr@chromium.org, tglx@linutronix.de, luto@mit.edu,
+        eparis@redhat.com, serge.hallyn@canonical.com, djm@mindrot.org,
+        scarybeasts@gmail.com, pmoore@redhat.com, akpm@linux-foundation.org,
+        corbet@lwn.net, eric.dumazet@gmail.com, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 14, 2012 at 10:03 AM, Will Drewry <wad@chromium.org> wrote:
+> On Wed, Mar 14, 2012 at 2:31 AM, Indan Zupancic <indan@nul.nu> wrote:
+>> Hello,
+>>
+>> On Mon, March 12, 2012 22:28, Will Drewry wrote:
+>>> This change adds support for a new ptrace option, PTRACE_O_TRACESECCOMP,
+>>> and a new return value for seccomp BPF programs, SECCOMP_RET_TRACE.
+>>>
+>>> When a tracer specifies the PTRACE_O_TRACESECCOMP ptrace option, the
+>>> tracer will be notified for any syscall that results in a BPF program
+>>> returning SECCOMP_RET_TRACE.  The 16-bit SECCOMP_RET_DATA mask of the
+>>> BPF program return value will be passed as the ptrace_message and may be
+>>> retrieved using PTRACE_GETEVENTMSG.
+>>
+>> Maybe good to tell it gets notified with PTRACE_EVENT_SECCOMP.
+>
+> Good call - I'll update it.
+>
+>>>
+>>> If the subordinate process is not using seccomp filter, then no
+>>> system call notifications will occur even if the option is specified.
+>>>
+>>> If there is no attached tracer when SECCOMP_RET_TRACE is returned,
+>>> the system call will not be executed and an -ENOSYS errno will be
+>>> returned to userspace.
+>>
+>> When no tracer with PTRACE_O_TRACESECCOMP set is attached?
+>> (Because that's what the code is doing.)
+>
+> That too :)
+>
+>>>
+>>> This change adds a dependency on the system call slow path.  Any future
+>>> efforts to use the system call fast path for seccomp filter will need to
+>>> address this restriction.
+>>>
+>>> v14: - rebase/nochanges
+>>> v13: - rebase on to 88ebdda6159ffc15699f204c33feb3e431bf9bdc
+>>>       (Brings back a change to ptrace.c and the masks.)
+>>> v12: - rebase to linux-next
+>>>     - use ptrace_event and update arch/Kconfig to mention slow-path dependency
+>>>     - drop all tracehook changes and inclusion (oleg@redhat.com)
+>>> v11: - invert the logic to just make it a PTRACE_SYSCALL accelerator
+>>>       (indan@nul.nu)
+>>> v10: - moved to PTRACE_O_SECCOMP / PT_TRACE_SECCOMP
+>>> v9:  - n/a
+>>> v8:  - guarded PTRACE_SECCOMP use with an ifdef
+>>> v7:  - introduced
+>>>
+>>> Signed-off-by: Will Drewry <wad@chromium.org>
+>>> ---
+>>> arch/Kconfig            |   11 ++++++-----
+>>> include/linux/ptrace.h  |    7 +++++--
+>>> include/linux/seccomp.h |    1 +
+>>> kernel/ptrace.c         |    3 +++
+>>> kernel/seccomp.c        |   20 +++++++++++++++-----
+>>> 5 files changed, 30 insertions(+), 12 deletions(-)
+>>>
+>>> diff --git a/arch/Kconfig b/arch/Kconfig
+>>> index d92a78e..3f8132c 100644
+>>> --- a/arch/Kconfig
+>>> +++ b/arch/Kconfig
+>>> @@ -202,15 +202,16 @@ config HAVE_CMPXCHG_DOUBLE
+>>> config HAVE_ARCH_SECCOMP_FILTER
+>>>       bool
+>>>       help
+>>> -       This symbol should be selected by an architecure if it provides:
+>>> -       asm/syscall.h:
+>>> +       An arch should select this symbol if it provides all of these things:
+>>>         - syscall_get_arch()
+>>>         - syscall_get_arguments()
+>>>         - syscall_rollback()
+>>>         - syscall_set_return_value()
+>>> -       SIGSYS siginfo_t support must be implemented.
+>>> -       __secure_computing_int()/secure_computing()'s return value must be
+>>> -       checked, with -1 resulting in the syscall being skipped.
+>>> +       - SIGSYS siginfo_t support
+>>> +       - uses __secure_computing_int() or secure_computing()
+>>> +       - secure_computing is called from a ptrace_event()-safe context
+>>> +       - secure_computing return value is checked and a return value of -1
+>>> +         results in the system call being skipped immediately.
+>>>
+>>> config SECCOMP_FILTER
+>>>       def_bool y
+>>> diff --git a/include/linux/ptrace.h b/include/linux/ptrace.h
+>>> index c2f1f6a..84b3418 100644
+>>> --- a/include/linux/ptrace.h
+>>> +++ b/include/linux/ptrace.h
+>>> @@ -62,8 +62,9 @@
+>>> #define PTRACE_O_TRACEEXEC    0x00000010
+>>> #define PTRACE_O_TRACEVFORKDONE       0x00000020
+>>> #define PTRACE_O_TRACEEXIT    0x00000040
+>>> +#define PTRACE_O_TRACESECCOMP        0x00000080
+>>>
+>>> -#define PTRACE_O_MASK                0x0000007f
+>>> +#define PTRACE_O_MASK                0x000000ff
+>>>
+>>> /* Wait extended result codes for the above trace options.  */
+>>> #define PTRACE_EVENT_FORK     1
+>>> @@ -73,6 +74,7 @@
+>>> #define PTRACE_EVENT_VFORK_DONE       5
+>>> #define PTRACE_EVENT_EXIT     6
+>>> #define PTRACE_EVENT_STOP     7
+>>> +#define PTRACE_EVENT_SECCOMP 8
+>>
+>> I think PTRACE_EVENT_STOP is supposed to be hidden, it's never directly
+>> seen by user space. Instead of doing the obvious thing, they went the
+>> crazy PTRACE_INTERRUPT + PTRACE_LISTEN way.
+>>
+>> So it's better to add PTRACE_EVENT_SECCOMP as 8 and bump STOP one up.
+>> But if PTRACE_EVENT_STOP is really hidden then it shouldn't show up in
+>> the user space header at all, it should be after the ifdef KERNEL.
+>
+> yeah that's in the -next branch so it will be fixed on merge resolve.
+>
+>>>
+>>> #include <asm/ptrace.h>
+>>>
+>>> @@ -101,8 +103,9 @@
+>>> #define PT_TRACE_EXEC         PT_EVENT_FLAG(PTRACE_EVENT_EXEC)
+>>> #define PT_TRACE_VFORK_DONE   PT_EVENT_FLAG(PTRACE_EVENT_VFORK_DONE)
+>>> #define PT_TRACE_EXIT         PT_EVENT_FLAG(PTRACE_EVENT_EXIT)
+>>> +#define PT_TRACE_SECCOMP     PT_EVENT_FLAG(PTRACE_EVENT_SECCOMP)
+>>>
+>>> -#define PT_TRACE_MASK        0x000003f4
+>>> +#define PT_TRACE_MASK        0x00000ff4
+>>
+>> This is wrong. Shouldn't it be 0xbf4? (0x7f4 if you bump STOP up.)
+>
+> If I bump stop up, but in the resolved version the masks simplify.
 
---=-M0oEd2u0zFJZYUwOl8Zd
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: quoted-printable
+Oops. To answer the question about 0xbf4 versus 0xff4.  0xbf4 would
+make sense for filtering out STOP, but it seemed like overkill because
+stop has already been moved out of the way in -next:
+http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=include/linux/ptrace.h;h=5c719627c2aa7bc58431ba5aa66195f9f89113ee;hb=c3381bf07c37799a7893c39469ad892322f9ded2#l62
 
+Merge should resolve this issue entirely.
 
-Dear RT Folks,
-
-I'm pleased to announce the 3.0.23-rt40 stable release.
-
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: 1a71c9ae0f844238de43681c41563a4203b7e933
-
-
-Or to build 3.0.23-rt40 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.23.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.23-rt40.=
-patch.xz
-
-
-You can also build from 3.0.23-rt39 by applying the incremental patch:
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/incr/patch-3.0.23-=
-rt39-rt40.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-Changes from 3.0.23-rt39:
-
----
-
-Steven Rostedt (2):
-      Revert "ACPI: Convert embedded controller lock to raw spinlock"
-      Linux 3.0.23-rt40
-
-Thomas Gleixner (5):
-      softirq: Check preemption after reenabling interrupts
-      rt: Introduce cpu_chill()
-      fs: dcache: Use cpu_chill() in trylock loops
-      fs: namespace: Use cpu_chill() instead of cpu_relax()
-      net: Use cpu_chill() instead of cpu_relax()
-
-----
- block/blk-iopoll.c      |    3 +++
- block/blk-softirq.c     |    3 +++
- drivers/acpi/ec.c       |   22 +++++++++++-----------
- drivers/acpi/internal.h |    2 +-
- fs/autofs4/autofs_i.h   |    1 +
- fs/autofs4/expire.c     |    2 +-
- fs/dcache.c             |    7 ++++---
- fs/namespace.c          |    3 ++-
- include/linux/delay.h   |    6 ++++++
- include/linux/preempt.h |    3 +++
- localversion-rt         |    2 +-
- net/core/dev.c          |    6 ++++++
- net/rds/ib_rdma.c       |    3 ++-
- 13 files changed, 44 insertions(+), 19 deletions(-)
----------------------------
-diff --git a/block/blk-iopoll.c b/block/blk-iopoll.c
-index 58916af..f7ca9b4 100644
---- a/block/blk-iopoll.c
-+++ b/block/blk-iopoll.c
-@@ -38,6 +38,7 @@ void blk_iopoll_sched(struct blk_iopoll *iop)
- 	list_add_tail(&iop->list, &__get_cpu_var(blk_cpu_iopoll));
- 	__raise_softirq_irqoff(BLOCK_IOPOLL_SOFTIRQ);
- 	local_irq_restore(flags);
-+	preempt_check_resched_rt();
- }
- EXPORT_SYMBOL(blk_iopoll_sched);
-=20
-@@ -135,6 +136,7 @@ static void blk_iopoll_softirq(struct softirq_action *h=
-)
- 		__raise_softirq_irqoff(BLOCK_IOPOLL_SOFTIRQ);
-=20
- 	local_irq_enable();
-+	preempt_check_resched_rt();
- }
-=20
- /**
-@@ -204,6 +206,7 @@ static int __cpuinit blk_iopoll_cpu_notify(struct notif=
-ier_block *self,
- 				 &__get_cpu_var(blk_cpu_iopoll));
- 		__raise_softirq_irqoff(BLOCK_IOPOLL_SOFTIRQ);
- 		local_irq_enable();
-+		preempt_check_resched_rt();
- 	}
-=20
- 	return NOTIFY_OK;
-diff --git a/block/blk-softirq.c b/block/blk-softirq.c
-index ee9c216..0206963 100644
---- a/block/blk-softirq.c
-+++ b/block/blk-softirq.c
-@@ -50,6 +50,7 @@ static void trigger_softirq(void *data)
- 		raise_softirq_irqoff(BLOCK_SOFTIRQ);
-=20
- 	local_irq_restore(flags);
-+	preempt_check_resched_rt();
- }
-=20
- /*
-@@ -92,6 +93,7 @@ static int __cpuinit blk_cpu_notify(struct notifier_block=
- *self,
- 				 &__get_cpu_var(blk_cpu_done));
- 		raise_softirq_irqoff(BLOCK_SOFTIRQ);
- 		local_irq_enable();
-+		preempt_check_resched_rt();
- 	}
-=20
- 	return NOTIFY_OK;
-@@ -139,6 +141,7 @@ do_local:
- 		goto do_local;
-=20
- 	local_irq_restore(flags);
-+	preempt_check_resched_rt();
- }
-=20
- /**
-diff --git a/drivers/acpi/ec.c b/drivers/acpi/ec.c
-index db0e6c3..b72a603 100644
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -152,10 +152,10 @@ static int ec_transaction_done(struct acpi_ec *ec)
- {
- 	unsigned long flags;
- 	int ret =3D 0;
--	raw_spin_lock_irqsave(&ec->curr_lock, flags);
-+	spin_lock_irqsave(&ec->curr_lock, flags);
- 	if (!ec->curr || ec->curr->done)
- 		ret =3D 1;
--	raw_spin_unlock_irqrestore(&ec->curr_lock, flags);
-+	spin_unlock_irqrestore(&ec->curr_lock, flags);
- 	return ret;
- }
-=20
-@@ -169,7 +169,7 @@ static void start_transaction(struct acpi_ec *ec)
- static void advance_transaction(struct acpi_ec *ec, u8 status)
- {
- 	unsigned long flags;
--	raw_spin_lock_irqsave(&ec->curr_lock, flags);
-+	spin_lock_irqsave(&ec->curr_lock, flags);
- 	if (!ec->curr)
- 		goto unlock;
- 	if (ec->curr->wlen > ec->curr->wi) {
-@@ -194,7 +194,7 @@ err:
- 	if (in_interrupt())
- 		++ec->curr->irq_count;
- unlock:
--	raw_spin_unlock_irqrestore(&ec->curr_lock, flags);
-+	spin_unlock_irqrestore(&ec->curr_lock, flags);
- }
-=20
- static int acpi_ec_sync_query(struct acpi_ec *ec);
-@@ -232,9 +232,9 @@ static int ec_poll(struct acpi_ec *ec)
- 		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
- 			break;
- 		pr_debug(PREFIX "controller reset, restart transaction\n");
--		raw_spin_lock_irqsave(&ec->curr_lock, flags);
-+		spin_lock_irqsave(&ec->curr_lock, flags);
- 		start_transaction(ec);
--		raw_spin_unlock_irqrestore(&ec->curr_lock, flags);
-+		spin_unlock_irqrestore(&ec->curr_lock, flags);
- 	}
- 	return -ETIME;
- }
-@@ -247,17 +247,17 @@ static int acpi_ec_transaction_unlocked(struct acpi_e=
-c *ec,
- 	if (EC_FLAGS_MSI)
- 		udelay(ACPI_EC_MSI_UDELAY);
- 	/* start transaction */
--	raw_spin_lock_irqsave(&ec->curr_lock, tmp);
-+	spin_lock_irqsave(&ec->curr_lock, tmp);
- 	/* following two actions should be kept atomic */
- 	ec->curr =3D t;
- 	start_transaction(ec);
- 	if (ec->curr->command =3D=3D ACPI_EC_COMMAND_QUERY)
- 		clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
--	raw_spin_unlock_irqrestore(&ec->curr_lock, tmp);
-+	spin_unlock_irqrestore(&ec->curr_lock, tmp);
- 	ret =3D ec_poll(ec);
--	raw_spin_lock_irqsave(&ec->curr_lock, tmp);
-+	spin_lock_irqsave(&ec->curr_lock, tmp);
- 	ec->curr =3D NULL;
--	raw_spin_unlock_irqrestore(&ec->curr_lock, tmp);
-+	spin_unlock_irqrestore(&ec->curr_lock, tmp);
- 	return ret;
- }
-=20
-@@ -678,7 +678,7 @@ static struct acpi_ec *make_acpi_ec(void)
- 	mutex_init(&ec->lock);
- 	init_swait_head(&ec->wait);
- 	INIT_LIST_HEAD(&ec->list);
--	raw_spin_lock_init(&ec->curr_lock);
-+	spin_lock_init(&ec->curr_lock);
- 	return ec;
- }
-=20
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index 2519b6e..6f889ba 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -64,7 +64,7 @@ struct acpi_ec {
- 	struct swait_head wait;
- 	struct list_head list;
- 	struct transaction *curr;
--	raw_spinlock_t curr_lock;
-+	spinlock_t curr_lock;
- };
-=20
- extern struct acpi_ec *first_ec;
-diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index b620114..83424ab 100644
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -34,6 +34,7 @@
- #include <linux/sched.h>
- #include <linux/mount.h>
- #include <linux/namei.h>
-+#include <linux/delay.h>
- #include <asm/current.h>
- #include <asm/uaccess.h>
-=20
-diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
-index d8b6184..f4abda3 100644
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -170,7 +170,7 @@ again:
- 			parent =3D p->d_parent;
- 			if (!seq_spin_trylock(&parent->d_lock)) {
- 				seq_spin_unlock(&p->d_lock);
--				cpu_relax();
-+				cpu_chill();
- 				goto relock;
- 			}
- 			seq_spin_unlock(&p->d_lock);
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 10580be..eedf276 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -36,6 +36,7 @@
- #include <linux/bit_spinlock.h>
- #include <linux/rculist_bl.h>
- #include <linux/prefetch.h>
-+#include <linux/delay.h>
- #include "internal.h"
-=20
- /*
-@@ -360,7 +361,7 @@ static inline struct dentry *dentry_kill(struct dentry =
-*dentry, int ref)
- 	if (inode && !spin_trylock(&inode->i_lock)) {
- relock:
- 		seq_spin_unlock(&dentry->d_lock);
--		cpu_relax();
-+		cpu_chill();
- 		return dentry; /* try again with same dentry */
- 	}
- 	if (IS_ROOT(dentry))
-@@ -738,7 +739,7 @@ relock:
-=20
- 		if (!seq_spin_trylock(&dentry->d_lock)) {
- 			spin_unlock(&dcache_lru_lock);
--			cpu_relax();
-+			cpu_chill();
- 			goto relock;
- 		}
-=20
-@@ -2053,7 +2054,7 @@ again:
- 	if (dentry->d_count =3D=3D 1) {
- 		if (inode && !spin_trylock(&inode->i_lock)) {
- 			seq_spin_unlock(&dentry->d_lock);
--			cpu_relax();
-+			cpu_chill();
- 			goto again;
- 		}
- 		dentry->d_flags &=3D ~DCACHE_CANT_MOUNT;
-diff --git a/fs/namespace.c b/fs/namespace.c
-index c563781..3270cde 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -31,6 +31,7 @@
- #include <linux/idr.h>
- #include <linux/fs_struct.h>
- #include <linux/fsnotify.h>
-+#include <linux/delay.h>
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
- #include "pnode.h"
-@@ -346,7 +347,7 @@ int mnt_want_write(struct vfsmount *mnt)
- 	 */
- 	while (mnt->mnt_flags & MNT_WRITE_HOLD) {
- 		preempt_enable();
--		cpu_relax();
-+		cpu_chill();
- 		preempt_disable();
- 	}
- 	/*
-diff --git a/include/linux/delay.h b/include/linux/delay.h
-index a6ecb34..e23a7c0 100644
---- a/include/linux/delay.h
-+++ b/include/linux/delay.h
-@@ -52,4 +52,10 @@ static inline void ssleep(unsigned int seconds)
- 	msleep(seconds * 1000);
- }
-=20
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+# define cpu_chill()	msleep(1)
-+#else
-+# define cpu_chill()	cpu_relax()
-+#endif
-+
- #endif /* defined(_LINUX_DELAY_H) */
-diff --git a/include/linux/preempt.h b/include/linux/preempt.h
-index 7a2bbbb..11412d7 100644
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -41,8 +41,10 @@ do { \
-=20
- #ifndef CONFIG_PREEMPT_RT_BASE
- # define preempt_enable_no_resched()	__preempt_enable_no_resched()
-+# define preempt_check_resched_rt()	do { } while (0)
- #else
- # define preempt_enable_no_resched()	preempt_enable()
-+# define preempt_check_resched_rt()	preempt_check_resched()
- #endif
-=20
- #define preempt_check_resched() \
-@@ -93,6 +95,7 @@ do { \
- #define preempt_enable_no_resched()	do { } while (0)
- #define preempt_enable()		do { } while (0)
- #define preempt_check_resched()		do { } while (0)
-+#define preempt_check_resched_rt()	do { } while (0)
-=20
- #define preempt_disable_notrace()		do { } while (0)
- #define preempt_enable_no_resched_notrace()	do { } while (0)
-diff --git a/localversion-rt b/localversion-rt
-index 5498386..2af6c89 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt39
-+-rt40
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 7606d18..b250c1d 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1705,6 +1705,7 @@ static inline void __netif_reschedule(struct Qdisc *q=
-)
- 	sd->output_queue_tailp =3D &q->next_sched;
- 	raise_softirq_irqoff(NET_TX_SOFTIRQ);
- 	local_irq_restore(flags);
-+	preempt_check_resched_rt();
- }
-=20
- void __netif_schedule(struct Qdisc *q)
-@@ -1726,6 +1727,7 @@ void dev_kfree_skb_irq(struct sk_buff *skb)
- 		sd->completion_queue =3D skb;
- 		raise_softirq_irqoff(NET_TX_SOFTIRQ);
- 		local_irq_restore(flags);
-+		preempt_check_resched_rt();
- 	}
- }
- EXPORT_SYMBOL(dev_kfree_skb_irq);
-@@ -2837,6 +2839,7 @@ enqueue:
- 	rps_unlock(sd);
-=20
- 	local_irq_restore(flags);
-+	preempt_check_resched_rt();
-=20
- 	atomic_long_inc(&skb->dev->rx_dropped);
- 	kfree_skb(skb);
-@@ -3659,6 +3662,7 @@ static void net_rps_action_and_irq_enable(struct soft=
-net_data *sd)
- 	} else
- #endif
- 		local_irq_enable();
-+	preempt_check_resched_rt();
- }
-=20
- static int process_backlog(struct napi_struct *napi, int quota)
-@@ -3731,6 +3735,7 @@ void __napi_schedule(struct napi_struct *n)
- 	local_irq_save(flags);
- 	____napi_schedule(&__get_cpu_var(softnet_data), n);
- 	local_irq_restore(flags);
-+	preempt_check_resched_rt();
- }
- EXPORT_SYMBOL(__napi_schedule);
-=20
-@@ -6233,6 +6238,7 @@ static int dev_cpu_callback(struct notifier_block *nf=
-b,
-=20
- 	raise_softirq_irqoff(NET_TX_SOFTIRQ);
- 	local_irq_enable();
-+	preempt_check_resched_rt();
-=20
- 	/* Process offline CPU's input_pkt_queue */
- 	while ((skb =3D __skb_dequeue(&oldsd->process_queue))) {
-diff --git a/net/rds/ib_rdma.c b/net/rds/ib_rdma.c
-index 819c35a..256ad87 100644
---- a/net/rds/ib_rdma.c
-+++ b/net/rds/ib_rdma.c
-@@ -33,6 +33,7 @@
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/rculist.h>
-+#include <linux/delay.h>
-=20
- #include "rds.h"
- #include "ib.h"
-@@ -294,7 +295,7 @@ static inline void wait_clean_list_grace(void)
- 	for_each_online_cpu(cpu) {
- 		flag =3D &per_cpu(clean_list_grace, cpu);
- 		while (test_bit(CLEAN_LIST_BUSY_BIT, flag))
--			cpu_relax();
-+			cpu_chill();
- 	}
- }
-=20
-
-
---=-M0oEd2u0zFJZYUwOl8Zd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPYL52AAoJEIy3vGnGbaoAwUYP/2wrP5I5gOE+0UEI3Nd8RXb2
-r9H+IMXFnnVucGIlBnUb6/3+O4sosaTiCJsmEf3m2fZfn4lmjxPSnOnkQkVs1m/3
-o8duh9IUoZBX+x6Gduh0U3/xW8OJH3Emm8R2+VpkHHYvYa53xtssUW72DfknQeJe
-HYc26TxR+bouFH0e5dopnCm3u5jOFcuKZ0uLf7XKf+xc0QNrU5X244mZQ2vlhYJK
-+a1kZpPpOx6e9Q+6eo8Xuy4z/Xye4YDMK8Oz+bu4oMq81NcbK4NmMLRuDjZnSd8/
-/Esz49UB0yJVGfjDuBJu37suiymMOk0uOa64jv5PSrJHm5sSWy7o9AKz8C2mPwa7
-KKhFC3k7wlN2ekbDinkCOoQ4HZ7+MD8Cb0YL7f29zRqKRhUbGxiN+LegnbjyPXoF
-c5bv5bp4ekDs5BNIL+uS+ucPB4PlHbzdLju73aI0s1V0UzntQbeTCt9v0HfwwsJ0
-thSSpqEizXQHbjFhu+4yGChH3Qi8BRyGvy6/L0KDTJBRDdFP8iyFJ0D3ZqosWf1U
-GYVoig67ASDNpy80KRtIlG1MmMfxv0g8A77+M2+QVB1ZhGIz18K1Ob/QZWIdMGhj
-v3oZUliloFPlWDolGbbyRaqU2bRmQaAlO+wnoqA6MCqohCRdeIQf/TGR36N25LOZ
-9V4cpqpBuBlwlR5wX7KQ
-=uMJk
------END PGP SIGNATURE-----
-
---=-M0oEd2u0zFJZYUwOl8Zd--
-
+>
+>>
+>>>
+>>> /* single stepping state bits (used on ARM and PA-RISC) */
+>>> #define PT_SINGLESTEP_BIT     31
+>>> diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+>>> index e6d4b56..f4c1774 100644
+>>> --- a/include/linux/seccomp.h
+>>> +++ b/include/linux/seccomp.h
+>>> @@ -21,6 +21,7 @@
+>>> #define SECCOMP_RET_KILL      0x00000000U /* kill the task immediately */
+>>> #define SECCOMP_RET_TRAP      0x00020000U /* disallow and force a SIGSYS */
+>>> #define SECCOMP_RET_ERRNO     0x00030000U /* returns an errno */
+>>> +#define SECCOMP_RET_TRACE    0x7ffe0000U /* pass to a tracer or disallow */
+>>> #define SECCOMP_RET_ALLOW     0x7fff0000U /* allow */
+>>
+>> Maybe a good idea to leave more gaps between all the return codes, in
+>> case new return codes are added in the future that fall between existing
+>> ones? E.g:
+>>
+>> #define SECCOMP_RET_KILL        0x00000000U /* kill the task immediately */
+>> #define SECCOMP_RET_TRAP        0x00100000U /* disallow and force a SIGSYS */
+>> #define SECCOMP_RET_ERRNO       0x00200000U /* returns an errno */
+>> #define SECCOMP_RET_TRACE       0x00300000U /* pass to a tracer or disallow */
+>> #define SECCOMP_RET_ALLOW       0x00400000U /* allow */
+>
+> The gaps are intentional.  Priority is from least permissive (0) to
+> most permissive (0x7fff).  So the gaps are
+> there for things between errno and trace. I could add more gaps on
+> those sides, but I don't think there is much need to given the scope
+> of what is possible in the middle.  I certainly wouldn't push ALLOW
+> down to the bottom.
+>
+>>>
+>>> /* Masks for the return value sections. */
+>>> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+>>> index 00ab2ca..8cf6da1 100644
+>>> --- a/kernel/ptrace.c
+>>> +++ b/kernel/ptrace.c
+>>> @@ -551,6 +551,9 @@ static int ptrace_setoptions(struct task_struct *child, unsigned
+>> long data)
+>>>       if (data & PTRACE_O_TRACEEXIT)
+>>>               child->ptrace |= PT_TRACE_EXIT;
+>>>
+>>> +     if (data & PTRACE_O_TRACESECCOMP)
+>>> +             child->ptrace |= PT_TRACE_SECCOMP;
+>>> +
+>>>       return (data & ~PTRACE_O_MASK) ? -EINVAL : 0;
+>>> }
+>>>
+>>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+>>> index 140490a..ddacc68 100644
+>>> --- a/kernel/seccomp.c
+>>> +++ b/kernel/seccomp.c
+>>> @@ -17,13 +17,13 @@
+>>> #include <linux/audit.h>
+>>> #include <linux/compat.h>
+>>> #include <linux/filter.h>
+>>> +#include <linux/ptrace.h>
+>>> #include <linux/sched.h>
+>>> #include <linux/seccomp.h>
+>>> #include <linux/security.h>
+>>> #include <linux/slab.h>
+>>> #include <linux/uaccess.h>
+>>>
+>>> -#include <linux/tracehook.h>
+>>> #include <asm/syscall.h>
+>>>
+>>> /* #define SECCOMP_DEBUG 1 */
+>>> @@ -389,14 +389,24 @@ int __secure_computing_int(int this_syscall)
+>>>                                                -(action & SECCOMP_RET_DATA),
+>>>                                                0);
+>>>                       return -1;
+>>> -             case SECCOMP_RET_TRAP: {
+>>> -                     int reason_code = action & SECCOMP_RET_DATA;
+>>> +             case SECCOMP_RET_TRAP:
+>>>                       /* Show the handler the original registers. */
+>>>                       syscall_rollback(current, task_pt_regs(current));
+>>>                       /* Let the filter pass back 16 bits of data. */
+>>> -                     seccomp_send_sigsys(this_syscall, reason_code);
+>>> +                     seccomp_send_sigsys(this_syscall,
+>>> +                                         action & SECCOMP_RET_DATA);
+>>>                       return -1;
+>>> -             }
+>>
+>> These are unrelated changes and probably shouldn't be here. It just makes
+>> it harder to review the code if you change it in a later patch for no
+>> apparent reason.
+>>
+>>> +             case SECCOMP_RET_TRACE:
+>>> +                     /* Skip these calls if there is no tracer. */
+>>> +                     if (!ptrace_event_enabled(current,
+>>> +                                               PTRACE_EVENT_SECCOMP))
+>>
+>> One line please, it's 81 chars.
+>
+> Ok :)
+>
+>>> +                             return -1;
+>>> +                     /* Allow the BPF to provide the event message */
+>>> +                     ptrace_event(PTRACE_EVENT_SECCOMP,
+>>> +                                  action & SECCOMP_RET_DATA);
+>>
+>> Why not move "int reason_code = action & SECCOMP_RET_DATA;" to the start
+>> of the function out of the if checks, instead of duplicating the code?
+>
+> Yeah I am cleaning this all up in the next rev. This was just ugly.
+>
+>>> +                     if (fatal_signal_pending(current))
+>>> +                             break;
+>>> +                     return 0;
+>>>               case SECCOMP_RET_ALLOW:
+>>>                       return 0;
+>>>               case SECCOMP_RET_KILL:
+>>
+>
+> Thanks!
+> will
