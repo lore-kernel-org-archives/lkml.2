@@ -1,156 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761015Ab2CNMnr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 08:43:47 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:45118
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760877Ab2CNMno (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 08:43:44 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bh8275dhz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 14 Mar 2012 20:45:23 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>
-Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
-Message-ID: <20120314124512.GG1180@shlinux2.ap.freescale.net>
-References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
- <1331628428-24017-2-git-send-email-b29396@freescale.com>
- <20120313172351.97C5E3E053B@localhost>
+	id S1761059Ab2CNMuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 08:50:10 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:36108 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761039Ab2CNMuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 08:50:06 -0400
+Date: Wed, 14 Mar 2012 08:50:02 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: Phillip Susi <phillsusi@gmail.com>, Andreas Dilger <adilger@whamcloud.com>,
+        Jacek Luczak <difrost.kernel@gmail.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+Subject: Re: getdents - ext4 vs btrfs performance
+Message-ID: <20120314125002.GH15379@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Lukas Czerner <lczerner@redhat.com>,
+	Phillip Susi <phillsusi@gmail.com>,
+	Andreas Dilger <adilger@whamcloud.com>,
+	Jacek Luczak <difrost.kernel@gmail.com>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <CADDYkjS5VJeYyHzqumazQ0qKg+HwA6GO+zYSJj7rkHNZFwjcoQ@mail.gmail.com>
+ <alpine.LFD.2.00.1203091158430.4487@dhcp-27-109.brq.redhat.com>
+ <BCAD47C1-B95A-4EDB-8EFB-3D4E325DE57D@whamcloud.com>
+ <20120310044804.GB5652@thunk.org>
+ <4F5F9A97.5060404@ubuntu.com>
+ <20120313195339.GA24124@thunk.org>
+ <4F5FAC9C.9070607@gmail.com>
+ <20120313213304.GB11969@thunk.org>
+ <alpine.LFD.2.00.1203140825090.5379@dhcp-27-109.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120313172351.97C5E3E053B@localhost>
+In-Reply-To: <alpine.LFD.2.00.1203140825090.5379@dhcp-27-109.brq.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 01:23:51AM +0800, Grant Likely wrote:
-> On Tue, 13 Mar 2012 16:47:04 +0800, Dong Aisheng <b29396@freescale.com> wrote:
-> > From: Dong Aisheng <dong.aisheng@linaro.org>
-> > 
-> > This patch includes basic dt support which can boot via nfs rootfs.
-> > 
-> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > ---
-> >  Documentation/devicetree/bindings/arm/fsl.txt |    4 +
-> >  arch/arm/boot/dts/imx28-evk.dts               |   31 +++++++++
-> >  arch/arm/boot/dts/imx28.dtsi                  |   88 +++++++++++++++++++++++++
-> >  arch/arm/mach-mxs/Kconfig                     |    9 +++
-> >  arch/arm/mach-mxs/Makefile                    |    1 +
-> >  arch/arm/mach-mxs/imx28-dt.c                  |   67 +++++++++++++++++++
-> >  6 files changed, 200 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/arm/fsl.txt b/Documentation/devicetree/bindings/arm/fsl.txt
-> > index 54bddda..9f21faf 100644
-> > --- a/Documentation/devicetree/bindings/arm/fsl.txt
-> > +++ b/Documentation/devicetree/bindings/arm/fsl.txt
-> > @@ -1,6 +1,10 @@
-> >  Freescale i.MX Platforms Device Tree Bindings
-> >  -----------------------------------------------
-> >  
-> > +i.MX28 Evaluation Kit
-> > +Required root node properties:
-> > +    - compatible = "fsl,imx28-evk", "fsl,imx28";
-> > +
-> >  i.MX51 Babbage Board
-> >  Required root node properties:
-> >      - compatible = "fsl,imx51-babbage", "fsl,imx51";
-> > diff --git a/arch/arm/boot/dts/imx28-evk.dts b/arch/arm/boot/dts/imx28-evk.dts
-> > new file mode 100644
-> > index 0000000..9758dc4
-> > --- /dev/null
-> > +++ b/arch/arm/boot/dts/imx28-evk.dts
-> > @@ -0,0 +1,31 @@
-> > +/*
-> > + * Copyright 2012 Freescale Semiconductor, Inc.
-> > + *
-> > + * The code contained herein is licensed under the GNU General Public
-> > + * License. You may obtain a copy of the GNU General Public License
-> > + * Version 2 or later at the following locations:
-> > + *
-> > + * http://www.opensource.org/licenses/gpl-license.html
-> > + * http://www.gnu.org/copyleft/gpl.html
-> > + */
-> > +
-> > +/dts-v1/;
-> > +/include/ "imx28.dtsi"
-> > +
-> > +/ {
-> > +	model = "Freescale i.MX28 Evaluation Kit";
-> > +	compatible = "fsl,imx28-evk", "fsl,imx28";
-> > +
-> > +	memory {
-> > +		device_type = "memory";
-> > +		reg = <0x40000000 0x08000000>;
-> > +	};
-> > +
-> > +	ahb@80080000 {
-> > +		fec@800f0000 {
-> > +			phy-mode = "rmii";
-> > +			local-mac-address = [00 04 9F 01 7D 5B];
-> 
-> Generally a bad idea to put a specific mac address into the device tree.
-> Better to fill it with zeros.  Otherwise all the dev boards will end up using
-> the same value.
-> 
-Yes, this issue also exists on other platfroms like mx6q.
-One way is to dynamically get mac address by reading otp register as non-dt does
-like:
-static int __init mx28evk_fec_get_mac(void)
-{
-        int i;
-        u32 val;
-        const u32 *ocotp = mxs_get_ocotp();
+On Wed, Mar 14, 2012 at 09:12:02AM +0100, Lukas Czerner wrote:
+> I kind of like the idea about having the separate btree with inode
+> numbers for the directory reading, just because it does not affect
+> allocation policy nor the write performance which is a good thing. Also
+> it has been done before in btrfs and it works very well for them. The
+> only downside (aside from format change) is the extra step when removing
+> the directory entry, but the positives outperform the negatives.
 
-        if (!ocotp)
-                return -ETIMEDOUT;
+Well, there will be extra (journaled!) block reads and writes involved
+when adding or removing directory entries.  So the performance on
+workloads that do a large number of directory adds and removed will
+have to be impacted.  By how much is not obvious, but it will be
+something which is measurable.
 
-        /*
-         * OCOTP only stores the last 4 octets for each mac address,
-         * so hard-code Freescale OUI (00:04:9f) here.
-         */
-        for (i = 0; i < 2; i++) {
-                val = ocotp[i];
-                mx28_fec_pdata[i].mac[0] = 0x00;
-                mx28_fec_pdata[i].mac[1] = 0x04;
-                mx28_fec_pdata[i].mac[2] = 0x9f;
-                mx28_fec_pdata[i].mac[3] = (val >> 16) & 0xff;
-                mx28_fec_pdata[i].mac[4] = (val >> 8) & 0xff;
-                mx28_fec_pdata[i].mac[5] = (val >> 0) & 0xff;
-        }
+> Maybe this might be even done in a way which does not require format
+> change. We can have new inode flag (say EXT4_INUM_INDEX_FL) which will
+> tell us that there is a inode number btree to use on directory reads.
+> Then the pointer to the root of that tree would be stored at the end of
+> the root block of the hree (of course if there is still some space for
+> it) and the rest is easy.
 
-        return 0;
-}
+You can make it be a RO_COMPAT change instead of an INCOMPAT change,
+yes.
 
-But it seems this needs pass mac address to fec driver via platforom data which is
-not friendly to dt.
+And if you want to do it as simply as possible, we could just recycle
+the current htree approach for the second tree, and simply store the
+root in another set of directory blocks.  But by putting the index
+nodes in the directory blocks, masquerading as deleted directories, it
+means that readdir() has to cycle through them and ignore the index
+blocks.
 
-Another way may be changing fec driver to get the fixed part of mac address(first
-two bytes) from device tree and read the left dynamical part from otp which i'm not
-sure is better enough.
+The alternate approach is to use physical block numbers instead of
+logical block numbers for the index blocks, and to store it separately
+from the blocks containing actual directory entries.  But if we do
+that for the inumber tree, the next question that arise is maybe we
+should do that for the hash tree as well --- and then once you upon
+that can of worms, it gets a lot more complicated.
 
-BTW, filling with zeros seems not work since it's invalid mac address.
+So the question that really arises here is how wide open do we want to
+leave the design space, and whether we are optimizing for the best
+possible layout change ignoring the amount of implementation work it
+might require, or whether we keep things as simple as possible from a
+code change perspective.
 
-Regards
-Dong Aisheng
+There are good arguments that can be made either way, and a lot
+depends on the quality of the students you can recruit, the amount of
+time they have, and how much review time it will take out of the core
+team during the design and implementation phase.
 
+Regards,
 
-
+						- Ted
