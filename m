@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759464Ab2CNUBJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 16:01:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:19586 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757033Ab2CNUBB (ORCPT
+	id S1760291Ab2CNUBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 16:01:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49776 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758348Ab2CNUBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 16:01:01 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6648"; a="172493912"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] ARM: Kconfig: Remove duplicate IRQ Kconfig entries
-Date: Wed, 14 Mar 2012 13:00:56 -0700
-Message-Id: <1331755256-31163-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.3.327.g2980b
+	Wed, 14 Mar 2012 16:01:10 -0400
+Date: Wed, 14 Mar 2012 12:59:19 -0700
+From: tip-bot for Anton Blanchard <anton@samba.org>
+Message-ID: <tip-b832796caa1fda8516464a003c8c7cc547bc20c2@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        anton@samba.org, hpa@zytor.com, mingo@redhat.com,
+        yanmin_zhang@linux.intel.com, peterz@infradead.org, emunson@mgebm.net,
+        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, anton@samba.org, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        yanmin_zhang@linux.intel.com, emunson@mgebm.net, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20120307114249.44275ca3@kryten>
+References: <20120307114249.44275ca3@kryten>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools:
+  Incorrect use of snprintf results in SEGV
+Git-Commit-ID: b832796caa1fda8516464a003c8c7cc547bc20c2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 14 Mar 2012 12:59:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These kconfig entries are already defined in kernel/irq/Kconfig
-so select them instead of redefining them.
+Commit-ID:  b832796caa1fda8516464a003c8c7cc547bc20c2
+Gitweb:     http://git.kernel.org/tip/b832796caa1fda8516464a003c8c7cc547bc20c2
+Author:     Anton Blanchard <anton@samba.org>
+AuthorDate: Wed, 7 Mar 2012 11:42:49 +1100
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Wed, 14 Mar 2012 12:36:19 -0300
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+perf tools: Incorrect use of snprintf results in SEGV
+
+I have a workload where perf top scribbles over the stack and we SEGV.
+What makes it interesting is that an snprintf is causing this.
+
+The workload is a c++ gem that has method names over 3000 characters
+long, but snprintf is designed to avoid overrunning buffers. So what
+went wrong?
+
+The problem is we assume snprintf returns the number of characters
+written:
+
+    ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", self->level);
+...
+    ret += repsep_snprintf(bf + ret, size - ret, "%s", self->ms.sym->name);
+
+Unfortunately this is not how snprintf works. snprintf returns the
+number of characters that would have been written if there was enough
+space. In the above case, if the first snprintf returns a value larger
+than size, we pass a negative size into the second snprintf and happily
+scribble over the stack. If you have 3000 character c++ methods thats a
+lot of stack to trample.
+
+This patch fixes repsep_snprintf by clamping the value at size - 1 which
+is the maximum snprintf can write before adding the NULL terminator.
+
+I get the sinking feeling that there are a lot of other uses of snprintf
+that have this same bug, we should audit them all.
+
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Eric B Munson <emunson@mgebm.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Cc: stable@kernel.org
+Link: http://lkml.kernel.org/r/20120307114249.44275ca3@kryten
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/arm/Kconfig |   10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ tools/perf/util/sort.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 7a08e37..a3ae6e9 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -30,6 +30,8 @@ config ARM
- 	select HAVE_HW_BREAKPOINT if (PERF_EVENTS && (CPU_V6 || CPU_V6K || CPU_V7))
- 	select HAVE_C_RECORDMCOUNT
- 	select HAVE_GENERIC_HARDIRQS
-+	select HARDIRQS_SW_RESEND
-+	select GENERIC_IRQ_PROBE
- 	select GENERIC_IRQ_SHOW
- 	select CPU_PM if (SUSPEND || CPU_IDLE)
- 	select GENERIC_PCI_IOMAP
-@@ -125,14 +127,6 @@ config TRACE_IRQFLAGS_SUPPORT
- 	bool
- 	default y
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 16da30d..076c9d4 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -33,6 +33,9 @@ static int repsep_snprintf(char *bf, size_t size, const char *fmt, ...)
+ 		}
+ 	}
+ 	va_end(ap);
++
++	if (n >= (int)size)
++		return size - 1;
+ 	return n;
+ }
  
--config HARDIRQS_SW_RESEND
--	bool
--	default y
--
--config GENERIC_IRQ_PROBE
--	bool
--	default y
--
- config GENERIC_LOCKBREAK
- 	bool
- 	default y
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
