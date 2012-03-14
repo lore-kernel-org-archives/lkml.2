@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab2CNXC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 19:02:29 -0400
+	id S1758063Ab2CNXCc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 19:02:32 -0400
 Received: from mail-pz0-f52.google.com ([209.85.210.52]:62306 "EHLO
 	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab2CNXC2 (ORCPT
+	with ESMTP id S1756189Ab2CNXC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 19:02:28 -0400
+	Wed, 14 Mar 2012 19:02:29 -0400
 From: jim.cromie@gmail.com
 To: jbaron@redhat.com, rusty@rustcorp.com.au
-Cc: linux-kernel@vger.kernel.org
-Subject: [00/11] pr_debug during module initialization
-Date: Wed, 14 Mar 2012 17:01:55 -0600
-Message-Id: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jim Cromie <jim.cromie@gmail.com>
+Subject: [PATCH 01/11] init: trivial tweaks to initcall_levels
+Date: Wed, 14 Mar 2012 17:01:56 -0600
+Message-Id: <1331766126-11674-2-git-send-email-jim.cromie@gmail.com>
 X-Mailer: git-send-email 1.7.8.1
+In-Reply-To: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
+References: <1331766126-11674-1-git-send-email-jim.cromie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jim Cromie <jim.cromie@gmail.com>
 
-This is 3rd revision of the dyndbg modinit patches, previously sent
-Dec 11.  Patches 1-17/25 sent then were added to driver-core-next,
-this set reworks the remainder.
+add a pr_info to print current level and level_name of initcall,
+and number of registered initcalls at that level.  This adds 7
+lines to dmesg output, like:
+   initlevel:6=device, 172 registered initcalls
 
-It implements the "fake" module param approach proposed by
-Thomas Renninger, back in https://lkml.org/lkml/2010/9/15/397
+Drop "parameters" from initcall_level_names[], it can be added
+back in the printk where it clarifies things.
 
-This set is on top of linux-next, since that includes Pawel Moll's
-initcall-level params patch.  Im not using this feature, but I didnt
-know that when I started.
+Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+---
+ init/main.c |   25 +++++++++++++++----------
+ 1 files changed, 15 insertions(+), 10 deletions(-)
 
-Rusty Russell did a partial review of 2nd rev (sent off-list), here:
-http://thread.gmane.org/gmane.linux.kernel/1262934
-This revision incorporates my understanding of his feedback.
-
-Core of patchset is 2 callbacks, called from parse_args:
-
-For builtin modules, dynamic_debug_init() calls parse_args(...,
-&ddebug_dyndbg_boot_param_cb) to handle dyndbg and $module.dyndbg
-params.  For loadable modules, load_module() calls parse_args(...,
-&ddebug_dyndbg_module_param_cb) to handle dyndbg args given by
-modprobe.  Both callbacks call ddebug_exec_queries() to activate the
-specified pr_debug callsites.
-
-0001-init-trivial-tweaks-to-initcall_levels.patch
-This adds pr_info for each initcall-level, yielding 7 lines in dmesg
-like:
-  initlevel:6=device, 172 registered initcalls
-
-I dropped the pr_debug added in 2nd rev, which was noisy and not
-useful, init_debug provides similar info and more.  This patch is
-decoration only, and can be dropped.
-
-0002-dynamic_debug-fix-leading-spaces.patch
-whitespace
-
-0003-dynamic_debug-replace-if-verbose-pr_info-with-macro-.patch
-I should have done this previously.  Ive disregarded a complaint about
-wrapping complex macro args in (), since theres plenty of similar code
-in include/*
-
-0004-dynamic_debug-change-ddebug_query-core-param-to-dynd.patch
-Change "ddebug_query" to "dyndbg", to match new $module.dyndbg added
-by this patchset.
-
-0005-params-add-param-name-to-parse_one-s-pr_debug.patch
-Current message doesnt ID the param name being handled.
-
-0006-params-add-3rd-arg-to-option-handler-callback-signat.patch
-Add "doing" to lower levels of param handling callchain, supplying it
-to callback added next.
-
-0007-dynamic_debug-make-dynamic-debug-work-during-module-.patch
-main patch of set.
-
-0008-pnp-if-CONFIG_DYNAMIC_DEBUG-use-pnp.dyndbg-instead-o.patch
-Adjust pnp for CONFIG_PNP_DEBUG_MESSAGES.  Unchanged since Dec 11th
-
-0009-dynamic_debug-add-modname-arg-to-exec_query-callchai.patch
-This allows parsing $modname.dyndbg=" func foo +p ; func bar +p"
-without repeating "module $modname" 2x in the value
-
-0010-dynamic_debug-update-Documentation-Kconfig.debug.patch
-This gets a checkpatch complaint because of long lines in which I
-tweaked flags.  I chose to disregard this cuz the lines show real
-output for ~out-of-tree code.
-
-0011-dynamic_debug-init-with-core_initcall-not-arch_initc.patch
-This works-for-me, but may be broken on some arches I dont have to
-test on.  I dont know why original design used arch_initcall, perhaps
-constraints have changed.  I also tested with early_initcall, that
-also worked.
+diff --git a/init/main.c b/init/main.c
+index d595751..deee88f 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -723,14 +723,14 @@ static initcall_t *initcall_levels[] __initdata = {
+ };
+ 
+ static char *initcall_level_names[] __initdata = {
+-	"early parameters",
+-	"core parameters",
+-	"postcore parameters",
+-	"arch parameters",
+-	"subsys parameters",
+-	"fs parameters",
+-	"device parameters",
+-	"late parameters",
++	"early",
++	"core",
++	"postcore",
++	"arch",
++	"subsys",
++	"fs",
++	"device",
++	"late",
+ };
+ 
+ static int __init ignore_unknown_bootoption(char *param, char *val)
+@@ -748,7 +748,7 @@ static void __init do_initcall_level(int level)
+ 		   static_command_line, __start___param,
+ 		   __stop___param - __start___param,
+ 		   level, level,
+-		   ignore_unknown_bootoption);
++		   &ignore_unknown_bootoption);
+ 
+ 	for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++)
+ 		do_one_initcall(*fn);
+@@ -758,8 +758,13 @@ static void __init do_initcalls(void)
+ {
+ 	int level;
+ 
+-	for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++)
++	for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++) {
++		pr_info("initlevel:%d=%s, %d registered initcalls\n",
++			level, initcall_level_names[level],
++			(int) (initcall_levels[level+1]
++				- initcall_levels[level]));
+ 		do_initcall_level(level);
++	}
+ }
+ 
+ /*
+-- 
+1.7.7.6
 
