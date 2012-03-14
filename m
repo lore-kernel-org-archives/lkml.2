@@ -1,94 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761451Ab2CNTXi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 15:23:38 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57045 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027Ab2CNTXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 15:23:37 -0400
-Date: Wed, 14 Mar 2012 16:17:58 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: adjust make rules
-Message-ID: <20120314191758.GD9528@infradead.org>
-References: <4F588A0802000078000770FF@nat28.tlf.novell.com>
+	id S932426Ab2CNT0X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 15:26:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38664 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932101Ab2CNT0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 15:26:20 -0400
+Message-ID: <4F60F0D7.70505@redhat.com>
+Date: Wed, 14 Mar 2012 16:26:15 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4F588A0802000078000770FF@nat28.tlf.novell.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] edac: Add a sysfs node to test the EDAC error report
+ facility
+References: <1331122101-28382-1-git-send-email-mchehab@redhat.com> <20120313233138.GA31106@kroah.com>
+In-Reply-To: <20120313233138.GA31106@kroah.com>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Mar 08, 2012 at 09:29:28AM +0000, Jan Beulich escreveu:
-> Add rules to generate pre-processed files (just like are available for
-> the normal kernel build), and adjust the rule to create assembly files
-> from C ones to produce its output in the output directory rather than
-> in the source tree.
+Em 13-03-2012 20:31, Greg KH escreveu:
+> On Wed, Mar 07, 2012 at 09:08:21AM -0300, Mauro Carvalho Chehab wrote:
+>> Even on memory controllers that have memory injection, such functionality
+>> can be disabled by BIOS during bootstrap, and it may not be possible to
+>> enable it via BIOS setup.
+>>
+>> So, as not all hardware supports error injection, add a mechanism to
+>> allow testing the edac driver and the core.
+>>
+>> This feature is only enabled when EDAC_DEBUG is equal to Y, so there's no
+>> extra code for the production Kernels.
 > 
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> Then please move it to debugfs, where debugging stuff belongs.
 
-I'm trying to use it but hit this:
+There are other edac error injection tools at sysfs. That's why I opted to keep
+it there - plus, I was too lazy[1] to learn about the debugfs bits at the time I
+wrote it, and adding a single node to sysfs were very trivial ;)
 
-[acme@sandy linux]$ make -C tools/perf/ O=/home/git/build/perf /home/git/build/perf/perf.s
-make: Entering directory `/home/git/linux/tools/perf'
-    CC /home/git/build/perf/perf.s
-perf.c: In function ‘handle_options’:
-perf.c:111: error: ‘PERF_HTML_PATH’ undeclared (first use in this function)
-perf.c:111: error: (Each undeclared identifier is reported only once
-perf.c:111: error: for each function it appears in.)
-perf.c: At top level:
-perf.c:238: error: ‘PERF_VERSION’ undeclared here (not in a function)
-make: *** [/home/git/build/perf/perf.s] Error 1
-make: Leaving directory `/home/git/linux/tools/perf'
-[acme@sandy linux]
+[1] In a matter of fact, testing this patchset is too time-consuming,
+as it required me to get access to several systems, including some old ones.
+This patch in particular were written in order to help me with the tests.
+While I intend to improve it, this has lower priority than the tests themselves,
+the discussions about the patches/ABI and the media maintainer stuff.
 
-Do I have to go to tools/perf and do it from there, trying...
-
-[acme@sandy perf]$ make O=/home/git/build/perf /home/git/build/perf/perf.s
-    CC /home/git/build/perf/perf.s
-perf.c: In function ‘handle_options’:
-perf.c:111: error: ‘PERF_HTML_PATH’ undeclared (first use in this function)
-perf.c:111: error: (Each undeclared identifier is reported only once
-perf.c:111: error: for each function it appears in.)
-perf.c: At top level:
-perf.c:238: error: ‘PERF_VERSION’ undeclared here (not in a function)
-make: *** [/home/git/build/perf/perf.s] Error 1
-[acme@sandy perf]$ make O=/home/git/build/perf perf.s
-make: *** No rule to make target `perf.s'.  Stop.
-[acme@sandy perf]$
-
-Same result, what am I doing wrong?
-
-- Arnaldo
- 
-> ---
->  tools/perf/Makefile |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
 > 
-> --- 3.3-rc6/tools/perf/Makefile
-> +++ 3.3-rc6-perf-make-rules/tools/perf/Makefile
-> @@ -706,10 +706,14 @@ $(OUTPUT)perf.o perf.spec \
->  
->  $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
->  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
-> +$(OUTPUT)%.i: %.c $(OUTPUT)PERF-CFLAGS
-> +	$(QUIET_CC)$(CC) -o $@ -E $(ALL_CFLAGS) $<
->  $(OUTPUT)%.s: %.c $(OUTPUT)PERF-CFLAGS
-> -	$(QUIET_CC)$(CC) -S $(ALL_CFLAGS) $<
-> +	$(QUIET_CC)$(CC) -o $@ -S $(ALL_CFLAGS) $<
->  $(OUTPUT)%.o: %.S
->  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
-> +$(OUTPUT)%.s: %.S
-> +	$(QUIET_CC)$(CC) -o $@ -E $(ALL_CFLAGS) $<
->  
->  $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
->  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
+> At the least, you need to document all sysfs files in Documentation/ABI/
+
+Yes, this is on my TODO list. I'll document it at the Documentation on the
+final patchset.
+
+Btw, the current EDAC sysfs API is not documented there at ABI/, but,
+instead, at Documentation/edac.txt. What is there is basically the sysfs node
+description, but it is more verbose than what is there at Documentation/ABI.
+
+I'm not sure what would be the better to do there: to move everything into
+Documentation/ABI, to keep edac.txt as is (of course, adding there the new
+nodes) or to keep a simplified edac.txt file and add a more concise
+description at Documentation/ABI.
+
+While there's current no plans to remove the existing EDAC sysfs API, when
+writing the documentation patch, it is probably a good idea to put the
+nodes that provide duplicated information at Documentation/ABI/obsolete.
+
 > 
+>>
+>> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+>> ---
+>>
+>> NOTE: This patch should be applied after the series that add proper support for
+>> FB-DIMM, due to context changes.
+>>
+>>  drivers/edac/edac_mc_sysfs.c |   62 ++++++++++++++++++++++++++++++++++++++++-
+>>  include/linux/edac.h         |    4 +++
+>>  2 files changed, 64 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+>> index 870ccb0..f538f9e 100644
+>> --- a/drivers/edac/edac_mc_sysfs.c
+>> +++ b/drivers/edac/edac_mc_sysfs.c
+>> @@ -744,6 +744,42 @@ static ssize_t mci_size_mb_show(struct mem_ctl_info *mci, char *data,
+>>  	return sprintf(data, "%u\n", PAGES_TO_MiB(total_pages));
+>>  }
+>>  
+>> +#ifdef CONFIG_EDAC_DEBUG
+>> +static ssize_t edac_fake_inject_show(struct mem_ctl_info *mci,
+>> +				     char *data, void *priv)
+>> +{
+>> +	return sprintf(data,
+>> +		       "EDAC fake test engine. Writing to this node a value in the form of :\n"
+>> +		       "\t0:1:0\n"
+>> +		       "will call the EDAC core routine to produce a memory error for the given memory location (0, 1, 0).\n"
+>> +		       "The driver's error parsing logic won't be tested. This tool is useful only\n"
+>> +		       "if you're testing the EDAC core tracing facility, or if you're needing to test\n"
+>> +		       "some userspace application.\n");
+>> +}
 > 
+> Ick, no NEVER do this for a sysfs file, even for "debugging", that's
+> what debugfs is for, please move this file there, this isn't ok.
+> 
+> Again, sysfs is "one value per file".
+
+Ok. I won't add this patch on my linux-next tree after finishing the tests. I'll keep
+it on my todo list and re-write it later, when I find some time to convert it into
+debugfs.
+
+> 
+> thanks,
+> 
+> greg k-h
+
