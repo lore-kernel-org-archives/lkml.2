@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab2CNF7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 01:59:12 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36897 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932199Ab2CNF7I (ORCPT
+	id S932378Ab2CNF7S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 01:59:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43985 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932253Ab2CNF7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 01:59:08 -0400
-Date: Tue, 13 Mar 2012 22:59:06 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>
-cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch -next 1/2] drivers, samsung-laptop: fix initialization of
- sabi_data in sabi_set_commandb
-Message-ID: <alpine.DEB.2.00.1203132258160.5229@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 14 Mar 2012 01:59:12 -0400
+Date: Tue, 13 Mar 2012 22:58:51 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <tip-bb6fa8b275e132b1e9319dbab94211543a0b7bd3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        tglx@linutronix.de, gregory.m.lueck@intel.com, hjl.tools@gmail.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hjl.tools@gmail.com, gregory.m.lueck@intel.com
+In-Reply-To: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/x32] x32: Fix stupid ia32/
+ x32 inversion in the siginfo format
+Git-Commit-ID: bb6fa8b275e132b1e9319dbab94211543a0b7bd3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-357468266-1331704722=:5229"
-Content-ID: <alpine.DEB.2.00.1203132259050.5229@chino.kir.corp.google.com>
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Mar 2012 22:58:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Commit-ID:  bb6fa8b275e132b1e9319dbab94211543a0b7bd3
+Gitweb:     http://git.kernel.org/tip/bb6fa8b275e132b1e9319dbab94211543a0b7bd3
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Tue, 13 Mar 2012 22:44:41 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Tue, 13 Mar 2012 22:44:41 -0700
 
---397155492-357468266-1331704722=:5229
-Content-Type: TEXT/PLAIN; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.00.1203132259051.5229@chino.kir.corp.google.com>
+x32: Fix stupid ia32/x32 inversion in the siginfo format
 
-Fields d0, d1, d2, and d3 are members of an anonymous struct inside an
-anonymous union inside struct sabi_data.  Initialization must be done by
-wrapping the anonymous union and structs with brackets to avoid a build
-error:
+Fix a stray ! which flipped the sense if we were generating a signal
+frame for ia32 vs. x32.
 
-drivers/platform/x86/samsung-laptop.c: In function ‘sabi_set_commandb’:
-drivers/platform/x86/samsung-laptop.c:433: error: unknown field ‘d0’ specified in initializer
-drivers/platform/x86/samsung-laptop.c:433: warning: missing braces around initializer
-drivers/platform/x86/samsung-laptop.c:433: warning: (near initialization for ‘in.<anonymous>’)
-...
+Introduced in:
 
-Signed-off-by: David Rientjes <rientjes@google.com>
+e7084fd5 x32: Switch to a 64-bit clock_t
+
+Reported-by: H. J. Lu <hjl.tools@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Gregory M. Lueck <gregory.m.lueck@intel.com>
+Link: http://lkml.kernel.org/r/1329696488-16970-1-git-send-email-hpa@zytor.com
 ---
- drivers/platform/x86/samsung-laptop.c |    2 +-
+ arch/x86/ia32/ia32_signal.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -430,7 +430,7 @@ exit:
- static int sabi_set_commandb(struct samsung_laptop *samsung,
- 			     u16 command, u8 data)
+diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
+index bc09ed2..ef026aa 100644
+--- a/arch/x86/ia32/ia32_signal.c
++++ b/arch/x86/ia32/ia32_signal.c
+@@ -37,7 +37,7 @@
+ int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
  {
--	struct sabi_data in = { .d0 = 0, .d1 = 0, .d2 = 0, .d3 = 0 };
-+	struct sabi_data in = { { { .d0 = 0, .d1 = 0, .d2 = 0, .d3 = 0 } } };
+ 	int err = 0;
+-	bool ia32 = !is_ia32_task();
++	bool ia32 = is_ia32_task();
  
- 	in.data[0] = data;
- 	return sabi_command(samsung, command, &in, NULL);
---397155492-357468266-1331704722=:5229--
+ 	if (!access_ok(VERIFY_WRITE, to, sizeof(compat_siginfo_t)))
+ 		return -EFAULT;
