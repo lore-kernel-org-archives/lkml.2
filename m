@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758406Ab2CNS6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 14:58:50 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64301 "EHLO
+	id S1759255Ab2CNTBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 15:01:01 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:51561 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab2CNS6s (ORCPT
+	with ESMTP id S1755381Ab2CNTA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 14:58:48 -0400
+	Wed, 14 Mar 2012 15:00:59 -0400
+Message-ID: <1331758844.3723.3.camel@lappy>
+Subject: vfs: chmod: Hung task after calling chmod()
 From: Sasha Levin <levinsasha928@gmail.com>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davej@redhat.com, Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] vfs namespace: Don't assume mount namespace has valid root
-Date: Wed, 14 Mar 2012 16:58:30 -0400
-Message-Id: <1331758710-16400-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.4
+To: Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Cc: Dave Jones <davej@redhat.com>
+Date: Wed, 14 Mar 2012 17:00:44 -0400
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the assumption that a mnt namespace will always have a valid
-root object.
+Hi all,
 
-This fixes a NULL ptr deref on unshare():
+I've found the following backtrace after running the trinity fuzzer in a KVM guest using the latest linux-next. Unfortunately I don't have full logs for this, so I can't tell exactly which parameters were passed to chmod().
 
-[   23.652282] BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-[   23.653105] IP: [<ffffffff81201e67>] dup_mnt_ns.clone.15+0x37/0x2a0
-[   23.653105] PGD 35dd2067 PUD 35dd3067 PMD 0
-[   23.653105] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   23.653105] CPU 2
-[   23.653105] Pid: 3068, comm: trinity Not tainted 3.3.0-rc6-next-20120309-sasha-00001-g10cf0bc-dirty #42
-[   23.653105] RIP: 0010:[<ffffffff81201e67>]  [<ffffffff81201e67>] dup_mnt_ns.clone.15+0x37/0x2a0
-[   23.653105] RSP: 0018:ffff880032b09e48  EFLAGS: 00010282
-[   23.653105] RAX: ffffffff81201e67 RBX: ffff880032b14200 RCX: 0000000000000000
-[   23.653105] RDX: ffffffff83cde6a0 RSI: ffffffff844ce960 RDI: 0000000000000282
-[   23.653105] RBP: ffff880032b09ea8 R08: 0000000000000001 R09: 0000000000000000
-[   23.653105] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
-[   23.653105] R13: ffff8800368db000 R14: ffff880032b388e8 R15: 00007fffb6d26e78
-[   23.653105] FS:  00007f89447c8700(0000) GS:ffff88003e200000(006b) knlGS:0000000000f50030
-[   23.653105] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   23.666575] CR2: 0000000000000020 CR3: 0000000035df4000 CR4: 00000000000406e0
-[   23.666575] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   23.666575] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   23.666575] Process trinity (pid: 3068, threadinfo ffff880032b08000, task ffff8800368db000)
-[   23.666575] Stack:
-[   23.666575]  00000000000000d0 ffff88003d82d488 ffff88003d3d6178 00000000000000d0
-[   23.666575]  ffff880032b09ec8 ffffffff811c2983 ffffffff810de328 ffff880032b608e8
-[   23.666575]  0000000004060a00 ffff8800368db000 ffff880032b14200 00007fffb6d26e78
-[   23.666575] Call Trace:
-[   23.666575]  [<ffffffff811c2983>] ? kmem_cache_alloc+0x123/0x180
-[   23.666575]  [<ffffffff810de328>] ? finish_task_switch+0x78/0x100
-[   23.666575]  [<ffffffff81202790>] copy_mnt_ns+0x30/0x50
-[   23.666575]  [<ffffffff810d889d>] create_new_namespaces+0x5d/0x190
-[   23.666575]  [<ffffffff810d8b93>] unshare_nsproxy_namespaces+0x63/0x90
-[   23.666575]  [<ffffffff810adc07>] sys_unshare+0x107/0x240
-[   23.666575]  [<ffffffff826f10fd>] system_call_fastpath+0x1a/0x1f
-[   23.666575] Code: 49 89 fc 53 48 89 f3 48 83 ec 38 e8 f4 cb ff ff 49 89 c6 48 3d 00 f0 ff ff 0f 87 96 01 00 00 48 c7 c7 00 e9 4c 84 e8 49 b9 4e 01 <49> 8b 74 24 20 ba 05 00 00 00 4c 89 e7 e8 77 f3 ff ff 49 89 c5
-[   23.666575] RIP  [<ffffffff81201e67>] dup_mnt_ns.clone.15+0x37/0x2a0
-[   23.666575]  RSP <ffff880032b09e48>
-[   23.666575] CR2: 0000000000000020
-[   23.693853] ---[ end trace 1a8ec15272933df5 ]---
+[  241.469508] INFO: task trinity:3058 blocked for more than 120 seconds.
+[  241.471949] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[  241.476626] trinity         D 0000000000000000  4544  3058      1 0x00000000
+[  241.480595]  ffff880035f29d98 0000000000000082 ffff880035f29d28 ffff880035f29fd8
+[  241.483212]  00000000001d4340 ffff880035f28000 00000000001d4340 00000000001d4340
+[  241.487158]  00000000001d4340 00000000001d4340 ffff880035f29fd8 00000000001d4340
+[  241.490875] Call Trace:
+[  241.492186]  [<ffffffff826edfc4>] schedule+0x24/0x70
+[  241.493132]  [<ffffffff826ee023>] schedule_preempt_disabled+0x13/0x20
+[  241.493878]  [<ffffffff826ec79f>] __mutex_lock_common+0x1ff/0x5a0
+[  241.494683]  [<ffffffff811dbe4a>] ? chmod_common+0x5a/0xc0
+[  241.495357]  [<ffffffff811ea22e>] ? putname+0x2e/0x40
+[  241.495946]  [<ffffffff811dbe4a>] ? chmod_common+0x5a/0xc0
+[  241.496669]  [<ffffffff826ecb80>] mutex_lock_nested+0x40/0x50
+[  241.497388]  [<ffffffff811dbe4a>] chmod_common+0x5a/0xc0
+[  241.498033]  [<ffffffff811e079c>] ? __fput+0x1cc/0x300
+[  241.498656]  [<ffffffff826f0da9>] ? sysret_check+0x22/0x5d
+[  241.499480]  [<ffffffff811dc964>] sys_fchmodat+0x34/0x50
+[  241.500350]  [<ffffffff811dc994>] sys_chmod+0x14/0x20
+[  241.500952]  [<ffffffff826f0d7d>] system_call_fastpath+0x1a/0x1f
+[  241.501671] 1 lock held by trinity/3058:
+[  241.502142]  #0:  (&type->i_mutex_dir_key){+.+.+.}, at: [<ffffffff811dbe4a>] chmod_common+0x5a/0xc0
+[  241.503314] Kernel panic - not syncing: hung_task: blocked tasks
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- fs/namespace.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 5a6208b..6b6bec7 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -2238,6 +2238,9 @@ static struct mnt_namespace *dup_mnt_ns(struct mnt_namespace *mnt_ns,
- 	struct mount *old = mnt_ns->root;
- 	struct mount *new;
- 
-+	if (old == NULL)
-+		return ERR_PTR(-EINVAL);
-+
- 	new_ns = alloc_mnt_ns();
- 	if (IS_ERR(new_ns))
- 		return new_ns;
 -- 
-1.7.8.4
+
+Sasha.
 
