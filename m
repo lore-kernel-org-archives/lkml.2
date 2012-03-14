@@ -1,42 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964979Ab2CNAwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:52:16 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:13023 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759375Ab2CNAwN (ORCPT
+	id S965075Ab2CNAxS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:53:18 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:37868 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932287Ab2CNAxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:52:13 -0400
-Message-ID: <4F5FEBBB.9030207@tilera.com>
-Date: Tue, 13 Mar 2012 20:52:11 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] arch/tile update for 3.3
-References: <4F5FCF6E.6060403@comcast.net> <CA+55aFySHdJ_LM4N7UhWektRoGK9f4+18=8xr3bMgK4gHuMqEg@mail.gmail.com>
-In-Reply-To: <CA+55aFySHdJ_LM4N7UhWektRoGK9f4+18=8xr3bMgK4gHuMqEg@mail.gmail.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 13 Mar 2012 20:53:16 -0400
+Date: Tue, 13 Mar 2012 17:53:12 -0700 (PDT)
+Message-Id: <20120313.175312.248147811152254607.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 13 Mar 2012 17:53:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/13/2012 8:06 PM, Linus Torvalds wrote:
-> On Tue, Mar 13, 2012 at 3:51 PM, Chris Metcalf <cdmetcalf@comcast.net> wrote:
->> These include a couple of queued-up minor bug fixes from the community, a fix
->> to unbreak the sysfs hooks in tile, and syncing up the defconfigs.
-> Ugh. When doing defconfigs, please try to use the new minconfig
-> machinery to generate a somewhat sane config file, instead of one that
-> contains everything.
->
-> They get smaller, and actually way more relevant too.
 
-OK, I'll look at that for 3.4.  Thanks!
+The most important bit here is the TCP syncookies issue, which seems
+to have been busted for some time.  That fix has been verified in
+production by the reporter.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1) Persistent TUN devices erroneously hold on to the network
+   namespace in such a way that it cannot be shutdown.  Fix
+   from Stanislav Kinsbursky with help from Eric Dumazet.
 
+2) TCP SYN cookies have been broken for a while due to how the route
+   lookup flow key is managed, connections can be delayed by as much
+   as 20 seconds due to this bug.  Fix from Eric Dumazet.
+
+3) Missing jiffies.h include in lib/dynamic_queue_limits.c can break
+   the build, from Tom Herbert.
+
+4) Add USB device ID for Sitecom LN-031, from Joerg Neikes.
+
+5) Fix OOPS in delayed workqueue in iwlegacy, from Stanislaw Gruszka.
+
+6) rt2x00 TX queue can be disabled forever due to races, fix by
+   synchronizing pause/unpause with a lock.  Also from Stanislaw
+   Gruszka.
+
+7) Statistics and endian fix in bnx2x driver from Yuval Mintz,
+   Eilon Greenstein, and Ariel Elior.
+
+Please pull, thanks a lot.
+
+The following changes since commit 2f1c2b8155865ba3c2909f468ac8be60f52ed56b:
+
+  Merge branch 'for_linus' of git://cavan.codon.org.uk/platform-drivers-x86 (2012-03-12 22:59:34 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Ariel Elior (1):
+      bnx2x: added cpu_to_le16 when preparing ramrod's data
+
+Eric Dumazet (1):
+      tcp: fix syncookie regression
+
+Joerg Neikes (1):
+      usb: asix: Patch for Sitecom LN-031
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Stanislav Kinsbursky (1):
+      tun: don't hold network namespace by tun sockets
+
+Stanislaw Gruszka (2):
+      iwl3945: fix possible il->txq NULL pointer dereference in delayed works
+      rt2x00: fix random stalls
+
+Tom Herbert (1):
+      dql: Fix undefined jiffies
+
+Yuval Mintz (3):
+      bnx2x: pfc statistics counts pfc events twice
+      bnx2x: dcb bit indices flags used as bits
+      bnx2x: FCoE statistics id fixed
+
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c   |    2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.h   |   12 ++++++--
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_dcb.c   |    8 +++--
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_sp.c    |    2 +-
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_stats.c |   12 --------
+ drivers/net/tun.c                                 |   15 ++++++++--
+ drivers/net/usb/asix.c                            |    4 +++
+ drivers/net/wireless/iwlegacy/3945-mac.c          |    2 +-
+ drivers/net/wireless/iwlegacy/3945.c              |    7 +++--
+ drivers/net/wireless/rt2x00/rt2x00dev.c           |    6 +++-
+ drivers/net/wireless/rt2x00/rt2x00mac.c           |    9 ++++++
+ drivers/net/wireless/rt2x00/rt2x00queue.c         |    3 ++
+ lib/dynamic_queue_limits.c                        |    1 +
+ net/ipv4/syncookies.c                             |   30 +++++++++++---------
+ net/ipv4/tcp_ipv4.c                               |   10 +++++--
+ 15 files changed, 78 insertions(+), 45 deletions(-)
