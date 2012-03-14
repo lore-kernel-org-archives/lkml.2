@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761182Ab2CNTLE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 15:11:04 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:7468 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755515Ab2CNTLB (ORCPT
+	id S1761280Ab2CNTMr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 15:12:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53663 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757440Ab2CNTMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 15:11:01 -0400
-Message-ID: <4F60ED44.70808@tilera.com>
-Date: Wed, 14 Mar 2012 15:11:00 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 14 Mar 2012 15:12:45 -0400
 MIME-Version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tile_edac: Fix the memory controller ID
-References: <1331560917-14071-1-git-send-email-mchehab@redhat.com>
-In-Reply-To: <1331560917-14071-1-git-send-email-mchehab@redhat.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4F602E2E.8030008@in.ibm.com>
+References: <1329841429.10124.38.camel@lappy> <4F602E2E.8030008@in.ibm.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Wed, 14 Mar 2012 21:12:25 +0200
+Message-ID: <CA+1xoqc2+HwfyyHUjJr9kFG9Y1esW6nxj=4djYwYx9vF0nSByw@mail.gmail.com>
+Subject: Re: [V9fs-developer] 9p: BUG: unable to handle kernel paging request
+ at ffff880035698000
+To: "M. Mohan Kumar" <mohan@in.ibm.com>
+Cc: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net,
+        v9fs-developer@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/12/2012 10:02 AM, Mauro Carvalho Chehab wrote:
-> Fix a regression introduced by changeset 7b03829a8ba4:
+On Wed, Mar 14, 2012 at 7:35 AM, M. Mohan Kumar <mohan@in.ibm.com> wrote:
+> On 02/21/2012 09:53 PM, Sasha Levin wrote:
+>>
+>> Hi,
+>>
+>> I was using the KVM tool for tests with trinity on top of a virtio-9p
+>> filesystem, and started seeing the BUGs below when I've put some pressure on
+>> the 9p fs (not much, just started writing the logs from trinity to a 9p fs).
 >
-> -       mci = edac_mc_alloc(sizeof(struct tile_edac_priv),
-> -               TILE_EDAC_NR_CSROWS, TILE_EDAC_NR_CHANS, pdev->id);
-> +       mci = edac_mc_alloc(0, ARRAY_SIZE(layers), layers, false,
-> +                           sizeof(struct tile_edac_priv));
+> Hi Sasha,
 >
-> The pdev->id is missing.
->
-> Compile-tested only. Btw, in order to compile it, I had to:
->
-> 1) comment a header at arch/tile/include/asm/linkage.h:
->
-> 	-#include <feedback.h>
-> 	+//#include <feedback.h>
->
-> 2) Use the ./arch/tile/configs/tilegx_defconfig . the tilepro_defconfig
->    is broken;
->
-> 3) manually enable the EDAC module on it.
->
-> Somebody has to fix it ;)
->
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> You mentioned about testing with trinity, Where can I find this trinity ? Is
+> is some test suite ? Were you running 9p as root?
 
-You might amend the commit message based on our conversation, but otherwise:
+I was using the fuzzer linked by davej in the previous mail.
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+9p was the root partition, and there was another 9p partition mounted
+on top of that root 9p.
 
-Thanks for fixing up the tile EDAC driver, BTW :-)
+> Which kernel version you were using? Is this bug still reproducible?
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+It was running the linux-next kernel of the day I sent the mail, I
+don't see it happening any more - but it could be because a lot of new
+kernel bugs showed up and they happen before this 9p issue happens.
