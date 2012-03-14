@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759965Ab2CNAj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 20:39:58 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64333 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759637Ab2CNAjz convert rfc822-to-8bit (ORCPT
+	id S1760029Ab2CNAkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 20:40:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:40485 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759627Ab2CNAkM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 20:39:55 -0400
+	Tue, 13 Mar 2012 20:40:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <4EF1CD49.9020800@linux.intel.com>
-References: <1324426147-16735-1-git-send-email-ccross@android.com>
-	<4EF1A0B4.5080307@linux.intel.com>
-	<CAMbhsRRP7s9xsHqxhb=iMfHAJFcqAea-6CDORZS34RCPNo+UWw@mail.gmail.com>
-	<4EF1AA8A.8060304@linux.intel.com>
-	<CAMbhsRSNTUvou9Gf6T4Ggq=jfxsWUcn7M2yNsKQz6aNrt6gLDg@mail.gmail.com>
-	<4EF1CD49.9020800@linux.intel.com>
-Date: Tue, 13 Mar 2012 17:39:54 -0700
-X-Google-Sender-Auth: MrveQY1hRvhvvIWbL7nZ1cwraUI
-Message-ID: <CAMbhsRS00BFgun=vA21LnuCW9HEH-72uFnNoB6A3GbVqkJEuWQ@mail.gmail.com>
-Subject: Re: [PATCH 0/3] coupled cpuidle state support
-From: Colin Cross <ccross@android.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
-        Kevin Hilman <khilman@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <201203140116.40344.rjw@sisk.pl>
+References: <201203092155.04731.rjw@sisk.pl>
+	<201203132242.07283.rjw@sisk.pl>
+	<CAOesGMi9uQyS=ATE+wXZY8hP-1+-uZhW2B-Y3zV9fOEBCYUFVw@mail.gmail.com>
+	<201203140116.40344.rjw@sisk.pl>
+Date: Tue, 13 Mar 2012 17:40:12 -0700
+Message-ID: <CAOesGMgsRDgiyfNTdC9KCPd4BJ-EsPK6=noVp=EVx-TMT7Hv7A@mail.gmail.com>
+Subject: Re: [GIT PULL] Renesas SoC updates for v3.4, take 2
+From: Olof Johansson <olof@lixom.net>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>, Paul Mundt <lethal@linux-sh.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 4:12 AM, Arjan van de Ven <arjan@linux.intel.com> wrote:
-> On 12/21/2011 10:55 AM, Colin Cross wrote:
->> On Wed, Dec 21, 2011 at 1:44 AM, Arjan van de Ven <arjan@linux.intel.com> wrote:
->>> On 12/21/2011 10:40 AM, Colin Cross wrote:
->>>
->>>>> this smells fundamentally racey to me; you can get an interrupt one
->>>>> cycle after you think you're done, but before the last guy enters WFI...
->>>>>
->>>>> how do you solve that issue ?
->>>>
->>>> All the cpus have interrupts off when they increment the counter, so
->>>> they cannot receive an interrupt.  If an interrupt is pending on one
->>>> of those cpus, it will be handled later when WFI aborts due to the
->>>> pending interrupt.
->>>
->>> ... but this leads to cases where you're aborting before other cpus are
->>> entering..... so your "last guy in" doesn't really work, since while cpu
->>> 0 thinks it's the last guy, cpu 1 is already on the way out/out
->>> already...  (heck it might already be going back to sleep if your idle
->>> code can run fast, like in the size of a cache miss)
+On Tue, Mar 13, 2012 at 5:16 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Wednesday, March 14, 2012, Olof Johansson wrote:
+>> On Tue, Mar 13, 2012 at 2:42 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Tuesday, March 13, 2012, Rafael J. Wysocki wrote:
+>> >> On Tuesday, March 13, 2012, Arnd Bergmann wrote:
+>> >> > On Tuesday 13 March 2012, Rafael J. Wysocki wrote:
+>> >> > > > Note that the __io() issue has turned out to be more urgent than I first
+>> >> > > > thought when we discussed it, so it would be good to apply the patch below
+>> >> > > > on top of your series.
+>> >> > >
+>> >> > > Do you want me to apply it now or will you do that in your tree?
+>> >> >
+>> >> > Doesn't matter to me, as long as one of you applies it ;-)
+>> >>
+>> >> OK, so I will add it to the soc branch in the Renesas tree.
+>> >
+>> > Applied and pushed back the updated tree.
 >>
->> Once a cpu has incremented the counter, it has no way out unless either
->> 1: another cpu (that hasn't incremented the counter yet) receives an
->> interrupt, aborts idle, and clears its idle flag
->> or
->> 2: all cpus enter the ready counter, and call the cpuidle driver's
->> enter function.
+>> Seems like you applied the patch but without the subject line,
 >
-> .. or it enters WFI, and a physical device sends it an interrupt,
-> at which point it exits.
+> I didn't notice that, sorry.
+>
+>> so now git thinks the whole first paragraph is the patch subject. That's a
+>> bit messy and I'd prefer if you could fix it up.
+>
+> I've just replaced the broken commit with a new fixed one.
+>
+>> Do you have downstream users of your tree that you'll mess up if you
+>> rebase the last commit though? Alternatively I can take everything on
+>> the branch but the last patch and apply it myself, but that will still
+>> cause trouble for your downstream developers once things go upstream
+>> and come down.
+>
+> Hopefully, no one has pulled from the tree yet. :-)
 
-Rereading this, I think I understand what you meant.  I misunderstood
-because of your reference to WFI, which is not entered at this point.
-WFI generally refers to the shallowest idle state, which only affects
-a single cpu.  For deeper states, the cpu may or may not execute the
-WFI instruction to trigger the transition (depending on the platform),
-but it's not really entering WFI, and the cpu will generally not ever
-execute the next instruction (again, depending on the platform).
+Cool. Pulled into next/soc. Thanks!!
 
-For coupled cpus, only one cpu is capable of booting first, so all
-interrupts should be masked on cpu1 by the time it gets to its low
-power state, so it should never abort.  If it does abort (like the
-example Kevin Hillman just posted to the end of this thread), cpu1
-needs to set a flag to say it is not going to get to idle, and cpu0
-needs to wait for cpu1 to be in idle (by polling a power controller
-register), or for the flag to be set.  Afterwards, the cpus need to
-resynchronize and reset the flag, which will be easy with the parallel
-barrier helper function that will be included in the next patch set.
+-Olof
