@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759622Ab2CNIlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 04:41:16 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:33440 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030705Ab2CNIlK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 04:41:10 -0400
-X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Mar 2012 04:41:10 EDT
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <syrjala@sci.fi>
-To: linux-i2c@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        khali@linux-fr.org, ben-linux@fluff.org,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <syrjala@sci.fi>
-Subject: [PATCH] i2c-algo-bit: Fix spurious SCL timeouts under heavy load
-Date: Wed, 14 Mar 2012 10:32:52 +0200
-Message-Id: <1331713973-7711-1-git-send-email-syrjala@sci.fi>
-X-Mailer: git-send-email 1.7.3.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1759634Ab2CNIn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 04:43:27 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:53352 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751782Ab2CNInW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 04:43:22 -0400
+Message-ID: <1331714575.2389.47.camel@epip-laptop>
+Subject: Re: [PATCH 7/7] arch/unicore32/kernel/dma.c: ensure arguments to
+ request_irq and free_irq are compatible
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Julia Lawall <julia.lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 14 Mar 2012 16:42:55 +0800
+In-Reply-To: <20120314081910.GC3163@mwanda>
+References: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1331494587-12196-8-git-send-email-Julia.Lawall@lip6.fr>
+	 <1331513926.2048.58.camel@epip-laptop>
+	 <alpine.DEB.2.02.1203120625570.2066@localhost6.localdomain6>
+	 <1331622633.2048.87.camel@epip-laptop>
+	 <alpine.DEB.2.02.1203130921250.1974@localhost6.localdomain6>
+	 <1331712444.2389.36.camel@epip-laptop> <20120314081910.GC3163@mwanda>
+Organization: MPRC, PKU
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the system is under heavy load, there can be a significant delay
-between the getscl() and time_after() calls inside sclhi(). That delay
-may cause the time_after() check to trigger after SCL has gone high,
-causing sclhi() to return -ETIMEDOUT.
+On Wed, 2012-03-14 at 11:19 +0300, Dan Carpenter wrote:
+> On Wed, Mar 14, 2012 at 04:07:24PM +0800, Guan Xuetao wrote:
+> > puv3_init_dma() is called ONCE when initializing.
+> > In logical, if request_irq(IRQ_DMAERR, *) failed, free_irq(IRQ_DMA, *)
+> > is unnecessary, and dma device/driver can keep on working.
+> > The patch could be:
+> >   	ret = request_irq(IRQ_DMAERR, dma_err_handler, 0, "DMAERR", NULL);
+> >   	if (ret) {
+> >   		printk(KERN_CRIT "Can't register IRQ for DMAERR\n");
+> >  -		free_irq(IRQ_DMA, "DMA");
+> >   		return ret;
+> >   	}
+> 
+> It seems like you should remove the error return as well?
+> 
+> regards,
+> dan carpenter
+> 
+The error return value will only generate an extra warning message, and
+have no side-effect.
 
-To fix the problem, double check that SCL is still low after the
-timeout has been reached, before deciding to return -ETIMEDOUT.
+Thanks and Regards,
+Guan Xuetao
 
-Signed-off-by: Ville Syrjälä <syrjala@sci.fi>
----
-I can easily reproduce these spurious timeouts on my HP-compaq nc6000
-laptop with the radeon kms driver. It's enough to have a -j2 kernel
-build running, and simultaneosly issue xrandr commands in a
-terminal. Calling xrandr will cause the driver to re-read the EDID
-from the display. A significant number of the EDID reads will fail.
-With this fix I have yet to see any failed EDID reads.
-
- drivers/i2c/algos/i2c-algo-bit.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/i2c/algos/i2c-algo-bit.c b/drivers/i2c/algos/i2c-algo-bit.c
-index 525c734..d25112e 100644
---- a/drivers/i2c/algos/i2c-algo-bit.c
-+++ b/drivers/i2c/algos/i2c-algo-bit.c
-@@ -104,9 +104,11 @@ static int sclhi(struct i2c_algo_bit_data *adap)
- 		 * are processing data internally.
- 		 */
- 		if (time_after(jiffies, start + adap->timeout))
--			return -ETIMEDOUT;
-+			break;
- 		cond_resched();
- 	}
-+	if (!getscl(adap))
-+		return -ETIMEDOUT;
- #ifdef DEBUG
- 	if (jiffies != start && i2c_debug >= 3)
- 		pr_debug("i2c-algo-bit: needed %ld jiffies for SCL to go "
--- 
-1.7.3.4
 
