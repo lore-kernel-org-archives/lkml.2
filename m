@@ -1,97 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab2CNFre (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 01:47:34 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52785 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755462Ab2CNFrd (ORCPT
+	id S1756389Ab2CNFxB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 01:53:01 -0400
+Received: from charybdis-ext.suse.de ([195.135.221.2]:24122 "EHLO
+	nat.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab2CNFw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 01:47:33 -0400
-Date: Wed, 14 Mar 2012 09:47:28 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Kees Cook <keescook@chromium.org>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] c/r: prctl: Add ability to set new mm_struct::exe_file v3
-Message-ID: <20120314054728.GA2778@moon>
-References: <20120309223932.GB725@moon>
- <20120309235901.GE19584@count0.beaverton.ibm.com>
- <20120310074854.GA3065@moon>
- <20120313024511.GF19584@count0.beaverton.ibm.com>
- <20120313062625.GA1912@moon>
- <20120313071812.GA6969@moon>
- <20120313154337.GA25711@redhat.com>
- <20120313160044.GF1912@moon>
- <20120313160420.GA18307@moon>
- <20120314014106.GI19584@count0.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120314014106.GI19584@count0.beaverton.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 14 Mar 2012 01:52:59 -0400
+Subject: Re: [PATCH] Added backlight driver for Acer Aspire 4736
+From: joeyli <jlee@suse.com>
+To: Pradeep Subrahmanion <subrahmanion.pradeep@gmail.com>
+Cc: Matthew Garrett <mjg@redhat.com>, rpurdie@rpsys.net,
+        FlorianSchandinat@gmx.de, akpm@linux-foundation.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1331692996.3052.8.camel@debian.Gayathri>
+References: <1331608337.2267.67.camel@debian.Gayathri>
+	 <20120312175130.GA18002@srcf.ucam.org>
+	 <1331640592.3485.50.camel@debian.Gayathri>
+	 <20120313124738.GB10822@srcf.ucam.org>
+	 <CABNxG=Dqg26EHmC3vibf3-SjVhby1qgQfMniQObUeh9eJ6SwEw@mail.gmail.com>
+	 <20120313133458.GA11574@srcf.ucam.org>
+	 <1331688294.2577.19.camel@debian.Gayathri>
+	 <1331680373.10557.169.camel@linux-s257.site>
+	 <1331692996.3052.8.camel@debian.Gayathri>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Mar 2012 13:51:18 +0800
+Message-ID: <1331704278.10557.190.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 13, 2012 at 06:41:06PM -0700, Matt Helsley wrote:
+於 三，2012-03-14 於 08:13 +0530，Pradeep Subrahmanion 提到：
+> Hi Joey , 
+> 
+> > Per my understood, EC firmware should change brightness but didn't do
+> > that, another
+> > way is touch i915 register in _BCM.
+> 
+>   how do we do this ? you mean change the _BCM implementation ? 
+
+"BIOS guy" should do something like this:
+
+ Method (AINT, 2, NotSerialized)
+{
 ...
-> > +
-> > +	exe_file = fget(fd);
-> > +	if (!exe_file)
-> > +		return -EBADF;
-> > +
-> > +	dentry = exe_file->f_path.dentry;
-> > +
-> > +	/*
-> > +	 * Because the original mm->exe_file
-> > +	 * points to executable file, make sure
-> > +	 * this one is executable as well to not
-> > +	 * break an overall picture.
-> > +	 */
-> > +	err = -EACCES;
-> > +	if (!S_ISREG(dentry->d_inode->i_mode)	||
-> > +	    exe_file->f_path.mnt->mnt_flags & MNT_NOEXEC)
-> > +		goto exit;
+        If (LEqual (Arg0, One))
+        {
+            Store (Divide (Multiply (Arg1, 0xFF), 0x64, ), BCLP)
+            Or (BCLP, 0x80000000, BCLP)		<=== touch BCLP register
+            Store (0x02, ASLC)
+        }
+
+    Method (_BCM, 1, NotSerialized)
+    {
+        If (LAnd (LGreaterEqual (Arg0, Zero), LLessEqual (Arg0, 0x64)))
+        {
+            AINT (One, Arg0)     <=== call AINT method
+            Store (Arg0, BRTL)
+        }
+    }
+
+
+Just for reference, they should do that when EC didn't wire to
+backlight. 
+
+> > 
+> > Acer machine provide a broken _BCM implementation and they didn't test
+> > it.
+> > 
+> > > > > By ' ACPI interface' , I mean 'acpi_video0' inside the
+> > > > > /sys/class/backlight. I havn't tried the /sys/class/backlight interface
+> > > > > directly . I will try that also.
+> > > > 
+> > > > So writing values into /sys/class/backlight/acpi_video0/brightness does 
+> > > > nothing?
+> > > 
+> > > 
+> > > No change in value when writing
+> > > to /sys/class/backlight/acpi_video0/brightness.
+> > > 
+> > > Another thing is that when i did boot with acpi_backlight = 'acer_wmi' ,
+> > > in new kernel (3.3.0-rc7) , it shows following messages , 
+> > > 
+> > > [    8.350825] wmi: Mapper loaded
+> > > [   10.363975] acer_wmi: Acer Laptop ACPI-WMI Extras
+> > > [   10.396186] acer_wmi: Function bitmap for Communication Device: 0x91
+> > > [   10.396385] acer_wmi: Brightness must be controlled by generic video
+> > > driver
+> > > 
+> > > Also there was no interface inside /sys/class/backlight for acer_wmi. 
+> > > 
+> > 
+> > Yes, acer_wmi support backlight control with AMW0 interface, your
+> > machine didn't have AMW0 interface.
+> > 
+> > Normally, backlight should control by standard acpi interface.
+> > 
+> > > I also tried writing directly to Embedded controller register .But no
+> > > change.
+> > 
+> > The machine has broken _BCM method, because EC should do something after
+> > _BCM changed EC register.
 > 
-> You could factor out this portion of the access checking from open_exec()
-> after the do_filp_open() in open_exec() and re-use it here. I know it's
-> tiny helper but tying these two together might be good for
-> maintenance later.
+> Thanks , 
 > 
+> Pradeep Subrahmanion
 
-Matt, I really dont wanna touch code outside of prctl and this function
-in particualar, at least in this patch, ie I can clean up and factor out
-is on top of the patch, as a separate task.
+Why they didn't find _BCM not work?
 
-> Should it check for some of the flags open_exec() uses? open_exec()
-> passes:
-> 
-> 	O_LARGEFILE|O_RDONLY|__FMODE_EXEC
-> 
-> to do_filp_open(). I think a O_RDONLY check might be good. I don't
-> think __FMODE_EXEC is something userspace can set so could be ignored.
-> O_LARGEFILE might be important though.
+My guess is:
 
-Well, we're not going to read from this file, so it is not that important
-at moment, so previously I've had
+Because the backlight control is through WDDM driver on Windows platform
+but not through standard ACPI method _BCM. They only test Windows
+platform, so, they didn't find _BCM broken.
 
-> +     if ((exe_file->f_flags & O_ACCMODE) != O_RDONLY)
-> +             goto exit;
+And, they also didn't really follow Microsoft WDDM spec:
 
-and Oleg pointed me
+ http://msdn.microsoft.com/en-us/windows/hardware/gg487382.aspx
 
- | But the O_RDONLY check looks strange. We are not going to write
- | to this file, we only set the name (and that is why I think it
- | should be mm->exe_path). What is the point to check that the file
- | was opened without FMODE_WRITE? Even if there were any security
- | risk the apllication can open this file again with the different
- | flags.
+Per spec,
+ODM should keep _BCM works fine for any other OS didn't support WDDM
+driver, but they didn't.
 
-so I dropped it. And I think the same applies to O_LARGEFILE. Sure
-it's not a problem to bring it back but should we?
+At last year, I told Acer PM one time for this issue, they said will
+check but finally didn't response me.
 
-	Cyrill
+
+Thanks
+Joey Lee
+
