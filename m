@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965203Ab2CNB4q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Mar 2012 21:56:46 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:33874 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964778Ab2CNB4p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Mar 2012 21:56:45 -0400
-X-AuditID: cbfee61a-b7b78ae000001ceb-3b-4f5ffadbf1a6
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: dirk.brandewie@gmail.com, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, Jason.Wortham@maxim-ic.com,
-        bruce.e.robertson@intel.com,
-        Karol Lewandowski <k.lewandowsk@samsung.com>, myungjoo.ham@gmail.com
-Subject: [PATCH] max17042: fix CHARGE_FULL representation.
-Date: Wed, 14 Mar 2012 10:56:47 +0900
-Message-id: <1331690207-1289-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-X-Brightmail-Tracker: AAAAAA==
+	id S1030232Ab2CNB6A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Mar 2012 21:58:00 -0400
+Received: from fifo99.com ([67.223.236.141]:46109 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964778Ab2CNB57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Mar 2012 21:57:59 -0400
+Date: Tue, 13 Mar 2012 18:57:56 -0700
+From: Daniel Walker <dwalker@fifo99.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: David Miller <davem@davemloft.net>, apenwarr@gmail.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org,
+        paulmck@linux.vnet.ibm.com, mingo@elte.hu, fdinitto@redhat.com,
+        hannes@cmpxchg.org, olaf@aepfle.de, paul.gortmaker@windriver.com,
+        tj@kernel.org, hpa@linux.intel.com, yinghai@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 0/5] Persist printk buffer across reboots.
+Message-ID: <20120314015755.GB5218@fifo99.com>
+References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
+ <20120312.225302.488696931454771146.davem@davemloft.net>
+ <1331646604.18960.76.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331646604.18960.76.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CHARGE_FULL should represent the full capacity of the battery in uAh.
-The 0x10 (FullCAP) register shows the compensated full capacity in
-mAh * 2; e.g., reg(0x10) = 0xBB8 means that it is 1500mAh.
+On Tue, Mar 13, 2012 at 02:50:04PM +0100, Peter Zijlstra wrote:
+> On Mon, 2012-03-12 at 22:53 -0700, David Miller wrote:
+> > From: Avery Pennarun <apenwarr@gmail.com>
+> > Date: Tue, 13 Mar 2012 01:36:36 -0400
+> > 
+> > > The last patch in this series implements a new CONFIG_PRINTK_PERSIST option
+> > > that, when enabled, puts the printk buffer in a well-defined memory location
+> > > so that we can keep appending to it after a reboot.  The upshot is that,
+> > > even after a kernel panic or non-panic hard lockup, on the next boot
+> > > userspace will be able to grab the kernel messages leading up to it.  It
+> > > could then upload the messages to a server (for example) to keep crash
+> > > statistics.
+> > 
+> > On some platforms there are formal ways to reserve areas of memory
+> > such that the bootup firmware will know to not touch it on soft resets
+> > no matter what.  For example, on Sparc there are OpenFirmware calls to
+> > set aside such an area of soft-reset preserved memory.
+> > 
+> > I think some formal agreement with the system firmware is a lot better
+> > when available, and should be explicitly accomodated in these changes
+> > so that those of us with such facilities can very easily hook it up.
+> 
+> Shouldn't this all be near the pstore effort? I know pstore and the
+> soft-reset stuff aren't quite the same, but if that's the best Sparc can
+> do, then why not?
+> 
+> OTOH if Sparc can actually do pstore too, then it might make sense.
+> 
+> What I guess I'm saying is that we should try and minimize the duplicate
+> efforts here.. and it seems to me that writing a soft reset x86 backend
+> to pstore for those machines that don't actually have the acpi flash
+> crap might be more useful and less duplicative.
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
----
- drivers/power/max17042_battery.c       |    7 ++-----
- include/linux/power/max17042_battery.h |    2 +-
- 2 files changed, 3 insertions(+), 6 deletions(-)
+I don't disagree, but pstore is written with this transactional notion in
+mind. It's doesn't appear to be setup to handle just a straight memory
+area. Changing mtdoops to do this would be more trivial. It would be merging
+android ram_console with mtdoops basically. However, I don't know if that would
+cover what Avery is doing here.
 
-diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-index 86acee2..4474427b 100644
---- a/drivers/power/max17042_battery.c
-+++ b/drivers/power/max17042_battery.c
-@@ -143,14 +143,11 @@ static int max17042_get_property(struct power_supply *psy,
- 		val->intval = ret >> 8;
- 		break;
- 	case POWER_SUPPLY_PROP_CHARGE_FULL:
--		ret = max17042_read_reg(chip->client, MAX17042_RepSOC);
-+		ret = max17042_read_reg(chip->client, MAX17042_FullCAP);
- 		if (ret < 0)
- 			return ret;
- 
--		if ((ret >> 8) >= MAX17042_BATTERY_FULL)
--			val->intval = 1;
--		else if (ret >= 0)
--			val->intval = 0;
-+		val->intval = ret * 1000 / 2;
- 		break;
- 	case POWER_SUPPLY_PROP_TEMP:
- 		ret = max17042_read_reg(chip->client, MAX17042_TEMP);
-diff --git a/include/linux/power/max17042_battery.h b/include/linux/power/max17042_battery.h
-index fe99211..a8fe98c 100644
---- a/include/linux/power/max17042_battery.h
-+++ b/include/linux/power/max17042_battery.h
-@@ -44,7 +44,7 @@ enum max17042_register {
- 	MAX17042_SOC		= 0x0D,
- 	MAX17042_AvSOC		= 0x0E,
- 	MAX17042_RemCap		= 0x0F,
--	MAX17402_FullCAP	= 0x10,
-+	MAX17042_FullCAP	= 0x10,
- 	MAX17042_TTE		= 0x11,
- 	MAX17042_V_empty	= 0x12,
- 
--- 
-1.7.4.1
+pstore does seems to have the nicest user interface (might be better in
+debugfs tho). If someone wanted to move forward with pstore they
+would have to write some some sort of,
 
+int pstore_register_simple(unsigned long addr, unsigned long size);
+
+to cover all the memory areas that aren't transaction based, or make
+pstore accept a platform_device.
+
+Daniel
