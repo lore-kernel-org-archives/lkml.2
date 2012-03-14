@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932378Ab2CNF7S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 01:59:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43985 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932253Ab2CNF7M (ORCPT
+	id S932392Ab2CNF7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 01:59:37 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62744 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932341Ab2CNF7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 01:59:12 -0400
-Date: Tue, 13 Mar 2012 22:58:51 -0700
-From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
-Message-ID: <tip-bb6fa8b275e132b1e9319dbab94211543a0b7bd3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, gregory.m.lueck@intel.com, hjl.tools@gmail.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hjl.tools@gmail.com, gregory.m.lueck@intel.com
-In-Reply-To: <1329696488-16970-1-git-send-email-hpa@zytor.com>
-References: <1329696488-16970-1-git-send-email-hpa@zytor.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/x32] x32: Fix stupid ia32/
- x32 inversion in the siginfo format
-Git-Commit-ID: bb6fa8b275e132b1e9319dbab94211543a0b7bd3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 14 Mar 2012 01:59:11 -0400
+Date: Tue, 13 Mar 2012 22:59:09 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>
+cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch -next 2/2] drivers, samsung-laptop: fix usage of isalnum
+In-Reply-To: <alpine.DEB.2.00.1203132258160.5229@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1203132258460.5229@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1203132258160.5229@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 13 Mar 2012 22:58:56 -0700 (PDT)
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-763871924-1331704743=:5229"
+Content-ID: <alpine.DEB.2.00.1203132259080.5229@chino.kir.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bb6fa8b275e132b1e9319dbab94211543a0b7bd3
-Gitweb:     http://git.kernel.org/tip/bb6fa8b275e132b1e9319dbab94211543a0b7bd3
-Author:     H. Peter Anvin <hpa@zytor.com>
-AuthorDate: Tue, 13 Mar 2012 22:44:41 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Tue, 13 Mar 2012 22:44:41 -0700
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-x32: Fix stupid ia32/x32 inversion in the siginfo format
+--397155492-763871924-1331704743=:5229
+Content-Type: TEXT/PLAIN; CHARSET=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.DEB.2.00.1203132259081.5229@chino.kir.corp.google.com>
 
-Fix a stray ! which flipped the sense if we were generating a signal
-frame for ia32 vs. x32.
+linux/ctype.h is needed for isalnum() to avoid a build error:
 
-Introduced in:
+drivers/platform/x86/samsung-laptop.c: In function ‘samsung_sabi_diag’:
+drivers/platform/x86/samsung-laptop.c:1306: error: implicit declaration of function ‘isalnum’
 
-e7084fd5 x32: Switch to a 64-bit clock_t
-
-Reported-by: H. J. Lu <hjl.tools@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Gregory M. Lueck <gregory.m.lueck@intel.com>
-Link: http://lkml.kernel.org/r/1329696488-16970-1-git-send-email-hpa@zytor.com
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- arch/x86/ia32/ia32_signal.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/platform/x86/samsung-laptop.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32_signal.c b/arch/x86/ia32/ia32_signal.c
-index bc09ed2..ef026aa 100644
---- a/arch/x86/ia32/ia32_signal.c
-+++ b/arch/x86/ia32/ia32_signal.c
-@@ -37,7 +37,7 @@
- int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
- {
- 	int err = 0;
--	bool ia32 = !is_ia32_task();
-+	bool ia32 = is_ia32_task();
+diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -25,6 +25,7 @@
+ #include <linux/acpi.h>
+ #include <linux/seq_file.h>
+ #include <linux/debugfs.h>
++#include <linux/ctype.h>
  
- 	if (!access_ok(VERIFY_WRITE, to, sizeof(compat_siginfo_t)))
- 		return -EFAULT;
+ /*
+  * This driver is needed because a number of Samsung laptops do not hook
+--397155492-763871924-1331704743=:5229--
