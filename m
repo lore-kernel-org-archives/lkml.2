@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031137Ab2CNVxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 17:53:41 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43718 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031036Ab2CNVxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 17:53:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="138949233"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Adalbert Dawid <dawid@rinux.net>
-CC: Borislav Petkov <bp@amd64.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "x86@kernel.org" <x86@kernel.org>
-Subject: RE: Kernel Panic with Rawtherapee (mce related)
-Thread-Topic: Kernel Panic with Rawtherapee (mce related)
-Thread-Index: AQHNAfJ8aeq5R/7dC0Geu08XqQtP/ZZqaDgA//+nNZCAAKFdgP//o10g
-Date: Wed, 14 Mar 2012 21:53:34 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F15B64D0A@ORSMSX103.amr.corp.intel.com>
-References: <1331678930.11814.16.camel@erde.fritz.box>
-	 <4F60B0E3.6020503@linux.vnet.ibm.com> <20120314155906.GA25286@aftab>
-	 <3908561D78D1C84285E8C5FCA982C28F15B64BF0@ORSMSX103.amr.corp.intel.com>
- <1331756331.5315.19.camel@erde.fritz.box>
-In-Reply-To: <1331756331.5315.19.camel@erde.fritz.box>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1031124Ab2CNWBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 18:01:15 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63873 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932497Ab2CNWBN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 18:01:13 -0400
 MIME-Version: 1.0
+In-Reply-To: <20120314213746.GK23916@ZenIV.linux.org.uk>
+References: <1331758710-16400-1-git-send-email-levinsasha928@gmail.com>
+ <20120314201048.GI23916@ZenIV.linux.org.uk> <20120314205809.GJ23916@ZenIV.linux.org.uk>
+ <CA+1xoqcvXsx1vpAB7Jg-dWGVaadbF4sC3Cr2s5itHfdiPFQerA@mail.gmail.com> <20120314213746.GK23916@ZenIV.linux.org.uk>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 15 Mar 2012 00:00:52 +0200
+Message-ID: <CA+1xoqcP-1rU79ZOD2t+cn8tr77Nxmhv0_MjuLcvp67Zb7FFKQ@mail.gmail.com>
+Subject: Re: [PATCH] vfs namespace: Don't assume mount namespace has valid root
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2ELrmXo031277
 
-> It would be very helpful to disable the "reboot in 30 seconds" timeout.
-> Is that possible somehow?
+On Wed, Mar 14, 2012 at 11:37 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Wed, Mar 14, 2012 at 11:03:43PM +0200, Sasha Levin wrote:
+>> > And that's all pointers to mnt_namespace that ever exist, aside of function
+>> > arguments and local variables. ?I'm not saying that I couldn't have possibly
+>> > fucked it up, but from rereading that code it doesn't look like we could
+>> > end up with dangling pointers to already freed instances...
+>>
+>> I'm trying to find the exact chain of events leading it it at the
+>> moment, but it reproduces rather easily - so if you have any ideas on
+>> figuring it out I'm happy to try anything.
+>
+> Which kernel, for starters?  I'd probably add dumping call chain +
+> return value in alloc_mnt_ns(), call chain + pointer being freed in
+> final put_mnt_ns() and failure exit of dup_mnt_ns(), address of
+> mnt_ns and value assigned to ->root on assignments to ->root in
+> create_mnt_ns() and dup_mnt_ns() and mnt_ns in dup_mnt_ns() if it
+> happens to have NULL ->root.
+>
+> That should give you full history of allocation/freeing mnt_namespace
+> instances and of assignments to anyone's ->root.  Ought to make a sane
+> starting point...
 
-# echo 0 > /proc/sys/kernel/panic
+I'm running 3.3.0-rc6-next-20120309-sasha-00002-g8fd19a0.
 
-[A non-zero value is the number of seconds before rebooting. zero means don't reboot]
-
-> Up to now, it has always been rawtherapee that crashed the machine. This
-> is why I thought it might possibly be some special cpu feature (an SSE
-> command or something) that happens to be broken in my cpu and that is
-> triggered only by rawtherapee and not by any other software. What is
-> your opinion on this theory?
-
-Can you set up a serial console for this system?  Seeing the kernel
-log leading up to the machine checks might also give some clues (e.g.
-perhaps rawtherapee is running the system out of memory right before
-the crash).
-
--Tony
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I found that if I revert f8b88187 ("brlocks/lglocks: cleanups") it
+seems that the problem is gone.
