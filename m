@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab2CNLdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 07:33:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54899 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757266Ab2CNLc6 (ORCPT
+	id S1757420Ab2CNLds (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 07:33:48 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54042 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab2CNLdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 07:32:58 -0400
-Date: Wed, 14 Mar 2012 04:35:30 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V3 5/8] hugetlbfs: Add memcg control files for
- hugetlbfs
-Message-Id: <20120314043530.d6f3d424.akpm@linux-foundation.org>
-In-Reply-To: <87lin38mkd.fsf@linux.vnet.ibm.com>
-References: <1331622432-24683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1331622432-24683-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<20120313144233.49026e6a.akpm@linux-foundation.org>
-	<87lin38mkd.fsf@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 14 Mar 2012 07:33:45 -0400
+Message-ID: <4F6081C3.4070905@mvista.com>
+Date: Wed, 14 Mar 2012 15:32:19 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Gupta, Ajay Kumar" <ajay.gupta@ti.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>
+Subject: Re: [PATCH] arm:da850: register musb device
+References: <1331651015-32586-1-git-send-email-prakash.pm@ti.com> <4F5F7F91.8010301@mvista.com> <A73F36158E33644199EB82C5EC81C7BC3178406C@DBDE01.ent.ti.com>
+In-Reply-To: <A73F36158E33644199EB82C5EC81C7BC3178406C@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Mar 2012 16:40:58 +0530 "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+Hello.
 
-> > 
-> > > +int mem_cgroup_hugetlb_file_init(struct hstate *h, int idx);
-> > 
-> > 
-> > No, please put it in a header file.  Always.  Where both callers and
-> > the implementation see the same propotype.
-> > 
-> > > +#else
-> > > +static int mem_cgroup_hugetlb_file_init(struct hstate *h, int idx)
-> > > +{
-> > > +	return 0;
-> > > +}
-> > > +#endif
-> > 
-> > So this will go into the same header file.
-> > 
-> 
-> I was not sure whether i want to put mem_cgroup_hugetlb_file_init in
-> linux/memcontrol.h .
+On 14-03-2012 10:16, Manjunathappa, Prakash wrote:
 
-The above is a declaration, not the definition (implementation).
+>>> Properly set up the OTG mode thru the CFGCHIP2 register, enable the
+>>> USB0_DRVVBUS pin,
 
-> Ideally i want to have that in mm/hugetlb.c and in
-> linux/hugetlb.h. That would require me to make mem_cgroup_read and
-> others non static and move few #defines to memcontrol.h. That would
-> involve larger code movement which i didn't want to do. ? What do you
-> suggest ? Just move mem_cgroup_hugetlb_file_init to memcontrol.h ?
+>>      I don't see where you are enabling it.
 
-In memcontrol.h:
+> Yes, I will correct the message.
 
-#ifdef CONFIG_FOO
-extern int mem_cgroup_hugetlb_file_init(struct hstate *h, int idx);
-#else
-static inline int mem_cgroup_hugetlb_file_init(struct hstate *h, int idx)
-{
-	return 0;
-}
-#endif
+>>> and finally register the MUSB platform device.
 
-?
+    Also, you're registering the MUSB device for DA850/OMAP-L138 EVM board, 
+not the whole DA850/OMAP-L138 SoC, so that should be reflected in the subject.
+
+>>> Signed-off-by: Ajay Kumar Gupta<ajay.gupta@ti.com>
+>>> Signed-off-by: Manjunathappa, Prakash<prakash.pm@ti.com>
+
+WBR, Sergei
