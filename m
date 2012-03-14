@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760342Ab2CNJvZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 05:51:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51734 "EHLO mx1.redhat.com"
+	id S1760376Ab2CNJyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 05:54:52 -0400
+Received: from ozlabs.org ([203.10.76.45]:34679 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759079Ab2CNJvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 05:51:24 -0400
-Date: Wed, 14 Mar 2012 15:21:14 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, "Daniel P. Berrange" <berrange@redhat.com>,
-        kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH 0/2 v3] kvm: notify host when guest panicked
-Message-ID: <20120314095114.GA4136@amit.redhat.com>
-References: <4F58664D.1070800@cn.fujitsu.com>
- <4F58943E.1050402@redhat.com>
- <4F595B31.9090301@cn.fujitsu.com>
- <4F5DBC26.7060204@cn.fujitsu.com>
- <4F5DD0FD.9070904@redhat.com>
- <20120313091843.GB3800@redhat.com>
- <4F5F25BF.7060100@redhat.com>
- <4F6056FE.3020202@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F6056FE.3020202@cn.fujitsu.com>
+	id S1759079Ab2CNJys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 05:54:48 -0400
+Date: Wed, 14 Mar 2012 20:54:27 +1100
+From: Anton Blanchard <anton@samba.org>
+To: dhowells@redhat.com
+Cc: linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: [PATCH] afs: Remote abort can cause BUG in rxrpc code
+Message-ID: <20120314205427.71a11c97@kryten>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) 14 Mar 2012 [16:29:50], Wen Congyang wrote:
-> At 03/13/2012 06:47 PM, Avi Kivity Wrote:
-> > On 03/13/2012 11:18 AM, Daniel P. Berrange wrote:
-> >> On Mon, Mar 12, 2012 at 12:33:33PM +0200, Avi Kivity wrote:
-> >>> On 03/12/2012 11:04 AM, Wen Congyang wrote:
-> >>>> Do you have any other comments about this patch?
-> >>>>
-> >>>
-> >>> Not really, but I'm not 100% convinced the patch is worthwhile.  It's
-> >>> likely to only be used by Linux, which has kexec facilities, and you can
-> >>> put talk to management via virtio-serial and describe the crash in more
-> >>> details than a simple hypercall.
-> >>
-> >> As mentioned before, I don't think virtio-serial is a good fit for this.
-> >> We want something that is simple & guaranteed always available. Using
-> >> virtio-serial requires significant setup work on both the host and guest.
-> > 
-> > So what?  It needs to be done anyway for the guest agent.
-> > 
-> >> Many management application won't know to make a vioserial device available
-> >> to all guests they create. 
-> > 
-> > Then they won't know to deal with the panic event either.
-> > 
-> >> Most administrators won't even configure kexec,
-> >> let alone virtio serial on top of it. 
-> > 
-> > It should be done by the OS vendor, not the individual admin.
-> > 
-> >> The hypercall requires zero host
-> >> side config, and zero guest side config, which IMHO is what we need for
-> >> this feature.
-> > 
-> > If it was this one feature, yes.  But we keep getting more and more
-> > features like that and we bloat the hypervisor.  There's a reason we
-> > have a host-to-guest channel, we should use it.
-> > 
-> 
-> I donot know how to use virtio-serial.
-> 
-> I start vm like this:
-> qemu ...\
->    -device virtio-serial \
->   -chardev socket,path=/tmp/foo,server,nowait,id=foo \
->   -device virtserialport,chardev=foo,name=port1 ...
 
-This is sufficient.  On the host, you can open /tmp/foo using a custom
-program or nc (nc -U /tmp/foo).  On the guest, you can just open
-/dev/virtio-ports/port1 and read/write into it.
+When writing files to afs I sometimes hit a BUG:
 
-See the following links for more details.
+kernel BUG at fs/afs/rxrpc.c:179!
 
-https://fedoraproject.org/wiki/Features/VirtioSerial#How_To_Test
-http://www.linux-kvm.org/page/Virtio-serial_API
+With a backtrace of:
 
-> You said that there are too many channels. Does it mean /tmp/foo is a channel?
+	afs_free_call
+	afs_make_call
+	afs_fs_store_data
+	afs_vnode_store_data
+	afs_write_back_from_locked_page
+	afs_writepages_region
+	afs_writepages
 
-You can have several such -device virtserialport.  The -device part
-describes what the guest will see.  The -chardev part ties that to the
-host-side part of the channel.
+The cause is:
 
-/tmp/foo is the host end-point for the channel, in the example above,
-and /dev/virtio-ports/port1 is the guest-side end-point.
+	ASSERT(skb_queue_empty(&call->rx_queue));
 
-		Amit
+Looking at a tcpdump of the session the abort happens because we
+are exceeding our disk quota:
+
+	rx abort fs reply store-data error diskquota exceeded (32)
+
+So the abort error is valid. We hit the BUG because we haven't
+freed all the resources for the call.
+
+By freeing any skbs in call->rx_queue before calling afs_free_call
+we avoid hitting leaking memory and avoid hitting the BUG.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: <stable@kernel.org>
+---
+
+Index: linux-build/fs/afs/rxrpc.c
+===================================================================
+--- linux-build.orig/fs/afs/rxrpc.c	2012-03-14 20:29:22.990351454 +1100
++++ linux-build/fs/afs/rxrpc.c	2012-03-14 20:30:51.039953546 +1100
+@@ -314,6 +314,7 @@ int afs_make_call(struct in_addr *addr,
+ 	struct msghdr msg;
+ 	struct kvec iov[1];
+ 	int ret;
++	struct sk_buff *skb;
+ 
+ 	_enter("%x,{%d},", addr->s_addr, ntohs(call->port));
+ 
+@@ -380,6 +381,8 @@ int afs_make_call(struct in_addr *addr,
+ 
+ error_do_abort:
+ 	rxrpc_kernel_abort_call(rxcall, RX_USER_ABORT);
++	while ((skb = skb_dequeue(&call->rx_queue)))
++		afs_free_skb(skb);
+ 	rxrpc_kernel_end_call(rxcall);
+ 	call->rxcall = NULL;
+ error_kill_call:
