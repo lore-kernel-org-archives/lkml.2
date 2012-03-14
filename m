@@ -1,54 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760896Ab2CNM31 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 08:29:27 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:31502 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753589Ab2CNM30 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 08:29:26 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=UTF-8
-Date: Wed, 14 Mar 2012 13:29:25 +0100
-From: Karol Lewandowski <k.lewandowsk@samsung.com>
-Subject: Re: [PATCH 3/3] max17042_battery: Make it possible to instantiate
- driver from DT
-In-reply-to: <20120313192233.GC2187@oksana.dev.rtsoft.ru>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        m.szyprowski@samsung.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Message-id: <4F608F25.9010001@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
-References: <1329933982-2529-1-git-send-email-k.lewandowsk@samsung.com>
- <1329933982-2529-4-git-send-email-k.lewandowsk@samsung.com>
- <20120313192233.GC2187@oksana.dev.rtsoft.ru>
+	id S1760920Ab2CNMaL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 08:30:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45294 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756084Ab2CNM3f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 08:29:35 -0400
+Subject: Re: [PATCH 06/35] Disintegrate asm/system.h for C6X [ver #2]
+From: Mark Salter <msalter@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: paul.gortmaker@windriver.com, hpa@zytor.com, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        arnd@arndb.de, linux-c6x-dev@linux-c6x.org
+Date: Wed, 14 Mar 2012 08:29:27 -0400
+In-Reply-To: <20120312233706.13888.5678.stgit@warthog.procyon.org.uk>
+References: <20120312233602.13888.27659.stgit@warthog.procyon.org.uk>
+	 <20120312233706.13888.5678.stgit@warthog.procyon.org.uk>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1331728169.2167.2.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.03.2012 20:22, Anton Vorontsov wrote:
-
-> On Wed, Feb 22, 2012 at 07:06:22PM +0100, Karol Lewandowski wrote:
->> Allow both device tree (preferred) and platform data-based driver
->> instantiation.
->>
->> Signed-off-by: Karol Lewandowski <k.lewandowsk@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
+On Mon, 2012-03-12 at 23:37 +0000, David Howells wrote:
+> Disintegrate asm/system.h for C6X.  Not compiled.  Appears to be missing
+> asm/atomic.h and asm/bug.h.
 > 
-> Thanks for the patch!
-> 
-> I applied the following version:
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> cc: linux-c6x-dev@linux-c6x.org
+> ---
 
-[..]
+I needed the following to clean up build errors from this:
 
-I've verified that these patches[1] work correctly on both DT and
-non-DT systems (samsung's nuri board).
+diff --git a/arch/c6x/include/asm/bug.h b/arch/c6x/include/asm/bug.h
+index 3df21c0..8d59933 100644
+--- a/arch/c6x/include/asm/bug.h
++++ b/arch/c6x/include/asm/bug.h
+@@ -11,11 +11,13 @@
+ #ifndef _ASM_C6X_BUG_H
+ #define _ASM_C6X_BUG_H
+ 
++#include <linux/linkage.h>
+ #include <asm-generic/bug.h>
+ 
+ struct pt_regs;
+ 
+ extern void die(char *str, struct pt_regs *fp, int nr);
+ extern asmlinkage int process_exception(struct pt_regs *regs);
++extern asmlinkage void enable_exception(void);
+ 
+ #endif /* _ASM_C6X_BUG_H */
+diff --git a/arch/c6x/include/asm/exec.h b/arch/c6x/include/asm/exec.h
+new file mode 100644
+index 0000000..646b5b7
+--- /dev/null
++++ b/arch/c6x/include/asm/exec.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_C6X_BARRIER_H
++#define _ASM_C6X_BARRIER_H
++
++#define arch_align_stack(x) (x)
++
++#endif
+diff --git a/arch/c6x/include/asm/special_insns.h b/arch/c6x/include/asm/special_insns.h
+index 3be40df..59672bc 100644
+--- a/arch/c6x/include/asm/special_insns.h
++++ b/arch/c6x/include/asm/special_insns.h
+@@ -48,7 +48,6 @@
+ /*
+  * Exception management
+  */
+-asmlinkage void enable_exception(void);
+ #define disable_exception()
+ #define get_except_type()        get_creg(EFR)
+ #define ack_exception(type)      set_creg(ECR, 1 << (type))
+diff --git a/arch/c6x/include/asm/switch_to.h b/arch/c6x/include/asm/switch_to.h
+index 83bb5a4..af6c71f 100644
+--- a/arch/c6x/include/asm/switch_to.h
++++ b/arch/c6x/include/asm/switch_to.h
+@@ -11,6 +11,8 @@
+ #ifndef _ASM_C6X_SWITCH_TO_H
+ #define _ASM_C6X_SWITCH_TO_H
+ 
++#include <linux/linkage.h>
++
+ #define prepare_to_switch()    do { } while (0)
+ 
+ struct task_struct;
 
-[1] Taken directly from your git tree.
 
-Thanks!
--- 
-Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
