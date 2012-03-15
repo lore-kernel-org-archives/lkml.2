@@ -1,45 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761940Ab2COOhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:37:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56865 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761902Ab2COOhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:37:00 -0400
-Message-ID: <4F61FE7E.9060600@zytor.com>
-Date: Thu, 15 Mar 2012 07:36:46 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120209 Thunderbird/10.0.1
+	id S1761470Ab2COOjd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:39:33 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60425 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753958Ab2COOja (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 10:39:30 -0400
+Message-ID: <4F61FF1D.5000502@samsung.com>
+Date: Thu, 15 Mar 2012 07:39:25 -0700
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: linux-kernel@vger.kernel.org, x86@kernel.org, matt.fleming@intel.com
-Subject: Re: [PATCH] EFI: Only set regions uncacheable if they support it
-References: <1331819798-1955-1-git-send-email-mjg@redhat.com> <4F61F5E6.8060509@zytor.com> <20120315140708.GA3395@srcf.ucam.org> <4F61FA14.6020203@zytor.com> <20120315142445.GA4357@srcf.ucam.org> <4F61FC8E.8070109@zytor.com> <20120315143308.GA4382@srcf.ucam.org>
-In-Reply-To: <20120315143308.GA4382@srcf.ucam.org>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joerg Roedel <joerg.roedel@amd.com>
+CC: Cho KyongHo <pullip.cho@samsung.com>, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>
+Subject: Re: [PATCH v12 2/3] ARM: EXYNOS: Change System MMU platform device
+ definitions
+References: <000201cd0286$2e6fbb40$8b4f31c0$%cho@samsung.com> <20120315111227.GA2384@amd.com>
+In-Reply-To: <20120315111227.GA2384@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 07:33 AM, Matthew Garrett wrote:
+On 03/15/12 04:12, Joerg Roedel wrote:
+> On Thu, Mar 15, 2012 at 05:32:39PM +0900, Cho KyongHo wrote:
+
+KyongHo, I looked at 'Cho KyongHo <pullip.cho ...>' and 'KyongHo Cho 
+<pullip.cho ...>' in this series, which one do you want to use?
+
+>> Handling System MMUs with an identifier is not flexible to manage
+>> System MMU platform devices because of the following reasons:
+>> 1. A device driver which needs to handle System MMU must know the ID.
+>> 2. A System MMU may not present in some implementations of Exynos family.
+>> 3. Handling System MMU with IOMMU API does not require an ID.
 >>
->> If we map it WB software can do speculative loads from that region which
->> would bring it into the cache.  If we map it UC we might have to CLFLUSH...
-> 
-> We've already mapped it at this point - we then go back and flag it UC 
-> if it's not writeback. The latter seems to be causing problems, I'm not 
-> sure we've seen any indication that the former is. And these regions are 
-> marked as runtime accessible, so per spec they do need to be mapped into 
-> address space...
-> 
+>> This patch is the result of removing ID of System MMUs.
+>> Instead, a device driver that needs to handle its System MMU must
+>> use IOMMU API while its descriptor of platform device is given.
+>>
+>> This patch also includes the following enhancements:
+>> - A System MMU device becomes a child if its power domain device.
+>> - clkdev
+>>
+>> Cc: Kukjin Kim<kgene.kim@samsung.com>
+>> Signed-off-by: KyongHo Cho<pullip.cho@samsung.com>
+>> ---
+>>   arch/arm/mach-exynos/Kconfig                    |   10 +-
+>>   arch/arm/mach-exynos/Makefile                   |    2 +-
+>>   arch/arm/mach-exynos/clock-exynos4.c            |   79 ++--
+>>   arch/arm/mach-exynos/clock-exynos4.h            |    2 +
+>>   arch/arm/mach-exynos/clock-exynos4210.c         |   11 +
+>>   arch/arm/mach-exynos/clock-exynos4212.c         |   28 ++-
+>>   arch/arm/mach-exynos/clock-exynos5.c            |   90 +++++
+>>   arch/arm/mach-exynos/dev-sysmmu.c               |  457 ++++++++++++----------
+>>   arch/arm/mach-exynos/include/mach/irqs.h        |   25 +-
+>>   arch/arm/mach-exynos/include/mach/map.h         |   38 ++
+>>   arch/arm/mach-exynos/include/mach/regs-clock.h  |    5 +
+>>   arch/arm/mach-exynos/include/mach/regs-sysmmu.h |   28 --
+>>   arch/arm/mach-exynos/include/mach/sysmmu.h      |   88 +++--
+>>   arch/arm/mach-exynos/mach-armlex4210.c          |    1 -
+>>   arch/arm/mach-exynos/mach-smdkv310.c            |    1 -
+>>   15 files changed, 529 insertions(+), 336 deletions(-)
+>>   delete mode 100644 arch/arm/mach-exynos/include/mach/regs-sysmmu.h
+>
+> This patch doesn't apply cleanly against upstream Linux (v3.3-rcX).
+> Please rebase to upstream and resend. The other 2 patches apply fine.
+>
 
-In other words, it's totally f*cked.  I guess at that point mapping it
-WB and letting the BIOS-configured MTRRs deal with the caching
-attributes is probably the right thing to do.
+Yes, as KyoungHo said, this has been created on top of Samsung tree 
+for-next because this touches many exynos stuff which has been changed 
+from Samsung tree for upcoming merge window. So if you're ok on this, 
+1st patch and this should be sent to upstream via samsung tree even 
+though I can't find any topic branch for this yet. And if you want topic 
+branch for your tree, let me know, I can provide it.
 
-I would still really like to understand why we're seeing #MCs... that's
-bothersome all by itself.
+Thanks.
 
-	-hpa
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
