@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760084Ab2COIJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 04:09:50 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:58229 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754195Ab2COIJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 04:09:44 -0400
-Message-ID: <4F61A3C6.8000607@bfs.de>
-Date: Thu, 15 Mar 2012 09:09:42 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
-MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Guan Xuetao <gxt@mprc.pku.edu.cn>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/unicore32/kernel/dma.c: eliminated unneeded free_irq
-References: <1331798498-13606-1-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1331798498-13606-1-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1760348Ab2COIRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 04:17:43 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59025 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755610Ab2COIRj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 04:17:39 -0400
+Date: Thu, 15 Mar 2012 19:17:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Mar 15
+Message-Id: <20120315191731.779ecc72e58f256d3817d117@canb.auug.org.au>
+In-Reply-To: <CAMuHMdUAOgU8k_icVfvqVFkDhAuH2CWV-DwuRr6K3f=4a-7Z5g@mail.gmail.com>
+References: <20120315185935.a0c475a30b2836765273a1e5@canb.auug.org.au>
+	<CAMuHMdUAOgU8k_icVfvqVFkDhAuH2CWV-DwuRr6K3f=4a-7Z5g@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__15_Mar_2012_19_17_31_+1100_yzW=Ze30G8wKikve"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__15_Mar_2012_19_17_31_+1100_yzW=Ze30G8wKikve
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Geert,
 
-Am 15.03.2012 09:01, schrieb Julia Lawall:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> The device remains functional if the second request_irq fails, so the first
-> one should not be freed.
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
-> diff --git a/arch/unicore32/kernel/dma.c b/arch/unicore32/kernel/dma.c
-> index ae441bc..6184ff2 100644
-> --- a/arch/unicore32/kernel/dma.c
-> +++ b/arch/unicore32/kernel/dma.c
-> @@ -172,8 +172,9 @@ int __init puv3_init_dma(void)
->  
->  	ret = request_irq(IRQ_DMAERR, dma_err_handler, 0, "DMAERR", NULL);
->  	if (ret) {
-> +		/* the device remains function if this fails, so don't free
-> +		   the previously allocated irq */
->  		printk(KERN_CRIT "Can't register IRQ for DMAERR\n");
-> -		free_irq(IRQ_DMA, "DMA");
->  		return ret;
->  	}
->  
+On Thu, 15 Mar 2012 09:02:01 +0100 Geert Uytterhoeven <geert@linux-m68k.org=
+> wrote:
+>
+> On Thu, Mar 15, 2012 at 08:59, Stephen Rothwell <sfr@canb.auug.org.au> wr=
+ote:
+> > News: the build system (see below) has had its toolchains for most
+> > architectures updated to gcc 4.6.3. =C2=A0People might like to check th=
+e build
+>=20
+> What does the "see below" (also in yesterday's report) refer to? I don't =
+see any
+> more toolchain info there.
 
-obviously we had the same idea ... i did not see that her it came in the moment i send my reply
-sorry for the noise,
-re,
- wh
+It refers to the paragraph:
 
+"Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds."
+
+further down in the email (i.e. "the build system").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__15_Mar_2012_19_17_31_+1100_yzW=Ze30G8wKikve
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPYaWbAAoJEECxmPOUX5FEpnQP/3dhxbKiB3xewKRZRdZrOkQ7
+44ibjW+GMr5r6zVFB++JbvxeuYk35/NpvjoUzha6+TgwJsReWS2+E95r+UhUOkfx
+XSyIY+RerYQnHlWMS/NHGwjbQ++ThDQHzTm87OurIPy/3X1vAlWJ+8yqKh4hvVIp
+U65EbGHNqK6oeRfy04klUb1c5olOwKvJz1LdxxrOqrYWGQrXiMtu1ejQPhB/Yal/
+tEzcLE9lxWAicBdyBsdDvomdxHjIGn+cG5q8TFF2S+5JCgBxyDkMS4uMbM55GjJc
+crbmoprmNOKmFMVCCV7CXEqoDquJvsZ8iR/w7AMv8iylj1NurXAjYU8U/SqIVhM8
+YlX0Pytdl6z55kRoE+OvblqBpIs2dAfBzVP6l/x5kxsqiRY81ln/wENdX61nzajA
+AueEQTyhp8XkSxHwyfoEtilIrJ82G0UK3ad5mH1lvddZmUrtJC9V8KLd1N37Gecb
+ZWrSDTwFnAegrhM0EwQdU2H3vsCcYWSh0oiTcclN+fLraHYJP59a+XfcqFEnn/1o
+IJ8eLRbU+Ste8GwTyxawGTSdZG73t6Qv0VoQ+RFv+skvkBMaS4Vc9FzFsf6Nf4PX
+CAdDd5NN+0gADt6xiy2KFS6bli4GvGaxrEGX9HCMajysRWFLjwWPr0RZULTB3NyG
+5qAW4oQ8f0dpkSl/xdsj
+=KgrY
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__15_Mar_2012_19_17_31_+1100_yzW=Ze30G8wKikve--
