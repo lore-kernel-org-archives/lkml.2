@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031439Ab2COBBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 21:01:53 -0400
-Received: from mprc.pku.edu.cn ([162.105.203.9]:42956 "EHLO mprc.pku.edu.cn"
+	id S1031475Ab2COBCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 21:02:43 -0400
+Received: from plane.gmane.org ([80.91.229.3]:46180 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965275Ab2COBBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 21:01:51 -0400
-Message-ID: <1331773284.2389.61.camel@epip-laptop>
-Subject: Re: [PATCH 7/7] arch/unicore32/kernel/dma.c: ensure arguments to
- request_irq and free_irq are compatible
-From: Guan Xuetao <gxt@mprc.pku.edu.cn>
-Reply-To: gxt@mprc.pku.edu.cn
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 15 Mar 2012 09:01:24 +0800
-In-Reply-To: <alpine.DEB.2.02.1203140957020.2146@localhost6.localdomain6>
-References: <1331494587-12196-1-git-send-email-Julia.Lawall@lip6.fr>
-	 <1331494587-12196-8-git-send-email-Julia.Lawall@lip6.fr>
-	 <1331513926.2048.58.camel@epip-laptop>
-	 <alpine.DEB.2.02.1203120625570.2066@localhost6.localdomain6>
-	 <1331622633.2048.87.camel@epip-laptop>
-	 <alpine.DEB.2.02.1203130921250.1974@localhost6.localdomain6>
-	 <1331712444.2389.36.camel@epip-laptop> <20120314081910.GC3163@mwanda>
-	 <1331714575.2389.47.camel@epip-laptop>
-	 <alpine.DEB.2.02.1203140957020.2146@localhost6.localdomain6>
-Organization: MPRC, PKU
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
+	id S1031451Ab2COBCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 21:02:38 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v4)
+Date: Thu, 15 Mar 2012 10:02:23 +0900
+Message-ID: <4F613F9F.6060700@lge.com>
+References: <1331746607-6706-1-git-send-email-asharma@fb.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 121.50.20.41
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+In-Reply-To: <1331746607-6706-1-git-send-email-asharma@fb.com>
+Cc: linux-perf-users@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-14 at 10:23 +0100, Julia Lawall wrote:
-> 
-> On Wed, 14 Mar 2012, Guan Xuetao wrote:
-> 
-> > On Wed, 2012-03-14 at 11:19 +0300, Dan Carpenter wrote:
-> >> On Wed, Mar 14, 2012 at 04:07:24PM +0800, Guan Xuetao wrote:
-> >>> puv3_init_dma() is called ONCE when initializing.
-> >>> In logical, if request_irq(IRQ_DMAERR, *) failed, free_irq(IRQ_DMA, *)
-> >>> is unnecessary, and dma device/driver can keep on working.
-> >>> The patch could be:
-> >>>   	ret = request_irq(IRQ_DMAERR, dma_err_handler, 0, "DMAERR", NULL);
-> >>>   	if (ret) {
-> >>>   		printk(KERN_CRIT "Can't register IRQ for DMAERR\n");
-> >>>  -		free_irq(IRQ_DMA, "DMA");
-> >>>   		return ret;
-> >>>   	}
-> >>
-> >> It seems like you should remove the error return as well?
-> >>
-> >> regards,
-> >> dan carpenter
-> >>
-> > The error return value will only generate an extra warning message, and
-> > have no side-effect.
-> 
-> The whole thing seems a little strange.  I guess your point is that the 
-> call site never looks at the return value?  Wouldn't it be better to make 
-> there be no return value in that case?  If there is a return value, some 
-> calling context in the future might take that into account and then the 
-> lack of a free_irq would be a memory leak.  Also if the first request_irq 
-> can never fail, perhaps that should be made explicit by not testing the 
-> return value?
-> 
-> julia
-This function is an init_call, not a probe function, and it is only
-called ONCE.
-The dma device here has two interrupts, one IRQ_DMA, another IRQ_DMAERR.
-And the device could work without IRQ_DMAERR.
-The return value should indicate whether there is something wrong during
-initialization, so the function needs return errno when any request_irq
-is failed.
-For the first request_irq, some code has prepared its resources before
-this call, so I suppose it successful. However, the return value must be
-tested.
+2012-03-15 2:36 AM, Arun Sharma wrote:
+> Each entry that used to get added once to the histogram, now is added
+> chain->nr times, each time with one less entry in the
+> callchain.
+>
+> This will result in a non-leaf function that appears in a lot of
+> samples to get a histogram entry with lots of hits.
+>
+> The user can then drill down into the callchains of functions that
+> have high inclusive times.
+>
+> Sample command lines:
+>
+> $ perf record -ag -- sleep 1
+> $ perf report -g graph,0.5,callee -n -s inclusive
+>
 
-Regards,
-Guan Xuetao
+Reviewed-by: Namhyung Kim <namhyung.kim@lge.com>
 
+Thanks, looks good to me now - although I still prefer make it a switch to 
+alter the behavior of the existing "symbol" sort order to do "inclusive" 
+calculation of its periods, but I can live with this :).
+
+
+> Signed-off-by: Arun Sharma <asharma@fb.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Namhyung Kim <namhyung.kim@lge.com>
+> Cc: Tom Zanussi <tzanussi@gmail.com>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-perf-users@vger.kernel.org
+> ---
+>   tools/perf/builtin-annotate.c |    2 +-
+>   tools/perf/builtin-diff.c     |    2 +-
+>   tools/perf/builtin-report.c   |   13 +++----
+>   tools/perf/builtin-top.c      |    2 +-
+>   tools/perf/util/callchain.c   |   15 ++++++++
+>   tools/perf/util/callchain.h   |    4 ++
+>   tools/perf/util/hist.c        |   80 +++++++++++++++++++++++++++++++++++++++-
+>   tools/perf/util/hist.h        |    4 ++-
+>   tools/perf/util/sort.c        |   14 +++++++
+>   tools/perf/util/sort.h        |    4 ++
+>   10 files changed, 126 insertions(+), 14 deletions(-)
+>
 
