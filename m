@@ -1,249 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759825Ab2COJ71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 05:59:27 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:57354 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751910Ab2COJ7Y convert rfc822-to-8bit (ORCPT
+	id S1757862Ab2COJ7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 05:59:55 -0400
+Received: from HSI-KBW-109-192-167-159.hsi6.kabel-badenwuerttemberg.de ([109.192.167.159]:57893
+	"EHLO rack0slot8.osadl.org" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752589Ab2COJ7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 05:59:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPM31RLCPid78829GnXz4fTq+-x19BMx=LPE3191=BRUtitiXw@mail.gmail.com>
-References: <20120202013825.20844.26081.stgit@kitami.mtv.corp.google.com>
-	<CAKfTPtDO-RfgP-W04EWGfR=QL46ffESLanM_5WtJ6+C6-2G8zA@mail.gmail.com>
-	<CAPM31RLCPid78829GnXz4fTq+-x19BMx=LPE3191=BRUtitiXw@mail.gmail.com>
-Date: Thu, 15 Mar 2012 10:59:24 +0100
-Message-ID: <CAKfTPtA3tkf=JNJd02nwuyGsKY5ufF0xeVTnz4-62dXi1TKUYQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/14] sched: entity load-tracking re-work
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Venki Pallipadi <venki@google.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ben Segall <bsegall@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 15 Mar 2012 05:59:53 -0400
+X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Mar 2012 05:59:53 EDT
+Message-Id: <20120315095357.607004685@osadl.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 15 Mar 2012 10:52:21 +0100
+From: Carsten Emde <C.Emde@osadl.org>
+To: David Airlie <airlied@linux.ie>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Keith Packard <keithp@keithp.com>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Carsten Emde <C.Emde@osadl.org>, DRI <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [V3 PATCH 2/2] drivers-gpu-drm-i915-quirk-backlight-inverted.patch
+References: <20120315095219.520461363@osadl.org>
+Content-Disposition: inline; filename=drivers-gpu-drm-i915-quirk-backlight-inverted.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 March 2012 16:59, Paul Turner <pjt@google.com> wrote:
->
-> On Mon, Mar 12, 2012 at 3:57 AM, Vincent Guittot
-> <vincent.guittot@linaro.org> wrote:
-> > Hi Paul,
-> >
-> > On 2 February 2012 02:38, Paul Turner <pjt@google.com> wrote:
-> >> Hi all,
-> >>
-> >> The attached series is an RFC on implementing load tracking at the entity
-> >> instead of cfs_rq level. This results in a bottom-up load-computation in which
-> >> entities contribute to their parents load, as opposed to the current top-down
-> >> where the parent averages its children.  In particular this allows us to
-> >> correctly migrate load with their accompanying entities and provides the
-> >> necessary inputs for intelligent load-balancing and power-management.
-> >>
-> >> It was previously well tested and stable, but that was on v3.1-; there's been
-> >> some fairly extensive changes in the wake-up path since so apologies if anything
-> >> was broken in the rebase.Note also, since this is also an RFC on the approach I
-> >> have not yet de-linted the various CONFIG combinations for introduced compiler
-> >> errors.
-> >>
-> >> Background:
-> >> ----------
-> >> We currently track the load average at the parenting cfs_rq level. We divide
-> >> execution into a series of consecutive "windows, w_i".  Within each we track:
-> >>  \Sum load_i * t_i where \Sum t_i = w and each load_i a disjoint load level.
-> >>
-> >> The load average is then \Sum w_j / 2^n.
-> >>
-> >> This this works reasonably well but there's a few problems
-> >> 1) Since decay occurs at boundary window boundary there are 'skews':
-> >> At a window boundary the 'foreground' time has a bias against the
-> >> time immediately preceding it (as a result of the folding division)
-> >> e.g.  __xx_|_yyyy___ vs __xx_yyyy_|___  (where '|' is a window boundary).
-> >>
-> >> The accounting here is 2x + 4y/2 or 2x + 4y, depending on which side of the
-> >> window your load lands on.
-> >>
-> >> 2) Everything within a window 'w' is accounted equally, we only fold at
-> >> the boundaries.  This actually means you can't set 'w' large enough to
-> >> really have meaningful coverage of the sched period without throwing
-> >> decay out the window.  But then with w/2 << sched_period (currently
-> >> w/2=5ms) the average ends up having fairly drastic swings even with
-> >> stable loads.
-> >>
-> >> (Note:  Before we even looked at migrating to per-entity tracking we evaluating
-> >> foreground window into the considered average until it was "complete", this
-> >> represented a measurable improvement in stability under predictable load.)
-> >>
-> >> 3) Since the load sum average is per-cfs_rq and not per-entity when a task
-> >> entity migrates we lose its contribution to load-sum and effectively double
-> >> count it while it former sum decays.
-> >>
-> >> New approach:
-> >> -------------
-> >> Instead of tracking load on a per-cfs_rq basis we do it on a per-sched_entity
-> >> basis.  The load sum for a cfs_rq is then just the sum of its childrens' load
-> >> averages.  The obvious immediately nice property is that when we migrate thread
-> >> A from cpu1-->cpu2, we carry its load with it; leaving the global load sum
-> >> unmodified.
-> >>
-> >> The 'windows' above are replaced with more fine-grained tracking, that is (for
-> >> an entity j):
-> >>
-> >> runnable_j = u_i * y^i , load_avg_j = runnable_j * weight_j [*]
-> >>
-> >> Where: u_i is the usage in the last i`th ~ms and y is chosen such that
-> >> y^~sched_period = 1/2 (we currently choose k=32).This means that load tracked 1
-> >> sched_period ago contributes about ~50% as current execution.
-> >
-> > We have a sched_period of 30ms for a 16 cores system but it's only 12
-> > ms on a dual core. Do you think that it's important to keep this rule
-> > (y^~sched_period = 1/2) whatever the number of core is ? The
-> > sched_period also increases with a large number of running thread
-> >
->
-> Yes both of these points are valid.
->
-> We could consider tuning it on demand, however, I'm not sure it's
-> required.  The only real requirement for stability here is that we
-> have a period that's typically larger than the scheduling quantum
-> (although, without being so large that decay is not meaningful!).
->
-> This does not hold in the opposite direction, that is, it's not a
-> requirement that we not span several quantums, only that we span at
-> least *one*.
->
-> We ran it across a variety of topologies (both large and small) in
-> LinSched and did not see any immediate ill effects.  I would suggest
-> we play this one by ear and see if a negative case arises.
->
-> >>
-> >> Now, the real challenge in tracking at an entity basis is handling blocked
-> >> entities.  Obviously runnable entities will be updated naturally as we iterate
-> >> through them but there could be O(many) blocked entities so we can't afford to
-> >> iterate through them and update their tracking.
-> >>
-> >
-> > I have run sysbench of my 32bits ARM platform. The results are available below:
-> >
-> > config 1 : v3.3-rc3 and CONFIG_FAIR_GROUP_SCHED not set
-> > config 2 : v3.3-rc3 and CONFIG_FAIR_GROUP_SCHED set
-> > config 3 : v3.3-rc3 with your patches and  CONFIG_FAIR_GROUP_SCHED not set
-> > config 4 : v3.3-rc3 with your patches and  CONFIG_FAIR_GROUP_SCHED set
-> >
-> > sysbench --test=cpu --num-threads=12 --max-time=10 run
-> >             total number of events
-> >             test1 test2 test3
-> > config1    336   336   338
-> > config2    336   337   338
-> > config3    336   338   336
-> > config4    336   338   337
-> >
-> > sysbench --test=threads --thread-locks=9 --num-threads=12 --max-time=10 run
-> >             total number of events
-> >             test1 test2 test3
-> > config1   5218 5228 5203
-> > config2   5204 5217 5251
-> > config3   5221 5219 5217
-> > config4   4859 4796 4836
-> >
-> >
-> > Whereas we have no difference for the cpu test (all the threads on in
-> > the run queue waiting for a core), we can see a decrease for the
-> > threads test. I'm wondering if it's linked to the fact that I have a
-> > 32bits machine doing 64bits division. Have you seen such kind of
-> > difference on a 64bits system ?
-> >
->
-> So I unfortunately do not have a (non-x86) 32-bit system to
-> meaningfully benchmark this on.  And yes, 32-bit was my only *real*
-> worry so I'm not completely shocked to see an initial regression here
-> :-(
->
-> With 32-bit performance in mind there are a few obvious things to
-> change in our runnable_sum accumulations (these can fit in 32-bit).
-> Once we grab those low hanging fruit I'm happy to work with you to see
-> what remains.  Do you have any that are externally accessible
-> per-chance or would you prefer several differently tuned patch-bombs?
-> :)
+Following the documentation of the Legacy Backlight Brightness (LBB)
+Register in the configuration space of some Intel PCI graphics adapters,
+setting the LBB register with the value 0x0 causes the backlight to be
+turned off, and 0xFF causes the backlight to be set to 100% intensity
+(http://download.intel.com/embedded/processors/Whitepaper/324567.pdf).
+The Acer Aspire 5734Z, however, turns the backlight off at 0xFF and sets
+it to maximum intensity at 0. In consequence, the screen of this systems
+becomes dark at an early boot stage which makes it unusable. The same
+inversion applies to the BLC_PWM_CTL I915 register. This problem was
+introduced in kernel version 2.6.38 when the PCI device of this system
+was first supported by the i915 KMS module.
 
-I will be pleased to help you on (non-x86) 32bits system.
-Let me check how we can do for such tests.
+This patch adds a quirk to invert the sense of the brightness variable
+in case an Acer Aspire 5734Z is encountered.
 
->
->
->
-> > Regards,
-> > Vincent
-> >
-> >> That our decay for a unit period is exponential introduces a particularly nice
-> >> property here:
-> >> We can separate the contributed load on a cfs_rq into blocked and runnable.
-> >> Runnable load is just the sum of all load_avg_j above, maintained by the
-> >> entities themselves as they run and self update (when they update their
-> >> load_avg they update the cumulative sum also).
-> >>
-> >> Blocked load then looks like:
-> >>  load_avg_j = weight_k * \Sum u[k]_n * y^n
-> >>
-> >> To account an entirely idle period we then only need to multiply by y.
-> >>
-> >> This ends up being orders of magnitude more accurate than the current
-> >> tracking schema, even with the old shares_window massively dilated to
-> >> better capture a stable load-state.  It's also obviously stable under
-> >> migration.
-> >>
-> >> As referenced above this also allows us to potentially improve decisions within
-> >> the load-balancer, for both distribution and power-management.
-> >>
-> >> Exmaple: consider 1x80% task  and 2x40% tasks on a 2-core machine.  It's
-> >> currently a bit of a gamble as to whether you get an {AB, B} or {A,
-> >> BB} split since they have equal weight (assume 1024).  With per-task
-> >> tracking we can actually consider them at their contributed weight and
-> >> see a stable ~{800,{400, 400}} load-split.  Likewise within balance_tasks we can
-> >> consider the load migrated to be that actually contributed.
-> >>
-> >> Thanks,
-> >>
-> >> - Paul
-> >>
-> >>
-> >> ---
-> >>
-> >> Ben Segall (1):
-> >>      sched: maintain per-rq runnable averages
-> >>
-> >> Paul Turner (13):
-> >>      sched: track the runnable average on a per-task entitiy basis
-> >>      sched: aggregate load contributed by task entities on parenting cfs_rq
-> >>      sched: maintain the load contribution of blocked entities
-> >>      sched: account for blocked load waking back up
-> >>      sched: aggregate total task_group load
-> >>      sched: compute load contribution by a group entity
-> >>      sched: normalize tg load contributions against runnable time
-> >>      sched: maintain runnable averages across throttled periods
-> >>      sched: replace update_shares weight distribution with per-entity computation
-> >>      sched: refactor update_shares_cpu() -> update_blocked_avgs()
-> >>      sched: update_cfs_shares at period edge
-> >>      sched: make __update_entity_runnable_avg() fast
-> >>      sched: implement usage tracking
-> >>
-> >>
-> >>  include/linux/sched.h |   11 +
-> >>  kernel/sched/core.c   |    3
-> >>  kernel/sched/debug.c  |   37 ++-
-> >>  kernel/sched/fair.c   |  714 ++++++++++++++++++++++++++++++++++++++-----------
-> >>  kernel/sched/sched.h  |   29 +-
-> >>  5 files changed, 611 insertions(+), 183 deletions(-)
-> >>
-> >>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+
+---
+ drivers/gpu/drm/i915/i915_drv.h      |    1 +
+ drivers/gpu/drm/i915/intel_display.c |   12 ++++++++++++
+ drivers/gpu/drm/i915/intel_panel.c   |   10 ++++++++++
+ 3 files changed, 23 insertions(+)
+
+Index: linux-3.3-rc7/drivers/gpu/drm/i915/i915_drv.h
+===================================================================
+--- linux-3.3-rc7.orig/drivers/gpu/drm/i915/i915_drv.h
++++ linux-3.3-rc7/drivers/gpu/drm/i915/i915_drv.h
+@@ -275,6 +275,7 @@ enum intel_pch {
+ 
+ #define QUIRK_PIPEA_FORCE (1<<0)
+ #define QUIRK_LVDS_SSC_DISABLE (1<<1)
++#define QUIRK_BRIGHTNESS_INVERTED (1<<2)
+ 
+ struct intel_fbdev;
+ struct intel_fbc_work;
+Index: linux-3.3-rc7/drivers/gpu/drm/i915/intel_display.c
+===================================================================
+--- linux-3.3-rc7.orig/drivers/gpu/drm/i915/intel_display.c
++++ linux-3.3-rc7/drivers/gpu/drm/i915/intel_display.c
+@@ -8950,6 +8950,15 @@ static void quirk_ssc_force_disable(stru
+ 	dev_priv->quirks |= QUIRK_LVDS_SSC_DISABLE;
+ }
+ 
++/*
++ * At least one machine (Acer Aspire 5734Z) has inverted backlight brightness
++ */
++static void quirk_brightness_inverted(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	dev_priv->quirks |= QUIRK_BRIGHTNESS_INVERTED;
++}
++
+ struct intel_quirk {
+ 	int device;
+ 	int subsystem_vendor;
+@@ -8984,6 +8993,9 @@ struct intel_quirk intel_quirks[] = {
+ 
+ 	/* Sony Vaio Y cannot use SSC on LVDS */
+ 	{ 0x0046, 0x104d, 0x9076, quirk_ssc_force_disable },
++
++	/* Acer Aspire 5734Z has inverted backlight brightness */
++	{ 0x2a42, 0x1025, 0x0459, quirk_brightness_inverted },
+ };
+ 
+ static void intel_init_quirks(struct drm_device *dev)
+Index: linux-3.3-rc7/drivers/gpu/drm/i915/intel_panel.c
+===================================================================
+--- linux-3.3-rc7.orig/drivers/gpu/drm/i915/intel_panel.c
++++ linux-3.3-rc7/drivers/gpu/drm/i915/intel_panel.c
+@@ -28,6 +28,7 @@
+  *      Chris Wilson <chris@chris-wilson.co.uk>
+  */
+ 
++#include <linux/moduleparam.h>
+ #include "intel_drv.h"
+ 
+ #define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
+@@ -212,6 +213,10 @@ u32 intel_panel_get_backlight(struct drm
+ 	}
+ 
+ 	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
++	if (dev_priv->quirks & QUIRK_BRIGHTNESS_INVERTED) {
++		u32 max = intel_panel_get_max_backlight(dev);
++		val = max - val;
++	}
+ 	return val;
+ }
+ 
+@@ -229,6 +234,11 @@ static void intel_panel_actually_set_bac
+ 
+ 	DRM_DEBUG_DRIVER("set backlight PWM = %d\n", level);
+ 
++	if (dev_priv->quirks & QUIRK_BRIGHTNESS_INVERTED) {
++		u32 max = intel_panel_get_max_backlight(dev);
++		level = max - level;
++	}
++
+ 	if (HAS_PCH_SPLIT(dev))
+ 		return intel_pch_panel_set_backlight(dev, level);
+ 
+
