@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759633Ab2CON5W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 09:57:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756335Ab2CON5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 09:57:21 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: hpa@zytor.com, x86@kernel.org, matt.fleming@intel.com,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH] EFI: Only set regions uncacheable if they support it
-Date: Thu, 15 Mar 2012 09:56:38 -0400
-Message-Id: <1331819798-1955-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.41.104
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1760549Ab2CON5w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 09:57:52 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36005 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759939Ab2CON5t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 09:57:49 -0400
+Message-ID: <4F61F551.5010608@gmail.com>
+Date: Thu, 15 Mar 2012 06:57:37 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+MIME-Version: 1.0
+To: Felix Fietkau <nbd@openwrt.org>
+CC: Mohammed Shafi <shafi.wireless@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux-netdev <netdev@vger.kernel.org>,
+        Linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: ath: DMA failed to stop in 10 ms AR_CR=0x00000024 AR_DIAG_SW=0x02000020
+ DMADBG_7=0x00008040
+References: <4F576FD5.2050208@gmail.com> <CAD2nsn23UqshHz1ZUn8bHN0rWyOMbBHhn9V8pmCc4_aT_uGYaw@mail.gmail.com> <4F577D9B.7020402@gmail.com> <4F579A88.6030503@openwrt.org>
+In-Reply-To: <4F579A88.6030503@openwrt.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The EFI memory region attributes field indicates whether the region can
-be mapped with various cache attributes. Our current implementation always
-marks regions uncacheable if they don't have the writeback support flag.
-This causes us to mark some regions uncacheable even if they don't
-indicate support for being uncacheable, triggering a clflush that may cause
-an MCE. Ensure we only do this for regions which support it.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- arch/x86/platform/efi/efi.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+>> ok! I have set that on the machine.. will see if I get this message in
+>> the upcoming weeks.
+> Also, please try this patch with powersave enabled:
+> http://nbd.name/ps-fix.patch
+>
+> - Felix
+>
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 4cf9bd0..12f78e1 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -682,7 +682,8 @@ void __init efi_enter_virtual_mode(void)
- 			continue;
- 		}
- 
--		if (!(md->attribute & EFI_MEMORY_WB)) {
-+		if (md->attribute & EFI_MEMORY_UC &&
-+		    !(md->attribute & EFI_MEMORY_WB)) {
- 			addr = md->virt_addr;
- 			npages = md->num_pages;
- 			memrange_efi_to_native(&addr, &npages);
--- 
-1.7.7.6
+I did have ps-fix patch running, but removed it in the kernel due to not 
+being able to connect once I wakeup from suspend. anyway I have enable 
+debugging for the wireless(hopefully) and was able to trigger this after 
+a fresh build of the kernel last night(git clean -fx and all)
 
+the message I have in dmesg is:
+
+[ 3348.274932] ath: Failed to stop TX DMA, queues=0x004!
+[ 3348.292637] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
+AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
+[ 3348.292643] ath: Could not stop RX, we could be confusing the DMA 
+engine when we start RX up
+[ 3348.292648] ------------[ cut here ]------------
+[ 3348.292662] WARNING: at drivers/net/wireless/ath/ath9k/recv.c:537 
+ath_stoprecv+0xed/0x100 [ath9k]()
+[ 3348.292666] Hardware name: 0914
+[ 3348.292669] Modules linked in: dm_crypt ipt_REJECT ipt_LOG xt_limit 
+xt_tcpudp xt_addrtype joydev xt_state arc4 snd_hda_codec_hdmi 
+snd_hda_codec_conexant ath9k snd_hda_intel snd_hda_codec snd_hwdep 
+mac80211 snd_pcm snd_seq_midi nf_conntrack_netbios_ns 
+nf_conntrack_broadcast nf_nat_ftp nf_nat snd_rawmidi ath9k_common 
+nf_conntrack_ipv4 uvcvideo nf_defrag_ipv4 ath9k_hw snd_seq_midi_event 
+nf_conntrack_ftp nf_conntrack snd_seq snd_timer snd_seq_device ath 
+videobuf2_core videodev cfg80211 psmouse iptable_filter ip_tables 
+videobuf2_vmalloc videobuf2_memops name_laptop intel_ips sparse_keymap 
+serio_raw snd lp parport x_tables soundcore snd_page_alloc i915 
+drm_kms_helper drm i2c_algo_bit intel_agp intel_gtt usb_storage agpgart 
+video r8169 uas
+[ 3348.292786] Pid: 5972, comm: kworker/u:24 Not tainted 
+3.3.0-rc7-00048-g762ad8a #1
+[ 3348.292790] Call Trace:
+[ 3348.292804]  [<c1046f32>] warn_slowpath_common+0x72/0xa0
+[ 3348.292816]  [<f8f528bd>] ? ath_stoprecv+0xed/0x100 [ath9k]
+[ 3348.292826]  [<f8f528bd>] ? ath_stoprecv+0xed/0x100 [ath9k]
+[ 3348.292832]  [<c1046f82>] warn_slowpath_null+0x22/0x30
+[ 3348.292842]  [<f8f528bd>] ath_stoprecv+0xed/0x100 [ath9k]
+[ 3348.292855]  [<f8f4e35d>] ath_prepare_reset+0x5d/0xd0 [ath9k]
+[ 3348.292865]  [<f8f4f92c>] ath_reset_internal+0x7c/0x160 [ath9k]
+[ 3348.292875]  [<c10a862b>] ? trace_hardirqs_on+0xb/0x10
+[ 3348.292885]  [<f8f4fa35>] ath_reset+0x25/0xb0 [ath9k]
+[ 3348.292891]  [<c10a8594>] ? trace_hardirqs_on_caller+0xf4/0x180
+[ 3348.292901]  [<f8f51377>] ath_reset_work+0x17/0x20 [ath9k]
+[ 3348.292909]  [<c10663d6>] process_one_work+0x166/0x5b0
+[ 3348.292916]  [<c1066362>] ? process_one_work+0xf2/0x5b0
+[ 3348.292924]  [<c12ca72b>] ? do_raw_spin_lock+0x3b/0xf0
+[ 3348.292935]  [<f8f51360>] ? ath_isr+0x270/0x270 [ath9k]
+[ 3348.292944]  [<c1066b34>] worker_thread+0x124/0x2c0
+[ 3348.292950]  [<c1066a10>] ? rescuer_thread+0x1c0/0x1c0
+[ 3348.292957]  [<c106b77d>] kthread+0x7d/0x90
+[ 3348.292963]  [<c106b700>] ? __init_kthread_worker+0x60/0x60
+[ 3348.292972]  [<c158ed42>] kernel_thread_helper+0x6/0x10
+[ 3348.292976] ---[ end trace ced0f48896d487b2 ]---
+[ 3349.735411] ath: Failed to stop TX DMA, queues=0x005!
+[ 3349.753028] ath: DMA failed to stop in 10 ms AR_CR=0x00000024 
+AR_DIAG_SW=0x02000020 DMADBG_7=0x00006040
+[ 3349.753034] ath: Could not stop RX, we could be confusing the DMA 
+engine when we start RX up
+
+
+full dmesg is here;
+http://fpaste.org/YhqT/
+
+hope this helps with finding the bug!
+
+Justin P. Mattock
