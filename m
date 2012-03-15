@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761452Ab2COSSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 14:18:47 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:51448 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760780Ab2COSS1 (ORCPT
+	id S1761547Ab2COSTC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 14:19:02 -0400
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:39076 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761328Ab2COSSp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 14:18:27 -0400
+	Thu, 15 Mar 2012 14:18:45 -0400
 From: Aneesh V <aneesh@ti.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
         Aneesh V <aneesh@ti.com>, Greg KH <greg@kroah.com>
-Subject: [PATCH v2 3/7] misc: emif: add basic infrastructure for EMIF driver
-Date: Thu, 15 Mar 2012 23:47:33 +0530
-Message-Id: <1331835457-5390-4-git-send-email-aneesh@ti.com>
+Subject: [PATCH v2 6/7] misc: emif: add one-time settings
+Date: Thu, 15 Mar 2012 23:47:36 +0530
+Message-Id: <1331835457-5390-7-git-send-email-aneesh@ti.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1331835457-5390-1-git-send-email-aneesh@ti.com>
 References: <1331835457-5390-1-git-send-email-aneesh@ti.com>
@@ -21,592 +21,207 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EMIF is an SDRAM controller used in various Texas Instruments
-SoCs. EMIF supports, based on its revision, one or more of
-LPDDR2/DDR2/DDR3 protocols.
-
-Add the basic infrastructure for EMIF driver that includes
-driver registration, probe, parsing of platform data etc.
+Add settings that are not dependent on frequency
+or any other transient parameters. This includes
+- power managment control init
+- impedence calibration control
+- frequency independent phy configuration registers
+- initialization of temperature polling
 
 Cc: Greg KH <greg@kroah.com>
 Signed-off-by: Aneesh V <aneesh@ti.com>
 ---
 v2:
 - replaced __init with __init_or_module
+- fixed bug in the implementation of i728 errata workaround
 
 v1:
-- Removed emif_cleanup() function and instead used
-  devm_* variant of APIs for resource allocations
-- Split include/linux/emif.h into two parts. The first
-  part now becomes include/linux/platform_data/emif_plat.h
-  and the other part is now merged in drivers/misc/emif.h
-- Made error messages more verbose
-- Corrected copyright year
-- Fixed other coding style comments
-- Minor adjustments to patch organization. Moved
-  some definitions to a subsequent patch that uses
-  them
-- Added a list a of devices. This is needed for errata
-  i728 workaround and for the new locking scheme
-- Added documentation for driver
+- Improved commit log
+- Changes for errata i728 workaround
 ---
- Documentation/misc-devices/ti-emif.txt  |   58 ++++++
- drivers/misc/Kconfig                    |   12 ++
- drivers/misc/Makefile                   |    1 +
- drivers/misc/emif.c                     |  289 +++++++++++++++++++++++++++++++
- drivers/misc/emif.h                     |    7 +
- include/linux/platform_data/emif_plat.h |  128 ++++++++++++++
- 6 files changed, 495 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/misc-devices/ti-emif.txt
- create mode 100644 drivers/misc/emif.c
- create mode 100644 include/linux/platform_data/emif_plat.h
+ drivers/misc/emif.c |  148 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 148 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/misc-devices/ti-emif.txt b/Documentation/misc-devices/ti-emif.txt
-new file mode 100644
-index 0000000..a9238c1
---- /dev/null
-+++ b/Documentation/misc-devices/ti-emif.txt
-@@ -0,0 +1,58 @@
-+TI EMIF SDRAM Controller Driver:
-+
-+Author
-+========
-+Aneesh V <aneesh@ti.com>
-+
-+Location
-+============
-+driver/misc/emif.c
-+
-+Supported SoCs:
-+===================
-+TI OMAP44xx
-+TI OMAP54xx
-+
-+Menuconfig option:
-+==========================
-+Device Drivers
-+	Misc devices
-+		Texas Instruments EMIF driver
-+
-+Description
-+===========
-+This driver is for the EMIF module available in Texas Instruments
-+SoCs. EMIF is an SDRAM controller that, based on its revision,
-+supports one or more of DDR2, DDR3, and LPDDR2 SDRAM protocols.
-+This driver takes care of only LPDDR2 memories presently. The
-+functions of the driver includes re-configuring AC timing
-+parameters and other settings during frequency, voltage and
-+temperature changes
-+
-+Platform Data (see include/linux/platform_data/emif_plat.h):
-+=====================================================================
-+DDR device details and other board dependent and SoC dependent
-+information can be passed through platform data (struct emif_platform_data)
-+- DDR device details: 'struct ddr_device_info'
-+- Device AC timings: 'struct lpddr2_timings' and 'struct lpddr2_min_tck'
-+- Custom configurations: customizable policy options through
-+  'struct emif_custom_configs'
-+- IP revision
-+- PHY type
-+
-+Interface to the external world:
-+================================
-+EMIF driver registers notifiers for voltage and frequency changes
-+affecting EMIF and takes appropriate actions when these are invoked.
-+- freq_pre_notify_handling()
-+- freq_post_notify_handling()
-+- volt_notify_handling()
-+
-+Debugfs
-+========
-+The driver creates two debugfs entries per device.
-+- regcache_dump : dump of register values calculated and saved for all
-+  frequencies used so far.
-+- mr4 : last polled value of MR4 register in the LPDDR2 device. MR4
-+  indicates the current temperature level of the device.
-+
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index c779509..847a936 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -441,6 +441,18 @@ config VMWARE_BALLOON
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called vmw_balloon.
- 
-+config TI_EMIF
-+	tristate "Texas Instruments EMIF driver"
-+	select DDR
-+	help
-+	  This driver is for the EMIF module available in Texas Instruments
-+	  SoCs. EMIF is an SDRAM controller that, based on its revision,
-+	  supports one or more of DDR2, DDR3, and LPDDR2 SDRAM protocols.
-+	  This driver takes care of only LPDDR2 memories presently. The
-+	  functions of the driver includes re-configuring AC timing
-+	  parameters and other settings during frequency, voltage and
-+	  temperature changes
-+
- config ARM_CHARLCD
- 	bool "ARM Ltd. Character LCD Driver"
- 	depends on PLAT_VERSATILE
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 3e1d801..75ab920 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -36,6 +36,7 @@ obj-$(CONFIG_TI_DAC7512)	+= ti_dac7512.o
- obj-$(CONFIG_C2PORT)		+= c2port/
- obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
- obj-$(CONFIG_HMC6352)		+= hmc6352.o
-+obj-$(CONFIG_TI_EMIF)		+= emif.o
- obj-y				+= eeprom/
- obj-y				+= cb710/
- obj-$(CONFIG_SPEAR13XX_PCIE_GADGET)	+= spear13xx_pcie_gadget.o
 diff --git a/drivers/misc/emif.c b/drivers/misc/emif.c
-new file mode 100644
-index 0000000..f864640
---- /dev/null
+index 52048f4..270a0e4 100644
+--- a/drivers/misc/emif.c
 +++ b/drivers/misc/emif.c
-@@ -0,0 +1,289 @@
-+/*
-+ * EMIF driver
-+ *
-+ * Copyright (C) 2012 Texas Instruments, Inc.
-+ *
-+ * Aneesh V <aneesh@ti.com>
-+ * Santosh Shilimkar <santosh.shilimkar@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/kernel.h>
-+#include <linux/reboot.h>
-+#include <linux/platform_data/emif_plat.h>
-+#include <linux/io.h>
-+#include <linux/device.h>
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
-+#include <linux/slab.h>
-+#include <linux/seq_file.h>
-+#include <linux/module.h>
-+#include <linux/list.h>
-+#include <misc/jedec_ddr.h>
-+#include "emif.h"
-+
-+/**
-+ * struct emif_data - Per device static data for driver's use
-+ * @duplicate:			Whether the DDR devices attached to this EMIF
-+ *				instance are exactly same as that on EMIF1. In
-+ *				this case we can save some memory and processing
-+ * @temperature_level:		Maximum temperature of LPDDR2 devices attached
-+ *				to this EMIF - read from MR4 register. If there
-+ *				are two devices attached to this EMIF, this
-+ *				value is the maximum of the two temperature
-+ *				levels.
-+ * @node:			node in the device list
-+ * @base:			base address of memory-mapped IO registers.
-+ * @dev:			device pointer.
-+ * @plat_data:			Pointer to saved platform data.
-+ */
-+struct emif_data {
-+	u8				duplicate;
-+	u8				temperature_level;
-+	struct list_head		node;
-+	void __iomem			*base;
-+	struct device			*dev;
-+	struct emif_platform_data	*plat_data;
-+};
-+
-+static struct emif_data *emif1;
-+static LIST_HEAD(device_list);
-+
-+static void get_default_timings(struct emif_data *emif)
-+{
-+	struct emif_platform_data *pd = emif->plat_data;
-+
-+	pd->timings		= lpddr2_jedec_timings;
-+	pd->timings_arr_size	= ARRAY_SIZE(lpddr2_jedec_timings);
-+
-+	dev_warn(emif->dev, "%s: using default timings\n", __func__);
-+}
-+
-+static int is_dev_data_valid(u32 type, u32 density, u32 io_width, u32 phy_type,
-+		u32 ip_rev, struct device *dev)
-+{
-+	int valid;
-+
-+	valid = (type == DDR_TYPE_LPDDR2_S4 ||
-+			type == DDR_TYPE_LPDDR2_S2)
-+		&& (density >= DDR_DENSITY_64Mb
-+			&& density <= DDR_DENSITY_8Gb)
-+		&& (io_width >= DDR_IO_WIDTH_8
-+			&& io_width <= DDR_IO_WIDTH_32);
-+
-+	/* Combinations of EMIF and PHY revisions that we support today */
-+	switch (ip_rev) {
-+	case EMIF_4D:
-+		valid = valid && (phy_type == EMIF_PHY_TYPE_ATTILAPHY);
-+		break;
-+	case EMIF_4D5:
-+		valid = valid && (phy_type == EMIF_PHY_TYPE_INTELLIPHY);
-+		break;
-+	default:
-+		valid = 0;
-+	}
-+
-+	if (!valid)
-+		dev_err(dev, "%s: invalid DDR details\n", __func__);
-+	return valid;
-+}
-+
-+static int is_custom_config_valid(struct emif_custom_configs *cust_cfgs,
-+		struct device *dev)
-+{
-+	int valid = 1;
-+
-+	if ((cust_cfgs->mask & EMIF_CUSTOM_CONFIG_LPMODE) &&
-+		(cust_cfgs->lpmode != EMIF_LP_MODE_DISABLE))
-+		valid = cust_cfgs->lpmode_freq_threshold &&
-+			cust_cfgs->lpmode_timeout_performance &&
-+			cust_cfgs->lpmode_timeout_power;
-+
-+	if (cust_cfgs->mask & EMIF_CUSTOM_CONFIG_TEMP_ALERT_POLL_INTERVAL)
-+		valid = valid && cust_cfgs->temp_alert_poll_interval_ms;
-+
-+	if (!valid)
-+		dev_warn(dev, "%s: invalid custom configs\n", __func__);
-+
-+	return valid;
-+}
-+
-+static struct emif_data *__init_or_module get_device_details(
-+		struct platform_device *pdev)
-+{
-+	u32				size;
-+	struct emif_data		*emif = NULL;
-+	struct ddr_device_info		*dev_info;
-+	struct emif_custom_configs	*cust_cfgs;
-+	struct emif_platform_data	*pd;
-+	struct device			*dev;
-+	void				*temp;
-+
-+	pd = pdev->dev.platform_data;
-+	dev = &pdev->dev;
-+
-+	if (!(pd && pd->device_info && is_dev_data_valid(pd->device_info->type,
-+			pd->device_info->density, pd->device_info->io_width,
-+			pd->phy_type, pd->ip_rev, dev))) {
-+		dev_err(dev, "%s: invalid device data\n", __func__);
-+		goto error;
-+	}
-+
-+	emif	= devm_kzalloc(dev, sizeof(*emif), GFP_KERNEL);
-+	temp	= devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
-+	dev_info = devm_kzalloc(dev, sizeof(*dev_info), GFP_KERNEL);
-+
-+	if (!emif || !pd || !dev_info) {
-+		dev_err(dev, "%s:%d: allocation error\n", __func__, __LINE__);
-+		goto error;
-+	}
-+
-+	memcpy(temp, pd, sizeof(*pd));
-+	pd = temp;
-+	memcpy(dev_info, pd->device_info, sizeof(*dev_info));
-+
-+	pd->device_info		= dev_info;
-+	emif->plat_data		= pd;
-+	emif->dev		= dev;
-+	emif->temperature_level	= SDRAM_TEMP_NOMINAL;
-+
-+	/*
-+	 * For EMIF instances other than EMIF1 see if the devices connected
-+	 * are exactly same as on EMIF1(which is typically the case). If so,
-+	 * mark it as a duplicate of EMIF1 and skip copying timings data.
-+	 * This will save some memory and some computation later.
-+	 */
-+	emif->duplicate = emif1 && (memcmp(dev_info,
-+		emif1->plat_data->device_info,
-+		sizeof(struct ddr_device_info)) == 0);
-+
-+	if (emif->duplicate) {
-+		pd->timings = NULL;
-+		pd->min_tck = NULL;
-+		goto out;
-+	} else if (emif1) {
-+		dev_warn(emif->dev, "%s: Non-symmetric DDR geometry\n",
-+			__func__);
-+	}
-+
-+	/*
-+	 * Copy custom configs - ignore allocation error, if any, as
-+	 * custom_configs is not very critical
-+	 */
-+	cust_cfgs = pd->custom_configs;
-+	if (cust_cfgs && is_custom_config_valid(cust_cfgs, dev)) {
-+		temp = devm_kzalloc(dev, sizeof(*cust_cfgs), GFP_KERNEL);
-+		if (temp)
-+			memcpy(temp, cust_cfgs, sizeof(*cust_cfgs));
-+		else
-+			dev_warn(dev, "%s:%d: allocation error\n", __func__,
-+				__LINE__);
-+		pd->custom_configs = temp;
-+	}
-+
-+	/*
-+	 * Copy timings and min-tck values from platform data. If it is not
-+	 * available or if memory allocation fails, use JEDEC defaults
-+	 */
-+	size = sizeof(struct lpddr2_timings) * pd->timings_arr_size;
-+	if (pd->timings) {
-+		temp = devm_kzalloc(dev, size, GFP_KERNEL);
-+		if (temp) {
-+			memcpy(temp, pd->timings, sizeof(*pd->timings));
-+			pd->timings = temp;
-+		} else {
-+			dev_warn(dev, "%s:%d: allocation error\n", __func__,
-+				__LINE__);
-+			get_default_timings(emif);
-+		}
-+	} else {
-+		get_default_timings(emif);
-+	}
-+
-+	if (pd->min_tck) {
-+		temp = devm_kzalloc(dev, sizeof(*pd->min_tck), GFP_KERNEL);
-+		if (temp) {
-+			memcpy(temp, pd->min_tck, sizeof(*pd->min_tck));
-+			pd->min_tck = temp;
-+		} else {
-+			dev_warn(dev, "%s:%d: allocation error\n", __func__,
-+				__LINE__);
-+			pd->min_tck = &lpddr2_jedec_min_tck;
-+		}
-+	} else {
-+		pd->min_tck = &lpddr2_jedec_min_tck;
-+	}
-+
-+out:
-+	return emif;
-+
-+error:
-+	return NULL;
-+}
-+
-+static int __init_or_module emif_probe(struct platform_device *pdev)
-+{
-+	struct emif_data	*emif;
-+	struct resource		*res;
-+
-+	emif = get_device_details(pdev);
-+	if (!emif) {
-+		pr_err("%s: error getting device data\n", __func__);
-+		goto error;
-+	}
-+
-+	if (!emif1)
-+		emif1 = emif;
-+
-+	list_add(&emif->node, &device_list);
-+
-+	/* Save pointers to each other in emif and device structures */
-+	emif->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, emif);
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(emif->dev, "%s: error getting memory resource\n",
-+			__func__);
-+		goto error;
-+	}
-+
-+	emif->base = devm_request_and_ioremap(emif->dev, res);
-+	if (!emif->base) {
-+		dev_err(emif->dev, "%s: devm_request_and_ioremap() failed\n",
-+			__func__);
-+		goto error;
-+	}
-+
-+	dev_info(&pdev->dev, "%s: device configured with addr = %p\n",
-+		__func__, emif->base);
-+
-+	return 0;
-+error:
-+	return -ENODEV;
-+}
-+
-+static struct platform_driver emif_driver = {
-+	.driver = {
-+		.name = "emif",
-+	},
-+};
-+
-+static int __init_or_module emif_register(void)
-+{
-+	return platform_driver_probe(&emif_driver, emif_probe);
-+}
-+
-+static void __exit emif_unregister(void)
-+{
-+	platform_driver_unregister(&emif_driver);
-+}
-+
-+module_init(emif_register);
-+module_exit(emif_unregister);
-+MODULE_DESCRIPTION("TI EMIF SDRAM Controller Driver");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:emif");
-+MODULE_AUTHOR("Texas Instruments Inc");
-diff --git a/drivers/misc/emif.h b/drivers/misc/emif.h
-index 44b97df..692b2a8 100644
---- a/drivers/misc/emif.h
-+++ b/drivers/misc/emif.h
-@@ -12,6 +12,13 @@
- #ifndef __EMIF_H
- #define __EMIF_H
+@@ -78,6 +78,24 @@ static void set_ddr_clk_period(u32 freq)
+ }
  
-+/*
-+ * Maximum number of different frequencies supported by EMIF driver
-+ * Determines the number of entries in the pointer array for register
-+ * cache
+ /*
++ * Get bus width used by EMIF. Note that this may be different from the
++ * bus width of the DDR devices used. For instance two 16-bit DDR devices
++ * may be connected to a given CS of EMIF. In this case bus width as far
++ * as EMIF is concerned is 32, where as the DDR bus width is 16 bits.
 + */
-+#define EMIF_MAX_NUM_FREQUENCIES			6
++static u32 get_emif_bus_width(struct emif_data *emif)
++{
++	u32		width;
++	void __iomem	*base = emif->base;
 +
- /* Registers offset */
- #define EMIF_MODULE_ID_AND_REVISION			0x0000
- #define EMIF_STATUS					0x0004
-diff --git a/include/linux/platform_data/emif_plat.h b/include/linux/platform_data/emif_plat.h
-new file mode 100644
-index 0000000..03378ca
---- /dev/null
-+++ b/include/linux/platform_data/emif_plat.h
-@@ -0,0 +1,128 @@
-+/*
-+ * Definitions for TI EMIF device platform data
-+ *
-+ * Copyright (C) 2012 Texas Instruments, Inc.
-+ *
-+ * Aneesh V <aneesh@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __EMIF_PLAT_H
-+#define __EMIF_PLAT_H
++	width = (readl(base + EMIF_SDRAM_CONFIG) & NARROW_MODE_MASK)
++			>> NARROW_MODE_SHIFT;
++	width = width == 0 ? 32 : 16;
 +
-+/* Low power modes - EMIF_PWR_MGMT_CTRL */
-+#define EMIF_LP_MODE_DISABLE				0
-+#define EMIF_LP_MODE_CLOCK_STOP				1
-+#define EMIF_LP_MODE_SELF_REFRESH			2
-+#define EMIF_LP_MODE_PWR_DN				4
-+
-+/* Hardware capabilities */
-+#define	EMIF_HW_CAPS_LL_INTERFACE			0x00000001
++	return width;
++}
 +
 +/*
-+ * EMIF IP Revisions
-+ *	EMIF4D  - Used in OMAP4
-+ *	EMIF4D5 - Used in OMAP5
-+ */
-+#define	EMIF_4D						1
-+#define	EMIF_4D5					2
+  * Get the CL from SDRAM_CONFIG register
+  */
+ static u32 get_cl(struct emif_data *emif)
+@@ -372,6 +390,70 @@ static u32 get_sdram_tim_3_shdw(const struct lpddr2_timings *timings,
+ 	return tim3;
+ }
+ 
++static u32 get_zq_config_reg(const struct lpddr2_addressing *addressing,
++		bool cs1_used, bool cal_resistors_per_cs)
++{
++	u32 zq = 0, val = 0;
 +
-+/*
-+ * PHY types
-+ *	ATTILAPHY  - Used in OMAP4
-+ *	INTELLIPHY - Used in OMAP5
-+ */
-+#define	EMIF_PHY_TYPE_ATTILAPHY				1
-+#define	EMIF_PHY_TYPE_INTELLIPHY			2
++	val = EMIF_ZQCS_INTERVAL_US * 1000 / addressing->tREFI_ns;
++	zq |= val << ZQ_REFINTERVAL_SHIFT;
 +
-+/* Custom config requests */
-+#define EMIF_CUSTOM_CONFIG_LPMODE			0x00000001
-+#define EMIF_CUSTOM_CONFIG_TEMP_ALERT_POLL_INTERVAL	0x00000002
++	val = DIV_ROUND_UP(T_ZQCL_DEFAULT_NS, T_ZQCS_DEFAULT_NS) - 1;
++	zq |= val << ZQ_ZQCL_MULT_SHIFT;
 +
-+#ifndef __ASSEMBLY__
-+/**
-+ * struct ddr_device_info - All information about the DDR device except AC
-+ *		timing parameters
-+ * @type:	Device type (LPDDR2-S4, LPDDR2-S2 etc)
-+ * @density:	Device density
-+ * @io_width:	Bus width
-+ * @cs1_used:	Whether there is a DDR device attached to the second
-+ *		chip-select(CS1) of this EMIF instance
-+ * @cal_resistors_per_cs: Whether there is one calibration resistor per
-+ *		chip-select or whether it's a single one for both
-+ * @manufacturer: Manufacturer name string
-+ */
-+struct ddr_device_info {
-+	u32	type;
-+	u32	density;
-+	u32	io_width;
-+	u32	cs1_used;
-+	u32	cal_resistors_per_cs;
-+	char	manufacturer[10];
-+};
++	val = DIV_ROUND_UP(T_ZQINIT_DEFAULT_NS, T_ZQCL_DEFAULT_NS) - 1;
++	zq |= val << ZQ_ZQINIT_MULT_SHIFT;
 +
-+/**
-+ * struct emif_custom_configs - Custom configuration parameters/policies
-+ *		passed from the platform layer
-+ * @mask:	Mask to indicate which configs are requested
-+ * @lpmode:	LPMODE to be used in PWR_MGMT_CTRL register
-+ * @lpmode_timeout_performance: Timeout before LPMODE entry when higher
-+ *		performance is desired at the cost of power (typically
-+ *		at higher OPPs)
-+ * @lpmode_timeout_power: Timeout before LPMODE entry when better power
-+ *		savings is desired and performance is not important
-+ *		(typically at lower loads indicated by lower OPPs)
-+ * @lpmode_freq_threshold: The DDR frequency threshold to identify between
-+ *		the above two cases:
-+ *		timeout = (freq >= lpmode_freq_threshold) ?
-+ *			lpmode_timeout_performance :
-+ *			lpmode_timeout_power;
-+ * @temp_alert_poll_interval_ms: LPDDR2 MR4 polling interval at nominal
-+ *		temperature(in milliseconds). When temperature is high
-+ *		polling is done 4 times as frequently.
-+ */
-+struct emif_custom_configs {
-+	u32 mask;
-+	u32 lpmode;
-+	u32 lpmode_timeout_performance;
-+	u32 lpmode_timeout_power;
-+	u32 lpmode_freq_threshold;
-+	u32 temp_alert_poll_interval_ms;
-+};
++	zq |= ZQ_SFEXITEN_ENABLE << ZQ_SFEXITEN_SHIFT;
 +
-+/**
-+ * struct emif_platform_data - Platform data passed on EMIF platform
-+ *				device creation. Used by the driver.
-+ * @hw_caps:		Hw capabilities of the EMIF IP in the respective SoC
-+ * @device_info:	Device info structure containing information such
-+ *			as type, bus width, density etc
-+ * @timings:		Timings information from device datasheet passed
-+ *			as an array of 'struct lpddr2_timings'. Can be NULL
-+ *			if if default timings are ok
-+ * @timings_arr_size:	Size of the timings array. Depends on the number
-+ *			of different frequencies for which timings data
-+ *			is provided
-+ * @min_tck:		Minimum value of some timing parameters in terms
-+ *			of number of cycles. Can be NULL if default values
-+ *			are ok
-+ * @custom_configs:	Custom configurations requested by SoC or board
-+ *			code and the data for them. Can be NULL if default
-+ *			configurations done by the driver are ok. See
-+ *			documentation for 'struct emif_custom_configs' for
-+ *			more details
-+ */
-+struct emif_platform_data {
-+	u32 hw_caps;
-+	struct ddr_device_info *device_info;
-+	const struct lpddr2_timings *timings;
-+	u32 timings_arr_size;
-+	const struct lpddr2_min_tck *min_tck;
-+	struct emif_custom_configs *custom_configs;
-+	u32 ip_rev;
-+	u32 phy_type;
-+};
-+#endif /* __ASSEMBLY__ */
++	if (cal_resistors_per_cs)
++		zq |= ZQ_DUALCALEN_ENABLE << ZQ_DUALCALEN_SHIFT;
++	else
++		zq |= ZQ_DUALCALEN_DISABLE << ZQ_DUALCALEN_SHIFT;
 +
-+#endif /* __LINUX_EMIF_H */
++	zq |= ZQ_CS0EN_MASK; /* CS0 is used for sure */
++
++	val = cs1_used ? 1 : 0;
++	zq |= val << ZQ_CS1EN_SHIFT;
++
++	return zq;
++}
++
++static u32 get_temp_alert_config(const struct lpddr2_addressing *addressing,
++		const struct emif_custom_configs *custom_configs, bool cs1_used,
++		u32 sdram_io_width, u32 emif_bus_width)
++{
++	u32 alert = 0, interval, devcnt;
++
++	if (custom_configs && (custom_configs->mask &
++				EMIF_CUSTOM_CONFIG_TEMP_ALERT_POLL_INTERVAL))
++		interval = custom_configs->temp_alert_poll_interval_ms;
++	else
++		interval = TEMP_ALERT_POLL_INTERVAL_DEFAULT_MS;
++
++	interval *= 1000000;			/* Convert to ns */
++	interval /= addressing->tREFI_ns;	/* Convert to refresh cycles */
++	alert |= (interval << TA_REFINTERVAL_SHIFT);
++
++	/*
++	 * sdram_io_width is in 'log2(x) - 1' form. Convert emif_bus_width
++	 * also to this form and subtract to get TA_DEVCNT, which is
++	 * in log2(x) form.
++	 */
++	emif_bus_width = __fls(emif_bus_width) - 1;
++	devcnt = emif_bus_width - sdram_io_width;
++	alert |= devcnt << TA_DEVCNT_SHIFT;
++
++	/* DEVWDT is in 'log2(x) - 3' form */
++	alert |= (sdram_io_width - 2) << TA_DEVWDT_SHIFT;
++
++	alert |= 1 << TA_SFEXITEN_SHIFT;
++	alert |= 1 << TA_CS0EN_SHIFT;
++	alert |= (cs1_used ? 1 : 0) << TA_CS1EN_SHIFT;
++
++	return alert;
++}
++
+ static u32 get_read_idle_ctrl_shdw(u8 volt_ramp)
+ {
+ 	u32 idle = 0, val = 0;
+@@ -815,6 +897,71 @@ static int __init_or_module setup_interrupts(struct emif_data *emif, u32 irq)
+ 
+ }
+ 
++static void __init_or_module emif_onetime_settings(struct emif_data *emif)
++{
++	u32				pwr_mgmt_ctrl, zq, temp_alert_cfg;
++	void __iomem			*base = emif->base;
++	const struct lpddr2_addressing	*addressing;
++	const struct ddr_device_info	*device_info;
++
++	device_info = emif->plat_data->device_info;
++	addressing = get_addressing_table(device_info);
++
++	/*
++	 * Init power management settings
++	 * We don't know the frequency yet. Use a high frequency
++	 * value for a conservative timeout setting
++	 */
++	pwr_mgmt_ctrl = get_pwr_mgmt_ctrl(1000000000, emif,
++			emif->plat_data->ip_rev);
++	emif->lpmode = (pwr_mgmt_ctrl & LP_MODE_MASK) >> LP_MODE_SHIFT;
++	writel(pwr_mgmt_ctrl, base + EMIF_POWER_MANAGEMENT_CONTROL);
++
++	/* Init ZQ calibration settings */
++	zq = get_zq_config_reg(addressing, device_info->cs1_used,
++		device_info->cal_resistors_per_cs);
++	writel(zq, base + EMIF_SDRAM_OUTPUT_IMPEDANCE_CALIBRATION_CONFIG);
++
++	/* Check temperature level temperature level*/
++	get_temperature_level(emif);
++	if (emif->temperature_level == SDRAM_TEMP_VERY_HIGH_SHUTDOWN)
++		dev_emerg(emif->dev, "SDRAM temperature exceeds operating limit.. Needs shut down!!!\n");
++
++	/* Init temperature polling */
++	temp_alert_cfg = get_temp_alert_config(addressing,
++		emif->plat_data->custom_configs, device_info->cs1_used,
++		device_info->io_width, get_emif_bus_width(emif));
++	writel(temp_alert_cfg, base + EMIF_TEMPERATURE_ALERT_CONFIG);
++
++	/*
++	 * Program external PHY control registers that are not frequency
++	 * dependent
++	 */
++	if (emif->plat_data->phy_type != EMIF_PHY_TYPE_INTELLIPHY)
++		return;
++	writel(EMIF_EXT_PHY_CTRL_1_VAL, base + EMIF_EXT_PHY_CTRL_1_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_5_VAL, base + EMIF_EXT_PHY_CTRL_5_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_6_VAL, base + EMIF_EXT_PHY_CTRL_6_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_7_VAL, base + EMIF_EXT_PHY_CTRL_7_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_8_VAL, base + EMIF_EXT_PHY_CTRL_8_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_9_VAL, base + EMIF_EXT_PHY_CTRL_9_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_10_VAL, base + EMIF_EXT_PHY_CTRL_10_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_11_VAL, base + EMIF_EXT_PHY_CTRL_11_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_12_VAL, base + EMIF_EXT_PHY_CTRL_12_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_13_VAL, base + EMIF_EXT_PHY_CTRL_13_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_14_VAL, base + EMIF_EXT_PHY_CTRL_14_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_15_VAL, base + EMIF_EXT_PHY_CTRL_15_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_16_VAL, base + EMIF_EXT_PHY_CTRL_16_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_17_VAL, base + EMIF_EXT_PHY_CTRL_17_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_18_VAL, base + EMIF_EXT_PHY_CTRL_18_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_19_VAL, base + EMIF_EXT_PHY_CTRL_19_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_20_VAL, base + EMIF_EXT_PHY_CTRL_20_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_21_VAL, base + EMIF_EXT_PHY_CTRL_21_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_22_VAL, base + EMIF_EXT_PHY_CTRL_22_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_23_VAL, base + EMIF_EXT_PHY_CTRL_23_SHDW);
++	writel(EMIF_EXT_PHY_CTRL_24_VAL, base + EMIF_EXT_PHY_CTRL_24_SHDW);
++}
++
+ static void get_default_timings(struct emif_data *emif)
+ {
+ 	struct emif_platform_data *pd = emif->plat_data;
+@@ -1027,6 +1174,7 @@ static int __init_or_module emif_probe(struct platform_device *pdev)
+ 		goto error;
+ 	}
+ 
++	emif_onetime_settings(emif);
+ 	disable_and_clear_all_interrupts(emif);
+ 	setup_interrupts(emif, irq);
+ 
 -- 
 1.7.1
 
