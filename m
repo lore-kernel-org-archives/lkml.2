@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761223Ab2COLA6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 07:00:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52465 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074Ab2COLAz convert rfc822-to-8bit (ORCPT
+	id S1761091Ab2COLC6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 07:02:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39584 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142Ab2COLC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 07:00:55 -0400
-Message-ID: <1331809239.18960.168.camel@twins>
-Subject: Re: [PATCH] watchdog: Make sure the watchdog thread gets CPU on
- loaded system
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Don Zickus <dzickus@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Thu, 15 Mar 2012 12:00:39 +0100
-In-Reply-To: <20120315014511.GT27051@google.com>
-References: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
-	 <20120314161906.e53359d3.akpm@linux-foundation.org>
-	 <20120315014511.GT27051@google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 15 Mar 2012 07:02:56 -0400
+Date: Thu, 15 Mar 2012 12:02:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        linux-kernel@vger.kernel.org, Carsten Emde <C.Emde@osadl.org>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [REGRESSION][PATCH] mqueue: Ignore the validity of abs_timeout
+ parameter when message can be performed immediately
+In-Reply-To: <CA+55aFygRpuCZ0K0_hon7t3H+qa3WKb3--VXooN8p14S6or2tw@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1203151144280.2466@ionos>
+References: <20120302164234.4938.38390934@jp.panasonic.com> <20120314144601.ccc50a68.akpm@linux-foundation.org> <alpine.LFD.2.02.1203142250500.2466@ionos> <alpine.LFD.2.02.1203150056361.2466@ionos>
+ <CA+55aFygRpuCZ0K0_hon7t3H+qa3WKb3--VXooN8p14S6or2tw@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-14 at 18:45 -0700, Mandeep Singh Baines wrote:
-> You could make MAX_RT_PRIO greater than MAX_USER_RT_PRIO but that
-> might
-> have some impact on real-time applications. A simple one-line patch:
+On Wed, 14 Mar 2012, Linus Torvalds wrote:
+> With the current code, checking the validity of the timeout falls out
+> from what we do. I don't think we need to work around that, based on
+> the POSIX wording. And if there are no applications that actually
+> broke, I don't think we should care.
 > 
-> - #define MAX_RT_PRIO           MAX_USER_RT_PRIO
-> + #define MAX_RT_PRIO           (MAX_USER_RT_PRIO + 1)
-> 
-> would prevent user-space from causing a false lockup detection.
+> Is there some other standard that says that you *have* to let crazy
+> invalid values go?
 
-We're so not going to muck with the fifo priorities just for this stupid
-soft watchdog,.. I already hate that I can't disable the piece of crap,
-making it more involved is just really not going to happen.
+Not that I'm aware of. Everything I found so far is copied from the
+POSIX spec.
 
+Thanks,
 
+	tglx
