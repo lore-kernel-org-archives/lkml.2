@@ -1,113 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031947Ab2CORyJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:54:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60180 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161206Ab2CORyD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:54:03 -0400
+	id S1161249Ab2CORy0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:54:26 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53936 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161203Ab2CORyV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 13:54:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <1331815251.15493.108.camel@mfleming-mobl1.ger.corp.intel.com>
-References: <1329744626-5036-1-git-send-email-matt@console-pimps.org>
-	<tip-f75bd1837564657b21431e44243e064a77276589@git.kernel.org>
-	<CAE9FiQWFpsZotawqPD4738jTayB=KOGo0W9+AT2go3GYk1v_sQ@mail.gmail.com>
-	<4F45B35D.1010702@zytor.com>
-	<CAE9FiQUbyYYN5orG_RyVm=P-8wNh=YsET1VzGojpFTfJPueHqA@mail.gmail.com>
-	<4F471651.3080609@zytor.com>
-	<4F4C3BA2.1070708@kernel.org>
-	<1331116250.3539.35.camel@mfleming-mobl1.ger.corp.intel.com>
-	<CAE9FiQUoRMA_PYnOEt0ZUYXLq=hNZtDuLifT=+R72HtrwfF6AA@mail.gmail.com>
-	<1331206127.3539.69.camel@mfleming-mobl1.ger.corp.intel.com>
-	<CAE9FiQVZVNARgs0rzgRpRdbSPydCXoeDat=4DLMNFcyBQuqwng@mail.gmail.com>
-	<1331555916.3539.88.camel@mfleming-mobl1.ger.corp.intel.com>
-	<CAE9FiQXA4+Ubh-6QZv5bouZchR6XZjBSGwR1ox-vug01xiGveA@mail.gmail.com>
-	<1331815251.15493.108.camel@mfleming-mobl1.ger.corp.intel.com>
-Date: Thu, 15 Mar 2012 10:54:00 -0700
-X-Google-Sender-Auth: VYwGpDkPGP4R4FDiNYBDDiGanIU
-Message-ID: <CAE9FiQVWjZFA9gz43NJAKbvp7HT0oekXiRY5mPgg6O8EN5xb7g@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86, efi: Delete efi_ioremap() and fix
- CONFIG_X86_32 oops
-From: Yinghai Lu <yinghai@kernel.org>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: "H. Peter Anvin" <hpa@kernel.org>, mingo@redhat.com, mjg@redhat.com,
-        linux-kernel@vger.kernel.org, keithp@keithp.com, rui.zhang@intel.com,
-        huang.ying.caritas@gmail.com, stable@vger.kernel.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <CAE9FiQWfYxD2OAmXF5UdQMkPt33xeoSu489N6KtU3k5VE3jUXw@mail.gmail.com>
+References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
+ <1331362837-10740-25-git-send-email-yinghai@kernel.org> <CAErSpo6g3pei2+oW0wLEpytBTh6wGTyzo28oVVzFECxZdta+FA@mail.gmail.com>
+ <CAE9FiQWfYxD2OAmXF5UdQMkPt33xeoSu489N6KtU3k5VE3jUXw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 15 Mar 2012 11:53:59 -0600
+Message-ID: <CAErSpo4KhQJOpKk8OOtcSxWc3wwkhLix8ECZhGtTnQ2WgQH7iw@mail.gmail.com>
+Subject: Re: [PATCH v2 24/37] PCI, ACPI: Add pci_root_hp hot removal
+ notification support.
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 5:40 AM, Matt Fleming <matt.fleming@intel.com> wrote:
-> On Mon, 2012-03-12 at 22:39 -0700, Yinghai Lu wrote:
->> On Mon, Mar 12, 2012 at 5:38 AM, Matt Fleming <matt.fleming@intel.com> wrote:
+On Tue, Mar 13, 2012 at 12:06 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Mar 12, 2012 at 8:25 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> Add missing hot_remove support for root device.
+>>>
+>>> How to use it?
+>>> Find out root bus number to acpi root name mapping from dmesg or /sys
+>>>
+>>>  echo "\_SB.PCIB 3" > /proc/acpi/sci/notify
+>>> to remove root bus
 >>
->> > Have you tested my patch? Have you hit this bug or is it just from code
->> > inspection. I'm starting to feel a bit silly now because I can't see the
->> > problem you're describing.
+>> Same comments as before: this is definitely NOT the way users should
+>> use this.  If you want to do that for debugging the ACPI notification
+>> path, fine, but the normal way is for the platform to generate this
+>> notification.  I think the normal way for users to manually remove an
+>> ACPI device should be something like:
 >>
->> from code inspection.
+>>    echo 1 > /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/remove
 >>
->> your new init_memory_mapping() will only map mem under max_low_pfn ?
+>> just like we do for PCI devices.
 >
-> No, that's not true for x86_64, look,
->
->        for (i = 0; i < e820.nr_map; i++) {
->                entry = &e820.map[i];
->                start = entry->addr;
->                end = start + entry->size;
->
->                /* We've already mapped below 1MB */
->                if (end < (1 << 20))
->                        continue;
->
->                if (start < (1 << 20))
->                        start = 1 << 20;
-> #ifdef CONFIG_X86_32
->                /*
->                 * The map is sorted, so bail once we hit a region
->                 * that's above max_low_pfn.
->                 */
->                if (start >= max_low_pfn << PAGE_SHIFT)
->                        break;
->
->                if (end > max_low_pfn << PAGE_SHIFT)
->                        end = max_low_pfn << PAGE_SHIFT;
-> #endif
->                switch (entry->type) {
->                case E820_RAM:
->                case E820_RESERVED_EFI:
->                case E820_ACPI:
->                case E820_NVS:
->                        last_pfn_mapped = __init_memory_mapping(start, end);
->                        break;
->                default:
->                        continue;
->                }
->
->                if (end <= max_low_pfn << PAGE_SHIFT)
->                        max_low_pfn_mapped = last_pfn_mapped;
+> notify way looks more like really physical hotadd/remove.
 
-why max_low_pfn is used here?
+Sure, the 'echo "\_SB.PCIB 3" > /proc/acpi/sci/notify' way looks more
+like physical hotadd/remove because it is basically injecting the
+notify event that the hardware/BIOS should be generating itself.  But
+it is platform-specific and therefore unacceptable as a general user
+interface.
 
->        }
+Using /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/remove would be a
+more generic way.  The PNP0A08:00/remove implementation would
+basically turn into an acpi_pci_root_remove() call, just like the
+'echo "\_SB.PCIB 3" > /proc/acpi/sci/notify' does.
+
+Both ways should exercise the same code path.  The only difference is
+that using /proc/acpi/sci/notify should go through a little more of
+the ACPI notify path before reaching acpi_pci_root_remove().
+
+> pci bus/remove and other is not really, because when you are using
+> /sys, you may still need to hold
+> one reference to bus or device.
 >
-> The max_low_pfn checks are only for CONFIG_X86_32 so that the behaviour
-> is the same as before this patch, i.e. we don't try to map above
-> max_low_pfn.
-
-ok, to simplify the code, in setup.c you could move
-#ifdef CONFIG_X86_64
-        if (max_pfn > max_low_pfn) {
-                /* can we preseve max_low_pfn ?*/
-                max_low_pfn = max_pfn;
-        }
-#endif
-
-before calling new init_memory_mapping()...
-
-so you could remove the #idef. in init_memory_mapping.
-
-Yinghai
+>>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>> Cc: Len Brown <lenb@kernel.org>
+>>> Cc: linux-acpi@vger.kernel.org
+>>> ---
+>>>  drivers/acpi/pci_root_hp.c |   61 ++++++++++++++++++++++++++++++++++++++++++++
+>>>  1 files changed, 61 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/acpi/pci_root_hp.c b/drivers/acpi/pci_root_hp.c
+>>> index dc11e81..f5585f5 100644
+>>> --- a/drivers/acpi/pci_root_hp.c
+>>> +++ b/drivers/acpi/pci_root_hp.c
+>>> @@ -73,6 +73,12 @@ static void add_acpi_root_bridge(acpi_handle handle)
+>>>        list_add(&bridge->list, &acpi_root_bridge_list);
+>>>  }
+>>>
+>>> +static void remove_acpi_root_bridge(struct acpi_root_bridge *bridge)
+>>> +{
+>>> +       list_del(&bridge->list);
+>>> +       kfree(bridge);
+>>> +}
+>>> +
+>>>  struct acpi_root_hp_work {
+>>>        struct work_struct work;
+>>>        acpi_handle handle;
+>>> @@ -142,6 +148,55 @@ static void handle_root_bridge_insertion(acpi_handle handle)
+>>>                printk(KERN_ERR "cannot start bridge\n");
+>>>  }
+>>>
+>>> +static int acpi_root_evaluate_object(acpi_handle handle, char *cmd, int val)
+>>> +{
+>>> +       acpi_status status;
+>>> +       struct acpi_object_list arg_list;
+>>> +       union acpi_object arg;
+>>> +
+>>> +       arg_list.count = 1;
+>>> +       arg_list.pointer = &arg;
+>>> +       arg.type = ACPI_TYPE_INTEGER;
+>>> +       arg.integer.value = val;
+>>> +
+>>> +       status = acpi_evaluate_object(handle, cmd, &arg_list, NULL);
+>>> +       if (ACPI_FAILURE(status)) {
+>>> +               printk(KERN_WARNING "%s: %s to %d failed\n",
+>>> +                                __func__, cmd, val);
+>>> +               return -1;
+>>> +       }
+>>> +
+>>> +       return 0;
+>>
+>> This function really has nothing to do with host bridges.  Are you
+>> sure there's no generic function you can use instead?
+>
+> seems not.
