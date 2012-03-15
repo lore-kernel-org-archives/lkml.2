@@ -1,121 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030682Ab2COPAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 11:00:24 -0400
-Received: from HSI-KBW-109-192-167-159.hsi6.kabel-badenwuerttemberg.de ([109.192.167.159]:38400
-	"EHLO rack0slot8.osadl.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965190Ab2COO7D (ORCPT
+	id S1030699Ab2COPBD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 11:01:03 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40969 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030379Ab2COPA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:59:03 -0400
-Message-Id: <20120315145828.308069018@osadl.org>
-User-Agent: quilt/0.48-1
-Date: Thu, 15 Mar 2012 15:56:25 +0100
-From: Carsten Emde <C.Emde@osadl.org>
-To: David Airlie <airlied@linux.ie>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Keith Packard <keithp@keithp.com>,
-        Paul Menzel <paulepanter@users.sourceforge.net>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Carsten Emde <C.Emde@osadl.org>, DRI <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [V5 PATCH 2/4] drivers-gpu-drm-i915-panel-invert-brightness-via-parameter.patch
-References: <20120315145623.486070468@osadl.org>
-Content-Disposition: inline; filename=drivers-gpu-drm-i915-panel-invert-brightness-via-parameter.patch
+	Thu, 15 Mar 2012 11:00:59 -0400
+Date: Thu, 15 Mar 2012 08:00:54 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Add a per-dimm structure
+Message-ID: <20120315150054.GD7928@kroah.com>
+References: <1331120438-27523-1-git-send-email-mchehab@redhat.com>
+ <20120313233217.GB31106@kroah.com>
+ <4F60F2E4.7060707@redhat.com>
+ <20120314204355.GA10187@kroah.com>
+ <4F611991.9040604@redhat.com>
+ <20120314233225.GA16564@kroah.com>
+ <4F61525D.2080404@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F61525D.2080404@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following the documentation of the Legacy Backlight Brightness (LBB)
-Register in the configuration space of some Intel PCI graphics adapters,
-setting the LBB register with the value 0x0 causes the backlight to be
-turned off, and 0xFF causes the backlight to be set to 100% intensity
-(http://download.intel.com/embedded/processors/Whitepaper/324567.pdf).
-The Acer Aspire 5734Z, however, turns the backlight off at 0xFF and sets
-it to maximum intensity at 0. In consequence, the screen of this systems
-becomes dark at an early boot stage which makes it unusable. The same
-inversion applies to the BLC_PWM_CTL I915 register. This problem was
-introduced in kernel version 2.6.38 when the PCI device of this system
-was first supported by the i915 KMS module.
+On Wed, Mar 14, 2012 at 11:22:21PM -0300, Mauro Carvalho Chehab wrote:
+> Em 14-03-2012 20:32, Greg KH escreveu:
+> > On Wed, Mar 14, 2012 at 07:20:01PM -0300, Mauro Carvalho Chehab wrote:
+> >>> Easy rule to remember, never mix "raw" kobjects and 'struct device',
+> >>> which is what you would be doing here, right?  We can handle many
+> >>> hundreds of thousands of files and devices in a single directory, no
+> >>> problem.
+> >>
+> >> No. They're all generated with raw kobjects, using kobject_init_and_add() or
+> >> sysfs_create_file() calls.
+> > 
+> > Ick, no.
+> > 
+> > Please, never use "raw" kobjects.  Why doesn't 'struct device' work for
+> > you properly here?  You just messed userspace all up in that it can not
+> > properly account for the parts of sysfs here in the device tree.
+> > 
+> > Anything below /sys/devices/ should be using 'struct device' unless
+> > there is a _very_ good reason not to.
+> 
+> The raw kobjects logic is there since the beginning of the edac. I've no
+> idea why.
 
-This patch adds a parameter to the i915 module to enable inversion of
-the brightness variable (i915.invert_brightness).
+Probably because 'struct sysdev' was what /sys/devices/system/ used to
+have, and it wasn't the easiest thing to work with.
 
-Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+I'd recommend converting the whole thing to struct device, if you are
+going to be doing any work to this code.  I had figured this code was
+not really needed anymore, but you've proved that wrong :)
 
----
- Documentation/kernel-parameters.txt |    9 +++++++++
- drivers/gpu/drm/i915/intel_panel.c  |   17 +++++++++++++++++
- 2 files changed, 26 insertions(+)
+good luck,
 
-Index: linux-3.3-rc7/Documentation/kernel-parameters.txt
-===================================================================
---- linux-3.3-rc7.orig/Documentation/kernel-parameters.txt
-+++ linux-3.3-rc7/Documentation/kernel-parameters.txt
-@@ -979,6 +979,15 @@ bytes respectively. Such letter suffixes
- 	i8k.restricted	[HW] Allow controlling fans only if SYS_ADMIN
- 			capability is set.
- 
-+	i915.invert_brightness
-+			[DRM] Invert the sense of the variable that is used to
-+			set the brightness of the panel backlight. Normally a
-+			value of 0 indicates backlight switched off, and the
-+			maximum value sets the backlight to maximum brightness.
-+			If this parameter is specified, a value of 0 sets the
-+			backlight to maximum brightness, and the maximum value
-+			switches the backlight off.
-+
- 	icn=		[HW,ISDN]
- 			Format: <io>[,<membase>[,<icn_id>[,<icn_id2>]]]
- 
-Index: linux-3.3-rc7/drivers/gpu/drm/i915/intel_panel.c
-===================================================================
---- linux-3.3-rc7.orig/drivers/gpu/drm/i915/intel_panel.c
-+++ linux-3.3-rc7/drivers/gpu/drm/i915/intel_panel.c
-@@ -28,6 +28,7 @@
-  *      Chris Wilson <chris@chris-wilson.co.uk>
-  */
- 
-+#include <linux/moduleparam.h>
- #include "intel_drv.h"
- 
- #define PCI_LBPC 0xf4 /* legacy/combination backlight modes */
-@@ -191,6 +192,20 @@ u32 intel_panel_get_max_backlight(struct
- 	return max;
- }
- 
-+static bool i915_panel_invert_brightness;
-+MODULE_PARM_DESC(invert_brightness, "Invert backlight brightness, please "
-+	"report PCI device ID, subsystem vendor and subsystem device ID "
-+	"to dri-devel@lists.freedesktop.org, if your machine needs it. "
-+	"It will then be included in an upcoming module version.");
-+module_param_named(invert_brightness, i915_panel_invert_brightness, bool, 0600);
-+static u32 intel_panel_compute_brightness(struct drm_device *dev, u32 val)
-+{
-+	if (i915_panel_invert_brightness)
-+		return intel_panel_get_max_backlight(dev) - val;
-+
-+	return val;
-+}
-+
- u32 intel_panel_get_backlight(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -211,6 +226,7 @@ u32 intel_panel_get_backlight(struct drm
- 		}
- 	}
- 
-+	val = intel_panel_compute_brightness(dev, val);
- 	DRM_DEBUG_DRIVER("get backlight PWM = %d\n", val);
- 	return val;
- }
-@@ -228,6 +244,7 @@ static void intel_panel_actually_set_bac
- 	u32 tmp;
- 
- 	DRM_DEBUG_DRIVER("set backlight PWM = %d\n", level);
-+	level = intel_panel_compute_brightness(dev, level);
- 
- 	if (HAS_PCH_SPLIT(dev))
- 		return intel_pch_panel_set_backlight(dev, level);
-
+greg k-h
