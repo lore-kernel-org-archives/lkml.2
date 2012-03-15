@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031580Ab2COQEt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:04:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54582 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964884Ab2COQEs convert rfc822-to-8bit (ORCPT
+	id S1031591Ab2COQGA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:06:00 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:14257 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030571Ab2COQF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:04:48 -0400
-Message-ID: <1331827471.18960.195.camel@twins>
-Subject: Re: [PATCH] watchdog: Make sure the watchdog thread gets CPU on
- loaded system
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Mandeep Singh Baines <msb@chromium.org>
-Date: Thu, 15 Mar 2012 17:04:31 +0100
-In-Reply-To: <20120315155413.GE3941@redhat.com>
-References: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
-	 <20120314161906.e53359d3.akpm@linux-foundation.org>
-	 <20120315080232.GA17163@tiehlicka.suse.cz>
-	 <20120315155413.GE3941@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 15 Mar 2012 12:05:58 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com
+Cc: linux-kernel@vger.kernel.org, ludovic.desroches@atmel.com,
+        dmitry.torokhov@gmail.com, mpm@selenic.com,
+        herbert@gondor.hengli.com.au, vinod.koul@intel.com,
+        a.zummo@towertech.it, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 3/6] mmc: atmel-mci: remove the need for CONFIG_MMC_ATMELMCI_DMA
+Date: Thu, 15 Mar 2012 16:57:19 +0100
+Message-Id: <c7df6b7863557d95bb8457f5c2b4002ea44c86ff.1331826095.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <cover.1331826095.git.nicolas.ferre@atmel.com>
+References: <cover.1331826095.git.nicolas.ferre@atmel.com>
+In-Reply-To: <cover.1331826095.git.nicolas.ferre@atmel.com>
+References: <cover.1331826095.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-15 at 11:54 -0400, Don Zickus wrote:
-> > > Why did watchdog() reset the scheduling policy seven instructions
-> > > before exiting?  Seems pointless.
-> > 
-> > It has been introduced by Thomas in cba9bd22. To be honest I don't
-> > understand why it makes a sense?
-> 
-> Yeah I noticed that too.  I didn't bother questioning it either when
-> it
-> went in.  I just assumed Thomas and Peter know scheduling a lot better
-> than I do. :-) 
+This Kconfig option is not needed anymore, so remove it.
 
-I just dug through my IRC logs and the reason is that running the entire
-exit path as a highest priority RT task incurs a latency spike to other
-tasks running on the system (313us). Since there's absolutely no point
-in running the exit path as a RT task, tglx made it not do that.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+ drivers/mmc/host/Kconfig     |   10 ----------
+ drivers/mmc/host/atmel-mci.c |    2 --
+ 2 files changed, 0 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 455a414..a6fc44a 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -288,16 +288,6 @@ config MMC_ATMELMCI
+ 
+ 	  If unsure, say N.
+ 
+-config MMC_ATMELMCI_DMA
+-	bool "Atmel MCI DMA support"
+-	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE
+-	help
+-	  Say Y here to have the Atmel MCI driver use a DMA engine to
+-	  do data transfers and thus increase the throughput and
+-	  reduce the CPU utilization.
+-
+-	  If unsure, say N.
+-
+ config MMC_IMX
+ 	tristate "Motorola i.MX Multimedia Card Interface support"
+ 	depends on ARCH_MX1
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index e4449a5..b5693fd 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -2164,10 +2164,8 @@ static int __exit atmci_remove(struct platform_device *pdev)
+ 	atmci_readl(host, ATMCI_SR);
+ 	clk_disable(host->mck);
+ 
+-#ifdef CONFIG_MMC_ATMELMCI_DMA
+ 	if (host->dma.chan)
+ 		dma_release_channel(host->dma.chan);
+-#endif
+ 
+ 	free_irq(platform_get_irq(pdev, 0), host);
+ 	iounmap(host->regs);
+-- 
+1.7.9
+
