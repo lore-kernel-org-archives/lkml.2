@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030309Ab2COOmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:42:42 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:58586 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756213Ab2COOmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:42:40 -0400
-Date: Thu, 15 Mar 2012 14:42:36 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, matt.fleming@intel.com
-Subject: Re: [PATCH] EFI: Only set regions uncacheable if they support it
-Message-ID: <20120315144236.GB4650@srcf.ucam.org>
-References: <1331819798-1955-1-git-send-email-mjg@redhat.com>
- <4F61F5E6.8060509@zytor.com>
- <20120315140708.GA3395@srcf.ucam.org>
- <4F61FA14.6020203@zytor.com>
- <20120315142445.GA4357@srcf.ucam.org>
- <4F61FC8E.8070109@zytor.com>
- <20120315143308.GA4382@srcf.ucam.org>
- <4F61FE7E.9060600@zytor.com>
+	id S1761258Ab2COOoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:44:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34820 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752039Ab2COOoC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 10:44:02 -0400
+Date: Thu, 15 Mar 2012 15:44:00 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mm: hugetlb: defer freeing pages when gathering surplus
+ pages
+Message-ID: <20120315144400.GA19855@tiehlicka.suse.cz>
+References: <CAJd=RBATj97k5UESDFx82bzt0K4OquhBoDkfjPBPacdmdfJE8g@mail.gmail.com>
+ <20120314111357.GD4434@tiehlicka.suse.cz>
+ <CAJd=RBBd0vF1waARU5FQbomLQLAG5ekmiWg+WDpALke9SaGP1g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F61FE7E.9060600@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CAJd=RBBd0vF1waARU5FQbomLQLAG5ekmiWg+WDpALke9SaGP1g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 07:36:46AM -0700, H. Peter Anvin wrote:
+On Wed 14-03-12 21:08:13, Hillf Danton wrote:
+> On Wed, Mar 14, 2012 at 7:13 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > [Sorry for the late reply but I was away from email for quite sometime]
+> >
+> 
+> Nice to see you back:)
 
-> I would still really like to understand why we're seeing #MCs... that's
-> bothersome all by itself.
+Thanks
 
-The region is the legacy video RAM, so I can imagine there being 
-something magic about it.
+> 
+> > On Tue 14-02-12 20:53:51, Hillf Danton wrote:
+> >> When gathering surplus pages, the number of needed pages is recomputed after
+> >> reacquiring hugetlb lock to catch changes in resv_huge_pages and
+> >> free_huge_pages. Plus it is recomputed with the number of newly allocated
+> >> pages involved.
+> >>
+> >> Thus freeing pages could be deferred a bit to see if the final page request is
+> >> satisfied, though pages could be allocated less than needed.
+> >
+> > The patch looks OK but I am missing a word why we need it. I guess
+> 
+> False negative is removed as it should be.
+
+Right, I meant false negative. Would be nice to have it in the
+changelog... Anyway, Andrew has already picked up the patch I guess.
+Just in case
+
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> > your primary motivation is that we want to reduce false positives when
+> > we fail to allocate surplus pages while somebody freed some in the
+> > background.
+> > What is the workload that you observed such a behavior? Or is this just
+> > from the code review?
+> >
+> The second.
+
+OK
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
