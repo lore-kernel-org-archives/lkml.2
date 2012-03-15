@@ -1,176 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760899Ab2COJoP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 05:44:15 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47413 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697Ab2COJoH (ORCPT
+	id S1761021Ab2COJut (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 05:50:49 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:60806 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544Ab2COJup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 05:44:07 -0400
-Date: Thu, 15 Mar 2012 10:43:57 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnd Bergman <arnd.bergmann@linaro.org>,
-        Paul Walmsley <paul@pwsan.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Deepak Saxena <dsaxena@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Andrew Lunn <andrew@lunn.ch>
-Subject: Re: [PATCH v6 2/3] clk: introduce the common clock framework
-Message-ID: <20120315094357.GX3852@pengutronix.de>
-References: <1331366064-1273-1-git-send-email-mturquette@linaro.org>
- <1331366064-1273-3-git-send-email-mturquette@linaro.org>
- <20120311113414.GM3852@pengutronix.de>
- <CAJOA=zMdkLB-DCPOk=kz5mn6BK6A_swocyCHJHeGE6H7FxBbmQ@mail.gmail.com>
- <20120312115117.GN3852@pengutronix.de>
- <CAJOA=zPx0ARsoO4ueSTMe_z2Gs4xG4P2qn1=-vHFf7_k=+K6hQ@mail.gmail.com>
- <20120313120507.GS3852@pengutronix.de>
- <CAJOA=zMT4vK7WPF7iEH9kN6GHHAv-LChHoadzieqV-Wd3Qj=WQ@mail.gmail.com>
+	Thu, 15 Mar 2012 05:50:45 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Magnus Damm <damm@opensource.se>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Paul Mundt <lethal@linux-sh.org>
+Subject: Re: linux-next: manual merge of the arm-soc tree with Linus' tree
+Date: Thu, 15 Mar 2012 10:51:06 +0100
+Message-ID: <1362815.uO65s14ojU@avalon>
+User-Agent: KMail/4.8.0 (Linux/3.2.1-gentoo-r2; KDE/4.8.0; x86_64; ; )
+In-Reply-To: <20120315175000.897f1172c296d4a687be0537@canb.auug.org.au>
+References: <20120315175000.897f1172c296d4a687be0537@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJOA=zMT4vK7WPF7iEH9kN6GHHAv-LChHoadzieqV-Wd3Qj=WQ@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:12:10 up 123 days, 16:59, 66 users,  load average: 1.03, 1.13,
- 1.10
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 05:51:48PM -0700, Turquette, Mike wrote:
-> On Tue, Mar 13, 2012 at 5:05 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> > On Mon, Mar 12, 2012 at 08:16:36PM -0700, Turquette, Mike wrote:
-> >> On Mon, Mar 12, 2012 at 4:51 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> >> > I tried another
-> >> > approach on the weekend which basically does not try to do all in a
-> >> > single recursion but instead sets the rate in multiple steps:
-> >> >
-> >> > 1) call a function which calculates all new rates of affected clocks
-> >> >   in a rate change and safes the value in a clk->new_rate field. This
-> >> >   function returns the topmost clock which has to be changed.
-> >> > 2) starting from the topmost clock notify all clients. This walks the
-> >> >   whole subtree even if a notfifier refuses the change. If necessary
-> >> >   we can walk the whole subtree again to abort the change.
-> >> > 3) actually change rates starting from the topmost clocks and notify
-> >> >   all clients on the way. I changed the set_rate callback to void.
-> >> >   Instead of failing (what is failing in case of set_rate? The clock
-> >> >   will still have some rate) I check for the result with
-> >> >   clk_ops->recalc_rate.
-> >
-> > The way described above works for me now, see this branch:
-> >
-> > git://git.pengutronix.de/git/imx/linux-2.6.git v3.3-rc6-clkv6-fixup
-> >
-> > You may not necessarily like it as it changes quite a lot in the rate
-> > changing code.
-> 
-> I tried that code and I really like it!  It is much more readable and
-> feels less "fragile" than the previous recursive __clk_set_rate.  I
-> did quite a bit of testing with this code today.  One of the tests
-> looks like this:
-> 
->     pll         (adjustable to anything)
->      |
-> clk_divider     (5 bits wide)
->      |
->    dummy        (no clk_ops)
-> 
-> The new code did a fine job arbitrating rates for the PLL and the
-> intermediate divider even if I put weird constraints on the PLL.  For
-> instance if I artificially limited it to a minimum of 600MHz and then
-> ran clk_set_rate(dummy, 300MHz) it would lock at 600MHz and set
-> clk_divider to divide-by-2.  Setting to 600MHz or more set the divider
-> back to 1 and relocked the PLL appropriately.  Pretty cool.
-> 
-> I also tested the notifiers with this code and they seem to function
-> properly.  I'll take this code in for v7.  Thanks a lot for this
-> helpful contribution.
-> 
-> I did find that MULT_ROUND_UP caused trouble for my PLL's round_rate
-> implementation.  Maybe my PLL code is fragile but a quick fix was to
-> make sure that we send the exact value we want to the round_rate code.
->  I also feel this is more correct.  Let me know what you think:
-> 
-> 8<---------------------------------------------------------------
-> 
-> commit 189fecedb175d0366759246c4192f45b0bc39a50
-> Author: Mike Turquette <mturquette@linaro.org>
-> Date:   Wed Mar 14 17:29:51 2012 -0700
-> 
->     clk-divider.c: round the actual rate we care about
-> 
-> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-> index 86ca9cd..06ef4a0 100644
-> --- a/drivers/clk/clk-divider.c
-> +++ b/drivers/clk/clk-divider.c
-> @@ -47,12 +47,6 @@ static unsigned long clk_divider_recalc_rate(struct
-> clk_hw *hw,
->  }
->  EXPORT_SYMBOL_GPL(clk_divider_recalc_rate);
-> 
-> -/*
-> - * The reverse of DIV_ROUND_UP: The maximum number which
-> - * divided by m is r
-> - */
-> -#define MULT_ROUND_UP(r, m) ((r) * (m) + (m) - 1)
-> -
->  static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
->  		unsigned long *best_parent_rate)
->  {
-> @@ -84,9 +78,9 @@ static int clk_divider_bestdiv(struct clk_hw *hw,
-> unsigned long rate,
-> 
->  	for (i = 1; i <= maxdiv; i++) {
->  		parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
-> -				MULT_ROUND_UP(rate, i));
-> +				(rate * i));
+Hi Stephen,
 
-I think MULT_ROUND_UP is the right thing to use here (not sure if this
-is a good name though)
-Consider we want to have an output rate of 33Hz. Now acceptable input
-rates for a divider value of 3 would be 99, 100 and 101Hz, so we have
-to call round_rate for the parent with 101Hz which includes 100 and
-99Hz.
+On Thursday 15 March 2012 17:50:00 Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> arch/arm/mach-shmobile/board-mackerel.c between commit 1740d3448012
+> ("ARM: mach-shmobile: mackerel: Reserve DMA memory for the frame buffer")
+> from Linus' tree and commit 5d7220ec000f ("ARM: mach-shmobile: sh7372
+> map_io and init_early update") from the arm-soc tree.
+> 
+> The latter moved the code to another file
+> arch/arm/mach-shmobile/setup-sh7372.c and I have no idea how to fix this
+> up, so I just removed the change done by the former.
 
-If you have problems with your PLL than most likely because it does
-something different on clk_round_rate than it does in clk_set_rate,
-for example clk_round_rate(10000) returns 10000, but clk_set_rate then
-sets the rate 9999 due to some rounding error. Being consistent between
-round_rate and set_rate is very important for this mechanism to work
-properly. It did cost me some nerves to get it right for the divider
-(and even more nerves to figure out why it is correct the way it works)
+The following patch (5d7220ec000f rebased on top of 1740d3448012) shows the
+correct conflict resolution in my opinion.
 
->  		now = parent_rate / i;
-> -		if (now <= rate && now >= best) {
-> +		if (now <= rate && now > best) {
+>From f040ba69632a54c86767974768d68b308901061c Mon Sep 17 00:00:00 2001
+From: Magnus Damm <damm@opensource.se>
+Date: Wed, 29 Feb 2012 12:37:19 +0900
+Subject: [PATCH] ARM: mach-shmobile: sh7372 map_io and init_early update
 
-This change is an optimization, but should be unrelated to your PLL
-problem, right?
+ARM: mach-shmobile: sh7372 map_io and init_early update
 
-Sascha
+Update the sh7372 SoC and the AP4EVB and Mackerel boards to make use
+of the functions sh7372_map_io() and sh7372_add_early_devices().
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+---
+ arch/arm/mach-shmobile/board-ap4evb.c        |   25 ++-----------------------
+ arch/arm/mach-shmobile/board-mackerel.c      |   21 +++------------------
+ arch/arm/mach-shmobile/include/mach/common.h |    1 +
+ arch/arm/mach-shmobile/setup-sh7372.c        |   22 ++++++++++++++++++++++
+ 4 files changed, 28 insertions(+), 41 deletions(-)
+
+diff --git a/arch/arm/mach-shmobile/board-ap4evb.c b/arch/arm/mach-shmobile/board-ap4evb.c
+index eeb4d96..c57ded1 100644
+--- a/arch/arm/mach-shmobile/board-ap4evb.c
++++ b/arch/arm/mach-shmobile/board-ap4evb.c
+@@ -61,7 +61,6 @@
+ 
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+ #include <asm/mach/time.h>
+ #include <asm/setup.h>
+ 
+@@ -1190,27 +1189,6 @@ static struct i2c_board_info i2c1_devices[] = {
+ 	},
+ };
+ 
+-static struct map_desc ap4evb_io_desc[] __initdata = {
+-	/* create a 1:1 entity map for 0xe6xxxxxx
+-	 * used by CPGA, INTC and PFC.
+-	 */
+-	{
+-		.virtual	= 0xe6000000,
+-		.pfn		= __phys_to_pfn(0xe6000000),
+-		.length		= 256 << 20,
+-		.type		= MT_DEVICE_NONSHARED
+-	},
+-};
+-
+-static void __init ap4evb_map_io(void)
+-{
+-	iotable_init(ap4evb_io_desc, ARRAY_SIZE(ap4evb_io_desc));
+-
+-	/* setup early devices and console here as well */
+-	sh7372_add_early_devices();
+-	shmobile_setup_console();
+-}
+-
+ #define GPIO_PORT9CR	0xE6051009
+ #define GPIO_PORT10CR	0xE605100A
+ #define USCCR1		0xE6058144
+@@ -1469,7 +1447,8 @@ static struct sys_timer ap4evb_timer = {
+ };
+ 
+ MACHINE_START(AP4EVB, "ap4evb")
+-	.map_io		= ap4evb_map_io,
++	.map_io		= sh7372_map_io,
++	.init_early	= sh7372_add_early_devices,
+ 	.init_irq	= sh7372_init_irq,
+ 	.handle_irq	= shmobile_handle_irq_intc,
+ 	.init_machine	= ap4evb_init,
+diff --git a/arch/arm/mach-shmobile/board-mackerel.c b/arch/arm/mach-shmobile/board-mackerel.c
+index 7b53cda..b5bbab7 100644
+--- a/arch/arm/mach-shmobile/board-mackerel.c
++++ b/arch/arm/mach-shmobile/board-mackerel.c
+@@ -58,7 +58,6 @@
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/time.h>
+-#include <asm/mach/map.h>
+ #include <asm/mach-types.h>
+ 
+ /*
+@@ -1337,29 +1336,14 @@ static struct i2c_board_info i2c1_devices[] = {
+ 	},
+ };
+ 
+-static struct map_desc mackerel_io_desc[] __initdata = {
+-	/* create a 1:1 entity map for 0xe6xxxxxx
+-	 * used by CPGA, INTC and PFC.
+-	 */
+-	{
+-		.virtual	= 0xe6000000,
+-		.pfn		= __phys_to_pfn(0xe6000000),
+-		.length		= 256 << 20,
+-		.type		= MT_DEVICE_NONSHARED
+-	},
+-};
+-
+ static void __init mackerel_map_io(void)
+ {
+-	iotable_init(mackerel_io_desc, ARRAY_SIZE(mackerel_io_desc));
++	sh7372_map_io();
++
+ 	/* DMA memory at 0xff200000 - 0xffdfffff. The default 2MB size isn't
+ 	 * enough to allocate the frame buffer memory.
+ 	 */
+ 	init_consistent_dma_size(12 << 20);
+-
+-	/* setup early devices and console here as well */
+-	sh7372_add_early_devices();
+-	shmobile_setup_console();
+ }
+ 
+ #define GPIO_PORT9CR	0xE6051009
+@@ -1592,6 +1576,7 @@ static struct sys_timer mackerel_timer = {
+ 
+ MACHINE_START(MACKEREL, "mackerel")
+ 	.map_io		= mackerel_map_io,
++	.init_early	= sh7372_add_early_devices,
+ 	.init_irq	= sh7372_init_irq,
+ 	.handle_irq	= shmobile_handle_irq_intc,
+ 	.init_machine	= mackerel_init,
+diff --git a/arch/arm/mach-shmobile/include/mach/common.h b/arch/arm/mach-shmobile/include/mach/common.h
+index e4b945e..b327402 100644
+--- a/arch/arm/mach-shmobile/include/mach/common.h
++++ b/arch/arm/mach-shmobile/include/mach/common.h
+@@ -30,6 +30,7 @@ extern struct clk sh7377_extalc1_clk;
+ extern struct clk sh7377_extal2_clk;
+ 
+ extern void sh7372_init_irq(void);
++extern void sh7372_map_io(void);
+ extern void sh7372_add_early_devices(void);
+ extern void sh7372_add_standard_devices(void);
+ extern void sh7372_clock_init(void);
+diff --git a/arch/arm/mach-shmobile/setup-sh7372.c b/arch/arm/mach-shmobile/setup-sh7372.c
+index a83cf51..12b4378 100644
+--- a/arch/arm/mach-shmobile/setup-sh7372.c
++++ b/arch/arm/mach-shmobile/setup-sh7372.c
+@@ -33,9 +33,28 @@
+ #include <linux/pm_domain.h>
+ #include <mach/hardware.h>
+ #include <mach/sh7372.h>
++#include <mach/common.h>
++#include <asm/mach/map.h>
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+ 
++static struct map_desc sh7372_io_desc[] __initdata = {
++	/* create a 1:1 entity map for 0xe6xxxxxx
++	 * used by CPGA, INTC and PFC.
++	 */
++	{
++		.virtual	= 0xe6000000,
++		.pfn		= __phys_to_pfn(0xe6000000),
++		.length		= 256 << 20,
++		.type		= MT_DEVICE_NONSHARED
++	},
++};
++
++void __init sh7372_map_io(void)
++{
++	iotable_init(sh7372_io_desc, ARRAY_SIZE(sh7372_io_desc));
++}
++
+ /* SCIFA0 */
+ static struct plat_sci_port scif0_platform_data = {
+ 	.mapbase	= 0xe6c40000,
+@@ -1049,4 +1068,7 @@ void __init sh7372_add_early_devices(void)
+ {
+ 	early_platform_add_devices(sh7372_early_devices,
+ 				   ARRAY_SIZE(sh7372_early_devices));
++
++	/* setup early console here as well */
++	shmobile_setup_console();
+ }
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Regards,
+
+Laurent Pinchart
+
