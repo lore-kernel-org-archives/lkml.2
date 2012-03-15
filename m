@@ -1,132 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161365Ab2COUJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 16:09:50 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57848 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032198Ab2COUJs (ORCPT
+	id S1032275Ab2COUL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 16:11:58 -0400
+Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:42940 "EHLO
+	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032210Ab2COULy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 16:09:48 -0400
-Message-ID: <4F624C88.6050503@suse.cz>
-Date: Thu, 15 Mar 2012 21:09:44 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120307 Thunderbird/11.0
+	Thu, 15 Mar 2012 16:11:54 -0400
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Mar 2012 16:11:54 EDT
+Subject: [PATCH 1/2] crypto: camellia-x86_64 - module init/exit functions
+ should be static
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-next@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 15 Mar 2012 22:11:51 +0200
+Message-ID: <20120315201151.11667.63183.stgit@localhost6.localdomain6>
+In-Reply-To: <4F620F37.4070404@xenotime.net>
+References: <4F620F37.4070404@xenotime.net>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: linux-mm@kvack.org
-CC: Jiri Slaby <jirislaby@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Too much free memory (not used for FS cache)
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-2
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This caused conflict with twofish-x86_64-3way when compiled into kernel,
+same function names and not static.
 
-since today's -next (20120315), the MM/VFS system is very sluggish.
-Especially when committing, diffing and similar with git. I still have
-2G of 6G of memory free. But with each commit I have to wait for git to
-fetch all data from disk.
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+---
+ arch/x86/crypto/camellia_glue.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I'm using ext4 on a raid for the partition with git kernel repository if
-that matters.
+diff --git a/arch/x86/crypto/camellia_glue.c b/arch/x86/crypto/camellia_glue.c
+index 1ca36a9..3306dc0 100644
+--- a/arch/x86/crypto/camellia_glue.c
++++ b/arch/x86/crypto/camellia_glue.c
+@@ -1925,7 +1925,7 @@ static int force;
+ module_param(force, int, 0);
+ MODULE_PARM_DESC(force, "Force module load, ignore CPU blacklist");
+ 
+-int __init init(void)
++static int __init init(void)
+ {
+ 	if (!force && is_blacklisted_cpu()) {
+ 		printk(KERN_INFO
+@@ -1938,7 +1938,7 @@ int __init init(void)
+ 	return crypto_register_algs(camellia_algs, ARRAY_SIZE(camellia_algs));
+ }
+ 
+-void __exit fini(void)
++static void __exit fini(void)
+ {
+ 	crypto_unregister_algs(camellia_algs, ARRAY_SIZE(camellia_algs));
+ }
 
-Any idea what that could be?
-
-nr_free_pages 555469
-nr_inactive_anon 16787
-nr_active_anon 414439
-nr_inactive_file 315585
-nr_active_file 137446
-nr_unevictable 0
-nr_mlock 0
-nr_anon_pages 277729
-nr_mapped 95971
-nr_file_pages 524644
-nr_dirty 11
-nr_writeback 0
-nr_slab_reclaimable 35548
-nr_slab_unreclaimable 7450
-nr_page_table_pages 11493
-nr_kernel_stack 464
-nr_unstable 0
-nr_bounce 0
-nr_vmscan_write 0
-nr_vmscan_immediate_reclaim 0
-nr_writeback_temp 0
-nr_isolated_anon 0
-nr_isolated_file 0
-nr_shmem 71614
-nr_dirtied 1165398
-nr_written 1147058
-nr_anon_transparent_hugepages 160
-nr_dirty_threshold 97608
-nr_dirty_background_threshold 48804
-pgpgin 2446144
-pgpgout 4844237
-pswpin 0
-pswpout 0
-pgalloc_dma 0
-pgalloc_dma32 21764611
-pgalloc_normal 38307626
-pgalloc_movable 0
-pgfree 60640227
-pgactivate 913299
-pgdeactivate 109336
-pgfault 51012433
-pgmajfault 8476
-pgrefill_dma 0
-pgrefill_dma32 79208
-pgrefill_normal 41244
-pgrefill_movable 0
-pgsteal_dma 0
-pgsteal_dma32 162966
-pgsteal_normal 185373
-pgsteal_movable 0
-pgscan_kswapd_dma 0
-pgscan_kswapd_dma32 162559
-pgscan_kswapd_normal 215360
-pgscan_kswapd_movable 0
-pgscan_direct_dma 0
-pgscan_direct_dma32 1624
-pgscan_direct_normal 3927
-pgscan_direct_movable 0
-pginodesteal 4
-slabs_scanned 102400
-kswapd_steal 342881
-kswapd_inodesteal 756
-kswapd_low_wmark_hit_quickly 0
-kswapd_high_wmark_hit_quickly 119
-kswapd_skip_congestion_wait 0
-pageoutrun 3493
-allocstall 5
-pgrotated 240
-compact_blocks_moved 432
-compact_pages_moved 10699
-compact_pagemigrate_failed 0
-compact_stall 14
-compact_fail 5
-compact_success 9
-htlb_buddy_alloc_success 0
-htlb_buddy_alloc_fail 0
-unevictable_pgs_culled 327
-unevictable_pgs_scanned 0
-unevictable_pgs_rescued 2618
-unevictable_pgs_mlocked 2618
-unevictable_pgs_munlocked 2618
-unevictable_pgs_cleared 0
-unevictable_pgs_stranded 0
-unevictable_pgs_mlockfreed 0
-thp_fault_alloc 13147
-thp_fault_fallback 0
-thp_collapse_alloc 3543
-thp_collapse_alloc_failed 0
-thp_split 183
-
-thanks,
--- 
-js
-suse labs
