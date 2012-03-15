@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761627Ab2COALg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 20:11:36 -0400
-Received: from mga14.intel.com ([143.182.124.37]:14388 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759355Ab2COALf convert rfc822-to-8bit (ORCPT
+	id S1031331Ab2COAOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 20:14:35 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43338 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760903Ab2COAOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 20:11:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="77663195"
-From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
-Thread-Topic: [PATCH] Fix the race between smp_call_function and CPU booting
-Thread-Index: AQHNAcbuNZzs3JjW0Uu/4BUvgje4I5Zqe/Ag
-Date: Thu, 15 Mar 2012 00:11:32 +0000
-Message-ID: <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
-	 <1331546307.18960.26.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
-	 <1331654251.18960.78.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
- <1331718197.18960.106.camel@twins>
-In-Reply-To: <1331718197.18960.106.camel@twins>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 14 Mar 2012 20:14:31 -0400
+Date: Thu, 15 Mar 2012 11:14:15 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: akpm@linux-foundation.org, rob.lee@linaro.org, j-pihet@ti.com,
+        khilman@ti.com, deepthi@linux.vnet.ibm.com, dan.carpenter@oracle.com,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hughd@google.com, amit.kucheria@linaro.org
+Subject: Re: [PATCH] cpuidle : fix random hangs with intel_idle
+Message-Id: <20120315111415.cd119171ac86967aebe85545@canb.auug.org.au>
+In-Reply-To: <1331770181-800-1-git-send-email-daniel.lezcano@linaro.org>
+References: <alpine.LSU.2.00.1203131454500.1335@eggly.anvils>
+	<1331770181-800-1-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__15_Mar_2012_11_14_15_+1100_0+_eXdBPP6Wa/e+I"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__15_Mar_2012_11_14_15_+1100_0+_eXdBPP6Wa/e+I
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Daniel,
 
-> -----Original Message-----
-> From: Peter Zijlstra [mailto:peterz@infradead.org]
-> Sent: Wednesday, March 14, 2012 5:43 PM
-> To: Liu, Chuansheng
-> Cc: linux-kernel@vger.kernel.org; Yanmin Zhang; tglx@linutronix.de
-> Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
-> 
-> On Wed, 2012-03-14 at 06:27 +0000, Liu, Chuansheng wrote:
-> > On the unplug case, after set the CPU to !active, we do not need IPI
-> > handling for the corresponding CPU before it is set to offline. I did
-> > not find any impact that limiting the smp_call_function just after CPU
-> > is active.
-> 
-> Have a look at Alpha, it's flush_tlb_mm() can use smp_call_function(), in
-> the !active,online case you very much still need to tlb flush that cpu.
-> 
-> The fact that it works on a limited use case on x86 doesn't say anything much
-> at all.
-Thanks your pointing out, do you have any other perfect solution for this issue?
-As for the stress test result, advancing the setting active before setting online broken
-something either.
+On Thu, 15 Mar 2012 01:09:41 +0100 Daniel Lezcano <daniel.lezcano@linaro.or=
+g> wrote:
+>
+> The cpuidle consolidation inverts the local_irq_enable for
+> the poll_idle function with CPU_RELAX.
+>=20
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Reported-by: Hugh Dickins <hughd@google.com>
+
+So this needs to go into Rob's tree.  Maybe after Hugh verifies that it
+fixes his problem.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__15_Mar_2012_11_14_15_+1100_0+_eXdBPP6Wa/e+I
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPYTRXAAoJEECxmPOUX5FEE2EQAKf2ZI6e/WnSOU+jQulIHOI4
+ZF6glVtXlsh+ueQWNNnTwTApP/kz6S0w+/fKVKr+h5a1O4JkmJX/EcjjG/dx5gAA
+15+Sgqx2k2gQU2WHtaKHqYSqHoKLUYYEtD8seU1VhpvuXYBOxwkyH4w1JtDvQzuz
+w/wMQbnC5fsvMNeZ3o7S1F5v0nuJt3epGovmN+a1adWyLl7NDJAtZ6KxTnSa0d1F
+XyuSO060pmlpV8rXm+S+u7NkJKgwbVQI5U1kCU0/k1i29jRVq0UTikvGFaUdUxHd
+d1roy430ivBwxGfRd8rJ3aiHnP0xyiyjjf4gd7MnhTs5MLR19kp7n0W57EH91YgR
+dS2O8hSWgbdQmUROy3IhC9ex8XkuzC0iAZHTnasi7rBHLFxqrrwgj0wwM2yESAjO
++RK1Y6sLxfXBGJtEFs6XAb08IZ4ym5dfv4WV5CaxYWb+dnaHHREjfj2mTvvvLj9k
+16PMLYF7xETsPQ78CFlRbl1ECsOm0plRnJ6dNlRv3g0sGsXBTy7EvmWOQwTSxTI4
+wTyeuPlDg4zS7kiR/juyejGb+8NJvHV3VplYo9Bn5SoLM3foNHyM9fsvYa54IWiQ
+aPHxZ/ueLJn5jWdIw0Tprn7CrnvDISOyd1tEfjSBTztM265eN8E+6ABzHYCKLUoZ
+MNEkQOabEMbFaqIaMuX2
+=aEc+
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__15_Mar_2012_11_14_15_+1100_0+_eXdBPP6Wa/e+I--
