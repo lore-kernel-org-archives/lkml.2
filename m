@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161814Ab2COVC0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 17:02:26 -0400
-Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:44490 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1032348Ab2COVCX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 17:02:23 -0400
-Date: Thu, 15 Mar 2012 22:02:19 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb/ub: deprecate & schedule for removal the "Low
- Performance USB Block" driver
-Message-ID: <20120315210219.GC6123@breakpoint.cc>
-References: <1331758372-9851-1-git-send-email-sebastian@breakpoint.cc>
- <20120315093331.6472333e@lembas.zaitcev.lan>
- <20120315153747.GA23515@kroah.com>
- <20120315181045.GB5702@breakpoint.cc>
- <20120315185648.GC11142@kroah.com>
+	id S1762091Ab2COVDQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 17:03:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57292 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161756Ab2COU75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 16:59:57 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 29/38] Make asm-generic/cmpxchg.h #include
+ asm-generic/cmpxchg-local.h [ver #3]
+To: paul.gortmaker@windriver.com
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, arnd@arndb.de,
+        David Howells <dhowells@redhat.com>, Arnd Bergmann <arnd@arndb.de>
+Date: Thu, 15 Mar 2012 20:59:49 +0000
+Message-ID: <20120315205949.28759.66530.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
+References: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; x-action=pgp-signed
-In-Reply-To: <20120315185648.GC11142@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+Make asm-generic/cmpxchg.h #include asm-generic/cmpxchg-local.h as all arch
+files that #include the former also #include the latter.  See:
 
-On > I'll take patches from you to do this, as the removal patch of ub will
-> make libusual not need to be stand-alone.
-Okay.
+	grep -rl asm-generic/cmpxchg-local[.]h arch/ | sort > b
+	grep -rl asm-generic/cmpxchg[.]h arch/ | sort > a
+	comm a b
 
-> And you will be the one sending the ub removal patch in 6 months, right?
+This simplifies the disintegration of asm-generic/system.h for arches that
+don't have their own.
 
-Linus should release 3.3 this weekend. The removal is scheduled for 3.6 which
-means 3 releases so something between 3 * 2 .. 3 * 3 months depending how
-long each release will take.
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
 
-> 
-> thanks,
-> 
-> greg k-h
+ include/asm-generic/atomic.h  |    2 ++
+ include/asm-generic/cmpxchg.h |    2 ++
+ include/asm-generic/system.h  |    1 -
+ 3 files changed, 4 insertions(+), 1 deletions(-)
 
-Sebastian
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
+index e37963c..8b8cf94 100644
+--- a/include/asm-generic/atomic.h
++++ b/include/asm-generic/atomic.h
+@@ -15,6 +15,8 @@
+ #ifndef __ASM_GENERIC_ATOMIC_H
+ #define __ASM_GENERIC_ATOMIC_H
+ 
++#include <asm/cmpxchg.h>
++
+ #ifdef CONFIG_SMP
+ /* Force people to define core atomics */
+ # if !defined(atomic_add_return) || !defined(atomic_sub_return) || \
+diff --git a/include/asm-generic/cmpxchg.h b/include/asm-generic/cmpxchg.h
+index 213ac6e..e0449af 100644
+--- a/include/asm-generic/cmpxchg.h
++++ b/include/asm-generic/cmpxchg.h
+@@ -10,6 +10,8 @@
+ #error "Cannot use generic cmpxchg on SMP"
+ #endif
+ 
++#include <asm-generic/cmpxchg-local.h>
++
+ /*
+  * Atomic compare and exchange.
+  *
+diff --git a/include/asm-generic/system.h b/include/asm-generic/system.h
+index 215efa7..82cb53a 100644
+--- a/include/asm-generic/system.h
++++ b/include/asm-generic/system.h
+@@ -19,7 +19,6 @@
+ #include <linux/types.h>
+ #include <linux/irqflags.h>
+ 
+-#include <asm/cmpxchg-local.h>
+ #include <asm/cmpxchg.h>
+ 
+ struct task_struct;
 
-iQIbBAEBCAAGBQJPYljbAAoJEHuW6BYqjPXRRFcP+PvnF1NsmGczvbL6JhalVD8F
-cH8COtO5cU7BvI3C7UzP0plURQ5PC0bbqzzayyvkZZyLK6zvwun2G78Ac/viSWQb
-GxMAFaXfkx+PN8+agzG1hjTN4BgA51AvRdF776Nn7qIugTxwli6GOthv2aIfgq6s
-1aiX0v6Iugm2apoWvGqUT0oe7JCauH2ZS7cd8XWG+C+UcN2D8Wx7ExeQtdN6cCpB
-FD31l90AtnQ06A6QI1v78Up3M0m0owhvm/Z0txlPJqYUemLlxfyGjgmlvXL3ypW9
-o11PKaNl7jxJ97UW1FNaltC20RVbKQM4K3VPEfcHf4U1V9Cqme0TTAsyG43G9rpg
-ObGcQ5YmDsRC2Tt0myW47x1Hhgk+oIEEMriXXLzmJoRo0sQioh3I0hAF4roljSy5
-4FB3msEUg7rsLUedRYXnPR1S+I5slWlkzLQRHk2dJ7u4Nakja2hJSGMzS/ZDWVCl
-LkPwhD/RQ02mlB15PogeJ39Q1B5Qy3jW/ICLEaIfXdGikUnEazGa9Cp9ek8G7ULF
-obmevTbtRqBapyGzRUc41jVXhEkGfefJuhO4ADG7kDyglgVk5iuu0ENSwqcP7Cd4
-O6QgsaKZrIXPjsUq2RupPLdU+UnZnzWee13oB9EfokBxGYg5G++NVHA1IN9Au7p8
-mNKos9Cb74Sl13vYCSs=
-=uzZf
------END PGP SIGNATURE-----
