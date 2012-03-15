@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760408Ab2COKtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 06:49:39 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50162 "EHLO
+	id S1760135Ab2COKuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 06:50:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50172 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759503Ab2COKtg (ORCPT
+	by vger.kernel.org with ESMTP id S1757969Ab2COKuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 06:49:36 -0400
-Date: Thu, 15 Mar 2012 10:49:31 +0000
+	Thu, 15 Mar 2012 06:50:50 -0400
+Date: Thu, 15 Mar 2012 10:50:49 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Dajun Chen <dchen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH RFC/RFT 1/2] regulator: Fix da9052 ldo regulator names
-Message-ID: <20120315104930.GE3138@opensource.wolfsonmicro.com>
-References: <1331077370.20711.2.camel@phoenix>
- <20120314140909.GN3133@opensource.wolfsonmicro.com>
- <CAF+7xWnNjJbdG2G8RBG_n5KdzCLXNe0RpJ2F99gFoP+R+AMYDA@mail.gmail.com>
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH v6] sound/soc/lapis: add machine driver for ML7213
+ Carrier Board
+Message-ID: <20120315105048.GF3138@opensource.wolfsonmicro.com>
+References: <CANKRQngTNWMGswq3weD1s8O4irVEz+DCr1vzi2gnWaQcoq5SEw@mail.gmail.com>
+ <1331275091-31700-1-git-send-email-tomoya.rohm@gmail.com>
+ <20120314144524.GT3133@opensource.wolfsonmicro.com>
+ <CANKRQni-8w+2p6=ZisQ+GXhGpNmYhesKfTHfOjWGGrQrhvTFGA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cPi+lWm09sJ+d57q"
+	protocol="application/pgp-signature"; boundary="AH+kv8CCoFf6qPuz"
 Content-Disposition: inline
-In-Reply-To: <CAF+7xWnNjJbdG2G8RBG_n5KdzCLXNe0RpJ2F99gFoP+R+AMYDA@mail.gmail.com>
+In-Reply-To: <CANKRQni-8w+2p6=ZisQ+GXhGpNmYhesKfTHfOjWGGrQrhvTFGA@mail.gmail.com>
 X-Cookie: Are you a turtle?
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,45 +33,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---cPi+lWm09sJ+d57q
+--AH+kv8CCoFf6qPuz
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Mar 15, 2012 at 07:42:53AM +0800, Axel Lin wrote:
+On Thu, Mar 15, 2012 at 01:50:48PM +0900, Tomoya MORINAGA wrote:
 
-> commit 4adf9beda5 regulator: Fix mask parameter in da9052_reg_update calls
-> commit 7b95765 regulator: Set n_voltages for da9052 regulators
-> commit 93651218 regulator: da9052: Ensure the selected voltage falls
-> within the specified range
+> OK.
+> codec is slave, i2s controller is master.
+> So, I'll use SND_SOC_DAIFMT_CBS_CFM.
 
-> I'm not sure if I should re-generate these 2 patches against
-> topic/drivers branch because
-> you will have conflict when merge them to for-next branch then.
+That means "Codec bit clock master frame clock slave".  Are you sure
+that's what you want?
 
-Those are bug fixes which are going to Linus, I guess I can merge them
-over though as there's a direct conflict.  Can you please resend the
-patches as they were, I deleted them when they didn't apply?
-
---cPi+lWm09sJ+d57q
+--AH+kv8CCoFf6qPuz
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPYckzAAoJEBus8iNuMP3deggP/01wrzlaM6YpoWHkVvgws6hm
-og6ohmPUUDVh3zoK1FI+ObI9etmJjaQUv6TcOoHkPg1PpEFeOGLLTO+zmg+mCedT
-o7WkA1K0djQ3NgDVRzwvtAwW8z8U9k6eBgf+4vtKSqB6Ony9n6KP74Zl9hF32htg
-EXRmGSMy1fb1sA5qoep16ogcBh2usfpQwjtLmwEqc3/4vzhiMv/9PWyxe5W1TrLT
-iPgb+WK1uns7AUMd1oDSymtrcZLRl0eIwBsAB7Avh3AKhHMg3drL1+6WWS9yi+a8
-+A6C8k0hvvMVExta7RWmjGcr9IaPrO3z35PLoopv2Nmfp8ytv+RSmQvuiKqbq6RJ
-/2ybXlS8FBpLVa2c/UX449GuEo8JCsgXXjx/s4l9u7+hdOF4KdgJ/YmT2qSI6g44
-3YhLoLBGjvqG5FDTYaNUfZWahnAhjfDhj+eOViBbcrUIbrWcGyqTbKYccv3jF3gD
-/dlz+1GEF/8Z0w6z+fxDmYcEUqPsBuxqav+hdyCdeyxGCAoRfeAvztTDEPlMcsk/
-iQ7nzc+hrMHAqSJzqYWkkC2ABSP78o1fe65/49juoRRyqoVlBjIliQlRx1KKV/H2
-jy1t4y/xl+0PtDE7AjiCO2LE7VMR0rPaKEJv7eGOuhi6OUUj6a78qkLvpQAfP8+b
-i5dgkFj0I5Zokl3UHaAu
-=7300
+iQIcBAEBAgAGBQJPYcl+AAoJEBus8iNuMP3dYWYP/R0XF2NYB0ME/pbTIyd1h48K
+ExVRJUv8T2Q6wGde5AvEnq8OCedT/Qw+i5irMGD/uPClKByKJ6xbfehtiYLQcVmC
+RmB9elMiy38mopJSvkcG0fTx8mJEX9fSYFH5eP4UaqG4w7bsOe2GRQsxcvqnoLgW
+yA17ViKthIHnXAWN/pUti0DGdAxtTnntUHHfCEP6RB1Hy7OaXaPrMORuIFxJs5fH
+y+PVjRJWPGWmR/FWGigGpYzaNKcAvd6l3EW3Bb4Uo7eU8Lp5W/TSslbV74IJBrYw
+zfAZpFtFMuTiEKBiwc7OyDotwnST81X/mJSD9UWLxcReX+JTm4ywWS0rDBHEtoxu
+Iz9nq3rPzzk2ivRWMirXbhcKiuYQe6+pJYp6HcaLg99QGNxVQhDZin1eDsOkoUaX
+G1oWyj5bytXLpxdFY4S4pEs9BtgdvtFrXYVI7iU9BSyErmesOeynmyDN4E0gz7yH
+pEKYgeO8uvWCHU9coUl9uhIsatdxkN4b/JCLFmu+5YqkHJHr5jxoamRPu3sre1d9
+k/e3nOQeT2EZYZCFzp5gHakqUp9p6XZx+eAC1NIrLa7StlXU32r0cb/oSXUpTuOa
+FOP0wjZpCb07YXVt4JGvWxlRVmUlhXlOgvRpzBh2L1YwkhlLuwDW/CfJumwG6cC1
+MyvpD/b+0rtfIYUrWVom
+=bKfV
 -----END PGP SIGNATURE-----
 
---cPi+lWm09sJ+d57q--
+--AH+kv8CCoFf6qPuz--
