@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759518Ab2COOH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:07:29 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:39956 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396Ab2COOH0 (ORCPT
+	id S1758655Ab2COOIR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:08:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59521 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755233Ab2COOIP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:07:26 -0400
-From: "M. Mohan Kumar" <mohan@in.ibm.com>
+	Thu, 15 Mar 2012 10:08:15 -0400
 To: Dave Jones <davej@redhat.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, ericvh@gmail.com,
-        rminnich@sandia.gov, lucho@ionkov.net,
-        v9fs-developer@lists.sourceforge.net,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [V9fs-developer] 9p: BUG: unable to handle kernel paging request at ffff880035698000
-In-Reply-To: <20120314142301.GA2371@redhat.com>
-References: <1329841429.10124.38.camel@lappy> <4F602E2E.8030008@in.ibm.com> <20120314142301.GA2371@redhat.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Thu, 15 Mar 2012 19:37:12 +0530
-Message-ID: <87ehsurm9b.fsf@in.ibm.com>
+Subject: Re: inode->i_wb_list corruption.
+Cc: Yang Bai <hamo.by@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Fedora Kernel Team <kernel-team@fedoraproject.org>, kernel@tesarici.cz
+From: Petr =?utf-8?q?Tesa=C5=99=C3=ADk?= <petr@tesarici.cz>
+Date: Thu, 15 Mar 2012 22:08:03 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12031514-2674-0000-0000-000003B46920
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201203152208.04168.petr@tesarici.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Dave & Sasha, I will try with trinity and update.
-
-On Wed, 14 Mar 2012 10:23:01 -0400, Dave Jones <davej@redhat.com> wrote:
-> On Wed, Mar 14, 2012 at 11:05:42AM +0530, M. Mohan Kumar wrote:
->  > On 02/21/2012 09:53 PM, Sasha Levin wrote:
->  > > Hi,
->  > >
->  > > I was using the KVM tool for tests with trinity on top of a virtio-9p filesystem, and started seeing the BUGs below when I've put some pressure on the 9p fs (not much, just started writing the logs from trinity to a 9p fs).
->  > Hi Sasha,
+Dne So 10. března 2012 02:00:15 Dave Jones napsal(a):
+> (trimmed cc)
+> 
+> On Sat, Mar 10, 2012 at 12:14:37AM +0800, Yang Bai wrote:
+>  > On Fri, Mar 9, 2012 at 11:19 PM, Dave Jones <davej@redhat.com> wrote:
+>  > > And with that, this arrived..
+>  > > https://bugzilla.redhat.com/show_bug.cgi?id=788433#c3
+>  > > 
+>  > > I'm leaning strongly towards believing this is yet another case of
+>  > > i915 corrupting memory on resume.
 >  > 
->  > You mentioned about testing with trinity, Where can I find this trinity 
->  > ? Is is some test suite ?
+>  > Nice catch. I am wondering
+>  > 1) why all lists being affected and
+>  > 2) why all list_head's prev being set to NULL.
+>  > 
+>  > Any ideas?
 > 
-> git://git.codemonkey.org.uk/trinity
+> This is probably the same bug:
+> https://bugzilla.kernel.org/show_bug.cgi?id=37142 Petr noticed that the
+> corruption is 32 bytes getting zeroed at the beginning of a page.
 > 
-> 	Dave
+> I think this may be responsible for a lot of different bugs that we've
+> had reported.
 > 
+> i915_drm_thaw is a deep nest of functions though, so this is going to be
+> hard to track down where that write is coming from. Because the corruption
+> seems to happen to pages that are already allocated, we probably can't
+> even rely on DEBUG_PAGEALLOC, though it might be worth trying.
 
+If it you believe it could be written by the CPU, I can try to catch the 
+instruction that writes to this memory. My plan is as follows:
+
+Set up all the hardware debug registers to trap writes to the pages that are 
+likely to get corrupted. Remember, I've seen the corruption happen always 
+roughly in the same physical memory area.
+
+I know, there are only 4 registers I can use, and the potential corruption 
+area is much larger than 4 pages, but with enough reboots, the chance is quite 
+high that I'll be lucky.
+
+I haven't gone for that plan yet, because I thought the area was in fact 
+written to by someone else on the PCI bus, not the CPU. If nothing else, I can 
+verify that. ;-)
+
+Dave, do you think the result of such testing would help you resolve the bug?
+
+Petr
