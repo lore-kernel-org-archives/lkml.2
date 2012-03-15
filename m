@@ -1,141 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760763Ab2COIu5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 04:50:57 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:23098 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759172Ab2COIuw convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Thu, 15 Mar 2012 04:50:52 -0400
-Message-Id: <4F61BB780200007800078903@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 15 Mar 2012 08:50:48 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: <axboe@kernel.dk>, <xen-devel@lists.xensource.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] xen/blkback: Make optional features be really
- optional.
-References: <1331748631-4022-1-git-send-email-konrad.wilk@oracle.com>
- <1331748631-4022-3-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1331748631-4022-3-git-send-email-konrad.wilk@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1760799Ab2COIvN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 04:51:13 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56251 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759172Ab2COIvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 04:51:10 -0400
+From: Gerard Snitselaar <dev@snitselaar.org>
+To: martyn.welch@ge.com, gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: vme: fix section mismatches in linux-next 20120314
+Date: Thu, 15 Mar 2012 01:50:39 -0700
+Message-Id: <1331801439-30038-1-git-send-email-dev@snitselaar.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 14.03.12 at 19:10, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> They were using the xenbus_dev_fatal() function which would
-> change the state of the connection immediately. Which is not
-> what we want when we advertise optional features.
-> 
-> So make 'feature-discard','feature-barrier','feature-flush-cache'
-> optional.
-> 
-> Suggested-by: Jan Beulich <JBeulich@suse.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/block/xen-blkback/xenbus.c |   25 ++++++++++---------------
->  1 files changed, 10 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkback/xenbus.c 
-> b/drivers/block/xen-blkback/xenbus.c
-> index d417c13..d90a39c 100644
-> --- a/drivers/block/xen-blkback/xenbus.c
-> +++ b/drivers/block/xen-blkback/xenbus.c
-> @@ -381,7 +381,7 @@ int xen_blkbk_flush_diskcache(struct xenbus_transaction 
-> xbt,
->  	err = xenbus_printf(xbt, dev->nodename, "feature-flush-cache",
->  			    "%d", state);
->  	if (err)
-> -		xenbus_dev_fatal(dev, err, "writing feature-flush-cache");
-> +		dev_warn(&dev->dev, "writing feature-flush-cache (%d)", err);
+pio2_gpio_init() annotated with __init, but called by pio2_probe()
+which is annotated __devinit. pio2_gpio_exit() is annotated __exit,
+but is called by pio2_probe() and by pio2_remove() which is annotated
+__devexit.
 
-I'm really not certain whether dev_warn() or xenbus_dev_error() is
-better here. The latter would also make the error visible in xenstore,
-but whether that's good, superfluous, or outright bad I'm unsure
-about.
+Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
+---
+ drivers/staging/vme/devices/vme_pio2.h      |    4 ++--
+ drivers/staging/vme/devices/vme_pio2_gpio.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
->  
->  	return err;
->  }
-> @@ -400,16 +400,14 @@ int xen_blkbk_discard(struct xenbus_transaction xbt, 
-> struct backend_info *be)
->  			"discard-granularity", "%u",
->  			q->limits.discard_granularity);
->  		if (err) {
-> -			xenbus_dev_fatal(dev, err,
-> -				"writing discard-granularity");
-> +			dev_warn(&dev->dev, "writing discard-granularity (%d)", err);
->  			goto out;
->  		}
->  		err = xenbus_printf(xbt, dev->nodename,
->  			"discard-alignment", "%u",
->  			q->limits.discard_alignment);
->  		if (err) {
-> -			xenbus_dev_fatal(dev, err,
-> -				"writing discard-alignment");
-> +			dev_warn(&dev->dev, "writing discard-alignment (%d)", err);
->  			goto out;
->  		}
->  		state = 1;
-> @@ -418,15 +416,14 @@ int xen_blkbk_discard(struct xenbus_transaction xbt, 
-> struct backend_info *be)
->  				    "discard-secure", "%d",
->  				    blkif->vbd.discard_secure);
->  		if (err) {
-> -			xenbus_dev_fatal(dev, err,
-> -					"writting discard-secure");
-> +			dev_warn(dev-dev, "writing discard-secure (%d)", err);
->  			goto out;
->  		}
->  	}
->  	err = xenbus_printf(xbt, dev->nodename, "feature-discard",
->  			    "%d", state);
->  	if (err)
-> -		xenbus_dev_fatal(dev, err, "writing feature-discard");
-> +		dev_warn(&dev->dev, "writing feature-discard (%d)", err);
->  out:
->  	return err;
->  }
-> @@ -439,7 +436,7 @@ int xen_blkbk_barrier(struct xenbus_transaction xbt,
->  	err = xenbus_printf(xbt, dev->nodename, "feature-barrier",
->  			    "%d", state);
->  	if (err)
-> -		xenbus_dev_fatal(dev, err, "writing feature-barrier");
-> +		dev_warn(&dev->dev, "writing feature-barrier (%d)", err);
->  
->  	return err;
->  }
-> @@ -671,14 +668,12 @@ again:
->  		return;
->  	}
->  
-> -	err = xen_blkbk_flush_diskcache(xbt, be, be->blkif->vbd.flush_support);
-> -	if (err)
-> -		goto abort;
-> +	/* If we can't advertise it is OK. */
-> +	(void)xen_blkbk_flush_diskcache(xbt, be, be->blkif->vbd.flush_support);
->  
-> -	err = xen_blkbk_discard(xbt, be);
-> +	(void)xen_blkbk_discard(xbt, be);
->  
-> -	/* If we can't advertise it is OK. */
-> -	err = xen_blkbk_barrier(xbt, be, be->blkif->vbd.flush_support);
-> +	(void)xen_blkbk_barrier(xbt, be, be->blkif->vbd.flush_support);
-
-The casts here are bogus in any case. Even more, the functions can
-now easily be declared to return "void", as they don't have a caller
-caring for their return value anymore (xen_blkbk_discard() should
-even be "static").
-
-Jan
-
->  
->  	err = xenbus_printf(xbt, dev->nodename, "sectors", "%llu",
->  			    (unsigned long long)vbd_sz(&be->blkif->vbd));
-
+diff --git a/drivers/staging/vme/devices/vme_pio2.h b/drivers/staging/vme/devices/vme_pio2.h
+index 3c59313..72d9ce0 100644
+--- a/drivers/staging/vme/devices/vme_pio2.h
++++ b/drivers/staging/vme/devices/vme_pio2.h
+@@ -243,7 +243,7 @@ struct pio2_card {
+ int pio2_cntr_reset(struct pio2_card *);
+ 
+ int pio2_gpio_reset(struct pio2_card *);
+-int __init pio2_gpio_init(struct pio2_card *);
+-void __exit pio2_gpio_exit(struct pio2_card *);
++int __devinit pio2_gpio_init(struct pio2_card *);
++void pio2_gpio_exit(struct pio2_card *);
+ 
+ #endif /* _VME_PIO2_H_ */
+diff --git a/drivers/staging/vme/devices/vme_pio2_gpio.c b/drivers/staging/vme/devices/vme_pio2_gpio.c
+index dc837de..8584849 100644
+--- a/drivers/staging/vme/devices/vme_pio2_gpio.c
++++ b/drivers/staging/vme/devices/vme_pio2_gpio.c
+@@ -187,7 +187,7 @@ int pio2_gpio_reset(struct pio2_card *card)
+ 	return 0;
+ }
+ 
+-int __init pio2_gpio_init(struct pio2_card *card)
++int __devinit pio2_gpio_init(struct pio2_card *card)
+ {
+ 	int retval = 0;
+ 	char *label;
+@@ -220,7 +220,7 @@ int __init pio2_gpio_init(struct pio2_card *card)
+ 	return retval;
+ };
+ 
+-void __exit pio2_gpio_exit(struct pio2_card *card)
++void pio2_gpio_exit(struct pio2_card *card)
+ {
+ 	const char *label = card->gc.label;
+ 
+-- 
+1.7.7.6
 
