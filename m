@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965226Ab2COO5u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:57:50 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:64383 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396Ab2COO5r (ORCPT
+	id S1030535Ab2COO60 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:58:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40729 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030266Ab2COO6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:57:47 -0400
-Date: Thu, 15 Mar 2012 07:57:43 -0700
-From: gregkh <gregkh@linuxfoundation.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Alan stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        "Sharp, Sarah A" <sarah.a.sharp@intel.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
-Message-ID: <20120315145743.GA7928@kroah.com>
-References: <1331787186.2979.71.camel@debian>
+	Thu, 15 Mar 2012 10:58:23 -0400
+Date: Thu, 15 Mar 2012 15:58:20 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sasha Levin <levinsasha928@gmail.com>
+cc: John Stultz <john.stultz@linaro.org>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: ntp: BUG: spinlock lockup on CPU#1
+In-Reply-To: <alpine.LFD.2.02.1203151440590.2466@ionos>
+Message-ID: <alpine.LFD.2.02.1203151556090.2466@ionos>
+References: <CA+1xoqcGcfYzjrvRU-z=mUSq+wgqfBqdM51shV5gk4ohfe5Wng@mail.gmail.com> <alpine.LFD.2.02.1203151440590.2466@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331787186.2979.71.camel@debian>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 12:53:06PM +0800, Alex Shi wrote:
+On Thu, 15 Mar 2012, Thomas Gleixner wrote:
+> CPU 0                                                    CPU 1
+> do_adjtimex()
+>   spin_lock_irq(&ntp_lock);
+>     process_adjtimex_modes();				 timer_interrupt()
+>       process_adj_status();                                do_timer()
+>         ntp_start_leap_timer();                             write_lock(&xtime_lock);
+>           hrtimer_start();                                  update_wall_time();
+>              hrtimer_reprogram();                            ntp_tick_length()
+>                tick_program_event()                            spin_lock(&ntp_lock);
+>                  clockevents_program_event()
+> 		   ktime_get()
+>                      seq = req_seqbegin(xtime_lock);
 > 
-> According to Felipe and Alan's comments the second parameter of irq
-> handler should be 'void *' not a specific structure pointer. 
-> So change it.
-> 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  drivers/usb/host/xhci-ring.c |    2 +-
->  drivers/usb/host/xhci.c      |    4 ++--
->  drivers/usb/host/xhci.h      |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
+> So CPU0 waits for xtime seqence to become valid and CPU1 cant make
+> progress because it's stuck on ntp_lock.
 
-Is this needed in my -next tree now?  Or is it something for later?
-
-Any reason you did not put Sarah on the To: line here?  She's the one
-that needs to ack it before I can accept it.
-
-thanks,
-
-greg k-h
+The same problem exists with ntp_clear() being called under the
+xtime/timekeeper lock write locked. Nasty ...
