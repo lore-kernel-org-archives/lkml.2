@@ -1,103 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965044Ab2COCSE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 22:18:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755757Ab2COCRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 22:17:44 -0400
-Date: Wed, 14 Mar 2012 22:17:39 -0400
-From: Dave Jones <davej@redhat.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: list-debug variants of rcu list routines.
-Message-ID: <20120315021738.GA31213@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, paulmck@linux.vnet.ibm.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759988Ab2COCT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 22:19:58 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:50421 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755757Ab2COCT4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 22:19:56 -0400
+Date: Thu, 15 Mar 2012 10:19:39 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [PATCH] IA64: fix ISA IRQ trigger model and polarity setting
+In-reply-to: <CA+8MBbLsA8OysJNFMN4a0p6Yj3qmmawvtE0pGtcnAJpULjNi+A@mail.gmail.com>
+X-Originating-IP: [10.107.196.60]
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Jiang Liu <liuj97@gmail.com>, linux-ia64@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>, chenkeping@huawei.com
+Message-id: <4F6151BB.9000807@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222
+ Thunderbird/9.0.1
+X-CFilter-Loop: Reflected
+References: <1331647629-11550-1-git-send-email-jiang.liu@huawei.com>
+ <CA+8MBbLsA8OysJNFMN4a0p6Yj3qmmawvtE0pGtcnAJpULjNi+A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Make __list_add_rcu check the next->prev and prev->next pointers
-  just like __list_add does.
-* Make list_del_rcu use __list_del_entry, which does the same checking
-  at deletion time.
+Hi Tony,
+I have checked the ACPI and MPSpec too. As you have mentioned,
+those specifications have no detailed definition for default
+trigger mode and polarity setting, only give some examples and
+state "refer to the bus specification".
 
-Has been running for a week here without anything being tripped up,
-but it seems worth adding for completeness just in case something
-ever does corrupt those lists.
+On the other hand, our platform uses Intel Boxboro and ICH10
+chipsets, which are the same chipsets used by Intel Emarald-Ridge
+platform. The ICH10 has a PCI-ISA bridge, so I assume it's an ISA
+bus instead of EISA. Then I referred to x86 IOAPIC implementation
+and found that default ISA IRQ trigger/polarity setting is
+edge-rising on x86, but level-low on IA64.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+As the MPSpec 1.4 table 4-10 states,
+EL 2:2 2 Trigger mode of APIC I/O input signals:
+	00 = Conforms to specifications of bus (for example, ISA is
+	     edge triggered)
+	01 = Edge-triggered
+	10 = Reserved
+	11 = Level-triggered
 
-diff -durpN '--exclude-from=/home/davej/.exclude' -u src/git-trees/kernel/linux/include/linux/rculist.h linux-dj/include/linux/rculist.h
---- src/git-trees/kernel/linux/include/linux/rculist.h	2011-07-23 00:05:34.000000000 -0400
-+++ linux-dj/include/linux/rculist.h	2012-03-07 00:21:47.050583527 -0500
-@@ -30,6 +30,7 @@
-  * This is only for internal list manipulation where we know
-  * the prev/next entries already!
-  */
-+#ifndef CONFIG_DEBUG_LIST
- static inline void __list_add_rcu(struct list_head *new,
- 		struct list_head *prev, struct list_head *next)
- {
-@@ -38,6 +39,10 @@ static inline void __list_add_rcu(struct
- 	rcu_assign_pointer(list_next_rcu(prev), new);
- 	next->prev = new;
- }
-+#else
-+extern void __list_add_rcu(struct list_head *new,
-+		struct list_head *prev, struct list_head *next);
-+#endif
- 
- /**
-  * list_add_rcu - add a new entry to rcu-protected list
-@@ -108,7 +113,7 @@ static inline void list_add_tail_rcu(str
-  */
- static inline void list_del_rcu(struct list_head *entry)
- {
--	__list_del(entry->prev, entry->next);
-+	__list_del_entry(entry);
- 	entry->prev = LIST_POISON2;
- }
- 
-diff -durpN '--exclude-from=/home/davej/.exclude' -u src/git-trees/kernel/linux/lib/list_debug.c linux-dj/lib/list_debug.c
---- src/git-trees/kernel/linux/lib/list_debug.c	2011-02-19 12:00:40.000000000 -0500
-+++ linux-dj/lib/list_debug.c	2012-03-07 00:18:12.108062540 -0500
-@@ -8,6 +8,7 @@
- 
- #include <linux/module.h>
- #include <linux/list.h>
-+#include <linux/rculist.h>
- 
- /*
-  * Insert a new entry between two known consecutive entries.
-@@ -73,3 +74,24 @@ void list_del(struct list_head *entry)
- 	entry->prev = LIST_POISON2;
- }
- EXPORT_SYMBOL(list_del);
-+
-+/*
-+ * RCU variants.
-+ */
-+void __list_add_rcu(struct list_head *new,
-+                struct list_head *prev, struct list_head *next)
-+{
-+	WARN(next->prev != prev,
-+		"list_add_rcu corruption. next->prev should be "
-+		"prev (%p), but was %p. (next=%p).\n",
-+		prev, next->prev, next);
-+	WARN(prev->next != next,
-+		"list_add_rcu corruption. prev->next should be "
-+		"next (%p), but was %p. (prev=%p).\n",
-+		next, prev->next, prev);
-+        new->next = next;
-+        new->prev = prev;
-+        rcu_assign_pointer(list_next_rcu(prev), new);
-+        next->prev = new;
-+}
-+EXPORT_SYMBOL(__list_add_rcu);
+So at lease IA64 has incorrectly set the default trigger mode to
+level-triggered, which violates the specifications.
+
+The scenario to trigger the issue on our platform is as below:
+1) System has plenty of IO cards, vector allocation mode is set to
+"global" by default. Because the system has limited interrupt vectors,
+it begins to sharing interrupt when running out of vectors. With
+current implementation, it will share interrupt vector among PCI
+IRQs(level-low) and ISA IRQs with default setting, then interrupt
+storm happens.
+2) If we switch the vector allocation mode to "percpu", system will
+have plenty of interrupt vectors, so no interrupt sharing and no 
+interrupt storm.
+
+So I think IA64 may have incorrectly set the default trigger/polarity
+mode. But I'm not sure whether it will cause any compatibility issues
+with existing platforms.
+
+Thanks!
+
+On 2012-3-15 5:12, Tony Luck wrote:
+>> When handling Interrupt Source Override in MADT table, the default
+>> ISA IRQ trigger model and poliarity should be edge-rising.
+>> Current IA64 implmentation doesn't follow the specification and
+>> set default ISA IRQ trigger model as level-low. With that wrong
+>> configuration and when system runs out of interrupt vectors,
+>> it will cause vector sharing among edge triggered ISA IRQ and
+>> level triggered PCI IRQ, then interrupt storm. So change the code
+>> to follow the specification.
+>
+> I chased the reference in ACPI to the MPS spec:
+>   http://www.intel.com/design/pentium/datashts/24201606.pdf
+>
+> Which says in table 4-10 "for example. EISA is active-low for
+> level triggered interrupt" and "for example, EISA is edge-triggered".
+>
+> It looks to me that if MADT says "high", we should set high, if it says
+> "low" we should set low. Ditto for trigger vs. level. But if we see the
+> value "0" - then we have more work to do to determine what the
+> bus we are on uses for its default.
+>
+> Did you find some other specification that gives a better explanation?
+> Or did I miss something - can we only get to this routine for ISA?
+>
+> You've tested this patch - and it works for you - but is there a risk
+> that it will break someone else?
+>
+> -Tony
+>
+>
+
 
