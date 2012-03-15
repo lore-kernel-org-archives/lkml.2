@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757172Ab2COHQs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 03:16:48 -0400
-Received: from mail.gw90.de ([188.40.100.199]:57884 "EHLO mail.gw90.de"
+	id S1755066Ab2COHWt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 03:22:49 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39922 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756888Ab2COHQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 03:16:46 -0400
-Message-ID: <1331795799.3718.7.camel@mattotaupa>
-Subject: Re: [V2 PATCH 2/2] drivers-gpu-drm-i915-invert-backlight-brightness
-From: Paul Menzel <paulepanter@users.sourceforge.net>
-To: Keith Packard <keithp@keithp.com>
-Cc: Carsten Emde <C.Emde@osadl.org>, David Airlie <airlied@linux.ie>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 15 Mar 2012 08:16:39 +0100
-In-Reply-To: <8662e6inzr.fsf@sumi.keithp.com>
-References: <20120314233544.629616190@osadl.org>
-	 <20120314234830.227490545@osadl.org> <8662e6inzr.fsf@sumi.keithp.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-lQPKSD7DUkmaxepAl6wo"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
+	id S1751150Ab2COHWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 03:22:48 -0400
+Date: Thu, 15 Mar 2012 08:21:24 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Paul Turner <pjt@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Benjamin Segall <bsegall@google.com>,
+        Ranjit Manomohan <ranjitm@google.com>, Nikhil Rao <ncrao@google.com>,
+        jmc@cs.unc.edu, Dhaval Giani <dhaval.giani@gmail.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] LinSched for v3.3-rc7
+Message-ID: <20120315072124.GA29161@elte.hu>
+References: <CAPM31RL6Sk6cNR9MzW_7XDvfkMA1q6xK_mcJJaCMY8Ex___9+A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM31RL6Sk6cNR9MzW_7XDvfkMA1q6xK_mcJJaCMY8Ex___9+A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+ -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+                             [score: 0.0000]
+  0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-lQPKSD7DUkmaxepAl6wo
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+* Paul Turner <pjt@google.com> wrote:
 
-Am Mittwoch, den 14.03.2012, 19:42 -0700 schrieb Keith Packard:
-> <#part sign=3Dpgpmime>
+> That said, I'm relatively happy with the current state of 
+> integration, there's certainly some specific areas that can 
+> still be greatly improved (in particular, the main simulator 
+> loop has not had as much attention paid as the 
+> LinSched<>Kernel interactions and there's a long list of TODOs 
+> that could be improved there), but things are now mated fairly 
+> cleanly through the use of a new LinSched architecture.  This 
+> is a total re-write of almost all LinSched<>Kernel 
+> interactions versus the previous (2.6.35) version, and has 
+> allowed us to now carry almost zero modifications against the 
+> kernel source.  It's both possible to develop/test in place, 
+> as well as being patch compatible.  The remaining touch-points 
+> now total just 20 lines!  Half of these are likely mergable, 
+> with the other 10 lines being more LinSched specific at this 
+> point in time, I've broken these down below:
+> 
+> The total damage:
+>  include/linux/init.h      |    6 ++++++   (linsched ugliness,
+> unfortunately necessary until we boot-strap proper initcall support)
+>  include/linux/rcupdate.h  |    3 +++    (only necessary to allow -O0
+> compilation which is extremely handy for analyzing the scheduler using
+> gdb)
+>  kernel/pid.c              |    4 ++++        (linsched ugliness,
+> these can go eventually)
+>  kernel/sched/fair.c       |    2 +-          (this is just the
+> promotion of 1 structure and function from static state which weren't
+> published in the sched/ re-factoring that we need from within the
+> simulator)
+>  kernel/sched/stats.c      |    2 +-
+>  kernel/time/timekeeping.c |    3 ++-    (this fixes a time-dilation
+> error due to rounding when our clock-source has ns-resolution, e.g.
+> shift==1)
+>  6 files changed, 17 insertions(+), 3 deletions(-)
 
-Notmuch sometimes seems to add that line. Is that a bug?
+Mind sending these preparatory changes as a standalone series as 
+well, against the upstream scheduler, straight away?
 
-> On Thu, 15 Mar 2012 00:35:46 +0100, Carsten Emde <C.Emde@osadl.org> wrote=
-:
->=20
-> > This patch adds a module parameter to invert the backlight brightness
-> > value before writing and after reading which makes the affected noteboo=
-k
-> > usable again.
->=20
-> You should add a quirk for this and set things up so that your machine
-> automatically gets the right value; when we find more machines that do
-> this, we can add them so that more people will get a system that 'just
-> works'.
-
-Keith, do you mean adding the quirk additionally in a separate patch?
-Having that module option would ease testing the workaround without
-needing to build a custom Linux kernel with a quirk added.
-
+Maybe we can find ways to remove the uglies while reviewing and 
+integrating all that. Having those bits upstream would make the 
+rest of linsched a lot easier to merge as well.
 
 Thanks,
 
-Paul
-
-
-
---=-lQPKSD7DUkmaxepAl6wo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEABECAAYFAk9hl1cACgkQPX1aK2wOHVjuPwCcDKSWdklU7CBjs/V+5Njr4be/
-wBkAn3mW7f4AMusXhRlGkDPDhco6uC0P
-=0SCM
------END PGP SIGNATURE-----
-
---=-lQPKSD7DUkmaxepAl6wo--
-
+	Ingo
