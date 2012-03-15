@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760202Ab2COO31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:29:27 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47354 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759489Ab2COO3X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:29:23 -0400
-Date: Thu, 15 Mar 2012 10:29:22 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Alex Shi <alex.shi@intel.com>
-cc: gregkh <gregkh@linuxfoundation.org>, <sarah.a.sharp@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] usb/core: skip unnecessary line IRQ request for USB3
-In-Reply-To: <1331786904.2979.64.camel@debian>
-Message-ID: <Pine.LNX.4.44L0.1203151025300.1366-100000@iolanthe.rowland.org>
+	id S1760419Ab2COObQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:31:16 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56346 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759489Ab2COObP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 10:31:15 -0400
+X-IronPort-AV: E=Sophos;i="4.73,591,1325433600"; 
+   d="scan'208";a="4543469"
+Message-ID: <4F61FCF8.1040304@cn.fujitsu.com>
+Date: Thu, 15 Mar 2012 22:30:16 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Rajak, Rishikesh Kumar (FEL/PQSi)" <rishikesh.rajak@hp.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "ltp-list@lists.sourceforge.net" <ltp-list@lists.sourceforge.net>,
+        "vapier@gentoo.org" <vapier@gentoo.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "risrajak@linux.vnet.ibm.com" <risrajak@linux.vnet.ibm.com>
+Subject: Re: [LTP] [PATCH] MAINTAINERS: update the maintain-ship of LTP
+References: <1331820621-10095-1-git-send-email-gaowanlong@cn.fujitsu.com> <80145D4278C2654ABC4879063FB2FFA9530ACB12@G4W3231.americas.hpqcorp.net>
+In-Reply-To: <80145D4278C2654ABC4879063FB2FFA9530ACB12@G4W3231.americas.hpqcorp.net>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-15 22:29:09,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-15 22:29:09,
+	Serialize complete at 2012-03-15 22:29:09
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Mar 2012, Alex Shi wrote:
+On 03/15/2012 10:19 PM, Rajak, Rishikesh Kumar (FEL/PQSi) wrote:
 
-> USB3 requests line IRQ here but will disable it
-> in later driver->start function and try MSI first.
+> Hi Wanlong,
 > 
-> xhci_hcd 0000:02:00.0: irq 18, io mem 0xfe500000
-> xhci_hcd 0000:02:00.0: irq 45 for MSI/MSI-X
-> xhci_hcd 0000:02:00.0: irq 46 for MSI/MSI-X
+> Review-By: Rishikesh K Rajak <rishikesh.rajak@hp.com>
 > 
-> So it is better to remove the redundant request here. And
-> save a little time in booting.
+> No issue with me. But still I am closely watching this place though my responsibilities have changed.
+
+
+Thank you for your previous great work, Rishikesh.
+
+Regards,
+Wanlong Gao
+
 > 
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> Regards
+> Rishi
+> 
+> -----Original Message-----
+> From: Wanlong Gao [mailto:gaowanlong@cn.fujitsu.com]
+> Sent: Thursday, March 15, 2012 7:40 PM
+> To: akpm@linux-foundation.org
+> Cc: ltp-list@lists.sourceforge.net; vapier@gentoo.org; linux-kernel@vger.kernel.org; risrajak@linux.vnet.ibm.com
+> Subject: [LTP] [PATCH] MAINTAINERS: update the maintain-ship of LTP
+> 
+> The maintain-ship of LTP is out of date, so update it.
+> 
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> Signed-off-by: Cyril Hrubis <chrubis@suse.cz>
+> Signed-off-by: Caspar Zhang <caspar@casparzhang.com>
 > ---
->  drivers/usb/core/hcd.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+>  MAINTAINERS |    8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-> index e128232..5b09825 100644
-> --- a/drivers/usb/core/hcd.c
-> +++ b/drivers/usb/core/hcd.c
-> @@ -2450,7 +2450,8 @@ int usb_add_hcd(struct usb_hcd *hcd,
->  	/* enable irqs just before we start the controller,
->  	 * if the BIOS provides legacy PCI irqs.
->  	 */
-> -	if (usb_hcd_is_primary_hcd(hcd) && irqnum) {
-> +	if (usb_hcd_is_primary_hcd(hcd) && irqnum
-> +		&& (hcd->driver->flags & HCD_MASK) != HCD_USB3) {
->  		retval = usb_hcd_request_irqs(hcd, irqnum, irqflags);
->  		if (retval)
->  			goto err_request_irq;
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 95e4e43..3e10e6f 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -4173,12 +4173,14 @@ F:      Documentation/hwmon/ltc4261
+>  F:     drivers/hwmon/ltc4261.c
+> 
+>  LTP (Linux Test Project)
+> -M:     Rishikesh K Rajak <risrajak@linux.vnet.ibm.com>
+> -M:     Garrett Cooper <yanegomi@gmail.com>
+> +M:     Shubham Goyal <shubham@linux.vnet.ibm.com>
+>  M:     Mike Frysinger <vapier@gentoo.org>
+> -M:     Subrata Modak <subrata@linux.vnet.ibm.com>
+> +M:     Cyril Hrubis <chrubis@suse.cz>
+> +M:     Caspar Zhang <caspar@casparzhang.com>
+> +M:     Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>  L:     ltp-list@lists.sourceforge.net (subscribers-only)
+>  W:     http://ltp.sourceforge.net/
+> +T:     git git://github.com/linux-test-project/ltp.git
+>  T:     git git://ltp.git.sourceforge.net/gitroot/ltp/ltp-dev
+>  S:     Maintained
+> 
+> --
+> 1.7.10.rc1
+> 
+> 
+> ------------------------------------------------------------------------------
+> This SF email is sponsosred by:
+> Try Windows Azure free for 90 days Click Here
+> http://p.sf.net/sfu/sfd2d-msazure
+> _______________________________________________
+> Ltp-list mailing list
+> Ltp-list@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/ltp-list
+> 
 
-This is not a good idea.  What happens if some USB-3 controller 
-(perhaps a non-xHCI USB-3 controller) doesn't use MSI?
-
-The right way to avoid registering a legacy interrupt handler is to 
-call usb_add_hcd() with irqnum equal to 0.
-
-Alan Stern
 
