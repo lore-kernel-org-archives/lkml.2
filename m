@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031091Ab2COWW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 18:22:59 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:37490 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965291Ab2COWW4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 18:22:56 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Daniel Walker <dwalker@fifo99.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Avery Pennarun <apenwarr@gmail.com>, Josh Triplett <josh@joshtriplett.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, "David S. Miller" <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Fabio M. Di Nitto" <fdinitto@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Olaf Hering <olaf@aepfle.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Yinghai LU <yinghai@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-Date: Thu, 15 Mar 2012 18:10:29 -0400
-Subject: RE: [PATCH 0/5] Persist printk buffer across reboots.
-Thread-Topic: [PATCH 0/5] Persist printk buffer across reboots.
-Thread-Index: Ac0BiN3Gzmq9d4F2RW6+WuXPAR90dgBbfklQ
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E31C6F891@USINDEVS01.corp.hds.com>
-References: <1331617001-20906-1-git-send-email-apenwarr@gmail.com>
- <20120313170851.GA5218@fifo99.com>
- <20120313151049.fa33d232.akpm@linux-foundation.org>
- <20120314021906.GC5218@fifo99.com>
-In-Reply-To: <20120314021906.GC5218@fifo99.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1031078Ab2COW1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 18:27:09 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47746 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759898Ab2COW1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 18:27:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] firmware_class: Move request_firmware_nowait() to workqueues
+Date: Thu, 15 Mar 2012 23:31:14 +0100
+User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: Christian Lamparter <chunkeey@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+References: <1331841015-26684-1-git-send-email-sboyd@codeaurora.org> <201203152107.57501.chunkeey@googlemail.com> <4F624D32.9030801@codeaurora.org>
+In-Reply-To: <4F624D32.9030801@codeaurora.org>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1203150245
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203152331.14314.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> There is also this series,
+On Thursday, March 15, 2012, Stephen Boyd wrote:
+> On 03/15/12 13:07, Christian Lamparter wrote:
+> > On Thursday, March 15, 2012 08:50:15 PM Stephen Boyd wrote:
+> >> Oddly enough a work_struct was already part of the firmware_work
+> >> structure but nobody was using it. Instead of creating a new
+> >> kthread for each request_firmware_nowait() just schedule the work
+> >> on the system workqueue. This should avoid some overhead in
+> >> forking new threads when they're not strictly necessary if
+> >> workqueues are available.
+> >>
+> >> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> >> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> >> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> >> ---
+> >>
+> >> I saw this while looking at this problem we're having.
+> > Correct me if I'm wrong, but wouldn't that stall all other
+> > global workqueue tasks for up to 60 seconds [in worst case]?
+> >
+> > But I think we can get rid of the firmware_work work struct...
+> >
 > 
-> http://lists.infradead.org/pipermail/kexec/2011-July/005258.html
-> 
-> It seems awkward that pstore is in fs/pstore/ then pstore ends up as the "back end" where it could just be the whole solution.
+> My understanding is that with concurrency managed workqueues when the
+> work item blocks another will be scheduled to run almost immediately. So
+> before that change by Tejun workqueues would have been a bad idea
+> because it could have blocked up to 60 second but now it should be fine
+> because that work item will just be put to sleep and another request
+> will run.
 
-I just wanted to avoid deadlocks of pstore and its drivers such as mtdoops, ramoops, and efi_pstore in panic case.
-That is still under discussion in lkml.
+Please read the description of system_wq in workqueue.h.
 
-I have no objection to modifying mtdoops/ram_console to use pstore.
+You should have used either system_long_wq or system_nrt_wq (depending on
+what you really need).
 
->pstore does seems to have the nicest user interface (might be better in debugfs tho). If someone wanted to move forward with pstore they would have to write some some sort of,
->
->int pstore_register_simple(unsigned long addr, unsigned long size);
->
->to cover all the memory areas that aren't transaction based, or make pstore accept a platform_device.
-
-If you would like to introduce new feature to pstore, Tony Luck is the appropriate person to discuss.
-
-Seiji
+Thanks,
+Rafael
