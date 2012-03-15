@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161157Ab2COROA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:14:00 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64610 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031926Ab2CORN7 (ORCPT
+	id S1032002Ab2COROK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:14:10 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:57519 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161170Ab2COROF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:13:59 -0400
-Message-ID: <4F622352.8070201@gmail.com>
-Date: Fri, 16 Mar 2012 01:13:54 +0800
-From: "Teo En Ming (Zhang Enming)" <ubuntu.fan.2012@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 15 Mar 2012 13:14:05 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19DqRZYwVGCqkWIBCkal5R5
+Date: Thu, 15 Mar 2012 10:14:00 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: jean.pihet@newoldbits.com
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>, Jean Pihet <j-pihet@ti.com>
+Subject: Re: [PATCH 02/10] ARM: OMAP2+: SmartReflex: move the platform
+ specific macros in plat-omap
+Message-ID: <20120315171359.GA7276@atomide.com>
+References: <1331829845-9526-1-git-send-email-j-pihet@ti.com>
+ <1331829845-9526-3-git-send-email-j-pihet@ti.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: ubuntu.fan.2012@gmail.com
-Subject: Latest Linux Kernel 3.x.x Series Compiled for Ubuntu and Debian Linux
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331829845-9526-3-git-send-email-j-pihet@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+* jean.pihet@newoldbits.com <jean.pihet@newoldbits.com> [120315 09:47]:
+> From: Jean Pihet <j-pihet@ti.com>
+> 
+> Move the platform specific macros from the smartreflex header file
+> (arch/arm/mach-omap2/smartreflex.h) in a new header file in plat-omap
+> (arch/arm/plat-omap/include/plat/smartreflex.h).
+> 
+> This change makes the SmartReflex implementation ready for the move
+> to drivers/.
 
-I have compiled the *latest* linux kernels 3.x.x series for Ubuntu and Debian Linux for you to install. You may download the *latest* linux
-kernels 3.x.x series for Ubuntu and Debian from the following download links:
+Glad to see this happening!
 
-(1) linux-image-3.3.0-rc7-xen-teo.en.ming-sgp_14.mar.2012_amd64.deb
+This would be better located in linux/power/smartreflex.h rather than
+plat/smartreflex.h.
 
-Download Link:http://www.mediafire.com/?kn505tufic974zj
+Regards,
 
-(2) linux-headers-3.3.0-rc7-xen-teo.en.ming-sgp_14.mar.2012_amd64.deb
-
-Download Link:http://www.mediafire.com/?cj1a1k82v516jp0
-
-
-
-(3) linux-image-3.2.11-xen-teo.en.ming-sgp_15.mar.2012_amd64.deb
-
-Download Link:http://www.mediafire.com/?mkh4rd6tobit35b
-
-(4) linux-headers-3.2.11-xen-teo.en.ming-sgp_15.mar.2012_amd64.deb
-
-Download link:http://www.mediafire.com/?xzxk5sbaujbnkkg
-
-
-
-To install the linux kernel .deb files, please execute the following commands:
-
-(a) sudo dpkg -i linux-image-3.3.0-rc7-xen-teo.en.ming-sgp_14.mar.2012_amd64.deb
-
-(b) sudo dpkg -i linux-headers-3.3.0-rc7-xen-teo.en.ming-sgp_14.mar.2012_amd64.deb
-
-
-
-(c) sudo dpkg -i linux-image-3.2.11-xen-teo.en.ming-sgp_15.mar.2012_amd64.deb
-
-(d) sudo dpkg -i linux-headers-3.2.11-xen-teo.en.ming-sgp_15.mar.2012_amd64.deb
-
-
-Please report successes and also let me know if you encounter any problems.
-
-Thank you very much.
-
-
-Yours sincerely,
-
-Teo En Ming (Zhang Enming)
-
+Tony
