@@ -1,56 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760853Ab2COI44 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 04:56:56 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58883 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756888Ab2COI4u (ORCPT
+	id S1760916Ab2COJHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 05:07:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:50163 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759588Ab2COJHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 04:56:50 -0400
-Message-ID: <1331801806.2941.3.camel@dabdike>
-Subject: RE: [PATCH] mpt2sas: Corrected the constant in comparison to a
- hexadecimal.
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nanjappa, Sathisha (MCXS, Cupertino)" <sathisha.nanjappa@hp.com>
-Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 15 Mar 2012 08:56:46 +0000
-In-Reply-To: <C8A4A375313D4E4DA64F2CB1D0490B0A44730306@G9W0735.americas.hpqcorp.net>
-References: <1331665168-22561-1-git-send-email-sathisha.nanjappa@hp.com>
-	 <1331665168-22561-2-git-send-email-sathisha.nanjappa@hp.com>
-	 <1331714014.8688.3.camel@dabdike>
-	 <C8A4A375313D4E4DA64F2CB1D0490B0A44730306@G9W0735.americas.hpqcorp.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	Thu, 15 Mar 2012 05:07:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v9] mfd: Add anatop mfd driver
+Date: Thu, 15 Mar 2012 09:07:29 +0000
+User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
+Cc: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
+        linaro-dev@lists.linaro.org, Samuel Ortiz <sameo@linux.intel.com>,
+        patches@linaro.org, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Venu Byravarasu <vbyravarasu@nvidia.com>,
+        Peter Korsgaard <jacmet@sunsite.dk>
+References: <1331797421-23731-1-git-send-email-paul.liu@linaro.org>
+In-Reply-To: <1331797421-23731-1-git-send-email-paul.liu@linaro.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201203150907.29895.arnd@arndb.de>
+X-Provags-ID: V02:K0:hlcUMcuuQcN2i1wyUL3TckAyEyFclK0B2xhGniEW0Od
+ k9YXzaGTLpGX47aSJBLorQkqTcP4t2RaRa8EeBWXSOoKkdY2Rs
+ PqCtyxtJAMHi2X/T23yO4rC6qt4EDloapJ23nOBtRkxMstI7w3
+ aEJHUgZEQCKvT7gJCU1y1MiOsChA4boLOVWMZSbLWmciOFJr5/
+ D7DNojWF10CCbXrqe/+efPozk4zP2LdZ/aABBOdDymcsJsLpPs
+ tQjbwYGkNNjFnlu8jyABVRake422Z2t94ApnMRR99gxinHmlYN
+ eJtvtN2/2a4K0PoRBCeAPjrkfXUrPiH/8d7OrR1fOqhj6qPBdb
+ E86gVs0Yc4XgkAJXJ2aI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-03-14 at 23:36 +0000, Nanjappa, Sathisha (MCXS, Cupertino)
-wrote:
-> > 
-> > On Tue, 2012-03-13 at 11:59 -0700, Sathisha Nanjappa wrote:
-> > > Bugzilla 42142 - mpt2sas: Number specified in wrong base
-> > >     https://bugzilla.kernel.org/show_bug.cgi?id=42142
-> > 
-> > From: James Bottomley
-> > Sent: Wednesday, March 14, 2012 1:34 AM
-> > Do you have a better description ... like what is the user
-> > visible effect of correcting the constant?
-> >
+On Thursday 15 March 2012, Ying-Chun Liu (PaulLiu) wrote:
+> From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
 > 
-> Does this look better:
-> 
-> "This fix ensures that the IOP_LOGINFO_CODE_TASK_TERMINATED
-> messages do not clutter the sas_log_info messages."
+> Anatop is a mfd chip embedded in Freescale i.MX6Q SoC.
+> Anatop provides regulators and thermal.
+> This driver handles the address space and the operation of the mfd device.
 
-Much better, thanks.  The whole point of a commit message is to explain
-what you're doing and why you're doing it.  Just translating C to
-english isn't useful because everyone who looks a kernel patches can
-read C.
+Hi Paul,
 
-James
+This looks like a very nice and clean driver, good work!
 
+Very broadly speaking, I wonder whether we could use the regmap
+infrastructure for these things in the future, but I would first
+need to understand whether that is actually in the scope of regmap.
 
+It seems that you just need a subset of what regmap provides,
+so it could work, but it might not actually be better than what
+you have now.
+
+Mark, can you comment on that?
+
+> +u32 anatop_get_bits(struct anatop *adata, u32 addr, int bit_shift,
+> +		    int bit_width)
+> +{
+> +	u32 val, mask;
+> +
+> +	if (bit_width == 32)
+> +		mask = ~0;
+> +	else
+> +		mask = (1 << bit_width) - 1;
+> +
+> +	val = readl(adata->ioreg + addr);
+> +	val = (val >> bit_shift) & mask;
+> +
+> +	return val;
+> +}
+> +EXPORT_SYMBOL(anatop_get_bits);
+
+I think the exports here should be EXPORT_SYMBOL_GPL. There is no reason
+why an out of tree driver would ever use these.
+
+> +static const struct of_device_id of_anatop_subdevice_match[] = {
+> +	{ .compatible = "fsl,anatop-regulator", },
+> +	{ .compatible = "fsl,anatop-thermal", },
+> +	{ },
+> +};
+> +
+> +static int __devinit of_anatop_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct device_node *np = dev->of_node;
+> +	void *ioreg;
+> +	struct anatop *drvdata;
+> +
+> +	ioreg = of_iomap(np, 0);
+> +	if (!ioreg)
+> +		return -EADDRNOTAVAIL;
+> +	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
+> +	if (!drvdata)
+> +		return -ENOMEM;
+> +	drvdata->ioreg = ioreg;
+> +	spin_lock_init(&drvdata->reglock);
+> +	platform_set_drvdata(pdev, drvdata);
+> +	of_platform_bus_probe(np, of_anatop_subdevice_match, dev);
+> +
+> +	return 0;
+> +}
+
+Why do you list the subdevices in of_anatop_subdevice_match()? I think you
+should just use 
+
+	of_platform_bus_probe(np, of_anatop_match, dev);
+
+here, using the same match table that you have in the platform_driver.
+That will automatically create platform devices for any children of this
+device, so you don't have to update the list above when you get new
+child drivers.
+
+	Arnd
