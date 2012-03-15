@@ -1,120 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161340Ab2COTuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 15:50:24 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:16642 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161312Ab2COTuU (ORCPT
+	id S1161350Ab2COTux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 15:50:53 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:26821 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161312Ab2COTuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 15:50:20 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6650"; a="170561628"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [PATCH] firmware_class: Move request_firmware_nowait() to workqueues
-Date: Thu, 15 Mar 2012 12:50:15 -0700
-Message-Id: <1331841015-26684-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.3.327.g2980b
-In-Reply-To: <201203150111.05724.rjw@sisk.pl>
+	Thu, 15 Mar 2012 15:50:51 -0400
+Date: Thu, 15 Mar 2012 15:46:44 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Avi Kivity <avi@redhat.com>, Akshay Karle <akshay.a.karle@gmail.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        ashu tripathi <er.ashutripathi@gmail.com>,
+        nishant gulhane <nishant.s.gulhane@gmail.com>,
+        amarmore2006 <amarmore2006@gmail.com>,
+        Shreyas Mahure <shreyas.mahure@gmail.com>,
+        mahesh mohan <mahesh6490@gmail.com>
+Subject: Re: [RFC 0/2] kvm: Transcendent Memory (tmem) on KVM
+Message-ID: <20120315194644.GB3486@phenom.dumpdata.com>
+References: <1331224181.2585.16.camel@aks>
+ <4F621FC0.7050800@redhat.com>
+ <ac318852-4ccd-4739-893c-52f5cddee6c7@default>
+ <4F622E90.5080001@redhat.com>
+ <20120315180233.GF452@phenom.dumpdata.com>
+ <4F6230B1.4010004@redhat.com>
+ <2928450b-b3bd-462f-9994-7b30810d6a83@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2928450b-b3bd-462f-9994-7b30810d6a83@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090209.4F624819.0001,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oddly enough a work_struct was already part of the firmware_work
-structure but nobody was using it. Instead of creating a new
-kthread for each request_firmware_nowait() just schedule the work
-on the system workqueue. This should avoid some overhead in
-forking new threads when they're not strictly necessary if
-workqueues are available.
+On Thu, Mar 15, 2012 at 12:36:48PM -0700, Dan Magenheimer wrote:
+> > From: Avi Kivity [mailto:avi@redhat.com]
+> > Sent: Thursday, March 15, 2012 12:11 PM
+> > To: Konrad Rzeszutek Wilk
+> > Cc: Dan Magenheimer; Akshay Karle; linux-kernel@vger.kernel.org; kvm@vger.kernel.org; ashu tripathi;
+> > nishant gulhane; amarmore2006; Shreyas Mahure; mahesh mohan
+> > Subject: Re: [RFC 0/2] kvm: Transcendent Memory (tmem) on KVM
+> > 
+> > On 03/15/2012 08:02 PM, Konrad Rzeszutek Wilk wrote:
+> > > >
+> > > > Nice.  This takes care of the tail-end of the streaming (the more
+> > > > important one - since it always involves a cold copy).  What about the
+> > > > other side?  Won't the read code invoke cleancache_get_page() for every
+> > > > page? (this one is just a null hypercall, so it's cheaper, but still
+> > > > expensive).
+> > >
+> > > That is something we should fix - I think it was mentioned in the frontswap
+> > > email thread the need for batching and it certainly seems required as those
+> > > hypercalls aren't that cheap.
+> > 
+> > In fact when tmem was first proposed I asked for two changes - make it
+> > batchable, and make it asynchronous (so we can offload copies to a dma
+> > engine, etc).  Of course that would have made tmem significantly more
+> > complicated.
+> 
+> (Sorry, I'm not typing fast enough to keep up with the thread...)
+> 
+> Hi Avi --
+> 
+> In case it wasn't clear from my last reply, RAMster shows
+> that tmem CAN be used asynchronously... by making it more
+> complicated, but without making the core kernel changes more
+> complicated.
+> 
+> In RAMster, pages are locally cached (compressed using zcache)
+> and then, depending on policy, a separate thread sends the pages
+> to a remote machine.  So the first part (compress and store locally)
+> still must be synchronous, but the second part (transmit to
+> another -- remote or possibly host? -- system) can be done
+> asynchronously.  The RAMster code has to handle all the race
+> conditions, which is a pain but seems to work.
+> 
+> This is all working today in RAMster (which is in linux-next).
+> Batching is still not implemented by any tmem backend, but RAMster
+> demonstrates how the backend implementation COULD do batching without
+> any additional core kernel changes.  I.e. no changes necessary
+> to frontswap or cleancache.
+> 
+> So, you see, I *was* listening. I just wasn't willing to fight
+> the uphill battle of much more complexity in the core kernel
+> for a capability that could be implemented differently.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
----
+Dan, please stop this.
 
-I saw this while looking at this problem we're having.
+The frontswap work is going through me and my goal is to provide
+the batching and asynchronous option. It might take longer than
+anticipated b/c it might require redoing some of the code - that
+is OK. We can do this in steps too - first do the synchronous
+(as is right now in implementation) and then add on the batching
+and asynchrnous work. This means breaking the ABI/API, and I believe
+Avi would like the ABI be as much baked as possible so that he does
+not have to provide a v2 (or v3) of the tmem support in KVM.
 
- drivers/base/firmware_class.c |   29 +++++++----------------------
- 1 file changed, 7 insertions(+), 22 deletions(-)
+I appreciate you having done that in RAMster but the "transmit"
+option is what we need to batch. Think of Scatter Gather DMA.
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 6c9387d..1010c06 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -16,7 +16,7 @@
- #include <linux/interrupt.h>
- #include <linux/bitops.h>
- #include <linux/mutex.h>
--#include <linux/kthread.h>
-+#include <linux/workqueue.h>
- #include <linux/highmem.h>
- #include <linux/firmware.h>
- #include <linux/slab.h>
-@@ -629,25 +629,18 @@ struct firmware_work {
- 	bool uevent;
- };
- 
--static int request_firmware_work_func(void *arg)
-+static void request_firmware_work_func(struct work_struct *work)
- {
--	struct firmware_work *fw_work = arg;
-+	struct firmware_work *fw_work;
- 	const struct firmware *fw;
--	int ret;
--
--	if (!arg) {
--		WARN_ON(1);
--		return 0;
--	}
-+	fw_work = container_of(work, struct firmware_work, work);
- 
--	ret = _request_firmware(&fw, fw_work->name, fw_work->device,
-+	_request_firmware(&fw, fw_work->name, fw_work->device,
- 				fw_work->uevent, true);
- 	fw_work->cont(fw, fw_work->context);
- 
- 	module_put(fw_work->module);
- 	kfree(fw_work);
--
--	return ret;
- }
- 
- /**
-@@ -673,7 +666,6 @@ request_firmware_nowait(
- 	const char *name, struct device *device, gfp_t gfp, void *context,
- 	void (*cont)(const struct firmware *fw, void *context))
- {
--	struct task_struct *task;
- 	struct firmware_work *fw_work;
- 
- 	fw_work = kzalloc(sizeof (struct firmware_work), gfp);
-@@ -692,15 +684,8 @@ request_firmware_nowait(
- 		return -EFAULT;
- 	}
- 
--	task = kthread_run(request_firmware_work_func, fw_work,
--			    "firmware/%s", name);
--	if (IS_ERR(task)) {
--		fw_work->cont(NULL, fw_work->context);
--		module_put(fw_work->module);
--		kfree(fw_work);
--		return PTR_ERR(task);
--	}
--
-+	INIT_WORK(&fw_work->work, request_firmware_work_func);
-+	schedule_work(&fw_work->work);
- 	return 0;
- }
- 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> 
+> That said, I still think it remains to be proven that
+> reducing the number of hypercalls by 2x or 3x (or whatever
+> the batching factor you choose) will make a noticeable
 
+I was thinking 32 - about the same number that we do in
+Xen with PV MMU upcalls. We also batch it there with multicalls.
+
+> performance difference.  But if it does, batching can
+> be done... and completely hidden in the backend.
+> 
+> (I hope Andrea is listening ;-)
+> 
+> Dan
