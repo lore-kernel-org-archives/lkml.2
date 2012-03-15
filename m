@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032119Ab2CORmp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:42:45 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:59302
+	id S1032147Ab2CORmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:42:49 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:27136
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1032046Ab2CORkG (ORCPT
+	by vger.kernel.org with ESMTP id S1032042Ab2CORkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Mar 2012 13:40:06 -0400
 X-SpamScore: 0
 X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839hd24h)
 X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0M0XT2O-01-13Y-02
+X-WSS-ID: 0M0XT2O-01-13Z-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
@@ -19,9 +19,9 @@ CC: <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
         Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Suresh Siddha <suresh.b.siddha@intel.com>,
         Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 5/9] iommu/vt-d: Convert IR ioapic-setup to use remap_ops
-Date: Thu, 15 Mar 2012 18:39:47 +0100
-Message-ID: <1331833191-25779-6-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 4/9] iommu/vt-d: Convert missing apic.c intr-remapping call to remap_ops
+Date: Thu, 15 Mar 2012 18:39:46 +0100
+Message-ID: <1331833191-25779-5-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1331833191-25779-1-git-send-email-joerg.roedel@amd.com>
 References: <1331833191-25779-1-git-send-email-joerg.roedel@amd.com>
@@ -32,301 +32,198 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IOAPIC setup routine for interrupt remapping is VT-d
-specific. Move it to the irq_remap_ops and add a call helper
-function.
+Convert these calls too:
+
+	* Disable of remapping hardware
+	* Reenable of remapping hardware
+	* Enable fault handling
+
+With that all of arch/x86/kernel/apic/apic.c is converted to
+use the generic intr-remapping interface.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- arch/x86/include/asm/intr_remapping.h |   15 +++++-
- arch/x86/kernel/apic/io_apic.c        |   68 +------------------------
- drivers/iommu/intel_intr_remapping.c  |   89 +++++++++++++++++++++++++++++++++
- drivers/iommu/intr_remapping.c        |   12 +++++
- drivers/iommu/intr_remapping.h        |    8 +++
- 5 files changed, 125 insertions(+), 67 deletions(-)
+ arch/x86/include/asm/intr_remapping.h |    6 ++++++
+ arch/x86/kernel/apic/apic.c           |    6 +++---
+ drivers/iommu/intel_intr_remapping.c  |    7 +++++--
+ drivers/iommu/intr_remapping.c        |   24 ++++++++++++++++++++++++
+ drivers/iommu/intr_remapping.h        |    9 +++++++++
+ include/linux/dmar.h                  |   18 ------------------
+ 6 files changed, 47 insertions(+), 23 deletions(-)
 
 diff --git a/arch/x86/include/asm/intr_remapping.h b/arch/x86/include/asm/intr_remapping.h
-index 55aa892..a22e1f1 100644
+index 207c605..55aa892 100644
 --- a/arch/x86/include/asm/intr_remapping.h
 +++ b/arch/x86/include/asm/intr_remapping.h
-@@ -24,6 +24,9 @@
- 
- #ifdef CONFIG_IRQ_REMAP
- 
-+struct IO_APIC_route_entry;
-+struct io_apic_irq_attr;
-+
- extern int intr_remapping_enabled;
- 
- extern void setup_intr_remapping(void);
-@@ -33,6 +36,10 @@ extern int intr_hardware_enable(void);
- extern void intr_hardware_disable(void);
- extern int intr_hardware_reenable(int);
- extern int intr_enable_fault_handling(void);
-+extern int intr_setup_ioapic_entry(int irq,
-+				   struct IO_APIC_route_entry *entry,
-+				   unsigned int destination, int vector,
-+				   struct io_apic_irq_attr *attr);
+@@ -30,6 +30,9 @@ extern void setup_intr_remapping(void);
+ extern int intr_remapping_supported(void);
+ extern int intr_hardware_init(void);
+ extern int intr_hardware_enable(void);
++extern void intr_hardware_disable(void);
++extern int intr_hardware_reenable(int);
++extern int intr_enable_fault_handling(void);
  
  #else  /* CONFIG_IRQ_REMAP */
  
-@@ -45,7 +52,13 @@ static inline int intr_hardware_enable(void) { return -ENODEV; }
- static inline void intr_hardware_disable(void) { }
- static inline int intr_hardware_reenable(int eim) { return -ENODEV; }
- static inline int intr_enable_fault_handling(void) { return -ENODEV; }
--
-+static inline int intr_setup_ioapic_entry(int irq,
-+					  struct IO_APIC_route_entry *entry,
-+					  unsigned int destination, int vector,
-+					  struct io_apic_irq_attr *attr)
-+{
-+	return -ENODEV;
-+}
+@@ -39,6 +42,9 @@ static inline void setup_intr_remapping(void) { }
+ static inline int intr_remapping_supported(void) { return 0; }
+ static inline int intr_hardware_init(void) { return -ENODEV; }
+ static inline int intr_hardware_enable(void) { return -ENODEV; }
++static inline void intr_hardware_disable(void) { }
++static inline int intr_hardware_reenable(int eim) { return -ENODEV; }
++static inline int intr_enable_fault_handling(void) { return -ENODEV; }
+ 
  #endif /* CONFIG_IRQ_REMAP */
  
- #endif /* __X86_INTR_REMAPPING_H */
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 6c00161..4746ba1 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1323,77 +1323,13 @@ static void ioapic_register_intr(unsigned int irq, struct irq_cfg *cfg,
- 				      fasteoi ? "fasteoi" : "edge");
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 578a452..d7863cc 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1438,7 +1438,7 @@ void __init bsp_end_local_APIC_setup(void)
+ 	 * handling for interrupt remapping.
+ 	 */
+ 	if (intr_remapping_enabled)
+-		enable_drhd_fault_handling();
++		intr_enable_fault_handling();
+ 
  }
  
--
--static int setup_ir_ioapic_entry(int irq,
--			      struct IR_IO_APIC_route_entry *entry,
--			      unsigned int destination, int vector,
--			      struct io_apic_irq_attr *attr)
--{
--	int index;
--	struct irte irte;
--	int ioapic_id = mpc_ioapic_id(attr->ioapic);
--	struct intel_iommu *iommu = map_ioapic_to_ir(ioapic_id);
--
--	if (!iommu) {
--		pr_warn("No mapping iommu for ioapic %d\n", ioapic_id);
--		return -ENODEV;
--	}
--
--	index = alloc_irte(iommu, irq, 1);
--	if (index < 0) {
--		pr_warn("Failed to allocate IRTE for ioapic %d\n", ioapic_id);
--		return -ENOMEM;
--	}
--
--	prepare_irte(&irte, vector, destination);
--
--	/* Set source-id of interrupt request */
--	set_ioapic_sid(&irte, ioapic_id);
--
--	modify_irte(irq, &irte);
--
--	apic_printk(APIC_VERBOSE, KERN_DEBUG "IOAPIC[%d]: "
--		"Set IRTE entry (P:%d FPD:%d Dst_Mode:%d "
--		"Redir_hint:%d Trig_Mode:%d Dlvry_Mode:%X "
--		"Avail:%X Vector:%02X Dest:%08X "
--		"SID:%04X SQ:%X SVT:%X)\n",
--		attr->ioapic, irte.present, irte.fpd, irte.dst_mode,
--		irte.redir_hint, irte.trigger_mode, irte.dlvry_mode,
--		irte.avail, irte.vector, irte.dest_id,
--		irte.sid, irte.sq, irte.svt);
--
--	memset(entry, 0, sizeof(*entry));
--
--	entry->index2	= (index >> 15) & 0x1;
--	entry->zero	= 0;
--	entry->format	= 1;
--	entry->index	= (index & 0x7fff);
--	/*
--	 * IO-APIC RTE will be configured with virtual vector.
--	 * irq handler will do the explicit EOI to the io-apic.
--	 */
--	entry->vector	= attr->ioapic_pin;
--	entry->mask	= 0;			/* enable IRQ */
--	entry->trigger	= attr->trigger;
--	entry->polarity	= attr->polarity;
--
--	/* Mask level triggered irqs.
--	 * Use IRQ_DELAYED_DISABLE for edge triggered irqs.
--	 */
--	if (attr->trigger)
--		entry->mask = 1;
--
--	return 0;
--}
--
- static int setup_ioapic_entry(int irq, struct IO_APIC_route_entry *entry,
- 			       unsigned int destination, int vector,
- 			       struct io_apic_irq_attr *attr)
- {
+@@ -2172,7 +2172,7 @@ static int lapic_suspend(void)
+ 	disable_local_APIC();
+ 
  	if (intr_remapping_enabled)
--		return setup_ir_ioapic_entry(irq,
--			 (struct IR_IO_APIC_route_entry *)entry,
--			 destination, vector, attr);
-+		return intr_setup_ioapic_entry(irq, entry, destination,
-+					       vector, attr);
+-		disable_intr_remapping();
++		intr_hardware_disable();
  
- 	memset(entry, 0, sizeof(*entry));
+ 	local_irq_restore(flags);
+ 	return 0;
+@@ -2239,7 +2239,7 @@ static void lapic_resume(void)
+ 	apic_read(APIC_ESR);
  
+ 	if (intr_remapping_enabled)
+-		reenable_intr_remapping(x2apic_mode);
++		intr_hardware_reenable(x2apic_mode);
+ 
+ 	local_irq_restore(flags);
+ }
 diff --git a/drivers/iommu/intel_intr_remapping.c b/drivers/iommu/intel_intr_remapping.c
-index 610b75b..f495eba 100644
+index 9c742fb..610b75b 100644
 --- a/drivers/iommu/intel_intr_remapping.c
 +++ b/drivers/iommu/intel_intr_remapping.c
-@@ -31,6 +31,7 @@ struct hpet_scope {
- };
+@@ -764,7 +764,7 @@ int __init ir_dev_scope_init(void)
+ }
+ rootfs_initcall(ir_dev_scope_init);
  
- #define IR_X2APIC_MODE(mode) (mode ? (1 << 11) : 0)
-+#define IRTE_DEST(dest) ((x2apic_mode) ? dest : dest << 8)
- 
- static struct ioapic_scope ir_ioapic[MAX_IO_APICS];
- static struct hpet_scope ir_hpet[MAX_HPET_TBS];
-@@ -814,6 +815,93 @@ error:
- 	return -1;
+-void disable_intr_remapping(void)
++static void disable_intr_remapping(void)
+ {
+ 	struct dmar_drhd_unit *drhd;
+ 	struct intel_iommu *iommu = NULL;
+@@ -780,7 +780,7 @@ void disable_intr_remapping(void)
+ 	}
  }
  
-+static void prepare_irte(struct irte *irte, int vector,
-+			 unsigned int dest)
-+{
-+	memset(irte, 0, sizeof(*irte));
-+
-+	irte->present = 1;
-+	irte->dst_mode = apic->irq_dest_mode;
-+	/*
-+	 * Trigger mode in the IRTE will always be edge, and for IO-APIC, the
-+	 * actual level or edge trigger will be setup in the IO-APIC
-+	 * RTE. This will help simplify level triggered irq migration.
-+	 * For more details, see the comments (in io_apic.c) explainig IO-APIC
-+	 * irq migration in the presence of interrupt-remapping.
-+	*/
-+	irte->trigger_mode = 0;
-+	irte->dlvry_mode = apic->irq_delivery_mode;
-+	irte->vector = vector;
-+	irte->dest_id = IRTE_DEST(dest);
-+	irte->redir_hint = 1;
-+}
-+
-+static int intel_setup_ioapic_entry(int irq,
-+				    struct IO_APIC_route_entry *route_entry,
-+				    unsigned int destination, int vector,
-+				    struct io_apic_irq_attr *attr)
-+{
-+	int ioapic_id = mpc_ioapic_id(attr->ioapic);
-+	struct intel_iommu *iommu = map_ioapic_to_ir(ioapic_id);
-+	struct IR_IO_APIC_route_entry *entry;
-+	struct irte irte;
-+	int index;
-+
-+	if (!iommu) {
-+		pr_warn("No mapping iommu for ioapic %d\n", ioapic_id);
-+		return -ENODEV;
-+	}
-+
-+	entry = (struct IR_IO_APIC_route_entry *)route_entry;
-+
-+	index = alloc_irte(iommu, irq, 1);
-+	if (index < 0) {
-+		pr_warn("Failed to allocate IRTE for ioapic %d\n", ioapic_id);
-+		return -ENOMEM;
-+	}
-+
-+	prepare_irte(&irte, vector, destination);
-+
-+	/* Set source-id of interrupt request */
-+	set_ioapic_sid(&irte, ioapic_id);
-+
-+	modify_irte(irq, &irte);
-+
-+	apic_printk(APIC_VERBOSE, KERN_DEBUG "IOAPIC[%d]: "
-+		"Set IRTE entry (P:%d FPD:%d Dst_Mode:%d "
-+		"Redir_hint:%d Trig_Mode:%d Dlvry_Mode:%X "
-+		"Avail:%X Vector:%02X Dest:%08X "
-+		"SID:%04X SQ:%X SVT:%X)\n",
-+		attr->ioapic, irte.present, irte.fpd, irte.dst_mode,
-+		irte.redir_hint, irte.trigger_mode, irte.dlvry_mode,
-+		irte.avail, irte.vector, irte.dest_id,
-+		irte.sid, irte.sq, irte.svt);
-+
-+	memset(entry, 0, sizeof(*entry));
-+
-+	entry->index2	= (index >> 15) & 0x1;
-+	entry->zero	= 0;
-+	entry->format	= 1;
-+	entry->index	= (index & 0x7fff);
-+	/*
-+	 * IO-APIC RTE will be configured with virtual vector.
-+	 * irq handler will do the explicit EOI to the io-apic.
-+	 */
-+	entry->vector	= attr->ioapic_pin;
-+	entry->mask	= 0;			/* enable IRQ */
-+	entry->trigger	= attr->trigger;
-+	entry->polarity	= attr->polarity;
-+
-+	/* Mask level triggered irqs.
-+	 * Use IRQ_DELAYED_DISABLE for edge triggered irqs.
-+	 */
-+	if (attr->trigger)
-+		entry->mask = 1;
-+
-+	return 0;
-+}
-+
-+
- struct irq_remap_ops intel_irq_remap_ops = {
+-int reenable_intr_remapping(int eim)
++static int reenable_intr_remapping(int eim)
+ {
+ 	struct dmar_drhd_unit *drhd;
+ 	int setup = 0;
+@@ -818,4 +818,7 @@ struct irq_remap_ops intel_irq_remap_ops = {
  	.supported		= intel_intr_remapping_supported,
  	.hardware_init		= dmar_table_init,
-@@ -821,4 +909,5 @@ struct irq_remap_ops intel_irq_remap_ops = {
- 	.hardware_disable	= disable_intr_remapping,
- 	.hardware_reenable	= reenable_intr_remapping,
- 	.enable_faulting	= enable_drhd_fault_handling,
-+	.setup_ioapic_entry	= intel_setup_ioapic_entry,
+ 	.hardware_enable	= intel_enable_intr_remapping,
++	.hardware_disable	= disable_intr_remapping,
++	.hardware_reenable	= reenable_intr_remapping,
++	.enable_faulting	= enable_drhd_fault_handling,
  };
 diff --git a/drivers/iommu/intr_remapping.c b/drivers/iommu/intr_remapping.c
-index 9aabed7..739148a 100644
+index 670c69a..9aabed7 100644
 --- a/drivers/iommu/intr_remapping.c
 +++ b/drivers/iommu/intr_remapping.c
-@@ -98,3 +98,15 @@ int __init intr_enable_fault_handling(void)
+@@ -74,3 +74,27 @@ int __init intr_hardware_enable(void)
  
- 	return remap_ops->enable_faulting();
+ 	return remap_ops->hardware_enable();
  }
 +
-+int intr_setup_ioapic_entry(int irq,
-+			    struct IO_APIC_route_entry *entry,
-+			    unsigned int destination, int vector,
-+			    struct io_apic_irq_attr *attr)
++void intr_hardware_disable(void)
 +{
-+	if (!remap_ops || !remap_ops->setup_ioapic_entry)
++	if (!remap_ops || !remap_ops->hardware_disable)
++		return;
++
++	remap_ops->hardware_disable();
++}
++
++int intr_hardware_reenable(int mode)
++{
++	if (!remap_ops || !remap_ops->hardware_reenable)
++		return 0;
++
++	return remap_ops->hardware_reenable(mode);
++}
++
++int __init intr_enable_fault_handling(void)
++{
++	if (!remap_ops || !remap_ops->enable_faulting)
 +		return -ENODEV;
 +
-+	return remap_ops->setup_ioapic_entry(irq, entry, destination,
-+					     vector, attr);
++	return remap_ops->enable_faulting();
 +}
 diff --git a/drivers/iommu/intr_remapping.h b/drivers/iommu/intr_remapping.h
-index 2744c9a..e8994f2 100644
+index d6df732..2744c9a 100644
 --- a/drivers/iommu/intr_remapping.h
 +++ b/drivers/iommu/intr_remapping.h
-@@ -24,6 +24,9 @@
+@@ -37,6 +37,15 @@ struct irq_remap_ops {
  
- #ifdef CONFIG_IRQ_REMAP
- 
-+struct IO_APIC_route_entry;
-+struct io_apic_irq_attr;
+ 	/* Enables the remapping hardware */
+ 	int  (*hardware_enable)(void);
 +
- extern int disable_intremap;
- extern int disable_sourceid_checking;
- extern int no_x2apic_optout;
-@@ -46,6 +49,11 @@ struct irq_remap_ops {
- 
- 	/* Enable fault handling */
- 	int  (*enable_faulting)(void);
++	/* Disables the remapping hardware */
++	void (*hardware_disable)(void);
 +
-+	/* IO-APIC setup routine */
-+	int (*setup_ioapic_entry)(int irq, struct IO_APIC_route_entry *,
-+				  unsigned int, int,
-+				  struct io_apic_irq_attr *);
++	/* Reenables the remapping hardware */
++	int  (*hardware_reenable)(int);
++
++	/* Enable fault handling */
++	int  (*enable_faulting)(void);
  };
  
  extern struct irq_remap_ops intel_irq_remap_ops;
+diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+index 6d66c9c..f2bd87f 100644
+--- a/include/linux/dmar.h
++++ b/include/linux/dmar.h
+@@ -115,9 +115,6 @@ struct irte {
+ };
+ 
+ #ifdef CONFIG_IRQ_REMAP
+-extern void disable_intr_remapping(void);
+-extern int reenable_intr_remapping(int);
+-
+ extern int get_irte(int irq, struct irte *entry);
+ extern int modify_irte(int irq, struct irte *irte_modified);
+ extern int alloc_irte(struct intel_iommu *iommu, int irq, u16 count);
+@@ -179,21 +176,6 @@ static inline int set_msi_sid(struct irte *irte, struct pci_dev *dev)
+ 	return 0;
+ }
+ 
+-#define intr_remapping_enabled		(0)
+-
+-static inline int enable_intr_remapping(void)
+-{
+-	return -1;
+-}
+-
+-static inline void disable_intr_remapping(void)
+-{
+-}
+-
+-static inline int reenable_intr_remapping(int eim)
+-{
+-	return 0;
+-}
+ #endif
+ 
+ enum {
 -- 
 1.7.5.4
 
