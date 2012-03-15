@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031600Ab2COP6o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 11:58:44 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:4941 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031490Ab2COP6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 11:58:39 -0400
+	id S1031629Ab2COP64 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 11:58:56 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:19043 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031528Ab2COP6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 11:58:50 -0400
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 To: linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com
 Cc: linux-kernel@vger.kernel.org, ludovic.desroches@atmel.com,
         dmitry.torokhov@gmail.com, mpm@selenic.com,
         herbert@gondor.hengli.com.au, vinod.koul@intel.com,
         a.zummo@towertech.it, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 4/6] rtc: Kconfig: remove dependency for AT91 rtc driver
-Date: Thu, 15 Mar 2012 16:57:20 +0100
-Message-Id: <7dce7bba2113315bf484570e3e0ad234c68c610b.1331826095.git.nicolas.ferre@atmel.com>
+Subject: [PATCH 5/6] Input: Kconfig: remove dependency for atmel_tsadcc driver
+Date: Thu, 15 Mar 2012 16:57:21 +0100
+Message-Id: <531cf3ace390f3673a73792f15f9c7cd6aeb273d.1331826095.git.nicolas.ferre@atmel.com>
 X-Mailer: git-send-email 1.7.9
 In-Reply-To: <cover.1331826095.git.nicolas.ferre@atmel.com>
 References: <cover.1331826095.git.nicolas.ferre@atmel.com>
@@ -30,22 +31,26 @@ file located in include/mach directory.
 
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
- drivers/rtc/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/input/touchscreen/Kconfig |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 3a125b8..918736e 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -831,7 +831,7 @@ config RTC_DRV_AT32AP700X
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 4af2a18..3900c64 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -432,10 +432,10 @@ config TOUCHSCREEN_TOUCHWIN
  
- config RTC_DRV_AT91RM9200
- 	tristate "AT91RM9200 or some AT91SAM9 RTC"
--	depends on ARCH_AT91RM9200 || ARCH_AT91SAM9RL || ARCH_AT91SAM9G45
+ config TOUCHSCREEN_ATMEL_TSADCC
+ 	tristate "Atmel Touchscreen Interface"
+-	depends on ARCH_AT91SAM9RL || ARCH_AT91SAM9G45
 +	depends on ARCH_AT91
  	help
- 	  Driver for the internal RTC (Realtime Clock) module found on
- 	  Atmel AT91RM9200's and some  AT91SAM9 chips. On AT91SAM9 chips
+ 	  Say Y here if you have a 4-wire touchscreen connected to the
+-          ADC Controller on your Atmel SoC (such as the AT91SAM9RL).
++          ADC Controller on your Atmel SoC.
+ 
+ 	  If unsure, say N.
+ 
 -- 
 1.7.9
 
