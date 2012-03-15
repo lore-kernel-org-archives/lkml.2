@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031807Ab2COQrf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:47:35 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:63562 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031918Ab2COQr1 (ORCPT
+	id S1031884Ab2COQsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:48:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47749 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031769Ab2COQoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:47:27 -0400
-Message-ID: <4F621D1B.5090709@gmail.com>
-Date: Thu, 15 Mar 2012 17:47:23 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120307 Thunderbird/11.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: stable-3.0: s390 build breakage [was: Linux 3.0.24]
-References: <20120312203451.GA16773@kroah.com> <4F61C911.5010204@suse.cz> <4F62186E.4050806@suse.cz> <20120315164624.GB25159@kroah.com>
-In-Reply-To: <20120315164624.GB25159@kroah.com>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Mar 2012 12:44:24 -0400
+From: jean.pihet@newoldbits.com
+To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kevin Hilman <khilman@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Jean Pihet <j-pihet@ti.com>
+Subject: [PATCH 01/10] ARM: OMAP3+: voltage: export functions to plat/voltage.h
+Date: Thu, 15 Mar 2012 17:43:56 +0100
+Message-Id: <1331829845-9526-2-git-send-email-j-pihet@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1331829845-9526-1-git-send-email-j-pihet@ti.com>
+References: <1331829845-9526-1-git-send-email-j-pihet@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 05:46 PM, Greg KH wrote:
-> On Thu, Mar 15, 2012 at 05:27:26PM +0100, Jiri Slaby wrote:
->> On 03/15/2012 11:48 AM, Jiri Slaby wrote:
->>> On 03/12/2012 09:34 PM, Greg KH wrote:
->>>> I'm announcing the release of the 3.0.24 kernel.
->>> ...
->>>> Heiko Carstens (1): compat: fix compile breakage on s390
->>>
->>> It looks like we need the same fix as for 2.6.32.59:
->>> arch/s390/kernel/setup.c: In function 'setup_addressing_mode':
->>> arch/s390/kernel/setup.c:328: error: 'PSW32_ASC_PRIMARY' undeclared
->>> (first use in this function)
->>> arch/s390/kernel/setup.c:328: error: (Each undeclared identifier is
->>> reported only once
->>> arch/s390/kernel/setup.c:328: error: for each function it appears in.)
->>
->> And when that one is fixed, there is another error:
->> drivers/s390/char/fs3270.c: In function 'fs3270_ioctl':
->> drivers/s390/char/fs3270.c:335: error: implicit declaration of function
->> 'compat_ptr'
->> drivers/s390/char/fs3270.c:335: warning: assignment makes pointer from
->> integer without a cast
-> 
-> Ick, have a patch for this?
+From: Jean Pihet <j-pihet@ti.com>
 
-Yes, but give me some time to see if it builds properly now.
+Move some functions from mach-omap2/ dir to the plat/ dir.
+The SmartReflex class driver is a user of the basic voltage domains
+functions (enable, disable, reset).
 
-thanks,
+Signed-off-by: Jean Pihet <j-pihet@ti.com>
+Cc: Kevin Hilman <khilman@ti.com>
+---
+ arch/arm/mach-omap2/voltage.h             |    1 -
+ arch/arm/mach-omap2/vp.h                  |    2 --
+ arch/arm/plat-omap/include/plat/voltage.h |    3 +++
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/voltage.h b/arch/arm/mach-omap2/voltage.h
+index 16a1b09..a81dea8 100644
+--- a/arch/arm/mach-omap2/voltage.h
++++ b/arch/arm/mach-omap2/voltage.h
+@@ -167,6 +167,5 @@ int voltdm_for_each_pwrdm(struct voltagedomain *voltdm,
+ 			  int (*fn)(struct voltagedomain *voltdm,
+ 				    struct powerdomain *pwrdm));
+ int voltdm_scale(struct voltagedomain *voltdm, unsigned long target_volt);
+-void voltdm_reset(struct voltagedomain *voltdm);
+ unsigned long voltdm_get_voltage(struct voltagedomain *voltdm);
+ #endif
+diff --git a/arch/arm/mach-omap2/vp.h b/arch/arm/mach-omap2/vp.h
+index 7c155d2..837cb8d 100644
+--- a/arch/arm/mach-omap2/vp.h
++++ b/arch/arm/mach-omap2/vp.h
+@@ -118,8 +118,6 @@ extern struct omap_vp_instance omap4_vp_iva;
+ extern struct omap_vp_instance omap4_vp_core;
+ 
+ void omap_vp_init(struct voltagedomain *voltdm);
+-void omap_vp_enable(struct voltagedomain *voltdm);
+-void omap_vp_disable(struct voltagedomain *voltdm);
+ int omap_vp_forceupdate_scale(struct voltagedomain *voltdm,
+ 			      unsigned long target_volt);
+ int omap_vp_update_errorgain(struct voltagedomain *voltdm,
+diff --git a/arch/arm/plat-omap/include/plat/voltage.h b/arch/arm/plat-omap/include/plat/voltage.h
+index 0a6a482..1842709 100644
+--- a/arch/arm/plat-omap/include/plat/voltage.h
++++ b/arch/arm/plat-omap/include/plat/voltage.h
+@@ -16,5 +16,8 @@ struct voltagedomain;
+ struct voltagedomain *voltdm_lookup(const char *name);
+ int voltdm_scale(struct voltagedomain *voltdm, unsigned long target_volt);
+ unsigned long voltdm_get_voltage(struct voltagedomain *voltdm);
++void voltdm_reset(struct voltagedomain *voltdm);
+ 
++void omap_vp_enable(struct voltagedomain *voltdm);
++void omap_vp_disable(struct voltagedomain *voltdm);
+ #endif
 -- 
-js
+1.7.5.4
+
