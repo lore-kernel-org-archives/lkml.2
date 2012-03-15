@@ -1,50 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031371Ab2COAYB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 20:24:01 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:38083 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760605Ab2COAYA (ORCPT
+	id S1031380Ab2COA2o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 20:28:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37902 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031226Ab2COA2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 20:24:00 -0400
-Date: Wed, 14 Mar 2012 17:23:26 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Daniel Lezcano <daniel.lezcano@linaro.org>, akpm@linux-foundation.org,
-        rob.lee@linaro.org, j-pihet@ti.com, khilman@ti.com,
-        deepthi@linux.vnet.ibm.com, dan.carpenter@oracle.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        amit.kucheria@linaro.org
-Subject: Re: [PATCH] cpuidle : fix random hangs with intel_idle
-In-Reply-To: <20120315111415.cd119171ac86967aebe85545@canb.auug.org.au>
-Message-ID: <alpine.LSU.2.00.1203141720360.2003@eggly.anvils>
-References: <alpine.LSU.2.00.1203131454500.1335@eggly.anvils> <1331770181-800-1-git-send-email-daniel.lezcano@linaro.org> <20120315111415.cd119171ac86967aebe85545@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Wed, 14 Mar 2012 20:28:43 -0400
+Date: Thu, 15 Mar 2012 01:28:38 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        Carsten Emde <C.Emde@osadl.org>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [REGRESSION][PATCH] mqueue: Ignore the validity of abs_timeout
+ parameter when message can be performed immediately
+In-Reply-To: <alpine.LFD.2.02.1203142250500.2466@ionos>
+Message-ID: <alpine.LFD.2.02.1203150056361.2466@ionos>
+References: <20120302164234.4938.38390934@jp.panasonic.com> <20120314144601.ccc50a68.akpm@linux-foundation.org> <alpine.LFD.2.02.1203142250500.2466@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Mar 2012, Stephen Rothwell wrote:
-> On Thu, 15 Mar 2012 01:09:41 +0100 Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-> >
-> > The cpuidle consolidation inverts the local_irq_enable for
-> > the poll_idle function with CPU_RELAX.
-> > 
-> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > Reported-by: Hugh Dickins <hughd@google.com>
+On Wed, 14 Mar 2012, Thomas Gleixner wrote:
+> On Wed, 14 Mar 2012, Andrew Morton wrote:
 > 
-> So this needs to go into Rob's tree.  Maybe after Hugh verifies that it
-> fixes his problem.
+> > On Fri, 02 Mar 2012 16:42:35 +0900
+> > Akira Takeuchi <takeuchi.akr@jp.panasonic.com> wrote:
+> > 
+> > > This patch fixes up the regression problem of mq_timed{send,receive} syscall.
+> > > 
+> > > When a message of mqueue can be performed immediately,
+> > > the validity of abs_timeout parameter should not be checked.
+> > > 
+> > > According to the manpage of mq_timedreceive:
+> > >     Under no circumstance shall the operation fail with a timeout
+> > >     if a message can be removed from the message queue immediately.
+> > >     The validity of the abstime parameter need not be checked
+> > >     if a message can be removed from the message queue immediately.
+> 
+> Those POSIX spec folks definitely have a seriously distorted
+> relationship to timers and timekeeping.
+> 
+> So the caller knows upfront when he needs to provide a valid timespec
+> and when not. So the users of mq_.... are into crystal ball
+> programming or what?
 
-Yes, Daniel got me to try it offline before he posted it.
+Thinking more about it. The manpage according to
 
-Tested-by: Hugh Dickins <hughd@google.com>
+  git://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
 
-Personally, I'd recommend including it even before it gets into Rob's
-tree (where it may well be improved upon first): it does a lot to
-improve the usability of linux-next.
+does not mention that insanity at all.
 
-Hugh
+So what the patch is referring to is the POSIX spec:
+
+   http://pubs.opengroup.org/onlinepubs/009604499/functions/mq_timedsend.html
+   http://pubs.opengroup.org/onlinepubs/009604499/functions/mq_timedreceive.html
+
+Aside of my previous ranting about the insanity of that, the following
+is actually open for interpretation:
+
+ "The validity of the abstime parameter need not be checked if a
+  message can be removed from the message queue immediately."
+
+It's not necessary to check the validity of the abstime parameter, but
+the spec does not forbid it either.
+
+So for the sake of sanity we rather fix that test case and keep the
+code as is. There haven't been regression reports from real world
+applications within 2 years, so there is no point to add more
+convolution to the mqueue code just to satisfy a random interpretation
+of the spec by a test suite.
+
+Again, there is no point to interpret it as "avoid the check" simply
+because user space cannot know whether there is room to queue or
+whether there is a message waiting. So requiring a valid timespec is
+always the Right Thing to do.
+
+Thanks,
+
+	tglx
