@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031897Ab2COQqe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:46:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48786 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031870Ab2COQq2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:46:28 -0400
-Date: Thu, 15 Mar 2012 09:46:24 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: stable-3.0: s390 build breakage [was: Linux 3.0.24]
-Message-ID: <20120315164624.GB25159@kroah.com>
-References: <20120312203451.GA16773@kroah.com>
- <4F61C911.5010204@suse.cz>
- <4F62186E.4050806@suse.cz>
+	id S1031906Ab2COQqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:46:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23950 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031706Ab2COQqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 12:46:51 -0400
+Date: Thu, 15 Mar 2012 12:46:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Jens Axboe <axboe@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH block/for-3.4/core] cfq: fix cfqg ref handling when
+ BLK_CGROUP && !CFQ_GROUP_IOSCHED
+Message-ID: <20120315164621.GD3253@redhat.com>
+References: <20120315094945.GA3205@localhost>
+ <20120315163546.GA32137@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F62186E.4050806@suse.cz>
+In-Reply-To: <20120315163546.GA32137@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 05:27:26PM +0100, Jiri Slaby wrote:
-> On 03/15/2012 11:48 AM, Jiri Slaby wrote:
-> > On 03/12/2012 09:34 PM, Greg KH wrote:
-> >> I'm announcing the release of the 3.0.24 kernel.
-> > ...
-> >> Heiko Carstens (1): compat: fix compile breakage on s390
-> > 
-> > It looks like we need the same fix as for 2.6.32.59:
-> > arch/s390/kernel/setup.c: In function 'setup_addressing_mode':
-> > arch/s390/kernel/setup.c:328: error: 'PSW32_ASC_PRIMARY' undeclared
-> > (first use in this function)
-> > arch/s390/kernel/setup.c:328: error: (Each undeclared identifier is
-> > reported only once
-> > arch/s390/kernel/setup.c:328: error: for each function it appears in.)
-> 
-> And when that one is fixed, there is another error:
-> drivers/s390/char/fs3270.c: In function 'fs3270_ioctl':
-> drivers/s390/char/fs3270.c:335: error: implicit declaration of function
-> 'compat_ptr'
-> drivers/s390/char/fs3270.c:335: warning: assignment makes pointer from
-> integer without a cast
+On Thu, Mar 15, 2012 at 09:35:46AM -0700, Tejun Heo wrote:
 
-Ick, have a patch for this?
+[..]
+> ---
+> Yeap, forgot to test that config combination.  Fengguang, can you
+> please test this patch?  Jens, once Fengguang confirms the fix, can
+> you please apply this on top of for-3.4/core along with the pending
+> stats updates?
 
-thanks,
+I was working on similar patch and you beat me to it. :-) One comment
+below.
 
-greg k-h
+[..]
+> @@ -3533,7 +3551,7 @@ static int cfq_init_queue(struct request
+>  
+>  	spin_lock_irq(q->queue_lock);
+>  	cfq_link_cfqq_cfqg(&cfqd->oom_cfqq, cfqd->root_group);
+> -	blkg_put(cfqg_to_blkg(cfqd->root_group));
+> +	cfqg_put(cfqd->root_group);
+
+This seems to be a spurious cfqg_put()? Which reference we are putting
+down here?
+
+Thanks
+Vivek
