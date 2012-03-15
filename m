@@ -1,242 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab2COFJM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 01:09:12 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58176 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab2COFJK convert rfc822-to-8bit (ORCPT
+	id S1753050Ab2COFhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 01:37:55 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34716 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab2COFhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 01:09:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120313161138.cbeb594d.akpm@linux-foundation.org>
-References: <1331197863-25564-1-git-send-email-bryan.wu@canonical.com>
- <1331197863-25564-3-git-send-email-bryan.wu@canonical.com> <20120313161138.cbeb594d.akpm@linux-foundation.org>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Thu, 15 Mar 2012 13:08:49 +0800
-X-Google-Sender-Auth: 1MuVJTGiTnMnGjOYbciHMRSBYeY
-Message-ID: <CAK5ve-+MuYbjnFmff8z5axQ-vrJn6ZbCOE_ZYyoWmkJwwAbhig@mail.gmail.com>
-Subject: Re: [PATCH 3/3] led-triggers: create a trigger for CPU activity
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: rpurdie@rpsys.net, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
-        linux@arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 15 Mar 2012 01:37:51 -0400
+Date: Thu, 15 Mar 2012 16:37:40 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: linux-next: manual merge of the tty tree with the xen-two tree
+Message-Id: <20120315163740.c51aed0e3c10234fa3f37a46@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__15_Mar_2012_16_37_40_+1100_k6Qqg1G4myzOx3RS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 7:11 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu,  8 Mar 2012 17:11:03 +0800
-> Bryan Wu <bryan.wu@canonical.com> wrote:
->
->> Attempting to consolidate the ARM LED code, this removes the
->> custom RealView LED trigger code to turn LEDs on and off in
->> response to CPU activity and replace it with a standard trigger.
->>
->> (bryan.wu@canonical.com:
->> It moves arch/arm/kernel/leds.c syscore stubs into this trigger.
->> It also provides ledtrig_cpu trigger event stub in <linux/leds.h>.
->> Although it was inspired by ARM work, it can be used in other arch.)
->
-> The patch doesn't "remove" or "move" anything.  It wholly consists of
-> additions.  Confused.
->
+--Signature=_Thu__15_Mar_2012_16_37_40_+1100_k6Qqg1G4myzOx3RS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm working on rebase my previous ARM leds consolidation patches to
-the linux-next. So this patch will come with those patches soon.
-Thanks for pointing out this.
+Hi Greg,
 
->> Cc: Richard Purdie <rpurdie@rpsys.net>
->> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
->>
->> Reviewed-by: Jamie Iles <jamie@jamieiles.com>
->> Tested-by: Jochen Friedrich <jochen@scram.de>
->
-> The authorship is a bit unclear.  You're the primary author, yes?
->
+Today's linux-next merge of the tty tree got a conflict in
+drivers/tty/hvc/hvc_xen.c between commits 02e19f9c7cac ("hvc_xen:
+implement multiconsole support") and cf8e019b523a ("hvc_xen: introduce
+HVC_XEN_FRONTEND") from the xen-two tree and commit d4e33fac2408
+("serial: Kill off NO_IRQ") from the tty tree.
 
-My work is based on Linus Walleij's patch, so I keep his signed off
-here. Basically I rewrote most of things.
+The code was moved around.  I fixed it up (see below) and can carry the
+fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->> --- /dev/null
->> +++ b/drivers/leds/ledtrig-cpu.c
->> @@ -0,0 +1,119 @@
->> +/*
->> + * ledtrig-cpu.c - LED trigger based on CPU activity
->> + *
->> + * Copyright 2011 Linus Walleij <linus.walleij@linaro.org>
->> + * Copyright 2011 Bryan Wu <bryan.wu@canonical.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/kernel.h>
->> +#include <linux/init.h>
->> +#include <linux/slab.h>
->> +#include <linux/percpu.h>
->> +#include <linux/syscore_ops.h>
->> +#include "leds.h"
->> +
->> +static DEFINE_PER_CPU(struct led_trigger *, cpu_trig);
->> +static DEFINE_PER_CPU(char [8], trig_name);
->> +
->> +void ledtrig_cpu(enum cpu_led_event ledevt)
->> +{
->> +     struct led_trigger *trig = __get_cpu_var(cpu_trig);
->> +
->> +     if (!trig)
->> +             return;
->> +
->> +     /* Locate the correct CPU LED */
->> +     switch (ledevt) {
->> +     case CPU_LED_IDLE_END:
->> +     case CPU_LED_START:
->> +             /* Will turn the LED on, max brightness */
->> +             led_trigger_event(trig, LED_FULL);
->> +             break;
->> +
->> +     case CPU_LED_IDLE_START:
->> +     case CPU_LED_STOP:
->> +     case CPU_LED_HALTED:
->> +             /* Will turn the LED off */
->> +             led_trigger_event(trig, LED_OFF);
->> +             break;
->> +
->> +     default:
->> +             /* Will leave the LED as it is */
->> +             break;
->> +     }
->> +}
->> +EXPORT_SYMBOL(ledtrig_cpu);
->
-> This is a global, exported-to-modules API function.  It should be
-> documented.
->
-> It should especially be documented if it has tricky unobvious calling
-> conditions, as this function does.  AFAICT it must be called by code
-> which is running on the target CPU and which is pinned to that CPU via
-> either preempt_disable() or set_cpus_allowed().
->
-> Or something else - I don't have a clue, and the author didn't tell me :(
->
+diff --cc drivers/tty/hvc/hvc_xen.c
+index 83d5c88,a1b0a75..0000000
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@@ -299,262 -193,8 +299,262 @@@ static int xen_initial_domain_console_i
+ =20
+  void xen_console_resume(void)
+  {
+ -	if (xencons_irq)
+ -		rebind_evtchn_irq(xen_start_info->console.domU.evtchn, xencons_irq);
+ +	struct xencons_info *info =3D vtermno_to_xencons(HVC_COOKIE);
+ +	if (info !=3D NULL && info->irq)
+ +		rebind_evtchn_irq(info->evtchn, info->irq);
+ +}
+ +
+ +static void xencons_disconnect_backend(struct xencons_info *info)
+ +{
+ +	if (info->irq > 0)
+ +		unbind_from_irqhandler(info->irq, NULL);
+ +	info->irq =3D 0;
+ +	if (info->evtchn > 0)
+ +		xenbus_free_evtchn(info->xbdev, info->evtchn);
+ +	info->evtchn =3D 0;
+ +	if (info->gntref > 0)
+ +		gnttab_free_grant_references(info->gntref);
+ +	info->gntref =3D 0;
+ +	if (info->hvc !=3D NULL)
+ +		hvc_remove(info->hvc);
+ +	info->hvc =3D NULL;
+ +}
+ +
+ +static void xencons_free(struct xencons_info *info)
+ +{
+ +	free_page((unsigned long)info->intf);
+ +	info->intf =3D NULL;
+ +	info->vtermno =3D 0;
+ +	kfree(info);
+ +}
+ +
+ +static int xen_console_remove(struct xencons_info *info)
+ +{
+ +	xencons_disconnect_backend(info);
+ +	spin_lock(&xencons_lock);
+ +	list_del(&info->list);
+ +	spin_unlock(&xencons_lock);
+ +	if (info->xbdev !=3D NULL)
+ +		xencons_free(info);
+ +	else {
+ +		if (xen_hvm_domain())
+ +			iounmap(info->intf);
+ +		kfree(info);
+ +	}
+ +	return 0;
+ +}
+ +
+ +#ifdef CONFIG_HVC_XEN_FRONTEND
+ +static struct xenbus_driver xencons_driver;
+ +
+ +static int xencons_remove(struct xenbus_device *dev)
+ +{
+ +	return xen_console_remove(dev_get_drvdata(&dev->dev));
+ +}
+ +
+ +static int xencons_connect_backend(struct xenbus_device *dev,
+ +				  struct xencons_info *info)
+ +{
+ +	int ret, evtchn, devid, ref, irq;
+ +	struct xenbus_transaction xbt;
+ +	grant_ref_t gref_head;
+ +	unsigned long mfn;
+ +
+ +	ret =3D xenbus_alloc_evtchn(dev, &evtchn);
+ +	if (ret)
+ +		return ret;
+ +	info->evtchn =3D evtchn;
+ +	irq =3D bind_evtchn_to_irq(evtchn);
+ +	if (irq < 0)
+ +		return irq;
+ +	info->irq =3D irq;
+ +	devid =3D dev->nodename[strlen(dev->nodename) - 1] - '0';
+ +	info->hvc =3D hvc_alloc(xenbus_devid_to_vtermno(devid),
+ +			irq, &domU_hvc_ops, 256);
+ +	if (IS_ERR(info->hvc))
+ +		return PTR_ERR(info->hvc);
+ +	if (xen_pv_domain())
+ +		mfn =3D virt_to_mfn(info->intf);
+ +	else
+ +		mfn =3D __pa(info->intf) >> PAGE_SHIFT;
+ +	ret =3D gnttab_alloc_grant_references(1, &gref_head);
+ +	if (ret < 0)
+ +		return ret;
+ +	info->gntref =3D gref_head;
+ +	ref =3D gnttab_claim_grant_reference(&gref_head);
+ +	if (ref < 0)
+ +		return ref;
+ +	gnttab_grant_foreign_access_ref(ref, info->xbdev->otherend_id,
+ +			mfn, 0);
+ +
+ + again:
+ +	ret =3D xenbus_transaction_start(&xbt);
+ +	if (ret) {
+ +		xenbus_dev_fatal(dev, ret, "starting transaction");
+ +		return ret;
+ +	}
+ +	ret =3D xenbus_printf(xbt, dev->nodename, "ring-ref", "%d", ref);
+ +	if (ret)
+ +		goto error_xenbus;
+ +	ret =3D xenbus_printf(xbt, dev->nodename, "port", "%u",
+ +			    evtchn);
+ +	if (ret)
+ +		goto error_xenbus;
+ +	ret =3D xenbus_printf(xbt, dev->nodename, "type", "ioemu");
+ +	if (ret)
+ +		goto error_xenbus;
+ +	ret =3D xenbus_transaction_end(xbt, 0);
+ +	if (ret) {
+ +		if (ret =3D=3D -EAGAIN)
+ +			goto again;
+ +		xenbus_dev_fatal(dev, ret, "completing transaction");
+ +		return ret;
+ +	}
+ +
+ +	xenbus_switch_state(dev, XenbusStateInitialised);
+ +	return 0;
+ +
+ + error_xenbus:
+ +	xenbus_transaction_end(xbt, 1);
+ +	xenbus_dev_fatal(dev, ret, "writing xenstore");
+ +	return ret;
+ +}
+ +
+ +static int __devinit xencons_probe(struct xenbus_device *dev,
+ +				  const struct xenbus_device_id *id)
+ +{
+ +	int ret, devid;
+ +	struct xencons_info *info;
+ +
+ +	devid =3D dev->nodename[strlen(dev->nodename) - 1] - '0';
+ +	if (devid =3D=3D 0)
+ +		return -ENODEV;
+ +
+ +	info =3D kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
+ +	if (!info)
+ +		goto error_nomem;
+ +	dev_set_drvdata(&dev->dev, info);
+ +	info->xbdev =3D dev;
+ +	info->vtermno =3D xenbus_devid_to_vtermno(devid);
+ +	info->intf =3D (void *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
+ +	if (!info->intf)
+ +		goto error_nomem;
+ +
+ +	ret =3D xencons_connect_backend(dev, info);
+ +	if (ret < 0)
+ +		goto error;
+ +	spin_lock(&xencons_lock);
+ +	list_add_tail(&info->list, &xenconsoles);
+ +	spin_unlock(&xencons_lock);
+ +
+ +	return 0;
+ +
+ + error_nomem:
+ +	ret =3D -ENOMEM;
+ +	xenbus_dev_fatal(dev, ret, "allocating device memory");
+ + error:
+ +	xencons_disconnect_backend(info);
+ +	xencons_free(info);
+ +	return ret;
+ +}
+ +
+ +static int xencons_resume(struct xenbus_device *dev)
+ +{
+ +	struct xencons_info *info =3D dev_get_drvdata(&dev->dev);
+ +
+ +	xencons_disconnect_backend(info);
+ +	memset(info->intf, 0, PAGE_SIZE);
+ +	return xencons_connect_backend(dev, info);
+ +}
+ +
+ +static void xencons_backend_changed(struct xenbus_device *dev,
+ +				   enum xenbus_state backend_state)
+ +{
+ +	switch (backend_state) {
+ +	case XenbusStateReconfiguring:
+ +	case XenbusStateReconfigured:
+ +	case XenbusStateInitialising:
+ +	case XenbusStateInitialised:
+ +	case XenbusStateUnknown:
+ +	case XenbusStateClosed:
+ +		break;
+ +
+ +	case XenbusStateInitWait:
+ +		break;
+ +
+ +	case XenbusStateConnected:
+ +		xenbus_switch_state(dev, XenbusStateConnected);
+ +		break;
+ +
+ +	case XenbusStateClosing:
+ +		xenbus_frontend_closed(dev);
+ +		break;
+ +	}
+ +}
+ +
+ +static const struct xenbus_device_id xencons_ids[] =3D {
+ +	{ "console" },
+ +	{ "" }
+ +};
+ +
+ +
+ +static DEFINE_XENBUS_DRIVER(xencons, "xenconsole",
+ +	.probe =3D xencons_probe,
+ +	.remove =3D xencons_remove,
+ +	.resume =3D xencons_resume,
+ +	.otherend_changed =3D xencons_backend_changed,
+ +);
+ +#endif /* CONFIG_HVC_XEN_FRONTEND */
+ +
+ +static int __init xen_hvc_init(void)
+ +{
+ +	int r;
+ +	struct xencons_info *info;
+ +	const struct hv_ops *ops;
+ +
+ +	if (!xen_domain())
+ +		return -ENODEV;
+ +
+ +	if (xen_initial_domain()) {
+ +		ops =3D &dom0_hvc_ops;
+ +		r =3D xen_initial_domain_console_init();
+ +		if (r < 0)
+ +			return r;
+ +		info =3D vtermno_to_xencons(HVC_COOKIE);
+ +	} else {
+ +		ops =3D &domU_hvc_ops;
+ +		if (xen_hvm_domain())
+ +			r =3D xen_hvm_console_init();
+ +		else
+ +			r =3D xen_pv_console_init();
+ +		if (r < 0)
+ +			return r;
+ +
+ +		info =3D vtermno_to_xencons(HVC_COOKIE);
+ +		info->irq =3D bind_evtchn_to_irq(info->evtchn);
+ +	}
+ +	if (info->irq < 0)
+- 		info->irq =3D 0; /* NO_IRQ */
+++		info->irq =3D 0;
+ +	else
+ +		irq_set_noprobe(info->irq);
+ +
+ +	info->hvc =3D hvc_alloc(HVC_COOKIE, info->irq, ops, 256);
+ +	if (IS_ERR(info->hvc)) {
+ +		r =3D PTR_ERR(info->hvc);
+ +		spin_lock(&xencons_lock);
+ +		list_del(&info->list);
+ +		spin_unlock(&xencons_lock);
+ +		if (info->irq)
+ +			unbind_from_irqhandler(info->irq, NULL);
+ +		kfree(info);
+ +		return r;
+ +	}
+ +
+ +	r =3D 0;
+ +#ifdef CONFIG_HVC_XEN_FRONTEND
+ +	r =3D xenbus_register_frontend(&xencons_driver);
+ +#endif
+ +	return r;
+  }
+ =20
+  static void __exit xen_hvc_fini(void)
 
-OK, I will sort out the documents about this API.
+--Signature=_Thu__15_Mar_2012_16_37_40_+1100_k6Qqg1G4myzOx3RS
+Content-Type: application/pgp-signature
 
->> +static int ledtrig_cpu_syscore_suspend(void)
->> +{
->> +     ledtrig_cpu(CPU_LED_STOP);
->> +     return 0;
->> +}
->> +
->> +static void ledtrig_cpu_syscore_resume(void)
->> +{
->> +     ledtrig_cpu(CPU_LED_START);
->> +}
->> +
->> +static void ledtrig_cpu_syscore_shutdown(void)
->> +{
->> +     ledtrig_cpu(CPU_LED_HALTED);
->> +}
->> +
->> +static struct syscore_ops ledtrig_cpu_syscore_ops = {
->> +     .shutdown       = ledtrig_cpu_syscore_shutdown,
->> +     .suspend        = ledtrig_cpu_syscore_suspend,
->> +     .resume         = ledtrig_cpu_syscore_resume,
->> +};
->> +
->> +static void __init ledtrig_cpu_register(void *info)
->> +{
->> +     int cpuid = smp_processor_id();
->> +     struct led_trigger *trig;
->> +     char *name = __get_cpu_var(trig_name);
->> +
->> +     snprintf(name, 8, "cpu%d", cpuid);
->
-> This explodes at 10,000 CPUS ;)
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-I think it's enough for a while -:). or need I use snprintf(name,
-4+NR_CPUS, "cpu%d", cpuid);
+iQIcBAEBCAAGBQJPYYAkAAoJEECxmPOUX5FEEugP/R4Val93bddIounQhMZgXv/l
+Q6tSTiDG0D+PSfM85ArBXjv/y84Cu5pBaUEOBDiidzNbmFPeirfcBVV7vZoD5hHx
+F92lTlzbYdt/B67XPt6SHUyTnpWZA9AGZsU0FUJAUihQUUufjzRYqOScrin4dhKm
+9QQHKyA27loy60jveqoAgBcsuUxciNl0/yKFi5alR/8/ulqc/rvNxgfeEoN0qZ30
+u1H+v3lxlI/3mSitDoWZRs4PYH9vatFxtB1XRoldqwqjD14Df8rXK47k2TqdQxG5
+RXbv6VnQqa7e6UgfYAKuwO2drVYVKuKGfZufqc9EI7nXsyqgFeE5cYdPvcxbzzkA
+CMF+xRcUVGFaUU08Uzzmz3Fe7neFqZR4gAw7/oidE/kGNbhwOCdhQ05+lke0mIRZ
+j5QKdA9pgtX5wzARjC1ZSZzTvFU1OpqTxLtPPejuO1fM0PwWvfchEFsaAJSqqnJv
+ic3L6v9dnGene7CQn1jvMyoehyk784eEVBWpVlYPNtCz+WpsdnhG1uzTTQsLW4U+
+t0Gl73Ytq3XWPrRXAT3WrgXDIUNiljiRFl4TCgCh/deXkKzXft1x0UwAkVIb6hWW
+WMt4HjGfnZic9Z0oBYbazN02tBdAmPMdmJedhTaeWIZhqLhKYd7DBT2tgHPNwAjw
+4U5GbkK1cSzMMBv7A5mo
+=mJTN
+-----END PGP SIGNATURE-----
 
->> +     led_trigger_register_simple(name, &trig);
->> +
->> +     pr_info("LED trigger %s indicate activity on CPU %d\n",
->> +             trig->name, cpuid);
->> +
->> +     __get_cpu_var(cpu_trig) = trig;
->> +}
->> +
->> +static void __exit ledtrig_cpu_unregister(void *info)
->> +{
->> +     struct led_trigger *trig = __get_cpu_var(cpu_trig);
->> +     char *name = __get_cpu_var(trig_name);
->> +
->> +     led_trigger_unregister_simple(trig);
->> +     __get_cpu_var(cpu_trig) = NULL;
->> +     memset(name, 0, 8);
->> +}
->> +
->> +static int __init ledtrig_cpu_init(void)
->> +{
->> +     on_each_cpu(ledtrig_cpu_register, NULL, 1);
->
-> on_each_cpu() only calls the function on presently-onlined CPUs.  How
-> does this code interact with CPU hotplug?
->
-> And as you've already noted, led_trigger_register_simple() is totally
-> not callable from interrupt context.  And we're not just talking about
-> under local_irq_disable() here: on_each_cpu() will raise cross-cpu hard
-> interrupts to call the function on remote CPUs.  We end up trying to do
-> down_write() and who knows what else from within a hard interrupt
-> handler.
->
-
-Right, I will change that to for_each_cpu() and resubmmit the patch.
-
->> --- a/include/linux/leds.h
->> +++ b/include/linux/leds.h
->> @@ -210,4 +210,19 @@ struct gpio_led_platform_data {
->>  struct platform_device *gpio_led_register_device(
->>               int id, const struct gpio_led_platform_data *pdata);
->>
->> +#if defined(CONFIG_LEDS_TRIGGER_CPU) || defined(CONFIG_LEDS_TRIGGER_CPU_MODULE)
->> +enum cpu_led_event {
->> +     CPU_LED_IDLE_START,     /* CPU enters idle */
->> +     CPU_LED_IDLE_END,       /* CPU idle ends */
->> +     CPU_LED_START,          /* Machine starts, especially resume */
->> +     CPU_LED_STOP,           /* Machine stops, especially suspend */
->> +     CPU_LED_HALTED,         /* Machine shutdown */
->> +};
->> +
->> +/* Use this routine to handle LEDs */
->> +extern void ledtrig_cpu(enum cpu_led_event evt);
->> +#else
->> +#define ledtrig_cpu(evt) do {} while (0)
->> +#endif
->
-> a) the stub function should be written in C, not CPP please
->
-
-Actually, I'm only familiar with C and forget to write CPP for a
-while. is this looks like CPP?
-
-> b) it makes no sense to provide the stub function when the
->   definition of its argument type (enum cpu_led_event) is not
->   also available.
->
-
-OK, l will move out the enum cpu_led_event out of this ifdef.
-
-Thanks,
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.138-1617-6545 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+--Signature=_Thu__15_Mar_2012_16_37_40_+1100_k6Qqg1G4myzOx3RS--
