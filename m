@@ -1,40 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762130Ab2COXyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 19:54:23 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:57354 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1761665Ab2COXyW (ORCPT
+	id S1762126Ab2COX7K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 19:59:10 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40179 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755998Ab2COX7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 19:54:22 -0400
-Date: Fri, 16 Mar 2012 10:54:06 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com,
-        linux-kernel@vger.kernel.org, ludovic.desroches@atmel.com,
-        dmitry.torokhov@gmail.com, mpm@selenic.com, vinod.koul@intel.com,
-        a.zummo@towertech.it
-Subject: Re: [PATCH 6/6] hwrng: Kconfig: remove dependency for atmel-rng
-	driver
-Message-ID: <20120315235406.GB18496@gondor.apana.org.au>
-References: <cover.1331826095.git.nicolas.ferre@atmel.com> <c3455cec019bedacc6ff58cf8cd2ae25cdeb212f.1331826095.git.nicolas.ferre@atmel.com>
+	Thu, 15 Mar 2012 19:59:07 -0400
+Date: Thu, 15 Mar 2012 16:58:31 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/7 v2] mm: rework __isolate_lru_page() file/anon
+ filter
+In-Reply-To: <4F618645.8020507@openvz.org>
+Message-ID: <alpine.LSU.2.00.1203151618150.1291@eggly.anvils>
+References: <20120229091547.29236.28230.stgit@zurg> <20120303091327.17599.80336.stgit@zurg> <alpine.LSU.2.00.1203061904570.18675@eggly.anvils> <20120308143034.f3521b1e.kamezawa.hiroyu@jp.fujitsu.com> <alpine.LSU.2.00.1203081758490.18195@eggly.anvils>
+ <4F59AE3C.5040200@openvz.org> <alpine.LSU.2.00.1203091559260.23317@eggly.anvils> <4F5AFAF0.6060608@openvz.org> <4F5B22DE.4020402@openvz.org> <alpine.LSU.2.00.1203141842490.2232@eggly.anvils> <4F618645.8020507@openvz.org>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c3455cec019bedacc6ff58cf8cd2ae25cdeb212f.1331826095.git.nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 04:57:22PM +0100, Nicolas Ferre wrote:
-> This will allow to select this driver for newer SoCs. Make sure to
-> keep dependency on HAVE_CLK to avoid breaking other machines.
+On Thu, 15 Mar 2012, Konstantin Khlebnikov wrote:
+> Hugh Dickins wrote:
+> > On Sat, 10 Mar 2012, Konstantin Khlebnikov wrote:
+> > > Konstantin Khlebnikov wrote:
+> > > 
+> > > Heh, looks like we don't need these checks at all:
+> > > without RECLAIM_MODE_LUMPYRECLAIM we isolate only pages from right lru,
+> > > with RECLAIM_MODE_LUMPYRECLAIM we isolate pages from all evictable lru.
+> > > Thus we should check only PageUnevictable() on lumpy reclaim.
+> > 
+> > Yes, those were great simplfying insights: I'm puzzling over why you
+> > didn't follow through on them in your otherwise nice 4.5/7, which
+> > still involves lru bits in the isolate mode?
 > 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Actually filter is required for single case: lumpy isolation for
+> shrink_active_list().
+> Maybe I'm wrong,
 
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+You are right.  I thought you were wrong, but testing proved you right.
+
+> or this is bug, but I don't see any reasons why this can not happen:
+
+It's very close to being a bug: perhaps I'd call it overlooked silliness.
+
+> sc->reclaim_mode manipulations are very tricky.
+
+And you are right on that too.  Particularly those reset_reclaim_mode()s
+in shrink_page_list(), when the set_reclaim_mode() is done at the head of
+shrink_inactive_list().
+
+With no set_reclaim_mode() or reset_reclaim_mode() in shrink_active_list(),
+so its isolate_lru_pages() test for RECLAIM_MODE_LUMPYRECLAIM just picks up
+whatever sc->reclaim_mode was left over from earlier shrink_inactive_list().
+
+Or none: the age_active_anon() call to shrink_active_list() never sets
+sc->reclaim_mode, and is lucky that the only test for RECLAIM_MODE_SINGLE
+is in code that it won't reach.
+
+(Or maybe I've got some of those details wrong again, it's convoluted.)
+
+I contend that what we want is
+
+--- next/mm/vmscan.c	2012-03-13 03:52:15.360030839 -0700
++++ linux/mm/vmscan.c	2012-03-15 14:53:47.035519540 -0700
+@@ -1690,6 +1690,8 @@ static void shrink_active_list(unsigned
+ 
+ 	lru_add_drain();
+ 
++	reset_reclaim_mode(sc);
++
+ 	if (!sc->may_unmap)
+ 		isolate_mode |= ISOLATE_UNMAPPED;
+ 	if (!sc->may_writepage)
+
+but admit that's a slight change in behaviour - though I think only
+a sensible one.  It's silly to embark upon lumpy reclaim of adjacent
+pages, while tying your hands to pull only from file for file or from
+anon for anon (though not so silly to restrict in/activity).
+
+Shrinking the active list is about repopulating an inactive list when
+it's low: shrinking the active list is not going to free any pages
+(except when they're concurrently freed while it holds them isolated),
+it's just going to move them to inactive; so aiming for adjacency at
+this stage is pointless.  Counter-productive even: if it's going to
+make any contribution to the lumpy reclaim, it should be populating
+the inactive list with a variety of good candidates to seed the next
+lump (whose adjacent pages will be isolated whichever list they're on):
+by populating with adjacent pages itself, it lowers the chance of
+later success, and increases the perturbation of lru-ness.
+
+And if we do a reset_reclaim_mode(sc) in shrink_active_list(), then you
+can remove the leftover lru stuff which spoils the simplicity of 4.5/7.
+
+But you are right not to mix such a change in with your reorganization:
+would you like to add the patch above into your series as a separate
+patch (Cc Rik and Mel), or would you like me to send it separately
+for discusssion, or do you see reason to disagree with it?
+
+Hugh
