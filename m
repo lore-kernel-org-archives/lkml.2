@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab2CORWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:22:24 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21382 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab2CORWW (ORCPT
+	id S1031827Ab2COR2d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:28:33 -0400
+Received: from nic.NetDirect.CA ([216.16.235.2]:48280 "EHLO
+	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030242Ab2COR2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:22:22 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 108.39.66.94
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/XP2ubI0F3N1v+hHRQoHEkeC1QjrOpvwQ=
-Date: Thu, 15 Mar 2012 13:22:13 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, Michael Walle <michael@walle.cc>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (arm-soc tree related)
-Message-ID: <20120315172213.GC20243@titan.lakedaemon.net>
-References: <20120315105901.7b10c9f4de9374a613436988@canb.auug.org.au>
- <20120315002020.GA16189@titan.lakedaemon.net>
- <201203151639.38223.arnd@arndb.de>
-MIME-Version: 1.0
+	Thu, 15 Mar 2012 13:28:31 -0400
+X-Originating-Ip: 216.16.235.2
+Date: Thu, 15 Mar 2012 13:28:28 -0400
+From: Chris Frey <cdfrey@foursquare.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: Linux 3.0.24
+Message-ID: <20120315172828.GA29721@foursquare.net>
+References: <20120312203451.GA16773@kroah.com> <20120315162322.GA26005@foursquare.net> <20120315163749.GA25001@kroah.com> <20120315165108.GA27737@foursquare.net> <20120315165812.GA10397@kroah.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201203151639.38223.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120315165812.GA10397@kroah.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 04:39:38PM +0000, Arnd Bergmann wrote:
-> On Thursday 15 March 2012, Jason Cooper wrote:
-> > That's my mistake.  I did a pull request for the wrong branch.  Olof,
-> > could you please drop the offending branch and I'll submit a new pull
-> > request once I have a chance to test Arnd's irq patch?
+On Thu, Mar 15, 2012 at 09:58:12AM -0700, Greg KH wrote:
+> On Thu, Mar 15, 2012 at 12:51:08PM -0400, Chris Frey wrote:
+> > Perhaps it would help if I phrased my question differently: What kind of
+> > bug makes you decide to write "must" instead of something else?
 > 
-> I reverted this in the for-next branch for now. The two initial patches
-> from the kirkwood/board branch are still present.
+> This has been discussed endlessly in the past, please see the lkml
+> archives for details if you are interested.  It all comes down to the
+> issue, how do you classify a bug fix as a specific "kind"[1]?
+> 
+> Is there some reason you don't trust me in my usage of the word "must"
+> here?  If so, then please feel free to go through all of the individual
+> patches, which I post, and make the judgement call for yourself.
+> 
+> [1] Hint, for the most part, you can't.
 
-Okay, thanks.  I've rebased onto next/boards and merged the
-depends/irqdomain branch.  I'm making progress, but not finished yet.
+It's not a matter of trust, but of understanding.  If, according to your
+footnote, you do not classify bugs at all (except maybe compile issues,
+as Jonathan mentioned), then "must" merely implies that "a bug was fixed."
 
-How is a pull-request done in the above scenario?  is my merge commit
-included in the series?  what is the pull-request based on?
-next/boards, or depends/irqdomain?
+But had you classified bugs, then it would be useful to know what
+criteria you had used.  And if so, it would make sense that such criteria
+would be documented somewhere.
 
-thx,
+I had assumed the latter case, but it seems that the former is more accurate.
 
-Jason.
+Thanks, both to you and Jonathan for clarifying my misunderstanding.
+
+- Chris
+
