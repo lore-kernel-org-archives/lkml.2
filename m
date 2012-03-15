@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761485Ab2COOgb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:36:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43664 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761209Ab2COOg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:36:29 -0400
-Date: Thu, 15 Mar 2012 10:35:49 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] watchdog: Make sure the watchdog thread gets CPU on
- loaded system
-Message-ID: <20120315143549.GC3941@redhat.com>
-References: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
- <20120314161906.e53359d3.akpm@linux-foundation.org>
- <20120315014511.GT27051@google.com>
- <1331809239.18960.168.camel@twins>
- <1331809597.18960.171.camel@twins>
- <20120315124228.GA5318@elte.hu>
- <1331820051.18960.187.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1331820051.18960.187.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761590Ab2COOgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:36:39 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34166 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761209Ab2COOgg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 10:36:36 -0400
+From: Sasha Levin <levinsasha928@gmail.com>
+To: johnstul@us.ibm.com, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Cc: Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH 1/2] math: Introduce div64_long
+Date: Thu, 15 Mar 2012 12:36:13 -0400
+Message-Id: <1331829374-31543-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 03:00:51PM +0100, Peter Zijlstra wrote:
-> On Thu, 2012-03-15 at 13:42 +0100, Ingo Molnar wrote:
-> > So unless there's concensus to remove everything but the hard 
-> > lockup detection facilities, lets solve the technical problem at 
-> > hand, ok? 
-> 
-> Well, at least make it possible to disable the silly soft thing.
-> 
-> And I really wouldn't know how the soft thing could possible help,
-> except when not actually having a NMI watchdog. What case does it
-> trigger where the NMI one doesn't?
+Add a div64_long macro which is used to devide a 64bit number by a long (which
+can be 4 bytes on 32bit systems and 8 bytes on 64bit systems).
 
-I think softlockup really boils down to a pre-emption disabled detector
-much like how the hardlockup really is a interrupts disabled detector.
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ include/linux/math64.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-The amount of code preventing the scheduler from running is most likely a
-lot lower than the code the prevents interrrupts from happening.
-
-Cheers,
-Don
+diff --git a/include/linux/math64.h b/include/linux/math64.h
+index 23fcdfc..b8ba855 100644
+--- a/include/linux/math64.h
++++ b/include/linux/math64.h
+@@ -6,6 +6,8 @@
+ 
+ #if BITS_PER_LONG == 64
+ 
++#define div64_long(x,y) div64_s64((x),(y))
++
+ /**
+  * div_u64_rem - unsigned 64bit divide with 32bit divisor with remainder
+  *
+@@ -45,6 +47,8 @@ static inline s64 div64_s64(s64 dividend, s64 divisor)
+ 
+ #elif BITS_PER_LONG == 32
+ 
++#define div64_long(x,y) div_s64((x),(y))
++
+ #ifndef div_u64_rem
+ static inline u64 div_u64_rem(u64 dividend, u32 divisor, u32 *remainder)
+ {
+-- 
+1.7.8.4
 
