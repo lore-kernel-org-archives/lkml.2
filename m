@@ -1,88 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab2COCFy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 22:05:54 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40730 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986Ab2COCFv (ORCPT
+	id S1757684Ab2COCGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 22:06:49 -0400
+Received: from mga14.intel.com ([143.182.124.37]:41574 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753986Ab2COCGr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 22:05:51 -0400
-Date: Thu, 15 Mar 2012 13:05:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michael Walle <michael@walle.cc>
-Subject: Re: linux-next: build failure after merge of the final tree
- (arm-soc tree related)
-Message-Id: <20120315130541.d0d8c98d132a32dfe369ee19@canb.auug.org.au>
-In-Reply-To: <CAP=VYLosYNbhGeUYyLr=0xa1UgK=fL-GOafySixFyQjy4GrdgA@mail.gmail.com>
-References: <20120315105901.7b10c9f4de9374a613436988@canb.auug.org.au>
-	<CAP=VYLosYNbhGeUYyLr=0xa1UgK=fL-GOafySixFyQjy4GrdgA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__15_Mar_2012_13_05_41_+1100_GRpqV_fK518ZNxD2"
+	Wed, 14 Mar 2012 22:06:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="119090938"
+From: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Du, Alek" <alek.du@intel.com>, "Zuo, Jiao" <jiao.zuo@intel.com>
+Subject: [PATCH] tty: hold lock across tty buffer finding and buffer filling
+Thread-Topic: [PATCH] tty: hold lock across tty buffer finding and buffer
+ filling
+Thread-Index: Ac0CUERRacLD33MLTtaeiAHOWyOq2A==
+Date: Thu, 15 Mar 2012 02:06:43 +0000
+Message-ID: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Mar_2012_13_05_41_+1100_GRpqV_fK518ZNxD2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Xiaobing Tu <xiaobing.tu@intel.com>
 
-Hi Paul,
+tty_buffer_request_room is well protected, but while after it returns,
+ it releases the port->lock. tty->buf.tail might be modified
+by either irq handler or other threads. The patch adds more protection
+by holding the lock across tty buffer finding and buffer filling.
 
-On Wed, 14 Mar 2012 21:53:39 -0400 Paul Gortmaker <paul.gortmaker@windriver=
-.com> wrote:
->
-> On Wed, Mar 14, 2012 at 7:59 PM, Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
-> >
-> > After merging the final tree, today's linux-next build (powerpc
-> > allmodconfig) failed like this:
-> >
-> > drivers/ata/sata_mv.c:4185:1: error: '__mod_of_device_table' aliased to=
- undefined symbol 'mvsdio_dt_ids'
-> >
-> > Caused by commit f1e1e148c5cb ("ARM: kirkwood: sata_mv: add device tree
-> > binding").
->=20
-> Looks like the same thing I reported in yesterday's triage that was
-> screwing sparc:
->=20
-> http://www.spinics.net/lists/sparclinux/msg09199.html
->=20
-> Odd that it only started screwing powerpc today though.
+Signed-off-by: Alek Du <alek.du@intel.com>
+Signed-off-by: Xiaobing Tu <xiaobing.tu@intel.com>
+---
+ drivers/tty/tty_buffer.c |   85 +++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 65 insertions(+), 20 deletions(-)
+ mode change 100644 => 100755 drivers/tty/tty_buffer.c
 
-It started affecting PowerPC with next-20120309, but I don't read the
-build logs every day :-(
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__15_Mar_2012_13_05_41_+1100_GRpqV_fK518ZNxD2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPYU51AAoJEECxmPOUX5FEzucP/i1C1bmMEVQA1O7y2SskyxZJ
-cam4R87x9pqVTdYbXMXmhnERIv0MitO93yn14ermGnosm2ZnzAt2xsz6zoAu7tz9
-xKHF7s0KmK5aCJJ3mGEjuCo9hyy9hQdRpdSrC0O9+yKjZ5bbZgvffi8x5/9dKt06
-K4GmqdxkbQLsNl2JZvNW46HGGMOwPKd+/bP0cNDiCjD1iWwjTkGIx6iqdxK0S8JA
-dffnIs1iPuNjx0hB9GetZK8+bzeYMcyz0YnHmo/xifPkmnhTEEI+anq5zAyNPQtK
-vGFhhFjxaVzV/XyNtbca4LMq8t9kyDeJYILED/JwFhO10xz4xICGoQzG0YU784Cp
-nSBEskjd9KMiDzKqw8mZhbfc9iFxYVauCgjot9RO3/v+XW+f/7F20GZXMdpVrYq7
-LMeioLrC9UCYdJsvrip5dK9NkzP5/jSBi54BeZQcQa1cYGIOu02aOaGY9DAYUUfA
-yqUBKTvJifmO63JwvRxLO59w6/mmfIzILg+h+lvsMzyijBVB4xSoF93yaSc+5Vej
-596NxJomjkaj9WhDCKCQjH6N35llg8PAe6X8a0Ycm00kLzQWxn7gENzOop4+KChT
-exmhl74mxvlr5P+ok/ITIgHiAnNO0AI3V9pXXbEXnWPfLktMR45W72jIK0umvrXa
-yQQXHkT1WdG4pN5JQ/Aw
-=ulsn
------END PGP SIGNATURE-----
-
---Signature=_Thu__15_Mar_2012_13_05_41_+1100_GRpqV_fK518ZNxD2--
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+old mode 100644
+new mode 100755
+index 6c9b7cd..6810f2d
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -185,25 +185,19 @@ static struct tty_buffer *tty_buffer_find(struct tty_struct *tty, size_t size)
+ 	/* Should possibly check if this fails for the largest buffer we
+ 	   have queued and recycle that ? */
+ }
+-
+ /**
+- *	tty_buffer_request_room		-	grow tty buffer if needed
++ *	__tty_buffer_request_room		-	grow tty buffer if needed
+  *	@tty: tty structure
+  *	@size: size desired
+  *
+  *	Make at least size bytes of linear space available for the tty
+  *	buffer. If we fail return the size we managed to find.
+- *
+- *	Locking: Takes tty->buf.lock
++ *      Locking: Caller must hold tty->buf.lock
+  */
+-int tty_buffer_request_room(struct tty_struct *tty, size_t size)
++static int __tty_buffer_request_room(struct tty_struct *tty, size_t size)
+ {
+ 	struct tty_buffer *b, *n;
+ 	int left;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&tty->buf.lock, flags);
+-
+ 	/* OPTIMISATION: We could keep a per tty "zero" sized buffer to
+ 	   remove this conditional if its worth it. This would be invisible
+ 	   to the callers */
+@@ -225,9 +219,30 @@ int tty_buffer_request_room(struct tty_struct *tty, size_t size)
+ 			size = left;
+ 	}
+ 
+-	spin_unlock_irqrestore(&tty->buf.lock, flags);
+ 	return size;
+ }
++
++
++/**
++ *	tty_buffer_request_room		-	grow tty buffer if needed
++ *	@tty: tty structure
++ *	@size: size desired
++ *
++ *	Make at least size bytes of linear space available for the tty
++ *	buffer. If we fail return the size we managed to find.
++ *
++ *	Locking: Takes tty->buf.lock
++ */
++int tty_buffer_request_room(struct tty_struct *tty, size_t size)
++{
++	unsigned long flags;
++	int length;
++	
++	spin_lock_irqsave(&tty->buf.lock, flags);
++	length = __tty_buffer_request_room(tty, size);
++	spin_unlock_irqrestore(&tty->buf.lock, flags);
++	return length;
++}
+ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
+ 
+ /**
+@@ -249,14 +264,22 @@ int tty_insert_flip_string_fixed_flag(struct tty_struct *tty,
+ 	int copied = 0;
+ 	do {
+ 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+-		int space = tty_buffer_request_room(tty, goal);
+-		struct tty_buffer *tb = tty->buf.tail;
++		int space;
++		unsigned long flags;
++		struct tty_buffer *tb;
++		
++		spin_lock_irqsave(&tty->buf.lock, flags);
++		space = __tty_buffer_request_room(tty, goal);
++		tb = tty->buf.tail;
+ 		/* If there is no space then tb may be NULL */
+-		if (unlikely(space == 0))
++		if (unlikely(space == 0)) {
++			spin_unlock_irqrestore(&tty->buf.lock, flags);
+ 			break;
++		}
+ 		memcpy(tb->char_buf_ptr + tb->used, chars, space);
+ 		memset(tb->flag_buf_ptr + tb->used, flag, space);
+ 		tb->used += space;
++		spin_unlock_irqrestore(&tty->buf.lock, flags);
+ 		copied += space;
+ 		chars += space;
+ 		/* There is a small chance that we need to split the data over
+@@ -286,14 +309,22 @@ int tty_insert_flip_string_flags(struct tty_struct *tty,
+ 	int copied = 0;
+ 	do {
+ 		int goal = min_t(size_t, size - copied, TTY_BUFFER_PAGE);
+-		int space = tty_buffer_request_room(tty, goal);
+-		struct tty_buffer *tb = tty->buf.tail;
++		int space;
++		unsigned long __flags;
++		struct tty_buffer *tb;
++		
++		spin_lock_irqsave(&tty->buf.lock, __flags);
++		space = __tty_buffer_request_room(tty, goal);
++		tb = tty->buf.tail;
+ 		/* If there is no space then tb may be NULL */
+-		if (unlikely(space == 0))
++		if (unlikely(space == 0)) {
++			spin_unlock_irqrestore(&tty->buf.lock, __flags);
+ 			break;
++		}
+ 		memcpy(tb->char_buf_ptr + tb->used, chars, space);
+ 		memcpy(tb->flag_buf_ptr + tb->used, flags, space);
+ 		tb->used += space;
++		spin_unlock_irqrestore(&tty->buf.lock, __flags);
+ 		copied += space;
+ 		chars += space;
+ 		flags += space;
+@@ -344,13 +375,20 @@ EXPORT_SYMBOL(tty_schedule_flip);
+ int tty_prepare_flip_string(struct tty_struct *tty, unsigned char **chars,
+ 								size_t size)
+ {
+-	int space = tty_buffer_request_room(tty, size);
++	int space;
++	unsigned long flags;
++	struct tty_buffer *tb;
++	
++	spin_lock_irqsave(&tty->buf.lock, flags);
++	space = __tty_buffer_request_room(tty, size);
++
++	tb = tty->buf.tail;
+ 	if (likely(space)) {
+-		struct tty_buffer *tb = tty->buf.tail;
+ 		*chars = tb->char_buf_ptr + tb->used;
+ 		memset(tb->flag_buf_ptr + tb->used, TTY_NORMAL, space);
+ 		tb->used += space;
+ 	}
++	spin_unlock_irqrestore(&tty->buf.lock, flags);
+ 	return space;
+ }
+ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
+@@ -374,13 +412,20 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
+ int tty_prepare_flip_string_flags(struct tty_struct *tty,
+ 			unsigned char **chars, char **flags, size_t size)
+ {
+-	int space = tty_buffer_request_room(tty, size);
++	int space;
++	unsigned long __flags;
++	struct tty_buffer *tb;
++	
++	spin_lock_irqsave(&tty->buf.lock, __flags);
++	space = __tty_buffer_request_room(tty, size);
++
++	tb = tty->buf.tail;
+ 	if (likely(space)) {
+-		struct tty_buffer *tb = tty->buf.tail;
+ 		*chars = tb->char_buf_ptr + tb->used;
+ 		*flags = tb->flag_buf_ptr + tb->used;
+ 		tb->used += space;
+ 	}
++	spin_unlock_irqrestore(&tty->buf.lock, __flags);
+ 	return space;
+ }
+ EXPORT_SYMBOL_GPL(tty_prepare_flip_string_flags);
+-- 
+1.7.4.1
