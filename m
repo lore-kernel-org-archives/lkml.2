@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762061Ab2COSzc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 14:55:32 -0400
-Received: from 121.247.115.37.static-hyderabad.vsnl.net.in ([121.247.115.37]:34931
-	"EHLO mail.rvhyd.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754919Ab2COSz0 (ORCPT
+	id S1762068Ab2COS4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 14:56:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41244 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762033Ab2COS4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 14:55:26 -0400
-Reply-To: <ming.yang97@yahoo.com.hk>
-From: "Ming Yang" <mgchi@rocketmail.com>
-Subject: We Can Work Together..
-Date: Thu, 15 Mar 2012 15:15:35 -0000
+	Thu, 15 Mar 2012 14:56:52 -0400
+Date: Thu, 15 Mar 2012 11:56:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Cc: Pete Zaitcev <zaitcev@redhat.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb/ub: deprecate & schedule for removal the "Low
+ Performance USB Block" driver
+Message-ID: <20120315185648.GC11142@kroah.com>
+References: <1331758372-9851-1-git-send-email-sebastian@breakpoint.cc>
+ <20120315093331.6472333e@lembas.zaitcev.lan>
+ <20120315153747.GA23515@kroah.com>
+ <20120315181045.GB5702@breakpoint.cc>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20120315151641.0BD3910677CB@mail.rvhyd.net>
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120315181045.GB5702@breakpoint.cc>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Mar 15, 2012 at 07:10:45PM +0100, Sebastian Andrzej Siewior wrote:
+> > > Although the above is false, and ub actually started libusual,
+> > > I don't mind. It's a transient notice anyway. Once ub is gone,
+> > > libusual can be folded back into usb-storage.
+> > 
+> > Good point.
+> > 
+> > Sebastian, care to reword this and resend it?
+> I want clarify one thing but sure.
+> 
+> > Also, are you going to be doing the "merge libusual into usb-storage"
+> > after you remove the ub driver?
+> 
+> This sounds like once ub is out, you have to merge those two :) So yes, unless
+> a use case for it comes up.
 
-I am Mr. Ming Yang, Director of Operations of the Hang Seng Bank Ltd, Sai Wan Ho Branch, Hong Kong, I am 
-seeking your assistance in helping me receive a large amount of money and in giving a clear research and 
-feasibility study on areas I could invest on.
+I'll take patches from you to do this, as the removal patch of ub will
+make libusual not need to be stand-alone.
 
-Kindly indicate your interest by replying this message via email on ming.yang97@yahoo.com.hk
+And you will be the one sending the ub removal patch in 6 months, right?
 
-Regards.
+thanks,
 
-Ming Yang
+greg k-h
