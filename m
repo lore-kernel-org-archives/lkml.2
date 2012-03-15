@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031519Ab2COP6K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 11:58:10 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:53260 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S965275Ab2COP6I (ORCPT
+	id S1031550Ab2COP61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 11:58:27 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:39065 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030668Ab2COP6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 11:58:08 -0400
-Message-ID: <4F62118A.2070403@xenotime.net>
-Date: Thu, 15 Mar 2012 08:58:02 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Brian Swetland <swetland@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-Subject: Re: linux-next: Tree for Mar 15 (staging/android/ram_console.c)
-References: <20120315185935.a0c475a30b2836765273a1e5@canb.auug.org.au>
-In-Reply-To: <20120315185935.a0c475a30b2836765273a1e5@canb.auug.org.au>
-Content-Type: text/plain; charset=windows-1251
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Thu, 15 Mar 2012 11:58:25 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org, plagnioj@jcrosoft.com
+Cc: linux-kernel@vger.kernel.org, ludovic.desroches@atmel.com,
+        dmitry.torokhov@gmail.com, mpm@selenic.com,
+        herbert@gondor.hengli.com.au, vinod.koul@intel.com,
+        a.zummo@towertech.it, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 2/6] mmc: Kconfig: remove choice between at91_mci and atmel-mci
+Date: Thu, 15 Mar 2012 16:57:18 +0100
+Message-Id: <d86c9743d2434e2c6a2a34cefe6c989e0efa9652.1331826095.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.9
+In-Reply-To: <cover.1331826095.git.nicolas.ferre@atmel.com>
+References: <cover.1331826095.git.nicolas.ferre@atmel.com>
+In-Reply-To: <cover.1331826095.git.nicolas.ferre@atmel.com>
+References: <cover.1331826095.git.nicolas.ferre@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 12:59 AM, Stephen Rothwell wrote:
+This choice is not so important now that atmel-mci supports every
+Atmel AT91 SoC except AT91RM9200. As this newer driver is better
+maintained choose this one to avoid confusion.
 
-> Hi all,
-> 
-> News: the build system (see below) has had its toolchains for most
-> architectures updated to gcc 4.6.3.  People might like to check the build
-> results and consider if this change has caused any problems.  There are
-> also a number of architectures that are building today for the first
-> time.  Thanks to Tony Breeds for his efforts in providing toolchains.
-> 
-> Changes since 20120314:
-
-
-
-on x86_64 when CONFIG_PRINTK is not enabled:
-
-
-drivers/staging/android/ram_console.c:99:6: error: 'dmesg_restrict' undeclared (first use in this function)
-
-
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 ---
-~Randy
+ drivers/mmc/host/Kconfig |   13 ++-----------
+ 1 files changed, 2 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 00fcbed..455a414 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -270,16 +270,9 @@ config MMC_AU1X
+ 
+ 	  If unsure, say N.
+ 
+-choice
+-	prompt "Atmel SD/MMC Driver"
+-	depends on AVR32 || ARCH_AT91
+-	default MMC_ATMELMCI if AVR32
+-	help
+-	  Choose which driver to use for the Atmel MCI Silicon
+-
+ config MMC_AT91
+ 	tristate "AT91 SD/MMC Card Interface support"
+-	depends on ARCH_AT91
++	depends on ARCH_AT91RM9200
+ 	help
+ 	  This selects the AT91 MCI controller.
+ 
+@@ -287,7 +280,7 @@ config MMC_AT91
+ 
+ config MMC_ATMELMCI
+ 	tristate "Atmel Multimedia Card Interface support"
+-	depends on AVR32 || ARCH_AT91
++	depends on AVR32 || (ARCH_AT91 && !ARCH_AT91RM9200)
+ 	help
+ 	  This selects the Atmel Multimedia Card Interface driver. If
+ 	  you have an AT32 (AVR32) or AT91 platform with a Multimedia
+@@ -295,8 +288,6 @@ config MMC_ATMELMCI
+ 
+ 	  If unsure, say N.
+ 
+-endchoice
+-
+ config MMC_ATMELMCI_DMA
+ 	bool "Atmel MCI DMA support"
+ 	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE
+-- 
+1.7.9
+
