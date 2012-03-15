@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161081Ab2COQ5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:57:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43137 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161050Ab2COQ5C (ORCPT
+	id S1161089Ab2COQ5r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:57:47 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35056 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161055Ab2COQ5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:57:02 -0400
-Date: Thu, 15 Mar 2012 09:56:55 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Lennart Poettering <mzxreary@0pointer.de>
-Subject: [PATCH] cgroup: deprecate remount option changes mount option
-Message-ID: <20120315165655.GD32137@google.com>
-References: <20120314215228.GI7349@google.com>
+	Thu, 15 Mar 2012 12:57:44 -0400
+Date: Thu, 15 Mar 2012 11:57:36 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Chris Frey <cdfrey@foursquare.net>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: Linux 3.0.24
+Message-ID: <20120315165736.GA11496@burratino>
+References: <20120312203451.GA16773@kroah.com>
+ <20120315162322.GA26005@foursquare.net>
+ <20120315163749.GA25001@kroah.com>
+ <20120315165108.GA27737@foursquare.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120314215228.GI7349@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120315165108.GA27737@foursquare.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch marks the following features for deprecation.
+Chris Frey wrote:
 
-* Rebinding subsys by remount: Never reached useful state - only works
-  on empty hierarchies.
+> Perhaps it would help if I phrased my question differently: What kind of
+> bug makes you decide to write "must" instead of something else?
 
-* release_agent update by remount: release_agent itself will be
-  replaced with conventional fsnotify notification.
+My impression is that Greg does not want to be in the business of
+deciding which updates are security-critical.  Others can make that
+judgement based on the patches listed.
 
-v2: Lennart pointed out that "name=" is necessary for mounts w/o any
-    controller attached.  Drop "name=" deprecation.
+"All users must upgrade" would generally mean that it is prudent for
+all users to upgrade, rather than some particular subset of them
+(e.g., users who have been experiencing build failures).
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Lennart Poettering <mzxreary@0pointer.de>
----
- Documentation/feature-removal-schedule.txt |   10 ++++++++++
- kernel/cgroup.c                            |    5 +++++
- 2 files changed, 15 insertions(+)
-
-Index: work/Documentation/feature-removal-schedule.txt
-===================================================================
---- work.orig/Documentation/feature-removal-schedule.txt
-+++ work/Documentation/feature-removal-schedule.txt
-@@ -510,3 +510,13 @@ Why:	The pci_scan_bus_parented() interfa
- 	convert to using pci_scan_root_bus() so they can supply a list of
- 	bus resources when the bus is created.
- Who:	Bjorn Helgaas <bhelgaas@google.com>
-+
-+----------------------------
-+
-+What:	cgroup option updates via remount
-+When:	March 2013
-+Why:	Remount currently allows changing bound subsystems and
-+	release_agent.  Rebinding is hardly useful as it only works
-+	when the hierarchy is empty and release_agent itself should be
-+	replaced with conventional fsnotify.
-+Who:	Tejun Heo <tj@kernel.org>
-Index: work/kernel/cgroup.c
-===================================================================
---- work.orig/kernel/cgroup.c
-+++ work/kernel/cgroup.c
-@@ -1294,6 +1294,11 @@ static int cgroup_remount(struct super_b
- 	if (ret)
- 		goto out_unlock;
- 
-+	/* See feature-removal-schedule.txt */
-+	if (opts.subsys_bits != root->actual_subsys_bits || opts.release_agent)
-+		pr_warning("cgroup: option changes via remount are deprecated (pid=%d comm=%s)\n",
-+			   task_tgid_nr(current), current->comm);
-+
- 	/* Don't allow flags or name to change at remount */
- 	if (opts.flags != root->flags ||
- 	    (opts.name && strcmp(opts.name, root->name))) {
+Hope that helps,
+Jonathan
