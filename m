@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161199Ab2CORth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:49:37 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:16418 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031939Ab2CORte convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:49:34 -0400
+	id S1161209Ab2CORwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:52:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41077 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161192Ab2CORwa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 13:52:30 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] Fix c6x's entry.S
+To: msalter@redhat.com, a-jacquiot@ti.com
+Cc: linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Thu, 15 Mar 2012 17:52:22 +0000
+Message-ID: <20120315175222.32354.43890.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Message-ID: <ac318852-4ccd-4739-893c-52f5cddee6c7@default>
-Date: Thu, 15 Mar 2012 10:49:19 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Avi Kivity <avi@redhat.com>, Akshay Karle <akshay.a.karle@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        kvm@vger.kernel.org, ashu tripathi <er.ashutripathi@gmail.com>,
-        nishant gulhane <nishant.s.gulhane@gmail.com>,
-        amarmore2006 <amarmore2006@gmail.com>,
-        Shreyas Mahure <shreyas.mahure@gmail.com>,
-        mahesh mohan <mahesh6490@gmail.com>
-Subject: RE: [RFC 0/2] kvm: Transcendent Memory (tmem) on KVM
-References: <1331224181.2585.16.camel@aks> <4F621FC0.7050800@redhat.com>
-In-Reply-To: <4F621FC0.7050800@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090209.4F622BAB.0085,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Avi Kivity [mailto:avi@redhat.com]
-> Subject: Re: [RFC 0/2] kvm: Transcendent Memory (tmem) on KVM
-> 
-> On 03/08/2012 06:29 PM, Akshay Karle wrote:
-> > Hi,
-> >
-> > We are undergraduate engineering students of Maharashtra Academy of
-> > Engineering, Pune, India and we are working on a project entitled
-> > 'Transcendent Memory on KVM' as a part of our academics.
-> >
-> > Since kvm is one of the most popular hypervisors available,
-> > we decided to implement this technique for kvm.
-> >
-> > Any comments/feedback would be appreciated and will help us a lot with our work.
-> 
-> One of the potential problems with tmem is reduction in performance when
-> the cache hit rate is low, for example when streaming.
-> 
-> Can you test this by creating a large file, for example with
-> 
->   dd < /dev/urandom > file bs=1M count=100000
-> 
-> and then measuring the time to stream it, using
-> 
->   time dd < file > /dev/null
-> 
-> with and without the patch?
-> 
-> Should be done on a cleancache enabled guest filesystem backed by a
-> virtio disk with cache=none.
-> 
-> It would be interesting to compare kvm_stat during the streaming, with
-> and without the patch.
+The ENDPROC() on sys_fadvise64_c6x() in arch/c6x/kernel/entry.S needs to be
+transposed with the preceding #endif so that it's in the same conditional
+block as the matching ENTRY() macro.
 
-Hi Avi --
+Without this, I see:
 
-The "WasActive" patch (https://lkml.org/lkml/2012/1/25/300) 
-is intended to avoid the streaming situation you are creating here.
-It increases the "quality" of cached pages placed into zcache
-and should probably also be used on the guest-side stubs (and/or maybe
-the host-side zcache... I don't know KVM well enough to determine
-if that would work).
+/tmp/ccGZBaPT.s: Assembler messages:
+/tmp/ccGZBaPT.s: Error: .size expression for sys_fadvise64_c6x does not evaluate to a constant
 
-As Dave Hansen pointed out, the WasActive patch is not yet correct
-and, as akpm points out, pageflag bits are scarce on 32-bit systems,
-so it remains to be seen if the WasActive patch can be upstreamed.
-Or maybe there is a different way to achieve the same goal.
-But I wanted to let you know that the streaming issue is understood
-and needs to be resolved for some cleancache backends just as it was
-resolved in the core mm code.
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-The measurement you suggest would still be interesting even
-without the WasActive patch as it measures a "worst case".
+ arch/c6x/kernel/entry.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Dan
+diff --git a/arch/c6x/kernel/entry.S b/arch/c6x/kernel/entry.S
+index 3e977cc..91b2e79 100644
+--- a/arch/c6x/kernel/entry.S
++++ b/arch/c6x/kernel/entry.S
+@@ -741,8 +741,8 @@ ENTRY(sys_fadvise64_c6x)
+ #endif
+ 	MV	.D1X	B6,A6
+ 	MV	.D2X	A8,B6
+-#endif
+ ENDPROC(sys_fadvise64_c6x)
++#endif
+ 
+ ;; On Entry
+ ;;   A4 - fd
+
