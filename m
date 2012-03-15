@@ -1,61 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031930Ab2CORcW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:32:22 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:59671 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396Ab2CORcT (ORCPT
+	id S1032011Ab2COReK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:34:10 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:54639 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847Ab2COReH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:32:19 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jason Cooper <jason@lakedaemon.net>
-Subject: Re: linux-next: build failure after merge of the final tree (arm-soc tree related)
-Date: Thu, 15 Mar 2012 17:32:12 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, Michael Walle <michael@walle.cc>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20120315105901.7b10c9f4de9374a613436988@canb.auug.org.au> <201203151639.38223.arnd@arndb.de> <20120315172213.GC20243@titan.lakedaemon.net>
-In-Reply-To: <20120315172213.GC20243@titan.lakedaemon.net>
+	Thu, 15 Mar 2012 13:34:07 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203151732.12852.arnd@arndb.de>
-X-Provags-ID: V02:K0:8qWcpun3cGkXCMA+JgUyVN84LalYgz11jwKCb/VV4Yb
- iZeX222T9H4Rd57Zft4n1YYJ+hu6pa4lphYfbR9VEvFGcvU7Kd
- nMa0PBVugrzfKcwtnBJ8meQadX1EhtbXdnI8cjFvZBuvxWGuxm
- 0gsLj8aF/kktvc8yrY2y56oKiOwkuGy11Pk0E+EDbfy9EwWVs+
- +47Bvzmblmxw78dmuu9BtgJylx8cvUzAo1VPO3qB9dwqCNOerm
- Jkq13x8ULgDKpFpfRKTyfBIjuJfz7XiqdUvLUXViWu6PzKo4W6
- 88J3uJcpZzZVC4lptKoFMukouJVGp2ZiiX8gsP7ep0XTS7ONO1
- RnFma9pUPVwwbMfLtlvc=
+In-Reply-To: <CAE9FiQWwzS2SFvzO2BL-aoVFVEMFpwJPKPODArkKtQSeAoTYGw@mail.gmail.com>
+References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
+ <1331362837-10740-21-git-send-email-yinghai@kernel.org> <CAErSpo5WKLf4C_f+roqDtbvs0vU_qTKp6OZ83AXXZggPrynt2A@mail.gmail.com>
+ <CAE9FiQWwzS2SFvzO2BL-aoVFVEMFpwJPKPODArkKtQSeAoTYGw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 15 Mar 2012 11:33:45 -0600
+Message-ID: <CAErSpo6Prmn9aAwC=e_1nC7QKzovp81KyZkOudgg7r8Gv0YWHA@mail.gmail.com>
+Subject: Re: [PATCH v2 20/37] PCI: Add pci bus removal through /sys/.../pci_bus/.../remove
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 March 2012, Jason Cooper wrote:
-> On Thu, Mar 15, 2012 at 04:39:38PM +0000, Arnd Bergmann wrote:
-> > On Thursday 15 March 2012, Jason Cooper wrote:
-> > > That's my mistake.  I did a pull request for the wrong branch.  Olof,
-> > > could you please drop the offending branch and I'll submit a new pull
-> > > request once I have a chance to test Arnd's irq patch?
-> > 
-> > I reverted this in the for-next branch for now. The two initial patches
-> > from the kirkwood/board branch are still present.
-> 
-> Okay, thanks.  I've rebased onto next/boards and merged the
-> depends/irqdomain branch.  I'm making progress, but not finished yet.
+On Mon, Mar 12, 2012 at 11:54 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Mar 12, 2012 at 8:10 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Sat, Mar 10, 2012 at 12:00 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>> it supports both pci root bus and pci bus under pci bridge.
+>>>
+>>> -v2: Change to three returns way in dev_bus_remove_store.
+>>>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>> Cc: Randy Dunlap <rdunlap@xenotime.net>
+>>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>>> Cc: linux-doc@vger.kernel.org
+>>> ---
+>>>  Documentation/ABI/testing/sysfs-bus-pci |    8 ++++++++
+>>>  drivers/pci/pci-sysfs.c                 |   30 ++++++++++++++++++++++++++++++
+>>>  2 files changed, 38 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/Documentation/ABI/testing/sysfs-bus-pci b/Documentation/ABI/testing/sysfs-bus-pci
+>>> index 95f0f37..22392de 100644
+>>> --- a/Documentation/ABI/testing/sysfs-bus-pci
+>>> +++ b/Documentation/ABI/testing/sysfs-bus-pci
+>>> @@ -92,6 +92,14 @@ Description:
+>>>                hot-remove the PCI device and any of its children.
+>>>                Depends on CONFIG_HOTPLUG.
+>>>
+>>> +What:          /sys/bus/pci/devices/.../pci_bus/.../remove
+>>> +Date:          March 2012
+>>> +Contact:       Linux PCI developers <linux-pci@vger.kernel.org>
+>>> +Description:
+>>> +               Writing a non-zero value to this attribute will
+>>> +               hot-remove the PCI bus and any of its children.
+>>> +               Depends on CONFIG_HOTPLUG.
+>>
+>> I don't think this interface makes sense.  This stops every device on
+>> the bus, removes the bus, unregisters the host bridge device if we're
+>> removing a root bus.
+>
+> it is some kind of handy. otherwise if there is several devices on the
+> bus, will need to
+> remove the devices one by one.
 
-Ok. I hope we can still make it for v3.4, but I think it won't be
-much of a problem if not -- it will get merged into linux-next
-just after v3.4-rc1 in case we don't make it, and then you have
-plenty of time to improve it further.
+It might be handy, but that's not enough.  You're doing a sysfs
+operation in the PCI namespace.  It should not have effects outside
+that namespace.  Host bridges are by definition outside the PCI
+namespace.
 
-> How is a pull-request done in the above scenario?  is my merge commit
-> included in the series?  what is the pull-request based on?
-> next/boards, or depends/irqdomain?
+>> I think we should just have a "remove *bridge*" interface.  It makes
+>> no sense to me to remove a bus but leave the bridge, and it makes the
+>> code quite complicated.
+>
+> I want to remove all devices under the bridge and then rescan the
+> bridge. then if the bridge get removed.
+> then we have to rescan bridge's parent bus.
+>
+>>
+>> The point of hotplug is to add and remove devices.  We'll get
+>> interrupts saying "please remove this device" or "please rescan the
+>> bus behind this bridge because something might have changed."
+>>
+>> If we're removing a host bridge, the platform, e.g., ACPI, will tell
+>> us about the bridge that is going away.  The notification is attached
+>> to the *bridge*, not the bus it leads to.
+>>
+>> The expected mechanism on x86 is an SCI from the platform, but if we
+>> need a sysfs way to start host bridge removal, I think it should be
+>> something like this:
+>>
+>>    echo 1 > /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/remove
+>
+> for that,  let just use
+> echo "\_SB.PCI0 3" > /proc/acpi/sci/notify
 
-You should base it on depends/irqdomain.
+That's a totally broken user interface.  There's no way for the user
+to look at the sysfs tree and figure out how to do that.  The ACPI
+namespace names like "PCI0" are platform-dependent internal things and
+should not be part of any user interface.
 
-	Arnd
+I don't object to /proc/acpi/sci/notify.  That looks like a useful way
+to inject notification events that would normally come from the
+hardware/BIOS.  But it's a development tool, not something that can be
+part of the normal user interface.
+
+Bjorn
