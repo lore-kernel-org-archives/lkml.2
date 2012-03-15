@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032410Ab2COX1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 19:27:10 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:42400
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1032060Ab2COX1C convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 19:27:02 -0400
-X-SpamScore: -16
-X-BigFish: VS-16(zz9371I1454I542M1432N98dKzz1202hzz8275bhz2fh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>
-Subject: RE: [PATCH 0000/0004] drivers: hv
-Thread-Topic: [PATCH 0000/0004] drivers: hv
-Thread-Index: AQHM/xUNOy6yOVAGgUil/yR0GrM6q5ZoyHoAgAM/EEA=
-Date: Thu, 15 Mar 2012 23:26:51 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B766384@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
- <20120313215036.GA4972@kroah.com>
-In-Reply-To: <20120313215036.GA4972@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.19]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+	id S1032401Ab2COXbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 19:31:21 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:56252 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031246Ab2COXbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 19:31:19 -0400
+Subject: Re: [PATCH] scsi: qla2xxx: fix section mismatch in linux-next
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Gerard Snitselaar <dev@snitselaar.org>
+Cc: andrew.vasquez@qlogic.com, linux-driver@qlogic.com,
+        JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        target-devel <target-devel@vger.kernel.org>
+In-Reply-To: <1331847626-11141-1-git-send-email-dev@snitselaar.org>
+References: <1331847626-11141-1-git-send-email-dev@snitselaar.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Mar 2012 16:31:16 -0700
+Message-ID: <1331854276.10203.143.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Tuesday, March 13, 2012 5:51 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; ohering@suse.com
-> Subject: Re: [PATCH 0000/0004] drivers: hv
+On Thu, 2012-03-15 at 14:40 -0700, Gerard Snitselaar wrote:
+> qla_tgt_exit() is annotated __exit , but called in
+> qla2x00_module_init().
 > 
-> On Sat, Mar 10, 2012 at 03:31:40PM -0800, K. Y. Srinivasan wrote:
-> >
-> > This patch-set further enhances the KVP functionality for Linux
-> > guests:
-> >
-> > 	1. Supports most of the Win8 KVP protocol.
-> > 	2. Supports operations on all the pools.
+> Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
+> ---
+>  drivers/scsi/qla2xxx/qla_target.c |    2 +-
+>  drivers/scsi/qla2xxx/qla_target.h |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> I've only applied the first patch, due to the issues with the second.
-> Feel free to resend the rest when you have them worked out.
 
-Thanks Greg. I don't think there are any substantive issues with the remaining 
-patches. I will fix them up and re-send them soon.
+Hi Gerard,
 
-K. Y
+> diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
+> index 6d6f1cf..699d16e 100644
+> --- a/drivers/scsi/qla2xxx/qla_target.c
+> +++ b/drivers/scsi/qla2xxx/qla_target.c
+> @@ -4730,7 +4730,7 @@ out:
+>  	return ret;
+>  }
+>  
+> -void __exit qla_tgt_exit(void)
+> +void qla_tgt_exit(void)
+>  {
+>  	destroy_workqueue(qla_tgt_wq);
+>  	mempool_destroy(qla_tgt_mgmt_cmd_mempool);
+> diff --git a/drivers/scsi/qla2xxx/qla_target.h b/drivers/scsi/qla2xxx/qla_target.h
+> index db6b399..b9d0aa1 100644
+> --- a/drivers/scsi/qla2xxx/qla_target.h
+> +++ b/drivers/scsi/qla2xxx/qla_target.h
+> @@ -934,7 +934,7 @@ extern void qla_tgt_fc_port_deleted(struct scsi_qla_host *, fc_port_t *);
+>  extern void qla_tgt_set_mode(struct scsi_qla_host *ha);
+>  extern void qla_tgt_clear_mode(struct scsi_qla_host *ha);
+>  extern int __init qla_tgt_init(void);
+> -extern void __exit qla_tgt_exit(void);
+> +extern void qla_tgt_exit(void);
+>  
+>  static inline bool qla_tgt_mode_enabled(struct scsi_qla_host *ha)
+>  {
+
+This looks fine.  Applied to lio-core, and will get this fixed up in
+target-pending/for-next-merge shortly.
+
+Thanks for your patch!
+
+--nab
+
+
 
 
