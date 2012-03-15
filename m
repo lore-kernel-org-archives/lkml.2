@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758879Ab2COIAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 04:00:55 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:62267 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755917Ab2COIAw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 04:00:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120314233926.GA22887@windriver.com>
-References: <20120314233926.GA22887@windriver.com>
-Date: Thu, 15 Mar 2012 09:00:50 +0100
-X-Google-Sender-Auth: fTChLjsLGwe3MZjHxv2W3UiPmfE
-Message-ID: <CAMuHMdV45SBg+cm0+x07SfvY-xpjqb_ZVznn-vD=70G1YZXnFw@mail.gmail.com>
-Subject: Re: linux-next: triage for March 14, 2012
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1758734Ab2COIBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 04:01:49 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:45455 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755619Ab2COIBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 04:01:45 -0400
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arch/unicore32/kernel/dma.c: eliminated unneeded free_irq
+Date: Thu, 15 Mar 2012 09:01:38 +0100
+Message-Id: <1331798498-13606-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 00:39, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> New breakage since last report:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Seems you missed two new failures for m68k/allmodconfig:
+The device remains functional if the second request_irq fails, so the first
+one should not be freed.
 
-include/linux/mmc/core.h:128:20: error: field 'completion' has incomplete type
-make[4]: *** [drivers/mmc/card/mmc_test.o] Error 1
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-drivers/staging/android/persistent_ram.c:457:2: error: implicit
-declaration of function 'memblock_reserve'
-[-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[4]: *** [drivers/staging/android/persistent_ram.o] Error 1
-
-> m68k:allmodconfig
->       when:   Mar 9, 00:38
->       why:    ERROR: "__udivdi3" [drivers/media/dvb/frontends/rtl2830.ko] undefined!
-
-This seems to be fixed, unless it doesn't get that far anymore.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+---
+diff --git a/arch/unicore32/kernel/dma.c b/arch/unicore32/kernel/dma.c
+index ae441bc..6184ff2 100644
+--- a/arch/unicore32/kernel/dma.c
++++ b/arch/unicore32/kernel/dma.c
+@@ -172,8 +172,9 @@ int __init puv3_init_dma(void)
+ 
+ 	ret = request_irq(IRQ_DMAERR, dma_err_handler, 0, "DMAERR", NULL);
+ 	if (ret) {
++		/* the device remains function if this fails, so don't free
++		   the previously allocated irq */
+ 		printk(KERN_CRIT "Can't register IRQ for DMAERR\n");
+-		free_irq(IRQ_DMA, "DMA");
+ 		return ret;
+ 	}
+ 
