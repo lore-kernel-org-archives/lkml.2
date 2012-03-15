@@ -1,93 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760932Ab2COJSl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 05:18:41 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53029 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760599Ab2COJSk (ORCPT
+	id S1760964Ab2COJdB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 05:33:01 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:58997 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760636Ab2COJc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 05:18:40 -0400
-Message-ID: <1331803115.13750.1.camel@phoenix>
-Subject: [PATCH 2/2] regulator: Use tps65912_get_voltage for both DCDCs and
- LDOs
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Margarita Olaya Cabrera <magi@slimlogic.co.uk>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 15 Mar 2012 17:18:35 +0800
-In-Reply-To: <1331803056.13750.0.camel@phoenix>
-References: <1331803056.13750.0.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	Thu, 15 Mar 2012 05:32:58 -0400
+Message-ID: <4F61B741.1040102@linux.vnet.ibm.com>
+Date: Thu, 15 Mar 2012 15:02:49 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Len Brown <lenb@kernel.org>, srivatsa.bhat@linux.vnet.ibm.com,
+        venki@google.com, trenn@suse.de, bhelgaas@google.com,
+        kernel-janitors@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/acpi/processor_driver.c: add missing kfree
+References: <1331800325-14251-1-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1331800325-14251-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+x-cbid: 12031423-6102-0000-0000-0000010B6442
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now tps65912_get_voltage_dcdc and tps65912_get_voltage_ldo has exactly the same
-implementation. We can merge them to tps65912_get_voltage function.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps65912-regulator.c |   21 +++------------------
- 1 files changed, 3 insertions(+), 18 deletions(-)
+On 03/15/2012 02:02 PM, Julia Lawall wrote:
 
-diff --git a/drivers/regulator/tps65912-regulator.c b/drivers/regulator/tps65912-regulator.c
-index 46f3c61..05ea096 100644
---- a/drivers/regulator/tps65912-regulator.c
-+++ b/drivers/regulator/tps65912-regulator.c
-@@ -406,7 +406,7 @@ static int tps65912_list_voltage(struct regulator_dev *dev, unsigned selector)
- 	return voltage;
- }
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> The function acpi_processor_add is stored in the ops.add field of a
+> acpi_driver structure.  This function is then called in
+> acpi_bus_driver_init.  On failure, this function clears the field
+> device->driver_data, but does not free its contents.  Thus the free has to
+> be done by the add function.  In acpi_processor_add, the corresponding
+> value is pr.  This value is currently freed on failure before storing it in
+> device->driver_data, but not after.  This free is added in the error
+> handling code at the end of the function.  The per_cpu variable
+> processors is also cleared so that it does not refer to a dangling pointer.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+>
+
+
+Acked-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+
  
--static int tps65912_get_voltage_dcdc(struct regulator_dev *dev)
-+static int tps65912_get_voltage(struct regulator_dev *dev)
- {
- 	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
- 	struct tps65912 *mfd = pmic->mfd;
-@@ -438,21 +438,6 @@ static int tps65912_set_voltage_sel(struct regulator_dev *dev,
- 	return tps65912_reg_write(mfd, reg, selector | value);
- }
- 
--static int tps65912_get_voltage_ldo(struct regulator_dev *dev)
--{
--	struct tps65912_reg *pmic = rdev_get_drvdata(dev);
--	struct tps65912 *mfd = pmic->mfd;
--	int id = rdev_get_id(dev);
--	int vsel = 0;
--	u8 reg;
--
--	reg = tps65912_get_sel_register(pmic, id);
--	vsel = tps65912_reg_read(mfd, reg);
--	vsel &= 0x3F;
--
--	return tps65912_vsel_to_uv_ldo(vsel);
--}
--
- /* Operations permitted on DCDCx */
- static struct regulator_ops tps65912_ops_dcdc = {
- 	.is_enabled = tps65912_reg_is_enabled,
-@@ -460,7 +445,7 @@ static struct regulator_ops tps65912_ops_dcdc = {
- 	.disable = tps65912_reg_disable,
- 	.set_mode = tps65912_set_mode,
- 	.get_mode = tps65912_get_mode,
--	.get_voltage = tps65912_get_voltage_dcdc,
-+	.get_voltage = tps65912_get_voltage,
- 	.set_voltage_sel = tps65912_set_voltage_sel,
- 	.list_voltage = tps65912_list_voltage,
- };
-@@ -470,7 +455,7 @@ static struct regulator_ops tps65912_ops_ldo = {
- 	.is_enabled = tps65912_reg_is_enabled,
- 	.enable = tps65912_reg_enable,
- 	.disable = tps65912_reg_disable,
--	.get_voltage = tps65912_get_voltage_ldo,
-+	.get_voltage = tps65912_get_voltage,
- 	.set_voltage_sel = tps65912_set_voltage_sel,
- 	.list_voltage = tps65912_list_voltage,
- };
--- 
-1.7.5.4
-
+> ---
+>  drivers/acpi/processor_driver.c |   13 +++++++++----
+>  1 file changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+> index 2801b41..98c3648 100644
+> --- a/drivers/acpi/processor_driver.c
+> +++ b/drivers/acpi/processor_driver.c
+> @@ -536,8 +536,8 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+>  		return -ENOMEM;
+> 
+>  	if (!zalloc_cpumask_var(&pr->throttling.shared_cpu_map, GFP_KERNEL)) {
+> -		kfree(pr);
+> -		return -ENOMEM;
+> +		result = -ENOMEM;
+> +		goto err_free_pr;
+>  	}
+> 
+>  	pr->handle = device->handle;
+> @@ -577,7 +577,7 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+>  	dev = get_cpu_device(pr->id);
+>  	if (sysfs_create_link(&device->dev.kobj, &dev->kobj, "sysdev")) {
+>  		result = -EFAULT;
+> -		goto err_free_cpumask;
+> +		goto err_clear_processor;
+>  	}
+> 
+>  	/*
+> @@ -595,9 +595,14 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
+> 
+>  err_remove_sysfs:
+>  	sysfs_remove_link(&device->dev.kobj, "sysdev");
+> +err_clear_processor:
+> +	/* processor_device_array is not cleared to allow checks for buggy
+> +	   BIOSes */
+> +	per_cpu(processors, pr->id) = NULL;
+>  err_free_cpumask:
+>  	free_cpumask_var(pr->throttling.shared_cpu_map);
+> -
+> +err_free_pr:
+> +	kfree(pr);
+>  	return result;
+>  }
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
 
