@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758655Ab2COOIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:08:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59521 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755233Ab2COOIP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:08:15 -0400
-To: Dave Jones <davej@redhat.com>
-Subject: Re: inode->i_wb_list corruption.
-Cc: Yang Bai <hamo.by@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Fedora Kernel Team <kernel-team@fedoraproject.org>, kernel@tesarici.cz
-From: Petr =?utf-8?q?Tesa=C5=99=C3=ADk?= <petr@tesarici.cz>
-Date: Thu, 15 Mar 2012 22:08:03 +0800
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201203152208.04168.petr@tesarici.cz>
+	id S1756308Ab2COOLh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:11:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:47870 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752752Ab2COOLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 10:11:35 -0400
+X-IronPort-AV: E=Sophos;i="4.73,591,1325433600"; 
+   d="scan'208";a="4543387"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, ltp-list@lists.sourceforge.net,
+        risrajak@linux.vnet.ibm.com, yanegomi@gmail.com,
+        shubham@linux.vnet.ibm.com, vapier@gentoo.org,
+        subrata@linux.vnet.ibm.com, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Cyril Hrubis <chrubis@suse.cz>, Caspar Zhang <caspar@casparzhang.com>
+Subject: [PATCH] MAINTAINERS: update the maintain-ship of LTP
+Date: Thu, 15 Mar 2012 22:10:21 +0800
+Message-Id: <1331820621-10095-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.rc1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-15 22:09:27,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-03-15 22:09:28,
+	Serialize complete at 2012-03-15 22:09:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne So 10. března 2012 02:00:15 Dave Jones napsal(a):
-> (trimmed cc)
-> 
-> On Sat, Mar 10, 2012 at 12:14:37AM +0800, Yang Bai wrote:
->  > On Fri, Mar 9, 2012 at 11:19 PM, Dave Jones <davej@redhat.com> wrote:
->  > > And with that, this arrived..
->  > > https://bugzilla.redhat.com/show_bug.cgi?id=788433#c3
->  > > 
->  > > I'm leaning strongly towards believing this is yet another case of
->  > > i915 corrupting memory on resume.
->  > 
->  > Nice catch. I am wondering
->  > 1) why all lists being affected and
->  > 2) why all list_head's prev being set to NULL.
->  > 
->  > Any ideas?
-> 
-> This is probably the same bug:
-> https://bugzilla.kernel.org/show_bug.cgi?id=37142 Petr noticed that the
-> corruption is 32 bytes getting zeroed at the beginning of a page.
-> 
-> I think this may be responsible for a lot of different bugs that we've
-> had reported.
-> 
-> i915_drm_thaw is a deep nest of functions though, so this is going to be
-> hard to track down where that write is coming from. Because the corruption
-> seems to happen to pages that are already allocated, we probably can't
-> even rely on DEBUG_PAGEALLOC, though it might be worth trying.
+The maintain-ship of LTP is out of date, so update it.
 
-If it you believe it could be written by the CPU, I can try to catch the 
-instruction that writes to this memory. My plan is as follows:
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Signed-off-by: Cyril Hrubis <chrubis@suse.cz>
+Signed-off-by: Caspar Zhang <caspar@casparzhang.com>
+---
+ MAINTAINERS |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-Set up all the hardware debug registers to trap writes to the pages that are 
-likely to get corrupted. Remember, I've seen the corruption happen always 
-roughly in the same physical memory area.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 95e4e43..3e10e6f 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4173,12 +4173,14 @@ F:	Documentation/hwmon/ltc4261
+ F:	drivers/hwmon/ltc4261.c
+ 
+ LTP (Linux Test Project)
+-M:	Rishikesh K Rajak <risrajak@linux.vnet.ibm.com>
+-M:	Garrett Cooper <yanegomi@gmail.com>
++M:	Shubham Goyal <shubham@linux.vnet.ibm.com>
+ M:	Mike Frysinger <vapier@gentoo.org>
+-M:	Subrata Modak <subrata@linux.vnet.ibm.com>
++M:	Cyril Hrubis <chrubis@suse.cz>
++M:	Caspar Zhang <caspar@casparzhang.com>
++M:	Wanlong Gao <gaowanlong@cn.fujitsu.com>
+ L:	ltp-list@lists.sourceforge.net (subscribers-only)
+ W:	http://ltp.sourceforge.net/
++T:	git git://github.com/linux-test-project/ltp.git
+ T:	git git://ltp.git.sourceforge.net/gitroot/ltp/ltp-dev
+ S:	Maintained
+ 
+-- 
+1.7.10.rc1
 
-I know, there are only 4 registers I can use, and the potential corruption 
-area is much larger than 4 pages, but with enough reboots, the chance is quite 
-high that I'll be lucky.
-
-I haven't gone for that plan yet, because I thought the area was in fact 
-written to by someone else on the PCI bus, not the CPU. If nothing else, I can 
-verify that. ;-)
-
-Dave, do you think the result of such testing would help you resolve the bug?
-
-Petr
