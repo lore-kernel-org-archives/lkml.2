@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759144Ab2COKqV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 06:46:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52996 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756274Ab2COKqT (ORCPT
+	id S1759213Ab2COKqq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 06:46:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47105 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755997Ab2COKqn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 06:46:19 -0400
-Date: Thu, 15 Mar 2012 10:46:18 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Marc Reilly <marc@cpdesign.com.au>
-Cc: sameo@linux.intel.com, linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-i2c@vger.kernel.org,
-        u.kleine-koenig@pengutronix.de, oskar@scara.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/6] regmap: Add support for device with 24 data bits.
-Message-ID: <20120315104617.GD3138@opensource.wolfsonmicro.com>
-References: <1331757790-10583-1-git-send-email-marc@cpdesign.com.au>
- <1331757790-10583-3-git-send-email-marc@cpdesign.com.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NklN7DEeGtkPCoo3"
-Content-Disposition: inline
-In-Reply-To: <1331757790-10583-3-git-send-email-marc@cpdesign.com.au>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 15 Mar 2012 06:46:43 -0400
+Message-ID: <1331808391.18960.160.camel@twins>
+Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Date: Thu, 15 Mar 2012 11:46:31 +0100
+In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
+References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
+	 <1331546307.18960.26.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
+	 <1331654251.18960.78.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
+	 <1331718197.18960.106.camel@twins>
+	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-03-15 at 00:11 +0000, Liu, Chuansheng wrote:
+> 
+> > -----Original Message-----
+> > From: Peter Zijlstra [mailto:peterz@infradead.org]
+> > Sent: Wednesday, March 14, 2012 5:43 PM
+> > To: Liu, Chuansheng
+> > Cc: linux-kernel@vger.kernel.org; Yanmin Zhang; tglx@linutronix.de
+> > Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
+> > 
+> > On Wed, 2012-03-14 at 06:27 +0000, Liu, Chuansheng wrote:
+> > > On the unplug case, after set the CPU to !active, we do not need IPI
+> > > handling for the corresponding CPU before it is set to offline. I did
+> > > not find any impact that limiting the smp_call_function just after CPU
+> > > is active.
+> > 
+> > Have a look at Alpha, it's flush_tlb_mm() can use smp_call_function(), in
+> > the !active,online case you very much still need to tlb flush that cpu.
+> > 
+> > The fact that it works on a limited use case on x86 doesn't say anything much
+> > at all.
 
---NklN7DEeGtkPCoo3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Thanks your pointing out, do you have any other perfect solution for this issue?
+> As for the stress test result, advancing the setting active before setting online broken
+> something either.
 
-On Thu, Mar 15, 2012 at 07:43:06AM +1100, Marc Reilly wrote:
-> Add support for devices with 24 data bits.
-
-Not sure what you generated this patch against but it doesn't apply to
-my topic/core or against -next.  Please regenerate it against
-topic/core, it looks good.
-
---NklN7DEeGtkPCoo3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPYcheAAoJEBus8iNuMP3dazYP/2dkWFkQjRUdofSKt5ttPovm
-D3KZSnXqP1L0PYHTni+pvsY9hHX83qigwcHHEsSeAS67KaLWBO/BBTc6Uaq1XkiS
-VI3mDvV9DaLEVCCzhyFc0W9AWZLBFaqamlmXlDVew3qFF9/Ftxlk/Afgxen4d1cp
-ZgM9/tC9S8zPFQyEPB9K3WsirA81xVTo8Lw2rbQPdjYG75Fn+OzZ8SlvrDCN0pxU
-HY1YuB5JClFpIuNvH5aKqqxZ7hFzpwr7zsaKLE9d+UgSKTE7jxfpmfZ77nz7vUrK
-5DGiXXANRsiOHxKMofRsv99xNauflkrNoDj6r3hhscPfB71r4gBetfe6hxRV2G9B
-dm8/ol5eCypDkf7YGRaAA7dTgBh7QfzxpC9JR5UAoiDCJyi6vPQ3M/olq3DPXl9E
-6zPSlkxAP14phm6QkzWzmaEB/SmMkq1ICSNQhgXX5bq+c+7yZvAoonN1Bh7rwB3K
-6vaMVYe3jqMN18SSrgE0i+fGQm1zP/jbkD+OK4MI7Pl0qHNScBXgZJKNo90HS93s
-ahgqvPxF6yITsttQioc6wL3eiSyj85/cY5oczr9hJRW5KHtqmVuXPRiGpOOowx6z
-6QUM3HbfrwtwP5nsKsh6kJzpGS8a2K+HvrwPrHWwBYHuDNayDyk7sWlKlUbuz13c
-YHf6Gqkko2C8B4BkBcxO
-=YWyi
------END PGP SIGNATURE-----
-
---NklN7DEeGtkPCoo3--
+I'm not sure I understand.. are you saying that commit
+5fbd036b552f633abb394a319f7c62a5c86a9cd7 in tip/master broke something?
