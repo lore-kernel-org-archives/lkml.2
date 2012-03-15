@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031306Ab2COWuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 18:50:24 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:55118 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1031162Ab2COWtm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 18:49:42 -0400
-Message-ID: <4F627205.4070606@xenotime.net>
-Date: Thu, 15 Mar 2012 15:49:41 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1031345Ab2COWxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 18:53:15 -0400
+Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:51377 "EHLO
+	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965275Ab2COWxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 18:53:14 -0400
+Date: Thu, 15 Mar 2012 18:53:10 -0400
+From: Wakko Warner <wakko@animx.eu.org>
+To: linux-kernel@vger.kernel.org
+Subject: Burning multiple DVDs at one time
+Message-ID: <20120315225310.GB3152@animx.eu.org>
+Mail-Followup-To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] crypto: twofish-x86_64-3way - module init/exit functions
- should be static
-References: <4F620F37.4070404@xenotime.net> <20120315201157.11667.30754.stgit@localhost6.localdomain6>
-In-Reply-To: <20120315201157.11667.30754.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 01:11 PM, Jussi Kivilinna wrote:
+I'm having problems doing this.
 
-> This caused conflict with camellia-x86_64 when compiled into kernel, same
-> function names and not static.
-> 
-> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-> Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+When I burn a single disk, wodim shows the drive buf @ 99% consistently. 
+The instant that a 2nd disk is being burned, the drive buf on the first one
+starts to drop and data stops when the 2nd wodim is performing OPC.
 
+During the burn of both discs, the drive buf will drop on both until one of
+them finishes.  Both drives see under runs.
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+When one starts fixating, the other will hang until the fixation is
+completed.
 
-Thanks.
+During the burns, the fifo of both never drop below 99%
 
-> ---
->  arch/x86/crypto/twofish_glue_3way.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/crypto/twofish_glue_3way.c b/arch/x86/crypto/twofish_glue_3way.c
-> index 408fc0c..922ab24 100644
-> --- a/arch/x86/crypto/twofish_glue_3way.c
-> +++ b/arch/x86/crypto/twofish_glue_3way.c
-> @@ -668,7 +668,7 @@ static int force;
->  module_param(force, int, 0);
->  MODULE_PARM_DESC(force, "Force module load, ignore CPU blacklist");
->  
-> -int __init init(void)
-> +static int __init init(void)
->  {
->  	if (!force && is_blacklisted_cpu()) {
->  		printk(KERN_INFO
-> @@ -681,7 +681,7 @@ int __init init(void)
->  	return crypto_register_algs(tf_algs, ARRAY_SIZE(tf_algs));
->  }
->  
-> -void __exit fini(void)
-> +static void __exit fini(void)
->  {
->  	crypto_unregister_algs(tf_algs, ARRAY_SIZE(tf_algs));
->  }
-> 
+There are no logs that are produced.
 
+My burners are:
+[6:0:0:0]    cd/dvd  ATAPI    iHAS422   8      4L11  /dev/sr7
+[7:0:0:0]    cd/dvd  ATAPI    iHAS224   B      GL05  /dev/sr8
 
+Both are SATA drives attached to the onboard sata controller
+00:1f.2 SATA controller: Intel Corporation 631xESB/632xESB SATA AHCI Controller (rev 09)
+00:1f.2 0106: 8086:2681 (rev 09)
+
+The kernel is a vanilla kernel v3.0.0.  (This also happened with 2.6.35)
+
+I don't believe it matters, but the data is coming over NFS via gigabit
+ethernet.  Each burn process uses a 768M host buffer.  As I stated, the host
+fifo on wodim never goes below 99%
+
+The system motherboard is a SuperMicro X7DA8
 
 -- 
-~Randy
+ Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
+ million bugs.
