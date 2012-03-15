@@ -1,57 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032263Ab2COUIU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 16:08:20 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:56691 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032223Ab2COUIP (ORCPT
+	id S1032269Ab2COUJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 16:09:21 -0400
+Received: from intmgw001.ash2.facebook.com ([66.220.155.178]:56930 "EHLO
+	intmgw001.ash2.facebook.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1032223Ab2COUJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 16:08:15 -0400
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH] firmware_class: Move request_firmware_nowait() to workqueues
-Date: Thu, 15 Mar 2012 21:07:57 +0100
-User-Agent: KMail/1.13.7 (Linux/3.3.0-rc7-wl+; KDE/4.7.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <1331841015-26684-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1331841015-26684-1-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201203152107.57501.chunkeey@googlemail.com>
+	Thu, 15 Mar 2012 16:09:18 -0400
+From: Arun Sharma <asharma@fb.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arun Sharma <asharma@fb.com>, Stephane Eranian <eranian@google.com>,
+        peterz@infradead.org, acme@redhat.com, ravitillo@lbl.gov,
+        vweaver1@eecs.utk.edu, khandual@linux.vnet.ibm.com, dsahern@gmail.com,
+        Ingo Molnar <mingo@elte.hu>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH] perf: Add branch stack support to perf script
+Date: Thu, 15 Mar 2012 13:08:47 -0700
+Message-Id: <1331842127-27468-1-git-send-email-asharma@fb.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 15, 2012 08:50:15 PM Stephen Boyd wrote:
-> Oddly enough a work_struct was already part of the firmware_work
-> structure but nobody was using it. Instead of creating a new
-> kthread for each request_firmware_nowait() just schedule the work
-> on the system workqueue. This should avoid some overhead in
-> forking new threads when they're not strictly necessary if
-> workqueues are available.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Kay Sievers <kay.sievers@vrfy.org>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
-> 
-> I saw this while looking at this problem we're having.
-Correct me if I'm wrong, but wouldn't that stall all other
-global workqueue tasks for up to 60 seconds [in worst case]?
+This makes it easier to write tools that consume the
+branch stack data.
 
-But I think we can get rid of the firmware_work work struct...
+Sample usage:
 
-Regards,
-	Chr
+perf record -jany_call,u -o perf.data.anycallu -- ./foo
+perf script -i perf.data.anycallu -fip,sym
 
+The samples seem to have the sense of call/return
+inverted. If the original callgraph was a -> b -> c
+I get samples like:
+
+from	to
+c	b
+b	a
+
+To restore the normal sense, I'm printing them as:
+
+to => from
+
+Signed-off-by: Arun Sharma <asharma@fb.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: acme@redhat.com
+Cc: ravitillo@lbl.gov
+Cc: vweaver1@eecs.utk.edu
+Cc: khandual@linux.vnet.ibm.com
+Cc: dsahern@gmail.com
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+---
+ tools/perf/builtin-script.c |   56 ++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 50 insertions(+), 6 deletions(-)
+
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index d4ce733..99ad1d5 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -318,6 +318,11 @@ static bool is_bts_event(struct perf_event_attr *attr)
+ 		(attr->sample_period == 1));
+ }
+ 
++static bool is_branch_stack_event(struct perf_event_attr *attr)
++{
++	return (attr->sample_type & PERF_SAMPLE_BRANCH_STACK);
++}
++
+ static bool sample_addr_correlates_sym(struct perf_event_attr *attr)
+ {
+ 	if ((attr->type == PERF_TYPE_SOFTWARE) &&
+@@ -326,31 +331,32 @@ static bool sample_addr_correlates_sym(struct perf_event_attr *attr)
+ 	     (attr->config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)))
+ 		return true;
+ 
+-	if (is_bts_event(attr))
++	if (is_bts_event(attr) || is_branch_stack_event(attr))
+ 		return true;
+ 
+ 	return false;
+ }
+ 
+-static void print_sample_addr(union perf_event *event,
++static void __print_sample_addr(union perf_event *event,
+ 			  struct perf_sample *sample,
+ 			  struct machine *machine,
+ 			  struct thread *thread,
+-			  struct perf_event_attr *attr)
++			  struct perf_event_attr *attr,
++			  u64 addr)
+ {
+ 	struct addr_location al;
+ 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 
+-	printf("%16" PRIx64, sample->addr);
++	printf("%16" PRIx64, addr);
+ 
+ 	if (!sample_addr_correlates_sym(attr))
+ 		return;
+ 
+ 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
+-			      sample->addr, &al);
++			      addr, &al);
+ 	if (!al.map)
+ 		thread__find_addr_map(thread, machine, cpumode, MAP__VARIABLE,
+-				      sample->addr, &al);
++				      addr, &al);
+ 
+ 	al.cpu = sample->cpu;
+ 	al.sym = NULL;
+@@ -373,6 +379,17 @@ static void print_sample_addr(union perf_event *event,
+ 	}
+ }
+ 
++static void print_sample_addr(union perf_event *event,
++			  struct perf_sample *sample,
++			  struct machine *machine,
++			  struct thread *thread,
++			  struct perf_event_attr *attr)
++			  
++{
++	return __print_sample_addr(event, sample, machine, thread, attr,
++				   sample->addr);
++}
++
+ static void print_sample_bts(union perf_event *event,
+ 			     struct perf_sample *sample,
+ 			     struct perf_evsel *evsel,
+@@ -401,6 +418,28 @@ static void print_sample_bts(union perf_event *event,
+ 	printf("\n");
+ }
+ 
++static void print_sample_branch_stack(union perf_event *event,
++			     struct perf_sample *sample,
++			     struct perf_evsel *evsel,
++			     struct machine *machine,
++			     struct thread *thread)
++{
++	uint64_t i;
++	struct perf_event_attr *attr = &evsel->attr;
++
++	printf("... branch stack: nr:%" PRIu64 "\n", sample->branch_stack->nr);
++
++	for (i = 0; i < sample->branch_stack->nr; i++) {
++		printf("\t..... %2"PRIu64": ", i); 
++		__print_sample_addr(event, sample, machine, thread, attr,
++			            sample->branch_stack->entries[i].to);
++		printf(" => ");
++		__print_sample_addr(event, sample, machine, thread, attr,
++			            sample->branch_stack->entries[i].from);
++		printf("\n");
++	}
++}
++
+ static void process_event(union perf_event *event __unused,
+ 			  struct perf_sample *sample,
+ 			  struct perf_evsel *evsel,
+@@ -417,6 +456,11 @@ static void process_event(union perf_event *event __unused,
+ 	if (is_bts_event(attr)) {
+ 		print_sample_bts(event, sample, evsel, machine, thread);
+ 		return;
++	} 
++
++	if (is_branch_stack_event(attr)) {
++		print_sample_branch_stack(event, sample, evsel, machine, thread);
++		return;
+ 	}
+ 
+ 	if (PRINT_FIELD(TRACE))
+-- 
+1.7.8.4
 
