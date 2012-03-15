@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762066Ab2COT1h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 15:27:37 -0400
-Received: from www.linutronix.de ([62.245.132.108]:42340 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757231Ab2COT1g (ORCPT
+	id S1161279Ab2COTbx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 15:31:53 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25988 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932425Ab2COTbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 15:27:36 -0400
-Date: Thu, 15 Mar 2012 20:27:33 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexander Gordeev <agordeev@redhat.com>
-cc: Ido Yariv <ido@wizery.com>, linux-kernel@vger.kernel.org
-Subject: Re: [tip:irq/core] genirq: Flush the irq thread on synchronization
-In-Reply-To: <20120315190755.GA6732@dhcp-26-207.brq.redhat.com>
-Message-ID: <alpine.LFD.2.02.1203152017550.2466@ionos>
-References: <1322843052-7166-1-git-send-email-ido@wizery.com> <tip-7140ea1980f2fae9c7aaeac5f6b35317e1389ee6@git.kernel.org> <20120315190755.GA6732@dhcp-26-207.brq.redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 15 Mar 2012 15:31:50 -0400
+Date: Thu, 15 Mar 2012 22:34:05 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Andrew Miller <amiller@amilx.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] Staging: rtl8187se: r8180_dm.c: Fix comments
+Message-ID: <20120315193405.GE3163@mwanda>
+References: <1331838321-18453-1-git-send-email-amiller@amilx.com>
+ <1331838321-18453-6-git-send-email-amiller@amilx.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0QFb0wBpEddLcDHQ"
+Content-Disposition: inline
+In-Reply-To: <1331838321-18453-6-git-send-email-amiller@amilx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-CT-RefId: str=0001.0A090203.4F6243A2.005B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Mar 2012, Alexander Gordeev wrote:
-> On Wed, Mar 14, 2012 at 04:07:30AM -0700, tip-bot for Ido Yariv wrote:
-> > +
-> > +	if (WARN_ON(desc->threads_oneshot & action->thread_mask))
-> > +		irq_finalize_oneshot(desc, action, true);
-> 
-> This check is called when the action is already removed in __free_irq() and no
-> desc->lock is held. Hence, a concurrent __setup_irq() could reallocate the very
-> same bit in the meantime. So neither irq_finalize_oneshot() nor the warning
-> are legitimate here.
 
-I put the WARN_ONs there for paranoia reasons, but yes, you are right
-they are more confusing than helpful. We really know that everything
-has been cleaned up.
+--0QFb0wBpEddLcDHQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
+On Thu, Mar 15, 2012 at 03:05:21PM -0400, Andrew Miller wrote:
+> -//+by amy 080312
+> +/*{by amy 080312 */
+      ^^^^^^^^^^^^^
+Just remove these comments.  We use version control to see who is
+doing what.
 
-	tglx
+> =20
+> -	//printk("----> DoTxHighPower()\n");
+> +	/* printk("----> DoTxHighPower()\n"); */
+> =20
+
+Also this dead debugging code can be deleted.  There was a bunch of
+it.
+
+regards,
+dan carpenter
+
+--0QFb0wBpEddLcDHQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPYkQsAAoJEOnZkXI/YHqRlogP/3UGhb36wg5+rIPTOkefDcQL
+ZxLZxMZsNDJuov5wmwRkYmnrEtZ73rXo953vt1VrY5o54NJ6E6vG65R/8jX/Tg2G
+S8Myvb/uLaO+3p9c3V+beHb+xKWtux5+8I/TpK9H1K1+6o1LUbriCO7iZWOb0C5l
+pjeGBqtkVgoAY5BwUueq7tDXZ1jPMcniJsgPaY8lo7Q+N5HUS8dl0AymtRaPW9QR
+l4ZbjxFYhYzmpceOrsnr3/wVal2VBOT3ybOW/+W/ccPYMG05IA3A5RvqGx0SRi5b
+GIce/6ruu6DN7Q+svwbT92KEN/FCZtPK8u6wMZe/rz7TUVAr2b+Rf9cawPnaSRfD
+NY25Ij3qLg4LKUQE9Nd8XKZTvrjQDgrOLe/Y0Po4OZ2dGGxVCxB2Ui4FwJz/p/Vh
+rxRSbIPiCHvt91pW1P51/X+lq7gIjTg9ir8mJEkeMbSPCPWNO3EpMyllQBnq9ZFR
+f0IsM2ZbT0V/pFog2ED8mNK+05Z26r1N/h1PXmU1s5ZjFMf11WgSHWkvta1CMG/5
+tCOX0bnIZMMf7Mqi0L7RtATaNloBXNZ6fCyMyGaV1yTk2Coux6W/jrJ0fs4F9cc2
+6jR+vihmdKY0b5Nt/EewNCmmCME84f5pQR+sInFEW1qNV8mKw7ib8/7uTH4yPY9/
+HHn9jHbRaaeN1dUk4ahe
+=JWcj
+-----END PGP SIGNATURE-----
+
+--0QFb0wBpEddLcDHQ--
