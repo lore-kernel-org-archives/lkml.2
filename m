@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031957Ab2COQyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:54:10 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:63763 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031805Ab2COQyH (ORCPT
+	id S1761795Ab2COQyh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:54:37 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:64573 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753782Ab2COQyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:54:07 -0400
-Date: Thu, 15 Mar 2012 09:54:02 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] cgroup: deprecate remount option changes and "name="
- mount option
-Message-ID: <20120315165402.GC32137@google.com>
-References: <20120314215228.GI7349@google.com>
- <20120314232925.GA16973@tango.0pointer.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120314232925.GA16973@tango.0pointer.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 15 Mar 2012 12:54:35 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=ISO-8859-1
+Date: Thu, 15 Mar 2012 17:54:33 +0100
+From: Karol Lewandowski <k.lewandowsk@samsung.com>
+Subject: Re: [PATCH 2/3] i2c-s3c2410: Rework device type handling
+In-reply-to: <20120315125630.GK3138@opensource.wolfsonmicro.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: ben-linux@fluff.org, thomas.abraham@linaro.org, m.szyprowski@samsung.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
+        t.stanislaws@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <4F621EC9.6020106@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111109 Icedove/8.0
+References: <1331657679-31302-1-git-send-email-k.lewandowsk@samsung.com>
+ <1331657679-31302-3-git-send-email-k.lewandowsk@samsung.com>
+ <20120314172915.GB13393@sirena.org.uk> <4F61BEC8.4030008@samsung.com>
+ <20120315125630.GK3138@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 15.03.2012 13:56, Mark Brown wrote:
 
-On Thu, Mar 15, 2012 at 12:29:25AM +0100, Lennart Poettering wrote:
-> Hmm, this is not clear to me. Are you intending to remove the name=
-> mount option entirely, or just intend to remove that you can change it
-> in remounts?
+> On Thu, Mar 15, 2012 at 11:04:56AM +0100, Karol Lewandowski wrote:
 > 
-> systemd uses name=systemd to get its own private cgroup tree, that has
-> no controller bound, hence we kinda need this option. Or are you
-> suggesting there was an other way to get a private cgroup tree that
-> systemd can use for grouping and labelling things?
+>> Introducing separate type (TYPE_S3C2440_HDMIPHY) has been our original
+>> attempt to solve this issue.  However, this required adding explicit
+>> checks to driver code all over the place (if (type == S3C2400 ||
+>> type == S3c2440_HDMIPHY).
+> 
+> Another option is to change the type to be a pointer to a struct with
+> quirk flags in it.
 
-Eh, you're right.  I want to remove support for duplicate mounting by
-name or subsys as it just isn't necessary, so what I want is,
 
-* "mount -t cgroupfs -o SUBSYS" will fail if SUBSYS is already mounted
-  somewhere else.
+Sure, that's possible.   However, I don't find it any simpler than
+using  bitmasks.  Quite to contrary - I consider it redundant to
+bring new structure into existence when simple uint does the trick
+just fine (IMHO, of course).
 
-* "mount -t cgroupfs -o none" will always create a new cgroup
-  hierarchy w/o any controller attached.
+If you consider code to be inherently less readable because of this
+approach I'll rework it.  If it's not a such big deal for you I would
+prefer to keep it as is.
 
-I didn't realize that the mount code didn't allow none w/o name and
-now I don't see a non-intrusive way to remove the name option. :( Eh
-well, I'll drop that part.
-
-Thanks.
-
+Thanks!
 -- 
-tejun
+Karol Lewandowski | Samsung Poland R&D Center | Linux/Platform
