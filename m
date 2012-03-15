@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161592Ab2COU5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 16:57:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36141 "EHLO mx1.redhat.com"
+	id S1161641Ab2COVG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 17:06:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1585 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161544Ab2COU51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 16:57:27 -0400
+	id S1031961Ab2COU5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 16:57:06 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 13/38] Disintegrate asm/system.h for Hexagon [ver #3]
+Subject: [PATCH 11/38] Disintegrate asm/system.h for FRV [ver #3]
 To: paul.gortmaker@windriver.com
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, arnd@arndb.de,
-        David Howells <dhowells@redhat.com>, Richard Kuo <rkuo@codeaurora.org>,
-        linux-hexagon@vger.kernel.org
-Date: Thu, 15 Mar 2012 20:57:17 +0000
-Message-ID: <20120315205717.28759.91092.stgit@warthog.procyon.org.uk>
+        David Howells <dhowells@redhat.com>
+Date: Thu, 15 Mar 2012 20:56:58 +0000
+Message-ID: <20120315205658.28759.49902.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
 References: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -28,440 +27,722 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disintegrate asm/system.h for Hexagon.  Not compiled.
+Disintegrate asm/system.h for FRV.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
-cc: linux-hexagon@vger.kernel.org
 ---
 
- arch/hexagon/include/asm/atomic.h    |    1 
- arch/hexagon/include/asm/barrier.h   |   41 +++++++++++
- arch/hexagon/include/asm/bitops.h    |    1 
- arch/hexagon/include/asm/cmpxchg.h   |   90 +++++++++++++++++++++++
- arch/hexagon/include/asm/exec.h      |   28 +++++++
- arch/hexagon/include/asm/switch_to.h |   34 +++++++++
- arch/hexagon/include/asm/system.h    |  131 +---------------------------------
- arch/hexagon/kernel/ptrace.c         |    1 
- arch/hexagon/kernel/smp.c            |    1 
- arch/hexagon/kernel/vm_events.c      |    1 
- 10 files changed, 199 insertions(+), 130 deletions(-)
- create mode 100644 arch/hexagon/include/asm/barrier.h
- create mode 100644 arch/hexagon/include/asm/cmpxchg.h
- create mode 100644 arch/hexagon/include/asm/exec.h
- create mode 100644 arch/hexagon/include/asm/switch_to.h
+ arch/frv/include/asm/atomic.h    |   57 -------------
+ arch/frv/include/asm/barrier.h   |   29 ++++++
+ arch/frv/include/asm/bug.h       |    2 
+ arch/frv/include/asm/cmpxchg.h   |  172 ++++++++++++++++++++++++++++++++++++++
+ arch/frv/include/asm/exec.h      |   17 ++++
+ arch/frv/include/asm/switch_to.h |   35 ++++++++
+ arch/frv/include/asm/system.h    |  162 +-----------------------------------
+ arch/frv/kernel/debug-stub.c     |    1 
+ arch/frv/kernel/gdb-io.c         |    1 
+ arch/frv/kernel/gdb-stub.c       |    1 
+ arch/frv/kernel/irq-mb93091.c    |    1 
+ arch/frv/kernel/irq-mb93093.c    |    1 
+ arch/frv/kernel/irq-mb93493.c    |    1 
+ arch/frv/kernel/irq.c            |    1 
+ arch/frv/kernel/process.c        |    1 
+ arch/frv/kernel/ptrace.c         |    1 
+ arch/frv/kernel/traps.c          |    1 
+ arch/frv/mm/fault.c              |    1 
+ arch/frv/mm/init.c               |    1 
+ arch/frv/mm/kmap.c               |    1 
+ 20 files changed, 261 insertions(+), 226 deletions(-)
+ create mode 100644 arch/frv/include/asm/barrier.h
+ create mode 100644 arch/frv/include/asm/cmpxchg.h
+ create mode 100644 arch/frv/include/asm/exec.h
+ create mode 100644 arch/frv/include/asm/switch_to.h
 
-diff --git a/arch/hexagon/include/asm/atomic.h b/arch/hexagon/include/asm/atomic.h
-index e220f90..3e25804 100644
---- a/arch/hexagon/include/asm/atomic.h
-+++ b/arch/hexagon/include/asm/atomic.h
-@@ -23,6 +23,7 @@
- #define _ASM_ATOMIC_H
+diff --git a/arch/frv/include/asm/atomic.h b/arch/frv/include/asm/atomic.h
+index 0d8a7d6..b86329d 100644
+--- a/arch/frv/include/asm/atomic.h
++++ b/arch/frv/include/asm/atomic.h
+@@ -16,7 +16,7 @@
  
  #include <linux/types.h>
+ #include <asm/spr-regs.h>
+-#include <asm/system.h>
 +#include <asm/cmpxchg.h>
  
- #define ATOMIC_INIT(i)		{ (i) }
- #define atomic_set(v, i)	((v)->counter = (i))
-diff --git a/arch/hexagon/include/asm/barrier.h b/arch/hexagon/include/asm/barrier.h
+ #ifdef CONFIG_SMP
+ #error not SMP safe
+@@ -181,61 +181,6 @@ static inline void atomic64_dec(atomic64_t *v)
+ #define atomic64_dec_and_test(v)	(atomic64_dec_return((v)) == 0)
+ #define atomic64_inc_and_test(v)	(atomic64_inc_return((v)) == 0)
+ 
+-/*****************************************************************************/
+-/*
+- * exchange value with memory
+- */
+-extern uint64_t __xchg_64(uint64_t i, volatile void *v);
+-
+-#ifndef CONFIG_FRV_OUTOFLINE_ATOMIC_OPS
+-
+-#define xchg(ptr, x)								\
+-({										\
+-	__typeof__(ptr) __xg_ptr = (ptr);					\
+-	__typeof__(*(ptr)) __xg_orig;						\
+-										\
+-	switch (sizeof(__xg_orig)) {						\
+-	case 4:									\
+-		asm volatile(							\
+-			"swap%I0 %M0,%1"					\
+-			: "+m"(*__xg_ptr), "=r"(__xg_orig)			\
+-			: "1"(x)						\
+-			: "memory"						\
+-			);							\
+-		break;								\
+-										\
+-	default:								\
+-		__xg_orig = (__typeof__(__xg_orig))0;				\
+-		asm volatile("break");						\
+-		break;								\
+-	}									\
+-										\
+-	__xg_orig;								\
+-})
+-
+-#else
+-
+-extern uint32_t __xchg_32(uint32_t i, volatile void *v);
+-
+-#define xchg(ptr, x)										\
+-({												\
+-	__typeof__(ptr) __xg_ptr = (ptr);							\
+-	__typeof__(*(ptr)) __xg_orig;								\
+-												\
+-	switch (sizeof(__xg_orig)) {								\
+-	case 4: __xg_orig = (__typeof__(*(ptr))) __xchg_32((uint32_t) x, __xg_ptr);	break;	\
+-	default:										\
+-		__xg_orig = (__typeof__(__xg_orig))0;									\
+-		asm volatile("break");								\
+-		break;										\
+-	}											\
+-	__xg_orig;										\
+-})
+-
+-#endif
+-
+-#define tas(ptr) (xchg((ptr), 1))
+-
+ #define atomic_cmpxchg(v, old, new)	(cmpxchg(&(v)->counter, old, new))
+ #define atomic_xchg(v, new)		(xchg(&(v)->counter, new))
+ #define atomic64_cmpxchg(v, old, new)	(__cmpxchg_64(old, new, &(v)->counter))
+diff --git a/arch/frv/include/asm/barrier.h b/arch/frv/include/asm/barrier.h
 new file mode 100644
-index 0000000..a4ed6e2
+index 0000000..06776ad
 --- /dev/null
-+++ b/arch/hexagon/include/asm/barrier.h
-@@ -0,0 +1,41 @@
-+/*
-+ * Memory barrier definitions for the Hexagon architecture
++++ b/arch/frv/include/asm/barrier.h
+@@ -0,0 +1,29 @@
++/* FR-V CPU memory barrier definitions
 + *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ * Copyright (C) 2003 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
 + */
 +
 +#ifndef _ASM_BARRIER_H
 +#define _ASM_BARRIER_H
 +
-+#define rmb()				barrier()
-+#define read_barrier_depends()		barrier()
-+#define wmb()				barrier()
-+#define mb()				barrier()
-+#define smp_rmb()			barrier()
-+#define smp_read_barrier_depends()	barrier()
-+#define smp_wmb()			barrier()
-+#define smp_mb()			barrier()
-+#define smp_mb__before_atomic_dec()	barrier()
-+#define smp_mb__after_atomic_dec()	barrier()
-+#define smp_mb__before_atomic_inc()	barrier()
-+#define smp_mb__after_atomic_inc()	barrier()
++#define nop()			asm volatile ("nop"::)
 +
-+/*  Set a value and use a memory barrier.  Used by the scheduler somewhere.  */
++#define mb()			asm volatile ("membar" : : :"memory")
++#define rmb()			asm volatile ("membar" : : :"memory")
++#define wmb()			asm volatile ("membar" : : :"memory")
++#define read_barrier_depends()	do { } while (0)
++
++#define smp_mb()			barrier()
++#define smp_rmb()			barrier()
++#define smp_wmb()			barrier()
++#define smp_read_barrier_depends()	do {} while(0)
 +#define set_mb(var, value) \
-+	do { var = value; mb(); } while (0)
++	do { var = (value); barrier(); } while (0)
 +
 +#endif /* _ASM_BARRIER_H */
-diff --git a/arch/hexagon/include/asm/bitops.h b/arch/hexagon/include/asm/bitops.h
-index d23461e..4caa649 100644
---- a/arch/hexagon/include/asm/bitops.h
-+++ b/arch/hexagon/include/asm/bitops.h
-@@ -24,7 +24,6 @@
+diff --git a/arch/frv/include/asm/bug.h b/arch/frv/include/asm/bug.h
+index 2e05450..dd01bcf 100644
+--- a/arch/frv/include/asm/bug.h
++++ b/arch/frv/include/asm/bug.h
+@@ -51,4 +51,6 @@ do {						\
  
- #include <linux/compiler.h>
- #include <asm/byteorder.h>
--#include <asm/system.h>
- #include <asm/atomic.h>
+ #include <asm-generic/bug.h>
  
- #ifdef __KERNEL__
-diff --git a/arch/hexagon/include/asm/cmpxchg.h b/arch/hexagon/include/asm/cmpxchg.h
-new file mode 100644
-index 0000000..c5f9527
---- /dev/null
-+++ b/arch/hexagon/include/asm/cmpxchg.h
-@@ -0,0 +1,90 @@
-+/*
-+ * xchg/cmpxchg operations for the Hexagon architecture
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
++extern void die_if_kernel(const char *, ...) __attribute__((format(printf, 1, 2)));
 +
+ #endif
+diff --git a/arch/frv/include/asm/cmpxchg.h b/arch/frv/include/asm/cmpxchg.h
+new file mode 100644
+index 0000000..5b04dd0
+--- /dev/null
++++ b/arch/frv/include/asm/cmpxchg.h
+@@ -0,0 +1,172 @@
++/* xchg and cmpxchg operation emulation for FR-V
++ *
++ * For an explanation of how atomic ops work in this arch, see:
++ *   Documentation/frv/atomic-ops.txt
++ *
++ * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
++ */
 +#ifndef _ASM_CMPXCHG_H
 +#define _ASM_CMPXCHG_H
 +
++#include <linux/types.h>
++
++/*****************************************************************************/
 +/*
-+ * __xchg - atomically exchange a register and a memory location
-+ * @x: value to swap
-+ * @ptr: pointer to memory
-+ * @size:  size of the value
-+ *
-+ * Only 4 bytes supported currently.
-+ *
-+ * Note:  there was an errata for V2 about .new's and memw_locked.
-+ *
++ * exchange value with memory
 + */
-+static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
-+				   int size)
++extern uint64_t __xchg_64(uint64_t i, volatile void *v);
++
++#ifndef CONFIG_FRV_OUTOFLINE_ATOMIC_OPS
++
++#define xchg(ptr, x)								\
++({										\
++	__typeof__(ptr) __xg_ptr = (ptr);					\
++	__typeof__(*(ptr)) __xg_orig;						\
++										\
++	switch (sizeof(__xg_orig)) {						\
++	case 4:									\
++		asm volatile(							\
++			"swap%I0 %M0,%1"					\
++			: "+m"(*__xg_ptr), "=r"(__xg_orig)			\
++			: "1"(x)						\
++			: "memory"						\
++			);							\
++		break;								\
++										\
++	default:								\
++		__xg_orig = (__typeof__(__xg_orig))0;				\
++		asm volatile("break");						\
++		break;								\
++	}									\
++										\
++	__xg_orig;								\
++})
++
++#else
++
++extern uint32_t __xchg_32(uint32_t i, volatile void *v);
++
++#define xchg(ptr, x)										\
++({												\
++	__typeof__(ptr) __xg_ptr = (ptr);							\
++	__typeof__(*(ptr)) __xg_orig;								\
++												\
++	switch (sizeof(__xg_orig)) {								\
++	case 4: __xg_orig = (__typeof__(*(ptr))) __xchg_32((uint32_t) x, __xg_ptr);	break;	\
++	default:										\
++		__xg_orig = (__typeof__(__xg_orig))0;									\
++		asm volatile("break");								\
++		break;										\
++	}											\
++	__xg_orig;										\
++})
++
++#endif
++
++#define tas(ptr) (xchg((ptr), 1))
++
++/*****************************************************************************/
++/*
++ * compare and conditionally exchange value with memory
++ * - if (*ptr == test) then orig = *ptr; *ptr = test;
++ * - if (*ptr != test) then orig = *ptr;
++ */
++extern uint64_t __cmpxchg_64(uint64_t test, uint64_t new, volatile uint64_t *v);
++
++#ifndef CONFIG_FRV_OUTOFLINE_ATOMIC_OPS
++
++#define cmpxchg(ptr, test, new)							\
++({										\
++	__typeof__(ptr) __xg_ptr = (ptr);					\
++	__typeof__(*(ptr)) __xg_orig, __xg_tmp;					\
++	__typeof__(*(ptr)) __xg_test = (test);					\
++	__typeof__(*(ptr)) __xg_new = (new);					\
++										\
++	switch (sizeof(__xg_orig)) {						\
++	case 4:									\
++		asm volatile(							\
++			"0:						\n"	\
++			"	orcc		gr0,gr0,gr0,icc3	\n"	\
++			"	ckeq		icc3,cc7		\n"	\
++			"	ld.p		%M0,%1			\n"	\
++			"	orcr		cc7,cc7,cc3		\n"	\
++			"	sub%I4cc	%1,%4,%2,icc0		\n"	\
++			"	bne		icc0,#0,1f		\n"	\
++			"	cst.p		%3,%M0		,cc3,#1	\n"	\
++			"	corcc		gr29,gr29,gr0	,cc3,#1	\n"	\
++			"	beq		icc3,#0,0b		\n"	\
++			"1:						\n"	\
++			: "+U"(*__xg_ptr), "=&r"(__xg_orig), "=&r"(__xg_tmp)	\
++			: "r"(__xg_new), "NPr"(__xg_test)			\
++			: "memory", "cc7", "cc3", "icc3", "icc0"		\
++			);							\
++		break;								\
++										\
++	default:								\
++		__xg_orig = (__typeof__(__xg_orig))0;				\
++		asm volatile("break");						\
++		break;								\
++	}									\
++										\
++	__xg_orig;								\
++})
++
++#else
++
++extern uint32_t __cmpxchg_32(uint32_t *v, uint32_t test, uint32_t new);
++
++#define cmpxchg(ptr, test, new)							\
++({										\
++	__typeof__(ptr) __xg_ptr = (ptr);					\
++	__typeof__(*(ptr)) __xg_orig;						\
++	__typeof__(*(ptr)) __xg_test = (test);					\
++	__typeof__(*(ptr)) __xg_new = (new);					\
++										\
++	switch (sizeof(__xg_orig)) {						\
++	case 4: __xg_orig = (__force __typeof__(*ptr))				\
++			__cmpxchg_32((__force uint32_t *)__xg_ptr,		\
++					 (__force uint32_t)__xg_test,		\
++					 (__force uint32_t)__xg_new); break;	\
++	default:								\
++		__xg_orig = (__typeof__(__xg_orig))0;				\
++		asm volatile("break");						\
++		break;								\
++	}									\
++										\
++	__xg_orig;								\
++})
++
++#endif
++
++#include <asm-generic/cmpxchg-local.h>
++
++static inline unsigned long __cmpxchg_local(volatile void *ptr,
++				      unsigned long old,
++				      unsigned long new, int size)
 +{
-+	unsigned long retval;
++	switch (size) {
++	case 4:
++		return cmpxchg((unsigned long *)ptr, old, new);
++	default:
++		return __cmpxchg_local_generic(ptr, old, new, size);
++	}
 +
-+	/*  Can't seem to use printk or panic here, so just stop  */
-+	if (size != 4) do { asm volatile("brkpt;\n"); } while (1);
-+
-+	__asm__ __volatile__ (
-+	"1:	%0 = memw_locked(%1);\n"    /*  load into retval */
-+	"	memw_locked(%1,P0) = %2;\n" /*  store into memory */
-+	"	if !P0 jump 1b;\n"
-+	: "=&r" (retval)
-+	: "r" (ptr), "r" (x)
-+	: "memory", "p0"
-+	);
-+	return retval;
++	return old;
 +}
 +
 +/*
-+ * Atomically swap the contents of a register with memory.  Should be atomic
-+ * between multiple CPU's and within interrupts on the same CPU.
++ * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
++ * them available.
 + */
-+#define xchg(ptr, v) ((__typeof__(*(ptr)))__xchg((unsigned long)(v), (ptr), \
-+	sizeof(*(ptr))))
-+
-+/*
-+ *  see rt-mutex-design.txt; cmpxchg supposedly checks if *ptr == A and swaps.
-+ *  looks just like atomic_cmpxchg on our arch currently with a bunch of
-+ *  variable casting.
-+ */
-+#define __HAVE_ARCH_CMPXCHG 1
-+
-+#define cmpxchg(ptr, old, new)					\
-+({								\
-+	__typeof__(ptr) __ptr = (ptr);				\
-+	__typeof__(*(ptr)) __old = (old);			\
-+	__typeof__(*(ptr)) __new = (new);			\
-+	__typeof__(*(ptr)) __oldval = 0;			\
-+								\
-+	asm volatile(						\
-+		"1:	%0 = memw_locked(%1);\n"		\
-+		"	{ P0 = cmp.eq(%0,%2);\n"		\
-+		"	  if (!P0.new) jump:nt 2f; }\n"		\
-+		"	memw_locked(%1,p0) = %3;\n"		\
-+		"	if (!P0) jump 1b;\n"			\
-+		"2:\n"						\
-+		: "=&r" (__oldval)				\
-+		: "r" (__ptr), "r" (__old), "r" (__new)		\
-+		: "memory", "p0"				\
-+	);							\
-+	__oldval;						\
-+})
++#define cmpxchg_local(ptr, o, n)				  	\
++	((__typeof__(*(ptr)))__cmpxchg_local((ptr), (unsigned long)(o),	\
++			(unsigned long)(n), sizeof(*(ptr))))
++#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
 +
 +#endif /* _ASM_CMPXCHG_H */
-diff --git a/arch/hexagon/include/asm/exec.h b/arch/hexagon/include/asm/exec.h
+diff --git a/arch/frv/include/asm/exec.h b/arch/frv/include/asm/exec.h
 new file mode 100644
-index 0000000..350e6d4
+index 0000000..65c9130
 --- /dev/null
-+++ b/arch/hexagon/include/asm/exec.h
-@@ -0,0 +1,28 @@
-+/*
-+ * Process execution related definitions for the Hexagon architecture
++++ b/arch/frv/include/asm/exec.h
+@@ -0,0 +1,17 @@
++/* FR-V CPU executable handling
 + *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ * Copyright (C) 2003 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
 + */
 +
 +#ifndef _ASM_EXEC_H
 +#define _ASM_EXEC_H
 +
-+/*  Should probably shoot for an 8-byte aligned stack pointer  */
-+#define STACK_MASK (~7)
-+#define arch_align_stack(x) (x & STACK_MASK)
++#define arch_align_stack(x) (x)
 +
 +#endif /* _ASM_EXEC_H */
-diff --git a/arch/hexagon/include/asm/switch_to.h b/arch/hexagon/include/asm/switch_to.h
+diff --git a/arch/frv/include/asm/switch_to.h b/arch/frv/include/asm/switch_to.h
 new file mode 100644
-index 0000000..28ca0df
+index 0000000..2cf0f6a
 --- /dev/null
-+++ b/arch/hexagon/include/asm/switch_to.h
-@@ -0,0 +1,34 @@
-+/*
-+ * Task switching definitions for the Hexagon architecture
++++ b/arch/frv/include/asm/switch_to.h
+@@ -0,0 +1,35 @@
++/* FR-V CPU basic task switching
 + *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ * Copyright (C) 2003 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version
++ * 2 of the License, or (at your option) any later version.
 + */
 +
 +#ifndef _ASM_SWITCH_TO_H
 +#define _ASM_SWITCH_TO_H
 +
-+struct thread_struct;
++#include <linux/thread_info.h>
 +
-+extern struct task_struct *__switch_to(struct task_struct *,
-+	struct task_struct *,
-+	struct task_struct *);
++/*
++ * switch_to(prev, next) should switch from task `prev' to `next'
++ * `prev' will never be the same as `next'.
++ * The `mb' is to tell GCC not to cache `current' across this call.
++ */
++extern asmlinkage
++struct task_struct *__switch_to(struct thread_struct *prev_thread,
++				struct thread_struct *next_thread,
++				struct task_struct *prev);
 +
-+#define switch_to(p, n, r) do {\
-+	r = __switch_to((p), (n), (r));\
-+} while (0)
++#define switch_to(prev, next, last)					\
++do {									\
++	(prev)->thread.sched_lr =					\
++		(unsigned long) __builtin_return_address(0);		\
++	(last) = __switch_to(&(prev)->thread, &(next)->thread, (prev));	\
++	mb();								\
++} while(0)
 +
 +#endif /* _ASM_SWITCH_TO_H */
-diff --git a/arch/hexagon/include/asm/system.h b/arch/hexagon/include/asm/system.h
-index 323ed1d..a7f4057 100644
---- a/arch/hexagon/include/asm/system.h
-+++ b/arch/hexagon/include/asm/system.h
-@@ -1,126 +1,5 @@
--/*
-- * System level definitions for the Hexagon architecture
+diff --git a/arch/frv/include/asm/system.h b/arch/frv/include/asm/system.h
+index 6c10fd2..5c707a2 100644
+--- a/arch/frv/include/asm/system.h
++++ b/arch/frv/include/asm/system.h
+@@ -1,158 +1,6 @@
+-/* system.h: FR-V CPU control definitions
 - *
-- * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+- * Copyright (C) 2003 Red Hat, Inc. All Rights Reserved.
+- * Written by David Howells (dhowells@redhat.com)
 - *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License
+- * as published by the Free Software Foundation; either version
+- * 2 of the License, or (at your option) any later version.
 - */
 -
 -#ifndef _ASM_SYSTEM_H
 -#define _ASM_SYSTEM_H
 -
+-#include <linux/types.h>
 -#include <linux/linkage.h>
--#include <linux/irqflags.h>
--#include <asm/atomic.h>
--#include <asm/hexagon_vm.h>
+-#include <linux/kernel.h>
 -
 -struct thread_struct;
 -
--extern struct task_struct *__switch_to(struct task_struct *,
--	struct task_struct *,
--	struct task_struct *);
+-/*
+- * switch_to(prev, next) should switch from task `prev' to `next'
+- * `prev' will never be the same as `next'.
+- * The `mb' is to tell GCC not to cache `current' across this call.
+- */
+-extern asmlinkage
+-struct task_struct *__switch_to(struct thread_struct *prev_thread,
+-				struct thread_struct *next_thread,
+-				struct task_struct *prev);
 -
--#define switch_to(p, n, r) do {\
--	r = __switch_to((p), (n), (r));\
--} while (0)
+-#define switch_to(prev, next, last)					\
+-do {									\
+-	(prev)->thread.sched_lr =					\
+-		(unsigned long) __builtin_return_address(0);		\
+-	(last) = __switch_to(&(prev)->thread, &(next)->thread, (prev));	\
+-	mb();								\
+-} while(0)
 -
+-/*
+- * Force strict CPU ordering.
+- */
+-#define nop()			asm volatile ("nop"::)
+-#define mb()			asm volatile ("membar" : : :"memory")
+-#define rmb()			asm volatile ("membar" : : :"memory")
+-#define wmb()			asm volatile ("membar" : : :"memory")
+-#define read_barrier_depends()	do { } while (0)
 -
--#define rmb()				barrier()
--#define read_barrier_depends()		barrier()
--#define wmb()				barrier()
--#define mb()				barrier()
--#define smp_rmb()			barrier()
--#define smp_read_barrier_depends()	barrier()
--#define smp_wmb()			barrier()
 -#define smp_mb()			barrier()
--#define smp_mb__before_atomic_dec()	barrier()
--#define smp_mb__after_atomic_dec()	barrier()
--#define smp_mb__before_atomic_inc()	barrier()
--#define smp_mb__after_atomic_inc()	barrier()
--
--/*
-- * __xchg - atomically exchange a register and a memory location
-- * @x: value to swap
-- * @ptr: pointer to memory
-- * @size:  size of the value
-- *
-- * Only 4 bytes supported currently.
-- *
-- * Note:  there was an errata for V2 about .new's and memw_locked.
-- *
-- */
--static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
--				   int size)
--{
--	unsigned long retval;
--
--	/*  Can't seem to use printk or panic here, so just stop  */
--	if (size != 4) do { asm volatile("brkpt;\n"); } while (1);
--
--	__asm__ __volatile__ (
--	"1:	%0 = memw_locked(%1);\n"    /*  load into retval */
--	"	memw_locked(%1,P0) = %2;\n" /*  store into memory */
--	"	if !P0 jump 1b;\n"
--	: "=&r" (retval)
--	: "r" (ptr), "r" (x)
--	: "memory", "p0"
--	);
--	return retval;
--}
--
--/*
-- * Atomically swap the contents of a register with memory.  Should be atomic
-- * between multiple CPU's and within interrupts on the same CPU.
-- */
--#define xchg(ptr, v) ((__typeof__(*(ptr)))__xchg((unsigned long)(v), (ptr), \
--	sizeof(*(ptr))))
--
--/*  Set a value and use a memory barrier.  Used by the scheduler somewhere.  */
+-#define smp_rmb()			barrier()
+-#define smp_wmb()			barrier()
+-#define smp_read_barrier_depends()	do {} while(0)
 -#define set_mb(var, value) \
--	do { var = value; mb(); } while (0)
+-	do { var = (value); barrier(); } while (0)
 -
--/*
-- *  see rt-mutex-design.txt; cmpxchg supposedly checks if *ptr == A and swaps.
-- *  looks just like atomic_cmpxchg on our arch currently with a bunch of
-- *  variable casting.
-- */
--#define __HAVE_ARCH_CMPXCHG 1
--
--#define cmpxchg(ptr, old, new)					\
--({								\
--	__typeof__(ptr) __ptr = (ptr);				\
--	__typeof__(*(ptr)) __old = (old);			\
--	__typeof__(*(ptr)) __new = (new);			\
--	__typeof__(*(ptr)) __oldval = 0;			\
--								\
--	asm volatile(						\
--		"1:	%0 = memw_locked(%1);\n"		\
--		"	{ P0 = cmp.eq(%0,%2);\n"		\
--		"	  if (!P0.new) jump:nt 2f; }\n"		\
--		"	memw_locked(%1,p0) = %3;\n"		\
--		"	if (!P0) jump 1b;\n"			\
--		"2:\n"						\
--		: "=&r" (__oldval)				\
--		: "r" (__ptr), "r" (__old), "r" (__new)		\
--		: "memory", "p0"				\
--	);							\
--	__oldval;						\
--})
--
--/*  Should probably shoot for an 8-byte aligned stack pointer  */
--#define STACK_MASK (~7)
--#define arch_align_stack(x) (x & STACK_MASK)
--
--#endif
+-extern void die_if_kernel(const char *, ...) __attribute__((format(printf, 1, 2)));
 +/* FILE TO BE DELETED. DO NOT ADD STUFF HERE! */
 +#include <asm/barrier.h>
 +#include <asm/cmpxchg.h>
 +#include <asm/exec.h>
 +#include <asm/switch_to.h>
-diff --git a/arch/hexagon/kernel/ptrace.c b/arch/hexagon/kernel/ptrace.c
-index bea3f08..32342de 100644
---- a/arch/hexagon/kernel/ptrace.c
-+++ b/arch/hexagon/kernel/ptrace.c
-@@ -29,7 +29,6 @@
- #include <linux/regset.h>
- #include <linux/user.h>
+ extern void free_initmem(void);
+-
+-#define arch_align_stack(x) (x)
+-
+-/*****************************************************************************/
+-/*
+- * compare and conditionally exchange value with memory
+- * - if (*ptr == test) then orig = *ptr; *ptr = test;
+- * - if (*ptr != test) then orig = *ptr;
+- */
+-extern uint64_t __cmpxchg_64(uint64_t test, uint64_t new, volatile uint64_t *v);
+-
+-#ifndef CONFIG_FRV_OUTOFLINE_ATOMIC_OPS
+-
+-#define cmpxchg(ptr, test, new)							\
+-({										\
+-	__typeof__(ptr) __xg_ptr = (ptr);					\
+-	__typeof__(*(ptr)) __xg_orig, __xg_tmp;					\
+-	__typeof__(*(ptr)) __xg_test = (test);					\
+-	__typeof__(*(ptr)) __xg_new = (new);					\
+-										\
+-	switch (sizeof(__xg_orig)) {						\
+-	case 4:									\
+-		asm volatile(							\
+-			"0:						\n"	\
+-			"	orcc		gr0,gr0,gr0,icc3	\n"	\
+-			"	ckeq		icc3,cc7		\n"	\
+-			"	ld.p		%M0,%1			\n"	\
+-			"	orcr		cc7,cc7,cc3		\n"	\
+-			"	sub%I4cc	%1,%4,%2,icc0		\n"	\
+-			"	bne		icc0,#0,1f		\n"	\
+-			"	cst.p		%3,%M0		,cc3,#1	\n"	\
+-			"	corcc		gr29,gr29,gr0	,cc3,#1	\n"	\
+-			"	beq		icc3,#0,0b		\n"	\
+-			"1:						\n"	\
+-			: "+U"(*__xg_ptr), "=&r"(__xg_orig), "=&r"(__xg_tmp)	\
+-			: "r"(__xg_new), "NPr"(__xg_test)			\
+-			: "memory", "cc7", "cc3", "icc3", "icc0"		\
+-			);							\
+-		break;								\
+-										\
+-	default:								\
+-		__xg_orig = (__typeof__(__xg_orig))0;				\
+-		asm volatile("break");						\
+-		break;								\
+-	}									\
+-										\
+-	__xg_orig;								\
+-})
+-
+-#else
+-
+-extern uint32_t __cmpxchg_32(uint32_t *v, uint32_t test, uint32_t new);
+-
+-#define cmpxchg(ptr, test, new)							\
+-({										\
+-	__typeof__(ptr) __xg_ptr = (ptr);					\
+-	__typeof__(*(ptr)) __xg_orig;						\
+-	__typeof__(*(ptr)) __xg_test = (test);					\
+-	__typeof__(*(ptr)) __xg_new = (new);					\
+-										\
+-	switch (sizeof(__xg_orig)) {						\
+-	case 4: __xg_orig = (__force __typeof__(*ptr))				\
+-			__cmpxchg_32((__force uint32_t *)__xg_ptr,		\
+-					 (__force uint32_t)__xg_test,		\
+-					 (__force uint32_t)__xg_new); break;	\
+-	default:								\
+-		__xg_orig = (__typeof__(__xg_orig))0;				\
+-		asm volatile("break");						\
+-		break;								\
+-	}									\
+-										\
+-	__xg_orig;								\
+-})
+-
+-#endif
+-
+-#include <asm-generic/cmpxchg-local.h>
+-
+-static inline unsigned long __cmpxchg_local(volatile void *ptr,
+-				      unsigned long old,
+-				      unsigned long new, int size)
+-{
+-	switch (size) {
+-	case 4:
+-		return cmpxchg((unsigned long *)ptr, old, new);
+-	default:
+-		return __cmpxchg_local_generic(ptr, old, new, size);
+-	}
+-
+-	return old;
+-}
+-
+-/*
+- * cmpxchg_local and cmpxchg64_local are atomic wrt current CPU. Always make
+- * them available.
+- */
+-#define cmpxchg_local(ptr, o, n)				  	\
+-	((__typeof__(*(ptr)))__cmpxchg_local((ptr), (unsigned long)(o),	\
+-			(unsigned long)(n), sizeof(*(ptr))))
+-#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
+-
+-#endif /* _ASM_SYSTEM_H */
+diff --git a/arch/frv/kernel/debug-stub.c b/arch/frv/kernel/debug-stub.c
+index 2845139..a0228f7 100644
+--- a/arch/frv/kernel/debug-stub.c
++++ b/arch/frv/kernel/debug-stub.c
+@@ -17,7 +17,6 @@
+ #include <linux/serial_reg.h>
+ #include <linux/start_kernel.h>
  
 -#include <asm/system.h>
- #include <asm/user.h>
+ #include <asm/serial-regs.h>
+ #include <asm/timer-regs.h>
+ #include <asm/irc-regs.h>
+diff --git a/arch/frv/kernel/gdb-io.c b/arch/frv/kernel/gdb-io.c
+index 2ca641d..0707d35 100644
+--- a/arch/frv/kernel/gdb-io.c
++++ b/arch/frv/kernel/gdb-io.c
+@@ -19,7 +19,6 @@
+ #include <linux/serial_reg.h>
  
- static int genregs_get(struct task_struct *target,
-diff --git a/arch/hexagon/kernel/smp.c b/arch/hexagon/kernel/smp.c
-index c871a2c..96ceec6 100644
---- a/arch/hexagon/kernel/smp.c
-+++ b/arch/hexagon/kernel/smp.c
-@@ -29,7 +29,6 @@
- #include <linux/smp.h>
- #include <linux/spinlock.h>
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/irc-regs.h>
+ #include <asm/timer-regs.h>
+ #include <asm/gdb-stub.h>
+diff --git a/arch/frv/kernel/gdb-stub.c b/arch/frv/kernel/gdb-stub.c
+index a6d5381..bbe78b0 100644
+--- a/arch/frv/kernel/gdb-stub.c
++++ b/arch/frv/kernel/gdb-stub.c
+@@ -126,7 +126,6 @@
  
--#include <asm/system.h>  /*  xchg  */
- #include <asm/time.h>    /*  timer_interrupt  */
- #include <asm/hexagon_vm.h>
+ #include <asm/asm-offsets.h>
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/gdb-stub.h>
  
-diff --git a/arch/hexagon/kernel/vm_events.c b/arch/hexagon/kernel/vm_events.c
-index 986a081..591fc1b 100644
---- a/arch/hexagon/kernel/vm_events.c
-+++ b/arch/hexagon/kernel/vm_events.c
-@@ -22,7 +22,6 @@
- #include <asm/registers.h>
- #include <linux/irq.h>
+ #define LEDS(x) do { /* *(u32*)0xe1200004 = ~(x); mb(); */ } while(0)
+diff --git a/arch/frv/kernel/irq-mb93091.c b/arch/frv/kernel/irq-mb93091.c
+index 9afc2ea..2cc327a 100644
+--- a/arch/frv/kernel/irq-mb93091.c
++++ b/arch/frv/kernel/irq-mb93091.c
+@@ -20,7 +20,6 @@
+ #include <linux/bitops.h>
+ 
+ #include <asm/io.h>
+-#include <asm/system.h>
+ #include <asm/delay.h>
+ #include <asm/irq.h>
+ #include <asm/irc-regs.h>
+diff --git a/arch/frv/kernel/irq-mb93093.c b/arch/frv/kernel/irq-mb93093.c
+index 4d4ad09..95e4eb4 100644
+--- a/arch/frv/kernel/irq-mb93093.c
++++ b/arch/frv/kernel/irq-mb93093.c
+@@ -20,7 +20,6 @@
+ #include <linux/bitops.h>
+ 
+ #include <asm/io.h>
+-#include <asm/system.h>
+ #include <asm/delay.h>
+ #include <asm/irq.h>
+ #include <asm/irc-regs.h>
+diff --git a/arch/frv/kernel/irq-mb93493.c b/arch/frv/kernel/irq-mb93493.c
+index 4d034c7..ba648da 100644
+--- a/arch/frv/kernel/irq-mb93493.c
++++ b/arch/frv/kernel/irq-mb93493.c
+@@ -20,7 +20,6 @@
+ #include <linux/bitops.h>
+ 
+ #include <asm/io.h>
+-#include <asm/system.h>
+ #include <asm/delay.h>
+ #include <asm/irq.h>
+ #include <asm/irc-regs.h>
+diff --git a/arch/frv/kernel/irq.c b/arch/frv/kernel/irq.c
+index 3facbc2..2239346 100644
+--- a/arch/frv/kernel/irq.c
++++ b/arch/frv/kernel/irq.c
+@@ -28,7 +28,6 @@
+ #include <linux/atomic.h>
+ #include <asm/io.h>
+ #include <asm/smp.h>
+-#include <asm/system.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgalloc.h>
+ #include <asm/delay.h>
+diff --git a/arch/frv/kernel/process.c b/arch/frv/kernel/process.c
+index 3901df1..8b6df6f 100644
+--- a/arch/frv/kernel/process.c
++++ b/arch/frv/kernel/process.c
+@@ -28,7 +28,6 @@
+ 
+ #include <asm/asm-offsets.h>
+ #include <asm/uaccess.h>
+-#include <asm/system.h>
+ #include <asm/setup.h>
+ #include <asm/pgtable.h>
+ #include <asm/tlb.h>
+diff --git a/arch/frv/kernel/ptrace.c b/arch/frv/kernel/ptrace.c
+index 9d68f7f..3987ff8 100644
+--- a/arch/frv/kernel/ptrace.c
++++ b/arch/frv/kernel/ptrace.c
+@@ -26,7 +26,6 @@
+ #include <asm/uaccess.h>
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/processor.h>
+ #include <asm/unistd.h>
+ 
+diff --git a/arch/frv/kernel/traps.c b/arch/frv/kernel/traps.c
+index 1d2dfe6..5cfd142 100644
+--- a/arch/frv/kernel/traps.c
++++ b/arch/frv/kernel/traps.c
+@@ -23,7 +23,6 @@
+ #include <asm/asm-offsets.h>
+ #include <asm/setup.h>
+ #include <asm/fpu.h>
+-#include <asm/system.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ #include <asm/siginfo.h>
+diff --git a/arch/frv/mm/fault.c b/arch/frv/mm/fault.c
+index a325d57..331c1e2 100644
+--- a/arch/frv/mm/fault.c
++++ b/arch/frv/mm/fault.c
+@@ -20,7 +20,6 @@
+ #include <linux/ptrace.h>
  #include <linux/hardirq.h>
+ 
+-#include <asm/system.h>
+ #include <asm/pgtable.h>
+ #include <asm/uaccess.h>
+ #include <asm/gdb-stub.h>
+diff --git a/arch/frv/mm/init.c b/arch/frv/mm/init.c
+index fbe5f0d..a19effc 100644
+--- a/arch/frv/mm/init.c
++++ b/arch/frv/mm/init.c
+@@ -33,7 +33,6 @@
+ #include <asm/segment.h>
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
+-#include <asm/system.h>
+ #include <asm/mmu_context.h>
+ #include <asm/virtconvert.h>
+ #include <asm/sections.h>
+diff --git a/arch/frv/mm/kmap.c b/arch/frv/mm/kmap.c
+index fb78be3..e9217e6 100644
+--- a/arch/frv/mm/kmap.c
++++ b/arch/frv/mm/kmap.c
+@@ -21,7 +21,6 @@
+ #include <asm/page.h>
+ #include <asm/pgalloc.h>
+ #include <asm/io.h>
 -#include <asm/system.h>
  
- /*
-  * show_regs - print pt_regs structure
+ #undef DEBUG
+ 
 
