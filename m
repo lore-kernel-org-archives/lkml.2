@@ -1,205 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031342Ab2COAmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 20:42:40 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:56740 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760625Ab2COAmj (ORCPT
+	id S1031354Ab2COAnv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 20:43:51 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:37720 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760625Ab2COAns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 20:42:39 -0400
-Message-ID: <4F613AF9.2030504@linaro.org>
-Date: Wed, 14 Mar 2012 17:42:33 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Wed, 14 Mar 2012 20:43:48 -0400
+Date: Thu, 15 Mar 2012 09:43:45 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Fernando Luis =?utf-8?Q?V=C3=A1zquez?= Cao 
+	<fernando@oss.ntt.co.jp>,
+        akpm@linux-foundation.org, linux-tip-commits@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
+        torvalds@linux-foundation.org, mingo@elte.hu, vgoyal@redhat.com
+Subject: Re: [PATCH 1/2] boot: ignore early NMIs
+Message-ID: <20120315004344.GA16806@verge.net.au>
+References: <4F5A6D87.4050809@zytor.com>
+ <4F5D8D0E.8060702@oss.ntt.co.jp>
+ <4F5D8E63.60606@zytor.com>
+ <4F5D943C.5020403@oss.ntt.co.jp>
+ <4F5E431D.8010305@zytor.com>
+ <m1zkblmvw7.fsf@fess.ebiederm.org>
+ <4F5E56EB.1090807@zytor.com>
+ <4F5E59AC.7090708@zytor.com>
+ <4F5EACE5.8080202@oss.ntt.co.jp>
+ <20120313133350.GS24378@redhat.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH 1/2] time: x86: Fix race switching from vsyscall to non-vsyscall
- clock
-References: <1331769536-4602-1-git-send-email-john.stultz@linaro.org> <1331769536-4602-2-git-send-email-john.stultz@linaro.org> <alpine.LFD.2.02.1203150131390.2466@ionos>
-In-Reply-To: <alpine.LFD.2.02.1203150131390.2466@ionos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12031500-3352-0000-0000-00000354385E
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120313133350.GS24378@redhat.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/14/2012 05:34 PM, Thomas Gleixner wrote:
-> On Wed, 14 Mar 2012, John Stultz wrote:
->>   notrace static noinline int do_realtime(struct timespec *ts)
->>   {
->>   	unsigned long seq, ns;
->> +	int mode;
-> Please keep a newline between declarations and code.
+On Tue, Mar 13, 2012 at 09:33:50AM -0400, Don Zickus wrote:
+> On Tue, Mar 13, 2012 at 11:11:49AM +0900, Fernando Luis Vázquez Cao wrote:
+> > On 03/13/2012 05:16 AM, H. Peter Anvin wrote:
+> > >On 03/12/2012 01:04 PM, H. Peter Anvin wrote:
+> > >>On 03/12/2012 01:01 PM, Eric W. Biederman wrote:
+> > >>>The basic problem is which source do we block this at?  How many
+> > >>>sources are their?  And architecturally last I looked x86 no longer
+> > >>>has a NMI disable EFI and similar systems want to get away without
+> > >>>a CMOS legacy clock because designers so often get them wrong.
+> > >>>
+> > >>On all processors which have an LAPIC you can block all NMI sources at
+> > >>the LAPIC.  I think it's safe to assume that if you don't have an LAPIC
+> > >>-- an ancient system by now -- you have port 70h.
+> > >>
+> > >One thing: *disabling* the LAPIC will allow external NMIs coming in on
+> > >LINT1 through, since the LAPIC in the disabled state tries to mimic the
+> > >no-LAPIC configuration.  So I don't think you want to disable LAPIC as
+> > >much as disable the interrupt vectors within.
+> > 
+> > Does this sound like a plan to get the ball rolling?:
+> > 
+> > 1.- Merge Don's patch to disable the LAPIC in kdump reboot path (this
+> >   fixes a real issue seen in the field, is a net win and certainly not a
+> >   regression - indeed it makes the code simpler because the I/O
+> >   APICs are left untouched).
+> 
+> I think you mean my patch to stop disabling the I/O APIC.  That patch
+> hasn't seen any new issues.  It was the piece that stopped disabling the
+> LAPIC that opened the doors for NMIs to fault the system.
+> 
+> > 
+> > 2.- Merge my patch set to ignore early NMIs (this brings the behavior
+> >   of the boot code in line with what we do in the rest of the kernel
+> >   a we can avoid situations were a spurious NMI causes the kernel
+> >   to halt). The early NMI handler is temporary and the final NMI
+> >   handler installed shortly afterwards will take care of subsequent
+> >   NMIs.
+> > 
+> > 3.- Make sure that spurious NMIs (i.e. NMIs that for whatever reason
+> >   could not be stopped at the source) received during the reboot
+> >   path to the kdump kernel do not cause a triple fault or a system
+> >   lockup. This is under testing.
+> 
+> This will require changes in kexec-tools as the purgatory code zaps the
+> GDT I believe.  This is going to make a 'complete solution' dependent on
+> a version of kexec-tools.  Not sure what we want to do there.
 
-Fixed below. Thanks!
-(Let me know if you see whitespace damage, I switched mail clients today 
-and am learning the quirks here.)
--john
+Ouch. I guess that in the event that purgatory needs to be modified
+some backwards-compatibility will need to be provided, possibly
+by allowing purgatory to switch between two behaviours based on
+e.g. a command line parameter.
 
-
-When switching from a vsyscall capable to a non-vsyscall capable
-clocksource, there was a small race, where the last vsyscall
-gettimeofday before the switch might return a invalid time value
-using the new non-vsyscall enabled clocksource values after the
-switch is complete.
-
-This is due to the vsyscall code checking the vclock_mode once
-outside of the seqcount protected section. After it reads the
-vclock mode, it doesn't re-check that the sampled clock data
-that is obtained in the seqcount critical section still matches.
-
-The fix is to sample vclock_mode inside the protected section,
-and as long as it isn't VCLOCK_NONE, return the calculated
-value. If it has changed and is now VCLOCK_NONE, fall back
-to the syscall gettime calculation.
-
-v2:
-   * Cleanup checks as suggested by tglx
-   * Also fix same issue present in gettimeofday path
-
-CC: Andy Lutomirski<luto@amacapital.net>
-CC: Thomas Gleixner<tglx@linutronix.de>
-Signed-off-by: John Stultz<john.stultz@linaro.org>
----
-  arch/x86/vdso/vclock_gettime.c |   68 +++++++++++++++++++++++++--------------
-  1 files changed, 43 insertions(+), 25 deletions(-)
-
-diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index 6bc0e72..e5ba922 100644
---- a/arch/x86/vdso/vclock_gettime.c
-+++ b/arch/x86/vdso/vclock_gettime.c
-@@ -70,6 +70,16 @@ notrace static long vdso_fallback_gettime(long clock, struct timespec *ts)
-  	return ret;
-  }
-
-+notrace static long vdso_fallback_gtod(struct timeval *tv, struct timezone *tz)
-+{
-+	long ret;
-+
-+	asm("syscall" : "=a" (ret) :
-+	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
-+	return ret;
-+}
-+
-+
-  notrace static inline long vgetns(void)
-  {
-  	long v;
-@@ -85,21 +95,28 @@ notrace static inline long vgetns(void)
-  notrace static noinline int do_realtime(struct timespec *ts)
-  {
-  	unsigned long seq, ns;
-+	int mode;
-+
-  	do {
-  		seq = read_seqbegin(&gtod->lock);
-+		mode = gtod->clock.vclock_mode;
-  		ts->tv_sec = gtod->wall_time_sec;
-  		ts->tv_nsec = gtod->wall_time_nsec;
-  		ns = vgetns();
-  	} while (unlikely(read_seqretry(&gtod->lock, seq)));
-+
-  	timespec_add_ns(ts, ns);
--	return 0;
-+	return mode;
-  }
-
-  notrace static noinline int do_monotonic(struct timespec *ts)
-  {
-  	unsigned long seq, ns, secs;
-+	int mode;
-+
-  	do {
-  		seq = read_seqbegin(&gtod->lock);
-+		mode = gtod->clock.vclock_mode;
-  		secs = gtod->wall_time_sec;
-  		ns = gtod->wall_time_nsec + vgetns();
-  		secs += gtod->wall_to_monotonic.tv_sec;
-@@ -116,7 +133,7 @@ notrace static noinline int do_monotonic(struct timespec *ts)
-  	ts->tv_sec = secs;
-  	ts->tv_nsec = ns;
-
--	return 0;
-+	return mode;
-  }
-
-  notrace static noinline int do_realtime_coarse(struct timespec *ts)
-@@ -156,14 +173,14 @@ notrace static noinline int do_monotonic_coarse(struct timespec *ts)
-
-  notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
-  {
-+	int ret = VCLOCK_NONE;
-+
-  	switch (clock) {
-  	case CLOCK_REALTIME:
--		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
--			return do_realtime(ts);
-+		ret = do_realtime(ts);
-  		break;
-  	case CLOCK_MONOTONIC:
--		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
--			return do_monotonic(ts);
-+		ret = do_monotonic(ts);
-  		break;
-  	case CLOCK_REALTIME_COARSE:
-  		return do_realtime_coarse(ts);
-@@ -171,32 +188,33 @@ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
-  		return do_monotonic_coarse(ts);
-  	}
-
--	return vdso_fallback_gettime(clock, ts);
-+	if (ret == VCLOCK_NONE)
-+		return vdso_fallback_gettime(clock, ts);
-+	return 0;
-  }
-  int clock_gettime(clockid_t, struct timespec *)
-  	__attribute__((weak, alias("__vdso_clock_gettime")));
-
-  notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
-  {
--	long ret;
--	if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
--		if (likely(tv != NULL)) {
--			BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
--				     offsetof(struct timespec, tv_nsec) ||
--				     sizeof(*tv) != sizeof(struct timespec));
--			do_realtime((struct timespec *)tv);
--			tv->tv_usec /= 1000;
--		}
--		if (unlikely(tz != NULL)) {
--			/* Avoid memcpy. Some old compilers fail to inline it */
--			tz->tz_minuteswest = gtod->sys_tz.tz_minuteswest;
--			tz->tz_dsttime = gtod->sys_tz.tz_dsttime;
--		}
--		return 0;
-+	long ret = VCLOCK_NONE;
-+
-+	if (likely(tv != NULL)) {
-+		BUILD_BUG_ON(offsetof(struct timeval, tv_usec) !=
-+			     offsetof(struct timespec, tv_nsec) ||
-+			     sizeof(*tv) != sizeof(struct timespec));
-+		ret = do_realtime((struct timespec *)tv);
-+		tv->tv_usec /= 1000;
-  	}
--	asm("syscall" : "=a" (ret) :
--	    "0" (__NR_gettimeofday), "D" (tv), "S" (tz) : "memory");
--	return ret;
-+	if (unlikely(tz != NULL)) {
-+		/* Avoid memcpy. Some old compilers fail to inline it */
-+		tz->tz_minuteswest = gtod->sys_tz.tz_minuteswest;
-+		tz->tz_dsttime = gtod->sys_tz.tz_dsttime;
-+	}
-+
-+	if (ret == VCLOCK_NONE)
-+		return vdso_fallback_gtod(tv, tz);
-+	return 0;
-  }
-  int gettimeofday(struct timeval *, struct timezone *)
-  	__attribute__((weak, alias("__vdso_gettimeofday")));
--- 
-1.7.3.2.146.gca209
-
-
+> > 4.- Identify all the NMI sources and keep them from reaching the CPU
+> >   when it can be done in a race-free way.
