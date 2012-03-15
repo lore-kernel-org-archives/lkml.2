@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758141Ab2COCI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 22:08:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40095 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755284Ab2COCIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 22:08:55 -0400
-Date: Thu, 15 Mar 2012 13:08:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, Michael Walle <michael@walle.cc>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: linux-next: build failure after merge of the final tree
- (arm-soc tree related)
-Message-Id: <20120315130849.9274a279aed2b10eb90d5c2f@canb.auug.org.au>
-In-Reply-To: <20120315002020.GA16189@titan.lakedaemon.net>
-References: <20120315105901.7b10c9f4de9374a613436988@canb.auug.org.au>
-	<20120315002020.GA16189@titan.lakedaemon.net>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__15_Mar_2012_13_08_49_+1100_l4E9qFC9srUYHKDl"
+	id S965044Ab2COCSE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 22:18:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5517 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755757Ab2COCRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 22:17:44 -0400
+Date: Wed, 14 Mar 2012 22:17:39 -0400
+From: Dave Jones <davej@redhat.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: list-debug variants of rcu list routines.
+Message-ID: <20120315021738.GA31213@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, paulmck@linux.vnet.ibm.com,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__15_Mar_2012_13_08_49_+1100_l4E9qFC9srUYHKDl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Make __list_add_rcu check the next->prev and prev->next pointers
+  just like __list_add does.
+* Make list_del_rcu use __list_del_entry, which does the same checking
+  at deletion time.
 
-Hi all,
+Has been running for a week here without anything being tripped up,
+but it seems worth adding for completeness just in case something
+ever does corrupt those lists.
 
-On Wed, 14 Mar 2012 20:20:20 -0400 Jason Cooper <jason@lakedaemon.net> wrot=
-e:
->
-> On Thu, Mar 15, 2012 at 10:59:01AM +1100, Stephen Rothwell wrote:
-> >=20
-> > After merging the final tree, today's linux-next build (powerpc
-> > allmodconfig) failed like this:
-> >=20
-> > drivers/ata/sata_mv.c:4185:1: error: '__mod_of_device_table' aliased to=
- undefined symbol 'mvsdio_dt_ids'
-> >=20
-> > Caused by commit f1e1e148c5cb ("ARM: kirkwood: sata_mv: add device tree
-> > binding").
->=20
-> That's my mistake.  I did a pull request for the wrong branch.  Olof,
-> could you please drop the offending branch and I'll submit a new pull
-> request once I have a chance to test Arnd's irq patch?
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-I will revert that commit today.
+diff -durpN '--exclude-from=/home/davej/.exclude' -u src/git-trees/kernel/linux/include/linux/rculist.h linux-dj/include/linux/rculist.h
+--- src/git-trees/kernel/linux/include/linux/rculist.h	2011-07-23 00:05:34.000000000 -0400
++++ linux-dj/include/linux/rculist.h	2012-03-07 00:21:47.050583527 -0500
+@@ -30,6 +30,7 @@
+  * This is only for internal list manipulation where we know
+  * the prev/next entries already!
+  */
++#ifndef CONFIG_DEBUG_LIST
+ static inline void __list_add_rcu(struct list_head *new,
+ 		struct list_head *prev, struct list_head *next)
+ {
+@@ -38,6 +39,10 @@ static inline void __list_add_rcu(struct
+ 	rcu_assign_pointer(list_next_rcu(prev), new);
+ 	next->prev = new;
+ }
++#else
++extern void __list_add_rcu(struct list_head *new,
++		struct list_head *prev, struct list_head *next);
++#endif
+ 
+ /**
+  * list_add_rcu - add a new entry to rcu-protected list
+@@ -108,7 +113,7 @@ static inline void list_add_tail_rcu(str
+  */
+ static inline void list_del_rcu(struct list_head *entry)
+ {
+-	__list_del(entry->prev, entry->next);
++	__list_del_entry(entry);
+ 	entry->prev = LIST_POISON2;
+ }
+ 
+diff -durpN '--exclude-from=/home/davej/.exclude' -u src/git-trees/kernel/linux/lib/list_debug.c linux-dj/lib/list_debug.c
+--- src/git-trees/kernel/linux/lib/list_debug.c	2011-02-19 12:00:40.000000000 -0500
++++ linux-dj/lib/list_debug.c	2012-03-07 00:18:12.108062540 -0500
+@@ -8,6 +8,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/list.h>
++#include <linux/rculist.h>
+ 
+ /*
+  * Insert a new entry between two known consecutive entries.
+@@ -73,3 +74,24 @@ void list_del(struct list_head *entry)
+ 	entry->prev = LIST_POISON2;
+ }
+ EXPORT_SYMBOL(list_del);
++
++/*
++ * RCU variants.
++ */
++void __list_add_rcu(struct list_head *new,
++                struct list_head *prev, struct list_head *next)
++{
++	WARN(next->prev != prev,
++		"list_add_rcu corruption. next->prev should be "
++		"prev (%p), but was %p. (next=%p).\n",
++		prev, next->prev, next);
++	WARN(prev->next != next,
++		"list_add_rcu corruption. prev->next should be "
++		"next (%p), but was %p. (prev=%p).\n",
++		next, prev->next, prev);
++        new->next = next;
++        new->prev = prev;
++        rcu_assign_pointer(list_next_rcu(prev), new);
++        next->prev = new;
++}
++EXPORT_SYMBOL(__list_add_rcu);
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__15_Mar_2012_13_08_49_+1100_l4E9qFC9srUYHKDl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPYU8xAAoJEECxmPOUX5FEeKcP/jRgpuaCbUGZL6RYn5wqBUoB
-VbtUuMp17D3vfU9vpI7mZQU+m21kTTEj9zEViROJMAcALR2aMackctfQpOpKqOIE
-UhJdWsFqVlQw54O1k556OJFOcTUNFKUBIpb0vdiW3kVlnGSqX9G4aelLzaFr2YQp
-Ip4jTyL3PfzkkflBbPooxBWItykY6WNqwSL20CpVx7yJ11wcDYHFkkq38RJEUdfo
-ZO1LbxiIMi6yPEwuziIayECYeBCy4Zy93O77OZ5iVRc0ik/SHxZfZSigud47ISn6
-yDfTy8BIKQTipSxSc86QIfHqk1Srzhfp3l+GWA7N89Toeh9ImOgABWykgBqiV3Ku
-JFK32eiafFpkv4u5Z8w6ua27TfhKA04e1eQgeKzX8RJyT0vTgc6K59rC5weV924+
-V0cRE6TfsLLcAUqHtRbFS4LqdwtG92pZdF48RoOwEdAF8c4s9JMcCvkS/M7o5SLS
-FWyyJqX9ApSd/PKWBue0oG0k2SUF6yo2PbowE1FrAkbt7mRXBXjjdQDaC8VlSwr8
-lSQTHVPkMxYkJG04qBQIzHXWrMMOB6fksroKjWonpKLKOCyBDOBNgpKlTY95q6+s
-mL6kaU7nmysADCdd2U5MTt92w3blACOReEBWRn8IdzPsaZtqYzeDu8HTDtLT8R9V
-qa60GzJogu2qc9fL/UJi
-=5bRR
------END PGP SIGNATURE-----
-
---Signature=_Thu__15_Mar_2012_13_08_49_+1100_l4E9qFC9srUYHKDl--
