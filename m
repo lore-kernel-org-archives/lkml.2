@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031960Ab2COXEK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 19:04:10 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:21191
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031159Ab2COXED (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 19:04:03 -0400
-X-SpamScore: -18
-X-BigFish: VS-18(zz9371I936eK542M1432N98dKzz1202hzzz2fh2a8h668h839h93fhd25h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Christoph Hellwig <hch@infradead.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
- to the host
-Thread-Topic: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command
- to the host
-Thread-Index: AQHM+LUYOjJW5Du7G0WJSaUrHj4mnJZZ3GmAgABVn8CAAAhLgIARy8Ow
-Date: Thu, 15 Mar 2012 23:03:45 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B76631A@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1330721347-26781-1-git-send-email-kys@microsoft.com>
-	 <20120304091225.GA27297@infradead.org>
-	 <6E21E5352C11B742B20C142EB499E0481B74886F@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <1330872513.2858.14.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1330872513.2858.14.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.19]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+	id S1031324Ab2COXEH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 19:04:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:42841 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031141Ab2COXEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 19:04:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="129543291"
+Subject: Re: [PATCH] Use x2apic_supported() in the default_apic_id_valid()
+ function.
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Steffen Persvold <sp@numascale.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Date: Thu, 15 Mar 2012 16:04:52 -0700
+In-Reply-To: <4F626E6C.5010809@numascale.com>
+References: <CAE9FiQXC7T7JQRfiry8nHaRYN3ggy9vfzc2jDUzar80hv6pEvw@mail.gmail.com>
+	  <1331834583-16070-1-git-send-email-sp@numascale.com>
+	  <CAE9FiQUh-kEcLLAZYiy90UJY8-WmXTKhYrjS7HQ40U+Ah2dwNg@mail.gmail.com>
+	 <1331846504.16101.12.camel@sbsiddha-desk.sc.intel.com>
+	 <4F626E6C.5010809@numascale.com>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1331852692.16101.30.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2FN4I9l007245
 
-
-
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Sent: Sunday, March 04, 2012 9:49 AM
-> To: KY Srinivasan
-> Cc: Christoph Hellwig; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; ohering@suse.com; linux-scsi@vger.kernel.org;
-> Haiyang Zhang
-> Subject: RE: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
-> the host
+On Thu, 2012-03-15 at 23:34 +0100, Steffen Persvold wrote:
+> Is my understanding of your suggestion correct that in 
+> x2apic_phys/cluster.c we add the following apic_id_valid() function :
 > 
-> On Sun, 2012-03-04 at 14:23 +0000, KY Srinivasan wrote:
-> >
-> > > -----Original Message-----
-> > > From: Christoph Hellwig [mailto:hch@infradead.org]
-> > > Sent: Sunday, March 04, 2012 4:12 AM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org;
-> ohering@suse.com;
-> > > jbottomley@parallels.com; hch@infradead.org; linux-scsi@vger.kernel.org;
-> > > Haiyang Zhang
-> > > Subject: Re: [PATCH 1/1] Drivers: scsi: storvsc: Don't pass ATA_16 command to
-> > > the host
-> > >
-> > > On Fri, Mar 02, 2012 at 12:49:07PM -0800, K. Y. Srinivasan wrote:
-> > > > Windows hosts don't handle the ATA_16 command; don't pass it to the
-> host.
-> > >
-> > > Most devices don't handle it, and answer with and unsupported opcode
-> > > sense reason.  If hyperv iis buggy enough to crap out on it please add
-> > > a comment explaining that.
-> >
-> > The host does not "crap out", it does return an error code but it is not
-> "unsupported opcode".
-> > The sense reason that comes back is a generic error SRB_STATUS code. It is
-> easier for me to filter the
-> > command on the outgoing side as opposed to dealing with a generic error code
-> that is coming back from
-> > the host.
-> 
-> That's the wrong thing to do ... you need to unwrap the error code.
-> The reason being I presume it's not impossible for Windows to host a
-> device supporting ATA_16 and there are signs that this is going to be
-> necessary to prevent data corruption on some USB devices ... if you just
-> filter the command without checking if the host supports it, you're
-> going to end up perpetuating the corruption problem.
+> static int x2apic_apic_id_valid(int apicid)
+> {
+>   	return x2apic_mode || (apicid < 255);
+> }
 
-James,
+Steffen, We can have something like:
 
-Currently, the Windows host does not provide me with granular error codes to 
-distinguish between the case where the operation failed and the case where it is
-an illegal or unsupported operation. I have asked the windows team to return more
-appropriate error codes and they may do that sometime soon. In the interim, filtering
-the command on the outgoing path is the best way I can deal with this issue. Currently,
-even on the host side they are filtering this command, except they are returning a failure
-to the guest instead of a more appropriate error code.
-While my proposal has been accepted for windows 8, I don't know when this change will ship.
-Also, it is not clear when prior versions of Windows hosts that we care about will pick up this
-change. This patch is the only way I know how to deal with this problems within my current
-constraints.
+static int x2apic_apic_id_valid(int apicid)
+{
+   	return 1;
+}
 
-Regards,
+and
 
-K. Y
+static int xapic_apic_id_valid(int apicid)
+{
+   	return apicid < 255;
+}
 
+If we have selected x2apic driver, then we know we are already in x2apic
+mode. And also x2apic_uv_x need to use the x2apic version above.
 
-> 
-> The general rule of thumb for avoiding this is to let the lower layers
-> handle as much as possible, and only begin behaviour alterations in the
-> upper layers if the lower layers have a provable and usually fatal
-> failure.
-> 
-> James
-> 
-> 
+> Considering that this function (apic->apic_id_valid()) is called already 
+> in the acpi/boot.c::acpi_parse_x2apic() function is it sufficient enough 
+> to test for x2apic_mode ? Yinghai indicated that x2apic_mode was not set 
+> at this point, thus it was testing cpu_has_x2apic instead ?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+If the bios has handed over to us in x2apic mode (or if it is a numachip
+platform), then by this point apic driver is already set to the
+corresponding x2apic/numachip driver etc. so we should be fine.
+
+When we are in xapic mode, typically there should be no x2apic MADT
+entries. And even if there are any (bios not following x2apic spec), the
+above xapic_apic_id_valid() check will consider only those x2apic MADT
+entries whose id's are less than 255. xapic mode can go into x2apic mode
+later but that flow is not supposed to bring up any cpu with apic id >
+255. So parsing only entries with apic id < 255 here should be fine.
+
+Hope this clarifies.
+
+thanks,
+suresh
+
