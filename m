@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030719Ab2COPKg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 11:10:36 -0400
-Received: from mail-pz0-f52.google.com ([209.85.210.52]:47511 "EHLO
-	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965190Ab2COPKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 11:10:33 -0400
-Date: Thu, 15 Mar 2012 08:10:27 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: linux-next: manual merge of the tty tree with the xen-two tree
-Message-ID: <20120315151027.GJ7928@kroah.com>
-References: <20120315163740.c51aed0e3c10234fa3f37a46@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120315163740.c51aed0e3c10234fa3f37a46@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761275Ab2COPPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 11:15:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32378 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753958Ab2COPPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 11:15:12 -0400
+Message-Id: <aefc95$3ggeaf@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="117979471"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [V5 PATCH 2/4] drivers-gpu-drm-i915-panel-invert-brightness-via-parameter.patch
+To: Carsten Emde <C.Emde@osadl.org>, David Airlie <airlied@linux.ie>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Keith Packard <keithp@keithp.com>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Carsten Emde <C.Emde@osadl.org>, DRI <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120315145828.308069018@osadl.org>
+References: <20120315145623.486070468@osadl.org> <20120315145828.308069018@osadl.org>
+Date: Thu, 15 Mar 2012 15:15:05 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 04:37:40PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
+On Thu, 15 Mar 2012 15:56:25 +0100, Carsten Emde <C.Emde@osadl.org> wrote:
+> Following the documentation of the Legacy Backlight Brightness (LBB)
+> Register in the configuration space of some Intel PCI graphics adapters,
+> setting the LBB register with the value 0x0 causes the backlight to be
+> turned off, and 0xFF causes the backlight to be set to 100% intensity
+> (http://download.intel.com/embedded/processors/Whitepaper/324567.pdf).
+> The Acer Aspire 5734Z, however, turns the backlight off at 0xFF and sets
+> it to maximum intensity at 0. In consequence, the screen of this systems
+> becomes dark at an early boot stage which makes it unusable. The same
+> inversion applies to the BLC_PWM_CTL I915 register. This problem was
+> introduced in kernel version 2.6.38 when the PCI device of this system
+> was first supported by the i915 KMS module.
 > 
-> Today's linux-next merge of the tty tree got a conflict in
-> drivers/tty/hvc/hvc_xen.c between commits 02e19f9c7cac ("hvc_xen:
-> implement multiconsole support") and cf8e019b523a ("hvc_xen: introduce
-> HVC_XEN_FRONTEND") from the xen-two tree and commit d4e33fac2408
-> ("serial: Kill off NO_IRQ") from the tty tree.
+> This patch adds a parameter to the i915 module to enable inversion of
+> the brightness variable (i915.invert_brightness).
 > 
-> The code was moved around.  I fixed it up (see below) and can carry the
-> fix as necessary.
+> Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+-Chris
 
-Thanks, this looks good.
-
-greg k-h
+-- 
+Chris Wilson, Intel Open Source Technology Centre
