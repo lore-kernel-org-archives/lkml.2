@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab2COEuK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 00:50:10 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:33010 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2COEuE (ORCPT
+	id S1752812Ab2COEuu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 00:50:50 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:61279 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab2COEus convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 00:50:04 -0400
-Message-ID: <d2e03d5f063de84d1bae3c3e06296f81.squirrel@webmail.greenhost.nl>
-In-Reply-To: <1331781125-15658-12-git-send-email-wad@chromium.org>
-References: <1331781125-15658-1-git-send-email-wad@chromium.org>
-    <1331781125-15658-12-git-send-email-wad@chromium.org>
-Date: Thu, 15 Mar 2012 05:49:47 +0100
-Subject: Re: [PATCH v15 11/13] ptrace,seccomp: Add PTRACE_SECCOMP support
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Will Drewry" <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        netdev@vger.kernel.org, x86@kernel.org, arnd@arndb.de,
-        davem@davemloft.net, hpa@zytor.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, mcgrathr@chromium.org,
-        tglx@linutronix.de, luto@mit.edu, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, "Will Drewry" <wad@chromium.org>
-User-Agent: SquirrelMail/1.4.22
+	Thu, 15 Mar 2012 00:50:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: -0.1
-X-Scan-Signature: 4052b6d1c9976086d5ab5ce040fcf5b8
+In-Reply-To: <20120314144524.GT3133@opensource.wolfsonmicro.com>
+References: <CANKRQngTNWMGswq3weD1s8O4irVEz+DCr1vzi2gnWaQcoq5SEw@mail.gmail.com>
+	<1331275091-31700-1-git-send-email-tomoya.rohm@gmail.com>
+	<20120314144524.GT3133@opensource.wolfsonmicro.com>
+Date: Thu, 15 Mar 2012 13:50:48 +0900
+Message-ID: <CANKRQni-8w+2p6=ZisQ+GXhGpNmYhesKfTHfOjWGGrQrhvTFGA@mail.gmail.com>
+Subject: Re: [PATCH v6] sound/soc/lapis: add machine driver for ML7213 Carrier Board
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
-
-On Thu, March 15, 2012 04:12, Will Drewry wrote:
-> @@ -73,6 +74,7 @@
->  #define PTRACE_EVENT_VFORK_DONE	5
->  #define PTRACE_EVENT_EXIT	6
->  #define PTRACE_EVENT_STOP	7
-> +#define PTRACE_EVENT_SECCOMP	8
+On Wed, Mar 14, 2012 at 11:45 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Fri, Mar 09, 2012 at 03:38:11PM +0900, Tomoya MORINAGA wrote:
 >
->  #include <asm/ptrace.h>
+>> +     /* set codec DAI configuration */
+>> +     ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
+>> +                              SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     /* set cpu DAI configuration */
+>> +     ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S |
+>> +                              SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBM_CFM);
 >
-> @@ -101,8 +103,9 @@
->  #define PT_TRACE_EXEC		PT_EVENT_FLAG(PTRACE_EVENT_EXEC)
->  #define PT_TRACE_VFORK_DONE	PT_EVENT_FLAG(PTRACE_EVENT_VFORK_DONE)
->  #define PT_TRACE_EXIT		PT_EVENT_FLAG(PTRACE_EVENT_EXIT)
-> +#define PT_TRACE_SECCOMP	PT_EVENT_FLAG(PTRACE_EVENT_SECCOMP)
+> This looks very broken, you're setting the two ends of the link to
+> different configurations.  If this is needed it should be documented why.
 >
-> -#define PT_TRACE_MASK	0x000003f4
-> +#define PT_TRACE_MASK	0x00000ff4
+> Also, this should be set in the dai_link structure as data rather than
+> set each time.
 
-Did you miss this bit?
+OK.
+codec is slave, i2s controller is master.
+So, I'll use SND_SOC_DAIFMT_CBS_CFM.
 
-Greetings,
-
-Indan
-
-
+thanks.
+-- 
+ROHM Co., Ltd.
+tomoya
