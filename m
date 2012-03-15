@@ -1,143 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761032Ab2COK5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 06:57:32 -0400
-Received: from exprod5og113.obsmtp.com ([64.18.0.26]:37321 "HELO
-	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754589Ab2COK52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 06:57:28 -0400
-From: Vinh Nguyen Huu Tuong <vhtnguyen@apm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Tirumala R Marri <tmarri@apm.com>,
+	id S964984Ab2COK6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 06:58:11 -0400
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:22041
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756159Ab2COK6I convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 06:58:08 -0400
+X-SpamScore: -9
+X-BigFish: VS-9(zzc89bh1432N98dKzz1202hzz8275chz2dh2a8h668h839hd25h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 15 Mar 2012 18:59:28 +0800
+From: Dong Aisheng <aisheng.dong@freescale.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        Guo Shawn-R65073 <r65073@freescale.com>,
+        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Michael Neuling <mikey@neuling.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Cc: open-source-review@apm.com, Duc Dang <dhdang@apm.com>,
-        Sang Pham <spham@apm.com>, Mai La <mla@apm.com>,
-        Thang Nguyen <tqnguyen@apm.com>, Phong Vo <pvo@apm.com>,
-        Vinh Nguyen Huu Tuong <vhtnguyen@apm.com>
-Subject: [PATCH 2/2] powerpc/44x: Add support PCI-E for APM821xx SoC and Bluestone board
-Date: Thu, 15 Mar 2012 17:57:19 +0700
-Message-Id: <1331809039-15405-1-git-send-email-vhtnguyen@apm.com>
-X-Mailer: git-send-email 1.7.2.5
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
+Message-ID: <20120315105927.GE13022@shlinux2.ap.freescale.net>
+References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
+ <1331628428-24017-2-git-send-email-b29396@freescale.com>
+ <20120313172351.97C5E3E053B@localhost>
+ <20120314124512.GG1180@shlinux2.ap.freescale.net>
+ <20120314141643.GP3852@pengutronix.de>
+ <20120315030206.GB13022@shlinux2.ap.freescale.net>
+ <20321.37353.63115.664975@ipc1.ka-ro>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <20321.37353.63115.664975@ipc1.ka-ro>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends PCI-E driver to support PCI-E for APM821xx SoC on Bluestone board.
-Notes: this patch includes the fix base on Duc comment.
-Signed-off-by: Vinh Nguyen Huu Tuong <vhtnguyen@apm.com>
----
- arch/powerpc/platforms/44x/Kconfig |    1 +
- arch/powerpc/sysdev/ppc4xx_pci.c   |   70 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 71 insertions(+), 0 deletions(-)
+On Thu, Mar 15, 2012 at 02:53:29PM +0800, Lothar Waßmann wrote:
+> Hi,
+> 
+> Dong Aisheng writes:
+> > On Wed, Mar 14, 2012 at 10:16:43PM +0800, s.hauer@pengutronix.de wrote:
+> > > On Wed, Mar 14, 2012 at 08:45:23PM +0800, Dong Aisheng wrote:
+> > > > On Wed, Mar 14, 2012 at 01:23:51AM +0800, Grant Likely wrote:
+> [...]
+> > > > But it seems this needs pass mac address to fec driver via platforom data which is
+> > > > not friendly to dt.
+> > > > 
+> > > > Another way may be changing fec driver to get the fixed part of mac address(first
+> > > > two bytes) from device tree and read the left dynamical part from otp which i'm not
+> > > > sure is better enough.
+> > > > 
+> > > > BTW, filling with zeros seems not work since it's invalid mac address.
+> > > 
+> > > Yes, that's the idea of using this value...
+> > > 
+> > But comparing to use an invalid value, why not just do not define that
+> > local-mac-address property?
+> > 
+> Because a MAC address is by definition a GLOBALLY UNIQUE IDENTIFIER
+> which is contrary to coding a "valid" default value for it somewhere!
+> The owner of a certain MAC address range (OUI) is responsible for
+> ensuring the uniqueness. Thus only they may assign a specific MAC
+> address to a specific device.
+> 
+Yes, you're correct.
+So i propose to read the MAC address from MX28 OTP in fec driver instead of
+define it in device tree in my last mail.
+http://www.spinics.net/lists/arm-kernel/msg165040.html
+Do you have any comment on that way?
 
-diff --git a/arch/powerpc/platforms/44x/Kconfig b/arch/powerpc/platforms/44x/Kconfig
-index 5d5aaf6..c1e9896 100644
---- a/arch/powerpc/platforms/44x/Kconfig
-+++ b/arch/powerpc/platforms/44x/Kconfig
-@@ -23,6 +23,7 @@ config BLUESTONE
- 	default n
- 	select PPC44x_SIMPLE
- 	select APM821xx
-+	select PPC4xx_PCI_EXPRESS
- 	select IBM_EMAC_RGMII
- 	help
- 	  This option enables support for the APM APM821xx Evaluation board.
-diff --git a/arch/powerpc/sysdev/ppc4xx_pci.c b/arch/powerpc/sysdev/ppc4xx_pci.c
-index 4f05f75..ed3ca9e 100644
---- a/arch/powerpc/sysdev/ppc4xx_pci.c
-+++ b/arch/powerpc/sysdev/ppc4xx_pci.c
-@@ -1050,6 +1050,74 @@ static struct ppc4xx_pciex_hwops ppc460ex_pcie_hwops __initdata =
- 	.check_link	= ppc4xx_pciex_check_link_sdr,
- };
- 
-+static int __init apm821xx_pciex_core_init(struct device_node *np)
-+{
-+	/* Return the number of pcie port */
-+	return 1;
-+}
-+
-+static int apm821xx_pciex_init_port_hw(struct ppc4xx_pciex_port *port)
-+{
-+	u32 val;
-+
-+	/*
-+	 * Do a software reset on PCIe ports.
-+	 * This code is to fix the issue that pci drivers doesn't re-assign
-+	 * bus number for PCIE devices after Uboot
-+	 * scanned and configured all the buses (eg. PCIE NIC IntelPro/1000
-+	 * PT quad port, SAS LSI 1064E)
-+	 */
-+
-+	mtdcri(SDR0, PESDR0_460EX_PHY_CTL_RST, 0x0);
-+	mdelay(10);
-+
-+	if (port->endpoint)
-+		val = PTYPE_LEGACY_ENDPOINT << 20;
-+	else
-+		val = PTYPE_ROOT_PORT << 20;
-+
-+	val |= LNKW_X1 << 12;
-+
-+	mtdcri(SDR0, port->sdr_base + PESDRn_DLPSET, val);
-+	mtdcri(SDR0, port->sdr_base + PESDRn_UTLSET1, 0x00000000);
-+	mtdcri(SDR0, port->sdr_base + PESDRn_UTLSET2, 0x01010000);
-+
-+	mtdcri(SDR0, PESDR0_460EX_L0CDRCTL, 0x00003230);
-+	mtdcri(SDR0, PESDR0_460EX_L0DRV, 0x00000130);
-+	mtdcri(SDR0, PESDR0_460EX_L0CLK, 0x00000006);
-+
-+	mtdcri(SDR0, PESDR0_460EX_PHY_CTL_RST, 0x10000000);
-+	mdelay(50);
-+	mtdcri(SDR0, PESDR0_460EX_PHY_CTL_RST, 0x30000000);
-+
-+	mtdcri(SDR0, port->sdr_base + PESDRn_RCSSET,
-+		mfdcri(SDR0, port->sdr_base + PESDRn_RCSSET) |
-+		(PESDRx_RCSSET_RSTGU | PESDRx_RCSSET_RSTPYN));
-+
-+	/* Poll for PHY reset */
-+	val = PESDR0_460EX_RSTSTA - port->sdr_base;
-+	if (ppc4xx_pciex_wait_on_sdr(port, val, 0x1, 1,	100)) {
-+		printk(KERN_WARNING "PCIE: Can't reset PHY\n");
-+		return -EBUSY;
-+	} else {
-+		mtdcri(SDR0, port->sdr_base + PESDRn_RCSSET,
-+			(mfdcri(SDR0, port->sdr_base + PESDRn_RCSSET) &
-+			~(PESDRx_RCSSET_RSTGU | PESDRx_RCSSET_RSTDL)) |
-+			PESDRx_RCSSET_RSTPYN);
-+
-+		port->has_ibpre = 1;
-+		return 0;
-+	}
-+}
-+
-+static struct ppc4xx_pciex_hwops apm821xx_pcie_hwops __initdata = {
-+	.want_sdr   = true,
-+	.core_init	= apm821xx_pciex_core_init,
-+	.port_init_hw	= apm821xx_pciex_init_port_hw,
-+	.setup_utl	= ppc460ex_pciex_init_utl,
-+	.check_link = ppc4xx_pciex_check_link_sdr,
-+};
-+
- static int __init ppc460sx_pciex_core_init(struct device_node *np)
- {
- 	/* HSS drive amplitude */
-@@ -1362,6 +1430,8 @@ static int __init ppc4xx_pciex_check_core_init(struct device_node *np)
- 		ppc4xx_pciex_hwops = &ppc460ex_pcie_hwops;
- 	if (of_device_is_compatible(np, "ibm,plb-pciex-460sx"))
- 		ppc4xx_pciex_hwops = &ppc460sx_pcie_hwops;
-+	if (of_device_is_compatible(np, "ibm,plb-pciex-apm821xx"))
-+		ppc4xx_pciex_hwops = &apm821xx_pcie_hwops;
- #endif /* CONFIG_44x    */
- #ifdef CONFIG_40x
- 	if (of_device_is_compatible(np, "ibm,plb-pciex-405ex"))
--- 
-1.7.2.5
+Regards
+Dong Aisheng
 
