@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761965Ab2COOwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 10:52:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36290 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758954Ab2COOwI (ORCPT
+	id S965206Ab2COOw2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 10:52:28 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:55720 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964859Ab2COOw0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 10:52:08 -0400
-Date: Thu, 15 Mar 2012 14:54:06 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, matt.fleming@intel.com
-Subject: Re: [PATCH] EFI: Only set regions uncacheable if they support it
-Message-ID: <20120315145406.7bd5d2a8@pyramind.ukuu.org.uk>
-In-Reply-To: <20120315144236.GB4650@srcf.ucam.org>
-References: <1331819798-1955-1-git-send-email-mjg@redhat.com>
-	<4F61F5E6.8060509@zytor.com>
-	<20120315140708.GA3395@srcf.ucam.org>
-	<4F61FA14.6020203@zytor.com>
-	<20120315142445.GA4357@srcf.ucam.org>
-	<4F61FC8E.8070109@zytor.com>
-	<20120315143308.GA4382@srcf.ucam.org>
-	<4F61FE7E.9060600@zytor.com>
-	<20120315144236.GB4650@srcf.ucam.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Mar 2012 10:52:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.02.1203151503530.2466@ionos>
+References: <CA+1xoqcGcfYzjrvRU-z=mUSq+wgqfBqdM51shV5gk4ohfe5Wng@mail.gmail.com>
+ <CA+1xoqdeuorMi+=EZLpyrBN9L+J2o4SF-8meY=5Qypze9XrpiQ@mail.gmail.com> <alpine.LFD.2.02.1203151503530.2466@ionos>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 15 Mar 2012 16:52:04 +0200
+Message-ID: <CA+1xoqfeDE5NEgGtxEWbU6uYaVgPfTWvBQ1pjcuf0piy_GGbqA@mail.gmail.com>
+Subject: Re: ntp: BUG: spinlock lockup on CPU#1
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Mar 2012 14:42:36 +0000
-Matthew Garrett <mjg@redhat.com> wrote:
+On Thu, Mar 15, 2012 at 4:04 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Thu, 15 Mar 2012, Sasha Levin wrote:
+>
+>> On Thu, Mar 15, 2012 at 3:23 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+>> > Hi all,
+>> >
+>> > I was doing some more fuzzing with trinity in a KVM tools guest, using
+>> > today's linux-next, when I've experienced a complete system lockup
+>> > (just in the guest ofcourse). After a bit I got the spew at the bottom
+>> > of this mail.
+>> >
+>> > From what I can tell from the logs, there were several threads waiting
+>> > on syscall results, and I suspect that the adjtimex() call on CPU3 is
+>> > somehow responsible for this lockup.
+>>
+>> Oh, and I'm not sure if it's related or not, but I've started seeing
+>> the following spew every time I start fuzzing:
+>>
+>> [   47.105987] ------------[ cut here ]------------
+>> [   47.106021] WARNING: at kernel/time/clockevents.c:209
+>
+> It's unrelated, but I'm mighty curious how you manage that.
 
-> On Thu, Mar 15, 2012 at 07:36:46AM -0700, H. Peter Anvin wrote:
-> 
-> > I would still really like to understand why we're seeing #MCs... that's
-> > bothersome all by itself.
-> 
-> The region is the legacy video RAM, so I can imagine there being 
-> something magic about it.
-
-What hardware platforms are afflicted by this btw ?
+>From what I gather from the logs it's the result of adjtimex() being
+called while a different CPU is in the middle of a syscall. It happens
+quite often really, so I can get that warning to jump out pretty
+easily.
