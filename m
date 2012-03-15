@@ -1,71 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030319Ab2COM4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 08:56:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53849 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761821Ab2COM4e (ORCPT
+	id S1761860Ab2CONFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 09:05:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56180 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761805Ab2CONFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 08:56:34 -0400
-Date: Thu, 15 Mar 2012 12:56:30 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Karol Lewandowski <k.lewandowsk@samsung.com>
-Cc: ben-linux@fluff.org, thomas.abraham@linaro.org, m.szyprowski@samsung.com,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        t.stanislaws@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 2/3] i2c-s3c2410: Rework device type handling
-Message-ID: <20120315125630.GK3138@opensource.wolfsonmicro.com>
-References: <1331657679-31302-1-git-send-email-k.lewandowsk@samsung.com>
- <1331657679-31302-3-git-send-email-k.lewandowsk@samsung.com>
- <20120314172915.GB13393@sirena.org.uk>
- <4F61BEC8.4030008@samsung.com>
+	Thu, 15 Mar 2012 09:05:11 -0400
+Date: Thu, 15 Mar 2012 06:04:20 -0700
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Message-ID: <tip-600e145882802d6ccbfe2c4aea243d97caeb91a9@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, rdunlap@xenotime.net,
+        tglx@linutronix.de, sfr@canb.auug.org.au, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, rdunlap@xenotime.net,
+        tglx@linutronix.de, sfr@canb.auug.org.au, mingo@elte.hu
+In-Reply-To: <1331811337.18960.179.camel@twins>
+References: <1331811337.18960.179.camel@twins>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] printk: Make it compile with !CONFIG_PRINTK
+Git-Commit-ID: 600e145882802d6ccbfe2c4aea243d97caeb91a9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HcccYpVZDxQ8hzPO"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4F61BEC8.4030008@samsung.com>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 15 Mar 2012 06:04:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  600e145882802d6ccbfe2c4aea243d97caeb91a9
+Gitweb:     http://git.kernel.org/tip/600e145882802d6ccbfe2c4aea243d97caeb91a9
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Thu, 15 Mar 2012 12:35:37 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 15 Mar 2012 13:38:54 +0100
 
---HcccYpVZDxQ8hzPO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+printk: Make it compile with !CONFIG_PRINTK
 
-On Thu, Mar 15, 2012 at 11:04:56AM +0100, Karol Lewandowski wrote:
+Commit 3ccf3e830615 ("printk/sched: Introduce special
+printk_sched() for those awkward moments") overlooked
+an #ifdef, so move code around to respect these directives.
 
-> Introducing separate type (TYPE_S3C2440_HDMIPHY) has been our original
-> attempt to solve this issue.  However, this required adding explicit
-> checks to driver code all over the place (if (type == S3C2400 ||
-> type == S3c2440_HDMIPHY).
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Link: http://lkml.kernel.org/r/1331811337.18960.179.camel@twins
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/printk.c |   40 ++++++++++++++++++++--------------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
 
-Another option is to change the type to be a pointer to a struct with
-quirk flags in it.
-
---HcccYpVZDxQ8hzPO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPYebwAAoJEBus8iNuMP3drkYP/1PZa56oyfKw8hJd1h9L+IZv
-RKBh7G8R2Z3Yx/uLDIP5PlhYoPOdMeQ9ngg4svOh27maeDvhEXgXO5jP2nzxjCOo
-Su62mR8sozezGe2OO6cFkX4zaa6I48gexfiSZzkMpr16HEkRXd5Cu/aSO4ruF50R
-yduSDMPZVuiI/fnlKvYpSKmkOhVUfgRNI+Zg7qbV6YqQLDjsP5EvEia7NU4h3T+B
-qs1RWcZC67LRvuDBWfB3akTHtoQqPAMLGqvqXgZfFOT860erAAVTfBj4jQ/1VIwo
-blaycDLtSAD6iQhtXE6HL06exP57GBtfYnXrFdxFu0OtyMRsgbpUeYFPuNE9japD
-dcC+t5gmGYrG8yVYtUjF607kP3HgQnKHDD/JmbGDo66IBxQC0F7gYJh/LBNstMK2
-YXZLi5JEmUMuvMlNQ/aQE7HdzVf4m0FiJHWCNaL8z7cmNF7HLERHARvW3WlT3vgJ
-2SMb3vKq9EQWQs0wvCqMfdROrVEXO8pEdjYwveZdiMXqNheCEuyPIjqG8tPPjwjv
-M41QcfsCTwdZIfaoJlCAPc/qiw7HmlyFOlXvFIUrOrw6d0/06XYJmSoS5h5EQhyy
-z2jj70jFdWTejb7ZBixO3RRD+J4j7psa/A7LzrlgJxKoDnhiITn6OHMwaS6UAVBf
-ihCC5yudMnNesehNatHt
-=NmrA
------END PGP SIGNATURE-----
-
---HcccYpVZDxQ8hzPO--
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 49a2ae4..b64ce71 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1222,26 +1222,6 @@ int is_console_locked(void)
+ static DEFINE_PER_CPU(int, printk_pending);
+ static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
+ 
+-int printk_sched(const char *fmt, ...)
+-{
+-	unsigned long flags;
+-	va_list args;
+-	char *buf;
+-	int r;
+-
+-	local_irq_save(flags);
+-	buf = __get_cpu_var(printk_sched_buf);
+-
+-	va_start(args, fmt);
+-	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
+-	va_end(args);
+-
+-	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
+-	local_irq_restore(flags);
+-
+-	return r;
+-}
+-
+ void printk_tick(void)
+ {
+ 	if (__this_cpu_read(printk_pending)) {
+@@ -1658,6 +1638,26 @@ late_initcall(printk_late_init);
+ 
+ #if defined CONFIG_PRINTK
+ 
++int printk_sched(const char *fmt, ...)
++{
++	unsigned long flags;
++	va_list args;
++	char *buf;
++	int r;
++
++	local_irq_save(flags);
++	buf = __get_cpu_var(printk_sched_buf);
++
++	va_start(args, fmt);
++	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
++	va_end(args);
++
++	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
++	local_irq_restore(flags);
++
++	return r;
++}
++
+ /*
+  * printk rate limiting, lifted from the networking subsystem.
+  *
