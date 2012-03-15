@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161163Ab2CORD7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:03:59 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38908 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161152Ab2CORDz (ORCPT
+	id S1161146Ab2COREx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:04:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44624 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030995Ab2COREu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:03:55 -0400
-Date: Thu, 15 Mar 2012 21:03:50 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>
-Subject: Re: [PATCH] power_supply: charger-manager: Clean up for better
- readability
-Message-ID: <20120315170350.GB11441@oksana.dev.rtsoft.ru>
-References: <1326344195.7311.1.camel@phoenix>
+	Thu, 15 Mar 2012 13:04:50 -0400
+Date: Thu, 15 Mar 2012 10:04:34 -0700
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH] watchdog: Make sure the watchdog thread gets CPU on
+ loaded system
+Message-ID: <20120315170434.GW27051@google.com>
+References: <20120315014511.GT27051@google.com>
+ <1331809239.18960.168.camel@twins>
+ <1331809597.18960.171.camel@twins>
+ <20120315124228.GA5318@elte.hu>
+ <1331820051.18960.187.camel@twins>
+ <20120315143549.GC3941@redhat.com>
+ <20120315153907.GV27051@google.com>
+ <1331827843.18960.197.camel@twins>
+ <1331827890.18960.198.camel@twins>
+ <1331828203.18960.200.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1326344195.7311.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1331828203.18960.200.camel@twins>
+X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 12:56:35PM +0800, Axel Lin wrote:
-> This patch includes below changes:
+Peter Zijlstra (peterz@infradead.org) wrote:
+> On Thu, 2012-03-15 at 17:11 +0100, Peter Zijlstra wrote:
+> > On Thu, 2012-03-15 at 17:10 +0100, Peter Zijlstra wrote:
+> > > On Thu, 2012-03-15 at 08:39 -0700, Mandeep Singh Baines wrote:
+> > > > Its a good tool for catching problems of scale. As we move to more and
+> > > > more cores you'll uncover bugs where data structures start to blow up.
+> > > > Hash tables get huge, when you have 100000s of processes or millions
+> > > > of
+> > > > TCP flows, or cgroups or namespace. That critical section (spinlock,
+> > > > spinlock_bh, or preempt_disable) that used to be OK might no longer
+> > > > be.
+> > > 
+> > > Or you run with the preempt latency tracer.
+> > 
+> > Or for that matter run cyclictest...
 > 
-> * Some code change for better readability.
-> * Current code in probe already ensures desc->charger_regulators is not NULL.
->   No need to check if it is NULL or not before calling regulator_bulk_free().
-> * Use dev_get_drvdata() in cm_suspend_prepare() and cm_suspend_complete()
+> Thing is, if you want a latency detector, call it that and stop
+> pretending its a useful debug feature. Also, if you want that, set the
+> interval in the 0.1-0.5 seconds range and dump stack on every new max.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
+> 
 
-Applied, thanks a lot!
+But preempt latency tracer is not negligible overhead while the softlockup
+detector is. Softlockup is a great tool to use for detecting temporary
+long duration lockups that can occur when data structures blow up.
+Because of the overhead, you probably wouldn't enable preempt latency
+tracking in production. If the problems is happening often enough, you
+might temporarily turn it on for a few machines to get a stack trace. But
+you might not have the luxury of being able to do that.
 
+I can't predict what my users are going to do. They will do things I never
+expected. So I can't test these cases in the lab, ruling out latency preempt
+detector. With softlockup, I can find out about problems I never even
+knew I had.
 
-FWIW, I also applied the following patch:
+In addition, softlockup is also a great tool for find permanent lockups.
 
-commit f304f0a31442f4c8b98208acedc3da2f6c60a771
-Author: Anton Vorontsov <anton.vorontsov@linaro.org>
-Date:   Thu Mar 15 21:01:28 2012 +0400
+One idea for reducing preempt latency tracer overhead would use the same
+approach that the HW counters use. Instead of examing every preempt
+enable/disable, only examine 1 in a 1000 (some configurable numbers).
+That way you could turn it on in production. Maybe a simple per_cpu
+counter.
 
-    charger-manager: Simplify charger_get_property(), get rid of a warning
-    
-    This patch fixes the following warning and makes the code a little
-    bit more simpler:
-    
-      CC      drivers/power/charger-manager.o
-    charger-manager.c: In function 'charger_get_property':
-    charger-manager.c:429:15: warning: 'i' may be used uninitialized in this function [-Wuninitialized]
-    
-    Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Regards,
+Mandeep
 
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index e610e6b..9eca9f1 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -399,7 +399,8 @@ static int charger_get_property(struct power_supply *psy,
- 	struct charger_manager *cm = container_of(psy,
- 			struct charger_manager, charger_psy);
- 	struct charger_desc *desc = cm->desc;
--	int i, ret = 0, uV;
-+	int ret = 0;
-+	int uV;
- 
- 	switch (psp) {
- 	case POWER_SUPPLY_PROP_STATUS:
-@@ -425,8 +426,7 @@ static int charger_get_property(struct power_supply *psy,
- 			val->intval = 0;
- 		break;
- 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
--		ret = get_batt_uV(cm, &i);
--		val->intval = i;
-+		ret = get_batt_uV(cm, &val->intval);
- 		break;
- 	case POWER_SUPPLY_PROP_CURRENT_NOW:
- 		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
