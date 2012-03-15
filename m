@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031458Ab2CORUO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:20:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22223 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150Ab2CORUL convert rfc822-to-8bit (ORCPT
+	id S1756294Ab2CORUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:20:22 -0400
+Received: from nic.NetDirect.CA ([216.16.235.2]:40081 "EHLO
+	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597Ab2CORUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:20:11 -0400
-Date: Thu, 15 Mar 2012 14:19:57 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Niklas =?UTF-8?B?U8O2ZGVybHVuZA==?= 
-	<niklas.soderlund@ericsson.com>
-Cc: <lucas.demarchi@profusion.mobi>, <borislav.petkov@amd.com>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <thang.b.nguyen@dektech.com.au>
-Subject: Re: [PATCH] edac: i5100 fix erroneous define for M1Err
-Message-ID: <20120315141957.2245678a@redhat.com>
-In-Reply-To: <1329475014-15589-1-git-send-email-niklas.soderlund@ericsson.com>
-References: <1329475014-15589-1-git-send-email-niklas.soderlund@ericsson.com>
+	Thu, 15 Mar 2012 13:20:18 -0400
+X-Originating-Ip: 216.16.235.2
+Date: Thu, 15 Mar 2012 12:23:22 -0400
+From: Chris Frey <cdfrey@foursquare.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Linux 3.0.24
+Message-ID: <20120315162322.GA26005@foursquare.net>
+References: <20120312203451.GA16773@kroah.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120312203451.GA16773@kroah.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, 17 Feb 2012 11:36:54 +0100
-Niklas Söderlund <niklas.soderlund@ericsson.com> escreveu:
-
-> According to [1] the define for M1Err in the FERR_NF_MEM register is
-> wrong. It should be at position 1 not 0.
+On Mon, Mar 12, 2012 at 01:34:51PM -0700, Greg KH wrote:
+> I'm announcing the release of the 3.0.24 kernel.
 > 
-> [1] Intel 5100 Memory Controller Hub Chipset Doc.Nr: 318378
->     http://www.intel.com/content/dam/doc/datasheet/5100-
->     memory-controller-hub-chipset-datasheet.pdf
-> 
-> Reported-by: Ba Thang Nguyen <thang.b.nguyen@dektech.com.au>
-> Signed-off-by: Niklas Söderlund <niklas.soderlund@ericsson.com>
-> ---
->  drivers/edac/i5100_edac.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/edac/i5100_edac.c b/drivers/edac/i5100_edac.c
-> index bcbdeec..ab2f906 100644
-> --- a/drivers/edac/i5100_edac.c
-> +++ b/drivers/edac/i5100_edac.c
-> @@ -49,7 +49,7 @@
->  #define		I5100_FERR_NF_MEM_M6ERR_MASK	(1 << 6)
->  #define		I5100_FERR_NF_MEM_M5ERR_MASK	(1 << 5)
->  #define		I5100_FERR_NF_MEM_M4ERR_MASK	(1 << 4)
-> -#define		I5100_FERR_NF_MEM_M1ERR_MASK	1
-> +#define		I5100_FERR_NF_MEM_M1ERR_MASK	(1 << 1)
->  #define		I5100_FERR_NF_MEM_ANY_MASK	\
->  			(I5100_FERR_NF_MEM_M16ERR_MASK | \
->  			I5100_FERR_NF_MEM_M15ERR_MASK | \
+> All users of the 3.0 kernel series must upgrade.
 
-Looks fine. I'm applying on my edac -next tree, together with the other fix:
+Is the word "must" defined anywhere?  When I read it, it looks like there
+are serious patches included in this release, perhaps data integrity or
+security patches.  But "must" has been in an awful lot of these release
+notes lately, that it makes me wonder if it is boilerplate.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git linux-next
+Just curious how to interpret this.
 
-Cheers,
-Mauro
+Thanks,
+- Chris
 
