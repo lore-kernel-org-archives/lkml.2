@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031507Ab2COBo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 21:44:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48286 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031223Ab2COBoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 21:44:25 -0400
-Message-ID: <4F61496D.8030000@redhat.com>
-Date: Wed, 14 Mar 2012 22:44:13 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Add a per-dimm structure
-References: <1331120438-27523-1-git-send-email-mchehab@redhat.com> <20120313233217.GB31106@kroah.com> <4F60F2E4.7060707@redhat.com> <20120314204355.GA10187@kroah.com> <20120314223102.GA27602@aftab>
-In-Reply-To: <20120314223102.GA27602@aftab>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1031524Ab2COBou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 21:44:50 -0400
+Received: from caiajhbdcaid.dreamhost.com ([208.97.132.83]:46505 "EHLO
+	homiemail-a7.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1031223Ab2COBos (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 21:44:48 -0400
+Subject: [PATCH] KVM: VMX: call invvpid only when EPT is disabled
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Sheng Yang <sheng.yang@intel.com>
+Cc: KVM <kvm@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Thu, 15 Mar 2012 02:44:44 +0100
+Message-ID: <1331775884.20336.2.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 14-03-2012 19:31, Borislav Petkov escreveu:
-> On Wed, Mar 14, 2012 at 01:43:55PM -0700, Greg KH wrote:
->>> He thinks that a multi-layer struct should be created inside that directory
->>> (it could have 2 or 3 levels of directories, depending on how the memory is
->>> organized at the memory controller), instead of having a large number of files
->>> there.
->>
->> Why create subdirs?  If those subdirectories are not real devices,
->> showing a real hierarchy, then do not create them as userspace will get
->> very confused very quickly.
-> 
-> Why, IMO, we agreed on the following layout
-> 
-> rank0/
-> |-- dimm_dev_type
-> |-- dimm_edac_mode
-> |-- dimm_label
-> |-- dimm_location
-> |-- dimm_mem_type
-> |-- CE
-> |-- UE
-> `-- dimm_size
-> 
-> with CE being the correctable errors counter and UE be optional and only
-> present when it makes sense for the hardware.
+From: Davidlohr Bueso <dave@gnu.org>
 
-As I said, that is easy to implement. The hard part would be what to do with
-the per-csrow/per-branch error counters that exist currently at EDAC.
+With EPT enabled it is not required to explicitly run invvpid to invalidate tagged TLB entries, as
+KVM does not force vm-exits for cr3 writes and invlpg. Run invvpid only when these instructions
+are emulated and shadow pages are used.
 
->From my side, I'm OK to remove them, but, as I said before, existing user tools
-use them, especially because UE errors aren't per-rank/per-dimm on the
-typical case (128 bits cacheline).
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ arch/x86/kvm/vmx.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Of course, the EDAC logic could increment multiple UE error counters in such
-case, (meaning that an error happened on either one of the affected DIMMs/Ranks)
-but this is a different behavior than the current API.
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 2c22fc7..51c7fb9 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2861,12 +2861,13 @@ static void exit_lmode(struct kvm_vcpu *vcpu)
+ 
+ static void vmx_flush_tlb(struct kvm_vcpu *vcpu)
+ {
+-	vpid_sync_context(to_vmx(vcpu));
+ 	if (enable_ept) {
+ 		if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
+ 			return;
+ 		ept_sync_context(construct_eptp(vcpu->arch.mmu.root_hpa));
+ 	}
++	else
++		vpid_sync_context(to_vmx(vcpu));
+ }
+ 
+ static void vmx_decache_cr0_guest_bits(struct kvm_vcpu *vcpu)
+-- 
+1.7.4.1
 
-Regards,
-Mauro
+
+
