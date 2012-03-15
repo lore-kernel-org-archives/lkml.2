@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760135Ab2COKuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 06:50:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50172 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757969Ab2COKuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 06:50:50 -0400
-Date: Thu, 15 Mar 2012 10:50:49 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com
-Subject: Re: [PATCH v6] sound/soc/lapis: add machine driver for ML7213
- Carrier Board
-Message-ID: <20120315105048.GF3138@opensource.wolfsonmicro.com>
-References: <CANKRQngTNWMGswq3weD1s8O4irVEz+DCr1vzi2gnWaQcoq5SEw@mail.gmail.com>
- <1331275091-31700-1-git-send-email-tomoya.rohm@gmail.com>
- <20120314144524.GT3133@opensource.wolfsonmicro.com>
- <CANKRQni-8w+2p6=ZisQ+GXhGpNmYhesKfTHfOjWGGrQrhvTFGA@mail.gmail.com>
+	id S1760146Ab2COKvd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 06:51:33 -0400
+Received: from toro.web-alm.net ([62.245.132.31]:34385 "EHLO toro.web-alm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755623Ab2COKvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 06:51:31 -0400
+Message-ID: <4F61C843.8050307@osadl.org>
+Date: Thu, 15 Mar 2012 11:45:23 +0100
+From: Carsten Emde <C.Emde@osadl.org>
+Organization: Open Source Automation Development Lab (OSADL)
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AH+kv8CCoFf6qPuz"
-Content-Disposition: inline
-In-Reply-To: <CANKRQni-8w+2p6=ZisQ+GXhGpNmYhesKfTHfOjWGGrQrhvTFGA@mail.gmail.com>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+CC: David Airlie <airlied@linux.ie>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Keith Packard <keithp@keithp.com>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [V3 PATCH 1/2] drivers-gpu-drm-allow-to-load-edid-firmware.patch
+References: <20120315095219.520461363@osadl.org>	<20120315095357.087317967@osadl.org> <CAE2SPAaz4oa7q4UTZ=iiKGv3v8=6xT_=odgMN-mrH9enRP26qQ@mail.gmail.com>
+In-Reply-To: <CAE2SPAaz4oa7q4UTZ=iiKGv3v8=6xT_=odgMN-mrH9enRP26qQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bastien,
 
---AH+kv8CCoFf6qPuz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>> Broken monitors and/or broken graphic boards may send erroneous or no
+>> EDID data. This also applies to broken KVM devices that are unable to
+>> correctly forward the EDID data of the connected monitor but invent
+>> their own fantasy data.
+>>
+>> This patch allows to specify an EDID data set to be used instead of
+>> probing the monitor for it. It contains built-in data sets of frequently
+>> used screen resolutions. In addition, a particular EDID data set may be
+>> provided in the /lib/firmware directory and loaded via the firmware
+>> interface. The name is passed to the kernel as module parameter of the
+>> drm_kms_helper module either when loaded
+>>   options drm_kms_helper edid_firmware=edid/1280x1024.bin
+>> or as kernel commandline parameter
+>>   drm_kms_helper.edid_firmware=edid/1280x1024.bin
+>
+> Windows allow vendor to override eddid based on 3 bytes manufacturer
+> and product code.
+This may solve the situation when a particular monitor lies about the
+required setting or its EDID data set has an invalid CRC. However, this
+does not solve the situation when we do not get any useful EDID
+information, because something is totally broken. This also applies to
+the KVM situation when the KVM sends EDID data that are totally
+unrelated to the monitor at the other side of the KVM.
 
-On Thu, Mar 15, 2012 at 01:50:48PM +0900, Tomoya MORINAGA wrote:
+> Seems a reasonnable approach to follow.
+I am not yet convinced.
 
-> OK.
-> codec is slave, i2s controller is master.
-> So, I'll use SND_SOC_DAIFMT_CBS_CFM.
-
-That means "Codec bit clock master frame clock slave".  Are you sure
-that's what you want?
-
---AH+kv8CCoFf6qPuz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPYcl+AAoJEBus8iNuMP3dYWYP/R0XF2NYB0ME/pbTIyd1h48K
-ExVRJUv8T2Q6wGde5AvEnq8OCedT/Qw+i5irMGD/uPClKByKJ6xbfehtiYLQcVmC
-RmB9elMiy38mopJSvkcG0fTx8mJEX9fSYFH5eP4UaqG4w7bsOe2GRQsxcvqnoLgW
-yA17ViKthIHnXAWN/pUti0DGdAxtTnntUHHfCEP6RB1Hy7OaXaPrMORuIFxJs5fH
-y+PVjRJWPGWmR/FWGigGpYzaNKcAvd6l3EW3Bb4Uo7eU8Lp5W/TSslbV74IJBrYw
-zfAZpFtFMuTiEKBiwc7OyDotwnST81X/mJSD9UWLxcReX+JTm4ywWS0rDBHEtoxu
-Iz9nq3rPzzk2ivRWMirXbhcKiuYQe6+pJYp6HcaLg99QGNxVQhDZin1eDsOkoUaX
-G1oWyj5bytXLpxdFY4S4pEs9BtgdvtFrXYVI7iU9BSyErmesOeynmyDN4E0gz7yH
-pEKYgeO8uvWCHU9coUl9uhIsatdxkN4b/JCLFmu+5YqkHJHr5jxoamRPu3sre1d9
-k/e3nOQeT2EZYZCFzp5gHakqUp9p6XZx+eAC1NIrLa7StlXU32r0cb/oSXUpTuOa
-FOP0wjZpCb07YXVt4JGvWxlRVmUlhXlOgvRpzBh2L1YwkhlLuwDW/CfJumwG6cC1
-MyvpD/b+0rtfIYUrWVom
-=bKfV
------END PGP SIGNATURE-----
-
---AH+kv8CCoFf6qPuz--
+	-Carsten.
