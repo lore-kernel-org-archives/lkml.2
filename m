@@ -1,72 +1,477 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161549Ab2COU4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 16:56:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47523 "EHLO ogre.sisk.pl"
+	id S1161558Ab2COU4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 16:56:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61842 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161434Ab2COU4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 16:56:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Simon Horman <horms@verge.net.au>
-Subject: Re: [Replacement][PATCH 2/6] PM / Domains: Fix hibernation restore of devices, v2
-Date: Thu, 15 Mar 2012 22:00:09 +0100
-User-Agent: KMail/1.13.6 (Linux/3.3.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: "Linux-sh list" <linux-sh@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Cao Minh Hiep <hiepcm@gmail.com>
-References: <201203130123.16268.rjw@sisk.pl> <201203132232.42915.rjw@sisk.pl> <20120315093921.GA15294@verge.net.au>
-In-Reply-To: <20120315093921.GA15294@verge.net.au>
+	id S1161544Ab2COU4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 16:56:14 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 04/38] ARM: move CP15 definitions to separate header file [ver
+ #3]
+To: paul.gortmaker@windriver.com
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org, arnd@arndb.de,
+        Stephen Warren <swarren@nvidia.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Nicolas Pitre <nico@linaro.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Date: Thu, 15 Mar 2012 20:55:53 +0000
+Message-ID: <20120315205553.28759.29541.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
+References: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201203152200.09546.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 15, 2012, Simon Horman wrote:
-> On Tue, Mar 13, 2012 at 10:32:42PM +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, March 13, 2012, Rafael J. Wysocki wrote:
-> > > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > > 
-> > > During resume from hibernation pm_genpd_restore_noirq() has to
-> > > deal with software state left by pm_genpd_suspend_noirq() and
-> > > unknown hardware state (the boot kernel may leave all PM domains and
-> > > devices in arbitrary states).  For this reason, make it attempt to
-> > > power cycle each domain when before resuming its first device to
-> > > possibly get rid of any unwanted hardware state that may interfere
-> > > with genpd_start_dev() later on.
-> > > 
-> > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > I realized that this wasn't a good idea because of patch [3/6] (we
-> > can't power cycle domains containing "always on" devices), so I
-> > decided to only fix the really broken things in pm_genpd_restore_noirq().
-> > 
-> > Of course, patch [3/6] also needs to be updated on top of the below to
-> > avoid starting "always on" devices in pm_genpd_restore_noirq() (it has
-> > to assume that they will be "always on" in the boot kernel too, but that
-> > seems to be a reasonable expectation).
-> > 
-> > Please note that those changes only affect resume from hibernation, so
-> > they don't invalidate the testing that has already been carried out.
-> 
-> Hi Rafael,
-> 
-> sorry for such a naeive question, but if I was to test
-> hibernate on the Mackerel how would I achieve resume?
-> Is there a button I should press?
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Hibernation is not supported on Mackerel at the moment, so you'd need to add
-some platform hooks first.  Then, you'd need some persistent storage with
-a swap patrition (or swap file at least) to save the image.  You'd need
-to point your kernel to the image storage using the resume= and resume_offset=
-command line switches.  Then, you should be able to create an image and the
-kernel would look for it automatically on the next boot.
+Avoid namespace conflicts with drivers over the CP15 definitions by
+moving CP15 related prototypes and definitions to a private header
+file.
 
-Still, I'm not sure if doing all that at this point is worth the effort.
+Acked-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com> [Tegra]
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Tested-by: H Hartley Sweeten <hsweeten@visionengravers.com> [EP93xx]
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
 
-Thanks,
-Rafael
+ arch/arm/include/asm/cp15.h      |   85 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/include/asm/system.h    |   77 ----------------------------------
+ arch/arm/kernel/fiq.c            |    2 -
+ arch/arm/kernel/head-nommu.S     |    2 -
+ arch/arm/kernel/head.S           |    2 -
+ arch/arm/kernel/setup.c          |    2 -
+ arch/arm/mach-exynos/hotplug.c   |    1 
+ arch/arm/mach-realview/hotplug.c |    1 
+ arch/arm/mach-tegra/hotplug.c    |    1 
+ arch/arm/mach-vexpress/hotplug.c |    2 -
+ arch/arm/mm/alignment.c          |    2 -
+ arch/arm/mm/cache-feroceon-l2.c  |    1 
+ arch/arm/mm/cache-tauros2.c      |    1 
+ arch/arm/mm/cache-xsc3l2.c       |    2 -
+ arch/arm/mm/ioremap.c            |    1 
+ arch/arm/mm/mmu.c                |    1 
+ arch/arm/mm/pgd.c                |    1 
+ arch/arm/vfp/vfpmodule.c         |    1 
+ 18 files changed, 101 insertions(+), 84 deletions(-)
+ create mode 100644 arch/arm/include/asm/cp15.h
+
+diff --git a/arch/arm/include/asm/cp15.h b/arch/arm/include/asm/cp15.h
+new file mode 100644
+index 0000000..17dcd82
+--- /dev/null
++++ b/arch/arm/include/asm/cp15.h
+@@ -0,0 +1,85 @@
++#ifndef __ASM_ARM_CP15_H
++#define __ASM_ARM_CP15_H
++
++/*
++ * CR1 bits (CP#15 CR1)
++ */
++#define CR_M	(1 << 0)	/* MMU enable				*/
++#define CR_A	(1 << 1)	/* Alignment abort enable		*/
++#define CR_C	(1 << 2)	/* Dcache enable			*/
++#define CR_W	(1 << 3)	/* Write buffer enable			*/
++#define CR_P	(1 << 4)	/* 32-bit exception handler		*/
++#define CR_D	(1 << 5)	/* 32-bit data address range		*/
++#define CR_L	(1 << 6)	/* Implementation defined		*/
++#define CR_B	(1 << 7)	/* Big endian				*/
++#define CR_S	(1 << 8)	/* System MMU protection		*/
++#define CR_R	(1 << 9)	/* ROM MMU protection			*/
++#define CR_F	(1 << 10)	/* Implementation defined		*/
++#define CR_Z	(1 << 11)	/* Implementation defined		*/
++#define CR_I	(1 << 12)	/* Icache enable			*/
++#define CR_V	(1 << 13)	/* Vectors relocated to 0xffff0000	*/
++#define CR_RR	(1 << 14)	/* Round Robin cache replacement	*/
++#define CR_L4	(1 << 15)	/* LDR pc can set T bit			*/
++#define CR_DT	(1 << 16)
++#define CR_IT	(1 << 18)
++#define CR_ST	(1 << 19)
++#define CR_FI	(1 << 21)	/* Fast interrupt (lower latency mode)	*/
++#define CR_U	(1 << 22)	/* Unaligned access operation		*/
++#define CR_XP	(1 << 23)	/* Extended page tables			*/
++#define CR_VE	(1 << 24)	/* Vectored interrupts			*/
++#define CR_EE	(1 << 25)	/* Exception (Big) Endian		*/
++#define CR_TRE	(1 << 28)	/* TEX remap enable			*/
++#define CR_AFE	(1 << 29)	/* Access flag enable			*/
++#define CR_TE	(1 << 30)	/* Thumb exception enable		*/
++
++#ifndef __ASSEMBLY__
++
++#if __LINUX_ARM_ARCH__ >= 4
++#define vectors_high()	(cr_alignment & CR_V)
++#else
++#define vectors_high()	(0)
++#endif
++
++extern unsigned long cr_no_alignment;	/* defined in entry-armv.S */
++extern unsigned long cr_alignment;	/* defined in entry-armv.S */
++
++static inline unsigned int get_cr(void)
++{
++	unsigned int val;
++	asm("mrc p15, 0, %0, c1, c0, 0	@ get CR" : "=r" (val) : : "cc");
++	return val;
++}
++
++static inline void set_cr(unsigned int val)
++{
++	asm volatile("mcr p15, 0, %0, c1, c0, 0	@ set CR"
++	  : : "r" (val) : "cc");
++	isb();
++}
++
++#ifndef CONFIG_SMP
++extern void adjust_cr(unsigned long mask, unsigned long set);
++#endif
++
++#define CPACC_FULL(n)		(3 << (n * 2))
++#define CPACC_SVC(n)		(1 << (n * 2))
++#define CPACC_DISABLE(n)	(0 << (n * 2))
++
++static inline unsigned int get_copro_access(void)
++{
++	unsigned int val;
++	asm("mrc p15, 0, %0, c1, c0, 2 @ get copro access"
++	  : "=r" (val) : : "cc");
++	return val;
++}
++
++static inline void set_copro_access(unsigned int val)
++{
++	asm volatile("mcr p15, 0, %0, c1, c0, 2 @ set copro access"
++	  : : "r" (val) : "cc");
++	isb();
++}
++
++#endif
++
++#endif
+diff --git a/arch/arm/include/asm/system.h b/arch/arm/include/asm/system.h
+index e4c96cc..774c41e 100644
+--- a/arch/arm/include/asm/system.h
++++ b/arch/arm/include/asm/system.h
+@@ -15,37 +15,6 @@
+ #define CPU_ARCH_ARMv7		9
+ 
+ /*
+- * CR1 bits (CP#15 CR1)
+- */
+-#define CR_M	(1 << 0)	/* MMU enable				*/
+-#define CR_A	(1 << 1)	/* Alignment abort enable		*/
+-#define CR_C	(1 << 2)	/* Dcache enable			*/
+-#define CR_W	(1 << 3)	/* Write buffer enable			*/
+-#define CR_P	(1 << 4)	/* 32-bit exception handler		*/
+-#define CR_D	(1 << 5)	/* 32-bit data address range		*/
+-#define CR_L	(1 << 6)	/* Implementation defined		*/
+-#define CR_B	(1 << 7)	/* Big endian				*/
+-#define CR_S	(1 << 8)	/* System MMU protection		*/
+-#define CR_R	(1 << 9)	/* ROM MMU protection			*/
+-#define CR_F	(1 << 10)	/* Implementation defined		*/
+-#define CR_Z	(1 << 11)	/* Implementation defined		*/
+-#define CR_I	(1 << 12)	/* Icache enable			*/
+-#define CR_V	(1 << 13)	/* Vectors relocated to 0xffff0000	*/
+-#define CR_RR	(1 << 14)	/* Round Robin cache replacement	*/
+-#define CR_L4	(1 << 15)	/* LDR pc can set T bit			*/
+-#define CR_DT	(1 << 16)
+-#define CR_IT	(1 << 18)
+-#define CR_ST	(1 << 19)
+-#define CR_FI	(1 << 21)	/* Fast interrupt (lower latency mode)	*/
+-#define CR_U	(1 << 22)	/* Unaligned access operation		*/
+-#define CR_XP	(1 << 23)	/* Extended page tables			*/
+-#define CR_VE	(1 << 24)	/* Vectored interrupts			*/
+-#define CR_EE	(1 << 25)	/* Exception (Big) Endian		*/
+-#define CR_TRE	(1 << 28)	/* TEX remap enable			*/
+-#define CR_AFE	(1 << 29)	/* Access flag enable			*/
+-#define CR_TE	(1 << 30)	/* Thumb exception enable		*/
+-
+-/*
+  * This is used to ensure the compiler did actually allocate the register we
+  * asked it for some inline assembly sequences.  Apparently we can't trust
+  * the compiler from one version to another so a bit of paranoia won't hurt.
+@@ -119,12 +88,6 @@ extern void (*arm_pm_restart)(char str, const char *cmd);
+ 
+ extern unsigned int user_debug;
+ 
+-#if __LINUX_ARM_ARCH__ >= 4
+-#define vectors_high()	(cr_alignment & CR_V)
+-#else
+-#define vectors_high()	(0)
+-#endif
+-
+ #if __LINUX_ARM_ARCH__ >= 7 ||		\
+ 	(__LINUX_ARM_ARCH__ == 6 && defined(CONFIG_CPU_32v6K))
+ #define sev()	__asm__ __volatile__ ("sev" : : : "memory")
+@@ -185,46 +148,6 @@ extern unsigned int user_debug;
+ #define set_mb(var, value)	do { var = value; smp_mb(); } while (0)
+ #define nop() __asm__ __volatile__("mov\tr0,r0\t@ nop\n\t");
+ 
+-extern unsigned long cr_no_alignment;	/* defined in entry-armv.S */
+-extern unsigned long cr_alignment;	/* defined in entry-armv.S */
+-
+-static inline unsigned int get_cr(void)
+-{
+-	unsigned int val;
+-	asm("mrc p15, 0, %0, c1, c0, 0	@ get CR" : "=r" (val) : : "cc");
+-	return val;
+-}
+-
+-static inline void set_cr(unsigned int val)
+-{
+-	asm volatile("mcr p15, 0, %0, c1, c0, 0	@ set CR"
+-	  : : "r" (val) : "cc");
+-	isb();
+-}
+-
+-#ifndef CONFIG_SMP
+-extern void adjust_cr(unsigned long mask, unsigned long set);
+-#endif
+-
+-#define CPACC_FULL(n)		(3 << (n * 2))
+-#define CPACC_SVC(n)		(1 << (n * 2))
+-#define CPACC_DISABLE(n)	(0 << (n * 2))
+-
+-static inline unsigned int get_copro_access(void)
+-{
+-	unsigned int val;
+-	asm("mrc p15, 0, %0, c1, c0, 2 @ get copro access"
+-	  : "=r" (val) : : "cc");
+-	return val;
+-}
+-
+-static inline void set_copro_access(unsigned int val)
+-{
+-	asm volatile("mcr p15, 0, %0, c1, c0, 2 @ set copro access"
+-	  : : "r" (val) : "cc");
+-	isb();
+-}
+-
+ /*
+  * switch_mm() may do a full cache flush over the context switch,
+  * so enable interrupts over the context switch to avoid high
+diff --git a/arch/arm/kernel/fiq.c b/arch/arm/kernel/fiq.c
+index 4c164ec..c32f845 100644
+--- a/arch/arm/kernel/fiq.c
++++ b/arch/arm/kernel/fiq.c
+@@ -42,9 +42,9 @@
+ #include <linux/seq_file.h>
+ 
+ #include <asm/cacheflush.h>
++#include <asm/cp15.h>
+ #include <asm/fiq.h>
+ #include <asm/irq.h>
+-#include <asm/system.h>
+ #include <asm/traps.h>
+ 
+ static unsigned long no_fiq_insn;
+diff --git a/arch/arm/kernel/head-nommu.S b/arch/arm/kernel/head-nommu.S
+index d46f259..278cfc1 100644
+--- a/arch/arm/kernel/head-nommu.S
++++ b/arch/arm/kernel/head-nommu.S
+@@ -17,8 +17,8 @@
+ #include <asm/assembler.h>
+ #include <asm/ptrace.h>
+ #include <asm/asm-offsets.h>
++#include <asm/cp15.h>
+ #include <asm/thread_info.h>
+-#include <asm/system.h>
+ 
+ /*
+  * Kernel startup entry point.
+diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
+index 6d57911..a2e9694 100644
+--- a/arch/arm/kernel/head.S
++++ b/arch/arm/kernel/head.S
+@@ -15,12 +15,12 @@
+ #include <linux/init.h>
+ 
+ #include <asm/assembler.h>
++#include <asm/cp15.h>
+ #include <asm/domain.h>
+ #include <asm/ptrace.h>
+ #include <asm/asm-offsets.h>
+ #include <asm/memory.h>
+ #include <asm/thread_info.h>
+-#include <asm/system.h>
+ #include <asm/pgtable.h>
+ 
+ #ifdef CONFIG_DEBUG_LL
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index a255c39..615e992 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -33,6 +33,7 @@
+ #include <linux/sort.h>
+ 
+ #include <asm/unified.h>
++#include <asm/cp15.h>
+ #include <asm/cpu.h>
+ #include <asm/cputype.h>
+ #include <asm/elf.h>
+@@ -44,7 +45,6 @@
+ #include <asm/cacheflush.h>
+ #include <asm/cachetype.h>
+ #include <asm/tlbflush.h>
+-#include <asm/system.h>
+ 
+ #include <asm/prom.h>
+ #include <asm/mach/arch.h>
+diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+index dd1ad55..9c17a0a 100644
+--- a/arch/arm/mach-exynos/hotplug.c
++++ b/arch/arm/mach-exynos/hotplug.c
+@@ -16,6 +16,7 @@
+ #include <linux/io.h>
+ 
+ #include <asm/cacheflush.h>
++#include <asm/cp15.h>
+ #include <asm/smp_plat.h>
+ 
+ #include <mach/regs-pmu.h>
+diff --git a/arch/arm/mach-realview/hotplug.c b/arch/arm/mach-realview/hotplug.c
+index eb55f05..57d9efb 100644
+--- a/arch/arm/mach-realview/hotplug.c
++++ b/arch/arm/mach-realview/hotplug.c
+@@ -13,6 +13,7 @@
+ #include <linux/smp.h>
+ 
+ #include <asm/cacheflush.h>
++#include <asm/cp15.h>
+ #include <asm/smp_plat.h>
+ 
+ extern volatile int pen_release;
+diff --git a/arch/arm/mach-tegra/hotplug.c b/arch/arm/mach-tegra/hotplug.c
+index f329404..d8dc9dd 100644
+--- a/arch/arm/mach-tegra/hotplug.c
++++ b/arch/arm/mach-tegra/hotplug.c
+@@ -13,6 +13,7 @@
+ #include <linux/smp.h>
+ 
+ #include <asm/cacheflush.h>
++#include <asm/cp15.h>
+ 
+ static inline void cpu_enter_lowpower(void)
+ {
+diff --git a/arch/arm/mach-vexpress/hotplug.c b/arch/arm/mach-vexpress/hotplug.c
+index 3034a4d..c504a72 100644
+--- a/arch/arm/mach-vexpress/hotplug.c
++++ b/arch/arm/mach-vexpress/hotplug.c
+@@ -14,7 +14,7 @@
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/smp_plat.h>
+-#include <asm/system.h>
++#include <asm/cp15.h>
+ 
+ extern volatile int pen_release;
+ 
+diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
+index caf14dc..78459b8 100644
+--- a/arch/arm/mm/alignment.c
++++ b/arch/arm/mm/alignment.c
+@@ -22,7 +22,7 @@
+ #include <linux/sched.h>
+ #include <linux/uaccess.h>
+ 
+-#include <asm/system.h>
++#include <asm/cp15.h>
+ #include <asm/unaligned.h>
+ 
+ #include "fault.h"
+diff --git a/arch/arm/mm/cache-feroceon-l2.c b/arch/arm/mm/cache-feroceon-l2.c
+index e0b0e7a..dd3d591 100644
+--- a/arch/arm/mm/cache-feroceon-l2.c
++++ b/arch/arm/mm/cache-feroceon-l2.c
+@@ -15,6 +15,7 @@
+ #include <linux/init.h>
+ #include <linux/highmem.h>
+ #include <asm/cacheflush.h>
++#include <asm/cp15.h>
+ #include <plat/cache-feroceon-l2.h>
+ 
+ /*
+diff --git a/arch/arm/mm/cache-tauros2.c b/arch/arm/mm/cache-tauros2.c
+index 5086865..1fbca05 100644
+--- a/arch/arm/mm/cache-tauros2.c
++++ b/arch/arm/mm/cache-tauros2.c
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/init.h>
+ #include <asm/cacheflush.h>
++#include <asm/cp15.h>
+ #include <asm/hardware/cache-tauros2.h>
+ 
+ 
+diff --git a/arch/arm/mm/cache-xsc3l2.c b/arch/arm/mm/cache-xsc3l2.c
+index 5a32020..6c3edeb 100644
+--- a/arch/arm/mm/cache-xsc3l2.c
++++ b/arch/arm/mm/cache-xsc3l2.c
+@@ -18,7 +18,7 @@
+  */
+ #include <linux/init.h>
+ #include <linux/highmem.h>
+-#include <asm/system.h>
++#include <asm/cp15.h>
+ #include <asm/cputype.h>
+ #include <asm/cacheflush.h>
+ 
+diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+index 80632e8..66daf17 100644
+--- a/arch/arm/mm/ioremap.c
++++ b/arch/arm/mm/ioremap.c
+@@ -26,6 +26,7 @@
+ #include <linux/vmalloc.h>
+ #include <linux/io.h>
+ 
++#include <asm/cp15.h>
+ #include <asm/cputype.h>
+ #include <asm/cacheflush.h>
+ #include <asm/mmu_context.h>
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 94c5a0c..163a69a 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -17,6 +17,7 @@
+ #include <linux/fs.h>
+ #include <linux/vmalloc.h>
+ 
++#include <asm/cp15.h>
+ #include <asm/cputype.h>
+ #include <asm/sections.h>
+ #include <asm/cachetype.h>
+diff --git a/arch/arm/mm/pgd.c b/arch/arm/mm/pgd.c
+index a3e78cc..0acb089 100644
+--- a/arch/arm/mm/pgd.c
++++ b/arch/arm/mm/pgd.c
+@@ -12,6 +12,7 @@
+ #include <linux/highmem.h>
+ #include <linux/slab.h>
+ 
++#include <asm/cp15.h>
+ #include <asm/pgalloc.h>
+ #include <asm/page.h>
+ #include <asm/tlbflush.h>
+diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
+index 8f3ccdd..d89068f 100644
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -18,6 +18,7 @@
+ #include <linux/smp.h>
+ #include <linux/init.h>
+ 
++#include <asm/cp15.h>
+ #include <asm/cputype.h>
+ #include <asm/thread_notify.h>
+ #include <asm/vfp.h>
+
