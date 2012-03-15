@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161203Ab2CORzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:55:18 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:9546 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161079Ab2CORzO (ORCPT
+	id S1161242Ab2CORzZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:55:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41912 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161079Ab2CORzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:55:14 -0400
-From: "Nanjappa, Sathisha (MCXS, Cupertino)" <sathisha.nanjappa@hp.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Dunlop <chris@onthe.net.au>,
-        "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
-Subject: RE: [PATCH] mpt2sas: Corrected the constant in comparison to a
- hexadecimal.
-Thread-Topic: [PATCH] mpt2sas: Corrected the constant in comparison to a
- hexadecimal.
-Thread-Index: AQHNAb0kYPKk1kFKbUOL9EWnl0kcTpZqbNNggACizACAAJQhAA==
-Date: Thu, 15 Mar 2012 17:54:56 +0000
-Message-ID: <C8A4A375313D4E4DA64F2CB1D0490B0A44731B27@G9W0735.americas.hpqcorp.net>
-References: <1331665168-22561-1-git-send-email-sathisha.nanjappa@hp.com>
-	 <1331665168-22561-2-git-send-email-sathisha.nanjappa@hp.com>
-	 <1331714014.8688.3.camel@dabdike>
-	 <C8A4A375313D4E4DA64F2CB1D0490B0A44730306@G9W0735.americas.hpqcorp.net>
- <1331801806.2941.3.camel@dabdike>
-In-Reply-To: <1331801806.2941.3.camel@dabdike>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.216.12.11]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 15 Mar 2012 13:55:21 -0400
+Date: Thu, 15 Mar 2012 18:55:18 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+cc: LKML <linux-kernel@vger.kernel.org>, Linus Torvalds <torvalds@osdl.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [patch 0/5] seqlock consolidation
+In-Reply-To: <20120315174305.GD8943@ZenIV.linux.org.uk>
+Message-ID: <alpine.LFD.2.02.1203151854110.2466@ionos>
+References: <20120314170736.617746873@linutronix.de> <20120315122112.GB8943@ZenIV.linux.org.uk> <alpine.LFD.2.02.1203151322020.2466@ionos> <20120315174305.GD8943@ZenIV.linux.org.uk>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q2FHtKNK005599
 
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of James Bottomley
-> Sent: Thursday, March 15, 2012 1:57 AM
+On Thu, 15 Mar 2012, Al Viro wrote:
+
+> On Thu, Mar 15, 2012 at 01:28:03PM +0100, Thomas Gleixner wrote:
 > 
-> On Wed, 2012-03-14 at 23:36 +0000, Nanjappa, Sathisha (MCXS, Cupertino)
-> wrote:
-> > >
-> > > On Tue, 2012-03-13 at 11:59 -0700, Sathisha Nanjappa wrote:
-> > > > Bugzilla 42142 - mpt2sas: Number specified in wrong base
-> > > >     https://bugzilla.kernel.org/show_bug.cgi?id=42142
-> > >
-> > > From: James Bottomley
-> > > Sent: Wednesday, March 14, 2012 1:34 AM
-> > > Do you have a better description ... like what is the user
-> > > visible effect of correcting the constant?
-> > >
-> >
-> > Does this look better:
-> >
-> > "This fix ensures that the IOP_LOGINFO_CODE_TASK_TERMINATED
-> > messages do not clutter the sas_log_info messages."
+> > The only way out is to lock d->d_lock which is contended, so the
+> > reader side boosts the writer and waits for the lock to be
+> > released. Though with the open coded seqlock we have no idea which
+> > lock we need to take.
+> > 
+> > Any better ideas ?
 > 
-> Much better, thanks.  The whole point of a commit message is to explain
-> what you're doing and why you're doing it.  Just translating C to
-> english isn't useful because everyone who looks a kernel patches can
-> read C.
+> So basically you want RT stuff to know that several areas in fs/dcache.c
+> (from write_seqcount_begin() to write_seqcount_end()) are protected by
+> (already held by that point) ->d_lock of corresponding dentries?
 > 
+> If that's it, I suggest to look for a solution that would express just that...
+> Or do you want something on the reader side as well?
 
-Thanks for clarifying. I'll keep that in mind during my future submittal requests.
+The problem is the reader side. If the reader preempts the writer then
+the only way to make progress is to take the lock, but therefor I need
+to know which lock I should take.
 
-FYI, I've received ack's from:
+Thanks,
 
-Acked-by: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
-Acked-by: "Chris Dunlop" <chris@onthe.net.au> 
+	tglx
 
--Satish.
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
