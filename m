@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032037Ab2CORfd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:35:33 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:10138 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396Ab2CORf1 (ORCPT
+	id S1032033Ab2CORjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:39:46 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49915 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030464Ab2CORjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:35:27 -0400
-From: Liz Clark <liz.clark@hp.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Liz Clark <liz.clark@hp.com>
-Subject: [PATCH] TTY: Wrong unicode value copied in con_set_unimap()
-Date: Thu, 15 Mar 2012 10:33:29 -0700
-Message-Id: <1331832809-4484-1-git-send-email-liz.clark@hp.com>
-X-Mailer: git-send-email 1.7.5.4
+	Thu, 15 Mar 2012 13:39:43 -0400
+Date: Thu, 15 Mar 2012 17:39:37 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [patch 1/5] seqlock: Remove unused functions
+Message-ID: <20120315173937.GC8943@ZenIV.linux.org.uk>
+References: <20120314170736.617746873@linutronix.de>
+ <20120314170918.404528547@linutronix.de>
+ <CA+55aFzCQEiV2ZfB3s983fe-zpyFhhc+QvpA58qeLWJxRJtU0A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzCQEiV2ZfB3s983fe-zpyFhhc+QvpA58qeLWJxRJtU0A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bugzilla 40012: PIO_UNIMAP bug: error updating Unicode-to-font map
+On Thu, Mar 15, 2012 at 09:29:50AM -0700, Linus Torvalds wrote:
+> So I have to say, I hate this entire series.
+> 
+> Seriously, what the heck is the point of this churn? It's all entirely
+> pointless searc-and-replace as far as I can tell, with absolutely zero
+> upside.
+> 
+> It makes the low-level filesystems have to be aware of things that
+> they don't want to know and *shouldn't* know. Why should a filesystem
+> care that d_lock is a seqlock, and have to use a locking function that
+> they've never seen before and is very specialized?
+> 
+> The "seq" part of the dentry is something only the lookup code and the
+> internal dentry code should care about. NOBODY ELSE should ever care.
 
-The unicode font map for the virtual console is a 32x32x64 table which
-allocates rows dynamically as entries are added.  The unicode value
-increases sequentially and should count all entries even in empty
-rows.  The defect is when copying the unicode font map in con_set_unimap(),
-the unicode value is not incremented properly.  The wrong unicode value
-is entered in the new font map.
+*nod*
 
-Signed-off-by: Liz Clark <liz.clark@hp.com>
----
- drivers/tty/vt/consolemap.c |   51 ++++++++++++++++++++++++++++++++++++------
- 1 files changed, 43 insertions(+), 8 deletions(-)
+There's another issue I have with that on API level, leaving aside any
+questions of that being a good fit for dcache.  It's simply a bad interface:
+we have variants that lock and play with d_seq, variants that play with
+d_seq alone and, most commonly used, variant that locks but does not
+touch d_seq at all.  IOW, we have traded "writes to d_seq must be under
+d_lock" with "update-seq-without-locking primitive must be used after we'd
+used lock-without-touching-seq one".  Which is not an improvement at all.
+Sure, you can make a direct product out of anything; that doesn't make
+the result a natural object.
 
-diff --git a/drivers/tty/vt/consolemap.c b/drivers/tty/vt/consolemap.c
-index a0f3d6c..8308fc7 100644
---- a/drivers/tty/vt/consolemap.c
-+++ b/drivers/tty/vt/consolemap.c
-@@ -516,6 +516,7 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
- 	int err = 0, err1, i;
- 	struct uni_pagedir *p, *q;
- 
-+	/* Save original vc_unipagdir_loc in case we allocate a new one */
- 	p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
- 	if (p->readonly) return -EIO;
- 	
-@@ -528,26 +529,57 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
- 		err1 = con_clear_unimap(vc, NULL);
- 		if (err1) return err1;
- 		
-+		/*
-+		 * Since refcount was > 1, con_clear_unimap() allocated a
-+		 * a new uni_pagedir for this vc.  Re: p != q
-+		 */
- 		q = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
--		for (i = 0, l = 0; i < 32; i++)
-+
-+		/*
-+		 * uni_pgdir is a 32*32*64 table with rows allocated
-+		 * when its first entry is added.  The unicode value must
-+		 * still be incremented for empty rows.  We are copying
-+		 * entries from "p" (old) to "q" (new).
-+		 */
-+		l = 0;		/* unicode value */
-+		for (i = 0; i < 32; i++)
- 		if ((p1 = p->uni_pgdir[i]))
- 			for (j = 0; j < 32; j++)
--			if ((p2 = p1[j]))
-+			if ((p2 = p1[j])) {
- 				for (k = 0; k < 64; k++, l++)
- 				if (p2[k] != 0xffff) {
-+					/*
-+					 * Found one, copy entry for unicode
-+					 * l with fontpos value p2[k].
-+					 */
- 					err1 = con_insert_unipair(q, l, p2[k]);
- 					if (err1) {
- 						p->refcount++;
- 						*vc->vc_uni_pagedir_loc = (unsigned long)p;
- 						con_release_unimap(q);
- 						kfree(q);
--						return err1; 
-+						return err1;
- 					}
--              			}
--              	p = q;
--	} else if (p == dflt)
-+				}
-+			} else {
-+				/* Account for row of 64 empty entries */
-+				l += 64;
-+			}
-+		else
-+			/* Account for empty table */
-+			l += 32 * 64;
-+
-+		/*
-+		 * Finished copying font table, set vc_uni_pagedir to new table
-+		 */
-+		p = q;
-+	} else if (p == dflt) {
- 		dflt = NULL;
--	
-+	}
-+
-+	/*
-+	 * Insert user specified unicode pairs into new table.
-+	 */
- 	while (ct--) {
- 		unsigned short unicode, fontpos;
- 		__get_user(unicode, &list->unicode);
-@@ -557,11 +589,14 @@ int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
- 		list++;
- 	}
- 	
-+	/*
-+	 * Merge with fontmaps of any other virtual consoles.
-+	 */
- 	if (con_unify_unimap(vc, p))
- 		return err;
- 
- 	for (i = 0; i <= 3; i++)
--		set_inverse_transl(vc, p, i); /* Update all inverse translations */
-+		set_inverse_transl(vc, p, i); /* Update inverse translations */
- 	set_inverse_trans_unicode(vc, p);
-   
- 	return err;
--- 
-1.7.5.4
+The _only_ relationship between d_seq and d_lock is that the latter happens
+to be serializing updates of the former.  For RT there's another one -
+->d_lock taken to protect ->d_seq modifications really should not be
+preempted in favour of anything that might do read_seqcount_begin on
+->d_seq.  The biggest such section is in __d_move(), AFAICS, and it's not
+_that_ big; can't RT simply have them protected by whatever it has that
+really prevents preempt?
 
+IOW, instead of all that stuff, how about
+	about_to_modify_seq_holding_lock(&dentry->d_seq, &dentry->d_lock);
+	done_modifying_seq(&dentry->d_seq, &dentry->d_lock);
+around those 3 or 4 areas in fs/dcache.c, to give RT the missing information?
