@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab2CODDd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 23:03:33 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:35088
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751246Ab2CODDb (ORCPT
+	id S1756329Ab2CODGl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 23:06:41 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:56867 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379Ab2CODGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 23:03:31 -0400
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 15 Mar 2012 11:05:09 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Guo Shawn-R65073 <r65073@freescale.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
-        "vinod.koul@linux.intel.com" <vinod.koul@linux.intel.com>
-Subject: Re: [PATCH v1 1/5] ARM: imx28: add basic dt support
-Message-ID: <20120315030508.GC13022@shlinux2.ap.freescale.net>
-References: <1331628428-24017-1-git-send-email-b29396@freescale.com>
- <1331628428-24017-2-git-send-email-b29396@freescale.com>
- <20120314194123.GR26642@pengutronix.de>
+	Wed, 14 Mar 2012 23:06:39 -0400
+Date: Thu, 15 Mar 2012 03:06:33 +0000
+From: Motiejus =?utf-8?Q?Jak=C5=A1tys?= <desired.mta@gmail.com>
+To: Vasco Dias <rafa.vasco@gmail.com>
+Cc: Matt Fleming <matt@console-pimps.org>, linux-kernel@vger.kernel.org,
+        mikew@google.com
+Subject: Re: Problem with efibootmgr on asus 1215b
+Message-ID: <20120315030631.GA28296@pierce>
+References: <20120312143806.GB12382@srcf.ucam.org>
+ <20120315012941.GA24251@pierce>
+ <4F61537C.8030309@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120314194123.GR26642@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4F61537C.8030309@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 03:41:23AM +0800, Sascha Hauer wrote:
-> On Tue, Mar 13, 2012 at 04:47:04PM +0800, Dong Aisheng wrote:
-> > From: Dong Aisheng <dong.aisheng@linaro.org>
-> > 
-> > This patch includes basic dt support which can boot via nfs rootfs.
-> > 
-> > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > ---
-> >  Documentation/devicetree/bindings/arm/fsl.txt |    4 +
-> >  arch/arm/boot/dts/imx28-evk.dts               |   31 +++++++++
-> >  arch/arm/boot/dts/imx28.dtsi                  |   88 +++++++++++++++++++++++++
-> >  arch/arm/mach-mxs/Kconfig                     |    9 +++
-> >  arch/arm/mach-mxs/Makefile                    |    1 +
-> >  arch/arm/mach-mxs/imx28-dt.c                  |   67 +++++++++++++++++++
-> >  6 files changed, 200 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/arm/fsl.txt b/Documentation/devicetree/bindings/arm/fsl.txt
-> > index 54bddda..9f21faf 100644
-> > --- a/Documentation/devicetree/bindings/arm/fsl.txt
-> > +++ b/Documentation/devicetree/bindings/arm/fsl.txt
-> > @@ -1,6 +1,10 @@
+On Thu, Mar 15, 2012 at 02:27:08AM +0000, Vasco Dias wrote:
+> On Thu 15 Mar 2012 01:29:41 AM WET, Motiejus Jakštys wrote:
+> >>Somewhat late to this I know, but:
+> >>
+> >>On Fri, Jan 20, 2012 at 11:48:26AM +0000, Matt Fleming wrote:
+> >
+> >Just to let you know I apparently have exactly the same issue with the same
+> >laptop. If it can help, I could try installing the M$ Student Edition during
+> >the weekend and report the results.
+> >
+> >Windows Server 2008 64-bit, fresh GPT partition table will be my lab
+> >environment. Standard installation procedure.
+> >
+> >I am running Ubuntu 12.04 with 3.2.0-18-generic.
+> >
+> >Motiejus
 > 
-> > +
-> > +static const char *imx28_dt_compat[] __initdata = {
-> > +	"fsl,imx28-evk",
-> > +	NULL,
-> > +};
-> > +
+> I have to say that before installing linux i tried installing
+> windows right after
+> converting the system to gpt and after selecting the partition to
+> install it it
+> would just BSOD.
 > 
-> I suggest to add a generic "fsl,imx28" entry here. It helps people to
-> start an unpatched kernel on their boards.
+> I downloaded windows from my msdna account, converted it to boot
+> from the usb drive and manually selected the efi file from the drive
+> to launch
+> the windows setup.
 > 
-Good point.
-Thanks for reminder.
+> Sometimes it would reboot just after starting, other times it would BSOD
+> after selecting the partition and clicking next and yet other times
+> it would
+> start installing and then BSOD.
+> 
+> After at least 20 different attemps there was just one time that
+> before going into BSOD that it successfuly registered the microsoft
+> boot program with the efi boot variables.
+> 
+> All that assuming the files on the usb drive were not corrupted ;)
+> (it would be fun if they were)
 
-Regards
-Dong Aisheng
+Thanks for response, now I know what to expect. Sounds like an *alternative*
+way to spend a weekend.
 
+Which version exactly did you use?
+
+In any case, I will verify your findings.
+
+So AFAIK there is no way to boot 64 bit linux (or even as of now - windows)
+without entering the UEFI shell and manually starting the UEFI loader (like
+[1])?
+
+[1]: https://bbs.archlinux.org/viewtopic.php?pid=1064647#p1064647
+
+Motiejus
