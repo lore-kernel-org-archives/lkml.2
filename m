@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032156Ab2CORnE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 13:43:04 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:50975 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1032076Ab2CORm5 (ORCPT
+	id S1032045Ab2CORnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 13:43:14 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46409 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032053Ab2CORnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 13:42:57 -0400
-Message-ID: <4F622A0A.30406@fb.com>
-Date: Thu, 15 Mar 2012 10:42:34 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 15 Mar 2012 13:43:07 -0400
+Date: Thu, 15 Mar 2012 17:43:06 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linus Torvalds <torvalds@osdl.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [patch 0/5] seqlock consolidation
+Message-ID: <20120315174305.GD8943@ZenIV.linux.org.uk>
+References: <20120314170736.617746873@linutronix.de>
+ <20120315122112.GB8943@ZenIV.linux.org.uk>
+ <alpine.LFD.2.02.1203151322020.2466@ionos>
 MIME-Version: 1.0
-To: Arun Sharma <asharma@fb.com>
-CC: <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Tom Zanussi <tzanussi@gmail.com>,
-        <linux-perf-users@vger.kernel.org>
-Subject: Re: [PATCH] perf: Add a new sort order: SORT_INCLUSIVE (v5)
-References: <1331832848-17028-1-git-send-email-asharma@fb.com>
-In-Reply-To: <1331832848-17028-1-git-send-email-asharma@fb.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7498,1.0.260,0.0.0000
- definitions=2012-03-15_04:2012-03-15,2012-03-14,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1203151322020.2466@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 15, 2012 at 01:28:03PM +0100, Thomas Gleixner wrote:
 
-This is just a rebase to tip:perf/core. No logic changes since v4 (which 
-Namhyung reviewed).
+> The only way out is to lock d->d_lock which is contended, so the
+> reader side boosts the writer and waits for the lock to be
+> released. Though with the open coded seqlock we have no idea which
+> lock we need to take.
+> 
+> Any better ideas ?
 
-Had to resolve some merge conflicts with the sort__branch_mode.
+So basically you want RT stuff to know that several areas in fs/dcache.c
+(from write_seqcount_begin() to write_seqcount_end()) are protected by
+(already held by that point) ->d_lock of corresponding dentries?
 
-  -Arun
+If that's it, I suggest to look for a solution that would express just that...
+Or do you want something on the reader side as well?
