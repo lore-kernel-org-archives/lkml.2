@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031397Ab2COAeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 20:34:12 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:10400 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757026Ab2COAeJ (ORCPT
+	id S1031408Ab2COAeZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 20:34:25 -0400
+Received: from www.linutronix.de ([62.245.132.108]:37928 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031361Ab2COAeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 20:34:09 -0400
-Date: Thu, 15 Mar 2012 01:33:04 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH] mpi: Avoid using freed pointer in mpi_lshift_limbs()
-In-Reply-To: <CALLzPKbAGKL-o66UmWJ4uGSmA1TymdCQA0CfBajHLVYzt_60UA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1203150130370.22671@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1202062104440.20117@swampdragon.chaosbits.net> <alpine.LNX.2.00.1203012232480.19443@swampdragon.chaosbits.net> <CALLzPKbAGKL-o66UmWJ4uGSmA1TymdCQA0CfBajHLVYzt_60UA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 14 Mar 2012 20:34:20 -0400
+Date: Thu, 15 Mar 2012 01:34:18 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Stultz <john.stultz@linaro.org>
+cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH 1/2] time: x86: Fix race switching from vsyscall to
+ non-vsyscall clock
+In-Reply-To: <1331769536-4602-2-git-send-email-john.stultz@linaro.org>
+Message-ID: <alpine.LFD.2.02.1203150131390.2466@ionos>
+References: <1331769536-4602-1-git-send-email-john.stultz@linaro.org> <1331769536-4602-2-git-send-email-john.stultz@linaro.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Mar 2012, Kasatkin, Dmitry wrote:
+On Wed, 14 Mar 2012, John Stultz wrote:
+>  notrace static noinline int do_realtime(struct timespec *ts)
+>  {
+>  	unsigned long seq, ns;
+> +	int mode;
 
-> On Thu, Mar 1, 2012 at 11:33 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> >
-> > Ping?
-> >
-> > On Mon, 6 Feb 2012, Jesper Juhl wrote:
-> >
-> >> At the start of the function we assign 'a->d' to 'ap'. Then we use the
-> >> RESIZE_IF_NEEDED macro on 'a' - this may free 'a->d' and replace it
-> >> with newly allocaetd storage. In that case, we'll be operating on
-> >> freed memory further down in the function when we index into 'ap[]'.
-> >> Since we don't actually need 'ap' until after the use of the
-> >> RESIZE_IF_NEEDED macro we can just delay the assignment to it until
-> >> after we've potentially resized, thus avoiding the issue.
-> >>
-> >> While I was there anyway I also changed the integer variable 'n' to be
-> >> const. It might as well be since we only assign to it once and use it
-> >> as a constant, and then the compiler will tell us if we ever assign to
-> >> it in the future.
-> >>
-> >> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> >> ---
-[...]
-> Hello,
-> 
-> I was travelling last week.
-> I will review the patch now..
-> 
+Please keep a newline between declarations and code.
 
-:-) Thanks. No rush, I'd just like to see the fix included at some point 
-if you agree that it is correct - just wondered at the "~1 month no 
-response".
+>  	do {
+>  		seq = read_seqbegin(&gtod->lock);
+> +		mode = gtod->clock.vclock_mode;
+>  		ts->tv_sec = gtod->wall_time_sec;
+>  		ts->tv_nsec = gtod->wall_time_nsec;
+>  		ns = vgetns();
+>  	} while (unlikely(read_seqretry(&gtod->lock, seq)));
+> +
+>  	timespec_add_ns(ts, ns);
+> -	return 0;
+> +	return mode;
+>  }
+>  
+>  notrace static noinline int do_monotonic(struct timespec *ts)
+>  {
+>  	unsigned long seq, ns, secs;
+> +	int mode;
 
+etc. etc. 
 
-> Thanks,
-> Dmitry
-> 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+>  	do {
