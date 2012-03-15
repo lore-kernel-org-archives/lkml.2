@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161129Ab2COQ6T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:58:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44591 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161097Ab2COQ6Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:58:16 -0400
-Date: Thu, 15 Mar 2012 09:58:12 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chris Frey <cdfrey@foursquare.net>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: Linux 3.0.24
-Message-ID: <20120315165812.GA10397@kroah.com>
-References: <20120312203451.GA16773@kroah.com>
- <20120315162322.GA26005@foursquare.net>
- <20120315163749.GA25001@kroah.com>
- <20120315165108.GA27737@foursquare.net>
+	id S1161108Ab2COQ6v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:58:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9860 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031844Ab2COQ6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 12:58:48 -0400
+Message-ID: <4F621FC0.7050800@redhat.com>
+Date: Thu, 15 Mar 2012 18:58:40 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120315165108.GA27737@foursquare.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Akshay Karle <akshay.a.karle@gmail.com>
+CC: linux-kernel@vger.kernel.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        konrad.wilk@oracle.com, kvm@vger.kernel.org,
+        ashu tripathi <er.ashutripathi@gmail.com>,
+        nishant gulhane <nishant.s.gulhane@gmail.com>,
+        amarmore2006 <amarmore2006@gmail.com>,
+        Shreyas Mahure <shreyas.mahure@gmail.com>,
+        mahesh mohan <mahesh6490@gmail.com>
+Subject: Re: [RFC 0/2] kvm: Transcendent Memory (tmem) on KVM
+References: <1331224181.2585.16.camel@aks>
+In-Reply-To: <1331224181.2585.16.camel@aks>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 12:51:08PM -0400, Chris Frey wrote:
-> > > When I read it, it looks like there are serious patches included in
-> > > this release, perhaps data integrity or security patches.  But "must"
-> > > has been in an awful lot of these release notes lately, that it makes
-> > > me wonder if it is boilerplate.
-> > > 
-> > > Just curious how to interpret this.
-> > 
-> > Interpret it as written please.
-> 
-> Perhaps it would help if I phrased my question differently: What kind of
-> bug makes you decide to write "must" instead of something else?
+On 03/08/2012 06:29 PM, Akshay Karle wrote:
+> Hi,
+>
+> We are undergraduate engineering students of Maharashtra Academy of
+> Engineering, Pune, India and we are working on a project entitled
+> 'Transcendent Memory on KVM' as a part of our academics.
+> The project members are:
+> 1. Ashutosh Tripathi
+> 2. Shreyas Mahure
+> 3. Nishant Gulhane
+> 4. Akshay Karle
+>
+> ---
+> Project Description:
+> What is Transcendent Memory(tmem in short)?
+> Transcendent Memory is a memory optimization technique for the
+> virtualized environment. It collects the underutilized memory of the
+> guests and the unassigned(fallow) memory of the host and places it into
+> a central tmem pool. Indirect access to this pool is then provided to the guests.
+> For further information on tmem, please refer the article on lwn by Dr.
+> Dan Magenheimer:
+> http://lwn.net/Articles/454795/
+>
+> Since kvm is one of the most popular hypervisors available,
+> we decided to implement this technique for kvm.
+>
+> Any comments/feedback would be appreciated and will help us a lot with our work.
+>
 
-This has been discussed endlessly in the past, please see the lkml
-archives for details if you are interested.  It all comes down to the
-issue, how do you classify a bug fix as a specific "kind"[1]?
+One of the potential problems with tmem is reduction in performance when
+the cache hit rate is low, for example when streaming.
 
-Is there some reason you don't trust me in my usage of the word "must"
-here?  If so, then please feel free to go through all of the individual
-patches, which I post, and make the judgement call for yourself.
+Can you test this by creating a large file, for example with
 
-thanks,
+  dd < /dev/urandom > file bs=1M count=100000
 
-greg k-h
+and then measuring the time to stream it, using
 
-[1] Hint, for the most part, you can't.
+  time dd < file > /dev/null
+
+with and without the patch?
+
+Should be done on a cleancache enabled guest filesystem backed by a
+virtio disk with cache=none.
+
+It would be interesting to compare kvm_stat during the streaming, with
+and without the patch.
+
+-- 
+error compiling committee.c: too many arguments to function
+
