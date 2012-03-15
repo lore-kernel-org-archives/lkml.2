@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965383Ab2COBFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 21:05:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12260 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965341Ab2COBFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 21:05:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="117795178"
-Date: Wed, 14 Mar 2012 18:05:36 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Sasha Levin <levinsasha928@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davej@redhat.com
-Subject: Re: [PATCH] vfs namespace: Don't assume mount namespace has valid
- root
-Message-ID: <20120315010536.GC8817@tassilo.jf.intel.com>
-References: <1331758710-16400-1-git-send-email-levinsasha928@gmail.com>
- <20120314201048.GI23916@ZenIV.linux.org.uk>
- <20120314205809.GJ23916@ZenIV.linux.org.uk>
- <CA+1xoqcvXsx1vpAB7Jg-dWGVaadbF4sC3Cr2s5itHfdiPFQerA@mail.gmail.com>
- <20120314213746.GK23916@ZenIV.linux.org.uk>
- <CA+1xoqcP-1rU79ZOD2t+cn8tr77Nxmhv0_MjuLcvp67Zb7FFKQ@mail.gmail.com>
- <20120314221908.GM23916@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120314221908.GM23916@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761654Ab2COBYE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 21:24:04 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:56131 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760722Ab2COBYA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Mar 2012 21:24:00 -0400
+X-AuditID: cbfee61a-b7b78ae000001ceb-a2-4f6144afaebc
+From: Yongsul@vger.kernel.org, Oh@vger.kernel.org
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "yongsul96.oh@samsung.com" <yongsul96.oh@samsung.com>
+Subject: [PATCH] USB: Gadget: Composite: Added error handling codes to prevent
+ a memory leak case when the configuration's bind function failed
+Date: Thu, 15 Mar 2012 10:23:55 +0900
+Message-id: <1331774635-21217-1-git-send-email-yongsul96.oh@samsung.com>
+X-Mailer: git-send-email 1.7.1
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->          * Second pass: switch the tsk->fs->* elements and mark new vfsmounts
-> @@ -2416,9 +2416,9 @@ bool is_path_reachable(struct mount *mnt, struct dentry *dentry,
-> 
-> IOW, Andi has hit delete one too many times...
+From: yongsul96.oh@samsung.com <yongsul96.oh@samsung.com>
 
-Oops. Sorry about that. Thanks for catching it.
+ In some usb gadget driver, for example usb gadget serial driver(serial.c),
+multifunction composite driver(multi,c), nokia composite gadget driver(nokia.c),
+HID composite driver(hid.c), CDC composite driver(cdc2.c).., the configuration's
+bind function by called the 'usb_add_config()' has multiple bind config functions
+for each functionality, for example cdc2 configuration bind function -'cdc_do_config()'
+has two functionality bind config functions -'ecm_bind_config()' & 'acm_bind_config()'
+in CDC composite driver.
+ In each functionality bind config function, new instance for each functionality is
+allocated & initialized by 'kzalloc()' ,and finally the new instance is added by
+'usb_add_function()'. After 'usb_add_function' state, already created the instance
+is only handled by its configuration & freed from functionality unbind function.
+ So, If an error occurred during the second functionality bind config state, for example
+an error occurred at 'acm_bind_config()' after succeeding 'ecm_bind_function()',
+The created instance by 'acm_bind_config()' cannot be freed.
+And it makes memory leak situation.
 
-The obvious patch looks good to me of course.
+This patch fixes this issue.
 
--Andi
+Signed-off-by: yongsul96.oh@samsung.com <yongsul96.oh@samsung.com>
+---
+ drivers/usb/gadget/composite.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index baaebf2..4cb1801 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -737,6 +737,19 @@ int usb_add_config(struct usb_composite_dev *cdev,
+ 
+ 	status = bind(config);
+ 	if (status < 0) {
++		while (!list_empty(&config->functions)) {
++			struct usb_function		*f;
++
++			f = list_first_entry(&config->functions,
++					struct usb_function, list);
++			list_del(&f->list);
++			if (f->unbind) {
++				DBG(cdev, "unbind function '%s'/%p\n",
++					f->name, f);
++				f->unbind(config, f);
++				/* may free memory for "f" */
++			}
++		}
+ 		list_del(&config->list);
+ 		config->cdev = NULL;
+ 	} else {
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.1
+
