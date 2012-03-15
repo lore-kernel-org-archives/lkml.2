@@ -1,75 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760738Ab2COWLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 18:11:33 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35266 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab2COWL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 18:11:29 -0400
-Date: Fri, 16 Mar 2012 09:11:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Howells <dhowells@redhat.com>
-Cc: paul.gortmaker@windriver.com, linux-arch@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de
-Subject: Re: [PATCH 21/38] Disintegrate asm/system.h for PowerPC [ver #3]
-Message-Id: <20120316091121.1a204465647258dddc3bd89d@canb.auug.org.au>
-In-Reply-To: <20120315205831.28759.61679.stgit@warthog.procyon.org.uk>
-References: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk>
-	<20120315205831.28759.61679.stgit@warthog.procyon.org.uk>
-X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__16_Mar_2012_09_11_21_+1100_WMGSzLZFfEeAgF2D"
+	id S1030775Ab2COWPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 18:15:30 -0400
+Received: from oz.csail.mit.edu ([128.30.30.239]:49569 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759773Ab2COWP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 18:15:26 -0400
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Thu, 15 Mar 2012 18:14:45 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: <avi@redhat.com>, <mingo@redhat.com>, <hpa@zytor.com>,
+        <ryanh@linux.vnet.ibm.com>, <aliguori@us.ibm.com>,
+        <mtosatti@redhat.com>, <kvm@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4 V16] Add functions to check if the host has stopped
+ the vm
+In-Reply-To: <4F606F13.1040704@siemens.com>
+References: <1331408248-6781-1-git-send-email-emunson@mgebm.net>
+ <1331408248-6781-3-git-send-email-emunson@mgebm.net>
+ <4F606F13.1040704@siemens.com>
+Message-ID: <de4337c724b527742527634d7c32de51@mgebm.net>
+User-Agent: Roundcube Webmail/0.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__16_Mar_2012_09_11_21_+1100_WMGSzLZFfEeAgF2D
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Dave,
-
-On Thu, 15 Mar 2012 20:58:32 +0000 David Howells <dhowells@redhat.com> wrot=
-e:
+On Wed, 14 Mar 2012 11:12:35 +0100, Jan Kiszka wrote:
+> On 2012-03-10 20:37, Eric B Munson wrote:
+>> When a host stops or suspends a VM it will set a flag to show this.  
+>> The
+>> watchdog will use these functions to determine if a softlockup is 
+>> real, or the
+>> result of a suspended VM.
+>>
 >
->  arch/powerpc/platforms/iseries/dt.c               |    1=20
->  arch/powerpc/platforms/iseries/lpevents.c         |    1=20
->  arch/powerpc/platforms/iseries/setup.c            |    1=20
->  arch/powerpc/platforms/iseries/smp.c              |    1=20
->  arch/powerpc/platforms/iseries/viopath.c          |    1=20
+> ...
+>
+>> diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+>> index f8492da..4ba090c 100644
+>> --- a/arch/x86/kernel/kvmclock.c
+>> +++ b/arch/x86/kernel/kvmclock.c
+>> @@ -22,6 +22,7 @@
+>>  #include <asm/msr.h>
+>>  #include <asm/apic.h>
+>>  #include <linux/percpu.h>
+>> +#include <linux/hardirq.h>
+>>
+>>  #include <asm/x86_init.h>
+>>  #include <asm/reboot.h>
+>> @@ -114,6 +115,26 @@ static void kvm_get_preset_lpj(void)
+>>  	preset_lpj = lpj;
+>>  }
+>>
+>> +bool kvm_check_and_clear_guest_paused(void)
+>> +{
+>> +	bool ret = false;
+>> +	struct pvclock_vcpu_time_info *src;
+>> +
+>> +	/*
+>> +	 * per_cpu() is safe here because this function is only called 
+>> from
+>> +	 * timer functions where preemption is already disabled.
+>> +	 */
+>> +	WARN_ON(!in_atomic());
+>> +	src = &__get_cpu_var(hv_clock);
+>> +	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
+>> +		__this_cpu_and(hv_clock.flags, ~PVCLOCK_GUEST_STOPPED);
+>> +		ret = true;
+>> +	}
+>> +
+>> +	return ret;
+>> +}
+>> +EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
+>
+> Which module is going to use this? I failed to find it, but I may 
+> have
+> missed something.
+>
+> The actual reason for this reply: this patches causes a compiler 
+> warning
+> here, likely due to lacking include for EXPORT_SYMBOL_GPL:
+>
+>   CC      arch/x86/kernel/kvmclock.o
+> /data/linux-kvm/arch/x86/kernel/kvmclock.c:136:1: warning: data
+> definition has no type or storage class
+> /data/linux-kvm/arch/x86/kernel/kvmclock.c:136:1: warning: type 
+> defaults
+> to ‘int’ in declaration of ‘EXPORT_SYMBOL_GPL’
+> /data/linux-kvm/arch/x86/kernel/kvmclock.c:136:1: warning: parameter
+> names (without types) in function declaration
+>
+> Jan
 
-I don't expect you to change your series (now, anyway), but just a heads
-up that all those files have been removed in the powerpc tree.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+There isn't a module that will use it, I was under the (mistaken) 
+understanding that
+the EXPORT was necessary for use in kernel/watchdog.c.  Give that it 
+isn't, I will
+post a patch to remove it shortly.
 
---Signature=_Fri__16_Mar_2012_09_11_21_+1100_WMGSzLZFfEeAgF2D
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPYmkJAAoJEECxmPOUX5FEULUP/1AR0SltRXfg2mLEuZhgz/cc
-QaRqQ3PaCIkMI6pO6Ykgib8t69V4pFl/NJn4BTK1TzY/9q0Ljo7Olq6K1ZSQ86zk
-8l8Pmx1jsOpFO5vvIcf7bMOiSiu95PNPSurzfulgxzkcXn3eNHO2Egr05pC06mML
-ZZHUgsxLA50s0hDuZZ3dHrl3qwiwnCZwe/MSioToya4y06FEB1o0x8Kf5gGXQCT2
-wQ9DfrL6JnRMkaRvJQSAtX0MHqoE0wSpuaI6aHQ+cwXud1Vcbs+ui42VoDlwp7Gm
-IDfsqx6S7W/7uFKITvYk+OBQc5/OmUftoS5VH1MbReSp0E17QC0DVSAUy860xLZe
-IfkfdtRXHqd7XmcbGHniKwi+TaVe8haADMsns/l6PY3IQCTKJ3LlKLmbB58gdJkE
-opaT32F0Spb34T6GWXOvFFKcADCJSsL07wES59+DlFnE4S76xOamCNkI/0B80V+c
-Fz7s8pCfoWe0+FZYMNt2h269EtrYgAo01ySMpGzn1ajQcf5fmXVS/iINmTn3eTyE
-tCAWY/2ttab0bnRy/ZkSZNLEOXnfR/snTQ/gDXmWrtMzsqDEBC/n3dsmOqyhhsuS
-DQH+TYf911LdUJVwr8VbG+qHrPXkDeEeW4vso/Ie1MLYRPX9kPhwaP0Ak2qn3vCp
-dtCEubzdflNaioMLlC8S
-=mdZk
------END PGP SIGNATURE-----
-
---Signature=_Fri__16_Mar_2012_09_11_21_+1100_WMGSzLZFfEeAgF2D--
+Eric
