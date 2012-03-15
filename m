@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030811Ab2COVYK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 17:24:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34194 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab2COVYE (ORCPT
+	id S1758638Ab2COVZh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 17:25:37 -0400
+Received: from ns1.pc-advies.be ([83.149.101.17]:38138 "EHLO
+	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753173Ab2COVZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 17:24:04 -0400
-Date: Thu, 15 Mar 2012 14:24:01 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Andrew Miller <amiller@amilx.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] Staging: rtl8187se: r8180_dm.c: Fix comments
-Message-ID: <20120315212401.GB22983@kroah.com>
-References: <1331838321-18453-1-git-send-email-amiller@amilx.com>
- <1331838321-18453-6-git-send-email-amiller@amilx.com>
- <20120315193405.GE3163@mwanda>
- <20120315204923.GA14240@iron>
- <20120315210856.GA18911@kroah.com>
- <20120315211552.GB14240@iron>
-MIME-Version: 1.0
+	Thu, 15 Mar 2012 17:25:36 -0400
+Date: Thu, 15 Mar 2012 22:25:34 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        David Dajun Chen <dajun.chen@diasemi.com>, linaro-dev@lists.linaro.org,
+        sameo@linux.intel.com
+Subject: Re: [PATCH 05/07] Watchdog: DA9052/53 watchdog support v1
+Message-ID: <20120315212534.GG10698@spo001.leaseweb.com>
+References: <1328532486.30549.82.camel@dhruva> <1331641624.7058.2.camel@dhruva>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120315211552.GB14240@iron>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1331641624.7058.2.camel@dhruva>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 05:15:52PM -0400, Andrew Miller wrote:
-> On Thu, Mar 15, 2012 at 02:08:56PM -0700, Greg KH wrote:
-> > On Thu, Mar 15, 2012 at 04:49:23PM -0400, Andrew Miller wrote:
-> > > On Thu, Mar 15, 2012 at 10:34:05PM +0300, Dan Carpenter wrote:
-> > > > On Thu, Mar 15, 2012 at 03:05:21PM -0400, Andrew Miller wrote:
-> > > > > -//+by amy 080312
-> > > > > +/*{by amy 080312 */
-> > > >       ^^^^^^^^^^^^^
-> > > > Just remove these comments.  We use version control to see who is
-> > > > doing what.
-> > > > 
-> > > > >  
-> > > > > -	//printk("----> DoTxHighPower()\n");
-> > > > > +	/* printk("----> DoTxHighPower()\n"); */
-> > > > >  
-> > > > 
-> > > > Also this dead debugging code can be deleted.  There was a bunch of
-> > > > it.
-> > > > 
-> > > > regards,
-> > > > dan carpenter
-> > > 
-> > > Thanks for the advice, If the patch goes through. I'll make another one 
-> > > with this changes. If not then I will include them when I revise it.
-> > 
-> > Send another one on top of this one that removes those unneeded
-> > comments, as I've just applied all of the patches in this series.
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> 
-> What about the old code that is commented out?
-> There is about one line of code commented out per
-> two line of code.
+Hi Ashish,
 
-Just delete it, it's obviously not being used :)
+> Any update on below patch?
+> On Mon, 2012-02-06 at 18:18 +0530, Ashish Jangam wrote:
+> > This driver adds support for the watchdog functionality provided by the
+> > Dialog Semiconductor DA9052/53 PMIC chip.
+> > 
+> > This patch is functionally tested on Samsung SMDKV6410.
+> > 
+> > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> > ---
+> >  Documentation/watchdog/watchdog-parameters.txt |    5 +
+> >  drivers/watchdog/Kconfig                       |    6 +
+> >  drivers/watchdog/Makefile                      |    1 +
+> >  drivers/watchdog/da9052_wdt.c                  |  333 ++++++++++++++++++++++++
+> >  4 files changed, 345 insertions(+), 0 deletions(-)
+
+What's the difference with the version of Fri, 5 Aug 2011 19:21:51 +0530 ?
+
+Kind regards,
+Wim.
 
