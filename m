@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032258Ab2COUBm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 16:01:42 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59958 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1032245Ab2COUB3 (ORCPT
+	id S1032254Ab2COUDH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 16:03:07 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47803 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1032233Ab2COUDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 16:01:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with Linus' tree
-Date: Thu, 15 Mar 2012 20:01:12 +0000
-User-Agent: KMail/1.12.2 (Linux/3.3.0-rc1; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Magnus Damm <damm@opensource.se>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Paul Mundt <lethal@linux-sh.org>
-References: <20120315175000.897f1172c296d4a687be0537@canb.auug.org.au> <1362815.uO65s14ojU@avalon>
-In-Reply-To: <1362815.uO65s14ojU@avalon>
+	Thu, 15 Mar 2012 16:03:03 -0400
+Date: Thu, 15 Mar 2012 16:03:02 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+cc: Pete Zaitcev <zaitcev@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb/ub: deprecate & schedule for removal the "Low
+ Performance USB Block" driver
+In-Reply-To: <20120315175701.GA5702@breakpoint.cc>
+Message-ID: <Pine.LNX.4.44L0.1203151601070.1366-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Message-Id: <201203152001.12353.arnd@arndb.de>
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:A2+8CjbbuxNSO+5aJoXI2O7rOnbRrklwU9xIZS5a8oe
- lLnXNmpJ5J5hAOhuq1pecN+fri2GDOmmCBusjIrcXxyO/hmCJS
- v/RyXDI4n0ZHjk4VMypNByPeKUPrLrxqpZbWP2z1NPDEainiwB
- OOIOk65zd3Kz7kXwYz16XQxYPjbvohrewHEa5wjRa94xFRs2Gd
- P5D0DOIHRBgij8wGzxVKnqHZcaz1ZCcv6Yzhv09Guds5emDDAk
- esleDwCcOnpCOkUJC3Qq4uRnmT/yTpFGTle5PH2xQJoStQ9GSB
- 2xUS000aKdGZrFcGmgWdTqC5M5tH9vN7lzXRDIhF/l6Ytqsd4X
- VZtfuqHnfMXAbn9ouuUE=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 March 2012, Laurent Pinchart wrote:
-> The following patch (5d7220ec000f rebased on top of 1740d3448012) shows the
-> correct conflict resolution in my opinion.
-> 
-> From f040ba69632a54c86767974768d68b308901061c Mon Sep 17 00:00:00 2001
-> From: Magnus Damm <damm@opensource.se>
-> Date: Wed, 29 Feb 2012 12:37:19 +0900
-> Subject: [PATCH] ARM: mach-shmobile: sh7372 map_io and init_early update
-> 
-> ARM: mach-shmobile: sh7372 map_io and init_early update
-> 
-> Update the sh7372 SoC and the AP4EVB and Mackerel boards to make use
-> of the functions sh7372_map_io() and sh7372_add_early_devices().
-> 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+On Thu, 15 Mar 2012, Sebastian Andrzej Siewior wrote:
 
-Hi Laurent,
+> On Thu, Mar 15, 2012 at 09:33:31AM -0600, Pete Zaitcev wrote:
+> > On Wed, 14 Mar 2012 21:52:51 +0100
+> > Sebastian Andrzej Siewior <sebastian@breakpoint.cc> wrote:
+> > 
+> > > +What:	Low Performance USB Block driver ("CONFIG_BLK_DEV_UB")
+> > > +When:	3.6
+> > 
+> > ACK
+> > 
+> > > +	does not use libusual which holds various workarounds for
+> > > +	certain buggy devices.
+> > 
+> > Although the above is false, and ub actually started libusual,
+> > I don't mind. It's a transient notice anyway. Once ub is gone,
+> > libusual can be folded back into usb-storage.
+> 
+> There might be an miss understanding here. For instance in
+> drivers/usb/storage/unusual_devs.h we have an entry like:
+> 
+> |UNUSUAL_DEV(  0x03f0, 0x4002, 0x0001, 0x0001,
+> |                 "HP",
+> |                 "PhotoSmart R707",
+> |                 USB_SC_DEVICE, USB_PR_DEVICE, NULL, US_FL_FIX_CAPACITY),
+> |
+> 
+> That US_FL_FIX_CAPACITY is used later in scsiglue.c to set sdev->fix_capacity
+> which is then used by sd_read_capacity() to substract one sector from the
+> final size.
+> In ub I see ub_sync_read_cap() and I don't see a change. Was my wording wrong
+> or is this something else?
 
-I've merged Paul's branch into my renesas/soc branch, because I don't
-rebase the branches once they are merged into arm-soc. Thanks a lot
-for the resolution you suggested, I used the same resulting code
-in the merge commit.
+Pete wasn't talking about the phrase "holds various workarounds...".  
+Rather, he was referring to the phrase "does not use libusual".  That
+part is wrong; ub _does_ use libusual.
 
-I'm not particularly happy about how we got here. Obviously, the bug
-fixes that Paul sent should have gone through the arm-soc tree to
-avoid this situation, and they should have been based on a -rc release
-rather than some random commit after -rc6. It's not a big issue
-because the next/soc branch already contains -rc7 though.
+Alan Stern
 
-	Arnd
