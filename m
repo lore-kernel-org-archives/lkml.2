@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761397Ab2COSeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 14:34:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43680 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758833Ab2COSeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 14:34:04 -0400
-Subject: Re: [PATCH] Fix c6x's entry.S
-From: Mark Salter <msalter@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: a-jacquiot@ti.com, linux-c6x-dev@linux-c6x.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 15 Mar 2012 14:34:00 -0400
-In-Reply-To: <20120315175222.32354.43890.stgit@warthog.procyon.org.uk>
-References: <20120315175222.32354.43890.stgit@warthog.procyon.org.uk>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1331836441.2985.20.camel@deneb.redhat.com>
-Mime-Version: 1.0
+	id S1761998Ab2COSfQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 14:35:16 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:54006 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755669Ab2COSfM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 14:35:12 -0400
+From: Aneesh V <aneesh@ti.com>
+To: devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Aneesh V <aneesh@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH v2 0/4] dt: device tree support for TI EMIF driver
+Date: Fri, 16 Mar 2012 00:04:03 +0530
+Message-Id: <1331836447-7584-1-git-send-email-aneesh@ti.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-15 at 17:52 +0000, David Howells wrote:
-> The ENDPROC() on sys_fadvise64_c6x() in arch/c6x/kernel/entry.S needs to be
-> transposed with the preceding #endif so that it's in the same conditional
-> block as the matching ENTRY() macro.
-> 
-> Without this, I see:
-> 
-> /tmp/ccGZBaPT.s: Assembler messages:
-> /tmp/ccGZBaPT.s: Error: .size expression for sys_fadvise64_c6x does not evaluate to a constant
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> ---
-> 
->  arch/c6x/kernel/entry.S |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/c6x/kernel/entry.S b/arch/c6x/kernel/entry.S
-> index 3e977cc..91b2e79 100644
-> --- a/arch/c6x/kernel/entry.S
-> +++ b/arch/c6x/kernel/entry.S
-> @@ -741,8 +741,8 @@ ENTRY(sys_fadvise64_c6x)
->  #endif
->  	MV	.D1X	B6,A6
->  	MV	.D2X	A8,B6
-> -#endif
->  ENDPROC(sys_fadvise64_c6x)
-> +#endif
+This series adds device tree support for TI EMIF SDRAM controller
+driver. For this, a binding has been added for representing AC timing
+parameters and other details of LPDDR2 memories.
 
-Thanks! Actually, I'll delete sys_fadvise64_c6x altogether. It is 
-leftover cruft since we no longer support __ARCH_WANT_SYSCALL_OFF_T.
+This series depends v2 of my series for adding EMIF driver [1]
 
-As an aside, the build tools I'm using didn't catch that. I definitely
-need to upgrade...
+[1] http://marc.info/?l=linux-omap&m=133183554007498&w=2
 
---Mark
+Cc: Rajendra Nayak <rnayak@ti.com>
+Cc: Benoit Cousson <b-cousson@ti.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
 
+Aneesh V (4):
+  dt: device tree bindings for LPDDR2 memories
+  dt: emif: device tree bindings for TI's EMIF sdram controller
+  arm: dts: EMIF and LPDDR2 device tree data for OMAP4 boards
+  misc: emif: add device tree support to emif driver
+
+ .../devicetree/bindings/lpddr2/lpddr2-timings.txt  |   52 ++++
+ .../devicetree/bindings/lpddr2/lpddr2.txt          |  102 +++++++
+ .../bindings/memory-controllers/ti/emif.txt        |   55 ++++
+ arch/arm/boot/dts/elpida_ecb240abacn.dtsi          |   67 +++++
+ arch/arm/boot/dts/omap4-panda.dts                  |   13 +
+ arch/arm/boot/dts/omap4-sdp.dts                    |   13 +
+ arch/arm/boot/dts/omap4.dtsi                       |   18 ++
+ drivers/misc/emif.c                                |  285 +++++++++++++++++++-
+ 8 files changed, 604 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/lpddr2/lpddr2-timings.txt
+ create mode 100644 Documentation/devicetree/bindings/lpddr2/lpddr2.txt
+ create mode 100644 Documentation/devicetree/bindings/memory-controllers/ti/emif.txt
+ create mode 100644 arch/arm/boot/dts/elpida_ecb240abacn.dtsi
 
