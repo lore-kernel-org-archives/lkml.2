@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761030Ab2COKI6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 06:08:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39345 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab2COKIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 06:08:54 -0400
-Date: Thu, 15 Mar 2012 11:08:47 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Paul Menzel <paulepanter@users.sourceforge.net>
-cc: Carsten Emde <C.Emde@osadl.org>, David Airlie <airlied@linux.ie>,
+	id S1761016Ab2COKJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 06:09:25 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10740 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753624Ab2COKJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 06:09:23 -0400
+Message-Id: <c55c5d$2a7hsj@AZSMGA002.ch.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="77842323"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [V3 PATCH 2/2] drivers-gpu-drm-i915-quirk-backlight-inverted.patch
+To: Carsten Emde <C.Emde@osadl.org>, David Airlie <airlied@linux.ie>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Subject: Re: [V2 PATCH 1/2]
- drivers-gpu-drm-allow-to-load-edid-firmware.patch
-In-Reply-To: <1331795634.3718.5.camel@mattotaupa>
-Message-ID: <alpine.LFD.2.02.1203151104450.2466@ionos>
-References: <20120314233544.629616190@osadl.org>  <20120314234829.759638810@osadl.org> <1331795634.3718.5.camel@mattotaupa>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+        Thomas Gleixner <tglx@linutronix.de>,
+        Keith Packard <keithp@keithp.com>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Carsten Emde <C.Emde@osadl.org>, DRI <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120315095357.607004685@osadl.org>
+References: <20120315095219.520461363@osadl.org> <20120315095357.607004685@osadl.org>
+Date: Thu, 15 Mar 2012 10:09:15 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Mar 2012, Paul Menzel wrote:
-
-> Dear Carsten,
+On Thu, 15 Mar 2012 10:52:21 +0100, Carsten Emde <C.Emde@osadl.org> wrote:
+> Following the documentation of the Legacy Backlight Brightness (LBB)
+> Register in the configuration space of some Intel PCI graphics adapters,
+> setting the LBB register with the value 0x0 causes the backlight to be
+> turned off, and 0xFF causes the backlight to be set to 100% intensity
+> (http://download.intel.com/embedded/processors/Whitepaper/324567.pdf).
+> The Acer Aspire 5734Z, however, turns the backlight off at 0xFF and sets
+> it to maximum intensity at 0. In consequence, the screen of this systems
+> becomes dark at an early boot stage which makes it unusable. The same
+> inversion applies to the BLC_PWM_CTL I915 register. This problem was
+> introduced in kernel version 2.6.38 when the PCI device of this system
+> was first supported by the i915 KMS module.
 > 
+> This patch adds a quirk to invert the sense of the brightness variable
+> in case an Acer Aspire 5734Z is encountered.
 > 
-> Am Donnerstag, den 15.03.2012, 00:35 +0100 schrieb Carsten Emde:
-> > Einfaches Textdokument-Anlage
-> > (drivers-gpu-drm-allow-to-load-edid-firmware.patch)
-> 
-> somehow your message was send as an attachment. Could you configure your
-> mailer (quilt) that it is send inline?
+> Signed-off-by: Carsten Emde <C.Emde@osadl.org>
 
-quilt sends the patches inline. From Carstens original mail:
+That looks a lot better. However, can I ask for another follow-on patch
+to enable this quirk by a module parameter as well? I would like to make
+it easier for anyone else hitting this issue to identity the problem and
+find a temporary solution until their machine is also quirked.
 
-  Content-Disposition: inline; filename=drivers-gpu-drm-allow-to-load-edid-firmware.patch
- 
-Could you use a sane mail client or teach Devolution to stop being
-silly?
+>  static void intel_init_quirks(struct drm_device *dev)
+> Index: linux-3.3-rc7/drivers/gpu/drm/i915/intel_panel.c
+> ===================================================================
+> --- linux-3.3-rc7.orig/drivers/gpu/drm/i915/intel_panel.c
+> +++ linux-3.3-rc7/drivers/gpu/drm/i915/intel_panel.c
+> @@ -28,6 +28,7 @@
+>   *      Chris Wilson <chris@chris-wilson.co.uk>
+>   */
+>  
+> +#include <linux/moduleparam.h>
+>  #include "intel_drv.h"
 
-Thanks,
+That include is now not required.
+-Chris
 
-	tglx
+-- 
+Chris Wilson, Intel Open Source Technology Centre
