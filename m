@@ -1,40 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161361Ab2COUGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 16:06:06 -0400
-Received: from Chamillionaire.breakpoint.cc ([85.10.199.196]:58773 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161052Ab2COUGD (ORCPT
+	id S1032263Ab2COUIU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 16:08:20 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56691 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1032223Ab2COUIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 16:06:03 -0400
-Date: Thu, 15 Mar 2012 21:05:57 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Pete Zaitcev <zaitcev@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb/ub: deprecate & schedule for removal the "Low
- Performance USB Block" driver
-Message-ID: <20120315200557.GA6123@breakpoint.cc>
-References: <20120315175701.GA5702@breakpoint.cc>
- <Pine.LNX.4.44L0.1203151601070.1366-100000@iolanthe.rowland.org>
+	Thu, 15 Mar 2012 16:08:15 -0400
+From: Christian Lamparter <chunkeey@googlemail.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH] firmware_class: Move request_firmware_nowait() to workqueues
+Date: Thu, 15 Mar 2012 21:07:57 +0100
+User-Agent: KMail/1.13.7 (Linux/3.3.0-rc7-wl+; KDE/4.7.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <1331841015-26684-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1331841015-26684-1-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1203151601070.1366-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203152107.57501.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 04:03:02PM -0400, Alan Stern wrote:
-> Pete wasn't talking about the phrase "holds various workarounds...".  
-> Rather, he was referring to the phrase "does not use libusual".  That
-> part is wrong; ub _does_ use libusual.
+On Thursday, March 15, 2012 08:50:15 PM Stephen Boyd wrote:
+> Oddly enough a work_struct was already part of the firmware_work
+> structure but nobody was using it. Instead of creating a new
+> kthread for each request_firmware_nowait() just schedule the work
+> on the system workqueue. This should avoid some overhead in
+> forking new threads when they're not strictly necessary if
+> workqueues are available.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Kay Sievers <kay.sievers@vrfy.org>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> ---
+> 
+> I saw this while looking at this problem we're having.
+Correct me if I'm wrong, but wouldn't that stall all other
+global workqueue tasks for up to 60 seconds [in worst case]?
 
-Okay, so I mixed up those two. "does not use libunsual" would be the correct
-thing to day, right?
+But I think we can get rid of the firmware_work work struct...
 
-> Alan Stern
+Regards,
+	Chr
 
-Sebastian
+
