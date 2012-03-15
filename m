@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161071Ab2COQvr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:51:47 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58405 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031783Ab2COQvm (ORCPT
+	id S1031935Ab2COQwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:52:35 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:50555 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031783Ab2COQwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:51:42 -0400
-Message-ID: <4F621E1A.5000602@gmail.com>
-Date: Thu, 15 Mar 2012 17:51:38 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120307 Thunderbird/11.0
+	Thu, 15 Mar 2012 12:52:32 -0400
+Date: Thu, 15 Mar 2012 12:48:28 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Akshay Karle <akshay.a.karle@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
+        kvm@vger.kernel.org, ashu tripathi <er.ashutripathi@gmail.com>,
+        nishant gulhane <nishant.s.gulhane@gmail.com>,
+        amarmore2006 <amarmore2006@gmail.com>,
+        Shreyas Mahure <shreyas.mahure@gmail.com>,
+        mahesh mohan <mahesh6490@gmail.com>
+Subject: Re: [RFC 0/2] kvm: Transcendent Memory (tmem) on KVM
+Message-ID: <20120315164828.GK30250@phenom.dumpdata.com>
+References: <1331224181.2585.16.camel@aks>
 MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: stable-3.0: s390 build breakage [was: Linux 3.0.24]
-References: <20120312203451.GA16773@kroah.com> <4F61C911.5010204@suse.cz> <4F62186E.4050806@suse.cz> <20120315164624.GB25159@kroah.com> <20120315164954.GR2264@1wt.eu>
-In-Reply-To: <20120315164954.GR2264@1wt.eu>
-X-Enigmail-Version: 1.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1331224181.2585.16.camel@aks>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4F621E4F.0027,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 05:49 PM, Willy Tarreau wrote:
-> On Thu, Mar 15, 2012 at 09:46:24AM -0700, Greg KH wrote:
->> On Thu, Mar 15, 2012 at 05:27:26PM +0100, Jiri Slaby wrote:
->>> On 03/15/2012 11:48 AM, Jiri Slaby wrote:
->>>> On 03/12/2012 09:34 PM, Greg KH wrote:
->>>>> I'm announcing the release of the 3.0.24 kernel.
->>>> ...
->>>>> Heiko Carstens (1): compat: fix compile breakage on s390
->>>>
->>>> It looks like we need the same fix as for 2.6.32.59:
->>>> arch/s390/kernel/setup.c: In function 'setup_addressing_mode':
->>>> arch/s390/kernel/setup.c:328: error: 'PSW32_ASC_PRIMARY' undeclared
->>>> (first use in this function)
->>>> arch/s390/kernel/setup.c:328: error: (Each undeclared identifier is
->>>> reported only once
->>>> arch/s390/kernel/setup.c:328: error: for each function it appears in.)
->>>
->>> And when that one is fixed, there is another error:
->>> drivers/s390/char/fs3270.c: In function 'fs3270_ioctl':
->>> drivers/s390/char/fs3270.c:335: error: implicit declaration of function
->>> 'compat_ptr'
->>> drivers/s390/char/fs3270.c:335: warning: assignment makes pointer from
->>> integer without a cast
->>
->> Ick, have a patch for this?
+> ---
+> kvm-tmem Patch details:
+> This patch adds appropriate shims at the guest that invokes the kvm
+> hypercalls, and the host uses zcache pools to implement the required
+> functions.
 > 
-> This one is declared in arch/s390/include/asm/compat.h:
+> To enable tmem on the 'kvm host' add the boot parameter:
+> "kvmtmem"
+> And to enable tmem in the 'kvm guests' add the boot parameter:
+> "tmem"
 > 
-> static inline void __user *compat_ptr(compat_uptr_t uptr)
-> {
->         return (void __user *)(unsigned long)(uptr & 0x7fffffffUL);
-> }
-> 
-> In 2.6.32, fs3270.c include linux/compat.h. In 3.0 it includes asm/compat.h
-> instead. I would have thought the later would have been enough.
+> The diffstat details for this patch are given below:
+>  arch/x86/include/asm/kvm_host.h      |    1 
+>  arch/x86/kvm/x86.c                   |    4 
+>  drivers/staging/zcache/Makefile      |    2 
+>  drivers/staging/zcache/kvm-tmem.c    |  356 +++++++++++++++++++++++++++++++++++
+>  drivers/staging/zcache/kvm-tmem.h    |   55 +++++
+>  drivers/staging/zcache/zcache-main.c |   98 ++++++++-
+>  include/linux/kvm_para.h             |    1 
+>  7 files changed, 508 insertions(+), 9 deletions(-)
+> 	
+> We have already uploaded our work alongwith the 'Frontswap' submitted by Dan,
+> on the following link:
+> https://github.com/akshaykarle/kvm-tmem
 
-But it was changed to linux/compat.h in 3.0.24 -- that's why it doesn't
-build. So the same fix as for setup.c should help here.
+Is there a way for these patches to be posted on LKML? It is rather difficult
+to copy-n-paste patches in emails and sending them. Or if you want to, you can
+email them directly to me. To do that use 'git send-email' and 'git format-patch'
+to prep the git commits into patches.
 
-thanks,
--- 
-js
+
+Also, the title says 'RFC 0/2' but I am not seing 1 or 2?
