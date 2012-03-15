@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab2COGhz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 02:37:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:33166 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753155Ab2COGhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 02:37:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="139151754"
-Subject: RE: [PATCH] usb/core: skip unnecessary line IRQ request for USB3
-From: Alex Shi <alex.shi@intel.com>
-To: "Xu, Andiry" <Andiry.Xu@amd.com>
-Cc: "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        gregkh <gregkh@linuxfoundation.org>,
-        "sarah.a.sharp@linux.intel.com" <sarah.a.sharp@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>
-In-Reply-To: <2A76B9D36150BE4293842BC2FE8FF16503320F@SCYBEXDAG04.amd.com>
-References: <1331786904.2979.64.camel@debian>
-	 <2A76B9D36150BE4293842BC2FE8FF16503320F@SCYBEXDAG04.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Mar 2012 14:37:47 +0800
-Message-ID: <1331793467.2979.86.camel@debian>
+	id S1756013Ab2COGu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 02:50:26 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57202 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755434Ab2COGuX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 02:50:23 -0400
+Date: Thu, 15 Mar 2012 17:50:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: linux-next: manual merge of the arm-soc tree with Linus' tree
+Message-Id: <20120315175000.897f1172c296d4a687be0537@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta6 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__15_Mar_2012_17_50_00_+1100_PIrwKDEQ5CZdHgqx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__15_Mar_2012_17_50_00_+1100_PIrwKDEQ5CZdHgqx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> You may also remove the unregister the legacy interrupt part in
-> xhci_try_enable_msi().
+Hi all,
 
-Sure, thanks!
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-shmobile/board-mackerel.c between commit 1740d3448012
+("ARM: mach-shmobile: mackerel: Reserve DMA memory for the frame buffer")
+from Linus' tree and commit 5d7220ec000f ("ARM: mach-shmobile: sh7372
+map_io and init_early update") from the arm-soc tree.
 
->From 6ae16651ae33ea1841984f3a5eb4a691ed730a19 Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Thu, 15 Mar 2012 08:12:47 +0800
-Subject: [PATCH] usb/core: skip unnecessary line IRQ request for USB3
+The latter moved the code to another file
+arch/arm/mach-shmobile/setup-sh7372.c and I have no idea how to fix this
+up, so I just removed the change done by the former.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-USB3(only xhci driver) requests line IRQ here but will disable it
-in later driver->start function and try MSI first:
+--Signature=_Thu__15_Mar_2012_17_50_00_+1100_PIrwKDEQ5CZdHgqx
+Content-Type: application/pgp-signature
 
-xhci_hcd 0000:02:00.0: irq 18, io mem 0xfe500000
-xhci_hcd 0000:02:00.0: irq 45 for MSI/MSI-X
-xhci_hcd 0000:02:00.0: irq 46 for MSI/MSI-X
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-So it is better to remove the redundant request here.
+iQIcBAEBCAAGBQJPYZEYAAoJEECxmPOUX5FE5foP/3fxDWdMRLbw/TsNPHKrs+U1
+FxhXP5MnaFPKJWa8FE/+iUQ0BryJCN0evOHYTRJ1wx1FvuY0zTijMA5YibICBIBz
+rfKYh7RuG7tZU5x14ZWWW56qCI7DSHLhqx+KTupfzljnOXnMmjEMGJiIK5g5+kXK
+pAWHGRj/HizCVXz+C4zTbj54D+/q0uuBKCpvQ7tLcTXGx+1GP802Qi5gIfxV9+E7
+++aG6SZoEnXGJjrsrCfVa8dXorMr1hL82f3D1al+BIdblMt7wmGqf8iInv7QwLhA
+e/+hk0kFV/g+z+I8LEq2rxZddd0DBOEksGcuUSA/uZQHg+BvjB7SyMNorC7FBAN6
+32vhxVkOqL+DGDD1B2xNHbhJhJ9jYirqsBf4kWRi01NuCATeArwhV5rlojgJm927
+4FRFISZkZSbBVCB8ikuggngsPEFHyqkSm1yMaXC8ylfNLkdhTTC0wYUeTLODdHhA
+a2A9pzDP/Nw6YI4KNw3t+c85DUu9PqjGeELeTckHx4bGup70bu46ivZOvSmjv9IT
+g+pcZkX0PINuqnZHhtieZc3Tugvx5Q2/XPq6LuNGnM9TBynStW0HEE2IGUzmnW38
+cHcoVbING3XJxZiY9K/LnUy/6tY3A5daCpCvUMkd+mWQamaY8mZXBdHbOUriRVdH
+3pzxkyMfc/nPdof5R6Ak
+=kbYc
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- drivers/usb/core/hcd.c  |    3 ++-
- drivers/usb/host/xhci.c |    3 ---
- 2 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index e128232..5b09825 100644
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -2450,7 +2450,8 @@ int usb_add_hcd(struct usb_hcd *hcd,
- 	/* enable irqs just before we start the controller,
- 	 * if the BIOS provides legacy PCI irqs.
- 	 */
--	if (usb_hcd_is_primary_hcd(hcd) && irqnum) {
-+	if (usb_hcd_is_primary_hcd(hcd) && irqnum
-+		&& (hcd->driver->flags & HCD_MASK) != HCD_USB3) {
- 		retval = usb_hcd_request_irqs(hcd, irqnum, irqflags);
- 		if (retval)
- 			goto err_request_irq;
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index c939f5f..64979c2 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -338,9 +338,6 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
- 	if (xhci->quirks & XHCI_BROKEN_MSI)
- 		return 0;
- 
--	/* unregister the legacy interrupt */
--	if (hcd->irq)
--		free_irq(hcd->irq, hcd);
- 	hcd->irq = -1;
- 
- 	ret = xhci_setup_msix(xhci);
--- 
-1.6.3.3
-
-
-> 
-> In fact, I think all the MSI related codes should be moved to xhci-pci.c,
-> Since MSI is PCI-only.
-
-A patch moving MSI from xhci to USB core is in reviewing. That walks
-far. :) https://lkml.org/lkml/2012/2/20/76 
-
-
+--Signature=_Thu__15_Mar_2012_17_50_00_+1100_PIrwKDEQ5CZdHgqx--
