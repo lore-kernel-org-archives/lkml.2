@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031374Ab2COXAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 19:00:06 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57636 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965275Ab2COXAB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 19:00:01 -0400
-Date: Fri, 16 Mar 2012 00:59:52 +0200
-From: Ido Yariv <ido@wizery.com>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [tip:irq/core] genirq: Flush the irq thread on synchronization
-Message-ID: <20120315225952.GA18032@WorkStation>
-References: <1322843052-7166-1-git-send-email-ido@wizery.com>
- <tip-7140ea1980f2fae9c7aaeac5f6b35317e1389ee6@git.kernel.org>
- <20120315190755.GA6732@dhcp-26-207.brq.redhat.com>
+	id S1031390Ab2COXC3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 19:02:29 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:40673 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030372Ab2COXCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 19:02:25 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: uclinux-dist-devel@blackfin.uclinux.org, lliubbo@gmail.com
+Subject: Re: [PATCH 07/38] Disintegrate asm/system.h for Blackfin [ver #3]
+Date: Thu, 15 Mar 2012 19:02:23 -0400
+User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.6.5; x86_64; ; )
+Cc: David Howells <dhowells@redhat.com>, paul.gortmaker@windriver.com,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de
+References: <20120315205514.28759.58969.stgit@warthog.procyon.org.uk> <20120315205620.28759.65095.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20120315205620.28759.65095.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120315190755.GA6732@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart6286657.DrAjxFpHXD";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201203151902.25640.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexander,
+--nextPart6286657.DrAjxFpHXD
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 
-On Thu, Mar 15, 2012 at 08:07:56PM +0100, Alexander Gordeev wrote:
-> > -	/* Prevent a stale desc->threads_oneshot */
-> > -	irq_finalize_oneshot(desc, action, true);
-> > +	/*
-> > +	 * This is the regular exit path. __free_irq() is stopping the
-> > +	 * thread via kthread_stop() after calling
-> > +	 * synchronize_irq(). So neither IRQTF_RUNTHREAD nor the
-> > +	 * oneshot mask bit should be set.
-> > +	 *
-> > +	 * Verify that this is true.
-> > +	 */
-> > +	if (WARN_ON(test_and_clear_bit(IRQTF_RUNTHREAD, &action->thread_flags)))
-> > +		wake_threads_waitq(desc);
-> 
-> If we hit this warning we do not know if this IRQTF_RUNTHREAD bit's count in
-> desc->threads_active was decremented or not.
-> 
-> Nevertheless, wake_threads_waitq() gets called and desc->threads_active gets
-> decremented. As result, if desc->threads_active initially was decremented, we
-> might wrongly wake up the queue while some threaded handler is still running.
-> 
-> By contrast, if we choose not to wake up here, we might stuck in
-> synchronize_irq(). Which is probably better than a fooling synchronize_irq().
+On Thursday 15 March 2012 16:56:21 David Howells wrote:
+> Disintegrate asm/system.h for Blackfin.
 
-AFAICT, IRQTF_RUNTHREAD and the desc->threads_active are always modified
-together:
-desc->threads_active is incremented if and only if IRQTF_RUNTHREAD is
-set after being cleared (in irq_wake_thread()).
-desc->threads_active is decremented in wake_threads_waitq(), which is
-only called when IRQTF_RUNTHREAD is cleared.
+i think Bob found an error in this patch.  he'll have to comment though.
+-mike
 
-It seems that if we get to this point, either IRQTF_RUNTHREAD is set and
-desc->threads_active was not decremented, or it is not set.
+--nextPart6286657.DrAjxFpHXD
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Do you see any case where the two will be out of sync?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
+iQIcBAABAgAGBQJPYnUBAAoJEEFjO5/oN/WBkdUP/3dEh6jC4b58DzaRVpPEcMFt
+/H8V00XMaWHKfyv7ZWzxQOSm4XOe0/GqMe/3+AYqXvULmNaat3nrPfghnOgi2b84
+aDm0ELBXflw9AIxOwpG2aWUEk6AWg6w1oqicYs7wxPisbbcWdB+MjOVQbNpHkspK
+DvpJ9O8r9a6WZJJpLVG5K0M4dH+RYzrARaacb+B+1ffsBrPjoChQXQHdGgEnadTb
+wUCLX0uhSw1QwpQjHb6AN1lts+Vf+VycrMK7a9miGrGt+ATutwAbTeiLNgpIRywe
+Ek8FDwLquWvqJ69dpgiKfUInMlD3kYImddrKM378oCEuLUuW6Bt1pc1hRm9FAFyP
+fL2aTWOaHECiYcaOm3oebdJ5wasp1azkxO1AVg3Ng+Pu+N47wVSLN3SedFmca/g3
+7r4CVoe8MmvtWeMzEs/MeCB5mrAuGnid7if6Xv3MnQAQvdrCnSdCGmaYlrqKvj0P
+NGn3JiBiRDnamjKybgDAzU8fv7eL/i2Et10ex0Py+EnTFXNXODhaQ/2hjIt9HMvS
+57IMmrgU19iEprxu/ZC0AdOCzReBmFyk+IqfWNngYYy+zwWpddwaSBb5nq8yEgQk
+Dg7UG0IfoJulloeHY2InRDELRAApwuLMBMlMpD/JL6x/5OGUFZN3+sf/yoVsLRxb
+tSI0PWamixWrQCkc1i1N
+=7xgz
+-----END PGP SIGNATURE-----
 
-> > +
-> > +	if (WARN_ON(desc->threads_oneshot & action->thread_mask))
-> > +		irq_finalize_oneshot(desc, action, true);
-> 
-> This check is called when the action is already removed in __free_irq() and no
-> desc->lock is held. Hence, a concurrent __setup_irq() could reallocate the very
-> same bit in the meantime. So neither irq_finalize_oneshot() nor the warning
-> are legitimate here.
-
-That's interesting. However, it doesn't seem to be a regression that's
-caused by this patch (the irq_finalize_oneshot() was there before), so
-it might be a good idea to fix this separately.
-
-Thanks,
-Ido.
+--nextPart6286657.DrAjxFpHXD--
