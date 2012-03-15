@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759213Ab2COKqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 06:46:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47105 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755997Ab2COKqn convert rfc822-to-8bit (ORCPT
+	id S1759344Ab2COKs5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 06:48:57 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47841 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754408Ab2COKsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 06:46:43 -0400
-Message-ID: <1331808391.18960.160.camel@twins>
-Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liu, Chuansheng" <chuansheng.liu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Date: Thu, 15 Mar 2012 11:46:31 +0100
-In-Reply-To: <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
-References: <27240C0AC20F114CBF8149A2696CBE4A053BE8@SHSMSX101.ccr.corp.intel.com>
-	 <1331546307.18960.26.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A054D70@SHSMSX101.ccr.corp.intel.com>
-	 <1331654251.18960.78.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A0556FA@SHSMSX101.ccr.corp.intel.com>
-	 <1331718197.18960.106.camel@twins>
-	 <27240C0AC20F114CBF8149A2696CBE4A056F47@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 15 Mar 2012 06:48:54 -0400
+Message-ID: <4F61C911.5010204@suse.cz>
+Date: Thu, 15 Mar 2012 11:48:49 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120307 Thunderbird/11.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: stable-3.0: s390 build breakage [was: Linux 3.0.24]
+References: <20120312203451.GA16773@kroah.com>
+In-Reply-To: <20120312203451.GA16773@kroah.com>
+X-Enigmail-Version: 1.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-15 at 00:11 +0000, Liu, Chuansheng wrote:
-> 
-> > -----Original Message-----
-> > From: Peter Zijlstra [mailto:peterz@infradead.org]
-> > Sent: Wednesday, March 14, 2012 5:43 PM
-> > To: Liu, Chuansheng
-> > Cc: linux-kernel@vger.kernel.org; Yanmin Zhang; tglx@linutronix.de
-> > Subject: RE: [PATCH] Fix the race between smp_call_function and CPU booting
-> > 
-> > On Wed, 2012-03-14 at 06:27 +0000, Liu, Chuansheng wrote:
-> > > On the unplug case, after set the CPU to !active, we do not need IPI
-> > > handling for the corresponding CPU before it is set to offline. I did
-> > > not find any impact that limiting the smp_call_function just after CPU
-> > > is active.
-> > 
-> > Have a look at Alpha, it's flush_tlb_mm() can use smp_call_function(), in
-> > the !active,online case you very much still need to tlb flush that cpu.
-> > 
-> > The fact that it works on a limited use case on x86 doesn't say anything much
-> > at all.
+On 03/12/2012 09:34 PM, Greg KH wrote:
+> I'm announcing the release of the 3.0.24 kernel.
+...
+> Heiko Carstens (1): compat: fix compile breakage on s390
 
-> Thanks your pointing out, do you have any other perfect solution for this issue?
-> As for the stress test result, advancing the setting active before setting online broken
-> something either.
+It looks like we need the same fix as for 2.6.32.59:
+arch/s390/kernel/setup.c: In function 'setup_addressing_mode':
+arch/s390/kernel/setup.c:328: error: 'PSW32_ASC_PRIMARY' undeclared
+(first use in this function)
+arch/s390/kernel/setup.c:328: error: (Each undeclared identifier is
+reported only once
+arch/s390/kernel/setup.c:328: error: for each function it appears in.)
 
-I'm not sure I understand.. are you saying that commit
-5fbd036b552f633abb394a319f7c62a5c86a9cd7 in tip/master broke something?
+regards,
+-- 
+js
+suse labs
