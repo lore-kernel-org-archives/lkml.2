@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031656Ab2COQQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 12:16:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48532 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031565Ab2COQQz convert rfc822-to-8bit (ORCPT
+	id S1031651Ab2COQS4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 12:18:56 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:47586 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031251Ab2COQSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 12:16:55 -0400
-Message-ID: <1331828203.18960.200.camel@twins>
-Subject: Re: [PATCH] watchdog: Make sure the watchdog thread gets CPU on
- loaded system
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
-Date: Thu, 15 Mar 2012 17:16:43 +0100
-In-Reply-To: <1331827890.18960.198.camel@twins>
-References: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
-	 <20120314161906.e53359d3.akpm@linux-foundation.org>
-	 <20120315014511.GT27051@google.com> <1331809239.18960.168.camel@twins>
-	 <1331809597.18960.171.camel@twins> <20120315124228.GA5318@elte.hu>
-	 <1331820051.18960.187.camel@twins> <20120315143549.GC3941@redhat.com>
-	 <20120315153907.GV27051@google.com> <1331827843.18960.197.camel@twins>
-	 <1331827890.18960.198.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Thu, 15 Mar 2012 12:18:52 -0400
+Subject: Re: [PATCH 5/7] module: take rcu_read_lock_sched() for /proc read
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Dennis1.Chen@amd.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, NeilBrown <neilb@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, Joe Perches <joe@perches.com>,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <1331822941-19938-5-git-send-email-xiyou.wangcong@gmail.com>
+References: <1331822941-19938-1-git-send-email-xiyou.wangcong@gmail.com>
+	 <1331822941-19938-5-git-send-email-xiyou.wangcong@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Mar 2012 09:18:49 -0700
+Message-ID: <1331828329.4874.7.camel@edumazet-glaptop>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-15 at 17:11 +0100, Peter Zijlstra wrote:
-> On Thu, 2012-03-15 at 17:10 +0100, Peter Zijlstra wrote:
-> > On Thu, 2012-03-15 at 08:39 -0700, Mandeep Singh Baines wrote:
-> > > Its a good tool for catching problems of scale. As we move to more and
-> > > more cores you'll uncover bugs where data structures start to blow up.
-> > > Hash tables get huge, when you have 100000s of processes or millions
-> > > of
-> > > TCP flows, or cgroups or namespace. That critical section (spinlock,
-> > > spinlock_bh, or preempt_disable) that used to be OK might no longer
-> > > be.
-> > 
-> > Or you run with the preempt latency tracer.
+On Thu, 2012-03-15 at 22:48 +0800, Cong Wang wrote:
+> In the seq file operations, it still hold module_mutex for just reading
+> the module list, switch to rcu_read_lock_sched() too.
 > 
-> Or for that matter run cyclictest...
 
-Thing is, if you want a latency detector, call it that and stop
-pretending its a useful debug feature. Also, if you want that, set the
-interval in the 0.1-0.5 seconds range and dump stack on every new max.
+Why is it needed ?
+
+1) insmod/rmmod/lsmod is hardly in fast path.
+
+2) after a mutex_lock(), a task is still preemptible
+   after rcu_read_lock_sched(), preemption is disabled
+
+   with NR_CPUS=4096, getting module refcounts is _very_ slow
+
+RCU doesnt fit every workload.
+
 
 
