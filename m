@@ -1,86 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761735Ab2COMJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 08:09:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34086 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753305Ab2COMJv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 08:09:51 -0400
-Date: Thu, 15 Mar 2012 12:09:48 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        linaro-dev@lists.linaro.org, Samuel Ortiz <sameo@linux.intel.com>,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Peter Korsgaard <jacmet@sunsite.dk>
-Subject: Re: [PATCH v9] mfd: Add anatop mfd driver
-Message-ID: <20120315120948.GG3138@opensource.wolfsonmicro.com>
-References: <1331797421-23731-1-git-send-email-paul.liu@linaro.org>
- <201203150907.29895.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gvF4niNJ+uBMJnEh"
+	id S1030950Ab2COMOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 08:14:42 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:23281 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932309Ab2COMOg (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Thu, 15 Mar 2012 08:14:36 -0400
+Message-Id: <4F61EB380200007800078A79@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 15 Mar 2012 12:14:32 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>
+Cc: <a.p.zijlstra@chello.nl>, <mingo@elte.hu>, <paulus@samba.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: adjust make rules
+References: <4F588A0802000078000770FF@nat28.tlf.novell.com>
+ <20120314191758.GD9528@infradead.org>
+In-Reply-To: <20120314191758.GD9528@infradead.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Disposition: inline
-In-Reply-To: <201203150907.29895.arnd@arndb.de>
-X-Cookie: Are you a turtle?
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 14.03.12 at 20:17, Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+wrote:
+> Em Thu, Mar 08, 2012 at 09:29:28AM +0000, Jan Beulich escreveu:
+>> Add rules to generate pre-processed files (just like are available for
+>> the normal kernel build), and adjust the rule to create assembly files
+>> from C ones to produce its output in the output directory rather than
+>> in the source tree.
+>> 
+>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> 
+> I'm trying to use it but hit this:
+> 
+> [acme@sandy linux]$ make -C tools/perf/ O=/home/git/build/perf 
+> /home/git/build/perf/perf.s
+> make: Entering directory `/home/git/linux/tools/perf'
+>     CC /home/git/build/perf/perf.s
+> perf.c: In function ‘handle_options’:
+> perf.c:111: error: ‘PERF_HTML_PATH’ undeclared (first use in this function)
+> perf.c:111: error: (Each undeclared identifier is reported only once
+> perf.c:111: error: for each function it appears in.)
+> perf.c: At top level:
+> perf.c:238: error: ‘PERF_VERSION’ undeclared here (not in a function)
+> make: *** [/home/git/build/perf/perf.s] Error 1
+> make: Leaving directory `/home/git/linux/tools/perf'
+> [acme@sandy linux]
+> 
+> Do I have to go to tools/perf and do it from there, trying...
 
---gvF4niNJ+uBMJnEh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No. perf.c just is a bad example - perf.o has a special make rule,
+and hence the pattern rule for perf.s fails because the symbols
+defined for perf.o don't get also defined for perf.s. Those special
+rules look pretty strange anyway - as long as using GNU make is a
+requirement, they could be re-written to use the pattern rule, and
+then would be much easier to extend to cover .i and .s generation
+as well.
 
-On Thu, Mar 15, 2012 at 09:07:29AM +0000, Arnd Bergmann wrote:
+Using the rules added in this patch works fine for me for any of the
+source files that don't have custom .o rules (which is what I needed
+when I came up with this patch).
 
-> Very broadly speaking, I wonder whether we could use the regmap
-> infrastructure for these things in the future, but I would first
-> need to understand whether that is actually in the scope of regmap.
+Jan
 
-> It seems that you just need a subset of what regmap provides,
-> so it could work, but it might not actually be better than what
-> you have now.
+> [acme@sandy perf]$ make O=/home/git/build/perf /home/git/build/perf/perf.s
+>     CC /home/git/build/perf/perf.s
+> perf.c: In function ‘handle_options’:
+> perf.c:111: error: ‘PERF_HTML_PATH’ undeclared (first use in this function)
+> perf.c:111: error: (Each undeclared identifier is reported only once
+> perf.c:111: error: for each function it appears in.)
+> perf.c: At top level:
+> perf.c:238: error: ‘PERF_VERSION’ undeclared here (not in a function)
+> make: *** [/home/git/build/perf/perf.s] Error 1
+> [acme@sandy perf]$ make O=/home/git/build/perf perf.s
+> make: *** No rule to make target `perf.s'.  Stop.
+> [acme@sandy perf]$
+> 
+> Same result, what am I doing wrong?
+> 
+> - Arnaldo
+>  
+>> ---
+>>  tools/perf/Makefile |    6 +++++-
+>>  1 file changed, 5 insertions(+), 1 deletion(-)
+>> 
+>> --- 3.3-rc6/tools/perf/Makefile
+>> +++ 3.3-rc6-perf-make-rules/tools/perf/Makefile
+>> @@ -706,10 +706,14 @@ $(OUTPUT)perf.o perf.spec \
+>>  
+>>  $(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
+>>  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
+>> +$(OUTPUT)%.i: %.c $(OUTPUT)PERF-CFLAGS
+>> +	$(QUIET_CC)$(CC) -o $@ -E $(ALL_CFLAGS) $<
+>>  $(OUTPUT)%.s: %.c $(OUTPUT)PERF-CFLAGS
+>> -	$(QUIET_CC)$(CC) -S $(ALL_CFLAGS) $<
+>> +	$(QUIET_CC)$(CC) -o $@ -S $(ALL_CFLAGS) $<
+>>  $(OUTPUT)%.o: %.S
+>>  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
+>> +$(OUTPUT)%.s: %.S
+>> +	$(QUIET_CC)$(CC) -o $@ -E $(ALL_CFLAGS) $<
+>>  
+>>  $(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+>>  	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) \
+>> 
+>> 
 
-> Mark, can you comment on that?
 
-There were some other mutterings about using regmap for memory mapped
-devices, mostly from the point of view of building framework features
-like this on top of it.  regmap currently makes some assumptions that
-the I/O is going to be slow so approximately any amount of CPU time can
-usefully be spent on avoiding I/O but we can probably do something about
-that.  It also uses mutexes to lock I/O which might not be the most
-sensible thing for memory mapped devices, but again that's solveable.
-Right now there's no memory mapping support but there's no reason that
-can't be added.
-
-In short, it does seem sensible to want to have some support for this
-for devices that use appropriate idioms.
-
---gvF4niNJ+uBMJnEh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPYdwFAAoJEBus8iNuMP3dR3AP/Rnm5XrEoeZxitAxN9ZrNtQB
-LtFFyQlHErbWnw0eYZ1Sjr4P/GqIrW1ljXS+KbOI0Ax17PG77uxJlGvZazwb/mqD
-TCJn+TQzD6ExlsVqXKZB23NwgAQpqAY38iz9BTeK8JFNNpGlAanQ2gzrluBHopEP
-vnr4L/Q21JR/Y7bXKpA0awAyufu9wxzOA0VT/4uq5exOweUSzoal6v5HsASwgxx8
-CNefquwr5EEFceh/+cDxWRF/05LuZUs4BgeNpKvJznAacPGriHxUCJVXnFpBsXQg
-dwt+h3RpmmwuRgqbfoJc0nSebHzxuNH7SIfi1nPhxJLH2S/DMeUYnNqBvT6qBIb7
-18y0rXqbi4/CPefunV8AqRaAfAL89qMBSFPN3Lg0vyqrK/eFgoxQkT0KkiJc0TYB
-9D+ypfncJ6ChTAQq2H14z6YP2cP8KoO/teymCLbefpjSP3PeuRn29x/zEYzP33rr
-9kjPVgoMMxClzP7f7aVY0gakQVeCyxjS2CyYtVM+UM/vZlZVrmVv5TEV5UbXlxRh
-RC8ZuN5pZHCiHOD1Cr/5Rf08n98ZqOTgP3ODwVVvHWKPuSofHsiMfIHqxOSQi0Mu
-SCi0t5mA8ZgeLTK/1GSt+ejjSBmD64br/bJ1zzjI6pH7MvewbJ/k9UY9ddjK5fAW
-jgDH7zcBXQRIPRMizPD/
-=ubka
------END PGP SIGNATURE-----
-
---gvF4niNJ+uBMJnEh--
