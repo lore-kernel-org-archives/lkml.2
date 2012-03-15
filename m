@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762095Ab2COVU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 17:20:56 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41528 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756405Ab2COVUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 17:20:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="78101512"
-Subject: Re: [PATCH] Use x2apic_supported() in the default_apic_id_valid()
- function.
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Steffen Persvold <sp@numascale.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Date: Thu, 15 Mar 2012 14:21:44 -0700
-In-Reply-To: <CAE9FiQUh-kEcLLAZYiy90UJY8-WmXTKhYrjS7HQ40U+Ah2dwNg@mail.gmail.com>
-References: <CAE9FiQXC7T7JQRfiry8nHaRYN3ggy9vfzc2jDUzar80hv6pEvw@mail.gmail.com>
-	 <1331834583-16070-1-git-send-email-sp@numascale.com>
-	 <CAE9FiQUh-kEcLLAZYiy90UJY8-WmXTKhYrjS7HQ40U+Ah2dwNg@mail.gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1331846504.16101.12.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1762054Ab2COVXn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 17:23:43 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34194 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173Ab2COVXm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 17:23:42 -0400
+Date: Thu, 15 Mar 2012 14:23:38 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Alexandra Sava <alexandrasava18@gmail.com>
+Cc: "Savoy, Pavan" <pavan_savoy@ti.com>,
+        Daniel Baluta <daniel.baluta@gmail.com>,
+        "mgherzan@gmail.com" <mgherzan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ti-st: Enhange logging for Shared Transport - TI driver
+Message-ID: <20120315212338.GA22983@kroah.com>
+References: <4f623469.634cb40a.5d79.ffff841d@mx.google.com>
+ <CAEnQRZBDxB5Vb7XTFKmdrvQOcWKQU0SWO4HExvDmFbEv_AMnQw@mail.gmail.com>
+ <0F08A04750B6BE499D6FAC390A6128A231758C32@DBDE01.ent.ti.com>
+ <CAMFpKOjymX4N-w=cKMUaM6k3xBnN_SYVk9eDBhi37xjT4D0YWQ@mail.gmail.com>
+ <CAMFpKOjphDX0HbaReZCNHtux=j1LSpEK6nU3thddqFUHXUCiuA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMFpKOjphDX0HbaReZCNHtux=j1LSpEK6nU3thddqFUHXUCiuA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-03-15 at 13:23 -0700, Yinghai Lu wrote:
-> On Thu, Mar 15, 2012 at 11:03 AM, Steffen Persvold <sp@numascale.com> wrote:
-> > Use x2apic_supported() in the default_apic_id_valid() function. If x2apic mode is disabled (via nox2apic for example), x2apic_supported() will return false.
+On Thu, Mar 15, 2012 at 11:17:25PM +0200, Alexandra Sava wrote:
+> On 15 March 2012 23:10, Alexandra Sava <alexandrasava18@gmail.com> wrote:
+> > On 15 March 2012 22:29, Savoy, Pavan <pavan_savoy@ti.com> wrote:
+> >> Daniel Baluta wrote:
+> >>> Adding Greg's new email address.
+> >>>
+> >>> On Thu, Mar 15, 2012 at 8:26 PM,  <alexandrasava18@gmail.com> wrote:
+> >>>> From: Alexandra Sava <alexandrasava18@gmail.com>
+> >>>>
+> >>>> * added new module parameter named debug_mask to control displayed
+> >>>> messages verbosity
+> >>>> * the logging mechanism is enabled via CONFIG_TI_ST_DEBUG Kconfig
+> >>>> option
+> >>
+> >> Any specific reason you want to have this ? Custom logging ?
+> >> Also please fix the spelling in the subject line.
+> >>
 > >
-> > This allows us to substitute the check in arch/x86/kernel/acpi/boot.c::acpi_parse_x2apic and avoid feigning the x2apic cpu feature in the NumaChip apic code.
-> >
-> > Signed-off-by: Steffen Persvold <sp@numascale.com>
-> > Reviewed-by: Daniel J Blueman <daniel@numascale-asia.com>
+> > The logging for this driver is too verbose, and I thought it would be
+> > better to implement a configurable mechanism which can enable/disable
+> > the log messages (not only via the global CONFIG_DYNAMIC_DEBUG).
+> > So, I think there are two ways:
 > 
-> I double checked on system with x2apic preenabled,
-> nox2apic in boot command line still works well and it
-> skips starting APs with apic id > 255.
-> 
-> Acked-by: Yinghai Lu <yinghai@kernel.org>
+> The logging for this driver is too verbose, and I thought it would be
+> better to implement a configurable mechanism which can enable/disable
+> the log messages (not only via the global CONFIG_DYNAMIC_DEBUG).
+> So, I think there are two ways:
+> 	1. keep pr_debug but reduce the amount of messages
 
-This breaks the smpboot check if enabling interrupt-remapping/x2apic
-fails on a platform. We will be in xapic mode and we don't clear the
-x2apic cpufeature bit in this case and as such smpboot check will fail.
+That's probably the best, you aren't needing almost all of them anymore
+now that the driver is working.
 
-So this change breaks the commit
-c284b42abadbb22083bfde24d308899c08d44ffa.
+> 	2. make the logs configurabile via CONFIG_TI_SI_DEBUG
 
-I think the right thing is to have two different apid_id_valid checks
-one for xapic driver (apic_flat_64.c) and another for x2apic driver
-(x2apic_phys/cluster.c) and that way, x2apic MADT entries will be parsed
-only if bios has handed over the OS in x2apic mode or if we have
-selected the numachip model.
+No, don't do this, no one will enable it.
 
-thanks,
-suresh
-
-
+greg k-h
