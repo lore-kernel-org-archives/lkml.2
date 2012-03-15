@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760799Ab2COIvN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 04:51:13 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56251 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759172Ab2COIvK (ORCPT
+	id S1760853Ab2COI44 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 04:56:56 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58883 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756888Ab2COI4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 04:51:10 -0400
-From: Gerard Snitselaar <dev@snitselaar.org>
-To: martyn.welch@ge.com, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: vme: fix section mismatches in linux-next 20120314
-Date: Thu, 15 Mar 2012 01:50:39 -0700
-Message-Id: <1331801439-30038-1-git-send-email-dev@snitselaar.org>
-X-Mailer: git-send-email 1.7.7.6
+	Thu, 15 Mar 2012 04:56:50 -0400
+Message-ID: <1331801806.2941.3.camel@dabdike>
+Subject: RE: [PATCH] mpt2sas: Corrected the constant in comparison to a
+ hexadecimal.
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Nanjappa, Sathisha (MCXS, Cupertino)" <sathisha.nanjappa@hp.com>
+Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 15 Mar 2012 08:56:46 +0000
+In-Reply-To: <C8A4A375313D4E4DA64F2CB1D0490B0A44730306@G9W0735.americas.hpqcorp.net>
+References: <1331665168-22561-1-git-send-email-sathisha.nanjappa@hp.com>
+	 <1331665168-22561-2-git-send-email-sathisha.nanjappa@hp.com>
+	 <1331714014.8688.3.camel@dabdike>
+	 <C8A4A375313D4E4DA64F2CB1D0490B0A44730306@G9W0735.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pio2_gpio_init() annotated with __init, but called by pio2_probe()
-which is annotated __devinit. pio2_gpio_exit() is annotated __exit,
-but is called by pio2_probe() and by pio2_remove() which is annotated
-__devexit.
+On Wed, 2012-03-14 at 23:36 +0000, Nanjappa, Sathisha (MCXS, Cupertino)
+wrote:
+> > 
+> > On Tue, 2012-03-13 at 11:59 -0700, Sathisha Nanjappa wrote:
+> > > Bugzilla 42142 - mpt2sas: Number specified in wrong base
+> > >     https://bugzilla.kernel.org/show_bug.cgi?id=42142
+> > 
+> > From: James Bottomley
+> > Sent: Wednesday, March 14, 2012 1:34 AM
+> > Do you have a better description ... like what is the user
+> > visible effect of correcting the constant?
+> >
+> 
+> Does this look better:
+> 
+> "This fix ensures that the IOP_LOGINFO_CODE_TASK_TERMINATED
+> messages do not clutter the sas_log_info messages."
 
-Signed-off-by: Gerard Snitselaar <dev@snitselaar.org>
----
- drivers/staging/vme/devices/vme_pio2.h      |    4 ++--
- drivers/staging/vme/devices/vme_pio2_gpio.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Much better, thanks.  The whole point of a commit message is to explain
+what you're doing and why you're doing it.  Just translating C to
+english isn't useful because everyone who looks a kernel patches can
+read C.
 
-diff --git a/drivers/staging/vme/devices/vme_pio2.h b/drivers/staging/vme/devices/vme_pio2.h
-index 3c59313..72d9ce0 100644
---- a/drivers/staging/vme/devices/vme_pio2.h
-+++ b/drivers/staging/vme/devices/vme_pio2.h
-@@ -243,7 +243,7 @@ struct pio2_card {
- int pio2_cntr_reset(struct pio2_card *);
- 
- int pio2_gpio_reset(struct pio2_card *);
--int __init pio2_gpio_init(struct pio2_card *);
--void __exit pio2_gpio_exit(struct pio2_card *);
-+int __devinit pio2_gpio_init(struct pio2_card *);
-+void pio2_gpio_exit(struct pio2_card *);
- 
- #endif /* _VME_PIO2_H_ */
-diff --git a/drivers/staging/vme/devices/vme_pio2_gpio.c b/drivers/staging/vme/devices/vme_pio2_gpio.c
-index dc837de..8584849 100644
---- a/drivers/staging/vme/devices/vme_pio2_gpio.c
-+++ b/drivers/staging/vme/devices/vme_pio2_gpio.c
-@@ -187,7 +187,7 @@ int pio2_gpio_reset(struct pio2_card *card)
- 	return 0;
- }
- 
--int __init pio2_gpio_init(struct pio2_card *card)
-+int __devinit pio2_gpio_init(struct pio2_card *card)
- {
- 	int retval = 0;
- 	char *label;
-@@ -220,7 +220,7 @@ int __init pio2_gpio_init(struct pio2_card *card)
- 	return retval;
- };
- 
--void __exit pio2_gpio_exit(struct pio2_card *card)
-+void pio2_gpio_exit(struct pio2_card *card)
- {
- 	const char *label = card->gc.label;
- 
--- 
-1.7.7.6
+James
+
 
