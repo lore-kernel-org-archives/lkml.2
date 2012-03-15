@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161412Ab2COUXZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 16:23:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56525 "EHLO
+	id S1161431Ab2COU0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 16:26:39 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39784 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161027Ab2COUXY (ORCPT
+	with ESMTP id S1161254Ab2COU0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 16:23:24 -0400
+	Thu, 15 Mar 2012 16:26:37 -0400
+Date: Thu, 15 Mar 2012 13:26:33 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: "Tu, Xiaobing" <xiaobing.tu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+        "Du, Alek" <alek.du@intel.com>, "Zuo, Jiao" <jiao.zuo@intel.com>
+Subject: Re: [PATCH] tty: hold lock across tty buffer finding and buffer
+ filling
+Message-ID: <20120315202633.GA23975@kroah.com>
+References: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1331834583-16070-1-git-send-email-sp@numascale.com>
-References: <CAE9FiQXC7T7JQRfiry8nHaRYN3ggy9vfzc2jDUzar80hv6pEvw@mail.gmail.com>
-	<1331834583-16070-1-git-send-email-sp@numascale.com>
-Date: Thu, 15 Mar 2012 13:23:24 -0700
-X-Google-Sender-Auth: eQklUbdyNCmoEv09COVdvPYbkuM
-Message-ID: <CAE9FiQUh-kEcLLAZYiy90UJY8-WmXTKhYrjS7HQ40U+Ah2dwNg@mail.gmail.com>
-Subject: Re: [PATCH] Use x2apic_supported() in the default_apic_id_valid() function.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Steffen Persvold <sp@numascale.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <EE928378561BF1449699C96571234A740FCC580F@SHSMSX102.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 11:03 AM, Steffen Persvold <sp@numascale.com> wrote:
-> Use x2apic_supported() in the default_apic_id_valid() function. If x2apic mode is disabled (via nox2apic for example), x2apic_supported() will return false.
->
-> This allows us to substitute the check in arch/x86/kernel/acpi/boot.c::acpi_parse_x2apic and avoid feigning the x2apic cpu feature in the NumaChip apic code.
->
-> Signed-off-by: Steffen Persvold <sp@numascale.com>
-> Reviewed-by: Daniel J Blueman <daniel@numascale-asia.com>
+On Thu, Mar 15, 2012 at 02:06:43AM +0000, Tu, Xiaobing wrote:
+> From: Xiaobing Tu <xiaobing.tu@intel.com>
+> 
+> tty_buffer_request_room is well protected, but while after it returns,
+>  it releases the port->lock. tty->buf.tail might be modified
+> by either irq handler or other threads. The patch adds more protection
+> by holding the lock across tty buffer finding and buffer filling.
+> 
+> Signed-off-by: Alek Du <alek.du@intel.com>
+> Signed-off-by: Xiaobing Tu <xiaobing.tu@intel.com>
+> ---
+>  drivers/tty/tty_buffer.c |   85 +++++++++++++++++++++++++++++++++++-----------
+>  1 files changed, 65 insertions(+), 20 deletions(-)
+>  mode change 100644 => 100755 drivers/tty/tty_buffer.c
+> 
+> diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+> old mode 100644
+> new mode 100755
 
-I double checked on system with x2apic preenabled,
-nox2apic in boot command line still works well and it
-skips starting APs with apic id > 255.
+What?  Why would you change the mode of the file to be executable?
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Also, your patch introduces a bunch of trailing whitespace, please run
+it through scripts/checkpatch.pl and fix those issues before resending
+it.
+
+thanks,
+
+greg k-h
