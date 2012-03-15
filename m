@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030750Ab2COPEZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 11:04:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19794 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030551Ab2COPEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 11:04:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="117976198"
-Message-ID: <4F6204B7.5010908@intel.com>
-Date: Thu, 15 Mar 2012 23:03:19 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S965341Ab2COPJy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 11:09:54 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:60550 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965133Ab2COPJv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 11:09:51 -0400
+Date: Thu, 15 Mar 2012 08:09:47 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: stable-3.0: s390 build breakage [was: Linux 3.0.24]
+Message-ID: <20120315150947.GI7928@kroah.com>
+References: <20120312203451.GA16773@kroah.com>
+ <4F61C911.5010204@suse.cz>
 MIME-Version: 1.0
-To: gregkh <gregkh@linuxfoundation.org>,
-        "Sharp, Sarah A" <sarah.a.sharp@intel.com>
-CC: Alan stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
-References: <1331787186.2979.71.camel@debian> <20120315145743.GA7928@kroah.com>
-In-Reply-To: <20120315145743.GA7928@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F61C911.5010204@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2012 10:57 PM, gregkh wrote:
-
-> On Thu, Mar 15, 2012 at 12:53:06PM +0800, Alex Shi wrote:
->>
->> According to Felipe and Alan's comments the second parameter of irq
->> handler should be 'void *' not a specific structure pointer. 
->> So change it.
->>
->> Signed-off-by: Alex Shi <alex.shi@intel.com>
->> ---
->>  drivers/usb/host/xhci-ring.c |    2 +-
->>  drivers/usb/host/xhci.c      |    4 ++--
->>  drivers/usb/host/xhci.h      |    2 +-
->>  3 files changed, 4 insertions(+), 4 deletions(-)
+On Thu, Mar 15, 2012 at 11:48:49AM +0100, Jiri Slaby wrote:
+> On 03/12/2012 09:34 PM, Greg KH wrote:
+> > I'm announcing the release of the 3.0.24 kernel.
+> ...
+> > Heiko Carstens (1): compat: fix compile breakage on s390
 > 
-> Is this needed in my -next tree now?  Or is it something for later?
+> It looks like we need the same fix as for 2.6.32.59:
+> arch/s390/kernel/setup.c: In function 'setup_addressing_mode':
+> arch/s390/kernel/setup.c:328: error: 'PSW32_ASC_PRIMARY' undeclared
+> (first use in this function)
+> arch/s390/kernel/setup.c:328: error: (Each undeclared identifier is
+> reported only once
+> arch/s390/kernel/setup.c:328: error: for each function it appears in.)
 
+Ick.  What is the patch that should be applied here to resolve this?  I
+don't remember seeing it go by, but I could have missed it.
 
-Appreciate if it can be in -next tree. :)
+thanks,
 
-> 
-> Any reason you did not put Sarah on the To: line here?  She's the one
-> that needs to ack it before I can accept it.
-
-
-Sarah, would you like to give some comments here?
-
-Thanks!
-
-> 
-> thanks,
-> 
-> greg k-h
-
-
+greg k-h
