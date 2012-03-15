@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031523Ab2COWxn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 18:53:43 -0400
-Received: from cora.hrz.tu-chemnitz.de ([134.109.228.40]:44152 "EHLO
+	id S965436Ab2COWzb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 18:55:31 -0400
+Received: from cora.hrz.tu-chemnitz.de ([134.109.228.40]:44205 "EHLO
 	cora.hrz.tu-chemnitz.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031141Ab2COWxl (ORCPT
+	with ESMTP id S965275Ab2COWz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 18:53:41 -0400
-Message-ID: <4F6272F3.7030909@hrz.tu-chemnitz.de>
-Date: Thu, 15 Mar 2012 23:53:39 +0100
+	Thu, 15 Mar 2012 18:55:29 -0400
+Message-ID: <4F626F39.6060105@hrz.tu-chemnitz.de>
+Date: Thu, 15 Mar 2012 23:37:45 +0100
 From: Markus Franke <markus.franke@s2002.tu-chemnitz.de>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.27) Gecko/20120216 Thunderbird/3.1.19
 MIME-Version: 1.0
@@ -18,8 +18,8 @@ Subject: [PATCH 2/2] w1: Disable irqs during 1-wire bus operations, extend
  1-wire reset pulse
 Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Scan-AV: mailbox.hrz.tu-chemnitz.de;2012-03-15 23:53:40;df830ebbd724b6a76a2bd811e0047e93
-X-Scan-SA: cora.hrz.tu-chemnitz.de;2012-03-15 23:53:40;c7debafe478fbce12e246f034b8bdb9e
+X-Scan-AV: mailbox.hrz.tu-chemnitz.de;2012-03-15 23:39:33;0c7886de8b999e2d448c1ecc042641ed
+X-Scan-SA: cora.hrz.tu-chemnitz.de;2012-03-15 23:39:34;b603463841e4af0ca8781f4ef607e140
 X-Spam-Score: -1.0 (-)
 X-Spam-Report: --- Textanalyse SpamAssassin 3.3.1 (-1.0 Punkte)
  Fragen an/questions to:  Postmaster TU Chemnitz <postmaster@tu-chemnitz.de>
