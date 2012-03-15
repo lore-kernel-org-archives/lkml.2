@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031269Ab2COWoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 18:44:10 -0400
-Received: from mx1310.superdata.vn ([27.0.13.10]:2728 "EHLO
-	mail9242.dotvndns.vn" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1031159Ab2COWoF (ORCPT
+	id S1031277Ab2COWtm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 18:49:42 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:45760 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1761635Ab2COWti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 18:44:05 -0400
-X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Mar 2012 18:44:04 EDT
-DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=datxanh.com.vn;
-	c=simple; q=dns; h=from:message-id;
-	b=hroiqNlpLR6Nn4zImOavbz4fuo/It2BCQFEeBoDSY4lNhbhBHj5OSXOeFiiZ
-	XnwODoD0FjIBW7070w1Ff9xPbRE60mPatDQmTr84JWWYgAsAbVe1GnxOg
-	0RhAXDzLgfhG7VEZnvHWRVYhwkAHyQXjcdndQ2IXpYqVaSAdYygGLo=;
-X-MDAV-Processed: mail9242.dotvndns.vn, Fri, 16 Mar 2012 05:38:12 +0700
-X-Spam-Processed: mail9242.dotvndns.vn, Fri, 16 Mar 2012 05:38:09 +0700
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: khuyenptm@datxanh.com.vn
-X-Return-Path: khuyenptm@datxanh.com.vn
-X-Envelope-From: khuyenptm@datxanh.com.vn
-Date: Fri, 16 Mar 2012 05:37:33 +0700
-From: "Pham Thi My Khuyen" <khuyenptm@datxanh.com.vn>
-Subject: Dear Esteemed Email User Account.
+	Thu, 15 Mar 2012 18:49:38 -0400
+Message-ID: <4F627201.3080100@xenotime.net>
+Date: Thu, 15 Mar 2012 15:49:37 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Message-ID: <WC20120315223733.3100B5@datxanh.com.vn>
-X-Mailer: WorldClient 11.0.3
-To: unlisted-recipients:; (no To-header on input)
+To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+CC: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] crypto: camellia-x86_64 - module init/exit functions
+ should be static
+References: <4F620F37.4070404@xenotime.net> <20120315201151.11667.63183.stgit@localhost6.localdomain6>
+In-Reply-To: <20120315201151.11667.63183.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/15/2012 01:11 PM, Jussi Kivilinna wrote:
+
+> This caused conflict with twofish-x86_64-3way when compiled into kernel,
+> same function names and not static.
+> 
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 
 
-Dear Esteemed User,
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
-Click on the link below and fill the details to improve the spam filter 
-services in our webmail systems for better online services to avoid 
-virus and spam 
+Thanks.
 
-mails.
+> ---
+>  arch/x86/crypto/camellia_glue.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/crypto/camellia_glue.c b/arch/x86/crypto/camellia_glue.c
+> index 1ca36a9..3306dc0 100644
+> --- a/arch/x86/crypto/camellia_glue.c
+> +++ b/arch/x86/crypto/camellia_glue.c
+> @@ -1925,7 +1925,7 @@ static int force;
+>  module_param(force, int, 0);
+>  MODULE_PARM_DESC(force, "Force module load, ignore CPU blacklist");
+>  
+> -int __init init(void)
+> +static int __init init(void)
+>  {
+>  	if (!force && is_blacklisted_cpu()) {
+>  		printk(KERN_INFO
+> @@ -1938,7 +1938,7 @@ int __init init(void)
+>  	return crypto_register_algs(camellia_algs, ARRAY_SIZE(camellia_algs));
+>  }
+>  
+> -void __exit fini(void)
+> +static void __exit fini(void)
+>  {
+>  	crypto_unregister_algs(camellia_algs, ARRAY_SIZE(camellia_algs));
+>  }
+> 
 
-http://www.autoproslancaster.com/form/use/helpdesk/form1.html
-
-Do not ignore this message.
 
 
+-- 
+~Randy
