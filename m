@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758441Ab2CODNV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 23:13:21 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48386 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754421Ab2CODNR (ORCPT
+	id S1760784Ab2CODOi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 23:14:38 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:61312 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759970Ab2CODNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 23:13:17 -0400
+	Wed, 14 Mar 2012 23:13:45 -0400
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
@@ -19,85 +19,78 @@ Cc: linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
         pmoore@redhat.com, akpm@linux-foundation.org, corbet@lwn.net,
         eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
         keescook@chromium.org, Will Drewry <wad@chromium.org>
-Subject: [PATCH v15 00/13] seccomp_filter: syscall filtering using BPF
-Date: Wed, 14 Mar 2012 22:11:52 -0500
-Message-Id: <1331781125-15658-1-git-send-email-wad@chromium.org>
+Subject: [PATCH v15 12/13] x86: Enable HAVE_ARCH_SECCOMP_FILTER
+Date: Wed, 14 Mar 2012 22:12:04 -0500
+Message-Id: <1331781125-15658-13-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1331781125-15658-1-git-send-email-wad@chromium.org>
+References: <1331781125-15658-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please see prior revisions of this patch series for a high
-level blurb.
+Enable support for seccomp filter on x86:
+- asm/tracehook.h exists
+- syscall_get_arguments() works
+- syscall_rollback() works
+- ptrace_report_syscall() works
+- secure_computing() return value is honored (see below)
 
-This revision makes a number of refinements and tweaks. The biggest
-change is a slight renumbering of the return codes which will break
-existing code using this patch series.
+This also adds support for honoring the return
+value from secure_computing().
 
-I believe this patch is in good shape, and I don't see the need for
-any more API changes at this point.  I plan to start using this revision
-more extensively, and I'd certainly appreciate any testing.
+SECCOMP_RET_TRACE and SECCOMP_RET_TRAP may result in seccomp needing to
+skip a system call without killing the process.  This is done by
+returning a non-zero (-1) value from secure_computing.  This change
+makes x86 respect that return value.
 
-Thanks!
-will
+To ensure that minimal kernel code is exposed, a non-zero return value
+results in an immediate return to user space (with an invalid syscall
+number).
 
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ arch/x86/Kconfig         |    1 +
+ arch/x86/kernel/ptrace.c |    7 ++++++-
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
-Kees Cook (1):
-  seccomp: remove duplicated failure logging
-
-Will Drewry (12):
-  sk_run_filter: add BPF_S_ANC_SECCOMP_LD_W
-  net/compat.c,linux/filter.h: share compat_sock_fprog
-  seccomp: kill the seccomp_t typedef
-  arch/x86: add syscall_get_arch to syscall.h
-  asm/syscall.h: add syscall_get_arch
-  seccomp: add system call filtering using BPF
-  seccomp: add SECCOMP_RET_ERRNO
-  signal, x86: add SIGSYS info and make it synchronous.
-  seccomp: Add SECCOMP_RET_TRAP
-  ptrace,seccomp: Add PTRACE_SECCOMP support
-  x86: Enable HAVE_ARCH_SECCOMP_FILTER
-  Documentation: prctl/seccomp_filter
-
- Documentation/prctl/seccomp_filter.txt |  156 +++++++++++
- arch/Kconfig                           |   24 ++
- arch/x86/Kconfig                       |    1 +
- arch/x86/ia32/ia32_signal.c            |    4 +
- arch/x86/include/asm/ia32.h            |    6 +
- arch/x86/include/asm/syscall.h         |   23 ++
- arch/x86/kernel/ptrace.c               |    7 +-
- include/asm-generic/siginfo.h          |   22 ++
- include/asm-generic/syscall.h          |   14 +
- include/linux/Kbuild                   |    1 +
- include/linux/audit.h                  |    8 +-
- include/linux/filter.h                 |   12 +
- include/linux/ptrace.h                 |    7 +-
- include/linux/sched.h                  |    2 +-
- include/linux/seccomp.h                |  105 +++++++-
- kernel/auditsc.c                       |   10 +-
- kernel/fork.c                          |    3 +
- kernel/ptrace.c                        |    3 +
- kernel/seccomp.c                       |  446 ++++++++++++++++++++++++++++++--
- kernel/signal.c                        |    9 +-
- kernel/sys.c                           |    2 +-
- net/compat.c                           |    8 -
- net/core/filter.c                      |    6 +
- samples/Makefile                       |    2 +-
- samples/seccomp/Makefile               |   38 +++
- samples/seccomp/bpf-direct.c           |  176 +++++++++++++
- samples/seccomp/bpf-fancy.c            |  102 ++++++++
- samples/seccomp/bpf-helper.c           |   89 +++++++
- samples/seccomp/bpf-helper.h           |  238 +++++++++++++++++
- samples/seccomp/dropper.c              |   68 +++++
- 30 files changed, 1538 insertions(+), 54 deletions(-)
- create mode 100644 Documentation/prctl/seccomp_filter.txt
- create mode 100644 samples/seccomp/Makefile
- create mode 100644 samples/seccomp/bpf-direct.c
- create mode 100644 samples/seccomp/bpf-fancy.c
- create mode 100644 samples/seccomp/bpf-helper.c
- create mode 100644 samples/seccomp/bpf-helper.h
- create mode 100644 samples/seccomp/dropper.c
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 5bed94e..4c9012b 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -82,6 +82,7 @@ config X86
+ 	select CLKEVT_I8253
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	select GENERIC_IOMAP
++	select HAVE_ARCH_SECCOMP_FILTER
+ 
+ config INSTRUCTION_DECODER
+ 	def_bool (KPROBES || PERF_EVENTS)
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 5026738..90d465a 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -1380,7 +1380,11 @@ long syscall_trace_enter(struct pt_regs *regs)
+ 		regs->flags |= X86_EFLAGS_TF;
+ 
+ 	/* do the secure computing check first */
+-	secure_computing(regs->orig_ax);
++	if (secure_computing(regs->orig_ax)) {
++		/* seccomp failures shouldn't expose any additional code. */
++		ret = -1L;
++		goto out;
++	}
+ 
+ 	if (unlikely(test_thread_flag(TIF_SYSCALL_EMU)))
+ 		ret = -1L;
+@@ -1405,6 +1409,7 @@ long syscall_trace_enter(struct pt_regs *regs)
+ 				    regs->dx, regs->r10);
+ #endif
+ 
++out:
+ 	return ret ?: regs->orig_ax;
+ }
+ 
 -- 
 1.7.5.4
 
