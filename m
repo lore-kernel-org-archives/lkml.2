@@ -1,68 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab2CODs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Mar 2012 23:48:59 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54244 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038Ab2CODs5 convert rfc822-to-8bit (ORCPT
+	id S1759639Ab2COD6t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Mar 2012 23:58:49 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40033 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755407Ab2COD6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Mar 2012 23:48:57 -0400
+	Wed, 14 Mar 2012 23:58:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1203150056361.2466@ionos>
-References: <20120302164234.4938.38390934@jp.panasonic.com>
- <20120314144601.ccc50a68.akpm@linux-foundation.org> <alpine.LFD.2.02.1203142250500.2466@ionos>
- <alpine.LFD.2.02.1203150056361.2466@ionos>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 14 Mar 2012 20:48:36 -0700
-X-Google-Sender-Auth: o9w51IRMgLrQfjeOHiNzBUJz5Kc
-Message-ID: <CA+55aFygRpuCZ0K0_hon7t3H+qa3WKb3--VXooN8p14S6or2tw@mail.gmail.com>
-Subject: Re: [REGRESSION][PATCH] mqueue: Ignore the validity of abs_timeout
- parameter when message can be performed immediately
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Akira Takeuchi <takeuchi.akr@jp.panasonic.com>,
-        linux-kernel@vger.kernel.org, Carsten Emde <C.Emde@osadl.org>,
-        Manfred Spraul <manfred@colorfullife.com>
+From: Paul Turner <pjt@google.com>
+Date: Wed, 14 Mar 2012 20:58:17 -0700
+Message-ID: <CAPM31RL6Sk6cNR9MzW_7XDvfkMA1q6xK_mcJJaCMY8Ex___9+A@mail.gmail.com>
+Subject: [ANNOUNCE] LinSched for v3.3-rc7
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Benjamin Segall <bsegall@google.com>,
+        Ranjit Manomohan <ranjitm@google.com>, Nikhil Rao <ncrao@google.com>,
+        jmc@cs.unc.edu, Dhaval Giani <dhaval.giani@gmail.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 14, 2012 at 5:28 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> Aside of my previous ranting about the insanity of that, the following
-> is actually open for interpretation:
->
->  "The validity of the abstime parameter need not be checked if a
->  message can be removed from the message queue immediately."
->
-> It's not necessary to check the validity of the abstime parameter, but
-> the spec does not forbid it either.
+Hi All,
 
-Yeah, I have to agree with your reading.
+[ Take 2, gmail tried to a non text/plain component into the last email .. ]
 
-I think that checking the validity is the sane thing to do, especially
-if it just "falls out" of how the code is written.
+Quick start version:
 
-At the same time, I can also imagine code that doesn't even look at
-the timeout parameter unless it is about to go to sleep, so I can
-understand the POSIX wording too: you don't *have* to check the
-validity if it's irrelevant, and not checking it is the natural thing
-for the code.
+Available under linsched-alpha at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/pjt/linsched.git  .linsched
 
-But it certainly doesn't seem to disallow the current code either.
+NOTE: The branch history is still subject to some revision as I am
+still re-partitioning some of the patches.  Once this is complete, I
+will promote linsched-alpha into a linsched branch at which point it
+will no longer be subject to history re-writes.
 
-So I do not think that the POSIX wording should be taken to mean that
-"you mustn't check the validity". It's a "whatever", not a "must do
-X".
+After checking out the code:
+cd tools/linsched
+make
+cd tests
+./run_tests.sh basic_tests
+<< then try changing some scheduler parameters, e.g. sched_latency,
+and repeating >>
 
-With the current code, checking the validity of the timeout falls out
-from what we do. I don't think we need to work around that, based on
-the POSIX wording. And if there are no applications that actually
-broke, I don't think we should care.
+(Note:  The basic_tests are unit-tests, these are calibrated to the
+current scheduler tunables and should strictly be considered sanity
+tests.  Please see the mcarlo-sim work for a more useful testing
+environment.)
 
-Is there some other standard that says that you *have* to let crazy
-invalid values go?
+Extended version:
 
-                 Linus
+First of all, apologies in the delay to posting this -- I know there's
+been a lot of interest.  We made the choice to first rebase to v3.3
+since there were fairly extensive changes, especially within the
+scheduler, that meant we had the opportunity to significantly clean up
+some of the LinSched code.  (For example, previously we were
+processing kernel/sched* using awk as a Makefile step so that we could
+extract the necessary structure information without modifying
+sched.c!)  While the code benefited greatly from this, there were
+several other changes that required fairly extensive modification in
+this process (and in the meanwhile the v3.1 version became less
+representative due to the extent of the above changes); which pushed
+things out much further than I would have liked.  I suppose the moral
+of the story is always release early, and often.
+
+That said, I'm relatively happy with the current state of integration,
+there's certainly some specific areas that can still be greatly
+improved (in particular, the main simulator loop has not had as much
+attention paid as the LinSched<>Kernel interactions and there's a long
+list of TODOs that could be improved there), but things are now mated
+fairly cleanly through the use of a new LinSched architecture.  This
+is a total re-write of almost all LinSched<>Kernel interactions versus
+the previous (2.6.35) version, and has allowed us to now carry almost
+zero modifications against the kernel source.  It's both possible to
+develop/test in place, as well as being patch compatible.  The
+remaining touch-points now total just 20 lines!  Half of these are
+likely mergable, with the other 10 lines being more LinSched specific
+at this point in time, I've broken these down below:
+
+The total damage:
+ include/linux/init.h      |    6 ++++++   (linsched ugliness,
+unfortunately necessary until we boot-strap proper initcall support)
+ include/linux/rcupdate.h  |    3 +++    (only necessary to allow -O0
+compilation which is extremely handy for analyzing the scheduler using
+gdb)
+ kernel/pid.c              |    4 ++++        (linsched ugliness,
+these can go eventually)
+ kernel/sched/fair.c       |    2 +-          (this is just the
+promotion of 1 structure and function from static state which weren't
+published in the sched/ re-factoring that we need from within the
+simulator)
+ kernel/sched/stats.c      |    2 +-
+ kernel/time/timekeeping.c |    3 ++-    (this fixes a time-dilation
+error due to rounding when our clock-source has ns-resolution, e.g.
+shift==1)
+ 6 files changed, 17 insertions(+), 3 deletions(-)
+
+Summarized changes vs 2.6.35 (previous version):
+
+- The original LinSched (understandably) simplified many of the kernel
+interactions in order to make simulation easier.  Unfortunately, this
+has serious side-effects on the accuracy of simulation.  We've now
+introduced a large portion of this state, including: irq and soft-irq
+contexts (we now perform periodic load-balance out of SCHED_SOFTIRQ
+for example), support for active load-balancing, correctly modeled
+nohz interactions, ipi and stop-task support.
+
+- Support for record and replay of application scheduling via perf.
+This is not yet well integrated, but under tests exist the tools to
+record an applications behavior using perf sched record, and then play
+it back in the simulator.
+
+- Load-balancer scoring.  This one is a very promising new avenue for
+load-balancer testing.  We analyzed several workloads and found that
+they could be well-modeled using a log-normal distribution.
+Parameterizing these models then allows us to construct a large (500)
+test-case set of randomly generated workloads that behave similarly.
+By integrating the variance between the current load-balance and an
+offline computed (currently greedy first-fit) balance we're able to
+automatically identify and score an approximation of our distance from
+an ideal load-balance.  Historically, such scores are very difficult
+to interpret, however, that's where our ability to generate a large
+set of test-cases above comes in.  This allows us to exploit a nice
+property, it's much easier to design a scoring function that diverges
+(in this case the variance) than a nice stable one that converges.  We
+can then catch regressions in load-balancer quality by measuring the
+divergence in this set of scoring functions across our set of
+test-cases.  This particular feature needs a large set of
+documentation in itself (todo), but to get started with playing with
+it see Makefile.mcarlo-sims in tools/linsched/tests.  In particular to
+evaluate the entire set across a variety of topologies the following
+command can be issued:
+  make -j <num_cpus * 2 > -f Makefile.mcarlo-sims
+(The included 'diff-mcarlo-500' tool can then be used to make
+comparisons across result sets.)
+
+- Validation versus real hardware.  Under tests/validation we've
+included a tool for replaying and recording the above simulations on a
+live-machine.  These can then be compared to simulated runs using the
+tools above to ensure that LinSched is modelling your architecture
+reasonably appropriately.  We did some reasonably extensive
+comparisons versus several x86 topologies in the v3.1 code using this;
+it's a fundamentally hard problem -- in particular there's much more
+clock drift between events on real hardware, but the results showed
+the included topologies to be a reasonable simulacrum under LinSched.
+
+What's to come?
+- More documentation, especially about the use of the new
+load-balancer scoring tools.
+- The history is very coarse right now as a result of going through a
+rebase cement-mixer.  I'd like to incrementally refactor some of the
+larger commits; once this is done I will promote linsched-alpha to a
+stable linsched branch that won't be subject to history re-writes.
+- KBuild integration.  We currently build everything out of the
+tools/linsched makefiles.  One of the immediate TODOs involves
+re-working the arch/linsched half of this to work with kbuild so that
+its less hacky/fragile.
+- Writing up some of the existing TODOs as starting points for anyone
+who wants to get involved.
+
+I'd also like to take a moment to specially recognize the effort of
+the following contributors, all of whom were involved extensively in
+the work above.  Things have come a long way since the 5000 lines of
+"#ifdef LINSCHED", the current status would not be possible without
+them.
+  Ben Segall, Dhaval Giani, Ranjit Manomohan, Nikhil Rao, and Abhishek
+Srivastava
+
+Thanks!
