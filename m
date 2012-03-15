@@ -1,271 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758416Ab2COHny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 03:43:54 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52718 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab2COHnu (ORCPT
+	id S1758596Ab2COHxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 03:53:21 -0400
+Received: from mail-pz0-f52.google.com ([209.85.210.52]:33969 "EHLO
+	mail-pz0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756954Ab2COHxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 03:43:50 -0400
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Venu Byravarasu <vbyravarasu@nvidia.com>,
-        Peter Korsgaard <jacmet@sunsite.dk>
-Subject: [PATCH v9] mfd: Add anatop mfd driver
-Date: Thu, 15 Mar 2012 15:43:41 +0800
-Message-Id: <1331797421-23731-1-git-send-email-paul.liu@linaro.org>
-X-Mailer: git-send-email 1.7.9.1
+	Thu, 15 Mar 2012 03:53:20 -0400
+Message-ID: <1331797985.7129.1.camel@phoenix>
+Subject: [PATCH] regulator: Fix set and get current limit for wm831x_buckv
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Thu, 15 Mar 2012 15:53:05 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+WM831X_DC1_HC_THR_MASK is 0x0070.
+We need to do proper shift for setting and getting current limit.
 
-Anatop is a mfd chip embedded in Freescale i.MX6Q SoC.
-Anatop provides regulators and thermal.
-This driver handles the address space and the operation of the mfd device.
-
-Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Venu Byravarasu <vbyravarasu@nvidia.com>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/mfd/Kconfig        |    8 +++
- drivers/mfd/Makefile       |    1 +
- drivers/mfd/anatop-mfd.c   |  142 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/anatop.h |   40 ++++++++++++
- 4 files changed, 191 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/anatop-mfd.c
- create mode 100644 include/linux/mfd/anatop.h
+ drivers/regulator/wm831x-dcdc.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 82da448..c3a9f31 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -846,6 +846,14 @@ config MFD_INTEL_MSIC
- 	  Passage) chip. This chip embeds audio, battery, GPIO, etc.
- 	  devices used in Intel Medfield platforms.
+diff --git a/drivers/regulator/wm831x-dcdc.c b/drivers/regulator/wm831x-dcdc.c
+index 4904a40..3044001 100644
+--- a/drivers/regulator/wm831x-dcdc.c
++++ b/drivers/regulator/wm831x-dcdc.c
+@@ -386,7 +386,8 @@ static int wm831x_buckv_set_current_limit(struct regulator_dev *rdev,
+ 	if (i == ARRAY_SIZE(wm831x_dcdc_ilim))
+ 		return -EINVAL;
  
-+config MFD_ANATOP
-+	bool "Support for Freescale i.MX on-chip ANATOP controller"
-+	depends on SOC_IMX6Q
-+	help
-+	  Select this option to enable Freescale i.MX on-chip ANATOP
-+	  MFD controller. This controller embeds regulator and
-+	  thermal devices for Freescale i.MX platforms.
-+
- endmenu
- endif
+-	return wm831x_set_bits(wm831x, reg, WM831X_DC1_HC_THR_MASK, i);
++	return wm831x_set_bits(wm831x, reg, WM831X_DC1_HC_THR_MASK,
++			       i << WM831X_DC1_HC_THR_SHIFT);
+ }
  
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 27430d3..42c8bf6 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -113,3 +113,4 @@ obj-$(CONFIG_TPS65911_COMPARATOR)	+= tps65911-comparator.o
- obj-$(CONFIG_MFD_AAT2870_CORE)	+= aat2870-core.o
- obj-$(CONFIG_MFD_INTEL_MSIC)	+= intel_msic.o
- obj-$(CONFIG_MFD_S5M_CORE)	+= s5m-core.o s5m-irq.o
-+obj-$(CONFIG_MFD_ANATOP)	+= anatop-mfd.o
-diff --git a/drivers/mfd/anatop-mfd.c b/drivers/mfd/anatop-mfd.c
-new file mode 100644
-index 0000000..4272e60
---- /dev/null
-+++ b/drivers/mfd/anatop-mfd.c
-@@ -0,0 +1,142 @@
-+/*
-+ * Anatop MFD driver
-+ *
-+ * Copyright (C) 2012 Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-+ * Copyright (C) 2012 Linaro
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *   (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_address.h>
-+#include <linux/mfd/anatop.h>
-+
-+u32 anatop_get_bits(struct anatop *adata, u32 addr, int bit_shift,
-+		    int bit_width)
-+{
-+	u32 val, mask;
-+
-+	if (bit_width == 32)
-+		mask = ~0;
-+	else
-+		mask = (1 << bit_width) - 1;
-+
-+	val = readl(adata->ioreg + addr);
-+	val = (val >> bit_shift) & mask;
-+
-+	return val;
-+}
-+EXPORT_SYMBOL(anatop_get_bits);
-+
-+void anatop_set_bits(struct anatop *adata, u32 addr, int bit_shift,
-+		     int bit_width, u32 data)
-+{
-+	u32 val, mask;
-+
-+	if (bit_width == 32)
-+		mask = ~0;
-+	else
-+		mask = (1 << bit_width) - 1;
-+
-+	spin_lock(&adata->reglock);
-+	val = readl(adata->ioreg + addr) & ~(mask << bit_shift);
-+	writel((data << bit_shift) | val, adata->ioreg + addr);
-+	spin_unlock(&adata->reglock);
-+}
-+EXPORT_SYMBOL(anatop_set_bits);
-+
-+static const struct of_device_id of_anatop_subdevice_match[] = {
-+	{ .compatible = "fsl,anatop-regulator", },
-+	{ .compatible = "fsl,anatop-thermal", },
-+	{ },
-+};
-+
-+static int __devinit of_anatop_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device_node *np = dev->of_node;
-+	void *ioreg;
-+	struct anatop *drvdata;
-+
-+	ioreg = of_iomap(np, 0);
-+	if (!ioreg)
-+		return -EADDRNOTAVAIL;
-+	drvdata = devm_kzalloc(dev, sizeof(*drvdata), GFP_KERNEL);
-+	if (!drvdata)
-+		return -ENOMEM;
-+	drvdata->ioreg = ioreg;
-+	spin_lock_init(&drvdata->reglock);
-+	platform_set_drvdata(pdev, drvdata);
-+	of_platform_bus_probe(np, of_anatop_subdevice_match, dev);
-+
-+	return 0;
-+}
-+
-+static int __devexit of_anatop_remove(struct platform_device *pdev)
-+{
-+	struct anatop *drvdata;
-+	drvdata = platform_get_drvdata(pdev);
-+	iounmap(drvdata->ioreg);
-+	return 0;
-+}
-+
-+static const struct of_device_id of_anatop_match[] = {
-+	{ .compatible = "fsl,imx6q-anatop", },
-+	{ },
-+};
-+
-+static struct platform_driver anatop_of_driver = {
-+	.driver = {
-+		.name = "anatop-mfd",
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_anatop_match,
-+	},
-+	.probe		= of_anatop_probe,
-+	.remove		= of_anatop_remove,
-+};
-+
-+static int __init anatop_init(void)
-+{
-+	return platform_driver_register(&anatop_of_driver);
-+}
-+postcore_initcall(anatop_init);
-+
-+static void __exit anatop_exit(void)
-+{
-+	platform_driver_unregister(&anatop_of_driver);
-+}
-+module_exit(anatop_exit);
-+
-+MODULE_AUTHOR("Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>");
-+MODULE_DESCRIPTION("ANATOP MFD driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mfd/anatop.h b/include/linux/mfd/anatop.h
-new file mode 100644
-index 0000000..22c1007
---- /dev/null
-+++ b/include/linux/mfd/anatop.h
-@@ -0,0 +1,40 @@
-+/*
-+ * anatop.h - Anatop MFD driver
-+ *
-+ *  Copyright (C) 2012 Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-+ *  Copyright (C) 2012 Linaro
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#ifndef __LINUX_MFD_ANATOP_H
-+#define __LINUX_MFD_ANATOP_H
-+
-+#include <linux/spinlock.h>
-+
-+/**
-+ * anatop - MFD data
-+ * @ioreg: ioremap register
-+ * @reglock: spinlock for register read/write
-+ */
-+struct anatop {
-+	void *ioreg;
-+	spinlock_t reglock;
-+};
-+
-+extern u32 anatop_get_bits(struct anatop *, u32, int, int);
-+extern void anatop_set_bits(struct anatop *, u32, int, int, u32);
-+
-+#endif /*  __LINUX_MFD_ANATOP_H */
+ static int wm831x_buckv_get_current_limit(struct regulator_dev *rdev)
+@@ -400,7 +401,8 @@ static int wm831x_buckv_get_current_limit(struct regulator_dev *rdev)
+ 	if (val < 0)
+ 		return val;
+ 
+-	return wm831x_dcdc_ilim[val & WM831X_DC1_HC_THR_MASK];
++	val = (val & WM831X_DC1_HC_THR_MASK) >> WM831X_DC1_HC_THR_SHIFT;
++	return wm831x_dcdc_ilim[val];
+ }
+ 
+ static struct regulator_ops wm831x_buckv_ops = {
 -- 
-1.7.9.1
+1.7.5.4
+
+
 
