@@ -1,100 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1032428Ab2COXgZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 19:36:25 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:1535 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031246Ab2COXgX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 19:36:23 -0400
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzz8275dhz2fh2a8h668h839h944hd25h)
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-From: KY Srinivasan <kys@microsoft.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-Subject: RE: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP
- messages in the driver
-Thread-Topic: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP
- messages in the driver
-Thread-Index: AQHM/xUgjodDttIBOEu6jGmJDxmA4pZk6SeAgABFvZCAAEJCAIAAHudAgACR+4CAAHKdUIAADleAgAVmLaA=
-Date: Thu, 15 Mar 2012 23:36:16 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481B7663B1@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1331422300-4330-1-git-send-email-kys@microsoft.com>
- <1331422331-4381-1-git-send-email-kys@microsoft.com>
- <1331422331-4381-2-git-send-email-kys@microsoft.com>
- <20120311104230.GC3337@mwanda>
- <6E21E5352C11B742B20C142EB499E0481B75B403@TK5EX14MBXC122.redmond.corp.microsoft.com>
- <20120311184916.GD3337@mwanda>
- <6E21E5352C11B742B20C142EB499E0481B75D433@TK5EX14MBXC122.redmond.corp.microsoft.com>
- <20120312052221.GE3337@mwanda>
- <6E21E5352C11B742B20C142EB499E0481B75D4CE@TK5EX14MBXC122.redmond.corp.microsoft.com>
- <20120312130353.GF3337@mwanda>
-In-Reply-To: <20120312130353.GF3337@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.19]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1032431Ab2COXhZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 19:37:25 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50444 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161037Ab2COXhU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 19:37:20 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.com
+In-Reply-To: <1331749794-8056-1-git-send-email-ccross@android.com>
+References: <1331749794-8056-1-git-send-email-ccross@android.com>
+Date: Thu, 15 Mar 2012 16:37:19 -0700
+X-Google-Sender-Auth: hmEws5RNDp7AF0E5bcDdj0BUPrY
+Message-ID: <CAMbhsRQAw2+as13NVvWkh7ojyRs+jNpFist2gmiiEY52U=o84A@mail.gmail.com>
+Subject: Re: [PATCHv2 0/5] coupled cpuidle state support
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-pm@lists.linux-foundation.org,
+        Kevin Hilman <khilman@ti.com>, Len Brown <len.brown@intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Colin Cross <ccross@android.com>, Rob Lee <rob.lee@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 14, 2012 at 11:29 AM, Colin Cross <ccross@android.com> wrote:
+> On some ARM SMP SoCs (OMAP4460, Tegra 2, and probably more), the
+> cpus cannot be independently powered down, either due to
+> sequencing restrictions (on Tegra 2, cpu 0 must be the last to
+> power down), or due to HW bugs (on OMAP4460, a cpu powering up
+> will corrupt the gic state unless the other cpu runs a work
+> around).  Each cpu has a power state that it can enter without
+> coordinating with the other cpu (usually Wait For Interrupt, or
+> WFI), and one or more "coupled" power states that affect blocks
+> shared between the cpus (L2 cache, interrupt controller, and
+> sometimes the whole SoC).  Entering a coupled power state must
+> be tightly controlled on both cpus.
+>
+> The easiest solution to implementing coupled cpu power states is
+> to hotplug all but one cpu whenever possible, usually using a
+> cpufreq governor that looks at cpu load to determine when to
+> enable the secondary cpus.  This causes problems, as hotplug is an
+> expensive operation, so the number of hotplug transitions must be
+> minimized, leading to very slow response to loads, often on the
+> order of seconds.
+>
+> This patch series implements an alternative solution, where each
+> cpu will wait in the WFI state until all cpus are ready to enter
+> a coupled state, at which point the coupled state function will
+> be called on all cpus at approximately the same time.
+>
+> Once all cpus are ready to enter idle, they are woken by an smp
+> cross call.  At this point, there is a chance that one of the
+> cpus will find work to do, and choose not to enter suspend.  A
+> final pass is needed to guarantee that all cpus will call the
+> power state enter function at the same time.  During this pass,
+> each cpu will increment the ready counter, and continue once the
+> ready counter matches the number of online coupled cpus.  If any
+> cpu exits idle, the other cpus will decrement their counter and
+> retry.
+>
+> To use coupled cpuidle states, a cpuidle driver must:
+>
+>   Set struct cpuidle_device.coupled_cpus to the mask of all
+>   coupled cpus, usually the same as cpu_possible_mask if all cpus
+>   are part of the same cluster.  The coupled_cpus mask must be
+>   set in the struct cpuidle_device for each cpu.
+>
+>   Set struct cpuidle_device.safe_state to a state that is not a
+>   coupled state.  This is usually WFI.
+>
+>   Set CPUIDLE_FLAG_COUPLED in struct cpuidle_state.flags for each
+>   state that affects multiple cpus.
+>
+>   Provide a struct cpuidle_state.enter function for each state
+>   that affects multiple cpus.  This function is guaranteed to be
+>   called on all cpus at approximately the same time.  The driver
+>   should ensure that the cpus all abort together if any cpu tries
+>   to abort once the function is called.
+>
+> This series has been tested by implementing a test cpuidle state
+> that uses the parallel barrier helper function to verify that
+> all cpus call the function at the same time.
+>
+> This patch set has a few disadvantages over the hotplug governor,
+> but I think they are all fairly minor:
+>   * Worst-case interrupt latency can be increased.  If one cpu
+>     receives an interrupt while the other is spinning in the
+>     ready_count loop, the second cpu will be stuck with
+>     interrupts off until the first cpu finished processing
+>     its interrupt and exits idle.  This will increase the worst
+>     case interrupt latency by the worst-case interrupt processing
+>     time, but should be very rare.
+>   * Interrupts are processed while still inside pm_idle.
+>     Normally, interrupts are only processed at the very end of
+>     pm_idle, just before it returns to the idle loop.  Coupled
+>     states requires processing interrupts inside
+>     cpuidle_enter_state_coupled in order to distinguish between
+>     the smp_cross_call from another cpu that is now idle and an
+>     interrupt that should cause idle to exit.
+>     I don't see a way to fix this without either being able to
+>     read the next pending irq from the interrupt chip, or
+>     querying the irq core for which interrupts were processed.
+>   * Since interrupts are processed inside cpuidle, the next
+>     timer event could change.  The new timer event will be
+>     handled correctly, but the idle state decision made by
+>     the governor will be out of date, and will not be revisited.
+>     The governor select function could be called again every time,
+>     but this could lead to a lot of work being done by an idle
+>     cpu if the other cpu was mostly busy.
+>
+> v2:
+>   * removed the coupled lock, replacing it with atomic counters
+>   * added a check for outstanding pokes before beginning the
+>     final transition to avoid extra wakeups
+>   * made the cpuidle_coupled struct completely private
+>   * fixed kerneldoc comment formatting
+>   * added a patch with a helper function for resynchronizing
+>     cpus after aborting idle
+>   * added a patch (not for merging) to add trace events for
+>     verification and performance testing
 
-
-> -----Original Message-----
-> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
-> Sent: Monday, March 12, 2012 9:04 AM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; ohering@suse.com; linux-
-> kernel@vger.kernel.org; virtualization@lists.osdl.org; Alan Stern;
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH 2/4] Drivers: hv: Support the newly introduced KVP
-> messages in the driver
-> 
-> On Mon, Mar 12, 2012 at 12:36:53PM +0000, KY Srinivasan wrote:
-> > Dan,
-> > I am sorry for not being as precise as I should be:
-> > utf16s_to_utf8s() takes two length parameters - the length of the utf16 string
-> > that is to be converted and the second the length of the utf8 output string.
-> > The windows host manipulates all string in utf16 encoding and the string we get
-> > from the host is guaranteed to be less than or equal to MAX value that we have
-> > including the terminating character. In my code, I simply pass the length of the
-> > utf16 string as received from the host.
-> >
-> > The parameter that I am currently passing MAX length value is the "maxout"
-> > parameter of the utf16s_utf8s() function. This by definition is the size of the
-> > output buffer and in this case it happens to be MAX characters big.
-> >
-> 
-> I also think I'm not being as clear as I should...  I understand
-> that you trust the input; I'm say that for correctness sake you
-> should specify a output size which leaves room for the NUL char.
-> 
-> I can't say I know this code very well so I could be wrong, but it's
-> what we do inside usb_string() for example.  Can someone who knows
-> the code check if we should do something like this:
-> 
-
-Dan, 
-
-Sorry I could not get back to you earlier. You are right, in that I am trusting
-the host! I am of the firm belief that in a virtualized environment, if you don't trust
-the host, there is not a whole lot you can do in a guest! I have had this arguments 
-with other on this mailing list in the past. Having said that, I think we have spent more
-time debating this than we should; your proposal is reasonable and I will go ahead and
-re-spin those patches based on your comments. I should be posting them shortly.
-
-Regards,
-
-K. Y
-
+I forgot to mention, this patch series is on v3.3-rc7, and will
+conflict with the cpuidle timekeeping patches.  If those go in first
+(which is likely), I will rework this series on top of it.  I left it
+on v3.3-rc7 now to make testing easier.
