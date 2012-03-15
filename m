@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758740Ab2COSBQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 14:01:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57453 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754900Ab2COSBN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 14:01:13 -0400
+	id S1031783Ab2COSCF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 14:02:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752818Ab2COSCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 14:02:03 -0400
+Message-ID: <4F622E90.5080001@redhat.com>
+Date: Thu, 15 Mar 2012 20:01:52 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4KhQJOpKk8OOtcSxWc3wwkhLix8ECZhGtTnQ2WgQH7iw@mail.gmail.com>
-References: <1331362837-10740-1-git-send-email-yinghai@kernel.org>
-	<1331362837-10740-25-git-send-email-yinghai@kernel.org>
-	<CAErSpo6g3pei2+oW0wLEpytBTh6wGTyzo28oVVzFECxZdta+FA@mail.gmail.com>
-	<CAE9FiQWfYxD2OAmXF5UdQMkPt33xeoSu489N6KtU3k5VE3jUXw@mail.gmail.com>
-	<CAErSpo4KhQJOpKk8OOtcSxWc3wwkhLix8ECZhGtTnQ2WgQH7iw@mail.gmail.com>
-Date: Thu, 15 Mar 2012 11:01:12 -0700
-X-Google-Sender-Auth: jqfm3MrXmYTK4-3963uUx57vCsw
-Message-ID: <CAE9FiQV8XsLZfZLLWsdkQ+EVvPV7Z70Xaz_utOcaDBU8hm4gpg@mail.gmail.com>
-Subject: Re: [PATCH v2 24/37] PCI, ACPI: Add pci_root_hp hot removal
- notification support.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, x86 <x86@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Akshay Karle <akshay.a.karle@gmail.com>, linux-kernel@vger.kernel.org,
+        Konrad Wilk <konrad.wilk@oracle.com>, kvm@vger.kernel.org,
+        ashu tripathi <er.ashutripathi@gmail.com>,
+        nishant gulhane <nishant.s.gulhane@gmail.com>,
+        amarmore2006 <amarmore2006@gmail.com>,
+        Shreyas Mahure <shreyas.mahure@gmail.com>,
+        mahesh mohan <mahesh6490@gmail.com>
+Subject: Re: [RFC 0/2] kvm: Transcendent Memory (tmem) on KVM
+References: <1331224181.2585.16.camel@aks> <4F621FC0.7050800@redhat.com> <ac318852-4ccd-4739-893c-52f5cddee6c7@default>
+In-Reply-To: <ac318852-4ccd-4739-893c-52f5cddee6c7@default>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 15, 2012 at 10:53 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Sure, the 'echo "\_SB.PCIB 3" > /proc/acpi/sci/notify' way looks more
-> like physical hotadd/remove because it is basically injecting the
-> notify event that the hardware/BIOS should be generating itself.  But
-> it is platform-specific and therefore unacceptable as a general user
-> interface.
+On 03/15/2012 07:49 PM, Dan Magenheimer wrote:
+> > One of the potential problems with tmem is reduction in performance when
+> > the cache hit rate is low, for example when streaming.
+> > 
+> > Can you test this by creating a large file, for example with
+> > 
+> >   dd < /dev/urandom > file bs=1M count=100000
+> > 
+> > and then measuring the time to stream it, using
+> > 
+> >   time dd < file > /dev/null
+> > 
+> > with and without the patch?
+> > 
+> > Should be done on a cleancache enabled guest filesystem backed by a
+> > virtio disk with cache=none.
+> > 
+> > It would be interesting to compare kvm_stat during the streaming, with
+> > and without the patch.
 >
-> Using /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/remove would be a
-> more generic way.  The PNP0A08:00/remove implementation would
-> basically turn into an acpi_pci_root_remove() call, just like the
-> 'echo "\_SB.PCIB 3" > /proc/acpi/sci/notify' does.
+> Hi Avi --
+>
+> The "WasActive" patch (https://lkml.org/lkml/2012/1/25/300) 
+> is intended to avoid the streaming situation you are creating here.
+> It increases the "quality" of cached pages placed into zcache
+> and should probably also be used on the guest-side stubs (and/or maybe
+> the host-side zcache... I don't know KVM well enough to determine
+> if that would work).
+>
+> As Dave Hansen pointed out, the WasActive patch is not yet correct
+> and, as akpm points out, pageflag bits are scarce on 32-bit systems,
+> so it remains to be seen if the WasActive patch can be upstreamed.
+> Or maybe there is a different way to achieve the same goal.
+> But I wanted to let you know that the streaming issue is understood
+> and needs to be resolved for some cleancache backends just as it was
+> resolved in the core mm code.
 
-if the users can not find _SB.PCIB etc, they may not find
-LNXSYSTM:00/device:00/PNP0A08:00.
+Nice.  This takes care of the tail-end of the streaming (the more
+important one - since it always involves a cold copy).  What about the
+other side?  Won't the read code invoke cleancache_get_page() for every
+page? (this one is just a null hypercall, so it's cheaper, but still
+expensive).
 
-so /sys/class/pci_bus/0000:80/remove is more easy for them?
+> The measurement you suggest would still be interesting even
+> without the WasActive patch as it measures a "worst case".
 
-Yinghai
+It can provide the justification for that patch, yes.
+
+-- 
+error compiling committee.c: too many arguments to function
+
