@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031188Ab2COWey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 18:34:54 -0400
-Received: from cpanel23.proisp.no ([88.87.44.74]:56931 "EHLO
-	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030380Ab2COWex (ORCPT
+	id S1031269Ab2COWoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 18:44:10 -0400
+Received: from mx1310.superdata.vn ([27.0.13.10]:2728 "EHLO
+	mail9242.dotvndns.vn" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1031159Ab2COWoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 18:34:53 -0400
-Message-ID: <4F626E6C.5010809@numascale.com>
-Date: Thu, 15 Mar 2012 23:34:20 +0100
-From: Steffen Persvold <sp@numascale.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:10.0) Gecko/20120129 Thunderbird/10.0
+	Thu, 15 Mar 2012 18:44:05 -0400
+X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Mar 2012 18:44:04 EDT
+DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=datxanh.com.vn;
+	c=simple; q=dns; h=from:message-id;
+	b=hroiqNlpLR6Nn4zImOavbz4fuo/It2BCQFEeBoDSY4lNhbhBHj5OSXOeFiiZ
+	XnwODoD0FjIBW7070w1Ff9xPbRE60mPatDQmTr84JWWYgAsAbVe1GnxOg
+	0RhAXDzLgfhG7VEZnvHWRVYhwkAHyQXjcdndQ2IXpYqVaSAdYygGLo=;
+X-MDAV-Processed: mail9242.dotvndns.vn, Fri, 16 Mar 2012 05:38:12 +0700
+X-Spam-Processed: mail9242.dotvndns.vn, Fri, 16 Mar 2012 05:38:09 +0700
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: khuyenptm@datxanh.com.vn
+X-Return-Path: khuyenptm@datxanh.com.vn
+X-Envelope-From: khuyenptm@datxanh.com.vn
+Date: Fri, 16 Mar 2012 05:37:33 +0700
+From: "Pham Thi My Khuyen" <khuyenptm@datxanh.com.vn>
+Subject: Dear Esteemed Email User Account.
 MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH] Use x2apic_supported() in the default_apic_id_valid()
- function.
-References: <CAE9FiQXC7T7JQRfiry8nHaRYN3ggy9vfzc2jDUzar80hv6pEvw@mail.gmail.com>  <1331834583-16070-1-git-send-email-sp@numascale.com>  <CAE9FiQUh-kEcLLAZYiy90UJY8-WmXTKhYrjS7HQ40U+Ah2dwNg@mail.gmail.com> <1331846504.16101.12.camel@sbsiddha-desk.sc.intel.com>
-In-Reply-To: <1331846504.16101.12.camel@sbsiddha-desk.sc.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset="us-ascii"
+Message-ID: <WC20120315223733.3100B5@datxanh.com.vn>
+X-Mailer: WorldClient 11.0.3
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/15/12 22:21 , Suresh Siddha wrote:
-> On Thu, 2012-03-15 at 13:23 -0700, Yinghai Lu wrote:
->> On Thu, Mar 15, 2012 at 11:03 AM, Steffen Persvold<sp@numascale.com>  wrote:
->>> Use x2apic_supported() in the default_apic_id_valid() function. If x2apic mode is disabled (via nox2apic for example), x2apic_supported() will return false.
->>>
->>> This allows us to substitute the check in arch/x86/kernel/acpi/boot.c::acpi_parse_x2apic and avoid feigning the x2apic cpu feature in the NumaChip apic code.
->>>
->>> Signed-off-by: Steffen Persvold<sp@numascale.com>
->>> Reviewed-by: Daniel J Blueman<daniel@numascale-asia.com>
->>
->> I double checked on system with x2apic preenabled,
->> nox2apic in boot command line still works well and it
->> skips starting APs with apic id>  255.
->>
->> Acked-by: Yinghai Lu<yinghai@kernel.org>
->
 
-Suresh,
 
-> This breaks the smpboot check if enabling interrupt-remapping/x2apic
-> fails on a platform. We will be in xapic mode and we don't clear the
-> x2apic cpufeature bit in this case and as such smpboot check will fail.
->
-> So this change breaks the commit
-> c284b42abadbb22083bfde24d308899c08d44ffa.
->
+Dear Esteemed User,
 
-I was afraid of that.
+Click on the link below and fill the details to improve the spam filter 
+services in our webmail systems for better online services to avoid 
+virus and spam 
 
-> I think the right thing is to have two different apid_id_valid checks
-> one for xapic driver (apic_flat_64.c) and another for x2apic driver
-> (x2apic_phys/cluster.c) and that way, x2apic MADT entries will be parsed
-> only if bios has handed over the OS in x2apic mode or if we have
-> selected the numachip model.
->
+mails.
 
-Is my understanding of your suggestion correct that in 
-x2apic_phys/cluster.c we add the following apic_id_valid() function :
+http://www.autoproslancaster.com/form/use/helpdesk/form1.html
 
-static int x2apic_apic_id_valid(int apicid)
-{
-  	return x2apic_mode || (apicid < 255);
-}
+Do not ignore this message.
 
-?
 
-Considering that this function (apic->apic_id_valid()) is called already 
-in the acpi/boot.c::acpi_parse_x2apic() function is it sufficient enough 
-to test for x2apic_mode ? Yinghai indicated that x2apic_mode was not set 
-at this point, thus it was testing cpu_has_x2apic instead ?
-
-I must admit that I am not familiar enough with the APIC/ACPI code base 
-to determine the sequence of events here (i.e MADT parsing, enabling of 
-x2apic mode etc. etc.).
-
-Please advice.
-
-Kind regards,
-Steffen
