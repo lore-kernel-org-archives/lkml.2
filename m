@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761865Ab2COMmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Mar 2012 08:42:47 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44924 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753570Ab2COMmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Mar 2012 08:42:46 -0400
-Date: Thu, 15 Mar 2012 13:42:29 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH] watchdog: Make sure the watchdog thread gets CPU on
- loaded system
-Message-ID: <20120315124228.GA5318@elte.hu>
-References: <1331757525-5755-1-git-send-email-dzickus@redhat.com>
- <20120314161906.e53359d3.akpm@linux-foundation.org>
- <20120315014511.GT27051@google.com>
- <1331809239.18960.168.camel@twins>
- <1331809597.18960.171.camel@twins>
+	id S1761906Ab2COMqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Mar 2012 08:46:34 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34292 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760121Ab2COMqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Mar 2012 08:46:33 -0400
+Date: Thu, 15 Mar 2012 12:46:31 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: notify sysfs when voltage is set
+Message-ID: <20120315124631.GJ3138@opensource.wolfsonmicro.com>
+References: <1331813073-714-1-git-send-email-horms@verge.net.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MFZs98Tklfu0WsCO"
 Content-Disposition: inline
-In-Reply-To: <1331809597.18960.171.camel@twins>
+In-Reply-To: <1331813073-714-1-git-send-email-horms@verge.net.au>
+X-Cookie: Are you a turtle?
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
- -2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-                             [score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+--MFZs98Tklfu0WsCO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> On Thu, 2012-03-15 at 12:00 +0100, Peter Zijlstra wrote:
-> > On Wed, 2012-03-14 at 18:45 -0700, Mandeep Singh Baines wrote:
-> > > You could make MAX_RT_PRIO greater than MAX_USER_RT_PRIO but that
-> > > might
-> > > have some impact on real-time applications. A simple one-line patch:
-> > > 
-> > > - #define MAX_RT_PRIO           MAX_USER_RT_PRIO
-> > > + #define MAX_RT_PRIO           (MAX_USER_RT_PRIO + 1)
-> > > 
-> > > would prevent user-space from causing a false lockup detection.
-> > 
-> > We're so not going to muck with the fifo priorities just for this stupid
-> > soft watchdog,.. I already hate that I can't disable the piece of crap,
-> > making it more involved is just really not going to happen.
-> 
-> And before people start to whinge about that, all the soft 
-> watchdog issues I've seen fly by the past year or so all were 
-> bugs in the watchdog itself, I can't actually remember it 
-> flagging a real problem.
+On Thu, Mar 15, 2012 at 09:04:33PM +0900, Simon Horman wrote:
 
-Its efficiency always depended on which area I was working on. 
-For syscall level stuff it helped me numerous times.
+> This allows libudev to be used to monitor voltage changes and thus allows
+> user-space code to avoid polling the sysfs entry for changes.
 
-> The NMI watchdog otoh works like a charm for me and regularly 
-> helps out when I done stupid.
+I notice that we don't generate similar events for cpufreq...  what are
+the performance implications from firing off udev (which isn't free)
+every time we scale the CPU frequency?  It feels like this might be
+disruptive, especially with a governor like ondemand which responds to
+system load.
 
-Sure, you are mostly working on perf events, the scheduler and 
-related core kernel areas so when you are stupid you get a hard 
-lockup or worse, quickly. Not much room for soft lockups.
+--MFZs98Tklfu0WsCO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-So it's more of a case of selection bias, me thinks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-So unless there's concensus to remove everything but the hard 
-lockup detection facilities, lets solve the technical problem at 
-hand, ok?
+iQIcBAEBAgAGBQJPYeShAAoJEBus8iNuMP3dvasP/i0PqANwn4eiUz88yCQZc46m
+tSmcH7j4U+3KYJNK5fpl/GS5Imz/nnG0NdLsyNZ2ATlB+Y1bcvIweTGHMAkQWBYw
+LLobuOD8Kvbf7E1ZTed8dtqmSfKpGmEMdRjiyANvMzyM1Oy5Qp4UcRIhrwQknTZn
+25Frv3/4WV6Vneu3PXoDI0WeYMMnxZKOZR8wgA4mZHfaMsWSzKuufZk568emmDO9
+TyiHSLYXJlGHR559/xTW1e989x8MVGR3A210N2jwzeDeHk/Y72ajFNhPHX279vpS
+MV1rZofMy0GD1rRCnHNltx+IJH1AnjbtDYL3xqhjO/ElFvZTpJCELC7QxzWBSYvr
+2G1L/UXpdBKF/90dBvXlgVrurTMfZ3Cl+xH4Knb6lqo3EqjlWiQdPTDItPdiy+nh
+A47fJ4KcC5u8YnQfqqNUzlozw77nz6BIaw2X7CU8ERX/yVodJw2I6h/57e7p8giY
+iN4Uplb1ijteONY6arSWvk71kShgOTy7tiyZN/iE6VnkvRPc9kpuqc60vgJFkxh6
+f//aVOJ5FpEv7dkbtbhSGf1Z+rX26Gm152VuU6TT0sY+2ddVhDqwi+3IbpCQYkvT
+6k2M6JrO+NHSKh27/VPcI/HHG7GhEi7XjD4VlI+TjaAOY3Y+O77ZQ+cRalZZ/Zus
+bHMpZ5lGKppfnKEmhpm6
+=rkmv
+-----END PGP SIGNATURE-----
 
-Thanks,
-
-	Ingo
+--MFZs98Tklfu0WsCO--
